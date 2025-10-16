@@ -1,0 +1,426 @@
+<!DOCTYPE html>
+<html lang="ko" xmlns:th="http://www.thymeleaf.org">
+<head th:replace="fragments/layout :: head('근태 관리', '/css/attendance.css')"></head>
+<body>
+    <div class="container">
+        <!-- 좌측 네비게이션 바 -->
+        <div th:replace="fragments/sidebar :: sidebar('attendance')"></div>
+
+        <!-- 메인 콘텐츠 영역 -->
+        <main class="main-content">
+            <header class="header">
+                <div class="header-left">
+                    <h1 class="page-title">근태 관리</h1>
+                    <p class="page-subtitle">BIO star2 지문인식 장비 연동</p>
+                </div>
+                <div class="header-right">
+                    <button class="btn-refresh" id="refreshBtn">
+                        <i class="fas fa-sync-alt"></i>
+                        데이터 새로고침
+                    </button>
+                </div>
+            </header>
+
+            <div class="attendance-area">
+                <!-- 이번주 근태 현황 -->
+                <div class="week-section">
+                    <div class="week-header">
+                        <h3>이번주 근무 현황 (1월 13일 ~ 1월 19일)</h3>
+                        <div class="week-nav">
+                            <button class="nav-btn" id="prevWeek"><i class="fas fa-chevron-left"></i></button>
+                            <button class="nav-btn" id="nextWeek"><i class="fas fa-chevron-right"></i></button>
+                        </div>
+                    </div>
+
+                    <!-- 이번주 통계 -->
+                    <div class="week-stats">
+                        <div class="stat-card">
+                            <div class="stat-icon" style="background: #e3f2fd;">
+                                <i class="fas fa-clock" style="color: #1976d2;"></i>
+                            </div>
+                            <div class="stat-content">
+                                <h3>총 근무시간</h3>
+                                <p class="stat-number">40<span>시간</span></p>
+                            </div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="stat-icon" style="background: #e8f5e9;">
+                                <i class="fas fa-calendar-check" style="color: #388e3c;"></i>
+                            </div>
+                            <div class="stat-content">
+                                <h3>정상 출근</h3>
+                                <p class="stat-number">3<span>일</span></p>
+                            </div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="stat-icon" style="background: #fff3e0;">
+                                <i class="fas fa-exclamation-triangle" style="color: #f57c00;"></i>
+                            </div>
+                            <div class="stat-content">
+                                <h3>지각</h3>
+                                <p class="stat-number">1<span>회</span></p>
+                            </div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="stat-icon" style="background: #f3e5f5;">
+                                <i class="fas fa-hourglass-half" style="color: #7b1fa2;"></i>
+                            </div>
+                            <div class="stat-content">
+                                <h3>평균 근무시간</h3>
+                                <p class="stat-number">8<span>시간</span></p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- 이번주 상세 기록 -->
+                    <div class="week-records">
+                        <div class="record-card today">
+                            <div class="record-header">
+                                <h4>목요일</h4>
+                                <span class="record-date">2025-01-16 (오늘)</span>
+                            </div>
+                            <div class="record-body">
+                                <div class="time-info">
+                                    <div class="time-item">
+                                        <i class="fas fa-sign-in-alt"></i>
+                                        <span class="time-label">출근</span>
+                                        <span class="time-value">09:00</span>
+                                    </div>
+                                    <div class="time-item">
+                                        <i class="fas fa-sign-out-alt"></i>
+                                        <span class="time-label">퇴근</span>
+                                        <span class="time-value">근무중</span>
+                                    </div>
+                                </div>
+                                <div class="duration-info">
+                                    <span>근무시간: <strong>7시간 30분</strong></span>
+                                    <span class="status-badge normal">정상</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="record-card">
+                            <div class="record-header">
+                                <h4>수요일</h4>
+                                <span class="record-date">2025-01-15</span>
+                            </div>
+                            <div class="record-body">
+                                <div class="time-info">
+                                    <div class="time-item">
+                                        <i class="fas fa-sign-in-alt"></i>
+                                        <span class="time-label">출근</span>
+                                        <span class="time-value">09:00</span>
+                                    </div>
+                                    <div class="time-item">
+                                        <i class="fas fa-sign-out-alt"></i>
+                                        <span class="time-label">퇴근</span>
+                                        <span class="time-value">18:00</span>
+                                    </div>
+                                </div>
+                                <div class="duration-info">
+                                    <span>근무시간: <strong>8시간</strong></span>
+                                    <span class="status-badge normal">정상</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="record-card late">
+                            <div class="record-header">
+                                <h4>화요일</h4>
+                                <span class="record-date">2025-01-14</span>
+                            </div>
+                            <div class="record-body">
+                                <div class="time-info">
+                                    <div class="time-item">
+                                        <i class="fas fa-sign-in-alt"></i>
+                                        <span class="time-label">출근</span>
+                                        <span class="time-value">09:45</span>
+                                    </div>
+                                    <div class="time-item">
+                                        <i class="fas fa-sign-out-alt"></i>
+                                        <span class="time-label">퇴근</span>
+                                        <span class="time-value">18:00</span>
+                                    </div>
+                                </div>
+                                <div class="duration-info">
+                                    <span>근무시간: <strong>8시간 15분</strong></span>
+                                    <span class="status-badge late">지각 (45분)</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="record-card">
+                            <div class="record-header">
+                                <h4>월요일</h4>
+                                <span class="record-date">2025-01-13</span>
+                            </div>
+                            <div class="record-body">
+                                <div class="time-info">
+                                    <div class="time-item">
+                                        <i class="fas fa-sign-in-alt"></i>
+                                        <span class="time-label">출근</span>
+                                        <span class="time-value">09:00</span>
+                                    </div>
+                                    <div class="time-item">
+                                        <i class="fas fa-sign-out-alt"></i>
+                                        <span class="time-label">퇴근</span>
+                                        <span class="time-value">18:00</span>
+                                    </div>
+                                </div>
+                                <div class="duration-info">
+                                    <span>근무시간: <strong>8시간</strong></span>
+                                    <span class="status-badge normal">정상</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 월간 캘린더 -->
+                <div class="calendar-section">
+                    <div class="calendar-header">
+                        <h3>2025년 1월 근태 현황</h3>
+                        <div class="calendar-nav">
+                            <button class="nav-btn" id="prevMonth"><i class="fas fa-chevron-left"></i></button>
+                            <span class="current-month">2025년 1월</span>
+                            <button class="nav-btn" id="nextMonth"><i class="fas fa-chevron-right"></i></button>
+                        </div>
+                    </div>
+
+                    <div class="calendar">
+                        <div class="calendar-weekdays">
+                            <div class="weekday">일</div>
+                            <div class="weekday">월</div>
+                            <div class="weekday">화</div>
+                            <div class="weekday">수</div>
+                            <div class="weekday">목</div>
+                            <div class="weekday">금</div>
+                            <div class="weekday">토</div>
+                        </div>
+                        <div class="calendar-days">
+                            <!-- 이전 달 날짜 -->
+                            <div class="day other-month">29</div>
+                            <div class="day other-month">30</div>
+                            <div class="day other-month">31</div>
+
+                            <!-- 1월 날짜 -->
+                            <div class="day holiday">
+                                <span class="day-number">1</span>
+                                <span class="day-status">휴일</span>
+                            </div>
+                            <div class="day work">
+                                <span class="day-number">2</span>
+                                <span class="day-status">정상</span>
+                                <span class="day-time">09:00~18:00</span>
+                            </div>
+                            <div class="day work">
+                                <span class="day-number">3</span>
+                                <span class="day-status">정상</span>
+                                <span class="day-time">09:00~18:30</span>
+                            </div>
+                            <div class="day weekend">
+                                <span class="day-number">4</span>
+                                <span class="day-status">주말</span>
+                            </div>
+                            <div class="day weekend">
+                                <span class="day-number">5</span>
+                                <span class="day-status">주말</span>
+                            </div>
+                            <div class="day work">
+                                <span class="day-number">6</span>
+                                <span class="day-status">정상</span>
+                                <span class="day-time">09:00~18:00</span>
+                            </div>
+                            <div class="day work late">
+                                <span class="day-number">7</span>
+                                <span class="day-status">지각</span>
+                                <span class="day-time">09:30~18:00</span>
+                            </div>
+                            <div class="day work">
+                                <span class="day-number">8</span>
+                                <span class="day-status">정상</span>
+                                <span class="day-time">09:00~19:00</span>
+                            </div>
+                            <div class="day work">
+                                <span class="day-number">9</span>
+                                <span class="day-status">정상</span>
+                                <span class="day-time">09:00~18:00</span>
+                            </div>
+                            <div class="day work">
+                                <span class="day-number">10</span>
+                                <span class="day-status">정상</span>
+                                <span class="day-time">09:00~18:30</span>
+                            </div>
+                            <div class="day weekend">
+                                <span class="day-number">11</span>
+                                <span class="day-status">주말</span>
+                            </div>
+                            <div class="day weekend">
+                                <span class="day-number">12</span>
+                                <span class="day-status">주말</span>
+                            </div>
+                            <div class="day work">
+                                <span class="day-number">13</span>
+                                <span class="day-status">정상</span>
+                                <span class="day-time">09:00~18:00</span>
+                            </div>
+                            <div class="day work late">
+                                <span class="day-number">14</span>
+                                <span class="day-status">지각</span>
+                                <span class="day-time">09:45~18:00</span>
+                            </div>
+                            <div class="day work">
+                                <span class="day-number">15</span>
+                                <span class="day-status">정상</span>
+                                <span class="day-time">09:00~18:00</span>
+                            </div>
+                            <div class="day today">
+                                <span class="day-number">16</span>
+                                <span class="day-status">근무중</span>
+                                <span class="day-time">09:00~</span>
+                            </div>
+                            <div class="day future">
+                                <span class="day-number">17</span>
+                            </div>
+                            <div class="day future weekend">
+                                <span class="day-number">18</span>
+                            </div>
+                            <div class="day future weekend">
+                                <span class="day-number">19</span>
+                            </div>
+                            <div class="day future">
+                                <span class="day-number">20</span>
+                            </div>
+                            <div class="day future">
+                                <span class="day-number">21</span>
+                            </div>
+                            <div class="day future">
+                                <span class="day-number">22</span>
+                            </div>
+                            <div class="day future">
+                                <span class="day-number">23</span>
+                            </div>
+                            <div class="day future">
+                                <span class="day-number">24</span>
+                            </div>
+                            <div class="day future weekend">
+                                <span class="day-number">25</span>
+                            </div>
+                            <div class="day future weekend">
+                                <span class="day-number">26</span>
+                            </div>
+                            <div class="day future">
+                                <span class="day-number">27</span>
+                            </div>
+                            <div class="day future">
+                                <span class="day-number">28</span>
+                            </div>
+                            <div class="day future">
+                                <span class="day-number">29</span>
+                            </div>
+                            <div class="day future">
+                                <span class="day-number">30</span>
+                            </div>
+                            <div class="day future">
+                                <span class="day-number">31</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="calendar-legend">
+                        <div class="legend-item">
+                            <span class="legend-dot normal"></span>
+                            <span>정상 출근</span>
+                        </div>
+                        <div class="legend-item">
+                            <span class="legend-dot late"></span>
+                            <span>지각</span>
+                        </div>
+                        <div class="legend-item">
+                            <span class="legend-dot absent"></span>
+                            <span>결근</span>
+                        </div>
+                        <div class="legend-item">
+                            <span class="legend-dot vacation"></span>
+                            <span>연차</span>
+                        </div>
+                        <div class="legend-item">
+                            <span class="legend-dot holiday"></span>
+                            <span>휴일</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 최근 근태 기록 -->
+                <div class="recent-records">
+                    <h3>최근 근태 기록</h3>
+                    <div class="records-list">
+                        <div class="record-item">
+                            <div class="record-date">
+                                <span class="date">2025-01-15</span>
+                                <span class="weekday">수요일</span>
+                            </div>
+                            <div class="record-time">
+                                <span><i class="fas fa-sign-in-alt"></i> 09:00</span>
+                                <span><i class="fas fa-sign-out-alt"></i> 18:00</span>
+                            </div>
+                            <div class="record-duration">8시간</div>
+                            <span class="record-status normal">정상</span>
+                        </div>
+                        <div class="record-item">
+                            <div class="record-date">
+                                <span class="date">2025-01-14</span>
+                                <span class="weekday">화요일</span>
+                            </div>
+                            <div class="record-time">
+                                <span><i class="fas fa-sign-in-alt"></i> 09:45</span>
+                                <span><i class="fas fa-sign-out-alt"></i> 18:00</span>
+                            </div>
+                            <div class="record-duration">8시간 15분</div>
+                            <span class="record-status late">지각</span>
+                        </div>
+                        <div class="record-item">
+                            <div class="record-date">
+                                <span class="date">2025-01-13</span>
+                                <span class="weekday">월요일</span>
+                            </div>
+                            <div class="record-time">
+                                <span><i class="fas fa-sign-in-alt"></i> 09:00</span>
+                                <span><i class="fas fa-sign-out-alt"></i> 18:00</span>
+                            </div>
+                            <div class="record-duration">8시간</div>
+                            <span class="record-status normal">정상</span>
+                        </div>
+                        <div class="record-item">
+                            <div class="record-date">
+                                <span class="date">2025-01-10</span>
+                                <span class="weekday">금요일</span>
+                            </div>
+                            <div class="record-time">
+                                <span><i class="fas fa-sign-in-alt"></i> 09:00</span>
+                                <span><i class="fas fa-sign-out-alt"></i> 18:30</span>
+                            </div>
+                            <div class="record-duration">8시간 30분</div>
+                            <span class="record-status normal">정상</span>
+                        </div>
+                        <div class="record-item">
+                            <div class="record-date">
+                                <span class="date">2025-01-09</span>
+                                <span class="weekday">목요일</span>
+                            </div>
+                            <div class="record-time">
+                                <span><i class="fas fa-sign-in-alt"></i> 09:00</span>
+                                <span><i class="fas fa-sign-out-alt"></i> 18:00</span>
+                            </div>
+                            <div class="record-duration">8시간</div>
+                            <span class="record-status normal">정상</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <script th:src="@{/js/attendance.js}"></script>
+</body>
+</html>

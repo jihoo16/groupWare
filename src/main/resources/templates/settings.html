@@ -1,0 +1,287 @@
+<!DOCTYPE html>
+<html lang="ko" xmlns:th="http://www.thymeleaf.org">
+<head th:replace="fragments/layout :: head('설정', '/css/settings.css')"></head>
+<body>
+    <div class="container">
+        <!-- 좌측 네비게이션 바 -->
+        <div th:replace="fragments/sidebar :: sidebar('settings')"></div>
+
+        <!-- 메인 콘텐츠 영역 -->
+        <main class="main-content">
+            <header class="header">
+                <div class="header-left">
+                    <h1 class="page-title">설정</h1>
+                </div>
+                <div class="header-right">
+                    <button class="btn-save" id="saveSettingsBtn">
+                        <i class="fas fa-save"></i>
+                        설정 저장
+                    </button>
+                </div>
+            </header>
+
+            <div class="settings-area">
+                <!-- 설정 탭 -->
+                <div class="settings-tabs">
+                    <button class="tab-btn active" data-tab="profile">
+                        <i class="fas fa-user"></i>
+                        프로필
+                    </button>
+                    <button class="tab-btn" data-tab="account">
+                        <i class="fas fa-key"></i>
+                        계정
+                    </button>
+                    <button class="tab-btn" data-tab="notification">
+                        <i class="fas fa-bell"></i>
+                        알림
+                    </button>
+                    <button class="tab-btn" data-tab="system">
+                        <i class="fas fa-cog"></i>
+                        시스템
+                    </button>
+                </div>
+
+                <!-- 프로필 설정 -->
+                <div class="tab-content active" id="profile">
+                    <div class="settings-card">
+                        <h3 class="card-title">프로필 정보</h3>
+                        <div class="profile-section">
+                            <div class="profile-avatar">
+                                <div class="avatar-display">
+                                    <i class="fas fa-user-circle"></i>
+                                </div>
+                                <button class="btn-change-avatar">
+                                    <i class="fas fa-camera"></i>
+                                    사진 변경
+                                </button>
+                            </div>
+                            <div class="profile-form">
+                                <div class="form-group">
+                                    <label>이름</label>
+                                    <input type="text" class="form-input" value="홍길동" placeholder="이름을 입력하세요">
+                                </div>
+                                <div class="form-group">
+                                    <label>이메일</label>
+                                    <input type="email" class="form-input" value="hong@pinecni.com" placeholder="이메일을 입력하세요">
+                                </div>
+                                <div class="form-group">
+                                    <label>연락처</label>
+                                    <input type="tel" class="form-input" value="010-1234-5678" placeholder="연락처를 입력하세요">
+                                </div>
+                                <div class="form-group">
+                                    <label>부서</label>
+                                    <select class="form-select">
+                                        <option value="개발팀" selected>개발팀</option>
+                                        <option value="경영지원팀">경영지원팀</option>
+                                        <option value="영업팀">영업팀</option>
+                                        <option value="디자인팀">디자인팀</option>
+                                    </select>
+                                </div>
+                                <div class="form-group">
+                                    <label>직급</label>
+                                    <input type="text" class="form-input" value="사원" readonly>
+                                </div>
+                                <div class="form-group full-width">
+                                    <label>자기소개</label>
+                                    <textarea class="form-textarea" rows="4" placeholder="간단한 자기소개를 입력하세요">안녕하세요. 개발팀에서 근무하고 있는 홍길동입니다.</textarea>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 계정 설정 -->
+                <div class="tab-content" id="account">
+                    <div class="settings-card">
+                        <h3 class="card-title">비밀번호 변경</h3>
+                        <div class="password-section">
+                            <div class="form-group">
+                                <label>현재 비밀번호</label>
+                                <input type="password" class="form-input" placeholder="현재 비밀번호를 입력하세요">
+                            </div>
+                            <div class="form-group">
+                                <label>새 비밀번호</label>
+                                <input type="password" class="form-input" placeholder="새 비밀번호를 입력하세요">
+                            </div>
+                            <div class="form-group">
+                                <label>새 비밀번호 확인</label>
+                                <input type="password" class="form-input" placeholder="새 비밀번호를 다시 입력하세요">
+                            </div>
+                            <button class="btn-secondary">비밀번호 변경</button>
+                        </div>
+                    </div>
+
+                    <div class="settings-card">
+                        <h3 class="card-title">보안 설정</h3>
+                        <div class="security-section">
+                            <div class="setting-item">
+                                <div class="setting-info">
+                                    <h4>2단계 인증</h4>
+                                    <p>계정 보안을 강화하기 위해 2단계 인증을 활성화합니다.</p>
+                                </div>
+                                <label class="toggle-switch">
+                                    <input type="checkbox">
+                                    <span class="slider"></span>
+                                </label>
+                            </div>
+                            <div class="setting-item">
+                                <div class="setting-info">
+                                    <h4>로그인 알림</h4>
+                                    <p>새로운 기기에서 로그인 시 이메일로 알림을 받습니다.</p>
+                                </div>
+                                <label class="toggle-switch">
+                                    <input type="checkbox" checked>
+                                    <span class="slider"></span>
+                                </label>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 알림 설정 -->
+                <div class="tab-content" id="notification">
+                    <div class="settings-card">
+                        <h3 class="card-title">알림 설정</h3>
+                        <div class="notification-section">
+                            <div class="setting-item">
+                                <div class="setting-info">
+                                    <h4>메일 알림</h4>
+                                    <p>새 메일 수신 시 알림을 받습니다.</p>
+                                </div>
+                                <label class="toggle-switch">
+                                    <input type="checkbox" checked>
+                                    <span class="slider"></span>
+                                </label>
+                            </div>
+                            <div class="setting-item">
+                                <div class="setting-info">
+                                    <h4>결재 알림</h4>
+                                    <p>결재 요청 및 승인/반려 시 알림을 받습니다.</p>
+                                </div>
+                                <label class="toggle-switch">
+                                    <input type="checkbox" checked>
+                                    <span class="slider"></span>
+                                </label>
+                            </div>
+                            <div class="setting-item">
+                                <div class="setting-info">
+                                    <h4>메신저 알림</h4>
+                                    <p>새 메시지 수신 시 알림을 받습니다.</p>
+                                </div>
+                                <label class="toggle-switch">
+                                    <input type="checkbox" checked>
+                                    <span class="slider"></span>
+                                </label>
+                            </div>
+                            <div class="setting-item">
+                                <div class="setting-info">
+                                    <h4>일정 알림</h4>
+                                    <p>일정 시작 전 알림을 받습니다.</p>
+                                </div>
+                                <label class="toggle-switch">
+                                    <input type="checkbox" checked>
+                                    <span class="slider"></span>
+                                </label>
+                            </div>
+                            <div class="setting-item">
+                                <div class="setting-info">
+                                    <h4>데스크톱 알림</h4>
+                                    <p>브라우저 데스크톱 알림을 활성화합니다.</p>
+                                </div>
+                                <label class="toggle-switch">
+                                    <input type="checkbox">
+                                    <span class="slider"></span>
+                                </label>
+                            </div>
+                            <div class="setting-item">
+                                <div class="setting-info">
+                                    <h4>알림음</h4>
+                                    <p>알림 수신 시 소리를 재생합니다.</p>
+                                </div>
+                                <label class="toggle-switch">
+                                    <input type="checkbox" checked>
+                                    <span class="slider"></span>
+                                </label>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 시스템 설정 -->
+                <div class="tab-content" id="system">
+                    <div class="settings-card">
+                        <h3 class="card-title">화면 설정</h3>
+                        <div class="system-section">
+                            <div class="form-group">
+                                <label>테마</label>
+                                <select class="form-select">
+                                    <option value="light" selected>라이트 모드</option>
+                                    <option value="dark">다크 모드</option>
+                                    <option value="auto">시스템 설정 따라가기</option>
+                                </select>
+                            </div>
+                            <div class="form-group">
+                                <label>언어</label>
+                                <select class="form-select">
+                                    <option value="ko" selected>한국어</option>
+                                    <option value="en">English</option>
+                                    <option value="ja">日本語</option>
+                                </select>
+                            </div>
+                            <div class="form-group">
+                                <label>페이지당 항목 수</label>
+                                <select class="form-select">
+                                    <option value="10">10개</option>
+                                    <option value="20" selected>20개</option>
+                                    <option value="50">50개</option>
+                                    <option value="100">100개</option>
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="settings-card">
+                        <h3 class="card-title">데이터 관리</h3>
+                        <div class="data-section">
+                            <div class="data-item">
+                                <div class="data-info">
+                                    <h4>캐시 데이터 삭제</h4>
+                                    <p>저장된 캐시 데이터를 삭제합니다.</p>
+                                </div>
+                                <button class="btn-danger-outline">삭제</button>
+                            </div>
+                            <div class="data-item">
+                                <div class="data-info">
+                                    <h4>내 데이터 다운로드</h4>
+                                    <p>개인 정보 및 활동 기록을 다운로드합니다.</p>
+                                </div>
+                                <button class="btn-secondary">다운로드</button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="settings-card">
+                        <h3 class="card-title">정보</h3>
+                        <div class="info-section">
+                            <div class="info-item">
+                                <span class="info-label">버전</span>
+                                <span class="info-value">v1.0.0</span>
+                            </div>
+                            <div class="info-item">
+                                <span class="info-label">최종 업데이트</span>
+                                <span class="info-value">2025-01-16</span>
+                            </div>
+                            <div class="info-item">
+                                <span class="info-label">고객센터</span>
+                                <span class="info-value">support@pinecni.com</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <script th:src="@{/js/settings.js}"></script>
+</body>
+</html>

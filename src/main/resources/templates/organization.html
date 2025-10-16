@@ -1,0 +1,197 @@
+<!DOCTYPE html>
+<html lang="ko" xmlns:th="http://www.thymeleaf.org">
+<head th:replace="fragments/layout :: head('ERP 시스템 - 조직도', '/css/organization.css')"></head>
+<body>
+    <div class="container">
+        <!-- 좌측 네비게이션 바 -->
+        <div th:replace="fragments/sidebar :: sidebar('organization')"></div>
+
+        <!-- 메인 콘텐츠 영역 -->
+        <main class="main-content">
+            <header class="header">
+                <div class="header-left">
+                    <h1 class="page-title">조직도</h1>
+                </div>
+                <div class="header-right">
+                    <div class="search-box">
+                        <i class="fas fa-search"></i>
+                        <input type="text" placeholder="이름, 부서 검색...">
+                    </div>
+                    <button class="notification-btn">
+                        <i class="fas fa-bell"></i>
+                        <span class="badge">3</span>
+                    </button>
+                </div>
+            </header>
+
+            <div class="org-chart-area">
+                <!-- 조직도 트리 구조 -->
+                <div class="org-chart">
+                    <!-- 대표이사 (최상위) -->
+                    <div class="org-level level-ceo">
+                        <div class="org-node ceo"
+                             data-name="김대표"
+                             data-position="대표이사"
+                             data-department="경영진"
+                             data-email="ceo@pinecni.com"
+                             data-image="">
+                            <div class="node-card">
+                                <div class="node-icon">
+                                    <i class="fas fa-user-tie"></i>
+                                </div>
+                                <div class="node-info">
+                                    <h3 class="node-name">김대표</h3>
+                                    <p class="node-position">대표이사</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- CMO/CTO 레벨 -->
+                    <div class="org-level level-executive">
+                        <div class="org-node cxo"
+                             data-name="박CMO"
+                             data-position="CMO"
+                             data-department="최고마케팅책임자"
+                             data-phone="010-2345-6789"
+                             data-email="cmo@pinecni.com"
+                             data-image=""
+                             data-status="active">
+                            <div class="node-card">
+                                <div class="node-icon">
+                                    <i class="fas fa-user-tie"></i>
+                                </div>
+                                <div class="node-info">
+                                    <h3 class="node-name">박CMO</h3>
+                                    <p class="node-position">CMO</p>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="org-node cxo"
+                             data-name="이CTO"
+                             data-position="CTO"
+                             data-department="최고기술책임자"
+                             data-phone="010-3456-7890"
+                             data-email="cto@pinecni.com"
+                             data-image="">
+                            <div class="node-card">
+                                <div class="node-icon">
+                                    <i class="fas fa-user-tie"></i>
+                                </div>
+                                <div class="node-info">
+                                    <h3 class="node-name">이CTO</h3>
+                                    <p class="node-position">CTO</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- 팀 레벨 -->
+                    <div class="org-level level-team">
+                        <!-- CMO 하위 팀들 -->
+                        <div class="cmo-teams">
+                            <div class="org-node team"
+                                 data-name="최사업"
+                                 data-position="사업팀장"
+                                 data-department="CMO > 사업팀"
+                                 data-phone="010-5678-9012"
+                                 data-email="business@pinecni.com"
+                                 data-image="">
+                                <div class="node-card">
+                                    <div class="node-icon">
+                                        <i class="fas fa-briefcase"></i>
+                                    </div>
+                                    <div class="node-info">
+                                        <h3 class="node-name">최사업</h3>
+                                        <p class="node-position">사업팀장</p>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="org-node team"
+                                 data-name="정지원"
+                                 data-position="지원팀장"
+                                 data-department="CMO > 지원팀"
+                                 data-phone="010-6789-0123"
+                                 data-email="support@pinecni.com"
+                                 data-image=""
+                                 data-status="vacation">
+                                <div class="node-card">
+                                    <div class="node-icon">
+                                        <i class="fas fa-hands-helping"></i>
+                                    </div>
+                                    <div class="node-info">
+                                        <h3 class="node-name">정지원</h3>
+                                        <p class="node-position">지원팀장</p>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- CTO 하위 팀 -->
+                        <div class="cto-teams">
+                            <div class="org-node team"
+                                 data-name="한기술"
+                                 data-position="기술연구소장"
+                                 data-department="CTO > 기술연구소"
+                                 data-phone="010-7890-1234"
+                                 data-email="rnd@pinecni.com"
+                                 data-image="">
+                                <div class="node-card">
+                                    <div class="node-icon">
+                                        <i class="fas fa-flask"></i>
+                                    </div>
+                                    <div class="node-info">
+                                        <h3 class="node-name">한기술</h3>
+                                        <p class="node-position">기술연구소장</p>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 호버 시 표시될 상세 정보 카드 -->
+                <div class="hover-card" id="hoverCard">
+                    <div class="hover-card-header">
+                        <div class="hover-avatar">
+                            <i class="fas fa-user-circle"></i>
+                        </div>
+                        <div class="hover-basic-info">
+                            <h3 class="hover-name"></h3>
+                            <p class="hover-position"></p>
+                        </div>
+                    </div>
+                    <div class="hover-card-body">
+                        <div class="hover-info-item status">
+                            <i class="fas fa-circle"></i>
+                            <span class="hover-status">재직중</span>
+                        </div>
+                        <div class="hover-info-item">
+                            <i class="fas fa-building"></i>
+                            <span class="hover-department"></span>
+                        </div>
+                        <div class="hover-info-item">
+                            <i class="fas fa-envelope"></i>
+                            <span class="hover-email"></span>
+                        </div>
+                    </div>
+                    <div class="hover-card-footer">
+                        <button class="hover-action-btn chat">
+                            <i class="fas fa-comments"></i>
+                            채팅
+                        </button>
+                        <button class="hover-action-btn email">
+                            <i class="fas fa-envelope"></i>
+                            메일
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <script th:src="@{/js/organization.js}"></script>
+</body>
+</html>

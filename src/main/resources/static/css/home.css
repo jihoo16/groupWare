@@ -1,0 +1,496 @@
+/* 전역 스타일 */
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+body {
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    background-color: #f5f7fa;
+    color: #333;
+    overflow-x: hidden;
+}
+
+.container {
+    display: flex;
+    height: 100vh;
+}
+
+/* 사이드바 스타일 */
+.sidebar {
+    width: 70px;
+    background: linear-gradient(180deg, #1a237e 0%, #283593 100%);
+    color: white;
+    display: flex;
+    flex-direction: column;
+    transition: width 0.3s ease;
+    box-shadow: 2px 0 10px rgba(0, 0, 0, 0.1);
+    position: relative;
+    z-index: 1000;
+}
+
+.sidebar:hover {
+    width: 250px;
+}
+
+/* 로고 영역 */
+.logo {
+    padding: 20px;
+    text-align: center;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+    display: flex;
+    align-items: center;
+    gap: 15px;
+    white-space: nowrap;
+    text-decoration: none;
+    cursor: pointer;
+    transition: background 0.3s ease;
+}
+
+.logo:hover {
+    background: rgba(255, 255, 255, 0.05);
+}
+
+.logo i {
+    font-size: 28px;
+    color: #fff;
+    min-width: 28px;
+}
+
+.logo-text {
+    font-size: 20px;
+    font-weight: bold;
+    color: #fff;
+    opacity: 0;
+    transition: opacity 0.3s ease;
+}
+
+.sidebar:hover .logo-text {
+    opacity: 1;
+}
+
+/* 메뉴 스타일 */
+.menu {
+    list-style: none;
+    padding: 20px 0;
+    flex: 1;
+    overflow-y: auto;
+    overflow-x: hidden;
+}
+
+.menu::-webkit-scrollbar {
+    width: 4px;
+}
+
+.menu::-webkit-scrollbar-thumb {
+    background-color: rgba(255, 255, 255, 0.3);
+    border-radius: 4px;
+}
+
+.menu-item {
+    position: relative;
+    margin: 5px 0;
+}
+
+.menu-item a {
+    display: flex;
+    align-items: center;
+    padding: 15px 20px;
+    color: rgba(255, 255, 255, 0.8);
+    text-decoration: none;
+    transition: all 0.3s ease;
+    gap: 15px;
+}
+
+.menu-item a i {
+    font-size: 20px;
+    min-width: 30px;
+    text-align: center;
+}
+
+.menu-text {
+    opacity: 0;
+    transition: opacity 0.3s ease;
+    white-space: nowrap;
+}
+
+.sidebar:hover .menu-text {
+    opacity: 1;
+}
+
+.menu-item:hover > a,
+.menu-item.active > a {
+    background: rgba(255, 255, 255, 0.1);
+    color: #fff;
+}
+
+.menu-item.active > a {
+    border-left: 4px solid #64b5f6;
+}
+
+/* 부모 메뉴가 active일 때 (하위 메뉴 접속 시) */
+.menu-item.menu-parent.active > .menu-toggle-btn,
+.menu-item.menu-parent.active > a.menu-toggle-btn {
+    background: rgba(255, 255, 255, 0.1) !important;
+    color: #fff !important;
+    border-left: 4px solid #64b5f6 !important;
+}
+
+/* 메뉴 뱃지 */
+.menu-badge {
+    background: #f44336;
+    color: white;
+    font-size: 10px;
+    padding: 2px 6px;
+    border-radius: 10px;
+    font-weight: bold;
+    min-width: 18px;
+    text-align: center;
+    opacity: 0;
+    transition: opacity 0.3s ease;
+}
+
+.sidebar:hover .menu-badge {
+    opacity: 1;
+}
+
+/* 메뉴 화살표 */
+.menu-arrow {
+    margin-left: auto;
+    font-size: 12px;
+    transition: transform 0.3s ease;
+    opacity: 0;
+}
+
+.sidebar:hover .menu-arrow {
+    opacity: 1;
+}
+
+.menu-parent.open .menu-arrow {
+    transform: rotate(180deg);
+}
+
+.menu-toggle-btn {
+    position: relative;
+}
+
+/* 서브메뉴 */
+.submenu {
+    list-style: none;
+    max-height: 0;
+    overflow: hidden;
+    transition: max-height 0.3s ease;
+    background: rgba(0, 0, 0, 0.1);
+}
+
+.menu-parent.open .submenu {
+    max-height: 500px;
+}
+
+.submenu-item {
+    margin: 0;
+}
+
+.submenu-item a {
+    padding: 12px 20px 12px 60px;
+    display: block;
+    color: rgba(255, 255, 255, 0.7);
+    text-decoration: none;
+    transition: all 0.3s ease;
+    font-size: 14px;
+    position: relative;
+}
+
+.submenu-item:hover a {
+    background: rgba(255, 255, 255, 0.15);
+    color: #fff;
+    padding-left: 65px;
+}
+
+.submenu-item:hover a::before {
+    content: '→';
+    position: absolute;
+    left: 45px;
+    opacity: 1;
+}
+
+.submenu-item.active a {
+    background: rgba(255, 255, 255, 0.2);
+    color: #fff;
+    border-left: 4px solid #64b5f6;
+    font-weight: 600;
+}
+
+.submenu-text {
+    white-space: nowrap;
+}
+
+/* 툴팁 */
+.menu-item::before {
+    content: attr(data-tooltip);
+    position: absolute;
+    left: 70px;
+    top: 50%;
+    transform: translateY(-50%);
+    background: #333;
+    color: white;
+    padding: 8px 12px;
+    border-radius: 4px;
+    white-space: nowrap;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.3s ease;
+    z-index: 1001;
+    font-size: 14px;
+}
+
+.menu-item:hover::before {
+    opacity: 1;
+}
+
+.sidebar:hover .menu-item::before {
+    display: none;
+}
+
+/* 사용자 정보 */
+.user-info {
+    padding: 20px;
+    border-top: 1px solid rgba(255, 255, 255, 0.1);
+    display: flex;
+    align-items: center;
+    gap: 15px;
+}
+
+.user-avatar i {
+    font-size: 32px;
+    color: #fff;
+}
+
+.user-details {
+    display: flex;
+    flex-direction: column;
+    opacity: 0;
+    transition: opacity 0.3s ease;
+}
+
+.sidebar:hover .user-details {
+    opacity: 1;
+}
+
+.user-name {
+    font-weight: bold;
+    font-size: 14px;
+}
+
+.user-role {
+    font-size: 12px;
+    color: rgba(255, 255, 255, 0.7);
+}
+
+/* 메인 콘텐츠 */
+.main-content {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    overflow-y: auto;
+}
+
+/* 헤더 */
+.header {
+    background: white;
+    padding: 20px 30px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+    position: sticky;
+    top: 0;
+    z-index: 100;
+}
+
+.header-left {
+    display: flex;
+    align-items: center;
+    gap: 20px;
+}
+
+.menu-toggle {
+    background: none;
+    border: none;
+    font-size: 20px;
+    color: #333;
+    cursor: pointer;
+    padding: 8px;
+    border-radius: 4px;
+    transition: background 0.3s ease;
+}
+
+.menu-toggle:hover {
+    background: #f0f0f0;
+}
+
+.page-title {
+    font-size: 24px;
+    font-weight: 600;
+    color: #1a237e;
+}
+
+.header-right {
+    display: flex;
+    align-items: center;
+    gap: 20px;
+}
+
+.search-box {
+    display: flex;
+    align-items: center;
+    background: #f5f7fa;
+    padding: 10px 15px;
+    border-radius: 8px;
+    gap: 10px;
+    min-width: 300px;
+}
+
+.search-box i {
+    color: #999;
+}
+
+.search-box input {
+    border: none;
+    background: none;
+    outline: none;
+    flex: 1;
+    font-size: 14px;
+}
+
+.notification-btn {
+    position: relative;
+    background: none;
+    border: none;
+    font-size: 20px;
+    color: #333;
+    cursor: pointer;
+    padding: 8px;
+    border-radius: 4px;
+    transition: background 0.3s ease;
+}
+
+.notification-btn:hover {
+    background: #f0f0f0;
+}
+
+.badge {
+    position: absolute;
+    top: 5px;
+    right: 5px;
+    background: #f44336;
+    color: white;
+    font-size: 10px;
+    padding: 2px 6px;
+    border-radius: 10px;
+    font-weight: bold;
+}
+
+/* 대시보드 영역 */
+.dashboard-area {
+    padding: 30px;
+    flex: 1;
+}
+
+.welcome-section {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+    padding: 40px;
+    border-radius: 12px;
+    margin-bottom: 30px;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+}
+
+.welcome-section h2 {
+    font-size: 28px;
+    margin-bottom: 10px;
+}
+
+.welcome-section p {
+    font-size: 16px;
+    opacity: 0.9;
+}
+
+/* 퀵 통계 */
+.quick-stats {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+    gap: 20px;
+}
+
+.stat-card {
+    background: white;
+    padding: 25px;
+    border-radius: 12px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+    display: flex;
+    align-items: center;
+    gap: 20px;
+    transition: transform 0.3s ease, box-shadow 0.3s ease;
+}
+
+.stat-card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.12);
+}
+
+.stat-icon {
+    width: 60px;
+    height: 60px;
+    border-radius: 12px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 24px;
+}
+
+.stat-content h3 {
+    font-size: 14px;
+    color: #666;
+    margin-bottom: 8px;
+    font-weight: 500;
+}
+
+.stat-number {
+    font-size: 32px;
+    font-weight: bold;
+    color: #333;
+}
+
+.stat-number span {
+    font-size: 16px;
+    font-weight: normal;
+    color: #999;
+    margin-left: 5px;
+}
+
+/* 반응형 디자인 */
+@media (max-width: 768px) {
+    .sidebar {
+        width: 70px;
+    }
+
+    .sidebar:hover {
+        width: 70px;
+    }
+
+    .logo-text,
+    .menu-text,
+    .user-details {
+        display: none;
+    }
+
+    .search-box {
+        min-width: 150px;
+    }
+
+    .quick-stats {
+        grid-template-columns: 1fr;
+    }
+}

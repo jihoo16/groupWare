@@ -1,0 +1,312 @@
+<!DOCTYPE html>
+<html lang="ko" xmlns:th="http://www.thymeleaf.org">
+<head th:replace="fragments/layout :: head('ERP 시스템 - 연차관리', '/css/vacation.css')"></head>
+<body>
+    <div class="container">
+        <!-- 좌측 네비게이션 바 -->
+        <div th:replace="fragments/sidebar :: sidebar('vacation')"></div>
+
+        <!-- 메인 콘텐츠 영역 -->
+        <main class="main-content">
+            <header class="header">
+                <div class="header-left">
+                    <h1 class="page-title">연차관리</h1>
+                </div>
+                <div class="header-right">
+                    <button class="btn-primary" id="openLeaveModal">
+                        <i class="fas fa-plus"></i>
+                        연차 신청
+                    </button>
+                </div>
+            </header>
+
+            <div class="leave-content">
+                <!-- 연차 현황 카드 -->
+                <div class="leave-summary">
+                    <div class="summary-card total">
+                        <div class="card-icon">
+                            <i class="fas fa-calendar-check"></i>
+                        </div>
+                        <div class="card-content">
+                            <h3>총 연차</h3>
+                            <p class="number">15<span>일</span></p>
+                        </div>
+                    </div>
+
+                    <div class="summary-card used clickable" id="usedLeaveCard">
+                        <div class="card-icon">
+                            <i class="fas fa-calendar-times"></i>
+                        </div>
+                        <div class="card-content">
+                            <h3>사용 연차</h3>
+                            <p class="number">8<span>일</span></p>
+                            <p class="sub-info">반차 2회 포함</p>
+                        </div>
+                    </div>
+
+                    <div class="summary-card remaining">
+                        <div class="card-icon">
+                            <i class="fas fa-umbrella-beach"></i>
+                        </div>
+                        <div class="card-content">
+                            <h3>잔여 연차</h3>
+                            <p class="number">7<span>일</span></p>
+                        </div>
+                    </div>
+
+                    <div class="summary-card pending">
+                        <div class="card-icon">
+                            <i class="fas fa-clock"></i>
+                        </div>
+                        <div class="card-content">
+                            <h3>승인 대기</h3>
+                            <p class="number">1<span>건</span></p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 연차 사용 내역 -->
+                <div class="leave-history">
+                    <div class="section-header">
+                        <h2>연차 사용 내역</h2>
+                        <div class="filter-group">
+                            <select class="filter-select">
+                                <option value="all">전체</option>
+                                <option value="2025">2025년</option>
+                                <option value="2024">2024년</option>
+                            </select>
+                            <select class="filter-select">
+                                <option value="all">전체 상태</option>
+                                <option value="approved">승인</option>
+                                <option value="pending">대기</option>
+                                <option value="rejected">반려</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <div class="history-table">
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th>신청일</th>
+                                    <th>구분</th>
+                                    <th>시작일</th>
+                                    <th>종료일</th>
+                                    <th>일수</th>
+                                    <th>사유</th>
+                                    <th>상태</th>
+                                    <th>승인자</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr>
+                                    <td>2025-03-15</td>
+                                    <td><span class="badge badge-full">연차</span></td>
+                                    <td>2025-03-20</td>
+                                    <td>2025-03-22</td>
+                                    <td>3일</td>
+                                    <td>개인 사유</td>
+                                    <td><span class="status-badge approved">승인</span></td>
+                                    <td>김대표</td>
+                                </tr>
+                                <tr>
+                                    <td>2025-03-10</td>
+                                    <td><span class="badge badge-half">반차(오전)</span></td>
+                                    <td>2025-03-12</td>
+                                    <td>2025-03-12</td>
+                                    <td>0.5일</td>
+                                    <td>병원 진료</td>
+                                    <td><span class="status-badge approved">승인</span></td>
+                                    <td>박CMO</td>
+                                </tr>
+                                <tr>
+                                    <td>2025-03-08</td>
+                                    <td><span class="badge badge-full">연차</span></td>
+                                    <td>2025-03-11</td>
+                                    <td>2025-03-11</td>
+                                    <td>1일</td>
+                                    <td>가족 행사</td>
+                                    <td><span class="status-badge approved">승인</span></td>
+                                    <td>박CMO</td>
+                                </tr>
+                                <tr>
+                                    <td>2025-03-05</td>
+                                    <td><span class="badge badge-half">반차(오후)</span></td>
+                                    <td>2025-03-06</td>
+                                    <td>2025-03-06</td>
+                                    <td>0.5일</td>
+                                    <td>개인 사유</td>
+                                    <td><span class="status-badge approved">승인</span></td>
+                                    <td>박CMO</td>
+                                </tr>
+                                <tr>
+                                    <td>2025-02-20</td>
+                                    <td><span class="badge badge-full">연차</span></td>
+                                    <td>2025-02-25</td>
+                                    <td>2025-02-27</td>
+                                    <td>3일</td>
+                                    <td>여행</td>
+                                    <td><span class="status-badge approved">승인</span></td>
+                                    <td>박CMO</td>
+                                </tr>
+                                <tr>
+                                    <td>2025-04-01</td>
+                                    <td><span class="badge badge-full">연차</span></td>
+                                    <td>2025-04-10</td>
+                                    <td>2025-04-10</td>
+                                    <td>1일</td>
+                                    <td>개인 사유</td>
+                                    <td><span class="status-badge pending">대기중</span></td>
+                                    <td>-</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <!-- 연간 연차 달력 -->
+                <div class="annual-calendar-section">
+                    <div class="section-header">
+                        <h2>연차 캘린더</h2>
+                        <div class="calendar-legend">
+                            <div class="legend-item">
+                                <span class="legend-color approved"></span>
+                                <span>승인(사용)</span>
+                            </div>
+                            <div class="legend-item">
+                                <span class="legend-color pending"></span>
+                                <span>대기중</span>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="annual-calendar-grid" id="annualCalendar"></div>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <!-- 사용 연차 상세 모달 -->
+    <div class="modal" id="usedLeaveModal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2>사용 연차 상세</h2>
+                <button class="modal-close" id="closeUsedModal">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            <div class="modal-body">
+                <div class="used-summary">
+                    <div class="summary-row">
+                        <span class="label">총 사용 연차:</span>
+                        <span class="value">8일 (반차 2회 포함)</span>
+                    </div>
+                </div>
+                <div class="used-table">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>사용 날짜</th>
+                                <th>구분</th>
+                                <th>사유</th>
+                                <th>승인일</th>
+                            </tr>
+                        </thead>
+                        <tbody id="usedLeaveTableBody">
+                            <!-- JavaScript로 동적 생성 -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 연차 신청 모달 -->
+    <div class="modal" id="leaveModal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2>연차 신청</h2>
+                <button class="modal-close" id="closeModal">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            <div class="modal-body">
+                <form id="leaveForm">
+                    <div class="form-group">
+                        <label for="leaveType">구분 <span class="required">*</span></label>
+                        <div class="radio-group">
+                            <label class="radio-label">
+                                <input type="radio" name="leaveType" value="full" checked>
+                                <span>연차</span>
+                            </label>
+                            <label class="radio-label">
+                                <input type="radio" name="leaveType" value="half-am">
+                                <span>반차(오전)</span>
+                            </label>
+                            <label class="radio-label">
+                                <input type="radio" name="leaveType" value="half-pm">
+                                <span>반차(오후)</span>
+                            </label>
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        <label>날짜 선택 <span class="required">*</span></label>
+                        <div class="calendar-container">
+                            <div class="calendar-header">
+                                <button type="button" class="calendar-nav" id="prevMonth">
+                                    <i class="fas fa-chevron-left"></i>
+                                </button>
+                                <span class="calendar-month" id="currentMonth"></span>
+                                <button type="button" class="calendar-nav" id="nextMonth">
+                                    <i class="fas fa-chevron-right"></i>
+                                </button>
+                            </div>
+                            <div class="calendar-weekdays">
+                                <div>일</div>
+                                <div>월</div>
+                                <div>화</div>
+                                <div>수</div>
+                                <div>목</div>
+                                <div>금</div>
+                                <div>토</div>
+                            </div>
+                            <div class="calendar-days" id="calendarDays"></div>
+                        </div>
+                        <input type="hidden" id="startDate" name="startDate" required>
+                        <input type="hidden" id="endDate" name="endDate" required>
+                    </div>
+
+                    <div class="form-group">
+                        <label>예상 사용 일수</label>
+                        <div class="days-info">
+                            <div class="calculated-days">
+                                <span id="calculatedDays">0</span> 일
+                            </div>
+                            <div class="remaining-after-use">
+                                <span>사용 후 잔여: </span>
+                                <span id="remainingDays">7</span> 일
+                            </div>
+                        </div>
+                        <div class="warning-message" id="warningMessage" style="display: none;">
+                            <i class="fas fa-exclamation-triangle"></i>
+                            잔여 연차보다 더 많은 연차는 신청 할 수 없습니다.
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="reason">사유 <span class="required">*</span></label>
+                        <textarea id="reason" name="reason" rows="4" placeholder="연차 사유를 입력하세요" required></textarea>
+                    </div>
+
+                    <div class="form-actions">
+                        <button type="button" class="btn-secondary" id="cancelBtn">취소</button>
+                        <button type="submit" class="btn-primary" id="submitBtn">신청</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <script th:src="@{/js/vacation.js}"></script>
+</body>
+</html>

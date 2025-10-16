@@ -1,0 +1,355 @@
+/* 조직도 영역 */
+.org-chart-area {
+    padding: 30px;
+    overflow-x: auto;
+    overflow-y: auto;
+    background: #f5f7fa;
+    position: relative;
+}
+
+.org-chart {
+    min-width: 800px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 60px;
+    padding: 30px;
+}
+
+/* 조직 레벨 */
+.org-level {
+    display: flex;
+    justify-content: center;
+    gap: 80px;
+    position: relative;
+}
+
+/* 레벨별 스타일 */
+.org-level.level-ceo {
+    gap: 0;
+}
+
+.org-level.level-executive {
+    gap: 150px;
+}
+
+.org-level.level-team {
+    gap: 100px;
+}
+
+/* 팀 그룹 */
+.cmo-teams,
+.cto-teams {
+    display: flex;
+    gap: 40px;
+    position: relative;
+}
+
+/* 조직 노드 */
+.org-node {
+    position: relative;
+    cursor: pointer;
+    transition: transform 0.3s ease;
+}
+
+.org-node:hover {
+    transform: translateY(-5px);
+    z-index: 10;
+}
+
+/* 노드 카드 */
+.node-card {
+    background: white;
+    border-radius: 12px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+    padding: 20px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 12px;
+    min-width: 160px;
+    transition: all 0.3s ease;
+}
+
+.org-node:hover .node-card {
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.15);
+}
+
+/* CEO 스타일 */
+.org-node.ceo .node-card {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+    min-width: 180px;
+    padding: 25px;
+}
+
+.org-node.ceo .node-icon {
+    background: rgba(255, 255, 255, 0.2);
+}
+
+.org-node.ceo .node-icon i {
+    color: white;
+}
+
+.org-node.ceo .node-name,
+.org-node.ceo .node-position {
+    color: white;
+}
+
+/* CXO (CMO/CTO) 스타일 */
+.org-node.cxo .node-card {
+    background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+    color: white;
+    min-width: 170px;
+}
+
+.org-node.cxo .node-icon {
+    background: rgba(255, 255, 255, 0.2);
+}
+
+.org-node.cxo .node-icon i {
+    color: white;
+}
+
+.org-node.cxo .node-name,
+.org-node.cxo .node-position {
+    color: white;
+}
+
+/* 팀 스타일 */
+.org-node.team .node-card {
+    background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+    color: white;
+    min-width: 150px;
+}
+
+.org-node.team .node-icon {
+    background: rgba(255, 255, 255, 0.2);
+}
+
+.org-node.team .node-icon i {
+    color: white;
+}
+
+.org-node.team .node-name,
+.org-node.team .node-position {
+    color: white;
+}
+
+/* 노드 아이콘 */
+.node-icon {
+    width: 70px;
+    height: 70px;
+    border-radius: 50%;
+    background: #e3f2fd;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 32px;
+}
+
+.node-icon i {
+    color: #1976d2;
+}
+
+/* 노드 정보 */
+.node-info {
+    text-align: center;
+}
+
+.node-name {
+    font-size: 16px;
+    font-weight: bold;
+    color: #333;
+    margin-bottom: 4px;
+}
+
+.node-position {
+    font-size: 13px;
+    color: #666;
+    margin: 0;
+}
+
+/* 연결선 제거 - 깔끔한 카드 레이아웃만 유지 */
+
+/* 휴가 중인 노드 스타일 */
+.org-node.on-vacation .node-card {
+    filter: grayscale(100%);
+    opacity: 0.6;
+}
+
+.org-node.on-vacation .node-card::after {
+    content: '휴가중';
+    position: absolute;
+    top: 5px;
+    right: 5px;
+    background: #9e9e9e;
+    color: white;
+    font-size: 10px;
+    padding: 3px 8px;
+    border-radius: 10px;
+    font-weight: bold;
+}
+
+/* 호버 카드 스타일 */
+.hover-card {
+    position: fixed;
+    background: white;
+    border-radius: 12px;
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.15);
+    width: 320px;
+    z-index: 1000;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.3s ease;
+}
+
+.hover-card.show {
+    opacity: 1;
+    pointer-events: auto;
+}
+
+.hover-card-header {
+    padding: 20px;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    border-radius: 12px 12px 0 0;
+    display: flex;
+    align-items: center;
+    gap: 15px;
+}
+
+.hover-avatar {
+    width: 60px;
+    height: 60px;
+    border-radius: 50%;
+    background: rgba(255, 255, 255, 0.2);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 40px;
+    color: white;
+}
+
+.hover-basic-info {
+    flex: 1;
+}
+
+.hover-name {
+    font-size: 18px;
+    font-weight: bold;
+    color: white;
+    margin: 0 0 4px 0;
+}
+
+.hover-position {
+    font-size: 14px;
+    color: rgba(255, 255, 255, 0.9);
+    margin: 0;
+}
+
+.hover-card-body {
+    padding: 20px;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+.hover-info-item {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    font-size: 14px;
+    color: #555;
+}
+
+.hover-info-item i {
+    width: 20px;
+    text-align: center;
+    color: #667eea;
+}
+
+.hover-card-footer {
+    padding: 15px 20px;
+    border-top: 1px solid #e0e0e0;
+    display: flex;
+    gap: 8px;
+}
+
+.hover-action-btn {
+    flex: 1;
+    padding: 10px 12px;
+    border: none;
+    border-radius: 8px;
+    font-size: 13px;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 4px;
+    background: #f5f7fa;
+    color: #555;
+}
+
+.hover-action-btn i {
+    font-size: 18px;
+}
+
+.hover-action-btn.chat {
+    background: #e3f2fd;
+    color: #1976d2;
+}
+
+.hover-action-btn.chat:hover {
+    background: #1976d2;
+    color: white;
+}
+
+.hover-action-btn.call {
+    background: #e8f5e9;
+    color: #388e3c;
+}
+
+.hover-action-btn.call:hover {
+    background: #388e3c;
+    color: white;
+}
+
+.hover-action-btn.email {
+    background: #fff3e0;
+    color: #f57c00;
+}
+
+.hover-action-btn.email:hover {
+    background: #f57c00;
+    color: white;
+}
+
+/* 상태 표시 스타일 */
+.hover-info-item.status i {
+    font-size: 10px;
+    color: #4caf50;
+}
+
+.hover-info-item.status.on-vacation i {
+    color: #9e9e9e;
+}
+
+.hover-status.on-vacation {
+    color: #9e9e9e;
+}
+
+/* 반응형 */
+@media (max-width: 1200px) {
+    .org-chart {
+        min-width: 700px;
+    }
+
+    .org-level.level-executive {
+        gap: 100px;
+    }
+
+    .org-level.level-team {
+        gap: 60px;
+    }
+}

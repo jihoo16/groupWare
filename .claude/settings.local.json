@@ -1,0 +1,15 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(mvn clean:*)",
+      "Bash(dir C:PRJerp.idea)",
+      "Bash(dir C:PRJerptargetclasses)",
+      "Bash(dir C:PRJerp)",
+      "Bash(move:*)",
+      "WebSearch",
+      "WebFetch(domain:cs.daum.net)"
+    ],
+    "deny": [],
+    "ask": []
+  }
+}

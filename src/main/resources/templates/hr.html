@@ -1,0 +1,369 @@
+<!DOCTYPE html>
+<html lang="ko" xmlns:th="http://www.thymeleaf.org">
+<head th:replace="fragments/layout :: head('인사 관리', '/css/hr.css')"></head>
+<body>
+    <div class="container">
+        <!-- 좌측 네비게이션 바 -->
+        <div th:replace="fragments/sidebar :: sidebar('hr')"></div>
+
+        <!-- 메인 콘텐츠 영역 -->
+        <main class="main-content">
+            <header class="header">
+                <div class="header-left">
+                    <h1 class="page-title">인사 관리</h1>
+                </div>
+                <div class="header-right">
+                    <div class="search-box">
+                        <i class="fas fa-search"></i>
+                        <input type="text" placeholder="직원 검색..." id="employeeSearch">
+                    </div>
+                    <button class="btn-primary" id="addEmployeeBtn">
+                        <i class="fas fa-user-plus"></i>
+                        직원 등록
+                    </button>
+                </div>
+            </header>
+
+            <div class="hr-area">
+                <!-- 통계 카드 -->
+                <div class="stats-grid">
+                    <div class="stat-card">
+                        <div class="stat-icon" style="background: #e3f2fd;">
+                            <i class="fas fa-users" style="color: #1976d2;"></i>
+                        </div>
+                        <div class="stat-content">
+                            <h3>전체 직원</h3>
+                            <p class="stat-number">23<span>명</span></p>
+                        </div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-icon" style="background: #e8f5e9;">
+                            <i class="fas fa-user-check" style="color: #388e3c;"></i>
+                        </div>
+                        <div class="stat-content">
+                            <h3>재직 중</h3>
+                            <p class="stat-number">23<span>명</span></p>
+                        </div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-icon" style="background: #fff3e0;">
+                            <i class="fas fa-user-clock" style="color: #f57c00;"></i>
+                        </div>
+                        <div class="stat-content">
+                            <h3>휴직 중</h3>
+                            <p class="stat-number">0<span>명</span></p>
+                        </div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-icon" style="background: #f3e5f5;">
+                            <i class="fas fa-user-graduate" style="color: #7b1fa2;"></i>
+                        </div>
+                        <div class="stat-content">
+                            <h3>신규 입사 (이번달)</h3>
+                            <p class="stat-number">2<span>명</span></p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 부서별 필터 -->
+                <div class="department-filters">
+                    <button class="dept-btn active" data-dept="all">전체</button>
+                    <button class="dept-btn" data-dept="경영지원팀">경영지원팀</button>
+                    <button class="dept-btn" data-dept="개발팀">개발팀</button>
+                    <button class="dept-btn" data-dept="영업팀">영업팀</button>
+                    <button class="dept-btn" data-dept="디자인팀">디자인팀</button>
+                </div>
+
+                <!-- 직원 목록 테이블 -->
+                <div class="employee-table-wrapper">
+                    <table class="employee-table">
+                        <thead>
+                            <tr>
+                                <th>사번</th>
+                                <th>이름</th>
+                                <th>부서</th>
+                                <th>직급</th>
+                                <th>이메일</th>
+                                <th>연락처</th>
+                                <th>입사일</th>
+                                <th>상태</th>
+                                <th>관리</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr data-dept="경영지원팀">
+                                <td>EMP001</td>
+                                <td>
+                                    <div class="employee-name">
+                                        <div class="emp-avatar">이</div>
+                                        <span>이경영</span>
+                                    </div>
+                                </td>
+                                <td>경영지원팀</td>
+                                <td><span class="position-badge leader">팀장</span></td>
+                                <td>lee@pinecni.com</td>
+                                <td>010-2345-6789</td>
+                                <td>2020-03-15</td>
+                                <td><span class="status-badge active">재직</span></td>
+                                <td>
+                                    <button class="btn-icon" title="상세정보"><i class="fas fa-eye"></i></button>
+                                    <button class="btn-icon" title="수정"><i class="fas fa-edit"></i></button>
+                                </td>
+                            </tr>
+                            <tr data-dept="경영지원팀">
+                                <td>EMP002</td>
+                                <td>
+                                    <div class="employee-name">
+                                        <div class="emp-avatar">박</div>
+                                        <span>박관리</span>
+                                    </div>
+                                </td>
+                                <td>경영지원팀</td>
+                                <td><span class="position-badge manager">과장</span></td>
+                                <td>park@pinecni.com</td>
+                                <td>010-3456-7890</td>
+                                <td>2021-05-20</td>
+                                <td><span class="status-badge active">재직</span></td>
+                                <td>
+                                    <button class="btn-icon" title="상세정보"><i class="fas fa-eye"></i></button>
+                                    <button class="btn-icon" title="수정"><i class="fas fa-edit"></i></button>
+                                </td>
+                            </tr>
+                            <tr data-dept="경영지원팀">
+                                <td>EMP003</td>
+                                <td>
+                                    <div class="employee-name">
+                                        <div class="emp-avatar">최</div>
+                                        <span>최인사</span>
+                                    </div>
+                                </td>
+                                <td>경영지원팀</td>
+                                <td><span class="position-badge staff">대리</span></td>
+                                <td>choi@pinecni.com</td>
+                                <td>010-4567-8901</td>
+                                <td>2022-01-10</td>
+                                <td><span class="status-badge active">재직</span></td>
+                                <td>
+                                    <button class="btn-icon" title="상세정보"><i class="fas fa-eye"></i></button>
+                                    <button class="btn-icon" title="수정"><i class="fas fa-edit"></i></button>
+                                </td>
+                            </tr>
+                            <tr data-dept="경영지원팀">
+                                <td>EMP004</td>
+                                <td>
+                                    <div class="employee-name">
+                                        <div class="emp-avatar">정</div>
+                                        <span>정회계</span>
+                                    </div>
+                                </td>
+                                <td>경영지원팀</td>
+                                <td><span class="position-badge staff">사원</span></td>
+                                <td>jung@pinecni.com</td>
+                                <td>010-5678-9012</td>
+                                <td>2023-03-01</td>
+                                <td><span class="status-badge active">재직</span></td>
+                                <td>
+                                    <button class="btn-icon" title="상세정보"><i class="fas fa-eye"></i></button>
+                                    <button class="btn-icon" title="수정"><i class="fas fa-edit"></i></button>
+                                </td>
+                            </tr>
+                            <tr data-dept="경영지원팀">
+                                <td>EMP005</td>
+                                <td>
+                                    <div class="employee-name">
+                                        <div class="emp-avatar">강</div>
+                                        <span>강총무</span>
+                                    </div>
+                                </td>
+                                <td>경영지원팀</td>
+                                <td><span class="position-badge staff">사원</span></td>
+                                <td>kang@pinecni.com</td>
+                                <td>010-6789-0123</td>
+                                <td>2023-07-15</td>
+                                <td><span class="status-badge active">재직</span></td>
+                                <td>
+                                    <button class="btn-icon" title="상세정보"><i class="fas fa-eye"></i></button>
+                                    <button class="btn-icon" title="수정"><i class="fas fa-edit"></i></button>
+                                </td>
+                            </tr>
+                            <tr data-dept="개발팀">
+                                <td>EMP006</td>
+                                <td>
+                                    <div class="employee-name">
+                                        <div class="emp-avatar">김</div>
+                                        <span>김개발</span>
+                                    </div>
+                                </td>
+                                <td>개발팀</td>
+                                <td><span class="position-badge leader">팀장</span></td>
+                                <td>kim.dev@pinecni.com</td>
+                                <td>010-1111-2222</td>
+                                <td>2019-01-10</td>
+                                <td><span class="status-badge active">재직</span></td>
+                                <td>
+                                    <button class="btn-icon" title="상세정보"><i class="fas fa-eye"></i></button>
+                                    <button class="btn-icon" title="수정"><i class="fas fa-edit"></i></button>
+                                </td>
+                            </tr>
+                            <tr data-dept="개발팀">
+                                <td>EMP007</td>
+                                <td>
+                                    <div class="employee-name">
+                                        <div class="emp-avatar">이</div>
+                                        <span>이백엔드</span>
+                                    </div>
+                                </td>
+                                <td>개발팀</td>
+                                <td><span class="position-badge senior">선임</span></td>
+                                <td>lee.backend@pinecni.com</td>
+                                <td>010-2222-3333</td>
+                                <td>2020-06-01</td>
+                                <td><span class="status-badge active">재직</span></td>
+                                <td>
+                                    <button class="btn-icon" title="상세정보"><i class="fas fa-eye"></i></button>
+                                    <button class="btn-icon" title="수정"><i class="fas fa-edit"></i></button>
+                                </td>
+                            </tr>
+                            <tr data-dept="개발팀">
+                                <td>EMP008</td>
+                                <td>
+                                    <div class="employee-name">
+                                        <div class="emp-avatar">박</div>
+                                        <span>박프론트</span>
+                                    </div>
+                                </td>
+                                <td>개발팀</td>
+                                <td><span class="position-badge senior">선임</span></td>
+                                <td>park.front@pinecni.com</td>
+                                <td>010-3333-4444</td>
+                                <td>2020-08-15</td>
+                                <td><span class="status-badge active">재직</span></td>
+                                <td>
+                                    <button class="btn-icon" title="상세정보"><i class="fas fa-eye"></i></button>
+                                    <button class="btn-icon" title="수정"><i class="fas fa-edit"></i></button>
+                                </td>
+                            </tr>
+                            <tr data-dept="개발팀">
+                                <td>EMP009</td>
+                                <td>
+                                    <div class="employee-name">
+                                        <div class="emp-avatar">최</div>
+                                        <span>최풀스택</span>
+                                    </div>
+                                </td>
+                                <td>개발팀</td>
+                                <td><span class="position-badge staff">주임</span></td>
+                                <td>choi.full@pinecni.com</td>
+                                <td>010-4444-5555</td>
+                                <td>2021-09-01</td>
+                                <td><span class="status-badge active">재직</span></td>
+                                <td>
+                                    <button class="btn-icon" title="상세정보"><i class="fas fa-eye"></i></button>
+                                    <button class="btn-icon" title="수정"><i class="fas fa-edit"></i></button>
+                                </td>
+                            </tr>
+                            <tr data-dept="개발팀">
+                                <td>EMP010</td>
+                                <td>
+                                    <div class="employee-name">
+                                        <div class="emp-avatar new">정</div>
+                                        <span>정자바</span>
+                                    </div>
+                                </td>
+                                <td>개발팀</td>
+                                <td><span class="position-badge staff">사원</span></td>
+                                <td>jung.java@pinecni.com</td>
+                                <td>010-5555-6666</td>
+                                <td>2025-01-02</td>
+                                <td><span class="status-badge active">재직</span></td>
+                                <td>
+                                    <button class="btn-icon" title="상세정보"><i class="fas fa-eye"></i></button>
+                                    <button class="btn-icon" title="수정"><i class="fas fa-edit"></i></button>
+                                </td>
+                            </tr>
+                            <tr data-dept="개발팀">
+                                <td>EMP011</td>
+                                <td>
+                                    <div class="employee-name">
+                                        <div class="emp-avatar new">강</div>
+                                        <span>강리액트</span>
+                                    </div>
+                                </td>
+                                <td>개발팀</td>
+                                <td><span class="position-badge staff">사원</span></td>
+                                <td>kang.react@pinecni.com</td>
+                                <td>010-6666-7777</td>
+                                <td>2025-01-02</td>
+                                <td><span class="status-badge active">재직</span></td>
+                                <td>
+                                    <button class="btn-icon" title="상세정보"><i class="fas fa-eye"></i></button>
+                                    <button class="btn-icon" title="수정"><i class="fas fa-edit"></i></button>
+                                </td>
+                            </tr>
+                            <tr data-dept="영업팀">
+                                <td>EMP012</td>
+                                <td>
+                                    <div class="employee-name">
+                                        <div class="emp-avatar">송</div>
+                                        <span>송영업</span>
+                                    </div>
+                                </td>
+                                <td>영업팀</td>
+                                <td><span class="position-badge leader">팀장</span></td>
+                                <td>song@pinecni.com</td>
+                                <td>010-1231-2312</td>
+                                <td>2019-06-01</td>
+                                <td><span class="status-badge active">재직</span></td>
+                                <td>
+                                    <button class="btn-icon" title="상세정보"><i class="fas fa-eye"></i></button>
+                                    <button class="btn-icon" title="수정"><i class="fas fa-edit"></i></button>
+                                </td>
+                            </tr>
+                            <tr data-dept="영업팀">
+                                <td>EMP013</td>
+                                <td>
+                                    <div class="employee-name">
+                                        <div class="emp-avatar">한</div>
+                                        <span>한세일즈</span>
+                                    </div>
+                                </td>
+                                <td>영업팀</td>
+                                <td><span class="position-badge manager">과장</span></td>
+                                <td>han@pinecni.com</td>
+                                <td>010-2312-3123</td>
+                                <td>2020-11-15</td>
+                                <td><span class="status-badge active">재직</span></td>
+                                <td>
+                                    <button class="btn-icon" title="상세정보"><i class="fas fa-eye"></i></button>
+                                    <button class="btn-icon" title="수정"><i class="fas fa-edit"></i></button>
+                                </td>
+                            </tr>
+                            <tr data-dept="디자인팀">
+                                <td>EMP014</td>
+                                <td>
+                                    <div class="employee-name">
+                                        <div class="emp-avatar">민</div>
+                                        <span>민디자인</span>
+                                    </div>
+                                </td>
+                                <td>디자인팀</td>
+                                <td><span class="position-badge leader">팀장</span></td>
+                                <td>min@pinecni.com</td>
+                                <td>010-7771-8882</td>
+                                <td>2020-02-01</td>
+                                <td><span class="status-badge active">재직</span></td>
+                                <td>
+                                    <button class="btn-icon" title="상세정보"><i class="fas fa-eye"></i></button>
+                                    <button class="btn-icon" title="수정"><i class="fas fa-edit"></i></button>
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <script th:src="@{/js/hr.js}"></script>
+</body>
+</html>

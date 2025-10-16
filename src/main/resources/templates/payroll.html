@@ -1,0 +1,392 @@
+<!DOCTYPE html>
+<html lang="ko" xmlns:th="http://www.thymeleaf.org">
+<head th:replace="fragments/layout :: head('급여 관리', '/css/payroll.css')"></head>
+<body>
+    <div class="container">
+        <!-- 좌측 네비게이션 바 -->
+        <div th:replace="fragments/sidebar :: sidebar('payroll')"></div>
+
+        <!-- 메인 콘텐츠 영역 -->
+        <main class="main-content">
+            <header class="header">
+                <div class="header-left">
+                    <h1 class="page-title">급여 관리</h1>
+                </div>
+                <div class="header-right">
+                    <select class="month-selector" id="monthSelector">
+                        <option value="2025-01">2025년 1월</option>
+                        <option value="2024-12">2024년 12월</option>
+                        <option value="2024-11">2024년 11월</option>
+                        <option value="2024-10">2024년 10월</option>
+                    </select>
+                    <button class="btn-primary" id="generatePayrollBtn">
+                        <i class="fas fa-file-invoice-dollar"></i>
+                        급여 명세서 생성
+                    </button>
+                </div>
+            </header>
+
+            <div class="payroll-area">
+                <!-- 급여 통계 -->
+                <div class="payroll-stats">
+                    <div class="stat-card">
+                        <div class="stat-header">
+                            <i class="fas fa-users"></i>
+                            <h3>급여 지급 대상</h3>
+                        </div>
+                        <div class="stat-body">
+                            <p class="stat-number">23<span>명</span></p>
+                        </div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-header">
+                            <i class="fas fa-money-bill-wave"></i>
+                            <h3>총 지급액</h3>
+                        </div>
+                        <div class="stat-body">
+                            <p class="stat-number">62,500,000<span>원</span></p>
+                        </div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-header">
+                            <i class="fas fa-hand-holding-usd"></i>
+                            <h3>평균 급여</h3>
+                        </div>
+                        <div class="stat-body">
+                            <p class="stat-number">2,717,391<span>원</span></p>
+                        </div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-header">
+                            <i class="fas fa-check-circle"></i>
+                            <h3>지급 완료</h3>
+                        </div>
+                        <div class="stat-body">
+                            <p class="stat-number">23<span>/23</span></p>
+                            <div class="progress-bar">
+                                <div class="progress" style="width: 100%;"></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 필터 -->
+                <div class="filter-section">
+                    <div class="filter-group">
+                        <label>부서</label>
+                        <select class="filter-select" id="deptFilter">
+                            <option value="all">전체</option>
+                            <option value="경영지원팀">경영지원팀</option>
+                            <option value="개발팀">개발팀</option>
+                            <option value="영업팀">영업팀</option>
+                            <option value="디자인팀">디자인팀</option>
+                        </select>
+                    </div>
+                    <div class="filter-group">
+                        <label>상태</label>
+                        <select class="filter-select" id="statusFilter">
+                            <option value="all">전체</option>
+                            <option value="paid">지급 완료</option>
+                            <option value="pending">지급 대기</option>
+                        </select>
+                    </div>
+                    <div class="search-group">
+                        <i class="fas fa-search"></i>
+                        <input type="text" placeholder="직원명 검색..." id="employeeSearch">
+                    </div>
+                </div>
+
+                <!-- 급여 목록 테이블 -->
+                <div class="payroll-table-wrapper">
+                    <table class="payroll-table">
+                        <thead>
+                            <tr>
+                                <th>사번</th>
+                                <th>이름</th>
+                                <th>부서</th>
+                                <th>직급</th>
+                                <th>기본급</th>
+                                <th>수당</th>
+                                <th>공제액</th>
+                                <th>실지급액</th>
+                                <th>상태</th>
+                                <th>관리</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr data-dept="경영지원팀" data-status="paid">
+                                <td>EMP001</td>
+                                <td>
+                                    <div class="employee-name">
+                                        <span>이경영</span>
+                                    </div>
+                                </td>
+                                <td>경영지원팀</td>
+                                <td>팀장</td>
+                                <td class="amount">4,500,000</td>
+                                <td class="amount positive">+500,000</td>
+                                <td class="amount negative">-450,000</td>
+                                <td class="amount total">4,550,000</td>
+                                <td><span class="status-badge paid">지급완료</span></td>
+                                <td>
+                                    <button class="btn-icon" title="명세서 보기"><i class="fas fa-file-alt"></i></button>
+                                    <button class="btn-icon" title="다운로드"><i class="fas fa-download"></i></button>
+                                </td>
+                            </tr>
+                            <tr data-dept="경영지원팀" data-status="paid">
+                                <td>EMP002</td>
+                                <td>
+                                    <div class="employee-name">
+                                        <span>박관리</span>
+                                    </div>
+                                </td>
+                                <td>경영지원팀</td>
+                                <td>과장</td>
+                                <td class="amount">3,800,000</td>
+                                <td class="amount positive">+300,000</td>
+                                <td class="amount negative">-370,000</td>
+                                <td class="amount total">3,730,000</td>
+                                <td><span class="status-badge paid">지급완료</span></td>
+                                <td>
+                                    <button class="btn-icon" title="명세서 보기"><i class="fas fa-file-alt"></i></button>
+                                    <button class="btn-icon" title="다운로드"><i class="fas fa-download"></i></button>
+                                </td>
+                            </tr>
+                            <tr data-dept="경영지원팀" data-status="paid">
+                                <td>EMP003</td>
+                                <td>
+                                    <div class="employee-name">
+                                        <span>최인사</span>
+                                    </div>
+                                </td>
+                                <td>경영지원팀</td>
+                                <td>대리</td>
+                                <td class="amount">3,200,000</td>
+                                <td class="amount positive">+200,000</td>
+                                <td class="amount negative">-306,000</td>
+                                <td class="amount total">3,094,000</td>
+                                <td><span class="status-badge paid">지급완료</span></td>
+                                <td>
+                                    <button class="btn-icon" title="명세서 보기"><i class="fas fa-file-alt"></i></button>
+                                    <button class="btn-icon" title="다운로드"><i class="fas fa-download"></i></button>
+                                </td>
+                            </tr>
+                            <tr data-dept="경영지원팀" data-status="paid">
+                                <td>EMP004</td>
+                                <td>
+                                    <div class="employee-name">
+                                        <span>정회계</span>
+                                    </div>
+                                </td>
+                                <td>경영지원팀</td>
+                                <td>사원</td>
+                                <td class="amount">2,800,000</td>
+                                <td class="amount positive">+150,000</td>
+                                <td class="amount negative">-265,500</td>
+                                <td class="amount total">2,684,500</td>
+                                <td><span class="status-badge paid">지급완료</span></td>
+                                <td>
+                                    <button class="btn-icon" title="명세서 보기"><i class="fas fa-file-alt"></i></button>
+                                    <button class="btn-icon" title="다운로드"><i class="fas fa-download"></i></button>
+                                </td>
+                            </tr>
+                            <tr data-dept="경영지원팀" data-status="paid">
+                                <td>EMP005</td>
+                                <td>
+                                    <div class="employee-name">
+                                        <span>강총무</span>
+                                    </div>
+                                </td>
+                                <td>경영지원팀</td>
+                                <td>사원</td>
+                                <td class="amount">2,700,000</td>
+                                <td class="amount positive">+100,000</td>
+                                <td class="amount negative">-252,000</td>
+                                <td class="amount total">2,548,000</td>
+                                <td><span class="status-badge paid">지급완료</span></td>
+                                <td>
+                                    <button class="btn-icon" title="명세서 보기"><i class="fas fa-file-alt"></i></button>
+                                    <button class="btn-icon" title="다운로드"><i class="fas fa-download"></i></button>
+                                </td>
+                            </tr>
+                            <tr data-dept="개발팀" data-status="paid">
+                                <td>EMP006</td>
+                                <td>
+                                    <div class="employee-name">
+                                        <span>김개발</span>
+                                    </div>
+                                </td>
+                                <td>개발팀</td>
+                                <td>팀장</td>
+                                <td class="amount">5,000,000</td>
+                                <td class="amount positive">+600,000</td>
+                                <td class="amount negative">-504,000</td>
+                                <td class="amount total">5,096,000</td>
+                                <td><span class="status-badge paid">지급완료</span></td>
+                                <td>
+                                    <button class="btn-icon" title="명세서 보기"><i class="fas fa-file-alt"></i></button>
+                                    <button class="btn-icon" title="다운로드"><i class="fas fa-download"></i></button>
+                                </td>
+                            </tr>
+                            <tr data-dept="개발팀" data-status="paid">
+                                <td>EMP007</td>
+                                <td>
+                                    <div class="employee-name">
+                                        <span>이백엔드</span>
+                                    </div>
+                                </td>
+                                <td>개발팀</td>
+                                <td>선임</td>
+                                <td class="amount">4,000,000</td>
+                                <td class="amount positive">+400,000</td>
+                                <td class="amount negative">-396,000</td>
+                                <td class="amount total">4,004,000</td>
+                                <td><span class="status-badge paid">지급완료</span></td>
+                                <td>
+                                    <button class="btn-icon" title="명세서 보기"><i class="fas fa-file-alt"></i></button>
+                                    <button class="btn-icon" title="다운로드"><i class="fas fa-download"></i></button>
+                                </td>
+                            </tr>
+                            <tr data-dept="개발팀" data-status="paid">
+                                <td>EMP008</td>
+                                <td>
+                                    <div class="employee-name">
+                                        <span>박프론트</span>
+                                    </div>
+                                </td>
+                                <td>개발팀</td>
+                                <td>선임</td>
+                                <td class="amount">4,000,000</td>
+                                <td class="amount positive">+400,000</td>
+                                <td class="amount negative">-396,000</td>
+                                <td class="amount total">4,004,000</td>
+                                <td><span class="status-badge paid">지급완료</span></td>
+                                <td>
+                                    <button class="btn-icon" title="명세서 보기"><i class="fas fa-file-alt"></i></button>
+                                    <button class="btn-icon" title="다운로드"><i class="fas fa-download"></i></button>
+                                </td>
+                            </tr>
+                            <tr data-dept="개발팀" data-status="paid">
+                                <td>EMP009</td>
+                                <td>
+                                    <div class="employee-name">
+                                        <span>최풀스택</span>
+                                    </div>
+                                </td>
+                                <td>개발팀</td>
+                                <td>주임</td>
+                                <td class="amount">3,500,000</td>
+                                <td class="amount positive">+300,000</td>
+                                <td class="amount negative">-342,000</td>
+                                <td class="amount total">3,458,000</td>
+                                <td><span class="status-badge paid">지급완료</span></td>
+                                <td>
+                                    <button class="btn-icon" title="명세서 보기"><i class="fas fa-file-alt"></i></button>
+                                    <button class="btn-icon" title="다운로드"><i class="fas fa-download"></i></button>
+                                </td>
+                            </tr>
+                            <tr data-dept="개발팀" data-status="paid">
+                                <td>EMP010</td>
+                                <td>
+                                    <div class="employee-name">
+                                        <span>정자바</span>
+                                    </div>
+                                </td>
+                                <td>개발팀</td>
+                                <td>사원</td>
+                                <td class="amount">3,000,000</td>
+                                <td class="amount positive">+200,000</td>
+                                <td class="amount negative">-288,000</td>
+                                <td class="amount total">2,912,000</td>
+                                <td><span class="status-badge paid">지급완료</span></td>
+                                <td>
+                                    <button class="btn-icon" title="명세서 보기"><i class="fas fa-file-alt"></i></button>
+                                    <button class="btn-icon" title="다운로드"><i class="fas fa-download"></i></button>
+                                </td>
+                            </tr>
+                            <tr data-dept="개발팀" data-status="paid">
+                                <td>EMP011</td>
+                                <td>
+                                    <div class="employee-name">
+                                        <span>강리액트</span>
+                                    </div>
+                                </td>
+                                <td>개발팀</td>
+                                <td>사원</td>
+                                <td class="amount">3,000,000</td>
+                                <td class="amount positive">+200,000</td>
+                                <td class="amount negative">-288,000</td>
+                                <td class="amount total">2,912,000</td>
+                                <td><span class="status-badge paid">지급완료</span></td>
+                                <td>
+                                    <button class="btn-icon" title="명세서 보기"><i class="fas fa-file-alt"></i></button>
+                                    <button class="btn-icon" title="다운로드"><i class="fas fa-download"></i></button>
+                                </td>
+                            </tr>
+                            <tr data-dept="영업팀" data-status="paid">
+                                <td>EMP012</td>
+                                <td>
+                                    <div class="employee-name">
+                                        <span>송영업</span>
+                                    </div>
+                                </td>
+                                <td>영업팀</td>
+                                <td>팀장</td>
+                                <td class="amount">4,500,000</td>
+                                <td class="amount positive">+800,000</td>
+                                <td class="amount negative">-477,000</td>
+                                <td class="amount total">4,823,000</td>
+                                <td><span class="status-badge paid">지급완료</span></td>
+                                <td>
+                                    <button class="btn-icon" title="명세서 보기"><i class="fas fa-file-alt"></i></button>
+                                    <button class="btn-icon" title="다운로드"><i class="fas fa-download"></i></button>
+                                </td>
+                            </tr>
+                            <tr data-dept="영업팀" data-status="paid">
+                                <td>EMP013</td>
+                                <td>
+                                    <div class="employee-name">
+                                        <span>한세일즈</span>
+                                    </div>
+                                </td>
+                                <td>영업팀</td>
+                                <td>과장</td>
+                                <td class="amount">3,800,000</td>
+                                <td class="amount positive">+600,000</td>
+                                <td class="amount negative">-396,000</td>
+                                <td class="amount total">4,004,000</td>
+                                <td><span class="status-badge paid">지급완료</span></td>
+                                <td>
+                                    <button class="btn-icon" title="명세서 보기"><i class="fas fa-file-alt"></i></button>
+                                    <button class="btn-icon" title="다운로드"><i class="fas fa-download"></i></button>
+                                </td>
+                            </tr>
+                            <tr data-dept="디자인팀" data-status="paid">
+                                <td>EMP014</td>
+                                <td>
+                                    <div class="employee-name">
+                                        <span>민디자인</span>
+                                    </div>
+                                </td>
+                                <td>디자인팀</td>
+                                <td>팀장</td>
+                                <td class="amount">4,200,000</td>
+                                <td class="amount positive">+400,000</td>
+                                <td class="amount negative">-414,000</td>
+                                <td class="amount total">4,186,000</td>
+                                <td><span class="status-badge paid">지급완료</span></td>
+                                <td>
+                                    <button class="btn-icon" title="명세서 보기"><i class="fas fa-file-alt"></i></button>
+                                    <button class="btn-icon" title="다운로드"><i class="fas fa-download"></i></button>
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <script th:src="@{/js/payroll.js}"></script>
+</body>
+</html>

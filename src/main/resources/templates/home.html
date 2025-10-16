@@ -1,0 +1,81 @@
+<!DOCTYPE html>
+<html lang="ko" xmlns:th="http://www.thymeleaf.org">
+<head th:replace="fragments/layout :: head('ERP 시스템 - 홈', null)"></head>
+<body>
+    <div class="container">
+        <!-- 좌측 네비게이션 바 -->
+        <div th:replace="fragments/sidebar :: sidebar('home')"></div>
+
+        <!-- 메인 콘텐츠 영역 -->
+        <main class="main-content">
+            <header class="header">
+                <div class="header-left">
+                    <h1 class="page-title">파인씨앤아이</h1>
+                </div>
+                <div class="header-right">
+                    <div class="search-box">
+                        <i class="fas fa-search"></i>
+                        <input type="text" placeholder="검색...">
+                    </div>
+                    <button class="notification-btn">
+                        <i class="fas fa-bell"></i>
+                        <span class="badge">3</span>
+                    </button>
+                </div>
+            </header>
+
+            <div class="dashboard-area">
+                <!-- 여기에 대시보드 컨텐츠가 들어갑니다 -->
+                <div class="welcome-section">
+                    <h2>환영합니다!</h2>
+                    <p>ERP 시스템에 오신 것을 환영합니다. 좌측 메뉴에서 원하는 기능을 선택하세요.</p>
+                </div>
+
+                <div class="quick-stats">
+                    <div class="stat-card" id="vacationCard" style="cursor: pointer;">
+                        <div class="stat-icon" style="background: #e3f2fd;">
+                            <i class="fas fa-umbrella-beach" style="color: #1976d2;"></i>
+                        </div>
+                        <div class="stat-content">
+                            <h3>잔여 연차</h3>
+                            <p class="stat-number">15<span>일</span></p>
+                        </div>
+                    </div>
+
+                    <div class="stat-card">
+                        <div class="stat-icon" style="background: #fff3e0;">
+                            <i class="fas fa-file-signature" style="color: #f57c00;"></i>
+                        </div>
+                        <div class="stat-content">
+                            <h3>결재 대기</h3>
+                            <p class="stat-number">5<span>건</span></p>
+                        </div>
+                    </div>
+
+                    <div class="stat-card" id="todayScheduleCard" style="cursor: pointer;">
+                        <div class="stat-icon" style="background: #f3e5f5;">
+                            <i class="fas fa-calendar-check" style="color: #7b1fa2;"></i>
+                        </div>
+                        <div class="stat-content">
+                            <h3>오늘 일정</h3>
+                            <p class="stat-number">3<span>건</span></p>
+                        </div>
+                    </div>
+
+                    <div class="stat-card" id="unreadMailCard" style="cursor: pointer;">
+                        <div class="stat-icon" style="background: #e8f5e9;">
+                            <i class="fas fa-envelope" style="color: #388e3c;"></i>
+                        </div>
+                        <div class="stat-content">
+                            <h3>읽지 않은 메일</h3>
+                            <p class="stat-number">12<span>건</span></p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <script th:src="@{/js/home.js}"></script>
+</body>
+</html>
