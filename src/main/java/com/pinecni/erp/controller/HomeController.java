@@ -46,6 +46,11 @@ public class HomeController {
         return "approval";
     }
 
+    @GetMapping("/approval/write")
+    public String approvalWrite() {
+        return "approval-write";
+    }
+
     @GetMapping("/hr")
     public String hr() {
         return "hr";
