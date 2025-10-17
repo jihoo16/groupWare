@@ -200,6 +200,24 @@ const posts = [
 ];
 
 let currentFilter = 'all';
+let attachedFiles = [];
+let selectedEmployees = [];
+
+// 더미 사원 데이터
+const employees = [
+    { id: 1, name: '김대표', department: '경영진', position: '대표이사' },
+    { id: 2, name: '이CTO', department: '경영진', position: 'CTO' },
+    { id: 3, name: '박보안', department: 'IT팀', position: '팀장' },
+    { id: 4, name: '최인사', department: '인사팀', position: '팀장' },
+    { id: 5, name: '강총무', department: '총무팀', position: '과장' },
+    { id: 6, name: '김개발', department: '개발팀', position: '팀장' },
+    { id: 7, name: '박프론트', department: '개발팀', position: '과장' },
+    { id: 8, name: '이백엔드', department: '개발팀', position: '대리' },
+    { id: 9, name: '정자바', department: '개발팀', position: '사원' },
+    { id: 10, name: '오마케팅', department: '마케팅팀', position: '과장' },
+    { id: 11, name: '서디자인', department: '디자인팀', position: '대리' },
+    { id: 12, name: '윤기획', department: '기획팀', position: '과장' }
+];
 
 document.addEventListener('DOMContentLoaded', () => {
     renderPosts();
@@ -209,7 +227,6 @@ document.addEventListener('DOMContentLoaded', () => {
 
 function renderPosts() {
     const list = document.getElementById('boardList');
-    list.innerHTML = '';
 
     const filtered = posts.filter(p => {
         if (currentFilter === 'all') return true;
@@ -219,71 +236,65 @@ function renderPosts() {
         return true;
     });
 
-    filtered.forEach(post => {
-        const item = document.createElement('div');
-        item.className = `board-item ${post.type} ${post.important ? 'important' : ''} ${isUnread(post) ? 'unread' : ''}`;
-        item.setAttribute('data-id', post.id);
+    if (filtered.length === 0) {
+        list.innerHTML = '<div style="text-align: center; padding: 60px; color: #999;">게시글이 없습니다.</div>';
+        return;
+    }
 
-        item.innerHTML = `
-            <div class="item-badges">
-                ${post.type === 'notice' ? '<span class="badge badge-notice">공지</span>' : ''}
-                ${post.important ? '<span class="badge badge-important">중요</span>' : ''}
-                ${isUnread(post) ? '<span class="badge badge-unread">읽지않음</span>' : ''}
-            </div>
-            <div class="item-header">
-                <h3 class="item-title">
-                    ${post.important ? '<i class="fas fa-exclamation-circle"></i>' : ''}
-                    ${post.title}
-                </h3>
-                <div class="item-actions">
-                    <button class="action-btn" data-action="edit" title="수정">
-                        <i class="fas fa-edit"></i>
-                    </button>
-                    <button class="action-btn" data-action="delete" title="삭제">
-                        <i class="fas fa-trash"></i>
-                    </button>
-                </div>
-            </div>
-            <p class="item-excerpt">${post.content}</p>
-            <div class="item-meta">
-                <div class="meta-left">
-                    <span class="meta-item">
-                        <i class="fas fa-user"></i>
-                        ${post.author}
-                    </span>
-                    <span class="meta-item">
-                        <i class="fas fa-calendar"></i>
-                        ${post.date}
-                    </span>
-                    <span class="meta-item">
-                        <i class="fas fa-eye"></i>
-                        ${post.views}
-                    </span>
-                    ${post.comments ? `<span class="meta-item"><i class="fas fa-comment"></i>${post.comments}</span>` : ''}
-                    <span class="meta-item">
-                        <i class="fas fa-users"></i>
-                        공개범위: ${getVisibilityText(post.visibility)}
-                    </span>
-                </div>
-                ${post.requireRead ? `
-                    <div class="meta-right">
-                        <span class="read-status">
-                            <i class="fas fa-check-circle"></i>
-                            ${post.readBy ? post.readBy.length : 0}/${(post.readBy ? post.readBy.length : 0) + (post.unreadBy ? post.unreadBy.length : 0)} 읽음
-                        </span>
-                    </div>
-                ` : ''}
-            </div>
-        `;
-
-        item.addEventListener('click', (e) => {
-            if (!e.target.closest('.action-btn')) {
-                showPostDetail(post.id);
-            }
-        });
-
-        list.appendChild(item);
-    });
+    list.innerHTML = `
+        <div class="board-table-wrapper">
+            <table class="board-table">
+                <thead>
+                    <tr>
+                        <th style="width: 80px;">상태</th>
+                        <th style="width: 100px;">분류</th>
+                        <th>제목</th>
+                        <th style="width: 120px;">작성자</th>
+                        <th style="width: 120px;">작성일</th>
+                        <th style="width: 80px;">조회</th>
+                        <th style="width: 100px;">관리</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    ${filtered.map(post => `
+                        <tr class="board-row ${isUnread(post) ? 'unread-row' : ''}" data-id="${post.id}" onclick="showPostDetail(${post.id})">
+                            <td>
+                                ${isUnread(post)
+                                    ? '<span class="status-badge status-unread"><i class="fas fa-circle"></i> 안읽음</span>'
+                                    : '<span class="status-badge status-read"><i class="far fa-circle"></i> 읽음</span>'}
+                            </td>
+                            <td>
+                                <div class="post-badges">
+                                    ${post.type === 'notice' ? '<span class="badge badge-notice">공지</span>' : ''}
+                                    ${post.important ? '<span class="badge badge-important">중요</span>' : ''}
+                                    ${!post.type === 'notice' && !post.important ? '<span class="badge badge-normal">일반</span>' : ''}
+                                </div>
+                            </td>
+                            <td class="title-cell">
+                                <div class="title-wrapper">
+                                    ${post.important ? '<i class="fas fa-exclamation-circle" style="color: #f44336; margin-right: 6px;"></i>' : ''}
+                                    <span class="post-title">${post.title}</span>
+                                    ${post.attachments && post.attachments.length > 0 ? `<i class="fas fa-paperclip" style="margin-left: 8px; color: #999;"></i>` : ''}
+                                    ${post.comments ? `<span class="comment-count"><i class="fas fa-comment"></i> ${post.comments}</span>` : ''}
+                                </div>
+                            </td>
+                            <td class="author-cell">${post.author}</td>
+                            <td class="date-cell">${post.date.split(' ')[0]}</td>
+                            <td class="views-cell">${post.views}</td>
+                            <td class="actions-cell" onclick="event.stopPropagation()">
+                                <button class="action-btn-small" onclick="event.stopPropagation(); editPost(${post.id})" title="수정">
+                                    <i class="fas fa-edit"></i>
+                                </button>
+                                <button class="action-btn-small" onclick="event.stopPropagation(); deletePost(${post.id})" title="삭제">
+                                    <i class="fas fa-trash"></i>
+                                </button>
+                            </td>
+                        </tr>
+                    `).join('')}
+                </tbody>
+            </table>
+        </div>
+    `;
 }
 
 function isUnread(post) {
@@ -354,6 +365,9 @@ function openPostModal(postId = null) {
     const modal = document.getElementById('postModal');
     const post = postId ? posts.find(p => p.id === postId) : null;
 
+    // 파일 목록 초기화
+    attachedFiles = post && post.attachments ? [...post.attachments] : [];
+
     modal.innerHTML = `
         <div class="modal-content modal-large">
             <div class="modal-header">
@@ -390,12 +404,31 @@ function openPostModal(postId = null) {
                     </div>
                     <div class="form-group">
                         <label>공개 범위 <span class="required">*</span></label>
-                        <select id="visibilityScope" required>
+                        <select id="visibilityScope" required onchange="handleVisibilityChange()">
                             <option value="all" ${!post || post.visibility === 'all' ? 'selected' : ''}>전체 공개</option>
                             <option value="dev" ${post && post.visibility === 'dev' ? 'selected' : ''}>개발팀</option>
                             <option value="hr" ${post && post.visibility === 'hr' ? 'selected' : ''}>인사팀</option>
-                            <option value="custom">사용자 지정</option>
+                            <option value="custom" ${post && post.visibility === 'custom' ? 'selected' : ''}>사용자 지정</option>
                         </select>
+                    </div>
+                    <div class="form-group" id="customVisibilityGroup" style="display: none;">
+                        <label>공개 대상 사원</label>
+                        <button type="button" class="btn-secondary" onclick="openEmployeeSelector()" style="width: 100%; justify-content: center;">
+                            <i class="fas fa-user-plus"></i> 사원 선택
+                        </button>
+                        <div id="selectedEmployeesList" class="selected-employees-list"></div>
+                    </div>
+                    <div class="form-group">
+                        <label>파일 첨부</label>
+                        <div class="file-upload-area" id="fileUploadArea">
+                            <input type="file" id="fileInput" class="file-upload-input" multiple>
+                            <label for="fileInput" class="file-upload-label">
+                                <i class="fas fa-cloud-upload-alt"></i>
+                                <p>파일을 드래그하거나 클릭하여 업로드</p>
+                                <small>여러 파일을 한번에 업로드할 수 있습니다</small>
+                            </label>
+                        </div>
+                        <div class="attached-files" id="attachedFilesList"></div>
                     </div>
                 </form>
             </div>
@@ -408,6 +441,215 @@ function openPostModal(postId = null) {
 
     modal.classList.add('show');
     document.body.style.overflow = 'hidden';
+
+    // 파일 업로드 이벤트 설정
+    setupFileUpload();
+
+    // 기존 첨부 파일 표시
+    renderAttachedFiles();
+
+    // 공개범위 초기 설정
+    handleVisibilityChange();
+
+    // 기존 선택된 사원 표시
+    if (post && post.customEmployees) {
+        selectedEmployees = [...post.customEmployees];
+        renderSelectedEmployees();
+    }
+}
+
+// 공개범위 변경 처리
+function handleVisibilityChange() {
+    const scope = document.getElementById('visibilityScope');
+    const customGroup = document.getElementById('customVisibilityGroup');
+
+    if (scope && customGroup) {
+        if (scope.value === 'custom') {
+            customGroup.style.display = 'block';
+        } else {
+            customGroup.style.display = 'none';
+        }
+    }
+}
+
+// 사원 선택 모달 열기
+function openEmployeeSelector() {
+    const modal = document.getElementById('employeeSelectorModal');
+    if (!modal) {
+        createEmployeeSelectorModal();
+        return;
+    }
+
+    modal.classList.add('show');
+    document.body.style.overflow = 'hidden';
+    renderEmployeeList();
+}
+
+// 사원 선택 모달 생성
+function createEmployeeSelectorModal() {
+    const modalHtml = `
+        <div id="employeeSelectorModal" class="modal show">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h2>공개 대상 사원 선택</h2>
+                    <button class="modal-close" onclick="closeEmployeeSelector()">
+                        <i class="fas fa-times"></i>
+                    </button>
+                </div>
+                <div class="modal-body">
+                    <div class="employee-search-box">
+                        <i class="fas fa-search"></i>
+                        <input type="text" id="employeeSearch" placeholder="이름 또는 부서로 검색..." oninput="searchEmployees()">
+                    </div>
+                    <div class="employee-selection-area">
+                        <div class="employee-list-panel">
+                            <h4>사원 목록</h4>
+                            <div id="employeeListContainer" class="employee-list"></div>
+                        </div>
+                        <div class="selected-panel">
+                            <h4>선택된 사원 (<span id="selectedCount">0</span>명)</h4>
+                            <div id="selectedEmployeesContainer" class="selected-list"></div>
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button class="btn-secondary" onclick="closeEmployeeSelector()">취소</button>
+                    <button class="btn-primary" onclick="confirmEmployeeSelection()">
+                        <i class="fas fa-check"></i> 확인
+                    </button>
+                </div>
+            </div>
+        </div>
+    `;
+
+    document.body.insertAdjacentHTML('beforeend', modalHtml);
+    document.body.style.overflow = 'hidden';
+    renderEmployeeList();
+}
+
+// 사원 목록 렌더링
+function renderEmployeeList(searchTerm = '') {
+    const container = document.getElementById('employeeListContainer');
+    if (!container) return;
+
+    const filtered = employees.filter(emp =>
+        emp.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        emp.department.toLowerCase().includes(searchTerm.toLowerCase())
+    );
+
+    container.innerHTML = filtered.map(emp => `
+        <div class="employee-item ${selectedEmployees.find(e => e.id === emp.id) ? 'selected' : ''}"
+             onclick="toggleEmployeeSelection(${emp.id})">
+            <div class="employee-info">
+                <div class="employee-avatar-small">${emp.name.charAt(0)}</div>
+                <div class="employee-details">
+                    <div class="employee-name-small">${emp.name}</div>
+                    <div class="employee-dept-small">${emp.department} · ${emp.position}</div>
+                </div>
+            </div>
+            <div class="employee-checkbox">
+                <i class="fas ${selectedEmployees.find(e => e.id === emp.id) ? 'fa-check-circle' : 'fa-circle'}"></i>
+            </div>
+        </div>
+    `).join('');
+
+    renderSelectedEmployeesInModal();
+}
+
+// 사원 검색
+function searchEmployees() {
+    const searchTerm = document.getElementById('employeeSearch').value;
+    renderEmployeeList(searchTerm);
+}
+
+// 사원 선택/해제 토글
+function toggleEmployeeSelection(empId) {
+    const employee = employees.find(e => e.id === empId);
+    if (!employee) return;
+
+    const index = selectedEmployees.findIndex(e => e.id === empId);
+    if (index > -1) {
+        selectedEmployees.splice(index, 1);
+    } else {
+        selectedEmployees.push(employee);
+    }
+
+    renderEmployeeList(document.getElementById('employeeSearch')?.value || '');
+}
+
+// 모달 내 선택된 사원 렌더링
+function renderSelectedEmployeesInModal() {
+    const container = document.getElementById('selectedEmployeesContainer');
+    const countSpan = document.getElementById('selectedCount');
+
+    if (countSpan) {
+        countSpan.textContent = selectedEmployees.length;
+    }
+
+    if (!container) return;
+
+    if (selectedEmployees.length === 0) {
+        container.innerHTML = '<div class="empty-message">선택된 사원이 없습니다</div>';
+        return;
+    }
+
+    container.innerHTML = selectedEmployees.map(emp => `
+        <div class="selected-employee-item">
+            <div class="employee-info">
+                <div class="employee-avatar-small">${emp.name.charAt(0)}</div>
+                <div class="employee-details">
+                    <div class="employee-name-small">${emp.name}</div>
+                    <div class="employee-dept-small">${emp.department}</div>
+                </div>
+            </div>
+            <button class="remove-employee-btn" onclick="event.stopPropagation(); toggleEmployeeSelection(${emp.id})">
+                <i class="fas fa-times"></i>
+            </button>
+        </div>
+    `).join('');
+}
+
+// 사원 선택 모달 닫기
+function closeEmployeeSelector() {
+    const modal = document.getElementById('employeeSelectorModal');
+    if (modal) {
+        modal.classList.remove('show');
+        document.body.style.overflow = '';
+    }
+}
+
+// 사원 선택 확인
+function confirmEmployeeSelection() {
+    renderSelectedEmployees();
+    closeEmployeeSelector();
+}
+
+// 폼에 선택된 사원 렌더링
+function renderSelectedEmployees() {
+    const container = document.getElementById('selectedEmployeesList');
+    if (!container) return;
+
+    if (selectedEmployees.length === 0) {
+        container.innerHTML = '';
+        return;
+    }
+
+    container.innerHTML = `
+        <div class="selected-employees-tags">
+            ${selectedEmployees.map(emp => `
+                <span class="employee-tag">
+                    ${emp.name} (${emp.department})
+                    <i class="fas fa-times" onclick="removeSelectedEmployee(${emp.id})"></i>
+                </span>
+            `).join('')}
+        </div>
+    `;
+}
+
+// 선택된 사원 제거
+function removeSelectedEmployee(empId) {
+    selectedEmployees = selectedEmployees.filter(e => e.id !== empId);
+    renderSelectedEmployees();
 }
 
 function closeModal(id) {
@@ -418,6 +660,8 @@ function closeModal(id) {
 
 function savePost() {
     const id = document.getElementById('postId').value;
+    const visibility = document.getElementById('visibilityScope').value;
+
     const newPost = {
         id: id ? parseInt(id) : posts.length + 1,
         type: document.getElementById('postType').value,
@@ -427,10 +671,12 @@ function savePost() {
         author: '현재사용자',
         date: new Date().toLocaleString('ko-KR', { year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit' }),
         views: 0,
-        visibility: document.getElementById('visibilityScope').value,
+        visibility: visibility,
         requireRead: document.getElementById('isImportant').checked,
         readBy: [],
-        unreadBy: []
+        unreadBy: [],
+        attachments: attachedFiles.length > 0 ? [...attachedFiles] : undefined,
+        customEmployees: visibility === 'custom' && selectedEmployees.length > 0 ? [...selectedEmployees] : undefined
     };
 
     if (id) {
@@ -441,6 +687,11 @@ function savePost() {
         posts.unshift(newPost);
         alert('게시글이 작성되었습니다.');
     }
+
+    // 첨부 파일 목록 초기화
+    attachedFiles = [];
+    // 선택된 사원 목록 초기화
+    selectedEmployees = [];
 
     closeModal('postModal');
     renderPosts();
@@ -491,6 +742,29 @@ function showPostDetail(id) {
                     <div style="padding: 20px; background: #f8f9fa; border-radius: 8px; line-height: 1.8; min-height: 200px;">
                         ${post.content}
                     </div>
+                    ${post.attachments && post.attachments.length > 0 ? `
+                        <div style="margin-top: 24px;">
+                            <h4 style="margin: 0 0 12px 0; font-size: 15px; color: #333;">
+                                <i class="fas fa-paperclip"></i> 첨부 파일 (${post.attachments.length})
+                            </h4>
+                            <div class="attached-files">
+                                ${post.attachments.map(file => `
+                                    <div class="attached-file" style="cursor: pointer;" onclick="downloadFile('${file.name}')">
+                                        <div class="file-info">
+                                            <div class="file-icon">
+                                                <i class="${getFileIcon(file.name)}"></i>
+                                            </div>
+                                            <div class="file-details">
+                                                <div class="file-name">${file.name}</div>
+                                                <div class="file-size">${file.size}</div>
+                                            </div>
+                                        </div>
+                                        <i class="fas fa-download" style="color: #667eea; font-size: 18px;"></i>
+                                    </div>
+                                `).join('')}
+                            </div>
+                        </div>
+                    ` : ''}
                     ${post.requireRead ? `
                         <div style="margin-top: 30px; padding: 20px; background: #e8f5e9; border-radius: 8px;">
                             <h4 style="margin: 0 0 16px 0;">읽음 확인</h4>
@@ -610,4 +884,126 @@ function searchPosts(query) {
         item.addEventListener('click', () => showPostDetail(post.id));
         list.appendChild(item);
     });
+}
+
+// 파일 업로드 설정
+function setupFileUpload() {
+    const fileInput = document.getElementById('fileInput');
+    const uploadArea = document.getElementById('fileUploadArea');
+
+    if (!fileInput || !uploadArea) return;
+
+    // 파일 선택 이벤트
+    fileInput.addEventListener('change', handleFileSelect);
+
+    // 드래그 앤 드롭 이벤트
+    uploadArea.addEventListener('dragover', (e) => {
+        e.preventDefault();
+        uploadArea.classList.add('dragover');
+    });
+
+    uploadArea.addEventListener('dragleave', () => {
+        uploadArea.classList.remove('dragover');
+    });
+
+    uploadArea.addEventListener('drop', (e) => {
+        e.preventDefault();
+        uploadArea.classList.remove('dragover');
+        const files = e.dataTransfer.files;
+        handleFiles(files);
+    });
+}
+
+// 파일 선택 처리
+function handleFileSelect(e) {
+    const files = e.target.files;
+    handleFiles(files);
+}
+
+// 파일 처리
+function handleFiles(files) {
+    Array.from(files).forEach(file => {
+        const fileObj = {
+            name: file.name,
+            size: formatFileSize(file.size),
+            type: file.type,
+            file: file
+        };
+        attachedFiles.push(fileObj);
+    });
+
+    renderAttachedFiles();
+}
+
+// 첨부 파일 목록 렌더링
+function renderAttachedFiles() {
+    const filesList = document.getElementById('attachedFilesList');
+    if (!filesList) return;
+
+    if (attachedFiles.length === 0) {
+        filesList.innerHTML = '';
+        return;
+    }
+
+    filesList.innerHTML = attachedFiles.map((file, index) => `
+        <div class="attached-file">
+            <div class="file-info">
+                <div class="file-icon">
+                    <i class="${getFileIcon(file.name)}"></i>
+                </div>
+                <div class="file-details">
+                    <div class="file-name">${file.name}</div>
+                    <div class="file-size">${file.size}</div>
+                </div>
+            </div>
+            <button class="file-remove" onclick="removeFile(${index})">
+                <i class="fas fa-times"></i> 삭제
+            </button>
+        </div>
+    `).join('');
+}
+
+// 파일 삭제
+function removeFile(index) {
+    attachedFiles.splice(index, 1);
+    renderAttachedFiles();
+}
+
+// 파일 크기 포맷
+function formatFileSize(bytes) {
+    if (bytes === 0) return '0 Bytes';
+    const k = 1024;
+    const sizes = ['Bytes', 'KB', 'MB', 'GB'];
+    const i = Math.floor(Math.log(bytes) / Math.log(k));
+    return Math.round(bytes / Math.pow(k, i) * 100) / 100 + ' ' + sizes[i];
+}
+
+// 파일 아이콘 가져오기
+function getFileIcon(fileName) {
+    const ext = fileName.split('.').pop().toLowerCase();
+    const iconMap = {
+        'pdf': 'fas fa-file-pdf',
+        'doc': 'fas fa-file-word',
+        'docx': 'fas fa-file-word',
+        'xls': 'fas fa-file-excel',
+        'xlsx': 'fas fa-file-excel',
+        'ppt': 'fas fa-file-powerpoint',
+        'pptx': 'fas fa-file-powerpoint',
+        'jpg': 'fas fa-file-image',
+        'jpeg': 'fas fa-file-image',
+        'png': 'fas fa-file-image',
+        'gif': 'fas fa-file-image',
+        'zip': 'fas fa-file-archive',
+        'rar': 'fas fa-file-archive',
+        'txt': 'fas fa-file-alt',
+        'csv': 'fas fa-file-csv'
+    };
+    return iconMap[ext] || 'fas fa-file';
+}
+
+// 파일 다운로드
+function downloadFile(fileName) {
+    // TODO: 실제 파일 다운로드 구현
+    console.log('파일 다운로드:', fileName);
+    alert(`"${fileName}" 파일을 다운로드합니다.`);
 }
