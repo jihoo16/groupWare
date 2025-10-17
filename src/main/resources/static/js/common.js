@@ -19,13 +19,8 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     });
 
-    // 클릭 이벤트 방지 (호버로만 동작)
-    const menuToggleBtns = document.querySelectorAll('.menu-toggle-btn');
-    menuToggleBtns.forEach(btn => {
-        btn.addEventListener('click', function(e) {
-            e.preventDefault();
-        });
-    });
+    // 대메뉴 클릭 시 페이지 이동 허용
+    // (호버는 mouseenter/mouseleave로 처리되므로 click은 페이지 이동용)
 
     // 사이드바에서 마우스가 완전히 벗어나면 모든 서브메뉴 닫기
     sidebar.addEventListener('mouseleave', function() {

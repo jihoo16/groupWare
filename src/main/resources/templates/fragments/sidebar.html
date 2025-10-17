@@ -22,7 +22,7 @@
                 </a>
             </li>
             <li th:class="${(activeMenu == 'approval' or activeMenu == 'vacation' or activeMenu == 'receipt') ? 'menu-item menu-parent active' : 'menu-item menu-parent'}" data-tooltip="전자결재">
-                <a href="#" class="menu-toggle-btn">
+                <a href="/approval" class="menu-toggle-btn">
                     <i class="fas fa-file-signature"></i>
                     <span class="menu-text">전자결재</span>
                     <i class="fas fa-chevron-down menu-arrow"></i>
@@ -71,7 +71,7 @@
                 </a>
             </li>
             <li th:class="${(activeMenu == 'hr' or activeMenu == 'attendance' or activeMenu == 'payroll') ? 'menu-item menu-parent active' : 'menu-item menu-parent'}" data-tooltip="관리">
-                <a href="#" class="menu-toggle-btn">
+                <a href="/hr" class="menu-toggle-btn">
                     <i class="fas fa-cogs"></i>
                     <span class="menu-text">관리</span>
                     <i class="fas fa-chevron-down menu-arrow"></i>
