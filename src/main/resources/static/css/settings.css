@@ -843,3 +843,242 @@
     10%, 30%, 50%, 70%, 90% { transform: translateX(-5px); }
     20%, 40%, 60%, 80% { transform: translateX(5px); }
 }
+
+/* 역량관리 섹션 */
+.competency-section {
+    margin-bottom: 30px;
+    padding-bottom: 30px;
+    border-bottom: 1px solid #e0e0e0;
+}
+
+.competency-section:last-child {
+    border-bottom: none;
+    margin-bottom: 0;
+    padding-bottom: 0;
+}
+
+.competency-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 20px;
+}
+
+.competency-header h4 {
+    font-size: 16px;
+    font-weight: 600;
+    color: #333;
+    margin: 0;
+}
+
+.btn-add {
+    padding: 8px 16px;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+    border: none;
+    border-radius: 8px;
+    font-size: 13px;
+    font-weight: 500;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    transition: all 0.3s ease;
+}
+
+.btn-add:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
+}
+
+.btn-add i {
+    font-size: 12px;
+}
+
+.competency-list {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+.empty-message {
+    padding: 40px;
+    text-align: center;
+    color: #999;
+    font-size: 14px;
+    background: #f8f9fa;
+    border-radius: 8px;
+    border: 2px dashed #e0e0e0;
+}
+
+/* 역량 항목 */
+.competency-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    padding: 20px;
+    background: #f8f9fa;
+    border-radius: 8px;
+    border: 1px solid #e0e0e0;
+    transition: all 0.3s ease;
+}
+
+.competency-item:hover {
+    border-color: #667eea;
+    box-shadow: 0 2px 8px rgba(102, 126, 234, 0.15);
+}
+
+.item-content {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.item-main {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+
+.item-main strong {
+    font-size: 15px;
+    font-weight: 600;
+    color: #333;
+}
+
+.item-detail {
+    font-size: 13px;
+    color: #666;
+}
+
+.item-period {
+    font-size: 13px;
+    color: #999;
+}
+
+.item-description {
+    margin-top: 8px;
+    padding: 12px;
+    background: white;
+    border-radius: 6px;
+    font-size: 13px;
+    color: #666;
+    line-height: 1.6;
+}
+
+.item-actions {
+    display: flex;
+    gap: 8px;
+    margin-left: 16px;
+}
+
+.btn-icon {
+    width: 36px;
+    height: 36px;
+    border: none;
+    background: white;
+    border-radius: 6px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.3s ease;
+    color: #666;
+    font-size: 14px;
+}
+
+.btn-icon:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+.btn-edit:hover {
+    background: #667eea;
+    color: white;
+}
+
+.btn-delete:hover {
+    background: #f44336;
+    color: white;
+}
+
+/* 역량 입력 폼 */
+.competency-form {
+    padding: 24px;
+    background: white;
+    border: 2px solid #667eea;
+    border-radius: 12px;
+    box-shadow: 0 4px 16px rgba(102, 126, 234, 0.15);
+    margin-bottom: 16px;
+}
+
+.form-row {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 16px;
+    margin-bottom: 16px;
+}
+
+.form-row:last-of-type {
+    margin-bottom: 0;
+}
+
+.form-row .form-group.full-width {
+    grid-column: 1 / -1;
+}
+
+.form-actions {
+    display: flex;
+    justify-content: flex-end;
+    gap: 12px;
+    margin-top: 20px;
+    padding-top: 20px;
+    border-top: 1px solid #e0e0e0;
+}
+
+.form-actions .btn-cancel {
+    background: #e0e0e0;
+    color: #666;
+}
+
+.form-actions .btn-cancel:hover {
+    background: #bdbdbd;
+}
+
+.form-actions .btn-save {
+    padding: 10px 24px;
+}
+
+.form-input.error,
+.form-select.error,
+.form-textarea.error {
+    border-color: #f44336;
+}
+
+/* 역량관리 반응형 */
+@media (max-width: 768px) {
+    .competency-item {
+        flex-direction: column;
+        gap: 16px;
+    }
+
+    .item-actions {
+        margin-left: 0;
+        align-self: flex-end;
+    }
+
+    .form-row {
+        grid-template-columns: 1fr;
+    }
+
+    .competency-header {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 12px;
+    }
+
+    .btn-add {
+        align-self: flex-end;
+    }
+}

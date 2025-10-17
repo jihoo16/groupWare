@@ -320,6 +320,427 @@ function initSignatureCanvas() {
     loadSavedSignature();
 }
 
+// 역량관리 데이터 구조
+const competencyData = {
+    education: [],
+    certificate: [],
+    career: [],
+    training: []
+};
+
+// 역량관리 초기화
+document.addEventListener('DOMContentLoaded', function() {
+    initCompetencyManagement();
+});
+
+function initCompetencyManagement() {
+    // 저장된 데이터 불러오기
+    loadCompetencyData();
+
+    // 추가 버튼 이벤트 리스너
+    const addButtons = document.querySelectorAll('.btn-add');
+    addButtons.forEach(btn => {
+        btn.addEventListener('click', function() {
+            const type = this.getAttribute('data-type');
+            showCompetencyForm(type);
+        });
+    });
+
+    // 초기 데이터 렌더링
+    renderAllCompetencies();
+}
+
+// 역량 항목 폼 표시
+function showCompetencyForm(type) {
+    const listContainer = document.getElementById(`${type}List`);
+
+    // 이미 입력 중인 폼이 있는지 확인
+    if (listContainer.querySelector('.competency-form')) {
+        showAlert('현재 입력 중인 항목을 먼저 완료해주세요.', 'warning');
+        return;
+    }
+
+    let formHTML = '';
+
+    switch(type) {
+        case 'education':
+            formHTML = `
+                <div class="competency-form">
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label>학교명</label>
+                            <input type="text" class="form-input" data-field="school" placeholder="학교명을 입력하세요">
+                        </div>
+                        <div class="form-group">
+                            <label>전공</label>
+                            <input type="text" class="form-input" data-field="major" placeholder="전공을 입력하세요">
+                        </div>
+                    </div>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label>학위</label>
+                            <select class="form-select" data-field="degree">
+                                <option value="">선택하세요</option>
+                                <option value="고졸">고졸</option>
+                                <option value="전문학사">전문학사</option>
+                                <option value="학사">학사</option>
+                                <option value="석사">석사</option>
+                                <option value="박사">박사</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label>입학일</label>
+                            <input type="date" class="form-input" data-field="startDate">
+                        </div>
+                        <div class="form-group">
+                            <label>졸업일</label>
+                            <input type="date" class="form-input" data-field="endDate">
+                        </div>
+                    </div>
+                    <div class="form-actions">
+                        <button class="btn-secondary btn-cancel">취소</button>
+                        <button class="btn-primary btn-save" data-type="${type}">저장</button>
+                    </div>
+                </div>
+            `;
+            break;
+
+        case 'certificate':
+            formHTML = `
+                <div class="competency-form">
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label>자격증명</label>
+                            <input type="text" class="form-input" data-field="name" placeholder="자격증명을 입력하세요">
+                        </div>
+                        <div class="form-group">
+                            <label>발급기관</label>
+                            <input type="text" class="form-input" data-field="issuer" placeholder="발급기관을 입력하세요">
+                        </div>
+                    </div>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label>취득일</label>
+                            <input type="date" class="form-input" data-field="date">
+                        </div>
+                        <div class="form-group">
+                            <label>자격증번호</label>
+                            <input type="text" class="form-input" data-field="number" placeholder="자격증번호를 입력하세요">
+                        </div>
+                    </div>
+                    <div class="form-actions">
+                        <button class="btn-secondary btn-cancel">취소</button>
+                        <button class="btn-primary btn-save" data-type="${type}">저장</button>
+                    </div>
+                </div>
+            `;
+            break;
+
+        case 'career':
+            formHTML = `
+                <div class="competency-form">
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label>회사명</label>
+                            <input type="text" class="form-input" data-field="company" placeholder="회사명을 입력하세요">
+                        </div>
+                        <div class="form-group">
+                            <label>직급/직책</label>
+                            <input type="text" class="form-input" data-field="position" placeholder="직급/직책을 입력하세요">
+                        </div>
+                    </div>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label>입사일</label>
+                            <input type="date" class="form-input" data-field="startDate">
+                        </div>
+                        <div class="form-group">
+                            <label>퇴사일</label>
+                            <input type="date" class="form-input" data-field="endDate">
+                        </div>
+                    </div>
+                    <div class="form-row">
+                        <div class="form-group full-width">
+                            <label>주요업무</label>
+                            <textarea class="form-textarea" data-field="description" rows="3" placeholder="주요업무를 입력하세요"></textarea>
+                        </div>
+                    </div>
+                    <div class="form-actions">
+                        <button class="btn-secondary btn-cancel">취소</button>
+                        <button class="btn-primary btn-save" data-type="${type}">저장</button>
+                    </div>
+                </div>
+            `;
+            break;
+
+        case 'training':
+            formHTML = `
+                <div class="competency-form">
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label>교육명</label>
+                            <input type="text" class="form-input" data-field="name" placeholder="교육명을 입력하세요">
+                        </div>
+                        <div class="form-group">
+                            <label>교육기관</label>
+                            <input type="text" class="form-input" data-field="institution" placeholder="교육기관을 입력하세요">
+                        </div>
+                    </div>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label>시작일</label>
+                            <input type="date" class="form-input" data-field="startDate">
+                        </div>
+                        <div class="form-group">
+                            <label>종료일</label>
+                            <input type="date" class="form-input" data-field="endDate">
+                        </div>
+                        <div class="form-group">
+                            <label>교육시간</label>
+                            <input type="number" class="form-input" data-field="hours" placeholder="시간">
+                        </div>
+                    </div>
+                    <div class="form-actions">
+                        <button class="btn-secondary btn-cancel">취소</button>
+                        <button class="btn-primary btn-save" data-type="${type}">저장</button>
+                    </div>
+                </div>
+            `;
+            break;
+    }
+
+    listContainer.insertAdjacentHTML('afterbegin', formHTML);
+
+    // 폼 버튼 이벤트 리스너
+    const form = listContainer.querySelector('.competency-form');
+    const cancelBtn = form.querySelector('.btn-cancel');
+    const saveBtn = form.querySelector('.btn-save');
+
+    cancelBtn.addEventListener('click', function() {
+        form.remove();
+    });
+
+    saveBtn.addEventListener('click', function() {
+        saveCompetencyItem(type, form);
+    });
+}
+
+// 역량 항목 저장
+function saveCompetencyItem(type, form) {
+    const inputs = form.querySelectorAll('[data-field]');
+    const item = {
+        id: Date.now(),
+        createdAt: new Date().toISOString()
+    };
+
+    let isValid = true;
+    inputs.forEach(input => {
+        const field = input.getAttribute('data-field');
+        const value = input.value.trim();
+
+        // 필수 필드 검증
+        if (input.hasAttribute('required') && !value) {
+            isValid = false;
+            input.classList.add('error');
+        } else {
+            input.classList.remove('error');
+        }
+
+        item[field] = value;
+    });
+
+    if (!isValid) {
+        showAlert('필수 항목을 입력해주세요.', 'warning');
+        return;
+    }
+
+    // 데이터 추가
+    competencyData[type].push(item);
+
+    // LocalStorage에 저장
+    saveCompetencyData();
+
+    // 폼 제거
+    form.remove();
+
+    // 목록 다시 렌더링
+    renderCompetencyList(type);
+
+    showAlert('저장되었습니다.', 'success');
+}
+
+// 역량 항목 삭제
+function deleteCompetencyItem(type, id) {
+    showConfirm('삭제하시겠습니까?', function() {
+        competencyData[type] = competencyData[type].filter(item => item.id !== id);
+        saveCompetencyData();
+        renderCompetencyList(type);
+        showAlert('삭제되었습니다.', 'success');
+    });
+}
+
+// 역량 항목 수정
+function editCompetencyItem(type, id) {
+    const item = competencyData[type].find(item => item.id === id);
+    if (!item) return;
+
+    // TODO: 수정 폼 표시 및 처리
+    showAlert('수정 기능은 추후 구현됩니다.', 'info');
+}
+
+// 역량 목록 렌더링
+function renderCompetencyList(type) {
+    const listContainer = document.getElementById(`${type}List`);
+    const items = competencyData[type];
+
+    // 기존 항목 제거 (폼 제외)
+    const existingItems = listContainer.querySelectorAll('.competency-item');
+    existingItems.forEach(item => item.remove());
+
+    if (items.length === 0) {
+        listContainer.innerHTML = '<div class="empty-message">등록된 항목이 없습니다.</div>';
+        return;
+    }
+
+    let itemsHTML = '';
+    items.forEach(item => {
+        let contentHTML = '';
+
+        switch(type) {
+            case 'education':
+                contentHTML = `
+                    <div class="competency-item">
+                        <div class="item-content">
+                            <div class="item-main">
+                                <strong>${item.school || '-'}</strong>
+                                <span class="item-detail">${item.major || '-'} | ${item.degree || '-'}</span>
+                            </div>
+                            <div class="item-period">
+                                ${formatDate(item.startDate)} ~ ${formatDate(item.endDate)}
+                            </div>
+                        </div>
+                        <div class="item-actions">
+                            <button class="btn-icon btn-edit" onclick="editCompetencyItem('${type}', ${item.id})">
+                                <i class="fas fa-edit"></i>
+                            </button>
+                            <button class="btn-icon btn-delete" onclick="deleteCompetencyItem('${type}', ${item.id})">
+                                <i class="fas fa-trash"></i>
+                            </button>
+                        </div>
+                    </div>
+                `;
+                break;
+
+            case 'certificate':
+                contentHTML = `
+                    <div class="competency-item">
+                        <div class="item-content">
+                            <div class="item-main">
+                                <strong>${item.name || '-'}</strong>
+                                <span class="item-detail">${item.issuer || '-'}</span>
+                            </div>
+                            <div class="item-period">
+                                ${formatDate(item.date)} | ${item.number || '-'}
+                            </div>
+                        </div>
+                        <div class="item-actions">
+                            <button class="btn-icon btn-edit" onclick="editCompetencyItem('${type}', ${item.id})">
+                                <i class="fas fa-edit"></i>
+                            </button>
+                            <button class="btn-icon btn-delete" onclick="deleteCompetencyItem('${type}', ${item.id})">
+                                <i class="fas fa-trash"></i>
+                            </button>
+                        </div>
+                    </div>
+                `;
+                break;
+
+            case 'career':
+                contentHTML = `
+                    <div class="competency-item">
+                        <div class="item-content">
+                            <div class="item-main">
+                                <strong>${item.company || '-'}</strong>
+                                <span class="item-detail">${item.position || '-'}</span>
+                            </div>
+                            <div class="item-period">
+                                ${formatDate(item.startDate)} ~ ${formatDate(item.endDate)}
+                            </div>
+                            ${item.description ? `<div class="item-description">${item.description}</div>` : ''}
+                        </div>
+                        <div class="item-actions">
+                            <button class="btn-icon btn-edit" onclick="editCompetencyItem('${type}', ${item.id})">
+                                <i class="fas fa-edit"></i>
+                            </button>
+                            <button class="btn-icon btn-delete" onclick="deleteCompetencyItem('${type}', ${item.id})">
+                                <i class="fas fa-trash"></i>
+                            </button>
+                        </div>
+                    </div>
+                `;
+                break;
+
+            case 'training':
+                contentHTML = `
+                    <div class="competency-item">
+                        <div class="item-content">
+                            <div class="item-main">
+                                <strong>${item.name || '-'}</strong>
+                                <span class="item-detail">${item.institution || '-'}</span>
+                            </div>
+                            <div class="item-period">
+                                ${formatDate(item.startDate)} ~ ${formatDate(item.endDate)}
+                                ${item.hours ? ` | ${item.hours}시간` : ''}
+                            </div>
+                        </div>
+                        <div class="item-actions">
+                            <button class="btn-icon btn-edit" onclick="editCompetencyItem('${type}', ${item.id})">
+                                <i class="fas fa-edit"></i>
+                            </button>
+                            <button class="btn-icon btn-delete" onclick="deleteCompetencyItem('${type}', ${item.id})">
+                                <i class="fas fa-trash"></i>
+                            </button>
+                        </div>
+                    </div>
+                `;
+                break;
+        }
+
+        itemsHTML += contentHTML;
+    });
+
+    listContainer.innerHTML = itemsHTML;
+}
+
+// 모든 역량 목록 렌더링
+function renderAllCompetencies() {
+    renderCompetencyList('education');
+    renderCompetencyList('certificate');
+    renderCompetencyList('career');
+    renderCompetencyList('training');
+}
+
+// 역량 데이터 저장
+function saveCompetencyData() {
+    localStorage.setItem('competencyData', JSON.stringify(competencyData));
+}
+
+// 역량 데이터 불러오기
+function loadCompetencyData() {
+    const savedData = localStorage.getItem('competencyData');
+    if (savedData) {
+        const parsed = JSON.parse(savedData);
+        Object.assign(competencyData, parsed);
+    }
+}
+
+// 날짜 포맷팅
+function formatDate(dateString) {
+    if (!dateString) return '-';
+    const date = new Date(dateString);
+    return `${date.getFullYear()}.${String(date.getMonth() + 1).padStart(2, '0')}`;
+}
+
 // 저장된 서명 불러오기
 function loadSavedSignature() {
     const savedSignature = localStorage.getItem('userSignature');
