@@ -110,7 +110,7 @@ document.addEventListener('DOMContentLoaded', function() {
         const name = hoverCard.querySelector('.hover-name').textContent;
         console.log(`${name}님과 채팅 시작`);
         // 채팅 기능 연동
-        alert(`${name}님과 채팅을 시작합니다.`);
+        showAlert(`${name}님과 채팅을 시작합니다.`, 'info');
     });
 
     emailBtn.addEventListener('click', function() {

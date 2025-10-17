@@ -409,7 +409,7 @@ document.addEventListener('DOMContentLoaded', function() {
         // 실제 API 호출 시 여기에 구현
         // fetch('/api/leave/apply', { ... })
 
-        alert('연차 신청이 완료되었습니다.');
+        showAlert('연차 신청이 완료되었습니다.', 'success');
         closeModal();
 
         // 페이지 새로고침 (실제로는 데이터 다시 로드)

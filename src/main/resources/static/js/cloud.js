@@ -157,14 +157,13 @@ document.addEventListener('DOMContentLoaded', function() {
         deleteSelectedBtn.addEventListener('click', function() {
             if (selectedFiles.size === 0) return;
 
-            const confirmDelete = confirm(`${selectedFiles.size}개의 항목을 삭제하시겠습니까?`);
-            if (confirmDelete) {
+            showConfirm(`${selectedFiles.size}개의 항목을 삭제하시겠습니까?`, function() {
                 console.log('삭제할 파일:', Array.from(selectedFiles));
                 // 실제로는 여기서 서버에 삭제 요청을 보냅니다
                 selectedFiles.clear();
                 updateSelectedInfo();
-                alert('선택한 항목이 삭제되었습니다.');
-            }
+                showAlert('선택한 항목이 삭제되었습니다.', 'success');
+            });
         });
     }
 
@@ -176,7 +175,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
             console.log('다운로드할 파일:', Array.from(selectedFiles));
             // 실제로는 여기서 서버에 다운로드 요청을 보냅니다
-            alert(`${selectedFiles.size}개의 파일 다운로드를 시작합니다.`);
+            showAlert(`${selectedFiles.size}개의 파일 다운로드를 시작합니다.`, 'info');
         });
     }
 
@@ -204,7 +203,7 @@ document.addEventListener('DOMContentLoaded', function() {
             const sortType = this.value;
             console.log('정렬 기준:', sortType);
             // 실제로는 여기서 파일 목록을 정렬합니다
-            alert(`${sortType} 정렬 기능은 추후 구현됩니다.`);
+            showAlert(`${sortType} 정렬 기능은 추후 구현됩니다.`, 'info');
         });
     }
 
@@ -333,7 +332,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
             // 실제로는 여기서 서버에 파일을 업로드합니다
             setTimeout(() => {
-                alert('파일 업로드가 완료되었습니다.');
+                showAlert('파일 업로드가 완료되었습니다.', 'success');
                 uploadFiles = [];
                 updateUploadList();
                 closeModal(uploadModal);
@@ -363,14 +362,14 @@ document.addEventListener('DOMContentLoaded', function() {
             const name = folderName.value.trim();
 
             if (!name) {
-                alert('폴더 이름을 입력해주세요.');
+                showAlert('폴더 이름을 입력해주세요.', 'warning');
                 return;
             }
 
             console.log('새 폴더 생성:', name);
             // 실제로는 여기서 서버에 폴더 생성 요청을 보냅니다
 
-            alert(`"${name}" 폴더가 생성되었습니다.`);
+            showAlert(`"${name}" 폴더가 생성되었습니다.`, 'success');
             folderName.value = '';
             closeModal(newFolderModal);
         });
@@ -388,13 +387,13 @@ document.addEventListener('DOMContentLoaded', function() {
 
             if (title === '다운로드') {
                 console.log('파일 다운로드:', fileName);
-                alert(`"${fileName}" 다운로드 기능은 추후 NAS와 연동하여 구현됩니다.`);
+                showAlert(`"${fileName}" 다운로드 기능은 추후 NAS와 연동하여 구현됩니다.`, 'info');
             } else if (title === '공유') {
                 console.log('파일 공유:', fileName);
-                alert(`"${fileName}" 공유 기능은 추후 구현됩니다.`);
+                showAlert(`"${fileName}" 공유 기능은 추후 구현됩니다.`, 'info');
             } else if (title === '더보기') {
                 console.log('파일 옵션:', fileName);
-                alert('추가 옵션 메뉴는 추후 구현됩니다.');
+                showAlert('추가 옵션 메뉴는 추후 구현됩니다.', 'info');
             }
         }
     });

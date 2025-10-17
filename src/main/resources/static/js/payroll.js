@@ -66,7 +66,7 @@ document.addEventListener('DOMContentLoaded', function() {
         monthSelector.addEventListener('change', function() {
             const selectedMonth = this.value;
             console.log('선택된 월:', selectedMonth);
-            alert(`${selectedMonth} 급여 데이터를 불러옵니다.`);
+            showAlert(`${selectedMonth} 급여 데이터를 불러옵니다.`, 'info');
             // TODO: 서버에서 해당 월 데이터 로드
         });
     }
@@ -75,7 +75,7 @@ document.addEventListener('DOMContentLoaded', function() {
     if (generatePayrollBtn) {
         generatePayrollBtn.addEventListener('click', function() {
             console.log('급여 명세서 생성');
-            alert('급여 명세서를 생성합니다.\n각 직원의 이메일로 전송됩니다.');
+            showAlert('급여 명세서를 생성합니다.\n각 직원의 이메일로 전송됩니다.', 'info');
             // TODO: 급여 명세서 일괄 생성 및 전송
         });
     }
@@ -116,13 +116,13 @@ document.addEventListener('DOMContentLoaded', function() {
 실지급액: ${netPay}원
         `;
 
-        alert(detailMessage);
+        showAlert(detailMessage, 'info');
         // TODO: 실제 명세서 모달 구현
     }
 
     // 급여 명세서 다운로드
     function downloadPayroll(name) {
-        alert(`${name}님의 급여 명세서를 다운로드합니다.`);
+        showAlert(`${name}님의 급여 명세서를 다운로드합니다.`, 'info');
         // TODO: PDF 다운로드 구현
     }
 

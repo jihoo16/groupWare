@@ -194,7 +194,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
             // 결재선 체크
             if (selectedApprovers.length === 0) {
-                alert('결재자를 선택해주세요.');
+                showAlert('결재자를 선택해주세요.', 'warning');
                 return;
             }
 
@@ -214,7 +214,7 @@ document.addEventListener('DOMContentLoaded', function() {
             console.log('새 결재 요청:', formData);
 
             // 성공 메시지
-            alert('결재 요청이 성공적으로 제출되었습니다.');
+            showAlert('결재 요청이 성공적으로 제출되었습니다.', 'success');
 
             // 폼 초기화
             newApprovalForm.reset();
@@ -319,7 +319,7 @@ document.addEventListener('DOMContentLoaded', function() {
             const comment = document.getElementById('commentInput').value;
 
             if (!comment.trim()) {
-                alert('결재 의견을 입력해주세요.');
+                showAlert('결재 의견을 입력해주세요.', 'warning');
                 return;
             }
 
@@ -328,7 +328,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 timestamp: new Date().toISOString()
             });
 
-            alert('결재가 승인되었습니다.');
+            showAlert('결재가 승인되었습니다.', 'success');
             closeModal(approvalDetailModal);
 
             // 실제로는 여기서 서버에 승인 요청을 보내고 페이지를 새로고침합니다
@@ -342,22 +342,21 @@ document.addEventListener('DOMContentLoaded', function() {
             const comment = document.getElementById('commentInput').value;
 
             if (!comment.trim()) {
-                alert('반려 사유를 입력해주세요.');
+                showAlert('반려 사유를 입력해주세요.', 'warning');
                 return;
             }
 
-            const confirmReject = confirm('정말 반려하시겠습니까?');
-            if (!confirmReject) return;
+            showConfirm('정말 반려하시겠습니까?', function() {
+                console.log('반려:', {
+                    comment: comment,
+                    timestamp: new Date().toISOString()
+                });
 
-            console.log('반려:', {
-                comment: comment,
-                timestamp: new Date().toISOString()
+                showAlert('결재가 반려되었습니다.', 'success');
+                closeModal(approvalDetailModal);
+
+                // 실제로는 여기서 서버에 반려 요청을 보내고 페이지를 새로고침합니다
             });
-
-            alert('결재가 반려되었습니다.');
-            closeModal(approvalDetailModal);
-
-            // 실제로는 여기서 서버에 반려 요청을 보내고 페이지를 새로고침합니다
         });
     }
 
@@ -367,7 +366,7 @@ document.addEventListener('DOMContentLoaded', function() {
             const attachmentItem = e.target.closest('.attachment-item');
             const fileName = attachmentItem.querySelector('span').textContent;
             console.log('파일 다운로드:', fileName);
-            alert(`"${fileName}" 다운로드 기능은 추후 구현됩니다.`);
+            showAlert(`"${fileName}" 다운로드 기능은 추후 구현됩니다.`, 'info');
         }
     });
 

@@ -415,6 +415,24 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     });
 
+    // 메일 삭제
+    document.getElementById('deleteBtn').addEventListener('click', function() {
+        if (!selectedMailId) return;
+
+        showConfirm('이 메일을 삭제하시겠습니까?', function() {
+            const mail = mails.find(m => m.id === selectedMailId);
+            if (mail) {
+                mail.folder = 'trash';
+            }
+
+            selectedMailId = null;
+            document.getElementById('mailDetailEmpty').style.display = 'flex';
+            document.getElementById('mailDetail').style.display = 'none';
+
+            renderMailList();
+        });
+    });
+
     // 파일 업로드
     const fileInput = document.getElementById('fileInput');
     const fileUploadBtn = document.getElementById('fileUploadBtn');
@@ -508,7 +526,7 @@ document.addEventListener('DOMContentLoaded', function() {
         });
 
         renderMailList();
-        alert('메일이 전송되었습니다.');
+        showAlert('메일이 전송되었습니다.', 'success');
     });
 
     // 임시저장
@@ -518,7 +536,7 @@ document.addEventListener('DOMContentLoaded', function() {
         const content = document.getElementById('mailContent').value;
 
         if (!to && !subject && !content) {
-            alert('저장할 내용이 없습니다.');
+            showAlert('저장할 내용이 없습니다.', 'warning');
             return;
         }
 
@@ -542,7 +560,7 @@ document.addEventListener('DOMContentLoaded', function() {
         composeModal.classList.remove('show');
 
         updateFolderCounts();
-        alert('임시 저장되었습니다.');
+        showAlert('임시 저장되었습니다.', 'success');
     });
 
     // 메일 상세 액션 버튼
@@ -566,22 +584,6 @@ document.addEventListener('DOMContentLoaded', function() {
         document.getElementById('mailTo').value = '';
         document.getElementById('mailSubjectInput').value = 'Fw: ' + mail.subject;
         document.getElementById('mailContent').value = '\n\n----- 전달된 메시지 -----\n' + stripHtml(mail.body);
-    });
-
-    document.getElementById('deleteBtn').addEventListener('click', function() {
-        if (!selectedMailId) return;
-        if (!confirm('이 메일을 삭제하시겠습니까?')) return;
-
-        const mail = mails.find(m => m.id === selectedMailId);
-        if (mail) {
-            mail.folder = 'trash';
-        }
-
-        selectedMailId = null;
-        document.getElementById('mailDetailEmpty').style.display = 'flex';
-        document.getElementById('mailDetail').style.display = 'none';
-
-        renderMailList();
     });
 
     // ESC 키로 모달 닫기

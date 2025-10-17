@@ -624,7 +624,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
         // 날짜 유효성 검사
         if (new Date(endDate) < new Date(startDate)) {
-            alert('종료 날짜는 시작 날짜보다 이전일 수 없습니다.');
+            showAlert('종료 날짜는 시작 날짜보다 이전일 수 없습니다.', 'warning');
             return;
         }
 
@@ -683,7 +683,7 @@ document.addEventListener('DOMContentLoaded', function() {
         // 모달 닫기
         closeAddScheduleModal();
 
-        alert('일정이 성공적으로 추가되었습니다.');
+        showAlert('일정이 성공적으로 추가되었습니다.', 'success');
     });
 
     // 모달 닫기 이벤트

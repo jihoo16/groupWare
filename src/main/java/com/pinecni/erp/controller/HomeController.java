@@ -71,11 +71,6 @@ public class HomeController {
         return "cloud";
     }
 
-    @GetMapping("/mypage")
-    public String mypage() {
-        return "mypage";
-    }
-
     @GetMapping("/receipt")
     public String receipt() {
         return "receipt";

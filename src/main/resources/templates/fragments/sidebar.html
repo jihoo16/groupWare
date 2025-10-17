@@ -94,12 +94,6 @@
                     </li>
                 </ul>
             </li>
-            <li class="menu-item" th:classappend="${activeMenu == 'mypage'} ? 'active' : ''" data-tooltip="마이페이지">
-                <a href="/mypage">
-                    <i class="fas fa-user"></i>
-                    <span class="menu-text">마이페이지</span>
-                </a>
-            </li>
         </ul>
 
         <a href="/settings" class="user-info" th:classappend="${activeMenu == 'settings'} ? 'active' : ''">

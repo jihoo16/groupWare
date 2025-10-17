@@ -247,7 +247,7 @@ function renderPosts() {
                 <thead>
                     <tr>
                         <th style="width: 80px;">상태</th>
-                        <th style="width: 100px;">분류</th>
+                        <th style="width: 150px;">분류</th>
                         <th>제목</th>
                         <th style="width: 120px;">작성자</th>
                         <th style="width: 120px;">작성일</th>
@@ -682,10 +682,10 @@ function savePost() {
     if (id) {
         const index = posts.findIndex(p => p.id === parseInt(id));
         posts[index] = { ...posts[index], ...newPost };
-        alert('게시글이 수정되었습니다.');
+        showAlert('게시글이 수정되었습니다.', 'success');
     } else {
         posts.unshift(newPost);
-        alert('게시글이 작성되었습니다.');
+        showAlert('게시글이 작성되었습니다.', 'success');
     }
 
     // 첨부 파일 목록 초기화
@@ -703,13 +703,13 @@ function editPost(id) {
 }
 
 function deletePost(id) {
-    if (confirm('게시글을 삭제하시겠습니까?')) {
+    showConfirm('게시글을 삭제하시겠습니까?', function() {
         const index = posts.findIndex(p => p.id === id);
         posts.splice(index, 1);
-        alert('게시글이 삭제되었습니다.');
+        showAlert('게시글이 삭제되었습니다.', 'success');
         renderPosts();
         updateFilterCounts();
-    }
+    });
 }
 
 function showPostDetail(id) {
@@ -810,7 +810,7 @@ function confirmRead(id) {
         post.unreadBy = post.unreadBy.filter(u => u !== 'currentUser');
         if (!post.readBy) post.readBy = [];
         post.readBy.push('currentUser');
-        alert('읽음 확인이 완료되었습니다.');
+        showAlert('읽음 확인이 완료되었습니다.', 'success');
         closeModal('postDetailModal');
         renderPosts();
         updateFilterCounts();
@@ -1005,5 +1005,5 @@ function getFileIcon(fileName) {
 function downloadFile(fileName) {
     // TODO: 실제 파일 다운로드 구현
     console.log('파일 다운로드:', fileName);
-    alert(`"${fileName}" 파일을 다운로드합니다.`);
+    showAlert(`"${fileName}" 파일을 다운로드합니다.`, 'info');
 }

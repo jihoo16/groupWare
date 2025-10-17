@@ -1,0 +1,164 @@
+/* 공통 모달 스타일 */
+.common-modal {
+    display: none;
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.5);
+    backdrop-filter: blur(4px);
+    z-index: 10000;
+    justify-content: center;
+    align-items: center;
+    animation: fadeIn 0.2s ease-out;
+}
+
+.common-modal.show {
+    display: flex;
+}
+
+@keyframes fadeIn {
+    from {
+        opacity: 0;
+    }
+    to {
+        opacity: 1;
+    }
+}
+
+.common-modal-content {
+    background: white;
+    border-radius: 16px;
+    width: 90%;
+    max-width: 450px;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+    box-shadow: 0 10px 40px rgba(0, 0, 0, 0.3);
+    animation: slideUp 0.3s ease-out;
+}
+
+@keyframes slideUp {
+    from {
+        transform: translateY(50px);
+        opacity: 0;
+    }
+    to {
+        transform: translateY(0);
+        opacity: 1;
+    }
+}
+
+.common-modal-header {
+    padding: 30px;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    background: linear-gradient(135deg, #2196f3 0%, #42a5f5 100%);
+}
+
+.common-modal-icon {
+    width: 80px;
+    height: 80px;
+    border-radius: 50%;
+    background: rgba(255, 255, 255, 0.2);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.common-modal-icon i {
+    font-size: 48px;
+    color: white;
+}
+
+.common-modal-body {
+    padding: 30px;
+    text-align: center;
+}
+
+.common-modal-body p {
+    margin: 0;
+    font-size: 16px;
+    color: #333;
+    line-height: 1.6;
+    white-space: pre-wrap;
+    word-break: keep-all;
+}
+
+.common-modal-footer {
+    padding: 20px 30px;
+    display: flex;
+    justify-content: center;
+    gap: 12px;
+    background: #f8f9fa;
+}
+
+.common-modal-btn {
+    padding: 12px 32px;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+    border: none;
+    border-radius: 8px;
+    font-size: 15px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    min-width: 100px;
+}
+
+.common-modal-btn:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
+}
+
+.common-modal-btn-secondary {
+    padding: 12px 32px;
+    background: white;
+    color: #666;
+    border: 2px solid #e0e0e0;
+    border-radius: 8px;
+    font-size: 15px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    min-width: 100px;
+}
+
+.common-modal-btn-secondary:hover {
+    background: #f5f5f5;
+    border-color: #ccc;
+}
+
+/* 반응형 */
+@media (max-width: 768px) {
+    .common-modal-content {
+        width: 95%;
+        max-width: none;
+    }
+
+    .common-modal-icon {
+        width: 60px;
+        height: 60px;
+    }
+
+    .common-modal-icon i {
+        font-size: 36px;
+    }
+
+    .common-modal-body {
+        padding: 20px;
+    }
+
+    .common-modal-body p {
+        font-size: 14px;
+    }
+
+    .common-modal-btn,
+    .common-modal-btn-secondary {
+        padding: 10px 24px;
+        font-size: 14px;
+        min-width: 80px;
+    }
+}

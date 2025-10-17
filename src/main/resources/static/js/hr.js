@@ -102,10 +102,10 @@ document.addEventListener('DOMContentLoaded', function() {
 
             if (icon.classList.contains('fa-eye')) {
                 console.log('상세보기');
-                alert('직원 상세정보 기능은 추후 구현됩니다.');
+                showAlert('직원 상세정보 기능은 추후 구현됩니다.', 'info');
             } else if (icon.classList.contains('fa-edit')) {
                 console.log('수정');
-                alert('직원 정보 수정 기능은 추후 구현됩니다.');
+                showAlert('직원 정보 수정 기능은 추후 구현됩니다.', 'info');
             }
         });
     });
@@ -147,7 +147,7 @@ function saveEmployee() {
     const position = document.getElementById('empPosition').value;
 
     if (!empName || !empId || !department || !position) {
-        alert('필수 항목을 모두 입력해주세요.');
+        showAlert('필수 항목을 모두 입력해주세요.', 'warning');
         return;
     }
 
@@ -179,7 +179,7 @@ function saveEmployee() {
     closeEmployeeModal();
 
     // 성공 메시지
-    alert('직원이 성공적으로 등록되었습니다.');
+    showAlert('직원이 성공적으로 등록되었습니다.', 'success');
 }
 
 // 테이블에 직원 추가
@@ -250,9 +250,9 @@ function addEmployeeToTable(data) {
             const icon = this.querySelector('i');
 
             if (icon.classList.contains('fa-eye')) {
-                alert('직원 상세정보 기능은 추후 구현됩니다.');
+                showAlert('직원 상세정보 기능은 추후 구현됩니다.', 'info');
             } else if (icon.classList.contains('fa-edit')) {
-                alert('직원 정보 수정 기능은 추후 구현됩니다.');
+                showAlert('직원 정보 수정 기능은 추후 구현됩니다.', 'info');
             }
         });
     });

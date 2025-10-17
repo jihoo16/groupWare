@@ -6,6 +6,9 @@ document.addEventListener('DOMContentLoaded', function() {
     const saveSettingsBtn = document.getElementById('saveSettingsBtn');
     const toggleSwitches = document.querySelectorAll('.toggle-switch input');
 
+    // 전자서명 캔버스 초기화
+    initSignatureCanvas();
+
     // 탭 전환
     tabButtons.forEach(btn => {
         btn.addEventListener('click', function() {
@@ -40,7 +43,7 @@ document.addEventListener('DOMContentLoaded', function() {
             };
 
             console.log('저장될 설정:', settings);
-            alert('설정이 저장되었습니다.');
+            showAlert('설정이 저장되었습니다.', 'success');
             // TODO: 서버에 설정 저장
         });
     }
@@ -60,31 +63,49 @@ document.addEventListener('DOMContentLoaded', function() {
     if (changeAvatarBtn) {
         changeAvatarBtn.addEventListener('click', function() {
             console.log('프로필 사진 변경');
-            alert('프로필 사진 변경 기능은 추후 구현됩니다.');
+            showAlert('프로필 사진 변경 기능은 추후 구현됩니다.', 'info');
             // TODO: 파일 업로드 모달 표시
         });
     }
 
     // 비밀번호 변경
-    const passwordChangeBtn = document.querySelector('.password-section .btn-secondary');
+    const passwordChangeBtn = document.getElementById('changePasswordBtn');
     if (passwordChangeBtn) {
         passwordChangeBtn.addEventListener('click', function() {
-            const currentPassword = document.querySelector('.password-section input[type="password"]:nth-of-type(1)')?.value;
-            const newPassword = document.querySelector('.password-section input[type="password"]:nth-of-type(2)')?.value;
-            const confirmPassword = document.querySelector('.password-section input[type="password"]:nth-of-type(3)')?.value;
+            const currentPassword = document.getElementById('currentPassword')?.value;
+            const newPassword = document.getElementById('newPassword')?.value;
+            const confirmPassword = document.getElementById('confirmPassword')?.value;
 
             if (!currentPassword || !newPassword || !confirmPassword) {
-                alert('모든 필드를 입력해주세요.');
+                showAlert('모든 필드를 입력해주세요.', 'warning');
+                return;
+            }
+
+            if (newPassword.length < 8) {
+                showAlert('새 비밀번호는 8자 이상이어야 합니다.', 'warning');
+                return;
+            }
+
+            // 비밀번호 강도 검증 (영문, 숫자, 특수문자 포함)
+            const passwordRegex = /^(?=.*[A-Za-z])(?=.*\d)(?=.*[@$!%*#?&])[A-Za-z\d@$!%*#?&]{8,}$/;
+            if (!passwordRegex.test(newPassword)) {
+                showAlert('비밀번호는 영문, 숫자, 특수문자를 포함해야 합니다.', 'warning');
                 return;
             }
 
             if (newPassword !== confirmPassword) {
-                alert('새 비밀번호가 일치하지 않습니다.');
+                showAlert('새 비밀번호가 일치하지 않습니다.', 'warning');
                 return;
             }
 
             console.log('비밀번호 변경 요청');
-            alert('비밀번호가 변경되었습니다.');
+            showAlert('비밀번호가 성공적으로 변경되었습니다.', 'success');
+
+            // 입력 필드 초기화
+            document.getElementById('currentPassword').value = '';
+            document.getElementById('newPassword').value = '';
+            document.getElementById('confirmPassword').value = '';
+
             // TODO: 서버에 비밀번호 변경 요청
         });
     }
@@ -93,11 +114,11 @@ document.addEventListener('DOMContentLoaded', function() {
     const deleteCacheBtn = document.querySelector('.data-section .btn-danger-outline');
     if (deleteCacheBtn) {
         deleteCacheBtn.addEventListener('click', function() {
-            if (confirm('캐시 데이터를 삭제하시겠습니까?')) {
+            showConfirm('캐시 데이터를 삭제하시겠습니까?', function() {
                 console.log('캐시 삭제');
-                alert('캐시가 삭제되었습니다.');
+                showAlert('캐시가 삭제되었습니다.', 'success');
                 // TODO: 캐시 삭제 처리
-            }
+            });
         });
     }
 
@@ -106,7 +127,7 @@ document.addEventListener('DOMContentLoaded', function() {
     if (downloadDataBtn) {
         downloadDataBtn.addEventListener('click', function() {
             console.log('내 데이터 다운로드');
-            alert('데이터 다운로드가 시작됩니다.');
+            showAlert('데이터 다운로드가 시작됩니다.', 'success');
             // TODO: 데이터 다운로드 처리
         });
     }
@@ -118,7 +139,7 @@ document.addEventListener('DOMContentLoaded', function() {
             const theme = this.value;
             console.log('테마 변경:', theme);
             // TODO: 테마 변경 적용
-            alert(`테마가 "${this.options[this.selectedIndex].text}"로 변경됩니다.`);
+            showAlert(`테마가 "${this.options[this.selectedIndex].text}"로 변경됩니다.`, 'info');
         });
     }
 
@@ -129,7 +150,7 @@ document.addEventListener('DOMContentLoaded', function() {
             const language = this.value;
             console.log('언어 변경:', language);
             // TODO: 언어 변경 적용
-            alert(`언어가 "${this.options[this.selectedIndex].text}"로 변경됩니다.`);
+            showAlert(`언어가 "${this.options[this.selectedIndex].text}"로 변경됩니다.`, 'info');
         });
     }
 
@@ -170,3 +191,287 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     }
 });
+
+// 전자서명 캔버스 초기화
+function initSignatureCanvas() {
+    const canvas = document.getElementById('signatureCanvas');
+    if (!canvas) return;
+
+    const ctx = canvas.getContext('2d');
+    const placeholder = document.getElementById('canvasPlaceholder');
+    const clearBtn = document.getElementById('clearSignature');
+    const saveBtn = document.getElementById('saveSignature');
+
+    let isDrawing = false;
+    let lastX = 0;
+    let lastY = 0;
+    let hasDrawn = false;
+
+    // 캔버스 설정 (기본 선 굵기 5)
+    ctx.strokeStyle = '#000000';
+    ctx.lineWidth = 5;
+    ctx.lineCap = 'round';
+    ctx.lineJoin = 'round';
+
+    // 마우스 이벤트
+    canvas.addEventListener('mousedown', startDrawing);
+    canvas.addEventListener('mousemove', draw);
+    canvas.addEventListener('mouseup', stopDrawing);
+    canvas.addEventListener('mouseout', stopDrawing);
+
+    // 터치 이벤트 (모바일 지원)
+    canvas.addEventListener('touchstart', handleTouchStart, { passive: false });
+    canvas.addEventListener('touchmove', handleTouchMove, { passive: false });
+    canvas.addEventListener('touchend', stopDrawing);
+
+    function startDrawing(e) {
+        isDrawing = true;
+        const rect = canvas.getBoundingClientRect();
+        lastX = e.clientX - rect.left;
+        lastY = e.clientY - rect.top;
+
+        if (!hasDrawn) {
+            placeholder.classList.add('hidden');
+            hasDrawn = true;
+        }
+    }
+
+    function draw(e) {
+        if (!isDrawing) return;
+
+        const rect = canvas.getBoundingClientRect();
+        const currentX = e.clientX - rect.left;
+        const currentY = e.clientY - rect.top;
+
+        ctx.beginPath();
+        ctx.moveTo(lastX, lastY);
+        ctx.lineTo(currentX, currentY);
+        ctx.stroke();
+
+        lastX = currentX;
+        lastY = currentY;
+    }
+
+    function stopDrawing() {
+        isDrawing = false;
+    }
+
+    function handleTouchStart(e) {
+        e.preventDefault();
+        const touch = e.touches[0];
+        const rect = canvas.getBoundingClientRect();
+        isDrawing = true;
+        lastX = touch.clientX - rect.left;
+        lastY = touch.clientY - rect.top;
+
+        if (!hasDrawn) {
+            placeholder.classList.add('hidden');
+            hasDrawn = true;
+        }
+    }
+
+    function handleTouchMove(e) {
+        e.preventDefault();
+        if (!isDrawing) return;
+
+        const touch = e.touches[0];
+        const rect = canvas.getBoundingClientRect();
+        const currentX = touch.clientX - rect.left;
+        const currentY = touch.clientY - rect.top;
+
+        ctx.beginPath();
+        ctx.moveTo(lastX, lastY);
+        ctx.lineTo(currentX, currentY);
+        ctx.stroke();
+
+        lastX = currentX;
+        lastY = currentY;
+    }
+
+    // 지우기 버튼
+    if (clearBtn) {
+        clearBtn.addEventListener('click', function() {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            placeholder.classList.remove('hidden');
+            hasDrawn = false;
+        });
+    }
+
+    // 저장 버튼 - 모달 표시
+    if (saveBtn) {
+        saveBtn.addEventListener('click', function() {
+            if (!hasDrawn) {
+                showAlert('서명을 작성해주세요.', 'warning');
+                return;
+            }
+
+            // 서명 데이터를 임시 저장
+            window.tempSignatureData = canvas.toDataURL('image/png');
+
+            // 동의 모달 표시
+            showSignatureConfirmModal();
+        });
+    }
+
+    // 서명 저장 동의 모달 처리
+    initSignatureConfirmModal(ctx, canvas, placeholder, hasDrawn);
+
+    // 저장된 서명 불러오기
+    loadSavedSignature();
+}
+
+// 저장된 서명 불러오기
+function loadSavedSignature() {
+    const savedSignature = localStorage.getItem('userSignature');
+    if (savedSignature) {
+        const currentSignature = document.getElementById('currentSignature');
+        if (currentSignature) {
+            currentSignature.innerHTML = `<img src="${savedSignature}" alt="전자서명">`;
+        }
+    }
+}
+
+// 서명 저장 동의 모달 초기화
+function initSignatureConfirmModal(ctx, canvas, placeholder, hasDrawn) {
+    const modal = document.getElementById('signatureConfirmModal');
+    const closeBtn = document.getElementById('closeSignatureModal');
+    const cancelBtn = document.getElementById('cancelSignatureSave');
+    const confirmBtn = document.getElementById('confirmSignatureSave');
+    const consentCheckbox = document.getElementById('consentCheckbox');
+
+    // 동의 체크박스 상태에 따라 버튼 활성화/비활성화
+    if (consentCheckbox) {
+        consentCheckbox.addEventListener('change', function() {
+            if (confirmBtn) {
+                confirmBtn.disabled = !this.checked;
+            }
+        });
+    }
+
+    // 취소 버튼
+    if (cancelBtn) {
+        cancelBtn.addEventListener('click', function() {
+            hideSignatureConfirmModal();
+            window.tempSignatureData = null;
+        });
+    }
+
+    // 닫기 버튼
+    if (closeBtn) {
+        closeBtn.addEventListener('click', function() {
+            hideSignatureConfirmModal();
+            window.tempSignatureData = null;
+        });
+    }
+
+    // 확인 버튼 - 실제 저장 처리
+    if (confirmBtn) {
+        confirmBtn.addEventListener('click', function() {
+            // 체크박스 확인
+            if (consentCheckbox && !consentCheckbox.checked) {
+                // 체크박스가 체크되지 않은 경우 강조 표시
+                const checkboxContainer = document.querySelector('.consent-checkbox');
+                if (checkboxContainer) {
+                    checkboxContainer.classList.add('highlight');
+
+                    // 3초 후 강조 제거
+                    setTimeout(() => {
+                        checkboxContainer.classList.remove('highlight');
+                    }, 3000);
+                }
+
+                showAlert('동의 내용을 확인하고 체크박스를 체크해주세요.', 'warning');
+                return;
+            }
+
+            if (!window.tempSignatureData) {
+                showAlert('서명 데이터가 없습니다.', 'error');
+                return;
+            }
+
+            // 현재 서명 영역에 표시
+            const currentSignature = document.getElementById('currentSignature');
+            if (currentSignature) {
+                currentSignature.innerHTML = `<img src="${window.tempSignatureData}" alt="전자서명">`;
+            }
+
+            // LocalStorage에 저장
+            localStorage.setItem('userSignature', window.tempSignatureData);
+
+            // 동의 날짜 저장
+            const consentDate = new Date().toISOString();
+            localStorage.setItem('signatureConsentDate', consentDate);
+
+            showAlert('서명이 저장되었습니다.', 'success');
+
+            // 캔버스 초기화
+            const signatureCanvas = document.getElementById('signatureCanvas');
+            const canvasPlaceholder = document.getElementById('canvasPlaceholder');
+            if (signatureCanvas && ctx) {
+                ctx.clearRect(0, 0, signatureCanvas.width, signatureCanvas.height);
+            }
+            if (canvasPlaceholder) {
+                canvasPlaceholder.classList.remove('hidden');
+            }
+
+            // 모달 닫기
+            hideSignatureConfirmModal();
+
+            // 체크박스 초기화
+            if (consentCheckbox) {
+                consentCheckbox.checked = false;
+            }
+            if (confirmBtn) {
+                confirmBtn.disabled = true;
+            }
+
+            // 임시 데이터 삭제
+            window.tempSignatureData = null;
+        });
+    }
+
+    // 모달 배경 클릭 시 닫기
+    if (modal) {
+        modal.addEventListener('click', function(e) {
+            if (e.target === modal) {
+                hideSignatureConfirmModal();
+                window.tempSignatureData = null;
+            }
+        });
+    }
+}
+
+// 서명 동의 모달 표시
+function showSignatureConfirmModal() {
+    const modal = document.getElementById('signatureConfirmModal');
+    if (modal) {
+        modal.classList.add('show');
+        modal.style.display = 'flex';
+    }
+}
+
+// 서명 동의 모달 숨기기
+function hideSignatureConfirmModal() {
+    const modal = document.getElementById('signatureConfirmModal');
+    const consentCheckbox = document.getElementById('consentCheckbox');
+    const confirmBtn = document.getElementById('confirmSignatureSave');
+    const checkboxContainer = document.querySelector('.consent-checkbox');
+
+    if (modal) {
+        modal.classList.remove('show');
+        modal.style.display = 'none';
+    }
+
+    // 체크박스 강조 제거
+    if (checkboxContainer) {
+        checkboxContainer.classList.remove('highlight');
+    }
+
+    // 체크박스와 버튼 상태 초기화
+    if (consentCheckbox) {
+        consentCheckbox.checked = false;
+    }
+    if (confirmBtn) {
+        confirmBtn.disabled = true;
+    }
+}

@@ -126,6 +126,7 @@
 }
 
 .form-group {
+    margin-bottom: 15px;
     display: flex;
     flex-direction: column;
     gap: 8px;
@@ -176,6 +177,245 @@
     display: flex;
     flex-direction: column;
     gap: 20px;
+}
+
+.password-section small {
+    display: block;
+    margin-top: 6px;
+    font-size: 12px;
+    color: #999;
+}
+
+/* 법적 고지 */
+.legal-notice {
+    display: flex;
+    gap: 15px;
+    padding: 20px;
+    background: #fff3e0;
+    border-left: 4px solid #ff9800;
+    border-radius: 8px;
+    margin-bottom: 25px;
+}
+
+.legal-notice i {
+    font-size: 24px;
+    color: #ff9800;
+    margin-top: 3px;
+}
+
+.notice-content {
+    flex: 1;
+}
+
+.notice-content p {
+    margin: 0 0 10px 0;
+    color: #333;
+}
+
+.notice-content ul {
+    margin: 0;
+    padding-left: 20px;
+}
+
+.notice-content li {
+    margin-bottom: 8px;
+    color: #666;
+    font-size: 13px;
+    line-height: 1.6;
+}
+
+/* 전자서명 섹션 */
+.signature-section {
+    margin-top: 20px;
+}
+
+.signature-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 30px;
+}
+
+.signature-display h4,
+.signature-editor h4 {
+    margin: 0 0 15px 0;
+    font-size: 16px;
+    color: #333;
+    font-weight: 600;
+}
+
+.current-signature {
+    width: 100%;
+    height: 250px;
+    border: 2px dashed #ddd;
+    border-radius: 12px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: #f8f9fa;
+    overflow: hidden;
+}
+
+.current-signature img {
+    max-width: 100%;
+    max-height: 100%;
+    object-fit: contain;
+}
+
+.no-signature {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 10px;
+    color: #999;
+}
+
+.no-signature i {
+    font-size: 48px;
+}
+
+.no-signature p {
+    margin: 0;
+    font-size: 14px;
+}
+
+.signature-canvas-wrapper {
+    position: relative;
+    width: 100%;
+    height: 250px;
+    border: 2px solid #667eea;
+    border-radius: 12px;
+    overflow: hidden;
+    background: white;
+}
+
+#signatureCanvas {
+    display: block;
+    cursor: crosshair;
+    touch-action: none;
+}
+
+.canvas-placeholder {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+    color: #ccc;
+    pointer-events: none;
+    transition: opacity 0.3s ease;
+}
+
+.canvas-placeholder.hidden {
+    opacity: 0;
+}
+
+.canvas-placeholder i {
+    font-size: 48px;
+}
+
+.canvas-placeholder p {
+    margin: 0;
+    font-size: 14px;
+}
+
+.signature-tools {
+    display: flex;
+    gap: 30px;
+    margin-top: 15px;
+    padding: 15px;
+    background: #f8f9fa;
+    border-radius: 8px;
+}
+
+.tool-group {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.tool-group label {
+    font-size: 13px;
+    color: #666;
+    font-weight: 500;
+    white-space: nowrap;
+}
+
+#lineWidth {
+    width: 120px;
+}
+
+#lineWidthValue {
+    font-size: 13px;
+    color: #333;
+    font-weight: 600;
+    min-width: 20px;
+}
+
+.color-options {
+    display: flex;
+    gap: 8px;
+}
+
+.color-btn {
+    width: 32px;
+    height: 32px;
+    border: 2px solid #ddd;
+    border-radius: 6px;
+    cursor: pointer;
+    transition: all 0.3s ease;
+}
+
+.color-btn:hover {
+    transform: scale(1.1);
+}
+
+.color-btn.active {
+    border-color: #667eea;
+    box-shadow: 0 0 0 2px rgba(102, 126, 234, 0.2);
+}
+
+.signature-actions {
+    display: flex;
+    gap: 12px;
+    margin-top: 15px;
+    justify-content: flex-end;
+}
+
+.btn-primary {
+    padding: 10px 20px;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+    border: none;
+    border-radius: 8px;
+    font-size: 14px;
+    font-weight: 500;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    transition: all 0.3s ease;
+}
+
+.btn-primary:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
+}
+
+.btn-primary:disabled {
+    background: #cccccc;
+    color: #888888;
+    cursor: not-allowed;
+    opacity: 0.6;
+}
+
+.btn-primary:disabled:hover {
+    transform: none;
+    box-shadow: none;
 }
 
 /* 버튼 스타일 */
@@ -361,6 +601,10 @@
     .profile-avatar {
         margin-bottom: 20px;
     }
+
+    .signature-grid {
+        grid-template-columns: 1fr;
+    }
 }
 
 @media (max-width: 768px) {
@@ -388,4 +632,214 @@
     .btn-danger-outline {
         align-self: flex-end;
     }
+
+    .signature-tools {
+        flex-direction: column;
+        gap: 15px;
+        align-items: stretch;
+    }
+
+    .tool-group {
+        flex-direction: column;
+        align-items: flex-start;
+    }
+
+    #lineWidth {
+        width: 100%;
+    }
+}
+
+/* 모달 스타일 */
+.modal {
+    display: none;
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.5);
+    backdrop-filter: blur(4px);
+    z-index: 9999;
+}
+
+.modal.show {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+
+.modal-content {
+    background: white;
+    border-radius: 16px;
+    width: 90%;
+    max-width: 700px;
+    max-height: 90vh;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+    box-shadow: 0 10px 40px rgba(0, 0, 0, 0.2);
+}
+
+.modal-header {
+    padding: 24px 30px;
+    border-bottom: 1px solid #e0e0e0;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+}
+
+.modal-header h2 {
+    margin: 0;
+    font-size: 18px;
+    font-weight: 600;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.modal-close {
+    background: none;
+    border: none;
+    font-size: 24px;
+    cursor: pointer;
+    color: white;
+    opacity: 0.8;
+    transition: all 0.3s ease;
+    width: 32px;
+    height: 32px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 50%;
+}
+
+.modal-close:hover {
+    opacity: 1;
+    background: rgba(255, 255, 255, 0.2);
+}
+
+.modal-body {
+    padding: 30px;
+    overflow-y: auto;
+    flex: 1;
+}
+
+.modal-footer {
+    padding: 20px 30px;
+    border-top: 1px solid #e0e0e0;
+    display: flex;
+    justify-content: flex-end;
+    gap: 12px;
+    background: #f8f9fa;
+}
+
+/* 동의 고지 스타일 */
+.consent-notice {
+    text-align: left;
+}
+
+.notice-icon {
+    text-align: center;
+    margin-bottom: 20px;
+}
+
+.notice-icon i {
+    font-size: 64px;
+    color: #ff9800;
+}
+
+.consent-notice h3 {
+    font-size: 20px;
+    font-weight: 600;
+    color: #333;
+    margin: 0 0 20px 0;
+    text-align: center;
+}
+
+.notice-text {
+    background: #f8f9fa;
+    padding: 20px;
+    border-radius: 8px;
+    margin-bottom: 20px;
+}
+
+.notice-text p {
+    margin: 0 0 15px 0;
+    font-size: 14px;
+    color: #333;
+    font-weight: 500;
+}
+
+.notice-text ul {
+    margin: 0;
+    padding-left: 20px;
+    list-style: none;
+}
+
+.notice-text li {
+    margin-bottom: 12px;
+    color: #666;
+    font-size: 13px;
+    line-height: 1.7;
+    position: relative;
+    padding-left: 0;
+}
+
+.notice-text li strong {
+    color: #1a237e;
+    font-weight: 600;
+}
+
+.consent-checkbox {
+    margin-top: 20px;
+    padding: 16px;
+    background: white;
+    border: 2px solid #667eea;
+    border-radius: 8px;
+}
+
+.consent-checkbox label {
+    display: flex;
+    align-items: flex-start;
+    gap: 12px;
+    cursor: pointer;
+    margin: 0;
+}
+
+.consent-checkbox input[type="checkbox"] {
+    width: 20px;
+    height: 20px;
+    margin-top: 2px;
+    cursor: pointer;
+    flex-shrink: 0;
+}
+
+.consent-checkbox span {
+    font-size: 14px;
+    color: #333;
+    font-weight: 500;
+    line-height: 1.5;
+}
+
+/* 체크박스 강조 애니메이션 */
+.consent-checkbox.highlight {
+    border-color: #f44336;
+    background: #ffebee;
+    animation: shake 0.5s;
+}
+
+.consent-checkbox.highlight label {
+    color: #f44336;
+}
+
+.consent-checkbox.highlight span {
+    color: #f44336;
+}
+
+@keyframes shake {
+    0%, 100% { transform: translateX(0); }
+    10%, 30%, 50%, 70%, 90% { transform: translateX(-5px); }
+    20%, 40%, 60%, 80% { transform: translateX(5px); }
 }

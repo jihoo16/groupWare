@@ -5,6 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title th:text="${title}">ERP 시스템</title>
     <link rel="stylesheet" th:href="@{/css/home.css}">
+    <link rel="stylesheet" th:href="@{/css/common-modal.css}">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <!-- 추가 CSS -->
     <th:block th:if="${additionalCss != null}">
@@ -12,5 +13,6 @@
     </th:block>
     <!-- 공통 JavaScript -->
     <script th:src="@{/js/common.js}" defer></script>
+    <script th:src="@{/js/common-modal.js}" defer></script>
 </head>
 </html>

@@ -19,7 +19,7 @@ document.addEventListener('DOMContentLoaded', function() {
             // TODO: BIO star2 API 호출
             setTimeout(() => {
                 icon.classList.remove('fa-spin');
-                alert('근태 데이터가 업데이트되었습니다.');
+                showAlert('근태 데이터가 업데이트되었습니다.', 'success');
                 // loadAttendanceData();
             }, 1000);
         });
@@ -29,7 +29,7 @@ document.addEventListener('DOMContentLoaded', function() {
     if (prevWeekBtn) {
         prevWeekBtn.addEventListener('click', function() {
             console.log('이전 주');
-            alert('이전 주 데이터를 불러옵니다.');
+            showAlert('이전 주 데이터를 불러옵니다.', 'info');
             // TODO: 이전 주 데이터 로드
             // loadWeekData(-1);
         });
@@ -39,7 +39,7 @@ document.addEventListener('DOMContentLoaded', function() {
     if (nextWeekBtn) {
         nextWeekBtn.addEventListener('click', function() {
             console.log('다음 주');
-            alert('다음 주 데이터를 불러옵니다.');
+            showAlert('다음 주 데이터를 불러옵니다.', 'info');
             // TODO: 다음 주 데이터 로드
             // loadWeekData(1);
         });
@@ -49,7 +49,7 @@ document.addEventListener('DOMContentLoaded', function() {
     if (prevMonthBtn) {
         prevMonthBtn.addEventListener('click', function() {
             console.log('이전 달');
-            alert('이전 달 기능은 추후 구현됩니다.');
+            showAlert('이전 달 기능은 추후 구현됩니다.', 'info');
             // TODO: 캘린더 이전 달로 이동
         });
     }
@@ -58,7 +58,7 @@ document.addEventListener('DOMContentLoaded', function() {
     if (nextMonthBtn) {
         nextMonthBtn.addEventListener('click', function() {
             console.log('다음 달');
-            alert('다음 달 기능은 추후 구현됩니다.');
+            showAlert('다음 달 기능은 추후 구현됩니다.', 'info');
             // TODO: 캘린더 다음 달로 이동
         });
     }
@@ -86,7 +86,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
 ※ BIO star2 지문인식 장비를 통해 자동 기록됨
         `;
-        alert(detailMessage);
+        showAlert(detailMessage, 'info');
         // TODO: 상세 정보 모달 구현
     }
 
