@@ -338,6 +338,308 @@
         </main>
     </div>
 
+    <!-- 새 결재 요청 모달 -->
+    <div id="newApprovalModal" class="modal">
+        <div class="modal-content modal-large">
+            <div class="modal-header">
+                <h2>새 결재 요청</h2>
+                <button class="modal-close" id="closeNewApprovalModal">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            <div class="modal-body">
+                <form id="newApprovalForm">
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="approvalType">문서 유형 <span class="required">*</span></label>
+                            <select id="approvalType" name="approvalType" required>
+                                <option value="">선택하세요</option>
+                                <option value="expense">지출결의서</option>
+                                <option value="trip">출장신청서</option>
+                                <option value="purchase">구매요청서</option>
+                                <option value="contract">계약서</option>
+                                <option value="recruit">채용요청서</option>
+                                <option value="budget">예산신청서</option>
+                                <option value="project">프로젝트 제안서</option>
+                                <option value="overseas">해외출장신청서</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label for="urgency">긴급도</label>
+                            <select id="urgency" name="urgency">
+                                <option value="normal">일반</option>
+                                <option value="urgent">긴급</option>
+                                <option value="very-urgent">매우 긴급</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="title">제목 <span class="required">*</span></label>
+                        <input type="text" id="title" name="title" placeholder="결재 문서 제목을 입력하세요" required>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="description">내용 <span class="required">*</span></label>
+                        <textarea id="description" name="description" rows="5" placeholder="결재 문서 내용을 입력하세요" required></textarea>
+                    </div>
+
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="amount">금액</label>
+                            <input type="number" id="amount" name="amount" placeholder="금액 입력 (원)">
+                        </div>
+                        <div class="form-group">
+                            <label for="startDate">시작일</label>
+                            <input type="date" id="startDate" name="startDate">
+                        </div>
+                        <div class="form-group">
+                            <label for="endDate">종료일</label>
+                            <input type="date" id="endDate" name="endDate">
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        <label>결재선 <span class="required">*</span></label>
+                        <div class="approver-select-area">
+                            <div id="approverList" class="approver-list">
+                                <!-- 선택된 결재자가 표시될 영역 -->
+                            </div>
+                            <button type="button" class="btn-add-approver" id="addApproverBtn">
+                                <i class="fas fa-plus"></i>
+                                결재자 추가
+                            </button>
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="attachment">첨부파일</label>
+                        <div class="file-upload-area">
+                            <input type="file" id="attachment" name="attachment" multiple>
+                            <label for="attachment" class="file-upload-label">
+                                <i class="fas fa-cloud-upload-alt"></i>
+                                <span>파일을 선택하거나 드래그하세요</span>
+                            </label>
+                            <div id="fileList" class="file-list"></div>
+                        </div>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn-secondary" id="cancelNewApproval">취소</button>
+                <button type="submit" form="newApprovalForm" class="btn-primary">결재 요청</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 결재자 선택 모달 -->
+    <div id="approverSelectModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2>결재자 선택</h2>
+                <button class="modal-close" id="closeApproverSelectModal">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            <div class="modal-body">
+                <div class="search-box">
+                    <i class="fas fa-search"></i>
+                    <input type="text" id="approverSearch" placeholder="이름 또는 부서 검색...">
+                </div>
+                <div class="approver-select-list">
+                    <div class="approver-item" data-name="박관리" data-position="과장" data-dept="관리팀">
+                        <i class="fas fa-user-circle"></i>
+                        <div class="approver-info">
+                            <div class="approver-name">박관리</div>
+                            <div class="approver-detail">관리팀 과장</div>
+                        </div>
+                    </div>
+                    <div class="approver-item" data-name="이경영" data-position="이사" data-dept="경영지원팀">
+                        <i class="fas fa-user-circle"></i>
+                        <div class="approver-info">
+                            <div class="approver-name">이경영</div>
+                            <div class="approver-detail">경영지원팀 이사</div>
+                        </div>
+                    </div>
+                    <div class="approver-item" data-name="송영업" data-position="부장" data-dept="영업팀">
+                        <i class="fas fa-user-circle"></i>
+                        <div class="approver-info">
+                            <div class="approver-name">송영업</div>
+                            <div class="approver-detail">영업팀 부장</div>
+                        </div>
+                    </div>
+                    <div class="approver-item" data-name="이CTO" data-position="CTO" data-dept="기술본부">
+                        <i class="fas fa-user-circle"></i>
+                        <div class="approver-info">
+                            <div class="approver-name">이CTO</div>
+                            <div class="approver-detail">기술본부 CTO</div>
+                        </div>
+                    </div>
+                    <div class="approver-item" data-name="박CMO" data-position="CMO" data-dept="마케팅본부">
+                        <i class="fas fa-user-circle"></i>
+                        <div class="approver-info">
+                            <div class="approver-name">박CMO</div>
+                            <div class="approver-detail">마케팅본부 CMO</div>
+                        </div>
+                    </div>
+                    <div class="approver-item" data-name="김대표" data-position="대표이사" data-dept="경영진">
+                        <i class="fas fa-user-circle"></i>
+                        <div class="approver-info">
+                            <div class="approver-name">김대표</div>
+                            <div class="approver-detail">경영진 대표이사</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 결재 문서 상세보기 모달 -->
+    <div id="approvalDetailModal" class="modal">
+        <div class="modal-content modal-large">
+            <div class="modal-header">
+                <h2>결재 문서 상세</h2>
+                <button class="modal-close" id="closeDetailModal">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            <div class="modal-body">
+                <div class="detail-section">
+                    <div class="detail-header-info">
+                        <div class="detail-type">
+                            <i class="fas fa-file-invoice"></i>
+                            <span id="detailType">지출결의서</span>
+                        </div>
+                        <span class="status-badge status-pending" id="detailStatus">결재 대기</span>
+                    </div>
+                    <h3 class="detail-title" id="detailTitle">사무용품 구매 건</h3>
+                    <div class="detail-meta">
+                        <div class="meta-item">
+                            <i class="fas fa-user"></i>
+                            <span>기안자: <strong id="detailDrafter">강총무</strong></span>
+                        </div>
+                        <div class="meta-item">
+                            <i class="fas fa-calendar"></i>
+                            <span>기안일: <strong id="detailDate">2025-01-15</strong></span>
+                        </div>
+                        <div class="meta-item">
+                            <i class="fas fa-won-sign"></i>
+                            <span>금액: <strong id="detailAmount">1,250,000원</strong></span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="detail-section">
+                    <h4 class="section-title">문서 내용</h4>
+                    <div class="detail-content" id="detailDescription">
+                        프린터 용지, 복사용지, 사무용품 일괄 구매 요청
+                    </div>
+                </div>
+
+                <div class="detail-section">
+                    <h4 class="section-title">결재선</h4>
+                    <div class="detail-approval-line" id="detailApprovalLine">
+                        <div class="approval-step done">
+                            <div class="step-icon">
+                                <i class="fas fa-check-circle"></i>
+                            </div>
+                            <div class="step-info">
+                                <div class="step-name">박관리</div>
+                                <div class="step-position">관리팀 과장</div>
+                                <div class="step-status approved">승인 완료</div>
+                                <div class="step-date">2025-01-15 10:30</div>
+                            </div>
+                        </div>
+                        <div class="approval-arrow">
+                            <i class="fas fa-arrow-right"></i>
+                        </div>
+                        <div class="approval-step current">
+                            <div class="step-icon">
+                                <i class="fas fa-clock"></i>
+                            </div>
+                            <div class="step-info">
+                                <div class="step-name">이경영</div>
+                                <div class="step-position">경영지원팀 이사</div>
+                                <div class="step-status pending">결재 대기중</div>
+                            </div>
+                        </div>
+                        <div class="approval-arrow">
+                            <i class="fas fa-arrow-right"></i>
+                        </div>
+                        <div class="approval-step">
+                            <div class="step-icon">
+                                <i class="fas fa-circle"></i>
+                            </div>
+                            <div class="step-info">
+                                <div class="step-name">김대표</div>
+                                <div class="step-position">대표이사</div>
+                                <div class="step-status">대기</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="detail-section" id="rejectionSection" style="display: none;">
+                    <h4 class="section-title">반려 사유</h4>
+                    <div class="rejection-box" id="detailRejectionReason">
+                        <i class="fas fa-exclamation-circle"></i>
+                        <span>예산 초과로 인한 반려. 분기 내 재신청 가능</span>
+                    </div>
+                </div>
+
+                <div class="detail-section">
+                    <h4 class="section-title">첨부파일</h4>
+                    <div class="attachment-list" id="detailAttachments">
+                        <div class="attachment-item">
+                            <i class="fas fa-file-pdf"></i>
+                            <span>견적서.pdf</span>
+                            <button class="btn-download">
+                                <i class="fas fa-download"></i>
+                            </button>
+                        </div>
+                        <div class="attachment-item">
+                            <i class="fas fa-file-excel"></i>
+                            <span>구매목록.xlsx</span>
+                            <button class="btn-download">
+                                <i class="fas fa-download"></i>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="detail-section">
+                    <h4 class="section-title">결재 의견</h4>
+                    <div class="comments-area">
+                        <div class="comment-item">
+                            <div class="comment-author">
+                                <i class="fas fa-user-circle"></i>
+                                <strong>박관리</strong>
+                                <span class="comment-date">2025-01-15 10:30</span>
+                            </div>
+                            <div class="comment-text">필요한 항목들로 판단됩니다. 승인합니다.</div>
+                        </div>
+                    </div>
+                    <div class="comment-input-area" id="commentInputArea">
+                        <textarea id="commentInput" placeholder="결재 의견을 입력하세요..." rows="3"></textarea>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer" id="detailModalFooter">
+                <button type="button" class="btn-secondary" id="closeDetailBtn">닫기</button>
+                <div class="approval-actions" id="approvalActions">
+                    <button type="button" class="btn-reject" id="rejectBtn">
+                        <i class="fas fa-times-circle"></i>
+                        반려
+                    </button>
+                    <button type="button" class="btn-approve" id="approveBtn">
+                        <i class="fas fa-check-circle"></i>
+                        승인
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <script th:src="@{/js/approval.js}"></script>
 </body>
 </html>

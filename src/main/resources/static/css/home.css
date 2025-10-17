@@ -260,6 +260,19 @@ body {
     display: flex;
     align-items: center;
     gap: 15px;
+    text-decoration: none;
+    color: white;
+    cursor: pointer;
+    transition: background 0.3s ease;
+}
+
+.user-info:hover {
+    background: rgba(255, 255, 255, 0.1);
+}
+
+.user-info.active {
+    background: rgba(255, 255, 255, 0.15);
+    border-left: 4px solid #64b5f6;
 }
 
 .user-avatar i {

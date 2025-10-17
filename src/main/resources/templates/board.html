@@ -1,348 +1,44 @@
 <!DOCTYPE html>
 <html lang="ko" xmlns:th="http://www.thymeleaf.org">
-<head th:replace="fragments/layout :: head('게시판', '/css/board.css')"></head>
+<head th:replace="fragments/layout :: head('전사 게시판', '/css/board.css')"></head>
 <body>
     <div class="container">
-        <!-- 좌측 네비게이션 바 -->
         <div th:replace="fragments/sidebar :: sidebar('board')"></div>
-
-        <!-- 메인 콘텐츠 영역 -->
         <main class="main-content">
             <header class="header">
                 <div class="header-left">
-                    <h1 class="page-title">게시판</h1>
+                    <h1 class="page-title"><i class="fas fa-clipboard-list"></i> 전사 게시판</h1>
                 </div>
                 <div class="header-right">
-                    <button class="btn-primary" id="writePostBtn">
-                        <i class="fas fa-pen"></i>
-                        글쓰기
-                    </button>
+                    <div class="search-box">
+                        <i class="fas fa-search"></i>
+                        <input type="text" id="boardSearch" placeholder="게시글 검색...">
+                    </div>
+                    <button class="btn-primary" id="newPostBtn"><i class="fas fa-pen"></i> 새 게시글</button>
                 </div>
             </header>
-
-            <div class="board-area">
-                <!-- 카테고리 탭 -->
-                <div class="category-tabs">
-                    <button class="tab-btn active" data-category="all">
-                        <i class="fas fa-list"></i>
-                        전체
-                    </button>
-                    <button class="tab-btn" data-category="notice">
-                        <i class="fas fa-bullhorn"></i>
-                        전사공지
-                    </button>
-                    <button class="tab-btn" data-category="news">
-                        <i class="fas fa-newspaper"></i>
-                        소식
-                    </button>
-                    <button class="tab-btn" data-category="data">
-                        <i class="fas fa-folder-open"></i>
-                        자료실
-                    </button>
-                    <button class="tab-btn" data-category="free">
-                        <i class="fas fa-comments"></i>
-                        자유게시판
-                    </button>
-                </div>
-
-                <!-- 검색 영역 -->
-                <div class="search-section">
-                    <select class="search-type">
-                        <option value="all">전체</option>
-                        <option value="title">제목</option>
-                        <option value="content">내용</option>
-                        <option value="author">작성자</option>
-                    </select>
-                    <div class="search-input-wrapper">
-                        <i class="fas fa-search"></i>
-                        <input type="text" class="search-input" placeholder="검색어를 입력하세요..." id="searchInput">
-                    </div>
-                    <button class="btn-search" id="searchBtn">검색</button>
-                </div>
-
-                <!-- 게시글 목록 -->
-                <div class="board-list">
-                    <!-- 고정 공지 -->
-                    <div class="post-item pinned" data-category="notice" data-id="1">
-                        <div class="post-badge notice">공지</div>
-                        <div class="post-content">
-                            <h3 class="post-title">
-                                <i class="fas fa-thumbtack"></i>
-                                [필독] 2025년 설 연휴 휴무 안내
-                            </h3>
-                            <p class="post-preview">2025년 설 연휴 기간 동안의 휴무 일정을 안내드립니다. 1월 28일(화)부터 1월 30일(목)까지...</p>
-                            <div class="post-meta">
-                                <span class="author">
-                                    <i class="fas fa-user"></i>
-                                    인사팀
-                                </span>
-                                <span class="date">
-                                    <i class="fas fa-calendar"></i>
-                                    2025-01-10
-                                </span>
-                                <span class="views">
-                                    <i class="fas fa-eye"></i>
-                                    523
-                                </span>
-                            </div>
-                        </div>
-                    </div>
-
-                    <div class="post-item pinned" data-category="notice" data-id="2">
-                        <div class="post-badge notice">공지</div>
-                        <div class="post-content">
-                            <h3 class="post-title">
-                                <i class="fas fa-thumbtack"></i>
-                                [중요] 보안 정책 변경 안내
-                            </h3>
-                            <p class="post-preview">회사 보안 강화를 위해 비밀번호 정책이 변경되었습니다. 2월 1일부터 모든 임직원은...</p>
-                            <div class="post-meta">
-                                <span class="author">
-                                    <i class="fas fa-user"></i>
-                                    IT팀
-                                </span>
-                                <span class="date">
-                                    <i class="fas fa-calendar"></i>
-                                    2025-01-08
-                                </span>
-                                <span class="views">
-                                    <i class="fas fa-eye"></i>
-                                    412
-                                </span>
-                            </div>
-                        </div>
-                    </div>
-
-                    <!-- 일반 게시글 -->
-                    <div class="post-item" data-category="news" data-id="3">
-                        <div class="post-badge news">소식</div>
-                        <div class="post-content">
-                            <h3 class="post-title">2025년 1분기 우수사원 선정</h3>
-                            <p class="post-preview">2025년 1분기 우수사원으로 개발팀 이백엔드님이 선정되었습니다. 축하드립니다!</p>
-                            <div class="post-meta">
-                                <span class="author">
-                                    <i class="fas fa-user"></i>
-                                    인사팀
-                                </span>
-                                <span class="date">
-                                    <i class="fas fa-calendar"></i>
-                                    2025-01-15
-                                </span>
-                                <span class="views">
-                                    <i class="fas fa-eye"></i>
-                                    189
-                                </span>
-                                <span class="comments">
-                                    <i class="fas fa-comment"></i>
-                                    12
-                                </span>
-                            </div>
-                        </div>
-                    </div>
-
-                    <div class="post-item" data-category="news" data-id="4">
-                        <div class="post-badge news">소식</div>
-                        <div class="post-content">
-                            <h3 class="post-title">신규 프로젝트 킥오프 미팅 안내</h3>
-                            <p class="post-preview">다음주 월요일 오전 10시에 대회의실에서 신규 프로젝트 킥오프 미팅이 있을 예정입니다...</p>
-                            <div class="post-meta">
-                                <span class="author">
-                                    <i class="fas fa-user"></i>
-                                    김개발
-                                </span>
-                                <span class="date">
-                                    <i class="fas fa-calendar"></i>
-                                    2025-01-14
-                                </span>
-                                <span class="views">
-                                    <i class="fas fa-eye"></i>
-                                    156
-                                </span>
-                                <span class="comments">
-                                    <i class="fas fa-comment"></i>
-                                    8
-                                </span>
-                            </div>
-                        </div>
-                    </div>
-
-                    <div class="post-item" data-category="data" data-id="5">
-                        <div class="post-badge data">자료</div>
-                        <div class="post-content">
-                            <h3 class="post-title">
-                                <i class="fas fa-paperclip"></i>
-                                2025년 업무 양식 모음
-                            </h3>
-                            <p class="post-preview">각종 업무에 필요한 양식들을 첨부파일로 공유드립니다. (지출결의서, 출장신청서, 구매요청서 등)</p>
-                            <div class="post-meta">
-                                <span class="author">
-                                    <i class="fas fa-user"></i>
-                                    경영지원팀
-                                </span>
-                                <span class="date">
-                                    <i class="fas fa-calendar"></i>
-                                    2025-01-12
-                                </span>
-                                <span class="views">
-                                    <i class="fas fa-eye"></i>
-                                    342
-                                </span>
-                                <span class="attachments">
-                                    <i class="fas fa-download"></i>
-                                    15
-                                </span>
-                            </div>
-                        </div>
-                    </div>
-
-                    <div class="post-item" data-category="free" data-id="6">
-                        <div class="post-badge free">자유</div>
-                        <div class="post-content">
-                            <h3 class="post-title">점심 맛집 추천 받습니다!</h3>
-                            <p class="post-preview">회사 근처에 괜찮은 맛집 있으면 추천 부탁드립니다. 일식이나 중식 좋아합니다~</p>
-                            <div class="post-meta">
-                                <span class="author">
-                                    <i class="fas fa-user"></i>
-                                    정자바
-                                </span>
-                                <span class="date">
-                                    <i class="fas fa-calendar"></i>
-                                    2025-01-16
-                                </span>
-                                <span class="views">
-                                    <i class="fas fa-eye"></i>
-                                    78
-                                </span>
-                                <span class="comments">
-                                    <i class="fas fa-comment"></i>
-                                    24
-                                </span>
-                            </div>
-                        </div>
-                    </div>
-
-                    <div class="post-item" data-category="free" data-id="7">
-                        <div class="post-badge free">자유</div>
-                        <div class="post-content">
-                            <h3 class="post-title">사내 동호회 모집합니다</h3>
-                            <p class="post-preview">배드민턴 동호회를 새로 만들려고 합니다. 관심있으신 분들은 댓글 남겨주세요!</p>
-                            <div class="post-meta">
-                                <span class="author">
-                                    <i class="fas fa-user"></i>
-                                    박프론트
-                                </span>
-                                <span class="date">
-                                    <i class="fas fa-calendar"></i>
-                                    2025-01-15
-                                </span>
-                                <span class="views">
-                                    <i class="fas fa-eye"></i>
-                                    92
-                                </span>
-                                <span class="comments">
-                                    <i class="fas fa-comment"></i>
-                                    15
-                                </span>
-                            </div>
-                        </div>
-                    </div>
-
-                    <div class="post-item" data-category="data" data-id="8">
-                        <div class="post-badge data">자료</div>
-                        <div class="post-content">
-                            <h3 class="post-title">
-                                <i class="fas fa-paperclip"></i>
-                                개발 가이드 문서
-                            </h3>
-                            <p class="post-preview">신입 개발자를 위한 코딩 컨벤션 및 개발 환경 설정 가이드입니다.</p>
-                            <div class="post-meta">
-                                <span class="author">
-                                    <i class="fas fa-user"></i>
-                                    이백엔드
-                                </span>
-                                <span class="date">
-                                    <i class="fas fa-calendar"></i>
-                                    2025-01-13
-                                </span>
-                                <span class="views">
-                                    <i class="fas fa-eye"></i>
-                                    234
-                                </span>
-                                <span class="attachments">
-                                    <i class="fas fa-download"></i>
-                                    48
-                                </span>
-                            </div>
-                        </div>
-                    </div>
-
-                    <div class="post-item" data-category="notice" data-id="9">
-                        <div class="post-badge notice">공지</div>
-                        <div class="post-content">
-                            <h3 class="post-title">건강검진 일정 안내</h3>
-                            <p class="post-preview">2025년 상반기 건강검진 일정을 안내드립니다. 부서별 일정을 확인하시고...</p>
-                            <div class="post-meta">
-                                <span class="author">
-                                    <i class="fas fa-user"></i>
-                                    인사팀
-                                </span>
-                                <span class="date">
-                                    <i class="fas fa-calendar"></i>
-                                    2025-01-11
-                                </span>
-                                <span class="views">
-                                    <i class="fas fa-eye"></i>
-                                    287
-                                </span>
-                            </div>
-                        </div>
-                    </div>
-
-                    <div class="post-item" data-category="news" data-id="10">
-                        <div class="post-badge news">소식</div>
-                        <div class="post-content">
-                            <h3 class="post-title">사옥 이전 계획 공유</h3>
-                            <p class="post-preview">하반기 사옥 이전 계획에 대해 공유드립니다. 이전 예정 지역은...</p>
-                            <div class="post-meta">
-                                <span class="author">
-                                    <i class="fas fa-user"></i>
-                                    경영지원팀
-                                </span>
-                                <span class="date">
-                                    <i class="fas fa-calendar"></i>
-                                    2025-01-09
-                                </span>
-                                <span class="views">
-                                    <i class="fas fa-eye"></i>
-                                    456
-                                </span>
-                                <span class="comments">
-                                    <i class="fas fa-comment"></i>
-                                    32
-                                </span>
-                            </div>
-                        </div>
+            <div class="board-container">
+                <div class="board-filters">
+                    <div class="filter-tabs">
+                        <button class="filter-tab active" data-filter="all">전체 <span class="tab-count">15</span></button>
+                        <button class="filter-tab" data-filter="notice">공지사항 <span class="tab-count">3</span></button>
+                        <button class="filter-tab" data-filter="important">중요 <span class="tab-count">2</span></button>
+                        <button class="filter-tab" data-filter="unread">읽지 않음 <span class="tab-count">5</span></button>
                     </div>
                 </div>
-
-                <!-- 페이지네이션 -->
+                <div class="board-list" id="boardList"></div>
                 <div class="pagination">
-                    <button class="page-btn" disabled>
-                        <i class="fas fa-chevron-left"></i>
-                    </button>
-                    <button class="page-num active">1</button>
-                    <button class="page-num">2</button>
-                    <button class="page-num">3</button>
-                    <button class="page-num">4</button>
-                    <button class="page-num">5</button>
-                    <button class="page-btn">
-                        <i class="fas fa-chevron-right"></i>
-                    </button>
+                    <button class="page-btn" disabled><i class="fas fa-chevron-left"></i></button>
+                    <button class="page-btn active">1</button>
+                    <button class="page-btn">2</button>
+                    <button class="page-btn"><i class="fas fa-chevron-right"></i></button>
                 </div>
             </div>
         </main>
     </div>
-
+    <div id="postModal" class="modal"></div>
+    <div id="postDetailModal" class="modal"></div>
+    <div id="readersModal" class="modal"></div>
     <script th:src="@{/js/board.js}"></script>
 </body>
 </html>

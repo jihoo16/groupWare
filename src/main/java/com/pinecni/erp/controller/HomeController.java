@@ -6,6 +6,11 @@ import org.springframework.web.bind.annotation.GetMapping;
 @Controller
 public class HomeController {
 
+    @GetMapping("/")
+    public String root() {
+        return "redirect:/home";
+    }
+
     @GetMapping("/home")
     public String home() {
         return "home";
@@ -59,5 +64,25 @@ public class HomeController {
     @GetMapping("/settings")
     public String settings() {
         return "settings";
+    }
+
+    @GetMapping("/cloud")
+    public String cloud() {
+        return "cloud";
+    }
+
+    @GetMapping("/mypage")
+    public String mypage() {
+        return "mypage";
+    }
+
+    @GetMapping("/receipt")
+    public String receipt() {
+        return "receipt";
+    }
+
+    @GetMapping("/board")
+    public String board() {
+        return "board";
     }
 }

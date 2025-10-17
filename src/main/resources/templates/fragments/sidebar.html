@@ -21,7 +21,7 @@
                     <span class="menu-text">조직도</span>
                 </a>
             </li>
-            <li th:class="${(activeMenu == 'approval' or activeMenu == 'vacation') ? 'menu-item menu-parent active' : 'menu-item menu-parent'}" data-tooltip="전자결재">
+            <li th:class="${(activeMenu == 'approval' or activeMenu == 'vacation' or activeMenu == 'receipt') ? 'menu-item menu-parent active' : 'menu-item menu-parent'}" data-tooltip="전자결재">
                 <a href="#" class="menu-toggle-btn">
                     <i class="fas fa-file-signature"></i>
                     <span class="menu-text">전자결재</span>
@@ -36,6 +36,11 @@
                     <li class="submenu-item">
                         <a href="/vacation">
                             <span class="submenu-text">연차 관리</span>
+                        </a>
+                    </li>
+                    <li class="submenu-item">
+                        <a href="/receipt">
+                            <span class="submenu-text">영수증 처리</span>
                         </a>
                     </li>
                 </ul>
@@ -57,6 +62,12 @@
                 <a href="/board">
                     <i class="fas fa-clipboard-list"></i>
                     <span class="menu-text">게시판</span>
+                </a>
+            </li>
+            <li class="menu-item" th:classappend="${activeMenu == 'cloud'} ? 'active' : ''" data-tooltip="클라우드">
+                <a href="/cloud">
+                    <i class="fas fa-cloud"></i>
+                    <span class="menu-text">클라우드</span>
                 </a>
             </li>
             <li th:class="${(activeMenu == 'hr' or activeMenu == 'attendance' or activeMenu == 'payroll') ? 'menu-item menu-parent active' : 'menu-item menu-parent'}" data-tooltip="관리">
@@ -83,15 +94,15 @@
                     </li>
                 </ul>
             </li>
-            <li class="menu-item" th:classappend="${activeMenu == 'settings'} ? 'active' : ''" data-tooltip="설정">
-                <a href="/settings">
-                    <i class="fas fa-cog"></i>
-                    <span class="menu-text">설정</span>
+            <li class="menu-item" th:classappend="${activeMenu == 'mypage'} ? 'active' : ''" data-tooltip="마이페이지">
+                <a href="/mypage">
+                    <i class="fas fa-user"></i>
+                    <span class="menu-text">마이페이지</span>
                 </a>
             </li>
         </ul>
 
-        <div class="user-info">
+        <a href="/settings" class="user-info" th:classappend="${activeMenu == 'settings'} ? 'active' : ''">
             <div class="user-avatar">
                 <i class="fas fa-user-circle"></i>
             </div>
@@ -99,7 +110,7 @@
                 <span class="user-name">사용자</span>
                 <span class="user-role">관리자</span>
             </div>
-        </div>
+        </a>
     </nav>
 </body>
 </html>
