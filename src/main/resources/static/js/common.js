@@ -46,4 +46,13 @@ document.addEventListener('DOMContentLoaded', function() {
             item.classList.remove('active');
         }
     });
+
+    // submenu-item에 active가 있으면 상위 menu-parent에도 active 추가
+    const activeSubmenuItem = document.querySelector('.submenu-item.active');
+    if (activeSubmenuItem) {
+        const parentMenuItem = activeSubmenuItem.closest('.menu-parent');
+        if (parentMenuItem) {
+            parentMenuItem.classList.add('active');
+        }
+    }
 });
