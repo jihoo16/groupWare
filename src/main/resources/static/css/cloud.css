@@ -690,6 +690,46 @@
     box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
 }
 
+/* 스크롤바 커스터마이징 - 호버 시에만 표시 */
+.folder-tree::-webkit-scrollbar,
+.file-grid::-webkit-scrollbar,
+.file-list::-webkit-scrollbar,
+.modal-body::-webkit-scrollbar {
+    width: 6px;
+    height: 6px;
+}
+
+.folder-tree::-webkit-scrollbar-track,
+.file-grid::-webkit-scrollbar-track,
+.file-list::-webkit-scrollbar-track,
+.modal-body::-webkit-scrollbar-track {
+    background: transparent;
+    border-radius: 3px;
+}
+
+.folder-tree::-webkit-scrollbar-thumb,
+.file-grid::-webkit-scrollbar-thumb,
+.file-list::-webkit-scrollbar-thumb,
+.modal-body::-webkit-scrollbar-thumb {
+    background: transparent;
+    border-radius: 3px;
+    transition: background 0.3s ease;
+}
+
+.folder-tree:hover::-webkit-scrollbar-thumb,
+.file-grid:hover::-webkit-scrollbar-thumb,
+.file-list:hover::-webkit-scrollbar-thumb,
+.modal-body:hover::-webkit-scrollbar-thumb {
+    background: #ccc;
+}
+
+.folder-tree::-webkit-scrollbar-thumb:hover,
+.file-grid::-webkit-scrollbar-thumb:hover,
+.file-list::-webkit-scrollbar-thumb:hover,
+.modal-body::-webkit-scrollbar-thumb:hover {
+    background: #999 !important;
+}
+
 /* 반응형 */
 @media (max-width: 768px) {
     .cloud-container {

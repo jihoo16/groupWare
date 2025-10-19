@@ -669,6 +669,36 @@ input.form-input:read-only {
     color: white;
 }
 
+/* 스크롤바 커스터마이징 - 호버 시에만 표시 */
+.modal-body::-webkit-scrollbar,
+.schedule-list::-webkit-scrollbar {
+    width: 6px;
+    height: 6px;
+}
+
+.modal-body::-webkit-scrollbar-track,
+.schedule-list::-webkit-scrollbar-track {
+    background: transparent;
+    border-radius: 3px;
+}
+
+.modal-body::-webkit-scrollbar-thumb,
+.schedule-list::-webkit-scrollbar-thumb {
+    background: transparent;
+    border-radius: 3px;
+    transition: background 0.3s ease;
+}
+
+.modal-body:hover::-webkit-scrollbar-thumb,
+.schedule-list:hover::-webkit-scrollbar-thumb {
+    background: #ccc;
+}
+
+.modal-body::-webkit-scrollbar-thumb:hover,
+.schedule-list::-webkit-scrollbar-thumb:hover {
+    background: #999 !important;
+}
+
 /* 반응형 */
 @media (max-width: 1200px) {
     .calendar-cell {

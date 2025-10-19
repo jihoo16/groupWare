@@ -83,9 +83,22 @@ body {
     width: 4px;
 }
 
+.menu::-webkit-scrollbar-track {
+    background: transparent;
+}
+
 .menu::-webkit-scrollbar-thumb {
-    background-color: rgba(255, 255, 255, 0.3);
+    background-color: transparent;
     border-radius: 4px;
+    transition: background-color 0.3s ease;
+}
+
+.menu:hover::-webkit-scrollbar-thumb {
+    background-color: rgba(255, 255, 255, 0.3);
+}
+
+.menu::-webkit-scrollbar-thumb:hover {
+    background-color: rgba(255, 255, 255, 0.5) !important;
 }
 
 .menu-item {
@@ -226,7 +239,7 @@ body {
     white-space: nowrap;
 }
 
-/* 툴팁 */
+/* 툴팁 - 사이드바가 접혀있을 때만 */
 .menu-item::before {
     content: attr(data-tooltip);
     position: absolute;
@@ -243,9 +256,12 @@ body {
     transition: opacity 0.3s ease;
     z-index: 1001;
     font-size: 14px;
+    display: none; /* 기본적으로 숨김 */
 }
 
-.menu-item:hover::before {
+/* 사이드바가 접혀있고 호버일 때만 툴팁 표시 */
+.sidebar:not(:hover) .menu-item:hover::before {
+    display: block;
     opacity: 1;
 }
 
@@ -405,6 +421,57 @@ body {
     font-weight: bold;
 }
 
+/* 버튼 스타일 */
+.btn-primary {
+    padding: 12px 24px;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+    border: none;
+    border-radius: 8px;
+    font-size: 14px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.btn-primary:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
+}
+
+.btn-primary i {
+    font-size: 14px;
+}
+
+.btn-secondary {
+    padding: 12px 24px;
+    background: #f5f7fa;
+    color: #555;
+    border: 1px solid #e0e0e0;
+    border-radius: 8px;
+    font-size: 14px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.btn-secondary:hover {
+    background: #e3f2fd;
+    color: #1976d2;
+    border-color: #1976d2;
+    transform: translateY(-2px);
+}
+
+.btn-secondary i {
+    font-size: 14px;
+}
+
 /* 대시보드 영역 */
 .dashboard-area {
     padding: 30px;
@@ -481,6 +548,53 @@ body {
     font-weight: normal;
     color: #999;
     margin-left: 5px;
+}
+
+/* 메인 콘텐츠 스크롤바 - 호버 시에만 표시 */
+.main-content::-webkit-scrollbar {
+    width: 8px;
+}
+
+.main-content::-webkit-scrollbar-track {
+    background: transparent;
+}
+
+.main-content::-webkit-scrollbar-thumb {
+    background: transparent;
+    border-radius: 4px;
+    transition: background 0.3s ease;
+}
+
+.main-content:hover::-webkit-scrollbar-thumb {
+    background: #ccc;
+}
+
+.main-content::-webkit-scrollbar-thumb:hover {
+    background: #999 !important;
+}
+
+/* 전역 스크롤바 스타일 - 호버 시에만 표시 */
+*::-webkit-scrollbar {
+    width: 6px;
+    height: 6px;
+}
+
+*::-webkit-scrollbar-track {
+    background: transparent;
+}
+
+*::-webkit-scrollbar-thumb {
+    background: transparent;
+    border-radius: 3px;
+    transition: background 0.3s ease;
+}
+
+*:hover::-webkit-scrollbar-thumb {
+    background: #ccc;
+}
+
+*::-webkit-scrollbar-thumb:hover {
+    background: #999 !important;
 }
 
 /* 반응형 디자인 */

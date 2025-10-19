@@ -598,6 +598,46 @@
     color: #999;
 }
 
+/* 스크롤바 커스터마이징 - 호버 시에만 표시 */
+.chat-list::-webkit-scrollbar,
+.chat-messages::-webkit-scrollbar,
+.modal-body::-webkit-scrollbar,
+.user-list::-webkit-scrollbar {
+    width: 6px;
+    height: 6px;
+}
+
+.chat-list::-webkit-scrollbar-track,
+.chat-messages::-webkit-scrollbar-track,
+.modal-body::-webkit-scrollbar-track,
+.user-list::-webkit-scrollbar-track {
+    background: transparent;
+    border-radius: 3px;
+}
+
+.chat-list::-webkit-scrollbar-thumb,
+.chat-messages::-webkit-scrollbar-thumb,
+.modal-body::-webkit-scrollbar-thumb,
+.user-list::-webkit-scrollbar-thumb {
+    background: transparent;
+    border-radius: 3px;
+    transition: background 0.3s ease;
+}
+
+.chat-list:hover::-webkit-scrollbar-thumb,
+.chat-messages:hover::-webkit-scrollbar-thumb,
+.modal-body:hover::-webkit-scrollbar-thumb,
+.user-list:hover::-webkit-scrollbar-thumb {
+    background: #ccc;
+}
+
+.chat-list::-webkit-scrollbar-thumb:hover,
+.chat-messages::-webkit-scrollbar-thumb:hover,
+.modal-body::-webkit-scrollbar-thumb:hover,
+.user-list::-webkit-scrollbar-thumb:hover {
+    background: #999 !important;
+}
+
 /* 반응형 */
 @media (max-width: 768px) {
     .messenger-container {

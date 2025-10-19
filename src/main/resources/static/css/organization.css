@@ -7,6 +7,47 @@
     min-height: 600px;
 }
 
+/* 선택 및 포커스 제거 */
+* {
+    -webkit-tap-highlight-color: transparent;
+    outline: none;
+    box-sizing: border-box;
+}
+
+*:focus {
+    outline: none !important;
+    box-shadow: none !important;
+}
+
+*::before,
+*::after {
+    box-sizing: border-box;
+}
+
+button:focus,
+.tree-node-header:focus,
+.tree-node:focus {
+    outline: none !important;
+}
+
+/* 텍스트 선택 */
+::selection {
+    background: rgba(102, 126, 234, 0.2);
+    color: inherit;
+}
+
+::-moz-selection {
+    background: rgba(102, 126, 234, 0.2);
+    color: inherit;
+}
+
+/* 툴팁 숨김 */
+[title]:hover::after,
+[title]:hover::before {
+    display: none !important;
+    content: none !important;
+}
+
 /* 좌측: 조직 트리 섹션 */
 .org-tree-section {
     background: white;
@@ -423,27 +464,38 @@
     transform: translateY(-2px);
 }
 
-/* 스크롤바 커스터마이징 */
+/* 스크롤바 커스터마이징 - 호버 시에만 표시 */
 .org-tree::-webkit-scrollbar,
-.detail-body::-webkit-scrollbar {
+.detail-body::-webkit-scrollbar,
+.employee-detail-section::-webkit-scrollbar {
     width: 6px;
 }
 
 .org-tree::-webkit-scrollbar-track,
-.detail-body::-webkit-scrollbar-track {
-    background: #f5f7fa;
+.detail-body::-webkit-scrollbar-track,
+.employee-detail-section::-webkit-scrollbar-track {
+    background: transparent;
     border-radius: 3px;
 }
 
 .org-tree::-webkit-scrollbar-thumb,
-.detail-body::-webkit-scrollbar-thumb {
-    background: #ccc;
+.detail-body::-webkit-scrollbar-thumb,
+.employee-detail-section::-webkit-scrollbar-thumb {
+    background: transparent;
     border-radius: 3px;
+    transition: background 0.3s ease;
+}
+
+.org-tree:hover::-webkit-scrollbar-thumb,
+.detail-body:hover::-webkit-scrollbar-thumb,
+.employee-detail-section:hover::-webkit-scrollbar-thumb {
+    background: #ccc;
 }
 
 .org-tree::-webkit-scrollbar-thumb:hover,
-.detail-body::-webkit-scrollbar-thumb:hover {
-    background: #999;
+.detail-body::-webkit-scrollbar-thumb:hover,
+.employee-detail-section::-webkit-scrollbar-thumb:hover {
+    background: #999 !important;
 }
 
 /* 반응형 */
