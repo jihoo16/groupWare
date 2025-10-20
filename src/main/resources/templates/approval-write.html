@@ -24,99 +24,156 @@
                 <div class="write-layout">
                     <!-- 좌측: 템플릿 선택 -->
                     <aside class="template-sidebar">
-                        <div class="sidebar-header">
+                        <div class="tree-header">
                             <h3><i class="fas fa-file-alt"></i> 문서 양식</h3>
+                            <button class="btn-expand-all" id="expandAllBtn">
+                                <i class="fas fa-minus-square"></i> 전체 접기
+                            </button>
                         </div>
-                        <div class="template-list">
-                            <button class="template-item active" data-template="vacation">
-                                <div class="template-item-icon vacation">
-                                    <i class="fas fa-umbrella-beach"></i>
+                        <div class="template-tree">
+                            <!-- 인사 -->
+                            <div class="tree-node expanded">
+                                <div class="tree-node-header category-node">
+                                    <span class="tree-toggle"><i class="fas fa-chevron-right"></i></span>
+                                    <span class="tree-icon"><i class="fas fa-user-tie"></i></span>
+                                    <span class="tree-label">인사</span>
+                                    <span class="tree-count">1</span>
                                 </div>
-                                <div class="template-item-info">
-                                    <strong>휴가신청서</strong>
-                                    <small>연차/반차/병가 신청</small>
+                                <div class="tree-children">
+                                    <div class="tree-node member">
+                                        <div class="tree-node-header active" data-template="vacation">
+                                            <span class="tree-toggle invisible"></span>
+                                            <span class="tree-icon"><i class="fas fa-umbrella-beach"></i></span>
+                                            <span class="tree-label">연차신청서</span>
+                                        </div>
+                                    </div>
                                 </div>
-                            </button>
+                            </div>
 
-                            <button class="template-item" data-template="expense">
-                                <div class="template-item-icon expense">
-                                    <i class="fas fa-won-sign"></i>
+                            <!-- 지출 -->
+                            <div class="tree-node expanded">
+                                <div class="tree-node-header category-node">
+                                    <span class="tree-toggle"><i class="fas fa-chevron-right"></i></span>
+                                    <span class="tree-icon"><i class="fas fa-coins"></i></span>
+                                    <span class="tree-label">지출</span>
+                                    <span class="tree-count">2</span>
                                 </div>
-                                <div class="template-item-info">
-                                    <strong>지출결의서</strong>
-                                    <small>업무 지출 승인</small>
+                                <div class="tree-children">
+                                    <div class="tree-node member">
+                                        <div class="tree-node-header" data-template="expense">
+                                            <span class="tree-toggle invisible"></span>
+                                            <span class="tree-icon"><i class="fas fa-won-sign"></i></span>
+                                            <span class="tree-label">지출결의서</span>
+                                        </div>
+                                    </div>
+                                    <div class="tree-node member">
+                                        <div class="tree-node-header" data-template="purchase">
+                                            <span class="tree-toggle invisible"></span>
+                                            <span class="tree-icon"><i class="fas fa-shopping-cart"></i></span>
+                                            <span class="tree-label">구매요청서</span>
+                                        </div>
+                                    </div>
                                 </div>
-                            </button>
+                            </div>
 
-                            <button class="template-item" data-template="purchase">
-                                <div class="template-item-icon purchase">
-                                    <i class="fas fa-shopping-cart"></i>
+                            <!-- 보고 -->
+                            <div class="tree-node expanded">
+                                <div class="tree-node-header category-node">
+                                    <span class="tree-toggle"><i class="fas fa-chevron-right"></i></span>
+                                    <span class="tree-icon"><i class="fas fa-chart-line"></i></span>
+                                    <span class="tree-label">보고</span>
+                                    <span class="tree-count">4</span>
                                 </div>
-                                <div class="template-item-info">
-                                    <strong>구매요청서</strong>
-                                    <small>물품/장비 구매</small>
+                                <div class="tree-children">
+                                    <div class="tree-node member">
+                                        <div class="tree-node-header" data-template="weekly-report">
+                                            <span class="tree-toggle invisible"></span>
+                                            <span class="tree-icon"><i class="fas fa-calendar-week"></i></span>
+                                            <span class="tree-label">주간업무보고</span>
+                                        </div>
+                                    </div>
+                                    <div class="tree-node member">
+                                        <div class="tree-node-header" data-template="monthly-report">
+                                            <span class="tree-toggle invisible"></span>
+                                            <span class="tree-icon"><i class="fas fa-calendar-alt"></i></span>
+                                            <span class="tree-label">월간업무보고</span>
+                                        </div>
+                                    </div>
+                                    <div class="tree-node member">
+                                        <div class="tree-node-header" data-template="meeting">
+                                            <span class="tree-toggle invisible"></span>
+                                            <span class="tree-icon"><i class="fas fa-users"></i></span>
+                                            <span class="tree-label">회의록</span>
+                                        </div>
+                                    </div>
+                                    <div class="tree-node member">
+                                        <div class="tree-node-header" data-template="general">
+                                            <span class="tree-toggle invisible"></span>
+                                            <span class="tree-icon"><i class="fas fa-file-alt"></i></span>
+                                            <span class="tree-label">일반기안문서</span>
+                                        </div>
+                                    </div>
                                 </div>
-                            </button>
+                            </div>
 
-                            <button class="template-item" data-template="weekly-report">
-                                <div class="template-item-icon report">
-                                    <i class="fas fa-chart-line"></i>
+                            <!-- 출장 -->
+                            <div class="tree-node expanded">
+                                <div class="tree-node-header category-node">
+                                    <span class="tree-toggle"><i class="fas fa-chevron-right"></i></span>
+                                    <span class="tree-icon"><i class="fas fa-plane-departure"></i></span>
+                                    <span class="tree-label">출장</span>
+                                    <span class="tree-count">2</span>
                                 </div>
-                                <div class="template-item-info">
-                                    <strong>주간업무보고</strong>
-                                    <small>주간 업무 현황</small>
+                                <div class="tree-children">
+                                    <div class="tree-node member">
+                                        <div class="tree-node-header" data-template="business-trip">
+                                            <span class="tree-toggle invisible"></span>
+                                            <span class="tree-icon"><i class="fas fa-plane"></i></span>
+                                            <span class="tree-label">출장신청</span>
+                                        </div>
+                                    </div>
+                                    <div class="tree-node member">
+                                        <div class="tree-node-header" data-template="trip-report">
+                                            <span class="tree-toggle invisible"></span>
+                                            <span class="tree-icon"><i class="fas fa-clipboard-list"></i></span>
+                                            <span class="tree-label">출장보고서</span>
+                                        </div>
+                                    </div>
                                 </div>
-                            </button>
+                            </div>
 
-                            <button class="template-item" data-template="monthly-report">
-                                <div class="template-item-icon report">
-                                    <i class="fas fa-chart-bar"></i>
+                            <!-- 연구비증빙 -->
+                            <div class="tree-node expanded">
+                                <div class="tree-node-header category-node">
+                                    <span class="tree-toggle"><i class="fas fa-chevron-right"></i></span>
+                                    <span class="tree-icon"><i class="fas fa-file-invoice-dollar"></i></span>
+                                    <span class="tree-label">연구비증빙</span>
+                                    <span class="tree-count">3</span>
                                 </div>
-                                <div class="template-item-info">
-                                    <strong>월간업무보고</strong>
-                                    <small>월간 성과 분석</small>
+                                <div class="tree-children">
+                                    <div class="tree-node member">
+                                        <div class="tree-node-header" data-template="receipt-meeting">
+                                            <span class="tree-toggle invisible"></span>
+                                            <span class="tree-icon"><i class="fas fa-receipt"></i></span>
+                                            <span class="tree-label">회의록</span>
+                                        </div>
+                                    </div>
+                                    <div class="tree-node member">
+                                        <div class="tree-node-header" data-template="receipt-trip">
+                                            <span class="tree-toggle invisible"></span>
+                                            <span class="tree-icon"><i class="fas fa-receipt"></i></span>
+                                            <span class="tree-label">출장</span>
+                                        </div>
+                                    </div>
+                                    <div class="tree-node member">
+                                        <div class="tree-node-header" data-template="receipt-overtime">
+                                            <span class="tree-toggle invisible"></span>
+                                            <span class="tree-icon"><i class="fas fa-receipt"></i></span>
+                                            <span class="tree-label">야근식대</span>
+                                        </div>
+                                    </div>
                                 </div>
-                            </button>
-
-                            <button class="template-item" data-template="meeting">
-                                <div class="template-item-icon meeting">
-                                    <i class="fas fa-users"></i>
-                                </div>
-                                <div class="template-item-info">
-                                    <strong>회의록</strong>
-                                    <small>회의 내용 기록</small>
-                                </div>
-                            </button>
-
-                            <button class="template-item" data-template="business-trip">
-                                <div class="template-item-icon trip">
-                                    <i class="fas fa-plane"></i>
-                                </div>
-                                <div class="template-item-info">
-                                    <strong>출장신청서</strong>
-                                    <small>국내외 출장</small>
-                                </div>
-                            </button>
-
-                            <button class="template-item" data-template="general">
-                                <div class="template-item-icon general">
-                                    <i class="fas fa-file-alt"></i>
-                                </div>
-                                <div class="template-item-info">
-                                    <strong>일반기안서</strong>
-                                    <small>일반 업무 기안</small>
-                                </div>
-                            </button>
-
-                            <button class="template-item" data-template="receipt">
-                                <div class="template-item-icon receipt">
-                                    <i class="fas fa-receipt"></i>
-                                </div>
-                                <div class="template-item-info">
-                                    <strong>영수증 처리</strong>
-                                    <small>연구비 증빙</small>
-                                </div>
-                            </button>
+                            </div>
                         </div>
                     </aside>
 
@@ -455,8 +512,8 @@
                                 </table>
                             </div>
 
-                            <!-- 영수증 처리 템플릿 -->
-                            <div id="template-receipt">
+                            <!-- 영수증 처리 템플릿 - 회의록 -->
+                            <div id="template-receipt-meeting">
                                 <div style="background: #f8f9fa; border: 2px solid #e8e8e8; border-radius: 10px; padding: 20px; margin-bottom: 30px;">
                                     <div style="margin-bottom: 15px;">
                                         <h4 style="font-size: 16px; font-weight: 700; color: #333; margin: 0 0 15px 0; display: flex; align-items: center; gap: 8px;">
@@ -710,6 +767,12 @@
                                 </table>
                                 </div>
                             </div>
+
+                            <!-- 영수증 처리 템플릿 - 출장 (회의록과 동일) -->
+                            <div id="template-receipt-trip"></div>
+
+                            <!-- 영수증 처리 템플릿 - 야근식대 (회의록과 동일) -->
+                            <div id="template-receipt-overtime"></div>
                         </div>
 
                         <!-- 첨부파일 -->
