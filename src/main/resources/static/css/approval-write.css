@@ -165,6 +165,10 @@ div:focus {
     background: linear-gradient(135deg, #43e97b 0%, #38f9d7 100%);
 }
 
+.template-item-icon.receipt {
+    background: linear-gradient(135deg, #ffeaa7 0%, #fdcb6e 100%);
+}
+
 .template-item-info {
     flex: 1;
     display: flex;
