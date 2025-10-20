@@ -21,7 +21,7 @@
                     <span class="menu-text">조직도</span>
                 </a>
             </li>
-            <li th:class="${(activeMenu == 'approval' or activeMenu == 'vacation' or activeMenu == 'receipt') ? 'menu-item menu-parent active' : 'menu-item menu-parent'}" data-tooltip="전자결재">
+            <li th:class="${(activeMenu == 'approval' or activeMenu == 'vacation' or activeMenu == 'approval-write') ? 'menu-item menu-parent active' : 'menu-item menu-parent'}" data-tooltip="전자결재">
                 <a href="/approval" class="menu-toggle-btn">
                     <i class="fas fa-file-signature"></i>
                     <span class="menu-text">전자결재</span>
@@ -38,9 +38,9 @@
                             <span class="submenu-text">연차 관리</span>
                         </a>
                     </li>
-                    <li class="submenu-item" th:classappend="${activeMenu == 'receipt'} ? 'active' : ''">
-                        <a href="/receipt">
-                            <span class="submenu-text">영수증 처리</span>
+                    <li class="submenu-item" th:classappend="${activeMenu == 'approval-write'} ? 'active' : ''">
+                        <a href="/approval/write">
+                            <span class="submenu-text">문서 작성</span>
                         </a>
                     </li>
                 </ul>
