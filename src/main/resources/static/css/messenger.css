@@ -2,7 +2,7 @@
 
 .messenger-container {
     display: flex;
-    height: calc(100vh - 80px);
+    height: calc(100vh - 90px);
     background: white;
     border-radius: 12px;
     overflow: hidden;
@@ -641,7 +641,8 @@
 /* 반응형 */
 @media (max-width: 652px) {
     .messenger-container {
-        height: calc(100vh - 60px);
+        margin: 10px;
+        height: calc(100vh - 90px);
     }
 
     .chat-list-panel {

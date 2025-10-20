@@ -3,7 +3,7 @@
 .cloud-container {
     display: flex;
     gap: 0;
-    height: calc(100vh - 140px);
+    height: calc(100vh - 90px);
     overflow: hidden;
 }
 

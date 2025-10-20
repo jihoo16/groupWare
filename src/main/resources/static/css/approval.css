@@ -3,8 +3,8 @@
     display: grid;
     grid-template-columns: 280px 1fr;
     gap: 21px;
-    padding: 20px;
-    height: calc(100vh - 140px);
+    padding: 20px 20px 10px 20px;
+    height: calc(100vh - 90px);
 }
 
 /* 선택 및 포커스 스타일 제거 */
