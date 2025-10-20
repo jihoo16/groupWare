@@ -4,6 +4,7 @@ document.addEventListener('DOMContentLoaded', function() {
     const currentMonthTitle = document.getElementById('currentMonthTitle');
     const prevMonthBtn = document.getElementById('prevMonthBtn');
     const nextMonthBtn = document.getElementById('nextMonthBtn');
+    const todayBtn = document.getElementById('todayBtn');
 
     let currentDate = new Date();
     const currentUser = '사용자'; // 실제로는 로그인한 사용자 정보
@@ -248,6 +249,17 @@ document.addEventListener('DOMContentLoaded', function() {
     // 다음 달 버튼
     nextMonthBtn.addEventListener('click', function() {
         currentDate.setMonth(currentDate.getMonth() + 1);
+        renderCalendar();
+    });
+
+    // 연/월 제목 클릭 이벤트
+    currentMonthTitle.addEventListener('click', function() {
+        openYearMonthSelectorModal();
+    });
+
+    // 오늘 버튼 클릭 이벤트
+    todayBtn.addEventListener('click', function() {
+        currentDate = new Date();
         renderCalendar();
     });
 
@@ -508,6 +520,7 @@ document.addEventListener('DOMContentLoaded', function() {
         if (e.key === 'Escape') {
             closeScheduleModal();
             closeAddScheduleModal();
+            closeYearMonthSelectorModal();
         }
     });
 
@@ -694,6 +707,93 @@ document.addEventListener('DOMContentLoaded', function() {
     document.getElementById('addScheduleModal').addEventListener('click', function(e) {
         if (e.target === this) {
             closeAddScheduleModal();
+        }
+    });
+
+    // 연/월 선택 모달 관련 변수
+    let selectedYear = null;
+    let selectedMonth = null;
+
+    // 연/월 선택 모달 열기
+    function openYearMonthSelectorModal() {
+        const modal = document.getElementById('yearMonthSelectorModal');
+        const currentYear = currentDate.getFullYear();
+        const currentMonth = currentDate.getMonth();
+        const today = new Date();
+        const todayYear = today.getFullYear();
+        const todayMonth = today.getMonth();
+
+        // 선택 초기화
+        selectedYear = currentYear;
+        selectedMonth = currentMonth;
+
+        // 연도 선택기 생성 (현재 연도 ±5년)
+        const yearSelector = document.getElementById('yearSelector');
+        yearSelector.innerHTML = '';
+        for (let i = currentYear - 5; i <= currentYear + 5; i++) {
+            const yearItem = document.createElement('div');
+            yearItem.className = 'year-item';
+            if (i === currentYear) yearItem.classList.add('selected');
+            if (i === todayYear) yearItem.classList.add('current');
+            yearItem.textContent = `${i}년`;
+            yearItem.dataset.year = i;
+            yearItem.addEventListener('click', function() {
+                selectedYear = parseInt(this.dataset.year);
+                document.querySelectorAll('.year-item').forEach(item => {
+                    item.classList.remove('selected');
+                });
+                this.classList.add('selected');
+            });
+            yearSelector.appendChild(yearItem);
+        }
+
+        // 월 선택기 생성
+        const monthSelector = document.getElementById('monthSelector');
+        monthSelector.innerHTML = '';
+        for (let i = 0; i < 12; i++) {
+            const monthItem = document.createElement('div');
+            monthItem.className = 'month-item';
+            if (i === currentMonth) monthItem.classList.add('selected');
+            if (i === todayMonth && currentYear === todayYear) monthItem.classList.add('current');
+            monthItem.textContent = `${i + 1}월`;
+            monthItem.dataset.month = i;
+            monthItem.addEventListener('click', function() {
+                selectedMonth = parseInt(this.dataset.month);
+                document.querySelectorAll('.month-item').forEach(item => {
+                    item.classList.remove('selected');
+                });
+                this.classList.add('selected');
+            });
+            monthSelector.appendChild(monthItem);
+        }
+
+        // 모달 표시
+        modal.classList.add('show');
+    }
+
+    // 연/월 선택 모달 닫기
+    function closeYearMonthSelectorModal() {
+        const modal = document.getElementById('yearMonthSelectorModal');
+        modal.classList.remove('show');
+    }
+
+    // 연/월 선택 확인 버튼
+    document.getElementById('confirmYearMonthBtn').addEventListener('click', function() {
+        if (selectedYear !== null && selectedMonth !== null) {
+            currentDate = new Date(selectedYear, selectedMonth, 1);
+            renderCalendar();
+            closeYearMonthSelectorModal();
+        }
+    });
+
+    // 연/월 선택 모달 닫기 이벤트
+    document.getElementById('closeYearMonthModal').addEventListener('click', closeYearMonthSelectorModal);
+    document.getElementById('cancelYearMonthBtn').addEventListener('click', closeYearMonthSelectorModal);
+
+    // 연/월 선택 모달 배경 클릭 시 닫기
+    document.getElementById('yearMonthSelectorModal').addEventListener('click', function(e) {
+        if (e.target === this) {
+            closeYearMonthSelectorModal();
         }
     });
 

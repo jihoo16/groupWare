@@ -23,11 +23,15 @@
             <div class="calendar-content">
                 <!-- 달력 네비게이션 -->
                 <div class="calendar-nav-header">
+                    <button class="btn-today" id="todayBtn">
+                        <i class="fas fa-calendar-day"></i>
+                        오늘
+                    </button>
                     <div class="calendar-nav-controls">
                         <button class="nav-btn" id="prevMonthBtn">
                             <i class="fas fa-chevron-left"></i>
                         </button>
-                        <h2 class="current-month" id="currentMonthTitle"></h2>
+                        <h2 class="current-month" id="currentMonthTitle" style="cursor: pointer;"></h2>
                         <button class="nav-btn" id="nextMonthBtn">
                             <i class="fas fa-chevron-right"></i>
                         </button>
@@ -199,6 +203,37 @@
             </div>
             <div class="modal-footer">
                 <button class="btn-secondary" id="closeModalBtn">닫기</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 연/월 선택 모달 -->
+    <div id="yearMonthSelectorModal" class="modal">
+        <div class="modal-content year-month-modal">
+            <div class="modal-header">
+                <h2 class="modal-title">연도 및 월 선택</h2>
+                <button class="modal-close" id="closeYearMonthModal">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            <div class="modal-body">
+                <div class="year-month-selector">
+                    <div class="selector-section">
+                        <h3 class="selector-label">연도</h3>
+                        <div class="year-selector" id="yearSelector"></div>
+                    </div>
+                    <div class="selector-section">
+                        <h3 class="selector-label">월</h3>
+                        <div class="month-selector" id="monthSelector"></div>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn-secondary" id="cancelYearMonthBtn">취소</button>
+                <button class="btn-primary" id="confirmYearMonthBtn">
+                    <i class="fas fa-check"></i>
+                    이동
+                </button>
             </div>
         </div>
     </div>
