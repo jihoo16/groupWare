@@ -8,6 +8,7 @@ document.addEventListener('DOMContentLoaded', function() {
     // DOM 요소
     const templateTreeHeaders = document.querySelectorAll('.tree-node-header[data-template]');
     const categoryNodes = document.querySelectorAll('.tree-node-header.category-node');
+    const expandAllBtn = document.getElementById('expandAllBtn');
     const documentForm = document.getElementById('documentForm');
     const addApproverBtn = document.getElementById('addApproverBtn');
     const approverChips = document.getElementById('approverChips');
@@ -32,13 +33,52 @@ document.addEventListener('DOMContentLoaded', function() {
         { id: 8, name: '유재석', position: '부장', dept: '영업본부 영업1팀' }
     ];
 
+    // 전체 접기/열기 버튼
+    let allExpanded = true; // 초기 상태는 모두 펼쳐진 상태
+    if (expandAllBtn) {
+        expandAllBtn.addEventListener('click', function() {
+            const treeNodes = document.querySelectorAll('.tree-node');
+
+            if (allExpanded) {
+                // 모두 접기
+                treeNodes.forEach(node => node.classList.remove('expanded'));
+                this.innerHTML = '<i class="fas fa-plus-square"></i> 전체 펼치기';
+                allExpanded = false;
+            } else {
+                // 모두 펼치기
+                treeNodes.forEach(node => node.classList.add('expanded'));
+                this.innerHTML = '<i class="fas fa-minus-square"></i> 전체 접기';
+                allExpanded = true;
+            }
+        });
+    }
+
     // 카테고리 노드 토글 (트리 확장/축소)
     categoryNodes.forEach(categoryNode => {
         categoryNode.addEventListener('click', function(e) {
             const treeNode = this.closest('.tree-node');
             treeNode.classList.toggle('expanded');
+
+            // 전체 펼치기/접기 버튼 상태 업데이트
+            updateExpandAllButton();
         });
     });
+
+    // 전체 펼치기/접기 버튼 상태 업데이트
+    function updateExpandAllButton() {
+        if (!expandAllBtn) return;
+
+        const treeNodes = document.querySelectorAll('.tree-node');
+        const expandedNodes = document.querySelectorAll('.tree-node.expanded');
+
+        if (expandedNodes.length === treeNodes.length) {
+            expandAllBtn.innerHTML = '<i class="fas fa-minus-square"></i> 전체 접기';
+            allExpanded = true;
+        } else if (expandedNodes.length === 0) {
+            expandAllBtn.innerHTML = '<i class="fas fa-plus-square"></i> 전체 펼치기';
+            allExpanded = false;
+        }
+    }
 
     // 템플릿 선택 (문서 항목 클릭)
     templateTreeHeaders.forEach(header => {
@@ -76,7 +116,7 @@ document.addEventListener('DOMContentLoaded', function() {
             });
 
             // 영수증 처리 템플릿인 경우 자동 채우기 이벤트 리스너 추가
-            if (templateKey === 'receipt') {
+            if (templateKey === 'receipt-meeting' || templateKey === 'receipt-trip' || templateKey === 'receipt-overtime') {
                 setupReceiptAutoFill();
             }
         }

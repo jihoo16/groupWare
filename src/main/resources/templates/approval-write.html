@@ -26,6 +26,9 @@
                     <aside class="template-sidebar">
                         <div class="tree-header">
                             <h3><i class="fas fa-file-alt"></i> 문서 양식</h3>
+                            <button class="btn-expand-all" id="expandAllBtn">
+                                <i class="fas fa-minus-square"></i> 전체 접기
+                            </button>
                         </div>
                         <div class="template-tree">
                             <!-- 인사 -->
@@ -145,14 +148,28 @@
                                     <span class="tree-toggle"><i class="fas fa-chevron-right"></i></span>
                                     <span class="tree-icon"><i class="fas fa-file-invoice-dollar"></i></span>
                                     <span class="tree-label">연구비증빙</span>
-                                    <span class="tree-count">1</span>
+                                    <span class="tree-count">3</span>
                                 </div>
                                 <div class="tree-children">
                                     <div class="tree-node member">
-                                        <div class="tree-node-header" data-template="receipt">
+                                        <div class="tree-node-header" data-template="receipt-meeting">
                                             <span class="tree-toggle invisible"></span>
                                             <span class="tree-icon"><i class="fas fa-receipt"></i></span>
-                                            <span class="tree-label">회의록/출장/야근식대</span>
+                                            <span class="tree-label">회의록</span>
+                                        </div>
+                                    </div>
+                                    <div class="tree-node member">
+                                        <div class="tree-node-header" data-template="receipt-trip">
+                                            <span class="tree-toggle invisible"></span>
+                                            <span class="tree-icon"><i class="fas fa-receipt"></i></span>
+                                            <span class="tree-label">출장</span>
+                                        </div>
+                                    </div>
+                                    <div class="tree-node member">
+                                        <div class="tree-node-header" data-template="receipt-overtime">
+                                            <span class="tree-toggle invisible"></span>
+                                            <span class="tree-icon"><i class="fas fa-receipt"></i></span>
+                                            <span class="tree-label">야근식대</span>
                                         </div>
                                     </div>
                                 </div>
@@ -495,8 +512,8 @@
                                 </table>
                             </div>
 
-                            <!-- 영수증 처리 템플릿 -->
-                            <div id="template-receipt">
+                            <!-- 영수증 처리 템플릿 - 회의록 -->
+                            <div id="template-receipt-meeting">
                                 <div style="background: #f8f9fa; border: 2px solid #e8e8e8; border-radius: 10px; padding: 20px; margin-bottom: 30px;">
                                     <div style="margin-bottom: 15px;">
                                         <h4 style="font-size: 16px; font-weight: 700; color: #333; margin: 0 0 15px 0; display: flex; align-items: center; gap: 8px;">
@@ -734,6 +751,118 @@
                                     </tr>
                                 </table>
                                 </div>
+                            </div>
+
+                            <!-- 영수증 처리 템플릿 - 출장 (동일한 양식) -->
+                            <div id="template-receipt-trip">
+                                <div style="background: #f8f9fa; border: 2px solid #e8e8e8; border-radius: 10px; padding: 20px; margin-bottom: 30px;">
+                                    <div style="margin-bottom: 15px;">
+                                        <h4 style="font-size: 16px; font-weight: 700; color: #333; margin: 0 0 15px 0; display: flex; align-items: center; gap: 8px;">
+                                            <i class="fas fa-edit" style="color: #667eea;"></i> 공통 정보 입력
+                                        </h4>
+                                    </div>
+                                    <table class="form-table" style="background: white;">
+                                        <tr>
+                                            <th style="width: 150px;">과제명</th>
+                                            <td colspan="3"><input type="text" id="common_project" placeholder="과제명을 입력하세요"></td>
+                                        </tr>
+                                        <tr>
+                                            <th>작성자</th>
+                                            <td><input type="text" id="common_author" value="홍길동" readonly></td>
+                                            <th>회의 일자</th>
+                                            <td><input type="date" id="common_date"></td>
+                                        </tr>
+                                        <tr>
+                                            <th>시작 시간</th>
+                                            <td><input type="time" id="common_start_time"></td>
+                                            <th>종료 시간</th>
+                                            <td><input type="time" id="common_end_time"></td>
+                                        </tr>
+                                        <tr>
+                                            <th>장소</th>
+                                            <td colspan="3"><input type="text" id="common_location" placeholder="회의 장소를 입력하세요"></td>
+                                        </tr>
+                                        <tr>
+                                            <th>사용 금액</th>
+                                            <td colspan="3">
+                                                <input type="number" id="common_amount" placeholder="사용 금액을 입력하세요 (원)" style="width: 300px; padding: 5px;">
+                                                <small style="color: #666; margin-left: 10px;">* 1인당 30,000원 기준으로 참석자가 자동 계산됩니다</small>
+                                            </td>
+                                        </tr>
+                                        <tr>
+                                            <th>참석자</th>
+                                            <td colspan="3">
+                                                <div style="display: flex; align-items: center; justify-content: flex-end; gap: 5px; margin-bottom: 10px;">
+                                                    <button type="button" id="addAttendeeBtn" style="width: 30px; height: 30px; background: #667eea; color: white; border: none; border-radius: 5px; cursor: pointer; font-size: 18px; padding: 0;">
+                                                        <i class="fas fa-plus"></i>
+                                                    </button>
+                                                    <button type="button" id="removeAttendeeBtn" style="width: 30px; height: 30px; background: #dc3545; color: white; border: none; border-radius: 5px; cursor: pointer; font-size: 18px; padding: 0;">
+                                                        <i class="fas fa-minus"></i>
+                                                    </button>
+                                                </div>
+                                                <div id="attendeeList"></div>
+                                            </td>
+                                        </tr>
+                                    </table>
+                                </div>
+                                <h2 class="doc-title">출 장 증 빙</h2>
+                                <p style="text-align: center; color: #666; margin-bottom: 30px;">동일한 양식으로 출장 관련 증빙을 작성합니다.</p>
+                            </div>
+
+                            <!-- 영수증 처리 템플릿 - 야근식대 (동일한 양식) -->
+                            <div id="template-receipt-overtime">
+                                <div style="background: #f8f9fa; border: 2px solid #e8e8e8; border-radius: 10px; padding: 20px; margin-bottom: 30px;">
+                                    <div style="margin-bottom: 15px;">
+                                        <h4 style="font-size: 16px; font-weight: 700; color: #333; margin: 0 0 15px 0; display: flex; align-items: center; gap: 8px;">
+                                            <i class="fas fa-edit" style="color: #667eea;"></i> 공통 정보 입력
+                                        </h4>
+                                    </div>
+                                    <table class="form-table" style="background: white;">
+                                        <tr>
+                                            <th style="width: 150px;">과제명</th>
+                                            <td colspan="3"><input type="text" id="common_project" placeholder="과제명을 입력하세요"></td>
+                                        </tr>
+                                        <tr>
+                                            <th>작성자</th>
+                                            <td><input type="text" id="common_author" value="홍길동" readonly></td>
+                                            <th>회의 일자</th>
+                                            <td><input type="date" id="common_date"></td>
+                                        </tr>
+                                        <tr>
+                                            <th>시작 시간</th>
+                                            <td><input type="time" id="common_start_time"></td>
+                                            <th>종료 시간</th>
+                                            <td><input type="time" id="common_end_time"></td>
+                                        </tr>
+                                        <tr>
+                                            <th>장소</th>
+                                            <td colspan="3"><input type="text" id="common_location" placeholder="회의 장소를 입력하세요"></td>
+                                        </tr>
+                                        <tr>
+                                            <th>사용 금액</th>
+                                            <td colspan="3">
+                                                <input type="number" id="common_amount" placeholder="사용 금액을 입력하세요 (원)" style="width: 300px; padding: 5px;">
+                                                <small style="color: #666; margin-left: 10px;">* 1인당 30,000원 기준으로 참석자가 자동 계산됩니다</small>
+                                            </td>
+                                        </tr>
+                                        <tr>
+                                            <th>참석자</th>
+                                            <td colspan="3">
+                                                <div style="display: flex; align-items: center; justify-content: flex-end; gap: 5px; margin-bottom: 10px;">
+                                                    <button type="button" id="addAttendeeBtn" style="width: 30px; height: 30px; background: #667eea; color: white; border: none; border-radius: 5px; cursor: pointer; font-size: 18px; padding: 0;">
+                                                        <i class="fas fa-plus"></i>
+                                                    </button>
+                                                    <button type="button" id="removeAttendeeBtn" style="width: 30px; height: 30px; background: #dc3545; color: white; border: none; border-radius: 5px; cursor: pointer; font-size: 18px; padding: 0;">
+                                                        <i class="fas fa-minus"></i>
+                                                    </button>
+                                                </div>
+                                                <div id="attendeeList"></div>
+                                            </td>
+                                        </tr>
+                                    </table>
+                                </div>
+                                <h2 class="doc-title">야 근 식 대 증 빙</h2>
+                                <p style="text-align: center; color: #666; margin-bottom: 30px;">동일한 양식으로 야근식대 관련 증빙을 작성합니다.</p>
                             </div>
                         </div>
 
