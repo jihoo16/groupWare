@@ -619,9 +619,24 @@ document.addEventListener('DOMContentLoaded', function() {
 
     // 템플릿 로드
     function loadTemplate(templateKey) {
-        const template = templates[templateKey];
-        if (template) {
-            documentForm.innerHTML = template.html;
+        const templateElement = document.getElementById('template-' + templateKey);
+        if (templateElement) {
+            // HTML에서 템플릿을 복사
+            documentForm.innerHTML = templateElement.innerHTML;
+
+            // 오늘 날짜 자동 입력
+            const today = new Date().toISOString().split('T')[0];
+            const todayFields = documentForm.querySelectorAll('.auto-today');
+            todayFields.forEach(field => {
+                field.value = today;
+            });
+
+            // 현재 월 자동 입력
+            const currentMonth = new Date().toISOString().slice(0, 7);
+            const monthFields = documentForm.querySelectorAll('.auto-month');
+            monthFields.forEach(field => {
+                field.value = currentMonth;
+            });
 
             // 영수증 처리 템플릿인 경우 자동 채우기 이벤트 리스너 추가
             if (templateKey === 'receipt') {
