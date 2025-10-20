@@ -1,6 +1,6 @@
 /* 설정 영역 */
 .settings-area {
-    padding: 30px;
+    padding: 24px;
 }
 
 /* 설정 탭 */
@@ -16,11 +16,11 @@
 
 .tab-btn {
     flex: 1;
-    padding: 16px 24px;
+    padding: 11px 24px;
     background: transparent;
     border: none;
     color: #666;
-    font-size: 15px;
+    font-size: 13.8px;
     font-weight: 500;
     cursor: pointer;
     border-radius: 8px;
@@ -42,7 +42,7 @@
 }
 
 .tab-btn i {
-    font-size: 18px;
+    font-size: 16.6px;
 }
 
 /* 탭 컨텐츠 */
@@ -58,13 +58,13 @@
 .settings-card {
     background: white;
     border-radius: 12px;
-    padding: 30px;
+    padding: 24px;
     box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
     margin-bottom: 20px;
 }
 
 .card-title {
-    font-size: 18px;
+    font-size: 16.6px;
     font-weight: 600;
     color: #333;
     margin-bottom: 24px;
@@ -76,14 +76,14 @@
 .profile-section {
     display: grid;
     grid-template-columns: 200px 1fr;
-    gap: 40px;
+    gap: 34px;
 }
 
 .profile-avatar {
     display: flex;
     flex-direction: column;
     align-items: center;
-    gap: 20px;
+    gap: 17px;
 }
 
 .avatar-display {
@@ -95,7 +95,7 @@
     align-items: center;
     justify-content: center;
     color: white;
-    font-size: 80px;
+    font-size: 73.6px;
     box-shadow: 0 4px 12px rgba(102, 126, 234, 0.3);
 }
 
@@ -105,7 +105,7 @@
     border: 2px solid #e0e0e0;
     border-radius: 8px;
     color: #666;
-    font-size: 14px;
+    font-size: 12.9px;
     font-weight: 500;
     cursor: pointer;
     display: flex;
@@ -122,7 +122,7 @@
 .profile-form {
     display: grid;
     grid-template-columns: repeat(2, 1fr);
-    gap: 20px;
+    gap: 17px;
 }
 
 .form-group {
@@ -137,7 +137,7 @@
 }
 
 .form-group label {
-    font-size: 14px;
+    font-size: 12.9px;
     font-weight: 600;
     color: #666;
 }
@@ -148,7 +148,7 @@
     padding: 12px 16px;
     border: 2px solid #e0e0e0;
     border-radius: 8px;
-    font-size: 14px;
+    font-size: 12.9px;
     color: #333;
     transition: all 0.3s ease;
 }
@@ -173,16 +173,16 @@
 
 /* 비밀번호 섹션 */
 .password-section {
-    max-width: 500px;
+    max-width: 425px;
     display: flex;
     flex-direction: column;
-    gap: 20px;
+    gap: 17px;
 }
 
 .password-section small {
     display: block;
     margin-top: 6px;
-    font-size: 12px;
+    font-size: 11px;
     color: #999;
 }
 
@@ -190,7 +190,7 @@
 .legal-notice {
     display: flex;
     gap: 15px;
-    padding: 20px;
+    padding: 15px;
     background: #fff3e0;
     border-left: 4px solid #ff9800;
     border-radius: 8px;
@@ -198,7 +198,7 @@
 }
 
 .legal-notice i {
-    font-size: 24px;
+    font-size: 22.1px;
     color: #ff9800;
     margin-top: 3px;
 }
@@ -220,7 +220,7 @@
 .notice-content li {
     margin-bottom: 8px;
     color: #666;
-    font-size: 13px;
+    font-size: 12px;
     line-height: 1.6;
 }
 
@@ -232,13 +232,13 @@
 .signature-grid {
     display: grid;
     grid-template-columns: 1fr 1fr;
-    gap: 30px;
+    gap: 25px;
 }
 
 .signature-display h4,
 .signature-editor h4 {
     margin: 0 0 15px 0;
-    font-size: 16px;
+    font-size: 14.7px;
     color: #333;
     font-weight: 600;
 }
@@ -270,12 +270,12 @@
 }
 
 .no-signature i {
-    font-size: 48px;
+    font-size: 44.2px;
 }
 
 .no-signature p {
     margin: 0;
-    font-size: 14px;
+    font-size: 12.9px;
 }
 
 .signature-canvas-wrapper {
@@ -315,17 +315,17 @@
 }
 
 .canvas-placeholder i {
-    font-size: 48px;
+    font-size: 44.2px;
 }
 
 .canvas-placeholder p {
     margin: 0;
-    font-size: 14px;
+    font-size: 12.9px;
 }
 
 .signature-tools {
     display: flex;
-    gap: 30px;
+    gap: 25px;
     margin-top: 15px;
     padding: 15px;
     background: #f8f9fa;
@@ -339,7 +339,7 @@
 }
 
 .tool-group label {
-    font-size: 13px;
+    font-size: 12px;
     color: #666;
     font-weight: 500;
     white-space: nowrap;
@@ -350,7 +350,7 @@
 }
 
 #lineWidthValue {
-    font-size: 13px;
+    font-size: 12px;
     color: #333;
     font-weight: 600;
     min-width: 20px;
@@ -392,7 +392,7 @@
     color: white;
     border: none;
     border-radius: 8px;
-    font-size: 14px;
+    font-size: 12.9px;
     font-weight: 500;
     cursor: pointer;
     display: flex;
@@ -425,7 +425,7 @@
     color: white;
     border: none;
     border-radius: 8px;
-    font-size: 14px;
+    font-size: 12.9px;
     font-weight: 500;
     cursor: pointer;
     display: flex;
@@ -445,7 +445,7 @@
     color: white;
     border: none;
     border-radius: 8px;
-    font-size: 14px;
+    font-size: 12.9px;
     font-weight: 500;
     cursor: pointer;
     transition: all 0.3s ease;
@@ -462,7 +462,7 @@
     color: #d32f2f;
     border: 2px solid #d32f2f;
     border-radius: 8px;
-    font-size: 14px;
+    font-size: 12.9px;
     font-weight: 500;
     cursor: pointer;
     transition: all 0.3s ease;
@@ -478,21 +478,21 @@
     display: flex;
     justify-content: space-between;
     align-items: center;
-    padding: 20px;
+    padding: 15px;
     background: #f5f7fa;
     border-radius: 8px;
     margin-bottom: 12px;
 }
 
 .setting-info h4 {
-    font-size: 15px;
+    font-size: 13.8px;
     font-weight: 600;
     color: #333;
     margin-bottom: 4px;
 }
 
 .setting-info p {
-    font-size: 13px;
+    font-size: 12px;
     color: #666;
 }
 
@@ -547,21 +547,21 @@
     display: flex;
     justify-content: space-between;
     align-items: center;
-    padding: 20px;
+    padding: 15px;
     background: #f5f7fa;
     border-radius: 8px;
     margin-bottom: 12px;
 }
 
 .data-info h4 {
-    font-size: 15px;
+    font-size: 13.8px;
     font-weight: 600;
     color: #333;
     margin-bottom: 4px;
 }
 
 .data-info p {
-    font-size: 13px;
+    font-size: 12px;
     color: #666;
 }
 
@@ -576,24 +576,24 @@
     display: flex;
     justify-content: space-between;
     align-items: center;
-    padding: 16px 20px;
+    padding: 11px 20px;
     background: #f5f7fa;
     border-radius: 8px;
 }
 
 .info-label {
-    font-size: 14px;
+    font-size: 12.9px;
     font-weight: 600;
     color: #666;
 }
 
 .info-value {
-    font-size: 14px;
+    font-size: 12.9px;
     color: #333;
 }
 
 /* 반응형 */
-@media (max-width: 1024px) {
+@media (max-width: 870px) {
     .profile-section {
         grid-template-columns: 1fr;
     }
@@ -607,7 +607,7 @@
     }
 }
 
-@media (max-width: 768px) {
+@media (max-width: 652px) {
     .settings-tabs {
         flex-wrap: wrap;
     }
@@ -672,7 +672,7 @@
     background: white;
     border-radius: 16px;
     width: 90%;
-    max-width: 700px;
+    max-width: 595px;
     max-height: 90vh;
     overflow: hidden;
     display: flex;
@@ -681,7 +681,7 @@
 }
 
 .modal-header {
-    padding: 24px 30px;
+    padding: 19px 30px;
     border-bottom: 1px solid #e0e0e0;
     display: flex;
     justify-content: space-between;
@@ -692,7 +692,7 @@
 
 .modal-header h2 {
     margin: 0;
-    font-size: 18px;
+    font-size: 16.6px;
     font-weight: 600;
     display: flex;
     align-items: center;
@@ -702,7 +702,7 @@
 .modal-close {
     background: none;
     border: none;
-    font-size: 24px;
+    font-size: 22.1px;
     cursor: pointer;
     color: white;
     opacity: 0.8;
@@ -721,13 +721,13 @@
 }
 
 .modal-body {
-    padding: 30px;
+    padding: 24px;
     overflow-y: auto;
     flex: 1;
 }
 
 .modal-footer {
-    padding: 20px 30px;
+    padding: 15px 30px;
     border-top: 1px solid #e0e0e0;
     display: flex;
     justify-content: flex-end;
@@ -746,12 +746,12 @@
 }
 
 .notice-icon i {
-    font-size: 64px;
+    font-size: 58.9px;
     color: #ff9800;
 }
 
 .consent-notice h3 {
-    font-size: 20px;
+    font-size: 18.4px;
     font-weight: 600;
     color: #333;
     margin: 0 0 20px 0;
@@ -760,14 +760,14 @@
 
 .notice-text {
     background: #f8f9fa;
-    padding: 20px;
+    padding: 15px;
     border-radius: 8px;
     margin-bottom: 20px;
 }
 
 .notice-text p {
     margin: 0 0 15px 0;
-    font-size: 14px;
+    font-size: 12.9px;
     color: #333;
     font-weight: 500;
 }
@@ -781,7 +781,7 @@
 .notice-text li {
     margin-bottom: 12px;
     color: #666;
-    font-size: 13px;
+    font-size: 12px;
     line-height: 1.7;
     position: relative;
     padding-left: 0;
@@ -794,7 +794,7 @@
 
 .consent-checkbox {
     margin-top: 20px;
-    padding: 16px;
+    padding: 11px;
     background: white;
     border: 2px solid #667eea;
     border-radius: 8px;
@@ -817,7 +817,7 @@
 }
 
 .consent-checkbox span {
-    font-size: 14px;
+    font-size: 12.9px;
     color: #333;
     font-weight: 500;
     line-height: 1.5;
@@ -865,7 +865,7 @@
 }
 
 .competency-header h4 {
-    font-size: 16px;
+    font-size: 14.7px;
     font-weight: 600;
     color: #333;
     margin: 0;
@@ -877,7 +877,7 @@
     color: white;
     border: none;
     border-radius: 8px;
-    font-size: 13px;
+    font-size: 12px;
     font-weight: 500;
     cursor: pointer;
     display: flex;
@@ -892,7 +892,7 @@
 }
 
 .btn-add i {
-    font-size: 12px;
+    font-size: 11px;
 }
 
 .competency-list {
@@ -902,10 +902,10 @@
 }
 
 .empty-message {
-    padding: 40px;
+    padding: 32px;
     text-align: center;
     color: #999;
-    font-size: 14px;
+    font-size: 12.9px;
     background: #f8f9fa;
     border-radius: 8px;
     border: 2px dashed #e0e0e0;
@@ -916,7 +916,7 @@
     display: flex;
     justify-content: space-between;
     align-items: flex-start;
-    padding: 20px;
+    padding: 15px;
     background: #f8f9fa;
     border-radius: 8px;
     border: 1px solid #e0e0e0;
@@ -942,18 +942,18 @@
 }
 
 .item-main strong {
-    font-size: 15px;
+    font-size: 13.8px;
     font-weight: 600;
     color: #333;
 }
 
 .item-detail {
-    font-size: 13px;
+    font-size: 12px;
     color: #666;
 }
 
 .item-period {
-    font-size: 13px;
+    font-size: 12px;
     color: #999;
 }
 
@@ -962,7 +962,7 @@
     padding: 12px;
     background: white;
     border-radius: 6px;
-    font-size: 13px;
+    font-size: 12px;
     color: #666;
     line-height: 1.6;
 }
@@ -985,7 +985,7 @@
     justify-content: center;
     transition: all 0.3s ease;
     color: #666;
-    font-size: 14px;
+    font-size: 12.9px;
 }
 
 .btn-icon:hover {
@@ -1005,7 +1005,7 @@
 
 /* 역량 입력 폼 */
 .competency-form {
-    padding: 24px;
+    padding: 19px;
     background: white;
     border: 2px solid #667eea;
     border-radius: 12px;
@@ -1015,7 +1015,7 @@
 
 .form-row {
     display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    grid-template-columns: repeat(auto-fit, minmax(170px, 1fr));
     gap: 16px;
     margin-bottom: 16px;
 }
@@ -1087,7 +1087,7 @@
 }
 
 /* 역량관리 반응형 */
-@media (max-width: 768px) {
+@media (max-width: 652px) {
     .competency-item {
         flex-direction: column;
         gap: 16px;

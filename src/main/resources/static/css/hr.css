@@ -1,13 +1,13 @@
 /* 인사 관리 영역 */
 .hr-area {
-    padding: 30px;
+    padding: 24px;
 }
 
 /* 통계 카드 그리드 */
 .stats-grid {
     display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
-    gap: 20px;
+    grid-template-columns: repeat(auto-fit, minmax(212px, 1fr));
+    gap: 17px;
     margin-bottom: 30px;
 }
 
@@ -25,7 +25,7 @@
     border: 2px solid #e0e0e0;
     border-radius: 8px;
     color: #666;
-    font-size: 14px;
+    font-size: 12.9px;
     font-weight: 500;
     cursor: pointer;
     transition: all 0.3s ease;
@@ -70,9 +70,9 @@
 }
 
 .employee-table th {
-    padding: 16px;
+    padding: 11px;
     text-align: left;
-    font-size: 13px;
+    font-size: 12px;
     font-weight: 600;
     color: #666;
     border-bottom: 2px solid #e0e0e0;
@@ -80,8 +80,8 @@
 }
 
 .employee-table td {
-    padding: 16px;
-    font-size: 14px;
+    padding: 11px;
+    font-size: 12.9px;
     color: #333;
     border-bottom: 1px solid #f0f0f0;
     white-space: nowrap;
@@ -111,7 +111,7 @@
     align-items: center;
     justify-content: center;
     font-weight: 600;
-    font-size: 14px;
+    font-size: 12.9px;
 }
 
 .emp-avatar.new {
@@ -131,7 +131,7 @@
 .position-badge {
     padding: 4px 12px;
     border-radius: 12px;
-    font-size: 12px;
+    font-size: 11px;
     font-weight: 600;
     white-space: nowrap;
 }
@@ -159,7 +159,7 @@
 .status-badge {
     padding: 4px 12px;
     border-radius: 12px;
-    font-size: 12px;
+    font-size: 11px;
     font-weight: 600;
 }
 
@@ -182,7 +182,7 @@
     background: none;
     border: none;
     color: #666;
-    font-size: 16px;
+    font-size: 14.7px;
     cursor: pointer;
     padding: 6px;
     transition: all 0.3s ease;
@@ -200,7 +200,7 @@
     color: white;
     border: none;
     border-radius: 8px;
-    font-size: 14px;
+    font-size: 12.9px;
     font-weight: 500;
     cursor: pointer;
     display: flex;
@@ -262,7 +262,7 @@
     background: white;
     border-radius: 16px;
     width: 90%;
-    max-width: 800px;
+    max-width: 680px;
     max-height: 90vh;
     overflow: hidden;
     display: flex;
@@ -271,11 +271,11 @@
 }
 
 .modal-content.modal-large {
-    max-width: 900px;
+    max-width: 765px;
 }
 
 .modal-header {
-    padding: 24px 30px;
+    padding: 19px 30px;
     border-bottom: 1px solid #e0e0e0;
     display: flex;
     justify-content: space-between;
@@ -286,14 +286,14 @@
 
 .modal-header h2 {
     margin: 0;
-    font-size: 18px;
+    font-size: 16.6px;
     font-weight: 600;
 }
 
 .modal-close {
     background: none;
     border: none;
-    font-size: 24px;
+    font-size: 22.1px;
     cursor: pointer;
     color: white;
     opacity: 0.8;
@@ -312,13 +312,13 @@
 }
 
 .modal-body {
-    padding: 30px;
+    padding: 24px;
     overflow-y: auto;
     flex: 1;
 }
 
 .modal-footer {
-    padding: 20px 30px;
+    padding: 15px 30px;
     border-top: 1px solid #e0e0e0;
     display: flex;
     justify-content: flex-end;
@@ -328,7 +328,7 @@
 
 /* 폼 스타일 */
 .form-section-title {
-    font-size: 16px;
+    font-size: 14.7px;
     font-weight: 600;
     color: #333;
     margin: 0 0 20px 0;
@@ -345,7 +345,7 @@
     margin-bottom: 8px;
     font-weight: 500;
     color: #333;
-    font-size: 14px;
+    font-size: 12.9px;
 }
 
 .required {
@@ -363,7 +363,7 @@
     padding: 12px 16px;
     border: 1px solid #ddd;
     border-radius: 8px;
-    font-size: 14px;
+    font-size: 12.9px;
     font-family: inherit;
     transition: all 0.3s ease;
     box-sizing: border-box;
@@ -384,8 +384,8 @@
 
 .form-row {
     display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-    gap: 20px;
+    grid-template-columns: repeat(auto-fit, minmax(170px, 1fr));
+    gap: 17px;
     margin-bottom: 20px;
 }
 
@@ -395,7 +395,7 @@
     color: #333;
     border: none;
     border-radius: 8px;
-    font-size: 14px;
+    font-size: 12.9px;
     font-weight: 500;
     cursor: pointer;
     transition: all 0.3s ease;
@@ -406,7 +406,7 @@
 }
 
 /* 반응형 */
-@media (max-width: 768px) {
+@media (max-width: 652px) {
     .employee-table-wrapper {
         max-height: 500px; /* 모바일에서는 더 작게 */
     }

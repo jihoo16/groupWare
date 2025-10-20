@@ -2,7 +2,6 @@
 .org-container {
     display: grid;
     grid-template-columns: 400px 1fr;
-    gap: 25px;
     height: calc(100vh - 200px);
     min-height: 600px;
 }
@@ -51,6 +50,7 @@ button:focus,
 /* 좌측: 조직 트리 섹션 */
 .org-tree-section {
     background: white;
+    margin: 15px;
     border-radius: 12px;
     box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
     display: flex;
@@ -59,7 +59,7 @@ button:focus,
 }
 
 .tree-header {
-    padding: 20px;
+    padding: 15px;
     background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
     color: white;
     display: flex;
@@ -70,7 +70,7 @@ button:focus,
 
 .tree-header h3 {
     margin: 0;
-    font-size: 18px;
+    font-size: 16.6px;
     font-weight: 600;
     display: flex;
     align-items: center;
@@ -78,7 +78,7 @@ button:focus,
 }
 
 .tree-header h3 i {
-    font-size: 20px;
+    font-size: 18.4px;
 }
 
 .btn-expand-all {
@@ -88,7 +88,7 @@ button:focus,
     color: white;
     border-radius: 8px;
     cursor: pointer;
-    font-size: 13px;
+    font-size: 12px;
     display: flex;
     align-items: center;
     gap: 6px;
@@ -102,7 +102,7 @@ button:focus,
 
 /* 조직 트리 */
 .org-tree {
-    padding: 20px;
+    padding: 15px;
     overflow-y: auto;
     flex: 1;
 }
@@ -144,7 +144,7 @@ button:focus,
     display: flex;
     align-items: center;
     justify-content: center;
-    font-size: 12px;
+    font-size: 11px;
     color: #666;
     transition: transform 0.3s ease;
 }
@@ -164,7 +164,7 @@ button:focus,
 
 /* 트리 아이콘 */
 .tree-icon {
-    font-size: 16px;
+    font-size: 14.7px;
     color: #667eea;
     width: 24px;
     text-align: center;
@@ -173,14 +173,14 @@ button:focus,
 /* 트리 레이블 */
 .tree-label {
     flex: 1;
-    font-size: 14px;
+    font-size: 12.9px;
     font-weight: 500;
     color: #333;
 }
 
 /* 멤버 카운트 뱃지 */
 .tree-count {
-    font-size: 11px;
+    font-size: 10.1px;
     background: #e3f2fd;
     color: #1976d2;
     padding: 2px 8px;
@@ -218,7 +218,7 @@ button:focus,
 /* 부서 노드 */
 .tree-node.department > .tree-node-header {
     font-weight: 600;
-    font-size: 15px;
+    font-size: 13.8px;
 }
 
 .tree-node.department > .tree-node-header .tree-icon {
@@ -232,7 +232,7 @@ button:focus,
 
 .tree-node.position > .tree-node-header .tree-icon {
     color: #f5576c;
-    font-size: 14px;
+    font-size: 12.9px;
 }
 
 /* 팀원 노드 */
@@ -243,7 +243,7 @@ button:focus,
 
 .tree-node.member > .tree-node-header .tree-icon {
     color: #4facfe;
-    font-size: 14px;
+    font-size: 12.9px;
 }
 
 .tree-node.member > .tree-node-header:hover {
@@ -257,6 +257,7 @@ button:focus,
 /* 우측: 직원 상세 정보 섹션 */
 .employee-detail-section {
     background: white;
+    margin: 15px;
     border-radius: 12px;
     box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
     display: flex;
@@ -271,18 +272,18 @@ button:focus,
     flex-direction: column;
     align-items: center;
     justify-content: center;
-    gap: 20px;
+    gap: 17px;
     color: #bbb;
     text-align: center;
 }
 
 .detail-placeholder i {
-    font-size: 80px;
+    font-size: 73.6px;
     color: #e0e0e0;
 }
 
 .detail-placeholder p {
-    font-size: 16px;
+    font-size: 14.7px;
     line-height: 1.6;
     margin: 0;
 }
@@ -310,10 +311,10 @@ button:focus,
 /* 상세 헤더 */
 .detail-header {
     background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-    padding: 35px;
+    padding: 28px;
     display: flex;
     align-items: center;
-    gap: 25px;
+    gap: 21px;
     border-radius: 12px 12px 0 0;
 }
 
@@ -325,7 +326,7 @@ button:focus,
     display: flex;
     align-items: center;
     justify-content: center;
-    font-size: 50px;
+    font-size: 46px;
     color: white;
     flex-shrink: 0;
 }
@@ -335,14 +336,14 @@ button:focus,
 }
 
 .detail-name {
-    font-size: 26px;
+    font-size: 23.9px;
     font-weight: bold;
     color: white;
     margin: 0 0 8px 0;
 }
 
 .detail-position {
-    font-size: 16px;
+    font-size: 14.7px;
     color: rgba(255, 255, 255, 0.9);
     margin: 0 0 10px 0;
 }
@@ -353,13 +354,13 @@ button:focus,
     background: rgba(76, 175, 80, 0.9);
     color: white;
     border-radius: 20px;
-    font-size: 13px;
+    font-size: 12px;
     font-weight: 600;
 }
 
 /* 상세 본문 */
 .detail-body {
-    padding: 30px 35px;
+    padding: 24px 35px;
     flex: 1;
     overflow-y: auto;
 }
@@ -373,7 +374,7 @@ button:focus,
 }
 
 .detail-section h4 {
-    font-size: 16px;
+    font-size: 14.7px;
     font-weight: 600;
     color: #333;
     margin: 0 0 20px 0;
@@ -386,14 +387,14 @@ button:focus,
 
 .detail-section h4 i {
     color: #667eea;
-    font-size: 18px;
+    font-size: 16.6px;
 }
 
 /* 정보 그리드 */
 .detail-info-grid {
     display: grid;
     grid-template-columns: repeat(2, 1fr);
-    gap: 20px;
+    gap: 17px;
 }
 
 .info-item {
@@ -403,7 +404,7 @@ button:focus,
 }
 
 .info-label {
-    font-size: 12px;
+    font-size: 11px;
     font-weight: 600;
     color: #999;
     text-transform: uppercase;
@@ -411,14 +412,14 @@ button:focus,
 }
 
 .info-value {
-    font-size: 15px;
+    font-size: 13.8px;
     color: #333;
     font-weight: 500;
 }
 
 /* 액션 버튼 */
 .detail-actions {
-    padding: 20px 35px;
+    padding: 15px 35px;
     border-top: 1px solid #f0f0f0;
     display: flex;
     gap: 12px;
@@ -429,7 +430,7 @@ button:focus,
     padding: 14px 20px;
     border: none;
     border-radius: 10px;
-    font-size: 14px;
+    font-size: 12.9px;
     font-weight: 600;
     cursor: pointer;
     transition: all 0.3s ease;
@@ -440,7 +441,7 @@ button:focus,
 }
 
 .btn-action i {
-    font-size: 16px;
+    font-size: 14.7px;
 }
 
 .btn-primary {
@@ -499,13 +500,13 @@ button:focus,
 }
 
 /* 반응형 */
-@media (max-width: 1400px) {
+@media (max-width: 1190px) {
     .org-container {
         grid-template-columns: 350px 1fr;
     }
 }
 
-@media (max-width: 1200px) {
+@media (max-width: 1020px) {
     .org-container {
         grid-template-columns: 1fr;
         grid-template-rows: 400px 1fr;
@@ -516,19 +517,19 @@ button:focus,
     }
 }
 
-@media (max-width: 768px) {
+@media (max-width: 652px) {
     .org-container {
         grid-template-rows: 300px 1fr;
     }
 
     .detail-header {
-        padding: 25px;
+        padding: 20px;
         flex-direction: column;
         text-align: center;
     }
 
     .detail-body {
-        padding: 20px;
+        padding: 15px;
     }
 
     .detail-actions {

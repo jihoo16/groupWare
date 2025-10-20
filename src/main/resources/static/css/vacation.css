@@ -1,24 +1,24 @@
 /* 연차관리 페이지 스타일 */
 
 .leave-content {
-    padding: 30px;
+    padding: 24px;
 }
 
 /* 연차 현황 요약 카드 */
 .leave-summary {
     display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
-    gap: 20px;
+    grid-template-columns: repeat(auto-fit, minmax(212px, 1fr));
+    gap: 17px;
     margin-bottom: 40px;
 }
 
 .summary-card {
     background: white;
     border-radius: 12px;
-    padding: 25px;
+    padding: 20px;
     display: flex;
     align-items: center;
-    gap: 20px;
+    gap: 17px;
     box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
     transition: transform 0.3s ease, box-shadow 0.3s ease;
 }
@@ -43,7 +43,7 @@
     display: flex;
     align-items: center;
     justify-content: center;
-    font-size: 30px;
+    font-size: 27.6px;
 }
 
 .summary-card.total .card-icon {
@@ -67,28 +67,28 @@
 }
 
 .card-content h3 {
-    font-size: 14px;
+    font-size: 12.9px;
     color: #666;
     margin-bottom: 8px;
     font-weight: 500;
 }
 
 .card-content .number {
-    font-size: 32px;
+    font-size: 29.4px;
     font-weight: bold;
     color: #333;
     margin: 0;
 }
 
 .card-content .number span {
-    font-size: 16px;
+    font-size: 14.7px;
     font-weight: normal;
     color: #999;
     margin-left: 5px;
 }
 
 .card-content .sub-info {
-    font-size: 12px;
+    font-size: 11px;
     color: #999;
     margin-top: 4px;
 }
@@ -97,21 +97,21 @@
 .annual-calendar-section {
     background: white;
     border-radius: 12px;
-    padding: 30px;
+    padding: 24px;
     box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
     margin-top: 40px;
 }
 
 .calendar-legend {
     display: flex;
-    gap: 20px;
+    gap: 17px;
 }
 
 .legend-item {
     display: flex;
     align-items: center;
     gap: 8px;
-    font-size: 13px;
+    font-size: 12px;
     color: #666;
 }
 
@@ -131,8 +131,8 @@
 
 .annual-calendar-grid {
     display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
-    gap: 20px;
+    grid-template-columns: repeat(auto-fit, minmax(238px, 1fr));
+    gap: 17px;
     margin-top: 20px;
 }
 
@@ -144,7 +144,7 @@
 
 .month-header {
     text-align: center;
-    font-size: 16px;
+    font-size: 14.7px;
     font-weight: 600;
     color: #333;
     margin-bottom: 12px;
@@ -159,7 +159,7 @@
 
 .month-weekdays div {
     text-align: center;
-    font-size: 11px;
+    font-size: 10.1px;
     font-weight: 600;
     color: #999;
     padding: 5px 0;
@@ -178,7 +178,7 @@
     justify-content: center;
     background: white;
     border-radius: 4px;
-    font-size: 12px;
+    font-size: 11px;
     color: #333;
     position: relative;
 }
@@ -216,7 +216,7 @@
 .leave-history {
     background: white;
     border-radius: 12px;
-    padding: 30px;
+    padding: 24px;
     box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
 }
 
@@ -228,7 +228,7 @@
 }
 
 .section-header h2 {
-    font-size: 20px;
+    font-size: 18.4px;
     font-weight: 600;
     color: #333;
     margin: 0;
@@ -243,7 +243,7 @@
     padding: 8px 15px;
     border: 1px solid #ddd;
     border-radius: 6px;
-    font-size: 14px;
+    font-size: 12.9px;
     background: white;
     cursor: pointer;
     transition: border-color 0.3s ease;
@@ -271,7 +271,7 @@
 .history-table th {
     padding: 15px;
     text-align: left;
-    font-size: 13px;
+    font-size: 12px;
     font-weight: 600;
     color: #666;
     border-bottom: 2px solid #e0e0e0;
@@ -279,7 +279,7 @@
 
 .history-table td {
     padding: 15px;
-    font-size: 14px;
+    font-size: 12.9px;
     color: #333;
     border-bottom: 1px solid #f0f0f0;
     vertical-align: middle;
@@ -294,7 +294,7 @@
     display: inline-block;
     padding: 4px 12px;
     border-radius: 12px;
-    font-size: 12px;
+    font-size: 11px;
     font-weight: 500;
     position: static;
 }
@@ -313,7 +313,7 @@
     display: inline-block;
     padding: 5px 12px;
     border-radius: 12px;
-    font-size: 12px;
+    font-size: 11px;
     font-weight: 500;
     position: static;
 }
@@ -340,7 +340,7 @@
     border: none;
     padding: 12px 24px;
     border-radius: 8px;
-    font-size: 14px;
+    font-size: 12.9px;
     font-weight: 500;
     cursor: pointer;
     display: flex;
@@ -371,7 +371,7 @@
     border: 1px solid #ddd;
     padding: 12px 24px;
     border-radius: 8px;
-    font-size: 14px;
+    font-size: 12.9px;
     font-weight: 500;
     cursor: pointer;
     transition: all 0.3s ease;
@@ -403,7 +403,7 @@
     background: white;
     border-radius: 12px;
     width: 90%;
-    max-width: 700px;
+    max-width: 595px;
     max-height: 90vh;
     box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2);
     display: flex;
@@ -421,7 +421,7 @@
     display: flex;
     justify-content: space-between;
     align-items: center;
-    padding: 25px 30px;
+    padding: 20px 30px;
     border-bottom: 1px solid #e0e0e0;
     flex-shrink: 0;
     background: white;
@@ -429,7 +429,7 @@
 }
 
 .modal-header h2 {
-    font-size: 20px;
+    font-size: 18.4px;
     font-weight: 600;
     color: #333;
     margin: 0;
@@ -438,7 +438,7 @@
 .modal-close {
     background: none;
     border: none;
-    font-size: 24px;
+    font-size: 22.1px;
     color: #999;
     cursor: pointer;
     padding: 0;
@@ -457,7 +457,7 @@
 }
 
 .modal-body {
-    padding: 30px;
+    padding: 24px;
     overflow-y: auto;
     flex: 1;
 }
@@ -469,7 +469,7 @@
 
 .form-group label {
     display: block;
-    font-size: 14px;
+    font-size: 12.9px;
     font-weight: 500;
     color: #333;
     margin-bottom: 8px;
@@ -487,7 +487,7 @@
     padding: 12px 15px;
     border: 1px solid #ddd;
     border-radius: 8px;
-    font-size: 14px;
+    font-size: 12.9px;
     transition: border-color 0.3s ease;
 }
 
@@ -496,7 +496,7 @@
     background: #f9fafb;
     border: 1px solid #e0e0e0;
     border-radius: 12px;
-    padding: 20px;
+    padding: 15px;
 }
 
 .calendar-header {
@@ -507,7 +507,7 @@
 }
 
 .calendar-month {
-    font-size: 18px;
+    font-size: 16.6px;
     font-weight: 600;
     color: #333;
 }
@@ -540,7 +540,7 @@
 
 .calendar-weekdays div {
     text-align: center;
-    font-size: 13px;
+    font-size: 12px;
     font-weight: 600;
     color: #666;
     padding: 10px 0;
@@ -569,7 +569,7 @@
     border: 2px solid #e0e0e0;
     border-radius: 8px;
     cursor: pointer;
-    font-size: 14px;
+    font-size: 12.9px;
     font-weight: 500;
     color: #333;
     transition: all 0.3s ease;
@@ -636,12 +636,12 @@
 }
 
 .calendar-day.holiday .day-number {
-    font-size: 14px;
+    font-size: 12.9px;
     font-weight: 600;
 }
 
 .calendar-day.holiday .holiday-name {
-    font-size: 9px;
+    font-size: 8.3px;
     font-weight: 500;
     margin-top: 2px;
     text-align: center;
@@ -711,13 +711,13 @@
     padding: 12px 20px;
     background: #f3f4ff;
     border-radius: 8px;
-    font-size: 18px;
+    font-size: 16.6px;
     font-weight: 600;
     color: #667eea;
 }
 
 .calculated-days span {
-    font-size: 24px;
+    font-size: 22.1px;
     margin-right: 5px;
 }
 
@@ -727,13 +727,13 @@
     padding: 12px 20px;
     background: #e8f5e9;
     border-radius: 8px;
-    font-size: 16px;
+    font-size: 14.7px;
     font-weight: 600;
     color: #388e3c;
 }
 
 .remaining-after-use span:last-child {
-    font-size: 20px;
+    font-size: 18.4px;
     margin-left: 3px;
 }
 
@@ -747,13 +747,13 @@
     border: 1px solid #ef5350;
     border-radius: 8px;
     color: #c62828;
-    font-size: 14px;
+    font-size: 12.9px;
     font-weight: 500;
     margin-top: 12px;
 }
 
 .warning-message i {
-    font-size: 16px;
+    font-size: 14.7px;
 }
 
 /* 폼 액션 버튼 */
@@ -761,7 +761,7 @@
     display: flex;
     gap: 10px;
     justify-content: flex-end;
-    padding: 20px 30px;
+    padding: 15px 30px;
     border-top: 1px solid #e0e0e0;
     flex-shrink: 0;
     background: white;
@@ -773,7 +773,7 @@
 .used-summary {
     background: #f9fafb;
     border-radius: 8px;
-    padding: 20px;
+    padding: 15px;
     margin-bottom: 20px;
 }
 
@@ -784,13 +784,13 @@
 }
 
 .summary-row .label {
-    font-size: 15px;
+    font-size: 13.8px;
     font-weight: 600;
     color: #666;
 }
 
 .summary-row .value {
-    font-size: 18px;
+    font-size: 16.6px;
     font-weight: 700;
     color: #f57c00;
 }
@@ -815,7 +815,7 @@
 .used-table th {
     padding: 12px 15px;
     text-align: left;
-    font-size: 13px;
+    font-size: 12px;
     font-weight: 600;
     color: #666;
     border-bottom: 2px solid #e0e0e0;
@@ -824,7 +824,7 @@
 
 .used-table td {
     padding: 12px 15px;
-    font-size: 14px;
+    font-size: 12.9px;
     color: #333;
     border-bottom: 1px solid #f0f0f0;
     vertical-align: middle;
@@ -838,7 +838,7 @@
     display: inline-block;
     padding: 4px 12px;
     border-radius: 12px;
-    font-size: 12px;
+    font-size: 11px;
     font-weight: 500;
     position: static;
 }
@@ -894,7 +894,7 @@
 }
 
 /* 반응형 */
-@media (max-width: 768px) {
+@media (max-width: 652px) {
     .leave-summary {
         grid-template-columns: 1fr;
     }
@@ -915,7 +915,7 @@
     }
 
     .history-table {
-        font-size: 12px;
+        font-size: 11px;
     }
 
     .history-table th,

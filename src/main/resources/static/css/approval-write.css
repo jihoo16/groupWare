@@ -1,6 +1,6 @@
 /* 문서 작성 레이아웃 */
 .write-container {
-    padding: 25px;
+    padding: 20px;
 }
 
 /* 기본 스타일 */
@@ -55,7 +55,7 @@ div:focus {
 .write-layout {
     display: grid;
     grid-template-columns: 280px 1fr;
-    gap: 25px;
+    gap: 21px;
     height: calc(100vh - 160px);
 }
 
@@ -70,14 +70,14 @@ div:focus {
 }
 
 .sidebar-header {
-    padding: 20px;
+    padding: 15px;
     background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
     color: white;
 }
 
 .sidebar-header h3 {
     margin: 0;
-    font-size: 16px;
+    font-size: 11.7px;
     font-weight: 700;
     display: flex;
     align-items: center;
@@ -132,7 +132,7 @@ div:focus {
     display: flex;
     align-items: center;
     justify-content: center;
-    font-size: 20px;
+    font-size: 14.7px;
     color: white;
     flex-shrink: 0;
 }
@@ -173,13 +173,13 @@ div:focus {
 }
 
 .template-item-info strong {
-    font-size: 14px;
+    font-size: 10.3px;
     font-weight: 700;
     color: #333;
 }
 
 .template-item-info small {
-    font-size: 12px;
+    font-size: 8.9px;
     color: #777;
 }
 
@@ -188,11 +188,11 @@ div:focus {
     background: white;
     border-radius: 12px;
     box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
-    padding: 30px;
+    padding: 24px;
     overflow-y: auto;
     display: flex;
     flex-direction: column;
-    gap: 25px;
+    gap: 21px;
 }
 
 /* 섹션 공통 스타일 */
@@ -204,7 +204,7 @@ div:focus {
 }
 
 .section-header h4 {
-    font-size: 16px;
+    font-size: 11.7px;
     font-weight: 700;
     color: #333;
     margin: 0;
@@ -223,7 +223,7 @@ div:focus {
     color: white;
     border: none;
     border-radius: 6px;
-    font-size: 13px;
+    font-size: 9.5px;
     font-weight: 600;
     cursor: pointer;
     display: flex;
@@ -242,7 +242,7 @@ div:focus {
     background: #f8f9fa;
     border: 2px solid #e8e8e8;
     border-radius: 10px;
-    padding: 20px;
+    padding: 15px;
 }
 
 .approver-chips {
@@ -261,7 +261,7 @@ div:focus {
     border: 2px solid #667eea;
     border-radius: 20px;
     color: #667eea;
-    font-size: 14px;
+    font-size: 10.3px;
     font-weight: 600;
 }
 
@@ -274,7 +274,7 @@ div:focus {
     background: #667eea;
     color: white;
     border-radius: 50%;
-    font-size: 12px;
+    font-size: 8.9px;
     font-weight: 700;
 }
 
@@ -283,7 +283,7 @@ div:focus {
     border: none;
     color: #999;
     cursor: pointer;
-    font-size: 16px;
+    font-size: 11.7px;
     padding: 0;
     width: 20px;
     height: 20px;
@@ -299,7 +299,7 @@ div:focus {
 
 .empty-message {
     color: #999;
-    font-size: 14px;
+    font-size: 10.3px;
     padding: 15px;
     text-align: center;
     width: 100%;
@@ -310,12 +310,12 @@ div:focus {
     background: white;
     border: 2px solid #e8e8e8;
     border-radius: 10px;
-    padding: 30px;
+    padding: 24px;
 }
 
 .doc-title {
     text-align: center;
-    font-size: 24px;
+    font-size: 17.7px;
     font-weight: 700;
     color: #333;
     margin: 0 0 25px 0;
@@ -334,7 +334,7 @@ div:focus {
 .form-table td {
     border: 1px solid #333;
     padding: 12px 16px;
-    font-size: 14px;
+    font-size: 10.3px;
 }
 
 .form-table th {
@@ -356,7 +356,7 @@ div:focus {
     border: 1px solid #ddd;
     padding: 8px 12px;
     border-radius: 4px;
-    font-size: 14px;
+    font-size: 10.3px;
     font-family: inherit;
     box-sizing: border-box;
 }
@@ -378,7 +378,7 @@ div:focus {
     background: #f8f9fa;
     border: 2px solid #e8e8e8;
     border-radius: 10px;
-    padding: 20px;
+    padding: 15px;
 }
 
 .file-upload-area {
@@ -398,26 +398,26 @@ div:focus {
     flex-direction: column;
     align-items: center;
     justify-content: center;
-    padding: 35px 20px;
+    padding: 28px 20px;
     cursor: pointer;
     color: #777;
 }
 
 .file-upload-label i {
-    font-size: 42px;
+    font-size: 30.9px;
     color: #667eea;
     margin-bottom: 12px;
 }
 
 .file-upload-label span {
-    font-size: 14px;
+    font-size: 10.3px;
     font-weight: 500;
     color: #555;
     margin-bottom: 5px;
 }
 
 .file-upload-label small {
-    font-size: 12px;
+    font-size: 8.9px;
     color: #999;
 }
 
@@ -437,13 +437,13 @@ div:focus {
 }
 
 .file-item i {
-    font-size: 20px;
+    font-size: 14.7px;
     color: #667eea;
 }
 
 .file-item span {
     flex: 1;
-    font-size: 14px;
+    font-size: 10.3px;
     color: #333;
 }
 
@@ -451,7 +451,7 @@ div:focus {
     background: none;
     border: none;
     color: #999;
-    font-size: 18px;
+    font-size: 13.2px;
     cursor: pointer;
     transition: color 0.2s ease;
     padding: 4px;
@@ -471,7 +471,7 @@ div:focus {
 
 .btn-lg {
     padding: 14px 28px;
-    font-size: 15px;
+    font-size: 11px;
     font-weight: 600;
     border-radius: 8px;
     cursor: pointer;
@@ -535,7 +535,7 @@ div:focus {
     background: white;
     border-radius: 12px;
     width: 90%;
-    max-width: 550px;
+    max-width: 467px;
     max-height: 85vh;
     display: flex;
     flex-direction: column;
@@ -555,7 +555,7 @@ div:focus {
 }
 
 .modal-header {
-    padding: 20px 25px;
+    padding: 15px 25px;
     background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
     border-radius: 12px 12px 0 0;
     display: flex;
@@ -565,7 +565,7 @@ div:focus {
 
 .modal-header h3 {
     margin: 0;
-    font-size: 18px;
+    font-size: 13.2px;
     font-weight: 700;
     color: white;
 }
@@ -581,7 +581,7 @@ div:focus {
     align-items: center;
     justify-content: center;
     color: white;
-    font-size: 16px;
+    font-size: 11.7px;
     transition: all 0.2s ease;
 }
 
@@ -590,7 +590,7 @@ div:focus {
 }
 
 .modal-body {
-    padding: 25px;
+    padding: 20px;
     overflow-y: auto;
     flex: 1;
 }
@@ -605,7 +605,7 @@ div:focus {
     padding: 12px 40px 12px 16px;
     border: 1px solid #ddd;
     border-radius: 8px;
-    font-size: 14px;
+    font-size: 10.3px;
 }
 
 .modal-search input:focus {
@@ -650,7 +650,7 @@ div:focus {
 }
 
 .employee-item i {
-    font-size: 28px;
+    font-size: 20.6px;
     color: #667eea;
 }
 
@@ -659,14 +659,14 @@ div:focus {
 }
 
 .employee-name {
-    font-size: 14px;
+    font-size: 10.3px;
     font-weight: 700;
     color: #333;
     margin-bottom: 3px;
 }
 
 .employee-detail {
-    font-size: 12px;
+    font-size: 8.9px;
     color: #777;
 }
 
@@ -681,7 +681,7 @@ div:focus {
 .modal-footer button {
     padding: 10px 20px;
     border-radius: 8px;
-    font-size: 14px;
+    font-size: 10.3px;
     font-weight: 600;
     cursor: pointer;
     transition: all 0.2s ease;
@@ -722,13 +722,13 @@ div:focus {
 }
 
 /* 반응형 */
-@media (max-width: 1024px) {
+@media (max-width: 870px) {
     .write-layout {
         grid-template-columns: 240px 1fr;
     }
 }
 
-@media (max-width: 768px) {
+@media (max-width: 652px) {
     .write-layout {
         grid-template-columns: 1fr;
         grid-template-rows: auto 1fr;
@@ -750,6 +750,6 @@ div:focus {
 
     .form-table th {
         width: 100px;
-        font-size: 13px;
+        font-size: 9.5px;
     }
 }
