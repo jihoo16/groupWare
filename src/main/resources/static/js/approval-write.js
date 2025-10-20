@@ -6,7 +6,8 @@ document.addEventListener('DOMContentLoaded', function() {
     let selectedEmployee = null;
 
     // DOM 요소
-    const templateItems = document.querySelectorAll('.template-item');
+    const templateTreeHeaders = document.querySelectorAll('.tree-node-header[data-template]');
+    const categoryNodes = document.querySelectorAll('.tree-node-header.category-node');
     const documentForm = document.getElementById('documentForm');
     const addApproverBtn = document.getElementById('addApproverBtn');
     const approverChips = document.getElementById('approverChips');
@@ -31,12 +32,23 @@ document.addEventListener('DOMContentLoaded', function() {
         { id: 8, name: '유재석', position: '부장', dept: '영업본부 영업1팀' }
     ];
 
-    // 템플릿 선택
-    templateItems.forEach(item => {
-        item.addEventListener('click', function() {
-            templateItems.forEach(i => i.classList.remove('active'));
+    // 카테고리 노드 토글 (트리 확장/축소)
+    categoryNodes.forEach(categoryNode => {
+        categoryNode.addEventListener('click', function(e) {
+            const treeNode = this.closest('.tree-node');
+            treeNode.classList.toggle('expanded');
+        });
+    });
+
+    // 템플릿 선택 (문서 항목 클릭)
+    templateTreeHeaders.forEach(header => {
+        header.addEventListener('click', function() {
+            // 모든 템플릿 헤더의 active 클래스 제거
+            templateTreeHeaders.forEach(h => h.classList.remove('active'));
+            // 클릭한 항목에 active 클래스 추가
             this.classList.add('active');
 
+            // 템플릿 로드
             const template = this.getAttribute('data-template');
             loadTemplate(template);
         });
