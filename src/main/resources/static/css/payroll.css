@@ -288,6 +288,31 @@
     color: #1a237e;
 }
 
+/* 스크롤바 커스터마이징 - 호버 시에만 표시 */
+.payroll-table-wrapper::-webkit-scrollbar {
+    width: 6px;
+    height: 6px;
+}
+
+.payroll-table-wrapper::-webkit-scrollbar-track {
+    background: transparent;
+    border-radius: 3px;
+}
+
+.payroll-table-wrapper::-webkit-scrollbar-thumb {
+    background: transparent;
+    border-radius: 3px;
+    transition: background 0.3s ease;
+}
+
+.payroll-table-wrapper:hover::-webkit-scrollbar-thumb {
+    background: #ccc;
+}
+
+.payroll-table-wrapper::-webkit-scrollbar-thumb:hover {
+    background: #999 !important;
+}
+
 /* 반응형 */
 @media (max-width: 1024px) {
     .payroll-stats {

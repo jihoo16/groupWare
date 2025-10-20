@@ -214,24 +214,29 @@
     box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
 }
 
-/* 스크롤바 스타일 */
+/* 스크롤바 스타일 - 호버 시에만 표시 */
 .employee-table-wrapper::-webkit-scrollbar {
     width: 8px;
     height: 8px;
 }
 
 .employee-table-wrapper::-webkit-scrollbar-track {
-    background: #f1f1f1;
+    background: transparent;
     border-radius: 4px;
 }
 
 .employee-table-wrapper::-webkit-scrollbar-thumb {
-    background: #888;
+    background: transparent;
     border-radius: 4px;
+    transition: background 0.3s ease;
+}
+
+.employee-table-wrapper:hover::-webkit-scrollbar-thumb {
+    background: #888;
 }
 
 .employee-table-wrapper::-webkit-scrollbar-thumb:hover {
-    background: #555;
+    background: #555 !important;
 }
 
 /* 모달 스타일 */

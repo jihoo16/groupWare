@@ -1,6 +1,6 @@
 <!DOCTYPE html>
 <html lang="ko" xmlns:th="http://www.thymeleaf.org">
-<head th:replace="fragments/layout :: head('결재 문서', '/css/approval.css')"></head>
+<head th:replace="fragments/layout :: head('전자결재', '/css/approval.css')"></head>
 <body>
     <div class="container">
         <!-- 좌측 네비게이션 바 -->
@@ -10,634 +10,750 @@
         <main class="main-content">
             <header class="header">
                 <div class="header-left">
-                    <h1 class="page-title">결재 문서</h1>
+                    <h1 class="page-title"><i class="fas fa-file-signature"></i> 전자결재</h1>
                 </div>
                 <div class="header-right">
-                    <button class="btn-primary" id="newApprovalBtn">
-                        <i class="fas fa-plus"></i>
+                    <div class="search-box">
+                        <i class="fas fa-search"></i>
+                        <input type="text" id="searchInput" placeholder="문서 검색...">
+                    </div>
+                    <button class="btn-primary" onclick="location.href='/approval/write'">
+                        <i class="fas fa-pen"></i>
                         새 문서 작성
                     </button>
                 </div>
             </header>
 
-            <div class="approval-area">
-                <!-- 필터 탭 -->
-                <div class="filter-tabs">
-                    <button class="tab-btn active" data-filter="all">전체 <span class="tab-count">8</span></button>
-                    <button class="tab-btn" data-filter="pending">결재 대기 <span class="tab-count">3</span></button>
-                    <button class="tab-btn" data-filter="approved">승인됨 <span class="tab-count">4</span></button>
-                    <button class="tab-btn" data-filter="rejected">반려됨 <span class="tab-count">1</span></button>
-                </div>
-
-                <!-- 결재 문서 목록 -->
-                <div class="approval-list">
-                    <!-- 결재 대기 문서 -->
-                    <div class="approval-card" data-status="pending">
-                        <div class="approval-header">
-                            <div class="approval-type">
-                                <i class="fas fa-file-invoice"></i>
-                                <span>지출결의서</span>
-                            </div>
-                            <span class="status-badge status-pending">결재 대기</span>
-                        </div>
-                        <div class="approval-body">
-                            <h3 class="approval-title">사무용품 구매 건</h3>
-                            <p class="approval-desc">프린터 용지, 복사용지, 사무용품 일괄 구매 요청</p>
-                            <div class="approval-meta">
-                                <div class="meta-item">
-                                    <i class="fas fa-user"></i>
-                                    <span>기안자: 강총무</span>
-                                </div>
-                                <div class="meta-item">
-                                    <i class="fas fa-calendar"></i>
-                                    <span>2025-01-15</span>
-                                </div>
-                                <div class="meta-item">
-                                    <i class="fas fa-won-sign"></i>
-                                    <span>1,250,000원</span>
-                                </div>
-                            </div>
-                        </div>
-                        <div class="approval-footer">
-                            <div class="approval-line">
-                                <span class="approver done">박관리 (승인)</span>
-                                <i class="fas fa-arrow-right"></i>
-                                <span class="approver current">이경영 (대기)</span>
-                                <i class="fas fa-arrow-right"></i>
-                                <span class="approver">김대표</span>
-                            </div>
-                            <button class="btn-view">상세보기</button>
-                        </div>
+            <div class="approval-container">
+                <!-- 좌측: 결재함 메뉴 -->
+                <aside class="approval-sidebar">
+                    <div class="sidebar-section">
+                        <h3 class="sidebar-title">
+                            <i class="fas fa-inbox"></i>
+                            결재함
+                        </h3>
+                        <nav class="sidebar-menu">
+                            <a href="#" class="menu-item active" data-box="pending">
+                                <i class="fas fa-clock"></i>
+                                <span>결재 대기</span>
+                                <span class="badge badge-warning">5</span>
+                            </a>
+                            <a href="#" class="menu-item" data-box="in-progress">
+                                <i class="fas fa-spinner"></i>
+                                <span>결재 진행중</span>
+                                <span class="badge badge-info">12</span>
+                            </a>
+                            <a href="#" class="menu-item" data-box="approved">
+                                <i class="fas fa-check-circle"></i>
+                                <span>결재 완료</span>
+                                <span class="badge badge-success">48</span>
+                            </a>
+                            <a href="#" class="menu-item" data-box="rejected">
+                                <i class="fas fa-times-circle"></i>
+                                <span>반려</span>
+                                <span class="badge badge-danger">3</span>
+                            </a>
+                            <a href="#" class="menu-item" data-box="reference">
+                                <i class="fas fa-eye"></i>
+                                <span>참조/수신</span>
+                                <span class="badge badge-secondary">15</span>
+                            </a>
+                        </nav>
                     </div>
 
-                    <div class="approval-card" data-status="pending">
-                        <div class="approval-header">
-                            <div class="approval-type">
-                                <i class="fas fa-business-time"></i>
-                                <span>출장신청서</span>
-                            </div>
-                            <span class="status-badge status-pending">결재 대기</span>
-                        </div>
-                        <div class="approval-body">
-                            <h3 class="approval-title">부산 고객사 방문</h3>
-                            <p class="approval-desc">신규 고객사 미팅 및 계약 체결 관련</p>
-                            <div class="approval-meta">
-                                <div class="meta-item">
-                                    <i class="fas fa-user"></i>
-                                    <span>기안자: 한세일즈</span>
-                                </div>
-                                <div class="meta-item">
-                                    <i class="fas fa-calendar"></i>
-                                    <span>2025-01-14</span>
-                                </div>
-                                <div class="meta-item">
-                                    <i class="fas fa-clock"></i>
-                                    <span>1박 2일</span>
-                                </div>
-                            </div>
-                        </div>
-                        <div class="approval-footer">
-                            <div class="approval-line">
-                                <span class="approver current">송영업 (대기)</span>
-                                <i class="fas fa-arrow-right"></i>
-                                <span class="approver">김대표</span>
-                            </div>
-                            <button class="btn-view">상세보기</button>
-                        </div>
-                    </div>
-
-                    <div class="approval-card" data-status="pending">
-                        <div class="approval-header">
-                            <div class="approval-type">
-                                <i class="fas fa-laptop-code"></i>
-                                <span>구매요청서</span>
-                            </div>
-                            <span class="status-badge status-pending">결재 대기</span>
-                        </div>
-                        <div class="approval-body">
-                            <h3 class="approval-title">개발 장비 구매</h3>
-                            <p class="approval-desc">MacBook Pro 2대, 모니터 4대 구매 요청</p>
-                            <div class="approval-meta">
-                                <div class="meta-item">
-                                    <i class="fas fa-user"></i>
-                                    <span>기안자: 김개발</span>
-                                </div>
-                                <div class="meta-item">
-                                    <i class="fas fa-calendar"></i>
-                                    <span>2025-01-13</span>
-                                </div>
-                                <div class="meta-item">
-                                    <i class="fas fa-won-sign"></i>
-                                    <span>8,500,000원</span>
-                                </div>
-                            </div>
-                        </div>
-                        <div class="approval-footer">
-                            <div class="approval-line">
-                                <span class="approver current">이CTO (대기)</span>
-                                <i class="fas fa-arrow-right"></i>
-                                <span class="approver">김대표</span>
-                            </div>
-                            <button class="btn-view">상세보기</button>
-                        </div>
-                    </div>
-
-                    <!-- 승인된 문서 -->
-                    <div class="approval-card" data-status="approved">
-                        <div class="approval-header">
-                            <div class="approval-type">
-                                <i class="fas fa-file-contract"></i>
-                                <span>계약서</span>
-                            </div>
-                            <span class="status-badge status-approved">승인 완료</span>
-                        </div>
-                        <div class="approval-body">
-                            <h3 class="approval-title">2025년 1분기 마케팅 대행사 계약</h3>
-                            <p class="approval-desc">디지털 마케팅 및 SNS 운영 대행 계약</p>
-                            <div class="approval-meta">
-                                <div class="meta-item">
-                                    <i class="fas fa-user"></i>
-                                    <span>기안자: 오마케팅</span>
-                                </div>
-                                <div class="meta-item">
-                                    <i class="fas fa-calendar"></i>
-                                    <span>2025-01-10</span>
-                                </div>
-                                <div class="meta-item">
-                                    <i class="fas fa-won-sign"></i>
-                                    <span>15,000,000원</span>
-                                </div>
-                            </div>
-                        </div>
-                        <div class="approval-footer">
-                            <div class="approval-line">
-                                <span class="approver done">송영업 (승인)</span>
-                                <i class="fas fa-arrow-right"></i>
-                                <span class="approver done">박CMO (승인)</span>
-                                <i class="fas fa-arrow-right"></i>
-                                <span class="approver done">김대표 (승인)</span>
-                            </div>
-                            <button class="btn-view">상세보기</button>
-                        </div>
-                    </div>
-
-                    <div class="approval-card" data-status="approved">
-                        <div class="approval-header">
-                            <div class="approval-type">
+                    <div class="sidebar-section">
+                        <h3 class="sidebar-title">
+                            <i class="fas fa-folder"></i>
+                            문서함
+                        </h3>
+                        <nav class="sidebar-menu">
+                            <a href="#" class="menu-item" data-category="all">
+                                <i class="fas fa-copy"></i>
+                                <span>전체 문서</span>
+                            </a>
+                            <a href="#" class="menu-item" data-category="report">
+                                <i class="fas fa-chart-line"></i>
+                                <span>주간/월간 보고</span>
+                            </a>
+                            <a href="#" class="menu-item" data-category="vacation">
+                                <i class="fas fa-umbrella-beach"></i>
+                                <span>휴가 신청</span>
+                            </a>
+                            <a href="#" class="menu-item" data-category="expense">
+                                <i class="fas fa-won-sign"></i>
+                                <span>지출 결의</span>
+                            </a>
+                            <a href="#" class="menu-item" data-category="purchase">
+                                <i class="fas fa-shopping-cart"></i>
+                                <span>구매 요청</span>
+                            </a>
+                            <a href="#" class="menu-item" data-category="meeting">
                                 <i class="fas fa-users"></i>
-                                <span>채용요청서</span>
-                            </div>
-                            <span class="status-badge status-approved">승인 완료</span>
-                        </div>
-                        <div class="approval-body">
-                            <h3 class="approval-title">신입 개발자 채용</h3>
-                            <p class="approval-desc">프론트엔드 개발자 1명, 백엔드 개발자 1명 채용</p>
-                            <div class="approval-meta">
-                                <div class="meta-item">
-                                    <i class="fas fa-user"></i>
-                                    <span>기안자: 최인사</span>
-                                </div>
-                                <div class="meta-item">
-                                    <i class="fas fa-calendar"></i>
-                                    <span>2025-01-08</span>
-                                </div>
-                                <div class="meta-item">
-                                    <i class="fas fa-user-plus"></i>
-                                    <span>2명</span>
-                                </div>
-                            </div>
-                        </div>
-                        <div class="approval-footer">
-                            <div class="approval-line">
-                                <span class="approver done">이경영 (승인)</span>
-                                <i class="fas fa-arrow-right"></i>
-                                <span class="approver done">이CTO (승인)</span>
-                                <i class="fas fa-arrow-right"></i>
-                                <span class="approver done">김대표 (승인)</span>
-                            </div>
-                            <button class="btn-view">상세보기</button>
+                                <span>회의록</span>
+                            </a>
+                            <a href="#" class="menu-item" data-category="general">
+                                <i class="fas fa-file-alt"></i>
+                                <span>일반 기안</span>
+                            </a>
+                        </nav>
+                    </div>
+                </aside>
+
+                <!-- 우측: 문서 목록 -->
+                <div class="approval-content">
+                    <div class="content-header">
+                        <h2 class="content-title">결재 대기</h2>
+                        <div class="content-controls">
+                            <select class="sort-select" id="sortSelect">
+                                <option value="date-desc">최신순</option>
+                                <option value="date-asc">오래된순</option>
+                                <option value="title">제목순</option>
+                                <option value="drafter">기안자순</option>
+                            </select>
                         </div>
                     </div>
 
-                    <div class="approval-card" data-status="approved">
-                        <div class="approval-header">
-                            <div class="approval-type">
-                                <i class="fas fa-file-invoice-dollar"></i>
-                                <span>예산신청서</span>
-                            </div>
-                            <span class="status-badge status-approved">승인 완료</span>
+                    <div class="document-table-wrapper">
+                        <div class="document-table-container" id="documentList">
+                            <table class="document-table">
+                            <thead>
+                                <tr>
+                                    <th width="60">상태</th>
+                                    <th width="80">긴급</th>
+                                    <th width="120">문서종류</th>
+                                    <th>제목</th>
+                                    <th width="100">기안자</th>
+                                    <th width="100">부서</th>
+                                    <th width="150">결재선</th>
+                                    <th width="120">기안일시</th>
+                                    <th width="100">관리</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr class="doc-row" data-status="pending" data-category="vacation">
+                                    <td>
+                                        <span class="status-badge status-pending">대기</span>
+                                    </td>
+                                    <td>
+                                        <span class="urgent-badge" style="display: none;">긴급</span>
+                                    </td>
+                                    <td>
+                                        <span class="doc-type">
+                                            <i class="fas fa-umbrella-beach"></i>
+                                            휴가신청서
+                                        </span>
+                                    </td>
+                                    <td class="doc-title-cell">
+                                        <div class="title-wrap">연차 휴가 신청 (2025.01.25~26)</div>
+                                        <div class="desc-wrap">가족 행사로 인한 연차 2일 사용 신청</div>
+                                    </td>
+                                    <td>김철수 대리</td>
+                                    <td>개발팀</td>
+                                    <td>
+                                        <div class="approver-line">
+                                            <span class="approver done">박팀장</span>
+                                            <i class="fas fa-chevron-right"></i>
+                                            <span class="approver current">이부장</span>
+                                        </div>
+                                    </td>
+                                    <td>2025-01-18 14:23</td>
+                                    <td>
+                                        <div class="table-actions">
+                                            <button class="btn-icon btn-approve">
+                                                <i class="fas fa-check"></i>
+                                            </button>
+                                            <button class="btn-icon btn-reject">
+                                                <i class="fas fa-times"></i>
+                                            </button>
+                                            <button class="btn-icon btn-view">
+                                                <i class="fas fa-eye"></i>
+                                            </button>
+                                        </div>
+                                    </td>
+                                </tr>
+
+                                <tr class="doc-row" data-status="pending" data-category="expense">
+                                    <td>
+                                        <span class="status-badge status-pending">대기</span>
+                                    </td>
+                                    <td>
+                                        <span class="urgent-badge">긴급</span>
+                                    </td>
+                                    <td>
+                                        <span class="doc-type">
+                                            <i class="fas fa-won-sign"></i>
+                                            지출결의서
+                                        </span>
+                                    </td>
+                                    <td class="doc-title-cell">
+                                        <div class="title-wrap">사무용품 구매 건</div>
+                                        <div class="desc-wrap">프린터 토너 및 복사용지 구매 (850,000원)</div>
+                                    </td>
+                                    <td>이영희 사원</td>
+                                    <td>총무팀</td>
+                                    <td>
+                                        <div class="approver-line">
+                                            <span class="approver current">박과장</span>
+                                            <i class="fas fa-chevron-right"></i>
+                                            <span class="approver">최부장</span>
+                                        </div>
+                                    </td>
+                                    <td>2025-01-18 13:45</td>
+                                    <td>
+                                        <div class="table-actions">
+                                            <button class="btn-icon btn-approve">
+                                                <i class="fas fa-check"></i>
+                                            </button>
+                                            <button class="btn-icon btn-reject">
+                                                <i class="fas fa-times"></i>
+                                            </button>
+                                            <button class="btn-icon btn-view">
+                                                <i class="fas fa-eye"></i>
+                                            </button>
+                                        </div>
+                                    </td>
+                                </tr>
+
+                                <tr class="doc-row" data-status="pending" data-category="report">
+                                    <td>
+                                        <span class="status-badge status-pending">대기</span>
+                                    </td>
+                                    <td></td>
+                                    <td>
+                                        <span class="doc-type">
+                                            <i class="fas fa-chart-line"></i>
+                                            주간업무보고
+                                        </span>
+                                    </td>
+                                    <td class="doc-title-cell">
+                                        <div class="title-wrap">2025년 1월 3주차 주간업무보고</div>
+                                        <div class="desc-wrap">신규 프로젝트 진행 현황 및 주요 이슈 보고</div>
+                                    </td>
+                                    <td>정민수 과장</td>
+                                    <td>기획팀</td>
+                                    <td>
+                                        <div class="approver-line">
+                                            <span class="approver current">강팀장</span>
+                                        </div>
+                                    </td>
+                                    <td>2025-01-18 11:20</td>
+                                    <td>
+                                        <div class="table-actions">
+                                            <button class="btn-icon btn-approve">
+                                                <i class="fas fa-check"></i>
+                                            </button>
+                                            <button class="btn-icon btn-reject">
+                                                <i class="fas fa-times"></i>
+                                            </button>
+                                            <button class="btn-icon btn-view">
+                                                <i class="fas fa-eye"></i>
+                                            </button>
+                                        </div>
+                                    </td>
+                                </tr>
+
+                                <tr class="doc-row" data-status="pending" data-category="meeting">
+                                    <td>
+                                        <span class="status-badge status-pending">대기</span>
+                                    </td>
+                                    <td></td>
+                                    <td>
+                                        <span class="doc-type">
+                                            <i class="fas fa-users"></i>
+                                            회의록
+                                        </span>
+                                    </td>
+                                    <td class="doc-title-cell">
+                                        <div class="title-wrap">2025 Q1 전략회의 회의록</div>
+                                        <div class="desc-wrap">1분기 사업 계획 및 목표 설정 회의 (참석 8명)</div>
+                                    </td>
+                                    <td>오준호 차장</td>
+                                    <td>경영지원팀</td>
+                                    <td>
+                                        <div class="approver-line">
+                                            <span class="approver done">김부장</span>
+                                            <i class="fas fa-chevron-right"></i>
+                                            <span class="approver current">박상무</span>
+                                        </div>
+                                    </td>
+                                    <td>2025-01-18 09:15</td>
+                                    <td>
+                                        <div class="table-actions">
+                                            <button class="btn-icon btn-approve">
+                                                <i class="fas fa-check"></i>
+                                            </button>
+                                            <button class="btn-icon btn-reject">
+                                                <i class="fas fa-times"></i>
+                                            </button>
+                                            <button class="btn-icon btn-view">
+                                                <i class="fas fa-eye"></i>
+                                            </button>
+                                        </div>
+                                    </td>
+                                </tr>
+
+                                <tr class="doc-row" data-status="pending" data-category="purchase">
+                                    <td>
+                                        <span class="status-badge status-pending">대기</span>
+                                    </td>
+                                    <td></td>
+                                    <td>
+                                        <span class="doc-type">
+                                            <i class="fas fa-shopping-cart"></i>
+                                            구매요청서
+                                        </span>
+                                    </td>
+                                    <td class="doc-title-cell">
+                                        <div class="title-wrap">노트북 2대 구매 요청</div>
+                                        <div class="desc-wrap">신입사원 지급용 노트북 구매 (3,600,000원)</div>
+                                    </td>
+                                    <td>서하늘 대리</td>
+                                    <td>IT지원팀</td>
+                                    <td>
+                                        <div class="approver-line">
+                                            <span class="approver current">윤팀장</span>
+                                            <i class="fas fa-chevron-right"></i>
+                                            <span class="approver">최부장</span>
+                                        </div>
+                                    </td>
+                                    <td>2025-01-17 16:40</td>
+                                    <td>
+                                        <div class="table-actions">
+                                            <button class="btn-icon btn-approve">
+                                                <i class="fas fa-check"></i>
+                                            </button>
+                                            <button class="btn-icon btn-reject">
+                                                <i class="fas fa-times"></i>
+                                            </button>
+                                            <button class="btn-icon btn-view">
+                                                <i class="fas fa-eye"></i>
+                                            </button>
+                                        </div>
+                                    </td>
+                                </tr>
+
+                                <tr class="doc-row" data-status="pending" data-category="general">
+                                    <td>
+                                        <span class="status-badge status-pending">대기</span>
+                                    </td>
+                                    <td></td>
+                                    <td>
+                                        <span class="doc-type">
+                                            <i class="fas fa-file-alt"></i>
+                                            일반기안
+                                        </span>
+                                    </td>
+                                    <td class="doc-title-cell">
+                                        <div class="title-wrap">신규 협력업체 계약 건</div>
+                                        <div class="desc-wrap">A사와의 연간 유지보수 계약 체결</div>
+                                    </td>
+                                    <td>최민준 과장</td>
+                                    <td>구매팀</td>
+                                    <td>
+                                        <div class="approver-line">
+                                            <span class="approver current">김팀장</span>
+                                            <i class="fas fa-chevron-right"></i>
+                                            <span class="approver">이상무</span>
+                                        </div>
+                                    </td>
+                                    <td>2025-01-17 15:30</td>
+                                    <td>
+                                        <div class="table-actions">
+                                            <button class="btn-icon btn-approve">
+                                                <i class="fas fa-check"></i>
+                                            </button>
+                                            <button class="btn-icon btn-reject">
+                                                <i class="fas fa-times"></i>
+                                            </button>
+                                            <button class="btn-icon btn-view">
+                                                <i class="fas fa-eye"></i>
+                                            </button>
+                                        </div>
+                                    </td>
+                                </tr>
+
+                                <tr class="doc-row" data-status="pending" data-category="vacation">
+                                    <td>
+                                        <span class="status-badge status-pending">대기</span>
+                                    </td>
+                                    <td></td>
+                                    <td>
+                                        <span class="doc-type">
+                                            <i class="fas fa-umbrella-beach"></i>
+                                            휴가신청서
+                                        </span>
+                                    </td>
+                                    <td class="doc-title-cell">
+                                        <div class="title-wrap">반차 신청 (2025.01.22 오후)</div>
+                                        <div class="desc-wrap">개인 용무로 인한 반차 사용</div>
+                                    </td>
+                                    <td>박지원 사원</td>
+                                    <td>마케팅팀</td>
+                                    <td>
+                                        <div class="approver-line">
+                                            <span class="approver current">정팀장</span>
+                                        </div>
+                                    </td>
+                                    <td>2025-01-17 14:15</td>
+                                    <td>
+                                        <div class="table-actions">
+                                            <button class="btn-icon btn-approve">
+                                                <i class="fas fa-check"></i>
+                                            </button>
+                                            <button class="btn-icon btn-reject">
+                                                <i class="fas fa-times"></i>
+                                            </button>
+                                            <button class="btn-icon btn-view">
+                                                <i class="fas fa-eye"></i>
+                                            </button>
+                                        </div>
+                                    </td>
+                                </tr>
+
+                                <tr class="doc-row" data-status="pending" data-category="expense">
+                                    <td>
+                                        <span class="status-badge status-pending">대기</span>
+                                    </td>
+                                    <td>
+                                        <span class="urgent-badge">긴급</span>
+                                    </td>
+                                    <td>
+                                        <span class="doc-type">
+                                            <i class="fas fa-won-sign"></i>
+                                            지출결의서
+                                        </span>
+                                    </td>
+                                    <td class="doc-title-cell">
+                                        <div class="title-wrap">서버 긴급 점검 비용</div>
+                                        <div class="desc-wrap">AWS 서버 증설 및 보안 강화 (12,500,000원)</div>
+                                    </td>
+                                    <td>강도현 차장</td>
+                                    <td>개발팀</td>
+                                    <td>
+                                        <div class="approver-line">
+                                            <span class="approver done">박팀장</span>
+                                            <i class="fas fa-chevron-right"></i>
+                                            <span class="approver current">최부장</span>
+                                            <i class="fas fa-chevron-right"></i>
+                                            <span class="approver">김대표</span>
+                                        </div>
+                                    </td>
+                                    <td>2025-01-17 10:20</td>
+                                    <td>
+                                        <div class="table-actions">
+                                            <button class="btn-icon btn-approve">
+                                                <i class="fas fa-check"></i>
+                                            </button>
+                                            <button class="btn-icon btn-reject">
+                                                <i class="fas fa-times"></i>
+                                            </button>
+                                            <button class="btn-icon btn-view">
+                                                <i class="fas fa-eye"></i>
+                                            </button>
+                                        </div>
+                                    </td>
+                                </tr>
+
+                                <tr class="doc-row" data-status="in-progress" data-category="report">
+                                    <td>
+                                        <span class="status-badge status-in-progress">진행중</span>
+                                    </td>
+                                    <td></td>
+                                    <td>
+                                        <span class="doc-type">
+                                            <i class="fas fa-chart-line"></i>
+                                            월간업무보고
+                                        </span>
+                                    </td>
+                                    <td class="doc-title-cell">
+                                        <div class="title-wrap">2024년 12월 월간업무보고</div>
+                                        <div class="desc-wrap">연말 실적 정산 및 내년도 계획 수립</div>
+                                    </td>
+                                    <td>송미래 대리</td>
+                                    <td>영업팀</td>
+                                    <td>
+                                        <div class="approver-line">
+                                            <span class="approver done">안팀장</span>
+                                            <i class="fas fa-chevron-right"></i>
+                                            <span class="approver current">윤본부장</span>
+                                        </div>
+                                    </td>
+                                    <td>2025-01-16 18:00</td>
+                                    <td>
+                                        <div class="table-actions">
+                                            <button class="btn-icon btn-view">
+                                                <i class="fas fa-eye"></i>
+                                            </button>
+                                        </div>
+                                    </td>
+                                </tr>
+
+                                <tr class="doc-row" data-status="in-progress" data-category="purchase">
+                                    <td>
+                                        <span class="status-badge status-in-progress">진행중</span>
+                                    </td>
+                                    <td></td>
+                                    <td>
+                                        <span class="doc-type">
+                                            <i class="fas fa-shopping-cart"></i>
+                                            구매요청서
+                                        </span>
+                                    </td>
+                                    <td class="doc-title-cell">
+                                        <div class="title-wrap">사무실 집기 구매</div>
+                                        <div class="desc-wrap">책상 5개, 의자 5개 구매 (2,800,000원)</div>
+                                    </td>
+                                    <td>한지수 사원</td>
+                                    <td>총무팀</td>
+                                    <td>
+                                        <div class="approver-line">
+                                            <span class="approver done">박과장</span>
+                                            <i class="fas fa-chevron-right"></i>
+                                            <span class="approver current">김팀장</span>
+                                        </div>
+                                    </td>
+                                    <td>2025-01-16 16:45</td>
+                                    <td>
+                                        <div class="table-actions">
+                                            <button class="btn-icon btn-view">
+                                                <i class="fas fa-eye"></i>
+                                            </button>
+                                        </div>
+                                    </td>
+                                </tr>
+
+                                <tr class="doc-row" data-status="approved" data-category="vacation">
+                                    <td>
+                                        <span class="status-badge status-approved">완료</span>
+                                    </td>
+                                    <td></td>
+                                    <td>
+                                        <span class="doc-type">
+                                            <i class="fas fa-umbrella-beach"></i>
+                                            휴가신청서
+                                        </span>
+                                    </td>
+                                    <td class="doc-title-cell">
+                                        <div class="title-wrap">연차 사용 (2025.01.20~21)</div>
+                                        <div class="desc-wrap">여행으로 인한 2일 연차 사용</div>
+                                    </td>
+                                    <td>이준호 대리</td>
+                                    <td>기획팀</td>
+                                    <td>
+                                        <div class="approver-line">
+                                            <span class="approver done">조팀장</span>
+                                        </div>
+                                    </td>
+                                    <td>2025-01-16 09:30</td>
+                                    <td>
+                                        <div class="table-actions">
+                                            <button class="btn-icon btn-view">
+                                                <i class="fas fa-eye"></i>
+                                            </button>
+                                        </div>
+                                    </td>
+                                </tr>
+
+                                <tr class="doc-row" data-status="approved" data-category="meeting">
+                                    <td>
+                                        <span class="status-badge status-approved">완료</span>
+                                    </td>
+                                    <td></td>
+                                    <td>
+                                        <span class="doc-type">
+                                            <i class="fas fa-users"></i>
+                                            회의록
+                                        </span>
+                                    </td>
+                                    <td class="doc-title-cell">
+                                        <div class="title-wrap">신제품 기획 회의</div>
+                                        <div class="desc-wrap">2025년 상반기 신제품 출시 계획 논의 (참석 6명)</div>
+                                    </td>
+                                    <td>윤서연 과장</td>
+                                    <td>상품기획팀</td>
+                                    <td>
+                                        <div class="approver-line">
+                                            <span class="approver done">이팀장</span>
+                                            <i class="fas fa-chevron-right"></i>
+                                            <span class="approver done">박본부장</span>
+                                        </div>
+                                    </td>
+                                    <td>2025-01-15 17:20</td>
+                                    <td>
+                                        <div class="table-actions">
+                                            <button class="btn-icon btn-view">
+                                                <i class="fas fa-eye"></i>
+                                            </button>
+                                        </div>
+                                    </td>
+                                </tr>
+
+                                <tr class="doc-row" data-status="approved" data-category="expense">
+                                    <td>
+                                        <span class="status-badge status-approved">완료</span>
+                                    </td>
+                                    <td></td>
+                                    <td>
+                                        <span class="doc-type">
+                                            <i class="fas fa-won-sign"></i>
+                                            지출결의서
+                                        </span>
+                                    </td>
+                                    <td class="doc-title-cell">
+                                        <div class="title-wrap">팀 회식비</div>
+                                        <div class="desc-wrap">개발팀 신년회 (450,000원)</div>
+                                    </td>
+                                    <td>정태양 과장</td>
+                                    <td>개발팀</td>
+                                    <td>
+                                        <div class="approver-line">
+                                            <span class="approver done">박팀장</span>
+                                            <i class="fas fa-chevron-right"></i>
+                                            <span class="approver done">최부장</span>
+                                        </div>
+                                    </td>
+                                    <td>2025-01-15 14:00</td>
+                                    <td>
+                                        <div class="table-actions">
+                                            <button class="btn-icon btn-view">
+                                                <i class="fas fa-eye"></i>
+                                            </button>
+                                        </div>
+                                    </td>
+                                </tr>
+
+                                <tr class="doc-row" data-status="rejected" data-category="purchase">
+                                    <td>
+                                        <span class="status-badge status-rejected">반려</span>
+                                    </td>
+                                    <td></td>
+                                    <td>
+                                        <span class="doc-type">
+                                            <i class="fas fa-shopping-cart"></i>
+                                            구매요청서
+                                        </span>
+                                    </td>
+                                    <td class="doc-title-cell">
+                                        <div class="title-wrap">에어컨 10대 구매</div>
+                                        <div class="desc-wrap">여름 대비 사무실 냉방기기 추가 구입 (15,000,000원)</div>
+                                    </td>
+                                    <td>김하늘 대리</td>
+                                    <td>총무팀</td>
+                                    <td>
+                                        <div class="approver-line">
+                                            <span class="approver done">박과장</span>
+                                            <i class="fas fa-chevron-right"></i>
+                                            <span class="approver rejected">최부장</span>
+                                        </div>
+                                    </td>
+                                    <td>2025-01-15 11:30</td>
+                                    <td>
+                                        <div class="table-actions">
+                                            <button class="btn-icon btn-view">
+                                                <i class="fas fa-eye"></i>
+                                            </button>
+                                        </div>
+                                    </td>
+                                </tr>
+
+                                <tr class="doc-row" data-status="approved" data-category="general">
+                                    <td>
+                                        <span class="status-badge status-approved">완료</span>
+                                    </td>
+                                    <td></td>
+                                    <td>
+                                        <span class="doc-type">
+                                            <i class="fas fa-file-alt"></i>
+                                            일반기안
+                                        </span>
+                                    </td>
+                                    <td class="doc-title-cell">
+                                        <div class="title-wrap">재택근무 시범 운영 건</div>
+                                        <div class="desc-wrap">개발팀 주 1회 재택근무 3개월 시범 운영</div>
+                                    </td>
+                                    <td>조민석 차장</td>
+                                    <td>개발팀</td>
+                                    <td>
+                                        <div class="approver-line">
+                                            <span class="approver done">박팀장</span>
+                                            <i class="fas fa-chevron-right"></i>
+                                            <span class="approver done">최부장</span>
+                                            <i class="fas fa-chevron-right"></i>
+                                            <span class="approver done">김대표</span>
+                                        </div>
+                                    </td>
+                                    <td>2025-01-14 16:00</td>
+                                    <td>
+                                        <div class="table-actions">
+                                            <button class="btn-icon btn-view">
+                                                <i class="fas fa-eye"></i>
+                                            </button>
+                                        </div>
+                                    </td>
+                                </tr>
+
+                                <tr class="doc-row" data-status="approved" data-category="report">
+                                    <td>
+                                        <span class="status-badge status-approved">완료</span>
+                                    </td>
+                                    <td></td>
+                                    <td>
+                                        <span class="doc-type">
+                                            <i class="fas fa-chart-line"></i>
+                                            주간업무보고
+                                        </span>
+                                    </td>
+                                    <td class="doc-title-cell">
+                                        <div class="title-wrap">2025년 1월 2주차 주간업무보고</div>
+                                        <div class="desc-wrap">신규 고객사 3곳 확보 및 계약 진행 현황</div>
+                                    </td>
+                                    <td>홍길동 대리</td>
+                                    <td>영업팀</td>
+                                    <td>
+                                        <div class="approver-line">
+                                            <span class="approver done">안팀장</span>
+                                            <i class="fas fa-chevron-right"></i>
+                                            <span class="approver done">윤본부장</span>
+                                        </div>
+                                    </td>
+                                    <td>2025-01-14 13:45</td>
+                                    <td>
+                                        <div class="table-actions">
+                                            <button class="btn-icon btn-view">
+                                                <i class="fas fa-eye"></i>
+                                            </button>
+                                        </div>
+                                    </td>
+                                </tr>
+                            </tbody>
+                        </table>
                         </div>
-                        <div class="approval-body">
-                            <h3 class="approval-title">2025년 디자인팀 분기별 예산</h3>
-                            <p class="approval-desc">디자인 소프트웨어 라이선스 및 장비 구매</p>
-                            <div class="approval-meta">
-                                <div class="meta-item">
-                                    <i class="fas fa-user"></i>
-                                    <span>기안자: 민디자인</span>
-                                </div>
-                                <div class="meta-item">
-                                    <i class="fas fa-calendar"></i>
-                                    <span>2025-01-05</span>
-                                </div>
-                                <div class="meta-item">
-                                    <i class="fas fa-won-sign"></i>
-                                    <span>12,000,000원</span>
-                                </div>
-                            </div>
-                        </div>
-                        <div class="approval-footer">
-                            <div class="approval-line">
-                                <span class="approver done">이CTO (승인)</span>
-                                <i class="fas fa-arrow-right"></i>
-                                <span class="approver done">김대표 (승인)</span>
-                            </div>
-                            <button class="btn-view">상세보기</button>
+
+                        <!-- 페이지네이션 -->
+                        <div class="pagination">
+                            <button class="page-btn" disabled>
+                                <i class="fas fa-chevron-left"></i>
+                            </button>
+                            <button class="page-btn active">1</button>
+                            <button class="page-btn">2</button>
+                            <button class="page-btn">3</button>
+                            <button class="page-btn">4</button>
+                            <button class="page-btn">5</button>
+                            <button class="page-btn">
+                                <i class="fas fa-chevron-right"></i>
+                            </button>
                         </div>
                     </div>
 
-                    <div class="approval-card" data-status="approved">
-                        <div class="approval-header">
-                            <div class="approval-type">
-                                <i class="fas fa-project-diagram"></i>
-                                <span>프로젝트 제안서</span>
-                            </div>
-                            <span class="status-badge status-approved">승인 완료</span>
-                        </div>
-                        <div class="approval-body">
-                            <h3 class="approval-title">사내 ERP 고도화 프로젝트</h3>
-                            <p class="approval-desc">기존 시스템 개선 및 신규 기능 추가</p>
-                            <div class="approval-meta">
-                                <div class="meta-item">
-                                    <i class="fas fa-user"></i>
-                                    <span>기안자: 이백엔드</span>
-                                </div>
-                                <div class="meta-item">
-                                    <i class="fas fa-calendar"></i>
-                                    <span>2025-01-03</span>
-                                </div>
-                                <div class="meta-item">
-                                    <i class="fas fa-clock"></i>
-                                    <span>3개월</span>
-                                </div>
-                            </div>
-                        </div>
-                        <div class="approval-footer">
-                            <div class="approval-line">
-                                <span class="approver done">김개발 (승인)</span>
-                                <i class="fas fa-arrow-right"></i>
-                                <span class="approver done">이CTO (승인)</span>
-                                <i class="fas fa-arrow-right"></i>
-                                <span class="approver done">김대표 (승인)</span>
-                            </div>
-                            <button class="btn-view">상세보기</button>
-                        </div>
-                    </div>
-
-                    <!-- 반려된 문서 -->
-                    <div class="approval-card" data-status="rejected">
-                        <div class="approval-header">
-                            <div class="approval-type">
-                                <i class="fas fa-plane-departure"></i>
-                                <span>해외출장신청서</span>
-                            </div>
-                            <span class="status-badge status-rejected">반려됨</span>
-                        </div>
-                        <div class="approval-body">
-                            <h3 class="approval-title">실리콘밸리 IT 박람회 참가</h3>
-                            <p class="approval-desc">CES 2025 참관 및 글로벌 파트너사 미팅</p>
-                            <div class="approval-meta">
-                                <div class="meta-item">
-                                    <i class="fas fa-user"></i>
-                                    <span>기안자: 서제안</span>
-                                </div>
-                                <div class="meta-item">
-                                    <i class="fas fa-calendar"></i>
-                                    <span>2025-01-12</span>
-                                </div>
-                                <div class="meta-item">
-                                    <i class="fas fa-won-sign"></i>
-                                    <span>5,800,000원</span>
-                                </div>
-                            </div>
-                            <div class="rejection-reason">
-                                <i class="fas fa-exclamation-circle"></i>
-                                <span>반려 사유: 예산 초과로 인한 반려. 분기 내 재신청 가능</span>
-                            </div>
-                        </div>
-                        <div class="approval-footer">
-                            <div class="approval-line">
-                                <span class="approver done">송영업 (승인)</span>
-                                <i class="fas fa-arrow-right"></i>
-                                <span class="approver rejected">박CMO (반려)</span>
-                            </div>
-                            <button class="btn-view">상세보기</button>
-                        </div>
+                    <!-- 빈 상태 -->
+                    <div class="empty-state" id="emptyState" style="display: none;">
+                        <i class="fas fa-inbox"></i>
+                        <h3>문서가 없습니다</h3>
+                        <p>조건에 맞는 문서가 없습니다.</p>
                     </div>
                 </div>
             </div>
         </main>
-    </div>
-
-    <!-- 새 문서 작성 모달 -->
-    <div id="newApprovalModal" class="modal">
-        <div class="modal-content modal-large">
-            <div class="modal-header">
-                <h2>새 문서 작성</h2>
-                <button class="modal-close" id="closeNewApprovalModal">
-                    <i class="fas fa-times"></i>
-                </button>
-            </div>
-            <div class="modal-body">
-                <form id="newApprovalForm">
-                    <div class="form-row">
-                        <div class="form-group">
-                            <label for="approvalType">문서 유형 <span class="required">*</span></label>
-                            <select id="approvalType" name="approvalType" required>
-                                <option value="">선택하세요</option>
-                                <option value="expense">지출결의서</option>
-                                <option value="trip">출장신청서</option>
-                                <option value="purchase">구매요청서</option>
-                                <option value="contract">계약서</option>
-                                <option value="recruit">채용요청서</option>
-                                <option value="budget">예산신청서</option>
-                                <option value="project">프로젝트 제안서</option>
-                                <option value="overseas">해외출장신청서</option>
-                            </select>
-                        </div>
-                        <div class="form-group">
-                            <label for="urgency">긴급도</label>
-                            <select id="urgency" name="urgency">
-                                <option value="normal">일반</option>
-                                <option value="urgent">긴급</option>
-                                <option value="very-urgent">매우 긴급</option>
-                            </select>
-                        </div>
-                    </div>
-
-                    <div class="form-group">
-                        <label for="title">제목 <span class="required">*</span></label>
-                        <input type="text" id="title" name="title" placeholder="결재 문서 제목을 입력하세요" required>
-                    </div>
-
-                    <div class="form-group">
-                        <label for="description">내용 <span class="required">*</span></label>
-                        <textarea id="description" name="description" rows="5" placeholder="결재 문서 내용을 입력하세요" required></textarea>
-                    </div>
-
-                    <div class="form-row">
-                        <div class="form-group">
-                            <label for="amount">금액</label>
-                            <input type="number" id="amount" name="amount" placeholder="금액 입력 (원)">
-                        </div>
-                        <div class="form-group">
-                            <label for="startDate">시작일</label>
-                            <input type="date" id="startDate" name="startDate">
-                        </div>
-                        <div class="form-group">
-                            <label for="endDate">종료일</label>
-                            <input type="date" id="endDate" name="endDate">
-                        </div>
-                    </div>
-
-                    <div class="form-group">
-                        <label>결재선 <span class="required">*</span></label>
-                        <div class="approver-select-area">
-                            <div id="approverList" class="approver-list">
-                                <!-- 선택된 결재자가 표시될 영역 -->
-                            </div>
-                            <button type="button" class="btn-add-approver" id="addApproverBtn">
-                                <i class="fas fa-plus"></i>
-                                결재자 추가
-                            </button>
-                        </div>
-                    </div>
-
-                    <div class="form-group">
-                        <label for="attachment">첨부파일</label>
-                        <div class="file-upload-area">
-                            <input type="file" id="attachment" name="attachment" multiple>
-                            <label for="attachment" class="file-upload-label">
-                                <i class="fas fa-cloud-upload-alt"></i>
-                                <span>파일을 선택하거나 드래그하세요</span>
-                            </label>
-                            <div id="fileList" class="file-list"></div>
-                        </div>
-                    </div>
-                </form>
-            </div>
-            <div class="modal-footer">
-                <button type="button" class="btn-secondary" id="cancelNewApproval">취소</button>
-                <button type="submit" form="newApprovalForm" class="btn-primary">결재 요청</button>
-            </div>
-        </div>
-    </div>
-
-    <!-- 결재자 선택 모달 -->
-    <div id="approverSelectModal" class="modal">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h2>결재자 선택</h2>
-                <button class="modal-close" id="closeApproverSelectModal">
-                    <i class="fas fa-times"></i>
-                </button>
-            </div>
-            <div class="modal-body">
-                <div class="search-box">
-                    <i class="fas fa-search"></i>
-                    <input type="text" id="approverSearch" placeholder="이름 또는 부서 검색...">
-                </div>
-                <div class="approver-select-list">
-                    <div class="approver-item" data-name="박관리" data-position="과장" data-dept="관리팀">
-                        <i class="fas fa-user-circle"></i>
-                        <div class="approver-info">
-                            <div class="approver-name">박관리</div>
-                            <div class="approver-detail">관리팀 과장</div>
-                        </div>
-                    </div>
-                    <div class="approver-item" data-name="이경영" data-position="이사" data-dept="경영지원팀">
-                        <i class="fas fa-user-circle"></i>
-                        <div class="approver-info">
-                            <div class="approver-name">이경영</div>
-                            <div class="approver-detail">경영지원팀 이사</div>
-                        </div>
-                    </div>
-                    <div class="approver-item" data-name="송영업" data-position="부장" data-dept="영업팀">
-                        <i class="fas fa-user-circle"></i>
-                        <div class="approver-info">
-                            <div class="approver-name">송영업</div>
-                            <div class="approver-detail">영업팀 부장</div>
-                        </div>
-                    </div>
-                    <div class="approver-item" data-name="이CTO" data-position="CTO" data-dept="기술본부">
-                        <i class="fas fa-user-circle"></i>
-                        <div class="approver-info">
-                            <div class="approver-name">이CTO</div>
-                            <div class="approver-detail">기술본부 CTO</div>
-                        </div>
-                    </div>
-                    <div class="approver-item" data-name="박CMO" data-position="CMO" data-dept="마케팅본부">
-                        <i class="fas fa-user-circle"></i>
-                        <div class="approver-info">
-                            <div class="approver-name">박CMO</div>
-                            <div class="approver-detail">마케팅본부 CMO</div>
-                        </div>
-                    </div>
-                    <div class="approver-item" data-name="김대표" data-position="대표이사" data-dept="경영진">
-                        <i class="fas fa-user-circle"></i>
-                        <div class="approver-info">
-                            <div class="approver-name">김대표</div>
-                            <div class="approver-detail">경영진 대표이사</div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </div>
-
-    <!-- 결재 문서 상세보기 모달 -->
-    <div id="approvalDetailModal" class="modal">
-        <div class="modal-content modal-large">
-            <div class="modal-header">
-                <h2>결재 문서 상세</h2>
-                <button class="modal-close" id="closeDetailModal">
-                    <i class="fas fa-times"></i>
-                </button>
-            </div>
-            <div class="modal-body">
-                <div class="detail-section">
-                    <div class="detail-header-info">
-                        <div class="detail-type">
-                            <i class="fas fa-file-invoice"></i>
-                            <span id="detailType">지출결의서</span>
-                        </div>
-                        <span class="status-badge status-pending" id="detailStatus">결재 대기</span>
-                    </div>
-                    <h3 class="detail-title" id="detailTitle">사무용품 구매 건</h3>
-                    <div class="detail-meta">
-                        <div class="meta-item">
-                            <i class="fas fa-user"></i>
-                            <span>기안자: <strong id="detailDrafter">강총무</strong></span>
-                        </div>
-                        <div class="meta-item">
-                            <i class="fas fa-calendar"></i>
-                            <span>기안일: <strong id="detailDate">2025-01-15</strong></span>
-                        </div>
-                        <div class="meta-item">
-                            <i class="fas fa-won-sign"></i>
-                            <span>금액: <strong id="detailAmount">1,250,000원</strong></span>
-                        </div>
-                    </div>
-                </div>
-
-                <div class="detail-section">
-                    <h4 class="section-title">문서 내용</h4>
-                    <div class="detail-content" id="detailDescription">
-                        프린터 용지, 복사용지, 사무용품 일괄 구매 요청
-                    </div>
-                </div>
-
-                <div class="detail-section">
-                    <h4 class="section-title">결재선</h4>
-                    <div class="detail-approval-line" id="detailApprovalLine">
-                        <div class="approval-step done">
-                            <div class="step-icon">
-                                <i class="fas fa-check-circle"></i>
-                            </div>
-                            <div class="step-info">
-                                <div class="step-name">박관리</div>
-                                <div class="step-position">관리팀 과장</div>
-                                <div class="step-status approved">승인 완료</div>
-                                <div class="step-date">2025-01-15 10:30</div>
-                            </div>
-                        </div>
-                        <div class="approval-arrow">
-                            <i class="fas fa-arrow-right"></i>
-                        </div>
-                        <div class="approval-step current">
-                            <div class="step-icon">
-                                <i class="fas fa-clock"></i>
-                            </div>
-                            <div class="step-info">
-                                <div class="step-name">이경영</div>
-                                <div class="step-position">경영지원팀 이사</div>
-                                <div class="step-status pending">결재 대기중</div>
-                            </div>
-                        </div>
-                        <div class="approval-arrow">
-                            <i class="fas fa-arrow-right"></i>
-                        </div>
-                        <div class="approval-step">
-                            <div class="step-icon">
-                                <i class="fas fa-circle"></i>
-                            </div>
-                            <div class="step-info">
-                                <div class="step-name">김대표</div>
-                                <div class="step-position">대표이사</div>
-                                <div class="step-status">대기</div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-
-                <div class="detail-section" id="rejectionSection" style="display: none;">
-                    <h4 class="section-title">반려 사유</h4>
-                    <div class="rejection-box" id="detailRejectionReason">
-                        <i class="fas fa-exclamation-circle"></i>
-                        <span>예산 초과로 인한 반려. 분기 내 재신청 가능</span>
-                    </div>
-                </div>
-
-                <div class="detail-section">
-                    <h4 class="section-title">첨부파일</h4>
-                    <div class="attachment-list" id="detailAttachments">
-                        <div class="attachment-item">
-                            <i class="fas fa-file-pdf"></i>
-                            <span>견적서.pdf</span>
-                            <button class="btn-download">
-                                <i class="fas fa-download"></i>
-                            </button>
-                        </div>
-                        <div class="attachment-item">
-                            <i class="fas fa-file-excel"></i>
-                            <span>구매목록.xlsx</span>
-                            <button class="btn-download">
-                                <i class="fas fa-download"></i>
-                            </button>
-                        </div>
-                    </div>
-                </div>
-
-                <div class="detail-section">
-                    <h4 class="section-title">결재 의견</h4>
-                    <div class="comments-area">
-                        <div class="comment-item">
-                            <div class="comment-author">
-                                <i class="fas fa-user-circle"></i>
-                                <strong>박관리</strong>
-                                <span class="comment-date">2025-01-15 10:30</span>
-                            </div>
-                            <div class="comment-text">필요한 항목들로 판단됩니다. 승인합니다.</div>
-                        </div>
-                    </div>
-                    <div class="comment-input-area" id="commentInputArea">
-                        <textarea id="commentInput" placeholder="결재 의견을 입력하세요..." rows="3"></textarea>
-                    </div>
-                </div>
-            </div>
-            <div class="modal-footer" id="detailModalFooter">
-                <button type="button" class="btn-secondary" id="closeDetailBtn">닫기</button>
-                <div class="approval-actions" id="approvalActions">
-                    <button type="button" class="btn-reject" id="rejectBtn">
-                        <i class="fas fa-times-circle"></i>
-                        반려
-                    </button>
-                    <button type="button" class="btn-approve" id="approveBtn">
-                        <i class="fas fa-check-circle"></i>
-                        승인
-                    </button>
-                </div>
-            </div>
-        </div>
     </div>
 
     <script th:src="@{/js/approval.js}"></script>

@@ -1,0 +1,198 @@
+<!DOCTYPE html>
+<html lang="ko" xmlns:th="http://www.thymeleaf.org">
+<head th:replace="fragments/layout :: head('문서 작성', '/css/approval-write.css')"></head>
+<body>
+    <div class="container">
+        <!-- 좌측 네비게이션 바 -->
+        <div th:replace="fragments/sidebar :: sidebar('approval')"></div>
+
+        <!-- 메인 콘텐츠 영역 -->
+        <main class="main-content">
+            <header class="header">
+                <div class="header-left">
+                    <h1 class="page-title"><i class="fas fa-pen-fancy"></i> 문서 작성</h1>
+                </div>
+                <div class="header-right">
+                    <button class="btn-secondary" onclick="history.back()">
+                        <i class="fas fa-arrow-left"></i>
+                        돌아가기
+                    </button>
+                </div>
+            </header>
+
+            <div class="write-container">
+                <div class="write-layout">
+                    <!-- 좌측: 템플릿 선택 -->
+                    <aside class="template-sidebar">
+                        <div class="sidebar-header">
+                            <h3><i class="fas fa-file-alt"></i> 문서 양식</h3>
+                        </div>
+                        <div class="template-list">
+                            <button class="template-item active" data-template="vacation">
+                                <div class="template-item-icon vacation">
+                                    <i class="fas fa-umbrella-beach"></i>
+                                </div>
+                                <div class="template-item-info">
+                                    <strong>휴가신청서</strong>
+                                    <small>연차/반차/병가 신청</small>
+                                </div>
+                            </button>
+
+                            <button class="template-item" data-template="expense">
+                                <div class="template-item-icon expense">
+                                    <i class="fas fa-won-sign"></i>
+                                </div>
+                                <div class="template-item-info">
+                                    <strong>지출결의서</strong>
+                                    <small>업무 지출 승인</small>
+                                </div>
+                            </button>
+
+                            <button class="template-item" data-template="purchase">
+                                <div class="template-item-icon purchase">
+                                    <i class="fas fa-shopping-cart"></i>
+                                </div>
+                                <div class="template-item-info">
+                                    <strong>구매요청서</strong>
+                                    <small>물품/장비 구매</small>
+                                </div>
+                            </button>
+
+                            <button class="template-item" data-template="weekly-report">
+                                <div class="template-item-icon report">
+                                    <i class="fas fa-chart-line"></i>
+                                </div>
+                                <div class="template-item-info">
+                                    <strong>주간업무보고</strong>
+                                    <small>주간 업무 현황</small>
+                                </div>
+                            </button>
+
+                            <button class="template-item" data-template="monthly-report">
+                                <div class="template-item-icon report">
+                                    <i class="fas fa-chart-bar"></i>
+                                </div>
+                                <div class="template-item-info">
+                                    <strong>월간업무보고</strong>
+                                    <small>월간 성과 분석</small>
+                                </div>
+                            </button>
+
+                            <button class="template-item" data-template="meeting">
+                                <div class="template-item-icon meeting">
+                                    <i class="fas fa-users"></i>
+                                </div>
+                                <div class="template-item-info">
+                                    <strong>회의록</strong>
+                                    <small>회의 내용 기록</small>
+                                </div>
+                            </button>
+
+                            <button class="template-item" data-template="business-trip">
+                                <div class="template-item-icon trip">
+                                    <i class="fas fa-plane"></i>
+                                </div>
+                                <div class="template-item-info">
+                                    <strong>출장신청서</strong>
+                                    <small>국내외 출장</small>
+                                </div>
+                            </button>
+
+                            <button class="template-item" data-template="general">
+                                <div class="template-item-icon general">
+                                    <i class="fas fa-file-alt"></i>
+                                </div>
+                                <div class="template-item-info">
+                                    <strong>일반기안서</strong>
+                                    <small>일반 업무 기안</small>
+                                </div>
+                            </button>
+                        </div>
+                    </aside>
+
+                    <!-- 우측: 문서 편집 영역 -->
+                    <div class="editor-area">
+                        <!-- 결재선 -->
+                        <div class="approval-line-section">
+                            <div class="section-header">
+                                <h4><i class="fas fa-users"></i> 결재선</h4>
+                                <button class="btn-add" id="addApproverBtn">
+                                    <i class="fas fa-plus"></i>
+                                    결재자 추가
+                                </button>
+                            </div>
+                            <div class="approver-chips" id="approverChips">
+                                <div class="empty-message">결재자를 추가해주세요</div>
+                            </div>
+                        </div>
+
+                        <!-- 문서 양식 (동적 로드) -->
+                        <div class="document-form" id="documentForm">
+                            <!-- 휴가신청서 템플릿 (기본) -->
+                        </div>
+
+                        <!-- 첨부파일 -->
+                        <div class="attachment-section">
+                            <div class="section-header">
+                                <h4><i class="fas fa-paperclip"></i> 첨부파일</h4>
+                            </div>
+                            <div class="file-upload-area" id="fileUploadArea">
+                                <input type="file" id="fileInput" multiple hidden>
+                                <label for="fileInput" class="file-upload-label">
+                                    <i class="fas fa-cloud-upload-alt"></i>
+                                    <span>파일을 선택하거나 드래그하세요</span>
+                                    <small>최대 10MB, 최대 5개</small>
+                                </label>
+                            </div>
+                            <div class="file-list" id="fileList"></div>
+                        </div>
+
+                        <!-- 제출 버튼 -->
+                        <div class="submit-actions">
+                            <button class="btn-secondary btn-lg" onclick="history.back()">
+                                <i class="fas fa-times"></i>
+                                취소
+                            </button>
+                            <button class="btn-outline btn-lg" id="saveDraftBtn">
+                                <i class="fas fa-save"></i>
+                                임시저장
+                            </button>
+                            <button class="btn-primary btn-lg" id="submitBtn">
+                                <i class="fas fa-paper-plane"></i>
+                                결재 요청
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <!-- 결재자 선택 모달 -->
+    <div class="modal" id="approverModal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>결재자 선택</h3>
+                <button class="modal-close" onclick="closeModal()">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            <div class="modal-body">
+                <div class="modal-search">
+                    <i class="fas fa-search"></i>
+                    <input type="text" id="approverSearch" placeholder="이름 또는 부서 검색...">
+                </div>
+                <div class="employee-list" id="employeeList">
+                    <!-- 동적 생성 -->
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn-secondary" onclick="closeModal()">취소</button>
+                <button class="btn-primary" onclick="addApprover()">추가</button>
+            </div>
+        </div>
+    </div>
+
+    <script th:src="@{/js/approval-write.js}"></script>
+</body>
+</html>

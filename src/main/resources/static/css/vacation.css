@@ -853,6 +853,46 @@
     color: #f57c00;
 }
 
+/* 스크롤바 커스터마이징 - 호버 시에만 표시 */
+.history-table::-webkit-scrollbar,
+.modal-body::-webkit-scrollbar,
+.used-table::-webkit-scrollbar,
+.calendar-days::-webkit-scrollbar {
+    width: 6px;
+    height: 6px;
+}
+
+.history-table::-webkit-scrollbar-track,
+.modal-body::-webkit-scrollbar-track,
+.used-table::-webkit-scrollbar-track,
+.calendar-days::-webkit-scrollbar-track {
+    background: transparent;
+    border-radius: 3px;
+}
+
+.history-table::-webkit-scrollbar-thumb,
+.modal-body::-webkit-scrollbar-thumb,
+.used-table::-webkit-scrollbar-thumb,
+.calendar-days::-webkit-scrollbar-thumb {
+    background: transparent;
+    border-radius: 3px;
+    transition: background 0.3s ease;
+}
+
+.history-table:hover::-webkit-scrollbar-thumb,
+.modal-body:hover::-webkit-scrollbar-thumb,
+.used-table:hover::-webkit-scrollbar-thumb,
+.calendar-days:hover::-webkit-scrollbar-thumb {
+    background: #ccc;
+}
+
+.history-table::-webkit-scrollbar-thumb:hover,
+.modal-body::-webkit-scrollbar-thumb:hover,
+.used-table::-webkit-scrollbar-thumb:hover,
+.calendar-days::-webkit-scrollbar-thumb:hover {
+    background: #999 !important;
+}
+
 /* 반응형 */
 @media (max-width: 768px) {
     .leave-summary {
