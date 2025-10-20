@@ -413,28 +413,37 @@ document.addEventListener('DOMContentLoaded', function() {
                         작성일 : <span id="proposal_date"></span>
                     </div>
                     <table class="form-table">
+                    <colgroup>
+                        <col style="width: 14.28%;">
+                        <col style="width: 14.28%;">
+                        <col style="width: 14.28%;">
+                        <col style="width: 14.28%;">
+                        <col style="width: 14.28%;">
+                        <col style="width: 14.28%;">
+                        <col style="width: 14.32%;">
+                    </colgroup>
                     <tr>
                         <th colspan="3">과제명</th>
-                        <td colspan="9"><input type="text" class="auto-project" placeholder="과제명을 입력하세요" readonly style="background: #f9f9f9;"></td>
+                        <td colspan="4"><input type="text" class="auto-project" placeholder="과제명을 입력하세요" readonly style="background: #f9f9f9;"></td>
                     </tr>
                     <tr>
                         <th colspan="3">참석인원</th>
-                        <th colspan="1">장소</th>
-                        <th colspan="1">회의 일시</th>
-                        <th colspan="1">회의 목적</th>
-                    </tr>
-                    <tr>
-                        <th>내외구분</th>
-                        <th>소속</th>
-                        <th>성명</th>
-                        <td class="auto-location-cell" colspan="1" rowspan="1" style="vertical-align: top;"><input type="text" class="auto-location" placeholder="회의 장소" readonly style="background: #f9f9f9;"></td>
-                        <td class="auto-datetime-cell" colspan="1" rowspan="1" style="vertical-align: top;"><input type="text" class="auto-datetime" placeholder="예: 2025.01.20. 14:00~18:00" readonly style="background: #f9f9f9;"></td>
-                        <td class="meeting-purpose-cell" colspan="1" rowspan="1" style="vertical-align: top;"><textarea placeholder="회의 목적" rows="3"></textarea></td>
+                        <th>장소</th>
+                        <th>회의 일시</th>
+                        <th colspan="2">회의 목적</th>
                     </tr>
                     <tbody id="proposal_attendees">
+                        <tr id="proposal_attendees_header">
+                            <th>내외구분</th>
+                            <th>소속</th>
+                            <th>성명</th>
+                            <td class="auto-location-cell" rowspan="5" style="vertical-align: top;"><input type="text" class="auto-location" placeholder="회의 장소" readonly style="background: #f9f9f9;"></td>
+                            <td class="auto-datetime-cell" rowspan="5" style="vertical-align: top;"><input type="text" class="auto-datetime" placeholder="예: 2025.01.20. 14:00~18:00" readonly style="background: #f9f9f9;"></td>
+                            <td class="meeting-purpose-cell" colspan="2" rowspan="5" style="vertical-align: top;"><textarea placeholder="회의 목적" rows="3"></textarea></td>
+                        </tr>
                     </tbody>
                     <tr>
-                        <th colspan="9" style="background: #f0f0f0; padding: 15px;">소요 경비 내역 (원)</th>
+                        <th colspan="7" style="background: #f0f0f0; padding: 15px; text-align: center">소요 경비 내역 (원)</th>
                     </tr>
                     <tr>
                         <th>일시</th>
@@ -685,40 +694,50 @@ document.addEventListener('DOMContentLoaded', function() {
             const tbody = document.getElementById('proposal_attendees');
             if (!tbody) return;
 
-            // 기존 참석자 행들 제거
-            while (tbody.rows.length > 0) {
-                tbody.deleteRow(0);
+            const maxAttendees = 5; // 최대 참석자 수
+
+            // 기존 참석자 데이터 행들 제거 (헤더 행은 유지)
+            while (tbody.rows.length > 1) {
+                tbody.deleteRow(1);
             }
 
-            // 새로운 참석자 행 추가
-            attendees.forEach((attendee, index) => {
+            // 빈 행으로 5개 행 채우기 (헤더 포함 총 5행)
+            const rowsToAdd = maxAttendees - 1; // 헤더 1개 + 데이터 4개 = 5개
+
+            for (let i = 0; i < rowsToAdd; i++) {
                 const row = tbody.insertRow();
-                row.innerHTML = `
-                    <td>
-                        <select>
-                            <option ${attendee.type === '내부' ? 'selected' : ''}>내부</option>
-                            <option ${attendee.type === '외부' ? 'selected' : ''}>외부</option>
-                        </select>
-                    </td>
-                    <td><input type="text" value="${attendee.dept || ''}" readonly style="background: #f9f9f9;"></td>
-                    <td><input type="text" value="${attendee.name || ''}" readonly style="background: #f9f9f9;"></td>
-                `;
-            });
 
-            // rowspan 업데이트
-            const totalRows = attendees.length;
-            const locationCell = document.querySelector('.auto-location-cell');
-            const datetimeCell = document.querySelector('.auto-datetime-cell');
-            const purposeCell = document.querySelector('.meeting-purpose-cell');
-
-            if (locationCell) locationCell.setAttribute('rowspan', totalRows);
-            if (datetimeCell) datetimeCell.setAttribute('rowspan', totalRows);
-            if (purposeCell) purposeCell.setAttribute('rowspan', totalRows);
+                if (i < attendees.length) {
+                    // 참석자 데이터가 있으면 표시
+                    const attendee = attendees[i];
+                    row.innerHTML = `
+                        <td style="border: 1px solid #ddd; padding: 5px; text-align: center;">
+                            <select style="width: 80px;">
+                                <option value="내부" ${attendee.type === '내부' ? 'selected' : ''}>내부</option>
+                                <option value="외부" ${attendee.type === '외부' ? 'selected' : ''}>외부</option>
+                            </select>
+                        </td>
+                        <td style="border: 1px solid #ddd; padding: 5px;"><input type="text" value="${attendee.dept || ''}" readonly style="background: #f9f9f9; width: 100%; border: none;"></td>
+                        <td style="border: 1px solid #ddd; padding: 5px;"><input type="text" value="${attendee.name || ''}" readonly style="background: #f9f9f9; width: 100%; border: none;"></td>
+                    `;
+                } else {
+                    // 빈 행 추가
+                    row.innerHTML = `
+                        <td style="border: 1px solid #ddd; padding: 5px;">&nbsp;</td>
+                        <td style="border: 1px solid #ddd; padding: 5px;">&nbsp;</td>
+                        <td style="border: 1px solid #ddd; padding: 5px;">&nbsp;</td>
+                    `;
+                }
+            }
         }
 
         // 참석자 추가 버튼
         if (addAttendeeBtn) {
             addAttendeeBtn.addEventListener('click', function() {
+                if (attendees.length >= 5) {
+                    alert('참석자는 최대 5명까지 추가할 수 있습니다.');
+                    return;
+                }
                 attendees.push({ type: '내부', dept: '', name: '' });
                 updateAttendeeList();
             });
@@ -755,20 +774,23 @@ document.addEventListener('DOMContentLoaded', function() {
                     // 1인당 30,000원 기준으로 인원 계산
                     const totalPeople = Math.ceil(amount / 30000);
 
+                    // 최대 5명까지만
+                    const actualPeople = Math.min(totalPeople, 5);
+
                     // 외부 1명 + 내부 나머지
                     const externalCount = 1;
-                    const internalCount = totalPeople - externalCount;
+                    const internalCount = actualPeople - externalCount;
 
                     // 참석자 배열 초기화
                     attendees = [];
 
-                    // 외부 1명 추가
-                    attendees.push({ type: '외부', dept: '', name: '' });
-
-                    // 내부 인원 추가
+                    // 내부 인원 먼저 추가
                     for (let i = 0; i < internalCount; i++) {
                         attendees.push({ type: '내부', dept: '', name: '' });
                     }
+
+                    // 외부 1명 추가
+                    attendees.push({ type: '외부', dept: '', name: '' });
 
                     updateAttendeeList();
                 }
