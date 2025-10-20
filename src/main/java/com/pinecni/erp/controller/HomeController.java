@@ -71,13 +71,13 @@ public class HomeController {
         return "cloud";
     }
 
-    @GetMapping("/receipt")
-    public String receipt() {
-        return "receipt";
-    }
-
     @GetMapping("/board")
     public String board() {
         return "board";
+    }
+
+    @GetMapping("/approval/write")
+    public String approvalWrite() {
+        return "approval-write";
     }
 }

@@ -352,6 +352,225 @@ document.addEventListener('DOMContentLoaded', function() {
                     </tr>
                 </table>
             `
+        },
+        'receipt': {
+            title: '영수증 처리',
+            html: `
+                <div style="background: white; border: 2px solid #e0e0e0; border-radius: 8px; padding: 30px; margin-bottom: 30px;">
+                    <h2 class="doc-title">회 의 품 의 서</h2>
+                    <div style="text-align: left; margin-bottom: 20px; font-size: 14px;">
+                        작성일 : ${new Date().toISOString().split('T')[0]}
+                    </div>
+                    <table class="form-table">
+                    <tr>
+                        <th colspan="3">과제명</th>
+                        <td colspan="4"><input type="text" placeholder="과제명을 입력하세요"></td>
+                    </tr>
+                    <tr>
+                        <th colspan="3">참석인원</th>
+                        <th>장소</th>
+                        <th>회의 일시</th>
+                        <th colspan="2">회의 목적</th>
+                    </tr>
+                    <tr>
+                        <th>내외구분</th>
+                        <th>소속</th>
+                        <th>성명</th>
+                        <td rowspan="4"><input type="text" placeholder="회의 장소"></td>
+                        <td rowspan="4"><input type="text" placeholder="예: 2025.01.20. 14:00~18:00"></td>
+                        <td colspan="2" rowspan="4"><textarea placeholder="회의 목적" rows="3"></textarea></td>
+                    </tr>
+                    <tr>
+                        <td>
+                            <select>
+                                <option>내부</option>
+                                <option>외부</option>
+                            </select>
+                        </td>
+                        <td><input type="text" placeholder="소속"></td>
+                        <td><input type="text" placeholder="성명"></td>
+                    </tr>
+                    <tr>
+                        <td>
+                            <select>
+                                <option>내부</option>
+                                <option>외부</option>
+                            </select>
+                        </td>
+                        <td><input type="text" placeholder="소속"></td>
+                        <td><input type="text" placeholder="성명"></td>
+                    </tr>
+                    <tr>
+                        <td>
+                            <select>
+                                <option>내부</option>
+                                <option>외부</option>
+                            </select>
+                        </td>
+                        <td><input type="text" placeholder="소속"></td>
+                        <td><input type="text" placeholder="성명"></td>
+                    </tr>
+                    <tr>
+                        <th colspan="7" style="background: #f0f0f0; padding: 15px;">소요 경비 내역 (원)</th>
+                    </tr>
+                    <tr>
+                        <th>일시</th>
+                        <th>회의비</th>
+                        <th>교통비</th>
+                        <th>식비</th>
+                        <th>기타(일비)</th>
+                        <th colspan="2">계</th>
+                    </tr>
+                    <tr>
+                        <td><input type="date"></td>
+                        <td><input type="number" placeholder="0"></td>
+                        <td><input type="number" placeholder="0"></td>
+                        <td><input type="number" placeholder="0"></td>
+                        <td><input type="number" placeholder="0"></td>
+                        <td colspan="2"><input type="number" placeholder="0" readonly style="background: #f9f9f9;"></td>
+                    </tr>
+                    <tr>
+                        <td><input type="date"></td>
+                        <td><input type="number" placeholder="0"></td>
+                        <td><input type="number" placeholder="0"></td>
+                        <td><input type="number" placeholder="0"></td>
+                        <td><input type="number" placeholder="0"></td>
+                        <td colspan="2"><input type="number" placeholder="0" readonly style="background: #f9f9f9;"></td>
+                    </tr>
+                    <tr>
+                        <td><input type="date"></td>
+                        <td><input type="number" placeholder="0"></td>
+                        <td><input type="number" placeholder="0"></td>
+                        <td><input type="number" placeholder="0"></td>
+                        <td><input type="number" placeholder="0"></td>
+                        <td colspan="2"><input type="number" placeholder="0" readonly style="background: #f9f9f9;"></td>
+                    </tr>
+                    <tr>
+                        <th>합계</th>
+                        <td colspan="4"><input type="number" placeholder="0" readonly style="background: #f9f9f9;"></td>
+                        <td colspan="2"></td>
+                    </tr>
+                    <tr>
+                        <th>특기사항</th>
+                        <td colspan="6"><textarea placeholder="특기사항을 입력하세요" rows="2"></textarea></td>
+                    </tr>
+                    <tr>
+                        <th>결제</th>
+                        <td colspan="6">
+                            <select style="width: 200px;">
+                                <option>카드로 결제</option>
+                                <option>현금으로 결제</option>
+                                <option>계좌이체</option>
+                                <option>법인카드</option>
+                            </select>
+                        </td>
+                    </tr>
+                </table>
+                </div>
+
+                <div style="background: white; border: 2px solid #e0e0e0; border-radius: 8px; padding: 30px; margin-bottom: 30px;">
+                    <h2 class="doc-title">회 의 록</h2>
+                    <table class="form-table">
+                    <tr>
+                        <th>제부/업무명</th>
+                        <td colspan="2"><input type="text" placeholder="제부 또는 업무명"></td>
+                        <th>작성자</th>
+                        <td><input type="text" value="홍길동" readonly></td>
+                    </tr>
+                    <tr>
+                        <th>일시</th>
+                        <td colspan="2"><input type="text" placeholder="예: 2025.01.20. 14:00~18:00"></td>
+                        <th>장소</th>
+                        <td><input type="text" placeholder="회의 장소"></td>
+                    </tr>
+                    <tr>
+                        <th rowspan="2">참석자</th>
+                        <th colspan="4">참여 기관</th>
+                    </tr>
+                    <tr>
+                        <td colspan="4"><textarea placeholder="참여 기관 및 참석자를 입력하세요 (예: 홍길동(회사명), 김철수(회사명))" rows="3"></textarea></td>
+                    </tr>
+                    <tr>
+                        <th colspan="5" style="background: #f0f0f0; padding: 15px;">내용</th>
+                    </tr>
+                    <tr>
+                        <td colspan="5"><textarea placeholder="회의 주제 및 주요 내용을 입력하세요" rows="10" style="text-align: left; vertical-align: top;"></textarea></td>
+                    </tr>
+                    <tr>
+                        <th>비고</th>
+                        <td colspan="4"><textarea placeholder="추가 사항" rows="3"></textarea></td>
+                    </tr>
+                </table>
+                </div>
+
+                <div style="background: white; border: 2px solid #e0e0e0; border-radius: 8px; padding: 30px; margin-bottom: 30px;">
+                    <h2 class="doc-title">참 석 자 명 단</h2>
+                    <table class="form-table">
+                    <tr>
+                        <th>제부/업무명</th>
+                        <td colspan="2"><input type="text" placeholder="제부 또는 업무명"></td>
+                        <th>작성자</th>
+                        <td><input type="text" value="홍길동" readonly></td>
+                    </tr>
+                    <tr>
+                        <th>일시</th>
+                        <td colspan="2"><input type="text" placeholder="예: 2025.01.20. 14:00~18:00"></td>
+                        <th>장소</th>
+                        <td><input type="text" placeholder="회의 장소"></td>
+                    </tr>
+                </table>
+                <table class="form-table" style="margin-top: 20px;">
+                    <tr>
+                        <th>성명</th>
+                        <th>소속</th>
+                        <th>서명</th>
+                        <th>성명</th>
+                        <th>소속</th>
+                        <th>서명</th>
+                    </tr>
+                    <tr>
+                        <td><input type="text"></td>
+                        <td><input type="text"></td>
+                        <td style="padding: 30px;"></td>
+                        <td><input type="text"></td>
+                        <td><input type="text"></td>
+                        <td style="padding: 30px;"></td>
+                    </tr>
+                    <tr>
+                        <td><input type="text"></td>
+                        <td><input type="text"></td>
+                        <td style="padding: 30px;"></td>
+                        <td><input type="text"></td>
+                        <td><input type="text"></td>
+                        <td style="padding: 30px;"></td>
+                    </tr>
+                    <tr>
+                        <td><input type="text"></td>
+                        <td><input type="text"></td>
+                        <td style="padding: 30px;"></td>
+                        <td><input type="text"></td>
+                        <td><input type="text"></td>
+                        <td style="padding: 30px;"></td>
+                    </tr>
+                    <tr>
+                        <td><input type="text"></td>
+                        <td><input type="text"></td>
+                        <td style="padding: 30px;"></td>
+                        <td><input type="text"></td>
+                        <td><input type="text"></td>
+                        <td style="padding: 30px;"></td>
+                    </tr>
+                    <tr>
+                        <td><input type="text"></td>
+                        <td><input type="text"></td>
+                        <td style="padding: 30px;"></td>
+                        <td><input type="text"></td>
+                        <td><input type="text"></td>
+                        <td style="padding: 30px;"></td>
+                    </tr>
+                </table>
+                </div>
+            `
         }
     };
 
