@@ -1,11 +1,11 @@
 /* 근태 관리 영역 */
 .attendance-area {
-    padding: 30px;
+    padding: 24px;
 }
 
 /* 헤더 서브타이틀 */
 .page-subtitle {
-    font-size: 13px;
+    font-size: 12px;
     color: #999;
     font-weight: normal;
     margin-top: 4px;
@@ -18,7 +18,7 @@
     color: white;
     border: none;
     border-radius: 8px;
-    font-size: 14px;
+    font-size: 12.9px;
     font-weight: 500;
     cursor: pointer;
     display: flex;
@@ -45,7 +45,7 @@
 .week-section {
     background: white;
     border-radius: 12px;
-    padding: 30px;
+    padding: 24px;
     box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
     margin-bottom: 30px;
 }
@@ -60,7 +60,7 @@
 }
 
 .week-header h3 {
-    font-size: 18px;
+    font-size: 16.6px;
     font-weight: 600;
     color: #333;
 }
@@ -73,15 +73,15 @@
 /* 주간 통계 */
 .week-stats {
     display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
-    gap: 20px;
+    grid-template-columns: repeat(auto-fit, minmax(187px, 1fr));
+    gap: 17px;
     margin-bottom: 30px;
 }
 
 .stat-card {
     background: #f5f7fa;
     border-radius: 12px;
-    padding: 20px;
+    padding: 15px;
     display: flex;
     align-items: center;
     gap: 16px;
@@ -103,24 +103,24 @@
 }
 
 .stat-icon i {
-    font-size: 28px;
+    font-size: 25.8px;
 }
 
 .stat-content h3 {
-    font-size: 13px;
+    font-size: 12px;
     color: #666;
     margin-bottom: 8px;
     font-weight: 500;
 }
 
 .stat-number {
-    font-size: 28px;
+    font-size: 25.8px;
     font-weight: bold;
     color: #333;
 }
 
 .stat-number span {
-    font-size: 14px;
+    font-size: 12.9px;
     font-weight: normal;
     color: #999;
     margin-left: 4px;
@@ -135,7 +135,7 @@
 .record-card {
     background: #f5f7fa;
     border-radius: 12px;
-    padding: 20px;
+    padding: 15px;
     border-left: 4px solid #e0e0e0;
     transition: all 0.3s ease;
 }
@@ -162,13 +162,13 @@
 }
 
 .record-header h4 {
-    font-size: 16px;
+    font-size: 14.7px;
     font-weight: 600;
     color: #333;
 }
 
 .record-date {
-    font-size: 13px;
+    font-size: 12px;
     color: #999;
 }
 
@@ -180,7 +180,7 @@
 
 .time-info {
     display: flex;
-    gap: 40px;
+    gap: 34px;
 }
 
 .time-item {
@@ -191,16 +191,16 @@
 
 .time-item i {
     color: #999;
-    font-size: 16px;
+    font-size: 14.7px;
 }
 
 .time-label {
-    font-size: 13px;
+    font-size: 12px;
     color: #666;
 }
 
 .time-value {
-    font-size: 18px;
+    font-size: 16.6px;
     font-weight: 600;
     color: #333;
 }
@@ -214,19 +214,19 @@
 }
 
 .duration-info span {
-    font-size: 14px;
+    font-size: 12.9px;
     color: #666;
 }
 
 .duration-info strong {
     color: #1a237e;
-    font-size: 16px;
+    font-size: 14.7px;
 }
 
 .status-badge {
     padding: 4px 12px;
     border-radius: 12px;
-    font-size: 12px;
+    font-size: 11px;
     font-weight: 600;
 }
 
@@ -244,7 +244,7 @@
 .calendar-section {
     background: white;
     border-radius: 12px;
-    padding: 24px;
+    padding: 19px;
     box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
     margin-bottom: 30px;
 }
@@ -257,7 +257,7 @@
 }
 
 .calendar-header h3 {
-    font-size: 18px;
+    font-size: 16.6px;
     font-weight: 600;
     color: #333;
 }
@@ -265,14 +265,14 @@
 .calendar-nav {
     display: flex;
     align-items: center;
-    gap: 20px;
+    gap: 17px;
 }
 
 .nav-btn {
     background: none;
     border: none;
     color: #666;
-    font-size: 16px;
+    font-size: 14.7px;
     cursor: pointer;
     padding: 8px;
     border-radius: 4px;
@@ -285,7 +285,7 @@
 }
 
 .current-month {
-    font-size: 16px;
+    font-size: 14.7px;
     font-weight: 600;
     color: #333;
     min-width: 120px;
@@ -306,7 +306,7 @@
 
 .weekday {
     text-align: center;
-    font-size: 13px;
+    font-size: 12px;
     font-weight: 600;
     color: #666;
     padding: 10px;
@@ -326,7 +326,7 @@
     flex-direction: column;
     align-items: center;
     justify-content: center;
-    font-size: 12px;
+    font-size: 11px;
     background: #f5f7fa;
     cursor: pointer;
     transition: all 0.3s ease;
@@ -339,18 +339,18 @@
 }
 
 .day-number {
-    font-size: 16px;
+    font-size: 14.7px;
     font-weight: 600;
     margin-bottom: 4px;
 }
 
 .day-status {
-    font-size: 10px;
+    font-size: 9.2px;
     font-weight: 500;
 }
 
 .day-time {
-    font-size: 9px;
+    font-size: 8.3px;
     color: #999;
     margin-top: 2px;
 }
@@ -396,7 +396,7 @@
 .calendar-legend {
     display: flex;
     flex-wrap: wrap;
-    gap: 20px;
+    gap: 17px;
     padding-top: 20px;
     border-top: 1px solid #e0e0e0;
 }
@@ -405,7 +405,7 @@
     display: flex;
     align-items: center;
     gap: 8px;
-    font-size: 13px;
+    font-size: 12px;
     color: #666;
 }
 
@@ -444,12 +444,12 @@
 .recent-records {
     background: white;
     border-radius: 12px;
-    padding: 24px;
+    padding: 19px;
     box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
 }
 
 .recent-records h3 {
-    font-size: 18px;
+    font-size: 16.6px;
     font-weight: 600;
     color: #333;
     margin-bottom: 20px;
@@ -465,7 +465,7 @@
     display: grid;
     grid-template-columns: 150px 200px 100px 80px;
     align-items: center;
-    padding: 16px;
+    padding: 11px;
     background: #f5f7fa;
     border-radius: 8px;
     transition: all 0.3s ease;
@@ -482,20 +482,20 @@
 }
 
 .record-date .date {
-    font-size: 14px;
+    font-size: 12.9px;
     font-weight: 600;
     color: #333;
 }
 
 .record-date .weekday {
-    font-size: 12px;
+    font-size: 11px;
     color: #999;
 }
 
 .record-time {
     display: flex;
     gap: 16px;
-    font-size: 13px;
+    font-size: 12px;
     color: #666;
 }
 
@@ -504,7 +504,7 @@
 }
 
 .record-duration {
-    font-size: 14px;
+    font-size: 12.9px;
     font-weight: 600;
     color: #333;
 }
@@ -512,7 +512,7 @@
 .record-status {
     padding: 4px 12px;
     border-radius: 12px;
-    font-size: 12px;
+    font-size: 11px;
     font-weight: 600;
     text-align: center;
 }
@@ -573,7 +573,7 @@
 }
 
 /* 반응형 */
-@media (max-width: 1024px) {
+@media (max-width: 870px) {
     .week-stats {
         grid-template-columns: repeat(2, 1fr);
     }
@@ -589,7 +589,7 @@
     }
 }
 
-@media (max-width: 768px) {
+@media (max-width: 652px) {
     .week-header {
         flex-direction: column;
         gap: 16px;
@@ -609,7 +609,7 @@
     }
 
     .day-number {
-        font-size: 14px;
+        font-size: 12.9px;
     }
 
     .day-status,

@@ -11,12 +11,12 @@
 
 /* 메일 사이드바 */
 .mail-sidebar {
-    width: 250px;
+    width: 225px;
     border-right: 1px solid #e0e0e0;
     display: flex;
     flex-direction: column;
     background: #f8f9fa;
-    padding: 20px;
+    padding: 15px;
 }
 
 .btn-compose {
@@ -26,7 +26,7 @@
     border: none;
     padding: 14px;
     border-radius: 8px;
-    font-size: 15px;
+    font-size: 13.8px;
     font-weight: 600;
     cursor: pointer;
     display: flex;
@@ -59,7 +59,7 @@
     cursor: pointer;
     transition: all 0.2s ease;
     color: #666;
-    font-size: 14px;
+    font-size: 12.9px;
     font-weight: 500;
 }
 
@@ -74,7 +74,7 @@
 }
 
 .folder-item i {
-    font-size: 16px;
+    font-size: 14.7px;
     width: 20px;
     text-align: center;
 }
@@ -88,7 +88,7 @@
     color: inherit;
     padding: 2px 8px;
     border-radius: 12px;
-    font-size: 12px;
+    font-size: 11px;
     font-weight: 600;
 }
 
@@ -106,7 +106,7 @@
 }
 
 .storage-label {
-    font-size: 12px;
+    font-size: 11px;
     color: #999;
     margin-bottom: 8px;
 }
@@ -126,13 +126,13 @@
 }
 
 .storage-text {
-    font-size: 11px;
+    font-size: 10.1px;
     color: #666;
 }
 
 /* 메일 목록 패널 */
 .mail-list-panel {
-    width: 400px;
+    width: 340px;
     border-right: 1px solid #e0e0e0;
     display: flex;
     flex-direction: column;
@@ -140,7 +140,7 @@
 }
 
 .mail-list-header {
-    padding: 20px;
+    padding: 15px;
     border-bottom: 1px solid #e0e0e0;
     display: flex;
     justify-content: space-between;
@@ -155,13 +155,13 @@
 
 .mail-list-title h2 {
     margin: 0;
-    font-size: 20px;
+    font-size: 18.4px;
     font-weight: 700;
     color: #333;
 }
 
 .mail-count {
-    font-size: 14px;
+    font-size: 12.9px;
     color: #999;
 }
 
@@ -212,7 +212,7 @@
     padding: 10px 10px 10px 35px;
     border: 1px solid #e0e0e0;
     border-radius: 20px;
-    font-size: 14px;
+    font-size: 12.9px;
     background: #f5f5f5;
     transition: all 0.3s ease;
 }
@@ -258,7 +258,7 @@
 }
 
 .mail-item-sender {
-    font-size: 15px;
+    font-size: 13.8px;
     font-weight: 600;
     color: #333;
 }
@@ -268,12 +268,12 @@
 }
 
 .mail-item-date {
-    font-size: 12px;
+    font-size: 11px;
     color: #999;
 }
 
 .mail-item-subject {
-    font-size: 14px;
+    font-size: 12.9px;
     font-weight: 500;
     color: #333;
     margin-bottom: 5px;
@@ -287,7 +287,7 @@
 }
 
 .mail-item-preview {
-    font-size: 13px;
+    font-size: 12px;
     color: #999;
     white-space: nowrap;
     overflow: hidden;
@@ -322,7 +322,7 @@
     background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
     color: white;
     border: none;
-    font-size: 24px;
+    font-size: 22.1px;
     cursor: pointer;
     box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
     display: flex;
@@ -347,13 +347,13 @@
 }
 
 .mail-detail-empty i {
-    font-size: 80px;
+    font-size: 73.6px;
     margin-bottom: 20px;
     opacity: 0.3;
 }
 
 .mail-detail-empty p {
-    font-size: 18px;
+    font-size: 16.6px;
     font-weight: 500;
 }
 
@@ -364,7 +364,7 @@
 }
 
 .mail-detail-header {
-    padding: 20px 30px;
+    padding: 15px 30px;
     border-bottom: 1px solid #e0e0e0;
 }
 
@@ -376,11 +376,11 @@
 .mail-detail-content {
     flex: 1;
     overflow-y: auto;
-    padding: 30px;
+    padding: 24px;
 }
 
 .mail-subject {
-    font-size: 24px;
+    font-size: 22.1px;
     font-weight: 700;
     color: #333;
     margin: 0 0 20px 0;
@@ -410,22 +410,22 @@
     align-items: center;
     justify-content: center;
     color: white;
-    font-size: 20px;
+    font-size: 18.4px;
 }
 
 .sender-name {
-    font-size: 16px;
+    font-size: 14.7px;
     font-weight: 600;
     color: #333;
 }
 
 .sender-email {
-    font-size: 14px;
+    font-size: 12.9px;
     color: #999;
 }
 
 .mail-date {
-    font-size: 14px;
+    font-size: 12.9px;
     color: #999;
 }
 
@@ -438,7 +438,7 @@
 }
 
 .attachments-header {
-    font-size: 14px;
+    font-size: 12.9px;
     font-weight: 600;
     color: #333;
     margin-bottom: 10px;
@@ -486,18 +486,18 @@
 }
 
 .attachment-name {
-    font-size: 14px;
+    font-size: 12.9px;
     font-weight: 500;
     color: #333;
 }
 
 .attachment-size {
-    font-size: 12px;
+    font-size: 11px;
     color: #999;
 }
 
 .mail-body {
-    font-size: 15px;
+    font-size: 13.8px;
     line-height: 1.8;
     color: #333;
     white-space: pre-wrap;
@@ -531,7 +531,7 @@
     background: white;
     border-radius: 12px;
     width: 90%;
-    max-width: 600px;
+    max-width: 510px;
     max-height: 90vh;
     display: flex;
     flex-direction: column;
@@ -541,7 +541,7 @@
 }
 
 .modal-large {
-    max-width: 800px;
+    max-width: 680px;
 }
 
 @keyframes slideDown {
@@ -559,13 +559,13 @@
     display: flex;
     justify-content: space-between;
     align-items: center;
-    padding: 20px 24px;
+    padding: 15px 24px;
     border-bottom: 2px solid #e0e0e0;
     flex-shrink: 0;
 }
 
 .modal-title {
-    font-size: 20px;
+    font-size: 18.4px;
     font-weight: 700;
     color: #333;
     margin: 0;
@@ -574,7 +574,7 @@
 .modal-close {
     background: none;
     border: none;
-    font-size: 24px;
+    font-size: 22.1px;
     color: #999;
     cursor: pointer;
     width: 36px;
@@ -592,7 +592,7 @@
 }
 
 .modal-body {
-    padding: 24px;
+    padding: 19px;
     overflow-y: auto;
     flex: 1;
 }
@@ -601,7 +601,7 @@
     display: flex;
     justify-content: flex-end;
     gap: 12px;
-    padding: 20px 24px;
+    padding: 15px 24px;
     border-top: 2px solid #e0e0e0;
     flex-shrink: 0;
 }
@@ -613,7 +613,7 @@
 
 .form-label {
     display: block;
-    font-size: 14px;
+    font-size: 12.9px;
     font-weight: 600;
     color: #333;
     margin-bottom: 8px;
@@ -624,7 +624,7 @@
     padding: 10px 14px;
     border: 2px solid #e0e0e0;
     border-radius: 6px;
-    font-size: 14px;
+    font-size: 12.9px;
     color: #333;
     transition: all 0.3s ease;
     box-sizing: border-box;
@@ -641,7 +641,7 @@
     padding: 10px 14px;
     border: 2px solid #e0e0e0;
     border-radius: 6px;
-    font-size: 14px;
+    font-size: 12.9px;
     color: #333;
     resize: vertical;
     font-family: inherit;
@@ -661,7 +661,7 @@
     border: none;
     padding: 12px 24px;
     border-radius: 8px;
-    font-size: 14px;
+    font-size: 12.9px;
     font-weight: 600;
     cursor: pointer;
     display: flex;
@@ -681,7 +681,7 @@
     border: none;
     padding: 10px 20px;
     border-radius: 6px;
-    font-size: 14px;
+    font-size: 12.9px;
     font-weight: 500;
     cursor: pointer;
     transition: all 0.3s ease;
@@ -695,7 +695,7 @@
 .file-upload-area {
     border: 2px dashed #e0e0e0;
     border-radius: 8px;
-    padding: 20px;
+    padding: 15px;
     text-align: center;
     transition: all 0.3s ease;
 }
@@ -710,7 +710,7 @@
     border: none;
     padding: 10px 20px;
     border-radius: 6px;
-    font-size: 14px;
+    font-size: 12.9px;
     font-weight: 500;
     cursor: pointer;
     color: #666;
@@ -739,7 +739,7 @@
     padding: 10px;
     background: #f8f9fa;
     border-radius: 6px;
-    font-size: 14px;
+    font-size: 12.9px;
 }
 
 .file-remove {
@@ -791,18 +791,18 @@
 }
 
 /* 반응형 */
-@media (max-width: 1200px) {
+@media (max-width: 1020px) {
     .mail-list-panel {
-        width: 350px;
+        width: 297px;
     }
 }
 
-@media (max-width: 768px) {
+@media (max-width: 652px) {
     .mail-sidebar {
         width: 200px;
     }
 
     .mail-list-panel {
-        width: 300px;
+        width: 255px;
     }
 }
