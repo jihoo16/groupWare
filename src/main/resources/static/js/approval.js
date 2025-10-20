@@ -39,7 +39,7 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     });
 
-    // ========== 새 문서 작성 모달 ==========
+    // ========== 새 결재 요청 모달 ==========
     if (newApprovalBtn) {
         newApprovalBtn.addEventListener('click', function() {
             openModal(newApprovalModal);
@@ -48,18 +48,7 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     }
 
-    // 사이드바의 문서 작성 클릭 이벤트
-    const sidebarDocumentWrite = document.getElementById('sidebarDocumentWrite');
-    if (sidebarDocumentWrite) {
-        sidebarDocumentWrite.addEventListener('click', function(e) {
-            e.preventDefault();
-            openModal(newApprovalModal);
-            selectedApprovers = [];
-            updateApproverList();
-        });
-    }
-
-    // 새 문서 작성 모달 닫기
+    // 새 결재 모달 닫기
     const closeNewApprovalModal = document.getElementById('closeNewApprovalModal');
     const cancelNewApproval = document.getElementById('cancelNewApproval');
 
@@ -197,7 +186,7 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     }
 
-    // 새 문서 작성 폼 제출
+    // 새 결재 요청 폼 제출
     const newApprovalForm = document.getElementById('newApprovalForm');
     if (newApprovalForm) {
         newApprovalForm.addEventListener('submit', function(e) {
@@ -222,10 +211,10 @@ document.addEventListener('DOMContentLoaded', function() {
                 files: selectedFiles.map(f => f.name)
             };
 
-            console.log('새 문서 작성:', formData);
+            console.log('새 결재 요청:', formData);
 
             // 성공 메시지
-            showAlert('문서 작성이 성공적으로 제출되었습니다.', 'success');
+            showAlert('결재 요청이 성공적으로 제출되었습니다.', 'success');
 
             // 폼 초기화
             newApprovalForm.reset();
