@@ -356,62 +356,85 @@ document.addEventListener('DOMContentLoaded', function() {
         'receipt': {
             title: '영수증 처리',
             html: `
+                <div style="background: #f8f9fa; border: 2px solid #e8e8e8; border-radius: 10px; padding: 20px; margin-bottom: 30px;">
+                    <div style="margin-bottom: 15px;">
+                        <h4 style="font-size: 16px; font-weight: 700; color: #333; margin: 0 0 15px 0; display: flex; align-items: center; gap: 8px;">
+                            <i class="fas fa-edit" style="color: #667eea;"></i> 공통 정보 입력
+                        </h4>
+                    </div>
+                    <table class="form-table" style="background: white;">
+                        <tr>
+                            <th style="width: 150px;">과제명</th>
+                            <td colspan="3"><input type="text" id="common_project" placeholder="과제명을 입력하세요"></td>
+                        </tr>
+                        <tr>
+                            <th>작성자</th>
+                            <td><input type="text" id="common_author" value="홍길동" readonly></td>
+                            <th>회의 일자</th>
+                            <td><input type="date" id="common_date"></td>
+                        </tr>
+                        <tr>
+                            <th>시작 시간</th>
+                            <td><input type="time" id="common_start_time"></td>
+                            <th>종료 시간</th>
+                            <td><input type="time" id="common_end_time"></td>
+                        </tr>
+                        <tr>
+                            <th>장소</th>
+                            <td colspan="3"><input type="text" id="common_location" placeholder="회의 장소를 입력하세요"></td>
+                        </tr>
+                        <tr>
+                            <th>사용 금액</th>
+                            <td colspan="3">
+                                <input type="number" id="common_amount" placeholder="사용 금액을 입력하세요 (원)" style="width: 300px; padding: 5px;">
+                                <small style="color: #666; margin-left: 10px;">* 1인당 30,000원 기준으로 참석자가 자동 계산됩니다</small>
+                            </td>
+                        </tr>
+                        <tr>
+                            <th>참석자</th>
+                            <td colspan="3">
+                                <div style="display: flex; align-items: center; justify-content: flex-end; gap: 5px; margin-bottom: 10px;">
+                                    <button type="button" id="addAttendeeBtn" style="width: 30px; height: 30px; background: #667eea; color: white; border: none; border-radius: 5px; cursor: pointer; font-size: 18px; padding: 0;">
+                                        <i class="fas fa-plus"></i>
+                                    </button>
+                                    <button type="button" id="removeAttendeeBtn" style="width: 30px; height: 30px; background: #dc3545; color: white; border: none; border-radius: 5px; cursor: pointer; font-size: 18px; padding: 0;">
+                                        <i class="fas fa-minus"></i>
+                                    </button>
+                                </div>
+                                <div id="attendeeList"></div>
+                            </td>
+                        </tr>
+                    </table>
+                </div>
+
                 <div style="background: white; border: 2px solid #e0e0e0; border-radius: 8px; padding: 30px; margin-bottom: 30px;">
                     <h2 class="doc-title">회 의 품 의 서</h2>
                     <div style="text-align: left; margin-bottom: 20px; font-size: 14px;">
-                        작성일 : ${new Date().toISOString().split('T')[0]}
+                        작성일 : <span id="proposal_date"></span>
                     </div>
                     <table class="form-table">
                     <tr>
                         <th colspan="3">과제명</th>
-                        <td colspan="4"><input type="text" placeholder="과제명을 입력하세요"></td>
+                        <td colspan="9"><input type="text" class="auto-project" placeholder="과제명을 입력하세요" readonly style="background: #f9f9f9;"></td>
                     </tr>
                     <tr>
                         <th colspan="3">참석인원</th>
-                        <th>장소</th>
-                        <th>회의 일시</th>
-                        <th colspan="2">회의 목적</th>
+                        <th colspan="1">장소</th>
+                        <th colspan="1">회의 일시</th>
+                        <th colspan="1">회의 목적</th>
                     </tr>
                     <tr>
                         <th>내외구분</th>
                         <th>소속</th>
                         <th>성명</th>
-                        <td rowspan="4"><input type="text" placeholder="회의 장소"></td>
-                        <td rowspan="4"><input type="text" placeholder="예: 2025.01.20. 14:00~18:00"></td>
-                        <td colspan="2" rowspan="4"><textarea placeholder="회의 목적" rows="3"></textarea></td>
+                        <td class="auto-location-cell" colspan="1" rowspan="1" style="vertical-align: top;"><input type="text" class="auto-location" placeholder="회의 장소" readonly style="background: #f9f9f9;"></td>
+                        <td class="auto-datetime-cell" colspan="1" rowspan="1" style="vertical-align: top;"><input type="text" class="auto-datetime" placeholder="예: 2025.01.20. 14:00~18:00" readonly style="background: #f9f9f9;"></td>
+                        <td class="meeting-purpose-cell" colspan="1" rowspan="1" style="vertical-align: top;"><textarea placeholder="회의 목적" rows="3"></textarea></td>
                     </tr>
+                    <tbody id="proposal_attendees">
+                    </tbody>
                     <tr>
-                        <td>
-                            <select>
-                                <option>내부</option>
-                                <option>외부</option>
-                            </select>
-                        </td>
-                        <td><input type="text" placeholder="소속"></td>
-                        <td><input type="text" placeholder="성명"></td>
-                    </tr>
-                    <tr>
-                        <td>
-                            <select>
-                                <option>내부</option>
-                                <option>외부</option>
-                            </select>
-                        </td>
-                        <td><input type="text" placeholder="소속"></td>
-                        <td><input type="text" placeholder="성명"></td>
-                    </tr>
-                    <tr>
-                        <td>
-                            <select>
-                                <option>내부</option>
-                                <option>외부</option>
-                            </select>
-                        </td>
-                        <td><input type="text" placeholder="소속"></td>
-                        <td><input type="text" placeholder="성명"></td>
-                    </tr>
-                    <tr>
-                        <th colspan="7" style="background: #f0f0f0; padding: 15px;">소요 경비 내역 (원)</th>
+                        <th colspan="9" style="background: #f0f0f0; padding: 15px;">소요 경비 내역 (원)</th>
                     </tr>
                     <tr>
                         <th>일시</th>
@@ -472,16 +495,16 @@ document.addEventListener('DOMContentLoaded', function() {
                     <h2 class="doc-title">회 의 록</h2>
                     <table class="form-table">
                     <tr>
-                        <th>제부/업무명</th>
-                        <td colspan="2"><input type="text" placeholder="제부 또는 업무명"></td>
+                        <th>세부 업무명</th>
+                        <td colspan="2"><input type="text" class="auto-project" placeholder="세부 업무명" readonly style="background: #f9f9f9;"></td>
                         <th>작성자</th>
-                        <td><input type="text" value="홍길동" readonly></td>
+                        <td><input type="text" class="auto-author" value="홍길동" readonly style="background: #f9f9f9;"></td>
                     </tr>
                     <tr>
                         <th>일시</th>
-                        <td colspan="2"><input type="text" placeholder="예: 2025.01.20. 14:00~18:00"></td>
+                        <td colspan="2"><input type="text" class="auto-datetime" placeholder="예: 2025.01.20. 14:00~18:00" readonly style="background: #f9f9f9;"></td>
                         <th>장소</th>
-                        <td><input type="text" placeholder="회의 장소"></td>
+                        <td><input type="text" class="auto-location" placeholder="회의 장소" readonly style="background: #f9f9f9;"></td>
                     </tr>
                     <tr>
                         <th rowspan="2">참석자</th>
@@ -507,16 +530,16 @@ document.addEventListener('DOMContentLoaded', function() {
                     <h2 class="doc-title">참 석 자 명 단</h2>
                     <table class="form-table">
                     <tr>
-                        <th>제부/업무명</th>
-                        <td colspan="2"><input type="text" placeholder="제부 또는 업무명"></td>
+                        <th>세부업무명</th>
+                        <td colspan="2"><input type="text" class="auto-project" placeholder="세부 업무명" readonly style="background: #f9f9f9;"></td>
                         <th>작성자</th>
-                        <td><input type="text" value="홍길동" readonly></td>
+                        <td><input type="text" class="auto-author" value="홍길동" readonly style="background: #f9f9f9;"></td>
                     </tr>
                     <tr>
                         <th>일시</th>
-                        <td colspan="2"><input type="text" placeholder="예: 2025.01.20. 14:00~18:00"></td>
+                        <td colspan="2"><input type="text" class="auto-datetime" placeholder="예: 2025.01.20. 14:00~18:00" readonly style="background: #f9f9f9;"></td>
                         <th>장소</th>
-                        <td><input type="text" placeholder="회의 장소"></td>
+                        <td><input type="text" class="auto-location" placeholder="회의 장소" readonly style="background: #f9f9f9;"></td>
                     </tr>
                 </table>
                 <table class="form-table" style="margin-top: 20px;">
@@ -590,7 +613,238 @@ document.addEventListener('DOMContentLoaded', function() {
         const template = templates[templateKey];
         if (template) {
             documentForm.innerHTML = template.html;
+
+            // 영수증 처리 템플릿인 경우 자동 채우기 이벤트 리스너 추가
+            if (templateKey === 'receipt') {
+                setupReceiptAutoFill();
+            }
         }
+    }
+
+    // 영수증 처리 자동 채우기 기능
+    function setupReceiptAutoFill() {
+        const commonProject = document.getElementById('common_project');
+        const commonDate = document.getElementById('common_date');
+        const commonStartTime = document.getElementById('common_start_time');
+        const commonEndTime = document.getElementById('common_end_time');
+        const commonLocation = document.getElementById('common_location');
+        const commonAmount = document.getElementById('common_amount');
+        const addAttendeeBtn = document.getElementById('addAttendeeBtn');
+        const removeAttendeeBtn = document.getElementById('removeAttendeeBtn');
+        const attendeeList = document.getElementById('attendeeList');
+
+        let attendees = [];
+
+        // 참석자 목록 업데이트 함수
+        function updateAttendeeList() {
+            attendeeList.innerHTML = '';
+            attendees.forEach((attendee, index) => {
+                const row = document.createElement('div');
+                row.style.cssText = 'display: flex; gap: 8px; margin-bottom: 8px; align-items: center;';
+                row.innerHTML = `
+                    <input type="checkbox" data-index="${index}" class="attendee-checkbox" style="width: 18px; height: 18px; cursor: pointer;">
+                    <select data-index="${index}" class="attendee-type" style="padding: 5px; width: 80px;">
+                        <option value="내부" ${attendee.type === '내부' ? 'selected' : ''}>내부</option>
+                        <option value="외부" ${attendee.type === '외부' ? 'selected' : ''}>외부</option>
+                    </select>
+                    <input type="text" data-index="${index}" class="attendee-dept" placeholder="소속" value="${attendee.dept || ''}" style="flex: 2; padding: 5px;">
+                    <input type="text" data-index="${index}" class="attendee-name" placeholder="성명" value="${attendee.name || ''}" style="flex: 1; padding: 5px;">
+                `;
+                attendeeList.appendChild(row);
+            });
+
+            // 이벤트 리스너 추가
+            document.querySelectorAll('.attendee-type, .attendee-dept, .attendee-name').forEach(el => {
+                el.addEventListener('input', function() {
+                    const index = parseInt(this.getAttribute('data-index'));
+                    if (this.classList.contains('attendee-type')) {
+                        attendees[index].type = this.value;
+                    } else if (this.classList.contains('attendee-dept')) {
+                        attendees[index].dept = this.value;
+                    } else if (this.classList.contains('attendee-name')) {
+                        attendees[index].name = this.value;
+                    }
+                    updateProposalAttendees();
+                });
+            });
+
+            // 체크박스 change 이벤트도 추가
+            document.querySelectorAll('.attendee-type').forEach(el => {
+                el.addEventListener('change', function() {
+                    const index = parseInt(this.getAttribute('data-index'));
+                    attendees[index].type = this.value;
+                    updateProposalAttendees();
+                });
+            });
+
+            updateProposalAttendees();
+        }
+
+        // 회의 품의서 참석인원 업데이트
+        function updateProposalAttendees() {
+            const tbody = document.getElementById('proposal_attendees');
+            if (!tbody) return;
+
+            // 기존 참석자 행들 제거
+            while (tbody.rows.length > 0) {
+                tbody.deleteRow(0);
+            }
+
+            // 새로운 참석자 행 추가
+            attendees.forEach((attendee, index) => {
+                const row = tbody.insertRow();
+                row.innerHTML = `
+                    <td>
+                        <select>
+                            <option ${attendee.type === '내부' ? 'selected' : ''}>내부</option>
+                            <option ${attendee.type === '외부' ? 'selected' : ''}>외부</option>
+                        </select>
+                    </td>
+                    <td><input type="text" value="${attendee.dept || ''}" readonly style="background: #f9f9f9;"></td>
+                    <td><input type="text" value="${attendee.name || ''}" readonly style="background: #f9f9f9;"></td>
+                `;
+            });
+
+            // rowspan 업데이트
+            const totalRows = attendees.length;
+            const locationCell = document.querySelector('.auto-location-cell');
+            const datetimeCell = document.querySelector('.auto-datetime-cell');
+            const purposeCell = document.querySelector('.meeting-purpose-cell');
+
+            if (locationCell) locationCell.setAttribute('rowspan', totalRows);
+            if (datetimeCell) datetimeCell.setAttribute('rowspan', totalRows);
+            if (purposeCell) purposeCell.setAttribute('rowspan', totalRows);
+        }
+
+        // 참석자 추가 버튼
+        if (addAttendeeBtn) {
+            addAttendeeBtn.addEventListener('click', function() {
+                attendees.push({ type: '내부', dept: '', name: '' });
+                updateAttendeeList();
+            });
+        }
+
+        // 참석자 제거 버튼 - 체크된 항목만 제거
+        if (removeAttendeeBtn) {
+            removeAttendeeBtn.addEventListener('click', function() {
+                const checkboxes = document.querySelectorAll('.attendee-checkbox:checked');
+                if (checkboxes.length === 0) {
+                    alert('제거할 참석자를 선택해주세요.');
+                    return;
+                }
+
+                // 체크된 인덱스를 역순으로 정렬하여 제거 (뒤에서부터 제거해야 인덱스 꼬임 방지)
+                const indicesToRemove = Array.from(checkboxes)
+                    .map(cb => parseInt(cb.getAttribute('data-index')))
+                    .sort((a, b) => b - a);
+
+                indicesToRemove.forEach(index => {
+                    attendees.splice(index, 1);
+                });
+
+                updateAttendeeList();
+            });
+        }
+
+        // 사용 금액 기반 자동 참석자 계산
+        if (commonAmount) {
+            commonAmount.addEventListener('input', function() {
+                const amount = parseInt(this.value) || 0;
+
+                if (amount > 0) {
+                    // 1인당 30,000원 기준으로 인원 계산
+                    const totalPeople = Math.ceil(amount / 30000);
+
+                    // 외부 1명 + 내부 나머지
+                    const externalCount = 1;
+                    const internalCount = totalPeople - externalCount;
+
+                    // 참석자 배열 초기화
+                    attendees = [];
+
+                    // 외부 1명 추가
+                    attendees.push({ type: '외부', dept: '', name: '' });
+
+                    // 내부 인원 추가
+                    for (let i = 0; i < internalCount; i++) {
+                        attendees.push({ type: '내부', dept: '', name: '' });
+                    }
+
+                    updateAttendeeList();
+                }
+            });
+        }
+
+        // 과제명 자동 채우기
+        if (commonProject) {
+            commonProject.addEventListener('input', function() {
+                const value = this.value;
+                document.querySelectorAll('.auto-project').forEach(field => {
+                    field.value = value;
+                });
+            });
+        }
+
+        // 날짜/시간 자동 채우기
+        function updateDateTime() {
+            const dateValue = commonDate ? commonDate.value : '';
+            const startTimeValue = commonStartTime ? commonStartTime.value : '';
+            const endTimeValue = commonEndTime ? commonEndTime.value : '';
+
+            if (dateValue) {
+                // 날짜를 "YYYY.MM.DD." 형식으로 변환
+                const [year, month, day] = dateValue.split('-');
+                let formattedDate = `${year}.${month}.${day}.`;
+
+                // 시작시간과 종료시간을 24시간 형태로 변환 (00:00~24:00)
+                if (startTimeValue && endTimeValue) {
+                    // 종료시간이 00:00이면 24:00으로 표시
+                    const endTimeDisplay = endTimeValue === '00:00' ? '24:00' : endTimeValue;
+                    formattedDate += ` ${startTimeValue}~${endTimeDisplay}`;
+                } else if (startTimeValue) {
+                    formattedDate += ` ${startTimeValue}`;
+                }
+
+                // 모든 일시 필드에 입력
+                document.querySelectorAll('.auto-datetime').forEach(field => {
+                    field.value = formattedDate;
+                });
+
+                // 회의 품의서 작성일 = 날짜 - 1일 (0000년 00월 00일 형식)
+                const proposalDateElement = document.getElementById('proposal_date');
+                if (proposalDateElement) {
+                    const date = new Date(dateValue);
+                    date.setDate(date.getDate() - 1);
+                    const propYear = date.getFullYear();
+                    const propMonth = String(date.getMonth() + 1).padStart(2, '0');
+                    const propDay = String(date.getDate()).padStart(2, '0');
+                    proposalDateElement.textContent = `${propYear}년 ${propMonth}월 ${propDay}일`;
+                }
+            }
+        }
+
+        if (commonDate) {
+            commonDate.addEventListener('input', updateDateTime);
+        }
+        if (commonStartTime) {
+            commonStartTime.addEventListener('input', updateDateTime);
+        }
+        if (commonEndTime) {
+            commonEndTime.addEventListener('input', updateDateTime);
+        }
+
+        // 장소 자동 채우기
+        if (commonLocation) {
+            commonLocation.addEventListener('input', function() {
+                const value = this.value;
+                document.querySelectorAll('.auto-location').forEach(field => {
+                    field.value = value;
+                });
+            });
+        }
+
+        // 초기화 - 빈 목록으로 시작 (금액 입력 시 자동 생성)
+        updateAttendeeList();
     }
 
     // 결재자 추가 버튼
