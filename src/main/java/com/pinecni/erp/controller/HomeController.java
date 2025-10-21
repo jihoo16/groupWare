@@ -90,4 +90,9 @@ public class HomeController {
     public String projectNew() {
         return "project-new";
     }
+
+    @GetMapping("/project/card")
+    public String projectCard() {
+        return "project-card";
+    }
 }

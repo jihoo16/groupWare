@@ -21,25 +21,19 @@
         <form id="projectForm">
             <div class="form-section">
                 <h2>기본 정보</h2>
-                <div class="form-grid">
+                <div class="form-grid" style="margin-bottom: 20px">
                     <div class="form-group">
                         <label for="projectName">프로젝트명 <span class="required">*</span></label>
                         <input type="text" id="projectName" name="projectName" class="form-control" required>
                     </div>
 
                     <div class="form-group">
-                        <label for="projectStatus">상태 <span class="required">*</span></label>
-                        <select id="projectStatus" name="projectStatus" class="form-control" required>
-                            <option value="">선택하세요</option>
-                            <option value="planning">기획</option>
-                            <option value="in-progress">진행중</option>
-                            <option value="completed">완료</option>
-                            <option value="on-hold">보류</option>
-                        </select>
+                        <label for="projectStatus">발주사 <span class="required">*</span></label>
+                        <input  type="text" id="projectStatus" name="projectStatus" class="form-control" required>
                     </div>
 
                     <div class="form-group">
-                        <label for="projectManager">PM (프로젝트 매니저) <span class="required">*</span></label>
+                        <label for="projectManager">연구 책임자<span class="required">*</span></label>
                         <select id="projectManager" name="projectManager" class="form-control" required>
                             <option value="">선택하세요</option>
                             <option value="1">김철수</option>
@@ -51,13 +45,13 @@
                     </div>
 
                     <div class="form-group">
-                        <label for="priority">우선순위 <span class="required">*</span></label>
-                        <select id="priority" name="priority" class="form-control" required>
-                            <option value="">선택하세요</option>
-                            <option value="high">높음</option>
-                            <option value="medium">보통</option>
-                            <option value="low">낮음</option>
-                        </select>
+                        <label>연구비 카드</label>
+                        <button type="button" class="btn btn-secondary btn-sm" id="addCardBtn">
+                            <i class="fas fa-credit-card"></i> 카드 추가
+                        </button>
+                        <div id="cardList" class="card-list">
+                            <!-- 카드 목록이 여기에 표시됩니다 -->
+                        </div>
                     </div>
 
                     <div class="form-group">
@@ -78,14 +72,8 @@
             </div>
 
             <div class="form-section">
-                <h2>팀 구성</h2>
+                <h2>참여연구원 구성</h2>
                 <div class="team-members">
-                    <div class="form-group">
-                        <button type="button" class="btn btn-primary" id="addMemberBtn">
-                            <i class="fas fa-user-plus"></i> 팀원 추가
-                        </button>
-                    </div>
-
                     <div class="team-table-container">
                         <table class="team-table" id="teamTable">
                             <thead>
@@ -105,24 +93,6 @@
                                 </tr>
                             </tbody>
                         </table>
-                    </div>
-                </div>
-            </div>
-
-            <div class="form-section">
-                <h2>예산 및 진행률</h2>
-                <div class="form-grid">
-                    <div class="form-group">
-                        <label for="budget">예산 (원)</label>
-                        <input type="number" id="budget" name="budget" class="form-control" min="0" step="1000000">
-                    </div>
-
-                    <div class="form-group">
-                        <label for="progress">진행률 (%)</label>
-                        <div class="progress-input-group">
-                            <input type="range" id="progressRange" name="progress" min="0" max="100" value="0" class="progress-slider">
-                            <input type="number" id="progressNumber" name="progressNumber" min="0" max="100" value="0" class="form-control progress-number">
-                        </div>
                     </div>
                 </div>
             </div>
@@ -169,7 +139,7 @@
                 <table class="member-select-table">
                     <thead>
                         <tr>
-                            <th width="50">선택</th>
+                            <th width="60">선택</th>
                             <th>이름</th>
                             <th>부서</th>
                             <th>직급</th>
@@ -244,6 +214,47 @@
             <button class="btn btn-secondary" onclick="closeMemberModal()">취소</button>
             <button class="btn btn-primary" onclick="addSelectedMembers()">
                 <i class="fas fa-check"></i> 선택 완료
+            </button>
+        </div>
+    </div>
+</div>
+
+<!-- 연구비 카드 추가 모달 -->
+<div id="cardModal" class="modal">
+    <div class="modal-content modal-small">
+        <div class="modal-header">
+            <h2>연구비 카드 추가</h2>
+            <button class="modal-close" onclick="closeCardModal()">
+                <i class="fas fa-times"></i>
+            </button>
+        </div>
+        <div class="modal-body">
+            <div class="form-group">
+                <label for="cardCompany">카드사 <span class="required">*</span></label>
+                <select id="cardCompany" class="form-control">
+                    <option value="">선택하세요</option>
+                    <option value="신한카드">신한카드</option>
+                    <option value="KB국민카드">KB국민카드</option>
+                    <option value="하나카드">하나카드</option>
+                    <option value="삼성카드">삼성카드</option>
+                    <option value="현대카드">현대카드</option>
+                    <option value="BC카드">BC카드</option>
+                    <option value="롯데카드">롯데카드</option>
+                    <option value="NH농협카드">NH농협카드</option>
+                    <option value="우리카드">우리카드</option>
+                    <option value="IBK기업은행카드">IBK기업은행카드</option>
+                </select>
+            </div>
+            <div class="form-group">
+                <label for="cardNumber">카드 뒷 4자리 <span class="required">*</span></label>
+                <input type="text" id="cardNumber" class="form-control" placeholder="1234" maxlength="4" pattern="\d{4}">
+                <small class="form-text">숫자 4자리를 입력하세요</small>
+            </div>
+        </div>
+        <div class="modal-footer">
+            <button class="btn btn-secondary" onclick="closeCardModal()">취소</button>
+            <button class="btn btn-primary" onclick="saveCard()">
+                <i class="fas fa-check"></i> 추가
             </button>
         </div>
     </div>

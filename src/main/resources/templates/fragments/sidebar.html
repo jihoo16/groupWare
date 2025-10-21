@@ -70,7 +70,7 @@
                     <span class="menu-text">클라우드</span>
                 </a>
             </li>
-            <li th:class="${(activeMenu == 'project' or activeMenu == 'project-new') ? 'menu-item menu-parent active' : 'menu-item menu-parent'}" data-tooltip="프로젝트 관리">
+            <li th:class="${(activeMenu == 'project' or activeMenu == 'project-new' or activeMenu == 'project-card') ? 'menu-item menu-parent active' : 'menu-item menu-parent'}" data-tooltip="프로젝트 관리">
                 <a href="/project" class="menu-toggle-btn">
                     <i class="fas fa-project-diagram"></i>
                     <span class="menu-text">프로젝트 관리</span>
@@ -85,6 +85,11 @@
                     <li class="submenu-item" th:classappend="${activeMenu == 'project-new'} ? 'active' : ''">
                         <a href="/project/new">
                             <span class="submenu-text">신규 프로젝트</span>
+                        </a>
+                    </li>
+                    <li class="submenu-item" th:classappend="${activeMenu == 'project-card'} ? 'active' : ''">
+                        <a href="/project/card">
+                            <span class="submenu-text">연구비카드 관리</span>
                         </a>
                     </li>
                 </ul>
