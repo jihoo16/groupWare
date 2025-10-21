@@ -80,4 +80,14 @@ public class HomeController {
     public String approvalWrite() {
         return "approval-write";
     }
+
+    @GetMapping("/project")
+    public String project() {
+        return "project";
+    }
+
+    @GetMapping("/project/new")
+    public String projectNew() {
+        return "project-new";
+    }
 }

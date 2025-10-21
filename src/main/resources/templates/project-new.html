@@ -1,0 +1,254 @@
+<!DOCTYPE html>
+<html lang="ko" xmlns:th="http://www.thymeleaf.org">
+<head th:replace="fragments/layout :: head('신규 프로젝트 등록', '/css/project.css')"></head>
+<body>
+<div class="container">
+    <div th:replace="fragments/sidebar :: sidebar('project-new')"></div>
+
+    <main class="main-content">
+        <header class="header">
+            <div class="header-left">
+                <h1 class="page-title">신규 프로젝트 등록</h1>
+            </div>
+            <div class="header-right">
+                <button class="btn btn-secondary" onclick="location.href='/project'">
+                    <i class="fas fa-arrow-left"></i> 목록으로
+                </button>
+            </div>
+        </header>
+
+    <div class="content-card">
+        <form id="projectForm">
+            <div class="form-section">
+                <h2>기본 정보</h2>
+                <div class="form-grid">
+                    <div class="form-group">
+                        <label for="projectName">프로젝트명 <span class="required">*</span></label>
+                        <input type="text" id="projectName" name="projectName" class="form-control" required>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="projectStatus">상태 <span class="required">*</span></label>
+                        <select id="projectStatus" name="projectStatus" class="form-control" required>
+                            <option value="">선택하세요</option>
+                            <option value="planning">기획</option>
+                            <option value="in-progress">진행중</option>
+                            <option value="completed">완료</option>
+                            <option value="on-hold">보류</option>
+                        </select>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="projectManager">PM (프로젝트 매니저) <span class="required">*</span></label>
+                        <select id="projectManager" name="projectManager" class="form-control" required>
+                            <option value="">선택하세요</option>
+                            <option value="1">김철수</option>
+                            <option value="2">이영희</option>
+                            <option value="3">박민수</option>
+                            <option value="4">정지훈</option>
+                            <option value="5">최수진</option>
+                        </select>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="priority">우선순위 <span class="required">*</span></label>
+                        <select id="priority" name="priority" class="form-control" required>
+                            <option value="">선택하세요</option>
+                            <option value="high">높음</option>
+                            <option value="medium">보통</option>
+                            <option value="low">낮음</option>
+                        </select>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="startDate">시작일 <span class="required">*</span></label>
+                        <input type="date" id="startDate" name="startDate" class="form-control" required>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="endDate">종료일 <span class="required">*</span></label>
+                        <input type="date" id="endDate" name="endDate" class="form-control" required>
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label for="projectDescription">프로젝트 설명 <span class="required">*</span></label>
+                    <textarea id="projectDescription" name="projectDescription" class="form-control" rows="4" required></textarea>
+                </div>
+            </div>
+
+            <div class="form-section">
+                <h2>팀 구성</h2>
+                <div class="team-members">
+                    <div class="form-group">
+                        <button type="button" class="btn btn-primary" id="addMemberBtn">
+                            <i class="fas fa-user-plus"></i> 팀원 추가
+                        </button>
+                    </div>
+
+                    <div class="team-table-container">
+                        <table class="team-table" id="teamTable">
+                            <thead>
+                                <tr>
+                                    <th width="40">No</th>
+                                    <th>이름</th>
+                                    <th>부서</th>
+                                    <th>직급</th>
+                                    <th width="140">참여 시작일</th>
+                                    <th width="140">참여 종료일</th>
+                                    <th width="80">작업</th>
+                                </tr>
+                            </thead>
+                            <tbody id="teamTableBody">
+                                <tr class="empty-row">
+                                    <td colspan="7" class="text-center">팀원을 추가해주세요</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <div class="form-section">
+                <h2>예산 및 진행률</h2>
+                <div class="form-grid">
+                    <div class="form-group">
+                        <label for="budget">예산 (원)</label>
+                        <input type="number" id="budget" name="budget" class="form-control" min="0" step="1000000">
+                    </div>
+
+                    <div class="form-group">
+                        <label for="progress">진행률 (%)</label>
+                        <div class="progress-input-group">
+                            <input type="range" id="progressRange" name="progress" min="0" max="100" value="0" class="progress-slider">
+                            <input type="number" id="progressNumber" name="progressNumber" min="0" max="100" value="0" class="form-control progress-number">
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="form-section">
+                <h2>첨부 파일</h2>
+                <div class="form-group">
+                    <label for="projectFiles">파일 첨부</label>
+                    <input type="file" id="projectFiles" name="projectFiles" class="form-control" multiple>
+                    <small class="form-text">프로젝트 관련 문서, 기획서, 디자인 파일 등을 첨부할 수 있습니다.</small>
+                </div>
+                <div id="fileList" class="file-list">
+                    <!-- 첨부된 파일 목록 -->
+                </div>
+            </div>
+
+        </form>
+    </div>
+
+    <!-- 하단 고정 액션 버튼 -->
+    <div class="project-form-footer">
+        <button type="button" class="btn btn-secondary" onclick="location.href='/project'">취소</button>
+        <button type="submit" class="btn btn-primary" form="projectForm">
+            <i class="fas fa-save"></i> 프로젝트 등록
+        </button>
+    </div>
+    </main>
+</div>
+
+<!-- 팀원 선택 모달 -->
+<div id="memberSelectModal" class="modal">
+    <div class="modal-content">
+        <div class="modal-header">
+            <h2>팀원 선택</h2>
+            <button class="modal-close" onclick="closeMemberModal()">
+                <i class="fas fa-times"></i>
+            </button>
+        </div>
+        <div class="modal-body">
+            <div class="form-group">
+                <input type="text" id="memberSearchInput" class="form-control" placeholder="이름으로 검색...">
+            </div>
+            <div class="member-list-container">
+                <table class="member-select-table">
+                    <thead>
+                        <tr>
+                            <th width="50">선택</th>
+                            <th>이름</th>
+                            <th>부서</th>
+                            <th>직급</th>
+                        </tr>
+                    </thead>
+                    <tbody id="memberSelectTableBody">
+                        <tr data-id="1" data-name="김철수" data-dept="개발팀" data-position="선임연구원">
+                            <td><input type="checkbox" class="member-checkbox" value="1"></td>
+                            <td>김철수</td>
+                            <td>개발팀</td>
+                            <td>선임연구원</td>
+                        </tr>
+                        <tr data-id="2" data-name="이영희" data-dept="기획팀" data-position="주임">
+                            <td><input type="checkbox" class="member-checkbox" value="2"></td>
+                            <td>이영희</td>
+                            <td>기획팀</td>
+                            <td>주임</td>
+                        </tr>
+                        <tr data-id="3" data-name="박민수" data-dept="디자인팀" data-position="대리">
+                            <td><input type="checkbox" class="member-checkbox" value="3"></td>
+                            <td>박민수</td>
+                            <td>디자인팀</td>
+                            <td>대리</td>
+                        </tr>
+                        <tr data-id="4" data-name="정지훈" data-dept="개발팀" data-position="책임연구원">
+                            <td><input type="checkbox" class="member-checkbox" value="4"></td>
+                            <td>정지훈</td>
+                            <td>개발팀</td>
+                            <td>책임연구원</td>
+                        </tr>
+                        <tr data-id="5" data-name="최수진" data-dept="QA팀" data-position="주임">
+                            <td><input type="checkbox" class="member-checkbox" value="5"></td>
+                            <td>최수진</td>
+                            <td>QA팀</td>
+                            <td>주임</td>
+                        </tr>
+                        <tr data-id="6" data-name="강동원" data-dept="개발팀" data-position="선임연구원">
+                            <td><input type="checkbox" class="member-checkbox" value="6"></td>
+                            <td>강동원</td>
+                            <td>개발팀</td>
+                            <td>선임연구원</td>
+                        </tr>
+                        <tr data-id="7" data-name="한지민" data-dept="기획팀" data-position="대리">
+                            <td><input type="checkbox" class="member-checkbox" value="7"></td>
+                            <td>한지민</td>
+                            <td>기획팀</td>
+                            <td>대리</td>
+                        </tr>
+                        <tr data-id="8" data-name="송중기" data-dept="개발팀" data-position="주임">
+                            <td><input type="checkbox" class="member-checkbox" value="8"></td>
+                            <td>송중기</td>
+                            <td>개발팀</td>
+                            <td>주임</td>
+                        </tr>
+                        <tr data-id="9" data-name="전지현" data-dept="마케팅팀" data-position="과장">
+                            <td><input type="checkbox" class="member-checkbox" value="9"></td>
+                            <td>전지현</td>
+                            <td>마케팅팀</td>
+                            <td>과장</td>
+                        </tr>
+                        <tr data-id="10" data-name="현빈" data-dept="영업팀" data-position="차장">
+                            <td><input type="checkbox" class="member-checkbox" value="10"></td>
+                            <td>현빈</td>
+                            <td>영업팀</td>
+                            <td>차장</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+        <div class="modal-footer">
+            <button class="btn btn-secondary" onclick="closeMemberModal()">취소</button>
+            <button class="btn btn-primary" onclick="addSelectedMembers()">
+                <i class="fas fa-check"></i> 선택 완료
+            </button>
+        </div>
+    </div>
+</div>
+
+<script th:src="@{/js/project.js}"></script>
+</body>
+</html>

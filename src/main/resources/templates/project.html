@@ -1,0 +1,222 @@
+<!DOCTYPE html>
+<html lang="ko" xmlns:th="http://www.thymeleaf.org">
+<head th:replace="fragments/layout :: head('프로젝트 관리', '/css/project.css')"></head>
+<body>
+<div class="container">
+    <div th:replace="fragments/sidebar :: sidebar('project')"></div>
+
+    <main class="main-content">
+        <header class="header">
+            <div class="header-left">
+                <h1 class="page-title">프로젝트 관리</h1>
+            </div>
+            <div class="header-right">
+                <button class="btn btn-primary" id="newProjectBtn">
+                    <i class="fas fa-plus"></i> 신규 프로젝트
+                </button>
+            </div>
+        </header>
+
+    <div class="content-card">
+        <div class="card-header">
+            <h2>프로젝트 목록</h2>
+            <div class="filter-group">
+                <select id="statusFilter" class="filter-select">
+                    <option value="">전체 상태</option>
+                    <option value="planning">기획</option>
+                    <option value="in-progress">진행중</option>
+                    <option value="completed">완료</option>
+                    <option value="on-hold">보류</option>
+                </select>
+                <input type="text" id="searchInput" class="search-input" placeholder="프로젝트명 검색...">
+            </div>
+        </div>
+
+        <div class="project-grid">
+            <!-- Sample project cards - 실제로는 백엔드에서 데이터를 받아옴 -->
+            <div class="project-card" data-status="in-progress" data-project-name="ERP 시스템 개발">
+                <div class="project-header">
+                    <h3>ERP 시스템 개발</h3>
+                    <span class="status-badge status-in-progress">진행중</span>
+                </div>
+                <div class="project-body">
+                    <div class="project-info">
+                        <div class="info-item">
+                            <i class="fas fa-user"></i>
+                            <span>PM: 김철수</span>
+                        </div>
+                        <div class="info-item">
+                            <i class="fas fa-users"></i>
+                            <span>팀원: 5명</span>
+                        </div>
+                        <div class="info-item">
+                            <i class="fas fa-calendar"></i>
+                            <span>2025-01-01 ~ 2025-12-31</span>
+                        </div>
+                    </div>
+                    <div class="project-progress">
+                        <div class="progress-bar">
+                            <div class="progress-fill" style="width: 45%;"></div>
+                        </div>
+                        <span class="progress-text">45%</span>
+                    </div>
+                    <p class="project-description">
+                        통합 ERP 시스템 개발 프로젝트. 인사, 회계, 영업 등 전사적 업무 프로세스 통합.
+                    </p>
+                </div>
+                <div class="project-footer">
+                    <button class="btn btn-sm btn-secondary" onclick="viewProject(1)">
+                        <i class="fas fa-eye"></i> 상세보기
+                    </button>
+                    <button class="btn btn-sm btn-primary" onclick="editProject(1)">
+                        <i class="fas fa-edit"></i> 수정
+                    </button>
+                </div>
+            </div>
+
+            <div class="project-card" data-status="planning" data-project-name="모바일 앱 개발">
+                <div class="project-header">
+                    <h3>모바일 앱 개발</h3>
+                    <span class="status-badge status-planning">기획</span>
+                </div>
+                <div class="project-body">
+                    <div class="project-info">
+                        <div class="info-item">
+                            <i class="fas fa-user"></i>
+                            <span>PM: 이영희</span>
+                        </div>
+                        <div class="info-item">
+                            <i class="fas fa-users"></i>
+                            <span>팀원: 3명</span>
+                        </div>
+                        <div class="info-item">
+                            <i class="fas fa-calendar"></i>
+                            <span>2025-03-01 ~ 2025-08-31</span>
+                        </div>
+                    </div>
+                    <div class="project-progress">
+                        <div class="progress-bar">
+                            <div class="progress-fill" style="width: 10%;"></div>
+                        </div>
+                        <span class="progress-text">10%</span>
+                    </div>
+                    <p class="project-description">
+                        고객용 모바일 애플리케이션 개발. iOS 및 Android 플랫폼 지원.
+                    </p>
+                </div>
+                <div class="project-footer">
+                    <button class="btn btn-sm btn-secondary" onclick="viewProject(2)">
+                        <i class="fas fa-eye"></i> 상세보기
+                    </button>
+                    <button class="btn btn-sm btn-primary" onclick="editProject(2)">
+                        <i class="fas fa-edit"></i> 수정
+                    </button>
+                </div>
+            </div>
+
+            <div class="project-card" data-status="completed" data-project-name="홈페이지 리뉴얼">
+                <div class="project-header">
+                    <h3>홈페이지 리뉴얼</h3>
+                    <span class="status-badge status-completed">완료</span>
+                </div>
+                <div class="project-body">
+                    <div class="project-info">
+                        <div class="info-item">
+                            <i class="fas fa-user"></i>
+                            <span>PM: 박민수</span>
+                        </div>
+                        <div class="info-item">
+                            <i class="fas fa-users"></i>
+                            <span>팀원: 4명</span>
+                        </div>
+                        <div class="info-item">
+                            <i class="fas fa-calendar"></i>
+                            <span>2024-10-01 ~ 2024-12-31</span>
+                        </div>
+                    </div>
+                    <div class="project-progress">
+                        <div class="progress-bar">
+                            <div class="progress-fill" style="width: 100%;"></div>
+                        </div>
+                        <span class="progress-text">100%</span>
+                    </div>
+                    <p class="project-description">
+                        회사 공식 홈페이지 전면 리뉴얼. 반응형 웹 디자인 적용.
+                    </p>
+                </div>
+                <div class="project-footer">
+                    <button class="btn btn-sm btn-secondary" onclick="viewProject(3)">
+                        <i class="fas fa-eye"></i> 상세보기
+                    </button>
+                    <button class="btn btn-sm btn-primary" onclick="editProject(3)">
+                        <i class="fas fa-edit"></i> 수정
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 프로젝트 상세 모달 -->
+    <div id="projectDetailModal" class="modal">
+        <div class="modal-content modal-large">
+            <div class="modal-header">
+                <h2>프로젝트 상세 정보</h2>
+                <button class="modal-close" onclick="closeProjectDetailModal()">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            <div class="modal-body">
+                <div class="detail-section">
+                    <h3>기본 정보</h3>
+                    <div class="detail-grid">
+                        <div class="detail-item">
+                            <label>프로젝트명</label>
+                            <span id="detailProjectName">-</span>
+                        </div>
+                        <div class="detail-item">
+                            <label>상태</label>
+                            <span id="detailStatus">-</span>
+                        </div>
+                        <div class="detail-item">
+                            <label>PM</label>
+                            <span id="detailPM">-</span>
+                        </div>
+                        <div class="detail-item">
+                            <label>팀원 수</label>
+                            <span id="detailTeamSize">-</span>
+                        </div>
+                        <div class="detail-item">
+                            <label>시작일</label>
+                            <span id="detailStartDate">-</span>
+                        </div>
+                        <div class="detail-item">
+                            <label>종료일</label>
+                            <span id="detailEndDate">-</span>
+                        </div>
+                    </div>
+                </div>
+                <div class="detail-section">
+                    <h3>프로젝트 설명</h3>
+                    <p id="detailDescription">-</p>
+                </div>
+                <div class="detail-section">
+                    <h3>진행률</h3>
+                    <div class="project-progress">
+                        <div class="progress-bar">
+                            <div class="progress-fill" id="detailProgressBar"></div>
+                        </div>
+                        <span class="progress-text" id="detailProgressText">0%</span>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-secondary" onclick="closeProjectDetailModal()">닫기</button>
+            </div>
+        </div>
+    </div>
+    </main>
+</div>
+
+<script th:src="@{/js/project.js}"></script>
+</body>
+</html>
