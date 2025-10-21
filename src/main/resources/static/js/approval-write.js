@@ -445,19 +445,27 @@ document.addEventListener('DOMContentLoaded', function() {
                 // 날짜를 "YYYY.MM.DD." 형식으로 변환
                 const [year, month, day] = dateValue.split('-');
                 let formattedDate = `${year}.${month}.${day}.`;
+                let formattedDateProposal = `${year}.${month}.${day}.`; // 회의 품의서용
 
                 // 시작시간과 종료시간을 24시간 형태로 변환 (00:00~24:00)
                 if (startTimeValue && endTimeValue) {
                     // 종료시간이 00:00이면 24:00으로 표시
                     const endTimeDisplay = endTimeValue === '00:00' ? '24:00' : endTimeValue;
                     formattedDate += ` ${startTimeValue}~${endTimeDisplay}`;
+                    formattedDateProposal += `\n${startTimeValue} ~ ${endTimeDisplay}`; // 줄바꿈 + 공백
                 } else if (startTimeValue) {
                     formattedDate += ` ${startTimeValue}`;
+                    formattedDateProposal += `\n${startTimeValue}`;
                 }
 
-                // 모든 일시 필드에 입력
+                // 일반 일시 필드에 입력 (회의록, 참석자 명단)
                 document.querySelectorAll('.auto-datetime').forEach(field => {
                     field.value = formattedDate;
+                });
+
+                // 회의 품의서용 일시 필드에 입력 (줄바꿈 포함)
+                document.querySelectorAll('.auto-datetime-proposal').forEach(field => {
+                    field.textContent = formattedDateProposal;
                 });
 
                 // 회의 품의서 작성일 = 날짜 - 1일 (월요일이면 금요일로)

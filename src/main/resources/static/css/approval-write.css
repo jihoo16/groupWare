@@ -412,7 +412,7 @@ div:focus {
     font-weight: 700;
     color: #333;
     text-align: center;
-    width: 90px;
+    width: 100px;
 }
 
 /* 회의 품의서 참석인원 칼럼 너비 */
@@ -469,12 +469,20 @@ div:focus {
     background: transparent !important;
     padding: 8px 0;
     cursor: default;
+    line-height: 1.6;
 }
 
 .form-table input[readonly]:focus,
 .form-table textarea[readonly]:focus {
     border: none !important;
     outline: none !important;
+}
+
+/* 회의 품의서 장소/일시 셀 */
+.auto-location-cell,
+.auto-datetime-cell {
+    vertical-align: middle;
+    min-height: 40px;
 }
 
 /* 첨부파일 섹션 */
