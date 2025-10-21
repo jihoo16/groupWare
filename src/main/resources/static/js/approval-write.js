@@ -263,20 +263,34 @@ document.addEventListener('DOMContentLoaded', function() {
                 }
             });
 
-            // 참석자 명단 입력 필드에 채우기
-            document.querySelectorAll('.attendee-sig-name').forEach((field, index) => {
-                if (orderedAttendees[index]) {
-                    field.value = orderedAttendees[index].name;
-                } else {
-                    field.value = '';
-                }
-            });
+            // 참석자 명단 입력 필드에 채우기 (왼쪽 열 먼저, 오른쪽 열 나중)
+            const nameFields = document.querySelectorAll('.attendee-sig-name');
+            const deptFields = document.querySelectorAll('.attendee-sig-dept');
 
-            document.querySelectorAll('.attendee-sig-dept').forEach((field, index) => {
-                if (orderedAttendees[index]) {
-                    field.value = orderedAttendees[index].dept;
+            // 총 필드 수 (20개)
+            const totalFields = nameFields.length;
+            const rowCount = totalFields / 2; // 10행
+
+            // 먼저 모든 필드 초기화
+            nameFields.forEach(field => field.value = '');
+            deptFields.forEach(field => field.value = '');
+
+            // 참석자를 왼쪽 열부터 채우기
+            orderedAttendees.forEach((attendee, idx) => {
+                let fieldIndex;
+                if (idx < rowCount) {
+                    // 왼쪽 열 (0, 2, 4, 6, 8, 10, 12, 14, 16, 18)
+                    fieldIndex = idx * 2;
                 } else {
-                    field.value = '';
+                    // 오른쪽 열 (1, 3, 5, 7, 9, 11, 13, 15, 17, 19)
+                    fieldIndex = (idx - rowCount) * 2 + 1;
+                }
+
+                if (nameFields[fieldIndex]) {
+                    nameFields[fieldIndex].value = attendee.name;
+                }
+                if (deptFields[fieldIndex]) {
+                    deptFields[fieldIndex].value = attendee.dept;
                 }
             });
         }
