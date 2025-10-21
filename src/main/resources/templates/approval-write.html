@@ -527,7 +527,7 @@
                                         </tr>
                                         <tr>
                                             <th>작성자</th>
-                                            <td><input type="text" id="common_author" value="홍길동" readonly></td>
+                                            <td><input type="text" id="common_author" value="홍길동" placeholder="프로젝트 과제 연결시 선택으로 변경"></td>
                                             <th>회의 일자</th>
                                             <td><input type="date" id="common_date"></td>
                                         </tr>
@@ -562,23 +562,62 @@
                                                 <div id="attendeeList"></div>
                                             </td>
                                         </tr>
+                                        <tr>
+                                            <th>회의 목적</th>
+                                            <td colspan="3"><textarea id="common_purpose" placeholder="회의 목적을 입력하세요" rows="4" style="width: 100%;"></textarea></td>
+                                        </tr>
+                                        <tr>
+                                            <th>주요 내용</th>
+                                            <td colspan="3"><textarea id="common_content" placeholder="회의 주요 내용을 입력하세요" rows="6" style="width: 100%;"></textarea></td>
+                                        </tr>
+                                        <tr>
+                                            <th>특기사항</th>
+                                            <td colspan="3"><textarea id="common_notes" placeholder="특기사항을 입력하세요" rows="2" style="width: 100%;"></textarea></td>
+                                        </tr>
+                                        <tr>
+                                            <th>결제 방법</th>
+                                            <td colspan="3">
+                                                <select id="common_payment" style="width: 200px;">
+                                                    <option>카드로 결제</option>
+                                                    <option>현금으로 결제</option>
+                                                    <option>계좌이체</option>
+                                                    <option>법인카드</option>
+                                                </select>
+                                            </td>
+                                        </tr>
                                     </table>
                                 </div>
 
                                 <div style="background: white; border: 2px solid #e0e0e0; border-radius: 8px; padding: 30px; margin-bottom: 30px;">
                                     <h2 class="doc-title">회 의 품 의 서</h2>
-                                    <div style="text-align: left; margin-bottom: 20px; font-size: 14px;">
+
+                                    <!-- 결재란 -->
+                                    <div style="float: right; margin-bottom: 20px;">
+                                        <table style="border: 2px solid #000; border-collapse: collapse;">
+                                            <tr>
+                                                <td rowspan="2" style="border: 1px solid #000; padding: 10px 20px; text-align: center; background: #f0f0f0; font-weight: bold; writing-mode: vertical-rl; text-orientation: upright; letter-spacing: 5px;">결재</td>
+                                                <td style="border: 1px solid #000; padding: 10px 20px; text-align: center; background: #f0f0f0; font-weight: bold;">담당</td>
+                                                <td style="border: 1px solid #000; padding: 10px 20px; text-align: center; background: #f0f0f0; font-weight: bold;">책임</td>
+                                            </tr>
+                                            <tr>
+                                                <td style="border: 1px solid #000; padding: 10px 20px; text-align: center;">홍길동</td>
+                                                <td style="border: 1px solid #000; padding: 20px 40px;">김상무</td>
+                                            </tr>
+                                        </table>
+                                    </div>
+
+                                    <div style="text-align: left; margin-bottom: 20px; font-size: 14px; clear: both;">
                                         작성일 : <span id="proposal_date"></span>
                                     </div>
                                     <table class="form-table">
                                     <colgroup>
-                                        <col style="width: 8%;">  <!-- 내외구분 -->
-                                        <col style="width: 12%;">  <!-- 소속 -->
-                                        <col style="width: 10%;">  <!-- 성명 -->
-                                        <col style="width: 10%;">  <!-- 장소/회의목적 헤더 -->
-                                        <col style="width: 20%;">  <!-- 장소 입력 -->
-                                        <col style="width: 15%;">  <!-- 회의 일시 헤더 -->
-                                        <col style="width: 25%;">  <!-- 회의 일시 입력 / 회의목적 입력 -->
+                                        <col style="width: 12%;">
+                                        <col style="width: 20%;">
+                                        <col style="width: 12%;">
+                                        <col style="width: 12%;">
+                                        <col style="width: 16%;">
+                                        <col style="width: 12%;">
+                                        <col style="width: 20%;">
                                     </colgroup>
                                     <tr>
                                         <th colspan="3">과제명</th>
@@ -591,75 +630,40 @@
                                         <th>회의 일시</th>
                                         <td class="auto-datetime-cell"><input type="text" class="auto-datetime" placeholder="예: 2025.01.20. 14:00~18:00" readonly style="background: #f9f9f9;"></td>
                                     </tr>
-                                    <tr>
+                                    <tr id="meeting_purpose_row">
                                         <th>내외구분</th>
                                         <th>소속</th>
                                         <th>성명</th>
-                                        <th rowspan="3">회의 목적</th>
-                                        <td colspan="3" rowspan="3" class="meeting-purpose-cell" style="vertical-align: top;"><textarea placeholder="회의 목적" rows="8" style="width: 100%; height: 100%; resize: vertical;"></textarea></td>
+                                        <th rowspan="3" id="meeting_purpose_header">회의 목적</th>
+                                        <td colspan="3" rowspan="3" class="meeting-purpose-cell" style="vertical-align: top;"><textarea class="auto-purpose" placeholder="회의 목적" rows="8" style="width: 100%; height: 100%; resize: vertical; background: #f9f9f9;" readonly></textarea></td>
                                     </tr>
-                                    <tbody id="proposal_attendees">
-                                    </tbody>
-                                    <tr>
-                                        <td colspan="3"></td>
+                                    <!-- 참석자 행들이 여기에 동적으로 추가됨 -->
+                                    <tr class="attendee-row">
+                                        <td colspan="3">&nbsp;</td>
                                     </tr>
-                                    <tr>
-                                        <td colspan="3"></td>
+                                    <tr class="attendee-row">
+                                        <td colspan="3">&nbsp;</td>
                                     </tr>
                                     <tr>
                                         <th colspan="9" style="background: #f0f0f0; padding: 15px;">소요 경비 내역 (원)</th>
                                     </tr>
                                     <tr>
                                         <th>일시</th>
-                                        <th>회의비</th>
-                                        <th>교통비</th>
-                                        <th>식비</th>
-                                        <th>기타(일비)</th>
-                                        <th colspan="2">계</th>
+                                        <th colspan="3">회의비</th>
+                                        <th colspan="3">사용 금액</th>
                                     </tr>
                                     <tr>
-                                        <td><input type="date"></td>
-                                        <td><input type="number" placeholder="0"></td>
-                                        <td><input type="number" placeholder="0"></td>
-                                        <td><input type="number" placeholder="0"></td>
-                                        <td><input type="number" placeholder="0"></td>
-                                        <td colspan="2"><input type="number" placeholder="0" readonly style="background: #f9f9f9;"></td>
-                                    </tr>
-                                    <tr>
-                                        <td><input type="date"></td>
-                                        <td><input type="number" placeholder="0"></td>
-                                        <td><input type="number" placeholder="0"></td>
-                                        <td><input type="number" placeholder="0"></td>
-                                        <td><input type="number" placeholder="0"></td>
-                                        <td colspan="2"><input type="number" placeholder="0" readonly style="background: #f9f9f9;"></td>
-                                    </tr>
-                                    <tr>
-                                        <td><input type="date"></td>
-                                        <td><input type="number" placeholder="0"></td>
-                                        <td><input type="number" placeholder="0"></td>
-                                        <td><input type="number" placeholder="0"></td>
-                                        <td><input type="number" placeholder="0"></td>
-                                        <td colspan="2"><input type="number" placeholder="0" readonly style="background: #f9f9f9;"></td>
-                                    </tr>
-                                    <tr>
-                                        <th>합계</th>
-                                        <td colspan="4"><input type="number" placeholder="0" readonly style="background: #f9f9f9;"></td>
-                                        <td colspan="2"></td>
+                                        <td style="text-align: center;"><span class="auto-datetime-display" style="display: block; padding: 8px;"></span></td>
+                                        <td colspan="3" style="text-align: center;"><span class="auto-amount-display" style="display: block; padding: 8px;"></span></td>
+                                        <td colspan="3" style="text-align: center;"><span class="auto-amount-display-2" style="display: block; padding: 8px;"></span></td>
                                     </tr>
                                     <tr>
                                         <th>특기사항</th>
-                                        <td colspan="6"><textarea placeholder="특기사항을 입력하세요" rows="2"></textarea></td>
+                                        <td colspan="6"><textarea class="auto-notes" placeholder="특기사항" rows="2" readonly style="background: #f9f9f9;"></textarea></td>
                                     </tr>
                                     <tr>
                                         <th>결제</th>
-                                        <td colspan="6">
-                                            <select style="width: 200px;">
-                                                <option>카드로 결제</option>
-                                                <option>현금으로 결제</option>
-                                                <option>계좌이체</option>
-                                                <option>법인카드</option>
-                                            </select>
-                                        </td>
+                                        <td colspan="6"><input type="text" class="auto-payment" readonly style="background: #f9f9f9;" /></td>
                                     </tr>
                                 </table>
                                 </div>
@@ -680,21 +684,24 @@
                                         <td><input type="text" class="auto-location" placeholder="회의 장소" readonly style="background: #f9f9f9;"></td>
                                     </tr>
                                     <tr>
-                                        <th rowspan="2">참석자</th>
-                                        <th colspan="4">참여 기관</th>
-                                    </tr>
-                                    <tr>
-                                        <td colspan="4"><textarea placeholder="참여 기관 및 참석자를 입력하세요 (예: 홍길동(회사명), 김철수(회사명))" rows="3"></textarea></td>
+                                        <th>참여자</th>
+                                        <th>참여기관</th>
+                                        <td colspan="3" class="auto-all-attendees" style="padding: 10px; white-space: pre-wrap;"></td>
                                     </tr>
                                     <tr>
                                         <th colspan="5" style="background: #f0f0f0; padding: 15px;">내용</th>
                                     </tr>
                                     <tr>
-                                        <td colspan="5"><textarea placeholder="회의 주제 및 주요 내용을 입력하세요" rows="10" style="text-align: left; vertical-align: top;"></textarea></td>
+                                        <th style="vertical-align: top; padding-top: 15px;">주제</th>
+                                        <td colspan="4" class="auto-subject" style="padding: 10px; text-align: left; vertical-align: top;"></td>
+                                    </tr>
+                                    <tr>
+                                        <th style="vertical-align: top; padding-top: 15px;">주요 내용</th>
+                                        <td colspan="4" class="auto-content" style="padding: 10px; text-align: left; vertical-align: top; white-space: pre-wrap;"></td>
                                     </tr>
                                     <tr>
                                         <th>비고</th>
-                                        <td colspan="4"><textarea placeholder="추가 사항" rows="3"></textarea></td>
+                                        <td colspan="4"><textarea class="auto-notes" placeholder="추가 사항" rows="3" readonly style="background: #f9f9f9;"></textarea></td>
                                     </tr>
                                 </table>
                                 </div>
@@ -715,7 +722,7 @@
                                         <td><input type="text" class="auto-location" placeholder="회의 장소" readonly style="background: #f9f9f9;"></td>
                                     </tr>
                                 </table>
-                                <table class="form-table" style="margin-top: 20px;">
+                                <table class="form-table" id="attendee-signature-table" style="margin-top: 20px;">
                                     <tr>
                                         <th>성명</th>
                                         <th>소속</th>
@@ -725,43 +732,43 @@
                                         <th>서명</th>
                                     </tr>
                                     <tr>
-                                        <td><input type="text"></td>
-                                        <td><input type="text"></td>
+                                        <td><input type="text" class="attendee-sig-name" data-index="0" readonly style="background: #f9f9f9;"></td>
+                                        <td><input type="text" class="attendee-sig-dept" data-index="0" readonly style="background: #f9f9f9;"></td>
                                         <td style="padding: 30px;"></td>
-                                        <td><input type="text"></td>
-                                        <td><input type="text"></td>
-                                        <td style="padding: 30px;"></td>
-                                    </tr>
-                                    <tr>
-                                        <td><input type="text"></td>
-                                        <td><input type="text"></td>
-                                        <td style="padding: 30px;"></td>
-                                        <td><input type="text"></td>
-                                        <td><input type="text"></td>
+                                        <td><input type="text" class="attendee-sig-name" data-index="1" readonly style="background: #f9f9f9;"></td>
+                                        <td><input type="text" class="attendee-sig-dept" data-index="1" readonly style="background: #f9f9f9;"></td>
                                         <td style="padding: 30px;"></td>
                                     </tr>
                                     <tr>
-                                        <td><input type="text"></td>
-                                        <td><input type="text"></td>
+                                        <td><input type="text" class="attendee-sig-name" data-index="2" readonly style="background: #f9f9f9;"></td>
+                                        <td><input type="text" class="attendee-sig-dept" data-index="2" readonly style="background: #f9f9f9;"></td>
                                         <td style="padding: 30px;"></td>
-                                        <td><input type="text"></td>
-                                        <td><input type="text"></td>
-                                        <td style="padding: 30px;"></td>
-                                    </tr>
-                                    <tr>
-                                        <td><input type="text"></td>
-                                        <td><input type="text"></td>
-                                        <td style="padding: 30px;"></td>
-                                        <td><input type="text"></td>
-                                        <td><input type="text"></td>
+                                        <td><input type="text" class="attendee-sig-name" data-index="3" readonly style="background: #f9f9f9;"></td>
+                                        <td><input type="text" class="attendee-sig-dept" data-index="3" readonly style="background: #f9f9f9;"></td>
                                         <td style="padding: 30px;"></td>
                                     </tr>
                                     <tr>
-                                        <td><input type="text"></td>
-                                        <td><input type="text"></td>
+                                        <td><input type="text" class="attendee-sig-name" data-index="4" readonly style="background: #f9f9f9;"></td>
+                                        <td><input type="text" class="attendee-sig-dept" data-index="4" readonly style="background: #f9f9f9;"></td>
                                         <td style="padding: 30px;"></td>
-                                        <td><input type="text"></td>
-                                        <td><input type="text"></td>
+                                        <td><input type="text" class="attendee-sig-name" data-index="5" readonly style="background: #f9f9f9;"></td>
+                                        <td><input type="text" class="attendee-sig-dept" data-index="5" readonly style="background: #f9f9f9;"></td>
+                                        <td style="padding: 30px;"></td>
+                                    </tr>
+                                    <tr>
+                                        <td><input type="text" class="attendee-sig-name" data-index="6" readonly style="background: #f9f9f9;"></td>
+                                        <td><input type="text" class="attendee-sig-dept" data-index="6" readonly style="background: #f9f9f9;"></td>
+                                        <td style="padding: 30px;"></td>
+                                        <td><input type="text" class="attendee-sig-name" data-index="7" readonly style="background: #f9f9f9;"></td>
+                                        <td><input type="text" class="attendee-sig-dept" data-index="7" readonly style="background: #f9f9f9;"></td>
+                                        <td style="padding: 30px;"></td>
+                                    </tr>
+                                    <tr>
+                                        <td><input type="text" class="attendee-sig-name" data-index="8" readonly style="background: #f9f9f9;"></td>
+                                        <td><input type="text" class="attendee-sig-dept" data-index="8" readonly style="background: #f9f9f9;"></td>
+                                        <td style="padding: 30px;"></td>
+                                        <td><input type="text" class="attendee-sig-name" data-index="9" readonly style="background: #f9f9f9;"></td>
+                                        <td><input type="text" class="attendee-sig-dept" data-index="9" readonly style="background: #f9f9f9;"></td>
                                         <td style="padding: 30px;"></td>
                                     </tr>
                                 </table>

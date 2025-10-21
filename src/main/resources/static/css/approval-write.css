@@ -397,6 +397,7 @@ div:focus {
     border-collapse: collapse;
     border: 1px solid #333;
     margin-bottom: 20px;
+    table-layout: fixed;
 }
 
 .form-table th,
@@ -410,8 +411,27 @@ div:focus {
     background: #f5f5f5;
     font-weight: 700;
     color: #333;
-    text-align: left;
-    width: 150px;
+    text-align: center;
+    width: 90px;
+}
+
+/* 회의 품의서 참석인원 칼럼 너비 */
+#meeting_purpose_row th:nth-child(1) {
+    width: 80px !important;
+    min-width: 80px !important;
+    max-width: 80px !important;
+}
+
+#meeting_purpose_row th:nth-child(2) {
+    width: 150px !important;
+    min-width: 150px !important;
+    max-width: 150px !important;
+}
+
+#meeting_purpose_row th:nth-child(3) {
+    width: 100px !important;
+    min-width: 100px !important;
+    max-width: 100px !important;
 }
 
 .form-table td {

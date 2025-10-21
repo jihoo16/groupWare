@@ -166,51 +166,190 @@ document.addEventListener('DOMContentLoaded', function() {
                         attendees[index].name = this.value;
                     }
                     updateProposalAttendees();
+                    updateMeetingMinutesAttendees();
                 });
             });
 
-            // 체크박스 change 이벤트도 추가
+            // 참석자 타입 변경 이벤트 (내부 선택 시 소속 자동 입력)
             document.querySelectorAll('.attendee-type').forEach(el => {
                 el.addEventListener('change', function() {
                     const index = parseInt(this.getAttribute('data-index'));
                     attendees[index].type = this.value;
+
+                    // 내부 선택 시 소속을 "파인씨앤아이"로 자동 설정
+                    if (this.value === '내부') {
+                        attendees[index].dept = '파인씨앤아이';
+                        // 해당 행의 소속 input 필드도 업데이트
+                        const deptInput = document.querySelector(`.attendee-dept[data-index="${index}"]`);
+                        if (deptInput) {
+                            deptInput.value = '파인씨앤아이';
+                        }
+                    }
+
                     updateProposalAttendees();
+                    updateMeetingMinutesAttendees();
                 });
             });
 
             updateProposalAttendees();
+            updateMeetingMinutesAttendees();
+        }
+
+        // 회의록 참석자 정보 업데이트
+        function updateMeetingMinutesAttendees() {
+            // 외부와 내부 참석자 분리
+            const externalAttendees = {};
+            const internalAttendees = [];
+
+            attendees.forEach(attendee => {
+                if (attendee.type === '외부' && attendee.name) {
+                    if (!externalAttendees[attendee.dept]) {
+                        externalAttendees[attendee.dept] = [];
+                    }
+                    externalAttendees[attendee.dept].push(attendee.name);
+                } else if (attendee.type === '내부' && attendee.name) {
+                    internalAttendees.push(attendee.name);
+                }
+            });
+
+            // 전체 참석자 문자열 생성 (외부 먼저, 내부 나중)
+            let allAttendeesText = '';
+
+            // 외부 참석자 추가
+            const externalOrgs = Object.keys(externalAttendees);
+            if (externalOrgs.length > 0) {
+                externalOrgs.forEach((org, index) => {
+                    const names = externalAttendees[org];
+                    allAttendeesText += names.map(name => `${name}(${org})`).join(', ');
+                    if (index < externalOrgs.length - 1) {
+                        allAttendeesText += ', ';
+                    }
+                });
+            }
+
+            // 내부 참석자 추가
+            if (internalAttendees.length > 0) {
+                if (allAttendeesText) {
+                    allAttendeesText += '\n';  // 외부와 내부 사이 줄바꿈
+                }
+                allAttendeesText += internalAttendees.join(', ') + '(파인씨앤아이)';
+            }
+
+            // 참석자 칸에 표시
+            document.querySelectorAll('.auto-all-attendees').forEach(field => {
+                field.textContent = allAttendeesText;
+            });
+
+            // 참석자 명단 테이블 업데이트 (외부 먼저, 내부 나중)
+            const orderedAttendees = [];
+
+            // 외부 참석자 먼저 추가
+            attendees.forEach(attendee => {
+                if (attendee.type === '외부' && attendee.name) {
+                    orderedAttendees.push({
+                        name: attendee.name,
+                        dept: attendee.dept
+                    });
+                }
+            });
+
+            // 내부 참석자 나중에 추가
+            attendees.forEach(attendee => {
+                if (attendee.type === '내부' && attendee.name) {
+                    orderedAttendees.push({
+                        name: attendee.name,
+                        dept: attendee.dept
+                    });
+                }
+            });
+
+            // 참석자 명단 입력 필드에 채우기
+            document.querySelectorAll('.attendee-sig-name').forEach((field, index) => {
+                if (orderedAttendees[index]) {
+                    field.value = orderedAttendees[index].name;
+                } else {
+                    field.value = '';
+                }
+            });
+
+            document.querySelectorAll('.attendee-sig-dept').forEach((field, index) => {
+                if (orderedAttendees[index]) {
+                    field.value = orderedAttendees[index].dept;
+                } else {
+                    field.value = '';
+                }
+            });
         }
 
         // 회의 품의서 참석인원 업데이트
         function updateProposalAttendees() {
-            const tbody = document.getElementById('proposal_attendees');
-            if (!tbody) return;
+            const meetingPurposeRow = document.getElementById('meeting_purpose_row');
+            if (!meetingPurposeRow) return;
 
-            const maxAttendees = 5; // 최대 참석자 수
+            // 회의 목적 셀과 헤더 찾기
+            const meetingPurposeCell = document.querySelector('.meeting-purpose-cell');
+            const meetingPurposeHeader = document.getElementById('meeting_purpose_header');
 
-            // 기존 참석자 데이터 행들 제거 (헤더 행은 유지)
-            while (tbody.rows.length > 1) {
-                tbody.deleteRow(1);
+            // 기존 참석자 행들 제거
+            const existingRows = document.querySelectorAll('.attendee-row');
+            existingRows.forEach(row => row.remove());
+
+            // 참석자를 타입과 소속별로 그룹화
+            const grouped = {};
+            attendees.forEach(attendee => {
+                const key = `${attendee.type}_${attendee.dept}`;
+                if (!grouped[key]) {
+                    grouped[key] = {
+                        type: attendee.type,
+                        dept: attendee.dept,
+                        names: []
+                    };
+                }
+                if (attendee.name) {
+                    grouped[key].names.push(attendee.name);
+                }
+            });
+
+            // 그룹화된 데이터를 배열로 변환
+            const groupedArray = Object.values(grouped);
+
+            // 참석자가 없으면 최소 2행 유지
+            const minRows = 2;
+            const rowsToAdd = Math.max(groupedArray.length, minRows);
+
+            // 회의 목적 셀의 rowspan 업데이트 (헤더 행 포함 총 rowsToAdd + 1)
+            const totalRowspan = rowsToAdd + 1;
+            if (meetingPurposeCell) {
+                meetingPurposeCell.setAttribute('rowspan', totalRowspan);
+            }
+            if (meetingPurposeHeader) {
+                meetingPurposeHeader.setAttribute('rowspan', totalRowspan);
             }
 
-            // 빈 행으로 5개 행 채우기 (헤더 포함 총 5행)
-            const rowsToAdd = maxAttendees - 1; // 헤더 1개 + 데이터 4개 = 5개
-
+            // 참석자 행 추가 (meeting_purpose_row 다음에 삽입)
+            let insertAfter = meetingPurposeRow;
             for (let i = 0; i < rowsToAdd; i++) {
-                const row = tbody.insertRow();
+                const row = document.createElement('tr');
+                row.className = 'attendee-row';
 
-                if (i < attendees.length) {
-                    // 참석자 데이터가 있으면 표시
-                    const attendee = attendees[i];
+                if (i < groupedArray.length) {
+                    // 그룹화된 참석자 데이터 표시
+                    const group = groupedArray[i];
+                    let nameDisplay = '';
+
+                    if (group.names.length > 0) {
+                        nameDisplay = group.names[0];
+                        if (group.names.length > 1) {
+                            nameDisplay += ` 외${group.names.length - 1}명`;
+                        }
+                    }
+
                     row.innerHTML = `
                         <td style="border: 1px solid #ddd; padding: 5px; text-align: center;">
-                            <select style="width: 80px;">
-                                <option value="내부" ${attendee.type === '내부' ? 'selected' : ''}>내부</option>
-                                <option value="외부" ${attendee.type === '외부' ? 'selected' : ''}>외부</option>
-                            </select>
+                            <span>${group.type}</span>
                         </td>
-                        <td style="border: 1px solid #ddd; padding: 5px;"><input type="text" value="${attendee.dept || ''}" readonly style="background: #f9f9f9; width: 100%; border: none;"></td>
-                        <td style="border: 1px solid #ddd; padding: 5px;"><input type="text" value="${attendee.name || ''}" readonly style="background: #f9f9f9; width: 100%; border: none;"></td>
+                        <td style="border: 1px solid #ddd; padding: 5px; text-align: center;"><span>${group.dept || ''}</span></td>
+                        <td style="border: 1px solid #ddd; padding: 5px; text-align: center;"><span>${nameDisplay}</span></td>
                     `;
                 } else {
                     // 빈 행 추가
@@ -220,17 +359,17 @@ document.addEventListener('DOMContentLoaded', function() {
                         <td style="border: 1px solid #ddd; padding: 5px;">&nbsp;</td>
                     `;
                 }
+
+                // insertAfter 다음에 삽입하고, insertAfter 업데이트
+                insertAfter.parentNode.insertBefore(row, insertAfter.nextSibling);
+                insertAfter = row;
             }
         }
 
         // 참석자 추가 버튼
         if (addAttendeeBtn) {
             addAttendeeBtn.addEventListener('click', function() {
-                if (attendees.length >= 5) {
-                    alert('참석자는 최대 5명까지 추가할 수 있습니다.');
-                    return;
-                }
-                attendees.push({ type: '내부', dept: '', name: '' });
+                attendees.push({ type: '내부', dept: '파인씨앤아이', name: '' });
                 updateAttendeeList();
             });
         }
@@ -266,19 +405,16 @@ document.addEventListener('DOMContentLoaded', function() {
                     // 1인당 30,000원 기준으로 인원 계산
                     const totalPeople = Math.ceil(amount / 30000);
 
-                    // 최대 5명까지만
-                    const actualPeople = Math.min(totalPeople, 5);
-
                     // 외부 1명 + 내부 나머지
                     const externalCount = 1;
-                    const internalCount = actualPeople - externalCount;
+                    const internalCount = totalPeople - externalCount;
 
                     // 참석자 배열 초기화
                     attendees = [];
 
                     // 내부 인원 먼저 추가
                     for (let i = 0; i < internalCount; i++) {
-                        attendees.push({ type: '내부', dept: '', name: '' });
+                        attendees.push({ type: '내부', dept: '파인씨앤아이', name: '' });
                     }
 
                     // 외부 1명 추가
@@ -324,11 +460,20 @@ document.addEventListener('DOMContentLoaded', function() {
                     field.value = formattedDate;
                 });
 
-                // 회의 품의서 작성일 = 날짜 - 1일 (0000년 00월 00일 형식)
+                // 회의 품의서 작성일 = 날짜 - 1일 (월요일이면 금요일로)
                 const proposalDateElement = document.getElementById('proposal_date');
                 if (proposalDateElement) {
                     const date = new Date(dateValue);
-                    date.setDate(date.getDate() - 1);
+                    const dayOfWeek = date.getDay(); // 0: 일요일, 1: 월요일, ..., 6: 토요일
+
+                    if (dayOfWeek === 1) {
+                        // 월요일이면 3일 전(금요일)
+                        date.setDate(date.getDate() - 3);
+                    } else {
+                        // 그 외에는 1일 전
+                        date.setDate(date.getDate() - 1);
+                    }
+
                     const propYear = date.getFullYear();
                     const propMonth = String(date.getMonth() + 1).padStart(2, '0');
                     const propDay = String(date.getDate()).padStart(2, '0');
@@ -356,6 +501,106 @@ document.addEventListener('DOMContentLoaded', function() {
                 });
             });
         }
+
+        // 회의 목적 자동 채우기
+        const commonPurpose = document.getElementById('common_purpose');
+        if (commonPurpose) {
+            commonPurpose.addEventListener('input', function() {
+                const value = this.value;
+                // 회의 품의서에 회의 목적 반영
+                document.querySelectorAll('.auto-purpose').forEach(field => {
+                    field.value = value;
+                });
+                // 회의록 주제에도 회의 목적 반영
+                document.querySelectorAll('.auto-subject').forEach(field => {
+                    field.textContent = value;
+                });
+            });
+        }
+
+        // 특기사항 자동 채우기
+        const commonNotes = document.getElementById('common_notes');
+        if (commonNotes) {
+            commonNotes.addEventListener('input', function() {
+                const value = this.value;
+                document.querySelectorAll('.auto-notes').forEach(field => {
+                    field.value = value;
+                });
+            });
+        }
+
+        // 주요 내용 자동 채우기
+        const commonContent = document.getElementById('common_content');
+        if (commonContent) {
+            commonContent.addEventListener('input', function() {
+                const value = this.value;
+                document.querySelectorAll('.auto-content').forEach(field => {
+                    field.textContent = value;
+                });
+            });
+        }
+
+        // 결제 방법 자동 채우기
+        const commonPayment = document.getElementById('common_payment');
+        if (commonPayment) {
+            commonPayment.addEventListener('change', function() {
+                const value = this.value;
+                document.querySelectorAll('.auto-payment').forEach(field => {
+                    field.value = value;
+                });
+            });
+        }
+
+        // 사용 금액 표시 자동 채우기
+        if (commonAmount) {
+            commonAmount.addEventListener('input', function() {
+                const amount = parseInt(this.value) || 0;
+
+                // 회의비와 사용 금액 모두 30,000원 단위로 올림
+                const roundedAmount = Math.ceil(amount / 30000) * 30000;
+                const formattedRoundedAmount = roundedAmount.toLocaleString('ko-KR') + '원';
+
+                document.querySelectorAll('.auto-amount-display, .auto-amount-display-2').forEach(field => {
+                    field.textContent = formattedRoundedAmount;
+                });
+            });
+        }
+
+        // 날짜를 일시 표시로 자동 채우기 (연월일만)
+        function updateDateTimeDisplay() {
+            const dateValue = commonDate ? commonDate.value : '';
+
+            if (dateValue) {
+                const [year, month, day] = dateValue.split('-');
+                const formattedDate = `${year}.${month}.${day}.`;
+
+                document.querySelectorAll('.auto-datetime-display').forEach(field => {
+                    field.textContent = formattedDate;
+                });
+            }
+        }
+
+        if (commonDate) {
+            commonDate.addEventListener('input', updateDateTimeDisplay);
+        }
+
+        // 초기값 설정 함수
+        function initializeDefaultValues() {
+            if (commonLocation && commonLocation.value) {
+                document.querySelectorAll('.auto-location').forEach(field => {
+                    field.value = commonLocation.value;
+                });
+            }
+
+            if (commonPayment) {
+                document.querySelectorAll('.auto-payment').forEach(field => {
+                    field.value = commonPayment.value;
+                });
+            }
+        }
+
+        // 페이지 로드 시 초기값 설정
+        setTimeout(initializeDefaultValues, 100);
 
         // 초기화 - 빈 목록으로 시작 (금액 입력 시 자동 생성)
         updateAttendeeList();
