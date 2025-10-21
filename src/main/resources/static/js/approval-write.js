@@ -551,6 +551,17 @@ document.addEventListener('DOMContentLoaded', function() {
             });
         }
 
+        // 회의록 비고 자동 채우기
+        const commonMinutesNotes = document.getElementById('common_minutes_notes');
+        if (commonMinutesNotes) {
+            commonMinutesNotes.addEventListener('input', function() {
+                const value = this.value;
+                document.querySelectorAll('.auto-minutes-notes').forEach(field => {
+                    field.value = value;
+                });
+            });
+        }
+
         // 사용 금액 표시 자동 채우기
         if (commonAmount) {
             commonAmount.addEventListener('input', function() {
@@ -800,6 +811,187 @@ document.addEventListener('DOMContentLoaded', function() {
             window.location.href = '/approval';
         }
     });
+
+    // PDF 저장 버튼 이벤트
+    const savePdfBtn = document.getElementById('savePdfBtn');
+    if (savePdfBtn) {
+        savePdfBtn.addEventListener('click', async function(e) {
+            e.preventDefault();
+
+            // 상태 복원을 위한 변수들을 외부에 선언
+            let allDivs = null;
+            let originalDisplays = [];
+
+            try {
+                console.log('PDF 저장 시작');
+
+                // 현재 활성화된 문서 양식 확인
+                const activeTemplate = document.querySelector('.tree-node-header.active');
+                if (!activeTemplate || activeTemplate.getAttribute('data-template') !== 'receipt-meeting') {
+                    alert('영수증 처리(회의록) 템플릿을 먼저 선택해주세요.');
+                    return;
+                }
+
+                // jsPDF와 html2canvas 로드 확인
+                if (typeof window.jspdf === 'undefined' || typeof window.html2canvas === 'undefined') {
+                    alert('PDF 라이브러리를 로드하는 중입니다. 잠시 후 다시 시도해주세요.');
+                    return;
+                }
+
+                const { jsPDF } = window.jspdf;
+                const pdf = new jsPDF('p', 'mm', 'a4');
+
+                // documentForm 내의 모든 최상위 div 찾기
+                allDivs = documentForm.querySelectorAll(':scope > div');
+                console.log('찾은 div 개수:', allDivs.length);
+
+                if (allDivs.length < 4) {
+                    alert('문서 구조를 찾을 수 없습니다. 영수증 처리(회의록) 템플릿을 선택했는지 확인해주세요.');
+                    return;
+                }
+
+                // 원래 display 스타일 저장
+                originalDisplays = Array.from(allDivs).map(div => div.style.display);
+
+                // 공통 정보 입력 영역 숨기고, 나머지는 모두 표시
+                allDivs[0].style.display = 'none'; // 공통 정보 입력
+                allDivs[1].style.display = 'block'; // 회의 품의서
+                allDivs[2].style.display = 'block'; // 회의록
+                allDivs[3].style.display = 'block'; // 참석자 명단
+
+                // 잠시 대기하여 DOM 업데이트 완료
+                await new Promise(resolve => setTimeout(resolve, 100));
+
+                // 공통 렌더링 옵션
+                const renderOptions = {
+                    scale: 3, // 고해상도
+                    useCORS: true,
+                    allowTaint: true,
+                    logging: false,
+                    backgroundColor: '#ffffff',
+                    imageTimeout: 0,
+                    removeContainer: true
+                };
+
+                // PDF 페이지 설정 (A4, 여백 포함)
+                const pdfWidth = 210; // A4 width in mm
+                const pdfHeight = 297; // A4 height in mm
+                const margin = 10; // 여백 10mm
+                const contentWidth = pdfWidth - (margin * 2);
+
+                // 1. 회의 품의서 페이지
+                console.log('회의 품의서 렌더링 중...');
+                const proposalDiv = allDivs[1]; // 두 번째 div
+
+                if (!proposalDiv) {
+                    throw new Error('회의 품의서를 찾을 수 없습니다.');
+                }
+
+                console.log('회의 품의서 div 크기:', proposalDiv.offsetWidth, 'x', proposalDiv.offsetHeight);
+
+                const proposalCanvas = await window.html2canvas(proposalDiv, renderOptions);
+
+                console.log('Canvas 생성 완료:', proposalCanvas.width, 'x', proposalCanvas.height);
+
+                const canvasWidth = proposalCanvas.width;
+                const canvasHeight = proposalCanvas.height;
+
+                if (canvasWidth === 0 || canvasHeight === 0) {
+                    throw new Error('Canvas 크기가 0입니다. 문서가 화면에 표시되어 있는지 확인하세요.');
+                }
+
+                // Canvas를 JPEG로 변환 (파일 크기 최적화)
+                console.log('이미지 변환 시작...');
+                const proposalImgData = proposalCanvas.toDataURL('image/jpeg', 0.95);
+                console.log('이미지 변환 완료, 데이터 길이:', proposalImgData.length);
+
+                if (!proposalImgData || proposalImgData === 'data:,') {
+                    throw new Error('이미지 데이터가 비어있습니다.');
+                }
+
+                // 이미지 높이 계산 (비율 유지)
+                const imgHeight = (canvasHeight * contentWidth) / canvasWidth;
+
+                console.log('PDF에 이미지 추가 중...', contentWidth, 'x', imgHeight);
+                pdf.addImage(proposalImgData, 'JPEG', margin, margin, contentWidth, imgHeight);
+                console.log('회의 품의서 페이지 완료');
+
+                // 2. 회의록 페이지
+                console.log('회의록 렌더링 중...');
+                const minutesDiv = allDivs[2]; // 세 번째 div
+
+                if (!minutesDiv) {
+                    throw new Error('회의록을 찾을 수 없습니다.');
+                }
+
+                console.log('회의록 div 크기:', minutesDiv.offsetWidth, 'x', minutesDiv.offsetHeight);
+
+                pdf.addPage();
+                const minutesCanvas = await window.html2canvas(minutesDiv, renderOptions);
+
+                console.log('회의록 Canvas 생성 완료:', minutesCanvas.width, 'x', minutesCanvas.height);
+
+                const minutesCanvasWidth = minutesCanvas.width;
+                const minutesCanvasHeight = minutesCanvas.height;
+
+                const minutesImgData = minutesCanvas.toDataURL('image/jpeg', 0.95);
+                const minutesImgHeight = (minutesCanvasHeight * contentWidth) / minutesCanvasWidth;
+
+                pdf.addImage(minutesImgData, 'JPEG', margin, margin, contentWidth, minutesImgHeight);
+                console.log('회의록 페이지 완료');
+
+                // 3. 참석자 명단 페이지
+                console.log('참석자 명단 렌더링 중...');
+                const attendeeDiv = allDivs[3]; // 네 번째 div
+
+                if (!attendeeDiv) {
+                    throw new Error('참석자 명단을 찾을 수 없습니다.');
+                }
+
+                console.log('참석자 명단 div 크기:', attendeeDiv.offsetWidth, 'x', attendeeDiv.offsetHeight);
+
+                pdf.addPage();
+                const attendeeCanvas = await window.html2canvas(attendeeDiv, renderOptions);
+
+                console.log('참석자 명단 Canvas 생성 완료:', attendeeCanvas.width, 'x', attendeeCanvas.height);
+
+                const attendeeCanvasWidth = attendeeCanvas.width;
+                const attendeeCanvasHeight = attendeeCanvas.height;
+
+                const attendeeImgData = attendeeCanvas.toDataURL('image/jpeg', 0.95);
+                const attendeeImgHeight = (attendeeCanvasHeight * contentWidth) / attendeeCanvasWidth;
+
+                pdf.addImage(attendeeImgData, 'JPEG', margin, margin, contentWidth, attendeeImgHeight);
+                console.log('참석자 명단 페이지 완료');
+
+                // PDF 저장 (날짜_회의록.pdf 형식)
+                const dateInput = document.getElementById('common_date');
+                let dateStr;
+                if (dateInput && dateInput.value) {
+                    dateStr = dateInput.value.replace(/-/g, '');
+                } else {
+                    const today = new Date();
+                    dateStr = `${today.getFullYear()}${String(today.getMonth() + 1).padStart(2, '0')}${String(today.getDate()).padStart(2, '0')}`;
+                }
+
+                const fileName = `${dateStr}_회의록.pdf`;
+                console.log('PDF 저장:', fileName);
+                pdf.save(fileName);
+
+                alert('PDF가 저장되었습니다.');
+            } catch (error) {
+                console.error('PDF 생성 오류:', error);
+                alert('PDF 생성 중 오류가 발생했습니다.\n' + error.message + '\n\n브라우저 콘솔(F12)을 확인해주세요.');
+            } finally {
+                // 에러 발생 여부와 관계없이 항상 원래 스타일 복원
+                if (allDivs && originalDisplays.length > 0) {
+                    allDivs.forEach((div, index) => {
+                        div.style.display = originalDisplays[index];
+                    });
+                }
+            }
+        });
+    }
 
     // 초기 템플릿 로드
     loadTemplate('vacation');

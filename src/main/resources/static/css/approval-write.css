@@ -462,6 +462,21 @@ div:focus {
     resize: vertical;
 }
 
+/* readonly 필드 스타일 - 테두리와 배경 제거 */
+.form-table input[readonly],
+.form-table textarea[readonly] {
+    border: none !important;
+    background: transparent !important;
+    padding: 8px 0;
+    cursor: default;
+}
+
+.form-table input[readonly]:focus,
+.form-table textarea[readonly]:focus {
+    border: none !important;
+    outline: none !important;
+}
+
 /* 첨부파일 섹션 */
 .attachment-section {
     background: #f8f9fa;

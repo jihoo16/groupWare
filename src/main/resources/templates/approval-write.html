@@ -575,6 +575,10 @@
                                             <td colspan="3"><textarea id="common_notes" placeholder="특기사항을 입력하세요" rows="2" style="width: 100%;"></textarea></td>
                                         </tr>
                                         <tr>
+                                            <th>회의록 비고</th>
+                                            <td colspan="3"><textarea id="common_minutes_notes" placeholder="회의록 비고를 입력하세요" rows="3" style="width: 100%;"></textarea></td>
+                                        </tr>
+                                        <tr>
                                             <th>결제 방법</th>
                                             <td colspan="3">
                                                 <select id="common_payment" style="width: 200px;">
@@ -634,10 +638,19 @@
                                         <th>내외구분</th>
                                         <th>소속</th>
                                         <th>성명</th>
-                                        <th rowspan="3" id="meeting_purpose_header">회의 목적</th>
-                                        <td colspan="3" rowspan="3" class="meeting-purpose-cell" style="vertical-align: top;"><textarea class="auto-purpose" placeholder="회의 목적" rows="8" style="width: 100%; height: 100%; resize: vertical; background: #f9f9f9;" readonly></textarea></td>
+                                        <th rowspan="6" id="meeting_purpose_header">회의 목적</th>
+                                        <td colspan="3" rowspan="6" class="meeting-purpose-cell" style="vertical-align: top;"><textarea class="auto-purpose" placeholder="회의 목적" rows="8" style="width: 100%; height: 100%; resize: vertical; background: #f9f9f9;" readonly></textarea></td>
                                     </tr>
                                     <!-- 참석자 행들이 여기에 동적으로 추가됨 -->
+                                    <tr class="attendee-row">
+                                        <td colspan="3">&nbsp;</td>
+                                    </tr>
+                                    <tr class="attendee-row">
+                                        <td colspan="3">&nbsp;</td>
+                                    </tr>
+                                    <tr class="attendee-row">
+                                        <td colspan="3">&nbsp;</td>
+                                    </tr>
                                     <tr class="attendee-row">
                                         <td colspan="3">&nbsp;</td>
                                     </tr>
@@ -653,13 +666,13 @@
                                         <th colspan="3">사용 금액</th>
                                     </tr>
                                     <tr>
-                                        <td style="text-align: center;"><span class="auto-datetime-display" style="display: block; padding: 8px;"></span></td>
-                                        <td colspan="3" style="text-align: center;"><span class="auto-amount-display" style="display: block; padding: 8px;"></span></td>
-                                        <td colspan="3" style="text-align: center;"><span class="auto-amount-display-2" style="display: block; padding: 8px;"></span></td>
+                                        <td style="text-align: center; height: 80px"><span class="auto-datetime-display" style="display: block; padding: 8px;"></span></td>
+                                        <td colspan="3" style="text-align: center; height: 80px"><span class="auto-amount-display" style="display: block; padding: 8px;"></span></td>
+                                        <td colspan="3" style="text-align: center; height: 80px"><span class="auto-amount-display-2" style="display: block; padding: 8px;"></span></td>
                                     </tr>
                                     <tr>
-                                        <th>특기사항</th>
-                                        <td colspan="6"><textarea class="auto-notes" placeholder="특기사항" rows="2" readonly style="background: #f9f9f9;"></textarea></td>
+                                        <th style="height: 300px">특기사항</th>
+                                        <td colspan="6"><textarea class="auto-notes" placeholder="특기사항" rows="2" readonly style="background: #f9f9f9; height: 300px"></textarea></td>
                                     </tr>
                                     <tr>
                                         <th>결제</th>
@@ -697,11 +710,11 @@
                                     </tr>
                                     <tr>
                                         <th style="vertical-align: top; padding-top: 15px;">주요 내용</th>
-                                        <td colspan="4" class="auto-content" style="padding: 10px; text-align: left; vertical-align: top; white-space: pre-wrap;"></td>
+                                        <td colspan="4" class="auto-content" style="padding: 10px; height: 300px; text-align: left; vertical-align: top; white-space: pre-wrap; min-height: 600px;"></td>
                                     </tr>
                                     <tr>
                                         <th>비고</th>
-                                        <td colspan="4"><textarea class="auto-notes" placeholder="추가 사항" rows="3" readonly style="background: #f9f9f9;"></textarea></td>
+                                        <td colspan="4"><textarea class="auto-minutes-notes" placeholder="추가 사항" rows="5" readonly style="background: #f9f9f9; height: 300px"></textarea></td>
                                     </tr>
                                 </table>
                                 </div>
@@ -771,6 +784,46 @@
                                         <td><input type="text" class="attendee-sig-dept" data-index="9" readonly style="background: #f9f9f9;"></td>
                                         <td style="padding: 30px;"></td>
                                     </tr>
+                                    <tr>
+                                        <td><input type="text" class="attendee-sig-name" data-index="10" readonly style="background: #f9f9f9;"></td>
+                                        <td><input type="text" class="attendee-sig-dept" data-index="10" readonly style="background: #f9f9f9;"></td>
+                                        <td style="padding: 30px;"></td>
+                                        <td><input type="text" class="attendee-sig-name" data-index="11" readonly style="background: #f9f9f9;"></td>
+                                        <td><input type="text" class="attendee-sig-dept" data-index="11" readonly style="background: #f9f9f9;"></td>
+                                        <td style="padding: 30px;"></td>
+                                    </tr>
+                                    <tr>
+                                        <td><input type="text" class="attendee-sig-name" data-index="12" readonly style="background: #f9f9f9;"></td>
+                                        <td><input type="text" class="attendee-sig-dept" data-index="12" readonly style="background: #f9f9f9;"></td>
+                                        <td style="padding: 30px;"></td>
+                                        <td><input type="text" class="attendee-sig-name" data-index="13" readonly style="background: #f9f9f9;"></td>
+                                        <td><input type="text" class="attendee-sig-dept" data-index="13" readonly style="background: #f9f9f9;"></td>
+                                        <td style="padding: 30px;"></td>
+                                    </tr>
+                                    <tr>
+                                        <td><input type="text" class="attendee-sig-name" data-index="14" readonly style="background: #f9f9f9;"></td>
+                                        <td><input type="text" class="attendee-sig-dept" data-index="14" readonly style="background: #f9f9f9;"></td>
+                                        <td style="padding: 30px;"></td>
+                                        <td><input type="text" class="attendee-sig-name" data-index="15" readonly style="background: #f9f9f9;"></td>
+                                        <td><input type="text" class="attendee-sig-dept" data-index="15" readonly style="background: #f9f9f9;"></td>
+                                        <td style="padding: 30px;"></td>
+                                    </tr>
+                                    <tr>
+                                        <td><input type="text" class="attendee-sig-name" data-index="16" readonly style="background: #f9f9f9;"></td>
+                                        <td><input type="text" class="attendee-sig-dept" data-index="16" readonly style="background: #f9f9f9;"></td>
+                                        <td style="padding: 30px;"></td>
+                                        <td><input type="text" class="attendee-sig-name" data-index="17" readonly style="background: #f9f9f9;"></td>
+                                        <td><input type="text" class="attendee-sig-dept" data-index="17" readonly style="background: #f9f9f9;"></td>
+                                        <td style="padding: 30px;"></td>
+                                    </tr>
+                                    <tr>
+                                        <td><input type="text" class="attendee-sig-name" data-index="18" readonly style="background: #f9f9f9;"></td>
+                                        <td><input type="text" class="attendee-sig-dept" data-index="18" readonly style="background: #f9f9f9;"></td>
+                                        <td style="padding: 30px;"></td>
+                                        <td><input type="text" class="attendee-sig-name" data-index="19" readonly style="background: #f9f9f9;"></td>
+                                        <td><input type="text" class="attendee-sig-dept" data-index="19" readonly style="background: #f9f9f9;"></td>
+                                        <td style="padding: 30px;"></td>
+                                    </tr>
                                 </table>
                                 </div>
                             </div>
@@ -808,6 +861,10 @@
                                 <i class="fas fa-save"></i>
                                 임시저장
                             </button>
+                            <button class="btn-outline btn-lg" id="savePdfBtn">
+                                <i class="fas fa-file-pdf"></i>
+                                PDF 저장
+                            </button>
                             <button class="btn-primary btn-lg" id="submitBtn">
                                 <i class="fas fa-paper-plane"></i>
                                 결재 요청
@@ -843,6 +900,10 @@
             </div>
         </div>
     </div>
+
+    <!-- jsPDF 라이브러리 -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 
     <script th:src="@{/js/approval-write.js}"></script>
 </body>
