@@ -12,6 +12,9 @@ document.addEventListener('DOMContentLoaded', function() {
     const memberSelectModal = document.getElementById('memberSelectModal');
     const memberSearchInput = document.getElementById('memberSearchInput');
     const teamTableBody = document.getElementById('teamTableBody');
+    const addCardBtn = document.getElementById('addCardBtn');
+    const cardModal = document.getElementById('cardModal');
+    const cardList = document.getElementById('cardList');
     const progressRange = document.getElementById('progressRange');
     const progressNumber = document.getElementById('progressNumber');
     const projectFiles = document.getElementById('projectFiles');
@@ -20,6 +23,10 @@ document.addEventListener('DOMContentLoaded', function() {
     // 선택된 팀원 목록
     let selectedMemberList = [];
     let memberIdCounter = 0;
+
+    // 카드 목록
+    let cardListData = [];
+    let cardIdCounter = 0;
 
     // 프로젝트 목록 페이지 기능
     if (newProjectBtn) {
@@ -70,6 +77,13 @@ document.addEventListener('DOMContentLoaded', function() {
             openMemberModal();
         });
     }
+
+    // 빈 테이블 클릭 시 팀원 추가 모달 열기
+    document.addEventListener('click', function(e) {
+        if (e.target.closest('.empty-row')) {
+            openMemberModal();
+        }
+    });
 
     // 모달 열기
     function openMemberModal() {
@@ -303,11 +317,11 @@ document.addEventListener('DOMContentLoaded', function() {
                 projectName: document.getElementById('projectName').value,
                 projectStatus: document.getElementById('projectStatus').value,
                 projectManager: document.getElementById('projectManager').value,
-                priority: document.getElementById('priority').value,
                 startDate: document.getElementById('startDate').value,
                 endDate: document.getElementById('endDate').value,
                 projectDescription: document.getElementById('projectDescription').value,
                 teamMembers: selectedMemberList,
+                cards: cardListData,
                 budget: document.getElementById('budget').value,
                 progress: document.getElementById('progressNumber').value
             };
@@ -325,7 +339,6 @@ document.addEventListener('DOMContentLoaded', function() {
         const projectName = document.getElementById('projectName').value.trim();
         const projectStatus = document.getElementById('projectStatus').value;
         const projectManager = document.getElementById('projectManager').value;
-        const priority = document.getElementById('priority').value;
         const startDate = document.getElementById('startDate').value;
         const endDate = document.getElementById('endDate').value;
         const projectDescription = document.getElementById('projectDescription').value.trim();
@@ -342,11 +355,6 @@ document.addEventListener('DOMContentLoaded', function() {
 
         if (!projectManager) {
             alert('프로젝트 매니저를 선택해주세요.');
-            return false;
-        }
-
-        if (!priority) {
-            alert('우선순위를 선택해주세요.');
             return false;
         }
 
@@ -457,6 +465,102 @@ document.addEventListener('DOMContentLoaded', function() {
         memberSelectModal.addEventListener('click', function(e) {
             if (e.target === memberSelectModal) {
                 closeMemberModal();
+            }
+        });
+    }
+
+    // 카드 추가 버튼 클릭
+    if (addCardBtn) {
+        addCardBtn.addEventListener('click', function() {
+            openCardModal();
+        });
+    }
+
+    // 카드 모달 열기
+    function openCardModal() {
+        if (!cardModal) return;
+        cardModal.classList.add('active');
+
+        // 입력 필드 초기화
+        document.getElementById('cardCompany').value = '';
+        document.getElementById('cardNumber').value = '';
+    }
+
+    // 카드 모달 닫기 (전역 함수)
+    window.closeCardModal = function() {
+        if (!cardModal) return;
+        cardModal.classList.remove('active');
+    };
+
+    // 카드 저장 (전역 함수)
+    window.saveCard = function() {
+        const cardCompany = document.getElementById('cardCompany').value;
+        const cardNumber = document.getElementById('cardNumber').value;
+
+        // 유효성 검사
+        if (!cardCompany) {
+            alert('카드사를 선택해주세요.');
+            return;
+        }
+
+        if (!cardNumber || cardNumber.length !== 4 || !/^\d{4}$/.test(cardNumber)) {
+            alert('카드 뒷 4자리를 정확히 입력해주세요.');
+            return;
+        }
+
+        // 카드 추가
+        cardIdCounter++;
+        cardListData.push({
+            id: cardIdCounter,
+            company: cardCompany,
+            number: cardNumber
+        });
+
+        renderCardList();
+        closeCardModal();
+    };
+
+    // 카드 목록 렌더링
+    function renderCardList() {
+        if (!cardList) return;
+
+        cardList.innerHTML = '';
+
+        if (cardListData.length === 0) {
+            cardList.innerHTML = '<p style="color: #868e96; font-size: 13px; margin-top: 8px;">등록된 카드가 없습니다.</p>';
+            return;
+        }
+
+        cardListData.forEach(card => {
+            const item = document.createElement('div');
+            item.className = 'card-item';
+            item.innerHTML = `
+                <div class="card-item-info">
+                    <i class="fas fa-credit-card"></i>
+                    <div class="card-item-details">
+                        <div class="card-company">${card.company}</div>
+                        <div class="card-number">**** **** **** ${card.number}</div>
+                    </div>
+                </div>
+                <button type="button" onclick="removeCard(${card.id})">
+                    <i class="fas fa-times"></i>
+                </button>
+            `;
+            cardList.appendChild(item);
+        });
+    }
+
+    // 카드 제거 (전역 함수)
+    window.removeCard = function(cardId) {
+        cardListData = cardListData.filter(card => card.id !== cardId);
+        renderCardList();
+    };
+
+    // 카드 모달 배경 클릭 시 닫기
+    if (cardModal) {
+        cardModal.addEventListener('click', function(e) {
+            if (e.target === cardModal) {
+                closeCardModal();
             }
         });
     }
