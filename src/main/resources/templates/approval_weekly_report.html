@@ -1,0 +1,313 @@
+<!DOCTYPE html>
+<html lang="ko" xmlns:th="http://www.thymeleaf.org">
+<head th:replace="fragments/layout :: head('주간업무보고', '/css/approval_weekly_report.css')"></head>
+<body>
+    <div class="container">
+        <!-- 좌측 네비게이션 바 -->
+        <div th:replace="fragments/sidebar :: sidebar('approval')"></div>
+
+        <!-- 메인 콘텐츠 영역 -->
+        <main class="main-content">
+            <header class="header">
+                <div class="header-left">
+                    <h1 class="page-title"><i class="fas fa-calendar-week"></i> 문서 작성 > 주간업무보고</h1>
+                </div>
+                <div class="header-right">
+                    <button class="btn-secondary" onclick="history.back()">
+                        <i class="fas fa-arrow-left"></i>
+                        돌아가기
+                    </button>
+                </div>
+            </header>
+
+            <div class="write-container">
+                <div class="write-layout">
+                    <!-- 좌측: 템플릿 선택 -->
+                    <aside class="template-sidebar">
+                        <div class="tree-header">
+                            <h3><i class="fas fa-file-alt"></i> 문서 양식</h3>
+                            <button class="btn-expand-all" id="expandAllBtn">
+                                <i class="fas fa-minus-square"></i> 전체 접기
+                            </button>
+                        </div>
+                        <div class="template-tree">
+                                                        <!-- 인사 -->
+                            <div class="tree-node expanded">
+                                <div class="tree-node-header category-node">
+                                    <span class="tree-toggle"><i class="fas fa-chevron-right"></i></span>
+                                    <span class="tree-icon"><i class="fas fa-user-tie"></i></span>
+                                    <span class="tree-label">인사</span>
+                                    <span class="tree-count">1</span>
+                                </div>
+                                <div class="tree-children">
+                                    <div class="tree-node member">
+                                        <a href="/approval/vacation" style="text-decoration: none; color: inherit;">
+                                            <div class="tree-node-header">
+                                                <span class="tree-toggle invisible"></span>
+                                                <span class="tree-icon"><i class="fas fa-umbrella-beach"></i></span>
+                                                <span class="tree-label">연차신청서</span>
+                                            </div>
+                                        </a>
+                                    </div>
+                                </div>
+                            </div><!-- 지출 -->
+                            <div class="tree-node expanded">
+                                <div class="tree-node-header category-node">
+                                    <span class="tree-toggle"><i class="fas fa-chevron-right"></i></span>
+                                    <span class="tree-icon"><i class="fas fa-coins"></i></span>
+                                    <span class="tree-label">지출</span>
+                                    <span class="tree-count">2</span>
+                                </div>
+                                <div class="tree-children">
+                                    <div class="tree-node member">
+                                        <a href="/approval/expense" style="text-decoration: none; color: inherit;">
+                                            <div class="tree-node-header">
+                                                <span class="tree-toggle invisible"></span>
+                                                <span class="tree-icon"><i class="fas fa-won-sign"></i></span>
+                                                <span class="tree-label">지출결의서</span>
+                                            </div>
+                                        </a>
+                                    </div>
+                                    <div class="tree-node member">
+                                        <a href="/approval/purchase" style="text-decoration: none; color: inherit;">
+                                            <div class="tree-node-header">
+                                                <span class="tree-toggle invisible"></span>
+                                                <span class="tree-icon"><i class="fas fa-shopping-cart"></i></span>
+                                                <span class="tree-label">구매요청서</span>
+                                            </div>
+                                        </a>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- 보고 -->
+                            <div class="tree-node expanded">
+                                <div class="tree-node-header category-node">
+                                    <span class="tree-toggle"><i class="fas fa-chevron-right"></i></span>
+                                    <span class="tree-icon"><i class="fas fa-chart-line"></i></span>
+                                    <span class="tree-label">보고</span>
+                                    <span class="tree-count">4</span>
+                                </div>
+                                <div class="tree-children">
+                                    <div class="tree-node member">
+                                        <div class="tree-node-header active">
+                                            <span class="tree-toggle invisible"></span>
+                                            <span class="tree-icon"><i class="fas fa-calendar-week"></i></span>
+                                            <span class="tree-label">주간업무보고</span>
+                                        </div>
+                                    </div>
+                                    <div class="tree-node member">
+                                        <a href="/approval/monthly-report" style="text-decoration: none; color: inherit;">
+                                            <div class="tree-node-header">
+                                                <span class="tree-toggle invisible"></span>
+                                                <span class="tree-icon"><i class="fas fa-calendar-alt"></i></span>
+                                                <span class="tree-label">월간업무보고</span>
+                                            </div>
+                                        </a>
+                                    </div>
+                                    <div class="tree-node member">
+                                        <a href="/approval/meeting" style="text-decoration: none; color: inherit;">
+                                            <div class="tree-node-header">
+                                                <span class="tree-toggle invisible"></span>
+                                                <span class="tree-icon"><i class="fas fa-users"></i></span>
+                                                <span class="tree-label">회의록</span>
+                                            </div>
+                                        </a>
+                                    </div>
+                                    <div class="tree-node member">
+                                        <a href="/approval/general" style="text-decoration: none; color: inherit;">
+                                            <div class="tree-node-header">
+                                                <span class="tree-toggle invisible"></span>
+                                                <span class="tree-icon"><i class="fas fa-file-alt"></i></span>
+                                                <span class="tree-label">일반기안문서</span>
+                                            </div>
+                                        </a>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- 출장 -->
+                            <div class="tree-node expanded">
+                                <div class="tree-node-header category-node">
+                                    <span class="tree-toggle"><i class="fas fa-chevron-right"></i></span>
+                                    <span class="tree-icon"><i class="fas fa-plane-departure"></i></span>
+                                    <span class="tree-label">출장</span>
+                                    <span class="tree-count">2</span>
+                                </div>
+                                <div class="tree-children">
+                                    <div class="tree-node member">
+                                        <a href="/approval/business-trip" style="text-decoration: none; color: inherit;">
+                                            <div class="tree-node-header">
+                                                <span class="tree-toggle invisible"></span>
+                                                <span class="tree-icon"><i class="fas fa-plane"></i></span>
+                                                <span class="tree-label">출장신청</span>
+                                            </div>
+                                        </a>
+                                    </div>
+                                    <div class="tree-node member">
+                                        <a href="/approval/trip-report" style="text-decoration: none; color: inherit;">
+                                            <div class="tree-node-header">
+                                                <span class="tree-toggle invisible"></span>
+                                                <span class="tree-icon"><i class="fas fa-clipboard-list"></i></span>
+                                                <span class="tree-label">출장보고서</span>
+                                            </div>
+                                        </a>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- 연구비증빙 -->
+                            <div class="tree-node expanded">
+                                <div class="tree-node-header category-node">
+                                    <span class="tree-toggle"><i class="fas fa-chevron-right"></i></span>
+                                    <span class="tree-icon"><i class="fas fa-file-invoice-dollar"></i></span>
+                                    <span class="tree-label">연구비증빙</span>
+                                    <span class="tree-count">3</span>
+                                </div>
+                                <div class="tree-children">
+                                    <div class="tree-node member">
+                                        <a href="/approval/receipt" style="text-decoration: none; color: inherit;">
+                                            <div class="tree-node-header">
+                                                <span class="tree-toggle invisible"></span>
+                                                <span class="tree-icon"><i class="fas fa-receipt"></i></span>
+                                                <span class="tree-label">회의록</span>
+                                            </div>
+                                        </a>
+                                    </div>
+                                    <div class="tree-node member">
+                                        <a href="/approval/receipt" style="text-decoration: none; color: inherit;">
+                                            <div class="tree-node-header">
+                                                <span class="tree-toggle invisible"></span>
+                                                <span class="tree-icon"><i class="fas fa-receipt"></i></span>
+                                                <span class="tree-label">출장</span>
+                                            </div>
+                                        </a>
+                                    </div>
+                                    <div class="tree-node member">
+                                        <a href="/approval/receipt" style="text-decoration: none; color: inherit;">
+                                            <div class="tree-node-header">
+                                                <span class="tree-toggle invisible"></span>
+                                                <span class="tree-icon"><i class="fas fa-receipt"></i></span>
+                                                <span class="tree-label">야근식대</span>
+                                            </div>
+                                        </a>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </aside>
+
+                    <!-- 우측: 문서 편집 영역 -->
+                    <div class="editor-area">
+                        <!-- 결재선 -->
+                        <div class="approval-line-section">
+                            <div class="section-header">
+                                <h4><i class="fas fa-users"></i> 결재선</h4>
+                                <button class="btn-add" id="addApproverBtn">
+                                    <i class="fas fa-plus"></i>
+                                    결재자 추가
+                                </button>
+                            </div>
+                            <div class="approver-chips" id="approverChips">
+                                <div class="empty-message">결재자를 추가해주세요</div>
+                            </div>
+                        </div>
+
+                        <!-- 문서 양식 -->
+                        <div class="document-form">
+                                                        <h2 class="doc-title">주 간 업 무 보 고</h2>
+                            <table class="form-table">
+                                <tr>
+                                    <th>보고자</th>
+                                    <td><input type="text" value="홍길동" readonly></td>
+                                    <th>부서</th>
+                                    <td><input type="text" value="개발팀" readonly></td>
+                                </tr>
+                                <tr>
+                                    <th>보고 기간</th>
+                                    <td colspan="3"><input type="text" placeholder="예: 2025.01.13 ~ 2025.01.17"></td>
+                                </tr>
+                                <tr>
+                                    <th>금주 주요 업무</th>
+                                    <td colspan="3"><textarea placeholder="이번 주 수행한 주요 업무를 입력하세요" rows="5"></textarea></td>
+                                </tr>
+                                <tr>
+                                    <th>주요 성과</th>
+                                    <td colspan="3"><textarea placeholder="달성한 성과 및 결과물" rows="4"></textarea></td>
+                                </tr>
+                                <tr>
+                                    <th>주요 이슈</th>
+                                    <td colspan="3"><textarea placeholder="발생한 문제 및 이슈사항" rows="4"></textarea></td>
+                                </tr>
+                                <tr>
+                                    <th>차주 계획</th>
+                                    <td colspan="3"><textarea placeholder="다음 주 진행 예정 업무" rows="5"></textarea></td>
+                                </tr>
+                            </table>
+                        </div>
+
+                        <!-- 첨부파일 -->
+                        <div class="attachment-section">
+                            <div class="section-header">
+                                <h4><i class="fas fa-paperclip"></i> 첨부파일</h4>
+                            </div>
+                            <div class="file-upload-area" id="fileUploadArea">
+                                <input type="file" id="fileInput" multiple hidden>
+                                <label for="fileInput" class="file-upload-label">
+                                    <i class="fas fa-cloud-upload-alt"></i>
+                                    <span>파일을 선택하거나 드래그하세요</span>
+                                    <small>최대 10MB, 최대 5개</small>
+                                </label>
+                            </div>
+                            <div class="file-list" id="fileList"></div>
+                        </div>
+
+                        <!-- 제출 버튼 -->
+                        <div class="submit-actions">
+                            <button class="btn-secondary btn-lg" onclick="history.back()">
+                                <i class="fas fa-times"></i>
+                                취소
+                            </button>
+                            <button class="btn-outline btn-lg" id="saveDraftBtn">
+                                <i class="fas fa-save"></i>
+                                임시저장
+                            </button>
+                            <button class="btn-primary btn-lg" id="submitBtn">
+                                <i class="fas fa-paper-plane"></i>
+                                결재 요청
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <!-- 결재자 선택 모달 -->
+    <div class="modal" id="approverModal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>결재자 선택</h3>
+                <button class="modal-close" onclick="closeModal()">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            <div class="modal-body">
+                <div class="modal-search">
+                    <i class="fas fa-search"></i>
+                    <input type="text" id="approverSearch" placeholder="이름 또는 부서 검색...">
+                </div>
+                <div class="employee-list" id="employeeList">
+                    <!-- 동적 생성 -->
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn-secondary" onclick="closeModal()">취소</button>
+                <button class="btn-primary" onclick="addApprover()">추가</button>
+            </div>
+        </div>
+    </div>
+
+    <script th:src="@{/js/approval_weekly_report.js}"></script>
+</body>
+</html>
