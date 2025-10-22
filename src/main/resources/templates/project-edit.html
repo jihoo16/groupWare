@@ -1,14 +1,14 @@
 <!DOCTYPE html>
 <html lang="ko" xmlns:th="http://www.thymeleaf.org">
-<head th:replace="fragments/layout :: head('신규 프로젝트 등록', '/css/project.css')"></head>
+<head th:replace="fragments/layout :: head('프로젝트 수정', '/css/project.css')"></head>
 <body>
 <div class="container">
-    <div th:replace="fragments/sidebar :: sidebar('project-new')"></div>
+    <div th:replace="fragments/sidebar :: sidebar('project')"></div>
 
     <main class="main-content">
         <header class="header">
             <div class="header-left">
-                <h1 class="page-title">신규 프로젝트 등록</h1>
+                <h1 class="page-title">프로젝트 수정</h1>
             </div>
             <div class="header-right">
                 <button class="btn btn-secondary" onclick="location.href='/project'">
@@ -18,7 +18,9 @@
         </header>
 
     <div class="content-card">
-        <form id="projectForm">
+        <form id="projectEditForm">
+            <input type="hidden" id="projectId" name="projectId">
+
             <div class="form-section">
                 <h2>기본 정보</h2>
                 <div class="form-grid" style="margin-bottom: 20px">
@@ -84,6 +86,9 @@
             <div class="form-section">
                 <h2>참여연구원 구성</h2>
                 <div class="team-members">
+                    <button type="button" class="btn btn-primary btn-sm" id="addMemberBtn" style="margin-bottom: 12px;">
+                        <i class="fas fa-user-plus"></i> 팀원 추가
+                    </button>
                     <div class="team-table-container">
                         <table class="team-table" id="teamTable">
                             <thead>
@@ -117,6 +122,9 @@
                     </button>
                     <small class="form-text">프로젝트 관련 문서, 기획서, 디자인 파일 등을 첨부할 수 있습니다.</small>
                 </div>
+                <div id="existingFileList" class="file-list">
+                    <!-- 기존 파일 목록 -->
+                </div>
                 <div id="fileList" class="file-list">
                     <!-- 첨부된 파일 목록 -->
                 </div>
@@ -128,8 +136,8 @@
     <!-- 하단 고정 액션 버튼 -->
     <div class="project-form-footer">
         <button type="button" class="btn btn-secondary" onclick="location.href='/project'">취소</button>
-        <button type="submit" class="btn btn-primary" form="projectForm">
-            <i class="fas fa-save"></i> 프로젝트 등록
+        <button type="submit" class="btn btn-primary" form="projectEditForm">
+            <i class="fas fa-save"></i> 수정 완료
         </button>
     </div>
     </main>
@@ -345,6 +353,6 @@
     </div>
 </div>
 
-<script th:src="@{/js/project.js}"></script>
+<script th:src="@{/js/project-edit.js}"></script>
 </body>
 </html>
