@@ -156,6 +156,7 @@ div[title]:hover::after {
 
 .badge {
     padding: 3px 8px;
+    margin-top: 6px;
     border-radius: 10px;
     font-size: 10.1px;
     font-weight: 700;

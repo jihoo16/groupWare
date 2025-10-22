@@ -42,15 +42,15 @@
                 <!-- 카드 그리드 -->
                 <div class="research-card-grid" id="cardGrid">
                     <!-- Sample cards - 실제로는 백엔드에서 데이터를 받아옴 -->
-                    <div class="research-card-item" data-company="신한카드" data-number="1234" data-project="ERP 시스템 개발">
-                        <div class="research-card-visual">
+                    <div class="research-card-item" data-company="신한카드" data-number="1234" data-project="ERP 시스템 개발" data-project-id="1">
+                        <div class="research-card-visual" onclick="showProjectInfo(1)">
                             <div class="research-card-chip">
                                 <i class="fas fa-microchip"></i>
                             </div>
                             <div class="research-card-company">신한카드</div>
                             <div class="research-card-number">**** **** **** 1234</div>
                         </div>
-                        <div class="research-card-info">
+                        <div class="research-card-info" onclick="showProjectInfo(1)">
                             <div class="info-row">
                                 <span class="info-label">연결 프로젝트</span>
                                 <span class="info-value">ERP 시스템 개발</span>
@@ -70,15 +70,15 @@
                         </div>
                     </div>
 
-                    <div class="research-card-item" data-company="KB국민카드" data-number="5678" data-project="모바일 앱 개발">
-                        <div class="research-card-visual">
+                    <div class="research-card-item" data-company="KB국민카드" data-number="5678" data-project="모바일 앱 개발" data-project-id="2">
+                        <div class="research-card-visual" onclick="showProjectInfo(2)">
                             <div class="research-card-chip">
                                 <i class="fas fa-microchip"></i>
                             </div>
                             <div class="research-card-company">KB국민카드</div>
                             <div class="research-card-number">**** **** **** 5678</div>
                         </div>
-                        <div class="research-card-info">
+                        <div class="research-card-info" onclick="showProjectInfo(2)">
                             <div class="info-row">
                                 <span class="info-label">연결 프로젝트</span>
                                 <span class="info-value">모바일 앱 개발</span>

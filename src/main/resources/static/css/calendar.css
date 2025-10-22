@@ -191,7 +191,6 @@
     background: #ffffff;
     border: 1px solid #e0e0e0;
     border-radius: 0;
-    padding: 10px;
     cursor: pointer;
     transition: all 0.3s ease;
     position: relative;
@@ -233,12 +232,12 @@
     display: flex;
     justify-content: space-between;
     align-items: center;
-    margin-bottom: 6px;
     flex-shrink: 0;
 }
 
 .cell-date {
     font-size: 15px;
+    margin: 5px;
     font-weight: 600;
     color: #333;
 }
@@ -281,7 +280,7 @@
 }
 
 .schedule-item {
-    padding: 4px 8px;
+    padding: 3px 5px;
     font-size: 10.1px;
     font-weight: 500;
     white-space: nowrap;
