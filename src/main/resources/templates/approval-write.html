@@ -514,8 +514,8 @@
 
                             <!-- 영수증 처리 템플릿 - 회의록 -->
                             <div id="template-receipt-meeting">
-                                <div style="background: #f8f9fa; border: 2px solid #e8e8e8; border-radius: 10px; padding: 20px; margin-bottom: 30px;">
-                                    <div style="margin-bottom: 15px;">
+                                <div style="background: #f8f9fa; border: 2px solid #e8e8e8; border-radius: 10px; padding: 20px; margin:0 auto 30px; max-width: 881px">
+                                    <div style="margin-bottom: 15px; " >
                                         <h4 style="font-size: 16px; font-weight: 700; color: #333; margin: 0 0 15px 0; display: flex; align-items: center; gap: 8px;">
                                             <i class="fas fa-edit" style="color: #667eea;"></i> 공통 정보 입력
                                         </h4>
@@ -592,7 +592,7 @@
                                     </table>
                                 </div>
 
-                                <div style="background: white; border: 2px solid #e0e0e0; border-radius: 8px; padding: 30px; margin-bottom: 30px;">
+                                <div style="background: white; border: 2px solid #e0e0e0; border-radius: 8px; padding: 30px; margin: 0 auto 30px; max-width: 881px">
                                     <h2 class="doc-title">회 의 품 의 서</h2>
 
                                     <!-- 결재란 -->
@@ -625,21 +625,21 @@
                                     </colgroup>
                                     <tr>
                                         <th colspan="3">과제명</th>
-                                        <td colspan="4"><input type="text" class="auto-project" placeholder="과제명을 입력하세요" readonly style="background: #f9f9f9;"></td>
+                                        <td colspan="4"><input type="text" class="auto-project" readonly style="background: #f9f9f9;"></td>
                                     </tr>
                                     <tr>
                                         <th colspan="3">참석인원</th>
                                         <th>장소</th>
-                                        <td class="auto-location-cell"><input type="text" class="auto-location" placeholder="회의 장소" readonly style="background: #f9f9f9;"></td>
+                                        <td class="auto-location-cell" style="padding: 10px 8px; "><input type="text" class="auto-location" readonly style="background: #f9f9f9; font-size: 13px; line-height: 1.6; text-align: center"></td>
                                         <th>회의 일시</th>
-                                        <td class="auto-datetime-cell"><input type="text" class="auto-datetime" placeholder="예: 2025.01.20. 14:00~18:00" readonly style="background: #f9f9f9;"></td>
+                                        <td class="auto-datetime-cell" style="white-space: pre-line; text-align: center; padding: 10px 8px;"><span class="auto-datetime-proposal"></span></td>
                                     </tr>
                                     <tr id="meeting_purpose_row">
                                         <th>내외구분</th>
                                         <th>소속</th>
                                         <th>성명</th>
                                         <th rowspan="6" id="meeting_purpose_header">회의 목적</th>
-                                        <td colspan="3" rowspan="6" class="meeting-purpose-cell" style="vertical-align: top;"><textarea class="auto-purpose" placeholder="회의 목적" rows="8" style="width: 100%; height: 100%; resize: vertical; background: #f9f9f9;" readonly></textarea></td>
+                                        <td colspan="3" rowspan="6" class="meeting-purpose-cell" style="vertical-align: middle; text-align: center;"><input type="text" class="auto-purpose" style="width: 100%; background: #f9f9f9; text-align: center; font-size: 16px" readonly></td>
                                     </tr>
                                     <!-- 참석자 행들이 여기에 동적으로 추가됨 -->
                                     <tr class="attendee-row">
@@ -658,21 +658,19 @@
                                         <td colspan="3">&nbsp;</td>
                                     </tr>
                                     <tr>
-                                        <th colspan="9" style="background: #f0f0f0; padding: 15px;">소요 경비 내역 (원)</th>
+                                        <th colspan="7" style="background: #f0f0f0; padding: 15px;">소요 비용 예상 내역 (원)</th>
                                     </tr>
                                     <tr>
                                         <th>일시</th>
-                                        <th colspan="3">회의비</th>
-                                        <th colspan="3">사용 금액</th>
+                                        <th colspan="6">집행 예정 금액</th>
                                     </tr>
                                     <tr>
-                                        <td style="text-align: center; height: 80px"><span class="auto-datetime-display" style="display: block; padding: 8px;"></span></td>
-                                        <td colspan="3" style="text-align: center; height: 80px"><span class="auto-amount-display" style="display: block; padding: 8px;"></span></td>
-                                        <td colspan="3" style="text-align: center; height: 80px"><span class="auto-amount-display-2" style="display: block; padding: 8px;"></span></td>
+                                        <td style="text-align: center; height: 80px; padding-left: 5px"><span class="auto-datetime-display" style="display: block; padding: 8px;"></span></td>
+                                        <td colspan="6" style="text-align: center; height: 80px"><span class="auto-amount-display" style="display: block; padding: 8px;"></span></td>
                                     </tr>
                                     <tr>
                                         <th style="height: 300px">특기사항</th>
-                                        <td colspan="6"><textarea class="auto-notes" placeholder="특기사항" rows="2" readonly style="background: #f9f9f9; height: 300px"></textarea></td>
+                                        <td colspan="6"><textarea class="auto-notes" rows="2" readonly style="background: #f9f9f9; height: 300px"></textarea></td>
                                     </tr>
                                     <tr>
                                         <th>결제</th>
@@ -681,58 +679,69 @@
                                 </table>
                                 </div>
 
-                                <div style="background: white; border: 2px solid #e0e0e0; border-radius: 8px; padding: 30px; margin-bottom: 30px;">
+                                <div style="background: white; border: 2px solid #e0e0e0; border-radius: 8px; padding: 30px; max-width: 881px; margin: 0 auto 30px">
                                     <h2 class="doc-title">회 의 록</h2>
                                     <table class="form-table">
+                                    <colgroup>
+                                        <col style="width: 15%;">
+                                        <col style="width: 55%;">
+                                        <col style="width: 10%;">
+                                        <col style="width: 20%;">
+                                    </colgroup>
                                     <tr>
-                                        <th>세부 업무명</th>
-                                        <td colspan="2"><input type="text" class="auto-project" placeholder="세부 업무명" readonly style="background: #f9f9f9;"></td>
+                                        <th>세부<br> 업무명</th>
+                                        <td><input type="text" class="auto-project" readonly style="background: #f9f9f9; text-align: center;"></td>
                                         <th>작성자</th>
-                                        <td><input type="text" class="auto-author" value="홍길동" readonly style="background: #f9f9f9;"></td>
+                                        <td><input type="text" class="auto-author" value="홍길동" readonly style="background: #f9f9f9; text-align: center;"></td>
                                     </tr>
                                     <tr>
                                         <th>일시</th>
-                                        <td colspan="2"><input type="text" class="auto-datetime" placeholder="예: 2025.01.20. 14:00~18:00" readonly style="background: #f9f9f9;"></td>
+                                        <td><input type="text" class="auto-datetime" readonly style="background: #f9f9f9; text-align: center;"></td>
                                         <th>장소</th>
-                                        <td><input type="text" class="auto-location" placeholder="회의 장소" readonly style="background: #f9f9f9;"></td>
+                                        <td><input type="text" class="auto-location" readonly style="background: #f9f9f9; text-align: center;"></td>
                                     </tr>
                                     <tr>
-                                        <th>참여자</th>
-                                        <th>참여기관</th>
-                                        <td colspan="3" class="auto-all-attendees" style="padding: 10px; white-space: pre-wrap;"></td>
+                                        <th>참여자<br>(참여기관)</th>
+                                        <td colspan="3" class="auto-all-attendees" style="padding: 10px; height: 50px; white-space: pre-wrap;"></td>
                                     </tr>
                                     <tr>
-                                        <th colspan="5" style="background: #f0f0f0; padding: 15px;">내용</th>
+                                        <th colspan="4" style="background: #f0f0f0; padding: 15px;">내용</th>
                                     </tr>
                                     <tr>
                                         <th style="vertical-align: top; padding-top: 15px;">주제</th>
-                                        <td colspan="4" class="auto-subject" style="padding: 10px; text-align: left; vertical-align: top;"></td>
+                                        <td colspan="3" class="auto-subject" style="padding: 10px; text-align: left; font-size: 18px"></td>
                                     </tr>
                                     <tr>
-                                        <th style="vertical-align: top; padding-top: 15px;">주요 내용</th>
-                                        <td colspan="4" class="auto-content" style="padding: 10px; height: 300px; text-align: left; vertical-align: top; white-space: pre-wrap; min-height: 600px;"></td>
+                                        <th style="padding-top: 15px;">주요 내용</th>
+                                        <td colspan="3" class="auto-content" style="padding: 10px; height: 300px; text-align: left; white-space: pre-wrap; min-height: 600px; line-height: 2.5; font-size: 18px"></td>
                                     </tr>
                                     <tr>
                                         <th>비고</th>
-                                        <td colspan="4"><textarea class="auto-minutes-notes" placeholder="추가 사항" rows="5" readonly style="background: #f9f9f9; height: 300px"></textarea></td>
+                                        <td colspan="3"><textarea class="auto-minutes-notes" rows="5" readonly style="background: #f9f9f9; height: 300px"></textarea></td>
                                     </tr>
                                 </table>
                                 </div>
 
-                                <div style="background: white; border: 2px solid #e0e0e0; border-radius: 8px; padding: 30px; margin-bottom: 30px;">
+                                <div style="background: white; border: 2px solid #e0e0e0; border-radius: 8px; padding: 30px; margin: 0 auto 30px; max-width: 881px">
                                     <h2 class="doc-title">참 석 자 명 단</h2>
                                     <table class="form-table">
-                                    <tr>
-                                        <th>세부업무명</th>
-                                        <td colspan="2"><input type="text" class="auto-project" placeholder="세부 업무명" readonly style="background: #f9f9f9;"></td>
+                                        <colgroup>
+                                            <col style="width: 15%;">
+                                            <col style="width: 55%;">
+                                            <col style="width: 10%;">
+                                            <col style="width: 20%;">
+                                        </colgroup>
+                                        <tr>
+                                            <th>세부<br> 업무명</th>
+                                        <td><input type="text" class="auto-project" readonly style="background: #f9f9f9; text-align: center;"></td>
                                         <th>작성자</th>
-                                        <td><input type="text" class="auto-author" value="홍길동" readonly style="background: #f9f9f9;"></td>
+                                        <td><input type="text" class="auto-author" value="홍길동" readonly style="background: #f9f9f9; text-align: center;"></td>
                                     </tr>
                                     <tr>
                                         <th>일시</th>
-                                        <td colspan="2"><input type="text" class="auto-datetime" placeholder="예: 2025.01.20. 14:00~18:00" readonly style="background: #f9f9f9;"></td>
+                                        <td><input type="text" class="auto-datetime" readonly style="background: #f9f9f9; text-align: center;"></td>
                                         <th>장소</th>
-                                        <td><input type="text" class="auto-location" placeholder="회의 장소" readonly style="background: #f9f9f9;"></td>
+                                        <td><input type="text" class="auto-location" readonly style="background: #f9f9f9; text-align: center;"></td>
                                     </tr>
                                 </table>
                                 <table class="form-table" id="attendee-signature-table" style="margin-top: 20px;">
