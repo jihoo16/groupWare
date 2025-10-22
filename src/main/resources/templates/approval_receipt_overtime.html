@@ -1,6 +1,6 @@
 <!DOCTYPE html>
 <html lang="ko" xmlns:th="http://www.thymeleaf.org">
-<head th:replace="fragments/layout :: head('연구비 증빙', '/css/approval_receipt.css')"></head>
+<head th:replace="fragments/layout :: head('연구비 증빙 - 야근식대', '/css/approval_receipt_overtime.css')"></head>
 <body>
     <div class="container">
         <!-- 좌측 네비게이션 바 -->
@@ -10,7 +10,7 @@
         <main class="main-content">
             <header class="header">
                 <div class="header-left">
-                    <h1 class="page-title"><i class="fas fa-file-invoice-dollar"></i> 문서작성 > 연구비 증빙</h1>
+                    <h1 class="page-title"><i class="fas fa-receipt"></i> 문서 작성 > 연구비 증빙 - 야근식대</h1>
                 </div>
                 <div class="header-right">
                     <button class="btn-secondary" onclick="history.back()">
@@ -160,7 +160,7 @@
                                 </div>
                             </div>
 
-                            <!-- 연구비증빙 -->
+                                                        <!-- 연구비증빙 -->
                             <div class="tree-node expanded">
                                 <div class="tree-node-header category-node">
                                     <span class="tree-toggle"><i class="fas fa-chevron-right"></i></span>
@@ -170,21 +170,25 @@
                                 </div>
                                 <div class="tree-children">
                                     <div class="tree-node member">
-                                        <div class="tree-node-header active" data-template="receipt-meeting">
-                                            <span class="tree-toggle invisible"></span>
-                                            <span class="tree-icon"><i class="fas fa-receipt"></i></span>
-                                            <span class="tree-label">회의록</span>
-                                        </div>
+                                        <a href="/approval/receipt-meeting" style="text-decoration: none; color: inherit;">
+                                            <div class="tree-node-header">
+                                                <span class="tree-toggle invisible"></span>
+                                                <span class="tree-icon"><i class="fas fa-receipt"></i></span>
+                                                <span class="tree-label">회의록</span>
+                                            </div>
+                                        </a>
                                     </div>
                                     <div class="tree-node member">
-                                        <div class="tree-node-header" data-template="receipt-trip">
-                                            <span class="tree-toggle invisible"></span>
-                                            <span class="tree-icon"><i class="fas fa-receipt"></i></span>
-                                            <span class="tree-label">출장</span>
-                                        </div>
+                                        <a href="/approval/receipt-trip" style="text-decoration: none; color: inherit;">
+                                            <div class="tree-node-header">
+                                                <span class="tree-toggle invisible"></span>
+                                                <span class="tree-icon"><i class="fas fa-receipt"></i></span>
+                                                <span class="tree-label">출장</span>
+                                            </div>
+                                        </a>
                                     </div>
                                     <div class="tree-node member">
-                                        <div class="tree-node-header" data-template="receipt-overtime">
+                                        <div class="tree-node-header active">
                                             <span class="tree-toggle invisible"></span>
                                             <span class="tree-icon"><i class="fas fa-receipt"></i></span>
                                             <span class="tree-label">야근식대</span>
@@ -825,6 +829,6 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 
-    <script th:src="@{/js/approval_receipt.js}"></script>
+    <script th:src="@{/js/approval_receipt_overtime.js}"></script>
 </body>
 </html>

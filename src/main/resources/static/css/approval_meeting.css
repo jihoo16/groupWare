@@ -137,6 +137,12 @@ div:focus {
 
 .tree-node-header:hover {
     background: #f5f7fa;
+    color: #333;
+}
+
+.tree-node-header:hover .tree-icon,
+.tree-node-header:hover .tree-label {
+    color: #333;
 }
 
 .tree-node-header.active {
@@ -147,6 +153,16 @@ div:focus {
 .tree-node-header.active .tree-icon,
 .tree-node-header.active .tree-label {
     color: white;
+}
+
+.tree-node-header.active:hover {
+    background: #f5f7fa;
+    color: #333;
+}
+
+.tree-node-header.active:hover .tree-icon,
+.tree-node-header.active:hover .tree-label {
+    color: #333;
 }
 
 /* 확장/축소 아이콘 */

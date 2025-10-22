@@ -81,6 +81,22 @@ public class HomeController {
         return "approval_receipt";
     }
 
+    // 연구비증빙
+    @GetMapping("/approval/receipt-meeting")
+    public String approvalReceiptMeeting() {
+        return "approval_receipt_meeting";
+    }
+
+    @GetMapping("/approval/receipt-trip")
+    public String approvalReceiptTrip() {
+        return "approval_receipt_trip";
+    }
+
+    @GetMapping("/approval/receipt-overtime")
+    public String approvalReceiptOvertime() {
+        return "approval_receipt_overtime";
+    }
+
     // 인사
     @GetMapping("/approval/vacation")
     public String approvalVacation() {
