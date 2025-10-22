@@ -411,8 +411,19 @@
                             <input type="email" id="empEmail" required placeholder="example@pinecni.com">
                         </div>
                         <div class="form-group">
+                            <label for="externalEmail">외부 이메일</label>
+                            <input type="email" id="externalEmail" required placeholder="example@gmail.com">
+                        </div>
+                    </div>
+
+                    <div class="form-row">
+                        <div class="form-group">
                             <label for="empPhone">연락처 <span class="required">*</span></label>
                             <input type="tel" id="empPhone" required placeholder="010-1234-5678">
+                        </div>
+                        <div class="form-group">
+                            <label for="emergencyContact">비상 연락처<span class="required">*</span></label>
+                            <input type="email" id="emergencyContact" required placeholder="010-1234-5678">
                         </div>
                     </div>
 
@@ -426,9 +437,8 @@
                         <div class="form-group">
                             <label for="empDept">부서 <span class="required">*</span></label>
                             <select id="empDept" required>
-                                <option value="">선택하세요</option>
-                                <option value="경영지원팀">경영지원팀</option>
                                 <option value="개발팀">개발팀</option>
+                                <option value="경영지원팀">경영지원팀</option>
                                 <option value="영업팀">영업팀</option>
                                 <option value="디자인팀">디자인팀</option>
                                 <option value="마케팅팀">마케팅팀</option>
@@ -437,16 +447,14 @@
                         <div class="form-group">
                             <label for="empPosition">직급 <span class="required">*</span></label>
                             <select id="empPosition" required>
-                                <option value="">선택하세요</option>
                                 <option value="사원">사원</option>
-                                <option value="주임">주임</option>
                                 <option value="대리">대리</option>
                                 <option value="과장">과장</option>
                                 <option value="차장">차장</option>
                                 <option value="부장">부장</option>
                                 <option value="이사">이사</option>
-                                <option value="팀장">팀장</option>
-                                <option value="선임">선임</span></option>
+                                <option value="상무">상무</option>
+                                <option value="대표이사">대표이사</option>
                             </select>
                         </div>
                     </div>
@@ -467,10 +475,6 @@
                     </div>
 
                     <div class="form-row">
-                        <div class="form-group">
-                            <label for="empSalary">연봉 (만원)</label>
-                            <input type="number" id="empSalary" placeholder="3000">
-                        </div>
                         <div class="form-group">
                             <label for="empWorkType">근무형태</label>
                             <select id="empWorkType">

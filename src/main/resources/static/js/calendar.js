@@ -9,6 +9,12 @@ document.addEventListener('DOMContentLoaded', function() {
     let currentDate = new Date();
     const currentUser = '사용자'; // 실제로는 로그인한 사용자 정보
 
+    // 드래그 선택 관련 변수
+    let isDragging = false;
+    let dragStartDate = null;
+    let dragEndDate = null;
+    let selectedCells = [];
+
     // 샘플 일정 데이터 (실제로는 서버에서 가져와야 함)
     const schedules = [
         // 연차
@@ -262,6 +268,35 @@ document.addEventListener('DOMContentLoaded', function() {
         currentDate = new Date();
         renderCalendar();
     });
+
+    // 마우스 휠 스크롤 이벤트 (달력 영역에서)
+    let isScrolling = false;
+    const scrollDebounceTime = 300; // 300ms 디바운스
+
+    calendarGrid.addEventListener('wheel', function(e) {
+        e.preventDefault();
+
+        // 이미 스크롤 중이면 무시
+        if (isScrolling) return;
+
+        isScrolling = true;
+
+        // 스크롤 방향 감지
+        if (e.deltaY > 0) {
+            // 하향 스크롤 - 다음달
+            currentDate.setMonth(currentDate.getMonth() + 1);
+        } else if (e.deltaY < 0) {
+            // 상향 스크롤 - 이전달
+            currentDate.setMonth(currentDate.getMonth() - 1);
+        }
+
+        renderCalendar();
+
+        // 디바운스: 일정 시간 후 다시 스크롤 가능
+        setTimeout(() => {
+            isScrolling = false;
+        }, scrollDebounceTime);
+    }, { passive: false });
 
     // 달력 렌더링
     function renderCalendar() {
@@ -531,14 +566,118 @@ document.addEventListener('DOMContentLoaded', function() {
     function attachDateCellClickEvents() {
         const calendarCells = document.querySelectorAll('.calendar-cell');
         calendarCells.forEach(cell => {
+            // 클릭 이벤트 (드래그가 아닌 경우만)
             cell.addEventListener('click', function(e) {
                 // 일정 아이템 클릭은 제외
                 if (e.target.closest('.schedule-item')) return;
 
+                // 드래그 후 클릭은 무시
+                if (selectedCells.length > 0) return;
+
                 const dateStr = this.getAttribute('data-date');
                 openAddScheduleModal(dateStr);
             });
+
+            // 마우스 다운 이벤트 (드래그 시작)
+            cell.addEventListener('mousedown', function(e) {
+                // 일정 아이템 클릭은 제외
+                if (e.target.closest('.schedule-item')) return;
+
+                // 다른 달의 날짜는 드래그 불가
+                if (this.classList.contains('other-month')) return;
+
+                e.preventDefault();
+                isDragging = true;
+                dragStartDate = this.getAttribute('data-date');
+                selectedCells = [this];
+                this.classList.add('drag-selecting');
+            });
+
+            // 마우스 엔터 이벤트 (드래그 중)
+            cell.addEventListener('mouseenter', function(e) {
+                if (!isDragging) return;
+
+                // 다른 달의 날짜는 드래그 불가
+                if (this.classList.contains('other-month')) return;
+
+                dragEndDate = this.getAttribute('data-date');
+                updateDragSelection();
+            });
         });
+
+        // 마우스 업 이벤트 (드래그 종료)
+        document.addEventListener('mouseup', function(e) {
+            if (!isDragging) return;
+
+            isDragging = false;
+
+            // 선택된 셀이 있으면 모달 열기
+            if (selectedCells.length > 0) {
+                const dates = selectedCells.map(cell => cell.getAttribute('data-date')).sort();
+                const startDate = dates[0];
+                const endDate = dates[dates.length - 1];
+
+                // 선택 효과 제거
+                clearDragSelection();
+
+                // 일정 추가 모달 열기 (시작일과 종료일 설정)
+                openAddScheduleModalWithRange(startDate, endDate);
+            }
+
+            dragStartDate = null;
+            dragEndDate = null;
+        });
+    }
+
+    // 드래그 선택 업데이트
+    function updateDragSelection() {
+        // 모든 선택 효과 제거
+        document.querySelectorAll('.calendar-cell').forEach(cell => {
+            cell.classList.remove('drag-selecting', 'drag-selected');
+        });
+
+        if (!dragStartDate || !dragEndDate) return;
+
+        const start = new Date(dragStartDate);
+        const end = new Date(dragEndDate);
+
+        // 시작일과 종료일 정렬
+        const [minDate, maxDate] = start <= end ? [start, end] : [end, start];
+
+        // 범위 내의 모든 셀 선택
+        selectedCells = [];
+        document.querySelectorAll('.calendar-cell:not(.other-month)').forEach(cell => {
+            const cellDate = new Date(cell.getAttribute('data-date'));
+            if (cellDate >= minDate && cellDate <= maxDate) {
+                cell.classList.add('drag-selecting');
+                selectedCells.push(cell);
+            }
+        });
+    }
+
+    // 드래그 선택 효과 제거
+    function clearDragSelection() {
+        document.querySelectorAll('.calendar-cell').forEach(cell => {
+            cell.classList.remove('drag-selecting', 'drag-selected');
+        });
+        selectedCells = [];
+    }
+
+    // 날짜 범위로 일정 추가 모달 열기
+    function openAddScheduleModalWithRange(startDate, endDate) {
+        const modal = document.getElementById('addScheduleModal');
+
+        // 폼 초기화
+        document.getElementById('addScheduleForm').reset();
+        document.getElementById('scheduleStartDate').value = startDate;
+        document.getElementById('scheduleEndDate').value = endDate;
+
+        // 참여자 목록 초기화
+        selectedParticipants = [currentUser]; // 생성자는 기본 참여자
+        renderParticipantsList();
+
+        // 모달 표시
+        modal.classList.add('show');
     }
 
     // 일정 추가 버튼 클릭
