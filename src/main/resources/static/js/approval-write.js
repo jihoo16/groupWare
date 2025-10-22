@@ -116,8 +116,10 @@ document.addEventListener('DOMContentLoaded', function() {
             });
 
             // 영수증 처리 템플릿인 경우 자동 채우기 이벤트 리스너 추가
-            if (templateKey === 'receipt-meeting' || templateKey === 'receipt-trip' || templateKey === 'receipt-overtime') {
+            if (templateKey === 'receipt-meeting' || templateKey === 'receipt-trip') {
                 setupReceiptAutoFill();
+            } else if (templateKey === 'receipt-overtime') {
+                setupOvertimeAutoFill();
             }
         }
     }
@@ -639,6 +641,269 @@ document.addEventListener('DOMContentLoaded', function() {
         updateAttendeeList();
     }
 
+    // 야근식대 자동 채우기 기능
+    function setupOvertimeAutoFill() {
+        const otProject = document.getElementById('ot_project');
+        const otManager = document.getElementById('ot_manager');
+        const otApplicant = document.getElementById('ot_applicant');
+        const otApprovalDate = document.getElementById('ot_approval_date');
+        const otDate = document.getElementById('ot_date');
+        const otTitle = document.getElementById('ot_title');
+        const otAmount = document.getElementById('ot_amount');
+        const otContent = document.getElementById('ot_content');
+        const addOvertimePersonBtn = document.getElementById('addOvertimePersonBtn');
+        const removeOvertimePersonBtn = document.getElementById('removeOvertimePersonBtn');
+        const overtimePersonList = document.getElementById('overtimePersonList');
+
+        let overtimePersons = [];
+
+        // 야근 인원 목록 업데이트 함수
+        function updateOvertimePersonList() {
+            overtimePersonList.innerHTML = '';
+            overtimePersons.forEach((person, index) => {
+                const row = document.createElement('div');
+                row.style.cssText = 'display: flex; gap: 8px; margin-bottom: 8px; align-items: center;';
+                row.innerHTML = `
+                    <input type="checkbox" data-index="${index}" class="overtime-checkbox" style="width: 18px; height: 18px; cursor: pointer;">
+                    <input type="text" data-index="${index}" class="overtime-name" placeholder="성명" value="${person.name || ''}" style="flex: 1; padding: 5px;">
+                    <input type="time" data-index="${index}" class="overtime-time" placeholder="시간" value="${person.time || ''}" style="flex: 1; padding: 5px;">
+                    <input type="text" data-index="${index}" class="overtime-task" placeholder="업무 내용" value="${person.task || ''}" style="flex: 2; padding: 5px;">
+                `;
+                overtimePersonList.appendChild(row);
+            });
+
+            // 이벤트 리스너 추가
+            document.querySelectorAll('.overtime-name, .overtime-time, .overtime-task').forEach(el => {
+                el.addEventListener('input', function() {
+                    const index = parseInt(this.getAttribute('data-index'));
+                    if (this.classList.contains('overtime-name')) {
+                        overtimePersons[index].name = this.value;
+                    } else if (this.classList.contains('overtime-time')) {
+                        overtimePersons[index].time = this.value;
+                    } else if (this.classList.contains('overtime-task')) {
+                        overtimePersons[index].task = this.value;
+                    }
+                    updateOvertimeTable();
+                    updateContentText();
+                });
+            });
+
+            updateOvertimeTable();
+            updateContentText();
+        }
+
+        // 야근 신청서 테이블 업데이트
+        function updateOvertimeTable() {
+            const personRows = document.querySelectorAll('.ot-person-row');
+
+            personRows.forEach((row, index) => {
+                const cells = row.querySelectorAll('td');
+                if (index < overtimePersons.length) {
+                    const person = overtimePersons[index];
+                    cells[1].textContent = person.name || '';
+                    cells[2].textContent = person.time || '';
+                    cells[3].textContent = person.task || '';
+                } else {
+                    cells[1].innerHTML = '&nbsp;';
+                    cells[2].innerHTML = '&nbsp;';
+                    cells[3].innerHTML = '&nbsp;';
+                }
+            });
+        }
+
+        // 품의 내용 텍스트 자동 업데이트
+        function updateContentText() {
+            if (!otContent) return;
+
+            const names = overtimePersons
+                .filter(p => p.name)
+                .map(p => p.name)
+                .join(', ');
+
+            otContent.value = `야근식대\n- 인원 : ${names}`;
+        }
+
+        // 인원 추가 버튼
+        if (addOvertimePersonBtn) {
+            addOvertimePersonBtn.addEventListener('click', function() {
+                overtimePersons.push({ name: '', time: '', task: '' });
+                updateOvertimePersonList();
+            });
+        }
+
+        // 인원 제거 버튼 - 체크된 항목만 제거
+        if (removeOvertimePersonBtn) {
+            removeOvertimePersonBtn.addEventListener('click', function() {
+                const checkboxes = document.querySelectorAll('.overtime-checkbox:checked');
+                if (checkboxes.length === 0) {
+                    alert('제거할 인원을 선택해주세요.');
+                    return;
+                }
+
+                // 체크된 인덱스를 역순으로 정렬하여 제거
+                const indicesToRemove = Array.from(checkboxes)
+                    .map(cb => parseInt(cb.getAttribute('data-index')))
+                    .sort((a, b) => b - a);
+
+                indicesToRemove.forEach(index => {
+                    overtimePersons.splice(index, 1);
+                });
+
+                updateOvertimePersonList();
+            });
+        }
+
+        // 금액 기반 자동 인원 계산 (1인당 63,900원)
+        if (otAmount) {
+            otAmount.addEventListener('input', function() {
+                const amount = parseInt(this.value) || 0;
+
+                if (amount > 0) {
+                    const totalPeople = Math.round(amount / 63900);
+
+                    // 인원 배열 초기화
+                    overtimePersons = [];
+
+                    for (let i = 0; i < totalPeople; i++) {
+                        overtimePersons.push({ name: '', time: '18:00 ~ 20:30', task: '카프카 헬름 차트 UI 개발 확인' });
+                    }
+
+                    updateOvertimePersonList();
+                }
+
+                // 금액 자동 채우기
+                updateAmountDisplay();
+            });
+        }
+
+        // 과제명 자동 채우기
+        if (otProject) {
+            otProject.addEventListener('input', function() {
+                const value = this.value;
+                document.querySelectorAll('.ot-auto-project').forEach(field => {
+                    field.textContent = value;
+                });
+            });
+        }
+
+        // 연구책임자 자동 채우기
+        if (otManager) {
+            otManager.addEventListener('input', function() {
+                const value = this.value;
+                document.querySelectorAll('.ot-auto-manager').forEach(field => {
+                    field.textContent = value;
+                });
+            });
+        }
+
+        // 신청자 자동 채우기
+        if (otApplicant) {
+            otApplicant.addEventListener('input', function() {
+                const value = this.value;
+                document.querySelectorAll('.ot-auto-applicant').forEach(field => {
+                    field.textContent = value;
+                });
+            });
+        }
+
+        // 품의일자 자동 채우기
+        if (otApprovalDate) {
+            otApprovalDate.addEventListener('input', function() {
+                const value = this.value;
+                if (value) {
+                    const [year, month, day] = value.split('-');
+                    const formatted = `${year}년 ${month}월 ${day}일`;
+                    document.querySelectorAll('.ot-auto-approval-date').forEach(field => {
+                        field.textContent = formatted;
+                    });
+                }
+            });
+        }
+
+        // 야근 일자 자동 채우기
+        if (otDate) {
+            otDate.addEventListener('input', function() {
+                const value = this.value;
+                if (value) {
+                    const [year, month, day] = value.split('-');
+                    const formatted = `${year}/${month}/${day}`;
+                    document.querySelectorAll('.ot-auto-date').forEach(field => {
+                        field.textContent = formatted;
+                    });
+
+                    // 전체 날짜 형식 (야근 신청서용)
+                    const fullFormatted = `${year}. ${month}. ${day}`;
+                    document.querySelectorAll('.ot-auto-date-full').forEach(field => {
+                        field.textContent = fullFormatted;
+                    });
+                }
+            });
+        }
+
+        // 품의명 자동 채우기
+        if (otTitle) {
+            otTitle.addEventListener('input', function() {
+                const value = this.value;
+                document.querySelectorAll('.ot-auto-title').forEach(field => {
+                    field.textContent = value;
+                });
+                // 적요에도 동일하게 입력
+                document.querySelectorAll('.ot-auto-desc').forEach(field => {
+                    field.textContent = value;
+                });
+            });
+
+            // 초기값 설정
+            if (otTitle.value) {
+                document.querySelectorAll('.ot-auto-title').forEach(field => {
+                    field.textContent = otTitle.value;
+                });
+                document.querySelectorAll('.ot-auto-desc').forEach(field => {
+                    field.textContent = otTitle.value;
+                });
+            }
+        }
+
+        // 지급종류 자동 채우기
+        const payTypeRadios = document.querySelectorAll('input[name="ot_pay_type"]');
+        payTypeRadios.forEach(radio => {
+            radio.addEventListener('change', function() {
+                if (this.checked) {
+                    document.querySelectorAll('.ot-auto-pay-type').forEach(field => {
+                        field.textContent = this.value;
+                    });
+                }
+            });
+        });
+
+        // 초기 지급종류 설정
+        const checkedRadio = document.querySelector('input[name="ot_pay_type"]:checked');
+        if (checkedRadio) {
+            document.querySelectorAll('.ot-auto-pay-type').forEach(field => {
+                field.textContent = checkedRadio.value;
+            });
+        }
+
+        // 금액 표시 업데이트
+        function updateAmountDisplay() {
+            const amount = parseInt(otAmount.value) || 0;
+            const formattedAmount = amount.toLocaleString('ko-KR');
+
+            document.querySelectorAll('.ot-auto-amount').forEach(field => {
+                field.textContent = formattedAmount;
+            });
+
+            // 수량 = 인원 수
+            const quantity = overtimePersons.length;
+            document.querySelectorAll('.ot-auto-quantity').forEach(field => {
+                field.textContent = quantity;
+            });
+        }
+
+        // 초기화
+        updateOvertimePersonList();
+    }
+
     // 결재자 추가 버튼
     addApproverBtn.addEventListener('click', function() {
         loadEmployeeList();
@@ -849,8 +1114,10 @@ document.addEventListener('DOMContentLoaded', function() {
 
                 // 현재 활성화된 문서 양식 확인
                 const activeTemplate = document.querySelector('.tree-node-header.active');
-                if (!activeTemplate || activeTemplate.getAttribute('data-template') !== 'receipt-meeting') {
-                    alert('영수증 처리(회의록) 템플릿을 먼저 선택해주세요.');
+                const templateType = activeTemplate ? activeTemplate.getAttribute('data-template') : null;
+
+                if (!activeTemplate || (templateType !== 'receipt-meeting' && templateType !== 'receipt-overtime')) {
+                    alert('영수증 처리(회의록) 또는 영수증 처리(야근식대) 템플릿을 먼저 선택해주세요.');
                     return;
                 }
 
@@ -867,19 +1134,32 @@ document.addEventListener('DOMContentLoaded', function() {
                 allDivs = documentForm.querySelectorAll(':scope > div');
                 console.log('찾은 div 개수:', allDivs.length);
 
-                if (allDivs.length < 4) {
-                    alert('문서 구조를 찾을 수 없습니다. 영수증 처리(회의록) 템플릿을 선택했는지 확인해주세요.');
-                    return;
-                }
-
                 // 원래 display 스타일 저장
                 originalDisplays = Array.from(allDivs).map(div => div.style.display);
 
-                // 공통 정보 입력 영역 숨기고, 나머지는 모두 표시
-                allDivs[0].style.display = 'none'; // 공통 정보 입력
-                allDivs[1].style.display = 'block'; // 회의 품의서
-                allDivs[2].style.display = 'block'; // 회의록
-                allDivs[3].style.display = 'block'; // 참석자 명단
+                // 템플릿 타입별로 다른 처리
+                if (templateType === 'receipt-meeting') {
+                    if (allDivs.length < 4) {
+                        alert('문서 구조를 찾을 수 없습니다. 영수증 처리(회의록) 템플릿을 선택했는지 확인해주세요.');
+                        return;
+                    }
+
+                    // 공통 정보 입력 영역 숨기고, 나머지는 모두 표시
+                    allDivs[0].style.display = 'none'; // 공통 정보 입력
+                    allDivs[1].style.display = 'block'; // 회의 품의서
+                    allDivs[2].style.display = 'block'; // 회의록
+                    allDivs[3].style.display = 'block'; // 참석자 명단
+                } else if (templateType === 'receipt-overtime') {
+                    if (allDivs.length < 3) {
+                        alert('문서 구조를 찾을 수 없습니다. 영수증 처리(야근식대) 템플릿을 선택했는지 확인해주세요.');
+                        return;
+                    }
+
+                    // 공통 정보 입력 영역 숨기고, 나머지는 모두 표시
+                    allDivs[0].style.display = 'none'; // 공통 정보 입력
+                    allDivs[1].style.display = 'block'; // 품의서
+                    allDivs[2].style.display = 'block'; // 야근 신청서
+                }
 
                 // 잠시 대기하여 DOM 업데이트 완료
                 await new Promise(resolve => setTimeout(resolve, 100));
@@ -901,102 +1181,146 @@ document.addEventListener('DOMContentLoaded', function() {
                 const margin = 10; // 여백 10mm
                 const contentWidth = pdfWidth - (margin * 2);
 
-                // 1. 회의 품의서 페이지
-                console.log('회의 품의서 렌더링 중...');
-                const proposalDiv = allDivs[1]; // 두 번째 div
+                let fileName = '';
 
-                if (!proposalDiv) {
-                    throw new Error('회의 품의서를 찾을 수 없습니다.');
+                if (templateType === 'receipt-meeting') {
+                    // 회의록 PDF 생성
+                    // 1. 회의 품의서 페이지
+                    console.log('회의 품의서 렌더링 중...');
+                    const proposalDiv = allDivs[1];
+
+                    if (!proposalDiv) {
+                        throw new Error('회의 품의서를 찾을 수 없습니다.');
+                    }
+
+                    console.log('회의 품의서 div 크기:', proposalDiv.offsetWidth, 'x', proposalDiv.offsetHeight);
+
+                    const proposalCanvas = await window.html2canvas(proposalDiv, renderOptions);
+                    console.log('Canvas 생성 완료:', proposalCanvas.width, 'x', proposalCanvas.height);
+
+                    const canvasWidth = proposalCanvas.width;
+                    const canvasHeight = proposalCanvas.height;
+
+                    if (canvasWidth === 0 || canvasHeight === 0) {
+                        throw new Error('Canvas 크기가 0입니다. 문서가 화면에 표시되어 있는지 확인하세요.');
+                    }
+
+                    const proposalImgData = proposalCanvas.toDataURL('image/jpeg', 0.95);
+                    const imgHeight = (canvasHeight * contentWidth) / canvasWidth;
+
+                    pdf.addImage(proposalImgData, 'JPEG', margin, margin, contentWidth, imgHeight);
+                    console.log('회의 품의서 페이지 완료');
+
+                    // 2. 회의록 페이지
+                    console.log('회의록 렌더링 중...');
+                    const minutesDiv = allDivs[2];
+
+                    if (!minutesDiv) {
+                        throw new Error('회의록을 찾을 수 없습니다.');
+                    }
+
+                    pdf.addPage();
+                    const minutesCanvas = await window.html2canvas(minutesDiv, renderOptions);
+
+                    const minutesCanvasWidth = minutesCanvas.width;
+                    const minutesCanvasHeight = minutesCanvas.height;
+
+                    const minutesImgData = minutesCanvas.toDataURL('image/jpeg', 0.95);
+                    const minutesImgHeight = (minutesCanvasHeight * contentWidth) / minutesCanvasWidth;
+
+                    pdf.addImage(minutesImgData, 'JPEG', margin, margin, contentWidth, minutesImgHeight);
+                    console.log('회의록 페이지 완료');
+
+                    // 3. 참석자 명단 페이지
+                    console.log('참석자 명단 렌더링 중...');
+                    const attendeeDiv = allDivs[3];
+
+                    if (!attendeeDiv) {
+                        throw new Error('참석자 명단을 찾을 수 없습니다.');
+                    }
+
+                    pdf.addPage();
+                    const attendeeCanvas = await window.html2canvas(attendeeDiv, renderOptions);
+
+                    const attendeeCanvasWidth = attendeeCanvas.width;
+                    const attendeeCanvasHeight = attendeeCanvas.height;
+
+                    const attendeeImgData = attendeeCanvas.toDataURL('image/jpeg', 0.95);
+                    const attendeeImgHeight = (attendeeCanvasHeight * contentWidth) / attendeeCanvasWidth;
+
+                    pdf.addImage(attendeeImgData, 'JPEG', margin, margin, contentWidth, attendeeImgHeight);
+                    console.log('참석자 명단 페이지 완료');
+
+                    // 파일명 생성
+                    const dateInput = document.getElementById('common_date');
+                    let dateStr;
+                    if (dateInput && dateInput.value) {
+                        dateStr = dateInput.value.replace(/-/g, '');
+                    } else {
+                        const today = new Date();
+                        dateStr = `${today.getFullYear()}${String(today.getMonth() + 1).padStart(2, '0')}${String(today.getDate()).padStart(2, '0')}`;
+                    }
+                    fileName = `${dateStr}_회의록.pdf`;
+                } else if (templateType === 'receipt-overtime') {
+                    // 야근식대 PDF 생성
+                    // 1. 품의서 페이지
+                    console.log('품의서 렌더링 중...');
+                    const proposalDiv = allDivs[1];
+
+                    if (!proposalDiv) {
+                        throw new Error('품의서를 찾을 수 없습니다.');
+                    }
+
+                    console.log('품의서 div 크기:', proposalDiv.offsetWidth, 'x', proposalDiv.offsetHeight);
+
+                    const proposalCanvas = await window.html2canvas(proposalDiv, renderOptions);
+                    console.log('Canvas 생성 완료:', proposalCanvas.width, 'x', proposalCanvas.height);
+
+                    const canvasWidth = proposalCanvas.width;
+                    const canvasHeight = proposalCanvas.height;
+
+                    if (canvasWidth === 0 || canvasHeight === 0) {
+                        throw new Error('Canvas 크기가 0입니다. 문서가 화면에 표시되어 있는지 확인하세요.');
+                    }
+
+                    const proposalImgData = proposalCanvas.toDataURL('image/jpeg', 0.95);
+                    const imgHeight = (canvasHeight * contentWidth) / canvasWidth;
+
+                    pdf.addImage(proposalImgData, 'JPEG', margin, margin, contentWidth, imgHeight);
+                    console.log('품의서 페이지 완료');
+
+                    // 2. 야근 신청서 페이지
+                    console.log('야근 신청서 렌더링 중...');
+                    const overtimeDiv = allDivs[2];
+
+                    if (!overtimeDiv) {
+                        throw new Error('야근 신청서를 찾을 수 없습니다.');
+                    }
+
+                    pdf.addPage();
+                    const overtimeCanvas = await window.html2canvas(overtimeDiv, renderOptions);
+
+                    const overtimeCanvasWidth = overtimeCanvas.width;
+                    const overtimeCanvasHeight = overtimeCanvas.height;
+
+                    const overtimeImgData = overtimeCanvas.toDataURL('image/jpeg', 0.95);
+                    const overtimeImgHeight = (overtimeCanvasHeight * contentWidth) / overtimeCanvasWidth;
+
+                    pdf.addImage(overtimeImgData, 'JPEG', margin, margin, contentWidth, overtimeImgHeight);
+                    console.log('야근 신청서 페이지 완료');
+
+                    // 파일명 생성
+                    const dateInput = document.getElementById('ot_date');
+                    let dateStr;
+                    if (dateInput && dateInput.value) {
+                        dateStr = dateInput.value.replace(/-/g, '');
+                    } else {
+                        const today = new Date();
+                        dateStr = `${today.getFullYear()}${String(today.getMonth() + 1).padStart(2, '0')}${String(today.getDate()).padStart(2, '0')}`;
+                    }
+                    fileName = `${dateStr}_야근식대비.pdf`;
                 }
 
-                console.log('회의 품의서 div 크기:', proposalDiv.offsetWidth, 'x', proposalDiv.offsetHeight);
-
-                const proposalCanvas = await window.html2canvas(proposalDiv, renderOptions);
-
-                console.log('Canvas 생성 완료:', proposalCanvas.width, 'x', proposalCanvas.height);
-
-                const canvasWidth = proposalCanvas.width;
-                const canvasHeight = proposalCanvas.height;
-
-                if (canvasWidth === 0 || canvasHeight === 0) {
-                    throw new Error('Canvas 크기가 0입니다. 문서가 화면에 표시되어 있는지 확인하세요.');
-                }
-
-                // Canvas를 JPEG로 변환 (파일 크기 최적화)
-                console.log('이미지 변환 시작...');
-                const proposalImgData = proposalCanvas.toDataURL('image/jpeg', 0.95);
-                console.log('이미지 변환 완료, 데이터 길이:', proposalImgData.length);
-
-                if (!proposalImgData || proposalImgData === 'data:,') {
-                    throw new Error('이미지 데이터가 비어있습니다.');
-                }
-
-                // 이미지 높이 계산 (비율 유지)
-                const imgHeight = (canvasHeight * contentWidth) / canvasWidth;
-
-                console.log('PDF에 이미지 추가 중...', contentWidth, 'x', imgHeight);
-                pdf.addImage(proposalImgData, 'JPEG', margin, margin, contentWidth, imgHeight);
-                console.log('회의 품의서 페이지 완료');
-
-                // 2. 회의록 페이지
-                console.log('회의록 렌더링 중...');
-                const minutesDiv = allDivs[2]; // 세 번째 div
-
-                if (!minutesDiv) {
-                    throw new Error('회의록을 찾을 수 없습니다.');
-                }
-
-                console.log('회의록 div 크기:', minutesDiv.offsetWidth, 'x', minutesDiv.offsetHeight);
-
-                pdf.addPage();
-                const minutesCanvas = await window.html2canvas(minutesDiv, renderOptions);
-
-                console.log('회의록 Canvas 생성 완료:', minutesCanvas.width, 'x', minutesCanvas.height);
-
-                const minutesCanvasWidth = minutesCanvas.width;
-                const minutesCanvasHeight = minutesCanvas.height;
-
-                const minutesImgData = minutesCanvas.toDataURL('image/jpeg', 0.95);
-                const minutesImgHeight = (minutesCanvasHeight * contentWidth) / minutesCanvasWidth;
-
-                pdf.addImage(minutesImgData, 'JPEG', margin, margin, contentWidth, minutesImgHeight);
-                console.log('회의록 페이지 완료');
-
-                // 3. 참석자 명단 페이지
-                console.log('참석자 명단 렌더링 중...');
-                const attendeeDiv = allDivs[3]; // 네 번째 div
-
-                if (!attendeeDiv) {
-                    throw new Error('참석자 명단을 찾을 수 없습니다.');
-                }
-
-                console.log('참석자 명단 div 크기:', attendeeDiv.offsetWidth, 'x', attendeeDiv.offsetHeight);
-
-                pdf.addPage();
-                const attendeeCanvas = await window.html2canvas(attendeeDiv, renderOptions);
-
-                console.log('참석자 명단 Canvas 생성 완료:', attendeeCanvas.width, 'x', attendeeCanvas.height);
-
-                const attendeeCanvasWidth = attendeeCanvas.width;
-                const attendeeCanvasHeight = attendeeCanvas.height;
-
-                const attendeeImgData = attendeeCanvas.toDataURL('image/jpeg', 0.95);
-                const attendeeImgHeight = (attendeeCanvasHeight * contentWidth) / attendeeCanvasWidth;
-
-                pdf.addImage(attendeeImgData, 'JPEG', margin, margin, contentWidth, attendeeImgHeight);
-                console.log('참석자 명단 페이지 완료');
-
-                // PDF 저장 (날짜_회의록.pdf 형식)
-                const dateInput = document.getElementById('common_date');
-                let dateStr;
-                if (dateInput && dateInput.value) {
-                    dateStr = dateInput.value.replace(/-/g, '');
-                } else {
-                    const today = new Date();
-                    dateStr = `${today.getFullYear()}${String(today.getMonth() + 1).padStart(2, '0')}${String(today.getDate()).padStart(2, '0')}`;
-                }
-
-                const fileName = `${dateStr}_회의록.pdf`;
                 console.log('PDF 저장:', fileName);
                 pdf.save(fileName);
 
