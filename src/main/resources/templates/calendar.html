@@ -44,6 +44,10 @@
                             <span>내 일정</span>
                         </div>
                         <div class="legend-item">
+                            <span class="legend-dot meeting-room"></span>
+                            <span>회의실 예약</span>
+                        </div>
+                        <div class="legend-item">
                             <span class="legend-dot leave"></span>
                             <span>연차/휴가</span>
                         </div>
@@ -97,7 +101,7 @@
                         <label class="form-label">일정 유형 <span class="required">*</span></label>
                         <select id="scheduleType" class="form-input" required>
                             <option value="business" selected>업무 일정</option>
-                            <option value="leave">연차/휴가</option>
+                            <option value="meeting-room">회의실 예약</option>
                             <option value="etc">기타</option>
                         </select>
                     </div>
@@ -116,11 +120,12 @@
                     <div class="form-row">
                         <div class="form-group">
                             <label class="form-label">시작 시간</label>
-                            <input type="time" id="scheduleStartTime" class="form-input">
+                            <input type="time" id="scheduleStartTime" class="form-input" value="09:00">
                         </div>
                         <div class="form-group">
                             <label class="form-label">종료 시간</label>
-                            <input type="time" id="scheduleEndTime" class="form-input">
+                            <input type="time" id="scheduleEndTime" class="form-input" value="09:00">
+
                         </div>
                     </div>
 

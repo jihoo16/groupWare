@@ -133,8 +133,30 @@
     background: #2196f3;
 }
 
+.legend-dot.meeting-room {
+    background: #f38a21;
+}
+
 .legend-dot.etc {
     background: #9c27b0;
+}
+
+/* 드래그 선택 스타일 */
+.calendar-cell.drag-selecting {
+    background: rgba(102, 126, 234, 0.15);
+    border: 2px solid #667eea;
+}
+
+.calendar-cell.drag-selected {
+    background: rgba(102, 126, 234, 0.25);
+    border: 2px solid #667eea;
+}
+
+.calendar-grid {
+    user-select: none;
+    -webkit-user-select: none;
+    -moz-user-select: none;
+    -ms-user-select: none;
 }
 
 /* 큰 달력 */
