@@ -136,25 +136,47 @@
     white-space: nowrap;
 }
 
-.position-badge.leader {
-    background: #e3f2fd;
-    color: #1976d2;
+.position-badge.staff {
+    background: #ffebee;
+    color: #d32f2f;
 }
 
-.position-badge.manager {
-    background: #f3e5f5;
-    color: #7b1fa2;
-}
-
-.position-badge.senior {
+.position-badge.assistant {
     background: #fff3e0;
     color: #f57c00;
 }
 
-.position-badge.staff {
+.position-badge.manager {
+    background: #fffbbe;
+    color: #fbc02d;
+}
+
+.position-badge.seniorManager {
     background: #e8f5e9;
     color: #388e3c;
 }
+
+.position-badge.director {
+    background: #e3f2fd;
+    color: #3e86d3;
+}
+
+.position-badge.executive {
+    background: rgba(42, 94, 250, 0.3); /* 진한 남색계열 + 30% 투명 */
+    color: #283593; /* 선명한 남색 */
+}
+
+
+.position-badge.seniorExec {
+    background: #f3e5f5;
+    color: #7b1fa2;
+}
+
+.position-badge.ceo {
+    background: #101010;
+    color: whitesmoke;
+}
+
 
 .status-badge {
     padding: 4px 12px;
