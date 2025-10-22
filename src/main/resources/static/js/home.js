@@ -60,9 +60,4 @@ document.addEventListener('DOMContentLoaded', function() {
 
     // 읽지 않은 메일 카드 클릭 이벤트
     const unreadMailCard = document.getElementById('unreadMailCard');
-    if (unreadMailCard) {
-        unreadMailCard.addEventListener('click', function() {
-            window.location.href = '/mail';
-        });
-    }
 });

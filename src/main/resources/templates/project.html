@@ -17,23 +17,17 @@
             </div>
         </header>
 
+    <!-- 현재 진행중인 프로젝트 -->
     <div class="content-card">
         <div class="card-header">
-            <h2>프로젝트 목록</h2>
+            <h2>현재 진행중인 프로젝트</h2>
             <div class="filter-group">
-                <select id="statusFilter" class="filter-select">
-                    <option value="">전체 상태</option>
-                    <option value="planning">기획</option>
-                    <option value="in-progress">진행중</option>
-                    <option value="completed">완료</option>
-                    <option value="on-hold">보류</option>
-                </select>
-                <input type="text" id="searchInput" class="search-input" placeholder="프로젝트명 검색...">
+                <input type="text" id="searchCurrentInput" class="search-input" placeholder="프로젝트명 검색...">
             </div>
         </div>
 
-        <div class="project-grid">
-            <!-- Sample project cards - 실제로는 백엔드에서 데이터를 받아옴 -->
+        <div class="project-grid" id="currentProjectGrid">
+            <!-- 진행중인 프로젝트 카드 -->
             <div class="project-card" data-status="in-progress" data-project-name="ERP 시스템 개발">
                 <div class="project-header">
                     <h3>ERP 시스템 개발</h3>
@@ -65,9 +59,6 @@
                     </p>
                 </div>
                 <div class="project-footer">
-                    <button class="btn btn-sm btn-secondary" onclick="viewProject(1)">
-                        <i class="fas fa-eye"></i> 상세보기
-                    </button>
                     <button class="btn btn-sm btn-primary" onclick="editProject(1)">
                         <i class="fas fa-edit"></i> 수정
                     </button>
@@ -105,52 +96,234 @@
                     </p>
                 </div>
                 <div class="project-footer">
-                    <button class="btn btn-sm btn-secondary" onclick="viewProject(2)">
-                        <i class="fas fa-eye"></i> 상세보기
-                    </button>
                     <button class="btn btn-sm btn-primary" onclick="editProject(2)">
                         <i class="fas fa-edit"></i> 수정
                     </button>
                 </div>
             </div>
 
-            <div class="project-card" data-status="completed" data-project-name="홈페이지 리뉴얼">
-                <div class="project-header">
-                    <h3>홈페이지 리뉴얼</h3>
-                    <span class="status-badge status-completed">완료</span>
-                </div>
-                <div class="project-body">
-                    <div class="project-info">
-                        <div class="info-item">
-                            <i class="fas fa-user"></i>
-                            <span>PM: 박민수</span>
-                        </div>
-                        <div class="info-item">
-                            <i class="fas fa-users"></i>
-                            <span>팀원: 4명</span>
-                        </div>
-                        <div class="info-item">
-                            <i class="fas fa-calendar"></i>
-                            <span>2024-10-01 ~ 2024-12-31</span>
-                        </div>
-                    </div>
-                    <div class="project-progress">
-                        <div class="progress-bar">
-                            <div class="progress-fill" style="width: 100%;"></div>
-                        </div>
-                        <span class="progress-text">100%</span>
-                    </div>
-                    <p class="project-description">
-                        회사 공식 홈페이지 전면 리뉴얼. 반응형 웹 디자인 적용.
-                    </p>
-                </div>
-                <div class="project-footer">
-                    <button class="btn btn-sm btn-secondary" onclick="viewProject(3)">
-                        <i class="fas fa-eye"></i> 상세보기
-                    </button>
-                    <button class="btn btn-sm btn-primary" onclick="editProject(3)">
-                        <i class="fas fa-edit"></i> 수정
-                    </button>
+        </div>
+    </div>
+
+    <!-- 과거 프로젝트 -->
+    <div class="content-card" style="margin-top: 24px;">
+        <div class="card-header">
+            <h2>과거 프로젝트</h2>
+            <div class="filter-group">
+                <select id="pastStatusFilter" class="filter-select">
+                    <option value="">전체 상태</option>
+                    <option value="completed">완료</option>
+                    <option value="on-hold">보류</option>
+                    <option value="cancelled">취소</option>
+                </select>
+                <input type="text" id="searchPastInput" class="search-input" placeholder="프로젝트명 검색...">
+            </div>
+        </div>
+
+        <div class="project-table-container">
+            <table class="project-table" id="pastProjectTable">
+                <thead>
+                    <tr>
+                        <th width="50">No</th>
+                        <th>프로젝트명</th>
+                        <th width="100">상태</th>
+                        <th width="120">PM</th>
+                        <th width="80">팀원</th>
+                        <th width="200">기간</th>
+                        <th width="100">진행률</th>
+                        <th width="150">작업</th>
+                    </tr>
+                </thead>
+                <tbody id="pastProjectTableBody">
+                    <tr data-status="completed" data-project-name="홈페이지 리뉴얼" data-project-id="3">
+                        <td class="text-center">1</td>
+                        <td><strong>홈페이지 리뉴얼</strong></td>
+                        <td><span class="status-badge status-completed">완료</span></td>
+                        <td>박민수</td>
+                        <td class="text-center">4명</td>
+                        <td>2024-10-01 ~ 2024-12-31</td>
+                        <td>
+                            <div class="table-progress">
+                                <div class="progress-bar-small">
+                                    <div class="progress-fill" style="width: 100%;"></div>
+                                </div>
+                                <span class="progress-text-small">100%</span>
+                            </div>
+                        </td>
+                        <td class="text-center action-cell">
+                            <button class="btn btn-sm btn-primary" onclick="event.stopPropagation(); editProject(3)" title="수정">
+                                <i class="fas fa-edit"></i>
+                            </button>
+                        </td>
+                    </tr>
+                    <tr data-status="completed" data-project-name="전자결재 시스템 구축" data-project-id="4">
+                        <td class="text-center">2</td>
+                        <td><strong>전자결재 시스템 구축</strong></td>
+                        <td><span class="status-badge status-completed">완료</span></td>
+                        <td>정지훈</td>
+                        <td class="text-center">6명</td>
+                        <td>2024-07-01 ~ 2024-09-30</td>
+                        <td>
+                            <div class="table-progress">
+                                <div class="progress-bar-small">
+                                    <div class="progress-fill" style="width: 100%;"></div>
+                                </div>
+                                <span class="progress-text-small">100%</span>
+                            </div>
+                        </td>
+                        <td class="text-center action-cell">
+                            <button class="btn btn-sm btn-primary" onclick="event.stopPropagation(); editProject(4)" title="수정">
+                                <i class="fas fa-edit"></i>
+                            </button>
+                        </td>
+                    </tr>
+                    <tr data-status="completed" data-project-name="인사관리 시스템 고도화" data-project-id="5">
+                        <td class="text-center">3</td>
+                        <td><strong>인사관리 시스템 고도화</strong></td>
+                        <td><span class="status-badge status-completed">완료</span></td>
+                        <td>최수진</td>
+                        <td class="text-center">3명</td>
+                        <td>2024-04-01 ~ 2024-06-30</td>
+                        <td>
+                            <div class="table-progress">
+                                <div class="progress-bar-small">
+                                    <div class="progress-fill" style="width: 100%;"></div>
+                                </div>
+                                <span class="progress-text-small">100%</span>
+                            </div>
+                        </td>
+                        <td class="text-center action-cell">
+                            <button class="btn btn-sm btn-primary" onclick="event.stopPropagation(); editProject(5)" title="수정">
+                                <i class="fas fa-edit"></i>
+                            </button>
+                        </td>
+                    </tr>
+                    <tr data-status="on-hold" data-project-name="AI 챗봇 개발" data-project-id="6">
+                        <td class="text-center">4</td>
+                        <td><strong>AI 챗봇 개발</strong></td>
+                        <td><span class="status-badge status-on-hold">보류</span></td>
+                        <td>강동원</td>
+                        <td class="text-center">2명</td>
+                        <td>2024-02-01 ~ 2024-05-31</td>
+                        <td>
+                            <div class="table-progress">
+                                <div class="progress-bar-small">
+                                    <div class="progress-fill" style="width: 35%;"></div>
+                                </div>
+                                <span class="progress-text-small">35%</span>
+                            </div>
+                        </td>
+                        <td class="text-center action-cell">
+                            <button class="btn btn-sm btn-primary" onclick="event.stopPropagation(); editProject(6)" title="수정">
+                                <i class="fas fa-edit"></i>
+                            </button>
+                        </td>
+                    </tr>
+                    <tr data-status="completed" data-project-name="고객 포털 사이트 개발" data-project-id="7">
+                        <td class="text-center">5</td>
+                        <td><strong>고객 포털 사이트 개발</strong></td>
+                        <td><span class="status-badge status-completed">완료</span></td>
+                        <td>한지민</td>
+                        <td class="text-center">5명</td>
+                        <td>2023-11-01 ~ 2024-01-31</td>
+                        <td>
+                            <div class="table-progress">
+                                <div class="progress-bar-small">
+                                    <div class="progress-fill" style="width: 100%;"></div>
+                                </div>
+                                <span class="progress-text-small">100%</span>
+                            </div>
+                        </td>
+                        <td class="text-center action-cell">
+                            <button class="btn btn-sm btn-primary" onclick="event.stopPropagation(); editProject(7)" title="수정">
+                                <i class="fas fa-edit"></i>
+                            </button>
+                        </td>
+                    </tr>
+                    <tr data-status="cancelled" data-project-name="블록체인 결제 시스템" data-project-id="8">
+                        <td class="text-center">6</td>
+                        <td><strong>블록체인 결제 시스템</strong></td>
+                        <td><span class="status-badge status-cancelled">취소</span></td>
+                        <td>송중기</td>
+                        <td class="text-center">4명</td>
+                        <td>2023-08-01 ~ 2023-10-31</td>
+                        <td>
+                            <div class="table-progress">
+                                <div class="progress-bar-small">
+                                    <div class="progress-fill" style="width: 20%;"></div>
+                                </div>
+                                <span class="progress-text-small">20%</span>
+                            </div>
+                        </td>
+                        <td class="text-center action-cell">
+                            <button class="btn btn-sm btn-primary" onclick="event.stopPropagation(); editProject(8)" title="수정">
+                                <i class="fas fa-edit"></i>
+                            </button>
+                        </td>
+                    </tr>
+                    <tr data-status="completed" data-project-name="데이터 분석 플랫폼" data-project-id="9">
+                        <td class="text-center">7</td>
+                        <td><strong>데이터 분석 플랫폼</strong></td>
+                        <td><span class="status-badge status-completed">완료</span></td>
+                        <td>이수민</td>
+                        <td class="text-center">4명</td>
+                        <td>2023-05-01 ~ 2023-10-31</td>
+                        <td>
+                            <div class="table-progress">
+                                <div class="progress-bar-small">
+                                    <div class="progress-fill" style="width: 100%;"></div>
+                                </div>
+                                <span class="progress-text-small">100%</span>
+                            </div>
+                        </td>
+                        <td class="text-center action-cell">
+                            <button class="btn btn-sm btn-primary" onclick="event.stopPropagation(); editProject(9)" title="수정">
+                                <i class="fas fa-edit"></i>
+                            </button>
+                        </td>
+                    </tr>
+                    <tr data-status="completed" data-project-name="IoT 통합 관리 시스템" data-project-id="10">
+                        <td class="text-center">8</td>
+                        <td><strong>IoT 통합 관리 시스템</strong></td>
+                        <td><span class="status-badge status-completed">완료</span></td>
+                        <td>김도현</td>
+                        <td class="text-center">6명</td>
+                        <td>2023-02-01 ~ 2023-07-31</td>
+                        <td>
+                            <div class="table-progress">
+                                <div class="progress-bar-small">
+                                    <div class="progress-fill" style="width: 100%;"></div>
+                                </div>
+                                <span class="progress-text-small">100%</span>
+                            </div>
+                        </td>
+                        <td class="text-center action-cell">
+                            <button class="btn btn-sm btn-primary" onclick="event.stopPropagation(); editProject(10)" title="수정">
+                                <i class="fas fa-edit"></i>
+                            </button>
+                        </td>
+                    </tr>
+
+                </tbody>
+            </table>
+
+            <!-- 페이지네이션 -->
+            <div class="pagination-container">
+                <button class="pagination-btn" id="firstPageBtn" title="처음">
+                    <i class="fas fa-angle-double-left"></i>
+                </button>
+                <button class="pagination-btn" id="prevPageBtn" title="이전">
+                    <i class="fas fa-angle-left"></i>
+                </button>
+                <div class="pagination-numbers" id="paginationNumbers"></div>
+                <button class="pagination-btn" id="nextPageBtn" title="다음">
+                    <i class="fas fa-angle-right"></i>
+                </button>
+                <button class="pagination-btn" id="lastPageBtn" title="마지막">
+                    <i class="fas fa-angle-double-right"></i>
+                </button>
+                <div class="pagination-info">
+                    <span id="pageInfo"></span>
                 </div>
             </div>
         </div>

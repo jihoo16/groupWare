@@ -83,7 +83,6 @@ Database (H2 dev / PostgreSQL production)
 6. **Calendar (일정관리)** - Event management with participants
 7. **Payroll (급여 관리)** - Monthly salary processing
 8. **Messenger (메신저)** - Chat rooms and message history
-9. **Email (메일)** - Multi-folder email management
 10. **Board (게시판)** - Announcements with pagination
 11. **Cloud (클라우드)** - File storage with NAS integration
 12. **Settings (설정)** - User profile and preferences

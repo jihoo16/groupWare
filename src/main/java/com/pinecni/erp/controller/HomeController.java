@@ -36,11 +36,6 @@ public class HomeController {
         return "messenger";
     }
 
-    @GetMapping("/mail")
-    public String mail() {
-        return "mail";
-    }
-
     @GetMapping("/approval")
     public String approval() {
         return "approval";
@@ -148,5 +143,10 @@ public class HomeController {
     @GetMapping("/project/card")
     public String projectCard() {
         return "project-card";
+    }
+
+    @GetMapping("/project/edit/{id}")
+    public String projectEdit() {
+        return "project-edit";
     }
 }
