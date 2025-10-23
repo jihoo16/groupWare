@@ -201,24 +201,158 @@
 
                     <!-- 우측: 문서 편집 영역 -->
                     <div class="editor-area">
-                        <!-- 결재선 -->
-                        <div class="approval-line-section">
-                            <div class="section-header">
-                                <h4><i class="fas fa-users"></i> 결재선</h4>
-                                <button class="btn-add" id="addApproverBtn">
-                                    <i class="fas fa-plus"></i>
-                                    결재자 추가
-                                </button>
+
+                        <!-- 연차 신청 인터랙티브 폼 -->
+                        <div class="vacation-interactive-form">
+                            <div class="vif-header">
+                                <h3><i class="fas fa-calendar-check"></i> 연차 신청</h3>
+                                <div class="vacation-balance">
+                                    <div class="balance-item">
+                                        <span class="balance-label">총 연차</span>
+                                        <span class="balance-value total">15일</span>
+                                    </div>
+                                    <div class="balance-separator">|</div>
+                                    <div class="balance-item">
+                                        <span class="balance-label">사용</span>
+                                        <span class="balance-value used">3일</span>
+                                    </div>
+                                    <div class="balance-separator">|</div>
+                                    <div class="balance-item">
+                                        <span class="balance-label">잔여</span>
+                                        <span class="balance-value remaining">12일</span>
+                                    </div>
+                                </div>
                             </div>
-                            <div class="approver-chips" id="approverChips">
-                                <div class="empty-message">결재자를 추가해주세요</div>
+
+                            <div class="vif-body">
+                                <!-- 좌측: 달력 -->
+                                <div class="vif-calendar-section">
+                                    <div class="calendar-header">
+                                        <button class="calendar-nav" id="prevMonth">
+                                            <i class="fas fa-chevron-left"></i>
+                                        </button>
+                                        <h4 class="calendar-title" id="calendarTitle">2025년 1월</h4>
+                                        <button class="calendar-nav" id="nextMonth">
+                                            <i class="fas fa-chevron-right"></i>
+                                        </button>
+                                    </div>
+                                    <div class="calendar-weekdays">
+                                        <div class="weekday sun">일</div>
+                                        <div class="weekday">월</div>
+                                        <div class="weekday">화</div>
+                                        <div class="weekday">수</div>
+                                        <div class="weekday">목</div>
+                                        <div class="weekday">금</div>
+                                        <div class="weekday sat">토</div>
+                                    </div>
+                                    <div class="calendar-days" id="calendarDays">
+                                        <!-- JavaScript로 생성 -->
+                                    </div>
+                                    <div class="calendar-legend">
+                                        <div class="legend-item">
+                                            <span class="legend-color selected"></span>
+                                            <span class="legend-text">선택된 날짜</span>
+                                        </div>
+                                        <div class="legend-item">
+                                            <span class="legend-color holiday"></span>
+                                            <span class="legend-text">공휴일/주말</span>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <!-- 우측: 신청 정보 -->
+                                <div class="vif-info-section">
+                                    <div class="info-card">
+                                        <div class="info-card-header">
+                                            <i class="fas fa-user"></i>
+                                            <span>신청자 정보</span>
+                                        </div>
+                                        <div class="info-card-body">
+                                            <div class="info-row">
+                                                <label>이름</label>
+                                                <input type="text" id="vif_applicant" value="홍길동" readonly>
+                                            </div>
+                                            <div class="info-row">
+                                                <label>부서</label>
+                                                <input type="text" id="vif_department" value="개발팀" readonly>
+                                            </div>
+                                            <div class="info-row">
+                                                <label>직급</label>
+                                                <input type="text" id="vif_position" value="사원" readonly>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <div class="info-card">
+                                        <div class="info-card-header">
+                                            <i class="fas fa-calendar-alt"></i>
+                                            <span>연차 정보</span>
+                                        </div>
+                                        <div class="info-card-body">
+                                            <div class="info-row">
+                                                <label>연차 유형 <span class="required">*</span></label>
+                                                <select id="vif_vacation_type">
+                                                    <option value="연차">연차 (1일)</option>
+                                                    <option value="반차(오전)">반차 - 오전 (0.5일)</option>
+                                                    <option value="반차(오후)">반차 - 오후 (0.5일)</option>
+                                                    <option value="병가">병가</option>
+                                                    <option value="경조사">경조사</option>
+                                                </select>
+                                            </div>
+                                            <div class="info-row">
+                                                <label>시작일 <span class="required">*</span></label>
+                                                <input type="date" id="vif_start_date" class="date-input">
+                                            </div>
+                                            <div class="info-row">
+                                                <label>종료일 <span class="required">*</span></label>
+                                                <input type="date" id="vif_end_date" class="date-input">
+                                            </div>
+                                            <div class="info-row highlight">
+                                                <label>사용 일수</label>
+                                                <div class="calculated-days">
+                                                    <span class="days-value" id="vif_calculated_days">0</span>
+                                                    <span class="days-unit">일</span>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <div class="info-card">
+                                        <div class="info-card-header">
+                                            <i class="fas fa-comment-alt"></i>
+                                            <span>신청 사유</span>
+                                        </div>
+                                        <div class="info-card-body">
+                                            <input id="vif_reason" type="text" placeholder="연차 사용 사유를 입력하세요" value="연차 사용합니다." />
+                                        </div>
+                                    </div>
+
+                                    <div class="vif-actions">
+                                        <button class="btn-reset" id="resetSelectionBtn">
+                                            <i class="fas fa-redo"></i>
+                                            선택 초기화
+                                        </button>
+                                        <button class="btn-apply" id="applyToFormBtn">
+                                            <i class="fas fa-check"></i>
+                                            양식에 적용
+                                        </button>
+                                    </div>
+                                </div>
                             </div>
                         </div>
 
                         <!-- 문서 양식 -->
-                        <div class="document-form">
-                            <h2 class="doc-title">연 차 신 청 서</h2>
-                            <table class="form-table">
+                        <div class="document-form-wrapper">
+                            <div class="document-form-header" id="documentFormToggle">
+                                <h3><i class="fas fa-file-alt"></i> 공식 문서 양식</h3>
+                                <button class="btn-toggle-form">
+                                    <i class="fas fa-chevron-up"></i>
+                                    <span>접기</span>
+                                </button>
+                            </div>
+                            <div class="document-form" id="documentFormContent">
+                                <h2 class="doc-title">연 차 신 청 서</h2>
+                                <table class="form-table">
                                 <tr>
                                     <th style="width: 150px;">신청자</th>
                                     <td><input type="text" id="applicant" placeholder="신청자명"></td>
@@ -258,22 +392,7 @@
                                     <td colspan="3"><textarea id="reason" rows="5" placeholder="연차 사용 사유를 입력하세요"></textarea></td>
                                 </tr>
                             </table>
-                        </div>
-
-                        <!-- 첨부파일 -->
-                        <div class="attachment-section">
-                            <div class="section-header">
-                                <h4><i class="fas fa-paperclip"></i> 첨부파일</h4>
                             </div>
-                            <div class="file-upload-area" id="fileUploadArea">
-                                <input type="file" id="fileInput" multiple hidden>
-                                <label for="fileInput" class="file-upload-label">
-                                    <i class="fas fa-cloud-upload-alt"></i>
-                                    <span>파일을 선택하거나 드래그하세요</span>
-                                    <small>최대 10MB, 최대 5개</small>
-                                </label>
-                            </div>
-                            <div class="file-list" id="fileList"></div>
                         </div>
 
                         <!-- 제출 버튼 -->

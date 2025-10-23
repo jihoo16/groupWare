@@ -1341,4 +1341,356 @@ document.addEventListener('DOMContentLoaded', function() {
 
     // 초기 템플릿 로드
     loadTemplate('vacation');
+
+    // ============================================
+    // 연차 신청 인터랙티브 폼 기능
+    // ============================================
+
+    const prevMonthBtn = document.getElementById('prevMonth');
+    const nextMonthBtn = document.getElementById('nextMonth');
+    const calendarTitle = document.getElementById('calendarTitle');
+    const calendarDays = document.getElementById('calendarDays');
+    const vifStartDate = document.getElementById('vif_start_date');
+    const vifEndDate = document.getElementById('vif_end_date');
+    const vifCalculatedDays = document.getElementById('vif_calculated_days');
+    const vifVacationType = document.getElementById('vif_vacation_type');
+    const resetSelectionBtn = document.getElementById('resetSelectionBtn');
+    const applyToFormBtn = document.getElementById('applyToFormBtn');
+
+    let currentYear = new Date().getFullYear();
+    let currentMonth = new Date().getMonth();
+    let selectedDates = [];
+    let selectionMode = null; // 'start' or 'range'
+
+    // 공휴일 데이터 (2025년 기준)
+    const holidays = {
+        '2025-01-01': '신정',
+        '2025-01-28': '설날 연휴',
+        '2025-01-29': '설날',
+        '2025-01-30': '설날 연휴',
+        '2025-03-01': '삼일절',
+        '2025-05-05': '어린이날',
+        '2025-05-06': '대체공휴일',
+        '2025-06-06': '현충일',
+        '2025-08-15': '광복절',
+        '2025-09-06': '추석 연휴',
+        '2025-09-07': '추석 연휴',
+        '2025-09-08': '추석',
+        '2025-09-09': '추석 연휴',
+        '2025-10-03': '개천절',
+        '2025-10-09': '한글날',
+        '2025-12-25': '크리스마스'
+    };
+
+    // 달력 렌더링
+    function renderCalendar() {
+        const firstDay = new Date(currentYear, currentMonth, 1);
+        const lastDay = new Date(currentYear, currentMonth + 1, 0);
+        const prevLastDay = new Date(currentYear, currentMonth, 0);
+
+        const firstDayOfWeek = firstDay.getDay();
+        const lastDate = lastDay.getDate();
+        const prevLastDate = prevLastDay.getDate();
+
+        calendarTitle.textContent = `${currentYear}년 ${currentMonth + 1}월`;
+        calendarDays.innerHTML = '';
+
+        // 이전 달 날짜
+        for (let i = firstDayOfWeek - 1; i >= 0; i--) {
+            const day = prevLastDate - i;
+            const dayEl = createDayElement(day, 'other-month');
+            calendarDays.appendChild(dayEl);
+        }
+
+        // 현재 달 날짜
+        for (let day = 1; day <= lastDate; day++) {
+            const date = new Date(currentYear, currentMonth, day);
+            const dateStr = formatDate(date);
+            const dayOfWeek = date.getDay();
+
+            let classes = '';
+            if (isToday(date)) classes += ' today';
+            if (dayOfWeek === 0) classes += ' sunday';
+            if (dayOfWeek === 6) classes += ' saturday';
+            if (holidays[dateStr]) classes += ' holiday';
+            if (isDateSelected(dateStr)) classes += ' selected';
+            if (isDateInRange(dateStr)) classes += ' in-range';
+            if (selectedDates.length > 0 && dateStr === selectedDates[0]) classes += ' range-start';
+            if (selectedDates.length > 1 && dateStr === selectedDates[selectedDates.length - 1]) classes += ' range-end';
+
+            const dayEl = createDayElement(day, classes, dateStr);
+            calendarDays.appendChild(dayEl);
+        }
+
+        // 다음 달 날짜
+        const remainingCells = 42 - calendarDays.children.length;
+        for (let day = 1; day <= remainingCells; day++) {
+            const dayEl = createDayElement(day, 'other-month');
+            calendarDays.appendChild(dayEl);
+        }
+    }
+
+    // 날짜 요소 생성
+    function createDayElement(day, classes, dateStr = null) {
+        const dayEl = document.createElement('div');
+        dayEl.className = `calendar-day ${classes}`;
+        dayEl.textContent = day;
+
+        if (dateStr && !classes.includes('other-month')) {
+            dayEl.addEventListener('click', () => selectDate(dateStr));
+        }
+
+        return dayEl;
+    }
+
+    // 날짜 선택
+    function selectDate(dateStr) {
+        const vacationType = vifVacationType.value;
+
+        // 반차인 경우 단일 날짜만 선택
+        if (vacationType.includes('반차')) {
+            selectedDates = [dateStr];
+            vifStartDate.value = dateStr;
+            vifEndDate.value = dateStr;
+        } else {
+            // 연차인 경우 범위 선택
+            if (selectedDates.length === 0) {
+                // 첫 번째 날짜 선택
+                selectedDates = [dateStr];
+                vifStartDate.value = dateStr;
+                vifEndDate.value = dateStr;
+            } else if (selectedDates.length === 1) {
+                // 두 번째 날짜 선택 (범위 완성)
+                const startDate = new Date(selectedDates[0]);
+                const endDate = new Date(dateStr);
+
+                if (endDate < startDate) {
+                    // 역순 선택시 시작일과 종료일 교체
+                    selectedDates = fillDateRange(dateStr, selectedDates[0]);
+                    vifStartDate.value = dateStr;
+                    vifEndDate.value = selectedDates[selectedDates.length - 1];
+                } else {
+                    selectedDates = fillDateRange(selectedDates[0], dateStr);
+                    vifEndDate.value = dateStr;
+                }
+            } else {
+                // 이미 범위가 선택된 경우 초기화 후 새로 선택
+                selectedDates = [dateStr];
+                vifStartDate.value = dateStr;
+                vifEndDate.value = dateStr;
+            }
+        }
+
+        renderCalendar();
+        calculateVacationDays();
+    }
+
+    // 날짜 범위 채우기
+    function fillDateRange(startStr, endStr) {
+        const dates = [];
+        const start = new Date(startStr);
+        const end = new Date(endStr);
+
+        for (let date = new Date(start); date <= end; date.setDate(date.getDate() + 1)) {
+            dates.push(formatDate(date));
+        }
+
+        return dates;
+    }
+
+    // 날짜가 선택되었는지 확인
+    function isDateSelected(dateStr) {
+        return selectedDates.length > 0 && (
+            dateStr === selectedDates[0] ||
+            dateStr === selectedDates[selectedDates.length - 1]
+        );
+    }
+
+    // 날짜가 범위 내에 있는지 확인
+    function isDateInRange(dateStr) {
+        if (selectedDates.length <= 1) return false;
+        const start = selectedDates[0];
+        const end = selectedDates[selectedDates.length - 1];
+        return dateStr > start && dateStr < end;
+    }
+
+    // 오늘 날짜 확인
+    function isToday(date) {
+        const today = new Date();
+        return date.getFullYear() === today.getFullYear() &&
+               date.getMonth() === today.getMonth() &&
+               date.getDate() === today.getDate();
+    }
+
+    // 날짜 포맷 (YYYY-MM-DD)
+    function formatDate(date) {
+        const year = date.getFullYear();
+        const month = String(date.getMonth() + 1).padStart(2, '0');
+        const day = String(date.getDate()).padStart(2, '0');
+        return `${year}-${month}-${day}`;
+    }
+
+    // 연차 일수 계산
+    function calculateVacationDays() {
+        if (!vifStartDate.value || !vifEndDate.value) {
+            vifCalculatedDays.textContent = '0';
+            return;
+        }
+
+        const vacationType = vifVacationType.value;
+
+        if (vacationType.includes('반차')) {
+            vifCalculatedDays.textContent = '0.5';
+            return;
+        }
+
+        // 주말과 공휴일 제외 계산
+        let workDays = 0;
+        const start = new Date(vifStartDate.value);
+        const end = new Date(vifEndDate.value);
+
+        for (let date = new Date(start); date <= end; date.setDate(date.getDate() + 1)) {
+            const dayOfWeek = date.getDay();
+            const dateStr = formatDate(date);
+
+            // 주말(토, 일)과 공휴일 제외
+            if (dayOfWeek !== 0 && dayOfWeek !== 6 && !holidays[dateStr]) {
+                workDays++;
+            }
+        }
+
+        vifCalculatedDays.textContent = workDays;
+    }
+
+    // 이전 달
+    if (prevMonthBtn) {
+        prevMonthBtn.addEventListener('click', () => {
+            currentMonth--;
+            if (currentMonth < 0) {
+                currentMonth = 11;
+                currentYear--;
+            }
+            renderCalendar();
+        });
+    }
+
+    // 다음 달
+    if (nextMonthBtn) {
+        nextMonthBtn.addEventListener('click', () => {
+            currentMonth++;
+            if (currentMonth > 11) {
+                currentMonth = 0;
+                currentYear++;
+            }
+            renderCalendar();
+        });
+    }
+
+    // 연차 유형 변경
+    if (vifVacationType) {
+        vifVacationType.addEventListener('change', () => {
+            selectedDates = [];
+            vifStartDate.value = '';
+            vifEndDate.value = '';
+            renderCalendar();
+            calculateVacationDays();
+        });
+    }
+
+    // 날짜 입력 필드 변경
+    if (vifStartDate) {
+        vifStartDate.addEventListener('change', () => {
+            if (vifStartDate.value) {
+                selectedDates = [vifStartDate.value];
+                if (vifEndDate.value && vifEndDate.value >= vifStartDate.value) {
+                    selectedDates = fillDateRange(vifStartDate.value, vifEndDate.value);
+                }
+                renderCalendar();
+                calculateVacationDays();
+            }
+        });
+    }
+
+    if (vifEndDate) {
+        vifEndDate.addEventListener('change', () => {
+            if (vifEndDate.value && vifStartDate.value) {
+                if (vifEndDate.value < vifStartDate.value) {
+                    alert('종료일은 시작일보다 이전일 수 없습니다.');
+                    vifEndDate.value = vifStartDate.value;
+                }
+                selectedDates = fillDateRange(vifStartDate.value, vifEndDate.value);
+                renderCalendar();
+                calculateVacationDays();
+            }
+        });
+    }
+
+    // 선택 초기화
+    if (resetSelectionBtn) {
+        resetSelectionBtn.addEventListener('click', () => {
+            selectedDates = [];
+            vifStartDate.value = '';
+            vifEndDate.value = '';
+            document.getElementById('vif_reason').value = '';
+            renderCalendar();
+            calculateVacationDays();
+        });
+    }
+
+    // 양식에 적용 - 나중에 문서 양식 토글 섹션에서 처리
+
+    // 달력 초기 렌더링
+    if (calendarDays) {
+        renderCalendar();
+    }
+
+    // ============================================
+    // 문서 양식 토글 기능
+    // ============================================
+
+    const documentFormToggle = document.getElementById('documentFormToggle');
+    const documentFormWrapper = document.querySelector('.document-form-wrapper');
+
+    // 기본적으로 문서 양식을 접어둠
+    if (documentFormWrapper) {
+        documentFormWrapper.classList.add('collapsed');
+    }
+
+    if (documentFormToggle) {
+        documentFormToggle.addEventListener('click', function() {
+            if (documentFormWrapper) {
+                documentFormWrapper.classList.toggle('collapsed');
+            }
+        });
+    }
+
+    // "양식에 적용" 버튼 클릭 시 문서 양식 자동으로 펼치기
+    if (applyToFormBtn) {
+        applyToFormBtn.addEventListener('click', function() {
+            // 기본 양식의 필드에 값 복사
+            document.getElementById('applicant').value = document.getElementById('vif_applicant').value;
+            document.getElementById('department').value = document.getElementById('vif_department').value;
+            document.getElementById('position').value = document.getElementById('vif_position').value;
+            document.getElementById('vacation_type').value = vifVacationType.value;
+            document.getElementById('start_date').value = vifStartDate.value;
+            document.getElementById('end_date').value = vifEndDate.value;
+            document.getElementById('days').value = vifCalculatedDays.textContent;
+            document.getElementById('reason').value = document.getElementById('vif_reason').value;
+
+            // 신청일은 오늘 날짜로
+            document.getElementById('apply_date').value = new Date().toISOString().split('T')[0];
+
+            // 문서 양식 펼치기
+            if (documentFormWrapper && documentFormWrapper.classList.contains('collapsed')) {
+                documentFormWrapper.classList.remove('collapsed');
+            }
+
+            // 문서 양식으로 스크롤
+            setTimeout(() => {
+                documentFormWrapper.scrollIntoView({ behavior: 'smooth', block: 'start' });
+            }, 300);
+
+            alert('양식에 적용되었습니다.');
+        });
+    }
 });

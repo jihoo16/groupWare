@@ -56,7 +56,7 @@ div:focus {
     display: grid;
     grid-template-columns: 280px 1fr;
     gap: 21px;
-    height: calc(100vh - 100px);
+    align-items: start;
 }
 
 /* 좌측 템플릿 사이드바 */
@@ -67,6 +67,9 @@ div:focus {
     overflow: hidden;
     display: flex;
     flex-direction: column;
+    position: sticky;
+    top: 20px;
+    max-height: calc(100vh - 40px);
 }
 
 /* 트리 헤더 */
@@ -274,10 +277,30 @@ div:focus {
     border-radius: 12px;
     box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
     padding: 24px;
-    overflow-y: auto;
+    padding-bottom: 100px; /* 고정된 버튼을 위한 하단 여백 */
     display: flex;
     flex-direction: column;
     gap: 21px;
+    position: relative;
+}
+
+/* 에디터 영역 스크롤바 스타일 */
+.editor-area::-webkit-scrollbar {
+    width: 8px;
+}
+
+.editor-area::-webkit-scrollbar-track {
+    background: #f1f1f1;
+    border-radius: 4px;
+}
+
+.editor-area::-webkit-scrollbar-thumb {
+    background: #888;
+    border-radius: 4px;
+}
+
+.editor-area::-webkit-scrollbar-thumb:hover {
+    background: #555;
 }
 
 /* 섹션 공통 스타일 */
@@ -390,12 +413,92 @@ div:focus {
     width: 100%;
 }
 
-/* 문서 양식 */
-.document-form {
+/* 문서 양식 래퍼 */
+.document-form-wrapper {
     background: white;
     border: 2px solid #e8e8e8;
     border-radius: 10px;
+    overflow: hidden;
+}
+
+.document-form-header {
+    background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+    padding: 16px 20px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    border-bottom: 2px solid #e8e8e8;
+}
+
+.document-form-header:hover {
+    background: linear-gradient(135deg, #e9ecef 0%, #dee2e6 100%);
+}
+
+.document-form-header h3 {
+    margin: 0;
+    font-size: 16px;
+    font-weight: 600;
+    color: #1a237e;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.document-form-header h3 i {
+    color: #667eea;
+}
+
+.btn-toggle-form {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 8px 16px;
+    background: white;
+    border: 1px solid #dee2e6;
+    border-radius: 6px;
+    color: #495057;
+    font-size: 13px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.btn-toggle-form:hover {
+    background: #f8f9fa;
+    border-color: #adb5bd;
+    transform: translateY(-1px);
+}
+
+.btn-toggle-form i {
+    transition: transform 0.3s ease;
+}
+
+.document-form-wrapper.collapsed .btn-toggle-form i {
+    transform: rotate(180deg);
+}
+
+.document-form-wrapper.collapsed .btn-toggle-form span::before {
+    content: '펼치기';
+}
+
+.document-form-wrapper:not(.collapsed) .btn-toggle-form span::before {
+    content: '접기';
+}
+
+/* 문서 양식 */
+.document-form {
+    background: white;
     padding: 24px;
+    max-height: 1000px;
+    overflow: hidden;
+    transition: max-height 0.3s ease, padding 0.3s ease;
+}
+
+.document-form-wrapper.collapsed .document-form {
+    max-height: 0;
+    padding: 0 24px;
 }
 
 .doc-title {
@@ -608,7 +711,22 @@ div h2{
     display: flex;
     justify-content: flex-end;
     gap: 12px;
-    padding-top: 10px;
+    padding: 16px 24px;
+    background: white;
+    border-top: 2px solid #e8e8e8;
+    position: fixed;
+    bottom: 0;
+    left: 380px; /* 사이드바(60px) + 여백(20px) + 템플릿 사이드바(280px) */
+    right: 25px;
+    z-index: 100;
+    box-shadow: 0 -4px 12px rgba(0, 0, 0, 0.08);
+    border-radius: 12px 12px 0 0;
+    transition: left 0.3s ease;
+}
+
+/* 사이드바 호버 시 버튼 위치 조정 */
+.sidebar:hover ~ .main-content .submit-actions {
+    left: 500px; /* 사이드바(200px) + 여백(20px) + 템플릿 사이드바(280px) */
 }
 
 .btn-lg {
@@ -874,15 +992,23 @@ div h2{
     .write-layout {
         grid-template-columns: 1fr;
         grid-template-rows: auto 1fr;
-        height: auto;
     }
 
     .template-sidebar {
         max-height: 200px;
+        position: relative;
+        top: 0;
     }
 
     .submit-actions {
         flex-direction: column-reverse;
+        left: 0;
+        right: 0;
+        border-radius: 0;
+    }
+
+    .sidebar:hover ~ .main-content .submit-actions {
+        left: 0;
     }
 
     .submit-actions button {
@@ -893,5 +1019,485 @@ div h2{
     .form-table th {
         width: 100px;
         font-size: 11px;
+    }
+}
+
+/* ============================================
+   연차신청서 인터랙티브 폼 스타일
+   ============================================ */
+
+/* 인터랙티브 폼 컨테이너 */
+.vacation-interactive-form {
+    background: white;
+    border-radius: 12px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+    margin-bottom: 24px;
+    overflow: hidden;
+}
+
+/* 헤더 */
+.vif-header {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    padding: 20px 24px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.vif-header h3 {
+    margin: 0;
+    color: white;
+    font-size: 18px;
+    font-weight: 600;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.vacation-balance {
+    display: flex;
+    align-items: center;
+    gap: 20px;
+    background: rgba(255, 255, 255, 0.15);
+    padding: 10px 20px;
+    border-radius: 8px;
+    backdrop-filter: blur(10px);
+}
+
+.balance-item {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 4px;
+}
+
+.balance-label {
+    font-size: 11px;
+    color: rgba(255, 255, 255, 0.9);
+    font-weight: 500;
+}
+
+.balance-value {
+    font-size: 18px;
+    font-weight: 700;
+    color: white;
+}
+
+.balance-value.total {
+    color: #ffd700;
+}
+
+.balance-value.used {
+    color: #ffb3b3;
+}
+
+.balance-value.remaining {
+    color: #90ee90;
+}
+
+.balance-separator {
+    color: rgba(255, 255, 255, 0.5);
+    font-size: 20px;
+}
+
+/* 본문 */
+.vif-body {
+    display: grid;
+    grid-template-columns: 1fr 400px;
+    gap: 24px;
+    padding: 24px;
+}
+
+/* 달력 섹션 */
+.vif-calendar-section {
+    background: #f8f9fa;
+    border-radius: 12px;
+    padding: 20px;
+}
+
+.calendar-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 20px;
+}
+
+.calendar-title {
+    margin: 0;
+    font-size: 16px;
+    font-weight: 600;
+    color: #1a237e;
+}
+
+.calendar-nav {
+    width: 36px;
+    height: 36px;
+    border-radius: 8px;
+    border: 1px solid #dee2e6;
+    background: white;
+    color: #495057;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.calendar-nav:hover {
+    background: #667eea;
+    color: white;
+    border-color: #667eea;
+    transform: scale(1.05);
+}
+
+.calendar-weekdays {
+    display: grid;
+    grid-template-columns: repeat(7, 1fr);
+    gap: 4px;
+    margin-bottom: 8px;
+}
+
+.weekday {
+    text-align: center;
+    font-size: 13px;
+    font-weight: 600;
+    color: #495057;
+    padding: 8px 0;
+}
+
+.weekday.sun {
+    color: #dc3545;
+}
+
+.weekday.sat {
+    color: #0d6efd;
+}
+
+.calendar-days {
+    display: grid;
+    grid-template-columns: repeat(7, 1fr);
+    gap: 4px;
+    min-height: 280px;
+}
+
+.calendar-day {
+    aspect-ratio: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 8px;
+    font-size: 14px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    background: white;
+    border: 2px solid transparent;
+    position: relative;
+}
+
+.calendar-day:hover:not(.disabled):not(.other-month) {
+    background: #e7f3ff;
+    transform: scale(1.05);
+    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.1);
+}
+
+.calendar-day.other-month {
+    color: #adb5bd;
+    cursor: default;
+}
+
+.calendar-day.disabled {
+    color: #dee2e6;
+    cursor: not-allowed;
+    background: #f8f9fa;
+}
+
+.calendar-day.today {
+    font-weight: 700;
+    color: #667eea;
+}
+
+.calendar-day.today::after {
+    content: '';
+    position: absolute;
+    bottom: 4px;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 4px;
+    height: 4px;
+    border-radius: 50%;
+    background: #667eea;
+}
+
+.calendar-day.weekend {
+    color: #6c757d;
+}
+
+.calendar-day.sunday {
+    color: #dc3545;
+}
+
+.calendar-day.saturday {
+    color: #0d6efd;
+}
+
+.calendar-day.holiday {
+    color: #dc3545;
+    background: #fff5f5;
+}
+
+.calendar-day.selected {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white !important;
+    border-color: #667eea;
+    font-weight: 700;
+}
+
+.calendar-day.in-range {
+    background: #e3f2fd;
+    color: #1976d2;
+}
+
+.calendar-day.range-start {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white !important;
+    border-radius: 8px 0 0 8px;
+}
+
+.calendar-day.range-end {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white !important;
+    border-radius: 0 8px 8px 0;
+}
+
+.calendar-day.range-start.range-end {
+    border-radius: 8px;
+}
+
+.calendar-legend {
+    display: flex;
+    gap: 16px;
+    margin-top: 16px;
+    padding-top: 16px;
+    border-top: 1px solid #dee2e6;
+}
+
+.legend-item {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.legend-color {
+    width: 16px;
+    height: 16px;
+    border-radius: 4px;
+}
+
+.legend-color.selected {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+}
+
+.legend-color.holiday {
+    background: #fff5f5;
+    border: 2px solid #dc3545;
+}
+
+.legend-text {
+    font-size: 12px;
+    color: #6c757d;
+}
+
+/* 정보 섹션 */
+.vif-info-section {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+}
+
+.info-card {
+    background: #f8f9fa;
+    border-radius: 12px;
+    overflow: hidden;
+    border: 1px solid #e9ecef;
+}
+
+.info-card-header {
+    background: white;
+    padding: 12px 16px;
+    border-bottom: 1px solid #e9ecef;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-weight: 600;
+    color: #1a237e;
+    font-size: 14px;
+}
+
+.info-card-header i {
+    color: #667eea;
+}
+
+.info-card-body {
+    padding: 16px;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+.info-row {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+}
+
+.info-row label {
+    font-size: 13px;
+    font-weight: 600;
+    color: #495057;
+}
+
+.info-row input,
+.info-row select,
+.info-row textarea {
+    padding: 10px 12px;
+    border: 1px solid #dee2e6;
+    border-radius: 6px;
+    font-size: 14px;
+    transition: all 0.2s ease;
+    background: white;
+}
+
+.info-row input:focus,
+.info-row select:focus,
+.info-row textarea:focus {
+    outline: none;
+    border-color: #667eea;
+    box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+}
+
+.info-row input[readonly] {
+    background: #e9ecef;
+    cursor: not-allowed;
+}
+
+.info-row textarea {
+    resize: vertical;
+    min-height: 80px;
+    font-family: inherit;
+}
+
+.info-row.highlight {
+    background: linear-gradient(135deg, #fff9e6 0%, #fff3cc 100%);
+    padding: 12px;
+    border-radius: 8px;
+    margin-top: 8px;
+}
+
+.calculated-days {
+    display: flex;
+    align-items: baseline;
+    gap: 4px;
+}
+
+.days-value {
+    font-size: 28px;
+    font-weight: 700;
+    color: #667eea;
+}
+
+.days-unit {
+    font-size: 16px;
+    color: #6c757d;
+}
+
+.required {
+    color: #dc3545;
+    font-weight: 700;
+}
+
+/* 액션 버튼 */
+.vif-actions {
+    display: flex;
+    gap: 12px;
+    margin-top: 8px;
+}
+
+.btn-reset,
+.btn-apply {
+    flex: 1;
+    padding: 12px 20px;
+    border-radius: 8px;
+    font-size: 14px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+}
+
+.btn-reset {
+    background: white;
+    border: 1px solid #dee2e6;
+    color: #6c757d;
+}
+
+.btn-reset:hover {
+    background: #f8f9fa;
+    border-color: #adb5bd;
+    transform: translateY(-2px);
+    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.1);
+}
+
+.btn-apply {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    border: none;
+    color: white;
+}
+
+.btn-apply:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
+}
+
+/* 반응형 */
+@media (max-width: 1200px) {
+    .vif-body {
+        grid-template-columns: 1fr;
+    }
+
+    .vif-info-section {
+        order: -1;
+    }
+
+    .vacation-balance {
+        flex-wrap: wrap;
+        gap: 12px;
+    }
+}
+
+@media (max-width: 768px) {
+    .vif-header {
+        flex-direction: column;
+        gap: 16px;
+        align-items: stretch;
+    }
+
+    .vacation-balance {
+        justify-content: space-around;
+    }
+
+    .calendar-days {
+        gap: 2px;
+    }
+
+    .calendar-day {
+        font-size: 12px;
+    }
+
+    .vif-actions {
+        flex-direction: column;
     }
 }

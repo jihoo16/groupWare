@@ -13,7 +13,7 @@
                     <h1 class="page-title">연차관리</h1>
                 </div>
                 <div class="header-right">
-                    <button class="btn-primary" id="openLeaveModal">
+                    <button class="btn-primary" onclick="location.href='/approval/vacation'">
                         <i class="fas fa-plus"></i>
                         연차 신청
                     </button>
@@ -216,93 +216,6 @@
                         </tbody>
                     </table>
                 </div>
-            </div>
-        </div>
-    </div>
-
-    <!-- 연차 신청 모달 -->
-    <div class="modal" id="leaveModal">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h2>연차 신청</h2>
-                <button class="modal-close" id="closeModal">
-                    <i class="fas fa-times"></i>
-                </button>
-            </div>
-            <div class="modal-body">
-                <form id="leaveForm">
-                    <div class="form-group">
-                        <label for="leaveType">구분 <span class="required">*</span></label>
-                        <div class="radio-group">
-                            <label class="radio-label">
-                                <input type="radio" name="leaveType" value="full" checked>
-                                <span>연차</span>
-                            </label>
-                            <label class="radio-label">
-                                <input type="radio" name="leaveType" value="half-am">
-                                <span>반차(오전)</span>
-                            </label>
-                            <label class="radio-label">
-                                <input type="radio" name="leaveType" value="half-pm">
-                                <span>반차(오후)</span>
-                            </label>
-                        </div>
-                    </div>
-
-                    <div class="form-group">
-                        <label>날짜 선택 <span class="required">*</span></label>
-                        <div class="calendar-container">
-                            <div class="calendar-header">
-                                <button type="button" class="calendar-nav" id="prevMonth">
-                                    <i class="fas fa-chevron-left"></i>
-                                </button>
-                                <span class="calendar-month" id="currentMonth"></span>
-                                <button type="button" class="calendar-nav" id="nextMonth">
-                                    <i class="fas fa-chevron-right"></i>
-                                </button>
-                            </div>
-                            <div class="calendar-weekdays">
-                                <div>일</div>
-                                <div>월</div>
-                                <div>화</div>
-                                <div>수</div>
-                                <div>목</div>
-                                <div>금</div>
-                                <div>토</div>
-                            </div>
-                            <div class="calendar-days" id="calendarDays"></div>
-                        </div>
-                        <input type="hidden" id="startDate" name="startDate" required>
-                        <input type="hidden" id="endDate" name="endDate" required>
-                    </div>
-
-                    <div class="form-group">
-                        <label>예상 사용 일수</label>
-                        <div class="days-info">
-                            <div class="calculated-days">
-                                <span id="calculatedDays">0</span> 일
-                            </div>
-                            <div class="remaining-after-use">
-                                <span>사용 후 잔여: </span>
-                                <span id="remainingDays">7</span> 일
-                            </div>
-                        </div>
-                        <div class="warning-message" id="warningMessage" style="display: none;">
-                            <i class="fas fa-exclamation-triangle"></i>
-                            잔여 연차보다 더 많은 연차는 신청 할 수 없습니다.
-                        </div>
-                    </div>
-
-                    <div class="form-group">
-                        <label for="reason">사유 <span class="required">*</span></label>
-                        <textarea id="reason" name="reason" rows="4" placeholder="연차 사유를 입력하세요" required></textarea>
-                    </div>
-
-                    <div class="form-actions">
-                        <button type="button" class="btn-secondary" id="cancelBtn">취소</button>
-                        <button type="submit" class="btn-primary" id="submitBtn">신청</button>
-                    </div>
-                </form>
             </div>
         </div>
     </div>
