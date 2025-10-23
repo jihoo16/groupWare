@@ -33,63 +33,6 @@ document.addEventListener('DOMContentLoaded', function() {
                 currentCategory = category;
                 currentBox = null;
                 updateContentTitle(null, category);
-                if (filter === 'all') {
-                    card.style.display = 'block';
-                } else if (status === filter) {
-                    card.style.display = 'block';
-                } else {
-                    card.style.display = 'none';
-                }
-            });
-        });
-    });
-
-    // ========== 새 결재 요청 모달 ==========
-    if (newApprovalBtn) {
-        newApprovalBtn.addEventListener('click', function() {
-            openModal(newApprovalModal);
-            selectedApprovers = [];
-            updateApproverList();
-        });
-    }
-
-    // 새 결재 모달 닫기
-    const closeNewApprovalModal = document.getElementById('closeNewApprovalModal');
-    const cancelNewApproval = document.getElementById('cancelNewApproval');
-
-    if (closeNewApprovalModal) {
-        closeNewApprovalModal.addEventListener('click', () => closeModal(newApprovalModal));
-    }
-    if (cancelNewApproval) {
-        cancelNewApproval.addEventListener('click', () => closeModal(newApprovalModal));
-    }
-
-    // 결재자 추가 버튼
-    const addApproverBtn = document.getElementById('addApproverBtn');
-    if (addApproverBtn) {
-        addApproverBtn.addEventListener('click', () => openModal(approverSelectModal));
-    }
-
-    // 결재자 선택 모달 닫기
-    const closeApproverSelectModal = document.getElementById('closeApproverSelectModal');
-    if (closeApproverSelectModal) {
-        closeApproverSelectModal.addEventListener('click', () => closeModal(approverSelectModal));
-    }
-
-    // 결재자 선택
-    const approverItems = document.querySelectorAll('.approver-item');
-    approverItems.forEach(item => {
-        item.addEventListener('click', function() {
-            const name = this.getAttribute('data-name');
-            const position = this.getAttribute('data-position');
-            const dept = this.getAttribute('data-dept');
-
-            // 이미 선택된 결재자인지 확인
-            const alreadySelected = selectedApprovers.find(a => a.name === name);
-
-            if (!alreadySelected) {
-                selectedApprovers.push({ name, position, dept });
-                updateApproverList();
             }
 
             filterDocuments();
@@ -130,63 +73,6 @@ document.addEventListener('DOMContentLoaded', function() {
             // 결재함 필터
             if (currentBox) {
                 show = status === currentBox;
-    // 파일 업로드
-    const fileInput = document.getElementById('attachment');
-    const fileList = document.getElementById('fileList');
-    let selectedFiles = [];
-
-    if (fileInput) {
-        fileInput.addEventListener('change', function(e) {
-            const files = Array.from(e.target.files);
-            selectedFiles = [...selectedFiles, ...files];
-            updateFileList();
-        });
-    }
-
-    function updateFileList() {
-        fileList.innerHTML = '';
-
-        selectedFiles.forEach((file, index) => {
-            const fileItem = document.createElement('div');
-            fileItem.className = 'file-item';
-
-            // 파일 아이콘 선택
-            let iconClass = 'fa-file';
-            if (file.name.endsWith('.pdf')) iconClass = 'fa-file-pdf';
-            else if (file.name.match(/\.(jpg|jpeg|png|gif)$/i)) iconClass = 'fa-file-image';
-            else if (file.name.match(/\.(xls|xlsx)$/i)) iconClass = 'fa-file-excel';
-            else if (file.name.match(/\.(doc|docx)$/i)) iconClass = 'fa-file-word';
-
-            fileItem.innerHTML = `
-                <i class="fas ${iconClass}"></i>
-                <span>${file.name}</span>
-                <button class="remove-file" data-index="${index}">
-                    <i class="fas fa-times"></i>
-                </button>
-            `;
-            fileList.appendChild(fileItem);
-        });
-
-        // 파일 제거 이벤트
-        document.querySelectorAll('.remove-file').forEach(btn => {
-            btn.addEventListener('click', function() {
-                const index = parseInt(this.getAttribute('data-index'));
-                selectedFiles.splice(index, 1);
-                updateFileList();
-            });
-        });
-    }
-
-    // 새 결재 요청 폼 제출
-    const newApprovalForm = document.getElementById('newApprovalForm');
-    if (newApprovalForm) {
-        newApprovalForm.addEventListener('submit', function(e) {
-            e.preventDefault();
-
-            // 결재선 체크
-            if (selectedApprovers.length === 0) {
-                showAlert('결재자를 선택해주세요.', 'warning');
-                return;
             }
 
             // 문서함 필터
@@ -204,10 +90,6 @@ document.addEventListener('DOMContentLoaded', function() {
 
                 show = show && (title.includes(searchTerm) || desc.includes(searchTerm) || allText.includes(searchTerm));
             }
-            console.log('새 결재 요청:', formData);
-
-            // 성공 메시지
-            showAlert('결재 요청이 성공적으로 제출되었습니다.', 'success');
 
             if (show) {
                 row.style.display = '';
@@ -229,35 +111,39 @@ document.addEventListener('DOMContentLoaded', function() {
     }
 
     // 검색
-    searchInput.addEventListener('input', filterDocuments);
+    if (searchInput) {
+        searchInput.addEventListener('input', filterDocuments);
+    }
 
     // 정렬
-    sortSelect.addEventListener('change', function() {
-        const value = this.value;
-        const tbody = documentList.querySelector('tbody');
-        if (!tbody) return;
+    if (sortSelect) {
+        sortSelect.addEventListener('change', function() {
+            const value = this.value;
+            const tbody = documentList.querySelector('tbody');
+            if (!tbody) return;
 
-        const docRows = Array.from(tbody.querySelectorAll('.doc-row'));
+            const docRows = Array.from(tbody.querySelectorAll('.doc-row'));
 
-        docRows.sort((a, b) => {
-            if (value === 'date-desc' || value === 'date-asc') {
-                const dateA = a.cells[7].textContent.trim(); // 기안일시 컬럼
-                const dateB = b.cells[7].textContent.trim();
-                return value === 'date-desc' ? dateB.localeCompare(dateA) : dateA.localeCompare(dateB);
-            } else if (value === 'title') {
-                const titleA = a.querySelector('.title-wrap').textContent.trim();
-                const titleB = b.querySelector('.title-wrap').textContent.trim();
-                return titleA.localeCompare(titleB);
-            } else if (value === 'drafter') {
-                const drafterA = a.cells[4].textContent.trim(); // 기안자 컬럼
-                const drafterB = b.cells[4].textContent.trim();
-                return drafterA.localeCompare(drafterB);
-            }
-            return 0;
+            docRows.sort((a, b) => {
+                if (value === 'date-desc' || value === 'date-asc') {
+                    const dateA = a.cells[7].textContent.trim(); // 기안일시 컬럼
+                    const dateB = b.cells[7].textContent.trim();
+                    return value === 'date-desc' ? dateB.localeCompare(dateA) : dateA.localeCompare(dateB);
+                } else if (value === 'title') {
+                    const titleA = a.querySelector('.title-wrap').textContent.trim();
+                    const titleB = b.querySelector('.title-wrap').textContent.trim();
+                    return titleA.localeCompare(titleB);
+                } else if (value === 'drafter') {
+                    const drafterA = a.cells[4].textContent.trim(); // 기안자 컬럼
+                    const drafterB = b.cells[4].textContent.trim();
+                    return drafterA.localeCompare(drafterB);
+                }
+                return 0;
+            });
+
+            docRows.forEach(row => tbody.appendChild(row));
         });
-
-        docRows.forEach(row => tbody.appendChild(row));
-    });
+    }
 
     // 문서 액션 버튼들
     document.addEventListener('click', function(e) {

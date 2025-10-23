@@ -73,7 +73,7 @@ public class HomeController {
 
     @GetMapping("/approval/write")
     public String approvalWrite() {
-        return "approval-write";
+        return "approval_receipt_meeting";
     }
 
     @GetMapping("/approval/receipt")
