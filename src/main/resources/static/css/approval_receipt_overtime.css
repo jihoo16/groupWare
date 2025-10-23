@@ -423,6 +423,9 @@ div:focus {
     font-size: 14px;
     height: 45px;
 }
+.form-table td {
+    font-weight: 500;
+}
 
 .form-table th {
     background: #f5f5f5;

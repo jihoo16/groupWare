@@ -144,24 +144,42 @@ document.addEventListener('DOMContentLoaded', function() {
                 const row = document.createElement('div');
                 row.style.cssText = 'display: flex; gap: 8px; margin-bottom: 8px; align-items: center;';
 
-                // select 박스 옵션 생성
-                let selectOptions = '<option value="">업무 선택</option>';
+                // 업무 내용 select 박스 옵션 생성
+                let taskSelectOptions = '<option value="">업무 선택</option>';
                 taskOptions.forEach(task => {
                     const selected = person.task === task ? 'selected' : '';
-                    selectOptions += `<option value="${task}" ${selected}>${task}</option>`;
+                    taskSelectOptions += `<option value="${task}" ${selected}>${task}</option>`;
                 });
+
+                // 종료 시간 select 박스 옵션 생성 (19:00 ~ 24:00, 30분 단위)
+                let endTimeOptions = '';
+                for (let hour = 19; hour <= 24; hour++) {
+                    for (let minute of [0, 30]) {
+                        // 24:30은 제외
+                        if (hour === 24 && minute === 30) continue;
+
+                        const timeValue = `${String(hour).padStart(2, '0')}:${String(minute).padStart(2, '0')}`;
+                        const selected = person.endTime === timeValue ? 'selected' : '';
+                        endTimeOptions += `<option value="${timeValue}" ${selected}>${timeValue}</option>`;
+                    }
+                }
+
+                const displayTime = person.endTime ? `18:00 ~ ${person.endTime}` : '18:00 ~ 21:00';
 
                 row.innerHTML = `
                     <input type="checkbox" data-index="${index}" class="overtime-checkbox" style="width: 18px; height: 18px; cursor: pointer;">
                     <input type="text" data-index="${index}" class="overtime-name" placeholder="성명" value="${person.name || ''}" style="flex: 1; padding: 5px;">
-                    <input type="text" data-index="${index}" class="overtime-time" placeholder="시간" value="${person.time || ''}" style="flex: 1; padding: 5px;" readonly>
-                    <select data-index="${index}" class="overtime-task" style="flex: 2; padding: 5px;">${selectOptions}</select>
+                    <div style="flex: 1; display: flex; gap: 4px; align-items: center;">
+                        <span style="white-space: nowrap;">18:00 ~</span>
+                        <select data-index="${index}" class="overtime-endtime" style="flex: 1; padding: 5px;">${endTimeOptions}</select>
+                    </div>
+                    <select data-index="${index}" class="overtime-task" style="flex: 2; padding: 5px;">${taskSelectOptions}</select>
                 `;
                 overtimePersonList.appendChild(row);
             });
 
             // 이벤트 리스너 추가
-            document.querySelectorAll('.overtime-name, .overtime-task').forEach(el => {
+            document.querySelectorAll('.overtime-name, .overtime-task, .overtime-endtime').forEach(el => {
                 const eventType = el.tagName === 'SELECT' ? 'change' : 'input';
                 el.addEventListener(eventType, function() {
                     const index = parseInt(this.getAttribute('data-index'));
@@ -169,6 +187,9 @@ document.addEventListener('DOMContentLoaded', function() {
                         overtimePersons[index].name = this.value;
                     } else if (this.classList.contains('overtime-task')) {
                         overtimePersons[index].task = this.value;
+                    } else if (this.classList.contains('overtime-endtime')) {
+                        overtimePersons[index].endTime = this.value;
+                        overtimePersons[index].time = `18:00 ~ ${this.value}`;
                     }
                     updateOvertimeTable();
                     updateContentText();
@@ -221,7 +242,7 @@ document.addEventListener('DOMContentLoaded', function() {
         // 인원 추가 버튼
         if (addOvertimePersonBtn) {
             addOvertimePersonBtn.addEventListener('click', function() {
-                overtimePersons.push({ name: '', time: '18:00 ~ 21:00', task: '' });
+                overtimePersons.push({ name: '', time: '18:00 ~ 21:00', endTime: '21:00', task: '' });
                 updateOvertimePersonList();
             });
         }
@@ -259,7 +280,7 @@ document.addEventListener('DOMContentLoaded', function() {
                     overtimePersons = [];
 
                     for (let i = 0; i < totalPeople; i++) {
-                        overtimePersons.push({ name: '', time: '18:00 ~ 21:00', task: '' });
+                        overtimePersons.push({ name: '', time: '18:00 ~ 21:00', endTime: '21:00', task: '' });
                     }
 
                     updateOvertimePersonList();
@@ -312,10 +333,16 @@ document.addEventListener('DOMContentLoaded', function() {
                         field.textContent = formatted;
                     });
 
-                    // 야근 일자 형식 (년 월 일)
+                    // 야근 일자 형식 (년 월 일) - 야근 신청서용
                     const dateFormatted = `${year}년 ${month}월 ${day}일`;
                     document.querySelectorAll('.ot-auto-date').forEach(field => {
                         field.textContent = dateFormatted;
+                    });
+
+                    // 품의서 날짜 형식 (년/월/일)
+                    const dateSlashFormatted = `${year}/${month}/${day}`;
+                    document.querySelectorAll('.ot-auto-date-slash').forEach(field => {
+                        field.textContent = dateSlashFormatted;
                     });
 
                     // 전체 날짜 형식 (년. 월. 일)
@@ -627,7 +654,13 @@ document.addEventListener('DOMContentLoaded', function() {
                 }
 
                 const { jsPDF } = window.jspdf;
-                const pdf = new jsPDF('p', 'mm', 'a4');
+                const pdf = new jsPDF({
+                    orientation: 'p',
+                    unit: 'mm',
+                    format: 'a4',
+                    compress: false,  // 압축 비활성화로 최고 품질 유지
+                    precision: 16     // 정밀도 향상
+                });
 
                 allDivs = documentForm.querySelectorAll(':scope > div');
                 console.log('찾은 div 개수:', allDivs.length);
@@ -644,16 +677,33 @@ document.addEventListener('DOMContentLoaded', function() {
                 allDivs[1].style.display = 'block';
                 allDivs[2].style.display = 'block';
 
-                await new Promise(resolve => setTimeout(resolve, 100));
+                await new Promise(resolve => setTimeout(resolve, 300));  // 렌더링 대기 시간 증가
 
                 const renderOptions = {
-                    scale: 3,
+                    scale: 5,  // 해상도 최대 향상 (4 → 5)
                     useCORS: true,
                     allowTaint: true,
                     logging: false,
                     backgroundColor: '#ffffff',
                     imageTimeout: 0,
-                    removeContainer: true
+                    removeContainer: true,
+                    windowWidth: 2560,  // 더 큰 렌더링 영역
+                    windowHeight: 1440,
+                    letterRendering: true,  // 텍스트 렌더링 개선
+                    foreignObjectRendering: false,  // 호환성 향상
+                    onclone: function(clonedDoc) {
+                        // 복제된 문서의 폰트 렌더링 개선
+                        const style = clonedDoc.createElement('style');
+                        style.textContent = `
+                            * {
+                                -webkit-font-smoothing: antialiased !important;
+                                -moz-osx-font-smoothing: grayscale !important;
+                                text-rendering: optimizeLegibility !important;
+                                font-smoothing: antialiased !important;
+                            }
+                        `;
+                        clonedDoc.head.appendChild(style);
+                    }
                 };
 
                 const pdfWidth = 210;
@@ -678,7 +728,7 @@ document.addEventListener('DOMContentLoaded', function() {
                     throw new Error('Canvas 크기가 0입니다. 문서가 화면에 표시되어 있는지 확인하세요.');
                 }
 
-                const proposalImgData = proposalCanvas.toDataURL('image/jpeg', 0.95);
+                const proposalImgData = proposalCanvas.toDataURL('image/png');  // PNG로 변경 (무손실)
 
                 // A4 페이지에 맞춰서 크기 조정 (가로 또는 세로 기준으로 맞춤)
                 let imgWidth = contentWidth;
@@ -694,7 +744,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 const xOffset = margin + (contentWidth - imgWidth) / 2;
                 const yOffset = margin + (contentHeight - imgHeight) / 2;
 
-                pdf.addImage(proposalImgData, 'JPEG', xOffset, yOffset, imgWidth, imgHeight);
+                pdf.addImage(proposalImgData, 'PNG', xOffset, yOffset, imgWidth, imgHeight);
                 console.log('품의서 페이지 완료');
 
                 // 2. 야근 신청서 페이지
@@ -711,7 +761,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 const overtimeCanvasWidth = overtimeCanvas.width;
                 const overtimeCanvasHeight = overtimeCanvas.height;
 
-                const overtimeImgData = overtimeCanvas.toDataURL('image/jpeg', 0.95);
+                const overtimeImgData = overtimeCanvas.toDataURL('image/png');  // PNG로 변경 (무손실)
 
                 // A4 페이지에 맞춰서 크기 조정
                 let overtimeImgWidth = contentWidth;
@@ -727,7 +777,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 const overtimeXOffset = margin + (contentWidth - overtimeImgWidth) / 2;
                 const overtimeYOffset = margin + (contentHeight - overtimeImgHeight) / 2;
 
-                pdf.addImage(overtimeImgData, 'JPEG', overtimeXOffset, overtimeYOffset, overtimeImgWidth, overtimeImgHeight);
+                pdf.addImage(overtimeImgData, 'PNG', overtimeXOffset, overtimeYOffset, overtimeImgWidth, overtimeImgHeight);
                 console.log('야근 신청서 페이지 완료');
 
                 // 파일명 생성
