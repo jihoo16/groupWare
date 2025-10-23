@@ -1066,13 +1066,16 @@ document.addEventListener('DOMContentLoaded', function() {
     };
 
     // 임시저장
-    saveDraftBtn.addEventListener('click', function() {
+    if (saveDraftBtn) {
+        saveDraftBtn.addEventListener('click', function() {
         alert('문서가 임시저장되었습니다.');
         // 실제로는 API 호출
     });
+    }
 
     // 제출
-    submitBtn.addEventListener('click', function() {
+    if (submitBtn) {
+        submitBtn.addEventListener('click', function() {
         if (selectedApprovers.length === 0) {
             alert('결재자를 지정해주세요.');
             return;
@@ -1084,6 +1087,7 @@ document.addEventListener('DOMContentLoaded', function() {
             window.location.href = '/approval';
         }
     });
+    }
 
     // PDF 저장 버튼 이벤트
     const savePdfBtn = document.getElementById('savePdfBtn');
