@@ -238,19 +238,17 @@
                                         </tr>
                                         <tr>
                                             <th>연구책임자</th>
-                                            <td><input type="text" id="ot_manager" placeholder="연구책임자명"></td>
+                                            <td><input type="text" id="ot_manager" placeholder="연구책임자명" value="상무님"></td>
                                             <th>신청자</th>
                                             <td><input type="text" id="ot_applicant" placeholder="신청자명" value="홍길동"></td>
                                         </tr>
                                         <tr>
                                             <th>품의일자</th>
-                                            <td><input type="date" id="ot_approval_date"></td>
-                                            <th>야근 일자</th>
-                                            <td><input type="date" id="ot_date"></td>
+                                            <td colspan="3"><input type="date" id="ot_approval_date"></td>
                                         </tr>
                                         <tr>
                                             <th>품의명</th>
-                                            <td colspan="3"><input type="text" id="ot_title" placeholder="예: 야근 식대" value="야근 식대"></td>
+                                            <td colspan="3"><input type="text" id="ot_title" placeholder="예: 야근 식대" value="야근 식대비"></td>
                                         </tr>
                                         <tr>
                                             <th>지급종류</th>
@@ -280,7 +278,7 @@
                                             </td>
                                         </tr>
                                         <tr>
-                                            <th>품의 내용</th>
+                                            <th >품의 내용</th>
                                             <td colspan="3"><textarea id="ot_content" placeholder="야근 내용을 입력하세요" rows="6" style="width: 100%;">야근식대
 - 인원 : </textarea></td>
                                         </tr>
@@ -294,14 +292,12 @@
                                     <div style="float: right; margin-bottom: 20px;">
                                         <table style="border: 2px solid #000; border-collapse: collapse;">
                                             <tr>
-                                                <td style="border: 1px solid #000; padding: 10px 20px; text-align: center; background: #f0f0f0; font-weight: bold;">신청자</td>
-                                                <td style="border: 1px solid #000; padding: 10px 20px; text-align: center; background: #f0f0f0; font-weight: bold;">연구책임자</td>
-                                                <td style="border: 1px solid #000; padding: 10px 20px; text-align: center; background: #f0f0f0; font-weight: bold;">대표이사</td>
+                                                <td style="width: 120px; border: 1px solid #000; padding: 10px 20px; text-align: center; background: #f0f0f0; font-weight: bold;">신청자</td>
+                                                <td style="width: 120px; border: 1px solid #000; padding: 10px 20px; text-align: center; background: #f0f0f0; font-weight: bold;">연구책임자</td>
                                             </tr>
                                             <tr>
                                                 <td class="ot-auto-applicant" style="border: 1px solid #000; padding: 10px 20px; text-align: center; min-width: 80px;"></td>
-                                                <td style="border: 1px solid #000; padding: 20px 40px;"></td>
-                                                <td style="border: 1px solid #000; padding: 20px 40px;"></td>
+                                                <td class="ot-auto-manager" style="border: 1px solid #000; padding: 10px 20px; text-align: center; min-width: 80px;"></td>
                                             </tr>
                                         </table>
                                     </div>
@@ -309,7 +305,9 @@
                                     <table class="form-table" style="clear: both; margin-top: 20px;">
                                         <tr>
                                             <th style="width: 15%;">과제명</th>
-                                            <td colspan="3" style="text-align: left; padding: 10px;"><span class="ot-auto-project"></span></td>
+                                            <td style="padding: 10px; text-align: center;"><span class="ot-auto-project"></span></td>
+                                            <th style="width: 15%;">연구책임자명</th>
+                                            <td style="padding: 10px; text-align: center;"><span class="ot-auto-manager"></span></td>
                                         </tr>
                                         <tr>
                                             <th>품의일자</th>
@@ -317,7 +315,7 @@
                                         </tr>
                                         <tr>
                                             <th>신청자</th>
-                                            <td colspan="3" style="text-align: center;"><span class="ot-auto-applicant"></span></td>
+                                            <td colspan="3" style="text-align: center;"><span class="ot-auto-applicant"></span> 연구원</td>
                                         </tr>
                                         <tr>
                                             <th>품의명</th>
@@ -326,6 +324,10 @@
                                         <tr>
                                             <th>지급종류</th>
                                             <td colspan="3" style="text-align: center;"><span class="ot-auto-pay-type"></span></td>
+                                        </tr>
+                                        <tr>
+                                            <th style="height: 200px;">품의 내용</th>
+                                            <td colspan="3" style="text-align: left; padding: 10px; white-space: pre-wrap; h200"><span class="ot-auto-content"></span></td>
                                         </tr>
                                         <tr>
                                             <th colspan="4" style="background: #f0f0f0; padding: 15px; text-align: center;">품의 내역서</th>
@@ -343,6 +345,30 @@
                                             <td style="text-align: center;"><span class="ot-auto-amount"></span></td>
                                         </tr>
                                         <tr>
+                                            <td></td>
+                                            <td></td>
+                                            <td></td>
+                                            <td></td>
+                                        </tr>
+                                        <tr>
+                                            <td></td>
+                                            <td></td>
+                                            <td></td>
+                                            <td></td>
+                                        </tr>
+                                        <tr>
+                                            <td></td>
+                                            <td></td>
+                                            <td></td>
+                                            <td></td>
+                                        </tr>
+                                        <tr>
+                                            <td></td>
+                                            <td></td>
+                                            <td></td>
+                                            <td></td>
+                                        </tr>
+                                        <tr>
                                             <td colspan="3" style="text-align: center; font-weight: bold;">계</td>
                                             <td style="text-align: center;"><span class="ot-auto-amount"></span></td>
                                         </tr>
@@ -351,22 +377,21 @@
 
                                 <div style="background: white; border: 2px solid #e0e0e0; border-radius: 8px; padding: 30px; max-width: 881px; margin: 0 auto 30px">
                                     <h2 class="doc-title" style="font-size: 30px; font-weight: bold;">야근 및 특근 신청서</h2>
-                                    <div style="text-align: left; margin-bottom: 20px; font-size: 14px; clear: both;">
-                                        <span class="ot-auto-date-full"></span>
-                                    </div>
 
                                     <div style="margin-bottom: 20px;">
                                         <h3 style="font-size: 16px; margin-bottom: 10px;">□ 과제 정보</h3>
                                         <table class="form-table">
                                             <tr>
-                                                <th style="width: 20%;">연구기관명<br>(부서명)</th>
+                                                <th style="width: 13%;">연구기관명<br>(부서명)</th>
                                                 <td style="text-align: center;">파인씨앤아이<br>- 기업 부설 연구소</td>
-                                                <th style="width: 20%;">연구책임자</th>
+                                                <th style="width: 13%;">연구책임자</th>
                                                 <td style="text-align: center;"><span class="ot-auto-manager"></span></td>
                                             </tr>
                                             <tr>
                                                 <th>과 제 명</th>
-                                                <td colspan="3" style="text-align: left; padding: 10px;"><span class="ot-auto-project"></span></td>
+                                                <td style="text-align: center; padding: 10px;"><span class="ot-auto-project"></span></td>
+                                                <th>야근 및 특근 일자</th>
+                                                <td style="text-align: center;"><span class="ot-auto-date"></span></td>
                                             </tr>
                                         </table>
                                     </div>
@@ -384,49 +409,111 @@
                                             </tr>
                                             <tr class="ot-person-row">
                                                 <td style="text-align: center;">1</td>
-                                                <td>&nbsp;</td>
-                                                <td>&nbsp;</td>
-                                                <td>&nbsp;</td>
-                                                <td>&nbsp;</td>
-                                                <td>&nbsp;</td>
+                                                <td style="text-align: center;">&nbsp;</td>
+                                                <td style="text-align: center;">&nbsp;</td>
+                                                <td style="text-align: center;">&nbsp;</td>
+                                                <td style="text-align: center;">&nbsp;</td>
+                                                <td style="text-align: center;">&nbsp;</td>
                                             </tr>
                                             <tr class="ot-person-row">
                                                 <td style="text-align: center;">2</td>
-                                                <td>&nbsp;</td>
-                                                <td>&nbsp;</td>
-                                                <td>&nbsp;</td>
-                                                <td>&nbsp;</td>
-                                                <td>&nbsp;</td>
+                                                <td style="text-align: center;">&nbsp;</td>
+                                                <td style="text-align: center;">&nbsp;</td>
+                                                <td style="text-align: center;">&nbsp;</td>
+                                                <td style="text-align: center;">&nbsp;</td>
+                                                <td style="text-align: center;">&nbsp;</td>
                                             </tr>
                                             <tr class="ot-person-row">
                                                 <td style="text-align: center;">3</td>
-                                                <td>&nbsp;</td>
-                                                <td>&nbsp;</td>
-                                                <td>&nbsp;</td>
-                                                <td>&nbsp;</td>
-                                                <td>&nbsp;</td>
+                                                <td style="text-align: center;">&nbsp;</td>
+                                                <td style="text-align: center;">&nbsp;</td>
+                                                <td style="text-align: center;">&nbsp;</td>
+                                                <td style="text-align: center;">&nbsp;</td>
+                                                <td style="text-align: center;">&nbsp;</td>
                                             </tr>
                                             <tr class="ot-person-row">
                                                 <td style="text-align: center;">4</td>
-                                                <td>&nbsp;</td>
-                                                <td>&nbsp;</td>
-                                                <td>&nbsp;</td>
-                                                <td>&nbsp;</td>
-                                                <td>&nbsp;</td>
+                                                <td style="text-align: center;">&nbsp;</td>
+                                                <td style="text-align: center;">&nbsp;</td>
+                                                <td style="text-align: center;">&nbsp;</td>
+                                                <td style="text-align: center;">&nbsp;</td>
+                                                <td style="text-align: center;">&nbsp;</td>
                                             </tr>
                                             <tr class="ot-person-row">
                                                 <td style="text-align: center;">5</td>
-                                                <td>&nbsp;</td>
-                                                <td>&nbsp;</td>
-                                                <td>&nbsp;</td>
-                                                <td>&nbsp;</td>
-                                                <td>&nbsp;</td>
+                                                <td style="text-align: center;">&nbsp;</td>
+                                                <td style="text-align: center;">&nbsp;</td>
+                                                <td style="text-align: center;">&nbsp;</td>
+                                                <td style="text-align: center;">&nbsp;</td>
+                                                <td style="text-align: center;">&nbsp;</td>
+                                            </tr>
+                                            <tr class="ot-person-row">
+                                                <td style="text-align: center;">6</td>
+                                                <td style="text-align: center;">&nbsp;</td>
+                                                <td style="text-align: center;">&nbsp;</td>
+                                                <td style="text-align: center;">&nbsp;</td>
+                                                <td style="text-align: center;">&nbsp;</td>
+                                                <td style="text-align: center;">&nbsp;</td>
+                                            </tr>
+                                            <tr class="ot-person-row">
+                                                <td style="text-align: center;">7</td>
+                                                <td style="text-align: center;">&nbsp;</td>
+                                                <td style="text-align: center;">&nbsp;</td>
+                                                <td style="text-align: center;">&nbsp;</td>
+                                                <td style="text-align: center;">&nbsp;</td>
+                                                <td style="text-align: center;">&nbsp;</td>
+                                            </tr>
+                                            <tr class="ot-person-row">
+                                                <td style="text-align: center;">8</td>
+                                                <td style="text-align: center;">&nbsp;</td>
+                                                <td style="text-align: center;">&nbsp;</td>
+                                                <td style="text-align: center;">&nbsp;</td>
+                                                <td style="text-align: center;">&nbsp;</td>
+                                                <td style="text-align: center;">&nbsp;</td>
+                                            </tr>
+                                            <tr class="ot-person-row">
+                                                <td style="text-align: center;">9</td>
+                                                <td style="text-align: center;">&nbsp;</td>
+                                                <td style="text-align: center;">&nbsp;</td>
+                                                <td style="text-align: center;">&nbsp;</td>
+                                                <td style="text-align: center;">&nbsp;</td>
+                                                <td style="text-align: center;">&nbsp;</td>
+                                            </tr>
+                                            <tr class="ot-person-row">
+                                                <td style="text-align: center;">10</td>
+                                                <td style="text-align: center;">&nbsp;</td>
+                                                <td style="text-align: center;">&nbsp;</td>
+                                                <td style="text-align: center;">&nbsp;</td>
+                                                <td style="text-align: center;">&nbsp;</td>
+                                                <td style="text-align: center;">&nbsp;</td>
+                                            </tr>
+                                            <tr class="ot-person-row">
+                                                <td style="text-align: center;">11</td>
+                                                <td style="text-align: center;">&nbsp;</td>
+                                                <td style="text-align: center;">&nbsp;</td>
+                                                <td style="text-align: center;">&nbsp;</td>
+                                                <td style="text-align: center;">&nbsp;</td>
+                                                <td style="text-align: center;">&nbsp;</td>
                                             </tr>
                                         </table>
                                     </div>
 
-                                    <div style="text-align: right; margin-top: 30px; font-size: 14px;">
-                                        <p style="margin: 5px 0;">연구책임자 : <span class="ot-auto-manager"></span> <span style="display: inline-block; width: 80px; border-bottom: 1px solid #000; margin-left: 10px;"></span></p>
+                                    <div style="margin-bottom: 20px;">
+                                        <h3 style="font-size: 16px; margin-bottom: 10px;">□ 실집행 금액</h3>
+                                        <table class="form-table">
+                                            <tr>
+                                                <th style="width: 20%; text-align: center; background: #f5f5f5;">실집행 금액</th>
+                                                <td style="text-align: center;"><span class="ot-auto-actual-amount"></span></td>
+                                            </tr>
+                                        </table>
+                                    </div>
+
+                                    <div style="text-align: center; margin: 30px 0; font-size: 14px;">
+                                        <span class="ot-auto-date-full"></span>
+                                    </div>
+
+                                    <div style="text-align: right; font-size: 14px;">
+                                        <p style="margin: 5px 0;">연구책임자 : <span class="ot-auto-manager" style=" min-width: 80px; border-bottom: 1px solid #000; padding-bottom: 2px;"></span> (인)</p>
                                     </div>
                                 </div>
                             </div>

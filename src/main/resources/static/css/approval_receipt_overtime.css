@@ -421,6 +421,7 @@ div:focus {
     border: 1px solid #333;
     padding: 12px 16px;
     font-size: 14px;
+    height: 45px;
 }
 
 .form-table th {
@@ -429,6 +430,7 @@ div:focus {
     color: #333;
     text-align: center;
     width: 102px;
+    height: 60px;
 }
 
 td, td span, td input {

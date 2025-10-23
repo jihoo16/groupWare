@@ -104,7 +104,6 @@ document.addEventListener('DOMContentLoaded', function() {
         const otManager = document.getElementById('ot_manager');
         const otApplicant = document.getElementById('ot_applicant');
         const otApprovalDate = document.getElementById('ot_approval_date');
-        const otDate = document.getElementById('ot_date');
         const otTitle = document.getElementById('ot_title');
         const otAmount = document.getElementById('ot_amount');
         const otContent = document.getElementById('ot_content');
@@ -114,29 +113,60 @@ document.addEventListener('DOMContentLoaded', function() {
 
         let overtimePersons = [];
 
+        // IT 업무 내용 목록
+        const taskOptions = [
+            '데이터베이스 설계',
+            '백엔드 API 개발',
+            '프론트엔드 UI 개발',
+            '시스템 아키텍처 설계',
+            '코드 리뷰 및 품질 관리',
+            '버그 수정 및 디버깅',
+            '테스트 코드 작성',
+            '배포 및 운영 환경 구축',
+            '성능 최적화',
+            '보안 취약점 분석',
+            '클라우드 인프라 구축',
+            '마이크로서비스 개발',
+            '모바일 앱 개발',
+            '웹 서비스 개발',
+            '알고리즘 개발',
+            '데이터 분석 및 시각화',
+            '머신러닝 모델 개발',
+            'DevOps 파이프라인 구축',
+            '기술 문서 작성',
+            'CI/CD 환경 구축'
+        ];
+
         // 야근 인원 목록 업데이트 함수
         function updateOvertimePersonList() {
             overtimePersonList.innerHTML = '';
             overtimePersons.forEach((person, index) => {
                 const row = document.createElement('div');
                 row.style.cssText = 'display: flex; gap: 8px; margin-bottom: 8px; align-items: center;';
+
+                // select 박스 옵션 생성
+                let selectOptions = '<option value="">업무 선택</option>';
+                taskOptions.forEach(task => {
+                    const selected = person.task === task ? 'selected' : '';
+                    selectOptions += `<option value="${task}" ${selected}>${task}</option>`;
+                });
+
                 row.innerHTML = `
                     <input type="checkbox" data-index="${index}" class="overtime-checkbox" style="width: 18px; height: 18px; cursor: pointer;">
                     <input type="text" data-index="${index}" class="overtime-name" placeholder="성명" value="${person.name || ''}" style="flex: 1; padding: 5px;">
-                    <input type="time" data-index="${index}" class="overtime-time" placeholder="시간" value="${person.time || ''}" style="flex: 1; padding: 5px;">
-                    <input type="text" data-index="${index}" class="overtime-task" placeholder="업무 내용" value="${person.task || ''}" style="flex: 2; padding: 5px;">
+                    <input type="text" data-index="${index}" class="overtime-time" placeholder="시간" value="${person.time || ''}" style="flex: 1; padding: 5px;" readonly>
+                    <select data-index="${index}" class="overtime-task" style="flex: 2; padding: 5px;">${selectOptions}</select>
                 `;
                 overtimePersonList.appendChild(row);
             });
 
             // 이벤트 리스너 추가
-            document.querySelectorAll('.overtime-name, .overtime-time, .overtime-task').forEach(el => {
-                el.addEventListener('input', function() {
+            document.querySelectorAll('.overtime-name, .overtime-task').forEach(el => {
+                const eventType = el.tagName === 'SELECT' ? 'change' : 'input';
+                el.addEventListener(eventType, function() {
                     const index = parseInt(this.getAttribute('data-index'));
                     if (this.classList.contains('overtime-name')) {
                         overtimePersons[index].name = this.value;
-                    } else if (this.classList.contains('overtime-time')) {
-                        overtimePersons[index].time = this.value;
                     } else if (this.classList.contains('overtime-task')) {
                         overtimePersons[index].task = this.value;
                     }
@@ -177,13 +207,21 @@ document.addEventListener('DOMContentLoaded', function() {
                 .map(p => p.name)
                 .join(', ');
 
-            otContent.value = `야근식대\n- 인원 : ${names}`;
+            const totalCount = overtimePersons.filter(p => p.name).length;
+
+            const contentText = `야근식대\n- 인원 : 총 ${totalCount}인\n- ${names}`;
+            otContent.value = contentText;
+
+            // 품의서에도 품의 내용 표시
+            document.querySelectorAll('.ot-auto-content').forEach(field => {
+                field.textContent = contentText;
+            });
         }
 
         // 인원 추가 버튼
         if (addOvertimePersonBtn) {
             addOvertimePersonBtn.addEventListener('click', function() {
-                overtimePersons.push({ name: '', time: '', task: '' });
+                overtimePersons.push({ name: '', time: '18:00 ~ 21:00', task: '' });
                 updateOvertimePersonList();
             });
         }
@@ -209,18 +247,19 @@ document.addEventListener('DOMContentLoaded', function() {
             });
         }
 
-        // 금액 기반 자동 인원 계산 (1인당 63,900원)
+        // 금액 기반 자동 인원 계산 (1인당 15,000원, 최소 1명)
         if (otAmount) {
             otAmount.addEventListener('input', function() {
                 const amount = parseInt(this.value) || 0;
 
                 if (amount > 0) {
-                    const totalPeople = Math.round(amount / 63900);
+                    // 15,000원 미만이어도 최소 1명
+                    const totalPeople = Math.max(1, Math.ceil(amount / 15000));
 
                     overtimePersons = [];
 
                     for (let i = 0; i < totalPeople; i++) {
-                        overtimePersons.push({ name: '', time: '18:00 ~ 20:30', task: '카프카 헬름 차트 UI 개발 확인' });
+                        overtimePersons.push({ name: '', time: '18:00 ~ 21:00', task: '' });
                     }
 
                     updateOvertimePersonList();
@@ -260,31 +299,26 @@ document.addEventListener('DOMContentLoaded', function() {
             });
         }
 
-        // 품의일자 자동 채우기
+        // 품의일자 자동 채우기 (야근 일자와 동일하게 적용)
         if (otApprovalDate) {
             otApprovalDate.addEventListener('input', function() {
                 const value = this.value;
                 if (value) {
                     const [year, month, day] = value.split('-');
+
+                    // 품의일자 형식 (년월일)
                     const formatted = `${year}년 ${month}월 ${day}일`;
                     document.querySelectorAll('.ot-auto-approval-date').forEach(field => {
                         field.textContent = formatted;
                     });
-                }
-            });
-        }
 
-        // 야근 일자 자동 채우기
-        if (otDate) {
-            otDate.addEventListener('input', function() {
-                const value = this.value;
-                if (value) {
-                    const [year, month, day] = value.split('-');
-                    const formatted = `${year}/${month}/${day}`;
+                    // 야근 일자 형식 (년 월 일)
+                    const dateFormatted = `${year}년 ${month}월 ${day}일`;
                     document.querySelectorAll('.ot-auto-date').forEach(field => {
-                        field.textContent = formatted;
+                        field.textContent = dateFormatted;
                     });
 
+                    // 전체 날짜 형식 (년. 월. 일)
                     const fullFormatted = `${year}. ${month}. ${day}`;
                     document.querySelectorAll('.ot-auto-date-full').forEach(field => {
                         field.textContent = fullFormatted;
@@ -317,37 +351,58 @@ document.addEventListener('DOMContentLoaded', function() {
         }
 
         // 지급종류 자동 채우기
-        const payTypeRadios = document.querySelectorAll('input[name="ot_pay_type"]');
-        payTypeRadios.forEach(radio => {
-            radio.addEventListener('change', function() {
-                if (this.checked) {
-                    document.querySelectorAll('.ot-auto-pay-type').forEach(field => {
-                        field.textContent = this.value;
-                    });
-                }
+        const payTypeInput = document.querySelector('input[name="ot_pay_type"]');
+        if (payTypeInput) {
+            payTypeInput.addEventListener('input', function() {
+                document.querySelectorAll('.ot-auto-pay-type').forEach(field => {
+                    field.textContent = this.value;
+                });
             });
-        });
 
-        // 초기 지급종류 설정
-        const checkedRadio = document.querySelector('input[name="ot_pay_type"]:checked');
-        if (checkedRadio) {
-            document.querySelectorAll('.ot-auto-pay-type').forEach(field => {
-                field.textContent = checkedRadio.value;
-            });
+            // 초기값 설정
+            if (payTypeInput.value) {
+                document.querySelectorAll('.ot-auto-pay-type').forEach(field => {
+                    field.textContent = payTypeInput.value;
+                });
+            }
         }
 
         // 금액 표시 업데이트
         function updateAmountDisplay() {
-            const amount = parseInt(otAmount.value) || 0;
-            const formattedAmount = amount.toLocaleString('ko-KR');
+            const actualAmount = parseInt(otAmount.value) || 0;
+            const quantity = overtimePersons.length;
+
+            // 품의 내역에는 1인당 15,000원 기준으로 표시
+            const displayAmount = quantity * 15000;
+            const formattedDisplayAmount = displayAmount.toLocaleString('ko-KR');
+
+            // 실제 입력 금액 (실집행 금액용)
+            const formattedActualAmount = actualAmount.toLocaleString('ko-KR');
 
             document.querySelectorAll('.ot-auto-amount').forEach(field => {
-                field.textContent = formattedAmount;
+                field.textContent = formattedDisplayAmount;
             });
 
-            const quantity = overtimePersons.length;
             document.querySelectorAll('.ot-auto-quantity').forEach(field => {
                 field.textContent = quantity;
+            });
+
+            // 실집행 금액 업데이트
+            document.querySelectorAll('.ot-auto-actual-amount').forEach(field => {
+                field.textContent = formattedActualAmount;
+            });
+        }
+
+        // 초기값 자동 채우기
+        if (otApplicant && otApplicant.value) {
+            document.querySelectorAll('.ot-auto-applicant').forEach(field => {
+                field.textContent = otApplicant.value;
+            });
+        }
+
+        if (otManager && otManager.value) {
+            document.querySelectorAll('.ot-auto-manager').forEach(field => {
+                field.textContent = otManager.value;
             });
         }
 
@@ -603,8 +658,9 @@ document.addEventListener('DOMContentLoaded', function() {
 
                 const pdfWidth = 210;
                 const pdfHeight = 297;
-                const margin = 10;
+                const margin = 5;
                 const contentWidth = pdfWidth - (margin * 2);
+                const contentHeight = pdfHeight - (margin * 2);
 
                 // 1. 품의서 페이지
                 console.log('품의서 렌더링 중...');
@@ -623,9 +679,22 @@ document.addEventListener('DOMContentLoaded', function() {
                 }
 
                 const proposalImgData = proposalCanvas.toDataURL('image/jpeg', 0.95);
-                const imgHeight = (canvasHeight * contentWidth) / canvasWidth;
 
-                pdf.addImage(proposalImgData, 'JPEG', margin, margin, contentWidth, imgHeight);
+                // A4 페이지에 맞춰서 크기 조정 (가로 또는 세로 기준으로 맞춤)
+                let imgWidth = contentWidth;
+                let imgHeight = (canvasHeight * contentWidth) / canvasWidth;
+
+                // 높이가 페이지를 넘으면 높이 기준으로 조정
+                if (imgHeight > contentHeight) {
+                    imgHeight = contentHeight;
+                    imgWidth = (canvasWidth * contentHeight) / canvasHeight;
+                }
+
+                // 중앙 정렬
+                const xOffset = margin + (contentWidth - imgWidth) / 2;
+                const yOffset = margin + (contentHeight - imgHeight) / 2;
+
+                pdf.addImage(proposalImgData, 'JPEG', xOffset, yOffset, imgWidth, imgHeight);
                 console.log('품의서 페이지 완료');
 
                 // 2. 야근 신청서 페이지
@@ -643,13 +712,26 @@ document.addEventListener('DOMContentLoaded', function() {
                 const overtimeCanvasHeight = overtimeCanvas.height;
 
                 const overtimeImgData = overtimeCanvas.toDataURL('image/jpeg', 0.95);
-                const overtimeImgHeight = (overtimeCanvasHeight * contentWidth) / overtimeCanvasWidth;
 
-                pdf.addImage(overtimeImgData, 'JPEG', margin, margin, contentWidth, overtimeImgHeight);
+                // A4 페이지에 맞춰서 크기 조정
+                let overtimeImgWidth = contentWidth;
+                let overtimeImgHeight = (overtimeCanvasHeight * contentWidth) / overtimeCanvasWidth;
+
+                // 높이가 페이지를 넘으면 높이 기준으로 조정
+                if (overtimeImgHeight > contentHeight) {
+                    overtimeImgHeight = contentHeight;
+                    overtimeImgWidth = (overtimeCanvasWidth * contentHeight) / overtimeCanvasHeight;
+                }
+
+                // 중앙 정렬
+                const overtimeXOffset = margin + (contentWidth - overtimeImgWidth) / 2;
+                const overtimeYOffset = margin + (contentHeight - overtimeImgHeight) / 2;
+
+                pdf.addImage(overtimeImgData, 'JPEG', overtimeXOffset, overtimeYOffset, overtimeImgWidth, overtimeImgHeight);
                 console.log('야근 신청서 페이지 완료');
 
                 // 파일명 생성
-                const dateInput = document.getElementById('ot_date');
+                const dateInput = document.getElementById('ot_approval_date');
                 let dateStr;
                 if (dateInput && dateInput.value) {
                     dateStr = dateInput.value.replace(/-/g, '');
