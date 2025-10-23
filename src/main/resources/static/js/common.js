@@ -50,4 +50,31 @@ document.addEventListener('DOMContentLoaded', function() {
             parentMenuItem.classList.add('active');
         }
     }
+
+    // ===========================
+    // Logout Button Handler
+    // ===========================
+    const logoutBtn = document.getElementById('logoutBtn');
+    if (logoutBtn) {
+        logoutBtn.addEventListener('click', function(e) {
+            e.preventDefault();
+
+            // Confirm logout
+            if (confirm('로그아웃 하시겠습니까?')) {
+                // Clear session storage
+                sessionStorage.removeItem('isLoggedIn');
+                sessionStorage.removeItem('username');
+                sessionStorage.removeItem('loginTime');
+
+                // Optional: Clear local storage (remember me)
+                // localStorage.removeItem('rememberedUsername');
+
+                // Show logout message
+                alert('로그아웃 되었습니다.');
+
+                // Redirect to login page
+                window.location.href = '/login';
+            }
+        });
+    }
 });

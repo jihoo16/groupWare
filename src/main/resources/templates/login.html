@@ -3,39 +3,74 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>ERP 시스템 - 로그인</title>
+    <title>로그인 - ERP 시스템</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link rel="stylesheet" th:href="@{/css/login.css}">
 </head>
 <body>
-    <div class="login-container">
-        <div class="login-card">
+<div class="login-container">
+    <!-- Left Panel - Branding -->
+    <div class="login-left">
+        <div class="brand-section">
+            <div class="logo-circle">
+                <i class="fas fa-building"></i>
+            </div>
+            <h1 class="brand-title">ERP System</h1>
+            <p class="brand-subtitle">통합 업무 관리 시스템</p>
+        </div>
+
+        <div class="features">
+            <div class="feature-item">
+                <i class="fas fa-check-circle"></i>
+                <span>전자결재 및 문서관리</span>
+            </div>
+            <div class="feature-item">
+                <i class="fas fa-check-circle"></i>
+                <span>인사 및 근태관리</span>
+            </div>
+            <div class="feature-item">
+                <i class="fas fa-check-circle"></i>
+                <span>프로젝트 및 일정관리</span>
+            </div>
+            <div class="feature-item">
+                <i class="fas fa-check-circle"></i>
+                <span>급여 및 경비관리</span>
+            </div>
+        </div>
+
+        <div class="decorative-shapes">
+            <div class="shape shape-1"></div>
+            <div class="shape shape-2"></div>
+            <div class="shape shape-3"></div>
+        </div>
+    </div>
+
+    <!-- Right Panel - Login Form -->
+    <div class="login-right">
+        <div class="login-form-container">
             <div class="login-header">
-                <div class="logo">
-                    <i class="fas fa-building"></i>
-                </div>
-                <h1>ERP 시스템</h1>
-                <p class="subtitle">통합 업무 관리 시스템</p>
+                <h2>로그인</h2>
+                <p>ERP 시스템에 오신 것을 환영합니다</p>
             </div>
 
             <form id="loginForm" class="login-form">
                 <div class="form-group">
-                    <label for="username" class="form-label">
+                    <label for="username">
                         <i class="fas fa-user"></i>
-                        아이디
+                        사용자 ID
                     </label>
                     <input
                         type="text"
                         id="username"
                         name="username"
-                        class="form-input"
-                        placeholder="아이디를 입력하세요"
+                        placeholder="사용자 ID를 입력하세요"
                         required
-                        autocomplete="username">
+                        autocomplete="username"
+                    >
                 </div>
 
                 <div class="form-group">
-                    <label for="password" class="form-label">
+                    <label for="password">
                         <i class="fas fa-lock"></i>
                         비밀번호
                     </label>
@@ -44,10 +79,10 @@
                             type="password"
                             id="password"
                             name="password"
-                            class="form-input"
                             placeholder="비밀번호를 입력하세요"
                             required
-                            autocomplete="current-password">
+                            autocomplete="current-password"
+                        >
                         <button type="button" class="toggle-password" id="togglePassword">
                             <i class="fas fa-eye"></i>
                         </button>
@@ -55,39 +90,44 @@
                 </div>
 
                 <div class="form-options">
-                    <label class="checkbox-label">
+                    <label class="remember-me">
                         <input type="checkbox" id="rememberMe" name="rememberMe">
-                        <span>로그인 상태 유지</span>
+                        <span class="checkmark"></span>
+                        <span class="label-text">로그인 상태 유지</span>
                     </label>
                     <a href="#" class="forgot-password">비밀번호 찾기</a>
                 </div>
 
                 <button type="submit" class="btn-login">
-                    <i class="fas fa-sign-in-alt"></i>
-                    로그인
+                    <span>로그인</span>
+                    <i class="fas fa-arrow-right"></i>
                 </button>
 
                 <div class="alert-message" id="alertMessage"></div>
+
+                <div class="divider">
+                    <span>또는</span>
+                </div>
+
+                <div class="alternative-login">
+                    <button type="button" class="btn-alt" id="btn-sso">
+                        <i class="fas fa-shield-alt"></i>
+                        <span>SSO 로그인</span>
+                    </button>
+                </div>
             </form>
 
             <div class="login-footer">
-                <p class="info-text">
-                    <i class="fas fa-info-circle"></i>
-                    문의사항은 시스템 관리자에게 연락하세요.
-                </p>
-                <p class="copyright">
-                    © 2025 ERP System. All rights reserved.
-                </p>
+                <p>계정이 필요하신가요? <a href="#" id="contact-admin">관리자에게 문의</a></p>
             </div>
         </div>
 
-        <div class="background-decoration">
-            <div class="circle circle-1"></div>
-            <div class="circle circle-2"></div>
-            <div class="circle circle-3"></div>
+        <div class="copyright">
+            <p>&copy; 2025 (주)파인씨엔아이. All rights reserved.</p>
         </div>
     </div>
+</div>
 
-    <script th:src="@{/js/login.js}"></script>
+<script th:src="@{/js/login.js}"></script>
 </body>
 </html>

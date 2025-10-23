@@ -49,7 +49,7 @@
     border-radius: 12px;
     box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
     overflow-x: auto;
-    max-height: 600px; /* 8명 정도의 행 높이 (헤더 + 8행 * 70px) */
+    max-height: 540px; /* 8명 정도의 행 높이 (헤더 + 8행 * 70px) */
     overflow-y: auto;
 }
 

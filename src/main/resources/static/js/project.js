@@ -32,6 +32,7 @@ document.addEventListener('DOMContentLoaded', function() {
     const memberSelectModal = document.getElementById('memberSelectModal');
     const memberSearchInput = document.getElementById('memberSearchInput');
     const teamTableBody = document.getElementById('teamTableBody');
+    const teamTableFooter = document.getElementById('teamTableFooter');
     const addCardBtn = document.getElementById('addCardBtn');
     const cardModal = document.getElementById('cardModal');
     const cardList = document.getElementById('cardList');
@@ -270,9 +271,11 @@ document.addEventListener('DOMContentLoaded', function() {
 
     // 신규 프로젝트 페이지 기능
 
-    // 팀원 추가 버튼 클릭 시 모달 열기
+    // 팀원 추가 버튼 클릭 시 모달 열기 (tfoot의 버튼과 empty-row 클릭 모두 처리)
     if (addMemberBtn) {
-        addMemberBtn.addEventListener('click', function() {
+        addMemberBtn.addEventListener('click', function(e) {
+            e.preventDefault();
+            e.stopPropagation();
             openMemberModal();
         });
     }
@@ -391,10 +394,15 @@ document.addEventListener('DOMContentLoaded', function() {
         teamTableBody.innerHTML = '';
 
         if (selectedMemberList.length === 0) {
+            // 팀원이 없을 때: empty-row 표시, tfoot 숨김
             teamTableBody.innerHTML = '<tr class="empty-row"><td colspan="7" class="text-center">팀원을 추가해주세요</td></tr>';
+            if (teamTableFooter) {
+                teamTableFooter.style.display = 'none';
+            }
             return;
         }
 
+        // 팀원이 있을 때: 목록 표시, tfoot 표시
         selectedMemberList.forEach((member, index) => {
             const row = document.createElement('tr');
             row.innerHTML = `
@@ -418,6 +426,11 @@ document.addEventListener('DOMContentLoaded', function() {
             `;
             teamTableBody.appendChild(row);
         });
+
+        // tfoot 표시
+        if (teamTableFooter) {
+            teamTableFooter.style.display = '';
+        }
     }
 
     // 팀원 참여기간 업데이트 (전역 함수)
@@ -1097,4 +1110,155 @@ document.addEventListener('DOMContentLoaded', function() {
             alert(`카드 ID ${cardId} 삭제 기능은 백엔드 연동 후 구현됩니다.`);
         }
     };
+
+    // ===========================
+    // 직급별 경비 설정 기능
+    // ===========================
+    const resetExpensesBtn = document.getElementById('resetExpensesBtn');
+    const loadDefaultExpensesBtn = document.getElementById('loadDefaultExpensesBtn');
+
+    // 기본값 데이터
+    const defaultExpenseValues = {
+        '사원': { daily: 30000, meal: 30000, meeting: 15000, overtime: 10000 },
+        '대리': { daily: 35000, meal: 35000, meeting: 20000, overtime: 12000 },
+        '과장': { daily: 40000, meal: 40000, meeting: 25000, overtime: 15000 },
+        '차장': { daily: 50000, meal: 50000, meeting: 30000, overtime: 18000 },
+        '부장': { daily: 60000, meal: 60000, meeting: 40000, overtime: 20000 }
+    };
+
+    // 기본값으로 초기화
+    if (resetExpensesBtn) {
+        resetExpensesBtn.addEventListener('click', function() {
+            if (confirm('경비 설정을 기본값으로 초기화하시겠습니까?')) {
+                resetExpensesToDefault();
+            }
+        });
+    }
+
+    function resetExpensesToDefault() {
+        Object.keys(defaultExpenseValues).forEach(position => {
+            const values = defaultExpenseValues[position];
+            const row = document.querySelector(`tr[data-position="${position}"]`);
+
+            if (row) {
+                const inputs = row.querySelectorAll('.expense-input-sm');
+                if (inputs.length >= 4) {
+                    inputs[0].value = values.daily;
+                    inputs[1].value = values.meal;
+                    inputs[2].value = values.meeting;
+                    inputs[3].value = values.overtime;
+                }
+            }
+        });
+
+        alert('경비 설정이 기본값으로 초기화되었습니다.');
+    }
+
+    // 기초정보관리 설정값 불러오기
+    if (loadDefaultExpensesBtn) {
+        loadDefaultExpensesBtn.addEventListener('click', function() {
+            // TODO: 실제로는 /api/basic-info/expenses API를 호출하여 데이터를 가져옴
+            // 현재는 시뮬레이션
+            loadExpensesFromBasicInfo();
+        });
+    }
+
+    function loadExpensesFromBasicInfo() {
+        // TODO: 백엔드 API 연동 시 실제 데이터 가져오기
+        // 현재는 기본값과 동일한 데이터를 사용 (시뮬레이션)
+        const basicInfoData = {
+            '사원': { daily: 30000, meal: 30000, meeting: 15000, overtime: 10000 },
+            '대리': { daily: 35000, meal: 35000, meeting: 20000, overtime: 12000 },
+            '과장': { daily: 40000, meal: 40000, meeting: 25000, overtime: 15000 },
+            '차장': { daily: 50000, meal: 50000, meeting: 30000, overtime: 18000 },
+            '부장': { daily: 60000, meal: 60000, meeting: 40000, overtime: 20000 }
+        };
+
+        Object.keys(basicInfoData).forEach(position => {
+            const values = basicInfoData[position];
+            const row = document.querySelector(`tr[data-position="${position}"]`);
+
+            if (row) {
+                const inputs = row.querySelectorAll('.expense-input-sm');
+                if (inputs.length >= 4) {
+                    inputs[0].value = values.daily;
+                    inputs[1].value = values.meal;
+                    inputs[2].value = values.meeting;
+                    inputs[3].value = values.overtime;
+                }
+            }
+        });
+
+        alert('기초정보관리 설정값을 불러왔습니다.');
+    }
+
+    // 경비 설정 데이터 수집 함수 (프로젝트 등록 시 사용)
+    function getExpenseSettingsData() {
+        const expenseData = {};
+
+        const rows = document.querySelectorAll('#expenseSettingsBody tr');
+        rows.forEach(row => {
+            const position = row.getAttribute('data-position');
+            const inputs = row.querySelectorAll('.expense-input-sm');
+
+            if (inputs.length >= 4) {
+                expenseData[position] = {
+                    dailyAllowance: parseInt(inputs[0].value) || 0,
+                    mealAllowance: parseInt(inputs[1].value) || 0,
+                    meetingAllowance: parseInt(inputs[2].value) || 0,
+                    overtimeMeal: parseInt(inputs[3].value) || 0
+                };
+            }
+        });
+
+        return expenseData;
+    }
+
+    // 프로젝트 폼 제출 시 경비 설정 데이터 포함
+    if (projectForm) {
+        const originalSubmitHandler = projectForm.onsubmit;
+
+        projectForm.addEventListener('submit', function(e) {
+            e.preventDefault();
+
+            // 기본 폼 데이터 수집
+            const formData = new FormData(projectForm);
+
+            // 경비 설정 데이터 추가
+            const expenseSettings = getExpenseSettingsData();
+            formData.append('expenseSettings', JSON.stringify(expenseSettings));
+
+            // 팀원 목록 추가
+            formData.append('teamMembers', JSON.stringify(selectedMemberList));
+
+            // 카드 목록 추가
+            formData.append('cards', JSON.stringify(cardListData));
+
+            // 연계 프로젝트 목록 추가
+            formData.append('relatedProjects', JSON.stringify(relatedProjectList));
+
+            console.log('프로젝트 등록 데이터:', {
+                formData: Object.fromEntries(formData),
+                expenseSettings: expenseSettings,
+                teamMembers: selectedMemberList,
+                cards: cardListData,
+                relatedProjects: relatedProjectList
+            });
+
+            // TODO: 백엔드 API 호출
+            alert('프로젝트가 등록되었습니다.\n\n직급별 경비 설정이 포함되었습니다.');
+
+            // 임시로 목록 페이지로 이동
+            // window.location.href = '/project';
+        });
+    }
+
+    // 숫자 입력 필드 포맷팅
+    document.querySelectorAll('.expense-input-sm').forEach(input => {
+        input.addEventListener('keypress', function(e) {
+            if (!/[0-9]/.test(e.key)) {
+                e.preventDefault();
+            }
+        });
+    });
 });

@@ -165,4 +165,14 @@ public class HomeController {
     public String projectEdit() {
         return "project-edit";
     }
+
+    @GetMapping("/basic-info")
+    public String basicInfo() {
+        return "basic-info";
+    }
+
+    @GetMapping("/login")
+    public String login() {
+        return "login";
+    }
 }

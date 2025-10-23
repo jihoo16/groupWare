@@ -87,7 +87,7 @@
                     </li>
                 </ul>
             </li>
-            <li th:class="${(activeMenu == 'hr' or activeMenu == 'attendance' or activeMenu == 'payroll') ? 'menu-item menu-parent active' : 'menu-item menu-parent'}" data-tooltip="관리">
+            <li th:class="${(activeMenu == 'hr' or activeMenu == 'attendance' or activeMenu == 'payroll' or activeMenu == 'basic-info') ? 'menu-item menu-parent active' : 'menu-item menu-parent'}" data-tooltip="관리">
                 <a href="/hr" class="menu-toggle-btn">
                     <i class="fas fa-cogs"></i>
                     <span class="menu-text">관리</span>
@@ -109,6 +109,11 @@
                             <span class="submenu-text">급여 관리</span>
                         </a>
                     </li>
+                    <li class="submenu-item" th:classappend="${activeMenu == 'basic-info'} ? 'active' : ''">
+                        <a href="/basic-info">
+                            <span class="submenu-text">기초정보관리</span>
+                        </a>
+                    </li>
                 </ul>
             </li>
         </ul>
@@ -123,6 +128,11 @@
                 <span class="user-role">관리자</span>
             </div>
         </a>
+
+        <button class="logout-btn" id="logoutBtn">
+            <i class="fas fa-sign-out-alt"></i>
+            <span class="logout-text">로그아웃</span>
+        </button>
     </nav>
 </body>
 </html>

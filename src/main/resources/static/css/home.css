@@ -319,6 +319,41 @@ body {
     color: rgba(255, 255, 255, 0.7);
 }
 
+/* 로그아웃 버튼 */
+.logout-btn {
+    width: 100%;
+    padding: 12px 15px;
+    background: linear-gradient(135deg, #f44336 0%, #e53935 100%);
+    color: white;
+    border: none;
+    border-top: 1px solid rgba(255, 255, 255, 0.1);
+    display: none; /* 기본적으로 숨김 */
+    align-items: center;
+    gap: 12px;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    font-size: 13px;
+    font-weight: 600;
+}
+
+/* 사이드바 hover 시에만 로그아웃 버튼 표시 */
+.sidebar:hover .logout-btn {
+    display: flex;
+}
+
+.logout-btn:hover {
+    background: linear-gradient(135deg, #e53935 0%, #d32f2f 100%);
+    box-shadow: 0 2px 8px rgba(244, 67, 54, 0.3);
+}
+
+.logout-btn i {
+    font-size: 16px;
+}
+
+.logout-text {
+    white-space: nowrap;
+}
+
 /* 메인 콘텐츠 */
 .main-content {
     flex: 1;
