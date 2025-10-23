@@ -482,6 +482,109 @@
     background: #5a6268;
 }
 
+.btn-danger {
+    background: #dc3545;
+    color: white;
+    border: none;
+    padding: 10px 20px;
+    border-radius: 6px;
+    font-size: 12.9px;
+    font-weight: 500;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    transition: all 0.3s ease;
+}
+
+.btn-danger:hover {
+    background: #c82333;
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(220, 53, 69, 0.4);
+}
+
+/* 알림 래퍼 */
+.notification-wrapper {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    flex-wrap: wrap;
+}
+
+/* 알림 토글 버튼 */
+.notification-toggle-btn {
+    background: #e8eaf6;
+    color: #667eea;
+    border: 2px solid #667eea;
+    padding: 10px 20px;
+    border-radius: 8px;
+    font-size: 12.9px;
+    font-weight: 500;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    transition: all 0.3s ease;
+}
+
+.notification-toggle-btn:hover {
+    background: #667eea;
+    color: white;
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(102, 126, 234, 0.3);
+}
+
+.notification-toggle-btn.active {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+    border-color: #667eea;
+}
+
+.notification-toggle-btn.active:hover {
+    box-shadow: 0 4px 12px rgba(102, 126, 234, 0.5);
+}
+
+.notification-toggle-btn i {
+    font-size: 14px;
+}
+
+/* 알림 시간 버튼 */
+.notification-time-buttons {
+    display: flex;
+    gap: 8px;
+    align-items: center;
+}
+
+.notification-time-btn {
+    background: #f5f5f5;
+    color: #666;
+    border: 2px solid #e0e0e0;
+    padding: 8px 16px;
+    border-radius: 6px;
+    font-size: 12px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.3s ease;
+}
+
+.notification-time-btn:hover {
+    background: #e8eaf6;
+    color: #667eea;
+    border-color: #667eea;
+    transform: translateY(-1px);
+}
+
+.notification-time-btn.active {
+    background: #667eea;
+    color: white;
+    border-color: #667eea;
+    box-shadow: 0 2px 8px rgba(102, 126, 234, 0.3);
+}
+
+.notification-time-btn.active:hover {
+    background: #5568d3;
+}
+
 /* 모달 스타일 */
 .modal {
     display: none;
@@ -544,8 +647,8 @@
 }
 
 .modal-title {
-    font-size: 22.1px;
-    font-weight: 700;
+    font-size: 20px;
+    font-weight: 600;
     color: #333;
     margin: 0;
 }
@@ -553,7 +656,7 @@
 .modal-close {
     background: none;
     border: none;
-    font-size: 22.1px;
+    font-size: 15px;
     color: #999;
     cursor: pointer;
     width: 36px;
@@ -625,6 +728,29 @@
 .required {
     color: #d32f2f;
     margin-left: 2px;
+}
+
+/* 체크박스 스타일 */
+.form-checkbox-wrapper {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    cursor: pointer;
+    user-select: none;
+}
+
+.form-checkbox {
+    width: 20px;
+    height: 20px;
+    cursor: pointer;
+    accent-color: #667eea;
+}
+
+.form-checkbox-label {
+    font-size: 12.9px;
+    font-weight: 500;
+    color: #333;
+    cursor: pointer;
 }
 
 .form-input {

@@ -117,27 +117,10 @@
                         </div>
                     </div>
 
-                    <div class="form-row">
-                        <div class="form-group">
-                            <label class="form-label">시작 시간</label>
-                            <input type="time" id="scheduleStartTime" class="form-input" value="09:00">
-                        </div>
-                        <div class="form-group">
-                            <label class="form-label">종료 시간</label>
-                            <input type="time" id="scheduleEndTime" class="form-input" value="09:00">
-
-                        </div>
-                    </div>
-
                     <div class="form-group">
-                        <label class="form-label">장소</label>
-                        <input type="text" id="scheduleLocation" class="form-input" placeholder="장소를 입력하세요">
-                    </div>
-
-                    <div class="form-group">
-                        <label class="form-label">참여자</label>
+                        <label class="form-label">참석자</label>
                         <div class="participants-input">
-                            <input type="text" id="participantInput" class="form-input" placeholder="참여자 이름을 입력하세요">
+                            <input type="text" id="participantInput" class="form-input" placeholder="참석자 이름을 입력하세요">
                             <button type="button" id="addParticipantBtn" class="btn-add">추가</button>
                         </div>
                         <div id="participantsList" class="participants-list"></div>
@@ -147,6 +130,64 @@
                         <label class="form-label">설명</label>
                         <textarea id="scheduleDescription" class="form-textarea" rows="4" placeholder="일정에 대한 설명을 입력하세요"></textarea>
                     </div>
+
+                    <div class="form-group">
+                        <label class="form-label">알림</label>
+                        <div class="notification-wrapper">
+                            <button type="button" id="notificationToggleBtn" class="notification-toggle-btn">
+                                <i class="fas fa-bell"></i>
+                                <span class="notification-status">알림 끄기</span>
+                            </button>
+                            <div id="notificationTimeButtons" class="notification-time-buttons" style="display: none;">
+                                <button type="button" class="notification-time-btn" data-time="10">10분 전</button>
+                                <button type="button" class="notification-time-btn" data-time="30">30분 전</button>
+                                <button type="button" class="notification-time-btn" data-time="60">1시간 전</button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        <label class="form-checkbox-wrapper" id="detailSettingsToggle" style="cursor: pointer;">
+                            <input type="checkbox" id="enableDetailSettings" class="form-checkbox">
+                            <span class="form-checkbox-label">상세 설정</span>
+                        </label>
+                    </div>
+
+                    <div id="detailSettingsSection" style="display: none;">
+                        <div class="form-group">
+                            <label class="form-label">장소</label>
+                            <input type="text" id="scheduleLocation" class="form-input" placeholder="장소를 입력하세요">
+                        </div>
+
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label class="form-label">시작 시간</label>
+                                <input type="time" id="scheduleStartTime" class="form-input" value="09:00">
+                            </div>
+                            <div class="form-group">
+                                <label class="form-label">종료 시간</label>
+                                <input type="time" id="scheduleEndTime" class="form-input" value="18:00">
+                            </div>
+                        </div>
+
+                        <div class="form-group">
+                            <label class="form-label">반복 설정</label>
+                            <select id="recurringType" class="form-input">
+                                <option value="none" selected>반복 안함</option>
+                                <option value="daily">매일</option>
+                                <option value="weekly">매주</option>
+                                <option value="monthly">매월</option>
+                                <option value="yearly">매년</option>
+                            </select>
+                        </div>
+
+                        <div class="form-group" id="recurringEndDateGroup" style="display: none;">
+                            <label class="form-label">반복 종료일</label>
+                            <input type="date" id="recurringEndDate" class="form-input">
+                        </div>
+                    </div>
+
+
                 </form>
             </div>
             <div class="modal-footer">
@@ -205,9 +246,21 @@
                     <div class="detail-label">설명</div>
                     <div class="detail-value" id="modalDescription"></div>
                 </div>
+                <div class="detail-row">
+                    <div class="detail-label">알림</div>
+                    <div class="detail-value" id="modalNotification"></div>
+                </div>
             </div>
             <div class="modal-footer">
+                <button class="btn-danger" id="deleteScheduleBtn" style="margin-right: auto;">
+                    <i class="fas fa-trash"></i>
+                    삭제
+                </button>
                 <button class="btn-secondary" id="closeModalBtn">닫기</button>
+                <button class="btn-primary" id="editScheduleBtn">
+                    <i class="fas fa-edit"></i>
+                    수정
+                </button>
             </div>
         </div>
     </div>
