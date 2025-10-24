@@ -904,14 +904,18 @@ document.addEventListener('DOMContentLoaded', function() {
         updateOvertimePersonList();
     }
 
-    // 결재자 추가 버튼
-    addApproverBtn.addEventListener('click', function() {
-        loadEmployeeList();
-        approverModal.classList.add('show');
-    });
+    // 결재자 추가 버튼 (연차신청서에는 없음)
+    if (addApproverBtn) {
+        addApproverBtn.addEventListener('click', function() {
+            loadEmployeeList();
+            approverModal.classList.add('show');
+        });
+    }
 
     // 직원 목록 로드
     function loadEmployeeList() {
+        if (!employeeList) return;
+
         employeeList.innerHTML = '';
         employees.forEach(emp => {
             const item = document.createElement('div');
@@ -933,13 +937,15 @@ document.addEventListener('DOMContentLoaded', function() {
     }
 
     // 직원 검색
-    approverSearch.addEventListener('input', function() {
-        const term = this.value.toLowerCase();
-        document.querySelectorAll('.employee-item').forEach(item => {
-            const text = item.textContent.toLowerCase();
-            item.style.display = text.includes(term) ? '' : 'none';
+    if (approverSearch) {
+        approverSearch.addEventListener('input', function() {
+            const term = this.value.toLowerCase();
+            document.querySelectorAll('.employee-item').forEach(item => {
+                const text = item.textContent.toLowerCase();
+                item.style.display = text.includes(term) ? '' : 'none';
+            });
         });
-    });
+    }
 
     // 결재자 추가
     window.addApprover = function() {
@@ -961,6 +967,8 @@ document.addEventListener('DOMContentLoaded', function() {
 
     // 결재자 칩 업데이트
     function updateApproverChips() {
+        if (!approverChips) return;
+
         if (selectedApprovers.length === 0) {
             approverChips.innerHTML = '<div class="empty-message">결재자를 추가해주세요</div>';
             return;
@@ -989,63 +997,73 @@ document.addEventListener('DOMContentLoaded', function() {
 
     // 모달 닫기
     window.closeModal = function() {
-        approverModal.classList.remove('show');
-        approverSearch.value = '';
+        if (approverModal) {
+            approverModal.classList.remove('show');
+        }
+        if (approverSearch) {
+            approverSearch.value = '';
+        }
         loadEmployeeList();
     };
 
     // 파일 업로드
-    fileInput.addEventListener('change', function(e) {
-        const files = Array.from(e.target.files);
-        files.forEach(file => {
-            if (selectedFiles.length >= 5) {
-                alert('최대 5개까지만 첨부 가능합니다.');
-                return;
-            }
-            if (file.size > 10 * 1024 * 1024) {
-                alert('파일 크기는 10MB를 초과할 수 없습니다.');
-                return;
-            }
-            selectedFiles.push(file);
+    if (fileInput) {
+        fileInput.addEventListener('change', function(e) {
+            const files = Array.from(e.target.files);
+            files.forEach(file => {
+                if (selectedFiles.length >= 5) {
+                    alert('최대 5개까지만 첨부 가능합니다.');
+                    return;
+                }
+                if (file.size > 10 * 1024 * 1024) {
+                    alert('파일 크기는 10MB를 초과할 수 없습니다.');
+                    return;
+                }
+                selectedFiles.push(file);
+            });
+            updateFileList();
+            fileInput.value = '';
         });
-        updateFileList();
-        fileInput.value = '';
-    });
+    }
 
     // 드래그 앤 드롭
-    fileUploadArea.addEventListener('dragover', function(e) {
-        e.preventDefault();
-        this.style.borderColor = '#667eea';
-        this.style.background = '#f5f7ff';
-    });
+    if (fileUploadArea) {
+        fileUploadArea.addEventListener('dragover', function(e) {
+            e.preventDefault();
+            this.style.borderColor = '#667eea';
+            this.style.background = '#f5f7ff';
+        });
 
-    fileUploadArea.addEventListener('dragleave', function() {
-        this.style.borderColor = '#ddd';
-        this.style.background = 'white';
-    });
+        fileUploadArea.addEventListener('dragleave', function() {
+            this.style.borderColor = '#ddd';
+            this.style.background = 'white';
+        });
 
-    fileUploadArea.addEventListener('drop', function(e) {
-        e.preventDefault();
-        this.style.borderColor = '#ddd';
-        this.style.background = 'white';
+        fileUploadArea.addEventListener('drop', function(e) {
+            e.preventDefault();
+            this.style.borderColor = '#ddd';
+            this.style.background = 'white';
 
-        const files = Array.from(e.dataTransfer.files);
-        files.forEach(file => {
+            const files = Array.from(e.dataTransfer.files);
+            files.forEach(file => {
             if (selectedFiles.length >= 5) {
                 alert('최대 5개까지만 첨부 가능합니다.');
                 return;
             }
-            if (file.size > 10 * 1024 * 1024) {
-                alert('파일 크기는 10MB를 초과할 수 없습니다.');
-                return;
-            }
-            selectedFiles.push(file);
+                if (file.size > 10 * 1024 * 1024) {
+                    alert('파일 크기는 10MB를 초과할 수 없습니다.');
+                    return;
+                }
+                selectedFiles.push(file);
+            });
+            updateFileList();
         });
-        updateFileList();
-    });
+    }
 
     // 파일 목록 업데이트
     function updateFileList() {
+        if (!fileList) return;
+
         if (selectedFiles.length === 0) {
             fileList.innerHTML = '';
             return;
@@ -1090,6 +1108,36 @@ document.addEventListener('DOMContentLoaded', function() {
         if (selectedApprovers.length === 0) {
             alert('결재자를 지정해주세요.');
             return;
+        }
+
+        // 마이너스 연차 검증
+        const warningCard = document.getElementById('vacation_warning_card');
+        const allowMinusCheckbox = document.getElementById('allow_minus_vacation');
+        const specialReasonTextarea = document.getElementById('special_approval_reason');
+
+        // 연차 초과 상태이고 경고 카드가 표시 중인 경우
+        if (warningCard && warningCard.style.display !== 'none') {
+            // 마이너스 연차 허용 체크박스가 체크되지 않은 경우
+            if (!allowMinusCheckbox || !allowMinusCheckbox.checked) {
+                alert('잔여 연차가 부족합니다.\n마이너스 연차 사용 허용을 체크하고 특별 승인 사유를 입력해주세요.');
+                return;
+            }
+
+            // 특별 승인 사유가 입력되지 않은 경우
+            if (!specialReasonTextarea || !specialReasonTextarea.value.trim()) {
+                alert('마이너스 연차 사용을 위한 특별 승인 사유를 입력해주세요.');
+                if (specialReasonTextarea) {
+                    specialReasonTextarea.focus();
+                }
+                return;
+            }
+
+            // 특별 승인 사유가 너무 짧은 경우 (최소 10자)
+            if (specialReasonTextarea.value.trim().length < 10) {
+                alert('특별 승인 사유를 10자 이상 상세히 입력해주세요.');
+                specialReasonTextarea.focus();
+                return;
+            }
         }
 
         if (confirm('결재를 요청하시겠습니까?')) {
@@ -1530,36 +1578,129 @@ document.addEventListener('DOMContentLoaded', function() {
         return `${year}-${month}-${day}`;
     }
 
-    // 연차 일수 계산
+    // 연차 일수 계산 및 초과 검증
     function calculateVacationDays() {
         if (!vifStartDate.value || !vifEndDate.value) {
             vifCalculatedDays.textContent = '0';
+            hideVacationWarning();
             return;
         }
 
         const vacationType = vifVacationType.value;
+        let usedDays = 0;
 
         if (vacationType.includes('반차')) {
+            usedDays = 0.5;
             vifCalculatedDays.textContent = '0.5';
-            return;
-        }
+        } else {
+            // 주말과 공휴일 제외 계산
+            let workDays = 0;
+            const start = new Date(vifStartDate.value);
+            const end = new Date(vifEndDate.value);
 
-        // 주말과 공휴일 제외 계산
-        let workDays = 0;
-        const start = new Date(vifStartDate.value);
-        const end = new Date(vifEndDate.value);
+            for (let date = new Date(start); date <= end; date.setDate(date.getDate() + 1)) {
+                const dayOfWeek = date.getDay();
+                const dateStr = formatDate(date);
 
-        for (let date = new Date(start); date <= end; date.setDate(date.getDate() + 1)) {
-            const dayOfWeek = date.getDay();
-            const dateStr = formatDate(date);
-
-            // 주말(토, 일)과 공휴일 제외
-            if (dayOfWeek !== 0 && dayOfWeek !== 6 && !holidays[dateStr]) {
-                workDays++;
+                // 주말(토, 일)과 공휴일 제외
+                if (dayOfWeek !== 0 && dayOfWeek !== 6 && !holidays[dateStr]) {
+                    workDays++;
+                }
             }
+
+            usedDays = workDays;
+            vifCalculatedDays.textContent = workDays;
         }
 
-        vifCalculatedDays.textContent = workDays;
+        // 연차 초과 검증
+        checkVacationBalance(usedDays);
+    }
+
+    // 연차 잔여 확인 및 경고 표시
+    function checkVacationBalance(usedDays) {
+        const totalVacation = 15; // 총 연차 (실제로는 서버에서 가져와야 함)
+        const usedVacation = 3;   // 사용한 연차 (실제로는 서버에서 가져와야 함)
+        const remainingVacation = totalVacation - usedVacation;
+
+        const remainingAfter = remainingVacation - usedDays;
+
+        // 신청 후 잔여 표시
+        const remainingAfterRow = document.getElementById('remaining_after_row');
+        const remainingAfterValue = document.getElementById('vif_remaining_after');
+
+        if (usedDays > 0) {
+            remainingAfterRow.style.display = 'flex';
+            remainingAfterValue.textContent = remainingAfter;
+
+            // 음수면 빨간색, 양수면 초록색
+            remainingAfterValue.classList.remove('positive', 'negative');
+            if (remainingAfter < 0) {
+                remainingAfterValue.classList.add('negative');
+            } else {
+                remainingAfterValue.classList.add('positive');
+            }
+        } else {
+            remainingAfterRow.style.display = 'none';
+        }
+
+        // 연차 부족 시 경고 표시
+        if (remainingAfter < 0) {
+            showVacationWarning(Math.abs(remainingAfter));
+        } else {
+            hideVacationWarning();
+        }
+    }
+
+    // 연차 부족 경고 표시
+    function showVacationWarning(excessDays) {
+        const warningCard = document.getElementById('vacation_warning_card');
+        const excessDaysSpan = document.querySelector('.excess-days');
+
+        if (warningCard && excessDaysSpan) {
+            excessDaysSpan.textContent = excessDays + '일';
+            warningCard.style.display = 'block';
+        }
+    }
+
+    // 연차 부족 경고 숨김
+    function hideVacationWarning() {
+        const warningCard = document.getElementById('vacation_warning_card');
+        if (warningCard) {
+            warningCard.style.display = 'none';
+        }
+
+        // 체크박스 및 특별 승인 사유 초기화
+        const allowMinusCheckbox = document.getElementById('allow_minus_vacation');
+        const specialReasonWrapper = document.getElementById('special_reason_wrapper');
+        const specialReasonTextarea = document.getElementById('special_approval_reason');
+
+        if (allowMinusCheckbox) {
+            allowMinusCheckbox.checked = false;
+        }
+        if (specialReasonWrapper) {
+            specialReasonWrapper.style.display = 'none';
+        }
+        if (specialReasonTextarea) {
+            specialReasonTextarea.value = '';
+        }
+    }
+
+    // 마이너스 연차 허용 체크박스 이벤트
+    const allowMinusCheckbox = document.getElementById('allow_minus_vacation');
+    const specialReasonWrapper = document.getElementById('special_reason_wrapper');
+
+    if (allowMinusCheckbox) {
+        allowMinusCheckbox.addEventListener('change', function() {
+            if (this.checked) {
+                specialReasonWrapper.style.display = 'block';
+            } else {
+                specialReasonWrapper.style.display = 'none';
+                const specialReasonTextarea = document.getElementById('special_approval_reason');
+                if (specialReasonTextarea) {
+                    specialReasonTextarea.value = '';
+                }
+            }
+        });
     }
 
     // 이전 달
@@ -1640,8 +1781,45 @@ document.addEventListener('DOMContentLoaded', function() {
     // 양식에 적용 - 나중에 문서 양식 토글 섹션에서 처리
 
     // 달력 초기 렌더링
-    if (calendarDays) {
-        renderCalendar();
+    if (calendarDays && vifStartDate && vifEndDate) {
+        try {
+            // 테스트용 더미 데이터 (오늘 날짜 기준: 2025-10-24)
+            // 10월 27일(월) ~ 10월 31일(금) 5일간 연차 신청
+            currentYear = 2025;
+            currentMonth = 9; // 10월 (0-based index)
+
+            // 신청자 정보 초기화 (실제로는 로그인 사용자 정보로 채워야 함)
+            const vifApplicant = document.getElementById('vif_applicant');
+            const vifDepartment = document.getElementById('vif_department');
+            const vifPosition = document.getElementById('vif_position');
+            const vifApplyDate = document.getElementById('vif_apply_date');
+
+            if (vifApplicant) vifApplicant.value = '홍길동';
+            if (vifDepartment) vifDepartment.value = '개발팀';
+            if (vifPosition) vifPosition.value = '대리';
+            if (vifApplyDate) vifApplyDate.value = new Date().toISOString().split('T')[0];
+
+            renderCalendar(); // 먼저 달력을 렌더링
+
+            // 그 다음 더미 데이터 설정
+            vifStartDate.value = '2025-10-27';
+            vifEndDate.value = '2025-10-31';
+            selectedDates = fillDateRange('2025-10-27', '2025-10-31');
+
+            // 선택된 날짜로 달력 다시 렌더링
+            renderCalendar();
+            calculateVacationDays(); // 일수 계산 및 연차 초과 검증
+        } catch (error) {
+            console.error('달력 초기화 중 오류:', error);
+            // 오류 발생 시에도 기본 달력은 표시
+            renderCalendar();
+        }
+    } else {
+        console.warn('달력 요소를 찾을 수 없습니다:', {
+            calendarDays: !!calendarDays,
+            vifStartDate: !!vifStartDate,
+            vifEndDate: !!vifEndDate
+        });
     }
 
     // ============================================
@@ -1667,18 +1845,48 @@ document.addEventListener('DOMContentLoaded', function() {
     // "양식에 적용" 버튼 클릭 시 문서 양식 자동으로 펼치기
     if (applyToFormBtn) {
         applyToFormBtn.addEventListener('click', function() {
-            // 기본 양식의 필드에 값 복사
+            // 기본 정보 복사
             document.getElementById('applicant').value = document.getElementById('vif_applicant').value;
             document.getElementById('department').value = document.getElementById('vif_department').value;
             document.getElementById('position').value = document.getElementById('vif_position').value;
+            document.getElementById('reason').value = document.getElementById('vif_reason').value;
+
+            // 숨겨진 필드들 (데이터 보관용)
             document.getElementById('vacation_type').value = vifVacationType.value;
             document.getElementById('start_date').value = vifStartDate.value;
             document.getElementById('end_date').value = vifEndDate.value;
             document.getElementById('days').value = vifCalculatedDays.textContent;
-            document.getElementById('reason').value = document.getElementById('vif_reason').value;
-
-            // 신청일은 오늘 날짜로
             document.getElementById('apply_date').value = new Date().toISOString().split('T')[0];
+
+            // 테스트용 추가 정보 (실제로는 사용자 정보에서 가져와야 함)
+            const addressField = document.getElementById('address');
+            const birthDateField = document.getElementById('birth_date');
+            const contactField = document.getElementById('contact');
+
+            if (addressField && !addressField.value) addressField.value = '서울시 강남구 테헤란로 123';
+            if (birthDateField && !birthDateField.value) birthDateField.value = '1990-01-01';
+            if (contactField && !contactField.value) contactField.value = '010-1234-5678';
+
+            // 휴가기간 포맷 생성 (YYYY.MM.DD (day) ~ YYYY.MM.DD (day) 총 연차 n일)
+            const vacationPeriod = formatVacationPeriod(
+                vifStartDate.value,
+                vifEndDate.value,
+                vifCalculatedDays.textContent
+            );
+            document.getElementById('vacation_period').value = vacationPeriod;
+
+            // 신청일 포맷 (YYYY년 MM월 DD일)
+            const today = new Date();
+            const applyDateText = `${today.getFullYear()}년 ${today.getMonth() + 1}월 ${today.getDate()}일`;
+            document.getElementById('apply_date_text').textContent = applyDateText;
+
+            // 하단 신청인 이름 설정 (띄어쓰기)
+            const applicantName = document.getElementById('vif_applicant').value;
+            const spacedName = applicantName.split('').join(' ');
+            document.getElementById('applicant_name_footer').textContent = spacedName;
+
+            // 결재라인 정보 자동 설정 (실제로는 서버에서 불러와야 함)
+            setApprovalLine();
 
             // 문서 양식 펼치기
             if (documentFormWrapper && documentFormWrapper.classList.contains('collapsed')) {
@@ -1691,6 +1899,102 @@ document.addEventListener('DOMContentLoaded', function() {
             }, 300);
 
             alert('양식에 적용되었습니다.');
+        });
+    }
+
+    // 휴가기간 포맷 생성 함수
+    function formatVacationPeriod(startDateStr, endDateStr, days) {
+        if (!startDateStr || !endDateStr) {
+            return '';
+        }
+
+        const startDate = new Date(startDateStr);
+        const endDate = new Date(endDateStr);
+
+        const dayNames = ['일', '월', '화', '수', '목', '금', '토'];
+
+        const startFormatted = `${startDate.getFullYear()}.${String(startDate.getMonth() + 1).padStart(2, '0')}.${String(startDate.getDate()).padStart(2, '0')} (${dayNames[startDate.getDay()]})`;
+        const endFormatted = `${endDate.getFullYear()}.${String(endDate.getMonth() + 1).padStart(2, '0')}.${String(endDate.getDate()).padStart(2, '0')} (${dayNames[endDate.getDay()]})`;
+
+        return `${startFormatted} ~ ${endFormatted} 총 연차 ${days}일`;
+    }
+
+    // ============================================
+    // 결재라인 자동 설정 및 전자서명 기능
+    // ============================================
+
+    function setApprovalLine() {
+        // 실제로는 로그인 사용자 정보 기반으로 서버에서 결재라인을 가져와야 함
+        // 테스트용 더미 데이터
+        const approvalLine = [
+            { role: '담당', name: '홍길동', id: 'user001' },
+            { role: '부서장', name: '김부장', id: 'manager001' },
+            { role: '대표이사', name: '이대표', id: 'ceo001' }
+        ];
+
+        approvalLine.forEach(approver => {
+            // 결재자 이름 설정
+            const nameSpan = document.querySelector(`.approver-name[data-role="${approver.role}"]`);
+            if (nameSpan) {
+                nameSpan.textContent = approver.name;
+            }
+
+            // 결재 셀에 approver-id 설정
+            const signCell = document.querySelector(`.approval-sign-cell[data-role="${approver.role}"]`);
+            if (signCell) {
+                signCell.setAttribute('data-approver-id', approver.id);
+            }
+        });
+    }
+
+    // 결재 서명란 클릭 이벤트 (전자서명 기능)
+    const approvalSignCells = document.querySelectorAll('.approval-sign-cell');
+    approvalSignCells.forEach(cell => {
+        cell.addEventListener('click', function() {
+            // 이미 서명된 경우 무시
+            if (this.classList.contains('signed')) {
+                return;
+            }
+
+            const role = this.getAttribute('data-role');
+            const approverId = this.getAttribute('data-approver-id');
+
+            // 실제로는 로그인된 사용자가 해당 결재자인지 확인해야 함
+            // 지금은 테스트용으로 바로 서명 처리
+            if (!approverId) {
+                alert('결재자 정보가 설정되지 않았습니다.\n먼저 "양식에 적용" 버튼을 클릭해주세요.');
+                return;
+            }
+
+            // 확인 다이얼로그
+            if (confirm(`${role} 결재를 승인하시겠습니까?`)) {
+                applySignature(this, role);
+            }
+        });
+    });
+
+    // 전자서명 적용
+    function applySignature(cell, role) {
+        // 서명 처리
+        cell.classList.add('signed');
+
+        // 서명 이미지 또는 텍스트 추가 (실제로는 서버에서 전자서명 이미지를 가져와야 함)
+        const signArea = cell.querySelector('.sign-area');
+        signArea.innerHTML = '<div style="font-family: \'Brush Script MT\', cursive; font-size: 16px; color: #d32f2f; font-weight: bold;">(인)</div>';
+
+        // 결재 날짜 설정
+        const dateCell = document.querySelector(`.approval-date[data-role="${role}"]`);
+        if (dateCell) {
+            const today = new Date();
+            const dateStr = `${today.getFullYear()}.${String(today.getMonth() + 1).padStart(2, '0')}.${String(today.getDate()).padStart(2, '0')}`;
+            dateCell.textContent = dateStr;
+        }
+
+        // 실제로는 서버에 결재 정보 저장 API 호출
+        console.log(`${role} 결재 완료:`, {
+            role: role,
+            approverId: cell.getAttribute('data-approver-id'),
+            timestamp: new Date().toISOString()
         });
     }
 });

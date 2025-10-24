@@ -1,0 +1,38 @@
+package com.pinecni.erp.repository;
+
+import com.pinecni.erp.entity.Code;
+import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Query;
+import org.springframework.stereotype.Repository;
+
+import java.util.List;
+import java.util.Optional;
+
+/**
+ * Code Repository
+ */
+@Repository
+public interface CodeRepository extends JpaRepository<Code, Long> {
+
+    /**
+     * 그룹별 코드 목록 조회
+     */
+    @Query("SELECT c FROM Code c WHERE c.groupCode = :groupCode ORDER BY c.displayOrder")
+    List<Code> findByGroupCode(String groupCode);
+
+    /**
+     * 코드로 조회
+     */
+    Optional<Code> findByCode(String code);
+
+    /**
+     * 그룹 및 코드로 조회
+     */
+    Optional<Code> findByGroupCodeAndCode(String groupCode, String code);
+
+    /**
+     * 활성화된 코드 목록 조회
+     */
+    @Query("SELECT c FROM Code c WHERE c.groupCode = :groupCode AND c.isActive = true ORDER BY c.displayOrder")
+    List<Code> findActiveByGroupCode(String groupCode);
+}
