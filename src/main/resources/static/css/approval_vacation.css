@@ -506,9 +506,98 @@ div:focus {
     font-size: 20.5px;
     font-weight: 700;
     color: #333;
-    margin: 0 0 25px 0;
-    padding-bottom: 20px;
+    margin: 0 0 15px 0;
+    padding-bottom: 15px;
     border-bottom: 3px double #333;
+}
+
+/* 결재라인 */
+.approval-line-box {
+    display: flex;
+    justify-content: flex-end;
+    margin-bottom: 25px;
+}
+
+.approval-line-table {
+    border-collapse: collapse;
+    border: 2px solid #333;
+}
+
+.approval-line-table th,
+.approval-line-table td {
+    border: 1px solid #333;
+    text-align: center;
+    padding: 0;
+}
+
+.approval-header {
+    font-size: 12px;
+    font-weight: 700;
+    color: #333;
+    background: #f5f5f5;
+    padding: 6px 12px;
+    width: 80px;
+}
+
+.approval-sign-cell {
+    height: 70px;
+    width: 80px;
+    padding: 4px;
+    cursor: pointer;
+    position: relative;
+    background: white;
+    transition: background-color 0.2s ease;
+}
+
+.approval-sign-cell:hover {
+    background: #f8f9fa;
+}
+
+.approval-sign-cell.signed {
+    cursor: default;
+}
+
+.approval-sign-cell.signed:hover {
+    background: white;
+}
+
+.sign-area {
+    width: 100%;
+    height: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    position: relative;
+}
+
+.sign-placeholder {
+    font-size: 11px;
+    color: #999;
+    user-select: none;
+}
+
+.approval-sign-cell.signed .sign-placeholder {
+    display: none;
+}
+
+.sign-image {
+    max-width: 100%;
+    max-height: 100%;
+    object-fit: contain;
+}
+
+.approval-name-cell {
+    font-size: 11px;
+    padding: 4px 6px;
+    background: white;
+    color: #333;
+}
+
+.approval-date-cell {
+    font-size: 10px;
+    padding: 4px 6px;
+    background: white;
+    color: #666;
 }
 
 .form-table {
@@ -586,6 +675,55 @@ div h2{
 .form-table textarea {
     min-height: 120px;
     resize: vertical;
+}
+
+/* 문서 하단 */
+.document-footer {
+    margin-top: 30px;
+    padding: 20px 0;
+}
+
+.footer-text {
+    text-align: center;
+    font-size: 14px;
+    font-weight: 500;
+    color: #333;
+    margin: 0 0 30px 0;
+    line-height: 1.6;
+}
+
+.footer-date {
+    text-align: center;
+    font-size: 14px;
+    font-weight: 600;
+    color: #333;
+    margin-bottom: 40px;
+}
+
+.footer-signature {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 20px;
+    font-size: 14px;
+    color: #333;
+}
+
+.signature-label {
+    font-weight: 600;
+}
+
+.signature-name {
+    font-weight: 700;
+    font-size: 16px;
+    letter-spacing: 0.3em;
+    min-width: 100px;
+    text-align: center;
+}
+
+.signature-seal {
+    font-weight: 500;
+    color: #666;
 }
 
 /* readonly 필드 스타일 - 테두리와 배경 제거 */
@@ -1112,27 +1250,27 @@ div h2{
 .vif-calendar-section {
     background: #f8f9fa;
     border-radius: 12px;
-    padding: 20px;
+    padding: 16px;
 }
 
 .calendar-header {
     display: flex;
     justify-content: space-between;
     align-items: center;
-    margin-bottom: 20px;
+    margin-bottom: 12px;
 }
 
 .calendar-title {
     margin: 0;
-    font-size: 16px;
+    font-size: 14px;
     font-weight: 600;
     color: #1a237e;
 }
 
 .calendar-nav {
-    width: 36px;
-    height: 36px;
-    border-radius: 8px;
+    width: 32px;
+    height: 32px;
+    border-radius: 6px;
     border: 1px solid #dee2e6;
     background: white;
     color: #495057;
@@ -1153,16 +1291,16 @@ div h2{
 .calendar-weekdays {
     display: grid;
     grid-template-columns: repeat(7, 1fr);
-    gap: 4px;
-    margin-bottom: 8px;
+    gap: 3px;
+    margin-bottom: 6px;
 }
 
 .weekday {
     text-align: center;
-    font-size: 13px;
+    font-size: 12px;
     font-weight: 600;
     color: #495057;
-    padding: 8px 0;
+    padding: 6px 0;
 }
 
 .weekday.sun {
@@ -1176,8 +1314,8 @@ div h2{
 .calendar-days {
     display: grid;
     grid-template-columns: repeat(7, 1fr);
-    gap: 4px;
-    min-height: 280px;
+    gap: 3px;
+    min-height: 210px;
 }
 
 .calendar-day {
@@ -1185,8 +1323,8 @@ div h2{
     display: flex;
     align-items: center;
     justify-content: center;
-    border-radius: 8px;
-    font-size: 14px;
+    border-radius: 6px;
+    font-size: 12px;
     font-weight: 500;
     cursor: pointer;
     transition: all 0.2s ease;
@@ -1276,21 +1414,21 @@ div h2{
 
 .calendar-legend {
     display: flex;
-    gap: 16px;
-    margin-top: 16px;
-    padding-top: 16px;
+    gap: 12px;
+    margin-top: 12px;
+    padding-top: 12px;
     border-top: 1px solid #dee2e6;
 }
 
 .legend-item {
     display: flex;
     align-items: center;
-    gap: 8px;
+    gap: 6px;
 }
 
 .legend-color {
-    width: 16px;
-    height: 16px;
+    width: 14px;
+    height: 14px;
     border-radius: 4px;
 }
 
@@ -1304,7 +1442,7 @@ div h2{
 }
 
 .legend-text {
-    font-size: 12px;
+    font-size: 11px;
     color: #6c757d;
 }
 
@@ -1313,6 +1451,77 @@ div h2{
     display: flex;
     flex-direction: column;
     gap: 16px;
+}
+
+/* 신청자 정보 컴팩트 스타일 */
+.applicant-info .info-card-header {
+    padding: 8px 12px;
+    font-size: 13px;
+}
+
+.applicant-info .info-card-body {
+    padding: 10px;
+    gap: 0;
+}
+
+.applicant-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 8px 10px;
+}
+
+.applicant-item {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+
+.applicant-item label {
+    font-size: 11px;
+    font-weight: 600;
+    color: #495057;
+}
+
+.applicant-item input {
+    padding: 6px 8px;
+    border: 1px solid #dee2e6;
+    border-radius: 4px;
+    font-size: 12px;
+    background: #e9ecef;
+    cursor: not-allowed;
+}
+
+/* 연차 정보 컴팩트 스타일 */
+.vif-info-section > .info-card:not(.applicant-info):not(.warning-card) .info-card-header {
+    padding: 8px 12px;
+    font-size: 13px;
+}
+
+.vif-info-section > .info-card:not(.applicant-info):not(.warning-card) .info-card-body {
+    padding: 10px;
+    gap: 8px;
+}
+
+.vif-info-section > .info-card:not(.applicant-info):not(.warning-card) .info-row {
+    gap: 4px;
+    padding: 0;
+    margin: 0;
+}
+
+.vif-info-section > .info-card:not(.applicant-info):not(.warning-card) .info-row label {
+    font-size: 11px;
+}
+
+.vif-info-section > .info-card:not(.applicant-info):not(.warning-card) .info-row input,
+.vif-info-section > .info-card:not(.applicant-info):not(.warning-card) .info-row select,
+.vif-info-section > .info-card:not(.applicant-info):not(.warning-card) .info-row textarea {
+    padding: 6px 8px;
+    font-size: 12px;
+}
+
+.vif-info-section > .info-card:not(.applicant-info):not(.warning-card) .info-row.highlight {
+    padding: 8px;
+    margin-top: 4px;
 }
 
 .info-card {
@@ -1389,9 +1598,6 @@ div h2{
 
 .info-row.highlight {
     background: linear-gradient(135deg, #fff9e6 0%, #fff3cc 100%);
-    padding: 12px;
-    border-radius: 8px;
-    margin-top: 8px;
 }
 
 .calculated-days {
@@ -1500,4 +1706,126 @@ div h2{
     .vif-actions {
         flex-direction: column;
     }
+}
+
+/* ============================================ */
+/* 연차 초과 경고 및 특별 승인 스타일 */
+/* ============================================ */
+
+.warning-card {
+    border: 2px solid #ff9800 !important;
+    background: linear-gradient(135deg, #fff3e0 0%, #ffe0b2 100%) !important;
+}
+
+.warning-card .info-card-header.warning {
+    background: linear-gradient(135deg, #ff9800 0%, #f57c00 100%);
+    color: white;
+}
+
+.warning-message {
+    padding: 12px;
+    background: white;
+    border-radius: 8px;
+    margin-bottom: 16px;
+    border-left: 4px solid #ff9800;
+}
+
+.warning-message p {
+    margin: 4px 0;
+    color: #333;
+}
+
+.warning-message strong {
+    color: #ff9800;
+    font-size: 15px;
+}
+
+.warning-message .excess-days {
+    color: #d32f2f;
+    font-weight: 700;
+    font-size: 16px;
+}
+
+.special-approval-options {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+.checkbox-wrapper {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    cursor: pointer;
+    padding: 12px;
+    background: white;
+    border-radius: 8px;
+    transition: all 0.3s ease;
+}
+
+.checkbox-wrapper:hover {
+    background: #f5f5f5;
+    transform: translateX(2px);
+}
+
+.checkbox-wrapper input[type="checkbox"] {
+    width: 18px;
+    height: 18px;
+    cursor: pointer;
+    accent-color: #ff9800;
+}
+
+.checkbox-wrapper span {
+    font-size: 14px;
+    font-weight: 600;
+    color: #333;
+}
+
+.special-reason-wrapper {
+    padding: 12px;
+    background: white;
+    border-radius: 8px;
+    border: 2px dashed #ff9800;
+}
+
+.special-reason-wrapper label {
+    display: block;
+    font-size: 13px;
+    font-weight: 600;
+    color: #666;
+    margin-bottom: 8px;
+}
+
+.special-reason-wrapper textarea {
+    width: 100%;
+    padding: 10px;
+    border: 1px solid #ddd;
+    border-radius: 6px;
+    font-size: 13px;
+    line-height: 1.6;
+    resize: vertical;
+    transition: all 0.3s ease;
+}
+
+.special-reason-wrapper textarea:focus {
+    border-color: #ff9800;
+    box-shadow: 0 0 0 3px rgba(255, 152, 0, 0.1);
+}
+
+.special-reason-wrapper textarea::placeholder {
+    color: #999;
+}
+
+#remaining_after_row .days-value {
+    transition: color 0.3s ease;
+    padding: 8px;
+}
+
+#remaining_after_row .days-value.negative {
+    color: #d32f2f !important;
+    font-weight: 700;
+}
+
+#remaining_after_row .days-value.positive {
+    color: #4caf50 !important;
 }

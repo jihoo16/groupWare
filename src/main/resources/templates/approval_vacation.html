@@ -2,373 +2,495 @@
 <html lang="ko" xmlns:th="http://www.thymeleaf.org">
 <head th:replace="fragments/layout :: head('연차신청서', '/css/approval_vacation.css')"></head>
 <body>
-    <div class="container">
-        <!-- 좌측 네비게이션 바 -->
-        <div th:replace="fragments/sidebar :: sidebar('approval')"></div>
+<div class="container">
+    <!-- 좌측 네비게이션 바 -->
+    <div th:replace="fragments/sidebar :: sidebar('approval')"></div>
 
-        <!-- 메인 콘텐츠 영역 -->
-        <main class="main-content">
-            <header class="header">
-                <div class="header-left">
-                    <h1 class="page-title"><i class="fas fa-umbrella-beach"></i> 문서 작성 > 연차신청서</h1>
-                </div>
-                <div class="header-right">
-                    <button class="btn-secondary" onclick="history.back()">
-                        <i class="fas fa-arrow-left"></i>
-                        돌아가기
-                    </button>
-                </div>
-            </header>
+    <!-- 메인 콘텐츠 영역 -->
+    <main class="main-content">
+        <header class="header">
+            <div class="header-left">
+                <h1 class="page-title"><i class="fas fa-umbrella-beach"></i> 문서 작성 > 연차신청서</h1>
+            </div>
+            <div class="header-right">
+                <button class="btn-secondary" onclick="history.back()">
+                    <i class="fas fa-arrow-left"></i>
+                    돌아가기
+                </button>
+            </div>
+        </header>
 
-            <div class="write-container">
-                <div class="write-layout">
-                    <!-- 좌측: 템플릿 선택 -->
-                    <aside class="template-sidebar">
-                        <div class="tree-header">
-                            <h3><i class="fas fa-file-alt"></i> 문서 양식</h3>
-                            <button class="btn-expand-all" id="expandAllBtn">
-                                <i class="fas fa-minus-square"></i> 전체 접기
+        <div class="write-container">
+            <div class="write-layout">
+                <!-- 좌측: 템플릿 선택 -->
+                <aside class="template-sidebar">
+                    <div class="tree-header">
+                        <h3><i class="fas fa-file-alt"></i> 문서 양식</h3>
+                        <button class="btn-expand-all" id="expandAllBtn">
+                            <i class="fas fa-minus-square"></i> 전체 접기
+                        </button>
+                    </div>
+                    <div class="template-tree">
+                        <!-- 인사 -->
+                        <div class="tree-node expanded">
+                            <div class="tree-node-header category-node">
+                                <span class="tree-toggle"><i class="fas fa-chevron-right"></i></span>
+                                <span class="tree-icon"><i class="fas fa-user-tie"></i></span>
+                                <span class="tree-label">인사</span>
+                                <span class="tree-count">1</span>
+                            </div>
+                            <div class="tree-children">
+                                <div class="tree-node member">
+                                    <div class="tree-node-header active">
+                                        <span class="tree-toggle invisible"></span>
+                                        <span class="tree-icon"><i class="fas fa-umbrella-beach"></i></span>
+                                        <span class="tree-label">연차신청서</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- 지출 -->
+                        <div class="tree-node expanded">
+                            <div class="tree-node-header category-node">
+                                <span class="tree-toggle"><i class="fas fa-chevron-right"></i></span>
+                                <span class="tree-icon"><i class="fas fa-coins"></i></span>
+                                <span class="tree-label">지출</span>
+                                <span class="tree-count">2</span>
+                            </div>
+                            <div class="tree-children">
+                                <div class="tree-node member">
+                                    <a href="/approval/expense" style="text-decoration: none; color: inherit;">
+                                        <div class="tree-node-header">
+                                            <span class="tree-toggle invisible"></span>
+                                            <span class="tree-icon"><i class="fas fa-won-sign"></i></span>
+                                            <span class="tree-label">지출결의서</span>
+                                        </div>
+                                    </a>
+                                </div>
+                                <div class="tree-node member">
+                                    <a href="/approval/purchase" style="text-decoration: none; color: inherit;">
+                                        <div class="tree-node-header">
+                                            <span class="tree-toggle invisible"></span>
+                                            <span class="tree-icon"><i class="fas fa-shopping-cart"></i></span>
+                                            <span class="tree-label">구매요청서</span>
+                                        </div>
+                                    </a>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- 보고 -->
+                        <div class="tree-node expanded">
+                            <div class="tree-node-header category-node">
+                                <span class="tree-toggle"><i class="fas fa-chevron-right"></i></span>
+                                <span class="tree-icon"><i class="fas fa-chart-line"></i></span>
+                                <span class="tree-label">보고</span>
+                                <span class="tree-count">4</span>
+                            </div>
+                            <div class="tree-children">
+                                <div class="tree-node member">
+                                    <a href="/approval/weekly-report" style="text-decoration: none; color: inherit;">
+                                        <div class="tree-node-header">
+                                            <span class="tree-toggle invisible"></span>
+                                            <span class="tree-icon"><i class="fas fa-calendar-week"></i></span>
+                                            <span class="tree-label">주간업무보고</span>
+                                        </div>
+                                    </a>
+                                </div>
+                                <div class="tree-node member">
+                                    <a href="/approval/monthly-report" style="text-decoration: none; color: inherit;">
+                                        <div class="tree-node-header">
+                                            <span class="tree-toggle invisible"></span>
+                                            <span class="tree-icon"><i class="fas fa-calendar-alt"></i></span>
+                                            <span class="tree-label">월간업무보고</span>
+                                        </div>
+                                    </a>
+                                </div>
+                                <div class="tree-node member">
+                                    <a href="/approval/meeting" style="text-decoration: none; color: inherit;">
+                                        <div class="tree-node-header">
+                                            <span class="tree-toggle invisible"></span>
+                                            <span class="tree-icon"><i class="fas fa-users"></i></span>
+                                            <span class="tree-label">회의록</span>
+                                        </div>
+                                    </a>
+                                </div>
+                                <div class="tree-node member">
+                                    <a href="/approval/general" style="text-decoration: none; color: inherit;">
+                                        <div class="tree-node-header">
+                                            <span class="tree-toggle invisible"></span>
+                                            <span class="tree-icon"><i class="fas fa-file-alt"></i></span>
+                                            <span class="tree-label">일반기안문서</span>
+                                        </div>
+                                    </a>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- 출장 -->
+                        <div class="tree-node expanded">
+                            <div class="tree-node-header category-node">
+                                <span class="tree-toggle"><i class="fas fa-chevron-right"></i></span>
+                                <span class="tree-icon"><i class="fas fa-plane-departure"></i></span>
+                                <span class="tree-label">출장</span>
+                                <span class="tree-count">2</span>
+                            </div>
+                            <div class="tree-children">
+                                <div class="tree-node member">
+                                    <a href="/approval/business-trip" style="text-decoration: none; color: inherit;">
+                                        <div class="tree-node-header">
+                                            <span class="tree-toggle invisible"></span>
+                                            <span class="tree-icon"><i class="fas fa-plane"></i></span>
+                                            <span class="tree-label">출장신청</span>
+                                        </div>
+                                    </a>
+                                </div>
+                                <div class="tree-node member">
+                                    <a href="/approval/trip-report" style="text-decoration: none; color: inherit;">
+                                        <div class="tree-node-header">
+                                            <span class="tree-toggle invisible"></span>
+                                            <span class="tree-icon"><i class="fas fa-clipboard-list"></i></span>
+                                            <span class="tree-label">출장보고서</span>
+                                        </div>
+                                    </a>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- 연구비증빙 -->
+                        <div class="tree-node expanded">
+                            <div class="tree-node-header category-node">
+                                <span class="tree-toggle"><i class="fas fa-chevron-right"></i></span>
+                                <span class="tree-icon"><i class="fas fa-file-invoice-dollar"></i></span>
+                                <span class="tree-label">연구비증빙</span>
+                                <span class="tree-count">3</span>
+                            </div>
+                            <div class="tree-children">
+                                <div class="tree-node member">
+                                    <a href="/approval/receipt-meeting" style="text-decoration: none; color: inherit;">
+                                        <div class="tree-node-header">
+                                            <span class="tree-toggle invisible"></span>
+                                            <span class="tree-icon"><i class="fas fa-receipt"></i></span>
+                                            <span class="tree-label">회의록</span>
+                                        </div>
+                                    </a>
+                                </div>
+                                <div class="tree-node member">
+                                    <a href="/approval/receipt-trip" style="text-decoration: none; color: inherit;">
+                                        <div class="tree-node-header">
+                                            <span class="tree-toggle invisible"></span>
+                                            <span class="tree-icon"><i class="fas fa-receipt"></i></span>
+                                            <span class="tree-label">출장</span>
+                                        </div>
+                                    </a>
+                                </div>
+                                <div class="tree-node member">
+                                    <a href="/approval/receipt-overtime" style="text-decoration: none; color: inherit;">
+                                        <div class="tree-node-header">
+                                            <span class="tree-toggle invisible"></span>
+                                            <span class="tree-icon"><i class="fas fa-receipt"></i></span>
+                                            <span class="tree-label">야근식대</span>
+                                        </div>
+                                    </a>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </aside>
+
+                <!-- 우측: 문서 편집 영역 -->
+                <div class="editor-area">
+
+                    <!-- 연차 신청 인터랙티브 폼 -->
+                    <div class="vacation-interactive-form">
+                        <div class="vif-header">
+                            <h3><i class="fas fa-calendar-check"></i> 연차 신청</h3>
+                            <div class="vacation-balance">
+                                <div class="balance-item">
+                                    <span class="balance-label">총 연차</span>
+                                    <span class="balance-value total">15일</span>
+                                </div>
+                                <div class="balance-separator">|</div>
+                                <div class="balance-item">
+                                    <span class="balance-label">사용</span>
+                                    <span class="balance-value used">3일</span>
+                                </div>
+                                <div class="balance-separator">|</div>
+                                <div class="balance-item">
+                                    <span class="balance-label">잔여</span>
+                                    <span class="balance-value remaining">12일</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="vif-body">
+                            <!-- 좌측: 달력 -->
+                            <div class="vif-calendar-section">
+                                <div class="calendar-header">
+                                    <button class="calendar-nav" id="prevMonth">
+                                        <i class="fas fa-chevron-left"></i>
+                                    </button>
+                                    <h4 class="calendar-title" id="calendarTitle">2025년 1월</h4>
+                                    <button class="calendar-nav" id="nextMonth">
+                                        <i class="fas fa-chevron-right"></i>
+                                    </button>
+                                </div>
+                                <div class="calendar-weekdays">
+                                    <div class="weekday sun">일</div>
+                                    <div class="weekday">월</div>
+                                    <div class="weekday">화</div>
+                                    <div class="weekday">수</div>
+                                    <div class="weekday">목</div>
+                                    <div class="weekday">금</div>
+                                    <div class="weekday sat">토</div>
+                                </div>
+                                <div class="calendar-days" id="calendarDays">
+                                    <!-- JavaScript로 생성 -->
+                                </div>
+                                <div class="calendar-legend">
+                                    <div class="legend-item">
+                                        <span class="legend-color selected"></span>
+                                        <span class="legend-text">선택된 날짜</span>
+                                    </div>
+                                    <div class="legend-item">
+                                        <span class="legend-color holiday"></span>
+                                        <span class="legend-text">공휴일/주말</span>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- 우측: 신청 정보 -->
+                            <div class="vif-info-section">
+                                <!-- 신청자 정보 -->
+                                <div class="info-card applicant-info">
+                                    <div class="info-card-header">
+                                        <i class="fas fa-user"></i>
+                                        <span>신청자 정보</span>
+                                    </div>
+                                    <div class="info-card-body">
+                                        <div class="applicant-grid">
+                                            <div class="applicant-item">
+                                                <label>신청자</label>
+                                                <input type="text" id="vif_applicant" placeholder="홍길동" readonly>
+                                            </div>
+                                            <div class="applicant-item">
+                                                <label>부서</label>
+                                                <input type="text" id="vif_department" placeholder="개발팀" readonly>
+                                            </div>
+                                            <div class="applicant-item">
+                                                <label>직급</label>
+                                                <input type="text" id="vif_position" placeholder="대리" readonly>
+                                            </div>
+                                            <div class="applicant-item">
+                                                <label>신청일</label>
+                                                <input type="date" id="vif_apply_date" readonly>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <!-- 연차 정보 -->
+                                <div class="info-card">
+                                    <div class="info-card-header">
+                                        <i class="fas fa-calendar-alt"></i>
+                                        <span>연차 정보</span>
+                                    </div>
+                                    <div class="info-card-body">
+                                        <div class="info-row">
+                                            <label>연차 유형 <span class="required">*</span></label>
+                                            <select id="vif_vacation_type">
+                                                <option value="연차">연차 (1일)</option>
+                                                <option value="반차(오전)">반차 - 오전 (0.5일)</option>
+                                                <option value="반차(오후)">반차 - 오후 (0.5일)</option>
+                                                <option value="병가">병가</option>
+                                                <option value="경조사">경조사</option>
+                                            </select>
+                                        </div>
+                                        <div class="info-row">
+                                            <label>시작일 <span class="required">*</span></label>
+                                            <input type="date" id="vif_start_date" class="date-input">
+                                        </div>
+                                        <div class="info-row">
+                                            <label>종료일 <span class="required">*</span></label>
+                                            <input type="date" id="vif_end_date" class="date-input">
+                                        </div>
+                                        <div class="info-row highlight">
+                                            <label>신청 일수</label>
+                                            <div class="calculated-days">
+                                                <span class="days-value" id="vif_calculated_days">0</span>
+                                                <span class="days-unit">일</span>
+                                            </div>
+                                        </div>
+                                        <div class="info-row" id="remaining_after_row" style="display: none;">
+                                            <label>신청 후 잔여</label>
+                                            <div class="calculated-days">
+                                                <span class="days-value" id="vif_remaining_after"
+                                                      style="font-weight: 700;">0</span>
+                                                <span class="days-unit">일</span>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <!-- 연차 초과 경고 -->
+                                <div class="info-card warning-card" id="vacation_warning_card" style="display: none;">
+                                    <div class="info-card-header warning">
+                                        <i class="fas fa-exclamation-triangle"></i>
+                                        <span>연차 부족 알림</span>
+                                    </div>
+                                    <div class="info-card-body">
+                                        <div class="warning-message">
+                                            <p><strong>잔여 연차가 부족합니다!</strong></p>
+                                            <p id="warning_detail">현재 잔여 연차보다 <span class="excess-days">0일</span> 더
+                                                신청하셨습니다.</p>
+                                        </div>
+                                        <div class="special-approval-options">
+                                            <label class="checkbox-wrapper">
+                                                <input type="checkbox" id="allow_minus_vacation">
+                                                <span>마이너스 연차 사용 허용 요청</span>
+                                            </label>
+                                            <div class="special-reason-wrapper" id="special_reason_wrapper"
+                                                 style="display: none;">
+                                                <label>특별 신청 사유 <span class="required">*</span></label>
+                                                <textarea id="special_approval_reason" rows="3"
+                                                          placeholder="마이너스 연차 사용은 관리직급과 협의 후 신청 가능합니다. &#10;연차 신청 전 반드시 협의 후 신청 해 주세요."></textarea>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div class="info-card">
+                                    <div class="info-card-header">
+                                        <i class="fas fa-comment-alt"></i>
+                                        <span>신청 사유</span>
+                                    </div>
+                                    <div class="info-card-body">
+                                        <div class="info-row">
+                                            <input id="vif_reason" class="date-input" type="text"
+                                                   placeholder="연차 사용 사유를 입력하세요" value="연차 휴가 사용."/>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div class="vif-actions">
+                                    <button class="btn-reset" id="resetSelectionBtn">
+                                        <i class="fas fa-redo"></i>
+                                        선택 초기화
+                                    </button>
+                                    <button class="btn-apply" id="applyToFormBtn">
+                                        <i class="fas fa-check"></i>
+                                        양식에 적용
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- 문서 양식 -->
+                    <div class="document-form-wrapper">
+                        <div class="document-form-header" id="documentFormToggle">
+                            <h3><i class="fas fa-file-alt"></i> 공식 문서 양식</h3>
+                            <button class="btn-toggle-form">
+                                <i class="fas fa-chevron-up"></i>
+                                <span></span>
                             </button>
                         </div>
-                        <div class="template-tree">
-                            <!-- 인사 -->
-                            <div class="tree-node expanded">
-                                <div class="tree-node-header category-node">
-                                    <span class="tree-toggle"><i class="fas fa-chevron-right"></i></span>
-                                    <span class="tree-icon"><i class="fas fa-user-tie"></i></span>
-                                    <span class="tree-label">인사</span>
-                                    <span class="tree-count">1</span>
-                                </div>
-                                <div class="tree-children">
-                                    <div class="tree-node member">
-                                        <div class="tree-node-header active">
-                                            <span class="tree-toggle invisible"></span>
-                                            <span class="tree-icon"><i class="fas fa-umbrella-beach"></i></span>
-                                            <span class="tree-label">연차신청서</span>
-                                        </div>
-                                    </div>
-                                </div>
+                        <div class="document-form" id="documentFormContent">
+                            <h2 class="doc-title">휴 가 계</h2>
+
+                            <!-- 결재라인 -->
+                            <div class="approval-line-box">
+                                <table class="approval-line-table">
+                                    <tr>
+                                        <th class="approval-header">담당</th>
+                                        <th class="approval-header">부서장</th>
+                                        <th class="approval-header">대표이사</th>
+                                    </tr>
+                                    <tr>
+                                        <td class="approval-sign-cell" data-role="담당" data-approver-id="">
+                                            <div class="sign-area">
+                                                <span class="sign-placeholder">결재</span>
+                                            </div>
+                                        </td>
+                                        <td class="approval-sign-cell" data-role="부서장" data-approver-id="">
+                                            <div class="sign-area">
+                                                <span class="sign-placeholder">결재</span>
+                                            </div>
+                                        </td>
+                                        <td class="approval-sign-cell" data-role="대표이사" data-approver-id="">
+                                            <div class="sign-area">
+                                                <span class="sign-placeholder">결재</span>
+                                            </div>
+                                        </td>
+                                    </tr>
+                                    <tr>
+                                        <td class="approval-name-cell">
+                                            <span class="approver-name" data-role="담당">-</span>
+                                        </td>
+                                        <td class="approval-name-cell">
+                                            <span class="approver-name" data-role="부서장">-</span>
+                                        </td>
+                                        <td class="approval-name-cell">
+                                            <span class="approver-name" data-role="대표이사">-</span>
+                                        </td>
+                                    </tr>
+                                    <tr>
+                                        <td class="approval-date-cell">
+                                            <span class="approval-date" data-role="담당">-</span>
+                                        </td>
+                                        <td class="approval-date-cell">
+                                            <span class="approval-date" data-role="부서장">-</span>
+                                        </td>
+                                        <td class="approval-date-cell">
+                                            <span class="approval-date" data-role="대표이사">-</span>
+                                        </td>
+                                    </tr>
+                                </table>
                             </div>
 
-                            <!-- 지출 -->
-                            <div class="tree-node expanded">
-                                <div class="tree-node-header category-node">
-                                    <span class="tree-toggle"><i class="fas fa-chevron-right"></i></span>
-                                    <span class="tree-icon"><i class="fas fa-coins"></i></span>
-                                    <span class="tree-label">지출</span>
-                                    <span class="tree-count">2</span>
-                                </div>
-                                <div class="tree-children">
-                                    <div class="tree-node member">
-                                        <a href="/approval/expense" style="text-decoration: none; color: inherit;">
-                                            <div class="tree-node-header">
-                                                <span class="tree-toggle invisible"></span>
-                                                <span class="tree-icon"><i class="fas fa-won-sign"></i></span>
-                                                <span class="tree-label">지출결의서</span>
-                                            </div>
-                                        </a>
-                                    </div>
-                                    <div class="tree-node member">
-                                        <a href="/approval/purchase" style="text-decoration: none; color: inherit;">
-                                            <div class="tree-node-header">
-                                                <span class="tree-toggle invisible"></span>
-                                                <span class="tree-icon"><i class="fas fa-shopping-cart"></i></span>
-                                                <span class="tree-label">구매요청서</span>
-                                            </div>
-                                        </a>
-                                    </div>
-                                </div>
-                            </div>
-
-                            <!-- 보고 -->
-                            <div class="tree-node expanded">
-                                <div class="tree-node-header category-node">
-                                    <span class="tree-toggle"><i class="fas fa-chevron-right"></i></span>
-                                    <span class="tree-icon"><i class="fas fa-chart-line"></i></span>
-                                    <span class="tree-label">보고</span>
-                                    <span class="tree-count">4</span>
-                                </div>
-                                <div class="tree-children">
-                                    <div class="tree-node member">
-                                        <a href="/approval/weekly-report" style="text-decoration: none; color: inherit;">
-                                            <div class="tree-node-header">
-                                                <span class="tree-toggle invisible"></span>
-                                                <span class="tree-icon"><i class="fas fa-calendar-week"></i></span>
-                                                <span class="tree-label">주간업무보고</span>
-                                            </div>
-                                        </a>
-                                    </div>
-                                    <div class="tree-node member">
-                                        <a href="/approval/monthly-report" style="text-decoration: none; color: inherit;">
-                                            <div class="tree-node-header">
-                                                <span class="tree-toggle invisible"></span>
-                                                <span class="tree-icon"><i class="fas fa-calendar-alt"></i></span>
-                                                <span class="tree-label">월간업무보고</span>
-                                            </div>
-                                        </a>
-                                    </div>
-                                    <div class="tree-node member">
-                                        <a href="/approval/meeting" style="text-decoration: none; color: inherit;">
-                                            <div class="tree-node-header">
-                                                <span class="tree-toggle invisible"></span>
-                                                <span class="tree-icon"><i class="fas fa-users"></i></span>
-                                                <span class="tree-label">회의록</span>
-                                            </div>
-                                        </a>
-                                    </div>
-                                    <div class="tree-node member">
-                                        <a href="/approval/general" style="text-decoration: none; color: inherit;">
-                                            <div class="tree-node-header">
-                                                <span class="tree-toggle invisible"></span>
-                                                <span class="tree-icon"><i class="fas fa-file-alt"></i></span>
-                                                <span class="tree-label">일반기안문서</span>
-                                            </div>
-                                        </a>
-                                    </div>
-                                </div>
-                            </div>
-
-                            <!-- 출장 -->
-                            <div class="tree-node expanded">
-                                <div class="tree-node-header category-node">
-                                    <span class="tree-toggle"><i class="fas fa-chevron-right"></i></span>
-                                    <span class="tree-icon"><i class="fas fa-plane-departure"></i></span>
-                                    <span class="tree-label">출장</span>
-                                    <span class="tree-count">2</span>
-                                </div>
-                                <div class="tree-children">
-                                    <div class="tree-node member">
-                                        <a href="/approval/business-trip" style="text-decoration: none; color: inherit;">
-                                            <div class="tree-node-header">
-                                                <span class="tree-toggle invisible"></span>
-                                                <span class="tree-icon"><i class="fas fa-plane"></i></span>
-                                                <span class="tree-label">출장신청</span>
-                                            </div>
-                                        </a>
-                                    </div>
-                                    <div class="tree-node member">
-                                        <a href="/approval/trip-report" style="text-decoration: none; color: inherit;">
-                                            <div class="tree-node-header">
-                                                <span class="tree-toggle invisible"></span>
-                                                <span class="tree-icon"><i class="fas fa-clipboard-list"></i></span>
-                                                <span class="tree-label">출장보고서</span>
-                                            </div>
-                                        </a>
-                                    </div>
-                                </div>
-                            </div>
-
-                                                        <!-- 연구비증빙 -->
-                            <div class="tree-node expanded">
-                                <div class="tree-node-header category-node">
-                                    <span class="tree-toggle"><i class="fas fa-chevron-right"></i></span>
-                                    <span class="tree-icon"><i class="fas fa-file-invoice-dollar"></i></span>
-                                    <span class="tree-label">연구비증빙</span>
-                                    <span class="tree-count">3</span>
-                                </div>
-                                <div class="tree-children">
-                                    <div class="tree-node member">
-                                        <a href="/approval/receipt-meeting" style="text-decoration: none; color: inherit;">
-                                            <div class="tree-node-header">
-                                                <span class="tree-toggle invisible"></span>
-                                                <span class="tree-icon"><i class="fas fa-receipt"></i></span>
-                                                <span class="tree-label">회의록</span>
-                                            </div>
-                                        </a>
-                                    </div>
-                                    <div class="tree-node member">
-                                        <a href="/approval/receipt-trip" style="text-decoration: none; color: inherit;">
-                                            <div class="tree-node-header">
-                                                <span class="tree-toggle invisible"></span>
-                                                <span class="tree-icon"><i class="fas fa-receipt"></i></span>
-                                                <span class="tree-label">출장</span>
-                                            </div>
-                                        </a>
-                                    </div>
-                                    <div class="tree-node member">
-                                        <a href="/approval/receipt-overtime" style="text-decoration: none; color: inherit;">
-                                            <div class="tree-node-header">
-                                                <span class="tree-toggle invisible"></span>
-                                                <span class="tree-icon"><i class="fas fa-receipt"></i></span>
-                                                <span class="tree-label">야근식대</span>
-                                            </div>
-                                        </a>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                    </aside>
-
-                    <!-- 우측: 문서 편집 영역 -->
-                    <div class="editor-area">
-
-                        <!-- 연차 신청 인터랙티브 폼 -->
-                        <div class="vacation-interactive-form">
-                            <div class="vif-header">
-                                <h3><i class="fas fa-calendar-check"></i> 연차 신청</h3>
-                                <div class="vacation-balance">
-                                    <div class="balance-item">
-                                        <span class="balance-label">총 연차</span>
-                                        <span class="balance-value total">15일</span>
-                                    </div>
-                                    <div class="balance-separator">|</div>
-                                    <div class="balance-item">
-                                        <span class="balance-label">사용</span>
-                                        <span class="balance-value used">3일</span>
-                                    </div>
-                                    <div class="balance-separator">|</div>
-                                    <div class="balance-item">
-                                        <span class="balance-label">잔여</span>
-                                        <span class="balance-value remaining">12일</span>
-                                    </div>
-                                </div>
-                            </div>
-
-                            <div class="vif-body">
-                                <!-- 좌측: 달력 -->
-                                <div class="vif-calendar-section">
-                                    <div class="calendar-header">
-                                        <button class="calendar-nav" id="prevMonth">
-                                            <i class="fas fa-chevron-left"></i>
-                                        </button>
-                                        <h4 class="calendar-title" id="calendarTitle">2025년 1월</h4>
-                                        <button class="calendar-nav" id="nextMonth">
-                                            <i class="fas fa-chevron-right"></i>
-                                        </button>
-                                    </div>
-                                    <div class="calendar-weekdays">
-                                        <div class="weekday sun">일</div>
-                                        <div class="weekday">월</div>
-                                        <div class="weekday">화</div>
-                                        <div class="weekday">수</div>
-                                        <div class="weekday">목</div>
-                                        <div class="weekday">금</div>
-                                        <div class="weekday sat">토</div>
-                                    </div>
-                                    <div class="calendar-days" id="calendarDays">
-                                        <!-- JavaScript로 생성 -->
-                                    </div>
-                                    <div class="calendar-legend">
-                                        <div class="legend-item">
-                                            <span class="legend-color selected"></span>
-                                            <span class="legend-text">선택된 날짜</span>
-                                        </div>
-                                        <div class="legend-item">
-                                            <span class="legend-color holiday"></span>
-                                            <span class="legend-text">공휴일/주말</span>
-                                        </div>
-                                    </div>
-                                </div>
-
-                                <!-- 우측: 신청 정보 -->
-                                <div class="vif-info-section">
-                                    <div class="info-card">
-                                        <div class="info-card-header">
-                                            <i class="fas fa-user"></i>
-                                            <span>신청자 정보</span>
-                                        </div>
-                                        <div class="info-card-body">
-                                            <div class="info-row">
-                                                <label>이름</label>
-                                                <input type="text" id="vif_applicant" value="홍길동" readonly>
-                                            </div>
-                                            <div class="info-row">
-                                                <label>부서</label>
-                                                <input type="text" id="vif_department" value="개발팀" readonly>
-                                            </div>
-                                            <div class="info-row">
-                                                <label>직급</label>
-                                                <input type="text" id="vif_position" value="사원" readonly>
-                                            </div>
-                                        </div>
-                                    </div>
-
-                                    <div class="info-card">
-                                        <div class="info-card-header">
-                                            <i class="fas fa-calendar-alt"></i>
-                                            <span>연차 정보</span>
-                                        </div>
-                                        <div class="info-card-body">
-                                            <div class="info-row">
-                                                <label>연차 유형 <span class="required">*</span></label>
-                                                <select id="vif_vacation_type">
-                                                    <option value="연차">연차 (1일)</option>
-                                                    <option value="반차(오전)">반차 - 오전 (0.5일)</option>
-                                                    <option value="반차(오후)">반차 - 오후 (0.5일)</option>
-                                                    <option value="병가">병가</option>
-                                                    <option value="경조사">경조사</option>
-                                                </select>
-                                            </div>
-                                            <div class="info-row">
-                                                <label>시작일 <span class="required">*</span></label>
-                                                <input type="date" id="vif_start_date" class="date-input">
-                                            </div>
-                                            <div class="info-row">
-                                                <label>종료일 <span class="required">*</span></label>
-                                                <input type="date" id="vif_end_date" class="date-input">
-                                            </div>
-                                            <div class="info-row highlight">
-                                                <label>사용 일수</label>
-                                                <div class="calculated-days">
-                                                    <span class="days-value" id="vif_calculated_days">0</span>
-                                                    <span class="days-unit">일</span>
-                                                </div>
-                                            </div>
-                                        </div>
-                                    </div>
-
-                                    <div class="info-card">
-                                        <div class="info-card-header">
-                                            <i class="fas fa-comment-alt"></i>
-                                            <span>신청 사유</span>
-                                        </div>
-                                        <div class="info-card-body">
-                                            <input id="vif_reason" type="text" placeholder="연차 사용 사유를 입력하세요" value="연차 사용합니다." />
-                                        </div>
-                                    </div>
-
-                                    <div class="vif-actions">
-                                        <button class="btn-reset" id="resetSelectionBtn">
-                                            <i class="fas fa-redo"></i>
-                                            선택 초기화
-                                        </button>
-                                        <button class="btn-apply" id="applyToFormBtn">
-                                            <i class="fas fa-check"></i>
-                                            양식에 적용
-                                        </button>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-
-                        <!-- 문서 양식 -->
-                        <div class="document-form-wrapper">
-                            <div class="document-form-header" id="documentFormToggle">
-                                <h3><i class="fas fa-file-alt"></i> 공식 문서 양식</h3>
-                                <button class="btn-toggle-form">
-                                    <i class="fas fa-chevron-up"></i>
-                                    <span>접기</span>
-                                </button>
-                            </div>
-                            <div class="document-form" id="documentFormContent">
-                                <h2 class="doc-title">연 차 신 청 서</h2>
-                                <table class="form-table">
+                            <table class="form-table">
                                 <tr>
-                                    <th style="width: 150px;">신청자</th>
-                                    <td><input type="text" id="applicant" placeholder="신청자명"></td>
-                                    <th style="width: 150px;">부서</th>
+                                    <th style="width: 120px;">주 소</th>
+                                    <td colspan="3"><input type="text" id="address" placeholder="주소"></td>
+                                </tr>
+                                <tr>
+                                    <th>생년월일</th>
+                                    <td><input type="date" id="birth_date"></td>
+                                    <th style="width: 120px;">연 락 처</th>
+                                    <td><input type="tel" id="contact" placeholder="010-0000-0000"></td>
+                                </tr>
+                                <tr>
+                                    <th>소 속</th>
                                     <td><input type="text" id="department" placeholder="부서명"></td>
-                                </tr>
-                                <tr>
-                                    <th>직급</th>
+                                    <th>직 급</th>
                                     <td><input type="text" id="position" placeholder="직급"></td>
-                                    <th>신청일</th>
-                                    <td><input type="date" id="apply_date"></td>
                                 </tr>
                                 <tr>
-                                    <th>연차 유형</th>
+                                    <th>성 명</th>
+                                    <td colspan="3"><input type="text" id="applicant" placeholder="신청자명"></td>
+                                </tr>
+                                <tr>
+                                    <th>내 용</th>
                                     <td colspan="3">
-                                        <select id="vacation_type">
+                                        <input type="text" id="content" value="휴가 신청" readonly style="font-weight: 600;">
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <th>사 유</th>
+                                    <td colspan="3"><textarea id="reason" rows="3"
+                                                              placeholder="연차 사용 사유를 입력하세요"></textarea></td>
+                                </tr>
+                                <tr>
+                                    <th>휴가기간</th>
+                                    <td colspan="3">
+                                        <input type="text" id="vacation_period" readonly
+                                               placeholder="2025.01.01 (월) ~ 2025.01.05 (금) 총 연차 5일"
+                                               style="font-weight: 500;">
+                                        <input type="date" id="start_date" style="display: none;">
+                                        <input type="date" id="end_date" style="display: none;">
+                                        <input type="number" id="days" style="display: none;">
+                                        <select id="vacation_type" style="display: none;">
                                             <option>연차</option>
                                             <option>반차(오전)</option>
                                             <option>반차(오후)</option>
@@ -377,70 +499,69 @@
                                         </select>
                                     </td>
                                 </tr>
-                                <tr>
-                                    <th>시작일</th>
-                                    <td><input type="date" id="start_date"></td>
-                                    <th>종료일</th>
-                                    <td><input type="date" id="end_date"></td>
-                                </tr>
-                                <tr>
-                                    <th>사용 일수</th>
-                                    <td colspan="3"><input type="number" id="days" placeholder="일수" step="0.5"></td>
-                                </tr>
-                                <tr>
-                                    <th>사유</th>
-                                    <td colspan="3"><textarea id="reason" rows="5" placeholder="연차 사용 사유를 입력하세요"></textarea></td>
-                                </tr>
                             </table>
+
+                            <div class="document-footer">
+                                <p class="footer-text">위 사유로 상기기간 동안 휴가사용을 신청하오니 허가하여 주시기 바랍니다.</p>
+                                <div class="footer-date">
+                                    <span id="apply_date_text"></span>
+                                    <input type="date" id="apply_date" style="display: none;">
+                                </div>
+                                <div class="footer-signature">
+                                    <span class="signature-label">신청인</span>
+                                    <span class="signature-name" id="applicant_name_footer">홍 길 동</span>
+                                    <span class="signature-seal">(서명 또는 인)</span>
+                                </div>
                             </div>
                         </div>
+                    </div>
 
-                        <!-- 제출 버튼 -->
-                        <div class="submit-actions">
-                            <button class="btn-secondary btn-lg" onclick="history.back()">
-                                <i class="fas fa-times"></i>
-                                취소
-                            </button>
-                            <button class="btn-outline btn-lg" id="saveDraftBtn">
-                                <i class="fas fa-save"></i>
-                                임시저장
-                            </button>
-                            <button class="btn-primary btn-lg" id="submitBtn">
-                                <i class="fas fa-paper-plane"></i>
-                                결재 요청
-                            </button>
-                        </div>
+                    <!-- 제출 버튼 -->
+                    <div class="submit-actions">
+                        <button class="btn-secondary btn-lg" onclick="history.back()">
+                            <i class="fas fa-times"></i>
+                            취소
+                        </button>
+                        <button class="btn-outline btn-lg" id="saveDraftBtn">
+                            <i class="fas fa-save"></i>
+                            임시저장
+                        </button>
+                        <button class="btn-primary btn-lg" id="submitBtn">
+                            <i class="fas fa-paper-plane"></i>
+                            결재 요청
+                        </button>
                     </div>
                 </div>
             </div>
-        </main>
-    </div>
+        </div>
+    </main>
+</div>
 
-    <!-- 결재자 선택 모달 -->
-    <div class="modal" id="approverModal">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h3>결재자 선택</h3>
-                <button class="modal-close" onclick="closeModal()">
-                    <i class="fas fa-times"></i>
-                </button>
+<!-- 결재자 선택 모달 -->
+<div class="modal" id="approverModal">
+    <div class="modal-content">
+        <div class="modal-header">
+            <h3>결재자 선택</h3>
+            <button class="modal-close" onclick="closeModal()">
+                <i class="fas fa-times"></i>
+            </button>
+        </div>
+        <div class="modal-body">
+            <div class="modal-search">
+                <i class="fas fa-search"></i>
+                <input type="text" id="approverSearch" placeholder="이름 또는 부서 검색...">
             </div>
-            <div class="modal-body">
-                <div class="modal-search">
-                    <i class="fas fa-search"></i>
-                    <input type="text" id="approverSearch" placeholder="이름 또는 부서 검색...">
-                </div>
-                <div class="employee-list" id="employeeList">
-                    <!-- 동적 생성 -->
-                </div>
-            </div>
-            <div class="modal-footer">
-                <button class="btn-secondary" onclick="closeModal()">취소</button>
-                <button class="btn-primary" onclick="addApprover()">추가</button>
+            <div class="employee-list" id="employeeList">
+                <!-- 동적 생성 -->
             </div>
         </div>
+        <div class="modal-footer">
+            <button class="btn-secondary" onclick="closeModal()">취소</button>
+            <button class="btn-primary" onclick="addApprover()">추가</button>
+        </div>
     </div>
+</div>
 
-    <script th:src="@{/js/approval_vacation.js}"></script>
+<script th:src="@{/js/approval_vacation.js}"></script>
 </body>
 </html>
