@@ -782,19 +782,37 @@ document.addEventListener('DOMContentLoaded', function() {
 
             let allDivs = null;
             let originalDisplays = [];
+            const loadingModal = document.getElementById('pdfLoadingModal');
+            const progressFill = document.getElementById('progressFill');
+            const progressText = document.getElementById('progressText');
+
+            // 진행도 업데이트 함수
+            function updateProgress(percent, message) {
+                if (progressFill) progressFill.style.width = percent + '%';
+                if (progressText) progressText.textContent = `${message} (${percent}%)`;
+            }
 
             try {
                 console.log('PDF 저장 시작 - 회의록 페이지');
+
+                // 로딩 모달 표시
+                if (loadingModal) loadingModal.classList.add('active');
+                updateProgress(0, '준비 중...');
 
                 const templateType = 'receipt-meeting';
 
                 if (typeof window.jspdf === 'undefined' || typeof window.html2canvas === 'undefined') {
                     alert('PDF 라이브러리를 로드하는 중입니다. 잠시 후 다시 시도해주세요.');
+                    if (loadingModal) loadingModal.classList.remove('active');
                     return;
                 }
 
+                updateProgress(10, 'PDF 초기화 중...');
+
                 const { jsPDF } = window.jspdf;
                 const pdf = new jsPDF('p', 'mm', 'a4');
+
+                updateProgress(15, '문서 구조 확인 중...');
 
                 allDivs = documentForm.querySelectorAll(':scope > div');
                 console.log('찾은 div 개수:', allDivs.length);
@@ -803,8 +821,11 @@ document.addEventListener('DOMContentLoaded', function() {
 
                 if (allDivs.length < 4) {
                     alert('문서 구조를 찾을 수 없습니다. 영수증 처리(회의록) 템플릿을 선택했는지 확인해주세요.');
+                    if (loadingModal) loadingModal.classList.remove('active');
                     return;
                 }
+
+                updateProgress(20, '페이지 준비 중...');
 
                 // 공통 정보 입력 영역 숨기고, 나머지는 모두 표시
                 allDivs[0].style.display = 'none';
@@ -829,6 +850,8 @@ document.addEventListener('DOMContentLoaded', function() {
                 const margin = 10;
                 const contentWidth = pdfWidth - (margin * 2);
 
+                updateProgress(30, '회의 품의서 렌더링 중...');
+
                 // 1. 회의 품의서 페이지
                 console.log('회의 품의서 렌더링 중...');
                 const proposalDiv = allDivs[1];
@@ -845,11 +868,15 @@ document.addEventListener('DOMContentLoaded', function() {
                     throw new Error('Canvas 크기가 0입니다. 문서가 화면에 표시되어 있는지 확인하세요.');
                 }
 
+                updateProgress(45, '회의 품의서 이미지 변환 중...');
+
                 const proposalImgData = proposalCanvas.toDataURL('image/jpeg', 0.95);
                 const imgHeight = (canvasHeight * contentWidth) / canvasWidth;
 
                 pdf.addImage(proposalImgData, 'JPEG', margin, margin, contentWidth, imgHeight);
                 console.log('회의 품의서 페이지 완료');
+
+                updateProgress(55, '회의록 렌더링 중...');
 
                 // 2. 회의록 페이지
                 console.log('회의록 렌더링 중...');
@@ -865,11 +892,15 @@ document.addEventListener('DOMContentLoaded', function() {
                 const minutesCanvasWidth = minutesCanvas.width;
                 const minutesCanvasHeight = minutesCanvas.height;
 
+                updateProgress(70, '회의록 이미지 변환 중...');
+
                 const minutesImgData = minutesCanvas.toDataURL('image/jpeg', 0.95);
                 const minutesImgHeight = (minutesCanvasHeight * contentWidth) / minutesCanvasWidth;
 
                 pdf.addImage(minutesImgData, 'JPEG', margin, margin, contentWidth, minutesImgHeight);
                 console.log('회의록 페이지 완료');
+
+                updateProgress(80, '참석자 명단 렌더링 중...');
 
                 // 3. 참석자 명단 페이지
                 console.log('참석자 명단 렌더링 중...');
@@ -885,11 +916,15 @@ document.addEventListener('DOMContentLoaded', function() {
                 const attendeeCanvasWidth = attendeeCanvas.width;
                 const attendeeCanvasHeight = attendeeCanvas.height;
 
+                updateProgress(90, '참석자 명단 이미지 변환 중...');
+
                 const attendeeImgData = attendeeCanvas.toDataURL('image/jpeg', 0.95);
                 const attendeeImgHeight = (attendeeCanvasHeight * contentWidth) / attendeeCanvasWidth;
 
                 pdf.addImage(attendeeImgData, 'JPEG', margin, margin, contentWidth, attendeeImgHeight);
                 console.log('참석자 명단 페이지 완료');
+
+                updateProgress(95, 'PDF 파일 생성 중...');
 
                 // 파일명 생성
                 const dateInput = document.getElementById('common_date');
@@ -905,9 +940,16 @@ document.addEventListener('DOMContentLoaded', function() {
                 console.log('PDF 저장:', fileName);
                 pdf.save(fileName);
 
-                alert('PDF가 저장되었습니다.');
+                updateProgress(100, '완료!');
+
+                // 잠시 후 모달 닫기
+                setTimeout(() => {
+                    if (loadingModal) loadingModal.classList.remove('active');
+                    alert('PDF가 저장되었습니다.');
+                }, 500);
             } catch (error) {
                 console.error('PDF 생성 오류:', error);
+                if (loadingModal) loadingModal.classList.remove('active');
                 alert('PDF 생성 중 오류가 발생했습니다.\n' + error.message + '\n\n브라우저 콘솔(F12)을 확인해주세요.');
             } finally {
                 if (allDivs && originalDisplays.length > 0) {
