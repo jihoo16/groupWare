@@ -33,6 +33,9 @@ document.addEventListener('DOMContentLoaded', function() {
         { id: 8, name: '유재석', position: '부장', dept: '영업본부 영업1팀' }
     ];
 
+    // 직책 목록
+    const positions = ['상무', '연구위원', '부장', '수석', '차장', '책임', '과장', '선임', '대리', '사원', '연구원'];
+
     // 전체 접기/열기 버튼
     let allExpanded = true;
     if (expandAllBtn) {
@@ -92,7 +95,501 @@ document.addEventListener('DOMContentLoaded', function() {
         const templateElement = document.getElementById('template-' + templateKey);
         if (templateElement) {
             documentForm.innerHTML = templateElement.innerHTML;
+            if (templateKey === 'receipt-trip') {
+                setupTripAutoFill();
+            }
         }
+    }
+
+    // 출장 자동 채우기 기능
+    function setupTripAutoFill() {
+        const tripProject = document.getElementById('trip_project');
+        const tripLocation = document.getElementById('trip_location');
+        const tripDate = document.getElementById('trip_date');
+        const tripDuration = document.getElementById('trip_duration');
+        const tripPurpose = document.getElementById('trip_purpose');
+        const tripReporter = document.getElementById('trip_reporter');
+        const tripResult = document.getElementById('trip_result');
+        const addTripPersonBtn = document.getElementById('addTripPersonBtn');
+        const removeTripPersonBtn = document.getElementById('removeTripPersonBtn');
+        const tripPersonList = document.getElementById('tripPersonList');
+        const dailyExpenseBody = document.getElementById('dailyExpenseBody');
+
+        let tripPersons = [];
+        let dailyExpenses = [];
+
+        // 출장 인원 목록 업데이트 함수
+        function updateTripPersonList() {
+            tripPersonList.innerHTML = '';
+            tripPersons.forEach((person, index) => {
+                const row = document.createElement('div');
+                row.style.cssText = 'display: flex; gap: 8px; margin-bottom: 8px; align-items: center;';
+
+                const positionOptions = positions.map(pos =>
+                    `<option value="${pos}" ${person.position === pos ? 'selected' : ''}>${pos}</option>`
+                ).join('');
+
+                row.innerHTML = `
+                    <input type="checkbox" data-index="${index}" class="trip-checkbox" style="width: 18px; height: 18px; cursor: pointer;">
+                    <input type="text" data-index="${index}" class="trip-dept" placeholder="부서명" value="${person.dept || ''}" style="flex: 1; padding: 5px;">
+                    <select data-index="${index}" class="trip-position" style="flex: 1; padding: 5px;">
+                        <option value="">직책 선택</option>
+                        ${positionOptions}
+                    </select>
+                    <input type="text" data-index="${index}" class="trip-name" placeholder="성명" value="${person.name || ''}" style="flex: 1; padding: 5px;">
+                `;
+                tripPersonList.appendChild(row);
+            });
+
+            // 이벤트 리스너 추가
+            document.querySelectorAll('.trip-dept, .trip-position, .trip-name').forEach(el => {
+                el.addEventListener('input', function() {
+                    const index = parseInt(this.getAttribute('data-index'));
+                    if (this.classList.contains('trip-dept')) {
+                        tripPersons[index].dept = this.value;
+                    } else if (this.classList.contains('trip-position')) {
+                        tripPersons[index].position = this.value;
+                    } else if (this.classList.contains('trip-name')) {
+                        tripPersons[index].name = this.value;
+                    }
+                    updateTripPersonDisplay();
+                });
+
+                el.addEventListener('change', function() {
+                    const index = parseInt(this.getAttribute('data-index'));
+                    if (this.classList.contains('trip-position')) {
+                        tripPersons[index].position = this.value;
+                        updateTripPersonDisplay();
+                    }
+                });
+            });
+
+            updateTripPersonDisplay();
+        }
+
+        // 출장 인원 테이블 업데이트
+        function updateTripPersonDisplay() {
+            const personRows = document.querySelectorAll('.trip-person-row');
+
+            // 모든 행의 첫 3개 셀 업데이트 (최대 5명까지 지원)
+            personRows.forEach((row, index) => {
+                const cells = row.querySelectorAll('td');
+                if (index < tripPersons.length) {
+                    cells[0].textContent = tripPersons[index].dept || '';
+                    cells[1].textContent = tripPersons[index].position || '';
+                    cells[2].textContent = tripPersons[index].name || '';
+                } else {
+                    cells[0].textContent = '';
+                    cells[1].textContent = '';
+                    cells[2].textContent = '';
+                }
+            });
+
+            // 출장내용 및 결과 업데이트
+            updateTripResult();
+        }
+
+        // 인원 추가 버튼
+        if (addTripPersonBtn) {
+            addTripPersonBtn.addEventListener('click', function() {
+                if (tripPersons.length >= 5) {
+                    alert('최대 5명까지만 추가할 수 있습니다.');
+                    return;
+                }
+                tripPersons.push({ dept: '연구소', position: '', name: '' });
+                updateTripPersonList();
+            });
+        }
+
+        // 인원 제거 버튼
+        if (removeTripPersonBtn) {
+            removeTripPersonBtn.addEventListener('click', function() {
+                const checkboxes = document.querySelectorAll('.trip-checkbox:checked');
+                if (checkboxes.length === 0) {
+                    alert('제거할 인원을 선택해주세요.');
+                    return;
+                }
+
+                const indicesToRemove = Array.from(checkboxes)
+                    .map(cb => parseInt(cb.getAttribute('data-index')))
+                    .sort((a, b) => b - a);
+
+                indicesToRemove.forEach(index => {
+                    tripPersons.splice(index, 1);
+                });
+
+                updateTripPersonList();
+            });
+        }
+
+        // 과제명 자동 채우기
+        if (tripProject) {
+            tripProject.addEventListener('input', function() {
+                const value = this.value;
+                document.querySelectorAll('.trip-auto-project').forEach(field => {
+                    field.textContent = value;
+                });
+            });
+        }
+
+        // 출장지 자동 채우기
+        if (tripLocation) {
+            tripLocation.addEventListener('input', function() {
+                const value = this.value;
+                document.querySelectorAll('.trip-auto-location').forEach(field => {
+                    field.textContent = value;
+                });
+            });
+        }
+
+        // 날짜별 비용 입력 행 생성 함수
+        function generateDailyExpenseRows() {
+            if (!tripDate || !tripDate.value || !dailyExpenseBody) return;
+
+            const startDate = new Date(tripDate.value);
+            const duration = parseInt(tripDuration ? tripDuration.value : '0');
+            const days = duration + 1; // 당일(0박) = 1일, 1박 = 2일
+
+            // 기존 데이터 초기화
+            dailyExpenses = [];
+            dailyExpenseBody.innerHTML = '';
+
+            // 날짜별 행 생성
+            for (let i = 0; i < days; i++) {
+                const currentDate = new Date(startDate);
+                currentDate.setDate(currentDate.getDate() + i);
+
+                const year = currentDate.getFullYear();
+                const month = String(currentDate.getMonth() + 1).padStart(2, '0');
+                const day = String(currentDate.getDate()).padStart(2, '0');
+                const dateStr = `${year}.${month}.${day}`;
+
+                dailyExpenses.push({
+                    date: dateStr,
+                    transport: 0,
+                    lodging: 0,
+                    meal: 0,
+                    other: 0
+                });
+
+                const row = document.createElement('tr');
+                row.innerHTML = `
+                    <td style="text-align: center; background: white; font-weight: 500;">${dateStr}</td>
+                    <td style="text-align: center;">
+                        <input type="number" class="expense-input" data-index="${i}" data-type="transport"
+                               placeholder="0" style="width: 100%; text-align: right; padding: 5px;" min="0">
+                    </td>
+                    <td style="text-align: center;">
+                        <input type="number" class="expense-input" data-index="${i}" data-type="lodging"
+                               placeholder="0" style="width: 100%; text-align: right; padding: 5px;" min="0">
+                    </td>
+                    <td style="text-align: center;">
+                        <input type="number" class="expense-input" data-index="${i}" data-type="meal"
+                               placeholder="0" style="width: 100%; text-align: right; padding: 5px;" min="0">
+                    </td>
+                    <td style="text-align: center;">
+                        <input type="number" class="expense-input" data-index="${i}" data-type="other"
+                               placeholder="0" style="width: 100%; text-align: right; padding: 5px;" min="0">
+                    </td>
+                `;
+                dailyExpenseBody.appendChild(row);
+            }
+
+            // 입력 이벤트 리스너 추가
+            document.querySelectorAll('.expense-input').forEach(input => {
+                input.addEventListener('input', function() {
+                    const index = parseInt(this.getAttribute('data-index'));
+                    const type = this.getAttribute('data-type');
+                    const value = parseInt(this.value) || 0;
+
+                    dailyExpenses[index][type] = value;
+                    updateTotalExpenses();
+                });
+            });
+
+            updateTotalExpenses();
+        }
+
+        // 합계 업데이트 함수
+        function updateTotalExpenses() {
+            let totalTransport = 0;
+            let totalLodging = 0;
+            let totalMeal = 0;
+            let totalOther = 0;
+
+            dailyExpenses.forEach(expense => {
+                totalTransport += expense.transport;
+                totalLodging += expense.lodging;
+                totalMeal += expense.meal;
+                totalOther += expense.other;
+            });
+
+            const grandTotal = totalTransport + totalLodging + totalMeal + totalOther;
+
+            // 합계 표시 (공통 입력칸)
+            document.getElementById('totalTransport').textContent = totalTransport.toLocaleString();
+            document.getElementById('totalLodging').textContent = totalLodging.toLocaleString();
+            document.getElementById('totalMeal').textContent = totalMeal.toLocaleString();
+            document.getElementById('totalOther').textContent = totalOther.toLocaleString();
+
+            // 품의서 소요경비 내역에 날짜별 행 생성
+            const proposalExpenseBody = document.getElementById('proposalExpenseBody');
+            if (proposalExpenseBody) {
+                proposalExpenseBody.innerHTML = '';
+                dailyExpenses.forEach((expense, index) => {
+                    const dayTotal = expense.transport + expense.lodging + expense.meal + expense.other;
+                    const row = document.createElement('tr');
+                    row.innerHTML = `
+                        <td style="text-align: center; padding: 10px;">${expense.date}</td>
+                        <td style="text-align: center; padding: 10px;">${expense.transport.toLocaleString()}</td>
+                        <td style="text-align: center; padding: 10px;">${expense.lodging.toLocaleString()}</td>
+                        <td style="text-align: center; padding: 10px;">${expense.meal.toLocaleString()}</td>
+                        <td style="text-align: center; padding: 10px;">${expense.other.toLocaleString()}</td>
+                        <td style="text-align: center; padding: 10px;">${dayTotal.toLocaleString()}</td>
+                    `;
+                    proposalExpenseBody.appendChild(row);
+                });
+            }
+
+            // 복명서 정산 세부내역에 날짜별 행 생성
+            const reportExpenseBody = document.getElementById('reportExpenseBody');
+            if (reportExpenseBody) {
+                reportExpenseBody.innerHTML = '';
+
+                // 헤더 행
+                const headerRow = document.createElement('tr');
+                const rowspan = dailyExpenses.length * 4 + 1; // 각 날짜당 4행(교통비, 숙박비, 식비, 기타) + 헤더
+                headerRow.innerHTML = `
+                    <th colspan="2" rowspan="${rowspan}">정산<br>세부내역</th>
+                    <th>날짜</th>
+                    <th colspan="2" style="text-align: center; background: #fafafa;">구분</th>
+                    <td style="text-align: center; font-weight: bold;">금액</td>
+                `;
+                reportExpenseBody.appendChild(headerRow);
+
+                // 날짜별 상세 내역
+                dailyExpenses.forEach((expense, index) => {
+                    // 교통비
+                    const transportRow = document.createElement('tr');
+                    transportRow.innerHTML = `
+                        <td rowspan="4" style="text-align: center;background: white; font-weight: 500; vertical-align: middle;">${expense.date}</td>
+                        <td colspan="2" style="background: white; padding: 8px; text-align: center">교통비</td>
+                        <td style="text-align: center; padding: 8px; background: white;">${expense.transport.toLocaleString()}원</td>
+                    `;
+                    reportExpenseBody.appendChild(transportRow);
+
+                    // 숙박비
+                    const lodgingRow = document.createElement('tr');
+                    lodgingRow.innerHTML = `
+                        <td colspan="2" style="background: white; padding: 8px; text-align: center">숙박비</td>
+                        <td style="text-align: center; padding: 8px;">${expense.lodging.toLocaleString()}원</td>
+                    `;
+                    reportExpenseBody.appendChild(lodgingRow);
+
+                    // 식비
+                    const mealRow = document.createElement('tr');
+                    mealRow.innerHTML = `
+                        <td colspan="2" style="background: white; padding: 8px; text-align: center">식비</td>
+                        <td style="text-align: center; padding: 8px;">${expense.meal.toLocaleString()}원</td>
+                    `;
+                    reportExpenseBody.appendChild(mealRow);
+
+                    // 기타(일비)
+                    const otherRow = document.createElement('tr');
+                    otherRow.innerHTML = `
+                        <td colspan="2" style="background: white; padding: 8px; text-align: center">기타(일비)</td>
+                        <td style="text-align: center; padding: 8px;">${expense.other.toLocaleString()}원</td>
+                    `;
+                    reportExpenseBody.appendChild(otherRow);
+                });
+            }
+
+            // 합계 금액 표시
+            document.querySelectorAll('.trip-auto-grand-total').forEach(field => {
+                field.textContent = grandTotal.toLocaleString();
+            });
+            document.querySelectorAll('.trip-auto-total').forEach(field => {
+                field.textContent = grandTotal.toLocaleString();
+            });
+            document.querySelectorAll('.trip-auto-request-amount').forEach(field => {
+                field.textContent = grandTotal.toLocaleString();
+            });
+        }
+
+        // 출장 기간 계산 함수
+        function updateTripDateRange() {
+            if (!tripDate || !tripDate.value) return;
+
+            const startDate = new Date(tripDate.value);
+            const duration = parseInt(tripDuration ? tripDuration.value : '0');
+
+            const [year, month, day] = tripDate.value.split('-');
+
+            let dateRangeText = '';
+            if (duration === 0) {
+                // 당일
+                dateRangeText = `${year}.${month}.${day}`;
+            } else {
+                // 1박 이상
+                const endDate = new Date(startDate);
+                endDate.setDate(endDate.getDate() + duration);
+
+                const endYear = endDate.getFullYear();
+                const endMonth = String(endDate.getMonth() + 1).padStart(2, '0');
+                const endDay = String(endDate.getDate()).padStart(2, '0');
+
+                dateRangeText = `${year}.${month}.${day} ~ ${endYear}.${endMonth}.${endDay}`;
+            }
+
+            // 출장기간 표시
+            document.querySelectorAll('.trip-auto-date').forEach(field => {
+                field.textContent = dateRangeText;
+            });
+
+            // 출장복명서 출장기간
+            document.querySelectorAll('.trip-auto-date-range').forEach(field => {
+                field.textContent = dateRangeText;
+            });
+
+            // 소요경비내역 일시 (시작일만)
+            const dateDotFormatted = `${year}.${month}.${day}`;
+            document.querySelectorAll('.trip-auto-date-dot').forEach(field => {
+                field.textContent = dateDotFormatted;
+            });
+
+            // 작성일 계산 (출장기간 -1일, 주말 제외)
+            const tripDateObj = new Date(tripDate.value);
+            const dayOfWeek = tripDateObj.getDay();
+
+            let writeDate = new Date(tripDateObj);
+            if (dayOfWeek === 1) { // 월요일이면 -3일 (금요일)
+                writeDate.setDate(writeDate.getDate() - 3);
+            } else if (dayOfWeek === 0) { // 일요일이면 -2일 (금요일)
+                writeDate.setDate(writeDate.getDate() - 2);
+            } else {
+                writeDate.setDate(writeDate.getDate() - 1);
+            }
+
+            const writeYear = writeDate.getFullYear();
+            const writeMonth = String(writeDate.getMonth() + 1).padStart(2, '0');
+            const writeDay = String(writeDate.getDate()).padStart(2, '0');
+            const writeFormatted = `${writeYear} 년 ${writeMonth} 월 ${writeDay} 일`;
+
+            document.querySelectorAll('.trip-auto-write-date').forEach(field => {
+                field.textContent = writeFormatted;
+            });
+
+            // 복명일자 계산 (출장 종료일 기준, YYYY년 MM월 DD일 형식)
+            let reportDate = startDate;
+            if (duration > 0) {
+                reportDate = new Date(startDate);
+                reportDate.setDate(reportDate.getDate() + duration);
+            }
+
+            const reportYear = reportDate.getFullYear();
+            const reportMonth = String(reportDate.getMonth() + 1).padStart(2, '0');
+            const reportDay = String(reportDate.getDate()).padStart(2, '0');
+
+            document.querySelectorAll('.trip-auto-report-year').forEach(field => {
+                field.textContent = reportYear;
+            });
+            document.querySelectorAll('.trip-auto-report-month').forEach(field => {
+                field.textContent = reportMonth.replace(/^0/, '');
+            });
+            document.querySelectorAll('.trip-auto-report-day').forEach(field => {
+                field.textContent = reportDay.replace(/^0/, '');
+            });
+
+            // 날짜별 비용 입력 테이블 생성
+            generateDailyExpenseRows();
+        }
+
+        // 출장기간 자동 채우기 및 작성일/복명일자 계산
+        if (tripDate) {
+            tripDate.addEventListener('input', function() {
+                updateTripDateRange();
+            });
+        }
+
+        // 출장 기간 셀렉트 박스 이벤트
+        if (tripDuration) {
+            tripDuration.addEventListener('change', function() {
+                updateTripDateRange();
+            });
+        }
+
+        // 출장목적 자동 채우기
+        if (tripPurpose) {
+            tripPurpose.addEventListener('input', function() {
+                const value = this.value;
+                document.querySelectorAll('.trip-auto-purpose').forEach(field => {
+                    field.textContent = value;
+                });
+            });
+        }
+
+        // 복명자 자동 채우기
+        if (tripReporter) {
+            tripReporter.addEventListener('input', function() {
+                const value = this.value;
+                document.querySelectorAll('.trip-auto-reporter').forEach(field => {
+                    field.textContent = value;
+                });
+
+                // 출장내용 및 결과에 자동 추가
+                updateTripResult();
+            });
+
+            // 초기값 설정
+            if (tripReporter.value) {
+                document.querySelectorAll('.trip-auto-reporter').forEach(field => {
+                    field.textContent = tripReporter.value;
+                });
+                updateTripResult();
+            }
+        }
+
+        // 출장내용 및 결과 업데이트
+        function updateTripResult() {
+            // 출장인원에서 이름만 가져오기 (복명자는 제외)
+            const personNames = tripPersons
+                .filter(person => person.name && person.name.trim())
+                .map(person => person.name.trim());
+
+            let resultText = '- 참석인원 :\n';
+
+            if (personNames.length > 0) {
+                resultText += `- ${personNames.join(', ')}(파인씨앤아이)`;
+            }
+
+            // textarea에 자동 생성된 내용 채우기 (사용자가 수정하지 않았을 때만)
+            if (tripResult && !tripResult.dataset.userModified) {
+                tripResult.value = resultText;
+            }
+
+            // 복명서의 출장내용 및 결과에 반영
+            const displayText = tripResult ? tripResult.value : resultText;
+            document.querySelectorAll('.trip-auto-result').forEach(field => {
+                field.textContent = displayText;
+            });
+        }
+
+        // 사용자가 직접 수정하면 자동 업데이트 중지
+        if (tripResult) {
+            tripResult.addEventListener('input', function() {
+                this.dataset.userModified = 'true';
+                // 수정된 내용을 복명서에 바로 반영
+                document.querySelectorAll('.trip-auto-result').forEach(field => {
+                    field.textContent = this.value;
+                });
+            });
+        }
+
+        // 초기 인원 설정
+        tripPersons = [
+            { dept: '연구소', position: '', name: '' }
+        ];
+        updateTripPersonList();
     }
 
     // 결재자 추가 버튼
@@ -300,87 +797,193 @@ document.addEventListener('DOMContentLoaded', function() {
 
             let allDivs = null;
             let originalDisplays = [];
+            const loadingModal = document.getElementById('pdfLoadingModal');
+            const progressFill = document.getElementById('progressFill');
+            const progressText = document.getElementById('progressText');
+
+            // 진행도 업데이트 함수
+            function updateProgress(percent, message) {
+                if (progressFill) progressFill.style.width = percent + '%';
+                if (progressText) progressText.textContent = `${message} (${percent}%)`;
+            }
 
             try {
                 console.log('PDF 저장 시작 - 출장 페이지');
 
-                const templateType = 'receipt-trip';
+                // 로딩 모달 표시
+                if (loadingModal) loadingModal.classList.add('active');
+                updateProgress(0, '준비 중...');
 
                 if (typeof window.jspdf === 'undefined' || typeof window.html2canvas === 'undefined') {
                     alert('PDF 라이브러리를 로드하는 중입니다. 잠시 후 다시 시도해주세요.');
+                    if (loadingModal) loadingModal.classList.remove('active');
                     return;
                 }
 
+                updateProgress(10, 'PDF 초기화 중...');
+
                 const { jsPDF } = window.jspdf;
-                const pdf = new jsPDF('p', 'mm', 'a4');
+                const pdf = new jsPDF({
+                    orientation: 'p',
+                    unit: 'mm',
+                    format: 'a4',
+                    compress: false,
+                    precision: 16
+                });
+
+                updateProgress(20, '문서 구조 확인 중...');
 
                 allDivs = documentForm.querySelectorAll(':scope > div');
                 console.log('찾은 div 개수:', allDivs.length);
 
                 originalDisplays = Array.from(allDivs).map(div => div.style.display);
 
-                if (allDivs.length < 2) {
+                if (allDivs.length < 3) {
                     alert('문서 구조를 찾을 수 없습니다. 영수증 처리(출장) 템플릿을 선택했는지 확인해주세요.');
+                    if (loadingModal) loadingModal.classList.remove('active');
                     return;
                 }
 
-                // 공통 정보 입력 영역 숨기고, 출장 관련 문서만 표시
-                allDivs[0].style.display = 'none';
-                for (let i = 1; i < allDivs.length; i++) {
-                    allDivs[i].style.display = 'block';
-                }
+                updateProgress(30, '페이지 준비 중...');
 
-                await new Promise(resolve => setTimeout(resolve, 100));
+                // 공통 정보 입력 영역 숨기고, 출장품의서와 출장복명서만 표시
+                allDivs[0].style.display = 'none';
+                allDivs[1].style.display = 'block';
+                allDivs[2].style.display = 'block';
+
+                await new Promise(resolve => setTimeout(resolve, 300));
 
                 const renderOptions = {
-                    scale: 3,
+                    scale: 5,
                     useCORS: true,
                     allowTaint: true,
                     logging: false,
                     backgroundColor: '#ffffff',
                     imageTimeout: 0,
-                    removeContainer: true
+                    removeContainer: true,
+                    windowWidth: 2560,
+                    windowHeight: 1440,
+                    letterRendering: true,
+                    foreignObjectRendering: false,
+                    onclone: function(clonedDoc) {
+                        const style = clonedDoc.createElement('style');
+                        style.textContent = `
+                            * {
+                                -webkit-font-smoothing: antialiased !important;
+                                -moz-osx-font-smoothing: grayscale !important;
+                                text-rendering: optimizeLegibility !important;
+                                font-smoothing: antialiased !important;
+                            }
+                        `;
+                        clonedDoc.head.appendChild(style);
+                    }
                 };
 
                 const pdfWidth = 210;
                 const pdfHeight = 297;
-                const margin = 10;
+                const margin = 5;
                 const contentWidth = pdfWidth - (margin * 2);
+                const contentHeight = pdfHeight - (margin * 2);
 
-                // 출장 관련 문서 페이지들 처리
-                for (let i = 1; i < allDivs.length; i++) {
-                    console.log(`문서 ${i} 렌더링 중...`);
+                updateProgress(40, '출장품의서 렌더링 중...');
 
-                    if (i > 1) {
-                        pdf.addPage();
-                    }
+                // 1. 출장품의서 페이지
+                console.log('출장품의서 렌더링 중...');
+                const proposalDiv = allDivs[1];
 
-                    const canvas = await window.html2canvas(allDivs[i], renderOptions);
-                    const canvasWidth = canvas.width;
-                    const canvasHeight = canvas.height;
-
-                    if (canvasWidth === 0 || canvasHeight === 0) {
-                        throw new Error('Canvas 크기가 0입니다. 문서가 화면에 표시되어 있는지 확인하세요.');
-                    }
-
-                    const imgData = canvas.toDataURL('image/jpeg', 0.95);
-                    const imgHeight = (canvasHeight * contentWidth) / canvasWidth;
-
-                    pdf.addImage(imgData, 'JPEG', margin, margin, contentWidth, imgHeight);
-                    console.log(`문서 ${i} 페이지 완료`);
+                if (!proposalDiv) {
+                    throw new Error('출장품의서를 찾을 수 없습니다.');
                 }
 
+                const proposalCanvas = await window.html2canvas(proposalDiv, renderOptions);
+                const canvasWidth = proposalCanvas.width;
+                const canvasHeight = proposalCanvas.height;
+
+                if (canvasWidth === 0 || canvasHeight === 0) {
+                    throw new Error('Canvas 크기가 0입니다. 문서가 화면에 표시되어 있는지 확인하세요.');
+                }
+
+                updateProgress(55, '출장품의서 이미지 변환 중...');
+
+                const proposalImgData = proposalCanvas.toDataURL('image/png');
+
+                let imgWidth = contentWidth;
+                let imgHeight = (canvasHeight * contentWidth) / canvasWidth;
+
+                if (imgHeight > contentHeight) {
+                    imgHeight = contentHeight;
+                    imgWidth = (canvasWidth * contentHeight) / canvasHeight;
+                }
+
+                const xOffset = margin + (contentWidth - imgWidth) / 2;
+                const yOffset = margin + (contentHeight - imgHeight) / 2;
+
+                pdf.addImage(proposalImgData, 'PNG', xOffset, yOffset, imgWidth, imgHeight);
+                console.log('출장품의서 페이지 완료');
+
+                updateProgress(70, '출장복명서 렌더링 중...');
+
+                // 2. 출장복명서 페이지
+                console.log('출장복명서 렌더링 중...');
+                const reportDiv = allDivs[2];
+
+                if (!reportDiv) {
+                    throw new Error('출장복명서를 찾을 수 없습니다.');
+                }
+
+                pdf.addPage();
+                const reportCanvas = await window.html2canvas(reportDiv, renderOptions);
+
+                const reportCanvasWidth = reportCanvas.width;
+                const reportCanvasHeight = reportCanvas.height;
+
+                updateProgress(85, '출장복명서 이미지 변환 중...');
+
+                const reportImgData = reportCanvas.toDataURL('image/png');
+
+                let reportImgWidth = contentWidth;
+                let reportImgHeight = (reportCanvasHeight * contentWidth) / reportCanvasWidth;
+
+                if (reportImgHeight > contentHeight) {
+                    reportImgHeight = contentHeight;
+                    reportImgWidth = (reportCanvasWidth * contentHeight) / reportCanvasHeight;
+                }
+
+                const reportXOffset = margin + (contentWidth - reportImgWidth) / 2;
+                const reportYOffset = margin + (contentHeight - reportImgHeight) / 2;
+
+                pdf.addImage(reportImgData, 'PNG', reportXOffset, reportYOffset, reportImgWidth, reportImgHeight);
+                console.log('출장복명서 페이지 완료');
+
+                updateProgress(95, 'PDF 파일 생성 중...');
+
                 // 파일명 생성
-                const today = new Date();
-                const dateStr = `${today.getFullYear()}${String(today.getMonth() + 1).padStart(2, '0')}${String(today.getDate()).padStart(2, '0')}`;
+                const dateInput = document.getElementById('trip_date');
+                let dateStr;
+                if (dateInput && dateInput.value) {
+                    dateStr = dateInput.value.replace(/-/g, '').slice(2); // YYMMDD 형식
+                } else {
+                    const today = new Date();
+                    const yy = String(today.getFullYear()).slice(2);
+                    const mm = String(today.getMonth() + 1).padStart(2, '0');
+                    const dd = String(today.getDate()).padStart(2, '0');
+                    dateStr = `${yy}${mm}${dd}`;
+                }
                 const fileName = `${dateStr}_출장.pdf`;
 
                 console.log('PDF 저장:', fileName);
                 pdf.save(fileName);
 
-                alert('PDF가 저장되었습니다.');
+                updateProgress(100, '완료!');
+
+                // 잠시 후 모달 닫기
+                setTimeout(() => {
+                    if (loadingModal) loadingModal.classList.remove('active');
+                    alert('PDF가 저장되었습니다.');
+                }, 500);
             } catch (error) {
                 console.error('PDF 생성 오류:', error);
+                if (loadingModal) loadingModal.classList.remove('active');
                 alert('PDF 생성 중 오류가 발생했습니다.\n' + error.message + '\n\n브라우저 콘솔(F12)을 확인해주세요.');
             } finally {
                 if (allDivs && originalDisplays.length > 0) {
