@@ -34,10 +34,7 @@ mvn clean test jacoco:report
 
 ### Development
 - Application runs on `http://localhost:8080`
-- H2 Console (development): `http://localhost:8080/h2-console`
-  - JDBC URL: `jdbc:h2:mem:erpdb`
-  - Username: `sa`
-  - Password: (empty)
+- Database: PostgreSQL at `192.168.1.165:15431/pinecni`
 - Spring Boot DevTools enabled for hot reload
 - Thymeleaf caching disabled in development
 
@@ -70,7 +67,7 @@ Service Layer (Business Logic - TO BE IMPLEMENTED)
     ↓ [Future: Repository Layer]
 Data Access Layer (JPA Repositories - TO BE IMPLEMENTED)
     ↓
-Database (H2 dev / PostgreSQL production)
+Database (PostgreSQL)
 ```
 
 ### Module Organization (12 Functional Modules)
@@ -153,18 +150,13 @@ document.addEventListener('DOMContentLoaded', function() {
 
 ## Database Configuration
 
-### Development (H2)
-- In-memory database configured in `application.properties`
-- JPA DDL auto: `update`
+### PostgreSQL
+- Database: PostgreSQL 15+ at `192.168.1.165:15431/pinecni`
+- User: `erp_dev`
+- Connection Pool: HikariCP (max 10 connections)
+- JPA DDL auto: `update` (개발 환경)
 - SQL logging enabled with formatting
-- No data persistence between restarts
-
-### Production (PostgreSQL)
-- PostgreSQL driver included in dependencies
-- Switch by updating `application.properties`:
-  - `spring.datasource.url`
-  - `spring.datasource.driverClassName`
-  - `spring.jpa.properties.hibernate.dialect`
+- Dialect: `org.hibernate.dialect.PostgreSQLDialect`
 
 ## Key Implementation Notes
 
@@ -226,8 +218,7 @@ Key libraries (see `pom.xml` for versions):
 - Java 17
 - Lombok (annotation processing configured)
 - Jackson with Java 8 time support
-- H2 Database (runtime)
-- PostgreSQL (runtime)
+- PostgreSQL JDBC Driver
 - Commons Lang3
 
 ## Common Development Patterns
