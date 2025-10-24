@@ -106,18 +106,17 @@ document.addEventListener('DOMContentLoaded', function() {
         const tripProject = document.getElementById('trip_project');
         const tripLocation = document.getElementById('trip_location');
         const tripDate = document.getElementById('trip_date');
+        const tripDuration = document.getElementById('trip_duration');
         const tripPurpose = document.getElementById('trip_purpose');
-        const tripTransport = document.getElementById('trip_transport');
-        const tripLodging = document.getElementById('trip_lodging');
-        const tripMeal = document.getElementById('trip_meal');
-        const tripOther = document.getElementById('trip_other');
         const tripReporter = document.getElementById('trip_reporter');
         const tripResult = document.getElementById('trip_result');
         const addTripPersonBtn = document.getElementById('addTripPersonBtn');
         const removeTripPersonBtn = document.getElementById('removeTripPersonBtn');
         const tripPersonList = document.getElementById('tripPersonList');
+        const dailyExpenseBody = document.getElementById('dailyExpenseBody');
 
         let tripPersons = [];
+        let dailyExpenses = [];
 
         // 출장 인원 목록 업데이트 함수
         function updateTripPersonList() {
@@ -243,62 +242,279 @@ document.addEventListener('DOMContentLoaded', function() {
             });
         }
 
+        // 날짜별 비용 입력 행 생성 함수
+        function generateDailyExpenseRows() {
+            if (!tripDate || !tripDate.value || !dailyExpenseBody) return;
+
+            const startDate = new Date(tripDate.value);
+            const duration = parseInt(tripDuration ? tripDuration.value : '0');
+            const days = duration + 1; // 당일(0박) = 1일, 1박 = 2일
+
+            // 기존 데이터 초기화
+            dailyExpenses = [];
+            dailyExpenseBody.innerHTML = '';
+
+            // 날짜별 행 생성
+            for (let i = 0; i < days; i++) {
+                const currentDate = new Date(startDate);
+                currentDate.setDate(currentDate.getDate() + i);
+
+                const year = currentDate.getFullYear();
+                const month = String(currentDate.getMonth() + 1).padStart(2, '0');
+                const day = String(currentDate.getDate()).padStart(2, '0');
+                const dateStr = `${year}.${month}.${day}`;
+
+                dailyExpenses.push({
+                    date: dateStr,
+                    transport: 0,
+                    lodging: 0,
+                    meal: 0,
+                    other: 0
+                });
+
+                const row = document.createElement('tr');
+                row.innerHTML = `
+                    <td style="text-align: center; background: white; font-weight: 500;">${dateStr}</td>
+                    <td style="text-align: center;">
+                        <input type="number" class="expense-input" data-index="${i}" data-type="transport"
+                               placeholder="0" style="width: 100%; text-align: right; padding: 5px;" min="0">
+                    </td>
+                    <td style="text-align: center;">
+                        <input type="number" class="expense-input" data-index="${i}" data-type="lodging"
+                               placeholder="0" style="width: 100%; text-align: right; padding: 5px;" min="0">
+                    </td>
+                    <td style="text-align: center;">
+                        <input type="number" class="expense-input" data-index="${i}" data-type="meal"
+                               placeholder="0" style="width: 100%; text-align: right; padding: 5px;" min="0">
+                    </td>
+                    <td style="text-align: center;">
+                        <input type="number" class="expense-input" data-index="${i}" data-type="other"
+                               placeholder="0" style="width: 100%; text-align: right; padding: 5px;" min="0">
+                    </td>
+                `;
+                dailyExpenseBody.appendChild(row);
+            }
+
+            // 입력 이벤트 리스너 추가
+            document.querySelectorAll('.expense-input').forEach(input => {
+                input.addEventListener('input', function() {
+                    const index = parseInt(this.getAttribute('data-index'));
+                    const type = this.getAttribute('data-type');
+                    const value = parseInt(this.value) || 0;
+
+                    dailyExpenses[index][type] = value;
+                    updateTotalExpenses();
+                });
+            });
+
+            updateTotalExpenses();
+        }
+
+        // 합계 업데이트 함수
+        function updateTotalExpenses() {
+            let totalTransport = 0;
+            let totalLodging = 0;
+            let totalMeal = 0;
+            let totalOther = 0;
+
+            dailyExpenses.forEach(expense => {
+                totalTransport += expense.transport;
+                totalLodging += expense.lodging;
+                totalMeal += expense.meal;
+                totalOther += expense.other;
+            });
+
+            const grandTotal = totalTransport + totalLodging + totalMeal + totalOther;
+
+            // 합계 표시 (공통 입력칸)
+            document.getElementById('totalTransport').textContent = totalTransport.toLocaleString();
+            document.getElementById('totalLodging').textContent = totalLodging.toLocaleString();
+            document.getElementById('totalMeal').textContent = totalMeal.toLocaleString();
+            document.getElementById('totalOther').textContent = totalOther.toLocaleString();
+
+            // 품의서 소요경비 내역에 날짜별 행 생성
+            const proposalExpenseBody = document.getElementById('proposalExpenseBody');
+            if (proposalExpenseBody) {
+                proposalExpenseBody.innerHTML = '';
+                dailyExpenses.forEach((expense, index) => {
+                    const dayTotal = expense.transport + expense.lodging + expense.meal + expense.other;
+                    const row = document.createElement('tr');
+                    row.innerHTML = `
+                        <td style="text-align: center; padding: 10px;">${expense.date}</td>
+                        <td style="text-align: center; padding: 10px;">${expense.transport.toLocaleString()}</td>
+                        <td style="text-align: center; padding: 10px;">${expense.lodging.toLocaleString()}</td>
+                        <td style="text-align: center; padding: 10px;">${expense.meal.toLocaleString()}</td>
+                        <td style="text-align: center; padding: 10px;">${expense.other.toLocaleString()}</td>
+                        <td style="text-align: center; padding: 10px;">${dayTotal.toLocaleString()}</td>
+                    `;
+                    proposalExpenseBody.appendChild(row);
+                });
+            }
+
+            // 복명서 정산 세부내역에 날짜별 행 생성
+            const reportExpenseBody = document.getElementById('reportExpenseBody');
+            if (reportExpenseBody) {
+                reportExpenseBody.innerHTML = '';
+
+                // 헤더 행
+                const headerRow = document.createElement('tr');
+                const rowspan = dailyExpenses.length * 4 + 1; // 각 날짜당 4행(교통비, 숙박비, 식비, 기타) + 헤더
+                headerRow.innerHTML = `
+                    <th colspan="2" rowspan="${rowspan}">정산<br>세부내역</th>
+                    <th>날짜</th>
+                    <th colspan="2" style="text-align: center; background: #fafafa;">구분</th>
+                    <td style="text-align: center; font-weight: bold;">금액</td>
+                `;
+                reportExpenseBody.appendChild(headerRow);
+
+                // 날짜별 상세 내역
+                dailyExpenses.forEach((expense, index) => {
+                    // 교통비
+                    const transportRow = document.createElement('tr');
+                    transportRow.innerHTML = `
+                        <td rowspan="4" style="text-align: center;background: white; font-weight: 500; vertical-align: middle;">${expense.date}</td>
+                        <td colspan="2" style="background: white; padding: 8px; text-align: center">교통비</td>
+                        <td style="text-align: center; padding: 8px; background: white;">${expense.transport.toLocaleString()}원</td>
+                    `;
+                    reportExpenseBody.appendChild(transportRow);
+
+                    // 숙박비
+                    const lodgingRow = document.createElement('tr');
+                    lodgingRow.innerHTML = `
+                        <td colspan="2" style="background: white; padding: 8px; text-align: center">숙박비</td>
+                        <td style="text-align: center; padding: 8px;">${expense.lodging.toLocaleString()}원</td>
+                    `;
+                    reportExpenseBody.appendChild(lodgingRow);
+
+                    // 식비
+                    const mealRow = document.createElement('tr');
+                    mealRow.innerHTML = `
+                        <td colspan="2" style="background: white; padding: 8px; text-align: center">식비</td>
+                        <td style="text-align: center; padding: 8px;">${expense.meal.toLocaleString()}원</td>
+                    `;
+                    reportExpenseBody.appendChild(mealRow);
+
+                    // 기타(일비)
+                    const otherRow = document.createElement('tr');
+                    otherRow.innerHTML = `
+                        <td colspan="2" style="background: white; padding: 8px; text-align: center">기타(일비)</td>
+                        <td style="text-align: center; padding: 8px;">${expense.other.toLocaleString()}원</td>
+                    `;
+                    reportExpenseBody.appendChild(otherRow);
+                });
+            }
+
+            // 합계 금액 표시
+            document.querySelectorAll('.trip-auto-grand-total').forEach(field => {
+                field.textContent = grandTotal.toLocaleString();
+            });
+            document.querySelectorAll('.trip-auto-total').forEach(field => {
+                field.textContent = grandTotal.toLocaleString();
+            });
+            document.querySelectorAll('.trip-auto-request-amount').forEach(field => {
+                field.textContent = grandTotal.toLocaleString();
+            });
+        }
+
+        // 출장 기간 계산 함수
+        function updateTripDateRange() {
+            if (!tripDate || !tripDate.value) return;
+
+            const startDate = new Date(tripDate.value);
+            const duration = parseInt(tripDuration ? tripDuration.value : '0');
+
+            const [year, month, day] = tripDate.value.split('-');
+
+            let dateRangeText = '';
+            if (duration === 0) {
+                // 당일
+                dateRangeText = `${year}.${month}.${day}`;
+            } else {
+                // 1박 이상
+                const endDate = new Date(startDate);
+                endDate.setDate(endDate.getDate() + duration);
+
+                const endYear = endDate.getFullYear();
+                const endMonth = String(endDate.getMonth() + 1).padStart(2, '0');
+                const endDay = String(endDate.getDate()).padStart(2, '0');
+
+                dateRangeText = `${year}.${month}.${day} ~ ${endYear}.${endMonth}.${endDay}`;
+            }
+
+            // 출장기간 표시
+            document.querySelectorAll('.trip-auto-date').forEach(field => {
+                field.textContent = dateRangeText;
+            });
+
+            // 출장복명서 출장기간
+            document.querySelectorAll('.trip-auto-date-range').forEach(field => {
+                field.textContent = dateRangeText;
+            });
+
+            // 소요경비내역 일시 (시작일만)
+            const dateDotFormatted = `${year}.${month}.${day}`;
+            document.querySelectorAll('.trip-auto-date-dot').forEach(field => {
+                field.textContent = dateDotFormatted;
+            });
+
+            // 작성일 계산 (출장기간 -1일, 주말 제외)
+            const tripDateObj = new Date(tripDate.value);
+            const dayOfWeek = tripDateObj.getDay();
+
+            let writeDate = new Date(tripDateObj);
+            if (dayOfWeek === 1) { // 월요일이면 -3일 (금요일)
+                writeDate.setDate(writeDate.getDate() - 3);
+            } else if (dayOfWeek === 0) { // 일요일이면 -2일 (금요일)
+                writeDate.setDate(writeDate.getDate() - 2);
+            } else {
+                writeDate.setDate(writeDate.getDate() - 1);
+            }
+
+            const writeYear = writeDate.getFullYear();
+            const writeMonth = String(writeDate.getMonth() + 1).padStart(2, '0');
+            const writeDay = String(writeDate.getDate()).padStart(2, '0');
+            const writeFormatted = `${writeYear} 년 ${writeMonth} 월 ${writeDay} 일`;
+
+            document.querySelectorAll('.trip-auto-write-date').forEach(field => {
+                field.textContent = writeFormatted;
+            });
+
+            // 복명일자 계산 (출장 종료일 기준, YYYY년 MM월 DD일 형식)
+            let reportDate = startDate;
+            if (duration > 0) {
+                reportDate = new Date(startDate);
+                reportDate.setDate(reportDate.getDate() + duration);
+            }
+
+            const reportYear = reportDate.getFullYear();
+            const reportMonth = String(reportDate.getMonth() + 1).padStart(2, '0');
+            const reportDay = String(reportDate.getDate()).padStart(2, '0');
+
+            document.querySelectorAll('.trip-auto-report-year').forEach(field => {
+                field.textContent = reportYear;
+            });
+            document.querySelectorAll('.trip-auto-report-month').forEach(field => {
+                field.textContent = reportMonth.replace(/^0/, '');
+            });
+            document.querySelectorAll('.trip-auto-report-day').forEach(field => {
+                field.textContent = reportDay.replace(/^0/, '');
+            });
+
+            // 날짜별 비용 입력 테이블 생성
+            generateDailyExpenseRows();
+        }
+
         // 출장기간 자동 채우기 및 작성일/복명일자 계산
         if (tripDate) {
             tripDate.addEventListener('input', function() {
-                const value = this.value;
-                if (value) {
-                    const [year, month, day] = value.split('-');
+                updateTripDateRange();
+            });
+        }
 
-                    // 출장품의서 출장기간 형식 (YYYY.MM.DD)
-                    const dateDotFormatted = `${year}.${month}.${day}`;
-                    document.querySelectorAll('.trip-auto-date').forEach(field => {
-                        field.textContent = dateDotFormatted;
-                    });
-
-                    // 출장복명서 출장기간 형식 (YYYY.MM.DD)
-                    document.querySelectorAll('.trip-auto-date-range').forEach(field => {
-                        field.textContent = dateDotFormatted;
-                    });
-
-                    // 소요경비내역 일시 (YYYY.MM.DD)
-                    document.querySelectorAll('.trip-auto-date-dot').forEach(field => {
-                        field.textContent = dateDotFormatted;
-                    });
-
-                    // 작성일 계산 (출장기간 -1일, 주말 제외)
-                    const tripDateObj = new Date(value);
-                    const dayOfWeek = tripDateObj.getDay();
-
-                    let writeDate = new Date(tripDateObj);
-                    if (dayOfWeek === 1) { // 월요일이면 -3일 (금요일)
-                        writeDate.setDate(writeDate.getDate() - 3);
-                    } else if (dayOfWeek === 0) { // 일요일이면 -2일 (금요일)
-                        writeDate.setDate(writeDate.getDate() - 2);
-                    } else {
-                        writeDate.setDate(writeDate.getDate() - 1);
-                    }
-
-                    const writeYear = writeDate.getFullYear();
-                    const writeMonth = String(writeDate.getMonth() + 1).padStart(2, '0');
-                    const writeDay = String(writeDate.getDate()).padStart(2, '0');
-                    const writeFormatted = `${writeYear} 년 ${writeMonth} 월 ${writeDay} 일`;
-
-                    document.querySelectorAll('.trip-auto-write-date').forEach(field => {
-                        field.textContent = writeFormatted;
-                    });
-
-                    // 복명일자 계산 (출장기간과 동일, YYYY년 MM월 DD일 형식)
-                    document.querySelectorAll('.trip-auto-report-year').forEach(field => {
-                        field.textContent = year;
-                    });
-                    document.querySelectorAll('.trip-auto-report-month').forEach(field => {
-                        field.textContent = month.replace(/^0/, '');
-                    });
-                    document.querySelectorAll('.trip-auto-report-day').forEach(field => {
-                        field.textContent = day.replace(/^0/, '');
-                    });
-                }
+        // 출장 기간 셀렉트 박스 이벤트
+        if (tripDuration) {
+            tripDuration.addEventListener('change', function() {
+                updateTripDateRange();
             });
         }
 
@@ -310,87 +526,6 @@ document.addEventListener('DOMContentLoaded', function() {
                     field.textContent = value;
                 });
             });
-        }
-
-        // 금액 계산 함수
-        function calculateTotal() {
-            const transport = parseInt(tripTransport.value) || 0;
-            const lodging = parseInt(tripLodging.value) || 0;
-            const meal = parseInt(tripMeal.value) || 0;
-            const other = parseInt(tripOther.value) || 0;
-
-            const total = transport + lodging + meal + other;
-
-            // 날짜 가져오기
-            const dateValue = tripDate ? tripDate.value : '';
-            let dateLabel = '';
-            if (dateValue) {
-                const [year, month, day] = dateValue.split('-');
-                dateLabel = `(${month}/${day})`;
-            }
-
-            // 교통비
-            document.querySelectorAll('.trip-auto-transport').forEach(field => {
-                field.textContent = transport.toLocaleString('ko-KR');
-            });
-            document.querySelectorAll('.trip-auto-transport-label').forEach(field => {
-                field.textContent = `교통비${dateLabel}`;
-            });
-
-            // 숙박비
-            document.querySelectorAll('.trip-auto-lodging').forEach(field => {
-                field.textContent = lodging.toLocaleString('ko-KR');
-            });
-            document.querySelectorAll('.trip-auto-lodging-label').forEach(field => {
-                field.textContent = `숙박비${dateLabel}`;
-            });
-
-            // 식비
-            document.querySelectorAll('.trip-auto-meal').forEach(field => {
-                field.textContent = meal.toLocaleString('ko-KR');
-            });
-            document.querySelectorAll('.trip-auto-meal-label').forEach(field => {
-                field.textContent = `식비${dateLabel}`;
-            });
-
-            // 기타
-            document.querySelectorAll('.trip-auto-other').forEach(field => {
-                field.textContent = other.toLocaleString('ko-KR');
-            });
-
-            // 합계
-            document.querySelectorAll('.trip-auto-total').forEach(field => {
-                field.textContent = total.toLocaleString('ko-KR');
-            });
-
-            // 출장신청금액 (복명서에서 사용)
-            document.querySelectorAll('.trip-auto-request-amount').forEach(field => {
-                field.textContent = total.toLocaleString('ko-KR') + ' 원';
-            });
-
-            // 차액 계산
-            document.querySelectorAll('.trip-auto-diff').forEach(field => {
-                field.textContent = '0 원';
-            });
-        }
-
-        // 각 금액 입력 필드에 이벤트 리스너 추가
-        if (tripTransport) {
-            tripTransport.addEventListener('input', calculateTotal);
-            // 초기값 설정
-            calculateTotal();
-        }
-        if (tripLodging) {
-            tripLodging.addEventListener('input', calculateTotal);
-        }
-        if (tripMeal) {
-            tripMeal.addEventListener('input', calculateTotal);
-        }
-        if (tripOther) {
-            tripOther.addEventListener('input', calculateTotal);
-        }
-        if (tripDate) {
-            tripDate.addEventListener('input', calculateTotal);
         }
 
         // 복명자 자동 채우기
