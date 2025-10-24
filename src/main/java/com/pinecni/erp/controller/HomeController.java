@@ -92,6 +92,11 @@ public class HomeController {
         return "approval_receipt_trip";
     }
 
+    @GetMapping("/approval/receipt-trip-meeting")
+    public String approvalReceiptTripMeeting() {
+        return "approval_receipt_trip_meeting";
+    }
+
     @GetMapping("/approval/receipt-overtime")
     public String approvalReceiptOvertime() {
         return "approval_receipt_overtime";
