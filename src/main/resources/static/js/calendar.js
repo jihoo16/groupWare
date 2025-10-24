@@ -319,6 +319,14 @@ document.addEventListener('DOMContentLoaded', function() {
         const today = new Date();
         today.setHours(0, 0, 0, 0);
 
+        // 오늘 버튼 표시/숨김 처리
+        const isCurrentMonth = (year === today.getFullYear() && month === today.getMonth());
+        if (isCurrentMonth) {
+            todayBtn.classList.remove('show');
+        } else {
+            todayBtn.classList.add('show');
+        }
+
         // 이전 달 날짜
         for (let i = firstDayWeek - 1; i >= 0; i--) {
             const day = prevLastDate - i;

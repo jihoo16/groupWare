@@ -206,21 +206,23 @@
                 <thead>
                 <tr>
                     <th rowspan="2" style="width: 120px;">직급</th>
-                    <th colspan="3" class="category-header business-trip-header">출장비</th>
-                    <th colspan="2" class="category-header meeting-header">회의비</th>
+                    <th colspan="2" class="category-header meal-header">식대</th>
+                    <th colspan="2" class="category-header business-trip-header">출장비</th>
                     <th colspan="2" class="category-header fuel-header">유류비</th>
                     <th colspan="2" class="category-header other-header">기타</th>
                 </tr>
                 <tr>
-                    <th class="sub-header">숙박비<br><span class="unit">(1박)</span></th>
-                    <th class="sub-header">식비<br><span class="unit">(1일)</span></th>
-                    <th class="sub-header">교통비<br><span class="unit">(1일)</span></th>
-                    <th class="sub-header">식사비<br><span class="unit">(1인)</span></th>
-                    <th class="sub-header">간식비<br><span class="unit">(1회)</span></th>
-                    <th class="sub-header">월 한도<br><span class="unit">(월)</span></th>
-                    <th class="sub-header">1회 한도<br><span class="unit">(회)</span></th>
-                    <th class="sub-header">경조사비<br><span class="unit">(건)</span></th>
-                    <th class="sub-header">야근식대<br><span class="unit">(1인)</span></th>
+                    <th class="sub-header">중식대<br><span class="unit">(1일)</span></th>
+                    <th class="sub-header">야근석식대<br><span class="unit">(1일)</span></th>
+
+                    <th class="sub-header">조식<br><span class="unit">(1일)</span></th>
+                    <th class="sub-header">중식대<br><span class="unit">(1인)</span></th>
+
+                    <th class="sub-header">택시비<br><span class="unit">(일)</span></th>
+                    <th class="sub-header">주유비<br><span class="unit">(km 당 비용산정)</span></th>
+
+                    <th class="sub-header">주말 및 휴일 경비<br><span class="unit">(1회)</span></th>
+                    <th class="sub-header">음료 및 다과비<br><span class="unit">(1인)</span></th>
                 </tr>
                 </thead>
                 <tbody id="expenses-tbody">
@@ -233,7 +235,6 @@
                     <td><input type="number" class="expense-input" value="30000" min="0" step="1000"></td>
                     <td><input type="number" class="expense-input" value="200000" min="0" step="1000"></td>
                     <td><input type="number" class="expense-input" value="50000" min="0" step="1000"></td>
-                    <td><input type="number" class="expense-input" value="50000" min="0" step="1000"></td>
                     <td><input type="number" class="expense-input" value="10000" min="0" step="1000"></td>
                 </tr>
                 <tr data-position="대리">
@@ -245,7 +246,6 @@
                     <td><input type="number" class="expense-input" value="40000" min="0" step="1000"></td>
                     <td><input type="number" class="expense-input" value="250000" min="0" step="1000"></td>
                     <td><input type="number" class="expense-input" value="60000" min="0" step="1000"></td>
-                    <td><input type="number" class="expense-input" value="70000" min="0" step="1000"></td>
                     <td><input type="number" class="expense-input" value="12000" min="0" step="1000"></td>
                 </tr>
                 <tr data-position="과장">
@@ -257,7 +257,6 @@
                     <td><input type="number" class="expense-input" value="50000" min="0" step="1000"></td>
                     <td><input type="number" class="expense-input" value="300000" min="0" step="1000"></td>
                     <td><input type="number" class="expense-input" value="70000" min="0" step="1000"></td>
-                    <td><input type="number" class="expense-input" value="100000" min="0" step="1000"></td>
                     <td><input type="number" class="expense-input" value="15000" min="0" step="1000"></td>
                 </tr>
                 <tr data-position="차장">
@@ -269,7 +268,6 @@
                     <td><input type="number" class="expense-input" value="60000" min="0" step="1000"></td>
                     <td><input type="number" class="expense-input" value="400000" min="0" step="1000"></td>
                     <td><input type="number" class="expense-input" value="80000" min="0" step="1000"></td>
-                    <td><input type="number" class="expense-input" value="150000" min="0" step="1000"></td>
                     <td><input type="number" class="expense-input" value="18000" min="0" step="1000"></td>
                 </tr>
                 <tr data-position="부장">
@@ -281,7 +279,6 @@
                     <td><input type="number" class="expense-input" value="80000" min="0" step="1000"></td>
                     <td><input type="number" class="expense-input" value="500000" min="0" step="1000"></td>
                     <td><input type="number" class="expense-input" value="100000" min="0" step="1000"></td>
-                    <td><input type="number" class="expense-input" value="200000" min="0" step="1000"></td>
                     <td><input type="number" class="expense-input" value="20000" min="0" step="1000"></td>
                 </tr>
                 </tbody>

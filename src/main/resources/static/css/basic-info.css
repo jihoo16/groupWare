@@ -653,12 +653,12 @@
     padding: 16px 12px !important;
 }
 
-.business-trip-header {
+.meal-header {
     background: linear-gradient(135deg, #fef3c7 0%, #fde68a 100%) !important;
     color: #92400e !important;
 }
 
-.meeting-header {
+.business-trip-header {
     background: linear-gradient(135deg, #ddd6fe 0%, #c4b5fd 100%) !important;
     color: #5b21b6 !important;
 }
