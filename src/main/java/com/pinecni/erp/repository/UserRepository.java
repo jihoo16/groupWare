@@ -20,6 +20,11 @@ public interface UserRepository extends JpaRepository<User, Long> {
     Optional<User> findByEmpId(String empId);
 
     /**
+     * 이메일로 사용자 조회
+     */
+    Optional<User> findByEmpEmail(String empEmail);
+
+    /**
      * 삭제되지 않은 사용자 조회
      */
     @Query("SELECT u FROM User u WHERE u.deletedAt IS NULL")
@@ -28,18 +33,24 @@ public interface UserRepository extends JpaRepository<User, Long> {
     /**
      * 부서별 활성 사용자 조회
      */
-    @Query("SELECT u FROM User u WHERE u.departmentCode = :departmentCode AND u.deletedAt IS NULL")
-    List<User> findActiveByDepartmentCode(String departmentCode);
+    @Query("SELECT u FROM User u WHERE u.empDept = :empDept AND u.deletedAt IS NULL")
+    List<User> findActiveByEmpDept(String empDept);
 
     /**
      * 직급별 활성 사용자 조회
      */
-    @Query("SELECT u FROM User u WHERE u.positionCode = :positionCode AND u.deletedAt IS NULL")
-    List<User> findActiveByPositionCode(String positionCode);
+    @Query("SELECT u FROM User u WHERE u.empPosition = :empPosition AND u.deletedAt IS NULL")
+    List<User> findActiveByEmpPosition(String empPosition);
+
+    /**
+     * 상태별 사용자 조회
+     */
+    @Query("SELECT u FROM User u WHERE u.empStatus = :empStatus AND u.deletedAt IS NULL")
+    List<User> findByEmpStatus(String empStatus);
 
     /**
      * 이름 검색
      */
-    @Query("SELECT u FROM User u WHERE u.name LIKE %:name% AND u.deletedAt IS NULL")
+    @Query("SELECT u FROM User u WHERE u.empName LIKE %:name% AND u.deletedAt IS NULL")
     List<User> searchByName(String name);
 }

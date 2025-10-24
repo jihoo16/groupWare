@@ -16,14 +16,14 @@ public interface ApprovalFileRepository extends JpaRepository<ApprovalFile, Long
     /**
      * 문서별 첨부파일 조회
      */
-    @Query("SELECT f FROM ApprovalFile f WHERE f.documentIdx = :documentIdx AND f.isDeleted = false " +
+    @Query("SELECT f FROM ApprovalFile f WHERE f.documentIdx = :documentIdx AND (f.isDeleted IS NULL OR f.isDeleted = false) " +
             "ORDER BY f.createdAt DESC")
     List<ApprovalFile> findByDocumentIdx(Long documentIdx);
 
     /**
      * 업로드 사용자별 파일 조회
      */
-    @Query("SELECT f FROM ApprovalFile f WHERE f.uploadUserIdx = :userIdx AND f.isDeleted = false " +
+    @Query("SELECT f FROM ApprovalFile f WHERE f.uploadUserIdx = :userIdx AND (f.isDeleted IS NULL OR f.isDeleted = false) " +
             "ORDER BY f.createdAt DESC")
     List<ApprovalFile> findByUploadUserIdx(Long userIdx);
 
@@ -31,13 +31,13 @@ public interface ApprovalFileRepository extends JpaRepository<ApprovalFile, Long
      * 파일 타입별 조회
      */
     @Query("SELECT f FROM ApprovalFile f WHERE f.documentIdx = :documentIdx " +
-            "AND f.fileType = :fileType AND f.isDeleted = false")
+            "AND f.fileType = :fileType AND (f.isDeleted IS NULL OR f.isDeleted = false)")
     List<ApprovalFile> findByDocumentIdxAndFileType(Long documentIdx, String fileType);
 
     /**
      * 원본 파일명 검색
      */
     @Query("SELECT f FROM ApprovalFile f WHERE f.documentIdx = :documentIdx " +
-            "AND f.originalFilename LIKE %:keyword% AND f.isDeleted = false")
+            "AND f.originalFilename LIKE %:keyword% AND (f.isDeleted IS NULL OR f.isDeleted = false)")
     List<ApprovalFile> searchByFilename(Long documentIdx, String keyword);
 }

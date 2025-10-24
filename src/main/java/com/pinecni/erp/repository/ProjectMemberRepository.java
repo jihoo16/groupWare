@@ -18,21 +18,21 @@ public interface ProjectMemberRepository extends JpaRepository<ProjectMember, Lo
      * 프로젝트별 팀원 목록 조회
      */
     @Query("SELECT m FROM ProjectMember m WHERE m.projectIdx = :projectIdx " +
-            "ORDER BY m.role, m.joinDate")
+            "ORDER BY m.role, m.participationStartDate")
     List<ProjectMember> findByProjectIdx(Long projectIdx);
 
     /**
      * 사용자별 참여 프로젝트 조회
      */
-    @Query("SELECT m FROM ProjectMember m WHERE m.userIdx = :userIdx " +
-            "ORDER BY m.joinDate DESC")
-    List<ProjectMember> findByUserIdx(Long userIdx);
+    @Query("SELECT m FROM ProjectMember m WHERE m.employeeIdx = :employeeIdx " +
+            "ORDER BY m.participationStartDate DESC")
+    List<ProjectMember> findByEmployeeIdx(Long employeeIdx);
 
     /**
      * 현재 활성 프로젝트 멤버 조회
      */
     @Query("SELECT m FROM ProjectMember m WHERE m.projectIdx = :projectIdx " +
-            "AND (m.leaveDate IS NULL OR m.leaveDate >= :currentDate)")
+            "AND (m.participationEndDate IS NULL OR m.participationEndDate >= :currentDate)")
     List<ProjectMember> findActiveByProjectIdx(Long projectIdx, LocalDate currentDate);
 
     /**
@@ -40,4 +40,10 @@ public interface ProjectMemberRepository extends JpaRepository<ProjectMember, Lo
      */
     @Query("SELECT m FROM ProjectMember m WHERE m.projectIdx = :projectIdx AND m.role = :role")
     List<ProjectMember> findByProjectIdxAndRole(Long projectIdx, String role);
+
+    /**
+     * 활성 멤버 조회 (isActive = true)
+     */
+    @Query("SELECT m FROM ProjectMember m WHERE m.projectIdx = :projectIdx AND m.isActive = true")
+    List<ProjectMember> findActiveMembers(Long projectIdx);
 }

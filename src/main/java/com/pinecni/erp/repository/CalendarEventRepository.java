@@ -5,7 +5,7 @@ import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.stereotype.Repository;
 
-import java.time.LocalDateTime;
+import java.time.LocalDate;
 import java.util.List;
 
 /**
@@ -20,14 +20,14 @@ public interface CalendarEventRepository extends JpaRepository<CalendarEvent, Lo
     @Query("SELECT e FROM CalendarEvent e WHERE e.deletedAt IS NULL " +
             "AND ((e.startDate <= :endDate AND e.endDate >= :startDate) " +
             "OR (e.isRecurring = true AND e.recurringEndDate >= :startDate))")
-    List<CalendarEvent> findEventsBetween(LocalDateTime startDate, LocalDateTime endDate);
+    List<CalendarEvent> findEventsBetween(LocalDate startDate, LocalDate endDate);
 
     /**
      * 작성자별 일정 조회
      */
-    @Query("SELECT e FROM CalendarEvent e WHERE e.creatorUserIdx = :userIdx AND e.deletedAt IS NULL " +
+    @Query("SELECT e FROM CalendarEvent e WHERE e.creatorIdx = :userIdx AND e.deletedAt IS NULL " +
             "ORDER BY e.startDate DESC")
-    List<CalendarEvent> findByCreatorUserIdx(Long userIdx);
+    List<CalendarEvent> findByCreatorIdx(Long userIdx);
 
     /**
      * 반복 일정 조회
@@ -38,6 +38,18 @@ public interface CalendarEventRepository extends JpaRepository<CalendarEvent, Lo
     /**
      * 결재 연동 일정 조회
      */
-    @Query("SELECT e FROM CalendarEvent e WHERE e.approvalDocIdx = :approvalDocIdx")
-    List<CalendarEvent> findByApprovalDocIdx(Long approvalDocIdx);
+    @Query("SELECT e FROM CalendarEvent e WHERE e.approvalIdx = :approvalIdx")
+    List<CalendarEvent> findByApprovalIdx(Long approvalIdx);
+
+    /**
+     * 이벤트 타입별 조회
+     */
+    @Query("SELECT e FROM CalendarEvent e WHERE e.eventType = :eventType AND e.deletedAt IS NULL")
+    List<CalendarEvent> findByEventType(String eventType);
+
+    /**
+     * 상태별 조회
+     */
+    @Query("SELECT e FROM CalendarEvent e WHERE e.status = :status AND e.deletedAt IS NULL")
+    List<CalendarEvent> findByStatus(String status);
 }

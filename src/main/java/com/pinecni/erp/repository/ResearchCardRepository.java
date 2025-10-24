@@ -15,31 +15,39 @@ import java.util.Optional;
 public interface ResearchCardRepository extends JpaRepository<ResearchCard, Long> {
 
     /**
-     * 카드번호로 조회
+     * 카드 뒷 4자리로 조회
      */
-    Optional<ResearchCard> findByCardNumber(String cardNumber);
+    @Query("SELECT c FROM ResearchCard c WHERE c.cardLastDigits = :lastDigits AND c.isActive = true")
+    List<ResearchCard> findByCardLastDigits(String lastDigits);
 
     /**
      * 프로젝트별 연구비카드 조회
      */
-    @Query("SELECT c FROM ResearchCard c WHERE c.projectIdx = :projectIdx AND c.deletedAt IS NULL")
+    @Query("SELECT c FROM ResearchCard c WHERE c.projectIdx = :projectIdx AND c.isActive = true")
     List<ResearchCard> findByProjectIdx(Long projectIdx);
 
     /**
      * 카드사별 카드 조회
      */
-    @Query("SELECT c FROM ResearchCard c WHERE c.cardCompany = :cardCompany AND c.deletedAt IS NULL")
+    @Query("SELECT c FROM ResearchCard c WHERE c.cardCompany = :cardCompany AND c.isActive = true")
     List<ResearchCard> findByCardCompany(String cardCompany);
 
     /**
      * 활성 카드 목록 조회
      */
-    @Query("SELECT c FROM ResearchCard c WHERE c.deletedAt IS NULL ORDER BY c.createdAt DESC")
+    @Query("SELECT c FROM ResearchCard c WHERE c.isActive = true ORDER BY c.createdAt DESC")
     List<ResearchCard> findAllActive();
 
     /**
-     * 카드 검색 (카드번호 부분 일치)
+     * 카드 닉네임 검색
      */
-    @Query("SELECT c FROM ResearchCard c WHERE c.cardNumber LIKE %:keyword% AND c.deletedAt IS NULL")
-    List<ResearchCard> searchByCardNumber(String keyword);
+    @Query("SELECT c FROM ResearchCard c WHERE c.cardNickname LIKE %:keyword% AND c.isActive = true")
+    List<ResearchCard> searchByNickname(String keyword);
+
+    /**
+     * 프로젝트와 카드사로 조회
+     */
+    @Query("SELECT c FROM ResearchCard c WHERE c.projectIdx = :projectIdx " +
+            "AND c.cardCompany = :cardCompany AND c.isActive = true")
+    List<ResearchCard> findByProjectIdxAndCardCompany(Long projectIdx, String cardCompany);
 }

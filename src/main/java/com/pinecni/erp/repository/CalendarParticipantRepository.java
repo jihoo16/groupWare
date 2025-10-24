@@ -29,6 +29,6 @@ public interface CalendarParticipantRepository extends JpaRepository<CalendarPar
      * 사용자의 참석 응답 상태별 조회
      */
     @Query("SELECT p FROM CalendarParticipant p WHERE p.userIdx = :userIdx " +
-            "AND p.responseStatus = :status")
-    List<CalendarParticipant> findByUserIdxAndResponseStatus(Long userIdx, String status);
+            "AND p.participationStatus = :status")
+    List<CalendarParticipant> findByUserIdxAndParticipationStatus(Long userIdx, String status);
 }

@@ -17,7 +17,7 @@ public interface CodeRepository extends JpaRepository<Code, Long> {
     /**
      * 그룹별 코드 목록 조회
      */
-    @Query("SELECT c FROM Code c WHERE c.groupCode = :groupCode ORDER BY c.displayOrder")
+    @Query("SELECT c FROM Code c WHERE c.groupCode = :groupCode ORDER BY c.sortOrder")
     List<Code> findByGroupCode(String groupCode);
 
     /**
@@ -33,6 +33,12 @@ public interface CodeRepository extends JpaRepository<Code, Long> {
     /**
      * 활성화된 코드 목록 조회
      */
-    @Query("SELECT c FROM Code c WHERE c.groupCode = :groupCode AND c.isActive = true ORDER BY c.displayOrder")
+    @Query("SELECT c FROM Code c WHERE c.groupCode = :groupCode AND c.useYn = 'Y' ORDER BY c.sortOrder")
     List<Code> findActiveByGroupCode(String groupCode);
+
+    /**
+     * 사용 여부별 조회
+     */
+    @Query("SELECT c FROM Code c WHERE c.useYn = :useYn ORDER BY c.groupCode, c.sortOrder")
+    List<Code> findByUseYn(String useYn);
 }

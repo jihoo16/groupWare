@@ -34,7 +34,7 @@ public class DocumentSequence {
     @Column(name = "year", nullable = false)
     private Integer year;
 
-    @Column(name = "current_sequence", nullable = false)
+    @Column(name = "current_sequence", nullable = false, columnDefinition = "INTEGER DEFAULT 0")
     private Integer currentSequence = 0;
 
     @Column(name = "prefix", length = 20)
