@@ -210,19 +210,7 @@
 
                     <!-- 우측: 문서 편집 영역 -->
                     <div class="editor-area">
-                        <!-- 결재선 -->
-                        <div class="approval-line-section">
-                            <div class="section-header">
-                                <h4><i class="fas fa-users"></i> 결재선</h4>
-                                <button class="btn-add" id="addApproverBtn">
-                                    <i class="fas fa-plus"></i>
-                                    결재자 추가
-                                </button>
-                            </div>
-                            <div class="approver-chips" id="approverChips">
-                                <div class="empty-message">결재자를 추가해주세요</div>
-                            </div>
-                        </div>
+
 
                         <!-- 문서 양식 (동적 로드) -->
                         <div class="document-form" id="documentForm">
@@ -233,13 +221,11 @@
                         <div style="display: none;">
                             <!-- 영수증 처리 템플릿 - 회의록 -->
                             <div id="template-receipt-meeting">
-                                <div style="background: #f8f9fa; border: 2px solid #e8e8e8; border-radius: 10px; padding: 20px; margin:0 auto 30px; max-width: 881px">
-                                    <div style="margin-bottom: 15px; " >
-                                        <h4 style="font-size: 16px; font-weight: 700; color: #333; margin: 0 0 15px 0; display: flex; align-items: center; gap: 8px;">
-                                            <i class="fas fa-edit" style="color: #667eea;"></i> 공통 정보 입력
-                                        </h4>
+                                <div class="common-info-section">
+                                    <div class="section-header-common">
+                                        <h4><i class="fas fa-edit"></i> 공통 정보 입력</h4>
                                     </div>
-                                    <table class="form-table" style="background: white;">
+                                    <table class="form-table common-info-table">
                                         <tr>
                                             <th style="width: 150px;">과제명</th>
                                             <td colspan="3"><input type="text" id="common_project" placeholder="과제명을 입력하세요"></td>
@@ -303,8 +289,18 @@
                                     </table>
                                 </div>
 
-                                <div style="background: white; border: 2px solid #e0e0e0; border-radius: 8px; padding: 30px; margin: 0 auto 30px; max-width: 881px">
-                                    <h2 class="doc-title">회 의 품 의 서</h2>
+                                <!-- 공식 문서 양식 -->
+                                <div class="document-form-wrapper">
+                                    <div class="document-form-header" id="documentFormToggle">
+                                        <h3><i class="fas fa-file-alt"></i> 공식 문서 양식</h3>
+                                        <button class="btn-toggle-form">
+                                            <i class="fas fa-chevron-up"></i>
+                                            <span></span>
+                                        </button>
+                                    </div>
+                                    <div class="document-form-content" id="documentFormContent">
+                                        <div style="background: white; border: 2px solid #e0e0e0; border-radius: 8px; padding: 30px; margin: 0 auto 30px; max-width: 881px">
+                                            <h2 class="doc-title">회 의 품 의 서</h2>
                                     <div style="text-align: left; margin-bottom: 10px; font-size: 14px;">
 
                                     </div>
@@ -391,10 +387,10 @@
                                         <td colspan="6"><input type="text" class="auto-payment" readonly style="background: #f9f9f9;" /></td>
                                     </tr>
                                 </table>
-                                </div>
+                                        </div>
 
-                                <div style="background: white; border: 2px solid #e0e0e0; border-radius: 8px; padding: 30px; max-width: 881px; margin: 0 auto 30px">
-                                    <h2 class="doc-title" style="margin: 0">회 의 록</h2>
+                                        <div style="background: white; border: 2px solid #e0e0e0; border-radius: 8px; padding: 30px; max-width: 881px; margin: 0 auto 30px">
+                                            <h2 class="doc-title" style="margin: 0">회 의 록</h2>
                                     <span id="doc_number_proposal" style="font-size: 14px; display: block; margin: 20px 0 5px"></span>
                                     <table class="form-table">
                                     <colgroup>
@@ -435,10 +431,10 @@
                                         <td colspan="3"><textarea class="auto-minutes-notes" rows="5" readonly style="background: #f9f9f9; height: 100px"></textarea></td>
                                     </tr>
                                 </table>
-                                </div>
+                                        </div>
 
-                                <div style="background: white; border: 2px solid #e0e0e0; border-radius: 8px; padding: 30px; margin: 0 auto 30px; max-width: 881px">
-                                    <h2 class="doc-title" style="margin: 0">참 석 자 명 단 </h2>
+                                        <div style="background: white; border: 2px solid #e0e0e0; border-radius: 8px; padding: 30px; margin: 0 auto 30px; max-width: 881px">
+                                            <h2 class="doc-title" style="margin: 0">참 석 자 명 단 </h2>
                                     <span id="doc_number_attendee" style="font-size: 14px; display: block; margin: 20px 0 5px"></span>
                                     <div style="text-align: left; margin-bottom: 10px; font-size: 14px;">
 
@@ -577,6 +573,8 @@
                                         <td style="padding: 30px;"></td>
                                     </tr>
                                 </table>
+                                        </div>
+                                    </div>
                                 </div>
                             </div>
                         </div>
@@ -595,6 +593,20 @@
                                 </label>
                             </div>
                             <div class="file-list" id="fileList"></div>
+                        </div>
+
+                        <!-- 결재선 -->
+                        <div class="approval-line-section">
+                            <div class="section-header">
+                                <h4><i class="fas fa-users"></i> 결재선</h4>
+                                <button class="btn-add" id="addApproverBtn">
+                                    <i class="fas fa-plus"></i>
+                                    결재자 추가
+                                </button>
+                            </div>
+                            <div class="approver-chips" id="approverChips">
+                                <div class="empty-message">결재자를 추가해주세요</div>
+                            </div>
                         </div>
 
                         <!-- 제출 버튼 -->

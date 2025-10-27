@@ -573,8 +573,30 @@ document.addEventListener('DOMContentLoaded', function() {
             }
         }
 
+        // 공식 문서 양식 토글 기능 설정
+        setupDocumentFormToggle();
+
         setTimeout(initializeDefaultValues, 100);
         updateAttendeeList();
+    }
+
+    // 공식 문서 양식 토글 기능
+    function setupDocumentFormToggle() {
+        const documentFormToggle = document.getElementById('documentFormToggle');
+        const documentFormWrapper = document.querySelector('.document-form-wrapper');
+
+        // 기본적으로 문서 양식을 접어둠
+        if (documentFormWrapper) {
+            documentFormWrapper.classList.add('collapsed');
+        }
+
+        if (documentFormToggle) {
+            documentFormToggle.addEventListener('click', function() {
+                if (documentFormWrapper) {
+                    documentFormWrapper.classList.toggle('collapsed');
+                }
+            });
+        }
     }
 
     // 결재자 추가 버튼
@@ -827,6 +849,14 @@ document.addEventListener('DOMContentLoaded', function() {
 
                 updateProgress(20, '페이지 준비 중...');
 
+                // 접힌 문서 양식을 임시로 펼치기
+                const documentFormWrapper = document.querySelector('.document-form-wrapper');
+                let wasCollapsed = false;
+                if (documentFormWrapper && documentFormWrapper.classList.contains('collapsed')) {
+                    wasCollapsed = true;
+                    documentFormWrapper.classList.remove('collapsed');
+                }
+
                 // 공통 정보 입력 영역 숨기고, 나머지는 모두 표시
                 allDivs[0].style.display = 'none';
                 allDivs[1].style.display = 'block';
@@ -952,10 +982,17 @@ document.addEventListener('DOMContentLoaded', function() {
                 if (loadingModal) loadingModal.classList.remove('active');
                 alert('PDF 생성 중 오류가 발생했습니다.\n' + error.message + '\n\n브라우저 콘솔(F12)을 확인해주세요.');
             } finally {
+                // 원래 display 상태 복원
                 if (allDivs && originalDisplays.length > 0) {
                     allDivs.forEach((div, index) => {
                         div.style.display = originalDisplays[index];
                     });
+                }
+
+                // 접혔던 문서 양식을 다시 접기
+                const documentFormWrapper = document.querySelector('.document-form-wrapper');
+                if (documentFormWrapper && wasCollapsed) {
+                    documentFormWrapper.classList.add('collapsed');
                 }
             }
         });
