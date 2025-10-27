@@ -503,70 +503,126 @@
 
                                 <!-- 회의록 -->
                                 <div style="background: white; border: 2px solid #e0e0e0; border-radius: 8px; padding: 30px; max-width: 881px; margin: 0 auto 30px">
-                                    <h2 class="doc-title" style="font-size: 30px; font-weight: bold; margin-bottom: 20px;">회 의 록</h2>
+                                    <h2 class="doc-title" style="margin: 0">회 의 록</h2>
+                                    <span id="doc_number_minutes" style="font-size: 14px; display: block; margin: 20px 0 5px"></span>
+                                    <div style="text-align: left; margin-bottom: 10px; font-size: 14px;"></div>
 
-                                    <!-- 결재란 -->
-                                    <div style="float: right; margin-bottom: 20px;">
-                                        <table style="border: 2px solid #000; border-collapse: collapse;">
-                                            <tr>
-                                                <td rowspan="2" style="width: 60px; border: 1px solid #000; padding: 10px 20px; text-align: center; background: #f0f0f0; font-weight: bold;">결<br><br>재</td>
-                                                <td style="width: 120px; border: 1px solid #000; padding: 10px 20px; text-align: center; background: #f0f0f0; font-weight: bold;">담당</td>
-                                                <td style="width: 120px; border: 1px solid #000; padding: 10px 20px; text-align: center; background: #f0f0f0; font-weight: bold;">연구책임자</td>
-                                                <td style="width: 120px; border: 1px solid #000; padding: 10px 20px; text-align: center; background: #f0f0f0; font-weight: bold;">대표이사</td>
-                                            </tr>
-                                            <tr>
-                                                <td style="height: 80px; border: 1px solid #000; padding: 10px 20px; text-align: center;"></td>
-                                                <td style="height: 80px; border: 1px solid #000; padding: 10px 20px; text-align: center;"></td>
-                                                <td style="height: 80px; border: 1px solid #000; padding: 10px 20px; text-align: center;"></td>
-                                            </tr>
-                                        </table>
-                                    </div>
-
-                                    <div style="clear: both;"></div>
-
-                                    <table class="form-table" style="margin-top: 20px;">
+                                    <table class="form-table">
+                                        <colgroup>
+                                            <col style="width: 15%;">
+                                            <col style="width: 55%;">
+                                            <col style="width: 10%;">
+                                            <col style="width: 20%;">
+                                        </colgroup>
                                         <tr>
-                                            <th style="width: 20%;">과제명</th>
-                                            <td colspan="3" style="padding: 10px;"><span class="auto-project"></span></td>
+                                            <th style="height: 80px">세부<br> 업무명</th>
+                                            <td><input type="text" class="auto-project" readonly style="background: #f9f9f9; text-align: center;"></td>
+                                            <th>작성자</th>
+                                            <td><input type="text" class="auto-author" value="홍길동" readonly style="background: #f9f9f9; text-align: center;"></td>
                                         </tr>
                                         <tr>
-                                            <th>회의일시</th>
-                                            <td colspan="3" style="padding: 10px;"><span class="auto-meeting-date"></span></td>
+                                            <th style="height: 80px">일시</th>
+                                            <td><input type="text" class="auto-datetime" readonly style="background: #f9f9f9; text-align: center;"></td>
+                                            <th>장소</th>
+                                            <td><input type="text" class="auto-location" readonly style="background: #f9f9f9; text-align: center;"></td>
                                         </tr>
                                         <tr>
-                                            <th>회의장소</th>
-                                            <td colspan="3" style="padding: 10px;"><span class="auto-location"></span></td>
+                                            <th>참여자<br>(참여기관)</th>
+                                            <td colspan="3" class="auto-all-attendees" style="padding: 10px; height: 80px; white-space: pre-wrap;"></td>
                                         </tr>
                                         <tr>
-                                            <th>회의내용</th>
-                                            <td colspan="3" style="white-space: pre-wrap; padding: 15px; min-height: 200px; text-align: left; vertical-align: top;">
-                                                <span class="auto-meeting-content"></span>
-                                            </td>
+                                            <th colspan="4" style="background: #f0f0f0; padding: 15px;">내용</th>
+                                        </tr>
+                                        <tr>
+                                            <th style="vertical-align: middle; padding-top: 15px;">주제</th>
+                                            <td colspan="3" class="auto-subject" style="padding: 10px; text-align: left; font-size: 18px; height: 100px"></td>
+                                        </tr>
+                                        <tr>
+                                            <th style="padding-top: 15px;">주요 내용</th>
+                                            <td colspan="3" class="auto-content" style="padding: 10px; height: 510px; text-align: left; white-space: pre-wrap; min-height: 600px; line-height: 2.5; font-size: 18px"></td>
+                                        </tr>
+                                        <tr>
+                                            <th>비고</th>
+                                            <td colspan="3"><textarea class="auto-minutes-notes" rows="5" readonly style="background: #f9f9f9; height: 100px"></textarea></td>
                                         </tr>
                                     </table>
                                 </div>
 
                                 <!-- 참석자 명단 -->
-                                <div style="background: white; border: 2px solid #e0e0e0; border-radius: 8px; padding: 30px; max-width: 881px; margin: 0 auto 30px">
-                                    <h2 class="doc-title" style="font-size: 30px; font-weight: bold; margin-bottom: 20px; text-align: center;">참 석 자 명 단</h2>
+                                <div style="background: white; border: 2px solid #e0e0e0; border-radius: 8px; padding: 30px; margin: 0 auto 30px; max-width: 881px">
+                                    <h2 class="doc-title" style="margin: 0">참 석 자 명 단</h2>
+                                    <span id="doc_number_attendee" style="font-size: 14px; display: block; margin: 20px 0 5px"></span>
+                                    <div style="text-align: left; margin-bottom: 10px; font-size: 14px;"></div>
 
-                                    <table class="form-table" style="margin-top: 20px;">
+                                    <table class="form-table">
+                                        <colgroup>
+                                            <col style="width: 15%;">
+                                            <col style="width: 55%;">
+                                            <col style="width: 10%;">
+                                            <col style="width: 20%;">
+                                        </colgroup>
                                         <tr>
-                                            <th style="width: 20%;">과제명</th>
-                                            <td colspan="3" style="padding: 10px;"><span class="auto-project"></span></td>
+                                            <th style="height: 80px">세부<br> 업무명</th>
+                                            <td><input type="text" class="auto-project" readonly style="background: #f9f9f9; text-align: center;"></td>
+                                            <th>작성자</th>
+                                            <td><input type="text" class="auto-author" value="홍길동" readonly style="background: #f9f9f9; text-align: center;"></td>
                                         </tr>
                                         <tr>
-                                            <th colspan="4" style="background: #f0f0f0; padding: 10px; text-align: center;">참석자 명단</th>
+                                            <th style="height: 80px">일시</th>
+                                            <td><input type="text" class="auto-datetime" readonly style="background: #f9f9f9; text-align: center;"></td>
+                                            <th>장소</th>
+                                            <td><input type="text" class="auto-location" readonly style="background: #f9f9f9; text-align: center;"></td>
+                                        </tr>
+                                    </table>
+                                    <table class="form-table" id="attendee-signature-table" style="margin-top: 20px;">
+                                        <tr style="height: 70px">
+                                            <th>성명</th>
+                                            <th>소속</th>
+                                            <th>서명</th>
+                                            <th>성명</th>
+                                            <th>소속</th>
+                                            <th>서명</th>
                                         </tr>
                                         <tr>
-                                            <th style="width: 10%;">번호</th>
-                                            <th style="width: 30%;">소속</th>
-                                            <th style="width: 20%;">직급</th>
-                                            <th style="width: 20%;">성명</th>
+                                            <td><input type="text" class="attendee-sig-name" data-index="0" readonly style="background: #f9f9f9;"></td>
+                                            <td><input type="text" class="attendee-sig-dept" data-index="0" readonly style="background: #f9f9f9;"></td>
+                                            <td style="padding: 30px;"></td>
+                                            <td><input type="text" class="attendee-sig-name" data-index="1" readonly style="background: #f9f9f9;"></td>
+                                            <td><input type="text" class="attendee-sig-dept" data-index="1" readonly style="background: #f9f9f9;"></td>
+                                            <td style="padding: 30px;"></td>
                                         </tr>
-                                        <tbody id="attendeeTableBody">
-                                            <!-- 동적 생성 -->
-                                        </tbody>
+                                        <tr>
+                                            <td><input type="text" class="attendee-sig-name" data-index="2" readonly style="background: #f9f9f9;"></td>
+                                            <td><input type="text" class="attendee-sig-dept" data-index="2" readonly style="background: #f9f9f9;"></td>
+                                            <td style="padding: 30px;"></td>
+                                            <td><input type="text" class="attendee-sig-name" data-index="3" readonly style="background: #f9f9f9;"></td>
+                                            <td><input type="text" class="attendee-sig-dept" data-index="3" readonly style="background: #f9f9f9;"></td>
+                                            <td style="padding: 30px;"></td>
+                                        </tr>
+                                        <tr>
+                                            <td><input type="text" class="attendee-sig-name" data-index="4" readonly style="background: #f9f9f9;"></td>
+                                            <td><input type="text" class="attendee-sig-dept" data-index="4" readonly style="background: #f9f9f9;"></td>
+                                            <td style="padding: 30px;"></td>
+                                            <td><input type="text" class="attendee-sig-name" data-index="5" readonly style="background: #f9f9f9;"></td>
+                                            <td><input type="text" class="attendee-sig-dept" data-index="5" readonly style="background: #f9f9f9;"></td>
+                                            <td style="padding: 30px;"></td>
+                                        </tr>
+                                        <tr>
+                                            <td><input type="text" class="attendee-sig-name" data-index="6" readonly style="background: #f9f9f9;"></td>
+                                            <td><input type="text" class="attendee-sig-dept" data-index="6" readonly style="background: #f9f9f9;"></td>
+                                            <td style="padding: 30px;"></td>
+                                            <td><input type="text" class="attendee-sig-name" data-index="7" readonly style="background: #f9f9f9;"></td>
+                                            <td><input type="text" class="attendee-sig-dept" data-index="7" readonly style="background: #f9f9f9;"></td>
+                                            <td style="padding: 30px;"></td>
+                                        </tr>
+                                        <tr>
+                                            <td><input type="text" class="attendee-sig-name" data-index="8" readonly style="background: #f9f9f9;"></td>
+                                            <td><input type="text" class="attendee-sig-dept" data-index="8" readonly style="background: #f9f9f9;"></td>
+                                            <td style="padding: 30px;"></td>
+                                            <td><input type="text" class="attendee-sig-name" data-index="9" readonly style="background: #f9f9f9;"></td>
+                                            <td><input type="text" class="attendee-sig-dept" data-index="9" readonly style="background: #f9f9f9;"></td>
+                                            <td style="padding: 30px;"></td>
+                                        </tr>
                                     </table>
                                 </div>
                             </div>
@@ -611,6 +667,31 @@
                 </div>
             </div>
         </main>
+    </div>
+
+    <!-- 결재자 선택 모달 -->
+    <div class="modal" id="approverModal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>결재자 선택</h3>
+                <button class="modal-close" onclick="closeModal()">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            <div class="modal-body">
+                <div class="modal-search">
+                    <i class="fas fa-search"></i>
+                    <input type="text" id="approverSearch" placeholder="이름 또는 부서 검색...">
+                </div>
+                <div class="employee-list" id="employeeList">
+                    <!-- 동적 생성 -->
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn-secondary" onclick="closeModal()">취소</button>
+                <button class="btn-primary" onclick="addApprover()">추가</button>
+            </div>
+        </div>
     </div>
 
     <!-- PDF 로딩 모달 -->
