@@ -42,12 +42,12 @@ document.addEventListener('DOMContentLoaded', function() {
             if (allExpanded) {
                 // 모두 접기
                 treeNodes.forEach(node => node.classList.remove('expanded'));
-                this.innerHTML = '<i class="fas fa-plus-square"></i> 전체 펼치기';
+                this.innerHTML = '<i class="fas fa-chevron-up"></i> 전체 펼치기';
                 allExpanded = false;
             } else {
                 // 모두 펼치기
                 treeNodes.forEach(node => node.classList.add('expanded'));
-                this.innerHTML = '<i class="fas fa-minus-square"></i> 전체 접기';
+                this.innerHTML = '<i class="fas fa-chevron-down"></i> 전체 접기';
                 allExpanded = true;
             }
         });
@@ -72,10 +72,10 @@ document.addEventListener('DOMContentLoaded', function() {
         const expandedNodes = document.querySelectorAll('.tree-node.expanded');
 
         if (expandedNodes.length === treeNodes.length) {
-            expandAllBtn.innerHTML = '<i class="fas fa-minus-square"></i> 전체 접기';
+            expandAllBtn.innerHTML = '<i class="fas fa-chevron-down"></i> 전체 접기';
             allExpanded = true;
         } else if (expandedNodes.length === 0) {
-            expandAllBtn.innerHTML = '<i class="fas fa-plus-square"></i> 전체 펼치기';
+            expandAllBtn.innerHTML = '<i class="fas fa-chevron-up"></i> 전체 펼치기';
             allExpanded = false;
         }
     }
