@@ -3,8 +3,9 @@
  */
 
 plugins {
-    `java-library`
-    `maven-publish`
+    java
+    id("org.springframework.boot") version "3.5.6"
+    id("io.spring.dependency-management") version "1.1.7"
 }
 
 repositories {
@@ -15,13 +16,14 @@ repositories {
 }
 
 dependencies {
-    api(libs.org.springframework.boot.spring.boot.starter.web)
-    api(libs.org.springframework.boot.spring.boot.starter.thymeleaf)
-    api(libs.org.springframework.boot.spring.boot.starter.data.jpa)
-    api(libs.org.springframework.boot.spring.boot.starter.validation)
-    api(libs.org.projectlombok.lombok)
-    api(libs.com.fasterxml.jackson.datatype.jackson.datatype.jsr310)
-    api(libs.org.apache.commons.commons.lang3)
+    implementation(libs.org.springframework.boot.spring.boot.starter.web)
+    implementation(libs.org.springframework.boot.spring.boot.starter.thymeleaf)
+    implementation(libs.org.springframework.boot.spring.boot.starter.data.jpa)
+    implementation(libs.org.springframework.boot.spring.boot.starter.validation)
+    implementation(libs.org.projectlombok.lombok)
+    annotationProcessor(libs.org.projectlombok.lombok)
+    implementation(libs.com.fasterxml.jackson.datatype.jackson.datatype.jsr310)
+    implementation(libs.org.apache.commons.commons.lang3)
     runtimeOnly(libs.com.h2database.h2)
     runtimeOnly(libs.org.springframework.boot.spring.boot.devtools)
     runtimeOnly(libs.org.postgresql.postgresql)
@@ -31,13 +33,7 @@ dependencies {
 group = "com.pinecni"
 version = "0.0.1-SNAPSHOT"
 description = "erp"
-java.sourceCompatibility = JavaVersion.VERSION_1_8
-
-publishing {
-    publications.create<MavenPublication>("maven") {
-        from(components["java"])
-    }
-}
+java.sourceCompatibility = JavaVersion.VERSION_17
 
 tasks.withType<JavaCompile>() {
     options.encoding = "UTF-8"
@@ -45,4 +41,11 @@ tasks.withType<JavaCompile>() {
 
 tasks.withType<Javadoc>() {
     options.encoding = "UTF-8"
+}
+
+tasks.withType<Test> {
+    useJUnitPlatform()
+    testLogging {
+        events("passed", "skipped", "failed")
+    }
 }

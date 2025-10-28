@@ -1,281 +1,385 @@
-// 인사 관리 페이지 JavaScript
+// 인사 관리 페이지 JavaScript (jQuery + Ajax)
 
-// 직원 ID 카운터
-let employeeIdCounter = 1001;
+// 전역 변수
+let allUsers = []; // 전체 사용자 데이터 캐시
+let currentFilter = 'all'; // 현재 부서 필터
 
-document.addEventListener('DOMContentLoaded', function() {
-    const deptButtons = document.querySelectorAll('.dept-btn');
-    const employeeRows = document.querySelectorAll('.employee-table tbody tr');
-    const searchInput = document.getElementById('employeeSearch');
-    const addEmployeeBtn = document.getElementById('addEmployeeBtn');
-    const employeeModal = document.getElementById('employeeModal');
-    const employeeForm = document.getElementById('employeeForm');
-    const modalCloseBtn = document.querySelector('#employeeModal .modal-close');
-    const cancelBtn = document.querySelector('#employeeModal .btn-secondary');
-    const saveBtn = document.querySelector('#employeeModal .btn-primary');
+// jQuery Ready
+$(document).ready(function() {
+    // 초기 데이터 로드
+    loadEmployees();
 
     // 부서 필터 버튼 클릭
-    deptButtons.forEach(btn => {
-        btn.addEventListener('click', function() {
-            const dept = this.getAttribute('data-dept');
+    $('.dept-btn').on('click', function() {
+        const dept = $(this).data('dept');
+        currentFilter = dept;
 
-            // 버튼 활성화
-            deptButtons.forEach(b => b.classList.remove('active'));
-            this.classList.add('active');
+        // 버튼 활성화
+        $('.dept-btn').removeClass('active');
+        $(this).addClass('active');
 
-            // 직원 필터링
-            const allRows = document.querySelectorAll('.employee-table tbody tr');
-            allRows.forEach(row => {
-                const rowDept = row.getAttribute('data-dept');
-                if (dept === 'all' || rowDept === dept) {
-                    row.style.display = '';
-                } else {
-                    row.style.display = 'none';
-                }
-            });
-        });
+        // 직원 필터링
+        filterEmployees();
     });
 
     // 검색 기능
-    if (searchInput) {
-        searchInput.addEventListener('input', function() {
-            const searchTerm = this.value.toLowerCase();
-            const allRows = document.querySelectorAll('.employee-table tbody tr');
-
-            allRows.forEach(row => {
-                const text = row.textContent.toLowerCase();
-                if (text.includes(searchTerm)) {
-                    row.style.display = '';
-                } else {
-                    row.style.display = 'none';
-                }
-            });
-        });
-    }
+    $('#employeeSearch').on('input', function() {
+        const searchTerm = $(this).val().toLowerCase();
+        searchEmployees(searchTerm);
+    });
 
     // 직원 등록 버튼
-    if (addEmployeeBtn) {
-        addEmployeeBtn.addEventListener('click', function() {
-            openEmployeeModal();
-        });
-    }
+    $('#addEmployeeBtn').on('click', function() {
+        openEmployeeModal();
+    });
 
     // 모달 닫기 버튼들
-    if (modalCloseBtn) {
-        modalCloseBtn.addEventListener('click', closeEmployeeModal);
-    }
-    if (cancelBtn) {
-        cancelBtn.addEventListener('click', closeEmployeeModal);
-    }
+    $('#closeEmployeeModal, #cancelEmployee').on('click', function() {
+        closeEmployeeModal();
+    });
 
     // 모달 외부 클릭 시 닫기
-    if (employeeModal) {
-        employeeModal.addEventListener('click', function(e) {
-            if (e.target === employeeModal) {
-                closeEmployeeModal();
-            }
-        });
-    }
+    $('#employeeModal').on('click', function(e) {
+        if (e.target === this) {
+            closeEmployeeModal();
+        }
+    });
 
     // 직원 등록 폼 제출
-    if (employeeForm) {
-        employeeForm.addEventListener('submit', function(e) {
-            e.preventDefault();
-            saveEmployee();
-        });
-    }
-
-    // 저장 버튼 클릭
-    if (saveBtn) {
-        saveBtn.addEventListener('click', function(e) {
-            e.preventDefault();
-            saveEmployee();
-        });
-    }
-
-    // 상세보기 버튼
-    const viewButtons = document.querySelectorAll('.btn-icon');
-    viewButtons.forEach(btn => {
-        btn.addEventListener('click', function(e) {
-            e.stopPropagation();
-            const icon = this.querySelector('i');
-
-            if (icon.classList.contains('fa-eye')) {
-                console.log('상세보기');
-                showAlert('직원 상세정보 기능은 추후 구현됩니다.', 'info');
-            } else if (icon.classList.contains('fa-edit')) {
-                console.log('수정');
-                showAlert('직원 정보 수정 기능은 추후 구현됩니다.', 'info');
-            }
-        });
+    $('#employeeForm').on('submit', function(e) {
+        e.preventDefault();
+        saveEmployee();
     });
 });
 
-// 직원 등록 모달 열기
+/**
+ * Ajax: 전체 활성 사용자 목록 조회
+ */
+function loadEmployees() {
+    $.ajax({
+        url: '/api/users',
+        method: 'GET',
+        dataType: 'json',
+        success: function(response) {
+            console.log('사용자 목록 조회 성공:', response);
+            allUsers = response; // 전역 변수에 저장
+            renderEmployeeTable(response);
+            updateStatistics(response);
+        },
+        error: function(xhr, status, error) {
+            console.error('사용자 목록 조회 실패:', error);
+            showAlert('직원 목록을 불러오는데 실패했습니다.', 'error');
+
+            // 에러 발생 시 빈 테이블 표시
+            $('#employeeTableBody').html(`
+                <tr>
+                    <td colspan="9" style="text-align: center; padding: 40px; color: #999;">
+                        <i class="fas fa-exclamation-triangle" style="font-size: 48px; margin-bottom: 16px;"></i>
+                        <p>직원 목록을 불러오는데 실패했습니다.</p>
+                        <p style="font-size: 14px; margin-top: 8px;">서버 연결을 확인해주세요.</p>
+                    </td>
+                </tr>
+            `);
+        }
+    });
+}
+
+/**
+ * 테이블에 직원 목록 렌더링
+ */
+function renderEmployeeTable(users) {
+    const $tbody = $('#employeeTableBody');
+    $tbody.empty();
+
+    if (users.length === 0) {
+        $tbody.html(`
+            <tr>
+                <td colspan="9" style="text-align: center; padding: 40px; color: #999;">
+                    <i class="fas fa-users" style="font-size: 48px; margin-bottom: 16px;"></i>
+                    <p>등록된 직원이 없습니다.</p>
+                </td>
+            </tr>
+        `);
+        return;
+    }
+
+    users.forEach(function(user) {
+        const row = createEmployeeRow(user);
+        $tbody.append(row);
+    });
+
+    // 버튼 이벤트 바인딩
+    bindEmployeeButtons();
+}
+
+/**
+ * 직원 행(TR) 생성
+ */
+function createEmployeeRow(user) {
+    // 이름 첫 글자 (아바타용)
+    const initial = user.empName ? user.empName.charAt(0) : '?';
+
+    // 직급별 뱃지 클래스 매핑
+    const positionClassMap = {
+        '사원': 'staff',
+        '대리': 'assistant',
+        '과장': 'manager',
+        '차장': 'seniorManager',
+        '부장': 'director',
+        '이사': 'executive',
+        '상무': 'seniorExec',
+        '대표이사': 'ceo',
+        '대표': 'ceo'
+    };
+    const positionClass = positionClassMap[user.empPosition] || 'staff';
+
+    // 상태별 뱃지 클래스 매핑
+    const statusClassMap = {
+        '재직': 'active',
+        '휴직': 'vacation',
+        '퇴사': 'inactive'
+    };
+    const statusClass = statusClassMap[user.empStatus] || 'active';
+
+    // 이번달 입사자 체크 (신규 뱃지용)
+    const isNewEmployee = checkNewEmployee(user.empJoinDate);
+    const newBadge = isNewEmployee ? 'new' : '';
+
+    return `
+        <tr data-idx="${user.idx}" data-dept="${user.empDept}">
+            <td>${user.empId || '-'}</td>
+            <td>
+                <div class="employee-name">
+                    <div class="emp-avatar ${newBadge}">${initial}</div>
+                    <span>${user.empName || '-'}</span>
+                </div>
+            </td>
+            <td>${user.empDept || '-'}</td>
+            <td><span class="position-badge ${positionClass}">${user.empPosition || '-'}</span></td>
+            <td>${user.empEmail || '-'}</td>
+            <td>${user.empPhone || '-'}</td>
+            <td>${user.empJoinDate || '-'}</td>
+            <td><span class="status-badge ${statusClass}">${user.empStatus || '-'}</span></td>
+            <td>
+                <button class="btn-icon btn-view" data-idx="${user.idx}" title="상세정보">
+                    <i class="fas fa-eye"></i>
+                </button>
+                <button class="btn-icon btn-edit" data-idx="${user.idx}" title="수정">
+                    <i class="fas fa-edit"></i>
+                </button>
+            </td>
+        </tr>
+    `;
+}
+
+/**
+ * 이번달 입사자인지 체크
+ */
+function checkNewEmployee(joinDate) {
+    if (!joinDate) return false;
+
+    const today = new Date();
+    const join = new Date(joinDate);
+
+    return today.getFullYear() === join.getFullYear() &&
+           today.getMonth() === join.getMonth();
+}
+
+/**
+ * 직원 버튼 이벤트 바인딩
+ */
+function bindEmployeeButtons() {
+    // 상세보기 버튼
+    $('.btn-view').on('click', function() {
+        const idx = $(this).data('idx');
+        viewEmployeeDetail(idx);
+    });
+
+    // 수정 버튼
+    $('.btn-edit').on('click', function() {
+        const idx = $(this).data('idx');
+        editEmployee(idx);
+    });
+}
+
+/**
+ * 직원 상세보기
+ */
+function viewEmployeeDetail(idx) {
+    $.ajax({
+        url: `/api/users/${idx}`,
+        method: 'GET',
+        dataType: 'json',
+        success: function(user) {
+            console.log('직원 상세 조회 성공:', user);
+            // TODO: 상세보기 모달 구현
+            showAlert('직원 상세정보 기능은 추후 구현됩니다.', 'info');
+        },
+        error: function(xhr, status, error) {
+            console.error('직원 상세 조회 실패:', error);
+            showAlert('직원 정보를 불러오는데 실패했습니다.', 'error');
+        }
+    });
+}
+
+/**
+ * 직원 수정
+ */
+function editEmployee(idx) {
+    $.ajax({
+        url: `/api/users/${idx}`,
+        method: 'GET',
+        dataType: 'json',
+        success: function(user) {
+            console.log('직원 정보 조회 성공:', user);
+            // TODO: 수정 모달에 데이터 채우기
+            showAlert('직원 정보 수정 기능은 추후 구현됩니다.', 'info');
+        },
+        error: function(xhr, status, error) {
+            console.error('직원 정보 조회 실패:', error);
+            showAlert('직원 정보를 불러오는데 실패했습니다.', 'error');
+        }
+    });
+}
+
+/**
+ * 통계 업데이트
+ */
+function updateStatistics(users) {
+    const totalCount = users.length;
+
+    // 재직 중인 직원 수
+    const activeCount = users.filter(u => u.empStatus === '재직').length;
+
+    // 휴직 중인 직원 수
+    const onLeaveCount = users.filter(u => u.empStatus === '휴직').length;
+
+    // 이번달 입사자 수
+    const today = new Date();
+    const newCount = users.filter(u => {
+        if (!u.empJoinDate) return false;
+        const joinDate = new Date(u.empJoinDate);
+        return joinDate.getFullYear() === today.getFullYear() &&
+               joinDate.getMonth() === today.getMonth();
+    }).length;
+
+    // 통계 카드 업데이트
+    $('#totalCount').text(totalCount);
+    $('#activeCount').text(activeCount);
+    $('#onLeaveCount').text(onLeaveCount);
+    $('#newCount').text(newCount);
+}
+
+/**
+ * 부서별 필터링
+ */
+function filterEmployees() {
+    const $rows = $('#employeeTableBody tr');
+
+    if (currentFilter === 'all') {
+        $rows.show();
+    } else {
+        $rows.each(function() {
+            const dept = $(this).data('dept');
+            if (dept === currentFilter) {
+                $(this).show();
+            } else {
+                $(this).hide();
+            }
+        });
+    }
+}
+
+/**
+ * 검색 기능
+ */
+function searchEmployees(searchTerm) {
+    const $rows = $('#employeeTableBody tr');
+
+    if (!searchTerm) {
+        // 검색어가 없으면 현재 필터만 적용
+        filterEmployees();
+        return;
+    }
+
+    $rows.each(function() {
+        const text = $(this).text().toLowerCase();
+        const dept = $(this).data('dept');
+
+        // 부서 필터와 검색어 둘 다 만족해야 함
+        const matchDept = (currentFilter === 'all' || dept === currentFilter);
+        const matchSearch = text.includes(searchTerm);
+
+        if (matchDept && matchSearch) {
+            $(this).show();
+        } else {
+            $(this).hide();
+        }
+    });
+}
+
+/**
+ * 직원 등록 모달 열기
+ */
 function openEmployeeModal() {
-    const modal = document.getElementById('employeeModal');
-    const form = document.getElementById('employeeForm');
-
-    // 폼 초기화
-    if (form) {
-        form.reset();
-        // 자동 사번 생성
-        document.getElementById('empId').value = 'EMP' + employeeIdCounter;
-    }
-
-    if (modal) {
-        modal.classList.add('show');
-    }
+    $('#employeeModal').addClass('show');
+    $('#employeeForm')[0].reset();
+    $('#modalTitle').text('직원 등록');
 }
 
-// 직원 등록 모달 닫기
+/**
+ * 직원 등록 모달 닫기
+ */
 function closeEmployeeModal() {
-    const modal = document.getElementById('employeeModal');
-    if (modal) {
-        modal.classList.remove('show');
-    }
+    $('#employeeModal').removeClass('show');
 }
 
-// 직원 저장
+/**
+ * 직원 저장 (생성)
+ */
 function saveEmployee() {
-    const form = document.getElementById('employeeForm');
+    // 폼 데이터 수집
+    const employeeData = {
+        empId: $('#empId').val().trim(),
+        empName: $('#empName').val().trim(),
+        empBirth: $('#empBirth').val(),
+        empGender: $('#empGender').val(),
+        empEmail: $('#empEmail').val().trim(),
+        externalEmail: $('#externalEmail').val().trim(),
+        empPhone: $('#empPhone').val().trim(),
+        emergencyContact: $('#emergencyContact').val().trim(),
+        empAddress: $('#empAddress').val().trim(),
+        empDept: $('#empDept').val(),
+        empPosition: $('#empPosition').val(),
+        empJoinDate: $('#empJoinDate').val(),
+        empStatus: $('#empStatus').val(),
+        empWorkType: $('#empWorkType').val(),
+        empNotes: $('#empNotes').val().trim(),
+        password: 'temp1234' // 임시 비밀번호 (실제로는 별도 입력 받아야 함)
+    };
 
     // 필수 필드 검증
-    const empName = document.getElementById('empName').value.trim();
-    const empId = document.getElementById('empId').value.trim();
-    const department = document.getElementById('empDept').value;
-    const position = document.getElementById('empPosition').value;
-
-    if (!empName || !empId || !department || !position) {
+    if (!employeeData.empName || !employeeData.empId || !employeeData.empEmail) {
         showAlert('필수 항목을 모두 입력해주세요.', 'warning');
         return;
     }
 
-    // 직원 데이터 수집
-    const employeeData = {
-        name: empName,
-        id: empId,
-        birthDate: document.getElementById('empBirth').value,
-        gender: document.getElementById('empGender').value,
-        email: document.getElementById('empEmail').value,
-        phone: document.getElementById('empPhone').value,
-        address: document.getElementById('empAddress').value,
-        department: department,
-        position: position,
-        joinDate: document.getElementById('empJoinDate').value,
-        status: document.getElementById('empStatus').value,
-        salary: document.getElementById('empSalary').value,
-        workType: document.getElementById('empWorkType').value,
-        notes: document.getElementById('empNotes').value
-    };
-
-    // 테이블에 직원 추가
-    addEmployeeToTable(employeeData);
-
-    // 사번 카운터 증가
-    employeeIdCounter++;
-
-    // 모달 닫기
-    closeEmployeeModal();
-
-    // 성공 메시지
-    showAlert('직원이 성공적으로 등록되었습니다.', 'success');
-}
-
-// 테이블에 직원 추가
-function addEmployeeToTable(data) {
-    const tbody = document.querySelector('.employee-table tbody');
-    if (!tbody) return;
-
-    // 이니셜 생성
-    const initial = data.name.charAt(0);
-
-    // 직급별 뱃지 클래스
-    const positionClass = {
-        '팀장': 'leader',
-        '과장': 'manager',
-        '대리': 'senior',
-        '사원': 'staff'
-    };
-
-    // 상태별 뱃지 클래스와 텍스트
-    const statusMap = {
-        '재직': { class: 'active', text: '재직' },
-        '휴직': { class: 'vacation', text: '휴직' },
-        '퇴사': { class: 'inactive', text: '퇴사' }
-    };
-
-    const statusInfo = statusMap[data.status] || { class: 'active', text: '재직' };
-
-    // 새 행 생성
-    const newRow = document.createElement('tr');
-    newRow.setAttribute('data-dept', data.department);
-
-    newRow.innerHTML = `
-        <td>
-            <div class="employee-name">
-                <div class="emp-avatar new">${initial}</div>
-                <span>${data.name}</span>
-            </div>
-        </td>
-        <td>${data.id}</td>
-        <td>${data.department}</td>
-        <td>
-            <span class="position-badge ${positionClass[data.position] || 'staff'}">${data.position}</span>
-        </td>
-        <td>${data.email || '-'}</td>
-        <td>${data.phone || '-'}</td>
-        <td>${data.joinDate || '-'}</td>
-        <td>
-            <span class="status-badge ${statusInfo.class}">${statusInfo.text}</span>
-        </td>
-        <td>
-            <button class="btn-icon" title="상세보기">
-                <i class="fas fa-eye"></i>
-            </button>
-            <button class="btn-icon" title="수정">
-                <i class="fas fa-edit"></i>
-            </button>
-        </td>
-    `;
-
-    // 테이블 맨 위에 추가
-    tbody.insertBefore(newRow, tbody.firstChild);
-
-    // 새 버튼에 이벤트 리스너 추가
-    const newButtons = newRow.querySelectorAll('.btn-icon');
-    newButtons.forEach(btn => {
-        btn.addEventListener('click', function(e) {
-            e.stopPropagation();
-            const icon = this.querySelector('i');
-
-            if (icon.classList.contains('fa-eye')) {
-                showAlert('직원 상세정보 기능은 추후 구현됩니다.', 'info');
-            } else if (icon.classList.contains('fa-edit')) {
-                showAlert('직원 정보 수정 기능은 추후 구현됩니다.', 'info');
-            }
-        });
+    // Ajax: 직원 생성 API 호출
+    $.ajax({
+        url: '/api/users',
+        method: 'POST',
+        contentType: 'application/json',
+        data: JSON.stringify(employeeData),
+        success: function(response) {
+            console.log('직원 등록 성공:', response);
+            showAlert('직원이 성공적으로 등록되었습니다.', 'success');
+            closeEmployeeModal();
+            loadEmployees(); // 목록 새로고침
+        },
+        error: function(xhr, status, error) {
+            console.error('직원 등록 실패:', xhr.responseJSON);
+            const errorMsg = xhr.responseJSON?.error || '직원 등록에 실패했습니다.';
+            showAlert(errorMsg, 'error');
+        }
     });
-
-    // 통계 업데이트
-    updateStats();
-}
-
-// 통계 업데이트
-function updateStats() {
-    const allRows = document.querySelectorAll('.employee-table tbody tr');
-    const totalCount = allRows.length;
-
-    // 부서별 카운트
-    const deptCounts = {};
-    allRows.forEach(row => {
-        const dept = row.getAttribute('data-dept');
-        deptCounts[dept] = (deptCounts[dept] || 0) + 1;
-    });
-
-    // 전체 직원 수 업데이트 (있다면)
-    const totalStatCard = document.querySelector('.stat-card .stat-value');
-    if (totalStatCard) {
-        totalStatCard.textContent = totalCount;
-    }
 }
