@@ -278,24 +278,79 @@ document.addEventListener('DOMContentLoaded', function() {
 
         // 참석자 명단 테이블 업데이트
         function updateAttendeeDisplay() {
-            const attendeeRows = document.querySelectorAll('.attendee-row');
+            // 참여자(참여기관) 텍스트 생성 - 회의록용
+            const attendeeNames = attendees
+                .filter(attendee => attendee.name && attendee.name.trim())
+                .map(attendee => attendee.name.trim());
 
-            // 모든 행 업데이트
-            attendeeRows.forEach((row, index) => {
-                const cells = row.querySelectorAll('td');
-                if (index < attendees.length) {
-                    cells[0].textContent = attendees[index].dept || '';
-                    cells[1].textContent = attendees[index].position || '';
-                    cells[2].textContent = attendees[index].name || '';
-                } else {
-                    cells[0].textContent = '';
-                    cells[1].textContent = '';
-                    cells[2].textContent = '';
+            let allAttendeesText = '';
+            if (attendeeNames.length > 0) {
+                allAttendeesText = attendeeNames.join(', ') + '(파인씨앤아이)';
+            }
+
+            document.querySelectorAll('.auto-all-attendees').forEach(field => {
+                field.textContent = allAttendeesText;
+            });
+
+            // 참석자 명단 서명 테이블 업데이트
+            const nameFields = document.querySelectorAll('.attendee-sig-name');
+            const deptFields = document.querySelectorAll('.attendee-sig-dept');
+
+            // 모든 필드 초기화
+            nameFields.forEach(field => field.value = '');
+            deptFields.forEach(field => field.value = '');
+
+            // 참석자 채우기 (왼쪽 열부터, 그 다음 오른쪽 열)
+            const totalFields = nameFields.length;
+            const rowCount = totalFields / 2;
+
+            attendees.forEach((attendee, idx) => {
+                if (attendee.name && attendee.name.trim()) {
+                    let fieldIndex;
+                    if (idx < rowCount) {
+                        // 왼쪽 열
+                        fieldIndex = idx * 2;
+                    } else {
+                        // 오른쪽 열
+                        fieldIndex = (idx - rowCount) * 2 + 1;
+                    }
+
+                    if (nameFields[fieldIndex]) {
+                        nameFields[fieldIndex].value = attendee.name;
+                    }
+                    if (deptFields[fieldIndex]) {
+                        deptFields[fieldIndex].value = attendee.dept || '';
+                    }
                 }
             });
 
-            // 회의내용 업데이트
-            updateMeetingContent();
+            // 회의 관련 필드 업데이트
+            updateMeetingFields();
+        }
+
+        // 회의 관련 필드 업데이트
+        function updateMeetingFields() {
+            // 일시 (회의록, 참석자 명단 공통)
+            if (commonDate && commonDate.value) {
+                const [year, month, day] = commonDate.value.split('-');
+                const dateTimeText = `${year}.${month}.${day}`;
+
+                document.querySelectorAll('.auto-datetime').forEach(field => {
+                    field.value = dateTimeText;
+                });
+            }
+
+            // 주제 (회의 목적 사용)
+            const subjectText = commonPurpose ? commonPurpose.value : '';
+            document.querySelectorAll('.auto-subject').forEach(field => {
+                field.textContent = subjectText;
+            });
+
+            // 주요 내용 (회의 내용 사용)
+            const contentText = commonMeetingContent ? commonMeetingContent.value : '';
+            document.querySelectorAll('.auto-content').forEach(field => {
+                field.textContent = contentText;
+            });
         }
 
         // 회의 참석자 추가 버튼
@@ -328,14 +383,6 @@ document.addEventListener('DOMContentLoaded', function() {
                 });
 
                 updateAttendeeList();
-            });
-        }
-
-        // 회의 내용 업데이트
-        function updateMeetingContent() {
-            const displayText = commonMeetingContent ? commonMeetingContent.value : '';
-            document.querySelectorAll('.auto-meeting-content').forEach(field => {
-                field.textContent = displayText;
             });
         }
 
@@ -627,11 +674,7 @@ document.addEventListener('DOMContentLoaded', function() {
         }
 
         // 출장기간 자동 채우기 및 작성일/복명일자 계산
-        if (commonDate) {
-            commonDate.addEventListener('input', function() {
-                updateTripDateRange();
-            });
-        }
+        // (이미 위에서 commonDate 이벤트 리스너 추가됨 - updateTripDateRange와 updateMeetingFields 모두 호출)
 
         // 출장 기간 셀렉트 박스 이벤트
         if (commonDuration) {
@@ -641,14 +684,7 @@ document.addEventListener('DOMContentLoaded', function() {
         }
 
         // 출장목적 자동 채우기
-        if (commonPurpose) {
-            commonPurpose.addEventListener('input', function() {
-                const value = this.value;
-                document.querySelectorAll('.auto-purpose').forEach(field => {
-                    field.textContent = value;
-                });
-            });
-        }
+        // (이미 위에서 commonPurpose 이벤트 리스너 추가됨 - updateMeetingFields 호출)
 
         // 복명자 자동 채우기
         if (commonReporter) {
@@ -671,10 +707,27 @@ document.addEventListener('DOMContentLoaded', function() {
             }
         }
 
-        // 회의내용 자동 채우기
+        // 회의 관련 입력 필드 이벤트 리스너
         if (commonMeetingContent) {
             commonMeetingContent.addEventListener('input', function() {
-                updateMeetingContent();
+                updateMeetingFields();
+            });
+        }
+
+        if (commonPurpose) {
+            commonPurpose.addEventListener('input', function() {
+                const value = this.value;
+                document.querySelectorAll('.auto-purpose').forEach(field => {
+                    field.textContent = value;
+                });
+                updateMeetingFields();
+            });
+        }
+
+        if (commonDate) {
+            commonDate.addEventListener('input', function() {
+                updateTripDateRange();
+                updateMeetingFields();
             });
         }
 
@@ -1110,11 +1163,6 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     }
 
-    // 초기 템플릿 로드 (출장)
+    // 초기 템플릿 로드 (출장+회의)
     loadTemplate('receipt-trip');
-
-    // 템플릿 전환 비활성화
-    templateTreeHeaders.forEach(header => {
-        header.style.pointerEvents = 'none';
-    });
 });
