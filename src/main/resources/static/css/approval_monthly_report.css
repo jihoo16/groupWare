@@ -895,3 +895,92 @@ div h2{
         font-size: 11px;
     }
 }
+
+/* 결재라인 */
+.approval-line-box {
+    display: flex;
+    justify-content: flex-end;
+    margin-bottom: 25px;
+}
+
+.approval-line-table {
+    border-collapse: collapse;
+    border: 2px solid #333;
+}
+
+.approval-line-table th,
+.approval-line-table td {
+    border: 1px solid #333;
+    text-align: center;
+    padding: 0;
+}
+
+.approval-header {
+    font-size: 12px;
+    font-weight: 700;
+    color: #333;
+    background: #f5f5f5;
+    padding: 6px 12px;
+    width: 80px;
+}
+
+.approval-sign-cell {
+    height: 70px;
+    width: 80px;
+    padding: 4px;
+    cursor: pointer;
+    position: relative;
+    background: white;
+    transition: background-color 0.2s ease;
+}
+
+.approval-sign-cell:hover {
+    background: #f8f9fa;
+}
+
+.approval-sign-cell.signed {
+    cursor: default;
+}
+
+.approval-sign-cell.signed:hover {
+    background: white;
+}
+
+.sign-area {
+    width: 100%;
+    height: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    position: relative;
+}
+
+.sign-placeholder {
+    font-size: 11px;
+    color: #999;
+    user-select: none;
+}
+
+.approval-sign-cell.signed .sign-placeholder {
+    display: none;
+}
+
+.sign-image {
+    max-width: 100%;
+    max-height: 100%;
+    object-fit: contain;
+}
+
+.approval-name-cell {
+    font-size: 11px;
+    padding: 4px 6px;
+    background: white;
+    color: #333;
+}
+
+.approval-date-cell {
+    font-size: 10px;
+    padding: 4px 6px;
+    background: white;
+    color: #666;
+}
