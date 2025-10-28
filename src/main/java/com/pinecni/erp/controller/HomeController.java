@@ -76,11 +76,6 @@ public class HomeController {
         return "approval_vacation";
     }
 
-    @GetMapping("/approval/receipt")
-    public String approvalReceipt() {
-        return "approval_receipt";
-    }
-
     // 연구비증빙
     @GetMapping("/approval/receipt-meeting")
     public String approvalReceiptMeeting() {
