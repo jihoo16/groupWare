@@ -122,20 +122,21 @@ document.addEventListener('DOMContentLoaded', function() {
     // 출장+회의 자동 채우기 기능
     function setupTripAutoFill() {
         const commonProject = document.getElementById('common_project');
+        const commonAuthor = document.getElementById('common_author');
         const commonLocation = document.getElementById('common_location');
         const commonDate = document.getElementById('common_date');
         const commonDuration = document.getElementById('common_duration');
         const commonPurpose = document.getElementById('common_purpose');
-        const commonReporter = document.getElementById('common_reporter');
         const commonTripResult = document.getElementById('common_trip_result');
         const commonMeetingContent = document.getElementById('common_meeting_content');
         const tripPersonArea = document.getElementById('tripPersonArea');
         const tripPersonList = document.getElementById('tripPersonList');
         const attendeeArea = document.getElementById('attendeeArea');
+        const addAttendeeBtn = document.getElementById('addAttendeeBtn');
+        const removeAttendeeBtn = document.getElementById('removeAttendeeBtn');
         const attendeeList = document.getElementById('attendeeList');
         const dailyExpenseBody = document.getElementById('dailyExpenseBody');
 
-        let tripPersons = [];
         let dailyExpenses = [];
         let attendees = [];
 
@@ -240,6 +241,29 @@ document.addEventListener('DOMContentLoaded', function() {
                         <i class="fas fa-user-plus" style="font-size: 20px; margin-bottom: 6px;"></i>
                         <div>클릭하여 회의 참석자 추가</div>
                     </div>
+        // 참석자 목록 업데이트 함수
+        function updateAttendeeList() {
+            attendeeList.innerHTML = '';
+            attendees.forEach((attendee, index) => {
+                const row = document.createElement('div');
+                row.style.cssText = 'display: flex; gap: 8px; margin-bottom: 8px; align-items: center;';
+
+                const positionOptions = positions.map(pos =>
+                    `<option value="${pos}" ${attendee.position === pos ? 'selected' : ''}>${pos}</option>`
+                ).join('');
+
+                row.innerHTML = `
+                    <input type="checkbox" data-index="${index}" class="attendee-checkbox" style="width: 18px; height: 18px; cursor: pointer;">
+                    <input type="text" data-index="${index}" class="attendee-dept" placeholder="부서명" value="${attendee.dept || ''}" style="flex: 1; padding: 5px;">
+                    <select data-index="${index}" class="attendee-position" style="flex: 1; padding: 5px;">
+                        <option value="">직책 선택</option>
+                        ${positionOptions}
+                    </select>
+                    <input type="text" data-index="${index}" class="attendee-name" placeholder="성명" value="${attendee.name || ''}" style="flex: 1; padding: 5px;">
+                    <label style="display: flex; align-items: center; gap: 4px; white-space: nowrap;">
+                        <input type="checkbox" data-index="${index}" class="attendee-external" ${attendee.isExternal ? 'checked' : ''} style="width: 16px; height: 16px; cursor: pointer;">
+                        외부
+                    </label>
                 `;
             } else {
                 attendeeList.innerHTML = attendees.map(attendee => `
@@ -255,6 +279,15 @@ document.addEventListener('DOMContentLoaded', function() {
                     </div>
                 `).join('');
             }
+
+            // 외부 체크박스 이벤트 리스너
+            document.querySelectorAll('.attendee-external').forEach(el => {
+                el.addEventListener('change', function() {
+                    const index = parseInt(this.getAttribute('data-index'));
+                    attendees[index].isExternal = this.checked;
+                    updateAttendeeDisplay();
+                });
+            });
 
             updateAttendeeDisplay();
         }
@@ -277,21 +310,28 @@ document.addEventListener('DOMContentLoaded', function() {
 
         // 참석자 명단 테이블 업데이트
         function updateAttendeeDisplay() {
-            // 참여자(참여기관) 텍스트 생성 - 회의록용
-            const attendeeNames = attendees
-                .filter(attendee => attendee.name && attendee.name.trim())
-                .map(attendee => attendee.name.trim());
+            // 내부 인원과 외부 인원 분리
+            const internalAttendees = attendees.filter(a => a.name && a.name.trim() && !a.isExternal);
+            const externalAttendees = attendees.filter(a => a.name && a.name.trim() && a.isExternal);
 
+            // 참여자(참여기관) 텍스트 생성 - 회의록용 (내부 + 외부 모두 포함)
             let allAttendeesText = '';
-            if (attendeeNames.length > 0) {
-                allAttendeesText = attendeeNames.join(', ') + '(파인씨앤아이)';
+            const internalNames = internalAttendees.map(a => a.name.trim());
+            const externalNames = externalAttendees.map(a => a.name.trim());
+
+            if (internalNames.length > 0 && externalNames.length > 0) {
+                allAttendeesText = internalNames.join(', ') + '(파인씨앤아이), ' + externalNames.join(', ') + '(외부)';
+            } else if (internalNames.length > 0) {
+                allAttendeesText = internalNames.join(', ') + '(파인씨앤아이)';
+            } else if (externalNames.length > 0) {
+                allAttendeesText = externalNames.join(', ') + '(외부)';
             }
 
             document.querySelectorAll('.auto-all-attendees').forEach(field => {
                 field.textContent = allAttendeesText;
             });
 
-            // 참석자 명단 서명 테이블 업데이트
+            // 참석자 명단 서명 테이블 업데이트 (외부 먼저, 내부 나중)
             const nameFields = document.querySelectorAll('.attendee-sig-name');
             const deptFields = document.querySelectorAll('.attendee-sig-dept');
 
@@ -299,11 +339,14 @@ document.addEventListener('DOMContentLoaded', function() {
             nameFields.forEach(field => field.value = '');
             deptFields.forEach(field => field.value = '');
 
+            // 외부 인원 먼저, 내부 인원 나중에 정렬
+            const sortedAttendees = [...externalAttendees, ...internalAttendees];
+
             // 참석자 채우기 (왼쪽 열부터, 그 다음 오른쪽 열)
             const totalFields = nameFields.length;
             const rowCount = totalFields / 2;
 
-            attendees.forEach((attendee, idx) => {
+            sortedAttendees.forEach((attendee, idx) => {
                 if (attendee.name && attendee.name.trim()) {
                     let fieldIndex;
                     if (idx < rowCount) {
@@ -318,17 +361,54 @@ document.addEventListener('DOMContentLoaded', function() {
                         nameFields[fieldIndex].value = attendee.name;
                     }
                     if (deptFields[fieldIndex]) {
-                        deptFields[fieldIndex].value = attendee.dept || '';
+                        // 외부 체크시 부서명 사용, 아니면 "파인씨앤아이"
+                        const deptValue = attendee.isExternal ? (attendee.dept || '') : '파인씨앤아이';
+                        deptFields[fieldIndex].value = deptValue;
                     }
+                }
+            });
+
+            // 출장품의서 출장인원 테이블 업데이트 (외부 인원 제외)
+            const personRows = document.querySelectorAll('.person-row');
+
+            // 모든 행 초기화
+            personRows.forEach(row => {
+                const cells = row.querySelectorAll('td');
+                cells[0].textContent = '';
+                cells[1].textContent = '';
+                cells[2].textContent = '';
+            });
+
+            // 내부 인원만 출장품의서에 표시 (최대 5명)
+            internalAttendees.forEach((attendee, index) => {
+                if (index < 5 && personRows[index]) {
+                    const cells = personRows[index].querySelectorAll('td');
+                    cells[0].textContent = attendee.dept || '';
+                    cells[1].textContent = attendee.position || '';
+                    cells[2].textContent = attendee.name || '';
                 }
             });
 
             // 회의 관련 필드 업데이트
             updateMeetingFields();
+
+            // 출장내용 및 결과 업데이트
+            updateTripResult();
         }
 
         // 회의 관련 필드 업데이트
         function updateMeetingFields() {
+            // 작성자 (회의록, 참석자명단)
+            const authorText = commonAuthor ? commonAuthor.value : '홍길동';
+            document.querySelectorAll('.auto-author').forEach(field => {
+                field.value = authorText;
+            });
+
+            // 복명자 (작성자와 동일하게)
+            document.querySelectorAll('.auto-reporter').forEach(field => {
+                field.textContent = authorText;
+            });
+
             // 일시 (회의록, 참석자 명단 공통)
             if (commonDate && commonDate.value) {
                 const [year, month, day] = commonDate.value.split('-');
@@ -353,14 +433,58 @@ document.addEventListener('DOMContentLoaded', function() {
         }
 
         // 기존 버튼 방식은 제거됨 - 이제 모달 방식으로 작동
+        // 참석자 추가 버튼
+        if (addAttendeeBtn) {
+            addAttendeeBtn.addEventListener('click', function() {
+                if (attendees.length >= 10) {
+                    alert('최대 10명까지만 추가할 수 있습니다.');
+                    return;
+                }
+                attendees.push({ dept: '', position: '', name: '', isExternal: false });
+                updateAttendeeList();
+            });
+        }
+
+        // 회의 참석자 제거 버튼
+        if (removeAttendeeBtn) {
+            removeAttendeeBtn.addEventListener('click', function() {
+                const checkboxes = document.querySelectorAll('.attendee-checkbox:checked');
+                if (checkboxes.length === 0) {
+                    alert('제거할 참석자를 선택해주세요.');
+                    return;
+                }
+
+                const indicesToRemove = Array.from(checkboxes)
+                    .map(cb => parseInt(cb.getAttribute('data-index')))
+                    .sort((a, b) => b - a);
+
+                indicesToRemove.forEach(index => {
+                    attendees.splice(index, 1);
+                });
+
+                updateAttendeeList();
+            });
+        }
 
         // 과제명 자동 채우기
         if (commonProject) {
             commonProject.addEventListener('input', function() {
                 const value = this.value;
                 document.querySelectorAll('.auto-project').forEach(field => {
-                    field.textContent = value;
+                    // input 요소면 value 속성, 아니면 textContent 설정
+                    if (field.tagName === 'INPUT') {
+                        field.value = value;
+                    } else {
+                        field.textContent = value;
+                    }
                 });
+            });
+        }
+
+        // 작성자 자동 채우기
+        if (commonAuthor) {
+            commonAuthor.addEventListener('input', function() {
+                updateMeetingFields();
             });
         }
 
@@ -369,7 +493,12 @@ document.addEventListener('DOMContentLoaded', function() {
             commonLocation.addEventListener('input', function() {
                 const value = this.value;
                 document.querySelectorAll('.auto-location').forEach(field => {
-                    field.textContent = value;
+                    // input 요소면 value 속성, 아니면 textContent 설정
+                    if (field.tagName === 'INPUT') {
+                        field.value = value;
+                    } else {
+                        field.textContent = value;
+                    }
                 });
             });
         }
@@ -401,6 +530,7 @@ document.addEventListener('DOMContentLoaded', function() {
                     transport: 0,
                     lodging: 0,
                     meal: 0,
+                    meeting: 0,
                     other: 0
                 });
 
@@ -417,6 +547,10 @@ document.addEventListener('DOMContentLoaded', function() {
                     </td>
                     <td style="text-align: center;">
                         <input type="number" class="expense-input" data-index="${i}" data-type="meal"
+                               placeholder="0" style="width: 100%; text-align: right; padding: 5px;" min="0">
+                    </td>
+                    <td style="text-align: center;">
+                        <input type="number" class="expense-input" data-index="${i}" data-type="meeting"
                                placeholder="0" style="width: 100%; text-align: right; padding: 5px;" min="0">
                     </td>
                     <td style="text-align: center;">
@@ -447,28 +581,37 @@ document.addEventListener('DOMContentLoaded', function() {
             let totalTransport = 0;
             let totalLodging = 0;
             let totalMeal = 0;
+            let totalMeeting = 0;
             let totalOther = 0;
 
             dailyExpenses.forEach(expense => {
                 totalTransport += expense.transport;
                 totalLodging += expense.lodging;
                 totalMeal += expense.meal;
+                totalMeeting += expense.meeting;
                 totalOther += expense.other;
             });
 
-            const grandTotal = totalTransport + totalLodging + totalMeal + totalOther;
+            const grandTotal = totalTransport + totalLodging + totalMeal + totalMeeting + totalOther;
 
             // 합계 표시 (공통 입력칸)
             document.getElementById('totalTransport').textContent = totalTransport.toLocaleString();
             document.getElementById('totalLodging').textContent = totalLodging.toLocaleString();
             document.getElementById('totalMeal').textContent = totalMeal.toLocaleString();
+            document.getElementById('totalMeeting').textContent = totalMeeting.toLocaleString();
             document.getElementById('totalOther').textContent = totalOther.toLocaleString();
+
+            // 품의서 전체 합계 표시
+            document.querySelectorAll('.auto-grand-total').forEach(field => {
+                field.textContent = grandTotal.toLocaleString();
+            });
 
             // 품의서 소요경비 내역에 날짜별 행 생성
             const proposalExpenseBody = document.getElementById('proposalExpenseBody');
             if (proposalExpenseBody) {
                 proposalExpenseBody.innerHTML = '';
                 dailyExpenses.forEach((expense, index) => {
+                    // 첫 번째 줄은 회의비 제외하고 계산
                     const dayTotal = expense.transport + expense.lodging + expense.meal + expense.other;
                     const row = document.createElement('tr');
                     row.innerHTML = `
@@ -480,6 +623,20 @@ document.addEventListener('DOMContentLoaded', function() {
                         <td style="text-align: center; padding: 10px;">${dayTotal.toLocaleString()}</td>
                     `;
                     proposalExpenseBody.appendChild(row);
+
+                    // 회의비가 있을 경우 별도 행 추가
+                    if (expense.meeting > 0) {
+                        const meetingRow = document.createElement('tr');
+                        meetingRow.innerHTML = `
+                            <td style="text-align: center; padding: 10px;">${expense.date}</td>
+                            <td style="text-align: center; padding: 10px;">0</td>
+                            <td style="text-align: center; padding: 10px;">0</td>
+                            <td style="text-align: center; padding: 10px;">0</td>
+                            <td style="text-align: center; padding: 10px;">${expense.meeting.toLocaleString()}(회의비)</td>
+                            <td style="text-align: center; padding: 10px;">${expense.meeting.toLocaleString()}</td>
+                        `;
+                        proposalExpenseBody.appendChild(meetingRow);
+                    }
                 });
             }
 
@@ -526,11 +683,21 @@ document.addEventListener('DOMContentLoaded', function() {
                     `;
                     reportExpenseBody.appendChild(mealRow);
 
-                    // 기타(일비)
+                    // 기타(일비) - 회의비 포함
+                    const otherTotal = expense.other + expense.meeting;
+                    let otherDisplay = '';
+                    if (expense.meeting > 0 && expense.other > 0) {
+                        otherDisplay = `${otherTotal.toLocaleString()}원 (회의비: ${expense.meeting.toLocaleString()}원)`;
+                    } else if (expense.meeting > 0) {
+                        otherDisplay = `${otherTotal.toLocaleString()}원 (회의비)`;
+                    } else {
+                        otherDisplay = `${otherTotal.toLocaleString()}원`;
+                    }
+
                     const otherRow = document.createElement('tr');
                     otherRow.innerHTML = `
                         <td colspan="2" style="background: white; padding: 8px; text-align: center">기타(일비)</td>
-                        <td style="text-align: center; padding: 8px;">${expense.other.toLocaleString()}원</td>
+                        <td style="text-align: center; padding: 8px;">${otherDisplay}</td>
                     `;
                     reportExpenseBody.appendChild(otherRow);
                 });
@@ -540,10 +707,14 @@ document.addEventListener('DOMContentLoaded', function() {
             document.querySelectorAll('.trip-auto-grand-total').forEach(field => {
                 field.textContent = grandTotal.toLocaleString();
             });
-            document.querySelectorAll('.trip-auto-total').forEach(field => {
+
+            // 복명서 실집행금액 표시
+            document.querySelectorAll('.auto-total').forEach(field => {
                 field.textContent = grandTotal.toLocaleString();
             });
-            document.querySelectorAll('.trip-auto-request-amount').forEach(field => {
+
+            // 복명서 출장신청금액 표시
+            document.querySelectorAll('.auto-request-amount').forEach(field => {
                 field.textContent = grandTotal.toLocaleString();
             });
         }
@@ -654,26 +825,8 @@ document.addEventListener('DOMContentLoaded', function() {
         // 출장목적 자동 채우기
         // (이미 위에서 commonPurpose 이벤트 리스너 추가됨 - updateMeetingFields 호출)
 
-        // 복명자 자동 채우기
-        if (commonReporter) {
-            commonReporter.addEventListener('input', function() {
-                const value = this.value;
-                document.querySelectorAll('.auto-reporter').forEach(field => {
-                    field.textContent = value;
-                });
-
-                // 출장내용 및 결과에 자동 추가
-                updateTripResult();
-            });
-
-            // 초기값 설정
-            if (commonReporter.value) {
-                document.querySelectorAll('.auto-reporter').forEach(field => {
-                    field.textContent = commonReporter.value;
-                });
-                updateTripResult();
-            }
-        }
+        // 복명자 초기값 설정 (작성자와 동일하게)
+        // updateMeetingFields에서 자동으로 복명자도 업데이트됨
 
         // 회의 관련 입력 필드 이벤트 리스너
         if (commonMeetingContent) {
@@ -701,10 +854,9 @@ document.addEventListener('DOMContentLoaded', function() {
 
         // 출장내용 및 결과 업데이트
         function updateTripResult() {
-            // 출장인원에서 이름만 가져오기 (복명자는 제외)
-            const personNames = tripPersons
-                .filter(person => person.name && person.name.trim())
-                .map(person => person.name.trim());
+            // 내부 인원(외부 제외)에서 이름만 가져오기
+            const internalAttendees = attendees.filter(a => a.name && a.name.trim() && !a.isExternal);
+            const personNames = internalAttendees.map(a => a.name.trim());
 
             let resultText = '- 참석인원 :\n';
 
@@ -742,6 +894,14 @@ document.addEventListener('DOMContentLoaded', function() {
         // 초기 참석자 설정
         attendees = [];
         renderAttendeeListInTemplate();
+        // 초기 참석자 설정
+        attendees = [
+            { dept: '', position: '', name: '', isExternal: false }
+        ];
+        updateAttendeeList();
+
+        // 초기 회의 관련 필드 설정 (작성자, 복명자 등)
+        updateMeetingFields();
     }
 
     // 파일 업로드
