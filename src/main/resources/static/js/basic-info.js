@@ -282,108 +282,227 @@ document.addEventListener('DOMContentLoaded', function() {
     }
 
     // ===========================
-    // Department Modal
+    // Department Modal (C01)
     // ===========================
     const departmentModal = document.getElementById('department-modal');
     const addDepartmentBtn = document.getElementById('add-department-btn');
     const departmentModalTitle = document.getElementById('department-modal-title');
     const departmentSaveBtn = document.getElementById('department-save-btn');
-    let editingDepartmentRow = null;
+    let isDepartmentEditMode = false;
+    let editingDepartmentIdx = null;
+
+    // Load departments when departments tab is clicked
+    tabButtons.forEach(button => {
+        button.addEventListener('click', () => {
+            if (button.getAttribute('data-tab') === 'departments') {
+                loadDepartments();
+            }
+        });
+    });
+
+    // Load departments from API
+    function loadDepartments() {
+        fetch('/api/codes?groupCode=C01')
+            .then(response => response.json())
+            .then(data => {
+                renderDepartmentTable(data);
+            })
+            .catch(error => {
+                console.error('소속 목록 조회 실패:', error);
+                alert('소속 목록을 불러오는데 실패했습니다.');
+            });
+    }
+
+    // Render department table
+    function renderDepartmentTable(departments) {
+        const tbody = document.getElementById('departments-tbody');
+
+        if (departments.length === 0) {
+            tbody.innerHTML = `
+                <tr>
+                    <td colspan="7" style="text-align: center; padding: 40px;">
+                        <i class="fas fa-inbox" style="font-size: 48px; color: #ccc; display: block; margin-bottom: 10px;"></i>
+                        <p style="color: #999;">등록된 소속이 없습니다.</p>
+                    </td>
+                </tr>
+            `;
+            return;
+        }
+
+        tbody.innerHTML = departments.map(dept => `
+            <tr data-idx="${dept.idx}">
+                <td>${dept.sortOrder || 0}</td>
+                <td>${dept.code}</td>
+                <td>${dept.codeName}</td>
+                <td>${dept.codeNameEn || '-'}</td>
+                <td>${dept.description || '-'}</td>
+                <td>
+                    <span class="status-${dept.useYn === 'Y' ? 'active' : 'inactive'}">
+                        ${dept.useYn === 'Y' ? '사용' : '미사용'}
+                    </span>
+                </td>
+                <td>
+                    <button class="btn-sm btn-edit" data-idx="${dept.idx}" data-type="department">수정</button>
+                    <button class="btn-sm btn-delete" data-idx="${dept.idx}" data-type="department">삭제</button>
+                </td>
+            </tr>
+        `).join('');
+    }
 
     // Open modal for adding new department
     addDepartmentBtn.addEventListener('click', () => {
         departmentModalTitle.textContent = '소속 추가';
         clearDepartmentForm();
-        editingDepartmentRow = null;
+        isDepartmentEditMode = false;
+        editingDepartmentIdx = null;
+        document.getElementById('department-code').disabled = false;
         openModal(departmentModal);
     });
 
-    // Edit department
-    document.getElementById('departments-tbody').addEventListener('click', (e) => {
-        if (e.target.classList.contains('btn-edit')) {
-            const row = e.target.closest('tr');
-            editingDepartmentRow = row;
-            departmentModalTitle.textContent = '소속 수정';
-
-            // Populate form with row data
-            const cells = row.cells;
-            document.getElementById('department-order').value = cells[0].textContent;
-            document.getElementById('department-name').value = cells[1].textContent;
-            document.getElementById('department-code').value = cells[2].textContent;
-
-            // Set parent department
-            const parentText = cells[3].textContent;
-            const parentSelect = document.getElementById('department-parent');
-            for (let option of parentSelect.options) {
-                if (option.textContent === parentText || (parentText === '-' && option.value === '')) {
-                    option.selected = true;
-                    break;
-                }
-            }
-
-            document.getElementById('department-status').value =
-                cells[4].textContent.includes('사용') ? 'active' : 'inactive';
-
-            openModal(departmentModal);
+    // Edit/Delete department
+    document.addEventListener('click', (e) => {
+        if (e.target.classList.contains('btn-edit') && e.target.getAttribute('data-type') === 'department') {
+            const idx = e.target.getAttribute('data-idx');
+            if (!idx) return;
+            editDepartment(idx);
         }
 
-        // Delete department
-        if (e.target.classList.contains('btn-delete')) {
-            if (confirm('정말 삭제하시겠습니까?')) {
-                e.target.closest('tr').remove();
-                reorderTableRows('departments-tbody');
-            }
+        if (e.target.classList.contains('btn-delete') && e.target.getAttribute('data-type') === 'department') {
+            const idx = e.target.getAttribute('data-idx');
+            if (!idx) return;
+            deleteDepartment(idx);
         }
     });
 
-    // Save department
-    departmentSaveBtn.addEventListener('click', () => {
-        const name = document.getElementById('department-name').value.trim();
-        const code = document.getElementById('department-code').value.trim();
-        const parentValue = document.getElementById('department-parent').value;
-        const parentText = document.getElementById('department-parent').selectedOptions[0].textContent;
-        const order = document.getElementById('department-order').value;
-        const status = document.getElementById('department-status').value;
+    // Edit department
+    function editDepartment(idx) {
+        fetch(`/api/codes/${idx}`)
+            .then(response => response.json())
+            .then(dept => {
+                departmentModalTitle.textContent = '소속 수정';
+                isDepartmentEditMode = true;
+                editingDepartmentIdx = idx;
+                fillDepartmentForm(dept);
+                document.getElementById('department-code').disabled = true; // 수정 시 코드 변경 불가
+                openModal(departmentModal);
+            })
+            .catch(error => {
+                console.error('소속 조회 실패:', error);
+                alert('소속 정보를 불러오는데 실패했습니다.');
+            });
+    }
 
-        if (!name || !code) {
-            alert('소속명과 소속코드는 필수입니다.');
+    // Delete department
+    function deleteDepartment(idx) {
+        if (!confirm('정말 삭제하시겠습니까?')) {
             return;
         }
 
-        const parentDisplay = parentValue ? parentText : '-';
+        fetch(`/api/codes/${idx}`, {
+            method: 'DELETE'
+        })
+        .then(response => {
+            if (!response.ok) {
+                throw new Error('소속 삭제 실패');
+            }
+            alert('소속이 성공적으로 삭제되었습니다.');
+            loadDepartments();
+        })
+        .catch(error => {
+            console.error('소속 삭제 실패:', error);
+            alert('소속 삭제에 실패했습니다.');
+        });
+    }
 
-        if (editingDepartmentRow) {
-            // Update existing row
-            const cells = editingDepartmentRow.cells;
-            cells[0].textContent = order;
-            cells[1].textContent = name;
-            cells[2].textContent = code;
-            cells[3].textContent = parentDisplay;
-            cells[4].innerHTML = status === 'active'
-                ? '<span class="status-active">사용</span>'
-                : '<span class="status-inactive">미사용</span>';
-        } else {
-            // Add new row
-            const tbody = document.getElementById('departments-tbody');
-            const newRow = tbody.insertRow();
-            newRow.innerHTML = `
-                <td>${order}</td>
-                <td>${name}</td>
-                <td>${code}</td>
-                <td>${parentDisplay}</td>
-                <td>${status === 'active'
-                    ? '<span class="status-active">사용</span>'
-                    : '<span class="status-inactive">미사용</span>'}</td>
-                <td>
-                    <button class="btn-sm btn-edit">수정</button>
-                    <button class="btn-sm btn-delete">삭제</button>
-                </td>
-            `;
+    // Save department
+    departmentSaveBtn.addEventListener('click', () => {
+        const code = document.getElementById('department-code').value.trim();
+        const codeName = document.getElementById('department-name').value.trim();
+
+        if (!code || !codeName) {
+            alert('코드와 소속명은 필수입니다.');
+            return;
         }
 
-        reorderTableRows('departments-tbody');
-        closeModal(departmentModal);
+        const formData = {
+            groupCode: 'C01',
+            code: code,
+            codeName: codeName,
+            codeNameEn: document.getElementById('department-name-en').value.trim() || null,
+            description: document.getElementById('department-description').value.trim() || null,
+            useYn: document.getElementById('department-status').value,
+            sortOrder: parseInt(document.getElementById('department-order').value) || 0
+        };
+
+        if (isDepartmentEditMode) {
+            updateDepartment(editingDepartmentIdx, formData);
+        } else {
+            createDepartment(formData);
+        }
     });
+
+    // Create department
+    function createDepartment(data) {
+        fetch('/api/codes', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify(data)
+        })
+        .then(response => {
+            if (!response.ok) {
+                throw new Error('소속 생성 실패');
+            }
+            return response.json();
+        })
+        .then(() => {
+            alert('소속이 성공적으로 등록되었습니다.');
+            closeModal(departmentModal);
+            loadDepartments();
+        })
+        .catch(error => {
+            console.error('소속 생성 실패:', error);
+            alert('소속 등록에 실패했습니다. 이미 존재하는 코드일 수 있습니다.');
+        });
+    }
+
+    // Update department
+    function updateDepartment(idx, data) {
+        fetch(`/api/codes/${idx}`, {
+            method: 'PUT',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify(data)
+        })
+        .then(response => {
+            if (!response.ok) {
+                throw new Error('소속 수정 실패');
+            }
+            return response.json();
+        })
+        .then(() => {
+            alert('소속이 성공적으로 수정되었습니다.');
+            closeModal(departmentModal);
+            loadDepartments();
+        })
+        .catch(error => {
+            console.error('소속 수정 실패:', error);
+            alert('소속 수정에 실패했습니다.');
+        });
+    }
+
+    // Fill form with department data
+    function fillDepartmentForm(dept) {
+        document.getElementById('department-idx').value = dept.idx;
+        document.getElementById('department-code').value = dept.code;
+        document.getElementById('department-name').value = dept.codeName;
+        document.getElementById('department-name-en').value = dept.codeNameEn || '';
+        document.getElementById('department-description').value = dept.description || '';
+        document.getElementById('department-order').value = dept.sortOrder || 0;
+        document.getElementById('department-status').value = dept.useYn;
+    }
 
     // ===========================
     // Logo Upload
@@ -542,11 +661,13 @@ document.addEventListener('DOMContentLoaded', function() {
     }
 
     function clearDepartmentForm() {
-        document.getElementById('department-name').value = '';
+        document.getElementById('department-idx').value = '';
         document.getElementById('department-code').value = '';
-        document.getElementById('department-parent').value = '';
-        document.getElementById('department-order').value = '1';
-        document.getElementById('department-status').value = 'active';
+        document.getElementById('department-name').value = '';
+        document.getElementById('department-name-en').value = '';
+        document.getElementById('department-description').value = '';
+        document.getElementById('department-order').value = '0';
+        document.getElementById('department-status').value = 'Y';
     }
 
     function reorderTableRows(tbodyId) {

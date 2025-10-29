@@ -97,69 +97,16 @@
                 <thead>
                 <tr>
                     <th style="width: 60px;">순서</th>
+                    <th>코드</th>
                     <th>소속명</th>
-                    <th style="width: 100px;">소속코드</th>
-                    <th style="width: 150px;">상위 소속</th>
+                    <th style="width: 150px;">영문명</th>
+                    <th style="width: 200px;">설명</th>
                     <th style="width: 100px;">사용여부</th>
                     <th style="width: 150px;">관리</th>
                 </tr>
                 </thead>
                 <tbody id="departments-tbody">
-                <tr>
-                    <td>1</td>
-                    <td>경영지원본부</td>
-                    <td>D001</td>
-                    <td>-</td>
-                    <td><span class="status-active">사용</span></td>
-                    <td>
-                        <button class="btn-sm btn-edit">수정</button>
-                        <button class="btn-sm btn-delete">삭제</button>
-                    </td>
-                </tr>
-                <tr>
-                    <td>2</td>
-                    <td>개발본부</td>
-                    <td>D002</td>
-                    <td>-</td>
-                    <td><span class="status-active">사용</span></td>
-                    <td>
-                        <button class="btn-sm btn-edit">수정</button>
-                        <button class="btn-sm btn-delete">삭제</button>
-                    </td>
-                </tr>
-                <tr>
-                    <td>3</td>
-                    <td>인사팀</td>
-                    <td>D003</td>
-                    <td>경영지원본부</td>
-                    <td><span class="status-active">사용</span></td>
-                    <td>
-                        <button class="btn-sm btn-edit">수정</button>
-                        <button class="btn-sm btn-delete">삭제</button>
-                    </td>
-                </tr>
-                <tr>
-                    <td>4</td>
-                    <td>기획팀</td>
-                    <td>D004</td>
-                    <td>경영지원본부</td>
-                    <td><span class="status-active">사용</span></td>
-                    <td>
-                        <button class="btn-sm btn-edit">수정</button>
-                        <button class="btn-sm btn-delete">삭제</button>
-                    </td>
-                </tr>
-                <tr>
-                    <td>5</td>
-                    <td>개발1팀</td>
-                    <td>D005</td>
-                    <td>개발본부</td>
-                    <td><span class="status-active">사용</span></td>
-                    <td>
-                        <button class="btn-sm btn-edit">수정</button>
-                        <button class="btn-sm btn-delete">삭제</button>
-                    </td>
-                </tr>
+                    <!-- DB에서 로드 -->
                 </tbody>
             </table>
         </div>
@@ -472,31 +419,35 @@
             <button class="modal-close">&times;</button>
         </div>
         <div class="modal-body">
+            <input type="hidden" id="department-idx">
+            <input type="hidden" id="department-group-code" value="C01">
+            <div class="form-group">
+                <label>코드 <span class="required">*</span></label>
+                <input type="text" id="department-code" placeholder="예: C01001" maxlength="50">
+                <small>영문 대문자, 숫자 조합 권장</small>
+            </div>
             <div class="form-group">
                 <label>소속명 <span class="required">*</span></label>
-                <input type="text" id="department-name" placeholder="예: 개발팀, 경영지원본부">
+                <input type="text" id="department-name" placeholder="예: 개발팀, 경영지원본부" maxlength="100">
             </div>
             <div class="form-group">
-                <label>소속코드 <span class="required">*</span></label>
-                <input type="text" id="department-code" placeholder="예: D001">
+                <label>영문명</label>
+                <input type="text" id="department-name-en" placeholder="예: Development Team" maxlength="100">
             </div>
             <div class="form-group">
-                <label>상위 소속</label>
-                <select id="department-parent">
-                    <option value="">없음 (최상위)</option>
-                    <option value="D001">경영지원본부</option>
-                    <option value="D002">개발본부</option>
-                </select>
+                <label>설명</label>
+                <textarea id="department-description" rows="3" placeholder="소속에 대한 설명을 입력하세요"></textarea>
             </div>
             <div class="form-group">
-                <label>순서</label>
-                <input type="number" id="department-order" value="1" min="1">
+                <label>정렬 순서</label>
+                <input type="number" id="department-order" value="0" min="0">
+                <small>숫자가 작을수록 위에 표시됩니다</small>
             </div>
             <div class="form-group">
                 <label>사용여부</label>
                 <select id="department-status">
-                    <option value="active">사용</option>
-                    <option value="inactive">미사용</option>
+                    <option value="Y">사용</option>
+                    <option value="N">미사용</option>
                 </select>
             </div>
         </div>
