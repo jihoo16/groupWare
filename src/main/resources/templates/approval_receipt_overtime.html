@@ -173,13 +173,11 @@
 
                             <!-- 영수증 처리 템플릿 - 야근식대 -->
                             <div id="template-receipt-overtime">
-                                <div style="background: #f8f9fa; border: 2px solid #e8e8e8; border-radius: 10px; padding: 20px; margin:0 auto 30px; max-width: 881px">
-                                    <div style="margin-bottom: 15px;">
-                                        <h4 style="font-size: 16px; font-weight: 700; color: #333; margin: 0 0 15px 0; display: flex; align-items: center; gap: 8px;">
-                                            <i class="fas fa-edit" style="color: #667eea;"></i> 공통 정보 입력
-                                        </h4>
+                                <div class="common-info-section">
+                                    <div class="section-header-common">
+                                        <h4><i class="fas fa-edit"></i> 공통 정보 입력</h4>
                                     </div>
-                                    <table class="form-table" style="background: white;">
+                                    <table class="form-table common-info-table receipt-overtime-table">
                                         <tr>
                                             <th style="width: 150px;">과제명</th>
                                             <td colspan="3"><input type="text" id="ot_project" placeholder="과제명을 입력하세요"></td>
@@ -215,10 +213,10 @@
                                             <th>야근 인원</th>
                                             <td colspan="3">
                                                 <div style="display: flex; align-items: center; justify-content: flex-end; gap: 5px; margin-bottom: 10px;">
-                                                    <button type="button" id="addOvertimePersonBtn" style="width: 30px; height: 30px; background: #667eea; color: white; border: none; border-radius: 5px; cursor: pointer; font-size: 18px; padding: 0;">
+                                                    <button type="button" id="addOvertimePersonBtn">
                                                         <i class="fas fa-plus"></i>
                                                     </button>
-                                                    <button type="button" id="removeOvertimePersonBtn" style="width: 30px; height: 30px; background: #dc3545; color: white; border: none; border-radius: 5px; cursor: pointer; font-size: 18px; padding: 0;">
+                                                    <button type="button" id="removeOvertimePersonBtn">
                                                         <i class="fas fa-minus"></i>
                                                     </button>
                                                 </div>
@@ -227,7 +225,7 @@
                                         </tr>
                                         <tr>
                                             <th >품의 내용</th>
-                                            <td colspan="3"><textarea id="ot_content" placeholder="야근 내용을 입력하세요" rows="6" style="width: 100%;">야근식대
+                                            <td colspan="3"><textarea id="ot_content" placeholder="야근 내용을 입력하세요" rows="6">야근식대
 - 인원 : </textarea></td>
                                         </tr>
                                     </table>

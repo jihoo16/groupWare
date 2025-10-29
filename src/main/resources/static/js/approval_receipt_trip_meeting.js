@@ -114,6 +114,7 @@ document.addEventListener('DOMContentLoaded', function() {
             documentForm.innerHTML = templateElement.innerHTML;
             if (templateKey === 'receipt-trip') {
                 setupTripAutoFill();
+                setupDocumentFormToggle();
             }
         }
     }
@@ -128,11 +129,9 @@ document.addEventListener('DOMContentLoaded', function() {
         const commonReporter = document.getElementById('common_reporter');
         const commonTripResult = document.getElementById('common_trip_result');
         const commonMeetingContent = document.getElementById('common_meeting_content');
-        const addTripPersonBtn = document.getElementById('addTripPersonBtn');
-        const removeTripPersonBtn = document.getElementById('removeTripPersonBtn');
+        const tripPersonArea = document.getElementById('tripPersonArea');
         const tripPersonList = document.getElementById('tripPersonList');
-        const addAttendeeBtn = document.getElementById('addAttendeeBtn');
-        const removeAttendeeBtn = document.getElementById('removeAttendeeBtn');
+        const attendeeArea = document.getElementById('attendeeArea');
         const attendeeList = document.getElementById('attendeeList');
         const dailyExpenseBody = document.getElementById('dailyExpenseBody');
 
@@ -140,54 +139,62 @@ document.addEventListener('DOMContentLoaded', function() {
         let dailyExpenses = [];
         let attendees = [];
 
-        // 출장 인원 목록 업데이트 함수
-        function updateTripPersonList() {
-            tripPersonList.innerHTML = '';
-            tripPersons.forEach((person, index) => {
-                const row = document.createElement('div');
-                row.style.cssText = 'display: flex; gap: 8px; margin-bottom: 8px; align-items: center;';
+        // 출장 인원 모달 초기화
+        if (tripPersonArea) {
+            tripPersonArea.addEventListener('click', function(e) {
+                // 제거 버튼 클릭은 무시
+                if (e.target.closest('.trip-person-remove')) {
+                    return;
+                }
+                openTripPersonModal();
+            });
+        }
 
-                const positionOptions = positions.map(pos =>
-                    `<option value="${pos}" ${person.position === pos ? 'selected' : ''}>${pos}</option>`
-                ).join('');
+        // 회의 참석자 모달 초기화
+        if (attendeeArea) {
+            attendeeArea.addEventListener('click', function(e) {
+                // 제거 버튼 클릭은 무시
+                if (e.target.closest('.attendee-remove')) {
+                    return;
+                }
+                openAttendeeModal();
+            });
+        }
 
-                row.innerHTML = `
-                    <input type="checkbox" data-index="${index}" class="trip-checkbox" style="width: 18px; height: 18px; cursor: pointer;">
-                    <input type="text" data-index="${index}" class="trip-dept" placeholder="부서명" value="${person.dept || ''}" style="flex: 1; padding: 5px;">
-                    <select data-index="${index}" class="trip-position" style="flex: 1; padding: 5px;">
-                        <option value="">직책 선택</option>
-                        ${positionOptions}
-                    </select>
-                    <input type="text" data-index="${index}" class="trip-name" placeholder="성명" value="${person.name || ''}" style="flex: 1; padding: 5px;">
+        // 출장 인원 목록 렌더링 함수
+        function renderTripPersonListInTemplate() {
+            if (!tripPersonList) return;
+
+            if (tripPersons.length === 0) {
+                tripPersonList.innerHTML = `
+                    <div style="text-align: center; color: #94a3b8; font-size: 13px;">
+                        <i class="fas fa-user-plus" style="font-size: 20px; margin-bottom: 6px;"></i>
+                        <div>클릭하여 출장 인원 추가</div>
+                    </div>
                 `;
-                tripPersonList.appendChild(row);
-            });
-
-            // 이벤트 리스너 추가
-            document.querySelectorAll('.trip-dept, .trip-position, .trip-name').forEach(el => {
-                el.addEventListener('input', function() {
-                    const index = parseInt(this.getAttribute('data-index'));
-                    if (this.classList.contains('trip-dept')) {
-                        tripPersons[index].dept = this.value;
-                    } else if (this.classList.contains('trip-position')) {
-                        tripPersons[index].position = this.value;
-                    } else if (this.classList.contains('trip-name')) {
-                        tripPersons[index].name = this.value;
-                    }
-                    updateTripPersonDisplay();
-                });
-
-                el.addEventListener('change', function() {
-                    const index = parseInt(this.getAttribute('data-index'));
-                    if (this.classList.contains('trip-position')) {
-                        tripPersons[index].position = this.value;
-                        updateTripPersonDisplay();
-                    }
-                });
-            });
+            } else {
+                tripPersonList.innerHTML = tripPersons.map(person => `
+                    <div class="trip-person-item">
+                        <div class="trip-person-info">
+                            <span class="name">${person.name}</span>
+                            <span>${person.dept}</span>
+                            <span>${person.position}</span>
+                        </div>
+                        <button type="button" class="trip-person-remove" onclick="removeTripPersonInTemplate('${person.id}')">
+                            <i class="fas fa-times"></i> 제거
+                        </button>
+                    </div>
+                `).join('');
+            }
 
             updateTripPersonDisplay();
         }
+
+        // 템플릿 내에서 인원 제거
+        window.removeTripPersonInTemplate = function(personId) {
+            tripPersons = tripPersons.filter(p => p.id !== personId);
+            renderTripPersonListInTemplate();
+        };
 
         // 출장 인원 테이블 업데이트
         function updateTripPersonDisplay() {
@@ -211,87 +218,62 @@ document.addEventListener('DOMContentLoaded', function() {
             updateTripResult();
         }
 
-        // 인원 추가 버튼
-        if (addTripPersonBtn) {
-            addTripPersonBtn.addEventListener('click', function() {
-                if (tripPersons.length >= 5) {
-                    alert('최대 5명까지만 추가할 수 있습니다.');
-                    return;
+        // 전역 함수로 등록하여 모달에서 접근 가능하게
+        window.addPersonsToTrip = function(persons) {
+            persons.forEach(person => {
+                if (!tripPersons.some(p => p.id === person.id)) {
+                    tripPersons.push(person);
                 }
-                tripPersons.push({ dept: '연구소', position: '', name: '' });
-                updateTripPersonList();
             });
-        }
+            renderTripPersonListInTemplate();
+        };
 
-        // 인원 제거 버튼
-        if (removeTripPersonBtn) {
-            removeTripPersonBtn.addEventListener('click', function() {
-                const checkboxes = document.querySelectorAll('.trip-checkbox:checked');
-                if (checkboxes.length === 0) {
-                    alert('제거할 인원을 선택해주세요.');
-                    return;
-                }
+        // 기존 버튼 방식은 제거됨 - 이제 모달 방식으로 작동
 
-                const indicesToRemove = Array.from(checkboxes)
-                    .map(cb => parseInt(cb.getAttribute('data-index')))
-                    .sort((a, b) => b - a);
+        // 회의 참석자 목록 렌더링 함수
+        function renderAttendeeListInTemplate() {
+            if (!attendeeList) return;
 
-                indicesToRemove.forEach(index => {
-                    tripPersons.splice(index, 1);
-                });
-
-                updateTripPersonList();
-            });
-        }
-
-        // 회의 참석자 목록 업데이트 함수
-        function updateAttendeeList() {
-            attendeeList.innerHTML = '';
-            attendees.forEach((attendee, index) => {
-                const row = document.createElement('div');
-                row.style.cssText = 'display: flex; gap: 8px; margin-bottom: 8px; align-items: center;';
-
-                const positionOptions = positions.map(pos =>
-                    `<option value="${pos}" ${attendee.position === pos ? 'selected' : ''}>${pos}</option>`
-                ).join('');
-
-                row.innerHTML = `
-                    <input type="checkbox" data-index="${index}" class="attendee-checkbox" style="width: 18px; height: 18px; cursor: pointer;">
-                    <input type="text" data-index="${index}" class="attendee-dept" placeholder="부서명" value="${attendee.dept || ''}" style="flex: 1; padding: 5px;">
-                    <select data-index="${index}" class="attendee-position" style="flex: 1; padding: 5px;">
-                        <option value="">직책 선택</option>
-                        ${positionOptions}
-                    </select>
-                    <input type="text" data-index="${index}" class="attendee-name" placeholder="성명" value="${attendee.name || ''}" style="flex: 1; padding: 5px;">
+            if (attendees.length === 0) {
+                attendeeList.innerHTML = `
+                    <div style="text-align: center; color: #94a3b8; font-size: 13px;">
+                        <i class="fas fa-user-plus" style="font-size: 20px; margin-bottom: 6px;"></i>
+                        <div>클릭하여 회의 참석자 추가</div>
+                    </div>
                 `;
-                attendeeList.appendChild(row);
-            });
-
-            // 이벤트 리스너 추가
-            document.querySelectorAll('.attendee-dept, .attendee-position, .attendee-name').forEach(el => {
-                el.addEventListener('input', function() {
-                    const index = parseInt(this.getAttribute('data-index'));
-                    if (this.classList.contains('attendee-dept')) {
-                        attendees[index].dept = this.value;
-                    } else if (this.classList.contains('attendee-position')) {
-                        attendees[index].position = this.value;
-                    } else if (this.classList.contains('attendee-name')) {
-                        attendees[index].name = this.value;
-                    }
-                    updateAttendeeDisplay();
-                });
-
-                el.addEventListener('change', function() {
-                    const index = parseInt(this.getAttribute('data-index'));
-                    if (this.classList.contains('attendee-position')) {
-                        attendees[index].position = this.value;
-                        updateAttendeeDisplay();
-                    }
-                });
-            });
+            } else {
+                attendeeList.innerHTML = attendees.map(attendee => `
+                    <div class="trip-person-item">
+                        <div class="trip-person-info">
+                            <span class="name">${attendee.name}</span>
+                            <span>${attendee.dept}</span>
+                            <span>${attendee.position}</span>
+                        </div>
+                        <button type="button" class="trip-person-remove attendee-remove" onclick="removeAttendeeInTemplate('${attendee.id}')">
+                            <i class="fas fa-times"></i> 제거
+                        </button>
+                    </div>
+                `).join('');
+            }
 
             updateAttendeeDisplay();
         }
+
+        // 템플릿 내에서 참석자 제거
+        window.removeAttendeeInTemplate = function(attendeeId) {
+            attendees = attendees.filter(a => a.id !== attendeeId);
+            renderAttendeeListInTemplate();
+        };
+
+        // 전역 함수로 등록하여 모달에서 접근 가능하게
+        window.addAttendeesToMeeting = function(persons) {
+            persons.forEach(person => {
+                if (!attendees.some(a => a.id === person.id)) {
+                    attendees.push(person);
+                }
+            });
+            renderAttendeeListInTemplate();
+        };
 
         // 참석자 명단 테이블 업데이트
         function updateAttendeeDisplay() {
@@ -370,38 +352,7 @@ document.addEventListener('DOMContentLoaded', function() {
             });
         }
 
-        // 회의 참석자 추가 버튼
-        if (addAttendeeBtn) {
-            addAttendeeBtn.addEventListener('click', function() {
-                if (attendees.length >= 10) {
-                    alert('최대 10명까지만 추가할 수 있습니다.');
-                    return;
-                }
-                attendees.push({ dept: '', position: '', name: '' });
-                updateAttendeeList();
-            });
-        }
-
-        // 회의 참석자 제거 버튼
-        if (removeAttendeeBtn) {
-            removeAttendeeBtn.addEventListener('click', function() {
-                const checkboxes = document.querySelectorAll('.attendee-checkbox:checked');
-                if (checkboxes.length === 0) {
-                    alert('제거할 참석자를 선택해주세요.');
-                    return;
-                }
-
-                const indicesToRemove = Array.from(checkboxes)
-                    .map(cb => parseInt(cb.getAttribute('data-index')))
-                    .sort((a, b) => b - a);
-
-                indicesToRemove.forEach(index => {
-                    attendees.splice(index, 1);
-                });
-
-                updateAttendeeList();
-            });
-        }
+        // 기존 버튼 방식은 제거됨 - 이제 모달 방식으로 작동
 
         // 과제명 자동 채우기
         if (commonProject) {
@@ -785,16 +736,12 @@ document.addEventListener('DOMContentLoaded', function() {
         }
 
         // 초기 인원 설정
-        tripPersons = [
-            { dept: '연구소', position: '', name: '' }
-        ];
-        updateTripPersonList();
+        tripPersons = [];
+        renderTripPersonListInTemplate();
 
         // 초기 참석자 설정
-        attendees = [
-            { dept: '', position: '', name: '' }
-        ];
-        updateAttendeeList();
+        attendees = [];
+        renderAttendeeListInTemplate();
     }
 
     // 파일 업로드
@@ -882,6 +829,118 @@ document.addEventListener('DOMContentLoaded', function() {
         updateFileList();
     };
 
+    // 결재자 모달 관련
+    // 모달 열기
+    window.openModal = function() {
+        if (approverModal) {
+            approverModal.classList.add('show');
+            renderEmployeeList();
+        }
+    };
+
+    // 모달 닫기
+    window.closeModal = function() {
+        if (approverModal) {
+            approverModal.classList.remove('show');
+            if (approverSearch) {
+                approverSearch.value = '';
+            }
+        }
+    };
+
+    // 결재자 추가 버튼 클릭
+    if (addApproverBtn) {
+        addApproverBtn.addEventListener('click', openModal);
+    }
+
+    // 모달 외부 클릭 시 닫기
+    if (approverModal) {
+        approverModal.addEventListener('click', function(e) {
+            if (e.target === approverModal) {
+                closeModal();
+            }
+        });
+    }
+
+    // 직원 목록 렌더링
+    function renderEmployeeList(searchText = '') {
+        if (!employeeList) return;
+
+        const filtered = employees.filter(emp => {
+            const searchStr = (emp.name + emp.dept + emp.position).toLowerCase();
+            return searchStr.includes(searchText.toLowerCase());
+        });
+
+        employeeList.innerHTML = filtered.map(emp => `
+            <div class="employee-item" data-id="${emp.id}" onclick="selectEmployee(${emp.id})">
+                <div class="employee-info">
+                    <div class="employee-name">${emp.name}</div>
+                    <div class="employee-detail">${emp.position} · ${emp.dept}</div>
+                </div>
+            </div>
+        `).join('');
+    }
+
+    // 직원 선택
+    window.selectEmployee = function(employeeId) {
+        const items = document.querySelectorAll('.employee-item');
+        items.forEach(item => {
+            if (parseInt(item.getAttribute('data-id')) === employeeId) {
+                item.classList.toggle('selected');
+            }
+        });
+    };
+
+    // 검색 기능
+    if (approverSearch) {
+        approverSearch.addEventListener('input', function(e) {
+            renderEmployeeList(e.target.value);
+        });
+    }
+
+    // 결재자 추가
+    window.addApprover = function() {
+        const selectedItems = document.querySelectorAll('.employee-item.selected');
+
+        selectedItems.forEach(item => {
+            const empId = parseInt(item.getAttribute('data-id'));
+            const employee = employees.find(e => e.id === empId);
+
+            if (employee && !selectedApprovers.some(a => a.id === empId)) {
+                selectedApprovers.push(employee);
+            }
+        });
+
+        renderApprovers();
+        closeModal();
+    };
+
+    // 결재자 목록 렌더링
+    function renderApprovers() {
+        if (!approverChips) return;
+
+        if (selectedApprovers.length === 0) {
+            approverChips.innerHTML = '<div class="empty-message">결재자를 추가해주세요</div>';
+        } else {
+            approverChips.innerHTML = selectedApprovers.map((approver, index) => `
+                <div class="approver-chip">
+                    <span class="approver-order">${index + 1}</span>
+                    <span class="approver-name">${approver.name}</span>
+                    <span class="approver-position">${approver.position}</span>
+                    <button class="btn-remove-approver" onclick="removeApprover(${approver.id})">
+                        <i class="fas fa-times"></i>
+                    </button>
+                </div>
+            `).join('');
+        }
+    }
+
+    // 결재자 제거
+    window.removeApprover = function(approverId) {
+        selectedApprovers = selectedApprovers.filter(a => a.id !== approverId);
+        renderApprovers();
+    };
+
     // 임시저장
     if (saveDraftBtn) {
         saveDraftBtn.addEventListener('click', function() {
@@ -912,6 +971,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
             let allDivs = null;
             let originalDisplays = [];
+            let wasCollapsed = false;
             const loadingModal = document.getElementById('pdfLoadingModal');
             const progressFill = document.getElementById('progressFill');
             const progressText = document.getElementById('progressText');
@@ -948,6 +1008,13 @@ document.addEventListener('DOMContentLoaded', function() {
 
                 updateProgress(20, '문서 구조 확인 중...');
 
+                // 접힌 문서 양식을 임시로 펼치기
+                const documentFormWrapper = document.querySelector('.document-form-wrapper');
+                if (documentFormWrapper && documentFormWrapper.classList.contains('collapsed')) {
+                    wasCollapsed = true;
+                    documentFormWrapper.classList.remove('collapsed');
+                }
+
                 allDivs = documentForm.querySelectorAll(':scope > div');
                 console.log('찾은 div 개수:', allDivs.length);
 
@@ -956,6 +1023,10 @@ document.addEventListener('DOMContentLoaded', function() {
                 if (allDivs.length < 5) {
                     alert('문서 구조를 찾을 수 없습니다. 영수증 처리(출장+회의) 템플릿을 선택했는지 확인해주세요.');
                     if (loadingModal) loadingModal.classList.remove('active');
+                    // 접혔던 문서 양식을 다시 접기
+                    if (documentFormWrapper && wasCollapsed) {
+                        documentFormWrapper.classList.add('collapsed');
+                    }
                     return;
                 }
 
@@ -1176,8 +1247,262 @@ document.addEventListener('DOMContentLoaded', function() {
                         div.style.display = originalDisplays[index];
                     });
                 }
+                // 접혔던 문서 양식을 다시 접기
+                const documentFormWrapper = document.querySelector('.document-form-wrapper');
+                if (documentFormWrapper && wasCollapsed) {
+                    documentFormWrapper.classList.add('collapsed');
+                }
             }
         });
+    }
+
+    // 출장 인원 모달 관련
+    const tripPersonModal = document.getElementById('tripPersonModal');
+    const personSearchInput = document.getElementById('personSearchInput');
+
+    // 모달 열기 함수
+    window.openTripPersonModal = function() {
+        if (tripPersonModal) {
+            tripPersonModal.classList.add('show');
+            renderTripPersonList2();
+        }
+    };
+
+    // 모달 닫기 함수
+    window.closeTripPersonModal = function() {
+        if (tripPersonModal) {
+            tripPersonModal.classList.remove('show');
+            // 검색 초기화
+            if (personSearchInput) {
+                personSearchInput.value = '';
+                renderTripPersonList2('');
+            }
+            // 선택 초기화
+            const selectedItems = document.querySelectorAll('#tripPersonList2 .employee-item.selected');
+            selectedItems.forEach(item => item.classList.remove('selected'));
+        }
+    };
+
+    // 모달 외부 클릭 시 닫기
+    if (tripPersonModal) {
+        tripPersonModal.addEventListener('click', function(e) {
+            if (e.target === tripPersonModal) {
+                closeTripPersonModal();
+            }
+        });
+    }
+
+    // 출장 인원 목록 데이터 (결재자와 동일한 데이터 사용)
+    const tripPersons2 = [
+        { id: 1, name: '김철수', position: '전무', dept: '경영지원본부' },
+        { id: 2, name: '박영희', position: '부장', dept: '경영지원본부 인사팀' },
+        { id: 3, name: '이민수', position: '부장', dept: '경영지원본부 총무팀' },
+        { id: 4, name: '최지원', position: '차장', dept: '경영지원본부 인사팀' },
+        { id: 5, name: '정수연', position: '차장', dept: '경영지원본부 총무팀' },
+        { id: 6, name: '강민호', position: '과장', dept: '경영지원본부 인사팀' },
+        { id: 7, name: '윤서영', position: '과장', dept: '경영지원본부 총무팀' },
+        { id: 8, name: '한동훈', position: '대리', dept: '경영지원본부 인사팀' },
+        { id: 9, name: '임채린', position: '대리', dept: '경영지원본부 총무팀' },
+        { id: 10, name: '송재현', position: '사원', dept: '경영지원본부 인사팀' }
+    ];
+
+    // 출장 인원 목록 렌더링
+    function renderTripPersonList2(searchText = '') {
+        const tripPersonList2El = document.getElementById('tripPersonList2');
+        if (!tripPersonList2El) return;
+
+        const filtered = tripPersons2.filter(person => {
+            const searchStr = (person.name + person.dept + person.position).toLowerCase();
+            return searchStr.includes(searchText.toLowerCase());
+        });
+
+        tripPersonList2El.innerHTML = filtered.map(person => `
+            <div class="employee-item" data-id="${person.id}" onclick="selectTripPerson(${person.id})">
+                <div class="employee-info">
+                    <div class="employee-name">${person.name}</div>
+                    <div class="employee-detail">${person.position} · ${person.dept}</div>
+                </div>
+            </div>
+        `).join('');
+    }
+
+    // 출장 인원 선택
+    window.selectTripPerson = function(personId) {
+        const items = document.querySelectorAll('#tripPersonList2 .employee-item');
+        items.forEach(item => {
+            if (parseInt(item.getAttribute('data-id')) === personId) {
+                item.classList.toggle('selected');
+            }
+        });
+    };
+
+    // 검색 기능
+    if (personSearchInput) {
+        personSearchInput.addEventListener('input', function(e) {
+            renderTripPersonList2(e.target.value);
+        });
+    }
+
+    // 선택된 인원 추가
+    window.addSelectedPersons = function() {
+        const selectedItems = document.querySelectorAll('#tripPersonList2 .employee-item.selected');
+        const personsToAdd = [];
+
+        selectedItems.forEach(item => {
+            const personId = item.getAttribute('data-id');
+            const person = tripPersons2.find(p => p.id === parseInt(personId));
+
+            if (person) {
+                personsToAdd.push({
+                    id: personId,
+                    name: person.name,
+                    dept: person.dept,
+                    position: person.position
+                });
+            }
+        });
+
+        // setupTripAutoFill에서 정의된 함수 호출
+        if (window.addPersonsToTrip) {
+            window.addPersonsToTrip(personsToAdd);
+        }
+
+        // 모달 닫기
+        closeTripPersonModal();
+    };
+
+    // 회의 참석자 모달 관련
+    const attendeeModal = document.getElementById('attendeeModal');
+    const attendeeSearchInput = document.getElementById('attendeeSearchInput');
+
+    // 회의 참석자 목록 데이터
+    const attendeePersons = [
+        { id: 1, name: '김철수', position: '전무', dept: '경영지원본부' },
+        { id: 2, name: '박영희', position: '부장', dept: '경영지원본부 인사팀' },
+        { id: 3, name: '이민수', position: '부장', dept: '경영지원본부 총무팀' },
+        { id: 4, name: '최지원', position: '차장', dept: '경영지원본부 인사팀' },
+        { id: 5, name: '정수연', position: '차장', dept: '경영지원본부 총무팀' },
+        { id: 6, name: '강민호', position: '과장', dept: '경영지원본부 인사팀' },
+        { id: 7, name: '윤서영', position: '과장', dept: '경영지원본부 총무팀' },
+        { id: 8, name: '한동훈', position: '대리', dept: '경영지원본부 인사팀' },
+        { id: 9, name: '임채린', position: '대리', dept: '경영지원본부 총무팀' },
+        { id: 10, name: '송재현', position: '사원', dept: '경영지원본부 인사팀' }
+    ];
+
+    // 모달 열기 함수
+    window.openAttendeeModal = function() {
+        if (attendeeModal) {
+            attendeeModal.classList.add('show');
+            renderAttendeeList2();
+        }
+    };
+
+    // 모달 닫기 함수
+    window.closeAttendeeModal = function() {
+        if (attendeeModal) {
+            attendeeModal.classList.remove('show');
+            // 검색 초기화
+            if (attendeeSearchInput) {
+                attendeeSearchInput.value = '';
+                renderAttendeeList2('');
+            }
+            // 선택 초기화
+            const selectedItems = document.querySelectorAll('#attendeeList2 .employee-item.selected');
+            selectedItems.forEach(item => item.classList.remove('selected'));
+        }
+    };
+
+    // 모달 외부 클릭 시 닫기
+    if (attendeeModal) {
+        attendeeModal.addEventListener('click', function(e) {
+            if (e.target === attendeeModal) {
+                closeAttendeeModal();
+            }
+        });
+    }
+
+    // 회의 참석자 목록 렌더링
+    function renderAttendeeList2(searchText = '') {
+        const attendeeList2El = document.getElementById('attendeeList2');
+        if (!attendeeList2El) return;
+
+        const filtered = attendeePersons.filter(person => {
+            const searchStr = (person.name + person.dept + person.position).toLowerCase();
+            return searchStr.includes(searchText.toLowerCase());
+        });
+
+        attendeeList2El.innerHTML = filtered.map(person => `
+            <div class="employee-item" data-id="${person.id}" onclick="selectAttendee(${person.id})">
+                <div class="employee-info">
+                    <div class="employee-name">${person.name}</div>
+                    <div class="employee-detail">${person.position} · ${person.dept}</div>
+                </div>
+            </div>
+        `).join('');
+    }
+
+    // 회의 참석자 선택
+    window.selectAttendee = function(personId) {
+        const items = document.querySelectorAll('#attendeeList2 .employee-item');
+        items.forEach(item => {
+            if (parseInt(item.getAttribute('data-id')) === personId) {
+                item.classList.toggle('selected');
+            }
+        });
+    };
+
+    // 검색 기능
+    if (attendeeSearchInput) {
+        attendeeSearchInput.addEventListener('input', function(e) {
+            renderAttendeeList2(e.target.value);
+        });
+    }
+
+    // 선택된 참석자 추가
+    window.addSelectedAttendees = function() {
+        const selectedItems = document.querySelectorAll('#attendeeList2 .employee-item.selected');
+        const personsToAdd = [];
+
+        selectedItems.forEach(item => {
+            const personId = item.getAttribute('data-id');
+            const person = attendeePersons.find(p => p.id === parseInt(personId));
+
+            if (person) {
+                personsToAdd.push({
+                    id: personId,
+                    name: person.name,
+                    dept: person.dept,
+                    position: person.position
+                });
+            }
+        });
+
+        // setupTripAutoFill에서 정의된 함수 호출
+        if (window.addAttendeesToMeeting) {
+            window.addAttendeesToMeeting(personsToAdd);
+        }
+
+        // 모달 닫기
+        closeAttendeeModal();
+    };
+
+    // 공식 문서 양식 토글 기능
+    function setupDocumentFormToggle() {
+        const documentFormToggle = document.getElementById('documentFormToggle');
+        const documentFormWrapper = document.querySelector('.document-form-wrapper');
+
+        // 기본적으로 문서 양식을 접어둠
+        if (documentFormWrapper) {
+            documentFormWrapper.classList.add('collapsed');
+        }
+
+        if (documentFormToggle) {
+            documentFormToggle.addEventListener('click', function() {
+                if (documentFormWrapper) {
+                    documentFormWrapper.classList.toggle('collapsed');
+                }
+            });
+        }
     }
 
     // 초기 템플릿 로드 (출장+회의)

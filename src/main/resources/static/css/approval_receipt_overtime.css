@@ -351,6 +351,348 @@ div:focus {
     width: 100%;
 }
 
+/* ========================================
+   공통정보입력 섹션 - 여백 최소화 및 UI 개선
+   ======================================== */
+
+/* 공통 정보 섹션 컨테이너 */
+.common-info-section {
+    background: #ffffff;
+    border: 1px solid #e2e8f0;
+    border-radius: 8px;
+    padding: 0;
+    margin-bottom: 20px;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+    transition: box-shadow 0.3s ease;
+    overflow: hidden;
+    max-width: 1400px; /* 가로 넓이 확장 */
+}
+
+.common-info-section:hover {
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+}
+
+/* 섹션 헤더 */
+.section-header-common {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    padding: 14px 20px;
+    margin: 0;
+}
+
+.section-header-common h4 {
+    color: white;
+    font-size: 16px;
+    font-weight: 600;
+    margin: 0;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.section-header-common h4 i {
+    font-size: 16px;
+}
+
+/* 공통 정보 테이블 스타일 */
+.common-info-table {
+    width: 100%;
+    margin: 0;
+    border-collapse: separate;
+    border-spacing: 0;
+}
+
+.common-info-table th {
+    background: #fafbfc;
+    color: #64748b;
+    font-weight: 600;
+    font-size: 13px;
+    border: none;
+    border-right: 1px solid #f1f5f9;
+    border-bottom: 1px solid #f1f5f9;
+    padding: 12px 14px;
+    vertical-align: middle;
+    text-align: center;
+    width: 120px;
+    white-space: nowrap;
+}
+
+.common-info-table th:last-child {
+    border-right: none;
+}
+
+.common-info-table td {
+    border: none;
+    border-right: 1px solid #f1f5f9;
+    border-bottom: 1px solid #f1f5f9;
+    padding: 10px 14px;
+    background: white;
+    vertical-align: middle;
+}
+
+.common-info-table td:last-child {
+    border-right: none;
+}
+
+.common-info-table tr:last-child th,
+.common-info-table tr:last-child td {
+    border-bottom: none;
+}
+
+/* 공통 정보 테이블 입력 필드 */
+.common-info-table input[type="text"],
+.common-info-table input[type="date"],
+.common-info-table input[type="time"],
+.common-info-table input[type="number"],
+.common-info-table select,
+.common-info-table textarea {
+    border: 1px solid #f1f5f9;
+    border-radius: 6px;
+    padding: 8px 12px;
+    font-size: 13px;
+    line-height: 1.5;
+    transition: all 0.2s ease;
+    background: #fafbfc;
+    width: 100%;
+    box-sizing: border-box;
+}
+
+.common-info-table input[type="text"]:hover,
+.common-info-table input[type="date"]:hover,
+.common-info-table input[type="time"]:hover,
+.common-info-table input[type="number"]:hover,
+.common-info-table select:hover,
+.common-info-table textarea:hover {
+    border-color: #e2e8f0;
+    background: #ffffff;
+}
+
+.common-info-table input[type="text"]:focus,
+.common-info-table input[type="date"]:focus,
+.common-info-table input[type="time"]:focus,
+.common-info-table input[type="number"]:focus,
+.common-info-table select:focus,
+.common-info-table textarea:focus {
+    border-color: #667eea;
+    box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.08);
+    outline: none;
+    background: #ffffff;
+}
+
+.common-info-table input::placeholder,
+.common-info-table textarea::placeholder {
+    color: #94a3b8;
+    font-size: 12px;
+}
+
+.common-info-table textarea {
+    min-height: 80px;
+    resize: vertical;
+    font-family: inherit;
+}
+
+.common-info-table small {
+    color: #64748b;
+    font-size: 11px;
+    display: block;
+    margin-top: 4px;
+}
+
+/* 참석자/출장인원/야근인원 버튼 영역 */
+.common-info-table #addAttendeeBtn,
+.common-info-table #removeAttendeeBtn,
+.common-info-table #addTripPersonBtn,
+.common-info-table #removeTripPersonBtn,
+.common-info-table #addOvertimePersonBtn,
+.common-info-table #removeOvertimePersonBtn {
+    width: 32px;
+    height: 32px;
+    border-radius: 4px;
+    border: none;
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 14px;
+    transition: all 0.2s ease;
+}
+
+.common-info-table #addAttendeeBtn,
+.common-info-table #addTripPersonBtn,
+.common-info-table #addOvertimePersonBtn {
+    background: #667eea;
+    color: white;
+}
+
+.common-info-table #addAttendeeBtn:hover,
+.common-info-table #addTripPersonBtn:hover,
+.common-info-table #addOvertimePersonBtn:hover {
+    background: #5a67d8;
+    transform: translateY(-1px);
+    box-shadow: 0 2px 6px rgba(102, 126, 234, 0.3);
+}
+
+.common-info-table #removeAttendeeBtn,
+.common-info-table #removeTripPersonBtn,
+.common-info-table #removeOvertimePersonBtn {
+    background: #ef4444;
+    color: white;
+}
+
+.common-info-table #removeAttendeeBtn:hover,
+.common-info-table #removeTripPersonBtn:hover,
+.common-info-table #removeOvertimePersonBtn:hover {
+    background: #dc2626;
+    transform: translateY(-1px);
+    box-shadow: 0 2px 6px rgba(239, 68, 68, 0.3);
+}
+
+.common-info-table #addAttendeeBtn:active,
+.common-info-table #removeAttendeeBtn:active,
+.common-info-table #addTripPersonBtn:active,
+.common-info-table #removeTripPersonBtn:active,
+.common-info-table #addOvertimePersonBtn:active,
+.common-info-table #removeOvertimePersonBtn:active {
+    transform: translateY(0);
+}
+
+/* 리스트 영역 */
+.common-info-table #attendeeList,
+.common-info-table #tripPersonList,
+.common-info-table #overtimePersonList {
+    background: #f8fafc;
+    border: 1px dashed #e2e8f0;
+    border-radius: 6px;
+    padding: 12px;
+    min-height: 60px;
+    margin-top: 8px;
+}
+
+.common-info-table #attendeeList:empty,
+.common-info-table #tripPersonList:empty,
+.common-info-table #overtimePersonList:empty {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.common-info-table #attendeeList:empty::before {
+    content: "참석자를 추가하려면 + 버튼을 클릭하세요";
+    color: #94a3b8;
+    font-size: 12px;
+}
+
+.common-info-table #tripPersonList:empty::before {
+    content: "출장 인원을 추가하려면 + 버튼을 클릭하세요";
+    color: #94a3b8;
+    font-size: 12px;
+}
+
+.common-info-table #overtimePersonList:empty::before {
+    content: "야근 인원을 추가하려면 + 버튼을 클릭하세요";
+    color: #94a3b8;
+    font-size: 12px;
+}
+
+/* Select 드롭다운 */
+.common-info-table select {
+    appearance: none;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%2364748b' d='M6 9L1 4h10z'/%3E%3C/svg%3E");
+    background-repeat: no-repeat;
+    background-position: right 10px center;
+    padding-right: 32px;
+    cursor: pointer;
+}
+
+/* 날짜/시간 입력 */
+.common-info-table input[type="date"],
+.common-info-table input[type="time"] {
+    cursor: pointer;
+}
+
+.common-info-table input[type="date"]::-webkit-calendar-picker-indicator,
+.common-info-table input[type="time"]::-webkit-calendar-picker-indicator {
+    cursor: pointer;
+    opacity: 0.6;
+    transition: opacity 0.2s ease;
+}
+
+.common-info-table input[type="date"]:hover::-webkit-calendar-picker-indicator,
+.common-info-table input[type="time"]:hover::-webkit-calendar-picker-indicator {
+    opacity: 1;
+}
+
+/* 숫자 입력 */
+.common-info-table input[type="number"] {
+    font-weight: 500;
+}
+
+/* 반응형 */
+@media (max-width: 768px) {
+    .common-info-section {
+        border-radius: 6px;
+    }
+
+    .section-header-common {
+        padding: 12px 16px;
+    }
+
+    .section-header-common h4 {
+        font-size: 14px;
+    }
+
+    .common-info-table th {
+        font-size: 12px;
+        padding: 10px 12px;
+    }
+
+    .common-info-table td {
+        padding: 8px 12px;
+    }
+
+    .common-info-table input,
+    .common-info-table select,
+    .common-info-table textarea {
+        font-size: 12px;
+        padding: 6px 10px;
+    }
+}
+
+/* ========================================
+   공통 정보 입력 테이블만 연한 테두리
+   ======================================== */
+
+.common-info-table.form-table {
+    border: 1px solid #becdea;
+}
+
+.common-info-table.form-table th,
+.common-info-table.form-table td {
+    border: 1px solid #becdea;
+}
+
+.common-info-table.form-table th {
+    background: #fafbfc;
+    font-weight: 600;
+    color: #64748b;
+}
+
+td, td span, td input {
+    font-size: 14px;
+}
+
+div h2{
+    font-weight: bold;
+    font-size: 30px;
+}
+
+/* ========================================
+   야근식대 전용 스타일
+   ======================================== */
+
+.receipt-overtime-table {
+    /* 야근식대 특화 스타일 추가 가능 */
+}
+
 /* 문서 양식 */
 .document-form {
     background: white;

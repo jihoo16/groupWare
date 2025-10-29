@@ -149,19 +149,6 @@
 
                     <!-- 우측: 문서 편집 영역 -->
                     <div class="editor-area">
-                        <!-- 결재선 -->
-                        <div class="approval-line-section">
-                            <div class="section-header">
-                                <h4><i class="fas fa-users"></i> 결재선</h4>
-                                <button class="btn-add" id="addApproverBtn">
-                                    <i class="fas fa-plus"></i>
-                                    결재자 추가
-                                </button>
-                            </div>
-                            <div class="approver-chips" id="approverChips">
-                                <div class="empty-message">결재자를 추가해주세요</div>
-                            </div>
-                        </div>
 
                         <!-- 문서 양식 (동적 로드) -->
                         <div class="document-form" id="documentForm">
@@ -172,13 +159,11 @@
                         <div style="display: none;">
                             <!-- 영수증 처리 템플릿 - 출장 -->
                             <div id="template-receipt-trip">
-                                <div style="background: #f8f9fa; border: 2px solid #e8e8e8; border-radius: 10px; padding: 20px; margin:0 auto 30px; max-width: 881px">
-                                    <div style="margin-bottom: 15px;">
-                                        <h4 style="font-size: 16px; font-weight: 700; color: #333; margin: 0 0 15px 0; display: flex; align-items: center; gap: 8px;">
-                                            <i class="fas fa-edit" style="color: #667eea;"></i> 공통 정보 입력
-                                        </h4>
+                                <div class="common-info-section">
+                                    <div class="section-header-common">
+                                        <h4><i class="fas fa-edit"></i> 공통 정보 입력</h4>
                                     </div>
-                                    <table class="form-table" style="background: white;">
+                                    <table class="form-table common-info-table receipt-trip-table">
                                         <tr>
                                             <th style="width: 150px;">과제명</th>
                                             <td colspan="3"><input type="text" id="trip_project" placeholder="과제명을 입력하세요"></td>
@@ -186,19 +171,15 @@
                                         <tr>
                                             <th>출장인원</th>
                                             <td colspan="3">
-                                                <div style="display: flex; align-items: center; gap: 10px;">
-                                                    <div style="flex: 1;">
-                                                        <div style="display: flex; align-items: center; justify-content: flex-end; gap: 5px; margin-bottom: 10px;">
-                                                            <button type="button" id="addTripPersonBtn" style="width: 30px; height: 30px; background: #667eea; color: white; border: none; border-radius: 5px; cursor: pointer; font-size: 18px; padding: 0;">
-                                                                <i class="fas fa-plus"></i>
-                                                            </button>
-                                                            <button type="button" id="removeTripPersonBtn" style="width: 30px; height: 30px; background: #dc3545; color: white; border: none; border-radius: 5px; cursor: pointer; font-size: 18px; padding: 0;">
-                                                                <i class="fas fa-minus"></i>
-                                                            </button>
-                                                        </div>
-                                                        <div id="tripPersonList"></div>
-                                                    </div>
+                                                <div style="display: flex; align-items: center; justify-content: flex-end; gap: 5px; margin-bottom: 10px;">
+                                                    <button type="button" id="addTripPersonBtn">
+                                                        <i class="fas fa-plus"></i>
+                                                    </button>
+                                                    <button type="button" id="removeTripPersonBtn">
+                                                        <i class="fas fa-minus"></i>
+                                                    </button>
                                                 </div>
+                                                <div id="tripPersonList"></div>
                                             </td>
                                         </tr>
                                         <tr>
@@ -206,10 +187,9 @@
                                             <td><input type="text" id="trip_location" placeholder="출장지를 입력하세요"></td>
                                             <th>출장기간</th>
                                             <td>
-                                                <div>
-                                                    <input type="date" id="trip_date" style="margin: 2px;">
-                                                    <br>
-                                                    <select id="trip_duration" style="width: 100px; margin: 2px">
+                                                <div style="display: flex; flex-direction: column; gap: 6px;">
+                                                    <input type="date" id="trip_date">
+                                                    <select id="trip_duration" style="width: 120px;">
                                                         <option value="0">당일</option>
                                                         <option value="1">1박</option>
                                                         <option value="2">2박</option>
@@ -220,51 +200,51 @@
                                         </tr>
                                         <tr>
                                             <th>출장목적</th>
-                                            <td colspan="3"><textarea id="trip_purpose" placeholder="출장 목적을 입력하세요" rows="3" style="width: 100%; "></textarea></td>
+                                            <td colspan="3"><textarea id="trip_purpose" placeholder="출장 목적을 입력하세요" rows="3"></textarea></td>
                                         </tr>
                                     </table>
 
                                     <!-- 날짜별 비용 입력 테이블 -->
-                                    <div style="margin-top: 20px;">
-                                        <h4 style="margin-bottom: 10px; font-size: 14px; font-weight: 600;">날짜별 비용 입력</h4>
-                                        <table class="form-table" id="dailyExpenseTable">
-                                            <thead>
-                                                <tr style="background: #f5f5f5;">
-                                                    <th style="width: 15%;">날짜</th>
-                                                    <th style="width: 20%;">교통비</th>
-                                                    <th style="width: 20%;">숙박비</th>
-                                                    <th style="width: 20%;">식비</th>
-                                                    <th style="width: 20%;">기타(일비)</th>
-                                                </tr>
-                                            </thead>
-                                            <tbody id="dailyExpenseBody" style="background: white;">
-                                                <!-- 동적 생성 -->
-                                            </tbody>
-                                            <tfoot>
-                                                <tr style="background: white;font-weight: bold;">
-                                                    <td style="text-align: center;">합계</td>
-                                                    <td style="text-align: center;"><span id="totalTransport">0</span> 원</td>
-                                                    <td style="text-align: center;"><span id="totalLodging">0</span> 원</td>
-                                                    <td style="text-align: center;"><span id="totalMeal">0</span> 원</td>
-                                                    <td style="text-align: center;"><span id="totalOther">0</span> 원</td>
-                                                </tr>
-                                            </tfoot>
-                                        </table>
-                                    </div>
+                                    <table class="form-table common-info-table daily-expense-table" id="dailyExpenseTable" style="margin-top: 0;">
+                                        <thead>
+                                            <tr>
+                                                <th colspan="5" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 14px 20px; text-align: left; font-size: 16px; font-weight: 600; border: none;">
+                                                    <i class="fas fa-calculator"></i> 날짜별 비용 입력
+                                                </th>
+                                            </tr>
+                                            <tr>
+                                                <th style="width: 15%;">날짜</th>
+                                                <th style="width: 20%;">교통비</th>
+                                                <th style="width: 20%;">숙박비</th>
+                                                <th style="width: 20%;">식비</th>
+                                                <th style="width: 20%;">기타(일비)</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody id="dailyExpenseBody">
+                                            <!-- 동적 생성 -->
+                                        </tbody>
+                                        <tfoot>
+                                            <tr>
+                                                <td>합계</td>
+                                                <td><span id="totalTransport">0</span> 원</td>
+                                                <td><span id="totalLodging">0</span> 원</td>
+                                                <td><span id="totalMeal">0</span> 원</td>
+                                                <td><span id="totalOther">0</span> 원</td>
+                                            </tr>
+                                        </tfoot>
+                                    </table>
 
-                                    <table class="form-table" style="margin-top: 20px;">
+                                    <table class="form-table common-info-table receipt-trip-table" style="margin-top: 20px;">
                                         <tr>
                                             <th>작성자</th>
                                             <td colspan="3">
-                                                <div style="display: flex; gap: 5px;">
-                                                    <input type="text" id="trip_reporter" placeholder="" value="" style="flex: 1;">
-                                                </div>
+                                                <input type="text" id="trip_reporter" placeholder="" value="">
                                             </td>
                                         </tr>
                                         <tr>
                                             <th>출장 내용 및 결과</th>
                                             <td colspan="3">
-                                                <textarea id="trip_result" placeholder="출장 내용 및 결과를 입력하세요" rows="5" style="width: 100%;"></textarea>
+                                                <textarea id="trip_result" placeholder="출장 내용 및 결과를 입력하세요" rows="5"></textarea>
                                             </td>
                                         </tr>
                                     </table>
@@ -442,6 +422,20 @@
                                         </tr>
                                     </table>
                                 </div>
+                            </div>
+                        </div>
+
+                        <!-- 결재선 -->
+                        <div class="approval-line-section">
+                            <div class="section-header">
+                                <h4><i class="fas fa-users"></i> 결재선</h4>
+                                <button class="btn-add" id="addApproverBtn">
+                                    <i class="fas fa-plus"></i>
+                                    결재자 추가
+                                </button>
+                            </div>
+                            <div class="approver-chips" id="approverChips">
+                                <div class="empty-message">결재자를 추가해주세요</div>
                             </div>
                         </div>
 
