@@ -4,32 +4,32 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-A Spring Boot 3.5.6 ERP application implementing 12 functional modules for HR and organizational management. The project uses Java 17, Maven, Thymeleaf templates, and vanilla JavaScript. Currently, the frontend UI is fully implemented with all templates and client-side logic, while the backend service and data access layers are in early stages.
+A Spring Boot 3.5.6 ERP application implementing 12 functional modules for HR and organizational management. The project uses Java 21, Gradle, Thymeleaf templates, and vanilla JavaScript. Currently, the frontend UI is fully implemented with all templates and client-side logic, while the backend service and data access layers are in early stages.
 
 ## Build and Development Commands
 
 ### Build and Run
 ```bash
 # Clean and build the project
-mvn clean install
+./gradlew clean build
 
 # Run the application
-mvn spring-boot:run
+./gradlew bootRun
 
 # Run with specific profile (when available)
-mvn spring-boot:run -Dspring-boot.run.profiles=dev
+./gradlew bootRun --args='--spring.profiles.active=dev'
 ```
 
 ### Testing
 ```bash
 # Run all tests
-mvn test
+./gradlew test
 
 # Run specific test class
-mvn test -Dtest=ClassName
+./gradlew test --tests ClassName
 
 # Run tests with coverage
-mvn clean test jacoco:report
+./gradlew clean test jacocoTestReport
 ```
 
 ### Development
@@ -213,9 +213,9 @@ document.addEventListener('DOMContentLoaded', function() {
 
 ## Dependencies
 
-Key libraries (see `pom.xml` for versions):
+Key libraries (see `build.gradle.kts` for versions):
 - Spring Boot 3.5.6 (Web, Thymeleaf, Data JPA, Validation)
-- Java 17
+- Java 21
 - Lombok (annotation processing configured)
 - Jackson with Java 8 time support
 - PostgreSQL JDBC Driver
@@ -230,7 +230,7 @@ Key libraries (see `pom.xml` for versions):
 
 ### Lombok Usage
 - Entity boilerplate reduction
-- Maven compiler plugin configured with annotation processor path
+- Gradle annotation processor configured
 - Excluded from final JAR via Spring Boot plugin
 
 ### State Management

@@ -33,7 +33,7 @@ dependencies {
 group = "com.pinecni"
 version = "0.0.1-SNAPSHOT"
 description = "erp"
-java.sourceCompatibility = JavaVersion.VERSION_17
+java.sourceCompatibility = JavaVersion.VERSION_21
 
 tasks.withType<JavaCompile>() {
     options.encoding = "UTF-8"
