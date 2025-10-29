@@ -206,11 +206,48 @@
                                             </div>
                                         </td>
                                     </tr>
+                                    <tr>
+                                        <th style="padding-top: 14px;">회의 참석자</th>
+                                        <td colspan="3">
+                                            <div id="attendeeArea"
+                                                 style="min-height: 60px; padding: 12px; border: 2px dashed #e2e8f0; border-radius: 8px; cursor: pointer; transition: all 0.2s; background: #fafbfc;">
+                                                <div id="attendeeList"
+                                                     style="display: flex; flex-direction: column; gap: 8px;">
+                                                    <!-- 동적 생성 -->
+                                                    <div style="text-align: center; color: #94a3b8; font-size: 13px;">
+                                                        <i class="fas fa-user-plus"
+                                                           style="font-size: 20px; margin-bottom: 6px;"></i>
+                                                        <div>클릭하여 회의 참석자 추가</div>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </td>
+                                    </tr>
+                                    <tr>
+                                        <th>작성자</th>
+                                        <td colspan="3">
+                                            <input type="text" id="common_author" placeholder="" value="">
+                                        </td>
+                                    </tr>
+                                    <tr>
+                                        <th style="white-space: nowrap;">출장 내용<br>및 결과</th>
+                                        <td colspan="3">
+                                            <textarea id="common_trip_result" placeholder="출장 내용 및 결과를 입력하세요"
+                                                      rows="5"></textarea>
+                                        </td>
+                                    </tr>
+                                    <tr>
+                                        <th>회의 내용</th>
+                                        <td colspan="3">
+                                            <textarea id="common_meeting_content" placeholder="회의 내용을 입력하세요"
+                                                      rows="5"></textarea>
+                                        </td>
+                                    </tr>
                                 </table>
 
                                 <!-- 날짜별 비용 입력 테이블 -->
                                 <table class="form-table common-info-table daily-expense-table" id="dailyExpenseTable"
-                                       style="margin-top: 20px;">
+                                       style="margin-top: 0;">
                                     <thead>
                                     <tr>
                                         <th colspan="5"
@@ -238,47 +275,6 @@
                                         <td><span id="totalOther">0</span> 원</td>
                                     </tr>
                                     </tfoot>
-                                </table>
-
-                                <table class="form-table common-info-table receipt-trip-table"
-                                       style="margin-top: 20px;">
-                                    <tr>
-                                        <th style="padding-top: 14px;">회의 참석자</th>
-                                        <td colspan="3">
-                                            <div id="attendeeArea"
-                                                 style="min-height: 60px; padding: 12px; border: 2px dashed #e2e8f0; border-radius: 8px; cursor: pointer; transition: all 0.2s; background: #fafbfc;">
-                                                <div id="attendeeList"
-                                                     style="display: flex; flex-direction: column; gap: 8px;">
-                                                    <!-- 동적 생성 -->
-                                                    <div style="text-align: center; color: #94a3b8; font-size: 13px;">
-                                                        <i class="fas fa-user-plus"
-                                                           style="font-size: 20px; margin-bottom: 6px;"></i>
-                                                        <div>클릭하여 회의 참석자 추가</div>
-                                                    </div>
-                                                </div>
-                                            </div>
-                                        </td>
-                                    </tr>
-                                    <tr>
-                                        <th>작성자</th>
-                                        <td colspan="3">
-                                            <input type="text" id="common_reporter" placeholder="" value="">
-                                        </td>
-                                    </tr>
-                                    <tr>
-                                        <th>출장 내용 및 결과</th>
-                                        <td colspan="3">
-                                            <textarea id="common_trip_result" placeholder="출장 내용 및 결과를 입력하세요"
-                                                      rows="5"></textarea>
-                                        </td>
-                                    </tr>
-                                    <tr>
-                                        <th>회의 내용</th>
-                                        <td colspan="3">
-                                            <textarea id="common_meeting_content" placeholder="회의 내용을 입력하세요"
-                                                      rows="5"></textarea>
-                                        </td>
-                                    </tr>
                                 </table>
                             </div>
 
@@ -647,22 +643,7 @@
                                 </div><!-- document-form-content 끝 -->
                             </div><!-- document-form-wrapper 끝 -->
                         </div>
-
                     </div>
-
-                        <!-- 결재선 -->
-                        <div class="approval-line-section">
-                            <div class="section-header">
-                                <h4><i class="fas fa-users"></i> 결재선</h4>
-                            </div>
-                            <div class="approver-chips" id="approverChips" style="min-height: 60px; padding: 12px; border: 2px dashed #e2e8f0; border-radius: 8px; cursor: pointer; transition: all 0.2s; background: #fafbfc; justify-content: center; align-items: center;">
-                                <div style="text-align: center; color: #94a3b8; font-size: 13px; width: 100%;">
-                                    <i class="fas fa-user-plus" style="font-size: 20px; margin-bottom: 6px; display: block;"></i>
-                                    <div>클릭하여 결재자 추가</div>
-                                </div>
-                            </div>
-                        </div>
-
 
                         <!-- 첨부파일 -->
                         <div class="attachment-section">
@@ -679,6 +660,19 @@
                             </div>
                             <div class="file-list" id="fileList"></div>
                         </div>
+
+                    <!-- 결재선 -->
+                    <div class="approval-line-section">
+                        <div class="section-header">
+                            <h4><i class="fas fa-users"></i> 결재선</h4>
+                        </div>
+                        <div class="approver-chips" id="approverChips" style="min-height: 60px; padding: 12px; border: 2px dashed #e2e8f0; border-radius: 8px; cursor: pointer; transition: all 0.2s; background: #fafbfc; justify-content: center; align-items: center;">
+                            <div style="text-align: center; color: #94a3b8; font-size: 13px; width: 100%;">
+                                <i class="fas fa-user-plus" style="font-size: 20px; margin-bottom: 6px; display: block;"></i>
+                                <div>클릭하여 결재자 추가</div>
+                            </div>
+                        </div>
+                    </div>
 
                         <!-- 제출 버튼 -->
                         <div class="submit-actions">

@@ -10,7 +10,6 @@ document.addEventListener('DOMContentLoaded', function() {
     const categoryNodes = document.querySelectorAll('.tree-node-header.category-node');
     const expandAllBtn = document.getElementById('expandAllBtn');
     const documentForm = document.getElementById('documentForm');
-    const addApproverBtn = document.getElementById('addApproverBtn');
     const approverChips = document.getElementById('approverChips');
     const fileInput = document.getElementById('fileInput');
     const fileList = document.getElementById('fileList');
@@ -111,6 +110,7 @@ document.addEventListener('DOMContentLoaded', function() {
             documentForm.innerHTML = templateElement.innerHTML;
             if (templateKey === 'receipt-overtime') {
                 setupOvertimeAutoFill();
+                setupDocumentFormToggle();
             }
         }
     }
@@ -124,8 +124,7 @@ document.addEventListener('DOMContentLoaded', function() {
         const otTitle = document.getElementById('ot_title');
         const otAmount = document.getElementById('ot_amount');
         const otContent = document.getElementById('ot_content');
-        const addOvertimePersonBtn = document.getElementById('addOvertimePersonBtn');
-        const removeOvertimePersonBtn = document.getElementById('removeOvertimePersonBtn');
+        const overtimePersonArea = document.getElementById('overtimePersonArea');
         const overtimePersonList = document.getElementById('overtimePersonList');
 
         let overtimePersons = [];
@@ -154,67 +153,74 @@ document.addEventListener('DOMContentLoaded', function() {
             'CI/CD 환경 구축'
         ];
 
-        // 야근 인원 목록 업데이트 함수
-        function updateOvertimePersonList() {
-            overtimePersonList.innerHTML = '';
-            overtimePersons.forEach((person, index) => {
-                const row = document.createElement('div');
-                row.style.cssText = 'display: flex; gap: 8px; margin-bottom: 8px; align-items: center;';
-
-                // 업무 내용 select 박스 옵션 생성
-                let taskSelectOptions = '<option value="">업무 선택</option>';
-                taskOptions.forEach(task => {
-                    const selected = person.task === task ? 'selected' : '';
-                    taskSelectOptions += `<option value="${task}" ${selected}>${task}</option>`;
-                });
-
-                // 종료 시간 select 박스 옵션 생성 (19:00 ~ 24:00, 30분 단위)
-                let endTimeOptions = '';
-                for (let hour = 19; hour <= 24; hour++) {
-                    for (let minute of [0, 30]) {
-                        // 24:30은 제외
-                        if (hour === 24 && minute === 30) continue;
-
-                        const timeValue = `${String(hour).padStart(2, '0')}:${String(minute).padStart(2, '0')}`;
-                        const selected = person.endTime === timeValue ? 'selected' : '';
-                        endTimeOptions += `<option value="${timeValue}" ${selected}>${timeValue}</option>`;
-                    }
+        // 야근인원 영역 클릭 시 모달 열기
+        if (overtimePersonArea) {
+            overtimePersonArea.addEventListener('click', function(e) {
+                // 제거 버튼 클릭은 무시
+                if (e.target.closest('.overtime-person-remove')) {
+                    return;
                 }
+                openOvertimePersonModal();
+            });
+        }
 
-                const displayTime = person.endTime ? `18:00 ~ ${person.endTime}` : '18:00 ~ 21:00';
+        // 야근 인원 목록 렌더링 함수 (모달 방식)
+        function renderOvertimePersonListInTemplate() {
+            if (!overtimePersonList) return;
 
-                row.innerHTML = `
-                    <input type="checkbox" data-index="${index}" class="overtime-checkbox" style="width: 18px; height: 18px; cursor: pointer;">
-                    <input type="text" data-index="${index}" class="overtime-name" placeholder="성명" value="${person.name || ''}" style="flex: 1; padding: 5px;">
-                    <div style="flex: 1; display: flex; gap: 4px; align-items: center;">
-                        <span style="white-space: nowrap;">18:00 ~</span>
-                        <select data-index="${index}" class="overtime-endtime" style="flex: 1; padding: 5px;">${endTimeOptions}</select>
+            if (overtimePersons.length === 0) {
+                overtimePersonList.innerHTML = `
+                    <div style="text-align: center; color: #94a3b8; font-size: 13px;">
+                        <i class="fas fa-user-plus" style="font-size: 20px; margin-bottom: 6px;"></i>
+                        <div>클릭하여 야근인원 추가</div>
                     </div>
-                    <select data-index="${index}" class="overtime-task" style="flex: 2; padding: 5px;">${taskSelectOptions}</select>
                 `;
-                overtimePersonList.appendChild(row);
-            });
-
-            // 이벤트 리스너 추가
-            document.querySelectorAll('.overtime-name, .overtime-task, .overtime-endtime').forEach(el => {
-                const eventType = el.tagName === 'SELECT' ? 'change' : 'input';
-                el.addEventListener(eventType, function() {
-                    const index = parseInt(this.getAttribute('data-index'));
-                    if (this.classList.contains('overtime-name')) {
-                        overtimePersons[index].name = this.value;
-                    } else if (this.classList.contains('overtime-task')) {
-                        overtimePersons[index].task = this.value;
-                    } else if (this.classList.contains('overtime-endtime')) {
-                        overtimePersons[index].endTime = this.value;
-                        overtimePersons[index].time = `18:00 ~ ${this.value}`;
-                    }
-                    updateOvertimeTable();
-                    updateContentText();
-                });
-            });
+            } else {
+                overtimePersonList.innerHTML = overtimePersons.map(person => `
+                    <div class="trip-person-item">
+                        <div class="trip-person-info">
+                            <span class="name">${person.name}</span>
+                            <span>${person.dept}</span>
+                            <span>${person.position}</span>
+                        </div>
+                        <button type="button" class="trip-person-remove overtime-person-remove" onclick="removeOvertimePersonInTemplate('${person.id}')">
+                            <i class="fas fa-times"></i> 제거
+                        </button>
+                    </div>
+                `).join('');
+            }
 
             updateOvertimeTable();
             updateContentText();
+        }
+
+        // 템플릿 내에서 야근인원 제거
+        window.removeOvertimePersonInTemplate = function(personId) {
+            overtimePersons = overtimePersons.filter(p => p.id !== personId);
+            renderOvertimePersonListInTemplate();
+        };
+
+        // 전역 함수로 등록하여 모달에서 접근 가능하게
+        window.addOvertimePersonsToOvertime = function(persons) {
+            persons.forEach(person => {
+                if (!overtimePersons.some(p => p.id === person.id)) {
+                    overtimePersons.push({
+                        id: person.id,
+                        name: person.name,
+                        dept: person.dept,
+                        position: person.position,
+                        time: '18:00 ~ 21:00',
+                        endTime: '21:00',
+                        task: ''
+                    });
+                }
+            });
+            renderOvertimePersonListInTemplate();
+        };
+
+        // 야근 인원 목록 업데이트 함수 (기존 방식, deprecated)
+        function updateOvertimePersonList() {
+            renderOvertimePersonListInTemplate();
         }
 
         // 야근 신청서 테이블 업데이트
@@ -256,34 +262,6 @@ document.addEventListener('DOMContentLoaded', function() {
             });
         }
 
-        // 인원 추가 버튼
-        if (addOvertimePersonBtn) {
-            addOvertimePersonBtn.addEventListener('click', function() {
-                overtimePersons.push({ name: '', time: '18:00 ~ 21:00', endTime: '21:00', task: '' });
-                updateOvertimePersonList();
-            });
-        }
-
-        // 인원 제거 버튼
-        if (removeOvertimePersonBtn) {
-            removeOvertimePersonBtn.addEventListener('click', function() {
-                const checkboxes = document.querySelectorAll('.overtime-checkbox:checked');
-                if (checkboxes.length === 0) {
-                    alert('제거할 인원을 선택해주세요.');
-                    return;
-                }
-
-                const indicesToRemove = Array.from(checkboxes)
-                    .map(cb => parseInt(cb.getAttribute('data-index')))
-                    .sort((a, b) => b - a);
-
-                indicesToRemove.forEach(index => {
-                    overtimePersons.splice(index, 1);
-                });
-
-                updateOvertimePersonList();
-            });
-        }
 
         // 금액 기반 자동 인원 계산 (1인당 15,000원, 최소 1명)
         if (otAmount) {
@@ -451,14 +429,40 @@ document.addEventListener('DOMContentLoaded', function() {
         }
 
         // 초기화
-        updateOvertimePersonList();
+        overtimePersons = [];
+        renderOvertimePersonListInTemplate();
     }
 
-    // 결재자 추가 버튼
-    addApproverBtn.addEventListener('click', function() {
-        loadEmployeeList();
-        approverModal.classList.add('show');
-    });
+    // 공식 문서 양식 토글 기능
+    function setupDocumentFormToggle() {
+        const documentFormToggle = document.getElementById('documentFormToggle');
+        const documentFormWrapper = document.querySelector('.document-form-wrapper');
+
+        // 기본적으로 문서 양식을 접어둠
+        if (documentFormWrapper) {
+            documentFormWrapper.classList.add('collapsed');
+        }
+
+        if (documentFormToggle) {
+            documentFormToggle.addEventListener('click', function() {
+                if (documentFormWrapper) {
+                    documentFormWrapper.classList.toggle('collapsed');
+                }
+            });
+        }
+    }
+
+    // 결재자 영역 클릭 시 모달 열기
+    if (approverChips) {
+        approverChips.addEventListener('click', function(e) {
+            // 제거 버튼 클릭은 무시
+            if (e.target.closest('.btn-remove-approver')) {
+                return;
+            }
+            loadEmployeeList();
+            approverModal.classList.add('show');
+        });
+    }
 
     // 직원 목록 로드
     function loadEmployeeList() {
@@ -512,7 +516,12 @@ document.addEventListener('DOMContentLoaded', function() {
     // 결재자 칩 업데이트
     function updateApproverChips() {
         if (selectedApprovers.length === 0) {
-            approverChips.innerHTML = '<div class="empty-message">결재자를 추가해주세요</div>';
+            approverChips.innerHTML = `
+                <div style="text-align: center; color: #94a3b8; font-size: 13px; width: 100%;">
+                    <i class="fas fa-user-plus" style="font-size: 20px; margin-bottom: 6px; display: block;"></i>
+                    <div>클릭하여 결재자 추가</div>
+                </div>
+            `;
             return;
         }
 
@@ -523,7 +532,7 @@ document.addEventListener('DOMContentLoaded', function() {
             chip.innerHTML = `
                 <span class="order">${index + 1}</span>
                 <span>${approver.name} ${approver.position}</span>
-                <button class="btn-remove" onclick="removeApprover(${index})">
+                <button class="btn-remove btn-remove-approver" onclick="removeApprover(${index})">
                     <i class="fas fa-times"></i>
                 </button>
             `;
@@ -862,6 +871,121 @@ document.addEventListener('DOMContentLoaded', function() {
             }
         });
     }
+
+    // 야근인원 모달 관련
+    const overtimePersonModal = document.getElementById('overtimePersonModal');
+    const overtimePersonSearchInput = document.getElementById('overtimePersonSearchInput');
+
+    // 야근인원 목록 데이터 (직원 목록과 동일)
+    const overtimePersonData = [
+        { id: 1, name: '김철수', position: '전무', dept: '경영지원본부' },
+        { id: 2, name: '박영희', position: '부장', dept: '경영지원본부 인사팀' },
+        { id: 3, name: '이민수', position: '부장', dept: '경영지원본부 총무팀' },
+        { id: 4, name: '최지원', position: '차장', dept: '경영지원본부 인사팀' },
+        { id: 5, name: '정수연', position: '차장', dept: '경영지원본부 총무팀' },
+        { id: 6, name: '강민호', position: '과장', dept: '경영지원본부 인사팀' },
+        { id: 7, name: '윤서영', position: '과장', dept: '경영지원본부 총무팀' },
+        { id: 8, name: '한동훈', position: '대리', dept: '경영지원본부 인사팀' },
+        { id: 9, name: '임채린', position: '대리', dept: '경영지원본부 총무팀' },
+        { id: 10, name: '송재현', position: '사원', dept: '경영지원본부 인사팀' }
+    ];
+
+    // 모달 열기 함수
+    window.openOvertimePersonModal = function() {
+        if (overtimePersonModal) {
+            overtimePersonModal.classList.add('show');
+            renderOvertimePersonList2();
+        }
+    };
+
+    // 모달 닫기 함수
+    window.closeOvertimePersonModal = function() {
+        if (overtimePersonModal) {
+            overtimePersonModal.classList.remove('show');
+            // 검색 초기화
+            if (overtimePersonSearchInput) {
+                overtimePersonSearchInput.value = '';
+                renderOvertimePersonList2('');
+            }
+            // 선택 초기화
+            const selectedItems = document.querySelectorAll('#overtimePersonList2 .employee-item.selected');
+            selectedItems.forEach(item => item.classList.remove('selected'));
+        }
+    };
+
+    // 모달 외부 클릭 시 닫기
+    if (overtimePersonModal) {
+        overtimePersonModal.addEventListener('click', function(e) {
+            if (e.target === overtimePersonModal) {
+                closeOvertimePersonModal();
+            }
+        });
+    }
+
+    // 야근인원 목록 렌더링
+    function renderOvertimePersonList2(searchText = '') {
+        const overtimePersonList2El = document.getElementById('overtimePersonList2');
+        if (!overtimePersonList2El) return;
+
+        const filtered = overtimePersonData.filter(person => {
+            const searchStr = (person.name + person.dept + person.position).toLowerCase();
+            return searchStr.includes(searchText.toLowerCase());
+        });
+
+        overtimePersonList2El.innerHTML = filtered.map(person => `
+            <div class="employee-item" data-id="${person.id}" onclick="selectOvertimePerson(${person.id})">
+                <div class="employee-info">
+                    <div class="employee-name">${person.name}</div>
+                    <div class="employee-detail">${person.position} · ${person.dept}</div>
+                </div>
+            </div>
+        `).join('');
+    }
+
+    // 야근인원 선택
+    window.selectOvertimePerson = function(personId) {
+        const items = document.querySelectorAll('#overtimePersonList2 .employee-item');
+        items.forEach(item => {
+            if (parseInt(item.getAttribute('data-id')) === personId) {
+                item.classList.toggle('selected');
+            }
+        });
+    };
+
+    // 검색 기능
+    if (overtimePersonSearchInput) {
+        overtimePersonSearchInput.addEventListener('input', function(e) {
+            renderOvertimePersonList2(e.target.value);
+        });
+    }
+
+    // 선택된 야근인원 추가
+    window.addSelectedOvertimePersons = function() {
+        const selectedItems = document.querySelectorAll('#overtimePersonList2 .employee-item.selected');
+        const personsToAdd = [];
+
+        selectedItems.forEach(item => {
+            const personId = item.getAttribute('data-id');
+            const person = overtimePersonData.find(p => p.id === parseInt(personId));
+
+            if (person) {
+                personsToAdd.push({
+                    id: personId,
+                    name: person.name,
+                    dept: person.dept,
+                    position: person.position
+                });
+            }
+        });
+
+        // setupOvertimeAutoFill에서 정의된 함수 호출
+        if (window.addOvertimePersonsToOvertime) {
+            window.addOvertimePersonsToOvertime(personsToAdd);
+        }
+
+        // 모달 닫기
+        closeOvertimePersonModal();
+    };
 
     // 초기 템플릿 로드 (야근식대)
     loadTemplate('receipt-overtime');
