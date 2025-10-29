@@ -33,46 +33,63 @@ document.addEventListener('DOMContentLoaded', function() {
         { id: 8, name: '유재석', position: '부장', dept: '영업본부 영업1팀' }
     ];
 
-    // 전체 접기/열기 버튼
-    let allExpanded = true;
-    if (expandAllBtn) {
-        expandAllBtn.addEventListener('click', function() {
-            const treeNodes = document.querySelectorAll('.tree-node');
+    // ============================================
+    // 템플릿 사이드바 접기/펼치기 기능
+    // ============================================
 
+    // 전체 접기/펼치기 버튼
+    const toggleAllBtn = document.getElementById('toggleAllBtn');
+    if (toggleAllBtn) {
+        toggleAllBtn.addEventListener('click', function() {
+            const categories = document.querySelectorAll('.menu-category');
+            const allExpanded = Array.from(categories).every(cat => cat.classList.contains('expanded'));
+
+            categories.forEach(category => {
+                if (allExpanded) {
+                    category.classList.remove('expanded');
+                } else {
+                    category.classList.add('expanded');
+                }
+            });
+
+            // 버튼 아이콘 변경
+            const icon = this.querySelector('i');
             if (allExpanded) {
-                treeNodes.forEach(node => node.classList.remove('expanded'));
-                this.innerHTML = '<i class="fas fa-plus-square"></i> 전체 펼치기';
-                allExpanded = false;
+                icon.className = 'fas fa-chevron-up';
             } else {
-                treeNodes.forEach(node => node.classList.add('expanded'));
-                this.innerHTML = '<i class="fas fa-minus-square"></i> 전체 접기';
-                allExpanded = true;
+                icon.className = 'fas fa-chevron-down';
             }
         });
     }
 
-    // 카테고리 노드 토글
-    categoryNodes.forEach(categoryNode => {
-        categoryNode.addEventListener('click', function(e) {
-            const treeNode = this.closest('.tree-node');
-            treeNode.classList.toggle('expanded');
-            updateExpandAllButton();
+    // 각 카테고리 헤더 클릭 시 토글
+    const categoryHeaders = document.querySelectorAll('.category-header');
+    categoryHeaders.forEach(header => {
+        header.addEventListener('click', function(e) {
+            // 링크 클릭 방지
+            e.preventDefault();
+
+            const category = this.closest('.menu-category');
+            category.classList.toggle('expanded');
+
+            // 전체 버튼 상태 업데이트
+            updateToggleAllButton();
         });
     });
 
-    // 전체 펼치기/접기 버튼 상태 업데이트
-    function updateExpandAllButton() {
-        if (!expandAllBtn) return;
+    // 전체 버튼 상태 업데이트
+    function updateToggleAllButton() {
+        if (!toggleAllBtn) return;
 
-        const treeNodes = document.querySelectorAll('.tree-node');
-        const expandedNodes = document.querySelectorAll('.tree-node.expanded');
+        const categories = document.querySelectorAll('.menu-category');
+        const allExpanded = Array.from(categories).every(cat => cat.classList.contains('expanded'));
+        const allCollapsed = Array.from(categories).every(cat => !cat.classList.contains('expanded'));
 
-        if (expandedNodes.length === treeNodes.length) {
-            expandAllBtn.innerHTML = '<i class="fas fa-minus-square"></i> 전체 접기';
-            allExpanded = true;
-        } else if (expandedNodes.length === 0) {
-            expandAllBtn.innerHTML = '<i class="fas fa-plus-square"></i> 전체 펼치기';
-            allExpanded = false;
+        const icon = toggleAllBtn.querySelector('i');
+        if (allCollapsed) {
+            icon.className = 'fas fa-chevron-up';
+        } else if (allExpanded) {
+            icon.className = 'fas fa-chevron-down';
         }
     }
 
