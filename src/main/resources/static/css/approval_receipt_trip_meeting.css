@@ -235,10 +235,12 @@ div:focus {
     border-radius: 12px;
     box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
     padding: 24px;
+    padding-bottom: 0;
     overflow-y: auto;
     display: flex;
     flex-direction: column;
     gap: 21px;
+    position: relative;
 }
 
 /* 섹션 공통 스타일 */
@@ -296,6 +298,13 @@ div:focus {
     flex-wrap: wrap;
     gap: 10px;
     min-height: 50px;
+    justify-content: center;
+    align-items: center;
+}
+
+.approver-chips:hover {
+    border-color: #667eea;
+    background: #f8f9ff;
 }
 
 .approver-chip {
@@ -941,12 +950,19 @@ div h2{
     color: #d32f2f;
 }
 
-/* 제출 버튼 */
+/* 제출 버튼 - 고정 Footer */
 .submit-actions {
+    position: sticky;
+    bottom: 0;
     display: flex;
     justify-content: flex-end;
     gap: 12px;
-    padding-top: 10px;
+    padding: 16px 24px;
+    background: white;
+    border-radius: 0 0 12px 12px;
+    box-shadow: 0 -4px 12px rgba(0, 0, 0, 0.08);
+    z-index: 100;
+    margin: 21px -24px 0 -24px;
 }
 
 .btn-lg {

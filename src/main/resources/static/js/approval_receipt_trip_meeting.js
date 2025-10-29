@@ -10,7 +10,6 @@ document.addEventListener('DOMContentLoaded', function() {
     const categoryNodes = document.querySelectorAll('.tree-node-header.category-node');
     const expandAllBtn = document.getElementById('expandAllBtn');
     const documentForm = document.getElementById('documentForm');
-    const addApproverBtn = document.getElementById('addApproverBtn');
     const approverChips = document.getElementById('approverChips');
     const fileInput = document.getElementById('fileInput');
     const fileList = document.getElementById('fileList');
@@ -18,7 +17,6 @@ document.addEventListener('DOMContentLoaded', function() {
     const approverModal = document.getElementById('approverModal');
     const employeeList = document.getElementById('employeeList');
     const approverSearch = document.getElementById('approverSearch');
-    const saveDraftBtn = document.getElementById('saveDraftBtn');
     const submitBtn = document.getElementById('submitBtn');
 
     // 샘플 직원 데이터
@@ -241,29 +239,6 @@ document.addEventListener('DOMContentLoaded', function() {
                         <i class="fas fa-user-plus" style="font-size: 20px; margin-bottom: 6px;"></i>
                         <div>클릭하여 회의 참석자 추가</div>
                     </div>
-        // 참석자 목록 업데이트 함수
-        function updateAttendeeList() {
-            attendeeList.innerHTML = '';
-            attendees.forEach((attendee, index) => {
-                const row = document.createElement('div');
-                row.style.cssText = 'display: flex; gap: 8px; margin-bottom: 8px; align-items: center;';
-
-                const positionOptions = positions.map(pos =>
-                    `<option value="${pos}" ${attendee.position === pos ? 'selected' : ''}>${pos}</option>`
-                ).join('');
-
-                row.innerHTML = `
-                    <input type="checkbox" data-index="${index}" class="attendee-checkbox" style="width: 18px; height: 18px; cursor: pointer;">
-                    <input type="text" data-index="${index}" class="attendee-dept" placeholder="부서명" value="${attendee.dept || ''}" style="flex: 1; padding: 5px;">
-                    <select data-index="${index}" class="attendee-position" style="flex: 1; padding: 5px;">
-                        <option value="">직책 선택</option>
-                        ${positionOptions}
-                    </select>
-                    <input type="text" data-index="${index}" class="attendee-name" placeholder="성명" value="${attendee.name || ''}" style="flex: 1; padding: 5px;">
-                    <label style="display: flex; align-items: center; gap: 4px; white-space: nowrap;">
-                        <input type="checkbox" data-index="${index}" class="attendee-external" ${attendee.isExternal ? 'checked' : ''} style="width: 16px; height: 16px; cursor: pointer;">
-                        외부
-                    </label>
                 `;
             } else {
                 attendeeList.innerHTML = attendees.map(attendee => `
@@ -279,15 +254,6 @@ document.addEventListener('DOMContentLoaded', function() {
                     </div>
                 `).join('');
             }
-
-            // 외부 체크박스 이벤트 리스너
-            document.querySelectorAll('.attendee-external').forEach(el => {
-                el.addEventListener('change', function() {
-                    const index = parseInt(this.getAttribute('data-index'));
-                    attendees[index].isExternal = this.checked;
-                    updateAttendeeDisplay();
-                });
-            });
 
             updateAttendeeDisplay();
         }
@@ -894,11 +860,6 @@ document.addEventListener('DOMContentLoaded', function() {
         // 초기 참석자 설정
         attendees = [];
         renderAttendeeListInTemplate();
-        // 초기 참석자 설정
-        attendees = [
-            { dept: '', position: '', name: '', isExternal: false }
-        ];
-        updateAttendeeList();
 
         // 초기 회의 관련 필드 설정 (작성자, 복명자 등)
         updateMeetingFields();
@@ -1008,9 +969,15 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     };
 
-    // 결재자 추가 버튼 클릭
-    if (addApproverBtn) {
-        addApproverBtn.addEventListener('click', openModal);
+    // 결재자 영역 클릭 시 모달 열기
+    if (approverChips) {
+        approverChips.addEventListener('click', function(e) {
+            // 제거 버튼 클릭은 무시
+            if (e.target.closest('.btn-remove-approver')) {
+                return;
+            }
+            openModal();
+        });
     }
 
     // 모달 외부 클릭 시 닫기
@@ -1080,7 +1047,12 @@ document.addEventListener('DOMContentLoaded', function() {
         if (!approverChips) return;
 
         if (selectedApprovers.length === 0) {
-            approverChips.innerHTML = '<div class="empty-message">결재자를 추가해주세요</div>';
+            approverChips.innerHTML = `
+                <div style="text-align: center; color: #94a3b8; font-size: 13px; width: 100%;">
+                    <i class="fas fa-user-plus" style="font-size: 20px; margin-bottom: 6px; display: block;"></i>
+                    <div>클릭하여 결재자 추가</div>
+                </div>
+            `;
         } else {
             approverChips.innerHTML = selectedApprovers.map((approver, index) => `
                 <div class="approver-chip">
@@ -1100,13 +1072,6 @@ document.addEventListener('DOMContentLoaded', function() {
         selectedApprovers = selectedApprovers.filter(a => a.id !== approverId);
         renderApprovers();
     };
-
-    // 임시저장
-    if (saveDraftBtn) {
-        saveDraftBtn.addEventListener('click', function() {
-            alert('문서가 임시저장되었습니다.');
-        });
-    }
 
     // 제출
     if (submitBtn) {
