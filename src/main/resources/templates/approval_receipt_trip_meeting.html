@@ -245,10 +245,14 @@
                                         <td colspan="3"><input type="text" id="common_project" placeholder="과제명을 입력하세요"></td>
                                     </tr>
                                     <tr>
+                                        <th>작성자</th>
+                                        <td><input type="text" id="common_author" value="" placeholder="작성자 이름"></td>
                                         <th>출장지</th>
                                         <td><input type="text" id="common_location" placeholder="출장지를 입력하세요"></td>
+                                    </tr>
+                                    <tr>
                                         <th>출장기간</th>
-                                        <td>
+                                        <td colspan="3">
                                             <div>
                                                 <input type="date" id="common_date" style="margin: 2px;">
                                                 <br>
@@ -267,33 +271,18 @@
                                     </tr>
                                 </table>
 
-                                <!-- 출장 인원 관리 -->
-                                <div style="margin-top: 20px;">
-                                    <h4 style="margin-bottom: 10px; font-size: 14px; font-weight: 600;">
-                                        출장 인원
-                                        <button type="button" class="btn-outline btn-sm" id="addTripPersonBtn" style="margin-left: 10px;">
-                                            <i class="fas fa-plus"></i> 인원 추가
-                                        </button>
-                                        <button type="button" class="btn-outline btn-sm" id="removeTripPersonBtn">
-                                            <i class="fas fa-minus"></i> 인원 제거
-                                        </button>
-                                    </h4>
-                                    <div id="tripPersonList" style="display: flex; flex-direction: column; gap: 10px;">
-                                        <!-- 동적 생성 -->
-                                    </div>
-                                </div>
-
                                 <!-- 날짜별 비용 입력 테이블 -->
                                 <div style="margin-top: 20px;">
                                     <h4 style="margin-bottom: 10px; font-size: 14px; font-weight: 600;">날짜별 비용 입력</h4>
                                     <table class="form-table" id="dailyExpenseTable">
                                         <thead>
                                             <tr style="background: #f5f5f5;">
-                                                <th style="width: 15%;">날짜</th>
-                                                <th style="width: 20%;">교통비</th>
-                                                <th style="width: 20%;">숙박비</th>
-                                                <th style="width: 20%;">식비</th>
-                                                <th style="width: 20%;">기타(일비)</th>
+                                                <th style="width: 12%;">날짜</th>
+                                                <th style="width: 17%;">교통비</th>
+                                                <th style="width: 17%;">숙박비</th>
+                                                <th style="width: 17%;">식비</th>
+                                                <th style="width: 17%;">회의비</th>
+                                                <th style="width: 17%;">기타(일비)</th>
                                             </tr>
                                         </thead>
                                         <tbody id="dailyExpenseBody" style="background: white;">
@@ -305,21 +294,22 @@
                                                 <td style="text-align: center;"><span id="totalTransport">0</span> 원</td>
                                                 <td style="text-align: center;"><span id="totalLodging">0</span> 원</td>
                                                 <td style="text-align: center;"><span id="totalMeal">0</span> 원</td>
+                                                <td style="text-align: center;"><span id="totalMeeting">0</span> 원</td>
                                                 <td style="text-align: center;"><span id="totalOther">0</span> 원</td>
                                             </tr>
                                         </tfoot>
                                     </table>
                                 </div>
 
-                                <!-- 회의 참석자 관리 -->
+                                <!-- 출장인원 및 회의 참석자 관리 -->
                                 <div style="margin-top: 20px;">
                                     <h4 style="margin-bottom: 10px; font-size: 14px; font-weight: 600;">
-                                        회의 참석자
+                                        출장인원 및 회의 참석자
                                         <button type="button" class="btn-outline btn-sm" id="addAttendeeBtn" style="margin-left: 10px;">
-                                            <i class="fas fa-plus"></i> 참석자 추가
+                                            <i class="fas fa-plus"></i> 인원 추가
                                         </button>
                                         <button type="button" class="btn-outline btn-sm" id="removeAttendeeBtn">
-                                            <i class="fas fa-minus"></i> 참석자 제거
+                                            <i class="fas fa-minus"></i> 인원 제거
                                         </button>
                                     </h4>
                                     <div id="attendeeList" style="display: flex; flex-direction: column; gap: 10px;">
@@ -329,19 +319,11 @@
 
                                 <table class="form-table" style="margin-top: 20px;">
                                     <tr>
-                                        <th>작성자</th>
-                                        <td colspan="3">
-                                            <div style="display: flex; gap: 5px;">
-                                                <input type="text" id="common_reporter" placeholder="" value="" style="flex: 1;">
-                                            </div>
-                                        </td>
-                                    </tr>
-                                    <tr>
                                         <th>출장 내용 및 결과</th>
                                         <td colspan="3">
                                             <textarea id="common_trip_result" placeholder="출장 내용 및 결과를 입력하세요" rows="5" style="width: 100%;"></textarea>
                                         </td>
-                                    </tr>
+                                    </tr>5
                                     <tr>
                                         <th>회의 내용</th>
                                         <td colspan="3">
@@ -381,7 +363,7 @@
                                     <table class="form-table" style="margin-top: 20px;">
                                         <tr>
                                             <th style="width: 15%;">과제명</th>
-                                            <td colspan="5" style="padding: 10px;">
+                                            <td colspan="5" style="padding: 10px; text-align: center;">
                                                 <span class="auto-project"></span>
                                             </td>
                                         </tr>
@@ -399,9 +381,31 @@
                                             <td rowspan="6" style="text-align: center; vertical-align: middle;"><span class="auto-date"></span></td>
                                             <td rowspan="6" style="text-align: center; padding: 10px; vertical-align: middle;"><span class="auto-purpose"></span></td>
                                         </tr>
-                                        <tbody id="proposalPersonBody">
-                                            <!-- 동적 생성 -->
-                                        </tbody>
+                                        <tr class="person-row">
+                                            <td style="text-align: center;"></td>
+                                            <td style="text-align: center;"></td>
+                                            <td style="text-align: center;"></td>
+                                        </tr>
+                                        <tr class="person-row">
+                                            <td style="text-align: center;"></td>
+                                            <td style="text-align: center;"></td>
+                                            <td style="text-align: center;"></td>
+                                        </tr>
+                                        <tr class="person-row">
+                                            <td style="text-align: center;"></td>
+                                            <td style="text-align: center;"></td>
+                                            <td style="text-align: center;"></td>
+                                        </tr>
+                                        <tr class="person-row">
+                                            <td style="text-align: center;"></td>
+                                            <td style="text-align: center;"></td>
+                                            <td style="text-align: center;"></td>
+                                        </tr>
+                                        <tr class="person-row">
+                                            <td style="text-align: center;"></td>
+                                            <td style="text-align: center;"></td>
+                                            <td style="text-align: center;"></td>
+                                        </tr>
                                         <tr>
                                             <th colspan="6" style="background: #f0f0f0; padding: 15px; text-align: center;">소 요 경 비 내 역(원)</th>
                                         </tr>
@@ -459,21 +463,21 @@
                                     <table class="form-table" style="margin-top: 20px;">
                                         <tr>
                                             <th style="width: 15%;">과제명</th>
-                                            <td colspan="5" style="padding: 10px;">
+                                            <td colspan="5" style="padding: 10px; text-align: center;">
                                                 <span class="auto-project"></span>
                                             </td>
                                         </tr>
                                         <tr>
                                             <th style="width: 15%;">복 명 자</th>
-                                            <td colspan="5" style="padding: 10px;">
+                                            <td colspan="5" style="padding: 10px; text-align: center;">
                                                 <span class="auto-reporter"></span>
                                             </td>
                                         </tr>
                                         <tr>
                                             <th>출 장 지</th>
-                                            <td colspan="2"><span class="auto-location"></span></td>
+                                            <td colspan="2" style="text-align: center;"><span class="auto-location"></span></td>
                                             <th style="width: 15%;">출장기간</th>
-                                            <td colspan="2"><span class="auto-date-range"></span></td>
+                                            <td colspan="2" style="text-align: center;"><span class="auto-date-range"></span></td>
                                         </tr>
                                         <tr>
                                             <th>출장내용<br>및 결과</th>
@@ -503,7 +507,7 @@
 
                                 <!-- 회의록 -->
                                 <div style="background: white; border: 2px solid #e0e0e0; border-radius: 8px; padding: 30px; max-width: 881px; margin: 0 auto 30px">
-                                    <h2 class="doc-title" style="margin: 0">회 의 록</h2>
+                                    <h2 class="doc-title" style="margin: 0; font-size: 30px">회 의 록</h2>
                                     <span id="doc_number_minutes" style="font-size: 14px; display: block; margin: 20px 0 5px"></span>
                                     <div style="text-align: left; margin-bottom: 10px; font-size: 14px;"></div>
 
@@ -550,7 +554,7 @@
 
                                 <!-- 참석자 명단 -->
                                 <div style="background: white; border: 2px solid #e0e0e0; border-radius: 8px; padding: 30px; margin: 0 auto 30px; max-width: 881px">
-                                    <h2 class="doc-title" style="margin: 0">참 석 자 명 단</h2>
+                                    <h2 class="doc-title" style="margin: 0; font-size: 30px">참 석 자 명 단</h2>
                                     <span id="doc_number_attendee" style="font-size: 14px; display: block; margin: 20px 0 5px"></span>
                                     <div style="text-align: left; margin-bottom: 10px; font-size: 14px;"></div>
 
