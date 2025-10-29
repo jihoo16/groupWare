@@ -26,82 +26,60 @@
     <!-- Tab Content: Positions -->
     <div class="tab-content active" id="positions-tab">
         <div class="section-header">
-            <h2>직급 관리</h2>
+            <h2>직급/직위 관리</h2>
             <button class="btn-add" id="add-position-btn">
-                <i class="fas fa-plus"></i> 직급 추가
+                <i class="fas fa-plus"></i> 코드 추가
             </button>
         </div>
 
-        <div class="table-container">
-            <table class="data-table">
-                <thead>
-                <tr>
-                    <th style="width: 60px;">순서</th>
-                    <th>직급명</th>
-                    <th style="width: 100px;">직급코드</th>
-                    <th style="width: 120px;">급여등급</th>
-                    <th style="width: 100px;">사용여부</th>
-                    <th style="width: 150px;">관리</th>
-                </tr>
-                </thead>
-                <tbody id="positions-tbody">
-                <tr>
-                    <td>1</td>
-                    <td>사원</td>
-                    <td>P001</td>
-                    <td>1급</td>
-                    <td><span class="status-active">사용</span></td>
-                    <td>
-                        <button class="btn-sm btn-edit">수정</button>
-                        <button class="btn-sm btn-delete">삭제</button>
-                    </td>
-                </tr>
-                <tr>
-                    <td>2</td>
-                    <td>대리</td>
-                    <td>P002</td>
-                    <td>2급</td>
-                    <td><span class="status-active">사용</span></td>
-                    <td>
-                        <button class="btn-sm btn-edit">수정</button>
-                        <button class="btn-sm btn-delete">삭제</button>
-                    </td>
-                </tr>
-                <tr>
-                    <td>3</td>
-                    <td>과장</td>
-                    <td>P003</td>
-                    <td>3급</td>
-                    <td><span class="status-active">사용</span></td>
-                    <td>
-                        <button class="btn-sm btn-edit">수정</button>
-                        <button class="btn-sm btn-delete">삭제</button>
-                    </td>
-                </tr>
-                <tr>
-                    <td>4</td>
-                    <td>차장</td>
-                    <td>P004</td>
-                    <td>4급</td>
-                    <td><span class="status-active">사용</span></td>
-                    <td>
-                        <button class="btn-sm btn-edit">수정</button>
-                        <button class="btn-sm btn-delete">삭제</button>
-                    </td>
-                </tr>
-                <tr>
-                    <td>5</td>
-                    <td>부장</td>
-                    <td>P005</td>
-                    <td>5급</td>
-                    <td><span class="status-active">사용</span></td>
-                    <td>
-                        <button class="btn-sm btn-edit">수정</button>
-                        <button class="btn-sm btn-delete">삭제</button>
-                    </td>
-                </tr>
-                </tbody>
-            </table>
+        <!-- Sub-tabs for Position vs Rank -->
+        <div class="sub-tab-container">
+            <button class="sub-tab-button active" data-subtab="rank">직급 (C02)</button>
+            <button class="sub-tab-button" data-subtab="position">직위 (C08)</button>
+        </div>
+
+        <!-- Sub-tab Content: Rank (C02) -->
+        <div class="sub-tab-content active" id="rank-subtab">
+            <div class="table-container">
+                <table class="data-table">
+                    <thead>
+                    <tr>
+                        <th style="width: 60px;">순서</th>
+                        <th>코드</th>
+                        <th>코드명</th>
+                        <th style="width: 150px;">영문명</th>
+                        <th style="width: 200px;">설명</th>
+                        <th style="width: 100px;">사용여부</th>
+                        <th style="width: 150px;">관리</th>
+                    </tr>
+                    </thead>
+                    <tbody id="rank-tbody">
+                        <!-- DB에서 로드 -->
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- Sub-tab Content: Position (C08) -->
+        <div class="sub-tab-content" id="position-subtab">
+            <div class="table-container">
+                <table class="data-table">
+                    <thead>
+                    <tr>
+                        <th style="width: 60px;">순서</th>
+                        <th>코드</th>
+                        <th>코드명</th>
+                        <th style="width: 150px;">영문명</th>
+                        <th style="width: 200px;">설명</th>
+                        <th style="width: 100px;">사용여부</th>
+                        <th style="width: 150px;">관리</th>
+                    </tr>
+                    </thead>
+                    <tbody id="position-tbody">
+                        <!-- DB에서 로드 -->
+                    </tbody>
+                </table>
+            </div>
         </div>
     </div>
 
@@ -439,35 +417,43 @@
 </main>
 </div>
 
-<!-- Position Modal -->
+<!-- Position/Rank Code Modal -->
 <div id="position-modal" class="modal">
     <div class="modal-content modal-sm">
         <div class="modal-header">
-            <h2 id="position-modal-title">직급 추가</h2>
+            <h2 id="position-modal-title">코드 추가</h2>
             <button class="modal-close">&times;</button>
         </div>
         <div class="modal-body">
+            <input type="hidden" id="position-idx">
+            <input type="hidden" id="position-group-code">
             <div class="form-group">
-                <label>직급명 <span class="required">*</span></label>
-                <input type="text" id="position-name" placeholder="예: 사원, 대리, 과장">
+                <label>코드 <span class="required">*</span></label>
+                <input type="text" id="position-code" placeholder="예: C08001" maxlength="50">
+                <small>영문 대문자, 숫자 조합 권장</small>
             </div>
             <div class="form-group">
-                <label>직급코드 <span class="required">*</span></label>
-                <input type="text" id="position-code" placeholder="예: P001">
+                <label>코드명 <span class="required">*</span></label>
+                <input type="text" id="position-name" placeholder="예: 사원, 부장" maxlength="100">
             </div>
             <div class="form-group">
-                <label>급여등급</label>
-                <input type="text" id="position-salary-grade" placeholder="예: 1급, 2급">
+                <label>영문명</label>
+                <input type="text" id="position-name-en" placeholder="예: Staff, Manager" maxlength="100">
             </div>
             <div class="form-group">
-                <label>순서</label>
-                <input type="number" id="position-order" value="1" min="1">
+                <label>설명</label>
+                <textarea id="position-description" rows="3" placeholder="코드에 대한 설명을 입력하세요"></textarea>
+            </div>
+            <div class="form-group">
+                <label>정렬 순서</label>
+                <input type="number" id="position-order" value="0" min="0">
+                <small>숫자가 작을수록 위에 표시됩니다</small>
             </div>
             <div class="form-group">
                 <label>사용여부</label>
                 <select id="position-status">
-                    <option value="active">사용</option>
-                    <option value="inactive">미사용</option>
+                    <option value="Y">사용</option>
+                    <option value="N">미사용</option>
                 </select>
             </div>
         </div>

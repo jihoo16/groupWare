@@ -382,7 +382,8 @@
 }
 
 .form-group input,
-.form-group select {
+.form-group select,
+.form-group textarea {
     padding: 10px 14px;
     border: 2px solid #e5e7eb;
     border-radius: 8px;
@@ -392,10 +393,17 @@
 }
 
 .form-group input:focus,
-.form-group select:focus {
+.form-group select:focus,
+.form-group textarea:focus {
     outline: none;
     border-color: #2563eb;
     box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1);
+}
+
+.form-group textarea {
+    resize: vertical;
+    min-height: 80px;
+    font-family: inherit;
 }
 
 .input-suffix {
@@ -841,4 +849,50 @@
     .btn-cancel {
         width: 100%;
     }
+}
+
+/* ===========================
+   Sub-Tab Container (for Position/Rank)
+   =========================== */
+.sub-tab-container {
+    display: flex;
+    gap: 8px;
+    margin-bottom: 20px;
+    border-bottom: 2px solid #e5e7eb;
+    padding-bottom: 0;
+}
+
+.sub-tab-button {
+    padding: 10px 20px;
+    background: transparent;
+    border: none;
+    border-bottom: 3px solid transparent;
+    color: #6b7280;
+    font-size: 14px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    position: relative;
+    bottom: -2px;
+}
+
+.sub-tab-button:hover {
+    color: #2563eb;
+    background: #eff6ff;
+    border-radius: 8px 8px 0 0;
+}
+
+.sub-tab-button.active {
+    color: #2563eb;
+    border-bottom-color: #2563eb;
+    font-weight: 600;
+}
+
+.sub-tab-content {
+    display: none;
+    animation: fadeIn 0.3s ease;
+}
+
+.sub-tab-content.active {
+    display: block;
 }

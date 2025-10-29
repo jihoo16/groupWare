@@ -1,5 +1,13 @@
 document.addEventListener('DOMContentLoaded', function() {
     // ===========================
+    // Global Variables
+    // ===========================
+    let currentSubTab = 'rank'; // rank(C02) or position(C08)
+    let currentGroupCode = 'C02';
+    let isEditMode = false;
+    let editingCodeIdx = null;
+
+    // ===========================
     // Tab Switching
     // ===========================
     const tabButtons = document.querySelectorAll('.tab-button');
@@ -16,99 +24,262 @@ document.addEventListener('DOMContentLoaded', function() {
             // Add active class to clicked tab and corresponding content
             button.classList.add('active');
             document.getElementById(`${tabName}-tab`).classList.add('active');
+
+            // Load data if positions tab
+            if (tabName === 'positions') {
+                loadCodes(currentGroupCode);
+            }
         });
     });
 
     // ===========================
-    // Position Modal
+    // Sub-Tab Switching (Position/Rank)
+    // ===========================
+    const subTabButtons = document.querySelectorAll('.sub-tab-button');
+    const subTabContents = document.querySelectorAll('.sub-tab-content');
+
+    subTabButtons.forEach(button => {
+        button.addEventListener('click', () => {
+            const subTab = button.getAttribute('data-subtab');
+            currentSubTab = subTab;
+            currentGroupCode = (subTab === 'rank') ? 'C02' : 'C08';
+
+            // Remove active class from all sub-tabs
+            subTabButtons.forEach(btn => btn.classList.remove('active'));
+            subTabContents.forEach(content => content.classList.remove('active'));
+
+            // Add active class to clicked sub-tab
+            button.classList.add('active');
+            document.getElementById(`${subTab}-subtab`).classList.add('active');
+
+            // Load codes for the selected sub-tab
+            loadCodes(currentGroupCode);
+        });
+    });
+
+    // ===========================
+    // Load Codes from API
+    // ===========================
+    function loadCodes(groupCode) {
+        fetch(`/api/codes?groupCode=${groupCode}`)
+            .then(response => response.json())
+            .then(data => {
+                renderCodeTable(data);
+            })
+            .catch(error => {
+                console.error('코드 목록 조회 실패:', error);
+                alert('코드 목록을 불러오는데 실패했습니다.');
+            });
+    }
+
+    // ===========================
+    // Render Code Table
+    // ===========================
+    function renderCodeTable(codes) {
+        const tbodyId = currentSubTab === 'rank' ? 'rank-tbody' : 'position-tbody';
+        const tbody = document.getElementById(tbodyId);
+
+        if (codes.length === 0) {
+            tbody.innerHTML = `
+                <tr>
+                    <td colspan="7" style="text-align: center; padding: 40px;">
+                        <i class="fas fa-inbox" style="font-size: 48px; color: #ccc; display: block; margin-bottom: 10px;"></i>
+                        <p style="color: #999;">등록된 코드가 없습니다.</p>
+                    </td>
+                </tr>
+            `;
+            return;
+        }
+
+        tbody.innerHTML = codes.map(code => `
+            <tr data-idx="${code.idx}">
+                <td>${code.sortOrder || 0}</td>
+                <td>${code.code}</td>
+                <td>${code.codeName}</td>
+                <td>${code.codeNameEn || '-'}</td>
+                <td>${code.description || '-'}</td>
+                <td>
+                    <span class="status-${code.useYn === 'Y' ? 'active' : 'inactive'}">
+                        ${code.useYn === 'Y' ? '사용' : '미사용'}
+                    </span>
+                </td>
+                <td>
+                    <button class="btn-sm btn-edit" data-idx="${code.idx}">수정</button>
+                    <button class="btn-sm btn-delete" data-idx="${code.idx}">삭제</button>
+                </td>
+            </tr>
+        `).join('');
+    }
+
+    // Initial load
+    loadCodes(currentGroupCode);
+
+    // ===========================
+    // Position/Rank Modal
     // ===========================
     const positionModal = document.getElementById('position-modal');
     const addPositionBtn = document.getElementById('add-position-btn');
     const positionModalTitle = document.getElementById('position-modal-title');
     const positionSaveBtn = document.getElementById('position-save-btn');
-    let editingPositionRow = null;
 
-    // Open modal for adding new position
+    // Open modal for adding new code
     addPositionBtn.addEventListener('click', () => {
-        positionModalTitle.textContent = '직급 추가';
+        const codeType = currentGroupCode === 'C02' ? '직급' : '직위';
+        positionModalTitle.textContent = `${codeType} 추가`;
         clearPositionForm();
-        editingPositionRow = null;
+        isEditMode = false;
+        editingCodeIdx = null;
+        document.getElementById('position-group-code').value = currentGroupCode;
+        document.getElementById('position-code').disabled = false;
         openModal(positionModal);
     });
 
-    // Edit position
-    document.getElementById('positions-tbody').addEventListener('click', (e) => {
+    // Edit/Delete code
+    document.addEventListener('click', (e) => {
         if (e.target.classList.contains('btn-edit')) {
-            const row = e.target.closest('tr');
-            editingPositionRow = row;
-            positionModalTitle.textContent = '직급 수정';
-
-            // Populate form with row data
-            const cells = row.cells;
-            document.getElementById('position-order').value = cells[0].textContent;
-            document.getElementById('position-name').value = cells[1].textContent;
-            document.getElementById('position-code').value = cells[2].textContent;
-            document.getElementById('position-salary-grade').value = cells[3].textContent;
-            document.getElementById('position-status').value =
-                cells[4].textContent.includes('사용') ? 'active' : 'inactive';
-
-            openModal(positionModal);
+            const idx = e.target.getAttribute('data-idx');
+            if (!idx) return;
+            editCode(idx);
         }
 
-        // Delete position
         if (e.target.classList.contains('btn-delete')) {
-            if (confirm('정말 삭제하시겠습니까?')) {
-                e.target.closest('tr').remove();
-                reorderTableRows('positions-tbody');
-            }
+            const idx = e.target.getAttribute('data-idx');
+            if (!idx) return;
+            deleteCode(idx);
         }
     });
 
-    // Save position
-    positionSaveBtn.addEventListener('click', () => {
-        const name = document.getElementById('position-name').value.trim();
-        const code = document.getElementById('position-code').value.trim();
-        const salaryGrade = document.getElementById('position-salary-grade').value.trim();
-        const order = document.getElementById('position-order').value;
-        const status = document.getElementById('position-status').value;
+    // Edit code
+    function editCode(idx) {
+        fetch(`/api/codes/${idx}`)
+            .then(response => response.json())
+            .then(code => {
+                const codeType = code.groupCode === 'C02' ? '직급' : '직위';
+                positionModalTitle.textContent = `${codeType} 수정`;
+                isEditMode = true;
+                editingCodeIdx = idx;
+                fillPositionForm(code);
+                document.getElementById('position-code').disabled = true; // 수정 시 코드 변경 불가
+                openModal(positionModal);
+            })
+            .catch(error => {
+                console.error('코드 조회 실패:', error);
+                alert('코드 정보를 불러오는데 실패했습니다.');
+            });
+    }
 
-        if (!name || !code) {
-            alert('직급명과 직급코드는 필수입니다.');
+    // Delete code
+    function deleteCode(idx) {
+        if (!confirm('정말 삭제하시겠습니까?')) {
             return;
         }
 
-        if (editingPositionRow) {
-            // Update existing row
-            const cells = editingPositionRow.cells;
-            cells[0].textContent = order;
-            cells[1].textContent = name;
-            cells[2].textContent = code;
-            cells[3].textContent = salaryGrade;
-            cells[4].innerHTML = status === 'active'
-                ? '<span class="status-active">사용</span>'
-                : '<span class="status-inactive">미사용</span>';
-        } else {
-            // Add new row
-            const tbody = document.getElementById('positions-tbody');
-            const newRow = tbody.insertRow();
-            newRow.innerHTML = `
-                <td>${order}</td>
-                <td>${name}</td>
-                <td>${code}</td>
-                <td>${salaryGrade}</td>
-                <td>${status === 'active'
-                    ? '<span class="status-active">사용</span>'
-                    : '<span class="status-inactive">미사용</span>'}</td>
-                <td>
-                    <button class="btn-sm btn-edit">수정</button>
-                    <button class="btn-sm btn-delete">삭제</button>
-                </td>
-            `;
+        fetch(`/api/codes/${idx}`, {
+            method: 'DELETE'
+        })
+        .then(response => {
+            if (!response.ok) {
+                throw new Error('코드 삭제 실패');
+            }
+            alert('코드가 성공적으로 삭제되었습니다.');
+            loadCodes(currentGroupCode);
+        })
+        .catch(error => {
+            console.error('코드 삭제 실패:', error);
+            alert('코드 삭제에 실패했습니다.');
+        });
+    }
+
+    // Save code
+    positionSaveBtn.addEventListener('click', () => {
+        const code = document.getElementById('position-code').value.trim();
+        const codeName = document.getElementById('position-name').value.trim();
+
+        if (!code || !codeName) {
+            alert('코드와 코드명은 필수입니다.');
+            return;
         }
 
-        reorderTableRows('positions-tbody');
-        closeModal(positionModal);
+        const formData = {
+            groupCode: document.getElementById('position-group-code').value,
+            code: code,
+            codeName: codeName,
+            codeNameEn: document.getElementById('position-name-en').value.trim() || null,
+            description: document.getElementById('position-description').value.trim() || null,
+            useYn: document.getElementById('position-status').value,
+            sortOrder: parseInt(document.getElementById('position-order').value) || 0
+        };
+
+        if (isEditMode) {
+            updateCode(editingCodeIdx, formData);
+        } else {
+            createCode(formData);
+        }
     });
+
+    // Create code
+    function createCode(data) {
+        fetch('/api/codes', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify(data)
+        })
+        .then(response => {
+            if (!response.ok) {
+                throw new Error('코드 생성 실패');
+            }
+            return response.json();
+        })
+        .then(() => {
+            alert('코드가 성공적으로 등록되었습니다.');
+            closeModal(positionModal);
+            loadCodes(currentGroupCode);
+        })
+        .catch(error => {
+            console.error('코드 생성 실패:', error);
+            alert('코드 등록에 실패했습니다. 이미 존재하는 코드일 수 있습니다.');
+        });
+    }
+
+    // Update code
+    function updateCode(idx, data) {
+        fetch(`/api/codes/${idx}`, {
+            method: 'PUT',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify(data)
+        })
+        .then(response => {
+            if (!response.ok) {
+                throw new Error('코드 수정 실패');
+            }
+            return response.json();
+        })
+        .then(() => {
+            alert('코드가 성공적으로 수정되었습니다.');
+            closeModal(positionModal);
+            loadCodes(currentGroupCode);
+        })
+        .catch(error => {
+            console.error('코드 수정 실패:', error);
+            alert('코드 수정에 실패했습니다.');
+        });
+    }
+
+    // Fill form with code data
+    function fillPositionForm(code) {
+        document.getElementById('position-idx').value = code.idx;
+        document.getElementById('position-group-code').value = code.groupCode;
+        document.getElementById('position-code').value = code.code;
+        document.getElementById('position-name').value = code.codeName;
+        document.getElementById('position-name-en').value = code.codeNameEn || '';
+        document.getElementById('position-description').value = code.description || '';
+        document.getElementById('position-order').value = code.sortOrder || 0;
+        document.getElementById('position-status').value = code.useYn;
+    }
 
     // ===========================
     // Department Modal
@@ -361,11 +532,13 @@ document.addEventListener('DOMContentLoaded', function() {
     }
 
     function clearPositionForm() {
-        document.getElementById('position-name').value = '';
+        document.getElementById('position-idx').value = '';
         document.getElementById('position-code').value = '';
-        document.getElementById('position-salary-grade').value = '';
-        document.getElementById('position-order').value = '1';
-        document.getElementById('position-status').value = 'active';
+        document.getElementById('position-name').value = '';
+        document.getElementById('position-name-en').value = '';
+        document.getElementById('position-description').value = '';
+        document.getElementById('position-order').value = '0';
+        document.getElementById('position-status').value = 'Y';
     }
 
     function clearDepartmentForm() {
