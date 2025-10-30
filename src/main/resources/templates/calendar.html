@@ -8,69 +8,249 @@
 
         <!-- 메인 콘텐츠 영역 -->
         <main class="main-content">
-            <div class="calendar-content">
-                <!-- 달력 네비게이션 -->
-                <div class="calendar-nav-header">
-                    <!-- 일정 추가 버튼 (항상 왼쪽) -->
-                    <button class="btn-primary" id="addScheduleBtn">
-                        <i class="fas fa-plus"></i>
-                        일정 추가
-                    </button>
+            <div class="calendar-container">
+                <!-- 좌측 필터 패널 -->
+                <aside class="calendar-sidebar">
+                    <div class="sidebar-section">
+                        <div class="sidebar-title-wrapper">
+                            <h3 class="sidebar-title">
+                                <i class="fas fa-filter"></i>
+                                팀별 일정
+                            </h3>
+                            <label class="select-all-wrapper">
+                                <input type="checkbox" class="select-all-checkbox" id="selectAllTeams" checked>
+                                <span class="select-all-label">전체</span>
+                            </label>
+                        </div>
+                        <div class="team-filter-list">
+                            <label class="team-filter-item">
+                                <input type="checkbox" class="team-checkbox" value="dev" checked>
+                                <span class="team-color-dot dev"></span>
+                                <span class="team-name">개발팀</span>
+                                <span class="team-count">(0)</span>
+                            </label>
+                            <label class="team-filter-item">
+                                <input type="checkbox" class="team-checkbox" value="design" checked>
+                                <span class="team-color-dot design"></span>
+                                <span class="team-name">디자인팀</span>
+                                <span class="team-count">(0)</span>
+                            </label>
+                            <label class="team-filter-item">
+                                <input type="checkbox" class="team-checkbox" value="marketing" checked>
+                                <span class="team-color-dot marketing"></span>
+                                <span class="team-name">마케팅팀</span>
+                                <span class="team-count">(0)</span>
+                            </label>
+                            <label class="team-filter-item">
+                                <input type="checkbox" class="team-checkbox" value="sales" checked>
+                                <span class="team-color-dot sales"></span>
+                                <span class="team-name">영업팀</span>
+                                <span class="team-count">(0)</span>
+                            </label>
+                            <label class="team-filter-item">
+                                <input type="checkbox" class="team-checkbox" value="hr" checked>
+                                <span class="team-color-dot hr"></span>
+                                <span class="team-name">인사팀</span>
+                                <span class="team-count">(0)</span>
+                            </label>
+                        </div>
+                    </div>
 
-                    <!-- 오늘 버튼 (오늘이 아닌 달에만 표시) -->
-                    <button class="btn-today" id="todayBtn">
-                        <i class="fas fa-calendar-day"></i>
-                        오늘
-                    </button>
+                    <div class="sidebar-section">
+                        <div class="sidebar-title-wrapper">
+                            <h3 class="sidebar-title">
+                                <i class="fas fa-tags"></i>
+                                일정 유형
+                            </h3>
+                            <label class="select-all-wrapper">
+                                <input type="checkbox" class="select-all-checkbox" id="selectAllTypes" checked>
+                                <span class="select-all-label">전체</span>
+                            </label>
+                        </div>
+                        <div class="type-filter-list">
+                            <label class="type-filter-item">
+                                <input type="checkbox" class="type-checkbox" value="business" checked>
+                                <span class="legend-dot business"></span>
+                                <span class="type-name">업무 일정</span>
+                            </label>
+                            <label class="type-filter-item">
+                                <input type="checkbox" class="type-checkbox" value="meeting-room" checked>
+                                <span class="legend-dot meeting-room"></span>
+                                <span class="type-name">회의실 예약</span>
+                            </label>
+                            <label class="type-filter-item">
+                                <input type="checkbox" class="type-checkbox" value="leave" checked>
+                                <span class="legend-dot leave"></span>
+                                <span class="type-name">연차/휴가</span>
+                            </label>
+                            <label class="type-filter-item">
+                                <input type="checkbox" class="type-checkbox" value="etc" checked>
+                                <span class="legend-dot etc"></span>
+                                <span class="type-name">기타</span>
+                            </label>
+                        </div>
+                    </div>
 
-                    <div class="calendar-nav-controls">
-                        <button class="nav-btn" id="prevMonthBtn">
-                            <i class="fas fa-chevron-left"></i>
+                    <div class="sidebar-section">
+                        <button class="btn-primary" id="addScheduleBtn" style="width: 100%;">
+                            <i class="fas fa-plus"></i>
+                            일정 추가
                         </button>
-                        <h2 class="current-month" id="currentMonthTitle" style="cursor: pointer;"></h2>
-                        <button class="nav-btn" id="nextMonthBtn">
-                            <i class="fas fa-chevron-right"></i>
+                    </div>
+                </aside>
+
+                <!-- 우측 캘린더 영역 -->
+                <div class="calendar-content">
+                    <!-- 달력 네비게이션 -->
+                    <div class="calendar-nav-header">
+                        <!-- 뷰 전환 버튼 -->
+                        <div class="view-toggle-buttons">
+                            <button class="view-btn" data-view="day">
+                                <i class="fas fa-calendar-day"></i>
+                                <span>일간</span>
+                            </button>
+                            <button class="view-btn" data-view="week">
+                                <i class="fas fa-calendar-week"></i>
+                                <span>주간</span>
+                            </button>
+                            <button class="view-btn active" data-view="month">
+                                <i class="fas fa-calendar-alt"></i>
+                                <span>월간</span>
+                            </button>
+                        </div>
+
+                        <!-- 오늘 버튼 -->
+                        <button class="btn-today" id="todayBtn">
+                            <i class="fas fa-calendar-day"></i>
+                            오늘
                         </button>
+
+                        <!-- 네비게이션 컨트롤 -->
+                        <div class="calendar-nav-controls">
+                            <button class="nav-btn" id="prevMonthBtn">
+                                <i class="fas fa-chevron-left"></i>
+                            </button>
+                            <h2 class="current-month" id="currentMonthTitle" style="cursor: pointer;"></h2>
+                            <button class="nav-btn" id="nextMonthBtn">
+                                <i class="fas fa-chevron-right"></i>
+                            </button>
+                        </div>
                     </div>
 
-                    <!-- 범례 -->
-                    <div class="calendar-legend">
-                        <div class="legend-item">
-                            <span class="legend-dot my-schedule"></span>
-                            <span>내 일정</span>
+                    <!-- 월간 달력 -->
+                    <div class="large-calendar" id="monthView">
+                        <div class="calendar-weekdays">
+                            <div class="weekday sunday">일요일</div>
+                            <div class="weekday">월요일</div>
+                            <div class="weekday">화요일</div>
+                            <div class="weekday">수요일</div>
+                            <div class="weekday">목요일</div>
+                            <div class="weekday">금요일</div>
+                            <div class="weekday saturday">토요일</div>
                         </div>
-                        <div class="legend-item">
-                            <span class="legend-dot meeting-room"></span>
-                            <span>회의실 예약</span>
-                        </div>
-                        <div class="legend-item">
-                            <span class="legend-dot leave"></span>
-                            <span>연차/휴가</span>
-                        </div>
-                        <div class="legend-item">
-                            <span class="legend-dot business"></span>
-                            <span>업무 일정</span>
-                        </div>
-                        <div class="legend-item">
-                            <span class="legend-dot etc"></span>
-                            <span>기타</span>
+                        <div class="calendar-grid" id="calendarGrid">
+                            <!-- JavaScript로 동적 생성 -->
                         </div>
                     </div>
-                </div>
 
-                <!-- 큰 달력 -->
-                <div class="large-calendar">
-                    <div class="calendar-weekdays">
-                        <div class="weekday sunday">일요일</div>
-                        <div class="weekday">월요일</div>
-                        <div class="weekday">화요일</div>
-                        <div class="weekday">수요일</div>
-                        <div class="weekday">목요일</div>
-                        <div class="weekday">금요일</div>
-                        <div class="weekday saturday">토요일</div>
+                    <!-- 주간 뷰 -->
+                    <div class="week-view" id="weekView" style="display: none;">
+                        <div class="week-header">
+                            <div class="time-gutter">시간</div>
+                            <div class="week-days" id="weekDays">
+                                <!-- JavaScript로 동적 생성 -->
+                            </div>
+                        </div>
+                        <div class="week-body-wrapper">
+                            <div class="week-time-column">
+                                <div class="time-slot" data-hour="0">00:00</div>
+                                <div class="time-slot" data-hour="1">01:00</div>
+                                <div class="time-slot" data-hour="2">02:00</div>
+                                <div class="time-slot" data-hour="3">03:00</div>
+                                <div class="time-slot" data-hour="4">04:00</div>
+                                <div class="time-slot" data-hour="5">05:00</div>
+                                <div class="time-slot" data-hour="6">06:00</div>
+                                <div class="time-slot" data-hour="7">07:00</div>
+                                <div class="time-slot" data-hour="8">08:00</div>
+                                <div class="time-slot" data-hour="9">09:00</div>
+                                <div class="time-slot" data-hour="10">10:00</div>
+                                <div class="time-slot" data-hour="11">11:00</div>
+                                <div class="time-slot" data-hour="12">12:00</div>
+                                <div class="time-slot" data-hour="13">13:00</div>
+                                <div class="time-slot" data-hour="14">14:00</div>
+                                <div class="time-slot" data-hour="15">15:00</div>
+                                <div class="time-slot" data-hour="16">16:00</div>
+                                <div class="time-slot" data-hour="17">17:00</div>
+                                <div class="time-slot" data-hour="18">18:00</div>
+                                <div class="time-slot" data-hour="19">19:00</div>
+                                <div class="time-slot" data-hour="20">20:00</div>
+                                <div class="time-slot" data-hour="21">21:00</div>
+                                <div class="time-slot" data-hour="22">22:00</div>
+                                <div class="time-slot" data-hour="23">23:00</div>
+                            </div>
+                            <div class="week-grid-container">
+                                <div class="week-grid" id="weekGrid">
+                                    <!-- JavaScript로 동적 생성 -->
+                                </div>
+                                <div class="week-events" id="weekEvents">
+                                    <!-- JavaScript로 일정 생성 -->
+                                </div>
+                            </div>
+                            <div class="current-time-line" id="currentTimeLine" style="display: none;">
+                                <div class="time-line-circle"></div>
+                                <div class="time-line"></div>
+                            </div>
+                        </div>
                     </div>
-                    <div class="calendar-grid" id="calendarGrid">
-                        <!-- JavaScript로 동적 생성 -->
+
+                    <!-- 일간 뷰 -->
+                    <div class="day-view" id="dayView" style="display: none;">
+                        <div class="day-header">
+                            <div class="time-gutter">시간</div>
+                            <div class="day-title" id="dayTitle">
+                                <!-- JavaScript로 동적 생성 -->
+                            </div>
+                        </div>
+                        <div class="day-body-wrapper">
+                            <div class="day-time-column">
+                                <div class="time-slot" data-hour="0">00:00</div>
+                                <div class="time-slot" data-hour="1">01:00</div>
+                                <div class="time-slot" data-hour="2">02:00</div>
+                                <div class="time-slot" data-hour="3">03:00</div>
+                                <div class="time-slot" data-hour="4">04:00</div>
+                                <div class="time-slot" data-hour="5">05:00</div>
+                                <div class="time-slot" data-hour="6">06:00</div>
+                                <div class="time-slot" data-hour="7">07:00</div>
+                                <div class="time-slot" data-hour="8">08:00</div>
+                                <div class="time-slot" data-hour="9">09:00</div>
+                                <div class="time-slot" data-hour="10">10:00</div>
+                                <div class="time-slot" data-hour="11">11:00</div>
+                                <div class="time-slot" data-hour="12">12:00</div>
+                                <div class="time-slot" data-hour="13">13:00</div>
+                                <div class="time-slot" data-hour="14">14:00</div>
+                                <div class="time-slot" data-hour="15">15:00</div>
+                                <div class="time-slot" data-hour="16">16:00</div>
+                                <div class="time-slot" data-hour="17">17:00</div>
+                                <div class="time-slot" data-hour="18">18:00</div>
+                                <div class="time-slot" data-hour="19">19:00</div>
+                                <div class="time-slot" data-hour="20">20:00</div>
+                                <div class="time-slot" data-hour="21">21:00</div>
+                                <div class="time-slot" data-hour="22">22:00</div>
+                                <div class="time-slot" data-hour="23">23:00</div>
+                            </div>
+                            <div class="day-grid-container">
+                                <div class="day-grid" id="dayGrid">
+                                    <!-- JavaScript로 동적 생성 -->
+                                </div>
+                                <div class="day-events" id="dayEvents">
+                                    <!-- JavaScript로 일정 생성 -->
+                                </div>
+                            </div>
+                            <div class="current-time-line" id="dayCurrentTimeLine" style="display: none;">
+                                <div class="time-line-circle"></div>
+                                <div class="time-line"></div>
+                            </div>
+                        </div>
                     </div>
                 </div>
             </div>

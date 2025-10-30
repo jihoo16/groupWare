@@ -266,7 +266,20 @@ document.addEventListener('DOMContentLoaded', function() {
     // 오늘 버튼 클릭 이벤트
     todayBtn.addEventListener('click', function() {
         currentDate = new Date();
-        renderCalendar();
+
+        // 현재 뷰에 맞게 렌더링
+        switch(currentView) {
+            case 'day':
+                renderDayView();
+                break;
+            case 'week':
+                renderWeekView();
+                break;
+            case 'month':
+            default:
+                renderCalendar();
+                break;
+        }
     });
 
     // 마우스 휠 스크롤 이벤트 (달력 영역에서)
@@ -1301,4 +1314,490 @@ document.addEventListener('DOMContentLoaded', function() {
             item.classList.remove('active');
         }
     });
+
+    // ===== 뷰 전환 버튼 기능 =====
+    const viewButtons = document.querySelectorAll('.view-btn');
+    let currentView = 'month'; // 기본값: 월간 뷰
+
+    viewButtons.forEach(btn => {
+        btn.addEventListener('click', function() {
+            const view = this.getAttribute('data-view');
+
+            // 버튼 활성화 상태 변경
+            viewButtons.forEach(b => b.classList.remove('active'));
+            this.classList.add('active');
+
+            // 뷰 변경
+            currentView = view;
+
+            // 뷰에 맞는 캘린더 렌더링
+            switch(view) {
+                case 'day':
+                    console.log('일간 뷰로 전환');
+                    document.getElementById('monthView').style.display = 'none';
+                    document.getElementById('weekView').style.display = 'none';
+                    document.getElementById('dayView').style.display = 'flex';
+                    renderDayView();
+                    break;
+                case 'week':
+                    console.log('주간 뷰로 전환');
+                    document.getElementById('monthView').style.display = 'none';
+                    document.getElementById('weekView').style.display = 'flex';
+                    document.getElementById('dayView').style.display = 'none';
+                    renderWeekView();
+                    break;
+                case 'month':
+                    console.log('월간 뷰로 전환');
+                    document.getElementById('monthView').style.display = 'flex';
+                    document.getElementById('weekView').style.display = 'none';
+                    document.getElementById('dayView').style.display = 'none';
+                    renderCalendar();
+                    break;
+            }
+        });
+    });
+
+    // ===== 팀별 필터 체크박스 기능 =====
+    const teamCheckboxes = document.querySelectorAll('.team-checkbox');
+    const typeCheckboxes = document.querySelectorAll('.type-checkbox');
+    const selectAllTeamsCheckbox = document.getElementById('selectAllTeams');
+    const selectAllTypesCheckbox = document.getElementById('selectAllTypes');
+
+    // 팀별 일정 - 전체 선택/해제
+    if (selectAllTeamsCheckbox) {
+        selectAllTeamsCheckbox.addEventListener('change', function() {
+            const isChecked = this.checked;
+            teamCheckboxes.forEach(checkbox => {
+                checkbox.checked = isChecked;
+            });
+            filterSchedules();
+        });
+    }
+
+    // 개별 팀 체크박스 변경 시
+    teamCheckboxes.forEach(checkbox => {
+        checkbox.addEventListener('change', function() {
+            // 모든 개별 체크박스가 체크되면 전체도 체크
+            const allChecked = Array.from(teamCheckboxes).every(cb => cb.checked);
+            const noneChecked = Array.from(teamCheckboxes).every(cb => !cb.checked);
+
+            if (selectAllTeamsCheckbox) {
+                if (allChecked) {
+                    selectAllTeamsCheckbox.checked = true;
+                    selectAllTeamsCheckbox.indeterminate = false;
+                } else if (noneChecked) {
+                    selectAllTeamsCheckbox.checked = false;
+                    selectAllTeamsCheckbox.indeterminate = false;
+                } else {
+                    selectAllTeamsCheckbox.indeterminate = true;
+                }
+            }
+
+            filterSchedules();
+        });
+    });
+
+    // 일정 유형 - 전체 선택/해제
+    if (selectAllTypesCheckbox) {
+        selectAllTypesCheckbox.addEventListener('change', function() {
+            const isChecked = this.checked;
+            typeCheckboxes.forEach(checkbox => {
+                checkbox.checked = isChecked;
+            });
+            filterSchedules();
+        });
+    }
+
+    // 개별 유형 체크박스 변경 시
+    typeCheckboxes.forEach(checkbox => {
+        checkbox.addEventListener('change', function() {
+            // 모든 개별 체크박스가 체크되면 전체도 체크
+            const allChecked = Array.from(typeCheckboxes).every(cb => cb.checked);
+            const noneChecked = Array.from(typeCheckboxes).every(cb => !cb.checked);
+
+            if (selectAllTypesCheckbox) {
+                if (allChecked) {
+                    selectAllTypesCheckbox.checked = true;
+                    selectAllTypesCheckbox.indeterminate = false;
+                } else if (noneChecked) {
+                    selectAllTypesCheckbox.checked = false;
+                    selectAllTypesCheckbox.indeterminate = false;
+                } else {
+                    selectAllTypesCheckbox.indeterminate = true;
+                }
+            }
+
+            filterSchedules();
+        });
+    });
+
+    // 필터링 함수
+    function filterSchedules() {
+        // 선택된 팀 목록
+        const selectedTeams = Array.from(teamCheckboxes)
+            .filter(cb => cb.checked)
+            .map(cb => cb.value);
+
+        // 선택된 유형 목록
+        const selectedTypes = Array.from(typeCheckboxes)
+            .filter(cb => cb.checked)
+            .map(cb => cb.value);
+
+        console.log('선택된 팀:', selectedTeams);
+        console.log('선택된 유형:', selectedTypes);
+
+        // TODO: 필터링된 일정만 표시
+        // 실제로는 schedules 배열을 필터링하여 다시 렌더링해야 함
+        renderCalendar();
+    }
+
+    // 팀별 일정 개수 업데이트 함수 (TODO: 실제 데이터와 연동)
+    function updateTeamCounts() {
+        const teamCounts = {
+            dev: 5,
+            design: 3,
+            marketing: 2,
+            sales: 4,
+            hr: 1
+        };
+
+        document.querySelectorAll('.team-filter-item').forEach(item => {
+            const checkbox = item.querySelector('.team-checkbox');
+            const countSpan = item.querySelector('.team-count');
+            if (checkbox && countSpan) {
+                const team = checkbox.value;
+                if (teamCounts[team] !== undefined) {
+                    countSpan.textContent = `(${teamCounts[team]})`;
+                }
+            }
+        });
+    }
+
+    // 초기 개수 업데이트
+    updateTeamCounts();
+
+    // ===== 주간 뷰 렌더링 함수 =====
+    function renderWeekView() {
+        const weekDaysContainer = document.getElementById('weekDays');
+        const weekGridContainer = document.getElementById('weekGrid');
+        const weekEventsContainer = document.getElementById('weekEvents');
+
+        // 현재 주의 시작일 (일요일) 구하기
+        const startOfWeek = new Date(currentDate);
+        const day = startOfWeek.getDay();
+        startOfWeek.setDate(startOfWeek.getDate() - day);
+
+        // 오늘 버튼 표시/숨김 처리
+        const today = new Date();
+        today.setHours(0, 0, 0, 0);
+        const endOfWeek = new Date(startOfWeek);
+        endOfWeek.setDate(endOfWeek.getDate() + 6);
+        const isCurrentWeek = (today >= startOfWeek && today <= endOfWeek);
+        if (isCurrentWeek) {
+            todayBtn.classList.remove('show');
+        } else {
+            todayBtn.classList.add('show');
+        }
+
+        // 주간 헤더 생성 (7일)
+        let headerHTML = '';
+        const weekDays = ['일', '월', '화', '수', '목', '금', '토'];
+
+        for (let i = 0; i < 7; i++) {
+            const dayDate = new Date(startOfWeek);
+            dayDate.setDate(dayDate.getDate() + i);
+            const isToday = dayDate.getTime() === today.getTime();
+            const dateStr = dayDate.getDate();
+
+            headerHTML += `
+                <div class="week-day-header ${isToday ? 'today' : ''}" data-date="${formatDate(dayDate)}">
+                    <div class="day-name">${weekDays[i]}</div>
+                    <div class="day-date">${dateStr}</div>
+                </div>
+            `;
+        }
+        weekDaysContainer.innerHTML = headerHTML;
+
+        // 시간 그리드 생성 (7일 × 24시간)
+        let gridHTML = '';
+        for (let hour = 0; hour < 24; hour++) {
+            for (let day = 0; day < 7; day++) {
+                const dayDate = new Date(startOfWeek);
+                dayDate.setDate(dayDate.getDate() + day);
+                gridHTML += `<div class="grid-cell" data-date="${formatDate(dayDate)}" data-hour="${hour}"></div>`;
+            }
+        }
+        weekGridContainer.innerHTML = gridHTML;
+
+        // 이벤트 렌더링
+        let eventsHTML = '';
+        for (let day = 0; day < 7; day++) {
+            const dayDate = new Date(startOfWeek);
+            dayDate.setDate(dayDate.getDate() + day);
+            const dateStr = formatDate(dayDate);
+
+            // 해당 날짜의 일정 필터링
+            const daySchedules = schedules.filter(s => s.date === dateStr);
+
+            daySchedules.forEach(schedule => {
+                const position = calculateEventPosition(schedule, day);
+                if (position) {
+                    const typeClass = schedule.type;
+                    eventsHTML += `
+                        <div class="week-event ${typeClass}"
+                             style="left: ${position.left}%; width: ${position.width}%; top: ${position.top}px; height: ${position.height}px;"
+                             data-schedule-id="${schedule.id}"
+                             data-group-id="${schedule.groupId}">
+                            <div class="event-time">${schedule.time}</div>
+                            <div class="event-title">${schedule.title}</div>
+                        </div>
+                    `;
+                }
+            });
+        }
+        weekEventsContainer.innerHTML = eventsHTML;
+
+        // 이벤트 클릭 핸들러 연결
+        attachWeekEventHandlers();
+
+        // 현재 시간 표시선 업데이트
+        updateCurrentTimeLine('week');
+
+        // 현재 시간으로 스크롤
+        scrollToCurrentTime('week');
+    }
+
+    // ===== 일간 뷰 렌더링 함수 =====
+    function renderDayView() {
+        const dayHeaderContainer = document.getElementById('dayTitle');
+        const dayGridContainer = document.getElementById('dayGrid');
+        const dayEventsContainer = document.getElementById('dayEvents');
+
+        const today = new Date();
+        today.setHours(0, 0, 0, 0);
+        const isToday = currentDate.getTime() === today.getTime();
+        const weekDays = ['일', '월', '화', '수', '목', '금', '토'];
+        const dayOfWeek = currentDate.getDay();
+
+        // 오늘 버튼 표시/숨김 처리
+        if (isToday) {
+            todayBtn.classList.remove('show');
+        } else {
+            todayBtn.classList.add('show');
+        }
+
+        // 일간 헤더 생성
+        dayHeaderContainer.innerHTML = `
+            <div class="day-header-info ${isToday ? 'today' : ''}">
+                <div class="day-name">${weekDays[dayOfWeek]}</div>
+                <div class="day-date">${currentDate.getDate()}</div>
+            </div>
+        `;
+
+        // 시간 그리드 생성 (24시간)
+        let gridHTML = '';
+        for (let hour = 0; hour < 24; hour++) {
+            gridHTML += `<div class="grid-cell" data-hour="${hour}"></div>`;
+        }
+        dayGridContainer.innerHTML = gridHTML;
+
+        // 이벤트 렌더링
+        const dateStr = formatDate(currentDate);
+        const daySchedules = schedules.filter(s => s.date === dateStr);
+
+        let eventsHTML = '';
+        daySchedules.forEach(schedule => {
+            const position = calculateEventPosition(schedule, 0, true);
+            if (position) {
+                const typeClass = schedule.type;
+                eventsHTML += `
+                    <div class="day-event ${typeClass}"
+                         style="top: ${position.top}px; height: ${position.height}px;"
+                         data-schedule-id="${schedule.id}"
+                         data-group-id="${schedule.groupId}">
+                        <div class="event-time">${schedule.time}</div>
+                        <div class="event-title">${schedule.title}</div>
+                    </div>
+                `;
+            }
+        });
+        dayEventsContainer.innerHTML = eventsHTML;
+
+        // 이벤트 클릭 핸들러 연결
+        attachDayEventHandlers();
+
+        // 현재 시간 표시선 업데이트
+        updateCurrentTimeLine('day');
+
+        // 현재 시간으로 스크롤
+        scrollToCurrentTime('day');
+    }
+
+    // ===== 이벤트 위치 계산 함수 =====
+    function calculateEventPosition(schedule, dayIndex, isDayView = false) {
+        // 종일 이벤트는 상단에 별도 표시 (현재는 skip)
+        if (schedule.time === '종일') {
+            return null;
+        }
+
+        // 시간 파싱 (예: "14:00 - 16:00")
+        const timeMatch = schedule.time.match(/(\d{2}):(\d{2})\s*-\s*(\d{2}):(\d{2})/);
+        if (!timeMatch) {
+            return null;
+        }
+
+        const startHour = parseInt(timeMatch[1]);
+        const startMinute = parseInt(timeMatch[2]);
+        const endHour = parseInt(timeMatch[3]);
+        const endMinute = parseInt(timeMatch[4]);
+
+        // 위치 계산 (1시간 = 40px)
+        const top = startHour * 40 + (startMinute * 40 / 60);
+        const endPosition = endHour * 40 + (endMinute * 40 / 60);
+        const height = endPosition - top;
+
+        // 주간 뷰의 경우 가로 위치 계산
+        const left = isDayView ? 0 : (dayIndex * 100 / 7);
+        const width = isDayView ? 100 : (100 / 7);
+
+        return {
+            top,
+            height,
+            left,
+            width
+        };
+    }
+
+    // ===== 현재 시간 표시선 업데이트 =====
+    function updateCurrentTimeLine(view) {
+        const now = new Date();
+        const currentHour = now.getHours();
+        const currentMinute = now.getMinutes();
+        const currentTop = currentHour * 40 + (currentMinute * 40 / 60);
+
+        const timeLine = view === 'week'
+            ? document.querySelector('#weekView .current-time-line')
+            : document.querySelector('#dayView .current-time-line');
+
+        if (timeLine) {
+            // 오늘 날짜인 경우만 표시
+            const today = new Date();
+            today.setHours(0, 0, 0, 0);
+
+            if (view === 'week') {
+                // 주간 뷰: 현재 주에 오늘이 포함되어 있는지 확인
+                const startOfWeek = new Date(currentDate);
+                const day = startOfWeek.getDay();
+                startOfWeek.setDate(startOfWeek.getDate() - day);
+                const endOfWeek = new Date(startOfWeek);
+                endOfWeek.setDate(endOfWeek.getDate() + 6);
+
+                if (today >= startOfWeek && today <= endOfWeek) {
+                    timeLine.style.top = currentTop + 'px';
+                    timeLine.style.display = 'block';
+                } else {
+                    timeLine.style.display = 'none';
+                }
+            } else {
+                // 일간 뷰: 현재 날짜가 오늘인지 확인
+                const viewDate = new Date(currentDate);
+                viewDate.setHours(0, 0, 0, 0);
+
+                if (viewDate.getTime() === today.getTime()) {
+                    timeLine.style.top = currentTop + 'px';
+                    timeLine.style.display = 'block';
+                } else {
+                    timeLine.style.display = 'none';
+                }
+            }
+        }
+    }
+
+    // ===== 현재 시간으로 스크롤 =====
+    function scrollToCurrentTime(view) {
+        const now = new Date();
+        const currentHour = now.getHours();
+
+        // 현재 시간보다 1시간 앞으로 스크롤 (여유 공간 확보)
+        const scrollTarget = Math.max(0, (currentHour - 1) * 40);
+
+        const bodyWrapper = view === 'week'
+            ? document.querySelector('.week-body-wrapper')
+            : document.querySelector('.day-body-wrapper');
+
+        if (bodyWrapper) {
+            setTimeout(() => {
+                bodyWrapper.scrollTop = scrollTarget;
+            }, 100);
+        }
+    }
+
+    // ===== 주간 뷰 이벤트 핸들러 =====
+    function attachWeekEventHandlers() {
+        const weekEvents = document.querySelectorAll('.week-event');
+        weekEvents.forEach(event => {
+            event.addEventListener('click', function(e) {
+                e.stopPropagation();
+                const scheduleId = parseInt(this.getAttribute('data-schedule-id'));
+                const groupId = this.getAttribute('data-group-id');
+                openScheduleModal(scheduleId, groupId);
+            });
+
+            // Hover 이벤트 - 같은 그룹 하이라이트
+            event.addEventListener('mouseenter', function() {
+                const groupId = this.getAttribute('data-group-id');
+                const sameGroupItems = document.querySelectorAll(`[data-group-id="${groupId}"]`);
+                sameGroupItems.forEach(groupItem => {
+                    groupItem.classList.add('group-hover');
+                });
+            });
+
+            event.addEventListener('mouseleave', function() {
+                const groupId = this.getAttribute('data-group-id');
+                const sameGroupItems = document.querySelectorAll(`[data-group-id="${groupId}"]`);
+                sameGroupItems.forEach(groupItem => {
+                    groupItem.classList.remove('group-hover');
+                });
+            });
+        });
+    }
+
+    // ===== 일간 뷰 이벤트 핸들러 =====
+    function attachDayEventHandlers() {
+        const dayEvents = document.querySelectorAll('.day-event');
+        dayEvents.forEach(event => {
+            event.addEventListener('click', function(e) {
+                e.stopPropagation();
+                const scheduleId = parseInt(this.getAttribute('data-schedule-id'));
+                const groupId = this.getAttribute('data-group-id');
+                openScheduleModal(scheduleId, groupId);
+            });
+
+            // Hover 이벤트 - 같은 그룹 하이라이트
+            event.addEventListener('mouseenter', function() {
+                const groupId = this.getAttribute('data-group-id');
+                const sameGroupItems = document.querySelectorAll(`[data-group-id="${groupId}"]`);
+                sameGroupItems.forEach(groupItem => {
+                    groupItem.classList.add('group-hover');
+                });
+            });
+
+            event.addEventListener('mouseleave', function() {
+                const groupId = this.getAttribute('data-group-id');
+                const sameGroupItems = document.querySelectorAll(`[data-group-id="${groupId}"]`);
+                sameGroupItems.forEach(groupItem => {
+                    groupItem.classList.remove('group-hover');
+                });
+            });
+        });
+    }
+
+    // 현재 시간 표시선 주기적 업데이트 (1분마다)
+    setInterval(() => {
+        if (currentView === 'week') {
+            updateCurrentTimeLine('week');
+        } else if (currentView === 'day') {
+            updateCurrentTimeLine('day');
+        }
+    }, 60000); // 1분마다 업데이트
 });
