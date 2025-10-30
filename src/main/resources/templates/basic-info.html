@@ -1,10 +1,10 @@
 <!DOCTYPE html>
 <html lang="ko" xmlns:th="http://www.thymeleaf.org">
-<head th:replace="fragments/layout :: head('기초정보관리', '/css/basic-info.css')"></head>
+<head th:replace="~{fragments/layout :: head('기초정보관리', '/css/basic-info.css')}"></head>
 <body>
 <div class="container">
 
-<div th:replace="fragments/sidebar :: sidebar('basic-info')"></div>
+<div th:replace="~{fragments/sidebar :: sidebar('basic-info')}"></div>
 
 <main class="main-content">
     <div class="header">

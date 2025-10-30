@@ -1,9 +1,9 @@
 <!DOCTYPE html>
 <html lang="ko" xmlns:th="http://www.thymeleaf.org">
-<head th:replace="fragments/layout :: head('프로젝트 관리', '/css/project.css')"></head>
+<head th:replace="~{fragments/layout :: head('프로젝트 관리', '/css/project.css')}"></head>
 <body>
 <div class="container">
-    <div th:replace="fragments/sidebar :: sidebar('project')"></div>
+    <div th:replace="~{fragments/sidebar :: sidebar('project')}"></div>
 
     <main class="main-content">
         <header class="header">

@@ -1,9 +1,9 @@
 <!DOCTYPE html>
 <html lang="ko" xmlns:th="http://www.thymeleaf.org">
-<head th:replace="fragments/layout :: head('전사 게시판', '/css/board.css')"></head>
+<head th:replace="~{fragments/layout :: head('전사 게시판', '/css/board.css')}"></head>
 <body>
     <div class="container">
-        <div th:replace="fragments/sidebar :: sidebar('board')"></div>
+        <div th:replace="~{fragments/sidebar :: sidebar('board')}"></div>
         <main class="main-content">
             <header class="header">
                 <div class="header-left">

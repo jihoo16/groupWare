@@ -1,10 +1,10 @@
 <!DOCTYPE html>
 <html lang="ko" xmlns:th="http://www.thymeleaf.org">
-<head th:replace="fragments/layout :: head('ERP 시스템 - 연차관리', '/css/vacation.css')"></head>
+<head th:replace="~{fragments/layout :: head('ERP 시스템 - 연차관리', '/css/vacation.css')}"></head>
 <body>
     <div class="container">
         <!-- 좌측 네비게이션 바 -->
-        <div th:replace="fragments/sidebar :: sidebar('vacation')"></div>
+        <div th:replace="~{fragments/sidebar :: sidebar('vacation')}"></div>
 
         <!-- 메인 콘텐츠 영역 -->
         <main class="main-content">

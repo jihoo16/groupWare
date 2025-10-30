@@ -1,10 +1,10 @@
 <!DOCTYPE html>
 <html lang="ko" xmlns:th="http://www.thymeleaf.org">
-<head th:replace="fragments/layout :: head('ERP 시스템 - 일정관리', '/css/calendar.css')"></head>
+<head th:replace="~{fragments/layout :: head('ERP 시스템 - 일정관리', '/css/calendar.css')}"></head>
 <body>
     <div class="container">
         <!-- 좌측 네비게이션 바 -->
-        <div th:replace="fragments/sidebar :: sidebar('calendar')"></div>
+        <div th:replace="~{fragments/sidebar :: sidebar('calendar')}"></div>
 
         <!-- 메인 콘텐츠 영역 -->
         <main class="main-content">
