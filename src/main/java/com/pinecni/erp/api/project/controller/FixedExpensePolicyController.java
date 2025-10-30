@@ -1,8 +1,8 @@
-package com.pinecni.erp.api.fixedexpense.controller;
+package com.pinecni.erp.api.project.controller;
 
-import com.pinecni.erp.api.fixedexpense.dto.FixedExpensePolicyDTO;
-import com.pinecni.erp.api.fixedexpense.dto.FixedExpensePolicyUpdateDTO;
-import com.pinecni.erp.api.fixedexpense.service.FixedExpensePolicyService;
+import com.pinecni.erp.api.project.dto.FixedExpensePolicyDTO;
+import com.pinecni.erp.api.project.dto.FixedExpensePolicyUpdateDTO;
+import com.pinecni.erp.api.project.service.FixedExpensePolicyService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;

@@ -1,7 +1,7 @@
-package com.pinecni.erp.api.fixedexpense.service;
+package com.pinecni.erp.api.project.service;
 
-import com.pinecni.erp.api.fixedexpense.dto.FixedExpensePolicyDTO;
-import com.pinecni.erp.api.fixedexpense.dto.FixedExpensePolicyUpdateDTO;
+import com.pinecni.erp.api.project.dto.FixedExpensePolicyDTO;
+import com.pinecni.erp.api.project.dto.FixedExpensePolicyUpdateDTO;
 
 import java.util.List;
 

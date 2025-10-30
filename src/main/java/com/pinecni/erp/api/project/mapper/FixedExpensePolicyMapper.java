@@ -1,7 +1,7 @@
-package com.pinecni.erp.api.fixedexpense.mapper;
+package com.pinecni.erp.api.project.mapper;
 
-import com.pinecni.erp.api.fixedexpense.dto.FixedExpensePolicyDTO;
-import com.pinecni.erp.api.fixedexpense.dto.FixedExpensePolicyUpdateDTO;
+import com.pinecni.erp.api.project.dto.FixedExpensePolicyDTO;
+import com.pinecni.erp.api.project.dto.FixedExpensePolicyUpdateDTO;
 import com.pinecni.erp.entity.FixedExpensePolicy;
 import org.springframework.stereotype.Component;
 

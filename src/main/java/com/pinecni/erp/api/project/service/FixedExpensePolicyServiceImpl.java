@@ -1,10 +1,10 @@
-package com.pinecni.erp.api.fixedexpense.service;
+package com.pinecni.erp.api.project.service;
 
-import com.pinecni.erp.api.fixedexpense.dto.FixedExpensePolicyDTO;
-import com.pinecni.erp.api.fixedexpense.dto.FixedExpensePolicyUpdateDTO;
-import com.pinecni.erp.api.fixedexpense.mapper.FixedExpensePolicyMapper;
+import com.pinecni.erp.api.project.dto.FixedExpensePolicyDTO;
+import com.pinecni.erp.api.project.dto.FixedExpensePolicyUpdateDTO;
+import com.pinecni.erp.api.project.mapper.FixedExpensePolicyMapper;
 import com.pinecni.erp.entity.FixedExpensePolicy;
-import com.pinecni.erp.repository.FixedExpensePolicyRepository;
+import com.pinecni.erp.api.project.repository.FixedExpensePolicyRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
