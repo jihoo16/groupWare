@@ -554,62 +554,125 @@ document.addEventListener('DOMContentLoaded', function() {
     });
 
     // ===========================
-    // Expense Settings - Save
+    // Expense Settings - Load & Save
     // ===========================
     const saveExpensesBtn = document.getElementById('save-expenses-btn');
 
+    // Load expense policies when expenses tab is clicked
+    tabButtons.forEach(button => {
+        button.addEventListener('click', () => {
+            if (button.getAttribute('data-tab') === 'expenses') {
+                loadExpensePolicies();
+            }
+        });
+    });
+
+    // Load expense policies from API
+    function loadExpensePolicies() {
+        // First, load active ranks (C02)
+        fetch('/api/codes?groupCode=C02&activeOnly=true')
+            .then(response => response.json())
+            .then(ranks => {
+                if (ranks.length === 0) {
+                    document.getElementById('expenses-tbody').innerHTML = `
+                        <tr>
+                            <td colspan="9" style="text-align: center; padding: 40px;">
+                                <i class="fas fa-inbox" style="font-size: 48px; color: #ccc; display: block; margin-bottom: 10px;"></i>
+                                <p style="color: #999;">등록된 직급이 없습니다. 직급 관리에서 직급을 먼저 등록해주세요.</p>
+                            </td>
+                        </tr>
+                    `;
+                    return;
+                }
+
+                // Load expense policies
+                return fetch('/api/fixed-expense-policies')
+                    .then(response => response.json())
+                    .then(policies => {
+                        renderExpenseTable(ranks, policies);
+                    });
+            })
+            .catch(error => {
+                console.error('직급별 고정경비 조회 실패:', error);
+                alert('직급별 고정경비를 불러오는데 실패했습니다.');
+            });
+    }
+
+    // Render expense table
+    function renderExpenseTable(ranks, policies) {
+        const tbody = document.getElementById('expenses-tbody');
+
+        // Create a map of policies by positionCode for quick lookup
+        const policyMap = {};
+        policies.forEach(policy => {
+            policyMap[policy.positionCode] = policy;
+        });
+
+        tbody.innerHTML = ranks.map(rank => {
+            const policy = policyMap[rank.code] || {};
+
+            return `
+                <tr data-position-code="${rank.code}">
+                    <td class="position-cell">${rank.codeName}</td>
+                    <td><input type="number" class="expense-input" data-field="lunchAllowance" value="${policy.lunchAllowance || 0}" min="0" step="1000"></td>
+                    <td><input type="number" class="expense-input" data-field="nightMealAllowance" value="${policy.nightMealAllowance || 0}" min="0" step="1000"></td>
+                    <td><input type="number" class="expense-input" data-field="businessMealAllowance" value="${policy.businessMealAllowance || 0}" min="0" step="1000"></td>
+                    <td><input type="number" class="expense-input" data-field="businessTripAllowance" value="${policy.businessTripAllowance || 0}" min="0" step="1000"></td>
+                    <td><input type="number" class="expense-input" data-field="transitAllowance" value="${policy.transitAllowance || 0}" min="0" step="1000"></td>
+                    <td><input type="number" class="expense-input" data-field="fuelAllowance" value="${policy.fuelAllowance || 0}" min="0" step="1000"></td>
+                    <td><input type="number" class="expense-input" data-field="holidayExpense" value="${policy.holidayExpense || 0}" min="0" step="1000"></td>
+                    <td><input type="number" class="expense-input" data-field="beverageExpense" value="${policy.beverageExpense || 0}" min="0" step="1000"></td>
+                </tr>
+            `;
+        }).join('');
+    }
+
+    // Save expense policies
     saveExpensesBtn.addEventListener('click', () => {
         const expenseData = [];
         const rows = document.querySelectorAll('#expenses-tbody tr');
 
         rows.forEach(row => {
-            const position = row.getAttribute('data-position');
-            const inputs = row.querySelectorAll('.expense-input');
-            const values = Array.from(inputs).map(input => parseInt(input.value) || 0);
+            const positionCode = row.getAttribute('data-position-code');
+            if (!positionCode) return;
 
-            expenseData.push({
-                position: position,
-                businessTrip: {
-                    accommodation: values[0],
-                    meal: values[1],
-                    transportation: values[2]
-                },
-                meeting: {
-                    meal: values[3],
-                    snack: values[4]
-                },
-                fuel: {
-                    monthly: values[5],
-                    perTrip: values[6]
-                },
-                other: {
-                    condolence: values[7],
-                    overtime: values[8]
-                }
+            const inputs = row.querySelectorAll('.expense-input');
+            const data = {
+                positionCode: positionCode
+            };
+
+            inputs.forEach(input => {
+                const field = input.getAttribute('data-field');
+                data[field] = parseInt(input.value) || 0;
             });
+
+            expenseData.push(data);
         });
 
         console.log('Expense data to save:', expenseData);
-        // TODO: Implement server-side save logic
 
-        // Format numbers with comma separator for display
-        const formatNumber = (num) => num.toLocaleString('ko-KR');
-
-        let summary = '직급별 고정경비 설정이 저장되었습니다.\n\n';
-        expenseData.forEach(data => {
-            summary += `[${data.position}]\n`;
-            summary += `출장비: 숙박 ${formatNumber(data.businessTrip.accommodation)}원 / `;
-            summary += `식비 ${formatNumber(data.businessTrip.meal)}원 / `;
-            summary += `교통비 ${formatNumber(data.businessTrip.transportation)}원\n`;
-            summary += `회의비: 식사 ${formatNumber(data.meeting.meal)}원 / `;
-            summary += `간식 ${formatNumber(data.meeting.snack)}원\n`;
-            summary += `유류비: 월 ${formatNumber(data.fuel.monthly)}원 / `;
-            summary += `1회 ${formatNumber(data.fuel.perTrip)}원\n`;
-            summary += `경조사비: ${formatNumber(data.other.condolence)}원 / `;
-            summary += `야근식대: ${formatNumber(data.other.overtime)}원\n\n`;
+        // Save to server
+        fetch('/api/fixed-expense-policies/batch', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify(expenseData)
+        })
+        .then(response => {
+            if (!response.ok) {
+                throw new Error('고정경비 저장 실패');
+            }
+            return response.json();
+        })
+        .then(result => {
+            alert(`직급별 고정경비가 성공적으로 저장되었습니다.\n저장된 항목: ${result.count}개`);
+            loadExpensePolicies(); // Reload to reflect changes
+        })
+        .catch(error => {
+            console.error('고정경비 저장 실패:', error);
+            alert('고정경비 저장에 실패했습니다.');
         });
-
-        alert(summary);
     });
 
     // Format expense inputs with a thousand separator on blur
