@@ -612,7 +612,7 @@ document.addEventListener('DOMContentLoaded', function() {
         alert(summary);
     });
 
-    // Format expense inputs with thousand separator on blur
+    // Format expense inputs with a thousand separator on blur
     document.querySelectorAll('.expense-input').forEach(input => {
         input.addEventListener('blur', (e) => {
             const value = parseInt(e.target.value) || 0;
