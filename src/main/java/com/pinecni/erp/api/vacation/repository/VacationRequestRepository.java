@@ -1,4 +1,4 @@
-package com.pinecni.erp.repository;
+package com.pinecni.erp.api.vacation.repository;
 
 import com.pinecni.erp.entity.VacationRequest;
 import org.springframework.data.jpa.repository.JpaRepository;

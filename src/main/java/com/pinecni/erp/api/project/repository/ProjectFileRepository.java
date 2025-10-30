@@ -1,4 +1,4 @@
-package com.pinecni.erp.repository;
+package com.pinecni.erp.api.project.repository;
 
 import com.pinecni.erp.entity.ProjectFile;
 import org.springframework.data.jpa.repository.JpaRepository;

@@ -1,7 +1,7 @@
-package com.pinecni.erp.controller;
+package com.pinecni.erp.api.code.controller;
 
+import com.pinecni.erp.api.code.service.CodeService;
 import com.pinecni.erp.entity.Code;
-import com.pinecni.erp.service.CodeService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;

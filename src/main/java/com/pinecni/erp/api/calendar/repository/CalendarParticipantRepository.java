@@ -1,4 +1,4 @@
-package com.pinecni.erp.repository;
+package com.pinecni.erp.api.calendar.repository;
 
 import com.pinecni.erp.entity.CalendarParticipant;
 import org.springframework.data.jpa.repository.JpaRepository;

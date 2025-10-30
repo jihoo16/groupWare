@@ -1,7 +1,7 @@
-package com.pinecni.erp.service;
+package com.pinecni.erp.api.code.service;
 
+import com.pinecni.erp.api.code.repository.CodeRepository;
 import com.pinecni.erp.entity.Code;
-import com.pinecni.erp.repository.CodeRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;

@@ -1,4 +1,4 @@
-package com.pinecni.erp.repository;
+package com.pinecni.erp.api.approval.repository;
 
 import com.pinecni.erp.entity.DocumentSequence;
 import org.springframework.data.jpa.repository.JpaRepository;
