@@ -303,26 +303,6 @@
                     </div>
 
                     <div class="form-group">
-                        <label class="form-label">설명</label>
-                        <textarea id="scheduleDescription" class="form-textarea" rows="4" placeholder="일정에 대한 설명을 입력하세요"></textarea>
-                    </div>
-
-                    <div class="form-group">
-                        <label class="form-label">알림</label>
-                        <div class="notification-wrapper">
-                            <button type="button" id="notificationToggleBtn" class="notification-toggle-btn">
-                                <i class="fas fa-bell"></i>
-                                <span class="notification-status">알림 끄기</span>
-                            </button>
-                            <div id="notificationTimeButtons" class="notification-time-buttons" style="display: none;">
-                                <button type="button" class="notification-time-btn" data-time="10">10분 전</button>
-                                <button type="button" class="notification-time-btn" data-time="30">30분 전</button>
-                                <button type="button" class="notification-time-btn" data-time="60">1시간 전</button>
-                            </div>
-                        </div>
-                    </div>
-
-                    <div class="form-group">
                         <label class="form-checkbox-wrapper" id="detailSettingsToggle" style="cursor: pointer;">
                             <input type="checkbox" id="enableDetailSettings" class="form-checkbox">
                             <span class="form-checkbox-label">상세 설정</span>
@@ -330,6 +310,26 @@
                     </div>
 
                     <div id="detailSettingsSection" style="display: none;">
+                        <div class="form-group">
+                            <label class="form-label">설명</label>
+                            <textarea id="scheduleDescription" class="form-textarea" rows="4" placeholder="일정에 대한 설명을 입력하세요"></textarea>
+                        </div>
+
+                        <div class="form-group">
+                            <label class="form-label">알림</label>
+                            <div class="notification-wrapper">
+                                <button type="button" id="notificationToggleBtn" class="notification-toggle-btn">
+                                    <i class="fas fa-bell"></i>
+                                    <span class="notification-status">알림 끄기</span>
+                                </button>
+                                <div id="notificationTimeButtons" class="notification-time-buttons" style="display: none;">
+                                    <button type="button" class="notification-time-btn" data-time="10">10분 전</button>
+                                    <button type="button" class="notification-time-btn" data-time="30">30분 전</button>
+                                    <button type="button" class="notification-time-btn" data-time="60">1시간 전</button>
+                                </div>
+                            </div>
+                        </div>
+
                         <div class="form-group">
                             <label class="form-label">장소</label>
                             <input type="text" id="scheduleLocation" class="form-input" placeholder="장소를 입력하세요">

@@ -38,7 +38,7 @@ public class VacationBalance {
     @Column(name = "total_days", nullable = false)
     private Integer totalDays = 15;
 
-    @Column(name = "used_days", nullable = false)
+    @Column(name = "used_days", nullable = false, columnDefinition = "integer default 0")
     private Integer usedDays = 0;
 
     @Column(name = "remaining_days", nullable = false)

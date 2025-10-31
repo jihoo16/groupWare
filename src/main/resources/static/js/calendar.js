@@ -9,6 +9,9 @@ document.addEventListener('DOMContentLoaded', function() {
     let currentDate = new Date();
     const currentUser = '사용자'; // 실제로는 로그인한 사용자 정보
 
+    // 공휴일 데이터
+    let holidays = [];
+
     // 드래그 선택 관련 변수
     let isDragging = false;
     let dragStartDate = null;
@@ -246,6 +249,45 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     ];
 
+    // 공휴일 데이터 로드 함수
+    async function loadHolidays(year) {
+        try {
+            const response = await fetch(`/api/calendar/holidays/year/${year}`);
+            const data = await response.json();
+
+            if (data.success) {
+                holidays = data.holidays || [];
+                console.log(`${year}년 공휴일 ${holidays.length}개 로드됨`);
+            } else {
+                console.error('공휴일 조회 실패:', data.message);
+                holidays = [];
+            }
+        } catch (error) {
+            console.error('공휴일 로드 중 오류:', error);
+            holidays = [];
+        }
+    }
+
+    // 특정 날짜가 공휴일인지 확인
+    function isHoliday(date) {
+        const dateStr = formatDate(date);
+        return holidays.some(holiday => holiday.holidayDate === dateStr);
+    }
+
+    // 특정 날짜의 공휴일 정보 가져오기
+    function getHolidayInfo(date) {
+        const dateStr = formatDate(date);
+        return holidays.find(holiday => holiday.holidayDate === dateStr);
+    }
+
+    // 날짜를 YYYY-MM-DD 형식으로 변환
+    function formatDate(date) {
+        const year = date.getFullYear();
+        const month = String(date.getMonth() + 1).padStart(2, '0');
+        const day = String(date.getDate()).padStart(2, '0');
+        return `${year}-${month}-${day}`;
+    }
+
     // 이전 달 버튼
     prevMonthBtn.addEventListener('click', function() {
         currentDate.setMonth(currentDate.getMonth() - 1);
@@ -312,9 +354,12 @@ document.addEventListener('DOMContentLoaded', function() {
     }, { passive: false });
 
     // 달력 렌더링
-    function renderCalendar() {
+    async function renderCalendar() {
         const year = currentDate.getFullYear();
         const month = currentDate.getMonth();
+
+        // 공휴일 로드 (해당 년도)
+        await loadHolidays(year);
 
         // 월 타이틀 설정
         currentMonthTitle.textContent = `${year}년 ${month + 1}월`;
@@ -390,7 +435,11 @@ document.addEventListener('DOMContentLoaded', function() {
             classes.push('past-date');
         }
 
-        if (dayOfWeek === 0) {
+        // 공휴일 체크
+        const holidayInfo = getHolidayInfo(date);
+        if (holidayInfo && !isOtherMonth) {
+            classes.push('weekend'); // 공휴일도 weekend 클래스 적용 (빨간색)
+        } else if (dayOfWeek === 0) {
             classes.push('weekend');
         } else if (dayOfWeek === 6) {
             classes.push('saturday');
@@ -461,10 +510,16 @@ document.addEventListener('DOMContentLoaded', function() {
             schedulesHTML += `<div class="more-schedules">+${daySchedules.length - maxDisplay}개 더보기</div>`;
         }
 
+        // 공휴일 표시
+        let holidayHTML = '';
+        if (holidayInfo && !isOtherMonth) {
+            holidayHTML = `<div class="holiday-name" style="font-size: 10px; color: #d32f2f; font-weight: 600; margin-top: 2px;">${holidayInfo.holidayName}</div>`;
+        }
+
         return `
             <div class="${classes.join(' ')}" data-date="${dateStr}">
                 <div class="cell-header">
-                    <div class="cell-date">${day}</div>
+                    <div class="cell-date">${day}${holidayHTML}</div>
                 </div>
                 <div class="schedule-list">
                     ${schedulesHTML}
@@ -1791,6 +1846,9 @@ document.addEventListener('DOMContentLoaded', function() {
             });
         });
     }
+
+    // 초기 렌더링
+    renderCalendar();
 
     // 현재 시간 표시선 주기적 업데이트 (1분마다)
     setInterval(() => {

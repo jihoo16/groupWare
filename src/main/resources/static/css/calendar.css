@@ -949,25 +949,51 @@
     margin-left: 2px;
 }
 
-/* 체크박스 스타일 */
+/* 체크박스 스타일 - 토글 스위치 */
 .form-checkbox-wrapper {
-    display: flex;
+    display: inline-flex;
     align-items: center;
-    gap: 10px;
+    gap: 12px;
     cursor: pointer;
     user-select: none;
 }
 
 .form-checkbox {
+    position: relative;
+    width: 50px;
+    height: 26px;
+    appearance: none;
+    background: #e0e0e0;
+    border-radius: 13px;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    outline: none;
+}
+
+.form-checkbox:before {
+    content: '';
+    position: absolute;
     width: 20px;
     height: 20px;
-    cursor: pointer;
-    accent-color: #667eea;
+    border-radius: 50%;
+    top: 3px;
+    left: 3px;
+    background: white;
+    transition: all 0.3s cubic-bezier(0.4, 0.0, 0.2, 1);
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.15);
+}
+
+.form-checkbox:checked {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+}
+
+.form-checkbox:checked:before {
+    transform: translateX(24px);
 }
 
 .form-checkbox-label {
-    font-size: 12.9px;
-    font-weight: 500;
+    font-size: 13.5px;
+    font-weight: 600;
     color: #333;
     cursor: pointer;
 }
