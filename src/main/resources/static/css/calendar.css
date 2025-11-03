@@ -916,6 +916,10 @@
     color: #666;
 }
 
+.detail-value-container {
+    min-height: 20px;
+}
+
 .detail-value {
     font-size: 12.9px;
     color: #333;
