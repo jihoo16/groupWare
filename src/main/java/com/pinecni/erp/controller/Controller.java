@@ -1,10 +1,9 @@
 package com.pinecni.erp.controller;
 
-import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.GetMapping;
 
-@Controller
-public class HomeController {
+@org.springframework.stereotype.Controller
+public class Controller {
 
     @GetMapping("/")
     public String root() {

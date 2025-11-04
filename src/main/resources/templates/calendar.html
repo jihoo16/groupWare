@@ -257,17 +257,17 @@
         </main>
     </div>
 
-    <!-- 일정 추가 모달 -->
-    <div id="addScheduleModal" class="modal">
+    <!-- 일정 모달 (추가/수정 통합) -->
+    <div id="scheduleDetailModal" class="modal">
         <div class="modal-content">
             <div class="modal-header">
-                <h2 class="modal-title">일정 추가</h2>
-                <button class="modal-close" id="closeAddModal">
+                <h2 class="modal-title" id="scheduleModalTitle">일정 정보</h2>
+                <button class="modal-close" id="closeModal">
                     <i class="fas fa-times"></i>
                 </button>
             </div>
             <div class="modal-body">
-                <form id="addScheduleForm">
+                <form id="scheduleForm">
                     <div class="form-group">
                         <label class="form-label">일정 제목 <span class="required">*</span></label>
                         <input type="text" id="scheduleTitle" class="form-input" placeholder="일정 제목을 입력하세요" required>
@@ -291,6 +291,22 @@
                             <label class="form-label">종료 날짜 <span class="required">*</span></label>
                             <input type="date" id="scheduleEndDate" class="form-input" required>
                         </div>
+                    </div>
+
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label class="form-label">시작 시간</label>
+                            <input type="time" id="scheduleStartTime" class="form-input" value="09:00">
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">종료 시간</label>
+                            <input type="time" id="scheduleEndTime" class="form-input" value="18:00">
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        <label class="form-label">장소</label>
+                        <input type="text" id="scheduleLocation" class="form-input" placeholder="장소를 입력하세요">
                     </div>
 
                     <div class="form-group">
@@ -321,121 +337,17 @@
                             </div>
                         </div>
                     </div>
-
-                    <div class="form-group">
-                        <label class="form-checkbox-wrapper" id="detailSettingsToggle" style="cursor: pointer;">
-                            <input type="checkbox" id="enableDetailSettings" class="form-checkbox">
-                            <span class="form-checkbox-label">상세 설정</span>
-                        </label>
-                    </div>
-
-                    <div id="detailSettingsSection" style="display: none;">
-                        <div class="form-group">
-                            <label class="form-label">장소</label>
-                            <input type="text" id="scheduleLocation" class="form-input" placeholder="장소를 입력하세요">
-                        </div>
-
-                        <div class="form-row">
-                            <div class="form-group">
-                                <label class="form-label">시작 시간</label>
-                                <input type="time" id="scheduleStartTime" class="form-input" value="09:00">
-                            </div>
-                            <div class="form-group">
-                                <label class="form-label">종료 시간</label>
-                                <input type="time" id="scheduleEndTime" class="form-input" value="18:00">
-                            </div>
-                        </div>
-
-                        <div class="form-group">
-                            <label class="form-label">반복 설정</label>
-                            <select id="recurringType" class="form-input">
-                                <option value="none" selected>반복 안함</option>
-                                <option value="daily">매일</option>
-                                <option value="weekly">매주</option>
-                                <option value="monthly">매월</option>
-                                <option value="yearly">매년</option>
-                            </select>
-                        </div>
-
-                        <div class="form-group" id="recurringEndDateGroup" style="display: none;">
-                            <label class="form-label">반복 종료일</label>
-                            <input type="date" id="recurringEndDate" class="form-input">
-                        </div>
-                    </div>
-
-
                 </form>
             </div>
             <div class="modal-footer">
-                <button class="btn-secondary" id="cancelAddBtn">취소</button>
-                <button class="btn-primary" id="saveScheduleBtn">
-                    <i class="fas fa-check"></i>
-                    저장
-                </button>
-            </div>
-        </div>
-    </div>
-
-    <!-- 일정 상세 모달 -->
-    <div id="scheduleDetailModal" class="modal">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h2 class="modal-title">일정 상세 정보</h2>
-                <button class="modal-close" id="closeModal">
-                    <i class="fas fa-times"></i>
-                </button>
-            </div>
-            <div class="modal-body">
-                <div class="detail-row">
-                    <div class="detail-label">일정 제목</div>
-                    <div class="detail-value" id="modalTitle"></div>
-                </div>
-                <div class="detail-row">
-                    <div class="detail-label">일정 유형</div>
-                    <div class="detail-value" id="modalType"></div>
-                </div>
-                <div class="detail-row">
-                    <div class="detail-label">날짜</div>
-                    <div class="detail-value" id="modalDate"></div>
-                </div>
-                <div class="detail-row">
-                    <div class="detail-label">시간</div>
-                    <div class="detail-value" id="modalTime"></div>
-                </div>
-                <div class="detail-row">
-                    <div class="detail-label">장소</div>
-                    <div class="detail-value" id="modalLocation"></div>
-                </div>
-                <div class="detail-row">
-                    <div class="detail-label">등록자</div>
-                    <div class="detail-value" id="modalCreator"></div>
-                </div>
-                <div class="detail-row">
-                    <div class="detail-label">참여자</div>
-                    <div class="detail-value" id="modalParticipants"></div>
-                </div>
-                <div class="detail-row">
-                    <div class="detail-label">등록일자</div>
-                    <div class="detail-value" id="modalCreatedAt"></div>
-                </div>
-                <div class="detail-row">
-                    <div class="detail-label">설명</div>
-                    <div class="detail-value" id="modalDescription"></div>
-                </div>
-                <div class="detail-row">
-                    <div class="detail-label">알림</div>
-                    <div class="detail-value" id="modalNotification"></div>
-                </div>
-            </div>
-            <div class="modal-footer">
-                <button class="btn-danger" id="deleteScheduleBtn" style="margin-right: auto;">
+                <button class="btn-danger" id="deleteScheduleBtn" style="margin-right: auto; display: none;">
                     <i class="fas fa-trash"></i>
                     삭제
                 </button>
                 <button class="btn-secondary" id="closeModalBtn">닫기</button>
-                <button class="btn-primary" id="editScheduleBtn">
-                    <i class="fas fa-edit"></i>
-                    수정
+                <button class="btn-primary" id="saveScheduleBtn">
+                    <i class="fas fa-check"></i>
+                    저장
                 </button>
             </div>
         </div>
