@@ -88,8 +88,7 @@ public class User extends BaseEntity {
     @Column(name = "memo", columnDefinition = "TEXT")
     private String memo;
 
-    @Lob
-    @Column(name = "signature_image", nullable = true)
+    @Column(name = "signature_image", columnDefinition = "bytea")
     private byte[] signatureImage;
 
     @Column(name = "last_login_date")

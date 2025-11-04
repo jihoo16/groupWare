@@ -35,13 +35,13 @@ public class VacationBalance {
     @Column(name = "year", nullable = false)
     private Integer year;
 
-    @Column(name = "total_days", nullable = false)
+    @Column(name = "total_days", nullable = true, columnDefinition = "integer default 15")
     private Integer totalDays = 15;
 
     @Column(name = "used_days", nullable = false, columnDefinition = "integer default 0")
     private Integer usedDays = 0;
 
-    @Column(name = "remaining_days", nullable = false)
+    @Column(name = "remaining_days", nullable = true, columnDefinition = "integer default 15")
     private Integer remainingDays = 15;
 
     @Column(name = "granted_date")

@@ -1265,41 +1265,79 @@ input.form-input:read-only {
     border-right: none;
 }
 
-.week-day-name {
+.week-day-combined {
+    font-size: 14px;
+    font-weight: 700;
+    color: #333;
+}
+
+.week-day-header.today .week-day-combined {
+    color: #667eea;
+    background: rgba(102, 126, 234, 0.1);
+    padding: 6px 12px;
+    border-radius: 8px;
+    display: inline-block;
+}
+
+.week-day-header.sunday .week-day-combined {
+    color: #d32f2f;
+}
+
+.week-day-header.saturday .week-day-combined {
+    color: #1976d2;
+}
+
+.week-day-header.holiday .week-day-combined {
+    color: #d32f2f;
+}
+
+/* 일간 뷰 헤더 */
+.day-header {
+    display: grid;
+    grid-template-columns: 60px 1fr;
+    background: white;
+    border-bottom: 1px solid #e0e0e0;
+}
+
+.time-gutter {
+    padding: 12px 8px;
+    text-align: center;
     font-size: 11px;
     font-weight: 600;
     color: #666;
-    margin-bottom: 4px;
+    background: #fafafa;
+    border-right: 1px solid #e0e0e0;
 }
 
-.week-day-date {
+.day-title {
+    padding: 8px 16px;
+    background: #fafafa;
+}
+
+.day-header-info {
+    text-align: center;
+}
+
+.day-header-info .day-date-combined {
     font-size: 18px;
     font-weight: 700;
     color: #333;
 }
 
-.week-day-header.today .week-day-name {
+.day-header-info.today .day-date-combined {
     color: #667eea;
 }
 
-.week-day-header.today .week-day-date {
-    background: #667eea;
-    color: white;
-    width: 36px;
-    height: 36px;
-    border-radius: 50%;
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    margin: 0 auto;
-}
-
-.week-day-header.sunday .week-day-name {
+.day-header-info.sunday .day-date-combined {
     color: #d32f2f;
 }
 
-.week-day-header.saturday .week-day-name {
+.day-header-info.saturday .day-date-combined {
     color: #1976d2;
+}
+
+.day-header-info.holiday .day-date-combined {
+    color: #d32f2f;
 }
 
 .week-body-wrapper,
@@ -1467,9 +1505,18 @@ input.form-input:read-only {
 .current-time-line {
     position: absolute;
     left: 60px;
-    right: 0;
     z-index: 50;
     pointer-events: none;
+}
+
+/* 일간 뷰 - 전체 너비 */
+.day-view .current-time-line {
+    right: 0;
+}
+
+/* 주간 뷰 - JavaScript에서 동적으로 설정 */
+.week-view .current-time-line {
+    /* left, width는 JavaScript에서 설정 */
 }
 
 .time-line-circle {

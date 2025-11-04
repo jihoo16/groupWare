@@ -7,6 +7,7 @@ document.addEventListener('DOMContentLoaded', function() {
     const todayBtn = document.getElementById('todayBtn');
 
     let currentDate = new Date();
+    let currentView = 'month'; // 기본값: 월간 뷰
     const currentUser = '사용자'; // 실제로는 로그인한 사용자 정보
 
     // 공휴일 데이터
@@ -60,16 +61,42 @@ document.addEventListener('DOMContentLoaded', function() {
         return `${year}-${month}-${day}`;
     }
 
-    // 이전 달 버튼
+    // 이전 버튼
     prevMonthBtn.addEventListener('click', function() {
-        currentDate.setMonth(currentDate.getMonth() - 1);
-        renderCalendar();
+        switch(currentView) {
+            case 'day':
+                currentDate.setDate(currentDate.getDate() - 1);
+                renderDayView();
+                break;
+            case 'week':
+                currentDate.setDate(currentDate.getDate() - 7);
+                renderWeekView();
+                break;
+            case 'month':
+            default:
+                currentDate.setMonth(currentDate.getMonth() - 1);
+                renderCalendar();
+                break;
+        }
     });
 
-    // 다음 달 버튼
+    // 다음 버튼
     nextMonthBtn.addEventListener('click', function() {
-        currentDate.setMonth(currentDate.getMonth() + 1);
-        renderCalendar();
+        switch(currentView) {
+            case 'day':
+                currentDate.setDate(currentDate.getDate() + 1);
+                renderDayView();
+                break;
+            case 'week':
+                currentDate.setDate(currentDate.getDate() + 7);
+                renderWeekView();
+                break;
+            case 'month':
+            default:
+                currentDate.setMonth(currentDate.getMonth() + 1);
+                renderCalendar();
+                break;
+        }
     });
 
     // 연/월 제목 클릭 이벤트
@@ -984,7 +1011,6 @@ document.addEventListener('DOMContentLoaded', function() {
 
     // ===== 뷰 전환 버튼 기능 =====
     const viewButtons = document.querySelectorAll('.view-btn');
-    let currentView = 'month'; // 기본값: 월간 뷰
 
     viewButtons.forEach(btn => {
         btn.addEventListener('click', function() {
@@ -1144,7 +1170,7 @@ document.addEventListener('DOMContentLoaded', function() {
     updateTeamCounts();
 
     // ===== 주간 뷰 렌더링 함수 =====
-    function renderWeekView() {
+    async function renderWeekView() {
         const weekDaysContainer = document.getElementById('weekDays');
         const weekGridContainer = document.getElementById('weekGrid');
         const weekEventsContainer = document.getElementById('weekEvents');
@@ -1154,11 +1180,26 @@ document.addEventListener('DOMContentLoaded', function() {
         const day = startOfWeek.getDay();
         startOfWeek.setDate(startOfWeek.getDate() - day);
 
+        // 공휴일 로드 (해당 년도)
+        await loadHolidays(startOfWeek.getFullYear());
+
+        // 주간 타이틀 설정
+        const endOfWeek = new Date(startOfWeek);
+        endOfWeek.setDate(endOfWeek.getDate() + 6);
+        const startMonth = startOfWeek.getMonth() + 1;
+        const endMonth = endOfWeek.getMonth() + 1;
+        const startDay = startOfWeek.getDate();
+        const endDay = endOfWeek.getDate();
+
+        if (startMonth === endMonth) {
+            currentMonthTitle.textContent = `${startOfWeek.getFullYear()}년 ${startMonth}월 ${startDay}일 - ${endDay}일`;
+        } else {
+            currentMonthTitle.textContent = `${startOfWeek.getFullYear()}년 ${startMonth}월 ${startDay}일 - ${endMonth}월 ${endDay}일`;
+        }
+
         // 오늘 버튼 표시/숨김 처리
         const today = new Date();
         today.setHours(0, 0, 0, 0);
-        const endOfWeek = new Date(startOfWeek);
-        endOfWeek.setDate(endOfWeek.getDate() + 6);
         const isCurrentWeek = (today >= startOfWeek && today <= endOfWeek);
         if (isCurrentWeek) {
             todayBtn.classList.remove('show');
@@ -1176,10 +1217,26 @@ document.addEventListener('DOMContentLoaded', function() {
             const isToday = dayDate.getTime() === today.getTime();
             const dateStr = dayDate.getDate();
 
+            // 공휴일 확인
+            const holidayInfo = getHolidayInfo(dayDate);
+
+            let dayNameClass = '';
+            let dayNameText = weekDays[i];
+            let holidayHTML = '';
+
+            if (holidayInfo) {
+                dayNameClass = 'holiday';
+                holidayHTML = `<div class="holiday-label" style="font-size: 10px; color: #d32f2f; margin-top: 2px;">${holidayInfo.holidayName}</div>`;
+            } else if (i === 0) {
+                dayNameClass = 'sunday';
+            } else if (i === 6) {
+                dayNameClass = 'saturday';
+            }
+
             headerHTML += `
-                <div class="week-day-header ${isToday ? 'today' : ''}" data-date="${formatDate(dayDate)}">
-                    <div class="day-name">${weekDays[i]}</div>
-                    <div class="day-date">${dateStr}</div>
+                <div class="week-day-header ${isToday ? 'today' : ''} ${dayNameClass}" data-date="${formatDate(dayDate)}">
+                    <div class="week-day-combined">${dateStr} (${dayNameText})</div>
+                    ${holidayHTML}
                 </div>
             `;
         }
@@ -1235,16 +1292,32 @@ document.addEventListener('DOMContentLoaded', function() {
     }
 
     // ===== 일간 뷰 렌더링 함수 =====
-    function renderDayView() {
+    async function renderDayView() {
         const dayHeaderContainer = document.getElementById('dayTitle');
         const dayGridContainer = document.getElementById('dayGrid');
         const dayEventsContainer = document.getElementById('dayEvents');
+
+        // 공휴일 로드 (해당 년도)
+        await loadHolidays(currentDate.getFullYear());
 
         const today = new Date();
         today.setHours(0, 0, 0, 0);
         const isToday = currentDate.getTime() === today.getTime();
         const weekDays = ['일', '월', '화', '수', '목', '금', '토'];
         const dayOfWeek = currentDate.getDay();
+
+        // 일간 타이틀 설정
+        const year = currentDate.getFullYear();
+        const month = currentDate.getMonth() + 1;
+        const date = currentDate.getDate();
+
+        // 공휴일 확인
+        const holidayInfo = getHolidayInfo(currentDate);
+        let titleText = `${year}년 ${month}월 ${date}일 (${weekDays[dayOfWeek]})`;
+        if (holidayInfo) {
+            titleText += ` - ${holidayInfo.holidayName}`;
+        }
+        currentMonthTitle.textContent = titleText;
 
         // 오늘 버튼 표시/숨김 처리
         if (isToday) {
@@ -1254,10 +1327,22 @@ document.addEventListener('DOMContentLoaded', function() {
         }
 
         // 일간 헤더 생성
+        let dayHeaderClass = isToday ? 'today' : '';
+        let holidayHTML = '';
+
+        if (holidayInfo) {
+            dayHeaderClass += ' holiday';
+            holidayHTML = `<div class="holiday-label" style="font-size: 11px; color: #d32f2f; margin-top: 4px;">${holidayInfo.holidayName}</div>`;
+        } else if (dayOfWeek === 0) {
+            dayHeaderClass += ' sunday';
+        } else if (dayOfWeek === 6) {
+            dayHeaderClass += ' saturday';
+        }
+
         dayHeaderContainer.innerHTML = `
-            <div class="day-header-info ${isToday ? 'today' : ''}">
-                <div class="day-name">${weekDays[dayOfWeek]}</div>
-                <div class="day-date">${currentDate.getDate()}</div>
+            <div class="day-header-info ${dayHeaderClass}">
+                <div class="day-date-combined">${currentDate.getDate()} (${weekDays[dayOfWeek]})</div>
+                ${holidayHTML}
             </div>
         `;
 
@@ -1360,8 +1445,21 @@ document.addEventListener('DOMContentLoaded', function() {
                 endOfWeek.setDate(endOfWeek.getDate() + 6);
 
                 if (today >= startOfWeek && today <= endOfWeek) {
-                    timeLine.style.top = currentTop + 'px';
-                    timeLine.style.display = 'block';
+                    // 오늘의 요일 계산 (0: 일요일 ~ 6: 토요일)
+                    const todayDayOfWeek = today.getDay();
+
+                    // 주간 그리드 컨테이너의 너비 가져오기
+                    const weekGridContainer = document.querySelector('.week-grid-container');
+                    if (weekGridContainer) {
+                        const gridWidth = weekGridContainer.offsetWidth;
+                        const columnWidth = gridWidth / 7; // 한 열의 너비 (px)
+
+                        // 시간선 위치 및 크기 설정 (오늘 날짜 열에만 표시)
+                        timeLine.style.top = currentTop + 'px';
+                        timeLine.style.left = (60 + todayDayOfWeek * columnWidth) + 'px'; // 60px(시간열) + 요일 오프셋
+                        timeLine.style.width = columnWidth + 'px';
+                        timeLine.style.display = 'block';
+                    }
                 } else {
                     timeLine.style.display = 'none';
                 }
