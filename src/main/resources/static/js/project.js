@@ -395,6 +395,43 @@ document.addEventListener('DOMContentLoaded', function() {
 
     // 신규 프로젝트 페이지 기능
 
+    // 연구 책임자 드롭다운 요소
+    const projectManagerSelect = document.getElementById('projectManager');
+
+    // 연구 책임자 목록 로드
+    if (projectManagerSelect) {
+        loadProjectManagers();
+    }
+
+    // 연구 책임자 목록 로드 함수
+    function loadProjectManagers() {
+        fetch('/api/users')
+            .then(response => {
+                if (!response.ok) {
+                    throw new Error('사용자 목록을 불러오는데 실패했습니다.');
+                }
+                return response.json();
+            })
+            .then(users => {
+                // 기존 옵션 제거 (첫 번째 "선택하세요" 제외)
+                while (projectManagerSelect.options.length > 1) {
+                    projectManagerSelect.remove(1);
+                }
+
+                // 활성 사용자만 필터링하여 드롭다운에 추가
+                users.forEach(user => {
+                    const option = document.createElement('option');
+                    option.value = user.idx;
+                    option.textContent = `${user.empName} (${user.empDept} / ${user.empPosition})`;
+                    projectManagerSelect.appendChild(option);
+                });
+            })
+            .catch(error => {
+                console.error('Error loading project managers:', error);
+                // 에러 발생 시에도 기본 옵션은 유지
+            });
+    }
+
     // 팀원 추가 버튼 클릭 시 모달 열기 (tfoot의 버튼과 empty-row 클릭 모두 처리)
     if (addMemberBtn) {
         addMemberBtn.addEventListener('click', function(e) {
@@ -657,9 +694,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 endDate: document.getElementById('endDate').value,
                 projectDescription: document.getElementById('projectDescription').value,
                 teamMembers: selectedMemberList,
-                cards: cardListData,
-                budget: document.getElementById('budget').value,
-                progress: document.getElementById('progressNumber').value
+                cards: cardListData
             };
 
             console.log('프로젝트 데이터:', formData);
