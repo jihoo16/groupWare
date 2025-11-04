@@ -15,6 +15,10 @@ document.addEventListener('DOMContentLoaded', function() {
     const projectFiles = document.getElementById('projectFiles');
     const fileList = document.getElementById('fileList');
     const existingFileList = document.getElementById('existingFileList');
+    const addRelatedProjectBtn = document.getElementById('addRelatedProjectBtn');
+    const relatedProjectModal = document.getElementById('relatedProjectModal');
+    const relatedProjectSearchInput = document.getElementById('relatedProjectSearchInput');
+    const relatedProjectListElement = document.getElementById('relatedProjectList');
 
     // 선택된 팀원 목록
     let selectedMemberList = [];
@@ -30,8 +34,48 @@ document.addEventListener('DOMContentLoaded', function() {
     // 기존 파일 목록
     let existingFiles = [];
 
-    // 프로젝트 데이터 로드
-    loadProjectData(projectId);
+    // 연구 책임자 드롭다운 요소
+    const projectManagerSelect = document.getElementById('projectManager');
+
+    // 연구 책임자 목록 로드 후 프로젝트 데이터 로드
+    if (projectManagerSelect) {
+        loadProjectManagers().then(() => {
+            // 연구 책임자 목록 로드 완료 후 프로젝트 데이터 로드
+            loadProjectData(projectId);
+        });
+    } else {
+        // projectManager 요소가 없으면 바로 프로젝트 데이터 로드
+        loadProjectData(projectId);
+    }
+
+    // 연구 책임자 목록 로드 함수
+    function loadProjectManagers() {
+        return fetch('/api/users')
+            .then(response => {
+                if (!response.ok) {
+                    throw new Error('사용자 목록을 불러오는데 실패했습니다.');
+                }
+                return response.json();
+            })
+            .then(users => {
+                // 기존 옵션 제거 (첫 번째 "선택하세요" 제외)
+                while (projectManagerSelect.options.length > 1) {
+                    projectManagerSelect.remove(1);
+                }
+
+                // 활성 사용자만 필터링하여 드롭다운에 추가
+                users.forEach(user => {
+                    const option = document.createElement('option');
+                    option.value = user.idx;
+                    option.textContent = `${user.empName} (${user.empDept} / ${user.empPosition})`;
+                    projectManagerSelect.appendChild(option);
+                });
+            })
+            .catch(error => {
+                console.error('Error loading project managers:', error);
+                // 에러 발생 시에도 기본 옵션은 유지
+            });
+    }
 
     // 프로젝트 데이터 로드 함수
     function loadProjectData(id) {
@@ -560,12 +604,6 @@ document.addEventListener('DOMContentLoaded', function() {
             }
         });
     }
-
-    // 연계 프로젝트 관련 기능
-    const addRelatedProjectBtn = document.getElementById('addRelatedProjectBtn');
-    const relatedProjectModal = document.getElementById('relatedProjectModal');
-    const relatedProjectSearchInput = document.getElementById('relatedProjectSearchInput');
-    const relatedProjectListElement = document.getElementById('relatedProjectList');
 
     // 연계 프로젝트 추가 버튼 클릭
     if (addRelatedProjectBtn) {

@@ -2,7 +2,11 @@ document.addEventListener('DOMContentLoaded', function() {
     // 프로젝트 목록 페이지 요소
     const newProjectBtn = document.getElementById('newProjectBtn');
     const searchCurrentInput = document.getElementById('searchCurrentInput');
-    const currentProjectCards = document.querySelectorAll('#currentProjectGrid .project-card');
+    const currentProjectGrid = document.getElementById('currentProjectGrid');
+
+    // 프로젝트 데이터
+    let allCurrentProjects = [];
+    let allPastProjectsData = [];
 
     // 과거 프로젝트 테이블 요소
     const pastStatusFilter = document.getElementById('pastStatusFilter');
@@ -71,16 +75,105 @@ document.addEventListener('DOMContentLoaded', function() {
     function filterCurrentProjects() {
         const searchValue = searchCurrentInput.value.toLowerCase();
 
-        currentProjectCards.forEach(card => {
-            const cardName = card.getAttribute('data-project-name').toLowerCase();
-            const searchMatch = !searchValue || cardName.includes(searchValue);
-
-            if (searchMatch) {
-                card.style.display = 'block';
-            } else {
-                card.style.display = 'none';
-            }
+        const filteredProjects = allCurrentProjects.filter(project => {
+            return !searchValue || project.projectName.toLowerCase().includes(searchValue);
         });
+
+        renderCurrentProjects(filteredProjects);
+    }
+
+    // 현재 진행중인 프로젝트 로드
+    function loadCurrentProjects() {
+        fetch('/api/projects?status=IN_PROGRESS')
+            .then(response => {
+                if (!response.ok) {
+                    throw new Error('프로젝트 목록을 불러오는데 실패했습니다.');
+                }
+                return response.json();
+            })
+            .then(projects => {
+                allCurrentProjects = projects;
+                renderCurrentProjects(projects);
+            })
+            .catch(error => {
+                console.error('Error loading current projects:', error);
+                if (currentProjectGrid) {
+                    currentProjectGrid.innerHTML = '<p class="text-center" style="padding: 40px; color: #868e96;">프로젝트를 불러올 수 없습니다.</p>';
+                }
+            });
+    }
+
+    // 현재 프로젝트 렌더링
+    function renderCurrentProjects(projects) {
+        if (!currentProjectGrid) return;
+
+        if (projects.length === 0) {
+            currentProjectGrid.innerHTML = '<p class="text-center" style="grid-column: 1/-1; padding: 40px; color: #868e96;">진행중인 프로젝트가 없습니다.</p>';
+            return;
+        }
+
+        currentProjectGrid.innerHTML = projects.map(project => `
+            <div class="project-card" data-project-name="${project.projectName}" data-project-id="${project.idx}">
+                <div class="project-header">
+                    <h3>${project.projectName}</h3>
+                    <span class="status-badge ${getStatusClass(project.projectStatus)}">${getStatusLabel(project.projectStatus)}</span>
+                </div>
+                <div class="project-body">
+                    <div class="project-info">
+                        <div class="info-item">
+                            <i class="fas fa-user"></i>
+                            <span>PM: ${project.projectManagerName || '-'}</span>
+                        </div>
+                        <div class="info-item">
+                            <i class="fas fa-users"></i>
+                            <span>팀원: ${project.memberCount}명</span>
+                        </div>
+                        <div class="info-item">
+                            <i class="fas fa-calendar"></i>
+                            <span>${project.startDate} ~ ${project.endDate}</span>
+                        </div>
+                    </div>
+                    <div class="project-progress">
+                        <div class="progress-bar">
+                            <div class="progress-fill" style="width: ${project.progress}%;"></div>
+                        </div>
+                        <span class="progress-text">${project.progress}%</span>
+                    </div>
+                    <p class="project-description">
+                        ${project.description || '프로젝트 설명이 없습니다.'}
+                    </p>
+                </div>
+                <div class="project-footer">
+                    <button class="btn btn-sm btn-primary" onclick="editProject(${project.idx})">
+                        <i class="fas fa-edit"></i> 수정
+                    </button>
+                </div>
+            </div>
+        `).join('');
+    }
+
+    // 상태 코드 → CSS 클래스
+    function getStatusClass(status) {
+        const statusMap = {
+            'PLANNING': 'status-planning',
+            'IN_PROGRESS': 'status-in-progress',
+            'COMPLETED': 'status-completed',
+            'ON_HOLD': 'status-on-hold',
+            'CANCELLED': 'status-cancelled'
+        };
+        return statusMap[status] || 'status-badge';
+    }
+
+    // 상태 코드 → 한글 라벨
+    function getStatusLabel(status) {
+        const labelMap = {
+            'PLANNING': '기획',
+            'IN_PROGRESS': '진행중',
+            'COMPLETED': '완료',
+            'ON_HOLD': '보류',
+            'CANCELLED': '취소'
+        };
+        return labelMap[status] || status;
     }
 
     // 과거 프로젝트 상태 필터
@@ -99,22 +192,42 @@ document.addEventListener('DOMContentLoaded', function() {
 
     // 초기 데이터 로드
     function loadPastProjects() {
-        allPastProjects = Array.from(pastProjectRows).map((row, index) => {
-            return {
-                no: index + 1,
-                name: row.getAttribute('data-project-name'),
-                status: row.getAttribute('data-status'),
-                statusBadge: row.querySelector('.status-badge').outerHTML,
-                pm: row.cells[3].textContent,
-                teamSize: row.cells[4].textContent,
-                period: row.cells[5].textContent,
-                progress: row.querySelector('.table-progress').innerHTML,
-                projectId: parseInt(row.getAttribute('data-project-id'))
-            };
-        });
-        filteredPastProjects = [...allPastProjects];
-        currentPage = 1;
-        renderPastProjects();
+        fetch('/api/projects')
+            .then(response => {
+                if (!response.ok) {
+                    throw new Error('프로젝트 목록을 불러오는데 실패했습니다.');
+                }
+                return response.json();
+            })
+            .then(projects => {
+                // 진행중이 아닌 프로젝트만 과거 프로젝트로 표시
+                const pastProjects = projects.filter(p => p.projectStatus !== 'IN_PROGRESS');
+
+                allPastProjectsData = pastProjects.map((project, index) => ({
+                    no: index + 1,
+                    idx: project.idx,
+                    name: project.projectName,
+                    status: project.projectStatus,
+                    statusLabel: getStatusLabel(project.projectStatus),
+                    statusClass: getStatusClass(project.projectStatus),
+                    pm: project.projectManagerName || '-',
+                    teamSize: project.memberCount + '명',
+                    period: `${project.startDate} ~ ${project.endDate}`,
+                    progress: project.progress,
+                    projectId: project.idx
+                }));
+
+                allPastProjects = allPastProjectsData;
+                filteredPastProjects = [...allPastProjects];
+                currentPage = 1;
+                renderPastProjects();
+            })
+            .catch(error => {
+                console.error('Error loading past projects:', error);
+                if (pastProjectTableBody) {
+                    pastProjectTableBody.innerHTML = '<tr><td colspan="8" class="text-center" style="padding: 40px;">프로젝트를 불러올 수 없습니다.</td></tr>';
+                }
+            });
     }
 
     // 과거 프로젝트 필터링
@@ -155,11 +268,18 @@ document.addEventListener('DOMContentLoaded', function() {
                 row.innerHTML = `
                     <td class="text-center">${project.no}</td>
                     <td><strong>${project.name}</strong></td>
-                    <td>${project.statusBadge}</td>
+                    <td><span class="status-badge ${project.statusClass}">${project.statusLabel}</span></td>
                     <td>${project.pm}</td>
                     <td class="text-center">${project.teamSize}</td>
                     <td>${project.period}</td>
-                    <td>${project.progress}</td>
+                    <td>
+                        <div class="table-progress">
+                            <div class="progress-bar-small">
+                                <div class="progress-fill" style="width: ${project.progress}%;"></div>
+                            </div>
+                            <span class="progress-text-small">${project.progress}%</span>
+                        </div>
+                    </td>
                     <td class="text-center action-cell">
                         <button class="btn btn-sm btn-primary" onclick="event.stopPropagation(); editProject(${project.projectId})" title="수정">
                             <i class="fas fa-edit"></i>
@@ -265,11 +385,52 @@ document.addEventListener('DOMContentLoaded', function() {
     }
 
     // 초기 로드
+    if (currentProjectGrid) {
+        loadCurrentProjects();
+    }
+
     if (pastProjectTableBody) {
         loadPastProjects();
     }
 
     // 신규 프로젝트 페이지 기능
+
+    // 연구 책임자 드롭다운 요소
+    const projectManagerSelect = document.getElementById('projectManager');
+
+    // 연구 책임자 목록 로드
+    if (projectManagerSelect) {
+        loadProjectManagers();
+    }
+
+    // 연구 책임자 목록 로드 함수
+    function loadProjectManagers() {
+        fetch('/api/users')
+            .then(response => {
+                if (!response.ok) {
+                    throw new Error('사용자 목록을 불러오는데 실패했습니다.');
+                }
+                return response.json();
+            })
+            .then(users => {
+                // 기존 옵션 제거 (첫 번째 "선택하세요" 제외)
+                while (projectManagerSelect.options.length > 1) {
+                    projectManagerSelect.remove(1);
+                }
+
+                // 활성 사용자만 필터링하여 드롭다운에 추가
+                users.forEach(user => {
+                    const option = document.createElement('option');
+                    option.value = user.idx;
+                    option.textContent = `${user.empName} (${user.empDept} / ${user.empPosition})`;
+                    projectManagerSelect.appendChild(option);
+                });
+            })
+            .catch(error => {
+                console.error('Error loading project managers:', error);
+                // 에러 발생 시에도 기본 옵션은 유지
+            });
+    }
 
     // 팀원 추가 버튼 클릭 시 모달 열기 (tfoot의 버튼과 empty-row 클릭 모두 처리)
     if (addMemberBtn) {
@@ -533,16 +694,43 @@ document.addEventListener('DOMContentLoaded', function() {
                 endDate: document.getElementById('endDate').value,
                 projectDescription: document.getElementById('projectDescription').value,
                 teamMembers: selectedMemberList,
-                cards: cardListData,
-                budget: document.getElementById('budget').value,
-                progress: document.getElementById('progressNumber').value
+                cards: cardListData
             };
 
             console.log('프로젝트 데이터:', formData);
 
-            // TODO: 백엔드 API 연동
-            alert('프로젝트가 등록되었습니다.');
-            window.location.href = '/project';
+            // 백엔드 API 연동
+            const createData = {
+                projectName: formData.projectName,
+                clientName: document.getElementById('clientName') ? document.getElementById('clientName').value : null,
+                projectManagerIdx: parseInt(formData.projectManager),
+                startDate: formData.startDate,
+                endDate: formData.endDate,
+                projectStatus: formData.projectStatus,
+                description: formData.projectDescription
+            };
+
+            fetch('/api/projects', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify(createData)
+            })
+            .then(response => {
+                if (!response.ok) {
+                    throw new Error('프로젝트 등록에 실패했습니다.');
+                }
+                return response.json();
+            })
+            .then(data => {
+                alert('프로젝트가 등록되었습니다.');
+                window.location.href = '/project';
+            })
+            .catch(error => {
+                console.error('Error creating project:', error);
+                alert('프로젝트 등록 중 오류가 발생했습니다.');
+            });
         });
     }
 
@@ -595,59 +783,34 @@ document.addEventListener('DOMContentLoaded', function() {
 
     // 프로젝트 상세보기 (전역 함수)
     window.viewProject = function(projectId) {
-        // TODO: 백엔드에서 프로젝트 상세 정보 가져오기
-        // 임시 데이터
-        const projectData = {
-            1: {
-                name: 'ERP 시스템 개발',
-                status: '진행중',
-                pm: '김철수',
-                teamSize: '5명',
-                startDate: '2025-01-01',
-                endDate: '2025-12-31',
-                description: '통합 ERP 시스템 개발 프로젝트. 인사, 회계, 영업 등 전사적 업무 프로세스 통합.',
-                progress: 45
-            },
-            2: {
-                name: '모바일 앱 개발',
-                status: '기획',
-                pm: '이영희',
-                teamSize: '3명',
-                startDate: '2025-03-01',
-                endDate: '2025-08-31',
-                description: '고객용 모바일 애플리케이션 개발. iOS 및 Android 플랫폼 지원.',
-                progress: 10
-            },
-            3: {
-                name: '홈페이지 리뉴얼',
-                status: '완료',
-                pm: '박민수',
-                teamSize: '4명',
-                startDate: '2024-10-01',
-                endDate: '2024-12-31',
-                description: '회사 공식 홈페이지 전면 리뉴얼. 반응형 웹 디자인 적용.',
-                progress: 100
-            }
-        };
+        fetch(`/api/projects/${projectId}`)
+            .then(response => {
+                if (!response.ok) {
+                    throw new Error('프로젝트 정보를 불러오는데 실패했습니다.');
+                }
+                return response.json();
+            })
+            .then(project => {
+                // 모달에 데이터 채우기
+                document.getElementById('detailProjectName').textContent = project.projectName;
+                document.getElementById('detailStatus').textContent = getStatusLabel(project.projectStatus);
+                document.getElementById('detailPM').textContent = project.projectManagerName || '-';
+                document.getElementById('detailTeamSize').textContent = project.memberCount + '명';
+                document.getElementById('detailStartDate').textContent = project.startDate;
+                document.getElementById('detailEndDate').textContent = project.endDate;
+                document.getElementById('detailDescription').textContent = project.description || '설명이 없습니다.';
+                document.getElementById('detailProgressBar').style.width = project.progress + '%';
+                document.getElementById('detailProgressText').textContent = project.progress + '%';
 
-        const project = projectData[projectId];
-        if (!project) return;
-
-        // 모달에 데이터 채우기
-        document.getElementById('detailProjectName').textContent = project.name;
-        document.getElementById('detailStatus').textContent = project.status;
-        document.getElementById('detailPM').textContent = project.pm;
-        document.getElementById('detailTeamSize').textContent = project.teamSize;
-        document.getElementById('detailStartDate').textContent = project.startDate;
-        document.getElementById('detailEndDate').textContent = project.endDate;
-        document.getElementById('detailDescription').textContent = project.description;
-        document.getElementById('detailProgressBar').style.width = project.progress + '%';
-        document.getElementById('detailProgressText').textContent = project.progress + '%';
-
-        // 모달 열기
-        if (projectDetailModal) {
-            projectDetailModal.classList.add('active');
-        }
+                // 모달 열기
+                if (projectDetailModal) {
+                    projectDetailModal.classList.add('active');
+                }
+            })
+            .catch(error => {
+                console.error('Error loading project details:', error);
+                alert('프로젝트 정보를 불러올 수 없습니다.');
+            });
     };
 
     // 프로젝트 수정 (전역 함수)
@@ -943,101 +1106,54 @@ document.addEventListener('DOMContentLoaded', function() {
 
     // 프로젝트 정보 보기 (전역 함수)
     window.showProjectInfo = function(projectId) {
-        // TODO: 백엔드에서 프로젝트 상세 정보 가져오기
-        // 임시 데이터
-        const projectData = {
-            1: {
-                name: 'ERP 시스템 개발',
-                status: '진행중',
-                statusClass: 'status-in-progress',
-                manager: '김철수 (개발팀, 팀장)',
-                startDate: '2025-01-01',
-                endDate: '2025-12-31',
-                description: '통합 ERP 시스템 개발 프로젝트. 인사, 회계, 영업 등 전사적 업무 프로세스를 통합하여 업무 효율성을 극대화합니다. Spring Boot 기반의 웹 애플리케이션으로 개발되며, 마이크로서비스 아키텍처를 적용하여 확장성과 유지보수성을 확보합니다.',
-                teamMembers: [
-                    { name: '김철수', dept: '개발팀', position: '팀장', startDate: '2025-01-01', endDate: '2025-12-31', status: 'active' },
-                    { name: '이영희', dept: '개발팀', position: '선임연구원', startDate: '2025-01-01', endDate: '2025-12-31', status: 'active' },
-                    { name: '박민수', dept: '개발팀', position: '연구원', startDate: '2025-01-15', endDate: '2025-12-31', status: 'active' },
-                    { name: '최지훈', dept: 'UI/UX팀', position: '디자이너', startDate: '2025-01-01', endDate: '2025-06-30', status: 'active' },
-                    { name: '정수진', dept: 'QA팀', position: '연구원', startDate: '2025-03-01', endDate: '2025-12-31', status: 'active' }
-                ]
-            },
-            2: {
-                name: '모바일 앱 개발',
-                status: '기획',
-                statusClass: 'status-planning',
-                manager: '이영희 (개발팀, 선임연구원)',
-                startDate: '2025-03-01',
-                endDate: '2025-08-31',
-                description: '고객용 모바일 애플리케이션 개발 프로젝트. iOS 및 Android 플랫폼을 모두 지원하며, React Native를 활용한 크로스 플랫폼 개발을 진행합니다. 사용자 편의성을 최우선으로 하는 직관적인 UI/UX를 제공합니다.',
-                teamMembers: [
-                    { name: '이영희', dept: '개발팀', position: '선임연구원', startDate: '2025-03-01', endDate: '2025-08-31', status: 'active' },
-                    { name: '박민수', dept: '개발팀', position: '연구원', startDate: '2025-03-01', endDate: '2025-08-31', status: 'active' },
-                    { name: '최지훈', dept: 'UI/UX팀', position: '디자이너', startDate: '2025-03-01', endDate: '2025-05-31', status: 'active' }
-                ]
-            },
-            3: {
-                name: '홈페이지 리뉴얼',
-                status: '완료',
-                statusClass: 'status-completed',
-                manager: '박민수 (개발팀, 연구원)',
-                startDate: '2024-10-01',
-                endDate: '2024-12-31',
-                description: '회사 공식 홈페이지 전면 리뉴얼 프로젝트. 반응형 웹 디자인을 적용하여 모바일, 태블릿, 데스크톱 등 다양한 디바이스에서 최적화된 사용자 경험을 제공합니다.',
-                teamMembers: [
-                    { name: '박민수', dept: '개발팀', position: '연구원', startDate: '2024-10-01', endDate: '2024-12-31', status: 'completed' },
-                    { name: '최지훈', dept: 'UI/UX팀', position: '디자이너', startDate: '2024-10-01', endDate: '2024-12-15', status: 'completed' },
-                    { name: '강동원', dept: '마케팅팀', position: '대리', startDate: '2024-10-01', endDate: '2024-11-30', status: 'completed' },
-                    { name: '윤서연', dept: '기획팀', position: '주임', startDate: '2024-10-01', endDate: '2024-12-31', status: 'completed' }
-                ]
-            }
-        };
+        fetch(`/api/projects/${projectId}`)
+            .then(response => {
+                if (!response.ok) {
+                    throw new Error('프로젝트 정보를 불러오는데 실패했습니다.');
+                }
+                return response.json();
+            })
+            .then(project => {
+                // 모달에 데이터 채우기
+                document.getElementById('infoProjectName').textContent = project.projectName;
 
-        const project = projectData[projectId];
-        if (!project) {
-            alert('프로젝트 정보를 찾을 수 없습니다.');
-            return;
-        }
+                const statusBadge = document.getElementById('infoProjectStatus');
+                statusBadge.textContent = getStatusLabel(project.projectStatus);
+                statusBadge.className = 'status-badge ' + getStatusClass(project.projectStatus);
 
-        // 모달에 데이터 채우기
-        document.getElementById('infoProjectName').textContent = project.name;
+                document.getElementById('infoProjectManager').textContent = project.projectManagerName || '-';
+                document.getElementById('infoProjectPeriod').textContent = `${project.startDate} ~ ${project.endDate}`;
+                document.getElementById('infoProjectDescription').textContent = project.description || '설명이 없습니다.';
 
-        const statusBadge = document.getElementById('infoProjectStatus');
-        statusBadge.textContent = project.status;
-        statusBadge.className = 'status-badge ' + project.statusClass;
+                // 팀원 목록 렌더링 (현재는 ProjectDTO에 팀원 목록이 없으므로 TODO)
+                const teamMembersBody = document.getElementById('infoTeamMembers');
+                teamMembersBody.innerHTML = '<tr><td colspan="6" class="text-center">팀원 목록은 추후 구현 예정입니다.</td></tr>';
 
-        document.getElementById('infoProjectManager').textContent = project.manager;
-        document.getElementById('infoProjectPeriod').textContent = `${project.startDate} ~ ${project.endDate}`;
-        document.getElementById('infoProjectDescription').textContent = project.description;
+                // TODO: 팀원 목록 API가 구현되면 아래 코드 활성화
+                // if (project.teamMembers && project.teamMembers.length > 0) {
+                //     project.teamMembers.forEach(member => {
+                //         const row = document.createElement('tr');
+                //         row.innerHTML = `
+                //             <td>${member.name}</td>
+                //             <td>${member.dept}</td>
+                //             <td>${member.position}</td>
+                //             <td>${member.startDate}</td>
+                //             <td>${member.endDate}</td>
+                //             <td><span class="member-status-active">참여중</span></td>
+                //         `;
+                //         teamMembersBody.appendChild(row);
+                //     });
+                // }
 
-        // 팀원 목록 렌더링
-        const teamMembersBody = document.getElementById('infoTeamMembers');
-        teamMembersBody.innerHTML = '';
-
-        if (project.teamMembers && project.teamMembers.length > 0) {
-            project.teamMembers.forEach(member => {
-                const row = document.createElement('tr');
-                const statusClass = member.status === 'active' ? 'member-status-active' : 'member-status-completed';
-                const statusText = member.status === 'active' ? '참여중' : '참여완료';
-
-                row.innerHTML = `
-                    <td>${member.name}</td>
-                    <td>${member.dept}</td>
-                    <td>${member.position}</td>
-                    <td>${member.startDate}</td>
-                    <td>${member.endDate}</td>
-                    <td><span class="${statusClass}">${statusText}</span></td>
-                `;
-                teamMembersBody.appendChild(row);
+                // 모달 열기
+                if (projectInfoModal) {
+                    projectInfoModal.classList.add('active');
+                }
+            })
+            .catch(error => {
+                console.error('Error loading project info:', error);
+                alert('프로젝트 정보를 찾을 수 없습니다.');
             });
-        } else {
-            teamMembersBody.innerHTML = '<tr><td colspan="6" class="text-center">참여연구원 정보가 없습니다.</td></tr>';
-        }
-
-        // 모달 열기
-        if (projectInfoModal) {
-            projectInfoModal.classList.add('active');
-        }
     };
 
     // 프로젝트 정보 모달 닫기 (전역 함수)
