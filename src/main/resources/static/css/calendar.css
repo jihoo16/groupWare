@@ -3,22 +3,22 @@
 /* 캘린더 컨테이너 - 좌측 필터 + 우측 캘린더 */
 .calendar-container {
     display: flex;
-    gap: 20px;
+    gap: 10px;
     height: 100%;
     overflow: hidden;
-    padding: 20px;
+    padding: 8px;
 }
 
 /* 좌측 사이드바 - 팀별 필터 */
 .calendar-sidebar {
-    width: 220px;
-    background: white;
-    border-radius: 12px;
-    padding: 16px;
-    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+    width: 200px;
+    background: transparent;
+    border-radius: 0;
+    padding: 12px;
+    box-shadow: none;
     display: flex;
     flex-direction: column;
-    gap: 18px;
+    gap: 16px;
     overflow-y: auto;
     flex-shrink: 0;
 }
@@ -26,21 +26,21 @@
 .sidebar-section {
     display: flex;
     flex-direction: column;
-    gap: 10px;
+    gap: 12px;
 }
 
 .sidebar-title-wrapper {
     display: flex;
     justify-content: space-between;
     align-items: center;
-    padding-bottom: 6px;
-    border-bottom: 2px solid #667eea;
+    padding-bottom: 8px;
+    border-bottom: 1px solid #e0e0e0;
 }
 
 .sidebar-title {
-    font-size: 12px;
+    font-size: 13px;
     font-weight: 600;
-    color: #333;
+    color: #555;
     margin: 0;
     display: flex;
     align-items: center;
@@ -48,8 +48,8 @@
 }
 
 .sidebar-title i {
-    color: #667eea;
-    font-size: 11px;
+    color: #888;
+    font-size: 12px;
 }
 
 .select-all-wrapper {
@@ -87,8 +87,8 @@
     display: flex;
     align-items: center;
     gap: 8px;
-    padding: 8px 10px;
-    border-radius: 6px;
+    padding: 6px 8px;
+    border-radius: 4px;
     cursor: pointer;
     transition: all 0.2s ease;
     user-select: none;
@@ -96,7 +96,7 @@
 
 .team-filter-item:hover,
 .type-filter-item:hover {
-    background: #f5f7fa;
+    background: #f0f0f0;
 }
 
 .team-checkbox,
@@ -167,10 +167,10 @@
     justify-content: space-between;
     align-items: center;
     gap: 12px;
-    margin-bottom: 15px;
+    margin-bottom: 8px;
     position: relative;
     flex-shrink: 0;
-    padding: 10px 0;
+    padding: 5px 0;
 }
 
 /* 뷰 전환 버튼 그룹 */
@@ -180,8 +180,8 @@
     background: white;
     border-radius: 8px;
     padding: 4px;
-    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
-    border: 2px solid #e0e0e0;
+    /*box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);*/
+    /*border: 2px solid #e0e0e0;*/
     flex-shrink: 0;
 }
 
@@ -367,8 +367,8 @@
 /* 큰 달력 */
 .large-calendar {
     background: white;
-    border-radius: 12px;
-    padding: 16px;
+    border-radius: 8px;
+    padding: 8px;
     box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
     flex: 1;
     display: flex;
@@ -1221,7 +1221,7 @@ input.form-input:read-only {
 .week-view,
 .day-view {
     background: white;
-    border-radius: 12px;
+    border-radius: 8px;
     padding: 0;
     box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
     flex: 1;
