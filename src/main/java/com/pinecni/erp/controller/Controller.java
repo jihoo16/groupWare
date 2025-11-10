@@ -30,6 +30,11 @@ public class Controller {
         return "calendar";
     }
 
+    @GetMapping("/calendar/edit")
+    public String calendarEdit() {
+        return "calendar-edit";
+    }
+
     @GetMapping("/messenger")
     public String messenger() {
         return "messenger";

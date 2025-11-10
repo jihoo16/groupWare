@@ -257,12 +257,92 @@
         </main>
     </div>
 
-    <!-- 일정 모달 (추가/수정 통합) -->
+    <!-- 일정 상세보기 모달 -->
     <div id="scheduleDetailModal" class="modal">
         <div class="modal-content">
             <div class="modal-header">
-                <h2 class="modal-title" id="scheduleModalTitle">일정 정보</h2>
+                <h2 class="modal-title" id="scheduleModalTitle">일정 상세정보</h2>
                 <button class="modal-close" id="closeModal">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            <div class="modal-body">
+                <div class="detail-row">
+                    <div class="detail-label">일정 제목</div>
+                    <div class="detail-value-container">
+                        <div class="detail-value" id="detailTitle">-</div>
+                    </div>
+                </div>
+
+                <div class="detail-row">
+                    <div class="detail-label">일정 유형</div>
+                    <div class="detail-value-container">
+                        <div class="detail-value" id="detailType">-</div>
+                    </div>
+                </div>
+
+                <div class="detail-row">
+                    <div class="detail-label">기간</div>
+                    <div class="detail-value-container">
+                        <div class="detail-value" id="detailPeriod">-</div>
+                    </div>
+                </div>
+
+                <div class="detail-row">
+                    <div class="detail-label">시간</div>
+                    <div class="detail-value-container">
+                        <div class="detail-value" id="detailTime">-</div>
+                    </div>
+                </div>
+
+                <div class="detail-row">
+                    <div class="detail-label">장소</div>
+                    <div class="detail-value-container">
+                        <div class="detail-value" id="detailLocation">-</div>
+                    </div>
+                </div>
+
+                <div class="detail-row">
+                    <div class="detail-label">참석자</div>
+                    <div class="detail-value-container">
+                        <div class="detail-value" id="detailParticipants">-</div>
+                    </div>
+                </div>
+
+                <div class="detail-row">
+                    <div class="detail-label">설명</div>
+                    <div class="detail-value-container">
+                        <div class="detail-value" id="detailDescription">-</div>
+                    </div>
+                </div>
+
+                <div class="detail-row">
+                    <div class="detail-label">알림</div>
+                    <div class="detail-value-container">
+                        <div class="detail-value" id="detailNotification">-</div>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn-danger" id="deleteScheduleBtn" style="margin-right: auto;">
+                    <i class="fas fa-trash"></i>
+                    삭제
+                </button>
+                <button class="btn-secondary" id="closeModalBtn">닫기</button>
+                <button class="btn-primary" id="editScheduleBtn">
+                    <i class="fas fa-edit"></i>
+                    수정
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 일정 추가 모달 -->
+    <div id="scheduleAddModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2 class="modal-title">일정 추가</h2>
+                <button class="modal-close" id="closeAddModal">
                     <i class="fas fa-times"></i>
                 </button>
             </div>
@@ -293,7 +373,14 @@
                         </div>
                     </div>
 
-                    <div class="form-row">
+                    <div class="form-group">
+                        <label class="form-checkbox-wrapper">
+                            <input type="checkbox" id="isAllDayCheckbox" class="form-checkbox-input">
+                            <span class="form-checkbox-label">종일</span>
+                        </label>
+                    </div>
+
+                    <div class="form-row" id="timeInputRow">
                         <div class="form-group">
                             <label class="form-label">시작 시간</label>
                             <input type="time" id="scheduleStartTime" class="form-input" value="09:00">
@@ -340,11 +427,7 @@
                 </form>
             </div>
             <div class="modal-footer">
-                <button class="btn-danger" id="deleteScheduleBtn" style="margin-right: auto; display: none;">
-                    <i class="fas fa-trash"></i>
-                    삭제
-                </button>
-                <button class="btn-secondary" id="closeModalBtn">닫기</button>
+                <button class="btn-secondary" id="closeAddModalBtn">닫기</button>
                 <button class="btn-primary" id="saveScheduleBtn">
                     <i class="fas fa-check"></i>
                     저장
@@ -380,6 +463,21 @@
                     <i class="fas fa-check"></i>
                     이동
                 </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 더보기 팝업 (특정 날짜의 모든 일정 표시) -->
+    <div id="moreSchedulesPopup" class="more-popup" style="display: none;">
+        <div class="more-popup-header">
+            <h3 class="more-popup-title" id="moreSchedulesTitle">일정 목록</h3>
+            <button class="more-popup-close" id="closeMoreSchedulesPopup">
+                <i class="fas fa-times"></i>
+            </button>
+        </div>
+        <div class="more-popup-body">
+            <div id="moreSchedulesList">
+                <!-- JavaScript로 동적 생성 -->
             </div>
         </div>
     </div>

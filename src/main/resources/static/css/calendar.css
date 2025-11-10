@@ -563,6 +563,82 @@
     box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
 }
 
+/* 단일 시간 일정 - 점 스타일 (구글 캘린더 스타일) */
+.schedule-item.time-dot {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    padding: 2px 4px;
+    background: transparent !important;
+    border: none !important;
+    box-shadow: none !important;
+    border-radius: 0;
+    overflow: hidden;
+}
+
+.schedule-item.time-dot .dot-time {
+    font-size: 9px;
+    font-weight: 600;
+    color: #5f6368;
+    flex-shrink: 0;
+}
+
+.schedule-item.time-dot .dot-title {
+    font-size: 10px;
+    font-weight: 500;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    color: #3c4043;
+}
+
+.schedule-item.time-dot::before {
+    content: '';
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    flex-shrink: 0;
+    margin-right: 2px;
+}
+
+/* 일정 타입별 점 색상 */
+.schedule-item.time-dot.leave::before {
+    background: #9ccc65;
+}
+
+.schedule-item.time-dot.business::before {
+    background: #26c6da;
+}
+
+.schedule-item.time-dot.meeting-room::before {
+    background: #ff7043;
+}
+
+.schedule-item.time-dot.etc::before {
+    background: #ba68c8;
+}
+
+/* 내 일정 점 스타일 */
+.schedule-item.time-dot.my-schedule::before {
+    box-shadow: 0 0 0 2px #fff, 0 0 0 3px #ffeb3b;
+}
+
+.schedule-item.time-dot.my-schedule .dot-time,
+.schedule-item.time-dot.my-schedule .dot-title {
+    font-weight: 700;
+    color: #1a73e8;
+}
+
+/* 시간 일정 hover */
+.schedule-item.time-dot:hover {
+    background: #f1f3f4 !important;
+    border-radius: 4px;
+}
+
+.schedule-item.time-dot:hover .dot-title {
+    color: #1a73e8;
+}
+
 /* 연속 일정 hover - 같은 그룹 모두 하이라이트 */
 .schedule-item.multi-day-start:hover,
 .schedule-item.multi-day-middle:hover,
@@ -661,6 +737,137 @@
 .more-schedules:hover {
     color: #764ba2;
     text-decoration: underline;
+}
+
+/* 더보기 팝업 (구글 캘린더 스타일) */
+.more-popup {
+    position: fixed;
+    background: white;
+    border-radius: 8px;
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.2);
+    z-index: 10000;
+    min-width: 300px;
+    max-width: 400px;
+    max-height: 500px;
+    display: flex;
+    flex-direction: column;
+}
+
+.more-popup-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 12px 16px;
+    border-bottom: 1px solid #e0e0e0;
+}
+
+.more-popup-title {
+    font-size: 14px;
+    font-weight: 600;
+    color: #333;
+    margin: 0;
+}
+
+.more-popup-close {
+    width: 24px;
+    height: 24px;
+    border: none;
+    background: transparent;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 50%;
+    transition: background 0.2s ease;
+    color: #666;
+}
+
+.more-popup-close:hover {
+    background: #f0f0f0;
+}
+
+.more-popup-body {
+    overflow-y: auto;
+    max-height: 450px;
+    padding: 8px;
+}
+
+/* 더보기 팝업 내 일정 목록 */
+.more-schedules-list {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+
+.more-schedule-item {
+    padding: 10px 12px;
+    border-radius: 6px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    border-left: 4px solid;
+    background: #f8f9fa;
+}
+
+.more-schedule-item:hover {
+    background: #e8f0fe;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+}
+
+.more-schedule-time {
+    font-size: 11px;
+    font-weight: 600;
+    color: #666;
+    margin-bottom: 3px;
+}
+
+.more-schedule-title {
+    font-size: 13px;
+    font-weight: 600;
+    color: #333;
+    margin-bottom: 3px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.more-schedule-meta {
+    font-size: 10px;
+    color: #999;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+/* 일정 타입별 테두리 색상 */
+.more-schedule-item.leave {
+    border-left-color: #9ccc65;
+}
+
+.more-schedule-item.business {
+    border-left-color: #26c6da;
+}
+
+.more-schedule-item.meeting-room {
+    border-left-color: #ff7043;
+}
+
+.more-schedule-item.etc {
+    border-left-color: #ba68c8;
+}
+
+/* 내 일정 강조 */
+.more-schedule-item.my-schedule {
+    background: linear-gradient(135deg, #fffbea 0%, #fff9e6 100%);
+    border-left-width: 5px;
+}
+
+.more-schedule-item.my-schedule:hover {
+    background: linear-gradient(135deg, #fff9e6 0%, #fff6d9 100%);
+}
+
+.more-schedule-item.my-schedule .more-schedule-title {
+    color: #1a73e8;
+    font-weight: 700;
 }
 
 /* 버튼 스타일 */
@@ -953,13 +1160,49 @@
     margin-left: 2px;
 }
 
-/* 체크박스 스타일 - 토글 스위치 */
+/* 종일 체크박스 스타일 */
 .form-checkbox-wrapper {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    cursor: pointer;
+    user-select: none;
+    padding: 8px 12px;
+    background: #f5f5f5;
+    border-radius: 6px;
+    border: 2px solid #e0e0e0;
+    transition: all 0.3s ease;
+}
+
+.form-checkbox-wrapper:hover {
+    background: #e8eaf6;
+    border-color: #667eea;
+}
+
+.form-checkbox-input {
+    width: 18px;
+    height: 18px;
+    cursor: pointer;
+    accent-color: #667eea;
+}
+
+.form-checkbox-wrapper .form-checkbox-label {
+    font-size: 14px;
+    font-weight: 600;
+    color: #333;
+    cursor: pointer;
+}
+
+/* 알림 토글 스위치 스타일 */
+.notification-wrapper .form-checkbox-wrapper {
     display: inline-flex;
     align-items: center;
     gap: 12px;
     cursor: pointer;
     user-select: none;
+    padding: 0;
+    background: transparent;
+    border: none;
 }
 
 .form-checkbox {

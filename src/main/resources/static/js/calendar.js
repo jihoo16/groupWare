@@ -20,7 +20,61 @@ document.addEventListener('DOMContentLoaded', function() {
     let selectedCells = [];
 
     // 일정 데이터 (서버에서 로드)
-    const schedules = [];
+    let schedules = [];
+
+    // 현재 사용자 정보 (실제로는 세션에서 가져와야 함)
+    const currentUserIdx = 1; // TODO: 실제 로그인 사용자 IDX로 변경
+
+    // 일정 데이터 로드 함수
+    async function loadSchedules(startDate, endDate) {
+        try {
+            const response = await fetch(`/api/calendar/events?startDate=${startDate}&endDate=${endDate}`);
+            const data = await response.json();
+
+            if (data.success) {
+                // API 응답을 프론트엔드 포맷으로 변환
+                schedules = data.events.map(event => {
+                    // participants가 객체 배열인 경우 이름만 추출
+                    let participantNames = [];
+                    if (event.participants && Array.isArray(event.participants)) {
+                        participantNames = event.participants.map(p =>
+                            typeof p === 'string' ? p : (p.userName || p.name || '')
+                        ).filter(name => name !== '');
+                    }
+
+                    return {
+                        id: event.idx,
+                        idx: event.idx,
+                        date: event.startDate,
+                        type: event.eventType,
+                        title: event.eventTitle,
+                        participants: participantNames,
+                        creator: event.creatorName,
+                        creatorIdx: event.creatorIdx,
+                        time: event.startTime && event.endTime ?
+                              `${event.startTime} - ${event.endTime}` : '종일',
+                        location: event.location || '-',
+                        description: event.eventDescription || '-',
+                        startDate: event.startDate,
+                        endDate: event.endDate,
+                        startTime: event.startTime,
+                        endTime: event.endTime,
+                        groupId: event.groupId,
+                        notification: event.notificationYn === 'Y',
+                        notificationTime: event.notificationMinutes || 10,
+                        isAllDay: event.isAllDay
+                    };
+                });
+                console.log(`일정 ${schedules.length}개 로드됨`);
+            } else {
+                console.error('일정 조회 실패:', data.message);
+                schedules = [];
+            }
+        } catch (error) {
+            console.error('일정 로드 중 오류:', error);
+            schedules = [];
+        }
+    }
 
     // 공휴일 데이터 로드 함수
     async function loadHolidays(year) {
@@ -59,6 +113,22 @@ document.addEventListener('DOMContentLoaded', function() {
         const month = String(date.getMonth() + 1).padStart(2, '0');
         const day = String(date.getDate()).padStart(2, '0');
         return `${year}-${month}-${day}`;
+    }
+
+    // 현재 뷰 새로고침
+    async function reloadCurrentView() {
+        switch(currentView) {
+            case 'day':
+                await renderDayView();
+                break;
+            case 'week':
+                await renderWeekView();
+                break;
+            case 'month':
+            default:
+                await renderCalendar();
+                break;
+        }
     }
 
     // 이전 버튼
@@ -166,6 +236,11 @@ document.addEventListener('DOMContentLoaded', function() {
         // 첫날과 마지막날
         const firstDay = new Date(year, month, 1);
         const lastDay = new Date(year, month + 1, 0);
+
+        // 일정 데이터 로드 (해당 월)
+        const startDate = formatDate(firstDay);
+        const endDate = formatDate(lastDay);
+        await loadSchedules(startDate, endDate);
         const prevLastDay = new Date(year, month, 0);
 
         const firstDayWeek = firstDay.getDay();
@@ -206,9 +281,6 @@ document.addEventListener('DOMContentLoaded', function() {
 
         // 일정 클릭 이벤트 추가
         attachScheduleClickEvents();
-
-        // 날짜 셀 클릭 이벤트 추가
-        attachDateCellClickEvents();
     }
 
     // 달력 셀 생성
@@ -244,10 +316,15 @@ document.addEventListener('DOMContentLoaded', function() {
             classes.push('saturday');
         }
 
-        // 해당 날짜의 일정 가져오기
-        const daySchedules = schedules.filter(s => s.date === dateStr);
+        // 해당 날짜의 일정 가져오기 (시작일~종료일 사이에 포함되는 일정 모두)
+        const daySchedules = schedules.filter(s => {
+            const scheduleStart = new Date(s.startDate);
+            const scheduleEnd = new Date(s.endDate);
+            const currentDate = new Date(dateStr);
+            return currentDate >= scheduleStart && currentDate <= scheduleEnd;
+        });
 
-        // 연속 일정을 상단에 정렬 (연속 일정 여부 -> groupId 순)
+        // 연속 일정을 상단에 정렬 (시작일이 빠른 순 -> 종료일이 늦은 순)
         daySchedules.sort((a, b) => {
             const aDayDiff = Math.ceil((new Date(a.endDate) - new Date(a.startDate)) / (1000 * 60 * 60 * 24));
             const bDayDiff = Math.ceil((new Date(b.endDate) - new Date(b.startDate)) / (1000 * 60 * 60 * 24));
@@ -258,9 +335,13 @@ document.addEventListener('DOMContentLoaded', function() {
             if (aIsMultiDay && !bIsMultiDay) return -1;
             if (!aIsMultiDay && bIsMultiDay) return 1;
 
-            // 같은 타입이면 groupId로 정렬 (같은 연속 일정끼리 붙어있도록)
+            // 연속 일정들 사이에서는 시작일이 빠른 것을 먼저
             if (aIsMultiDay && bIsMultiDay) {
-                return a.groupId.localeCompare(b.groupId);
+                const startCompare = a.startDate.localeCompare(b.startDate);
+                if (startCompare !== 0) return startCompare;
+
+                // 시작일이 같으면 종료일이 늦은 것을 먼저 (더 긴 일정이 위로)
+                return b.endDate.localeCompare(a.endDate);
             }
 
             return 0;
@@ -288,6 +369,7 @@ document.addEventListener('DOMContentLoaded', function() {
             const endDateObj = new Date(schedule.endDate);
             const dayDiff = Math.ceil((endDateObj - startDateObj) / (1000 * 60 * 60 * 24));
             const isMultiDay = dayDiff >= 1; // 2일 이상인 일정
+            const isAllDay = schedule.time === '종일';
 
             if (isMultiDay) {
                 // 시작일, 중간일, 종료일 구분
@@ -299,14 +381,28 @@ document.addEventListener('DOMContentLoaded', function() {
                     scheduleClasses.push('multi-day-middle');
                 }
             } else {
-                scheduleClasses.push('single-day');
+                // 단일 일정
+                if (!isAllDay) {
+                    // 단일 시간 일정 - 점으로 표시
+                    scheduleClasses.push('time-dot');
+                    const timeMatch = schedule.time.match(/(\d{2}:\d{2})/);
+                    const startTime = timeMatch ? timeMatch[1] : '';
+                    schedulesHTML += `<div class="schedule-item ${scheduleClasses.join(' ')}" data-schedule-id="${schedule.id}" data-group-id="${schedule.groupId}" title="${startTime} ${schedule.title}">
+                        <span class="dot-time">${startTime}</span>
+                        <span class="dot-title">${schedule.title}</span>
+                    </div>`;
+                    return;
+                } else {
+                    // 종일 일정
+                    scheduleClasses.push('single-day');
+                }
             }
 
             schedulesHTML += `<div class="schedule-item ${scheduleClasses.join(' ')}" data-schedule-id="${schedule.id}" data-group-id="${schedule.groupId}">${schedule.title}</div>`;
         });
 
         if (daySchedules.length > maxDisplay) {
-            schedulesHTML += `<div class="more-schedules">+${daySchedules.length - maxDisplay}개 더보기</div>`;
+            schedulesHTML += `<div class="more-schedules" data-date="${dateStr}" data-total="${daySchedules.length}">+${daySchedules.length - maxDisplay}개 더보기</div>`;
         }
 
         // 공휴일 표시
@@ -374,9 +470,122 @@ document.addEventListener('DOMContentLoaded', function() {
                 });
             });
         });
+
+        // 더보기 클릭 이벤트
+        const moreSchedulesItems = document.querySelectorAll('.more-schedules');
+        moreSchedulesItems.forEach(item => {
+            item.addEventListener('click', function(e) {
+                e.preventDefault();
+                e.stopPropagation();
+                e.stopImmediatePropagation();
+                const dateStr = this.getAttribute('data-date');
+                const cell = this.closest('.calendar-cell');
+                openMoreSchedulesPopup(dateStr, cell);
+            }, true);
+        });
     }
 
-    // 일정 모달 열기 (수정 모드)
+    // 더보기 팝업 열기
+    function openMoreSchedulesPopup(dateStr, cellElement) {
+        const date = new Date(dateStr);
+        const year = date.getFullYear();
+        const month = date.getMonth() + 1;
+        const day = date.getDate();
+
+        // 팝업 타이틀 설정
+        document.getElementById('moreSchedulesTitle').textContent = `${month}월 ${day}일`;
+
+        // 해당 날짜의 모든 일정 가져오기
+        const daySchedules = schedules.filter(s => {
+            const scheduleStart = new Date(s.startDate);
+            const scheduleEnd = new Date(s.endDate);
+            const currentDate = new Date(dateStr);
+            return currentDate >= scheduleStart && currentDate <= scheduleEnd;
+        });
+
+        // 일정 목록 HTML 생성
+        let listHTML = '';
+        if (daySchedules.length === 0) {
+            listHTML = '<p style="text-align: center; color: #999; padding: 20px;">일정이 없습니다.</p>';
+        } else {
+            listHTML = '<div class="more-schedules-list">';
+            daySchedules.forEach(schedule => {
+                const isMySchedule = schedule.participants.includes(currentUser);
+                const typeClass = schedule.type;
+                const myClass = isMySchedule ? 'my-schedule' : '';
+
+                listHTML += `
+                    <div class="more-schedule-item ${typeClass} ${myClass}" data-schedule-id="${schedule.id}" data-group-id="${schedule.groupId}">
+                        <div class="more-schedule-time">${schedule.time}</div>
+                        <div class="more-schedule-title">${schedule.title}</div>
+                        <div class="more-schedule-meta">${schedule.location}</div>
+                    </div>
+                `;
+            });
+            listHTML += '</div>';
+        }
+
+        document.getElementById('moreSchedulesList').innerHTML = listHTML;
+
+        // 일정 클릭 이벤트 추가
+        const scheduleItems = document.querySelectorAll('.more-schedule-item[data-schedule-id]');
+        scheduleItems.forEach(item => {
+            item.addEventListener('click', function() {
+                const scheduleId = parseInt(this.getAttribute('data-schedule-id'));
+                const groupId = this.getAttribute('data-group-id');
+                closeMoreSchedulesPopup();
+                openScheduleModal(scheduleId, groupId);
+            });
+        });
+
+        // 팝업 위치 계산 및 표시
+        const popup = document.getElementById('moreSchedulesPopup');
+        const rect = cellElement.getBoundingClientRect();
+
+        // 팝업을 일단 표시해서 크기를 알아냄
+        popup.style.display = 'block';
+        const popupRect = popup.getBoundingClientRect();
+
+        // 기본 위치: 셀의 오른쪽 하단
+        let left = rect.right + 10;
+        let top = rect.top;
+
+        // 화면 오른쪽을 넘어가면 왼쪽에 표시
+        if (left + popupRect.width > window.innerWidth) {
+            left = rect.left - popupRect.width - 10;
+        }
+
+        // 화면 하단을 넘어가면 위로 조정
+        if (top + popupRect.height > window.innerHeight) {
+            top = window.innerHeight - popupRect.height - 10;
+        }
+
+        // 화면 상단을 넘어가지 않도록
+        if (top < 10) {
+            top = 10;
+        }
+
+        popup.style.left = left + 'px';
+        popup.style.top = top + 'px';
+    }
+
+    // 더보기 팝업 닫기
+    function closeMoreSchedulesPopup() {
+        document.getElementById('moreSchedulesPopup').style.display = 'none';
+    }
+
+    // 더보기 팝업 닫기 이벤트
+    document.getElementById('closeMoreSchedulesPopup').addEventListener('click', closeMoreSchedulesPopup);
+
+    // 외부 클릭 시 팝업 닫기
+    document.addEventListener('click', function(e) {
+        const popup = document.getElementById('moreSchedulesPopup');
+        if (popup.style.display === 'block' && !popup.contains(e.target) && !e.target.closest('.more-schedules')) {
+            closeMoreSchedulesPopup();
+        }
+    });
+
+    // 일정 모달 열기 (상세보기 모드)
     function openScheduleModal(scheduleId, groupId) {
         const schedule = schedules.find(s => s.id === scheduleId);
         if (!schedule) return;
@@ -385,52 +594,71 @@ document.addEventListener('DOMContentLoaded', function() {
         currentEditingSchedule = schedule;
 
         // 모달 타이틀 설정
-        document.getElementById('scheduleModalTitle').textContent = '일정 수정';
+        document.getElementById('scheduleModalTitle').textContent = '일정 상세정보';
 
-        // 입력 필드에 값 설정
-        document.getElementById('scheduleTitle').value = schedule.title;
-        document.getElementById('scheduleType').value = schedule.type;
-        document.getElementById('scheduleStartDate').value = schedule.startDate;
-        document.getElementById('scheduleEndDate').value = schedule.endDate;
+        // 상세 정보 표시
+        document.getElementById('detailTitle').textContent = schedule.title;
 
-        // 시간 파싱
-        if (schedule.time !== '종일') {
-            const timeMatch = schedule.time.match(/(\d{2}:\d{2})\s*-\s*(\d{2}:\d{2})/);
-            if (timeMatch) {
-                document.getElementById('scheduleStartTime').value = timeMatch[1];
-                document.getElementById('scheduleEndTime').value = timeMatch[2];
-            }
+        // 일정 유형 한글 변환
+        const typeMap = {
+            'leave': '연차/휴가',
+            'business': '업무 일정',
+            'meeting-room': '회의실 예약',
+            'etc': '기타'
+        };
+        document.getElementById('detailType').textContent = typeMap[schedule.type] || schedule.type;
+
+        // 기간 표시
+        const startDate = new Date(schedule.startDate);
+        const endDate = new Date(schedule.endDate);
+        const startDateStr = `${startDate.getFullYear()}.${String(startDate.getMonth() + 1).padStart(2, '0')}.${String(startDate.getDate()).padStart(2, '0')}`;
+        const endDateStr = `${endDate.getFullYear()}.${String(endDate.getMonth() + 1).padStart(2, '0')}.${String(endDate.getDate()).padStart(2, '0')}`;
+
+        if (schedule.startDate === schedule.endDate) {
+            document.getElementById('detailPeriod').textContent = startDateStr;
         } else {
-            document.getElementById('scheduleStartTime').value = '09:00';
-            document.getElementById('scheduleEndTime').value = '18:00';
+            document.getElementById('detailPeriod').textContent = `${startDateStr} ~ ${endDateStr}`;
         }
 
-        document.getElementById('scheduleLocation').value = schedule.location === '-' ? '' : schedule.location;
-        document.getElementById('scheduleDescription').value = schedule.description === '-' ? '' : schedule.description;
+        // 시간 표시
+        document.getElementById('detailTime').textContent = schedule.time;
 
-        // 참여자 목록 설정
-        selectedParticipants = [...schedule.participants];
-        renderParticipantsList();
+        // 장소 표시
+        document.getElementById('detailLocation').textContent = schedule.location || '-';
 
-        // 알림 설정
-        notificationEnabled = schedule.notification !== false;
-        notificationTime = schedule.notificationTime || 10;
-        updateNotificationButton();
+        // 참석자 표시
+        document.getElementById('detailParticipants').textContent = schedule.participants.length > 0
+            ? schedule.participants.join(', ')
+            : '-';
 
-        // 알림 시간 버튼 설정
-        notificationTimeBtns.forEach(btn => {
-            btn.classList.remove('active');
-            if (parseInt(btn.getAttribute('data-time')) === notificationTime) {
-                btn.classList.add('active');
+        // 설명 표시
+        document.getElementById('detailDescription').textContent = schedule.description || '-';
+
+        // 알림 표시
+        let notificationText = '-';
+        if (schedule.notification) {
+            const minutes = schedule.notificationTime || 10;
+            if (minutes >= 60) {
+                notificationText = `${minutes / 60}시간 전`;
+            } else {
+                notificationText = `${minutes}분 전`;
             }
-        });
-
-        // 삭제 버튼 표시
-        document.getElementById('deleteScheduleBtn').style.display = 'flex';
+        } else {
+            notificationText = '알림 없음';
+        }
+        document.getElementById('detailNotification').textContent = notificationText;
 
         // 모달 표시
         document.getElementById('scheduleDetailModal').classList.add('show');
     }
+
+    // 수정 버튼 클릭 이벤트
+    document.getElementById('editScheduleBtn').addEventListener('click', function() {
+        if (!currentEditingSchedule) return;
+
+        // 일정 수정 페이지로 이동 (일정 ID를 쿼리 파라미터로 전달)
+        window.location.href = `/calendar/edit?id=${currentEditingSchedule.idx}`;
+    });
 
     // 모달 닫기 함수
     function closeScheduleModal() {
@@ -438,45 +666,71 @@ document.addEventListener('DOMContentLoaded', function() {
         modal.classList.remove('show');
     }
 
-    // 모달 닫기 이벤트
+    // 일정 추가 모달 닫기 함수
+    function closeAddScheduleModal() {
+        const modal = document.getElementById('scheduleAddModal');
+        modal.classList.remove('show');
+    }
+
+    // 상세보기 모달 닫기 이벤트
     document.getElementById('closeModal').addEventListener('click', closeScheduleModal);
     document.getElementById('closeModalBtn').addEventListener('click', closeScheduleModal);
 
-    // 모달 배경 클릭 시 닫기
+    // 상세보기 모달 배경 클릭 시 닫기
     document.getElementById('scheduleDetailModal').addEventListener('click', function(e) {
         if (e.target === this) {
             closeScheduleModal();
         }
     });
 
-    // 일정 삭제 버튼 클릭
-    document.getElementById('deleteScheduleBtn').addEventListener('click', function() {
-        if (!currentEditingSchedule) return;
+    // 일정 추가 모달 닫기 이벤트
+    document.getElementById('closeAddModal').addEventListener('click', closeAddScheduleModal);
+    document.getElementById('closeAddModalBtn').addEventListener('click', closeAddScheduleModal);
 
-        if (confirm('이 일정을 삭제하시겠습니까?')) {
-            // 같은 그룹의 모든 일정 삭제
-            const groupId = currentEditingSchedule.groupId;
-            for (let i = schedules.length - 1; i >= 0; i--) {
-                if (schedules[i].groupId === groupId) {
-                    schedules.splice(i, 1);
-                }
-            }
-
-            // 달력 다시 렌더링
-            renderCalendar();
-
-            // 모달 닫기
-            closeScheduleModal();
-
-            showAlert('일정이 삭제되었습니다.', 'success');
+    // 일정 추가 모달 배경 클릭 시 닫기
+    document.getElementById('scheduleAddModal').addEventListener('click', function(e) {
+        if (e.target === this) {
+            closeAddScheduleModal();
         }
     });
 
-    // ESC 키로 모달 닫기
+    // 일정 삭제 버튼 클릭
+    document.getElementById('deleteScheduleBtn').addEventListener('click', async function() {
+        if (!currentEditingSchedule) return;
+
+        if (confirm('이 일정을 삭제하시겠습니까?')) {
+            try {
+                const response = await fetch(`/api/calendar/events/${currentEditingSchedule.idx}?userId=${currentUserIdx}`, {
+                    method: 'DELETE'
+                });
+
+                const data = await response.json();
+
+                if (data.success) {
+                    showAlert('일정이 삭제되었습니다.', 'success');
+
+                    // 달력 새로고침
+                    await reloadCurrentView();
+
+                    // 모달 닫기
+                    closeScheduleModal();
+                } else {
+                    showAlert('일정 삭제 실패: ' + data.message, 'error');
+                }
+            } catch (error) {
+                console.error('일정 삭제 중 오류:', error);
+                showAlert('일정 삭제 중 오류가 발생했습니다.', 'error');
+            }
+        }
+    });
+
+    // ESC 키로 모달/팝업 닫기
     document.addEventListener('keydown', function(e) {
         if (e.key === 'Escape') {
             closeScheduleModal();
+            closeAddScheduleModal();
             closeYearMonthSelectorModal();
+            closeMoreSchedulesPopup();
         }
     });
 
@@ -485,6 +739,47 @@ document.addEventListener('DOMContentLoaded', function() {
     let notificationEnabled = false; // 기본값: 알림 꺼짐
     let notificationTime = 10; // 기본값: 10분 전
     let currentEditingSchedule = null; // 현재 수정 중인 일정 (null이면 추가 모드)
+
+    // 종일 체크박스 관련 요소
+    const isAllDayCheckbox = document.getElementById('isAllDayCheckbox');
+    const timeInputRow = document.getElementById('timeInputRow');
+    const addScheduleStartTime = document.getElementById('scheduleStartTime');
+    const addScheduleEndTime = document.getElementById('scheduleEndTime');
+
+    // 종일 체크박스 이벤트
+    if (isAllDayCheckbox) {
+        isAllDayCheckbox.addEventListener('change', function() {
+            toggleAddTimeInputs(!this.checked);
+
+            if (this.checked) {
+                // 종일로 변경 시 시간 필드 초기화
+                addScheduleStartTime.value = '';
+                addScheduleEndTime.value = '';
+            } else {
+                // 시간 일정으로 변경 시 기본값 설정
+                if (!addScheduleStartTime.value) addScheduleStartTime.value = '09:00';
+                if (!addScheduleEndTime.value) addScheduleEndTime.value = '18:00';
+            }
+        });
+    }
+
+    // 시간 입력 필드 활성화/비활성화 함수 (일정 추가용)
+    function toggleAddTimeInputs(enabled) {
+        if (!addScheduleStartTime || !addScheduleEndTime) return;
+
+        addScheduleStartTime.disabled = !enabled;
+        addScheduleEndTime.disabled = !enabled;
+
+        if (enabled) {
+            timeInputRow.style.opacity = '1';
+            addScheduleStartTime.style.cursor = 'text';
+            addScheduleEndTime.style.cursor = 'text';
+        } else {
+            timeInputRow.style.opacity = '0.5';
+            addScheduleStartTime.style.cursor = 'not-allowed';
+            addScheduleEndTime.style.cursor = 'not-allowed';
+        }
+    }
 
     // 알림 토글 버튼 이벤트
     const notificationToggleBtn = document.getElementById('notificationToggleBtn');
@@ -528,48 +823,60 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     });
 
-    // 날짜 셀 클릭 이벤트 연결
+    // 날짜 셀 클릭 이벤트 연결 (이벤트 위임 방식)
     function attachDateCellClickEvents() {
-        const calendarCells = document.querySelectorAll('.calendar-cell');
-        calendarCells.forEach(cell => {
-            // 클릭 이벤트 (드래그가 아닌 경우만)
-            cell.addEventListener('click', function(e) {
-                // 일정 아이템 클릭은 제외
-                if (e.target.closest('.schedule-item')) return;
+        // 클릭 이벤트 (이벤트 위임)
+        calendarGrid.addEventListener('click', function(e) {
+            const cell = e.target.closest('.calendar-cell');
+            if (!cell) return;
 
-                // 드래그 후 클릭은 무시
-                if (selectedCells.length > 0) return;
+            // 일정 아이템 클릭은 제외
+            if (e.target.closest('.schedule-item')) return;
 
-                const dateStr = this.getAttribute('data-date');
-                openAddScheduleModal(dateStr);
-            });
+            // 더보기 클릭은 제외
+            if (e.target.closest('.more-schedules')) return;
 
-            // 마우스 다운 이벤트 (드래그 시작)
-            cell.addEventListener('mousedown', function(e) {
-                // 일정 아이템 클릭은 제외
-                if (e.target.closest('.schedule-item')) return;
+            // 드래그 후 클릭은 무시
+            if (selectedCells.length > 0) return;
 
-                // 다른 달의 날짜는 드래그 불가
-                if (this.classList.contains('other-month')) return;
-
-                e.preventDefault();
-                isDragging = true;
-                dragStartDate = this.getAttribute('data-date');
-                selectedCells = [this];
-                this.classList.add('drag-selecting');
-            });
-
-            // 마우스 엔터 이벤트 (드래그 중)
-            cell.addEventListener('mouseenter', function(e) {
-                if (!isDragging) return;
-
-                // 다른 달의 날짜는 드래그 불가
-                if (this.classList.contains('other-month')) return;
-
-                dragEndDate = this.getAttribute('data-date');
-                updateDragSelection();
-            });
+            const dateStr = cell.getAttribute('data-date');
+            openAddScheduleModal(dateStr);
         });
+
+        // 마우스 다운 이벤트 (이벤트 위임)
+        calendarGrid.addEventListener('mousedown', function(e) {
+            const cell = e.target.closest('.calendar-cell');
+            if (!cell) return;
+
+            // 일정 아이템 클릭은 제외
+            if (e.target.closest('.schedule-item')) return;
+
+            // 더보기 클릭은 제외
+            if (e.target.closest('.more-schedules')) return;
+
+            // 다른 달의 날짜는 드래그 불가
+            if (cell.classList.contains('other-month')) return;
+
+            e.preventDefault();
+            isDragging = true;
+            dragStartDate = cell.getAttribute('data-date');
+            selectedCells = [cell];
+            cell.classList.add('drag-selecting');
+        });
+
+        // 마우스 엔터 이벤트 (이벤트 위임)
+        calendarGrid.addEventListener('mouseenter', function(e) {
+            if (!isDragging) return;
+
+            const cell = e.target.closest('.calendar-cell');
+            if (!cell) return;
+
+            // 다른 달의 날짜는 드래그 불가
+            if (cell.classList.contains('other-month')) return;
+
+            dragEndDate = cell.getAttribute('data-date');
+            updateDragSelection();
+        }, true);
 
         // 마우스 업 이벤트 (드래그 종료)
         document.addEventListener('mouseup', function(e) {
@@ -631,15 +938,16 @@ document.addEventListener('DOMContentLoaded', function() {
 
     // 날짜 범위로 일정 추가 모달 열기
     function openAddScheduleModalWithRange(startDate, endDate) {
-        currentEditingSchedule = null; // 추가 모드
-
-        // 모달 타이틀 설정
-        document.getElementById('scheduleModalTitle').textContent = '일정 추가';
-
         // 폼 초기화
         document.getElementById('scheduleForm').reset();
         document.getElementById('scheduleStartDate').value = startDate;
         document.getElementById('scheduleEndDate').value = endDate;
+
+        // 종일 체크박스 초기화
+        if (isAllDayCheckbox) {
+            isAllDayCheckbox.checked = false;
+            toggleAddTimeInputs(true);
+        }
 
         // 알림 버튼 초기화 (기본: 꺼짐)
         notificationEnabled = false;
@@ -654,11 +962,8 @@ document.addEventListener('DOMContentLoaded', function() {
         selectedParticipants = [currentUser]; // 생성자는 기본 참여자
         renderParticipantsList();
 
-        // 삭제 버튼 숨기기
-        document.getElementById('deleteScheduleBtn').style.display = 'none';
-
         // 모달 표시
-        document.getElementById('scheduleDetailModal').classList.add('show');
+        document.getElementById('scheduleAddModal').classList.add('show');
     }
 
     // 일정 추가 버튼 클릭
@@ -670,15 +975,16 @@ document.addEventListener('DOMContentLoaded', function() {
 
     // 일정 추가 모달 열기
     function openAddScheduleModal(dateStr) {
-        currentEditingSchedule = null; // 추가 모드
-
-        // 모달 타이틀 설정
-        document.getElementById('scheduleModalTitle').textContent = '일정 추가';
-
         // 폼 초기화
         document.getElementById('scheduleForm').reset();
         document.getElementById('scheduleStartDate').value = dateStr;
         document.getElementById('scheduleEndDate').value = dateStr;
+
+        // 종일 체크박스 초기화
+        if (isAllDayCheckbox) {
+            isAllDayCheckbox.checked = false;
+            toggleAddTimeInputs(true);
+        }
 
         // 알림 버튼 초기화 (기본: 꺼짐)
         notificationEnabled = false;
@@ -693,11 +999,8 @@ document.addEventListener('DOMContentLoaded', function() {
         selectedParticipants = [currentUser]; // 생성자는 기본 참여자
         renderParticipantsList();
 
-        // 삭제 버튼 숨기기
-        document.getElementById('deleteScheduleBtn').style.display = 'none';
-
         // 모달 표시
-        document.getElementById('scheduleDetailModal').classList.add('show');
+        document.getElementById('scheduleAddModal').classList.add('show');
     }
 
     // 참여자 추가 버튼
@@ -745,7 +1048,7 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     }
 
-    // 일정 저장 버튼
+    // 일정 저장 버튼 (추가 모드 전용)
     document.getElementById('saveScheduleBtn').addEventListener('click', function() {
         const form = document.getElementById('scheduleForm');
 
@@ -754,24 +1057,21 @@ document.addEventListener('DOMContentLoaded', function() {
             return;
         }
 
-        // 수정 모드인 경우
-        if (currentEditingSchedule) {
-            updateSchedule();
-            return;
-        }
-
-        // 추가 모드
+        // 추가 모드만 처리
         addNewSchedule();
     });
 
     // 새 일정 추가 함수
-    function addNewSchedule() {
+    async function addNewSchedule() {
         const title = document.getElementById('scheduleTitle').value;
         const type = document.getElementById('scheduleType').value;
         const startDate = document.getElementById('scheduleStartDate').value;
         const endDate = document.getElementById('scheduleEndDate').value;
-        const location = document.getElementById('scheduleLocation').value || '-';
-        const description = document.getElementById('scheduleDescription').value || '-';
+        const isAllDay = isAllDayCheckbox ? isAllDayCheckbox.checked : false;
+        const startTime = isAllDay ? null : (document.getElementById('scheduleStartTime').value || null);
+        const endTime = isAllDay ? null : (document.getElementById('scheduleEndTime').value || null);
+        const location = document.getElementById('scheduleLocation').value || null;
+        const description = document.getElementById('scheduleDescription').value || null;
 
         // 날짜 유효성 검사
         if (new Date(endDate) < new Date(startDate)) {
@@ -779,123 +1079,57 @@ document.addEventListener('DOMContentLoaded', function() {
             return;
         }
 
-        // 시간 포맷
-        let timeStr = '종일';
-        const startTime = document.getElementById('scheduleStartTime').value;
-        const endTime = document.getElementById('scheduleEndTime').value;
-        if (startTime && endTime) {
-            timeStr = `${startTime} - ${endTime}`;
-        } else if (startTime) {
-            timeStr = `${startTime}부터`;
-        }
+        // API 요청 데이터 생성
+        const eventData = {
+            eventTitle: title,
+            eventType: type,
+            eventDescription: description,
+            startDate: startDate,
+            endDate: endDate,
+            startTime: startTime,
+            endTime: endTime,
+            isAllDay: isAllDay,
+            location: location,
+            creatorIdx: currentUserIdx,
+            creatorName: currentUser,
+            notificationYn: notificationEnabled ? 'Y' : 'N',
+            notificationMinutes: notificationTime,
+            participants: selectedParticipants.map(name => ({
+                userName: name,
+                userIdx: null, // TODO: 실제 사용자 IDX 매핑 필요
+                receiveNotification: 'Y'
+            }))
+        };
 
-        // 현재 시간
-        const now = new Date();
-        const createdAt = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')} ${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`;
+        try {
+            const response = await fetch('/api/calendar/events', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify(eventData)
+            });
 
-        // 날짜 범위에 대한 일정 생성
-        const start = new Date(startDate);
-        const end = new Date(endDate);
-        const scheduleId = schedules.length + 1;
+            const data = await response.json();
 
-        // 연속 일정 그룹 ID 생성
-        const groupId = `schedule-group-${scheduleId}`;
+            if (data.success) {
+                showAlert('일정이 성공적으로 추가되었습니다.', 'success');
 
-        const currentLoopDate = new Date(start);
+                // 달력 새로고침
+                await reloadCurrentView();
 
-        while (currentLoopDate <= end) {
-            const dateStr = formatDate(currentLoopDate);
-
-            // 새 일정 객체
-            const newSchedule = {
-                id: scheduleId,
-                date: dateStr,
-                type: type,
-                title: title,
-                participants: [...selectedParticipants],
-                creator: currentUser,
-                time: timeStr,
-                location: location,
-                description: description,
-                createdAt: createdAt,
-                startDate: startDate,
-                endDate: endDate,
-                groupId: groupId,
-                notification: notificationEnabled,
-                notificationTime: notificationTime
-            };
-
-            // 일정 배열에 추가
-            schedules.push(newSchedule);
-
-            // 다음 날짜로 이동
-            currentLoopDate.setDate(currentLoopDate.getDate() + 1);
-        }
-
-        // 달력 다시 렌더링
-        renderCalendar();
-
-        // 모달 닫기
-        closeScheduleModal();
-
-        showAlert('일정이 성공적으로 추가되었습니다.', 'success');
-    }
-
-    // 일정 수정 함수
-    function updateSchedule() {
-        const title = document.getElementById('scheduleTitle').value.trim();
-        const type = document.getElementById('scheduleType').value;
-        const startDate = document.getElementById('scheduleStartDate').value;
-        const endDate = document.getElementById('scheduleEndDate').value;
-        const startTime = document.getElementById('scheduleStartTime').value;
-        const endTime = document.getElementById('scheduleEndTime').value;
-        const location = document.getElementById('scheduleLocation').value.trim() || '-';
-        const description = document.getElementById('scheduleDescription').value.trim() || '-';
-
-        // 유효성 검사
-        if (!title) {
-            showAlert('일정 제목을 입력하세요.', 'warning');
-            return;
-        }
-
-        if (new Date(endDate) < new Date(startDate)) {
-            showAlert('종료 날짜는 시작 날짜보다 이전일 수 없습니다.', 'warning');
-            return;
-        }
-
-        // 시간 포맷
-        let timeStr = '종일';
-        if (startTime && endTime) {
-            timeStr = `${startTime} - ${endTime}`;
-        } else if (startTime) {
-            timeStr = `${startTime}부터`;
-        }
-
-        // 같은 그룹의 모든 일정 업데이트
-        const groupId = currentEditingSchedule.groupId;
-        schedules.forEach(schedule => {
-            if (schedule.groupId === groupId) {
-                schedule.title = title;
-                schedule.type = type;
-                schedule.startDate = startDate;
-                schedule.endDate = endDate;
-                schedule.time = timeStr;
-                schedule.location = location;
-                schedule.description = description;
-                schedule.participants = [...selectedParticipants];
-                schedule.notification = notificationEnabled;
-                schedule.notificationTime = notificationTime;
+                // 모달 닫기
+                closeAddScheduleModal();
+            } else {
+                showAlert('일정 추가 실패: ' + data.message, 'error');
             }
-        });
-
-        // 달력 다시 렌더링
-        renderCalendar();
-
-        // 모달 닫기
-        closeScheduleModal();
-
-        showAlert('일정이 수정되었습니다.', 'success');
+        } catch (error) {
+            console.error('일정 추가 중 오류:', error);
+            showAlert('일정 추가 중 오류가 발생했습니다.', 'error');
+        }
     }
+
+    // 일정 수정 함수는 제거 - 이제 별도 페이지에서 처리
 
     // 연/월 선택 모달 관련 변수
     let selectedYear = null;
@@ -992,6 +1226,9 @@ document.addEventListener('DOMContentLoaded', function() {
 
     // 페이지 로드 시 달력 렌더링
     renderCalendar();
+
+    // 날짜 셀 클릭 이벤트 연결 (한 번만 실행)
+    attachDateCellClickEvents();
 
     // 알림 버튼 초기 상태 설정
     updateNotificationButton();
@@ -1180,12 +1417,19 @@ document.addEventListener('DOMContentLoaded', function() {
         const day = startOfWeek.getDay();
         startOfWeek.setDate(startOfWeek.getDate() - day);
 
+        // 종료일 (토요일)
+        const endOfWeek = new Date(startOfWeek);
+        endOfWeek.setDate(endOfWeek.getDate() + 6);
+
         // 공휴일 로드 (해당 년도)
         await loadHolidays(startOfWeek.getFullYear());
 
+        // 일정 데이터 로드 (해당 주)
+        const startDate = formatDate(startOfWeek);
+        const endDate = formatDate(endOfWeek);
+        await loadSchedules(startDate, endDate);
+
         // 주간 타이틀 설정
-        const endOfWeek = new Date(startOfWeek);
-        endOfWeek.setDate(endOfWeek.getDate() + 6);
         const startMonth = startOfWeek.getMonth() + 1;
         const endMonth = endOfWeek.getMonth() + 1;
         const startDay = startOfWeek.getDate();
@@ -1260,8 +1504,13 @@ document.addEventListener('DOMContentLoaded', function() {
             dayDate.setDate(dayDate.getDate() + day);
             const dateStr = formatDate(dayDate);
 
-            // 해당 날짜의 일정 필터링
-            const daySchedules = schedules.filter(s => s.date === dateStr);
+            // 해당 날짜의 일정 필터링 (시작일~종료일 사이에 포함되는 일정 모두)
+            const daySchedules = schedules.filter(s => {
+                const scheduleStart = new Date(s.startDate);
+                const scheduleEnd = new Date(s.endDate);
+                const currentDate = new Date(dateStr);
+                return currentDate >= scheduleStart && currentDate <= scheduleEnd;
+            });
 
             daySchedules.forEach(schedule => {
                 const position = calculateEventPosition(schedule, day);
@@ -1299,6 +1548,10 @@ document.addEventListener('DOMContentLoaded', function() {
 
         // 공휴일 로드 (해당 년도)
         await loadHolidays(currentDate.getFullYear());
+
+        // 일정 데이터 로드 (해당 일)
+        const dayDate = formatDate(currentDate);
+        await loadSchedules(dayDate, dayDate);
 
         const today = new Date();
         today.setHours(0, 0, 0, 0);
@@ -1353,9 +1606,14 @@ document.addEventListener('DOMContentLoaded', function() {
         }
         dayGridContainer.innerHTML = gridHTML;
 
-        // 이벤트 렌더링
+        // 이벤트 렌더링 (시작일~종료일 사이에 포함되는 일정 모두)
         const dateStr = formatDate(currentDate);
-        const daySchedules = schedules.filter(s => s.date === dateStr);
+        const daySchedules = schedules.filter(s => {
+            const scheduleStart = new Date(s.startDate);
+            const scheduleEnd = new Date(s.endDate);
+            const viewDate = new Date(dateStr);
+            return viewDate >= scheduleStart && viewDate <= scheduleEnd;
+        });
 
         let eventsHTML = '';
         daySchedules.forEach(schedule => {
