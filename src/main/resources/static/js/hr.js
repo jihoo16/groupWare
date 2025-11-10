@@ -7,10 +7,11 @@ let currentFilter = 'all'; // 현재 부서 필터
 // jQuery Ready
 $(document).ready(function() {
     // 초기 데이터 로드
+    loadDepartments(); // 부서 목록 로드 후 직원 목록 로드
     loadEmployees();
 
-    // 부서 필터 버튼 클릭
-    $('.dept-btn').on('click', function() {
+    // 부서 필터 버튼 클릭 (이벤트 위임 방식)
+    $('.department-filters').on('click', '.dept-btn', function() {
         const dept = $(this).data('dept');
         currentFilter = dept;
 
@@ -53,6 +54,46 @@ $(document).ready(function() {
 });
 
 /**
+ * Ajax: 부서 목록 조회 및 필터 버튼 생성
+ */
+function loadDepartments() {
+    $.ajax({
+        url: '/api/codes/departments?activeOnly=true',
+        method: 'GET',
+        dataType: 'json',
+        success: function(response) {
+            console.log('부서 목록 조회 성공:', response);
+            renderDepartmentFilters(response);
+        },
+        error: function(xhr, status, error) {
+            console.error('부서 목록 조회 실패:', error);
+            // 에러 발생 시 기본 필터만 표시
+            renderDepartmentFilters([]);
+        }
+    });
+}
+
+/**
+ * 부서 필터 버튼 동적 생성
+ */
+function renderDepartmentFilters(departments) {
+    const $container = $('.department-filters');
+    $container.empty();
+
+    // "전체" 버튼 추가
+    $container.append(`
+        <button class="dept-btn active" data-dept="all">전체</button>
+    `);
+
+    // 부서 버튼 추가 (sortOrder 순서대로)
+    departments.forEach(function(dept) {
+        $container.append(`
+            <button class="dept-btn" data-dept="${dept.codeName}">${dept.codeName}</button>
+        `);
+    });
+}
+
+/**
  * Ajax: 전체 활성 사용자 목록 조회
  */
 function loadEmployees() {
@@ -72,11 +113,11 @@ function loadEmployees() {
 
             // 에러 발생 시 빈 테이블 표시
             $('#employeeTableBody').html(`
-                <tr>
+                <tr class="empty-message">
                     <td colspan="9" style="text-align: center; padding: 40px; color: #999;">
-                        <i class="fas fa-exclamation-triangle" style="font-size: 48px; margin-bottom: 16px;"></i>
-                        <p>직원 목록을 불러오는데 실패했습니다.</p>
-                        <p style="font-size: 14px; margin-top: 8px;">서버 연결을 확인해주세요.</p>
+                        <i class="fas fa-exclamation-triangle" style="font-size: 48px; margin-bottom: 16px; display: block; color: #ff6b6b;"></i>
+                        <p style="font-size: 16px; font-weight: 500; color: #ff6b6b;">직원 목록을 불러오는데 실패했습니다.</p>
+                        <p style="font-size: 14px; margin-top: 8px; color: #bbb;">서버 연결을 확인하거나 잠시 후 다시 시도해주세요.</p>
                     </td>
                 </tr>
             `);
@@ -93,10 +134,11 @@ function renderEmployeeTable(users) {
 
     if (users.length === 0) {
         $tbody.html(`
-            <tr>
+            <tr class="empty-message">
                 <td colspan="9" style="text-align: center; padding: 40px; color: #999;">
-                    <i class="fas fa-users" style="font-size: 48px; margin-bottom: 16px;"></i>
-                    <p>등록된 직원이 없습니다.</p>
+                    <i class="fas fa-users" style="font-size: 48px; margin-bottom: 16px; display: block;"></i>
+                    <p style="font-size: 16px; font-weight: 500;">등록된 직원이 없습니다.</p>
+                    <p style="font-size: 14px; margin-top: 8px; color: #bbb;">상단의 "직원 등록" 버튼을 클릭하여 직원을 추가해주세요.</p>
                 </td>
             </tr>
         `);
@@ -274,7 +316,11 @@ function updateStatistics(users) {
  * 부서별 필터링
  */
 function filterEmployees() {
-    const $rows = $('#employeeTableBody tr');
+    const $tbody = $('#employeeTableBody');
+    const $rows = $tbody.find('tr').not('.empty-message');
+
+    // 빈 메시지 제거
+    $tbody.find('.empty-message').remove();
 
     if (currentFilter === 'all') {
         $rows.show();
@@ -288,13 +334,31 @@ function filterEmployees() {
             }
         });
     }
+
+    // 필터링 후 보이는 행이 없으면 빈 메시지 표시
+    const visibleRows = $rows.filter(':visible').length;
+    if (visibleRows === 0) {
+        $tbody.append(`
+            <tr class="empty-message">
+                <td colspan="9" style="text-align: center; padding: 40px; color: #999;">
+                    <i class="fas fa-user-slash" style="font-size: 48px; margin-bottom: 16px; display: block;"></i>
+                    <p style="font-size: 16px; font-weight: 500;">${currentFilter === 'all' ? '등록된 직원이 없습니다.' : currentFilter + '에 소속된 직원이 없습니다.'}</p>
+                    <p style="font-size: 14px; margin-top: 8px; color: #bbb;">다른 부서를 선택하거나 직원을 등록해주세요.</p>
+                </td>
+            </tr>
+        `);
+    }
 }
 
 /**
  * 검색 기능
  */
 function searchEmployees(searchTerm) {
-    const $rows = $('#employeeTableBody tr');
+    const $tbody = $('#employeeTableBody');
+    const $rows = $tbody.find('tr').not('.empty-message');
+
+    // 빈 메시지 제거
+    $tbody.find('.empty-message').remove();
 
     if (!searchTerm) {
         // 검색어가 없으면 현재 필터만 적용
@@ -316,6 +380,24 @@ function searchEmployees(searchTerm) {
             $(this).hide();
         }
     });
+
+    // 검색 후 보이는 행이 없으면 빈 메시지 표시
+    const visibleRows = $rows.filter(':visible').length;
+    if (visibleRows === 0) {
+        const deptText = currentFilter === 'all' ? '전체' : currentFilter;
+        $tbody.append(`
+            <tr class="empty-message">
+                <td colspan="9" style="text-align: center; padding: 40px; color: #999;">
+                    <i class="fas fa-search" style="font-size: 48px; margin-bottom: 16px; display: block;"></i>
+                    <p style="font-size: 16px; font-weight: 500;">"${searchTerm}" 검색 결과가 없습니다.</p>
+                    <p style="font-size: 14px; margin-top: 8px; color: #bbb;">
+                        ${deptText}에서 해당하는 직원을 찾을 수 없습니다.<br>
+                        검색어를 다시 확인하거나 부서 필터를 변경해주세요.
+                    </p>
+                </td>
+            </tr>
+        `);
+    }
 }
 
 /**

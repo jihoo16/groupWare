@@ -1,5 +1,6 @@
 package com.pinecni.erp.api.user.service;
 
+import com.pinecni.erp.api.department.service.DepartmentService;
 import com.pinecni.erp.api.user.dto.UserCreateDTO;
 import com.pinecni.erp.api.user.repository.UserRepository;
 import com.pinecni.erp.entity.User;
@@ -30,6 +31,7 @@ public class UserServiceImpl implements UserService {
 
     private final UserRepository userRepository;
     private final UserMapper userMapper;
+    private final DepartmentService departmentService;
 
     @Override
     public List<UserSimpleDTO> getAllActiveUsers() {
@@ -128,9 +130,13 @@ public class UserServiceImpl implements UserService {
         user.setUpdatedUserIdx(createdUserIdx);
         user.setUpdatedAt(LocalDateTime.now());
 
+        // 부서명 → 부서 코드 변환 (empDept 기반)
+        setDepartmentCode(user);
+
         // 저장
         User savedUser = userRepository.save(user);
-        log.info("User created successfully. idx: {}, empId: {}", savedUser.getIdx(), savedUser.getEmpId());
+        log.info("User created successfully. idx: {}, empId: {}, empDept: {}",
+                savedUser.getIdx(), savedUser.getEmpId(), savedUser.getEmpDept());
 
         return userMapper.toDTO(savedUser);
     }
@@ -157,9 +163,19 @@ public class UserServiceImpl implements UserService {
             passwordHash = generatePasswordHash(updateDTO.getPassword());
         }
 
+        // 기존 부서명 저장
+        String oldDept = user.getEmpDept();
+
         // Entity 업데이트
         userMapper.updateEntity(user, updateDTO, passwordHash);
         user.setUpdatedUserIdx(updatedUserIdx);
+
+        // 부서가 변경된 경우 부서 코드 재설정
+        if (updateDTO.getEmpDept() != null && !updateDTO.getEmpDept().equals(oldDept)) {
+            setDepartmentCode(user);
+            log.info("Department changed: {} -> {}",
+                    oldDept, user.getEmpDept());
+        }
 
         // 저장
         User updatedUser = userRepository.save(user);
@@ -233,6 +249,40 @@ public class UserServiceImpl implements UserService {
         } catch (NoSuchAlgorithmException e) {
             log.error("Password hash generation failed", e);
             throw new RuntimeException("비밀번호 해시 생성 실패", e);
+        }
+    }
+
+    /**
+     * 부서명을 부서 코드로 변환
+     * departments 테이블에서 dept_name으로 dept_code 찾아서 설정
+     */
+    private void setDepartmentCode(User user) {
+        if (user.getEmpDept() == null || user.getEmpDept().isEmpty()) {
+            log.warn("empDept is null or empty.");
+            return;
+        }
+
+        // empDept가 이미 dept_code 형식인지 확인 (예: "DEV", "HR")
+        if (departmentService.isDeptCodeValid(user.getEmpDept())) {
+            log.debug("empDept is already a valid dept_code: {}", user.getEmpDept());
+            return;
+        }
+
+        // empDept가 부서명인 경우 dept_code로 변환
+        String deptCode = departmentService.getDeptCodeByName(user.getEmpDept());
+
+        if (deptCode != null) {
+            String oldDeptName = user.getEmpDept();
+            user.setEmpDept(deptCode);
+            log.info("Department name converted to code: {} -> {}",
+                    oldDeptName, deptCode);
+        } else {
+            log.warn("Department not found for name: {}. Please check departments table.",
+                    user.getEmpDept());
+            throw new IllegalArgumentException(
+                    "유효하지 않은 부서입니다: " + user.getEmpDept() +
+                    ". 기초정보관리에서 부서를 먼저 등록해주세요."
+            );
         }
     }
 }

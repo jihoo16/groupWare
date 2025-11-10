@@ -132,4 +132,17 @@ public class CodeController {
         log.debug("직위 목록 조회 요청");
         return ResponseEntity.ok(codeService.getPositions());
     }
+
+    /**
+     * 부서 목록 조회 (C01)
+     */
+    @GetMapping("/departments")
+    public ResponseEntity<List<Code>> getDepartments(
+            @RequestParam(required = false, defaultValue = "false") boolean activeOnly) {
+        log.debug("부서 목록 조회 요청: activeOnly={}", activeOnly);
+        List<Code> departments = activeOnly
+                ? codeService.getActiveDepartments()
+                : codeService.getDepartments();
+        return ResponseEntity.ok(departments);
+    }
 }

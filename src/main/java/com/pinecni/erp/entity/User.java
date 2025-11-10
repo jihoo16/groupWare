@@ -58,8 +58,12 @@ public class User extends BaseEntity {
     @Column(name = "emp_address", length = 255)
     private String empAddress;
 
-    @Column(name = "emp_dept", nullable = false, length = 50)
-    private String empDept;
+    @Column(name = "emp_dept", nullable = false, length = 20)
+    private String empDept; // FK to departments.dept_code
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "emp_dept", referencedColumnName = "dept_code", insertable = false, updatable = false)
+    private Department department;
 
     @Column(name = "emp_position", nullable = false, length = 30)
     private String empPosition;

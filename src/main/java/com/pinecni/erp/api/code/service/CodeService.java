@@ -141,4 +141,18 @@ public class CodeService {
     public List<Code> getPositions() {
         return getCodesByGroupCode("C08");
     }
+
+    /**
+     * 부서 목록 조회 (C01)
+     */
+    public List<Code> getDepartments() {
+        return getCodesByGroupCode("C01");
+    }
+
+    /**
+     * 활성화된 부서 목록 조회 (C01)
+     */
+    public List<Code> getActiveDepartments() {
+        return getActiveCodesByGroupCode("C01");
+    }
 }
