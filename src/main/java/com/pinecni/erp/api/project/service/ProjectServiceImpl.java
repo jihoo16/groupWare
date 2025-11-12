@@ -1,11 +1,13 @@
 package com.pinecni.erp.api.project.service;
 
-import com.pinecni.erp.api.project.dto.ProjectCreateDTO;
-import com.pinecni.erp.api.project.dto.ProjectDTO;
-import com.pinecni.erp.api.project.dto.ProjectUpdateDTO;
+import com.pinecni.erp.api.project.dto.*;
 import com.pinecni.erp.api.project.mapper.ProjectMapper;
+import com.pinecni.erp.api.project.repository.ProjectMemberRepository;
 import com.pinecni.erp.api.project.repository.ProjectRepository;
+import com.pinecni.erp.api.project.repository.ResearchCardRepository;
 import com.pinecni.erp.entity.Project;
+import com.pinecni.erp.entity.ProjectMember;
+import com.pinecni.erp.entity.ResearchCard;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -25,6 +27,8 @@ import java.util.stream.Collectors;
 public class ProjectServiceImpl implements ProjectService {
 
     private final ProjectRepository projectRepository;
+    private final ProjectMemberRepository projectMemberRepository;
+    private final ResearchCardRepository researchCardRepository;
     private final ProjectMapper mapper;
 
     @Override
@@ -81,10 +85,59 @@ public class ProjectServiceImpl implements ProjectService {
         // DTO → Entity 변환
         Project project = mapper.toEntity(createDTO, createdUserIdx);
 
-        // 저장
+        // 프로젝트 저장
         Project savedProject = projectRepository.save(project);
 
-        log.info("Project created: idx={}, name={}", savedProject.getIdx(), savedProject.getProjectName());
+        // 연구비 카드 저장
+        if (createDTO.getProjectCards() != null && !createDTO.getProjectCards().isEmpty()) {
+            log.debug("Saving {} research cards for project idx={}", createDTO.getProjectCards().size(), savedProject.getIdx());
+
+            for (ProjectCardCreateDTO cardDTO : createDTO.getProjectCards()) {
+                // 카드 뒷 4자리 검증
+                if (cardDTO.getCardLastDigits() == null || !cardDTO.getCardLastDigits().matches("\\d{4}")) {
+                    log.warn("Invalid card last digits: {}. Skipping card for project idx={}",
+                             cardDTO.getCardLastDigits(), savedProject.getIdx());
+                    continue;
+                }
+
+                ResearchCard card = ResearchCard.builder()
+                        .projectIdx(savedProject.getIdx())
+                        .cardCompany(cardDTO.getCardCompany())
+                        .cardLastDigits(cardDTO.getCardLastDigits())
+                        .cardNickname(cardDTO.getCardNickname())
+                        .isActive(true)
+                        .build();
+
+                researchCardRepository.save(card);
+                log.debug("Research card saved: company={}, lastDigits={}, projectIdx={}",
+                         cardDTO.getCardCompany(), cardDTO.getCardLastDigits(), savedProject.getIdx());
+            }
+        }
+
+        // 팀원 저장 로직
+        if (createDTO.getTeamMembers() != null && !createDTO.getTeamMembers().isEmpty()) {
+            log.debug("Saving {} team members for project idx={}", createDTO.getTeamMembers().size(), savedProject.getIdx());
+
+            for (ProjectMemberCreateDTO memberDTO : createDTO.getTeamMembers()) {
+                ProjectMember member = ProjectMember.builder()
+                        .projectIdx(savedProject.getIdx())
+                        .employeeIdx(memberDTO.getEmployeeIdx())
+                        .participationStartDate(memberDTO.getParticipationStartDate())
+                        .participationEndDate(memberDTO.getParticipationEndDate())
+                        .role(memberDTO.getRole())
+                        .isActive(true)
+                        .build();
+
+                projectMemberRepository.save(member);
+                log.debug("Team member saved: employeeIdx={}, projectIdx={}", memberDTO.getEmployeeIdx(), savedProject.getIdx());
+            }
+        }
+
+        log.info("Project created: idx={}, name={}, teamMembers={}, researchCards={}",
+                 savedProject.getIdx(),
+                 savedProject.getProjectName(),
+                 createDTO.getTeamMembers() != null ? createDTO.getTeamMembers().size() : 0,
+                 createDTO.getProjectCards() != null ? createDTO.getProjectCards().size() : 0);
         return mapper.toDTO(savedProject);
     }
 

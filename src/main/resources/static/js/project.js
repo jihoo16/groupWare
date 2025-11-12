@@ -451,10 +451,67 @@ document.addEventListener('DOMContentLoaded', function() {
     // 모달 열기
     function openMemberModal() {
         if (!memberSelectModal) return;
-        memberSelectModal.classList.add('active');
 
-        // 이미 추가된 팀원들의 체크박스 상태 유지
-        updateCheckboxStates();
+        // 인력 목록을 먼저 로드한 후 모달 표시
+        loadMembersForModal();
+    }
+
+    // 인력 목록 로드 함수
+    function loadMembersForModal() {
+        fetch('/api/users')
+            .then(response => {
+                if (!response.ok) {
+                    throw new Error('인력 목록을 불러오는데 실패했습니다.');
+                }
+                return response.json();
+            })
+            .then(users => {
+                renderMemberSelectTable(users);
+
+                // 모달 표시
+                memberSelectModal.classList.add('active');
+
+                // 이미 추가된 팀원들의 체크박스 상태 유지
+                updateCheckboxStates();
+            })
+            .catch(error => {
+                console.error('Error loading members:', error);
+                alert('인력 목록을 불러올 수 없습니다.');
+            });
+    }
+
+    // 인력 선택 테이블 렌더링
+    function renderMemberSelectTable(users) {
+        const memberSelectTableBody = document.getElementById('memberSelectTableBody');
+        if (!memberSelectTableBody) return;
+
+        // 테이블 초기화
+        memberSelectTableBody.innerHTML = '';
+
+        if (users.length === 0) {
+            memberSelectTableBody.innerHTML = '<tr><td colspan="4" class="text-center" style="padding: 40px;">등록된 인력이 없습니다.</td></tr>';
+            return;
+        }
+
+        // 활성 상태 사용자만 표시
+        const activeUsers = users.filter(user => user.empStatus === '재직' || !user.empStatus);
+
+        activeUsers.forEach(user => {
+            const row = document.createElement('tr');
+            row.setAttribute('data-id', user.idx);
+            row.setAttribute('data-name', user.empName);
+            row.setAttribute('data-dept', user.empDept || '-');
+            row.setAttribute('data-position', user.empPosition || '-');
+
+            row.innerHTML = `
+                <td><input type="checkbox" class="member-checkbox" value="${user.idx}"></td>
+                <td>${user.empName}</td>
+                <td>${user.empDept || '-'}</td>
+                <td>${user.empPosition || '-'}</td>
+            `;
+
+            memberSelectTableBody.appendChild(row);
+        });
     }
 
     // 모달 닫기 (전역 함수)
@@ -518,6 +575,18 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     });
 
+    // 프로젝트 역할 옵션
+    const PROJECT_ROLES = [
+        { value: '', label: '선택하세요' },
+        { value: 'PM', label: 'PM (프로젝트 관리자)' },
+        { value: 'PL', label: 'PL (프로젝트 리더)' },
+        { value: 'DEVELOPER', label: '개발자' },
+        { value: 'SENIOR_RESEARCHER', label: '선임연구원' },
+        { value: 'RESEARCHER', label: '연구원' },
+        { value: 'ASSISTANT_RESEARCHER', label: '보조연구원' },
+        { value: 'QA', label: 'QA/테스터' }
+    ];
+
     // 선택 완료 (전역 함수)
     window.addSelectedMembers = function() {
         const checkboxes = document.querySelectorAll('.member-checkbox:checked');
@@ -538,6 +607,7 @@ document.addEventListener('DOMContentLoaded', function() {
                     name: memberName,
                     dept: memberDept,
                     position: memberPosition,
+                    role: '', // 역할 기본값
                     startDate: projectStartDate || '',
                     endDate: projectEndDate || ''
                 });
@@ -556,7 +626,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
         if (selectedMemberList.length === 0) {
             // 팀원이 없을 때: empty-row 표시, tfoot 숨김
-            teamTableBody.innerHTML = '<tr class="empty-row"><td colspan="7" class="text-center">팀원을 추가해주세요</td></tr>';
+            teamTableBody.innerHTML = '<tr class="empty-row"><td colspan="8" class="text-center">팀원을 추가해주세요</td></tr>';
             if (teamTableFooter) {
                 teamTableFooter.style.display = 'none';
             }
@@ -566,11 +636,22 @@ document.addEventListener('DOMContentLoaded', function() {
         // 팀원이 있을 때: 목록 표시, tfoot 표시
         selectedMemberList.forEach((member, index) => {
             const row = document.createElement('tr');
+
+            // 역할 select 옵션 생성
+            const roleOptions = PROJECT_ROLES.map(role =>
+                `<option value="${role.value}" ${member.role === role.value ? 'selected' : ''}>${role.label}</option>`
+            ).join('');
+
             row.innerHTML = `
                 <td class="text-center">${index + 1}</td>
                 <td>${member.name}</td>
                 <td>${member.dept}</td>
                 <td>${member.position}</td>
+                <td>
+                    <select class="form-control" onchange="updateMemberRole('${member.id}', this.value)" style="width: 100%; padding: 4px;">
+                        ${roleOptions}
+                    </select>
+                </td>
                 <td>
                     <input type="date" value="${member.startDate}"
                            onchange="updateMemberDate('${member.id}', 'startDate', this.value)">
@@ -599,6 +680,14 @@ document.addEventListener('DOMContentLoaded', function() {
         const member = selectedMemberList.find(m => m.id === memberId);
         if (member) {
             member[field] = value;
+        }
+    };
+
+    // 팀원 역할 업데이트 (전역 함수)
+    window.updateMemberRole = function(memberId, value) {
+        const member = selectedMemberList.find(m => m.id === memberId);
+        if (member) {
+            member.role = value;
         }
     };
 
@@ -689,6 +778,7 @@ document.addEventListener('DOMContentLoaded', function() {
             const formData = {
                 projectName: document.getElementById('projectName').value,
                 projectStatus: document.getElementById('projectStatus').value,
+                clientName: document.getElementById('clientName').value,
                 projectManager: document.getElementById('projectManager').value,
                 startDate: document.getElementById('startDate').value,
                 endDate: document.getElementById('endDate').value,
@@ -702,12 +792,27 @@ document.addEventListener('DOMContentLoaded', function() {
             // 백엔드 API 연동
             const createData = {
                 projectName: formData.projectName,
-                clientName: document.getElementById('clientName') ? document.getElementById('clientName').value : null,
+                clientName: formData.clientName,
+                projectStatus: formData.projectStatus,
                 projectManagerIdx: parseInt(formData.projectManager),
                 startDate: formData.startDate,
                 endDate: formData.endDate,
-                projectStatus: formData.projectStatus,
-                description: formData.projectDescription
+                description: formData.projectDescription,
+
+                // 연구비 카드 데이터 추가 (DTO 구조에 맞게 변환)
+                projectCards: cardListData.map(card => ({
+                    cardCompany: card.company,
+                    cardLastDigits: card.number,
+                    cardNickname: card.name
+                })),
+
+                // 팀원 데이터 추가 (DTO 구조에 맞게 변환)
+                teamMembers: selectedMemberList.map(member => ({
+                    employeeIdx: parseInt(member.id),
+                    participationStartDate: member.startDate,
+                    participationEndDate: member.endDate,
+                    role: member.role || null
+                }))
             };
 
             fetch('/api/projects', {
@@ -871,6 +976,7 @@ document.addEventListener('DOMContentLoaded', function() {
     window.saveCard = function() {
         const cardCompany = document.getElementById('cardCompany').value;
         const cardNumber = document.getElementById('cardNumber').value;
+        const cardName = document.getElementById('cardName').value;
 
         // 유효성 검사
         if (!cardCompany) {
@@ -883,12 +989,18 @@ document.addEventListener('DOMContentLoaded', function() {
             return;
         }
 
+        if (!cardName) {
+            alert('카드 닉네임을 입력해주세요.');
+            return;
+        }
+
         // 카드 추가
         cardIdCounter++;
         cardListData.push({
             id: cardIdCounter,
             company: cardCompany,
-            number: cardNumber
+            number: cardNumber,
+            name: cardName
         });
 
         renderCardList();
@@ -956,10 +1068,66 @@ document.addEventListener('DOMContentLoaded', function() {
     // 연계 프로젝트 모달 열기
     function openRelatedProjectModal() {
         if (!relatedProjectModal) return;
-        relatedProjectModal.classList.add('active');
 
-        // 이미 추가된 프로젝트들의 체크박스 상태 유지
-        updateRelatedProjectCheckboxStates();
+        // 프로젝트 목록을 먼저 로드한 후 모달 표시
+        loadRelatedProjects();
+    }
+
+    // 연계 프로젝트 목록 로드
+    function loadRelatedProjects() {
+        fetch('/api/projects')
+            .then(response => {
+                if (!response.ok) {
+                    throw new Error('프로젝트 목록을 불러오는데 실패했습니다.');
+                }
+                return response.json();
+            })
+            .then(projects => {
+                renderRelatedProjectTable(projects);
+
+                // 모달 표시
+                relatedProjectModal.classList.add('active');
+
+                // 이미 추가된 프로젝트들의 체크박스 상태 유지
+                updateRelatedProjectCheckboxStates();
+            })
+            .catch(error => {
+                console.error('Error loading related projects:', error);
+                alert('프로젝트 목록을 불러올 수 없습니다.');
+            });
+    }
+
+    // 연계 프로젝트 테이블 렌더링
+    function renderRelatedProjectTable(projects) {
+        const relatedProjectTableBody = document.getElementById('relatedProjectTableBody');
+        if (!relatedProjectTableBody) return;
+
+        // 테이블 초기화
+        relatedProjectTableBody.innerHTML = '';
+
+        if (projects.length === 0) {
+            relatedProjectTableBody.innerHTML = '<tr><td colspan="5" class="text-center" style="padding: 40px;">등록된 프로젝트가 없습니다.</td></tr>';
+            return;
+        }
+
+        projects.forEach(project => {
+            const row = document.createElement('tr');
+            row.setAttribute('data-id', project.idx);
+            row.setAttribute('data-name', project.projectName);
+            row.setAttribute('data-status', getStatusLabel(project.projectStatus));
+            row.setAttribute('data-pm', project.projectManagerName || '-');
+            row.setAttribute('data-period', `${project.startDate} ~ ${project.endDate}`);
+
+            row.innerHTML = `
+                <td><input type="checkbox" class="related-project-checkbox" value="${project.idx}"></td>
+                <td>${project.projectName}</td>
+                <td><span class="status-badge ${getStatusClass(project.projectStatus)}">${getStatusLabel(project.projectStatus)}</span></td>
+                <td>${project.projectManagerName || '-'}</td>
+                <td>${project.startDate} ~ ${project.endDate}</td>
+            `;
+
+            relatedProjectTableBody.appendChild(row);
+        });
     }
 
     // 연계 프로젝트 모달 닫기 (전역 함수)
@@ -1360,9 +1528,6 @@ document.addEventListener('DOMContentLoaded', function() {
                 cards: cardListData,
                 relatedProjects: relatedProjectList
             });
-
-            // TODO: 백엔드 API 호출
-            alert('프로젝트가 등록되었습니다.\n\n직급별 경비 설정이 포함되었습니다.');
 
             // 임시로 목록 페이지로 이동
             // window.location.href = '/project';

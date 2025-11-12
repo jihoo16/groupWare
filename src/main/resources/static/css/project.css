@@ -347,6 +347,7 @@ select.form-control {
     border: 2px solid #e9ecef;
     border-radius: 10px;
     box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
+    text-align: center;
 }
 
 .team-table {
@@ -364,7 +365,6 @@ select.form-control {
 
 .team-table th {
     padding: 14px 16px;
-    text-align: left;
     font-weight: 600;
     color: #1a237e;
     border-bottom: 2px solid #4361ee;

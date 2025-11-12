@@ -28,8 +28,20 @@
                     </div>
 
                     <div class="form-group">
-                        <label for="projectStatus">발주사 <span class="required">*</span></label>
-                        <input  type="text" id="projectStatus" name="projectStatus" class="form-control" required>
+                        <label for="clientName">발주사 <span class="required">*</span></label>
+                        <input  type="text" id="clientName" name="clientName" class="form-control" required>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="projectStatus">상태 <span class="required">*</span></label>
+                        <select id="projectStatus" name="projectStatus" class="form-control" required>
+                            <option value="">선택하세요</option>
+                            <option value="PLANNING">기획</option>
+                            <option value="IN_PROGRESS">진행중</option>
+                            <option value="COMPLETED">완료</option>
+                            <option value="ON_HOLD">보류</option>
+                            <option value="CANCELLED">취소</option>
+                        </select>
                     </div>
 
                     <div class="form-group">
@@ -62,7 +74,7 @@
 
                     <div class="form-group" style="grid-column: 1 / -1;">
                         <label for="receiptUrl">영수증 등록 페이지 URL</label>
-                        <input type="url" id="receiptUrl" name="receiptUrl" class="form-control" placeholder="https://example.com/receipt">
+                        <input type="text" id="receiptUrl" name="receiptUrl" class="form-control" placeholder="https://example.com/receipt">
                         <small class="form-text">외부 영수증 등록 시스템 URL을 입력하세요.</small>
                     </div>
                 </div>
@@ -94,19 +106,20 @@
                                     <th>이름</th>
                                     <th>부서</th>
                                     <th>직급</th>
+                                    <th width="140">역할</th>
                                     <th width="140">참여 시작일</th>
                                     <th width="140">참여 종료일</th>
-                                    <th width="80">작업</th>
+                                    <th width="80">삭제</th>
                                 </tr>
                             </thead>
                             <tbody id="teamTableBody">
-                                <tr class="empty-row">
-                                    <td colspan="7" class="text-center">팀원을 추가해주세요</td>
+                                <tr class="empty-row text-center">
+                                    <td colspan="8" class="text-center">팀원을 추가해주세요</td>
                                 </tr>
                             </tbody>
                             <tfoot id="teamTableFooter" style="display: none;">
                                 <tr class="add-member-row">
-                                    <td colspan="7" class="text-center">
+                                    <td colspan="8" class="text-center">
                                         <button type="button" class="btn-add-member-inline" id="addMemberBtn">
                                             <i class="fas fa-user-plus"></i> 참여인력 추가
                                         </button>
@@ -243,66 +256,7 @@
                         </tr>
                     </thead>
                     <tbody id="memberSelectTableBody">
-                        <tr data-id="1" data-name="김철수" data-dept="개발팀" data-position="선임연구원">
-                            <td><input type="checkbox" class="member-checkbox" value="1"></td>
-                            <td>김철수</td>
-                            <td>개발팀</td>
-                            <td>선임연구원</td>
-                        </tr>
-                        <tr data-id="2" data-name="이영희" data-dept="기획팀" data-position="주임">
-                            <td><input type="checkbox" class="member-checkbox" value="2"></td>
-                            <td>이영희</td>
-                            <td>기획팀</td>
-                            <td>주임</td>
-                        </tr>
-                        <tr data-id="3" data-name="박민수" data-dept="디자인팀" data-position="대리">
-                            <td><input type="checkbox" class="member-checkbox" value="3"></td>
-                            <td>박민수</td>
-                            <td>디자인팀</td>
-                            <td>대리</td>
-                        </tr>
-                        <tr data-id="4" data-name="정지훈" data-dept="개발팀" data-position="책임연구원">
-                            <td><input type="checkbox" class="member-checkbox" value="4"></td>
-                            <td>정지훈</td>
-                            <td>개발팀</td>
-                            <td>책임연구원</td>
-                        </tr>
-                        <tr data-id="5" data-name="최수진" data-dept="QA팀" data-position="주임">
-                            <td><input type="checkbox" class="member-checkbox" value="5"></td>
-                            <td>최수진</td>
-                            <td>QA팀</td>
-                            <td>주임</td>
-                        </tr>
-                        <tr data-id="6" data-name="강동원" data-dept="개발팀" data-position="선임연구원">
-                            <td><input type="checkbox" class="member-checkbox" value="6"></td>
-                            <td>강동원</td>
-                            <td>개발팀</td>
-                            <td>선임연구원</td>
-                        </tr>
-                        <tr data-id="7" data-name="한지민" data-dept="기획팀" data-position="대리">
-                            <td><input type="checkbox" class="member-checkbox" value="7"></td>
-                            <td>한지민</td>
-                            <td>기획팀</td>
-                            <td>대리</td>
-                        </tr>
-                        <tr data-id="8" data-name="송중기" data-dept="개발팀" data-position="주임">
-                            <td><input type="checkbox" class="member-checkbox" value="8"></td>
-                            <td>송중기</td>
-                            <td>개발팀</td>
-                            <td>주임</td>
-                        </tr>
-                        <tr data-id="9" data-name="전지현" data-dept="마케팅팀" data-position="과장">
-                            <td><input type="checkbox" class="member-checkbox" value="9"></td>
-                            <td>전지현</td>
-                            <td>마케팅팀</td>
-                            <td>과장</td>
-                        </tr>
-                        <tr data-id="10" data-name="현빈" data-dept="영업팀" data-position="차장">
-                            <td><input type="checkbox" class="member-checkbox" value="10"></td>
-                            <td>현빈</td>
-                            <td>영업팀</td>
-                            <td>차장</td>
-                        </tr>
+                        <!-- 인력 목록은 JavaScript에서 동적으로 로드됩니다 -->
                     </tbody>
                 </table>
             </div>
@@ -346,6 +300,10 @@
                 <label for="cardNumber">카드 뒷 4자리 <span class="required">*</span></label>
                 <input type="text" id="cardNumber" class="form-control" placeholder="숫자 4자리를 입력하세요" maxlength="4" pattern="\d{4}">
             </div>
+            <div class="form-group">
+                <label for="cardName">카드 닉네임 <span class="required">*</span></label>
+                <input type="text" id="cardName" class="form-control" placeholder="카드닉네임을 입력하세요" maxlength="30">
+            </div>
         </div>
         <div class="modal-footer">
             <button class="btn btn-secondary" onclick="closeCardModal()">취소</button>
@@ -381,41 +339,7 @@
                         </tr>
                     </thead>
                     <tbody id="relatedProjectTableBody">
-                        <tr data-id="1" data-name="ERP 시스템 개발" data-status="진행중" data-pm="김철수" data-period="2025-01-01 ~ 2025-12-31">
-                            <td><input type="checkbox" class="related-project-checkbox" value="1"></td>
-                            <td>ERP 시스템 개발</td>
-                            <td><span class="status-badge status-in-progress">진행중</span></td>
-                            <td>김철수</td>
-                            <td>2025-01-01 ~ 2025-12-31</td>
-                        </tr>
-                        <tr data-id="2" data-name="모바일 앱 개발" data-status="기획" data-pm="이영희" data-period="2025-03-01 ~ 2025-08-31">
-                            <td><input type="checkbox" class="related-project-checkbox" value="2"></td>
-                            <td>모바일 앱 개발</td>
-                            <td><span class="status-badge status-planning">기획</span></td>
-                            <td>이영희</td>
-                            <td>2025-03-01 ~ 2025-08-31</td>
-                        </tr>
-                        <tr data-id="3" data-name="홈페이지 리뉴얼" data-status="완료" data-pm="박민수" data-period="2024-10-01 ~ 2024-12-31">
-                            <td><input type="checkbox" class="related-project-checkbox" value="3"></td>
-                            <td>홈페이지 리뉴얼</td>
-                            <td><span class="status-badge status-completed">완료</span></td>
-                            <td>박민수</td>
-                            <td>2024-10-01 ~ 2024-12-31</td>
-                        </tr>
-                        <tr data-id="4" data-name="전자결재 시스템 구축" data-status="완료" data-pm="정지훈" data-period="2024-07-01 ~ 2024-09-30">
-                            <td><input type="checkbox" class="related-project-checkbox" value="4"></td>
-                            <td>전자결재 시스템 구축</td>
-                            <td><span class="status-badge status-completed">완료</span></td>
-                            <td>정지훈</td>
-                            <td>2024-07-01 ~ 2024-09-30</td>
-                        </tr>
-                        <tr data-id="5" data-name="인사관리 시스템 고도화" data-status="완료" data-pm="최수진" data-period="2024-04-01 ~ 2024-06-30">
-                            <td><input type="checkbox" class="related-project-checkbox" value="5"></td>
-                            <td>인사관리 시스템 고도화</td>
-                            <td><span class="status-badge status-completed">완료</span></td>
-                            <td>최수진</td>
-                            <td>2024-04-01 ~ 2024-06-30</td>
-                        </tr>
+                        <!-- JavaScript에서 동적으로 로드됩니다 -->
                     </tbody>
                 </table>
             </div>

@@ -1,11 +1,13 @@
 package com.pinecni.erp.api.project.dto;
 
+import com.pinecni.erp.entity.ProjectMember;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
 import java.time.LocalDate;
+import java.util.List;
 
 /**
  * 프로젝트 생성 요청 DTO
@@ -52,4 +54,13 @@ public class ProjectCreateDTO {
      * 프로젝트 설명
      */
     private String description;
+
+    /**
+    * 참여인력 목록
+    */
+    private List<ProjectMemberCreateDTO> teamMembers;
+    /**
+    *  카드 추가
+    */
+    private List<ProjectCardCreateDTO> projectCards;
 }
