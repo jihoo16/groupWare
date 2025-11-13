@@ -16,79 +16,18 @@
 
     <!-- Tab Navigation -->
     <div class="tab-container">
-        <button class="tab-button active" data-tab="positions">직급 관리</button>
-        <button class="tab-button" data-tab="departments">소속 관리</button>
+        <button class="tab-button active" data-tab="code-groups">그룹코드 설정</button>
         <button class="tab-button" data-tab="expenses">직급별 고정경비</button>
         <button class="tab-button" data-tab="logo">회사 로고</button>
         <button class="tab-button" data-tab="other">기타 설정</button>
     </div>
 
-    <!-- Tab Content: Positions -->
-    <div class="tab-content active" id="positions-tab">
+    <!-- Tab Content: Code Groups -->
+    <div class="tab-content active" id="code-groups-tab">
         <div class="section-header">
-            <h2>직급/직위 관리</h2>
-            <button class="btn-add" id="add-position-btn">
-                <i class="fas fa-plus"></i> 코드 추가
-            </button>
-        </div>
-
-        <!-- Sub-tabs for Position vs Rank -->
-        <div class="sub-tab-container">
-            <button class="sub-tab-button active" data-subtab="rank">직급 (C02)</button>
-            <button class="sub-tab-button" data-subtab="position">직위 (C08)</button>
-        </div>
-
-        <!-- Sub-tab Content: Rank (C02) -->
-        <div class="sub-tab-content active" id="rank-subtab">
-            <div class="table-container">
-                <table class="data-table">
-                    <thead>
-                    <tr>
-                        <th style="width: 60px;">순서</th>
-                        <th>코드</th>
-                        <th>코드명</th>
-                        <th style="width: 150px;">영문명</th>
-                        <th style="width: 200px;">설명</th>
-                        <th style="width: 100px;">사용여부</th>
-                        <th style="width: 150px;">관리</th>
-                    </tr>
-                    </thead>
-                    <tbody id="rank-tbody">
-                        <!-- DB에서 로드 -->
-                    </tbody>
-                </table>
-            </div>
-        </div>
-
-        <!-- Sub-tab Content: Position (C08) -->
-        <div class="sub-tab-content" id="position-subtab">
-            <div class="table-container">
-                <table class="data-table">
-                    <thead>
-                    <tr>
-                        <th style="width: 60px;">순서</th>
-                        <th>코드</th>
-                        <th>코드명</th>
-                        <th style="width: 150px;">영문명</th>
-                        <th style="width: 200px;">설명</th>
-                        <th style="width: 100px;">사용여부</th>
-                        <th style="width: 150px;">관리</th>
-                    </tr>
-                    </thead>
-                    <tbody id="position-tbody">
-                        <!-- DB에서 로드 -->
-                    </tbody>
-                </table>
-            </div>
-        </div>
-    </div>
-
-    <!-- Tab Content: Departments -->
-    <div class="tab-content" id="departments-tab">
-        <div class="section-header">
-            <h2>소속 관리</h2>
-            <button class="btn-add" id="add-department-btn">
-                <i class="fas fa-plus"></i> 소속 추가
+            <h2>그룹코드 설정</h2>
+            <button class="btn-add" id="add-code-group-btn">
+                <i class="fas fa-plus"></i> 그룹코드 추가
             </button>
         </div>
 
@@ -96,16 +35,14 @@
             <table class="data-table">
                 <thead>
                 <tr>
-                    <th style="width: 60px;">순서</th>
-                    <th>코드</th>
-                    <th>소속명</th>
-                    <th style="width: 150px;">영문명</th>
-                    <th style="width: 200px;">설명</th>
+                    <th style="width: 150px;">그룹코드</th>
+                    <th>그룹명</th>
+                    <th style="width: 250px;">설명</th>
                     <th style="width: 100px;">사용여부</th>
-                    <th style="width: 150px;">관리</th>
+                    <th style="width: 290px;">관리</th>
                 </tr>
                 </thead>
-                <tbody id="departments-tbody">
+                <tbody id="code-groups-tbody">
                     <!-- DB에서 로드 -->
                 </tbody>
             </table>
@@ -310,41 +247,31 @@
 </main>
 </div>
 
-<!-- Position/Rank Code Modal -->
-<div id="position-modal" class="modal">
+<!-- Code Group Modal -->
+<div id="code-group-modal" class="modal">
     <div class="modal-content modal-sm">
         <div class="modal-header">
-            <h2 id="position-modal-title">코드 추가</h2>
+            <h2 id="code-group-modal-title">그룹코드 추가</h2>
             <button class="modal-close">&times;</button>
         </div>
         <div class="modal-body">
-            <input type="hidden" id="position-idx">
-            <input type="hidden" id="position-group-code">
+            <input type="hidden" id="code-group-idx">
             <div class="form-group">
-                <label>코드 <span class="required">*</span></label>
-                <input type="text" id="position-code" placeholder="예: C08001" maxlength="50">
-                <small>영문 대문자, 숫자 조합 권장</small>
+                <label>그룹코드 <span class="required">*</span></label>
+                <input type="text" id="code-group-code" placeholder="예: C01, C02" maxlength="10">
+                <small>영문 대문자, 숫자 조합 권장 (최대 10자)</small>
             </div>
             <div class="form-group">
-                <label>코드명 <span class="required">*</span></label>
-                <input type="text" id="position-name" placeholder="예: 사원, 부장" maxlength="100">
-            </div>
-            <div class="form-group">
-                <label>영문명</label>
-                <input type="text" id="position-name-en" placeholder="예: Staff, Manager" maxlength="100">
+                <label>그룹명 <span class="required">*</span></label>
+                <input type="text" id="code-group-name" placeholder="예: 소속, 직급" maxlength="100">
             </div>
             <div class="form-group">
                 <label>설명</label>
-                <textarea id="position-description" rows="3" placeholder="코드에 대한 설명을 입력하세요"></textarea>
-            </div>
-            <div class="form-group">
-                <label>정렬 순서</label>
-                <input type="number" id="position-order" value="0" min="0">
-                <small>숫자가 작을수록 위에 표시됩니다</small>
+                <textarea id="code-group-description" rows="3" placeholder="그룹코드에 대한 설명을 입력하세요"></textarea>
             </div>
             <div class="form-group">
                 <label>사용여부</label>
-                <select id="position-status">
+                <select id="code-group-status">
                     <option value="Y">사용</option>
                     <option value="N">미사용</option>
                 </select>
@@ -352,54 +279,7 @@
         </div>
         <div class="modal-footer">
             <button class="btn-cancel">취소</button>
-            <button class="btn-confirm" id="position-save-btn">저장</button>
-        </div>
-    </div>
-</div>
-
-<!-- Department Modal -->
-<div id="department-modal" class="modal">
-    <div class="modal-content modal-sm">
-        <div class="modal-header">
-            <h2 id="department-modal-title">소속 추가</h2>
-            <button class="modal-close">&times;</button>
-        </div>
-        <div class="modal-body">
-            <input type="hidden" id="department-idx">
-            <input type="hidden" id="department-group-code" value="C01">
-            <div class="form-group">
-                <label>코드 <span class="required">*</span></label>
-                <input type="text" id="department-code" placeholder="예: C01001" maxlength="50">
-                <small>영문 대문자, 숫자 조합 권장</small>
-            </div>
-            <div class="form-group">
-                <label>소속명 <span class="required">*</span></label>
-                <input type="text" id="department-name" placeholder="예: 개발팀, 경영지원본부" maxlength="100">
-            </div>
-            <div class="form-group">
-                <label>영문명</label>
-                <input type="text" id="department-name-en" placeholder="예: Development Team" maxlength="100">
-            </div>
-            <div class="form-group">
-                <label>설명</label>
-                <textarea id="department-description" rows="3" placeholder="소속에 대한 설명을 입력하세요"></textarea>
-            </div>
-            <div class="form-group">
-                <label>정렬 순서</label>
-                <input type="number" id="department-order" value="0" min="0">
-                <small>숫자가 작을수록 위에 표시됩니다</small>
-            </div>
-            <div class="form-group">
-                <label>사용여부</label>
-                <select id="department-status">
-                    <option value="Y">사용</option>
-                    <option value="N">미사용</option>
-                </select>
-            </div>
-        </div>
-        <div class="modal-footer">
-            <button class="btn-cancel">취소</button>
-            <button class="btn-confirm" id="department-save-btn">저장</button>
+            <button class="btn-confirm" id="code-group-save-btn">저장</button>
         </div>
     </div>
 </div>

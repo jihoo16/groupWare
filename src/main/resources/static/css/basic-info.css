@@ -96,6 +96,27 @@
     margin-right: 6px;
 }
 
+.btn-back {
+    padding: 10px 20px;
+    background: #f3f4f6;
+    color: #6b7280;
+    border: none;
+    border-radius: 8px;
+    font-size: 14px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.3s ease;
+}
+
+.btn-back:hover {
+    background: #e5e7eb;
+    transform: translateY(-2px);
+}
+
+.btn-back i {
+    margin-right: 6px;
+}
+
 /* ===========================
    Table Container
    =========================== */
@@ -104,6 +125,27 @@
     border-radius: 12px;
     box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
     overflow: hidden;
+    max-height: 500px;
+    overflow-y: auto;
+}
+
+/* Custom scrollbar for all tables */
+.table-container::-webkit-scrollbar {
+    width: 8px;
+}
+
+.table-container::-webkit-scrollbar-track {
+    background: #f1f1f1;
+    border-radius: 4px;
+}
+
+.table-container::-webkit-scrollbar-thumb {
+    background: #c1c1c1;
+    border-radius: 4px;
+}
+
+.table-container::-webkit-scrollbar-thumb:hover {
+    background: #a8a8a8;
 }
 
 .data-table {
@@ -113,6 +155,9 @@
 
 .data-table thead {
     background: linear-gradient(135deg, #f3f4f6 0%, #e5e7eb 100%);
+    position: sticky;
+    top: 0;
+    z-index: 10;
 }
 
 .data-table th {
@@ -194,6 +239,21 @@
 .btn-delete:hover {
     background: #fee2e2;
     transform: translateY(-1px);
+}
+
+.btn-detail {
+    background: #f3f4f6;
+    color: #6b7280;
+}
+
+.btn-detail:hover {
+    background: #e5e7eb;
+    color: #374151;
+    transform: translateY(-1px);
+}
+
+.btn-detail i {
+    margin-right: 4px;
 }
 
 /* ===========================
@@ -501,7 +561,9 @@
     width: 90%;
     max-width: 500px;
     max-height: 90vh;
-    overflow-y: auto;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
 }
 
 .modal-sm {
@@ -514,6 +576,7 @@
     align-items: center;
     padding: 20px 24px;
     border-bottom: 2px solid #f3f4f6;
+    flex-shrink: 0;
 }
 
 .modal-header h2 {
@@ -545,6 +608,8 @@
 
 .modal-body {
     padding: 24px;
+    overflow-y: auto;
+    flex: 1;
 }
 
 .modal-body .form-group {
@@ -562,6 +627,7 @@
     gap: 12px;
     padding: 20px 24px;
     border-top: 2px solid #f3f4f6;
+    flex-shrink: 0;
 }
 
 .btn-confirm {
@@ -895,4 +961,48 @@
 
 .sub-tab-content.active {
     display: block;
+}
+
+/* ===========================
+   Code Input Group (Prefix + Suffix)
+   =========================== */
+.code-input-group {
+    display: flex;
+    gap: 0;
+}
+
+.code-prefix {
+    width: 80px;
+    padding: 10px 14px;
+    background: #f3f4f6;
+    border: 2px solid #e5e7eb;
+    border-right: 1px dashed #d1d5db;
+    border-radius: 8px 0 0 8px;
+    font-size: 14px;
+    font-weight: 600;
+    color: #6b7280;
+    text-align: center;
+    cursor: not-allowed;
+}
+
+.code-suffix {
+    flex: 1;
+    padding: 10px 14px;
+    border: 2px solid #e5e7eb;
+    border-left: 1px dashed #d1d5db;
+    border-radius: 0 8px 8px 0;
+    font-size: 14px;
+    color: #111827;
+    transition: all 0.3s ease;
+}
+
+.code-suffix:focus {
+    outline: none;
+    border-color: #2563eb;
+    box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1);
+}
+
+.code-suffix:focus + .code-prefix,
+.code-input-group:focus-within .code-prefix {
+    border-color: #2563eb;
 }

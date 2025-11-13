@@ -25,26 +25,26 @@ public interface DepartmentRepository extends JpaRepository<Department, Long> {
     Optional<Department> findByDeptName(String deptName);
 
     /**
-     * 활성화된 부서 목록 조회
+     * 활성화된 부서 목록 조회 (idx DESC)
      */
-    @Query("SELECT d FROM Department d WHERE d.useYn = 'Y' AND d.deletedAt IS NULL ORDER BY d.sortOrder")
+    @Query("SELECT d FROM Department d WHERE d.useYn = 'Y' AND d.deletedAt IS NULL ORDER BY d.idx DESC")
     List<Department> findAllActive();
 
     /**
-     * 부서 유형별 조회
+     * 부서 유형별 조회 (idx DESC)
      */
-    @Query("SELECT d FROM Department d WHERE d.deptType = :deptType AND d.useYn = 'Y' AND d.deletedAt IS NULL ORDER BY d.sortOrder")
+    @Query("SELECT d FROM Department d WHERE d.deptType = :deptType AND d.useYn = 'Y' AND d.deletedAt IS NULL ORDER BY d.idx DESC")
     List<Department> findByDeptType(String deptType);
 
     /**
-     * 상위 부서 코드로 하위 부서 조회
+     * 상위 부서 코드로 하위 부서 조회 (idx DESC)
      */
-    @Query("SELECT d FROM Department d WHERE d.parentDeptCode = :parentDeptCode AND d.useYn = 'Y' AND d.deletedAt IS NULL ORDER BY d.sortOrder")
+    @Query("SELECT d FROM Department d WHERE d.parentDeptCode = :parentDeptCode AND d.useYn = 'Y' AND d.deletedAt IS NULL ORDER BY d.idx DESC")
     List<Department> findByParentDeptCode(String parentDeptCode);
 
     /**
-     * 사용 여부별 조회
+     * 사용 여부별 조회 (idx DESC)
      */
-    @Query("SELECT d FROM Department d WHERE d.useYn = :useYn AND d.deletedAt IS NULL ORDER BY d.sortOrder")
+    @Query("SELECT d FROM Department d WHERE d.useYn = :useYn AND d.deletedAt IS NULL ORDER BY d.idx DESC")
     List<Department> findByUseYn(String useYn);
 }

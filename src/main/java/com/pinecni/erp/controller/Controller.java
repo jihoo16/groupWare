@@ -175,6 +175,11 @@ public class Controller {
         return "basic-info";
     }
 
+    @GetMapping("/basic-info/code-detail")
+    public String codeDetail() {
+        return "code-detail";
+    }
+
     @GetMapping("/login")
     public String login() {
         return "login";

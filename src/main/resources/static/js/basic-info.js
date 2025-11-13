@@ -1,13 +1,5 @@
 document.addEventListener('DOMContentLoaded', function() {
     // ===========================
-    // Global Variables
-    // ===========================
-    let currentSubTab = 'rank'; // rank(C02) or position(C08)
-    let currentGroupCode = 'C02';
-    let isEditMode = false;
-    let editingCodeIdx = null;
-
-    // ===========================
     // Tab Switching
     // ===========================
     const tabButtons = document.querySelectorAll('.tab-button');
@@ -25,201 +17,190 @@ document.addEventListener('DOMContentLoaded', function() {
             button.classList.add('active');
             document.getElementById(`${tabName}-tab`).classList.add('active');
 
-            // Load data if positions tab
-            if (tabName === 'positions') {
-                loadCodes(currentGroupCode);
+            // Load data based on tab
+            if (tabName === 'code-groups') {
+                loadCodeGroups();
+            } else if (tabName === 'expenses') {
+                loadExpensePolicies();
             }
         });
     });
 
     // ===========================
-    // Sub-Tab Switching (Position/Rank)
+    // Code Group Management
     // ===========================
-    const subTabButtons = document.querySelectorAll('.sub-tab-button');
-    const subTabContents = document.querySelectorAll('.sub-tab-content');
+    const codeGroupModal = document.getElementById('code-group-modal');
+    const addCodeGroupBtn = document.getElementById('add-code-group-btn');
+    const codeGroupModalTitle = document.getElementById('code-group-modal-title');
+    const codeGroupSaveBtn = document.getElementById('code-group-save-btn');
+    let isCodeGroupEditMode = false;
+    let editingCodeGroupIdx = null;
+    let currentCodeGroups = [];
 
-    subTabButtons.forEach(button => {
-        button.addEventListener('click', () => {
-            const subTab = button.getAttribute('data-subtab');
-            currentSubTab = subTab;
-            currentGroupCode = (subTab === 'rank') ? 'C02' : 'C08';
-
-            // Remove active class from all sub-tabs
-            subTabButtons.forEach(btn => btn.classList.remove('active'));
-            subTabContents.forEach(content => content.classList.remove('active'));
-
-            // Add active class to clicked sub-tab
-            button.classList.add('active');
-            document.getElementById(`${subTab}-subtab`).classList.add('active');
-
-            // Load codes for the selected sub-tab
-            loadCodes(currentGroupCode);
-        });
-    });
-
-    // ===========================
-    // Load Codes from API
-    // ===========================
-    function loadCodes(groupCode) {
-        fetch(`/api/codes?groupCode=${groupCode}`)
+    // Load code groups from API
+    function loadCodeGroups() {
+        fetch('/api/code-groups')
             .then(response => response.json())
             .then(data => {
-                renderCodeTable(data);
+                // Handle different response structures
+                const codeGroups = Array.isArray(data) ? data : (data.data || []);
+                currentCodeGroups = codeGroups;
+                renderCodeGroupTable(codeGroups);
             })
             .catch(error => {
-                console.error('코드 목록 조회 실패:', error);
-                alert('코드 목록을 불러오는데 실패했습니다.');
+                console.error('그룹코드 목록 조회 실패:', error);
+                alert('그룹코드 목록을 불러오는데 실패했습니다.');
             });
     }
 
-    // ===========================
-    // Render Code Table
-    // ===========================
-    function renderCodeTable(codes) {
-        const tbodyId = currentSubTab === 'rank' ? 'rank-tbody' : 'position-tbody';
-        const tbody = document.getElementById(tbodyId);
+    // Render code group table
+    function renderCodeGroupTable(codeGroups) {
+        const tbody = document.getElementById('code-groups-tbody');
 
-        if (codes.length === 0) {
+        if (!Array.isArray(codeGroups) || codeGroups.length === 0) {
             tbody.innerHTML = `
                 <tr>
-                    <td colspan="7" style="text-align: center; padding: 40px;">
+                    <td colspan="5" style="text-align: center; padding: 40px;">
                         <i class="fas fa-inbox" style="font-size: 48px; color: #ccc; display: block; margin-bottom: 10px;"></i>
-                        <p style="color: #999;">등록된 코드가 없습니다.</p>
+                        <p style="color: #999;">등록된 그룹코드가 없습니다.</p>
                     </td>
                 </tr>
             `;
             return;
         }
 
-        tbody.innerHTML = codes.map(code => `
-            <tr data-idx="${code.idx}">
-                <td>${code.sortOrder || 0}</td>
-                <td>${code.code}</td>
-                <td>${code.codeName}</td>
-                <td>${code.codeNameEn || '-'}</td>
-                <td>${code.description || '-'}</td>
+        tbody.innerHTML = codeGroups.map(group => `
+            <tr data-idx="${group.idx}">
+                <td><strong>${group.groupCode}</strong></td>
+                <td>${group.groupName}</td>
+                <td>${group.description || '-'}</td>
                 <td>
-                    <span class="status-${code.useYn === 'Y' ? 'active' : 'inactive'}">
-                        ${code.useYn === 'Y' ? '사용' : '미사용'}
+                    <span class="status-${group.useYn === 'Y' ? 'active' : 'inactive'}">
+                        ${group.useYn === 'Y' ? '사용' : '미사용'}
                     </span>
                 </td>
                 <td>
-                    <button class="btn-sm btn-edit" data-idx="${code.idx}">수정</button>
-                    <button class="btn-sm btn-delete" data-idx="${code.idx}">삭제</button>
+                    <button class="btn-sm btn-detail" data-group-code="${group.groupCode}" data-group-name="${group.groupName}">
+                        <i class="fas fa-list"></i> 상세코드
+                    </button>
+                    <button class="btn-sm btn-edit" data-idx="${group.idx}" data-type="code-group">수정</button>
+                    <button class="btn-sm btn-delete" data-idx="${group.idx}" data-type="code-group">삭제</button>
                 </td>
             </tr>
         `).join('');
     }
 
     // Initial load
-    loadCodes(currentGroupCode);
+    loadCodeGroups();
 
-    // ===========================
-    // Position/Rank Modal
-    // ===========================
-    const positionModal = document.getElementById('position-modal');
-    const addPositionBtn = document.getElementById('add-position-btn');
-    const positionModalTitle = document.getElementById('position-modal-title');
-    const positionSaveBtn = document.getElementById('position-save-btn');
+    // Open modal for adding new code group
+    addCodeGroupBtn.addEventListener('click', () => {
+        codeGroupModalTitle.textContent = '그룹코드 추가';
+        clearCodeGroupForm();
+        isCodeGroupEditMode = false;
+        editingCodeGroupIdx = null;
+        document.getElementById('code-group-code').disabled = false;
 
-    // Open modal for adding new code
-    addPositionBtn.addEventListener('click', () => {
-        const codeType = currentGroupCode === 'C02' ? '직급' : '직위';
-        positionModalTitle.textContent = `${codeType} 추가`;
-        clearPositionForm();
-        isEditMode = false;
-        editingCodeIdx = null;
-        document.getElementById('position-group-code').value = currentGroupCode;
-        document.getElementById('position-code').disabled = false;
-        openModal(positionModal);
+        // Set next group code automatically in input
+        const nextGroupCode = getNextGroupCode();
+        document.getElementById('code-group-code').value = nextGroupCode;
+
+        openModal(codeGroupModal);
     });
 
-    // Edit/Delete code
+    // Detail/Edit/Delete code group
     document.addEventListener('click', (e) => {
-        if (e.target.classList.contains('btn-edit')) {
-            const idx = e.target.getAttribute('data-idx');
-            if (!idx) return;
-            editCode(idx);
-        }
-
-        if (e.target.classList.contains('btn-delete')) {
-            const idx = e.target.getAttribute('data-idx');
-            if (!idx) return;
-            deleteCode(idx);
-        }
-    });
-
-    // Edit code
-    function editCode(idx) {
-        fetch(`/api/codes/${idx}`)
-            .then(response => response.json())
-            .then(code => {
-                const codeType = code.groupCode === 'C02' ? '직급' : '직위';
-                positionModalTitle.textContent = `${codeType} 수정`;
-                isEditMode = true;
-                editingCodeIdx = idx;
-                fillPositionForm(code);
-                document.getElementById('position-code').disabled = true; // 수정 시 코드 변경 불가
-                openModal(positionModal);
-            })
-            .catch(error => {
-                console.error('코드 조회 실패:', error);
-                alert('코드 정보를 불러오는데 실패했습니다.');
-            });
-    }
-
-    // Delete code
-    function deleteCode(idx) {
-        if (!confirm('정말 삭제하시겠습니까?')) {
+        // Handle detail button (including icon click)
+        const detailBtn = e.target.closest('.btn-detail');
+        if (detailBtn) {
+            const groupCode = detailBtn.getAttribute('data-group-code');
+            const groupName = detailBtn.getAttribute('data-group-name');
+            if (groupCode) {
+                window.location.href = `/basic-info/code-detail?groupCode=${groupCode}&groupName=${encodeURIComponent(groupName)}`;
+            }
             return;
         }
 
-        fetch(`/api/codes/${idx}`, {
+        if (e.target.classList.contains('btn-edit') && e.target.getAttribute('data-type') === 'code-group') {
+            const idx = e.target.getAttribute('data-idx');
+            if (!idx) return;
+            editCodeGroup(idx);
+        }
+
+        if (e.target.classList.contains('btn-delete') && e.target.getAttribute('data-type') === 'code-group') {
+            const idx = e.target.getAttribute('data-idx');
+            if (!idx) return;
+            deleteCodeGroup(idx);
+        }
+    });
+
+    // Edit code group
+    function editCodeGroup(idx) {
+        fetch(`/api/code-groups/${idx}`)
+            .then(response => response.json())
+            .then(group => {
+                codeGroupModalTitle.textContent = '그룹코드 수정';
+                isCodeGroupEditMode = true;
+                editingCodeGroupIdx = idx;
+                fillCodeGroupForm(group);
+                document.getElementById('code-group-code').disabled = true; // 수정 시 코드 변경 불가
+                openModal(codeGroupModal);
+            })
+            .catch(error => {
+                console.error('그룹코드 조회 실패:', error);
+                alert('그룹코드 정보를 불러오는데 실패했습니다.');
+            });
+    }
+
+    // Delete code group
+    function deleteCodeGroup(idx) {
+        if (!confirm('정말 삭제하시겠습니까?\n이 그룹에 속한 하위 코드들도 영향을 받을 수 있습니다.')) {
+            return;
+        }
+
+        fetch(`/api/code-groups/${idx}`, {
             method: 'DELETE'
         })
         .then(response => {
             if (!response.ok) {
-                throw new Error('코드 삭제 실패');
+                throw new Error('그룹코드 삭제 실패');
             }
-            alert('코드가 성공적으로 삭제되었습니다.');
-            loadCodes(currentGroupCode);
+            alert('그룹코드가 성공적으로 삭제되었습니다.');
+            loadCodeGroups();
         })
         .catch(error => {
-            console.error('코드 삭제 실패:', error);
-            alert('코드 삭제에 실패했습니다.');
+            console.error('그룹코드 삭제 실패:', error);
+            alert('그룹코드 삭제에 실패했습니다.');
         });
     }
 
-    // Save code
-    positionSaveBtn.addEventListener('click', () => {
-        const code = document.getElementById('position-code').value.trim();
-        const codeName = document.getElementById('position-name').value.trim();
+    // Save code group
+    codeGroupSaveBtn.addEventListener('click', () => {
+        const groupCode = document.getElementById('code-group-code').value.trim();
+        const groupName = document.getElementById('code-group-name').value.trim();
 
-        if (!code || !codeName) {
-            alert('코드와 코드명은 필수입니다.');
+        if (!groupCode || !groupName) {
+            alert('그룹코드와 그룹명은 필수입니다.');
             return;
         }
 
         const formData = {
-            groupCode: document.getElementById('position-group-code').value,
-            code: code,
-            codeName: codeName,
-            codeNameEn: document.getElementById('position-name-en').value.trim() || null,
-            description: document.getElementById('position-description').value.trim() || null,
-            useYn: document.getElementById('position-status').value,
-            sortOrder: parseInt(document.getElementById('position-order').value) || 0
+            groupCode: groupCode,
+            groupName: groupName,
+            description: document.getElementById('code-group-description').value.trim() || null,
+            useYn: document.getElementById('code-group-status').value
         };
 
-        if (isEditMode) {
-            updateCode(editingCodeIdx, formData);
+        if (isCodeGroupEditMode) {
+            updateCodeGroup(editingCodeGroupIdx, formData);
         } else {
-            createCode(formData);
+            createCodeGroup(formData);
         }
     });
 
-    // Create code
-    function createCode(data) {
-        fetch('/api/codes', {
+    // Create code group
+    function createCodeGroup(data) {
+        fetch('/api/code-groups', {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json'
@@ -228,24 +209,24 @@ document.addEventListener('DOMContentLoaded', function() {
         })
         .then(response => {
             if (!response.ok) {
-                throw new Error('코드 생성 실패');
+                throw new Error('그룹코드 생성 실패');
             }
             return response.json();
         })
         .then(() => {
-            alert('코드가 성공적으로 등록되었습니다.');
-            closeModal(positionModal);
-            loadCodes(currentGroupCode);
+            alert('그룹코드가 성공적으로 등록되었습니다.');
+            closeModal(codeGroupModal);
+            loadCodeGroups();
         })
         .catch(error => {
-            console.error('코드 생성 실패:', error);
-            alert('코드 등록에 실패했습니다. 이미 존재하는 코드일 수 있습니다.');
+            console.error('그룹코드 생성 실패:', error);
+            alert('그룹코드 등록에 실패했습니다. 이미 존재하는 코드일 수 있습니다.');
         });
     }
 
-    // Update code
-    function updateCode(idx, data) {
-        fetch(`/api/codes/${idx}`, {
+    // Update code group
+    function updateCodeGroup(idx, data) {
+        fetch(`/api/code-groups/${idx}`, {
             method: 'PUT',
             headers: {
                 'Content-Type': 'application/json'
@@ -254,254 +235,58 @@ document.addEventListener('DOMContentLoaded', function() {
         })
         .then(response => {
             if (!response.ok) {
-                throw new Error('코드 수정 실패');
+                throw new Error('그룹코드 수정 실패');
             }
             return response.json();
         })
         .then(() => {
-            alert('코드가 성공적으로 수정되었습니다.');
-            closeModal(positionModal);
-            loadCodes(currentGroupCode);
+            alert('그룹코드가 성공적으로 수정되었습니다.');
+            closeModal(codeGroupModal);
+            loadCodeGroups();
         })
         .catch(error => {
-            console.error('코드 수정 실패:', error);
-            alert('코드 수정에 실패했습니다.');
+            console.error('그룹코드 수정 실패:', error);
+            alert('그룹코드 수정에 실패했습니다.');
         });
     }
 
-    // Fill form with code data
-    function fillPositionForm(code) {
-        document.getElementById('position-idx').value = code.idx;
-        document.getElementById('position-group-code').value = code.groupCode;
-        document.getElementById('position-code').value = code.code;
-        document.getElementById('position-name').value = code.codeName;
-        document.getElementById('position-name-en').value = code.codeNameEn || '';
-        document.getElementById('position-description').value = code.description || '';
-        document.getElementById('position-order').value = code.sortOrder || 0;
-        document.getElementById('position-status').value = code.useYn;
+    // Fill form with code group data
+    function fillCodeGroupForm(group) {
+        document.getElementById('code-group-idx').value = group.idx;
+        document.getElementById('code-group-code').value = group.groupCode;
+        document.getElementById('code-group-name').value = group.groupName;
+        document.getElementById('code-group-description').value = group.description || '';
+        document.getElementById('code-group-status').value = group.useYn;
     }
 
-    // ===========================
-    // Department Modal (C01)
-    // ===========================
-    const departmentModal = document.getElementById('department-modal');
-    const addDepartmentBtn = document.getElementById('add-department-btn');
-    const departmentModalTitle = document.getElementById('department-modal-title');
-    const departmentSaveBtn = document.getElementById('department-save-btn');
-    let isDepartmentEditMode = false;
-    let editingDepartmentIdx = null;
-
-    // Load departments when departments tab is clicked
-    tabButtons.forEach(button => {
-        button.addEventListener('click', () => {
-            if (button.getAttribute('data-tab') === 'departments') {
-                loadDepartments();
-            }
-        });
-    });
-
-    // Load departments from API
-    function loadDepartments() {
-        fetch('/api/codes?groupCode=C01')
-            .then(response => response.json())
-            .then(data => {
-                renderDepartmentTable(data);
-            })
-            .catch(error => {
-                console.error('소속 목록 조회 실패:', error);
-                alert('소속 목록을 불러오는데 실패했습니다.');
-            });
+    // Clear code group form
+    function clearCodeGroupForm() {
+        document.getElementById('code-group-idx').value = '';
+        document.getElementById('code-group-code').value = '';
+        document.getElementById('code-group-name').value = '';
+        document.getElementById('code-group-description').value = '';
+        document.getElementById('code-group-status').value = 'Y';
     }
 
-    // Render department table
-    function renderDepartmentTable(departments) {
-        const tbody = document.getElementById('departments-tbody');
-
-        if (departments.length === 0) {
-            tbody.innerHTML = `
-                <tr>
-                    <td colspan="7" style="text-align: center; padding: 40px;">
-                        <i class="fas fa-inbox" style="font-size: 48px; color: #ccc; display: block; margin-bottom: 10px;"></i>
-                        <p style="color: #999;">등록된 소속이 없습니다.</p>
-                    </td>
-                </tr>
-            `;
-            return;
+    // Get next suggested group code
+    function getNextGroupCode() {
+        if (currentCodeGroups.length === 0) {
+            return 'C01';
         }
 
-        tbody.innerHTML = departments.map(dept => `
-            <tr data-idx="${dept.idx}">
-                <td>${dept.sortOrder || 0}</td>
-                <td>${dept.code}</td>
-                <td>${dept.codeName}</td>
-                <td>${dept.codeNameEn || '-'}</td>
-                <td>${dept.description || '-'}</td>
-                <td>
-                    <span class="status-${dept.useYn === 'Y' ? 'active' : 'inactive'}">
-                        ${dept.useYn === 'Y' ? '사용' : '미사용'}
-                    </span>
-                </td>
-                <td>
-                    <button class="btn-sm btn-edit" data-idx="${dept.idx}" data-type="department">수정</button>
-                    <button class="btn-sm btn-delete" data-idx="${dept.idx}" data-type="department">삭제</button>
-                </td>
-            </tr>
-        `).join('');
-    }
+        // Extract numeric parts from codes like C01, C02, C08, etc.
+        const numericCodes = currentCodeGroups
+            .map(cg => cg.groupCode)
+            .filter(code => /^C\d+$/.test(code))
+            .map(code => parseInt(code.substring(1)));
 
-    // Open modal for adding new department
-    addDepartmentBtn.addEventListener('click', () => {
-        departmentModalTitle.textContent = '소속 추가';
-        clearDepartmentForm();
-        isDepartmentEditMode = false;
-        editingDepartmentIdx = null;
-        document.getElementById('department-code').disabled = false;
-        openModal(departmentModal);
-    });
-
-    // Edit/Delete department
-    document.addEventListener('click', (e) => {
-        if (e.target.classList.contains('btn-edit') && e.target.getAttribute('data-type') === 'department') {
-            const idx = e.target.getAttribute('data-idx');
-            if (!idx) return;
-            editDepartment(idx);
+        if (numericCodes.length === 0) {
+            return 'C01';
         }
 
-        if (e.target.classList.contains('btn-delete') && e.target.getAttribute('data-type') === 'department') {
-            const idx = e.target.getAttribute('data-idx');
-            if (!idx) return;
-            deleteDepartment(idx);
-        }
-    });
-
-    // Edit department
-    function editDepartment(idx) {
-        fetch(`/api/codes/${idx}`)
-            .then(response => response.json())
-            .then(dept => {
-                departmentModalTitle.textContent = '소속 수정';
-                isDepartmentEditMode = true;
-                editingDepartmentIdx = idx;
-                fillDepartmentForm(dept);
-                document.getElementById('department-code').disabled = true; // 수정 시 코드 변경 불가
-                openModal(departmentModal);
-            })
-            .catch(error => {
-                console.error('소속 조회 실패:', error);
-                alert('소속 정보를 불러오는데 실패했습니다.');
-            });
-    }
-
-    // Delete department
-    function deleteDepartment(idx) {
-        if (!confirm('정말 삭제하시겠습니까?')) {
-            return;
-        }
-
-        fetch(`/api/codes/${idx}`, {
-            method: 'DELETE'
-        })
-        .then(response => {
-            if (!response.ok) {
-                throw new Error('소속 삭제 실패');
-            }
-            alert('소속이 성공적으로 삭제되었습니다.');
-            loadDepartments();
-        })
-        .catch(error => {
-            console.error('소속 삭제 실패:', error);
-            alert('소속 삭제에 실패했습니다.');
-        });
-    }
-
-    // Save department
-    departmentSaveBtn.addEventListener('click', () => {
-        const code = document.getElementById('department-code').value.trim();
-        const codeName = document.getElementById('department-name').value.trim();
-
-        if (!code || !codeName) {
-            alert('코드와 소속명은 필수입니다.');
-            return;
-        }
-
-        const formData = {
-            groupCode: 'C01',
-            code: code,
-            codeName: codeName,
-            codeNameEn: document.getElementById('department-name-en').value.trim() || null,
-            description: document.getElementById('department-description').value.trim() || null,
-            useYn: document.getElementById('department-status').value,
-            sortOrder: parseInt(document.getElementById('department-order').value) || 0
-        };
-
-        if (isDepartmentEditMode) {
-            updateDepartment(editingDepartmentIdx, formData);
-        } else {
-            createDepartment(formData);
-        }
-    });
-
-    // Create department
-    function createDepartment(data) {
-        fetch('/api/codes', {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json'
-            },
-            body: JSON.stringify(data)
-        })
-        .then(response => {
-            if (!response.ok) {
-                throw new Error('소속 생성 실패');
-            }
-            return response.json();
-        })
-        .then(() => {
-            alert('소속이 성공적으로 등록되었습니다.');
-            closeModal(departmentModal);
-            loadDepartments();
-        })
-        .catch(error => {
-            console.error('소속 생성 실패:', error);
-            alert('소속 등록에 실패했습니다. 이미 존재하는 코드일 수 있습니다.');
-        });
-    }
-
-    // Update department
-    function updateDepartment(idx, data) {
-        fetch(`/api/codes/${idx}`, {
-            method: 'PUT',
-            headers: {
-                'Content-Type': 'application/json'
-            },
-            body: JSON.stringify(data)
-        })
-        .then(response => {
-            if (!response.ok) {
-                throw new Error('소속 수정 실패');
-            }
-            return response.json();
-        })
-        .then(() => {
-            alert('소속이 성공적으로 수정되었습니다.');
-            closeModal(departmentModal);
-            loadDepartments();
-        })
-        .catch(error => {
-            console.error('소속 수정 실패:', error);
-            alert('소속 수정에 실패했습니다.');
-        });
-    }
-
-    // Fill form with department data
-    function fillDepartmentForm(dept) {
-        document.getElementById('department-idx').value = dept.idx;
-        document.getElementById('department-code').value = dept.code;
-        document.getElementById('department-name').value = dept.codeName;
-        document.getElementById('department-name-en').value = dept.codeNameEn || '';
-        document.getElementById('department-description').value = dept.description || '';
-        document.getElementById('department-order').value = dept.sortOrder || 0;
-        document.getElementById('department-status').value = dept.useYn;
+        const maxNum = Math.max(...numericCodes);
+        const nextNum = maxNum + 1;
+        return 'C' + String(nextNum).padStart(2, '0');
     }
 
     // ===========================
@@ -513,59 +298,58 @@ document.addEventListener('DOMContentLoaded', function() {
     const logoResetBtn = document.getElementById('logo-reset-btn');
     const logoImage = document.getElementById('logo-image');
 
-    logoUploadBtn.addEventListener('click', () => {
-        logoFileInput.click();
-    });
+    if (logoUploadBtn) {
+        logoUploadBtn.addEventListener('click', () => {
+            logoFileInput.click();
+        });
+    }
 
-    logoFileInput.addEventListener('change', (e) => {
-        const file = e.target.files[0];
-        if (file) {
-            // Validate file size (2MB max)
-            if (file.size > 2 * 1024 * 1024) {
-                alert('파일 크기는 2MB를 초과할 수 없습니다.');
-                return;
+    if (logoFileInput) {
+        logoFileInput.addEventListener('change', (e) => {
+            const file = e.target.files[0];
+            if (file) {
+                // Validate file size (2MB max)
+                if (file.size > 2 * 1024 * 1024) {
+                    alert('파일 크기는 2MB를 초과할 수 없습니다.');
+                    return;
+                }
+
+                // Validate file type
+                if (!file.type.match('image/(png|jpeg|svg\\+xml)')) {
+                    alert('PNG, JPG, SVG 파일만 업로드 가능합니다.');
+                    return;
+                }
+
+                // Preview image
+                const reader = new FileReader();
+                reader.onload = (e) => {
+                    logoImage.src = e.target.result;
+                };
+                reader.readAsDataURL(file);
             }
+        });
+    }
 
-            // Validate file type
-            if (!file.type.match('image/(png|jpeg|svg\\+xml)')) {
-                alert('PNG, JPG, SVG 파일만 업로드 가능합니다.');
-                return;
+    if (logoSaveBtn) {
+        logoSaveBtn.addEventListener('click', () => {
+            // TODO: Implement logo save logic (upload to server)
+            alert('로고가 저장되었습니다.');
+        });
+    }
+
+    if (logoResetBtn) {
+        logoResetBtn.addEventListener('click', () => {
+            if (confirm('로고를 초기화하시겠습니까?')) {
+                logoImage.src = '/images/logo-placeholder.png';
+                logoFileInput.value = '';
             }
-
-            // Preview image
-            const reader = new FileReader();
-            reader.onload = (e) => {
-                logoImage.src = e.target.result;
-            };
-            reader.readAsDataURL(file);
-        }
-    });
-
-    logoSaveBtn.addEventListener('click', () => {
-        // TODO: Implement logo save logic (upload to server)
-        alert('로고가 저장되었습니다.');
-    });
-
-    logoResetBtn.addEventListener('click', () => {
-        if (confirm('로고를 초기화하시겠습니까?')) {
-            logoImage.src = '/images/logo-placeholder.png';
-            logoFileInput.value = '';
-        }
-    });
+        });
+    }
 
     // ===========================
     // Expense Settings - Load & Save
     // ===========================
     const saveExpensesBtn = document.getElementById('save-expenses-btn');
-
-    // Load expense policies when expenses tab is clicked
-    tabButtons.forEach(button => {
-        button.addEventListener('click', () => {
-            if (button.getAttribute('data-tab') === 'expenses') {
-                loadExpensePolicies();
-            }
-        });
-    });
 
     // Load expense policies from API
     function loadExpensePolicies() {
@@ -628,67 +412,54 @@ document.addEventListener('DOMContentLoaded', function() {
     }
 
     // Save expense policies
-    saveExpensesBtn.addEventListener('click', () => {
-        const expenseData = [];
-        const rows = document.querySelectorAll('#expenses-tbody tr');
+    if (saveExpensesBtn) {
+        saveExpensesBtn.addEventListener('click', () => {
+            const expenseData = [];
+            const rows = document.querySelectorAll('#expenses-tbody tr');
 
-        rows.forEach(row => {
-            const positionCode = row.getAttribute('data-position-code');
-            if (!positionCode) return;
+            rows.forEach(row => {
+                const positionCode = row.getAttribute('data-position-code');
+                if (!positionCode) return;
 
-            const inputs = row.querySelectorAll('.expense-input');
-            const data = {
-                positionCode: positionCode
-            };
+                const inputs = row.querySelectorAll('.expense-input');
+                const data = {
+                    positionCode: positionCode
+                };
 
-            inputs.forEach(input => {
-                const field = input.getAttribute('data-field');
-                data[field] = parseInt(input.value) || 0;
+                inputs.forEach(input => {
+                    const field = input.getAttribute('data-field');
+                    data[field] = parseInt(input.value) || 0;
+                });
+
+                expenseData.push(data);
             });
 
-            expenseData.push(data);
-        });
+            console.log('Expense data to save:', expenseData);
 
-        console.log('Expense data to save:', expenseData);
-
-        // Save to server
-        fetch('/api/fixed-expense-policies/batch', {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json'
-            },
-            body: JSON.stringify(expenseData)
-        })
-        .then(response => {
-            if (!response.ok) {
-                throw new Error('고정경비 저장 실패');
-            }
-            return response.json();
-        })
-        .then(result => {
-            alert(`직급별 고정경비가 성공적으로 저장되었습니다.\n저장된 항목: ${result.count}개`);
-            loadExpensePolicies(); // Reload to reflect changes
-        })
-        .catch(error => {
-            console.error('고정경비 저장 실패:', error);
-            alert('고정경비 저장에 실패했습니다.');
+            // Save to server
+            fetch('/api/fixed-expense-policies/batch', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify(expenseData)
+            })
+            .then(response => {
+                if (!response.ok) {
+                    throw new Error('고정경비 저장 실패');
+                }
+                return response.json();
+            })
+            .then(result => {
+                alert(`직급별 고정경비가 성공적으로 저장되었습니다.\n저장된 항목: ${result.count}개`);
+                loadExpensePolicies(); // Reload to reflect changes
+            })
+            .catch(error => {
+                console.error('고정경비 저장 실패:', error);
+                alert('고정경비 저장에 실패했습니다.');
+            });
         });
-    });
-
-    // Format expense inputs with a thousand separator on blur
-    document.querySelectorAll('.expense-input').forEach(input => {
-        input.addEventListener('blur', (e) => {
-            const value = parseInt(e.target.value) || 0;
-            e.target.value = value;
-        });
-
-        // Allow only numbers
-        input.addEventListener('keypress', (e) => {
-            if (!/[0-9]/.test(e.key)) {
-                e.preventDefault();
-            }
-        });
-    });
+    }
 
     // ===========================
     // Other Settings - Save All
@@ -713,55 +484,17 @@ document.addEventListener('DOMContentLoaded', function() {
         modal.classList.remove('active');
     }
 
-    function clearPositionForm() {
-        document.getElementById('position-idx').value = '';
-        document.getElementById('position-code').value = '';
-        document.getElementById('position-name').value = '';
-        document.getElementById('position-name-en').value = '';
-        document.getElementById('position-description').value = '';
-        document.getElementById('position-order').value = '0';
-        document.getElementById('position-status').value = 'Y';
-    }
-
-    function clearDepartmentForm() {
-        document.getElementById('department-idx').value = '';
-        document.getElementById('department-code').value = '';
-        document.getElementById('department-name').value = '';
-        document.getElementById('department-name-en').value = '';
-        document.getElementById('department-description').value = '';
-        document.getElementById('department-order').value = '0';
-        document.getElementById('department-status').value = 'Y';
-    }
-
-    function reorderTableRows(tbodyId) {
-        const tbody = document.getElementById(tbodyId);
-        const rows = Array.from(tbody.rows);
-
-        rows.sort((a, b) => {
-            const orderA = parseInt(a.cells[0].textContent);
-            const orderB = parseInt(b.cells[0].textContent);
-            return orderA - orderB;
-        });
-
-        // Re-append rows in sorted order
-        rows.forEach(row => tbody.appendChild(row));
-    }
-
     // Modal close button handlers
     document.querySelectorAll('.modal-close, .modal .btn-cancel').forEach(btn => {
         btn.addEventListener('click', () => {
-            closeModal(positionModal);
-            closeModal(departmentModal);
+            closeModal(codeGroupModal);
         });
     });
 
     // Close modal on outside click
     window.addEventListener('click', (e) => {
-        if (e.target === positionModal) {
-            closeModal(positionModal);
-        }
-        if (e.target === departmentModal) {
-            closeModal(departmentModal);
+        if (e.target === codeGroupModal) {
+            closeModal(codeGroupModal);
         }
     });
 });
