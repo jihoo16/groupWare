@@ -3,10 +3,12 @@ package com.pinecni.erp.api.project.service;
 import com.pinecni.erp.api.project.dto.*;
 import com.pinecni.erp.api.project.mapper.ProjectMapper;
 import com.pinecni.erp.api.project.repository.ProjectMemberRepository;
+import com.pinecni.erp.api.project.repository.ProjectRelationRepository;
 import com.pinecni.erp.api.project.repository.ProjectRepository;
 import com.pinecni.erp.api.project.repository.ResearchCardRepository;
 import com.pinecni.erp.entity.Project;
 import com.pinecni.erp.entity.ProjectMember;
+import com.pinecni.erp.entity.ProjectRelation;
 import com.pinecni.erp.entity.ResearchCard;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -29,6 +31,7 @@ public class ProjectServiceImpl implements ProjectService {
     private final ProjectRepository projectRepository;
     private final ProjectMemberRepository projectMemberRepository;
     private final ResearchCardRepository researchCardRepository;
+    private final ProjectRelationRepository projectRelationRepository;
     private final ProjectMapper mapper;
 
     @Override
@@ -87,7 +90,24 @@ public class ProjectServiceImpl implements ProjectService {
 
         // 프로젝트 저장
         Project savedProject = projectRepository.save(project);
+        // 연계 프로젝트
+        if (createDTO.getProjectRelations() != null && !createDTO.getProjectRelations().isEmpty()) {
+            log.debug("Saving {} relations for project idx={}", createDTO.getProjectRelations().size(), savedProject.getIdx());
 
+            for(ProjectRelationsCreateDTO relationsDTO : createDTO.getProjectRelations()) {
+                ProjectRelation relation = ProjectRelation.builder()
+                        .sourceProjectIdx(savedProject.getIdx())
+                        .targetProjectIdx(relationsDTO.getTargetProjectIdx())
+                        .relationType(relationsDTO.getRelationType())
+                        .description(relationsDTO.getDescription())
+                        .createdUserIdx(createdUserIdx)
+                        .build();
+
+                projectRelationRepository.save(relation);
+                log.debug("Project relation saved: source={}, target={}, type={}",
+                         savedProject.getIdx(), relationsDTO.getTargetProjectIdx(), relationsDTO.getRelationType());
+            }
+        }
         // 연구비 카드 저장
         if (createDTO.getProjectCards() != null && !createDTO.getProjectCards().isEmpty()) {
             log.debug("Saving {} research cards for project idx={}", createDTO.getProjectCards().size(), savedProject.getIdx());

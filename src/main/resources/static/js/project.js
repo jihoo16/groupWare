@@ -812,7 +812,15 @@ document.addEventListener('DOMContentLoaded', function() {
                     participationStartDate: member.startDate,
                     participationEndDate: member.endDate,
                     role: member.role || null
+                })),
+
+                // 연계 프로젝트 데이터 추가 (각 프로젝트의 개별 타입/설명 사용)
+                projectRelations: relatedProjectList.map(project => ({
+                    targetProjectIdx: parseInt(project.id),
+                    relationType: project.relationType,
+                    description: project.description || null
                 }))
+
             };
 
             fetch('/api/projects', {
@@ -1210,7 +1218,9 @@ document.addEventListener('DOMContentLoaded', function() {
                     name: projectName,
                     status: projectStatus,
                     pm: projectPM,
-                    period: projectPeriod
+                    period: projectPeriod,
+                    relationType: 'RELATED', // 기본값
+                    description: ''
                 });
             }
         });
@@ -1234,7 +1244,7 @@ document.addEventListener('DOMContentLoaded', function() {
             const item = document.createElement('div');
             item.className = 'related-project-item';
             item.innerHTML = `
-                <div class="related-project-info">
+                <div class="related-project-info form-grid">
                     <div class="related-project-name">
                         <i class="fas fa-link"></i>
                         ${project.name}
@@ -1244,10 +1254,33 @@ document.addEventListener('DOMContentLoaded', function() {
                         <span><i class="fas fa-user"></i> PM: ${project.pm}</span>
                         <span><i class="fas fa-calendar"></i> ${project.period}</span>
                     </div>
+                    <div class="related-project-fields" style="margin-top: 12px;">
+                        <div style="display: grid; grid-template-columns: 200px 1fr; gap: 12px; align-items: start;">
+                            <div class="form-group">
+                                <label style="display: block; font-size: 13px; font-weight: 500; margin-bottom: 4px; color: #495057;">연계 타입</label>
+                                <select onchange="updateRelatedProjectType('${project.id}', this.value)"
+                                        style="width: 100%; padding: 6px 8px; border: 1px solid #ced4da; border-radius: 4px; font-size: 13px;" class="form-control">
+                                    <option value="RELATED" ${project.relationType === 'RELATED' ? 'selected' : ''}>RELATED</option>
+                                    <option value="SUCCESSOR" ${project.relationType === 'SUCCESSOR' ? 'selected' : ''}>SUCCESSOR</option>
+                                    <option value="COLLABORATION" ${project.relationType === 'COLLABORATION' ? 'selected' : ''}>COLLABORATION</option>
+                                </select>
+                            </div>
+                            <div class="form-group">
+                                <label style="display: block; font-size: 13px; font-weight: 500; margin-bottom: 4px; color: #495057;">설명</label>
+                                <textarea onchange="updateRelatedProjectDescription('${project.id}', this.value)"
+                                          placeholder="연계 프로젝트 설명을 입력하세요"
+                                          class="form-control"
+                                          style="width: 100%; padding: 6px 8px; border: 1px solid #ced4da; border-radius: 4px; font-size: 13px; resize: vertical; min-height: 60px;">${project.description || ''}</textarea>
+                            </div>
+                        </div>
+                        
+                    </div>
                 </div>
-                <button type="button" onclick="removeRelatedProject('${project.id}')">
+               
+                <button type="button" onclick="removeRelatedProject('${project.id}')" style="align-self: flex-start;">
                     <i class="fas fa-times"></i>
                 </button>
+                 
             `;
             relatedProjectListElement.appendChild(item);
         });
@@ -1258,6 +1291,22 @@ document.addEventListener('DOMContentLoaded', function() {
         relatedProjectList = relatedProjectList.filter(p => p.id !== projectId);
         renderRelatedProjectList();
         updateRelatedProjectCheckboxStates();
+    };
+
+    // 연계 프로젝트 타입 업데이트 (전역 함수)
+    window.updateRelatedProjectType = function(projectId, value) {
+        const project = relatedProjectList.find(p => p.id === projectId);
+        if (project) {
+            project.relationType = value;
+        }
+    };
+
+    // 연계 프로젝트 설명 업데이트 (전역 함수)
+    window.updateRelatedProjectDescription = function(projectId, value) {
+        const project = relatedProjectList.find(p => p.id === projectId);
+        if (project) {
+            project.description = value;
+        }
     };
 
     // 연계 프로젝트 모달 배경 클릭 시 닫기

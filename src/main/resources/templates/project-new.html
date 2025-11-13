@@ -54,8 +54,8 @@
 
                     <div class="form-group">
                         <label>연구비 카드</label>
-                        <button type="button" class="btn btn-secondary btn-sm" id="addCardBtn">
-                            <i class="fas fa-credit-card"></i> 카드 추가
+                        <button type="button" class="btn btn-secondary btn-sm form-control" id="addCardBtn">
+                            <i class="fas fa-credit-card "></i> 카드 추가
                         </button>
                         <div id="cardList" class="card-list">
                             <!-- 카드 목록이 여기에 표시됩니다 -->
@@ -78,7 +78,10 @@
                         <small class="form-text">외부 영수증 등록 시스템 URL을 입력하세요.</small>
                     </div>
                 </div>
-
+                <div class="form-group">
+                    <label for="projectDescription">프로젝트 설명 <span class="required">*</span></label>
+                    <textarea id="projectDescription" name="projectDescription" class="form-control" rows="4" required></textarea>
+                </div>
                 <div class="form-group" style="margin-bottom: 20px">
                     <label>연계 프로젝트</label>
                     <button type="button" class="btn btn-secondary btn-sm" id="addRelatedProjectBtn">
@@ -89,10 +92,7 @@
                     </div>
                 </div>
 
-                <div class="form-group">
-                    <label for="projectDescription">프로젝트 설명 <span class="required">*</span></label>
-                    <textarea id="projectDescription" name="projectDescription" class="form-control" rows="4" required></textarea>
-                </div>
+
             </div>
 
             <div class="form-section">

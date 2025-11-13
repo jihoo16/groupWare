@@ -62,5 +62,8 @@ public class ProjectCreateDTO {
     /**
     *  카드 추가
     */
-    private List<ProjectCardCreateDTO> projectCards;
+    private List<ProjectCardCreateDTO> projectCards;/**
+    *  연계 추가
+    */
+    private List<ProjectRelationsCreateDTO> projectRelations;
 }
