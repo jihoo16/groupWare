@@ -165,7 +165,8 @@ document.addEventListener('DOMContentLoaded', function() {
 
     // 초기 데이터 로드
     function loadPastProjects() {
-        fetch('/api/projects')
+        // 최적화된 과거 프로젝트 전용 API 사용
+        fetch('/api/projects/past')
             .then(response => {
                 if (!response.ok) {
                     throw new Error('프로젝트 목록을 불러오는데 실패했습니다.');
@@ -173,10 +174,8 @@ document.addEventListener('DOMContentLoaded', function() {
                 return response.json();
             })
             .then(projects => {
-                // 진행중이 아닌 프로젝트만 과거 프로젝트로 표시
-                const pastProjects = projects.filter(p => p.projectStatus !== 'IN_PROGRESS');
-
-                allPastProjectsData = pastProjects.map((project, index) => ({
+                // 이미 백엔드에서 필터링된 과거 프로젝트만 반환됨
+                allPastProjectsData = projects.map((project, index) => ({
                     no: index + 1,
                     idx: project.idx,
                     name: project.projectName,
@@ -233,11 +232,25 @@ document.addEventListener('DOMContentLoaded', function() {
         if (currentProjects.length === 0) {
             pastProjectTableBody.innerHTML = '<tr><td colspan="8" class="text-center" style="padding: 40px;">검색 결과가 없습니다.</td></tr>';
         } else {
+            const today = new Date();
+            today.setHours(0, 0, 0, 0); // 시간 정보 제거
+
             currentProjects.forEach(project => {
                 const row = document.createElement('tr');
                 row.setAttribute('data-status', project.status);
                 row.setAttribute('data-project-name', project.name);
                 row.setAttribute('data-project-id', project.projectId);
+
+                // 시작일이 오늘 이후인지 확인
+                const startDate = new Date(project.period.split(' ~ ')[0]);
+                startDate.setHours(0, 0, 0, 0);
+                const isFutureProject = startDate > today;
+
+                // 미래 프로젝트인 경우 클래스 추가
+                if (isFutureProject) {
+                    row.classList.add('future-project');
+                }
+
                 row.innerHTML = `
                     <td class="text-center">${project.no}</td>
                     <td><strong>${project.name}</strong></td>

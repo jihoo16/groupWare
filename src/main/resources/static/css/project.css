@@ -1371,6 +1371,17 @@ body:has(.project-form-footer) .main-content {
     text-align: right;
 }
 
+/* 미래 프로젝트 (시작일이 오늘 이후) */
+.project-table tbody tr.future-project {
+    background: linear-gradient(to right, #f0f9ff, #e0f2fe);
+    border-left: 3px solid #0ea5e9;
+}
+
+.project-table tbody tr.future-project:hover {
+    background: linear-gradient(to right, #e0f2fe, #bae6fd);
+    transform: scale(1.005);
+}
+
 /* 반응형 */
 @media (max-width: 768px) {
     .project-grid {

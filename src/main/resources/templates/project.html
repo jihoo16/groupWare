@@ -27,94 +27,21 @@
         </div>
 
         <div class="project-grid" id="currentProjectGrid">
-            <!-- 진행중인 프로젝트 카드 -->
-            <div class="project-card" data-status="in-progress" data-project-name="ERP 시스템 개발">
-                <div class="project-header">
-                    <h3>ERP 시스템 개발</h3>
-                    <span class="status-badge status-in-progress">진행중</span>
-                </div>
-                <div class="project-body">
-                    <div class="project-info">
-                        <div class="info-item">
-                            <i class="fas fa-user"></i>
-                            <span>PM: 김철수</span>
-                        </div>
-                        <div class="info-item">
-                            <i class="fas fa-users"></i>
-                            <span>팀원: 5명</span>
-                        </div>
-                        <div class="info-item">
-                            <i class="fas fa-calendar"></i>
-                            <span>2025-01-01 ~ 2025-12-31</span>
-                        </div>
-                    </div>
-                    <div class="project-progress">
-                        <div class="progress-bar">
-                            <div class="progress-fill" style="width: 45%;"></div>
-                        </div>
-                        <span class="progress-text">45%</span>
-                    </div>
-                    <p class="project-description">
-                        통합 ERP 시스템 개발 프로젝트. 인사, 회계, 영업 등 전사적 업무 프로세스 통합.
-                    </p>
-                </div>
-                <div class="project-footer">
-                    <button class="btn btn-sm btn-primary" onclick="editProject(1)">
-                        <i class="fas fa-edit"></i> 수정
-                    </button>
-                </div>
-            </div>
-
-            <div class="project-card" data-status="planning" data-project-name="모바일 앱 개발">
-                <div class="project-header">
-                    <h3>모바일 앱 개발</h3>
-                    <span class="status-badge status-planning">기획</span>
-                </div>
-                <div class="project-body">
-                    <div class="project-info">
-                        <div class="info-item">
-                            <i class="fas fa-user"></i>
-                            <span>PM: 이영희</span>
-                        </div>
-                        <div class="info-item">
-                            <i class="fas fa-users"></i>
-                            <span>팀원: 3명</span>
-                        </div>
-                        <div class="info-item">
-                            <i class="fas fa-calendar"></i>
-                            <span>2025-03-01 ~ 2025-08-31</span>
-                        </div>
-                    </div>
-                    <div class="project-progress">
-                        <div class="progress-bar">
-                            <div class="progress-fill" style="width: 10%;"></div>
-                        </div>
-                        <span class="progress-text">10%</span>
-                    </div>
-                    <p class="project-description">
-                        고객용 모바일 애플리케이션 개발. iOS 및 Android 플랫폼 지원.
-                    </p>
-                </div>
-                <div class="project-footer">
-                    <button class="btn btn-sm btn-primary" onclick="editProject(2)">
-                        <i class="fas fa-edit"></i> 수정
-                    </button>
-                </div>
-            </div>
-
+            <!-- JavaScript에서 동적으로 렌더링됩니다 -->
         </div>
     </div>
 
     <!-- 과거 프로젝트 -->
     <div class="content-card" style="margin-top: 24px;">
         <div class="card-header">
-            <h2>과거 프로젝트</h2>
+            <h2>프로젝트 목록</h2>
             <div class="filter-group">
                 <select id="pastStatusFilter" class="filter-select">
                     <option value="">전체 상태</option>
-                    <option value="completed">완료</option>
-                    <option value="on-hold">보류</option>
-                    <option value="cancelled">취소</option>
+                    <option value="PLANNING">기획</option>
+                    <option value="COMPLETED">완료</option>
+                    <option value="ON_HOLD">보류</option>
+                    <option value="CANCELLED">취소</option>
                 </select>
                 <input type="text" id="searchPastInput" class="search-input" placeholder="프로젝트명 검색...">
             </div>
