@@ -3,6 +3,7 @@ package com.pinecni.erp.api.project.controller;
 import com.pinecni.erp.api.project.dto.ProjectCreateDTO;
 import com.pinecni.erp.api.project.dto.ProjectDTO;
 import com.pinecni.erp.api.project.dto.ProjectUpdateDTO;
+import com.pinecni.erp.api.project.dto.ResearchCardDTO;
 import com.pinecni.erp.api.project.service.ProjectService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -60,6 +61,26 @@ public class ProjectController {
             log.error("프로젝트 조회 실패: {}", e.getMessage());
             return ResponseEntity.notFound().build();
         }
+    }
+
+    /**
+     * 과거 프로젝트 조회 (진행중이 아닌 프로젝트)
+     * GET /api/projects/past
+     * GET /api/projects/past?status=COMPLETED
+     */
+    @GetMapping("/past")
+    public ResponseEntity<List<ProjectDTO>> getPastProjects(
+            @RequestParam(required = false) String status) {
+        log.debug("GET /api/projects/past - status: {}", status);
+
+        List<ProjectDTO> projects;
+        if (status != null && !status.isEmpty()) {
+            projects = projectService.getPastProjectsByStatus(status);
+        } else {
+            projects = projectService.getPastProjects();
+        }
+
+        return ResponseEntity.ok(projects);
     }
 
     /**
@@ -138,6 +159,23 @@ public class ProjectController {
             Map<String, String> error = new HashMap<>();
             error.put("error", e.getMessage());
             return ResponseEntity.status(HttpStatus.NOT_FOUND).body(error);
+        }
+    }
+
+    /**
+     * 프로젝트별 연구비 카드 목록 조회
+     * GET /api/projects/{idx}/cards
+     */
+    @GetMapping("/{idx}/cards")
+    public ResponseEntity<List<ResearchCardDTO>> getProjectCards(@PathVariable Long idx) {
+        log.debug("GET /api/projects/{}/cards", idx);
+
+        try {
+            List<ResearchCardDTO> cards = projectService.getProjectCards(idx);
+            return ResponseEntity.ok(cards);
+        } catch (Exception e) {
+            log.error("연구비 카드 조회 실패: {}", e.getMessage());
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(null);
         }
     }
 

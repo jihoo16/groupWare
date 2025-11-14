@@ -50,4 +50,16 @@ public interface ProjectRepository extends JpaRepository<Project, Long> {
      */
     @Query("SELECT p FROM Project p WHERE p.projectManagerIdx = :pmUserIdx AND p.isDeleted = false")
     List<Project> findByProjectManagerIdx(Long pmUserIdx);
+
+    /**
+     * 과거 프로젝트 조회 (진행중이 아닌 프로젝트)
+     */
+    @Query("SELECT p FROM Project p WHERE p.projectStatus != 'IN_PROGRESS' AND p.isDeleted = false ORDER BY p.createdAt DESC")
+    List<Project> findPastProjects();
+
+    /**
+     * 과거 프로젝트 중 특정 상태만 조회
+     */
+    @Query("SELECT p FROM Project p WHERE p.projectStatus = :status AND p.projectStatus != 'IN_PROGRESS' AND p.isDeleted = false ORDER BY p.createdAt DESC")
+    List<Project> findPastProjectsByStatus(String status);
 }

@@ -3,6 +3,7 @@ package com.pinecni.erp.api.project.service;
 import com.pinecni.erp.api.project.dto.ProjectCreateDTO;
 import com.pinecni.erp.api.project.dto.ProjectDTO;
 import com.pinecni.erp.api.project.dto.ProjectUpdateDTO;
+import com.pinecni.erp.api.project.dto.ResearchCardDTO;
 
 import java.util.List;
 
@@ -32,4 +33,13 @@ public interface ProjectService {
 
 
     List<ProjectDTO> searchProjectsByName(String name);
+
+
+    List<ProjectDTO> getPastProjects();
+
+
+    List<ProjectDTO> getPastProjectsByStatus(String status);
+
+
+    List<ResearchCardDTO> getProjectCards(Long projectIdx);
 }

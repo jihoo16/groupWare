@@ -1,6 +1,7 @@
 package com.pinecni.erp.api.project.service;
 
 import com.pinecni.erp.api.project.dto.*;
+import com.pinecni.erp.api.project.dto.ResearchCardDTO;
 import com.pinecni.erp.api.project.mapper.ProjectMapper;
 import com.pinecni.erp.api.project.repository.ProjectMemberRepository;
 import com.pinecni.erp.api.project.repository.ProjectRelationRepository;
@@ -217,6 +218,40 @@ public class ProjectServiceImpl implements ProjectService {
 
         return projectRepository.searchByName(name.trim()).stream()
                 .map(mapper::toDTO)
+                .collect(Collectors.toList());
+    }
+
+    @Override
+    public List<ProjectDTO> getPastProjects() {
+        log.debug("getPastProjects() called");
+
+        return projectRepository.findPastProjects().stream()
+                .map(mapper::toDTO)
+                .collect(Collectors.toList());
+    }
+
+    @Override
+    public List<ProjectDTO> getPastProjectsByStatus(String status) {
+        log.debug("getPastProjectsByStatus() called with status: {}", status);
+
+        return projectRepository.findPastProjectsByStatus(status).stream()
+                .map(mapper::toDTO)
+                .collect(Collectors.toList());
+    }
+
+    @Override
+    public List<ResearchCardDTO> getProjectCards(Long projectIdx) {
+        log.debug("getProjectCards() called with projectIdx: {}", projectIdx);
+
+        return researchCardRepository.findByProjectIdx(projectIdx).stream()
+                .map(card -> ResearchCardDTO.builder()
+                        .idx(card.getIdx())
+                        .projectIdx(card.getProjectIdx())
+                        .cardCompany(card.getCardCompany())
+                        .cardLastDigits(card.getCardLastDigits())
+                        .cardNickname(card.getCardNickname())
+                        .isActive(card.getIsActive())
+                        .build())
                 .collect(Collectors.toList());
     }
 }
