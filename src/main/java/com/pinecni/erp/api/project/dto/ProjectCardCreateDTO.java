@@ -15,6 +15,11 @@ import lombok.NoArgsConstructor;
 public class ProjectCardCreateDTO {
 
     /**
+     * 카드 IDX (업데이트 시에만 사용, 생성 시에는 null)
+     */
+    private Long idx;
+
+    /**
      * 프로젝트 IDX (Service에서 설정)
      */
     private Long projectIdx;

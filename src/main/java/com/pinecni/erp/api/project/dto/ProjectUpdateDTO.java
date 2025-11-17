@@ -6,6 +6,7 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 
 import java.time.LocalDate;
+import java.util.List;
 
 /**
  * 프로젝트 수정 요청 DTO
@@ -57,4 +58,17 @@ public class ProjectUpdateDTO {
      * 증빙 URL
      */
     private String receiptUrl;
+
+    /**
+     * 연구비 카드 목록
+     */
+    private List<ProjectCardCreateDTO> projectCards;
+    /**
+     * 참여인력 목록
+     */
+    private List<ProjectMemberCreateDTO> teamMembers;
+    /**
+     *  연계 추가
+    */
+    private List<ProjectRelationsCreateDTO> projectRelations;
 }

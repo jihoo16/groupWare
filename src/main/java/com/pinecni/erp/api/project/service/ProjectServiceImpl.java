@@ -188,7 +188,70 @@ public class ProjectServiceImpl implements ProjectService {
         // 저장
         Project updatedProject = projectRepository.save(project);
 
-        log.info("Project updated: idx={}, name={}", updatedProject.getIdx(), updatedProject.getProjectName());
+        // 연구비 카드 업데이트
+        if (updateDTO.getProjectCards() != null) {
+            log.debug("Updating {} research cards for project idx={}", updateDTO.getProjectCards().size(), idx);
+
+            // 1. 기존 활성 카드 목록 조회
+            List<ResearchCard> existingCards = researchCardRepository.findByProjectIdx(idx);
+            java.util.Set<Long> updatedCardIds = new java.util.HashSet<>();
+
+            // 2. DTO의 카드 처리 (생성 또는 업데이트)
+            for (ProjectCardCreateDTO cardDTO : updateDTO.getProjectCards()) {
+                // 카드 뒷 4자리 검증
+                if (cardDTO.getCardLastDigits() == null || !cardDTO.getCardLastDigits().matches("\\d{4}")) {
+                    log.warn("Invalid card last digits: {}. Skipping card for project idx={}",
+                             cardDTO.getCardLastDigits(), idx);
+                    continue;
+                }
+
+                if (cardDTO.getIdx() != null && cardDTO.getIdx() > 0) {
+                    // 기존 카드 업데이트
+                    ResearchCard existingCard = researchCardRepository.findById(cardDTO.getIdx())
+                            .orElseThrow(() -> new IllegalArgumentException("카드를 찾을 수 없습니다: " + cardDTO.getIdx()));
+
+                    existingCard.setCardCompany(cardDTO.getCardCompany());
+                    existingCard.setCardLastDigits(cardDTO.getCardLastDigits());
+                    existingCard.setCardNickname(cardDTO.getCardNickname());
+                    existingCard.setIsActive(true);
+
+                    researchCardRepository.save(existingCard);
+                    updatedCardIds.add(existingCard.getIdx());
+
+                    log.debug("Research card updated: idx={}, company={}, lastDigits={}",
+                             existingCard.getIdx(), cardDTO.getCardCompany(), cardDTO.getCardLastDigits());
+                } else {
+                    // 신규 카드 생성
+                    ResearchCard newCard = ResearchCard.builder()
+                            .projectIdx(idx)
+                            .cardCompany(cardDTO.getCardCompany())
+                            .cardLastDigits(cardDTO.getCardLastDigits())
+                            .cardNickname(cardDTO.getCardNickname())
+                            .isActive(true)
+                            .build();
+
+                    ResearchCard savedCard = researchCardRepository.save(newCard);
+                    updatedCardIds.add(savedCard.getIdx());
+
+                    log.debug("Research card created: idx={}, company={}, lastDigits={}",
+                             savedCard.getIdx(), cardDTO.getCardCompany(), cardDTO.getCardLastDigits());
+                }
+            }
+
+            // 3. DTO에 포함되지 않은 기존 카드는 비활성화 (삭제된 것으로 간주)
+            for (ResearchCard existingCard : existingCards) {
+                if (!updatedCardIds.contains(existingCard.getIdx())) {
+                    existingCard.setIsActive(false);
+                    researchCardRepository.save(existingCard);
+                    log.debug("Research card deactivated: idx={}", existingCard.getIdx());
+                }
+            }
+        }
+
+        log.info("Project updated: idx={}, name={}, cards={}",
+                 updatedProject.getIdx(),
+                 updatedProject.getProjectName(),
+                 updateDTO.getProjectCards() != null ? updateDTO.getProjectCards().size() : 0);
         return mapper.toDTO(updatedProject);
     }
 

@@ -492,11 +492,11 @@ document.addEventListener('DOMContentLoaded', function() {
             alert('카드 닉네임을 입력해주세요.');
             return;
         }
-
-        // 카드 추가
-        cardIdCounter++;
+        console.log("cardIdCounter : "+cardIdCounter)
+        // 카드 추가 (신규 카드는 음수 ID 사용)
+        cardIdCounter--;
         cardListData.push({
-            id: cardIdCounter,
+            id: cardIdCounter,  // 음수 ID로 신규 카드 표시
             company: cardCompany,
             number: cardNumber,
             name: cardName
@@ -637,7 +637,17 @@ document.addEventListener('DOMContentLoaded', function() {
                 return;
             }
 
-            const projectId = document.getElementById('projectId').value;
+            // URL에서 가져온 projectId 사용 (hidden input 값 대신)
+            // const projectId = document.getElementById('projectId').value;
+            console.log(cardListData.id)
+            // 카드 데이터 변환 (기존 카드는 idx 포함, 신규 카드는 idx null)
+            const projectCards = cardListData.map(card => ({
+                idx: card.id > 0 ? card.id : null,  // 양수면 기존 카드 idx, 음수면 null (신규)
+                cardCompany: card.company,
+                cardLastDigits: card.number,
+                cardNickname: card.name || null
+            }));
+            console.log("projectCards : "+projectCards.values());
 
             // ProjectUpdateDTO 형식에 맞게 데이터 수집
             const updateData = {
@@ -648,7 +658,8 @@ document.addEventListener('DOMContentLoaded', function() {
                 endDate: document.getElementById('endDate').value,
                 projectStatus: document.getElementById('projectStatus').value,
                 description: document.getElementById('projectDescription').value,
-                receiptUrl: document.getElementById('receiptUrl').value || null
+                receiptUrl: document.getElementById('receiptUrl').value || null,
+                projectCards: projectCards
             };
 
             console.log('수정된 프로젝트 데이터:', updateData);
@@ -668,8 +679,8 @@ document.addEventListener('DOMContentLoaded', function() {
                 return response.json();
             })
             .then(data => {
-                alert('프로젝트가 수정되었습니다.');
-                window.location.href = '/project';
+                // alert('프로젝트가 수정되었습니다.');
+                // window.location.href = '/project';
             })
             .catch(error => {
                 console.error('Error updating project:', error);
