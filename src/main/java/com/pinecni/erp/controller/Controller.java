@@ -35,6 +35,11 @@ public class Controller {
         return "calendar-edit";
     }
 
+    @GetMapping("/calendar/new")
+    public String calendarNew() {
+        return "calendar-new";
+    }
+
     @GetMapping("/messenger")
     public String messenger() {
         return "messenger";
@@ -168,6 +173,21 @@ public class Controller {
     @GetMapping("/project/edit/{id}")
     public String projectEdit() {
         return "project-edit";
+    }
+
+    @GetMapping("/team")
+    public String team() {
+        return "team";
+    }
+
+    @GetMapping("/team/new")
+    public String teamNew() {
+        return "team-new";
+    }
+
+    @GetMapping("/team/edit/{id}")
+    public String teamEdit() {
+        return "team-edit";
     }
 
     @GetMapping("/basic-info")

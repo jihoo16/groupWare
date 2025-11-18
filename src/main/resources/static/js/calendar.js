@@ -968,9 +968,8 @@ document.addEventListener('DOMContentLoaded', function() {
 
     // 일정 추가 버튼 클릭
     document.getElementById('addScheduleBtn').addEventListener('click', function() {
-        const today = new Date();
-        const dateStr = formatDate(today);
-        openAddScheduleModal(dateStr);
+        // 상세한 일정 추가 페이지로 이동
+        window.location.href = '/calendar/new';
     });
 
     // 일정 추가 모달 열기
