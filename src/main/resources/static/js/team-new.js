@@ -379,12 +379,12 @@ document.addEventListener('DOMContentLoaded', function() {
 
         const html = Array.from(selectedEmployees.values()).map(emp => `
             <div class="selected-employee-item">
-                <div class="selected-employee-avatar">${getInitial(emp.empName)}</div>
+                <div class="selected-employee-avatar">${getInitial(emp.name)}</div>
                 <div class="selected-employee-info">
-                    <div class="selected-employee-name">${emp.empName}</div>
-                    <div class="selected-employee-dept">${emp.empDept || '부서 미지정'} · ${emp.empPosition || '직급 미지정'}</div>
+                    <div class="selected-employee-name">${emp.name}</div>
+                    <div class="selected-employee-dept">${emp.department || '부서 미지정'} · ${emp.rank || '직급 미지정'}</div>
                 </div>
-                <button type="button" class="btn-remove-selected" onclick="removeSelectedEmployee(${emp.idx})">
+                <button type="button" class="btn-remove-selected" onclick="removeSelectedEmployee(${emp.id})">
                     <i class="fas fa-times"></i>
                 </button>
             </div>
@@ -394,17 +394,10 @@ document.addEventListener('DOMContentLoaded', function() {
     }
 
     // 선택된 팀원 제거
-    window.removeSelectedEmployee = function(empIdx) {
-        selectedEmployees.delete(empIdx);
-        const checkbox = document.getElementById(`emp-${empIdx}`);
-        if (checkbox) {
-            checkbox.checked = false;
-        }
-        const treeEmployee = document.querySelector(`.tree-employee[data-emp-idx="${empIdx}"]`);
-        if (treeEmployee) {
-            treeEmployee.classList.remove('selected');
-        }
+    window.removeSelectedEmployee = function(memberId) {
+        selectedEmployees.delete(memberId);
         updateSelectedEmployeesList();
+        updateOrgTreeCheckboxes();
     };
 
     // 직원 검색 필터
