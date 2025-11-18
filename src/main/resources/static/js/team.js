@@ -418,11 +418,15 @@ document.addEventListener('DOMContentLoaded', function() {
                 <div class="empty-grid-message">
                     <i class="fas fa-users-slash"></i>
                     <p>등록된 팀이 없습니다.</p>
-                    <button class="btn btn-primary" onclick="window.location.href='/team/new'">
-                        <i class="fas fa-plus"></i> 첫 번째 팀 만들기
-                    </button>
+                    <p class="empty-grid-hint">클릭하여 팀 추가</p>
                 </div>
             `;
+
+            // 빈 그리드 클릭 이벤트
+            const emptyMessage = teamGrid.querySelector('.empty-grid-message');
+            emptyMessage.addEventListener('click', function() {
+                window.location.href = '/team/new';
+            });
         }
     }
 

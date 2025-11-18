@@ -625,19 +625,42 @@
     text-align: center;
     padding: 60px 20px;
     color: #6c757d;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    border-radius: 12px;
+}
+
+.empty-grid-message:hover {
+    background: #f8f9fa;
+    color: #4361ee;
 }
 
 .empty-grid-message i {
     font-size: 64px;
     color: #dee2e6;
     margin-bottom: 16px;
+    transition: all 0.3s ease;
+}
+
+.empty-grid-message:hover i {
+    color: #4361ee;
+    transform: scale(1.1);
 }
 
 .empty-grid-message p {
     font-size: 16px;
     margin: 16px 0;
+    font-style: italic;
 }
 
-.empty-grid-message .btn {
-    margin-top: 16px;
+.empty-grid-hint {
+    font-size: 14px !important;
+    color: #4361ee !important;
+    font-weight: 600;
+    opacity: 0;
+    transition: opacity 0.3s ease;
+}
+
+.empty-grid-message:hover .empty-grid-hint {
+    opacity: 1;
 }
