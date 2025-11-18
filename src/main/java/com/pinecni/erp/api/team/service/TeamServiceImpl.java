@@ -62,7 +62,7 @@ public class TeamServiceImpl implements TeamService {
         if (createDTO.getTeamName() == null || createDTO.getTeamName().isEmpty()) {
             throw new IllegalArgumentException("팀 이름은 필수입니다.");
         }
-        if (createDTO.getCreatorIdx() == null) {
+        if (createDTO.getCreatedUserIdx() == null) {
             throw new IllegalArgumentException("생성자 정보는 필수입니다.");
         }
 

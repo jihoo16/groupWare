@@ -14,7 +14,6 @@ document.addEventListener('DOMContentLoaded', function() {
 
     // DOM 요소
     const newTeamBtn = document.getElementById('newTeamBtn');
-    const createFirstTeamBtn = document.getElementById('createFirstTeamBtn');
     const teamSearchInput = document.getElementById('teamSearchInput');
     const filterTabs = document.querySelectorAll('.filter-tab');
     const viewBtns = document.querySelectorAll('.view-btn');
@@ -22,7 +21,6 @@ document.addEventListener('DOMContentLoaded', function() {
 
     const loadingState = document.getElementById('loadingState');
     const errorState = document.getElementById('errorState');
-    const emptyState = document.getElementById('emptyState');
     const teamGrid = document.getElementById('teamGrid');
     const teamList = document.getElementById('teamList');
     const teamTableBody = document.getElementById('teamTableBody');
@@ -46,12 +44,6 @@ document.addEventListener('DOMContentLoaded', function() {
     newTeamBtn.addEventListener('click', () => {
         window.location.href = '/team/new';
     });
-
-    if (createFirstTeamBtn) {
-        createFirstTeamBtn.addEventListener('click', () => {
-            window.location.href = '/team/new';
-        });
-    }
 
     teamSearchInput.addEventListener('input', function() {
         filterAndRenderTeams();
@@ -248,29 +240,46 @@ document.addEventListener('DOMContentLoaded', function() {
 
     // 리스트 뷰 렌더링
     function renderListView(teams) {
-        teamTableBody.innerHTML = teams.map((team, index) => `
-            <tr data-team-idx="${team.idx}">
-                <td>${index + 1}</td>
-                <td class="team-name-cell view-detail-btn" data-team-idx="${team.idx}">${team.teamName}</td>
-                <td><span class="team-type-badge ${team.teamType}">${getTeamTypeLabel(team.teamType)}</span></td>
-                <td>${team.teamLeaderName || '미지정'}</td>
-                <td>${team.memberCount || 0}명</td>
-                <td>${formatDate(team.createdAt)}</td>
-                <td><span class="status-badge ${team.isActive === 'Y' ? 'active' : 'inactive'}">${team.isActive === 'Y' ? '활성' : '비활성'}</span></td>
-                <td>
-                    <div class="team-table-actions">
-                        <button class="btn-icon edit-btn" data-team-idx="${team.idx}" title="수정">
-                            <i class="fas fa-edit"></i>
-                        </button>
-                        <button class="btn-icon danger delete-btn" data-team-idx="${team.idx}" title="삭제">
-                            <i class="fas fa-trash"></i>
-                        </button>
-                    </div>
-                </td>
-            </tr>
-        `).join('');
+        if (teams.length === 0) {
+            // 빈 행 표시 (클릭 가능)
+            teamTableBody.innerHTML = `
+                <tr class="empty-row">
+                    <td colspan="8">
+                        <i class="fas fa-users"></i> 팀을 추가해주세요
+                    </td>
+                </tr>
+            `;
 
-        attachCardEventListeners();
+            // 빈 행 클릭 이벤트
+            const emptyRow = teamTableBody.querySelector('.empty-row');
+            emptyRow.addEventListener('click', function() {
+                window.location.href = '/team/new';
+            });
+        } else {
+            teamTableBody.innerHTML = teams.map((team, index) => `
+                <tr data-team-idx="${team.idx}">
+                    <td>${index + 1}</td>
+                    <td class="team-name-cell view-detail-btn" data-team-idx="${team.idx}">${team.teamName}</td>
+                    <td><span class="team-type-badge ${team.teamType}">${getTeamTypeLabel(team.teamType)}</span></td>
+                    <td>${team.teamLeaderName || '미지정'}</td>
+                    <td>${team.memberCount || 0}명</td>
+                    <td>${formatDate(team.createdAt)}</td>
+                    <td><span class="status-badge ${team.isActive === 'Y' ? 'active' : 'inactive'}">${team.isActive === 'Y' ? '활성' : '비활성'}</span></td>
+                    <td>
+                        <div class="team-table-actions">
+                            <button class="btn-icon edit-btn" data-team-idx="${team.idx}" title="수정">
+                                <i class="fas fa-edit"></i>
+                            </button>
+                            <button class="btn-icon danger delete-btn" data-team-idx="${team.idx}" title="삭제">
+                                <i class="fas fa-trash"></i>
+                            </button>
+                        </div>
+                    </td>
+                </tr>
+            `).join('');
+
+            attachCardEventListeners();
+        }
     }
 
     // 카드 이벤트 리스너 부착
@@ -397,14 +406,29 @@ document.addEventListener('DOMContentLoaded', function() {
 
     function showEmpty() {
         hideAllStates();
-        emptyState.style.display = 'block';
         teamCount.textContent = '0';
+
+        // 리스트 뷰인 경우 빈 테이블 표시, 그리드 뷰인 경우 빈 그리드 표시
+        if (currentView === 'list') {
+            teamList.style.display = 'block';
+            renderListView([]);
+        } else {
+            teamGrid.style.display = 'grid';
+            teamGrid.innerHTML = `
+                <div class="empty-grid-message">
+                    <i class="fas fa-users-slash"></i>
+                    <p>등록된 팀이 없습니다.</p>
+                    <button class="btn btn-primary" onclick="window.location.href='/team/new'">
+                        <i class="fas fa-plus"></i> 첫 번째 팀 만들기
+                    </button>
+                </div>
+            `;
+        }
     }
 
     function hideAllStates() {
         loadingState.style.display = 'none';
         errorState.style.display = 'none';
-        emptyState.style.display = 'none';
         teamGrid.style.display = 'none';
         teamList.style.display = 'none';
     }
