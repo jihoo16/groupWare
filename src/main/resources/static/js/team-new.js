@@ -11,7 +11,6 @@ document.addEventListener('DOMContentLoaded', function() {
     const backBtn = document.getElementById('backBtn');
     const cancelBtn = document.getElementById('cancelBtn');
     const submitBtn = document.getElementById('submitBtn');
-    const addMemberBtn = document.getElementById('addMemberBtn');
     const teamTableBody = document.getElementById('teamTableBody');
 
     // 모달 요소
@@ -42,8 +41,6 @@ document.addEventListener('DOMContentLoaded', function() {
     });
 
     teamForm.addEventListener('submit', handleSubmit);
-
-    addMemberBtn.addEventListener('click', openEmployeeSelectionModal);
 
     closeEmployeeModal.addEventListener('click', closeModal);
     cancelEmployeeSelection.addEventListener('click', closeModal);
@@ -398,6 +395,10 @@ document.addEventListener('DOMContentLoaded', function() {
                     </td>
                 </tr>
             `;
+
+            // 빈 행 클릭 이벤트
+            const emptyRow = teamTableBody.querySelector('.empty-row');
+            emptyRow.addEventListener('click', openEmployeeSelectionModal);
             return;
         }
 
