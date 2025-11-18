@@ -1,0 +1,676 @@
+/* 신규 팀 생성 페이지 스타일 */
+
+/* 콘텐츠 카드 */
+.content-card {
+    background: white;
+    margin: 24px;
+    border-radius: 12px;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+    padding: 32px;
+}
+
+/* 폼 섹션 */
+.form-section {
+    margin-bottom: 32px;
+    padding-bottom: 32px;
+    border-bottom: 1px solid #e9ecef;
+}
+
+.form-section:last-child {
+    margin-bottom: 0;
+    padding-bottom: 0;
+    border-bottom: none;
+}
+
+.form-section h2 {
+    font-size: 18px;
+    font-weight: 600;
+    color: #1a1a1a;
+    margin-bottom: 20px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.form-section h2::before {
+    content: '';
+    width: 4px;
+    height: 20px;
+    background: linear-gradient(135deg, #4361ee, #3a51d4);
+    border-radius: 2px;
+}
+
+/* 폼 그리드 */
+.form-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 20px;
+}
+
+.form-group {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.form-group.full-width {
+    grid-column: 1 / -1;
+}
+
+.form-group label {
+    font-size: 14px;
+    font-weight: 600;
+    color: #495057;
+    display: flex;
+    align-items: center;
+    gap: 4px;
+}
+
+.form-group .required {
+    color: #dc3545;
+    font-size: 16px;
+}
+
+.form-control {
+    padding: 10px 14px;
+    border: 1px solid #dee2e6;
+    border-radius: 8px;
+    font-size: 14px;
+    color: #495057;
+    transition: all 0.3s ease;
+    font-family: inherit;
+}
+
+.form-control:focus {
+    outline: none;
+    border-color: #4361ee;
+    box-shadow: 0 0 0 3px rgba(67, 97, 238, 0.1);
+}
+
+.form-control::placeholder {
+    color: #adb5bd;
+}
+
+textarea.form-control {
+    resize: vertical;
+    min-height: 100px;
+}
+
+select.form-control {
+    cursor: pointer;
+    appearance: none;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%23495057' d='M6 9L1 4h10z'/%3E%3C/svg%3E");
+    background-repeat: no-repeat;
+    background-position: right 12px center;
+    padding-right: 36px;
+}
+
+/* 팀원 구성 섹션 */
+.team-members {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+}
+
+.team-table-container {
+    border: 1px solid #e9ecef;
+    border-radius: 8px;
+    overflow: hidden;
+}
+
+.team-table {
+    width: 100%;
+    border-collapse: collapse;
+    background: white;
+}
+
+.team-table thead tr {
+    background: #f8f9fa;
+}
+
+.team-table th {
+    padding: 12px 16px;
+    text-align: left;
+    font-size: 13px;
+    font-weight: 600;
+    color: #495057;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    border-bottom: 2px solid #e9ecef;
+}
+
+.team-table tbody tr {
+    border-bottom: 1px solid #f1f3f5;
+    transition: all 0.2s ease;
+}
+
+.team-table tbody tr:last-child {
+    border-bottom: none;
+}
+
+.team-table tbody tr:hover:not(.empty-row) {
+    background: #f8f9fa;
+}
+
+.team-table td {
+    padding: 14px 16px;
+    font-size: 14px;
+    color: #495057;
+}
+
+.team-table .empty-row td {
+    padding: 40px;
+    text-align: center;
+    color: #adb5bd;
+    font-size: 14px;
+}
+
+.team-table .empty-row i {
+    font-size: 32px;
+    display: block;
+    margin-bottom: 8px;
+    color: #dee2e6;
+}
+
+.team-table .text-center {
+    text-align: center;
+}
+
+.team-table .member-role-select {
+    padding: 6px 10px;
+    border: 1px solid #dee2e6;
+    border-radius: 6px;
+    font-size: 13px;
+    color: #495057;
+    width: 100%;
+    max-width: 160px;
+    cursor: pointer;
+}
+
+.team-table .member-role-select:focus {
+    outline: none;
+    border-color: #4361ee;
+}
+
+.team-table .btn-remove-member {
+    padding: 6px 12px;
+    background: #f8f9fa;
+    border: 1px solid #e9ecef;
+    border-radius: 6px;
+    color: #dc3545;
+    font-size: 13px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.team-table .btn-remove-member:hover {
+    background: #dc3545;
+    color: white;
+    border-color: #dc3545;
+}
+
+/* 팀원 추가 버튼 */
+.add-member-btn-wrapper {
+    display: flex;
+    justify-content: center;
+}
+
+.btn-add-member {
+    padding: 12px 24px;
+    background: white;
+    border: 2px dashed #4361ee;
+    border-radius: 8px;
+    color: #4361ee;
+    font-size: 14px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.btn-add-member:hover {
+    background: #f0f4ff;
+    border-color: #3a51d4;
+    color: #3a51d4;
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(67, 97, 238, 0.15);
+}
+
+.btn-add-member i {
+    font-size: 16px;
+}
+
+/* 폼 액션 버튼 */
+.form-actions {
+    display: flex;
+    justify-content: flex-end;
+    gap: 12px;
+    padding-top: 24px;
+    border-top: 1px solid #e9ecef;
+    margin-top: 32px;
+}
+
+/* 팀원 선택 모달 */
+.modal {
+    display: none;
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.5);
+    backdrop-filter: blur(4px);
+    z-index: 1000;
+    align-items: center;
+    justify-content: center;
+}
+
+.modal.active {
+    display: flex;
+}
+
+.modal-content {
+    background: white;
+    border-radius: 12px;
+    box-shadow: 0 10px 40px rgba(0, 0, 0, 0.2);
+    max-height: 90vh;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+    animation: modalSlideIn 0.3s ease;
+}
+
+@keyframes modalSlideIn {
+    from {
+        opacity: 0;
+        transform: translateY(-20px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.modal-lg {
+    width: 90%;
+    max-width: 1000px;
+}
+
+.modal-header {
+    padding: 20px 24px;
+    border-bottom: 1px solid #e9ecef;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    flex-shrink: 0;
+}
+
+.modal-header h2 {
+    font-size: 20px;
+    font-weight: 600;
+    color: #1a1a1a;
+    margin: 0;
+}
+
+.modal-close {
+    background: none;
+    border: none;
+    font-size: 28px;
+    color: #adb5bd;
+    cursor: pointer;
+    padding: 0;
+    width: 32px;
+    height: 32px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 6px;
+    transition: all 0.2s ease;
+}
+
+.modal-close:hover {
+    background: #f8f9fa;
+    color: #495057;
+}
+
+.modal-body {
+    padding: 0;
+    overflow-y: auto;
+    flex: 1;
+}
+
+.modal-footer {
+    padding: 16px 24px;
+    border-top: 1px solid #e9ecef;
+    display: flex;
+    justify-content: flex-end;
+    gap: 12px;
+    flex-shrink: 0;
+}
+
+/* 팀원 선택 컨테이너 */
+.employee-selection-container {
+    display: grid;
+    grid-template-columns: 1.5fr 1fr;
+    height: 500px;
+}
+
+/* 조직도 트리 패널 */
+.org-tree-panel {
+    border-right: 1px solid #e9ecef;
+    display: flex;
+    flex-direction: column;
+}
+
+.panel-header {
+    padding: 16px 20px;
+    border-bottom: 1px solid #e9ecef;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    flex-shrink: 0;
+}
+
+.panel-header-buttons {
+    display: flex;
+    gap: 8px;
+}
+
+.search-input {
+    padding: 10px 12px;
+    border: 1px solid #dee2e6;
+    border-radius: 8px;
+    font-size: 14px;
+    width: 100%;
+    transition: all 0.3s ease;
+}
+
+.search-input:focus {
+    outline: none;
+    border-color: #4361ee;
+    box-shadow: 0 0 0 3px rgba(67, 97, 238, 0.1);
+}
+
+.btn-select-all,
+.btn-expand,
+.btn-clear {
+    padding: 8px 14px;
+    background: white;
+    border: 1px solid #dee2e6;
+    border-radius: 6px;
+    font-size: 13px;
+    font-weight: 500;
+    color: #495057;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.btn-select-all:hover,
+.btn-expand:hover,
+.btn-clear:hover {
+    background: #f8f9fa;
+    border-color: #4361ee;
+    color: #4361ee;
+}
+
+.org-tree-wrapper {
+    flex: 1;
+    overflow-y: auto;
+    padding: 16px 20px;
+}
+
+.org-tree {
+    font-size: 14px;
+}
+
+.tree-loading {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 60px 20px;
+    color: #6c757d;
+}
+
+.tree-loading i {
+    font-size: 36px;
+    color: #4361ee;
+    margin-bottom: 12px;
+}
+
+.tree-department {
+    margin-bottom: 8px;
+}
+
+.tree-department-header {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 8px 12px;
+    background: #f8f9fa;
+    border-radius: 6px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    user-select: none;
+}
+
+.tree-department-header:hover {
+    background: #e9ecef;
+}
+
+.tree-department-header .toggle-icon {
+    width: 16px;
+    text-align: center;
+    color: #6c757d;
+    font-size: 12px;
+}
+
+.tree-department-header .dept-name {
+    font-weight: 600;
+    color: #1a1a1a;
+    flex: 1;
+}
+
+.tree-department-header .dept-count {
+    font-size: 12px;
+    color: #6c757d;
+}
+
+.tree-employees {
+    margin-left: 24px;
+    margin-top: 4px;
+    display: none;
+}
+
+.tree-employees.expanded {
+    display: block;
+}
+
+.tree-employee {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 8px 12px;
+    margin-bottom: 2px;
+    border-radius: 6px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.tree-employee:hover {
+    background: #f8f9fa;
+}
+
+.tree-employee.selected {
+    background: #e7f5ff;
+    border-left: 3px solid #4361ee;
+}
+
+.tree-employee input[type="checkbox"] {
+    width: 16px;
+    height: 16px;
+    cursor: pointer;
+}
+
+.tree-employee .emp-info {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+}
+
+.tree-employee .emp-name {
+    font-weight: 500;
+    color: #1a1a1a;
+    font-size: 13px;
+}
+
+.tree-employee .emp-position {
+    font-size: 11px;
+    color: #6c757d;
+}
+
+/* 선택된 팀원 패널 */
+.selected-employees-panel {
+    display: flex;
+    flex-direction: column;
+    background: #f8f9fa;
+}
+
+.selected-employees-panel .panel-header {
+    background: white;
+    display: flex;
+    flex-direction: row;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.selected-employees-panel .panel-header h3 {
+    font-size: 16px;
+    font-weight: 600;
+    color: #1a1a1a;
+    margin: 0;
+}
+
+.selected-employees-list {
+    flex: 1;
+    overflow-y: auto;
+    padding: 16px 20px;
+}
+
+.empty-message {
+    text-align: center;
+    color: #adb5bd;
+    font-size: 14px;
+    padding: 60px 20px;
+}
+
+.selected-employee-item {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 12px;
+    background: white;
+    border-radius: 8px;
+    margin-bottom: 8px;
+    transition: all 0.2s ease;
+}
+
+.selected-employee-item:hover {
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+.selected-employee-avatar {
+    width: 36px;
+    height: 36px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, #4361ee, #3a51d4);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: white;
+    font-weight: 600;
+    font-size: 14px;
+    flex-shrink: 0;
+}
+
+.selected-employee-info {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+}
+
+.selected-employee-name {
+    font-size: 14px;
+    font-weight: 600;
+    color: #1a1a1a;
+}
+
+.selected-employee-dept {
+    font-size: 12px;
+    color: #6c757d;
+}
+
+.btn-remove-selected {
+    padding: 4px 8px;
+    background: transparent;
+    border: none;
+    color: #dc3545;
+    cursor: pointer;
+    border-radius: 4px;
+    transition: all 0.2s ease;
+    flex-shrink: 0;
+}
+
+.btn-remove-selected:hover {
+    background: #dc3545;
+    color: white;
+}
+
+/* 반응형 */
+@media (max-width: 1024px) {
+    .form-grid {
+        grid-template-columns: 1fr;
+    }
+
+    .employee-selection-container {
+        grid-template-columns: 1fr;
+        height: auto;
+    }
+
+    .org-tree-panel {
+        border-right: none;
+        border-bottom: 1px solid #e9ecef;
+        max-height: 400px;
+    }
+
+    .selected-employees-panel {
+        max-height: 300px;
+    }
+}
+
+@media (max-width: 768px) {
+    .content-card {
+        padding: 20px;
+        margin: 16px;
+    }
+
+    .form-section {
+        margin-bottom: 24px;
+        padding-bottom: 24px;
+    }
+
+    .form-actions {
+        flex-direction: column-reverse;
+    }
+
+    .form-actions button {
+        width: 100%;
+    }
+}

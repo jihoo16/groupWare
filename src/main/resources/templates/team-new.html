@@ -1,0 +1,160 @@
+<!DOCTYPE html>
+<html lang="ko" xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{fragments/layout :: head('신규 팀 생성', '/css/team-new.css')}"></head>
+<body>
+<div class="container">
+    <div th:replace="~{fragments/sidebar :: sidebar('team-new')}"></div>
+
+    <main class="main-content">
+        <header class="header">
+            <div class="header-left">
+                <h1 class="page-title">
+                    <i class="fas fa-users-cog"></i>
+                    신규 팀 생성
+                </h1>
+            </div>
+            <div class="header-right">
+                <button class="btn btn-secondary" id="backBtn">
+                    <i class="fas fa-arrow-left"></i> 목록으로
+                </button>
+            </div>
+        </header>
+
+        <div class="content-card">
+            <form id="teamForm">
+                <!-- 기본 정보 -->
+                <div class="form-section">
+                    <h2>기본 정보</h2>
+                    <div class="form-grid">
+                        <div class="form-group">
+                            <label for="teamName">팀 이름 <span class="required">*</span></label>
+                            <input type="text" id="teamName" name="teamName" class="form-control" placeholder="팀 이름을 입력하세요" required>
+                        </div>
+
+                        <div class="form-group">
+                            <label for="teamType">팀 유형 <span class="required">*</span></label>
+                            <select id="teamType" name="teamType" class="form-control" required>
+                                <option value="custom">일반 팀</option>
+                                <option value="project">프로젝트 팀</option>
+                                <option value="temporary">임시 팀</option>
+                            </select>
+                        </div>
+
+                        <div class="form-group">
+                            <label for="teamLeader">팀 리더</label>
+                            <select id="teamLeader" name="teamLeader" class="form-control">
+                                <option value="">선택하세요</option>
+                                <!-- JavaScript에서 동적으로 로드 -->
+                            </select>
+                        </div>
+
+                        <div class="form-group full-width">
+                            <label for="teamDescription">팀 설명</label>
+                            <textarea id="teamDescription" name="teamDescription" class="form-control" rows="4" placeholder="팀에 대한 설명을 입력하세요"></textarea>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 팀원 구성 -->
+                <div class="form-section">
+                    <h2>팀원 구성</h2>
+                    <div class="team-members">
+                        <div class="team-table-container">
+                            <table class="team-table" id="teamTable">
+                                <thead>
+                                <tr>
+                                    <th width="50">No</th>
+                                    <th>이름</th>
+                                    <th>부서</th>
+                                    <th>직급</th>
+                                    <th width="180">역할</th>
+                                    <th width="100">삭제</th>
+                                </tr>
+                                </thead>
+                                <tbody id="teamTableBody">
+                                <tr class="empty-row">
+                                    <td colspan="6" class="text-center">
+                                        <i class="fas fa-users"></i> 팀원을 추가해주세요
+                                    </td>
+                                </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                        <div class="add-member-btn-wrapper">
+                            <button type="button" class="btn-add-member" id="addMemberBtn">
+                                <i class="fas fa-user-plus"></i> 팀원 추가
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 폼 액션 -->
+                <div class="form-actions">
+                    <button type="button" class="btn btn-secondary" id="cancelBtn">
+                        취소
+                    </button>
+                    <button type="submit" class="btn btn-primary" id="submitBtn">
+                        <i class="fas fa-check"></i> 팀 생성
+                    </button>
+                </div>
+            </form>
+        </div>
+    </main>
+</div>
+
+<!-- 팀원 선택 모달 -->
+<div id="employeeSelectionModal" class="modal">
+    <div class="modal-content modal-lg">
+        <div class="modal-header">
+            <h2>팀원 선택</h2>
+            <button class="modal-close" id="closeEmployeeModal">&times;</button>
+        </div>
+        <div class="modal-body">
+            <div class="employee-selection-container">
+                <div class="org-tree-panel">
+                    <div class="panel-header">
+                        <input type="text" id="employeeSearch" class="search-input" placeholder="이름, 부서, 직급으로 검색...">
+                        <div class="panel-header-buttons">
+                            <button type="button" id="selectAllBtn" class="btn-select-all">
+                                <i class="fas fa-check-double"></i> 전체 선택
+                            </button>
+                            <button type="button" id="expandAllBtn" class="btn-expand">
+                                <i class="fas fa-plus-square"></i> 전체 펼치기
+                            </button>
+                        </div>
+                    </div>
+                    <div class="org-tree-wrapper">
+                        <div id="employeeOrgTree" class="org-tree">
+                            <!-- 로딩 상태 -->
+                            <div class="tree-loading">
+                                <i class="fas fa-spinner fa-spin"></i>
+                                <p>직원 목록을 불러오는 중...</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="selected-employees-panel">
+                    <div class="panel-header">
+                        <h3>선택된 팀원 (<span id="selectedCount">0</span>)</h3>
+                        <button type="button" id="clearSelectedBtn" class="btn-clear">
+                            <i class="fas fa-times"></i> 전체 해제
+                        </button>
+                    </div>
+                    <div id="selectedEmployeesList" class="selected-employees-list">
+                        <p class="empty-message">선택된 팀원이 없습니다.</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="modal-footer">
+            <button type="button" class="btn btn-secondary" id="cancelEmployeeSelection">취소</button>
+            <button type="button" class="btn btn-primary" id="confirmEmployeeSelection">
+                <i class="fas fa-check"></i> 선택 완료
+            </button>
+        </div>
+    </div>
+</div>
+
+<script th:src="@{/js/team-new.js}"></script>
+</body>
+</html>
