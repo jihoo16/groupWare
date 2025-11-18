@@ -82,14 +82,20 @@
                             <h2 class="section-title">참석자</h2>
 
                             <div class="form-group">
-                                <div class="participants-input">
-                                    <input type="text" id="participantInput" class="form-input" placeholder="참석자 이름을 입력하세요">
-                                    <button type="button" id="addParticipantBtn" class="btn-add">
-                                        <i class="fas fa-plus"></i>
-                                        추가
-                                    </button>
+                                <!-- 테이블에 참석자 추가 버튼이 있으므로 이 버튼은 숨김 (JavaScript에서 참조용으로만 사용) -->
+                                <button type="button" id="addParticipantBtn" class="btn-add" style="display: none;">
+                                    <i class="fas fa-users"></i>
+                                    직원 선택
+                                </button>
+                                <div id="participantsList" class="participants-list">
+                                    <!-- 초기 로딩 UI -->
+                                    <div class="participants-loading">
+                                        <div class="loading-spinner">
+                                            <i class="fas fa-spinner fa-spin"></i>
+                                        </div>
+                                        <p class="loading-text">참석자 정보를 불러오는 중...</p>
+                                    </div>
                                 </div>
-                                <div id="participantsList" class="participants-list"></div>
                             </div>
                         </div>
 
@@ -98,7 +104,7 @@
 
                             <div class="form-group">
                                 <label class="form-label">설명</label>
-                                <textarea id="scheduleDescription" class="form-textarea" rows="6" placeholder="일정에 대한 설명을 입력하세요"></textarea>
+                                <textarea id="scheduleDescription" class="form-textarea" rows="3" placeholder="일정에 대한 설명을 입력하세요"></textarea>
                             </div>
 
                             <div class="form-group">
@@ -116,27 +122,72 @@
                                 </div>
                             </div>
                         </div>
-
-                        <!-- 하단 버튼 -->
-                        <div class="form-actions">
-                            <button type="button" class="btn-danger" id="deleteScheduleBtn">
-                                <i class="fas fa-trash"></i>
-                                삭제
-                            </button>
-                            <div class="action-buttons-right">
-                                <button type="button" class="btn-secondary" id="cancelBtn">
-                                    취소
-                                </button>
-                                <button type="submit" class="btn-primary" id="saveScheduleBtn">
-                                    <i class="fas fa-check"></i>
-                                    저장
-                                </button>
-                            </div>
-                        </div>
                     </form>
                 </div>
             </div>
+
+            <!-- 하단 버튼 -->
+            <div class="form-actions">
+                <button type="button" class="btn-danger" id="deleteScheduleBtn">
+                    <i class="fas fa-trash"></i>
+                    삭제
+                </button>
+                <div class="action-buttons-right">
+                    <button type="button" class="btn-secondary" id="cancelBtn">
+                        취소
+                    </button>
+                    <button type="button" class="btn-primary" id="saveScheduleBtn">
+                        <i class="fas fa-check"></i>
+                        저장
+                    </button>
+                </div>
+            </div>
         </main>
+    </div>
+
+    <!-- Employee Selection Modal -->
+    <div id="employeeSelectionModal" class="modal">
+        <div class="modal-content modal-lg">
+            <div class="modal-header">
+                <h2>직원 선택</h2>
+                <button class="modal-close" id="closeEmployeeModal">&times;</button>
+            </div>
+            <div class="modal-body">
+                <div class="employee-selection-container">
+                    <div class="org-tree-panel">
+                        <div class="panel-header">
+                            <input type="text" id="employeeSearch" class="search-input" placeholder="이름, 부서, 직급으로 검색...">
+                            <div class="panel-header-buttons">
+                                <button type="button" id="selectAllBtn" class="btn-select-all">
+                                    <i class="fas fa-check-double"></i> 전체 선택
+                                </button>
+                                <button type="button" id="expandAllBtn" class="btn-expand">
+                                    <i class="fas fa-plus-square"></i> 전체 펼치기
+                                </button>
+                            </div>
+                        </div>
+                        <div class="org-tree-wrapper">
+                            <div id="employeeOrgTree" class="org-tree"></div>
+                        </div>
+                    </div>
+                    <div class="selected-employees-panel">
+                        <div class="panel-header">
+                            <h3>선택된 직원 (<span id="selectedCount">0</span>)</h3>
+                            <button type="button" id="clearSelectedBtn" class="btn-clear">
+                                <i class="fas fa-times"></i> 전체 해제
+                            </button>
+                        </div>
+                        <div id="selectedEmployeesList" class="selected-employees-list"></div>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn-cancel" id="cancelEmployeeSelection">취소</button>
+                <button type="button" class="btn-confirm" id="confirmEmployeeSelection">
+                    <i class="fas fa-check"></i> 선택 완료
+                </button>
+            </div>
+        </div>
     </div>
 
     <script th:src="@{/js/calendar-edit.js}"></script>
