@@ -1054,13 +1054,47 @@
     margin-bottom: 0;
 }
 
+.selected-employee-avatar {
+    width: 36px;
+    height: 36px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, #667eea, #764ba2);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: white;
+    font-weight: 600;
+    font-size: 14px;
+    flex-shrink: 0;
+}
+
+.selected-employee-info {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    margin-left: 12px;
+}
+
+.selected-employee-name {
+    font-size: 14px;
+    font-weight: 600;
+    color: #667eea;
+}
+
 .employee-name {
     font-size: 14px;
     font-weight: 600;
     color: #667eea;
 }
 
-.remove-employee-btn {
+.selected-employee-dept {
+    font-size: 12px;
+    color: #6c757d;
+}
+
+.remove-employee-btn,
+.btn-remove-selected {
     background: none;
     border: none;
     color: #667eea;
@@ -1075,9 +1109,11 @@
     transition: all 0.2s ease;
     position: relative;
     z-index: 10;
+    flex-shrink: 0;
 }
 
-.remove-employee-btn:hover {
+.remove-employee-btn:hover,
+.btn-remove-selected:hover {
     background: #667eea;
     color: white;
 }

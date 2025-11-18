@@ -701,11 +701,15 @@ document.addEventListener('DOMContentLoaded', function() {
         selectedCount.textContent = tempSelectedEmployees.length;
 
         if (tempSelectedEmployees.length === 0) {
-            selectedEmployeesList.innerHTML = '<p style="text-align: center; color: #999; padding: 20px;">선택된 직원이 없습니다.</p>';
+            selectedEmployeesList.innerHTML = '<p class="empty-message">선택된 직원이 없습니다.</p>';
         } else {
             selectedEmployeesList.innerHTML = tempSelectedEmployees.map(emp => `
                 <div class="selected-employee-item">
-                    <span class="employee-name">${emp.name} (${emp.department})</span>
+                    <div class="selected-employee-avatar">${getInitial(emp.name)}</div>
+                    <div class="selected-employee-info">
+                        <div class="selected-employee-name">${emp.name}</div>
+                        <div class="selected-employee-dept">${emp.department || '부서 미지정'} · ${emp.rank || '직급 미지정'}</div>
+                    </div>
                     <button type="button" class="remove-employee-btn" data-id="${emp.id}">
                         <i class="fas fa-times"></i>
                     </button>
@@ -727,6 +731,12 @@ document.addEventListener('DOMContentLoaded', function() {
 
         // 버튼 상태 업데이트
         updateSelectAllButtonState();
+    }
+
+    // 이름의 첫 글자 가져오기
+    function getInitial(name) {
+        if (!name) return '?';
+        return name.charAt(0);
     }
 
     // Update org tree checkboxes based on selected employees
