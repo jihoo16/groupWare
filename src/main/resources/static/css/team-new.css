@@ -238,6 +238,49 @@ select.form-control {
     border-color: #dc3545;
 }
 
+/* 버튼 스타일 */
+.btn {
+    padding: 12px 24px;
+    border: none;
+    border-radius: 8px;
+    font-size: 14px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.btn:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+}
+
+.btn-primary {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+}
+
+.btn-primary:hover:not(:disabled) {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 20px rgba(102, 126, 234, 0.4);
+}
+
+.btn-secondary {
+    background: #e0e0e0;
+    color: #555;
+}
+
+.btn-secondary:hover:not(:disabled) {
+    background: #d0d0d0;
+}
+
+.btn-sm {
+    padding: 8px 16px;
+    font-size: 13px;
+}
+
 /* 폼 액션 버튼 */
 .form-actions {
     display: flex;
@@ -248,34 +291,43 @@ select.form-control {
     margin-top: 32px;
 }
 
-/* 팀원 선택 모달 */
+/* ============================================
+   Employee Selection Modal
+   ============================================ */
+
+/* Modal Base */
 .modal {
     display: none;
     position: fixed;
-    top: 0;
+    z-index: 1000;
     left: 0;
+    top: 0;
     width: 100%;
     height: 100%;
-    background: rgba(0, 0, 0, 0.5);
+    background-color: rgba(0, 0, 0, 0.5);
     backdrop-filter: blur(4px);
-    z-index: 1000;
-    align-items: center;
-    justify-content: center;
 }
 
 .modal.active {
     display: flex;
+    align-items: center;
+    justify-content: center;
 }
 
 .modal-content {
     background: white;
     border-radius: 12px;
-    box-shadow: 0 10px 40px rgba(0, 0, 0, 0.2);
-    max-height: 90vh;
-    overflow: hidden;
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2);
+    width: 90%;
+    max-width: 900px;
+    max-height: 85vh;
     display: flex;
     flex-direction: column;
     animation: modalSlideIn 0.3s ease;
+}
+
+.modal-content.modal-lg {
+    max-width: 1000px;
 }
 
 @keyframes modalSlideIn {
@@ -289,32 +341,28 @@ select.form-control {
     }
 }
 
-.modal-lg {
-    width: 90%;
-    max-width: 1000px;
-}
-
 .modal-header {
-    padding: 20px 24px;
-    border-bottom: 1px solid #e9ecef;
     display: flex;
     justify-content: space-between;
     align-items: center;
-    flex-shrink: 0;
+    padding: 20px 24px;
+    border-bottom: 2px solid #e0e0e0;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    border-radius: 12px 12px 0 0;
 }
 
 .modal-header h2 {
-    font-size: 20px;
-    font-weight: 600;
-    color: #1a1a1a;
     margin: 0;
+    font-size: 20px;
+    font-weight: 700;
+    color: white;
 }
 
 .modal-close {
     background: none;
     border: none;
     font-size: 28px;
-    color: #adb5bd;
+    color: white;
     cursor: pointer;
     padding: 0;
     width: 32px;
@@ -322,51 +370,57 @@ select.form-control {
     display: flex;
     align-items: center;
     justify-content: center;
-    border-radius: 6px;
+    border-radius: 50%;
     transition: all 0.2s ease;
+    position: relative;
+    z-index: 10;
 }
 
 .modal-close:hover {
-    background: #f8f9fa;
-    color: #495057;
+    background: rgba(255, 255, 255, 0.2);
+    transform: rotate(90deg);
 }
 
 .modal-body {
-    padding: 0;
-    overflow-y: auto;
     flex: 1;
+    overflow: auto;
+    padding: 24px;
 }
 
 .modal-footer {
-    padding: 16px 24px;
-    border-top: 1px solid #e9ecef;
     display: flex;
     justify-content: flex-end;
     gap: 12px;
-    flex-shrink: 0;
+    padding: 16px 24px;
+    border-top: 2px solid #e0e0e0;
+    background: #fafafa;
+    border-radius: 0 0 12px 12px;
 }
 
-/* 팀원 선택 컨테이너 */
+/* Employee Selection Container */
 .employee-selection-container {
     display: grid;
-    grid-template-columns: 1.5fr 1fr;
+    grid-template-columns: 2fr 1fr;
+    gap: 20px;
     height: 500px;
 }
 
-/* 조직도 트리 패널 */
+/* Org Tree Panel */
 .org-tree-panel {
-    border-right: 1px solid #e9ecef;
     display: flex;
     flex-direction: column;
+    border: 2px solid #e0e0e0;
+    border-radius: 8px;
+    overflow: hidden;
 }
 
-.panel-header {
-    padding: 16px 20px;
-    border-bottom: 1px solid #e9ecef;
+.org-tree-panel .panel-header {
     display: flex;
-    flex-direction: column;
     gap: 12px;
-    flex-shrink: 0;
+    padding: 16px;
+    background: #f5f5f5;
+    border-bottom: 2px solid #e0e0e0;
+    align-items: center;
 }
 
 .panel-header-buttons {
@@ -375,51 +429,78 @@ select.form-control {
 }
 
 .search-input {
-    padding: 10px 12px;
-    border: 1px solid #dee2e6;
-    border-radius: 8px;
+    flex: 1;
+    padding: 10px 14px;
+    border: 2px solid #e0e0e0;
+    border-radius: 6px;
     font-size: 14px;
-    width: 100%;
     transition: all 0.3s ease;
+    position: relative;
+    z-index: 10;
 }
 
 .search-input:focus {
     outline: none;
-    border-color: #4361ee;
-    box-shadow: 0 0 0 3px rgba(67, 97, 238, 0.1);
+    border-color: #667eea;
+    box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
 }
 
-.btn-select-all,
-.btn-expand,
-.btn-clear {
-    padding: 8px 14px;
+.btn-select-all {
     background: white;
-    border: 1px solid #dee2e6;
+    color: #00c853;
+    border: 2px solid #00c853;
+    padding: 10px 16px;
     border-radius: 6px;
     font-size: 13px;
-    font-weight: 500;
-    color: #495057;
+    font-weight: 600;
     cursor: pointer;
-    transition: all 0.2s ease;
-    display: inline-flex;
+    white-space: nowrap;
+    display: flex;
     align-items: center;
     gap: 6px;
+    transition: all 0.3s ease;
+    position: relative;
+    z-index: 10;
 }
 
-.btn-select-all:hover,
-.btn-expand:hover,
-.btn-clear:hover {
-    background: #f8f9fa;
-    border-color: #4361ee;
-    color: #4361ee;
+.btn-select-all:hover {
+    background: #00c853;
+    color: white;
+    transform: translateY(-1px);
+    box-shadow: 0 2px 8px rgba(0, 200, 83, 0.3);
+}
+
+.btn-expand {
+    background: white;
+    color: #667eea;
+    border: 2px solid #667eea;
+    padding: 10px 16px;
+    border-radius: 6px;
+    font-size: 13px;
+    font-weight: 600;
+    cursor: pointer;
+    white-space: nowrap;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    transition: all 0.3s ease;
+    position: relative;
+    z-index: 10;
+}
+
+.btn-expand:hover {
+    background: #667eea;
+    color: white;
 }
 
 .org-tree-wrapper {
     flex: 1;
     overflow-y: auto;
-    padding: 16px 20px;
+    padding: 16px;
+    background: white;
 }
 
+/* Organization Tree Styles */
 .org-tree {
     font-size: 14px;
 }
@@ -435,10 +516,111 @@ select.form-control {
 
 .tree-loading i {
     font-size: 36px;
-    color: #4361ee;
+    color: #667eea;
     margin-bottom: 12px;
 }
 
+.tree-node {
+    margin-bottom: 8px;
+}
+
+.tree-node-header {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 8px 12px;
+    cursor: pointer;
+    border-radius: 6px;
+    transition: all 0.2s ease;
+    user-select: none;
+    position: relative;
+    z-index: 1;
+}
+
+.tree-node-header:hover {
+    background: #f5f5f5;
+}
+
+.tree-node.department > .tree-node-header {
+    background: linear-gradient(135deg, #e8eaf6 0%, #f3e5f5 100%);
+    font-weight: 600;
+    border: 2px solid #667eea;
+}
+
+.tree-node.position > .tree-node-header {
+    background: #f5f5f5;
+    font-weight: 500;
+}
+
+.tree-node.member > .tree-node-header {
+    padding-left: 40px;
+}
+
+.tree-toggle {
+    width: 20px;
+    height: 20px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: transform 0.3s ease;
+    color: #667eea;
+    flex-shrink: 0;
+}
+
+.tree-toggle.invisible {
+    visibility: hidden;
+}
+
+.tree-node.expanded > .tree-node-header .tree-toggle {
+    transform: rotate(90deg);
+}
+
+.tree-icon {
+    width: 20px;
+    height: 20px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: #667eea;
+    flex-shrink: 0;
+}
+
+.tree-label {
+    flex: 1;
+    font-size: 14px;
+    color: #333;
+}
+
+.tree-count {
+    font-size: 12px;
+    color: #999;
+    background: white;
+    padding: 2px 8px;
+    border-radius: 10px;
+    font-weight: 600;
+}
+
+.tree-children {
+    display: none;
+    padding-left: 24px;
+    margin-top: 4px;
+}
+
+.tree-node.expanded > .tree-children {
+    display: block;
+}
+
+.employee-checkbox {
+    width: 18px;
+    height: 18px;
+    cursor: pointer;
+    accent-color: #667eea;
+    flex-shrink: 0;
+    position: relative;
+    z-index: 2;
+}
+
+/* Legacy tree styles for backward compatibility */
 .tree-department {
     margin-bottom: 8px;
 }
@@ -448,33 +630,39 @@ select.form-control {
     align-items: center;
     gap: 8px;
     padding: 8px 12px;
-    background: #f8f9fa;
+    background: linear-gradient(135deg, #e8eaf6 0%, #f3e5f5 100%);
+    border: 2px solid #667eea;
     border-radius: 6px;
     cursor: pointer;
     transition: all 0.2s ease;
     user-select: none;
+    font-weight: 600;
 }
 
 .tree-department-header:hover {
-    background: #e9ecef;
+    background: linear-gradient(135deg, #e0e2f4 0%, #f0dff3 100%);
 }
 
 .tree-department-header .toggle-icon {
-    width: 16px;
+    width: 20px;
     text-align: center;
-    color: #6c757d;
+    color: #667eea;
     font-size: 12px;
 }
 
 .tree-department-header .dept-name {
     font-weight: 600;
-    color: #1a1a1a;
+    color: #333;
     flex: 1;
 }
 
 .tree-department-header .dept-count {
     font-size: 12px;
-    color: #6c757d;
+    color: #999;
+    background: white;
+    padding: 2px 8px;
+    border-radius: 10px;
+    font-weight: 600;
 }
 
 .tree-employees {
@@ -492,6 +680,7 @@ select.form-control {
     align-items: center;
     gap: 10px;
     padding: 8px 12px;
+    padding-left: 40px;
     margin-bottom: 2px;
     border-radius: 6px;
     cursor: pointer;
@@ -499,18 +688,19 @@ select.form-control {
 }
 
 .tree-employee:hover {
-    background: #f8f9fa;
+    background: #f5f5f5;
 }
 
 .tree-employee.selected {
-    background: #e7f5ff;
-    border-left: 3px solid #4361ee;
+    background: #e8eaf6;
+    border-left: 3px solid #667eea;
 }
 
 .tree-employee input[type="checkbox"] {
-    width: 16px;
-    height: 16px;
+    width: 18px;
+    height: 18px;
     cursor: pointer;
+    accent-color: #667eea;
 }
 
 .tree-employee .emp-info {
@@ -522,41 +712,66 @@ select.form-control {
 
 .tree-employee .emp-name {
     font-weight: 500;
-    color: #1a1a1a;
-    font-size: 13px;
+    color: #333;
+    font-size: 14px;
 }
 
 .tree-employee .emp-position {
     font-size: 11px;
-    color: #6c757d;
+    color: #999;
 }
 
-/* 선택된 팀원 패널 */
+/* Selected Employees Panel */
 .selected-employees-panel {
     display: flex;
     flex-direction: column;
-    background: #f8f9fa;
+    border: 2px solid #e0e0e0;
+    border-radius: 8px;
+    overflow: hidden;
 }
 
 .selected-employees-panel .panel-header {
-    background: white;
     display: flex;
-    flex-direction: row;
     justify-content: space-between;
     align-items: center;
+    padding: 16px;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
 }
 
-.selected-employees-panel .panel-header h3 {
-    font-size: 16px;
-    font-weight: 600;
-    color: #1a1a1a;
+.selected-employees-panel h3 {
     margin: 0;
+    font-size: 15px;
+    font-weight: 600;
+}
+
+.btn-clear {
+    background: rgba(255, 255, 255, 0.2);
+    color: white;
+    border: 1px solid rgba(255, 255, 255, 0.4);
+    padding: 6px 12px;
+    border-radius: 6px;
+    font-size: 12px;
+    font-weight: 600;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    transition: all 0.2s ease;
+    position: relative;
+    z-index: 10;
+}
+
+.btn-clear:hover {
+    background: rgba(255, 255, 255, 0.3);
+    border-color: rgba(255, 255, 255, 0.6);
 }
 
 .selected-employees-list {
     flex: 1;
     overflow-y: auto;
-    padding: 16px 20px;
+    padding: 16px;
+    background: white;
 }
 
 .empty-message {
@@ -568,24 +783,24 @@ select.form-control {
 
 .selected-employee-item {
     display: flex;
+    justify-content: space-between;
     align-items: center;
-    gap: 12px;
-    padding: 12px;
-    background: white;
+    padding: 10px 14px;
+    background: #e8eaf6;
     border-radius: 8px;
     margin-bottom: 8px;
-    transition: all 0.2s ease;
+    border: 1px solid #667eea;
 }
 
-.selected-employee-item:hover {
-    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+.selected-employee-item:last-child {
+    margin-bottom: 0;
 }
 
 .selected-employee-avatar {
     width: 36px;
     height: 36px;
     border-radius: 50%;
-    background: linear-gradient(135deg, #4361ee, #3a51d4);
+    background: linear-gradient(135deg, #667eea, #764ba2);
     display: flex;
     align-items: center;
     justify-content: center;
@@ -600,12 +815,19 @@ select.form-control {
     display: flex;
     flex-direction: column;
     gap: 2px;
+    margin-left: 12px;
 }
 
 .selected-employee-name {
     font-size: 14px;
     font-weight: 600;
-    color: #1a1a1a;
+    color: #667eea;
+}
+
+.employee-name {
+    font-size: 14px;
+    font-weight: 600;
+    color: #667eea;
 }
 
 .selected-employee-dept {
@@ -613,41 +835,175 @@ select.form-control {
     color: #6c757d;
 }
 
-.btn-remove-selected {
-    padding: 4px 8px;
-    background: transparent;
+.btn-remove-selected,
+.remove-employee-btn {
+    background: none;
     border: none;
-    color: #dc3545;
+    color: #667eea;
     cursor: pointer;
-    border-radius: 4px;
+    padding: 4px;
+    width: 24px;
+    height: 24px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 50%;
     transition: all 0.2s ease;
+    position: relative;
+    z-index: 10;
     flex-shrink: 0;
 }
 
-.btn-remove-selected:hover {
-    background: #dc3545;
+.btn-remove-selected:hover,
+.remove-employee-btn:hover {
+    background: #667eea;
     color: white;
 }
 
+/* Scrollbar Customization */
+.org-tree-wrapper::-webkit-scrollbar,
+.selected-employees-list::-webkit-scrollbar {
+    width: 8px;
+}
+
+.org-tree-wrapper::-webkit-scrollbar-track,
+.selected-employees-list::-webkit-scrollbar-track {
+    background: #f0f0f0;
+    border-radius: 4px;
+}
+
+.org-tree-wrapper::-webkit-scrollbar-thumb,
+.selected-employees-list::-webkit-scrollbar-thumb {
+    background: #ccc;
+    border-radius: 4px;
+}
+
+.org-tree-wrapper::-webkit-scrollbar-thumb:hover,
+.selected-employees-list::-webkit-scrollbar-thumb:hover {
+    background: #999;
+}
+
+/* Modal Footer Buttons */
+.btn-cancel {
+    background: #6c757d;
+    color: white;
+    border: none;
+    padding: 12px 24px;
+    border-radius: 8px;
+    font-size: 14px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    position: relative;
+    z-index: 10;
+}
+
+.btn-cancel:hover {
+    background: #5a6268;
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(108, 117, 125, 0.3);
+}
+
+.btn-confirm {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+    border: none;
+    padding: 12px 24px;
+    border-radius: 8px;
+    font-size: 14px;
+    font-weight: 600;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    transition: all 0.3s ease;
+    position: relative;
+    z-index: 10;
+}
+
+.btn-confirm:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 20px rgba(102, 126, 234, 0.4);
+}
+
+/* Position Badge Styles */
+.position-badge {
+    display: inline-block;
+    padding: 4px 12px;
+    margin-left: 8px;
+    border-radius: 12px;
+    font-size: 11px;
+    font-weight: 600;
+    white-space: nowrap;
+    vertical-align: middle;
+}
+
+.position-badge.staff {
+    background: #ffebee;
+    color: #d32f2f;
+}
+
+.position-badge.assistant {
+    background: #fff3e0;
+    color: #f57c00;
+}
+
+.position-badge.manager {
+    background: #fffbbe;
+    color: #fbc02d;
+}
+
+.position-badge.seniorManager {
+    background: #e8f5e9;
+    color: #388e3c;
+}
+
+.position-badge.director {
+    background: #e3f2fd;
+    color: #3e86d3;
+}
+
+.position-badge.executive {
+    background: rgba(42, 94, 250, 0.3);
+    color: #283593;
+}
+
+.position-badge.seniorExec {
+    background: #f3e5f5;
+    color: #7b1fa2;
+}
+
+.position-badge.ceo {
+    background: #101010;
+    color: whitesmoke;
+}
+
+/* ============================================
+   End of Employee Selection Modal
+   ============================================ */
+
 /* 반응형 */
-@media (max-width: 1024px) {
-    .form-grid {
-        grid-template-columns: 1fr;
+@media (max-width: 1200px) {
+    .modal-content.modal-lg {
+        max-width: 95%;
+        max-height: 90vh;
     }
 
     .employee-selection-container {
         grid-template-columns: 1fr;
         height: auto;
+        gap: 16px;
     }
 
-    .org-tree-panel {
-        border-right: none;
-        border-bottom: 1px solid #e9ecef;
-        max-height: 400px;
-    }
-
+    .org-tree-panel,
     .selected-employees-panel {
-        max-height: 300px;
+        height: 300px;
+    }
+}
+
+@media (max-width: 1024px) {
+    .form-grid {
+        grid-template-columns: 1fr;
     }
 }
 
