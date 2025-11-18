@@ -60,12 +60,12 @@ public class TeamController {
 
     /**
      * 생성자별 팀 목록 조회
-     * GET /api/teams/creator/{creatorIdx}
+     * GET /api/teams/creator/{createdUserIdx}
      */
-    @GetMapping("/creator/{creatorIdx}")
-    public ResponseEntity<List<TeamDTO>> getTeamsByCreator(@PathVariable Long creatorIdx) {
-        log.debug("GET /api/teams/creator/{}", creatorIdx);
-        List<TeamDTO> teams = teamService.getTeamsByCreator(creatorIdx);
+    @GetMapping("/creator/{createdUserIdx}")
+    public ResponseEntity<List<TeamDTO>> getTeamsByCreator(@PathVariable Long createdUserIdx) {
+        log.debug("GET /api/teams/creator/{}", createdUserIdx);
+        List<TeamDTO> teams = teamService.getTeamsByCreator(createdUserIdx);
         return ResponseEntity.ok(teams);
     }
 

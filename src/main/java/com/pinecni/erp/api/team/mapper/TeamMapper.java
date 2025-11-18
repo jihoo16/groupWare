@@ -38,7 +38,7 @@ public class TeamMapper {
                 .teamName(team.getTeamName())
                 .teamDescription(team.getTeamDescription())
                 .teamType(team.getTeamType())
-                .creatorIdx(team.getCreatorIdx())
+                .createdUserIdx(team.getCreatedUserIdx())
                 .teamLeaderIdx(team.getTeamLeaderIdx())
                 .isActive(team.getIsActive())
                 .createdAt(team.getCreatedAt())
@@ -46,8 +46,8 @@ public class TeamMapper {
                 .build();
 
         // 생성자 이름 조회
-        if (team.getCreatorIdx() != null) {
-            userRepository.findById(team.getCreatorIdx())
+        if (team.getCreatedUserIdx() != null) {
+            userRepository.findById(team.getCreatedUserIdx())
                     .ifPresent(user -> dto.setCreatorName(user.getEmpName()));
         }
 
@@ -114,14 +114,18 @@ public class TeamMapper {
      * TeamCreateDTO -> Entity 변환
      */
     public Team toEntity(TeamCreateDTO createDTO, Long createdUserIdx) {
-        return Team.builder()
+        Team team = Team.builder()
                 .teamName(createDTO.getTeamName())
                 .teamDescription(createDTO.getTeamDescription())
                 .teamType(createDTO.getTeamType() != null ? createDTO.getTeamType() : "custom")
-                .creatorIdx(createDTO.getCreatorIdx())
                 .teamLeaderIdx(createDTO.getTeamLeaderIdx())
                 .isActive("Y")
                 .build();
+
+        // BaseEntity의 createdUserIdx 설정
+        team.setCreatedUserIdx(createDTO.getCreatedUserIdx());
+
+        return team;
     }
 
     /**

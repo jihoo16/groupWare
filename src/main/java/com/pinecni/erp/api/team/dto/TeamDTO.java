@@ -40,7 +40,7 @@ public class TeamDTO {
     /**
      * 생성자 IDX
      */
-    private Long creatorIdx;
+    private Long createdUserIdx;
 
     /**
      * 생성자 이름

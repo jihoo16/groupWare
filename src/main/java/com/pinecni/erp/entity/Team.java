@@ -12,7 +12,7 @@ import java.util.List;
 @Entity
 @Table(name = "team", schema = "erp",
         indexes = {
-                @Index(name = "idx_team_creator", columnList = "creator_idx"),
+                @Index(name = "idx_team_creator", columnList = "created_user_idx"),
                 @Index(name = "idx_team_leader", columnList = "team_leader_idx"),
                 @Index(name = "idx_team_active", columnList = "is_active"),
                 @Index(name = "idx_team_type", columnList = "team_type")
@@ -39,9 +39,6 @@ public class Team extends BaseEntity {
     @Column(name = "team_type", length = 20)
     private String teamType = "custom"; // custom / project / temporary
 
-    @Column(name = "creator_idx", nullable = false)
-    private Long creatorIdx;
-
     @Column(name = "team_leader_idx")
     private Long teamLeaderIdx;
 
@@ -49,8 +46,9 @@ public class Team extends BaseEntity {
     private String isActive = "Y";
 
     // 관계 매핑
+    // created_user_idx는 BaseEntity의 createdUserIdx 사용
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "creator_idx", insertable = false, updatable = false)
+    @JoinColumn(name = "created_user_idx", insertable = false, updatable = false)
     private User creator;
 
     @ManyToOne(fetch = FetchType.LAZY)

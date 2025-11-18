@@ -43,7 +43,7 @@ public interface TeamService {
     /**
      * 생성자별 팀 목록 조회
      */
-    List<TeamDTO> getTeamsByCreator(Long creatorIdx);
+    List<TeamDTO> getTeamsByCreator(Long createdUserIdx);
 
     /**
      * 팀 리더별 팀 목록 조회

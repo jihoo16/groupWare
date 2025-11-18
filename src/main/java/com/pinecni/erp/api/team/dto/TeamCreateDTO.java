@@ -34,7 +34,7 @@ public class TeamCreateDTO {
     /**
      * 생성자 IDX
      */
-    private Long creatorIdx;
+    private Long createdUserIdx;
 
     /**
      * 팀 리더 IDX

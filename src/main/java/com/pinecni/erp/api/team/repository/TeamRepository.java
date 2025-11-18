@@ -22,8 +22,8 @@ public interface TeamRepository extends JpaRepository<Team, Long> {
     /**
      * 생성자별 팀 목록 조회
      */
-    @Query("SELECT t FROM Team t WHERE t.creatorIdx = :creatorIdx ORDER BY t.createdAt DESC")
-    List<Team> findByCreatorIdx(Long creatorIdx);
+    @Query("SELECT t FROM Team t WHERE t.createdUserIdx = :createdUserIdx ORDER BY t.createdAt DESC")
+    List<Team> findByCreatedUserIdx(Long createdUserIdx);
 
     /**
      * 팀 리더별 팀 목록 조회

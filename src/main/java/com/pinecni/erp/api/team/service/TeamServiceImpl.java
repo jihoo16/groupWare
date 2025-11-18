@@ -129,9 +129,9 @@ public class TeamServiceImpl implements TeamService {
     }
 
     @Override
-    public List<TeamDTO> getTeamsByCreator(Long creatorIdx) {
-        log.debug("getTeamsByCreator() called with creatorIdx: {}", creatorIdx);
-        return teamRepository.findByCreatorIdx(creatorIdx).stream()
+    public List<TeamDTO> getTeamsByCreator(Long createdUserIdx) {
+        log.debug("getTeamsByCreator() called with createdUserIdx: {}", createdUserIdx);
+        return teamRepository.findByCreatedUserIdx(createdUserIdx).stream()
                 .map(mapper::toDTO)
                 .collect(Collectors.toList());
     }
