@@ -13,6 +13,7 @@ document.addEventListener('DOMContentLoaded', function() {
     let selectedTeamIdx = null;
 
     // DOM 요소
+    const newTeamBtn = document.getElementById('newTeamBtn');
     const teamSearchInput = document.getElementById('teamSearchInput');
     const filterTabs = document.querySelectorAll('.filter-tab');
     const viewBtns = document.querySelectorAll('.view-btn');
@@ -40,6 +41,10 @@ document.addEventListener('DOMContentLoaded', function() {
     loadTeams();
 
     // 이벤트 리스너
+    newTeamBtn.addEventListener('click', () => {
+        window.location.href = '/team/new';
+    });
+
     teamSearchInput.addEventListener('input', function() {
         filterAndRenderTeams();
     });

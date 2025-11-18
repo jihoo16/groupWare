@@ -63,12 +63,15 @@
     border-radius: 8px;
     font-size: 14px;
     min-width: 300px;
+    background: white;
+    color: #333;
     transition: all 0.3s ease;
 }
 
 .search-box .search-input:focus {
     outline: none;
     border-color: #4361ee;
+    background: white;
     box-shadow: 0 0 0 3px rgba(67, 97, 238, 0.1);
 }
 
