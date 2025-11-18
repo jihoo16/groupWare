@@ -257,6 +257,7 @@ document.addEventListener('DOMContentLoaded', function() {
         const node = document.createElement('div');
         node.className = 'tree-node department';
         node.setAttribute('data-id', dept.id);
+        node.setAttribute('data-dept', JSON.stringify(dept));
 
         const totalMembers = dept.members ? dept.members.length : 0;
 
@@ -281,6 +282,34 @@ document.addEventListener('DOMContentLoaded', function() {
                 children.appendChild(memberNode);
             });
         }
+
+        // 부서 이름 클릭 시 해당 부서의 모든 직원 선택
+        const treeLabel = node.querySelector('.tree-label');
+        treeLabel.style.cursor = 'pointer';
+        treeLabel.addEventListener('click', function(e) {
+            e.stopPropagation();
+
+            const deptData = JSON.parse(node.getAttribute('data-dept'));
+            if (!deptData.members || deptData.members.length === 0) return;
+
+            // 현재 부서의 모든 직원이 선택되어 있는지 확인
+            const allSelected = deptData.members.every(member => selectedEmployees.has(member.id));
+
+            if (allSelected) {
+                // 모두 선택되어 있으면 해제
+                deptData.members.forEach(member => {
+                    selectedEmployees.delete(member.id);
+                });
+            } else {
+                // 하나라도 선택 안 되어 있으면 모두 선택
+                deptData.members.forEach(member => {
+                    selectedEmployees.set(member.id, member);
+                });
+            }
+
+            updateSelectedEmployeesList();
+            updateOrgTreeCheckboxes();
+        });
 
         attachToggleEvent(node);
         return node;
