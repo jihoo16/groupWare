@@ -25,8 +25,10 @@ public class UserDTO {
     private String empPhone;
     private String emergencyContact;
     private String empAddress;
-    private String empDept;
-    private String empPosition;
+    private String empDept; // 부서 코드 (C01001, C01002 등)
+    private String empDeptName; // 부서 코드명 (경영지원본부, 개발본부 등)
+    private String empPosition; // 직급 코드 (C02001, C02002 등)
+    private String empPositionName; // 직급 코드명 (전무, 상무, 부장 등)
     private LocalDate empJoinDate;
     private String empStatus;
     private String empWorkType;

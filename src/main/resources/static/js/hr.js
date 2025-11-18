@@ -9,6 +9,8 @@ $(document).ready(function() {
     // 초기 데이터 로드
     loadDepartments(); // 부서 목록 로드 후 직원 목록 로드
     loadEmployees();
+    loadDepartmentOptions(); // 모달 폼 부서 옵션 로드
+    loadPositionOptions(); // 모달 폼 직급 옵션 로드
 
     // 부서 필터 버튼 클릭 (이벤트 위임 방식)
     $('.department-filters').on('click', '.dept-btn', function() {
@@ -88,7 +90,7 @@ function renderDepartmentFilters(departments) {
     // 부서 버튼 추가 (sortOrder 순서대로)
     departments.forEach(function(dept) {
         $container.append(`
-            <button class="dept-btn" data-dept="${dept.codeName}">${dept.codeName}</button>
+            <button class="dept-btn" data-dept="${dept.code}">${dept.codeName}</button>
         `);
     });
 }
@@ -169,11 +171,12 @@ function createEmployeeRow(user) {
         '차장': 'seniorManager',
         '부장': 'director',
         '이사': 'executive',
+        '전무': 'executive',
         '상무': 'seniorExec',
         '대표이사': 'ceo',
         '대표': 'ceo'
     };
-    const positionClass = positionClassMap[user.empPosition] || 'staff';
+    const positionClass = positionClassMap[user.empPositionName] || 'staff';
 
     // 상태별 뱃지 클래스 매핑
     const statusClassMap = {
@@ -196,8 +199,8 @@ function createEmployeeRow(user) {
                     <span>${user.empName || '-'}</span>
                 </div>
             </td>
-            <td>${user.empDept || '-'}</td>
-            <td><span class="position-badge ${positionClass}">${user.empPosition || '-'}</span></td>
+            <td>${user.empDeptName || '-'}</td>
+            <td><span class="position-badge ${positionClass}">${user.empPositionName || '-'}</span></td>
             <td>${user.empEmail || '-'}</td>
             <td>${user.empPhone || '-'}</td>
             <td>${user.empJoinDate || '-'}</td>
@@ -462,6 +465,54 @@ function saveEmployee() {
             console.error('직원 등록 실패:', xhr.responseJSON);
             const errorMsg = xhr.responseJSON?.error || '직원 등록에 실패했습니다.';
             showAlert(errorMsg, 'error');
+        }
+    });
+}
+
+/**
+ * 모달 폼 부서 옵션 동적 로드
+ */
+function loadDepartmentOptions() {
+    $.ajax({
+        url: '/api/codes/departments?activeOnly=true',
+        method: 'GET',
+        dataType: 'json',
+        success: function(response) {
+            console.log('부서 옵션 로드 성공:', response);
+            const $select = $('#empDept');
+            $select.empty();
+            $select.append('<option value="">선택하세요</option>');
+
+            response.forEach(function(dept) {
+                $select.append(`<option value="${dept.code}">${dept.codeName}</option>`);
+            });
+        },
+        error: function(xhr, status, error) {
+            console.error('부서 옵션 로드 실패:', error);
+        }
+    });
+}
+
+/**
+ * 모달 폼 직급 옵션 동적 로드
+ */
+function loadPositionOptions() {
+    $.ajax({
+        url: '/api/codes/ranks?activeOnly=true',
+        method: 'GET',
+        dataType: 'json',
+        success: function(response) {
+            console.log('직급 옵션 로드 성공:', response);
+            const $select = $('#empPosition');
+            $select.empty();
+            $select.append('<option value="">선택하세요</option>');
+
+            response.forEach(function(position) {
+                $select.append(`<option value="${position.code}">${position.codeName}</option>`);
+            });
+        },
+        error: function(xhr, status, error) {
+            console.error('직급 옵션 로드 실패:', error);
         }
     });
 }

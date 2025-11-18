@@ -87,6 +87,25 @@
                     </li>
                 </ul>
             </li>
+            <li th:class="${(activeMenu == 'team' or activeMenu == 'team-new' or activeMenu == 'team-edit') ? 'menu-item menu-parent active' : 'menu-item menu-parent'}" data-tooltip="팀 관리">
+                <a href="/team" class="menu-toggle-btn">
+                    <i class="fas fa-users-cog"></i>
+                    <span class="menu-text">팀 관리</span>
+                    <i class="fas fa-chevron-down menu-arrow"></i>
+                </a>
+                <ul class="submenu">
+                    <li class="submenu-item" th:classappend="${activeMenu == 'team'} ? 'active' : ''">
+                        <a href="/team">
+                            <span class="submenu-text">팀 목록</span>
+                        </a>
+                    </li>
+                    <li class="submenu-item" th:classappend="${activeMenu == 'team-new'} ? 'active' : ''">
+                        <a href="/team/new">
+                            <span class="submenu-text">신규 팀 생성</span>
+                        </a>
+                    </li>
+                </ul>
+            </li>
             <li th:class="${(activeMenu == 'hr' or activeMenu == 'attendance' or activeMenu == 'payroll' or activeMenu == 'basic-info') ? 'menu-item menu-parent active' : 'menu-item menu-parent'}" data-tooltip="관리">
                 <a href="/hr" class="menu-toggle-btn">
                     <i class="fas fa-cogs"></i>

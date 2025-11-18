@@ -5,6 +5,8 @@ import com.pinecni.erp.api.user.dto.UserCreateDTO;
 import com.pinecni.erp.api.user.dto.UserDTO;
 import com.pinecni.erp.api.user.dto.UserSimpleDTO;
 import com.pinecni.erp.api.user.dto.UserUpdateDTO;
+import com.pinecni.erp.api.code.repository.CodeRepository;
+import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 
 import java.time.LocalDateTime;
@@ -13,7 +15,10 @@ import java.time.LocalDateTime;
  * User Entity <-> DTO 변환 Mapper
  */
 @Component
+@RequiredArgsConstructor
 public class UserMapper {
+
+    private final CodeRepository codeRepository;
 
     /**
      * Entity -> DTO 변환
@@ -23,7 +28,7 @@ public class UserMapper {
             return null;
         }
 
-        return UserDTO.builder()
+        UserDTO dto = UserDTO.builder()
                 .idx(user.getIdx())
                 .empId(user.getEmpId())
                 .empName(user.getEmpName())
@@ -48,6 +53,20 @@ public class UserMapper {
                 .updatedAt(user.getUpdatedAt())
                 .updatedUserIdx(user.getUpdatedUserIdx())
                 .build();
+
+        // 부서 코드명 조회
+        if (user.getEmpDept() != null) {
+            codeRepository.findByGroupCodeAndCode("C01", user.getEmpDept())
+                    .ifPresent(code -> dto.setEmpDeptName(code.getCodeName()));
+        }
+
+        // 직급 코드명 조회
+        if (user.getEmpPosition() != null) {
+            codeRepository.findByGroupCodeAndCode("C02", user.getEmpPosition())
+                    .ifPresent(code -> dto.setEmpPositionName(code.getCodeName()));
+        }
+
+        return dto;
     }
 
     /**
@@ -58,7 +77,7 @@ public class UserMapper {
             return null;
         }
 
-        return UserSimpleDTO.builder()
+        UserSimpleDTO dto = UserSimpleDTO.builder()
                 .idx(user.getIdx())
                 .empId(user.getEmpId())
                 .empName(user.getEmpName())
@@ -69,6 +88,20 @@ public class UserMapper {
                 .empStatus(user.getEmpStatus())
                 .profilePhotoPath(user.getProfilePhotoPath())
                 .build();
+
+        // 부서 코드명 조회
+        if (user.getEmpDept() != null) {
+            codeRepository.findByGroupCodeAndCode("C01", user.getEmpDept())
+                    .ifPresent(code -> dto.setEmpDeptName(code.getCodeName()));
+        }
+
+        // 직급 코드명 조회
+        if (user.getEmpPosition() != null) {
+            codeRepository.findByGroupCodeAndCode("C02", user.getEmpPosition())
+                    .ifPresent(code -> dto.setEmpPositionName(code.getCodeName()));
+        }
+
+        return dto;
     }
 
     /**

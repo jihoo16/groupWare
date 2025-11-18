@@ -136,6 +136,13 @@ public class CodeService {
     }
 
     /**
+     * 활성화된 직급 목록 조회 (C02)
+     */
+    public List<Code> getActiveRanks() {
+        return getActiveCodesByGroupCode("C02");
+    }
+
+    /**
      * 직위 목록 조회 (C08)
      */
     public List<Code> getPositions() {

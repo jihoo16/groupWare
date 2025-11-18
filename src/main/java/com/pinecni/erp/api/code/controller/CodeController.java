@@ -119,9 +119,13 @@ public class CodeController {
      * 직급 목록 조회 (C02)
      */
     @GetMapping("/ranks")
-    public ResponseEntity<List<Code>> getRanks() {
-        log.debug("직급 목록 조회 요청");
-        return ResponseEntity.ok(codeService.getRanks());
+    public ResponseEntity<List<Code>> getRanks(
+            @RequestParam(required = false, defaultValue = "false") boolean activeOnly) {
+        log.debug("직급 목록 조회 요청: activeOnly={}", activeOnly);
+        List<Code> ranks = activeOnly
+                ? codeService.getActiveRanks()
+                : codeService.getRanks();
+        return ResponseEntity.ok(ranks);
     }
 
     /**

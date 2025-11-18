@@ -25,32 +25,32 @@ public interface UserRepository extends JpaRepository<User, Long> {
     Optional<User> findByEmpEmail(String empEmail);
 
     /**
-     * 삭제되지 않은 사용자 조회
+     * 삭제되지 않은 사용자 조회 (사번 오름차순)
      */
-    @Query("SELECT u FROM User u WHERE u.deletedAt IS NULL")
+    @Query("SELECT u FROM User u WHERE u.deletedAt IS NULL ORDER BY u.empId ASC")
     List<User> findAllActive();
 
     /**
-     * 부서별 활성 사용자 조회
+     * 부서별 활성 사용자 조회 (사번 오름차순)
      */
-    @Query("SELECT u FROM User u WHERE u.empDept = :empDept AND u.deletedAt IS NULL")
+    @Query("SELECT u FROM User u WHERE u.empDept = :empDept AND u.deletedAt IS NULL ORDER BY u.empId ASC")
     List<User> findActiveByEmpDept(String empDept);
 
     /**
-     * 직급별 활성 사용자 조회
+     * 직급별 활성 사용자 조회 (사번 오름차순)
      */
-    @Query("SELECT u FROM User u WHERE u.empPosition = :empPosition AND u.deletedAt IS NULL")
+    @Query("SELECT u FROM User u WHERE u.empPosition = :empPosition AND u.deletedAt IS NULL ORDER BY u.empId ASC")
     List<User> findActiveByEmpPosition(String empPosition);
 
     /**
-     * 상태별 사용자 조회
+     * 상태별 사용자 조회 (사번 오름차순)
      */
-    @Query("SELECT u FROM User u WHERE u.empStatus = :empStatus AND u.deletedAt IS NULL")
+    @Query("SELECT u FROM User u WHERE u.empStatus = :empStatus AND u.deletedAt IS NULL ORDER BY u.empId ASC")
     List<User> findByEmpStatus(String empStatus);
 
     /**
-     * 이름 검색
+     * 이름 검색 (사번 오름차순)
      */
-    @Query("SELECT u FROM User u WHERE u.empName LIKE %:name% AND u.deletedAt IS NULL")
+    @Query("SELECT u FROM User u WHERE u.empName LIKE %:name% AND u.deletedAt IS NULL ORDER BY u.empId ASC")
     List<User> searchByName(String name);
 }

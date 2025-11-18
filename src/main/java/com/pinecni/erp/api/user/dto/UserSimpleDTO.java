@@ -15,8 +15,10 @@ public class UserSimpleDTO {
     private Long idx;
     private String empId;
     private String empName;
-    private String empDept;
-    private String empPosition;
+    private String empDept; // 부서 코드
+    private String empDeptName; // 부서 코드명
+    private String empPosition; // 직급 코드
+    private String empPositionName; // 직급 코드명
     private String empEmail;
     private String empPhone;
     private String empStatus;
