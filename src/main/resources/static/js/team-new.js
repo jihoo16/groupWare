@@ -315,6 +315,7 @@ document.addEventListener('DOMContentLoaded', function() {
         `;
 
         const checkbox = node.querySelector('.employee-checkbox');
+        const header = node.querySelector('.tree-node-header');
 
         checkbox.addEventListener('change', function() {
             const memberData = JSON.parse(node.getAttribute('data-member'));
@@ -329,6 +330,21 @@ document.addEventListener('DOMContentLoaded', function() {
 
             updateSelectedEmployeesList();
         });
+
+        // 행 전체 클릭 시 체크박스 토글
+        header.addEventListener('click', function(e) {
+            // 체크박스 자체를 클릭한 경우는 이미 change 이벤트가 발생하므로 무시
+            if (e.target === checkbox) {
+                return;
+            }
+            // 다른 영역 클릭 시 체크박스 토글
+            checkbox.checked = !checkbox.checked;
+            // change 이벤트 수동 발생
+            checkbox.dispatchEvent(new Event('change'));
+        });
+
+        // 마우스 커서 변경으로 클릭 가능함을 표시
+        header.style.cursor = 'pointer';
 
         return node;
     }
