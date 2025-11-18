@@ -45,19 +45,19 @@
     border-color: #4361ee;
 }
 
-.search-box {
+.team-search-box {
     position: relative;
     display: flex;
     align-items: center;
 }
 
-.search-box i {
+.team-search-box i {
     position: absolute;
     left: 12px;
     color: #adb5bd;
 }
 
-.search-box .search-input {
+.team-search-input {
     padding: 10px 12px 10px 36px;
     border: 1px solid #dee2e6;
     border-radius: 8px;
@@ -68,7 +68,7 @@
     transition: all 0.3s ease;
 }
 
-.search-box .search-input:focus {
+.team-search-input:focus {
     outline: none;
     border-color: #4361ee;
     background: white;
