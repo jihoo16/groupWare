@@ -248,10 +248,59 @@ public class ProjectServiceImpl implements ProjectService {
             }
         }
 
-        log.info("Project updated: idx={}, name={}, cards={}",
+        // 연계 프로젝트 업데이트
+        if (updateDTO.getProjectRelations() != null) {
+            log.debug("Updating {} project relations for project idx={}", updateDTO.getProjectRelations().size(), idx);
+
+            // 1. 기존 연계 프로젝트 목록 조회
+            List<ProjectRelation> existingRelations = projectRelationRepository.findBySourceProjectIdx(idx);
+            java.util.Set<Long> updatedRelationTargetIds = new java.util.HashSet<>();
+
+            // 2. DTO의 연계 프로젝트 처리 (생성 또는 유지)
+            for (ProjectRelationsCreateDTO relationDTO : updateDTO.getProjectRelations()) {
+                if (relationDTO.getTargetProjectIdx() == null) {
+                    log.warn("Target project idx is null. Skipping relation for project idx={}", idx);
+                    continue;
+                }
+
+                // 기존 연계 관계 확인
+                boolean exists = existingRelations.stream()
+                        .anyMatch(r -> r.getTargetProjectIdx().equals(relationDTO.getTargetProjectIdx()));
+
+                if (!exists) {
+                    // 신규 연계 관계 생성
+                    ProjectRelation newRelation = ProjectRelation.builder()
+                            .sourceProjectIdx(idx)
+                            .targetProjectIdx(relationDTO.getTargetProjectIdx())
+                            .relationType(relationDTO.getRelationType() != null ?
+                                    relationDTO.getRelationType() : "RELATED")
+                            .description(relationDTO.getDescription())
+                            .createdUserIdx(updatedUserIdx)
+                            .build();
+
+                    projectRelationRepository.save(newRelation);
+                    log.debug("Project relation created: source={}, target={}, type={}",
+                             idx, relationDTO.getTargetProjectIdx(), newRelation.getRelationType());
+                }
+
+                updatedRelationTargetIds.add(relationDTO.getTargetProjectIdx());
+            }
+
+            // 3. DTO에 포함되지 않은 기존 연계 관계는 삭제
+            for (ProjectRelation existingRelation : existingRelations) {
+                if (!updatedRelationTargetIds.contains(existingRelation.getTargetProjectIdx())) {
+                    projectRelationRepository.delete(existingRelation);
+                    log.debug("Project relation deleted: idx={}, target={}",
+                             existingRelation.getIdx(), existingRelation.getTargetProjectIdx());
+                }
+            }
+        }
+
+        log.info("Project updated: idx={}, name={}, cards={}, relations={}",
                  updatedProject.getIdx(),
                  updatedProject.getProjectName(),
-                 updateDTO.getProjectCards() != null ? updateDTO.getProjectCards().size() : 0);
+                 updateDTO.getProjectCards() != null ? updateDTO.getProjectCards().size() : 0,
+                 updateDTO.getProjectRelations() != null ? updateDTO.getProjectRelations().size() : 0);
         return mapper.toDTO(updatedProject);
     }
 

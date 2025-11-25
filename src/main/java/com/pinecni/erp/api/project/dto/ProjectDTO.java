@@ -7,6 +7,7 @@ import lombok.NoArgsConstructor;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.util.List;
 
 /**
  * 프로젝트 조회 응답 DTO
@@ -99,4 +100,9 @@ public class ProjectDTO {
      * 수정자 IDX
      */
     private Long updatedUserIdx;
+
+    /**
+     * 연계 프로젝트 목록
+     */
+    private List<ProjectRelationDTO> projectRelations;
 }

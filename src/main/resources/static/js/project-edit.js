@@ -19,6 +19,8 @@ document.addEventListener('DOMContentLoaded', function() {
     const relatedProjectModal = document.getElementById('relatedProjectModal');
     const relatedProjectSearchInput = document.getElementById('relatedProjectSearchInput');
     const relatedProjectListElement = document.getElementById('relatedProjectList');
+    const relationDetailsModal = document.getElementById('relationDetailsModal');
+    const relationDetailsContainer = document.getElementById('relationDetailsContainer');
 
     // 선택된 팀원 목록
     let selectedMemberList = [];
@@ -108,7 +110,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 document.getElementById('receiptUrl').value = project.receiptUrl || '';
                 document.getElementById('projectDescription').value = project.description || '';
 
-                // TODO: 팀원, 연계 프로젝트, 파일 목록은 별도 API로 조회 필요
+                // TODO: 팀원, 파일 목록은 별도 API로 조회 필요
                 // 현재는 빈 배열로 초기화
                 selectedMemberList = [];
                 renderTeamTable();
@@ -116,11 +118,21 @@ document.addEventListener('DOMContentLoaded', function() {
                 // 연구비 카드 목록 로드
                 loadProjectCards(project.idx);
 
-                // cardListData = [];
-                // cardIdCounter = 0;
-                // renderCardList();
-
-                relatedProjectList = [];
+                // 연계 프로젝트 목록 로드
+                if (project.projectRelations && project.projectRelations.length > 0) {
+                    relatedProjectList = project.projectRelations.map(relation => ({
+                        id: relation.targetProjectIdx,
+                        name: relation.targetProjectName,
+                        status: relation.targetProjectStatus,
+                        pm: relation.targetProjectManager,
+                        period: relation.targetPeriod,
+                        relationType: relation.relationType,
+                        description: relation.description
+                    }));
+                    console.log('연계 프로젝트 목록 로드:', relatedProjectList);
+                } else {
+                    relatedProjectList = [];
+                }
                 renderRelatedProjectList();
 
                 existingFiles = [];
@@ -643,8 +655,10 @@ document.addEventListener('DOMContentLoaded', function() {
             }
 
             // URL에서 가져온 projectId 사용 (hidden input 값 대신)
-            // const projectId = document.getElementById('projectId').value;
-            console.log(cardListData.id)
+            console.log('폼 제출 - 현재 projectId:', projectId);
+            console.log('현재 cardListData:', cardListData);
+            console.log('현재 relatedProjectList:', relatedProjectList);
+
             // 카드 데이터 변환 (기존 카드는 idx 포함, 신규 카드는 idx null)
             const projectCards = cardListData.map(card => ({
                 idx: card.id > 0 ? card.id : null,  // 양수면 기존 카드 idx, 음수면 null (신규)
@@ -652,7 +666,15 @@ document.addEventListener('DOMContentLoaded', function() {
                 cardLastDigits: card.number,
                 cardNickname: card.name || null
             }));
-            console.log("projectCards : "+projectCards.values());
+            console.log("변환된 projectCards:", projectCards);
+
+            // 연계 프로젝트 데이터 변환
+            const projectRelations = relatedProjectList.map(project => ({
+                targetProjectIdx: project.id,
+                relationType: project.relationType || 'RELATED',
+                description: project.description || null
+            }));
+            console.log("변환된 projectRelations:", projectRelations);
 
             // ProjectUpdateDTO 형식에 맞게 데이터 수집
             const updateData = {
@@ -664,7 +686,8 @@ document.addEventListener('DOMContentLoaded', function() {
                 projectStatus: document.getElementById('projectStatus').value,
                 description: document.getElementById('projectDescription').value,
                 receiptUrl: document.getElementById('receiptUrl').value || null,
-                projectCards: projectCards
+                projectCards: projectCards,
+                projectRelations: projectRelations
             };
 
             console.log('수정된 프로젝트 데이터:', updateData);
@@ -921,32 +944,132 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     });
 
-    // 연계 프로젝트 선택 완료 (전역 함수)
-    window.addSelectedRelatedProjects = function() {
+    // 연계 정보 입력 모달 표시 (전역 함수)
+    window.showRelationDetailsModal = function() {
         const checkboxes = document.querySelectorAll('.related-project-checkbox:checked');
 
+        if (checkboxes.length === 0) {
+            alert('연계할 프로젝트를 선택해주세요.');
+            return;
+        }
+
+        // 선택된 프로젝트 정보 수집
+        const selectedProjects = [];
         checkboxes.forEach(checkbox => {
             const row = checkbox.closest('tr');
-            const projectId = checkbox.value;
-            const projectName = row.getAttribute('data-name');
-            const projectStatus = row.getAttribute('data-status');
-            const projectPM = row.getAttribute('data-pm');
-            const projectPeriod = row.getAttribute('data-period');
+            selectedProjects.push({
+                id: checkbox.value,
+                name: row.getAttribute('data-name'),
+                status: row.getAttribute('data-status'),
+                pm: row.getAttribute('data-pm'),
+                period: row.getAttribute('data-period')
+            });
+        });
+
+        // 상세 정보 입력 폼 생성
+        relationDetailsContainer.innerHTML = '';
+        selectedProjects.forEach((project, index) => {
+            const formSection = document.createElement('div');
+            formSection.className = 'form-section';
+            formSection.style.marginBottom = '20px';
+            formSection.style.padding = '15px';
+            formSection.style.border = '1px solid #dee2e6';
+            formSection.style.borderRadius = '4px';
+
+            formSection.innerHTML = `
+                <h3 style="font-size: 14px; margin-bottom: 15px; color: #495057;">
+                    <i class="fas fa-link"></i> ${project.name}
+                </h3>
+                <input type="hidden" id="relationProjectId_${index}" value="${project.id}">
+                <input type="hidden" id="relationProjectName_${index}" value="${project.name}">
+                <input type="hidden" id="relationProjectStatus_${index}" value="${project.status}">
+                <input type="hidden" id="relationProjectPM_${index}" value="${project.pm}">
+                <input type="hidden" id="relationProjectPeriod_${index}" value="${project.period}">
+
+                <div class="form-group" style="margin-bottom: 15px;">
+                    <label for="relationType_${index}" style="display: block; margin-bottom: 5px; font-weight: 500;">
+                        연계 유형 <span class="required">*</span>
+                    </label>
+                    <select id="relationType_${index}" class="form-control" required>
+                        <option value="">선택하세요</option>
+                        <option value="RELATED">RELATED</option>
+                        <option value="DEPENDENT">DEPENDENT</option>
+                        <option value="PREREQUISITE">DEPENDENT</option>
+                        <option value="SUCCESSOR">SUCCESSOR</option>
+                        <option value="REFERENCE">REFERENCE</option>
+                    </select>
+                </div>
+
+                <div class="form-group">
+                    <label for="relationDescription_${index}" style="display: block; margin-bottom: 5px; font-weight: 500;">
+                        설명
+                    </label>
+                    <textarea id="relationDescription_${index}" class="form-control" rows="2"
+                              placeholder="연계 프로젝트와의 관계를 간단히 설명해주세요"></textarea>
+                </div>
+            `;
+
+            relationDetailsContainer.appendChild(formSection);
+        });
+
+        // 모달 전환
+        relatedProjectModal.classList.remove('active');
+        relationDetailsModal.classList.add('active');
+    };
+
+    // 연계 정보 저장 (전역 함수)
+    window.saveRelatedProjects = function() {
+        const formSections = relationDetailsContainer.querySelectorAll('.form-section');
+        const newRelations = [];
+
+        // 각 폼에서 데이터 수집 및 유효성 검사
+        for (let i = 0; i < formSections.length; i++) {
+            const relationType = document.getElementById(`relationType_${i}`).value;
+            const description = document.getElementById(`relationDescription_${i}`).value;
+            const projectId = document.getElementById(`relationProjectId_${i}`).value;
+            const projectName = document.getElementById(`relationProjectName_${i}`).value;
+            const projectStatus = document.getElementById(`relationProjectStatus_${i}`).value;
+            const projectPM = document.getElementById(`relationProjectPM_${i}`).value;
+            const projectPeriod = document.getElementById(`relationProjectPeriod_${i}`).value;
+
+            if (!relationType) {
+                alert(`"${projectName}" 프로젝트의 연계 유형을 선택해주세요.`);
+                return;
+            }
 
             // 중복 체크
             if (!relatedProjectList.some(p => p.id === projectId)) {
-                relatedProjectList.push({
+                newRelations.push({
                     id: projectId,
                     name: projectName,
                     status: projectStatus,
                     pm: projectPM,
-                    period: projectPeriod
+                    period: projectPeriod,
+                    relationType: relationType,
+                    description: description
                 });
             }
-        });
+        }
 
+        // 연계 프로젝트 목록에 추가
+        relatedProjectList.push(...newRelations);
         renderRelatedProjectList();
+
+        // 모달 닫기
+        closeRelationDetailsModal();
         closeRelatedProjectModal();
+    };
+
+    // 연계 정보 입력 모달 닫기 (전역 함수)
+    window.closeRelationDetailsModal = function() {
+        if (!relationDetailsModal) return;
+        relationDetailsModal.classList.remove('active');
+    };
+
+    // 프로젝트 선택으로 돌아가기 (전역 함수)
+    window.backToProjectSelection = function() {
+        closeRelationDetailsModal();
+        relatedProjectModal.classList.add('active');
     };
 
     // 연계 프로젝트 목록 렌더링
@@ -963,16 +1086,20 @@ document.addEventListener('DOMContentLoaded', function() {
         relatedProjectList.forEach(project => {
             const item = document.createElement('div');
             item.className = 'related-project-item';
+            const statusLabel = getStatusLabel(project.status);
+            const statusClass = getStatusClass(project.status);
             item.innerHTML = `
                 <div class="related-project-info">
                     <div class="related-project-name">
                         <i class="fas fa-link"></i>
-                        ${project.name}
+                        ${project.name || '-'}
                     </div>
                     <div class="related-project-details">
-                        <span><i class="fas fa-circle"></i> ${project.status}</span>
-                        <span><i class="fas fa-user"></i> PM: ${project.pm}</span>
-                        <span><i class="fas fa-calendar"></i> ${project.period}</span>
+                        <span><span class="status-badge ${statusClass}">${statusLabel}</span></span>
+                        <span><i class="fas fa-user"></i> PM: ${project.pm || '-'}</span>
+                        <span><i class="fas fa-calendar"></i> ${project.period || '-'}</span>
+                        <span><i class="fas fa-link"></i>연계 타입: ${project.relationType || '-'}</span>
+                        <span><i class="fas fa-comment-alt"></i>설명: ${project.description || '-'}</span>
                     </div>
                 </div>
                 <button type="button" onclick="removeRelatedProject('${project.id}')">
@@ -995,6 +1122,15 @@ document.addEventListener('DOMContentLoaded', function() {
         relatedProjectModal.addEventListener('click', function(e) {
             if (e.target === relatedProjectModal) {
                 closeRelatedProjectModal();
+            }
+        });
+    }
+
+    // 연계 정보 입력 모달 배경 클릭 시 닫기
+    if (relationDetailsModal) {
+        relationDetailsModal.addEventListener('click', function(e) {
+            if (e.target === relationDetailsModal) {
+                closeRelationDetailsModal();
             }
         });
     }
