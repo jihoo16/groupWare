@@ -502,7 +502,6 @@ document.addEventListener('DOMContentLoaded', function() {
         // 카드 추가 (신규 카드는 음수 ID 사용)
         cardIdCounter--;
         cardListData.push({
-            id: cardIdCounter,  // 음수 ID로 신규 카드 표시
             company: cardCompany,
             number: cardNumber,
             name: cardName
@@ -685,8 +684,8 @@ document.addEventListener('DOMContentLoaded', function() {
                 return response.json();
             })
             .then(data => {
-                // alert('프로젝트가 수정되었습니다.');
-                // window.location.href = '/project';
+                 alert('프로젝트가 수정되었습니다.');
+                window.location.href = '/project';
             })
             .catch(error => {
                 console.error('Error updating project:', error);
