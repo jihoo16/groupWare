@@ -67,7 +67,10 @@ document.addEventListener('DOMContentLoaded', function() {
                 users.forEach(user => {
                     const option = document.createElement('option');
                     option.value = user.idx;
-                    option.textContent = `${user.empName} (${user.empDept} / ${user.empPosition})`;
+                    // 한글 이름 사용 (empDeptName, empPositionName)
+                    const deptName = user.empDeptName || user.empDept || '-';
+                    const positionName = user.empPositionName || user.empPosition || '-';
+                    option.textContent = `${user.empName} (${deptName} / ${positionName})`;
                     projectManagerSelect.appendChild(option);
                 });
             })
@@ -242,16 +245,19 @@ document.addEventListener('DOMContentLoaded', function() {
 
         activeUsers.forEach(user => {
             const row = document.createElement('tr');
+            const deptName = user.empDeptName || user.empDept || '-';
+            const positionName = user.empPositionName || user.empPosition || '-';
+
             row.setAttribute('data-id', user.idx);
             row.setAttribute('data-name', user.empName);
-            row.setAttribute('data-dept', user.empDept || '-');
-            row.setAttribute('data-position', user.empPosition || '-');
+            row.setAttribute('data-dept', deptName);
+            row.setAttribute('data-position', positionName);
 
             row.innerHTML = `
                 <td><input type="checkbox" class="member-checkbox" value="${user.idx}"></td>
                 <td>${user.empName}</td>
-                <td>${user.empDept || '-'}</td>
-                <td>${user.empPosition || '-'}</td>
+                <td>${deptName}</td>
+                <td>${positionName}</td>
             `;
 
             memberSelectTableBody.appendChild(row);
