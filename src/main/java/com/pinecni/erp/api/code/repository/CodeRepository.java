@@ -31,9 +31,9 @@ public interface CodeRepository extends JpaRepository<Code, Long> {
     Optional<Code> findByGroupCodeAndCode(String groupCode, String code);
 
     /**
-     * 활성화된 코드 목록 조회 (idx DESC)
+     * 활성화된 코드 목록 조회 (sort_order ASC)
      */
-    @Query("SELECT c FROM Code c WHERE c.groupCode = :groupCode AND c.useYn = 'Y' ORDER BY c.idx DESC")
+    @Query("SELECT c FROM Code c WHERE c.groupCode = :groupCode AND c.useYn = 'Y' ORDER BY c.sortOrder ASC, c.idx ASC")
     List<Code> findActiveByGroupCode(String groupCode);
 
     /**

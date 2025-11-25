@@ -54,359 +54,9 @@
     };
 
     // ============================================
-    // 샘플 데이터
+    // 상태 관리 - 조직도 데이터
     // ============================================
-    const organizationData = {
-        departments: [
-            {
-                id: 1,
-                name: '경영지원본부',
-                positions: [
-                    {
-                        id: 101,
-                        name: '본부장',
-                        rank: '임원',
-                        members: [
-                            {
-                                id: 1001,
-                                name: '김철수',
-                                position: '본부장',
-                                rank: '전무',
-                                department: '경영지원본부',
-                                email: 'kim.cs@company.com',
-                                phone: '010-1234-5678',
-                                extension: '1001',
-                                joinDate: '2015-03-15',
-                                status: '재직중',
-                                manager: '-',
-                                teamCount: 15
-                            }
-                        ]
-                    },
-                    {
-                        id: 102,
-                        name: '팀장',
-                        rank: '부장',
-                        members: [
-                            {
-                                id: 1002,
-                                name: '박영희',
-                                position: '인사팀장',
-                                rank: '부장',
-                                department: '경영지원본부 인사팀',
-                                email: 'park.yh@company.com',
-                                phone: '010-2345-6789',
-                                extension: '1002',
-                                joinDate: '2016-05-20',
-                                status: '재직중',
-                                manager: '김철수 전무',
-                                teamCount: 5
-                            },
-                            {
-                                id: 1003,
-                                name: '이민수',
-                                position: '총무팀장',
-                                rank: '부장',
-                                department: '경영지원본부 총무팀',
-                                email: 'lee.ms@company.com',
-                                phone: '010-3456-7890',
-                                extension: '1003',
-                                joinDate: '2017-02-10',
-                                status: '재직중',
-                                manager: '김철수 전무',
-                                teamCount: 4
-                            }
-                        ]
-                    },
-                    {
-                        id: 103,
-                        name: '팀원',
-                        rank: '사원~차장',
-                        members: [
-                            {
-                                id: 1004,
-                                name: '정수진',
-                                position: '인사담당',
-                                rank: '차장',
-                                department: '경영지원본부 인사팀',
-                                email: 'jung.sj@company.com',
-                                phone: '010-4567-8901',
-                                extension: '1004',
-                                joinDate: '2018-07-01',
-                                status: '재직중',
-                                manager: '박영희 부장',
-                                teamCount: 0
-                            },
-                            {
-                                id: 1005,
-                                name: '최동욱',
-                                position: '급여담당',
-                                rank: '과장',
-                                department: '경영지원본부 인사팀',
-                                email: 'choi.dw@company.com',
-                                phone: '010-5678-9012',
-                                extension: '1005',
-                                joinDate: '2019-03-15',
-                                status: '재직중',
-                                manager: '박영희 부장',
-                                teamCount: 0
-                            },
-                            {
-                                id: 1006,
-                                name: '강미래',
-                                position: '총무담당',
-                                rank: '대리',
-                                department: '경영지원본부 총무팀',
-                                email: 'kang.mr@company.com',
-                                phone: '010-6789-0123',
-                                extension: '1006',
-                                joinDate: '2020-01-20',
-                                status: '재직중',
-                                manager: '이민수 부장',
-                                teamCount: 0
-                            },
-                            {
-                                id: 1007,
-                                name: '윤서연',
-                                position: '시설관리',
-                                rank: '사원',
-                                department: '경영지원본부 총무팀',
-                                email: 'yoon.sy@company.com',
-                                phone: '010-7890-1234',
-                                extension: '1007',
-                                joinDate: '2021-06-01',
-                                status: '재직중',
-                                manager: '이민수 부장',
-                                teamCount: 0
-                            }
-                        ]
-                    }
-                ]
-            },
-            {
-                id: 2,
-                name: '개발본부',
-                positions: [
-                    {
-                        id: 201,
-                        name: '본부장',
-                        rank: '임원',
-                        members: [
-                            {
-                                id: 2001,
-                                name: '장현우',
-                                position: '개발본부장',
-                                rank: '상무',
-                                department: '개발본부',
-                                email: 'jang.hw@company.com',
-                                phone: '010-1111-2222',
-                                extension: '2001',
-                                joinDate: '2014-08-01',
-                                status: '재직중',
-                                manager: '-',
-                                teamCount: 20
-                            }
-                        ]
-                    },
-                    {
-                        id: 202,
-                        name: '팀장',
-                        rank: '부장',
-                        members: [
-                            {
-                                id: 2002,
-                                name: '임지훈',
-                                position: 'Frontend팀장',
-                                rank: '부장',
-                                department: '개발본부 Frontend팀',
-                                email: 'lim.jh@company.com',
-                                phone: '010-2222-3333',
-                                extension: '2002',
-                                joinDate: '2016-09-01',
-                                status: '재직중',
-                                manager: '장현우 상무',
-                                teamCount: 6
-                            },
-                            {
-                                id: 2003,
-                                name: '한소희',
-                                position: 'Backend팀장',
-                                rank: '부장',
-                                department: '개발본부 Backend팀',
-                                email: 'han.sh@company.com',
-                                phone: '010-3333-4444',
-                                extension: '2003',
-                                joinDate: '2015-11-15',
-                                status: '재직중',
-                                manager: '장현우 상무',
-                                teamCount: 8
-                            }
-                        ]
-                    },
-                    {
-                        id: 203,
-                        name: '팀원',
-                        rank: '사원~차장',
-                        members: [
-                            {
-                                id: 2004,
-                                name: '오준석',
-                                position: 'Frontend 개발',
-                                rank: '차장',
-                                department: '개발본부 Frontend팀',
-                                email: 'oh.js@company.com',
-                                phone: '010-4444-5555',
-                                extension: '2004',
-                                joinDate: '2017-04-01',
-                                status: '재직중',
-                                manager: '임지훈 부장',
-                                teamCount: 0
-                            },
-                            {
-                                id: 2005,
-                                name: '신예은',
-                                position: 'Frontend 개발',
-                                rank: '과장',
-                                department: '개발본부 Frontend팀',
-                                email: 'shin.ye@company.com',
-                                phone: '010-5555-6666',
-                                extension: '2005',
-                                joinDate: '2018-02-15',
-                                status: '재직중',
-                                manager: '임지훈 부장',
-                                teamCount: 0
-                            },
-                            {
-                                id: 2006,
-                                name: '배준영',
-                                position: 'Backend 개발',
-                                rank: '차장',
-                                department: '개발본부 Backend팀',
-                                email: 'bae.jy@company.com',
-                                phone: '010-6666-7777',
-                                extension: '2006',
-                                joinDate: '2017-07-20',
-                                status: '재직중',
-                                manager: '한소희 부장',
-                                teamCount: 0
-                            },
-                            {
-                                id: 2007,
-                                name: '송하늘',
-                                position: 'Backend 개발',
-                                rank: '과장',
-                                department: '개발본부 Backend팀',
-                                email: 'song.hn@company.com',
-                                phone: '010-7777-8888',
-                                extension: '2007',
-                                joinDate: '2019-01-10',
-                                status: '재직중',
-                                manager: '한소희 부장',
-                                teamCount: 0
-                            },
-                            {
-                                id: 2008,
-                                name: '나윤서',
-                                position: 'Backend 개발',
-                                rank: '대리',
-                                department: '개발본부 Backend팀',
-                                email: 'na.ys@company.com',
-                                phone: '010-8888-9999',
-                                extension: '2008',
-                                joinDate: '2020-05-01',
-                                status: '재직중',
-                                manager: '한소희 부장',
-                                teamCount: 0
-                            }
-                        ]
-                    }
-                ]
-            },
-            {
-                id: 3,
-                name: '영업본부',
-                positions: [
-                    {
-                        id: 301,
-                        name: '본부장',
-                        rank: '임원',
-                        members: [
-                            {
-                                id: 3001,
-                                name: '권민재',
-                                position: '영업본부장',
-                                rank: '상무',
-                                department: '영업본부',
-                                email: 'kwon.mj@company.com',
-                                phone: '010-1212-3434',
-                                extension: '3001',
-                                joinDate: '2015-01-05',
-                                status: '재직중',
-                                manager: '-',
-                                teamCount: 12
-                            }
-                        ]
-                    },
-                    {
-                        id: 302,
-                        name: '팀장',
-                        rank: '부장',
-                        members: [
-                            {
-                                id: 3002,
-                                name: '유재석',
-                                position: '영업1팀장',
-                                rank: '부장',
-                                department: '영업본부 영업1팀',
-                                email: 'yoo.js@company.com',
-                                phone: '010-5656-7878',
-                                extension: '3002',
-                                joinDate: '2016-03-10',
-                                status: '재직중',
-                                manager: '권민재 상무',
-                                teamCount: 5
-                            }
-                        ]
-                    },
-                    {
-                        id: 303,
-                        name: '팀원',
-                        rank: '사원~차장',
-                        members: [
-                            {
-                                id: 3003,
-                                name: '홍길동',
-                                position: '영업담당',
-                                rank: '차장',
-                                department: '영업본부 영업1팀',
-                                email: 'hong.gd@company.com',
-                                phone: '010-9090-1212',
-                                extension: '3003',
-                                joinDate: '2017-06-15',
-                                status: '재직중',
-                                manager: '유재석 부장',
-                                teamCount: 0
-                            },
-                            {
-                                id: 3004,
-                                name: '김영수',
-                                position: '영업담당',
-                                rank: '과장',
-                                department: '영업본부 영업1팀',
-                                email: 'kim.ys@company.com',
-                                phone: '010-3434-5656',
-                                extension: '3004',
-                                joinDate: '2018-09-01',
-                                status: '재직중',
-                                manager: '유재석 부장',
-                                teamCount: 0
-                            }
-                        ]
-                    }
-                ]
-            }
-        ]
-    };
+    let organizationData = null;
 
     // ============================================
     // 상태 관리
@@ -464,6 +114,35 @@
     }
 
     // ============================================
+    // API 호출
+    // ============================================
+
+    /**
+     * 서버에서 조직도 데이터를 가져옵니다.
+     */
+    async function fetchOrganizationData() {
+        try {
+            console.log('Fetching organization data from /api/organization/tree');
+            const response = await fetch('/api/organization/tree');
+            console.log('Response status:', response.status);
+
+            if (!response.ok) {
+                throw new Error(`HTTP error! status: ${response.status}`);
+            }
+
+            const data = await response.json();
+            console.log('Received organization data:', data);
+            console.log('Number of departments:', data.departments ? data.departments.length : 0);
+
+            return data;
+        } catch (error) {
+            console.error('조직도 데이터 로딩 실패:', error);
+            alert('조직도 데이터를 불러오는데 실패했습니다.\n브라우저 콘솔을 확인해주세요.');
+            return null;
+        }
+    }
+
+    // ============================================
     // 조직도 트리 렌더링
     // ============================================
 
@@ -480,7 +159,7 @@
 
         orgTree.innerHTML = '';
 
-        if (!data.departments || data.departments.length === 0) {
+        if (!data || !data.departments || data.departments.length === 0) {
             orgTree.innerHTML = '<p style="padding: 20px; text-align: center; color: #999;">조직도 데이터가 없습니다.</p>';
             return;
         }
@@ -799,7 +478,10 @@
     /**
      * 애플리케이션을 초기화합니다.
      */
-    function initialize() {
+    async function initialize() {
+        // 서버에서 조직도 데이터 로드
+        organizationData = await fetchOrganizationData();
+
         // 조직도 구성
         buildOrgTree(organizationData);
 
