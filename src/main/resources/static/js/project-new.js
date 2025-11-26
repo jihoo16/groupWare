@@ -57,7 +57,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 users.forEach(user => {
                     const option = document.createElement('option');
                     option.value = user.idx;
-                    option.textContent = `${user.empName} (${user.empDept} / ${user.empPosition})`;
+                    option.textContent = `${user.empName} (${user.empDeptName} / ${user.empPositionName})`;
                     projectManagerSelect.appendChild(option);
                 });
             })
@@ -412,6 +412,26 @@ document.addEventListener('DOMContentLoaded', function() {
 
             console.log('프로젝트 데이터:', formData);
 
+            // 직급별 경비 설정 데이터 수집
+            const expenseSettings = [];
+            const expenseRows = document.querySelectorAll('#expenseSettingsBody tr[data-position]');
+            expenseRows.forEach(row => {
+                const position = row.getAttribute('data-position');
+                const inputs = row.querySelectorAll('.expense-input-sm');
+
+                if (inputs.length >= 4) {
+                    expenseSettings.push({
+                        positionCode: null, // 직급 코드는 백엔드에서 처리하거나 매핑 필요
+                        positionName: position,
+                        transitAllowance: "실비",
+                        dailyAllowance: parseInt(inputs[0].value) || 0,
+                        mealAllowance: parseInt(inputs[1].value) || 0,
+                        meetingAllowance: parseInt(inputs[2].value) || 0,
+                        overtimeMealAllowance: parseInt(inputs[3].value) || 0
+                    });
+                }
+            });
+
             // 백엔드 API 연동
             const createData = {
                 projectName: formData.projectName,
@@ -431,7 +451,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 })),
 
                 // 팀원 데이터 추가 (DTO 구조에 맞게 변환)
-                teamMembers: selectedMemberList.map(member => ({
+                projectMembers: selectedMemberList.map(member => ({
                     employeeIdx: parseInt(member.id),
                     participationStartDate: member.startDate,
                     participationEndDate: member.endDate,
@@ -443,7 +463,10 @@ document.addEventListener('DOMContentLoaded', function() {
                     targetProjectIdx: parseInt(project.id),
                     relationType: project.relationType,
                     description: project.description || null
-                }))
+                })),
+
+                // 직급별 경비 설정 데이터 추가
+                expenseSettings: expenseSettings
 
             };
 

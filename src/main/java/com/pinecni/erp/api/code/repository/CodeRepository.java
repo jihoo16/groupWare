@@ -41,4 +41,9 @@ public interface CodeRepository extends JpaRepository<Code, Long> {
      */
     @Query("SELECT c FROM Code c WHERE c.useYn = :useYn ORDER BY c.idx DESC")
     List<Code> findByUseYn(String useYn);
+
+    /**
+     * 그룹 및 코드명으로 조회
+     */
+    Optional<Code> findByGroupCodeAndCodeName(String groupCode, String codeName);
 }

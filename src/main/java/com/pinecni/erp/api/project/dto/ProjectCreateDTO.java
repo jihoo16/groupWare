@@ -69,4 +69,9 @@ public class ProjectCreateDTO {
      * 팀원 목록
      */
     private List<ProjectMemberCreateDTO> projectMembers;
+
+    /**
+     * 직급별 경비 설정 목록
+     */
+    private List<ProjectExpenseSettingCreateDTO> expenseSettings;
 }

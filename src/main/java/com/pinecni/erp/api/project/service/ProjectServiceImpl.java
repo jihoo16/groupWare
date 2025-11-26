@@ -1,13 +1,16 @@
 package com.pinecni.erp.api.project.service;
 
+import com.pinecni.erp.api.code.repository.CodeRepository;
 import com.pinecni.erp.api.project.dto.*;
 import com.pinecni.erp.api.project.dto.ResearchCardDTO;
 import com.pinecni.erp.api.project.mapper.ProjectMapper;
+import com.pinecni.erp.api.project.repository.ProjectExpenseSettingRepository;
 import com.pinecni.erp.api.project.repository.ProjectMemberRepository;
 import com.pinecni.erp.api.project.repository.ProjectRelationRepository;
 import com.pinecni.erp.api.project.repository.ProjectRepository;
 import com.pinecni.erp.api.project.repository.ResearchCardRepository;
 import com.pinecni.erp.entity.Project;
+import com.pinecni.erp.entity.ProjectExpenseSetting;
 import com.pinecni.erp.entity.ProjectMember;
 import com.pinecni.erp.entity.ProjectRelation;
 import com.pinecni.erp.entity.ResearchCard;
@@ -33,6 +36,8 @@ public class ProjectServiceImpl implements ProjectService {
     private final ProjectMemberRepository projectMemberRepository;
     private final ResearchCardRepository researchCardRepository;
     private final ProjectRelationRepository projectRelationRepository;
+    private final ProjectExpenseSettingRepository projectExpenseSettingRepository;
+    private final CodeRepository codeRepository;
     private final ProjectMapper mapper;
 
     @Override
@@ -154,11 +159,48 @@ public class ProjectServiceImpl implements ProjectService {
             }
         }
 
-        log.info("Project created: idx={}, name={}, teamMembers={}, researchCards={}",
+        // 직급별 경비 설정 저장
+        if (createDTO.getExpenseSettings() != null && !createDTO.getExpenseSettings().isEmpty()) {
+            log.debug("Saving {} expense settings for project idx={}", createDTO.getExpenseSettings().size(), savedProject.getIdx());
+
+            for (ProjectExpenseSettingCreateDTO settingDTO : createDTO.getExpenseSettings()) {
+                // 직급명으로 코드 조회 (positionCode가 없는 경우)
+                String positionCode = settingDTO.getPositionCode();
+                if (positionCode == null && settingDTO.getPositionName() != null) {
+                    positionCode = codeRepository.findByGroupCodeAndCodeName("C02", settingDTO.getPositionName())
+                            .map(code -> code.getCode())
+                            .orElse(null);
+                }
+
+                if (positionCode == null) {
+                    log.warn("Position code not found for position name: {}", settingDTO.getPositionName());
+                    continue;
+                }
+
+                ProjectExpenseSetting setting = ProjectExpenseSetting.builder()
+                        .projectIdx(savedProject.getIdx())
+                        .positionCode(positionCode)
+                        .positionName(settingDTO.getPositionName())
+                        .transitAllowance(settingDTO.getTransitAllowance() != null ?
+                                settingDTO.getTransitAllowance() : "실비")
+                        .dailyAllowance(settingDTO.getDailyAllowance())
+                        .mealAllowance(settingDTO.getMealAllowance())
+                        .meetingAllowance(settingDTO.getMeetingAllowance())
+                        .overtimeMealAllowance(settingDTO.getOvertimeMealAllowance())
+                        .build();
+
+                projectExpenseSettingRepository.save(setting);
+                log.debug("Expense setting saved: position={}, projectIdx={}",
+                         settingDTO.getPositionName(), savedProject.getIdx());
+            }
+        }
+
+        log.info("Project created: idx={}, name={}, teamMembers={}, researchCards={}, expenseSettings={}",
                  savedProject.getIdx(),
                  savedProject.getProjectName(),
                  createDTO.getProjectMembers() != null ? createDTO.getProjectMembers().size() : 0,
-                 createDTO.getProjectCards() != null ? createDTO.getProjectCards().size() : 0);
+                 createDTO.getProjectCards() != null ? createDTO.getProjectCards().size() : 0,
+                 createDTO.getExpenseSettings() != null ? createDTO.getExpenseSettings().size() : 0);
         return mapper.toDTO(savedProject);
     }
 
