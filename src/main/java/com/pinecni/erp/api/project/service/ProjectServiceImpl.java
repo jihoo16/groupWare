@@ -136,10 +136,10 @@ public class ProjectServiceImpl implements ProjectService {
         }
 
         // 팀원 저장 로직
-        if (createDTO.getTeamMembers() != null && !createDTO.getTeamMembers().isEmpty()) {
-            log.debug("Saving {} team members for project idx={}", createDTO.getTeamMembers().size(), savedProject.getIdx());
+        if (createDTO.getProjectMembers() != null && !createDTO.getProjectMembers().isEmpty()) {
+            log.debug("Saving {} team members for project idx={}", createDTO.getProjectMembers().size(), savedProject.getIdx());
 
-            for (ProjectMemberCreateDTO memberDTO : createDTO.getTeamMembers()) {
+            for (ProjectMemberCreateDTO memberDTO : createDTO.getProjectMembers()) {
                 ProjectMember member = ProjectMember.builder()
                         .projectIdx(savedProject.getIdx())
                         .employeeIdx(memberDTO.getEmployeeIdx())
@@ -157,7 +157,7 @@ public class ProjectServiceImpl implements ProjectService {
         log.info("Project created: idx={}, name={}, teamMembers={}, researchCards={}",
                  savedProject.getIdx(),
                  savedProject.getProjectName(),
-                 createDTO.getTeamMembers() != null ? createDTO.getTeamMembers().size() : 0,
+                 createDTO.getProjectMembers() != null ? createDTO.getProjectMembers().size() : 0,
                  createDTO.getProjectCards() != null ? createDTO.getProjectCards().size() : 0);
         return mapper.toDTO(savedProject);
     }
@@ -295,12 +295,73 @@ public class ProjectServiceImpl implements ProjectService {
                 }
             }
         }
+        // 팀원 업데이트
+        if (updateDTO.getProjectMembers() != null) {
+            log.debug("Updating {} project members for project idx={}", updateDTO.getProjectMembers().size(), idx);
 
-        log.info("Project updated: idx={}, name={}, cards={}, relations={}",
+            // 1. 기존 활성 팀원 목록 조회
+            List<ProjectMember> existingMembers = projectMemberRepository.findByProjectIdx(idx);
+            java.util.Set<Long> updatedMemberEmployeeIds = new java.util.HashSet<>();
+
+            // 2. DTO의 팀원 처리 (생성 또는 업데이트)
+            for (ProjectMemberCreateDTO memberDTO : updateDTO.getProjectMembers()) {
+                if (memberDTO.getEmployeeIdx() == null) {
+                    log.warn("Employee idx is null. Skipping member for project idx={}", idx);
+                    continue;
+                }
+
+                // 기존 팀원 확인 (같은 직원이 이미 등록되어 있는지)
+                ProjectMember existingMember = existingMembers.stream()
+                        .filter(m -> m.getEmployeeIdx().equals(memberDTO.getEmployeeIdx()))
+                        .findFirst()
+                        .orElse(null);
+
+                if (existingMember != null) {
+                    // 기존 팀원 업데이트
+                    existingMember.setRole(memberDTO.getRole());
+                    existingMember.setParticipationStartDate(memberDTO.getParticipationStartDate());
+                    existingMember.setParticipationEndDate(memberDTO.getParticipationEndDate());
+                    existingMember.setIsActive(true);
+
+                    projectMemberRepository.save(existingMember);
+                    log.debug("Project member updated: employeeIdx={}, projectIdx={}",
+                             memberDTO.getEmployeeIdx(), idx);
+                } else {
+                    // 신규 팀원 생성
+                    ProjectMember newMember = ProjectMember.builder()
+                            .projectIdx(idx)
+                            .employeeIdx(memberDTO.getEmployeeIdx())
+                            .role(memberDTO.getRole())
+                            .participationStartDate(memberDTO.getParticipationStartDate())
+                            .participationEndDate(memberDTO.getParticipationEndDate())
+                            .isActive(true)
+                            .build();
+
+                    projectMemberRepository.save(newMember);
+                    log.debug("Project member created: employeeIdx={}, projectIdx={}",
+                             memberDTO.getEmployeeIdx(), idx);
+                }
+
+                updatedMemberEmployeeIds.add(memberDTO.getEmployeeIdx());
+            }
+
+            // 3. DTO에 포함되지 않은 기존 팀원은 비활성화 (삭제된 것으로 간주)
+            for (ProjectMember existingMember : existingMembers) {
+                if (!updatedMemberEmployeeIds.contains(existingMember.getEmployeeIdx())) {
+                    existingMember.setIsActive(false);
+                    projectMemberRepository.save(existingMember);
+                    log.debug("Project member deactivated: employeeIdx={}, projectIdx={}",
+                             existingMember.getEmployeeIdx(), idx);
+                }
+            }
+        }
+
+        log.info("Project updated: idx={}, name={}, cards={}, relations={}, members={}",
                  updatedProject.getIdx(),
                  updatedProject.getProjectName(),
                  updateDTO.getProjectCards() != null ? updateDTO.getProjectCards().size() : 0,
-                 updateDTO.getProjectRelations() != null ? updateDTO.getProjectRelations().size() : 0);
+                 updateDTO.getProjectRelations() != null ? updateDTO.getProjectRelations().size() : 0,
+                 updateDTO.getProjectMembers() != null ? updateDTO.getProjectMembers().size() : 0);
         return mapper.toDTO(updatedProject);
     }
 

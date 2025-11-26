@@ -1,12 +1,13 @@
 package com.pinecni.erp.api.project.mapper;
 
-import com.pinecni.erp.api.project.dto.ProjectCreateDTO;
-import com.pinecni.erp.api.project.dto.ProjectDTO;
-import com.pinecni.erp.api.project.dto.ProjectRelationDTO;
-import com.pinecni.erp.api.project.dto.ProjectUpdateDTO;
+import com.pinecni.erp.api.code.repository.CodeRepository;
+import com.pinecni.erp.api.project.dto.*;
+import com.pinecni.erp.api.project.repository.ProjectMemberRepository;
 import com.pinecni.erp.api.project.repository.ProjectRelationRepository;
 import com.pinecni.erp.api.project.repository.ProjectRepository;
+import com.pinecni.erp.api.user.repository.UserRepository;
 import com.pinecni.erp.entity.Project;
+import com.pinecni.erp.entity.ProjectMember;
 import com.pinecni.erp.entity.ProjectRelation;
 import com.pinecni.erp.entity.User;
 import lombok.RequiredArgsConstructor;
@@ -27,6 +28,9 @@ public class ProjectMapper {
 
     private final ProjectRelationRepository projectRelationRepository;
     private final ProjectRepository projectRepository;
+    private final ProjectMemberRepository projectMemberRepository;
+    private final UserRepository userRepository;
+    private final CodeRepository codeRepository;
 
     /**
      * Entity → DTO 변환
@@ -44,6 +48,14 @@ public class ProjectMapper {
                 .map(this::toRelationDTO)
                 .collect(Collectors.toList());
 
+        // 팀원 목록 조회 및 변환
+        List<ProjectMemberDTO> members = projectMemberRepository
+                .findByProjectIdx(entity.getIdx())
+                .stream()
+                .filter(ProjectMember::getIsActive)
+                .map(this::toMemberDTO)
+                .collect(Collectors.toList());
+
         return ProjectDTO.builder()
                 .idx(entity.getIdx())
                 .projectName(entity.getProjectName())
@@ -56,10 +68,10 @@ public class ProjectMapper {
                 .projectStatus(entity.getProjectStatus())
                 .description(entity.getDescription())
                 .receiptUrl(entity.getReceiptUrl())
-                .memberCount(entity.getProjectMembers() != null ?
-                        entity.getProjectMembers().size() : 0)
+                .memberCount(members.size())
                 .progress(calculateProgress(entity))
                 .projectRelations(relations)
+                .projectMembers(members)
                 .createdAt(entity.getCreatedAt())
                 .updatedAt(entity.getUpdatedAt())
                 .createdUserIdx(entity.getCreatedUserIdx())
@@ -210,6 +222,46 @@ public class ProjectMapper {
                     return null;
                 })
                 .orElse(null);
+    }
+
+    /**
+     * ProjectMember Entity → ProjectMemberDTO 변환
+     */
+    private ProjectMemberDTO toMemberDTO(ProjectMember member) {
+        if (member == null) {
+            return null;
+        }
+
+        // 직원 정보 조회
+        User employee = userRepository.findById(member.getEmployeeIdx()).orElse(null);
+
+        ProjectMemberDTO dto = ProjectMemberDTO.builder()
+                .idx(member.getIdx())
+                .projectIdx(member.getProjectIdx())
+                .employeeIdx(member.getEmployeeIdx())
+                .role(member.getRole())
+                .participationStartDate(member.getParticipationStartDate())
+                .participationEndDate(member.getParticipationEndDate())
+                .createdAt(member.getCreatedAt())
+                .updatedAt(member.getUpdatedAt())
+                .createdUserIdx(member.getCreatedUserIdx())
+                .updatedUserIdx(member.getUpdatedUserIdx())
+                .employeeName(employee != null ? employee.getEmpName() : null)
+                .build();
+
+        // 부서명 조회 (코드 → 명칭)
+        if (employee != null && employee.getEmpDept() != null) {
+            codeRepository.findByGroupCodeAndCode("C01", employee.getEmpDept())
+                    .ifPresent(code -> dto.setEmployeeDeptName(code.getCodeName()));
+        }
+
+        // 직급명 조회 (코드 → 명칭)
+        if (employee != null && employee.getEmpPosition() != null) {
+            codeRepository.findByGroupCodeAndCode("C02", employee.getEmpPosition())
+                    .ifPresent(code -> dto.setEmployeePositionName(code.getCodeName()));
+        }
+
+        return dto;
     }
 
     /**

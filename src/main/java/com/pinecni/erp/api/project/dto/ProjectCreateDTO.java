@@ -56,14 +56,17 @@ public class ProjectCreateDTO {
     private String description;
 
     /**
-    * 참여인력 목록
-    */
-    private List<ProjectMemberCreateDTO> teamMembers;
+     * 연구비 카드 목록
+     */
+    private List<ProjectCardCreateDTO> projectCards;
+
     /**
-    *  카드 추가
-    */
-    private List<ProjectCardCreateDTO> projectCards;/**
-    *  연계 추가
-    */
+     * 연계 프로젝트 목록
+     */
     private List<ProjectRelationsCreateDTO> projectRelations;
+
+    /**
+     * 팀원 목록
+     */
+    private List<ProjectMemberCreateDTO> projectMembers;
 }

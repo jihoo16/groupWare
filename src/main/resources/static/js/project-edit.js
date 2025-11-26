@@ -110,9 +110,20 @@ document.addEventListener('DOMContentLoaded', function() {
                 document.getElementById('receiptUrl').value = project.receiptUrl || '';
                 document.getElementById('projectDescription').value = project.description || '';
 
-                // TODO: 팀원, 파일 목록은 별도 API로 조회 필요
-                // 현재는 빈 배열로 초기화
-                selectedMemberList = [];
+                // 팀원 목록 로드
+                if (project.projectMembers && project.projectMembers.length > 0) {
+                    selectedMemberList = project.projectMembers.map(member => ({
+                        id: member.employeeIdx.toString(),
+                        name: member.employeeName || '-',
+                        dept: member.employeeDeptName || '-',
+                        position: member.employeePositionName || '-',
+                        role: member.role || '',
+                        startDate: member.participationStartDate || '',
+                        endDate: member.participationEndDate || ''
+                    }));
+                } else {
+                    selectedMemberList = [];
+                }
                 renderTeamTable();
 
                 // 연구비 카드 목록 로드
@@ -676,6 +687,15 @@ document.addEventListener('DOMContentLoaded', function() {
             }));
             console.log("변환된 projectRelations:", projectRelations);
 
+            // 팀원 데이터 변환
+            const projectMembers = selectedMemberList.map(member => ({
+                employeeIdx: parseInt(member.id),
+                role: member.role || null,
+                participationStartDate: member.startDate || null,
+                participationEndDate: member.endDate || null
+            }));
+            console.log("변환된 projectMembers:", projectMembers);
+
             // ProjectUpdateDTO 형식에 맞게 데이터 수집
             const updateData = {
                 projectName: document.getElementById('projectName').value,
@@ -687,7 +707,8 @@ document.addEventListener('DOMContentLoaded', function() {
                 description: document.getElementById('projectDescription').value,
                 receiptUrl: document.getElementById('receiptUrl').value || null,
                 projectCards: projectCards,
-                projectRelations: projectRelations
+                projectRelations: projectRelations,
+                projectMembers: projectMembers
             };
 
             console.log('수정된 프로젝트 데이터:', updateData);

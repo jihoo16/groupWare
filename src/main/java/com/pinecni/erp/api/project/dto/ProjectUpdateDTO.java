@@ -63,12 +63,14 @@ public class ProjectUpdateDTO {
      * 연구비 카드 목록
      */
     private List<ProjectCardCreateDTO> projectCards;
+
     /**
-     * 참여인력 목록
+     * 연계 프로젝트 목록
      */
-    private List<ProjectMemberCreateDTO> teamMembers;
-    /**
-     *  연계 추가
-    */
     private List<ProjectRelationsCreateDTO> projectRelations;
+
+    /**
+     * 팀원 목록
+     */
+    private List<ProjectMemberCreateDTO> projectMembers;
 }

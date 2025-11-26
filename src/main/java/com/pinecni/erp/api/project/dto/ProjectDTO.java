@@ -105,4 +105,8 @@ public class ProjectDTO {
      * 연계 프로젝트 목록
      */
     private List<ProjectRelationDTO> projectRelations;
+    /**
+     * 프로젝트 멤버 목록
+     */
+    private List<ProjectMemberDTO> projectMembers ;
 }
