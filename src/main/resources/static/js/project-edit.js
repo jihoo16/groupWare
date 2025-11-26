@@ -994,9 +994,9 @@ document.addEventListener('DOMContentLoaded', function() {
                         <option value="">선택하세요</option>
                         <option value="RELATED">RELATED</option>
                         <option value="DEPENDENT">DEPENDENT</option>
-                        <option value="PREREQUISITE">DEPENDENT</option>
+                        <option value="PREREQUISITE">PREREQUISITE</option>
                         <option value="SUCCESSOR">SUCCESSOR</option>
-                        <option value="REFERENCE">REFERENCE</option>
+                        <option value="COLLABORATION">COLLABORATION</option>
                     </select>
                 </div>
 

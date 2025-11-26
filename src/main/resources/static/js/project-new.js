@@ -843,7 +843,7 @@ document.addEventListener('DOMContentLoaded', function() {
                         <option value="DEPENDENT">DEPENDENT</option>
                         <option value="PREREQUISITE">PREREQUISITE</option>
                         <option value="SUCCESSOR">SUCCESSOR</option>
-                        <option value="REFERENCE">REFERENCE</option>
+                        <option value="COLLABORATION">COLLABORATION</option>
                     </select>
                 </div>
 
@@ -943,27 +943,8 @@ document.addEventListener('DOMContentLoaded', function() {
                         <span><i class="fas fa-circle"></i> ${project.status}</span>
                         <span><i class="fas fa-user"></i> PM: ${project.pm}</span>
                         <span><i class="fas fa-calendar"></i> ${project.period}</span>
-                    </div>
-                    <div class="related-project-fields" style="margin-top: 12px;">
-                        <div style="display: grid; grid-template-columns: 200px 1fr; gap: 12px; align-items: start;">
-                            <div class="form-group">
-                                <label style="display: block; font-size: 13px; font-weight: 500; margin-bottom: 4px; color: #495057;">연계 타입</label>
-                                <select onchange="updateRelatedProjectType('${project.id}', this.value)"
-                                        style="width: 100%; padding: 6px 8px; border: 1px solid #ced4da; border-radius: 4px; font-size: 13px;" class="form-control">
-                                    <option value="RELATED" ${project.relationType === 'RELATED' ? 'selected' : ''}>RELATED</option>
-                                    <option value="SUCCESSOR" ${project.relationType === 'SUCCESSOR' ? 'selected' : ''}>SUCCESSOR</option>
-                                    <option value="COLLABORATION" ${project.relationType === 'COLLABORATION' ? 'selected' : ''}>COLLABORATION</option>
-                                </select>
-                            </div>
-                            <div class="form-group">
-                                <label style="display: block; font-size: 13px; font-weight: 500; margin-bottom: 4px; color: #495057;">설명</label>
-                                <textarea onchange="updateRelatedProjectDescription('${project.id}', this.value)"
-                                          placeholder="연계 프로젝트 설명을 입력하세요"
-                                          class="form-control"
-                                          style="width: 100%; padding: 6px 8px; border: 1px solid #ced4da; border-radius: 4px; font-size: 13px; resize: vertical; min-height: 60px;">${project.description || ''}</textarea>
-                            </div>
-                        </div>
-
+                         <span><i class="fas fa-link"></i>연계 타입: ${project.relationType || '-'}</span>
+                        <span><i class="fas fa-comment-alt"></i>설명: ${project.description || '-'}</span>
                     </div>
                 </div>
 
