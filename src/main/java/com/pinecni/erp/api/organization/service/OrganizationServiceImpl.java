@@ -49,16 +49,16 @@ public class OrganizationServiceImpl implements OrganizationService {
     // 직급 그룹 정의
     private static final Map<String, String> POSITION_GROUPS = new HashMap<>();
     static {
-        POSITION_GROUPS.put("대표이사", "본부장");
-        POSITION_GROUPS.put("전무", "본부장");
-        POSITION_GROUPS.put("상무", "본부장");
-        POSITION_GROUPS.put("이사", "팀장");
-        POSITION_GROUPS.put("부장", "팀장");
-        POSITION_GROUPS.put("차장", "팀원");
-        POSITION_GROUPS.put("과장", "팀원");
-        POSITION_GROUPS.put("대리", "팀원");
-        POSITION_GROUPS.put("주임", "팀원");
-        POSITION_GROUPS.put("사원", "팀원");
+        POSITION_GROUPS.put("대표이사", "C-Level");
+        POSITION_GROUPS.put("전무", "C-Level");
+        POSITION_GROUPS.put("상무", "C-Level");
+        POSITION_GROUPS.put("이사", "C-Level");
+        POSITION_GROUPS.put("부장", "Team Lead");
+        POSITION_GROUPS.put("차장", "Team Lead");
+        POSITION_GROUPS.put("과장", "Team Lead");
+        POSITION_GROUPS.put("대리", "Team Member");
+        POSITION_GROUPS.put("주임", "Team Member");
+        POSITION_GROUPS.put("사원", "Team Member");
     }
 
     @Override
@@ -210,7 +210,7 @@ public class OrganizationServiceImpl implements OrganizationService {
      * 직급 그룹명 반환
      */
     private String getPositionGroupName(String position) {
-        return POSITION_GROUPS.getOrDefault(position, "팀원");
+        return POSITION_GROUPS.getOrDefault(position, "Team Member");
     }
 
     /**

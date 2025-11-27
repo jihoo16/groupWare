@@ -225,7 +225,7 @@
                 <span class="${CSS_CLASSES.TREE_ICON}">
                     <i class="${ICONS.CROWN}"></i>
                 </span>
-                <span class="${CSS_CLASSES.TREE_LABEL}">${position.name} (${position.rank})</span>
+                <span class="${CSS_CLASSES.TREE_LABEL}">${position.name}</span>
                 <span class="${CSS_CLASSES.TREE_COUNT}">${position.members.length}명</span>
             </div>
             <div class="${CSS_CLASSES.TREE_CHILDREN}"></div>
