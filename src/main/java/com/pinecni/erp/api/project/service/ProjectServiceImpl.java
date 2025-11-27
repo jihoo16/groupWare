@@ -397,13 +397,79 @@ public class ProjectServiceImpl implements ProjectService {
                 }
             }
         }
+        // 직급별 경비 업데이트
+        if (updateDTO.getProjectExpenseSettings() != null) {
+            log.debug("Updating {} expense settings for project idx={}", updateDTO.getProjectExpenseSettings().size(), idx);
 
-        log.info("Project updated: idx={}, name={}, cards={}, relations={}, members={}",
+            // 1. 기존 직급별 경비 설정 목록 조회
+            List<ProjectExpenseSetting> existingSettings = projectExpenseSettingRepository.findByProjectIdx(idx);
+            java.util.Set<String> updatedPositionCodes = new java.util.HashSet<>();
+
+            // 2. DTO의 경비 설정 처리 (생성 또는 업데이트)
+            for (ProjectExpenseSettingDTO settingDTO : updateDTO.getProjectExpenseSettings()) {
+                if (settingDTO.getPositionCode() == null) {
+                    log.warn("Position code is null. Skipping expense setting for project idx={}", idx);
+                    continue;
+                }
+
+                // 기존 경비 설정 확인 (같은 직급 코드가 이미 등록되어 있는지)
+                ProjectExpenseSetting existingSetting = existingSettings.stream()
+                        .filter(s -> s.getPositionCode().equals(settingDTO.getPositionCode()))
+                        .findFirst()
+                        .orElse(null);
+
+                if (existingSetting != null) {
+                    // 기존 경비 설정 업데이트
+                    existingSetting.setPositionName(settingDTO.getPositionName());
+                    existingSetting.setTransitAllowance(settingDTO.getTransitAllowance() != null ?
+                            settingDTO.getTransitAllowance() : "실비");
+                    existingSetting.setDailyAllowance(settingDTO.getDailyAllowance());
+                    existingSetting.setMealAllowance(settingDTO.getMealAllowance());
+                    existingSetting.setMeetingAllowance(settingDTO.getMeetingAllowance());
+                    existingSetting.setOvertimeMealAllowance(settingDTO.getOvertimeMealAllowance());
+
+                    projectExpenseSettingRepository.save(existingSetting);
+                    log.debug("Expense setting updated: positionCode={}, projectIdx={}",
+                             settingDTO.getPositionCode(), idx);
+                } else {
+                    // 신규 경비 설정 생성
+                    ProjectExpenseSetting newSetting = ProjectExpenseSetting.builder()
+                            .projectIdx(idx)
+                            .positionCode(settingDTO.getPositionCode())
+                            .positionName(settingDTO.getPositionName())
+                            .transitAllowance(settingDTO.getTransitAllowance() != null ?
+                                    settingDTO.getTransitAllowance() : "실비")
+                            .dailyAllowance(settingDTO.getDailyAllowance())
+                            .mealAllowance(settingDTO.getMealAllowance())
+                            .meetingAllowance(settingDTO.getMeetingAllowance())
+                            .overtimeMealAllowance(settingDTO.getOvertimeMealAllowance())
+                            .build();
+
+                    projectExpenseSettingRepository.save(newSetting);
+                    log.debug("Expense setting created: positionCode={}, projectIdx={}",
+                             settingDTO.getPositionCode(), idx);
+                }
+
+                updatedPositionCodes.add(settingDTO.getPositionCode());
+            }
+
+            // 3. DTO에 포함되지 않은 기존 경비 설정은 삭제
+            for (ProjectExpenseSetting existingSetting : existingSettings) {
+                if (!updatedPositionCodes.contains(existingSetting.getPositionCode())) {
+                    projectExpenseSettingRepository.delete(existingSetting);
+                    log.debug("Expense setting deleted: idx={}, positionCode={}",
+                             existingSetting.getIdx(), existingSetting.getPositionCode());
+                }
+            }
+        }
+
+        log.info("Project updated: idx={}, name={}, cards={}, relations={}, members={}, expenseSettings={}",
                  updatedProject.getIdx(),
                  updatedProject.getProjectName(),
                  updateDTO.getProjectCards() != null ? updateDTO.getProjectCards().size() : 0,
                  updateDTO.getProjectRelations() != null ? updateDTO.getProjectRelations().size() : 0,
-                 updateDTO.getProjectMembers() != null ? updateDTO.getProjectMembers().size() : 0);
+                 updateDTO.getProjectMembers() != null ? updateDTO.getProjectMembers().size() : 0,
+                 updateDTO.getProjectExpenseSettings() != null ? updateDTO.getProjectExpenseSettings().size() : 0);
         return mapper.toDTO(updatedProject);
     }
 
@@ -466,6 +532,23 @@ public class ProjectServiceImpl implements ProjectService {
                         .cardLastDigits(card.getCardLastDigits())
                         .cardNickname(card.getCardNickname())
                         .isActive(card.getIsActive())
+                        .build())
+                .collect(Collectors.toList());
+    }
+
+    @Override
+  public List<ProjectExpenseSettingDTO> getProjectExpenseSettings(Long projectIdx) {
+        log.debug("getProjectExpenseSettings() called with projectIdx: {}", projectIdx);
+
+        return projectExpenseSettingRepository.findByProjectIdx(projectIdx).stream()
+                .map(setting -> ProjectExpenseSettingDTO.builder()
+                        .positionCode(setting.getPositionCode())
+                        .positionName(setting.getPositionName())
+                        .transitAllowance(setting.getTransitAllowance())
+                        .dailyAllowance(setting.getDailyAllowance())
+                        .mealAllowance(setting.getMealAllowance())
+                        .meetingAllowance(setting.getMeetingAllowance())
+                        .overtimeMealAllowance(setting.getOvertimeMealAllowance())
                         .build())
                 .collect(Collectors.toList());
     }

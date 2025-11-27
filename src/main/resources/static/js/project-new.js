@@ -33,9 +33,79 @@ document.addEventListener('DOMContentLoaded', function() {
     // 연구 책임자 드롭다운 요소
     const projectManagerSelect = document.getElementById('projectManager');
 
-    // 연구 책임자 목록 로드
-    if (projectManagerSelect) {
-        loadProjectManagers();
+    // 직급 목록 저장 변수
+    let positionList = [];
+
+    // 페이지 로드 시 직급 목록과 연구 책임자 목록 로드
+    Promise.all([
+        loadPositions(),
+        projectManagerSelect ? loadProjectManagers() : Promise.resolve()
+    ]).then(() => {
+        console.log('초기 데이터 로드 완료');
+    }).catch(error => {
+        console.error('초기 데이터 로드 실패:', error);
+    });
+
+    // 직급 목록 로드 함수
+    function loadPositions() {
+        return fetch('/api/codes/ranks?activeOnly=true')
+            .then(response => {
+                if (!response.ok) {
+                    throw new Error('직급 목록을 불러오는데 실패했습니다.');
+                }
+                return response.json();
+            })
+            .then(positions => {
+                positionList = positions;
+                console.log('직급 목록 로드 완료:', positionList);
+
+                // 경비 설정 테이블 생성
+                renderExpenseSettingsTable();
+            })
+            .catch(error => {
+                console.error('Error loading positions:', error);
+                throw error;
+            });
+    }
+
+    // 경비 설정 테이블 동적 생성
+    function renderExpenseSettingsTable() {
+        const expenseSettingsBody = document.getElementById('expenseSettingsBody');
+        if (!expenseSettingsBody) return;
+
+        expenseSettingsBody.innerHTML = '';
+
+        if (positionList.length === 0) {
+            expenseSettingsBody.innerHTML = '<tr><td colspan="6" class="text-center" style="padding: 20px;">등록된 직급이 없습니다.</td></tr>';
+            return;
+        }
+
+        positionList.forEach(position => {
+            const row = document.createElement('tr');
+            row.setAttribute('data-position', position.codeName);
+            row.setAttribute('data-position-code', position.code);
+
+            row.innerHTML = `
+                <td class="position-name-cell">${position.codeName}</td>
+                <td><input type="number" class="expense-input-sm" name="daily_allowance_${position.code}" value="0" min="0" step="1000" placeholder="일비"></td>
+                <td><input type="number" class="expense-input-sm" name="meal_allowance_${position.code}" value="0" min="0" step="1000" placeholder="식비"></td>
+                <td><input type="number" class="expense-input-sm" name="meeting_allowance_${position.code}" value="0" min="0" step="1000" placeholder="회의비"></td>
+                <td><input type="number" class="expense-input-sm" name="overtime_meal_${position.code}" value="0" min="0" step="1000" placeholder="야근식대"></td>
+            `;
+
+            expenseSettingsBody.appendChild(row);
+        });
+
+        // 숫자 입력 필드 포맷팅 이벤트 추가
+        document.querySelectorAll('.expense-input-sm').forEach(input => {
+            input.addEventListener('keypress', function(e) {
+                if (!/[0-9]/.test(e.key)) {
+                    e.preventDefault();
+                }
+            });
+        });
+
+        console.log('경비 설정 테이블 생성 완료');
     }
 
     // 연구 책임자 목록 로드 함수
@@ -135,14 +205,14 @@ document.addEventListener('DOMContentLoaded', function() {
             const row = document.createElement('tr');
             row.setAttribute('data-id', user.idx);
             row.setAttribute('data-name', user.empName);
-            row.setAttribute('data-dept', user.empDept || '-');
-            row.setAttribute('data-position', user.empPosition || '-');
+            row.setAttribute('data-dept', user.empDeptName || '-');
+            row.setAttribute('data-position', user.empPositionName || '-');
 
             row.innerHTML = `
                 <td><input type="checkbox" class="member-checkbox" value="${user.idx}"></td>
                 <td>${user.empName}</td>
-                <td>${user.empDept || '-'}</td>
-                <td>${user.empPosition || '-'}</td>
+                <td>${user.empDeptName || '-'}</td>
+                <td>${user.empPositionName || '-'}</td>
             `;
 
             memberSelectTableBody.appendChild(row);
@@ -1025,87 +1095,33 @@ document.addEventListener('DOMContentLoaded', function() {
     const resetExpensesBtn = document.getElementById('resetExpensesBtn');
     const loadDefaultExpensesBtn = document.getElementById('loadDefaultExpensesBtn');
 
-    // 기본값 데이터
-    const defaultExpenseValues = {
-        '사원': { daily: 30000, meal: 30000, meeting: 15000, overtime: 10000 },
-        '대리': { daily: 35000, meal: 35000, meeting: 20000, overtime: 12000 },
-        '과장': { daily: 40000, meal: 40000, meeting: 25000, overtime: 15000 },
-        '차장': { daily: 50000, meal: 50000, meeting: 30000, overtime: 18000 },
-        '부장': { daily: 60000, meal: 60000, meeting: 40000, overtime: 20000 }
-    };
-
     // 기본값으로 초기화
     if (resetExpensesBtn) {
         resetExpensesBtn.addEventListener('click', function() {
-            if (confirm('경비 설정을 기본값으로 초기화하시겠습니까?')) {
+            if (confirm('경비 설정을 0원으로 초기화하시겠습니까?')) {
                 resetExpensesToDefault();
             }
         });
     }
 
     function resetExpensesToDefault() {
-        Object.keys(defaultExpenseValues).forEach(position => {
-            const values = defaultExpenseValues[position];
-            const row = document.querySelector(`tr[data-position="${position}"]`);
+        const expenseRows = document.querySelectorAll('#expenseSettingsBody tr[data-position]');
 
-            if (row) {
-                const inputs = row.querySelectorAll('.expense-input-sm');
-                if (inputs.length >= 4) {
-                    inputs[0].value = values.daily;
-                    inputs[1].value = values.meal;
-                    inputs[2].value = values.meeting;
-                    inputs[3].value = values.overtime;
-                }
-            }
+        expenseRows.forEach(row => {
+            const inputs = row.querySelectorAll('.expense-input-sm');
+            inputs.forEach(input => {
+                input.value = 0;
+            });
         });
 
-        alert('경비 설정이 기본값으로 초기화되었습니다.');
+        alert('경비 설정이 0원으로 초기화되었습니다.');
     }
 
-    // 기초정보관리 설정값 불러오기
+    // 기초정보관리 설정값 불러오기 (추후 구현)
     if (loadDefaultExpensesBtn) {
         loadDefaultExpensesBtn.addEventListener('click', function() {
+            alert('기초정보관리 설정값 불러오기 기능은 추후 구현 예정입니다.');
             // TODO: 실제로는 /api/basic-info/expenses API를 호출하여 데이터를 가져옴
-            // 현재는 시뮬레이션
-            loadExpensesFromBasicInfo();
         });
     }
-
-    function loadExpensesFromBasicInfo() {
-        // TODO: 백엔드 API 연동 시 실제 데이터 가져오기
-        // 현재는 기본값과 동일한 데이터를 사용 (시뮬레이션)
-        const basicInfoData = {
-            '사원': { daily: 30000, meal: 30000, meeting: 15000, overtime: 10000 },
-            '대리': { daily: 35000, meal: 35000, meeting: 20000, overtime: 12000 },
-            '과장': { daily: 40000, meal: 40000, meeting: 25000, overtime: 15000 },
-            '차장': { daily: 50000, meal: 50000, meeting: 30000, overtime: 18000 },
-            '부장': { daily: 60000, meal: 60000, meeting: 40000, overtime: 20000 }
-        };
-
-        Object.keys(basicInfoData).forEach(position => {
-            const values = basicInfoData[position];
-            const row = document.querySelector(`tr[data-position="${position}"]`);
-
-            if (row) {
-                const inputs = row.querySelectorAll('.expense-input-sm');
-                if (inputs.length >= 4) {
-                    inputs[0].value = values.daily;
-                    inputs[1].value = values.meal;
-                    inputs[2].value = values.meeting;
-                    inputs[3].value = values.overtime;
-                }
-            }
-        });
-
-        alert('기초정보관리 설정값을 불러왔습니다.');
-    }
-
-    // 숫자 입력 필드 포맷팅
-    document.querySelectorAll('.expense-input-sm').forEach(input => {
-        input.addEventListener('keypress', function(e) {
-            if (!/[0-9]/.test(e.key)) {
-                e.preventDefault();
-            }
-        });
-    });
 });

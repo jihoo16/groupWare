@@ -73,4 +73,9 @@ public class ProjectUpdateDTO {
      * 팀원 목록
      */
     private List<ProjectMemberCreateDTO> projectMembers;
+    
+    /**
+     * 직급별 경비 목록
+     */
+    private List<ProjectExpenseSettingDTO> projectExpenseSettings;
 }

@@ -2,11 +2,13 @@ package com.pinecni.erp.api.project.mapper;
 
 import com.pinecni.erp.api.code.repository.CodeRepository;
 import com.pinecni.erp.api.project.dto.*;
+import com.pinecni.erp.api.project.repository.ProjectExpenseSettingRepository;
 import com.pinecni.erp.api.project.repository.ProjectMemberRepository;
 import com.pinecni.erp.api.project.repository.ProjectRelationRepository;
 import com.pinecni.erp.api.project.repository.ProjectRepository;
 import com.pinecni.erp.api.user.repository.UserRepository;
 import com.pinecni.erp.entity.Project;
+import com.pinecni.erp.entity.ProjectExpenseSetting;
 import com.pinecni.erp.entity.ProjectMember;
 import com.pinecni.erp.entity.ProjectRelation;
 import com.pinecni.erp.entity.User;
@@ -29,6 +31,7 @@ public class ProjectMapper {
     private final ProjectRelationRepository projectRelationRepository;
     private final ProjectRepository projectRepository;
     private final ProjectMemberRepository projectMemberRepository;
+    private final ProjectExpenseSettingRepository projectExpenseSettingRepository;
     private final UserRepository userRepository;
     private final CodeRepository codeRepository;
 
@@ -56,6 +59,13 @@ public class ProjectMapper {
                 .map(this::toMemberDTO)
                 .collect(Collectors.toList());
 
+        // 직급별 경비 설정 목록 조회 및 변환
+        List<ProjectExpenseSettingDTO> expenseSettings = projectExpenseSettingRepository
+                .findByProjectIdx(entity.getIdx())
+                .stream()
+                .map(this::toExpenseSettingDTO)
+                .collect(Collectors.toList());
+
         return ProjectDTO.builder()
                 .idx(entity.getIdx())
                 .projectName(entity.getProjectName())
@@ -72,6 +82,7 @@ public class ProjectMapper {
                 .progress(calculateProgress(entity))
                 .projectRelations(relations)
                 .projectMembers(members)
+                .projectExpenseSettings(expenseSettings)
                 .createdAt(entity.getCreatedAt())
                 .updatedAt(entity.getUpdatedAt())
                 .createdUserIdx(entity.getCreatedUserIdx())
@@ -262,6 +273,25 @@ public class ProjectMapper {
         }
 
         return dto;
+    }
+
+    /**
+     * ProjectExpenseSetting Entity → ProjectExpenseSettingDTO 변환
+     */
+    private ProjectExpenseSettingDTO toExpenseSettingDTO(ProjectExpenseSetting setting) {
+        if (setting == null) {
+            return null;
+        }
+
+        return ProjectExpenseSettingDTO.builder()
+                .positionCode(setting.getPositionCode())
+                .positionName(setting.getPositionName())
+                .transitAllowance(setting.getTransitAllowance())
+                .dailyAllowance(setting.getDailyAllowance())
+                .mealAllowance(setting.getMealAllowance())
+                .meetingAllowance(setting.getMeetingAllowance())
+                .overtimeMealAllowance(setting.getOvertimeMealAllowance())
+                .build();
     }
 
     /**

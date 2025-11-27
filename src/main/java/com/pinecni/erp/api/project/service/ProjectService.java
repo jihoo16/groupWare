@@ -2,6 +2,7 @@ package com.pinecni.erp.api.project.service;
 
 import com.pinecni.erp.api.project.dto.ProjectCreateDTO;
 import com.pinecni.erp.api.project.dto.ProjectDTO;
+import com.pinecni.erp.api.project.dto.ProjectExpenseSettingDTO;
 import com.pinecni.erp.api.project.dto.ProjectUpdateDTO;
 import com.pinecni.erp.api.project.dto.ResearchCardDTO;
 
@@ -42,4 +43,9 @@ public interface ProjectService {
 
 
     List<ResearchCardDTO> getProjectCards(Long projectIdx);
+
+    /**
+     * 프로젝트의 직급별 경비 설정 조회
+     */
+    List<ProjectExpenseSettingDTO> getProjectExpenseSettings(Long projectIdx);
 }

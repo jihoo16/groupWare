@@ -109,4 +109,10 @@ public class ProjectDTO {
      * 프로젝트 멤버 목록
      */
     private List<ProjectMemberDTO> projectMembers ;
+
+    /**
+     * 직급별 경비 목록
+     */
+    private List<ProjectExpenseSettingDTO> projectExpenseSettings  ;
+
 }
