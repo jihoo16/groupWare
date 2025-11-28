@@ -25,14 +25,9 @@ public class FixedExpensePolicyMapper {
                 .idx(entity.getIdx())
                 .positionCode(entity.getPositionCode())
                 .positionName(entity.getPositionCodeRef() != null ? entity.getPositionCodeRef().getCodeName() : null)
-                .lunchAllowance(entity.getLunchAllowance())
-                .nightMealAllowance(entity.getNightMealAllowance())
-                .businessMealAllowance(entity.getBusinessMealAllowance())
-                .businessTripAllowance(entity.getBusinessTripAllowance())
-                .transitAllowance(entity.getTransitAllowance())
-                .fuelAllowance(entity.getFuelAllowance())
-                .holidayExpense(entity.getHolidayExpense())
-                .beverageExpense(entity.getBeverageExpense())
+                .expenseItemName(entity.getExpenseItemName())
+                .expenseItemNameEn(entity.getExpenseItemNameEn())
+                .amount(entity.getAmount())
                 .createdAt(entity.getCreatedAt())
                 .updatedAt(entity.getUpdatedAt())
                 .createdUserIdx(entity.getCreatedUserIdx())
@@ -50,14 +45,9 @@ public class FixedExpensePolicyMapper {
 
         return FixedExpensePolicy.builder()
                 .positionCode(dto.getPositionCode())
-                .lunchAllowance(dto.getLunchAllowance() != null ? dto.getLunchAllowance() : 0)
-                .nightMealAllowance(dto.getNightMealAllowance() != null ? dto.getNightMealAllowance() : 0)
-                .businessMealAllowance(dto.getBusinessMealAllowance() != null ? dto.getBusinessMealAllowance() : 0)
-                .businessTripAllowance(dto.getBusinessTripAllowance() != null ? dto.getBusinessTripAllowance() : 0)
-                .transitAllowance(dto.getTransitAllowance() != null ? dto.getTransitAllowance() : 0)
-                .fuelAllowance(dto.getFuelAllowance() != null ? dto.getFuelAllowance() : 0)
-                .holidayExpense(dto.getHolidayExpense() != null ? dto.getHolidayExpense() : 0)
-                .beverageExpense(dto.getBeverageExpense() != null ? dto.getBeverageExpense() : 0)
+                .expenseItemName(dto.getExpenseItemName())
+                .expenseItemNameEn(dto.getExpenseItemNameEn())
+                .amount(dto.getAmount() != null ? dto.getAmount() : 0)
                 .build();
     }
 
@@ -71,29 +61,14 @@ public class FixedExpensePolicyMapper {
 
         // positionCode는 변경 불가 (키값이므로)
 
-        if (dto.getLunchAllowance() != null) {
-            entity.setLunchAllowance(dto.getLunchAllowance());
+        if (dto.getExpenseItemName() != null) {
+            entity.setExpenseItemName(dto.getExpenseItemName());
         }
-        if (dto.getNightMealAllowance() != null) {
-            entity.setNightMealAllowance(dto.getNightMealAllowance());
+        if (dto.getExpenseItemNameEn() != null) {
+            entity.setExpenseItemNameEn(dto.getExpenseItemNameEn());
         }
-        if (dto.getBusinessMealAllowance() != null) {
-            entity.setBusinessMealAllowance(dto.getBusinessMealAllowance());
-        }
-        if (dto.getBusinessTripAllowance() != null) {
-            entity.setBusinessTripAllowance(dto.getBusinessTripAllowance());
-        }
-        if (dto.getTransitAllowance() != null) {
-            entity.setTransitAllowance(dto.getTransitAllowance());
-        }
-        if (dto.getFuelAllowance() != null) {
-            entity.setFuelAllowance(dto.getFuelAllowance());
-        }
-        if (dto.getHolidayExpense() != null) {
-            entity.setHolidayExpense(dto.getHolidayExpense());
-        }
-        if (dto.getBeverageExpense() != null) {
-            entity.setBeverageExpense(dto.getBeverageExpense());
+        if (dto.getAmount() != null) {
+            entity.setAmount(dto.getAmount());
         }
 
         // 수정자 정보 업데이트

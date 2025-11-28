@@ -30,7 +30,7 @@ public class FixedExpensePolicyServiceImpl implements FixedExpensePolicyService 
     @Override
     public List<FixedExpensePolicyDTO> getAllPolicies() {
         log.debug("getAllPolicies() called");
-        return fixedExpensePolicyRepository.findAllByOrderByPositionCode().stream()
+        return fixedExpensePolicyRepository.findAllByOrderByPositionCodeAscExpenseItemNameAsc().stream()
                 .map(mapper::toDTO)
                 .collect(Collectors.toList());
     }
@@ -39,22 +39,33 @@ public class FixedExpensePolicyServiceImpl implements FixedExpensePolicyService 
     public FixedExpensePolicyDTO getPolicyByPositionCode(String positionCode) {
         log.debug("getPolicyByPositionCode() called with positionCode: {}", positionCode);
 
-        return fixedExpensePolicyRepository.findByPositionCode(positionCode)
-                .map(mapper::toDTO)
-                .orElse(null);
+        // 주의: 이 메서드는 한 직급에 여러 경비 항목이 있을 수 있으므로 첫 번째 항목만 반환
+        List<FixedExpensePolicy> policies = fixedExpensePolicyRepository.findByPositionCode(positionCode);
+
+        if (policies.isEmpty()) {
+            return null;
+        }
+
+        return mapper.toDTO(policies.get(0));
     }
 
     @Override
     @Transactional
     public FixedExpensePolicyDTO upsertPolicy(FixedExpensePolicyUpdateDTO updateDTO, Long userIdx) {
-        log.debug("upsertPolicy() called with positionCode: {}", updateDTO.getPositionCode());
+        log.debug("upsertPolicy() called with positionCode: {}, expenseItemName: {}",
+                updateDTO.getPositionCode(), updateDTO.getExpenseItemName());
 
         if (updateDTO.getPositionCode() == null || updateDTO.getPositionCode().isEmpty()) {
             throw new IllegalArgumentException("직급 코드는 필수입니다.");
         }
 
+        if (updateDTO.getExpenseItemName() == null || updateDTO.getExpenseItemName().isEmpty()) {
+            throw new IllegalArgumentException("경비 항목명은 필수입니다.");
+        }
+
         Optional<FixedExpensePolicy> existingPolicy =
-                fixedExpensePolicyRepository.findByPositionCode(updateDTO.getPositionCode());
+                fixedExpensePolicyRepository.findByPositionCodeAndExpenseItemName(
+                        updateDTO.getPositionCode(), updateDTO.getExpenseItemName());
 
         FixedExpensePolicy policy;
 
@@ -62,7 +73,8 @@ public class FixedExpensePolicyServiceImpl implements FixedExpensePolicyService 
             // 수정
             policy = existingPolicy.get();
             mapper.updateEntity(policy, updateDTO, userIdx);
-            log.info("FixedExpensePolicy updated for positionCode: {}", updateDTO.getPositionCode());
+            log.info("FixedExpensePolicy updated for positionCode: {}, expenseItemName: {}",
+                    updateDTO.getPositionCode(), updateDTO.getExpenseItemName());
         } else {
             // 생성
             policy = mapper.toEntity(updateDTO, userIdx);
@@ -70,7 +82,8 @@ public class FixedExpensePolicyServiceImpl implements FixedExpensePolicyService 
             policy.setCreatedUserIdx(userIdx);
             policy.setUpdatedAt(LocalDateTime.now());
             policy.setUpdatedUserIdx(userIdx);
-            log.info("FixedExpensePolicy created for positionCode: {}", updateDTO.getPositionCode());
+            log.info("FixedExpensePolicy created for positionCode: {}, expenseItemName: {}",
+                    updateDTO.getPositionCode(), updateDTO.getExpenseItemName());
         }
 
         FixedExpensePolicy savedPolicy = fixedExpensePolicyRepository.save(policy);
@@ -92,10 +105,13 @@ public class FixedExpensePolicyServiceImpl implements FixedExpensePolicyService 
     public void deletePolicy(String positionCode) {
         log.debug("deletePolicy() called with positionCode: {}", positionCode);
 
-        FixedExpensePolicy policy = fixedExpensePolicyRepository.findByPositionCode(positionCode)
-                .orElseThrow(() -> new IllegalArgumentException("해당 직급의 고정경비 정책을 찾을 수 없습니다: " + positionCode));
+        List<FixedExpensePolicy> policies = fixedExpensePolicyRepository.findByPositionCode(positionCode);
 
-        fixedExpensePolicyRepository.delete(policy);
-        log.info("FixedExpensePolicy deleted for positionCode: {}", positionCode);
+        if (policies.isEmpty()) {
+            throw new IllegalArgumentException("해당 직급의 고정경비 정책을 찾을 수 없습니다: " + positionCode);
+        }
+
+        fixedExpensePolicyRepository.deleteAll(policies);
+        log.info("FixedExpensePolicy deleted for positionCode: {} ({} items)", positionCode, policies.size());
     }
 }

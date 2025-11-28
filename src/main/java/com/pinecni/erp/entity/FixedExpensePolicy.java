@@ -1,7 +1,10 @@
 package com.pinecni.erp.entity;
 
 import jakarta.persistence.*;
+import jakarta.validation.constraints.NotNull;
+import jakarta.validation.constraints.Size;
 import lombok.*;
+import org.hibernate.annotations.ColumnDefault;
 
 /**
  * 직급별 고정경비 정책 Entity
@@ -24,32 +27,21 @@ public class FixedExpensePolicy extends BaseEntity {
     @Column(name = "position_code", nullable = false, length = 50)
     private String positionCode;
 
-    @Column(name = "lunch_allowance")
-    private Integer lunchAllowance;
-
-    @Column(name = "night_meal_allowance")
-    private Integer nightMealAllowance;
-
-    @Column(name = "business_meal_allowance")
-    private Integer businessMealAllowance;
-
-    @Column(name = "business_trip_allowance")
-    private Integer businessTripAllowance;
-
-    @Column(name = "transit_allowance")
-    private Integer transitAllowance;
-
-    @Column(name = "fuel_allowance")
-    private Integer fuelAllowance;
-
-    @Column(name = "holiday_expense")
-    private Integer holidayExpense;
-
-    @Column(name = "beverage_expense")
-    private Integer beverageExpense;
+    @Column(name = "expense_item_name", nullable = false, length = 100)
+    private String expenseItemName;
 
     // 관계 매핑
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "position_code", referencedColumnName = "code", insertable = false, updatable = false)
     private Code positionCodeRef;
+
+    @Size(max = 100)
+    @Column(name = "expense_item_name_en", length = 100)
+    private String expenseItemNameEn;
+
+    @NotNull
+    @ColumnDefault("0")
+    @Column(name = "amount", nullable = false)
+    private Integer amount;
+
 }

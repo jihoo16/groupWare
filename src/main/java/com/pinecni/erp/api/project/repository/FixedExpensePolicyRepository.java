@@ -14,12 +14,17 @@ import java.util.Optional;
 public interface FixedExpensePolicyRepository extends JpaRepository<FixedExpensePolicy, Long> {
 
     /**
-     * 직급별 경비 정책 조회
+     * 직급별 경비 정책 목록 조회 (한 직급에 여러 경비 항목)
      */
-    Optional<FixedExpensePolicy> findByPositionCode(String positionCode);
+    List<FixedExpensePolicy> findByPositionCode(String positionCode);
+
+    /**
+     * 직급 + 경비 항목명으로 조회
+     */
+    Optional<FixedExpensePolicy> findByPositionCodeAndExpenseItemName(String positionCode, String expenseItemName);
 
     /**
      * 모든 경비 정책 조회 (직급 코드 순)
      */
-    List<FixedExpensePolicy> findAllByOrderByPositionCode();
+    List<FixedExpensePolicy> findAllByOrderByPositionCodeAscExpenseItemNameAsc();
 }

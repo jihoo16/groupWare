@@ -15,12 +15,7 @@ import lombok.NoArgsConstructor;
 public class FixedExpensePolicyUpdateDTO {
 
     private String positionCode;
-    private Integer lunchAllowance;
-    private Integer nightMealAllowance;
-    private Integer businessMealAllowance;
-    private Integer businessTripAllowance;
-    private Integer transitAllowance;
-    private Integer fuelAllowance;
-    private Integer holidayExpense;
-    private Integer beverageExpense;
+    private String expenseItemName;
+    private String expenseItemNameEn;
+    private Integer amount;
 }

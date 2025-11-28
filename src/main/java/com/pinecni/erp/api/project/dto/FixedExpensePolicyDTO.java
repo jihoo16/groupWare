@@ -20,14 +20,9 @@ public class FixedExpensePolicyDTO {
     private Long idx;
     private String positionCode;
     private String positionName;
-    private Integer lunchAllowance;
-    private Integer nightMealAllowance;
-    private Integer businessMealAllowance;
-    private Integer businessTripAllowance;
-    private Integer transitAllowance;
-    private Integer fuelAllowance;
-    private Integer holidayExpense;
-    private Integer beverageExpense;
+    private String expenseItemName;
+    private String expenseItemNameEn;
+    private Integer amount;
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;
     private Long createdUserIdx;

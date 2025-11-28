@@ -386,26 +386,34 @@ document.addEventListener('DOMContentLoaded', function() {
     function renderExpenseTable(ranks, policies) {
         const tbody = document.getElementById('expenses-tbody');
 
-        // Create a map of policies by positionCode for quick lookup
+        // 새로운 구조: 각 직급 + 경비 항목 조합을 맵으로 저장
         const policyMap = {};
         policies.forEach(policy => {
-            policyMap[policy.positionCode] = policy;
+            const key = `${policy.positionCode}_${policy.expenseItemName}`;
+            policyMap[key] = policy.amount || 0;
         });
 
-        tbody.innerHTML = ranks.map(rank => {
-            const policy = policyMap[rank.code] || {};
+        // 경비 항목 목록 정의
+        const expenseItems = [
+            { field: 'lunchAllowance', name: '중식비' },
+            { field: 'nightMealAllowance', name: '야근식대' },
+            { field: 'businessMealAllowance', name: '회의비' },
+            { field: 'businessTripAllowance', name: '출장비' },
+            { field: 'transitAllowance', name: '교통비' },
+            { field: 'fuelAllowance', name: '유류비' },
+            { field: 'holidayExpense', name: '휴일근무' },
+            { field: 'beverageExpense', name: '음료비' }
+        ];
 
+        tbody.innerHTML = ranks.map(rank => {
             return `
                 <tr data-position-code="${rank.code}">
                     <td class="position-cell">${rank.codeName}</td>
-                    <td><input type="number" class="expense-input" data-field="lunchAllowance" value="${policy.lunchAllowance || 0}" min="0" step="1000"></td>
-                    <td><input type="number" class="expense-input" data-field="nightMealAllowance" value="${policy.nightMealAllowance || 0}" min="0" step="1000"></td>
-                    <td><input type="number" class="expense-input" data-field="businessMealAllowance" value="${policy.businessMealAllowance || 0}" min="0" step="1000"></td>
-                    <td><input type="number" class="expense-input" data-field="businessTripAllowance" value="${policy.businessTripAllowance || 0}" min="0" step="1000"></td>
-                    <td><input type="number" class="expense-input" data-field="transitAllowance" value="${policy.transitAllowance || 0}" min="0" step="1000"></td>
-                    <td><input type="number" class="expense-input" data-field="fuelAllowance" value="${policy.fuelAllowance || 0}" min="0" step="1000"></td>
-                    <td><input type="number" class="expense-input" data-field="holidayExpense" value="${policy.holidayExpense || 0}" min="0" step="1000"></td>
-                    <td><input type="number" class="expense-input" data-field="beverageExpense" value="${policy.beverageExpense || 0}" min="0" step="1000"></td>
+                    ${expenseItems.map(item => {
+                        const key = `${rank.code}_${item.name}`;
+                        const value = policyMap[key] || 0;
+                        return `<td><input type="number" class="expense-input" data-field="${item.field}" data-item-name="${item.name}" value="${value}" min="0" step="1000"></td>`;
+                    }).join('')}
                 </tr>
             `;
         }).join('');
@@ -422,16 +430,18 @@ document.addEventListener('DOMContentLoaded', function() {
                 if (!positionCode) return;
 
                 const inputs = row.querySelectorAll('.expense-input');
-                const data = {
-                    positionCode: positionCode
-                };
 
+                // 새로운 구조: 각 경비 항목을 별도의 레코드로 저장
                 inputs.forEach(input => {
-                    const field = input.getAttribute('data-field');
-                    data[field] = parseInt(input.value) || 0;
-                });
+                    const itemName = input.getAttribute('data-item-name');
+                    const amount = parseInt(input.value) || 0;
 
-                expenseData.push(data);
+                    expenseData.push({
+                        positionCode: positionCode,
+                        expenseItemName: itemName,
+                        amount: amount
+                    });
+                });
             });
 
             console.log('Expense data to save:', expenseData);

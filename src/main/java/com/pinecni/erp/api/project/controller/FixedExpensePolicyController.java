@@ -2,7 +2,10 @@ package com.pinecni.erp.api.project.controller;
 
 import com.pinecni.erp.api.project.dto.FixedExpensePolicyDTO;
 import com.pinecni.erp.api.project.dto.FixedExpensePolicyUpdateDTO;
+import com.pinecni.erp.api.project.mapper.FixedExpensePolicyMapper;
+import com.pinecni.erp.api.project.repository.FixedExpensePolicyRepository;
 import com.pinecni.erp.api.project.service.FixedExpensePolicyService;
+import com.pinecni.erp.entity.FixedExpensePolicy;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
@@ -12,6 +15,7 @@ import org.springframework.web.bind.annotation.*;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.stream.Collectors;
 
 /**
  * 직급별 고정경비 정책 Controller
@@ -24,6 +28,8 @@ import java.util.Map;
 public class FixedExpensePolicyController {
 
     private final FixedExpensePolicyService fixedExpensePolicyService;
+    private final FixedExpensePolicyRepository fixedExpensePolicyRepository;
+    private final FixedExpensePolicyMapper mapper;
 
     /**
      * 전체 고정경비 정책 목록 조회
@@ -37,8 +43,9 @@ public class FixedExpensePolicyController {
     }
 
     /**
-     * 직급별 고정경비 정책 조회
+     * 직급별 고정경비 정책 조회 (단일 - 첫 번째 항목만)
      * GET /api/fixed-expense-policies/{positionCode}
+     * @deprecated 여러 경비 항목을 조회하려면 /api/fixed-expense-policies/position/{positionCode} 사용
      */
     @GetMapping("/{positionCode}")
     public ResponseEntity<FixedExpensePolicyDTO> getPolicyByPositionCode(@PathVariable String positionCode) {
@@ -51,6 +58,27 @@ public class FixedExpensePolicyController {
         }
 
         return ResponseEntity.ok(policy);
+    }
+
+    /**
+     * 직급별 고정경비 정책 목록 조회 (모든 경비 항목)
+     * GET /api/fixed-expense-policies/position/{positionCode}
+     */
+    @GetMapping("/position/{positionCode}")
+    public ResponseEntity<List<FixedExpensePolicyDTO>> getPoliciesByPositionCode(@PathVariable String positionCode) {
+        log.debug("GET /api/fixed-expense-policies/position/{} - getPoliciesByPositionCode()", positionCode);
+
+        List<FixedExpensePolicy> policies = fixedExpensePolicyRepository.findByPositionCode(positionCode);
+
+        if (policies.isEmpty()) {
+            return ResponseEntity.ok(List.of());
+        }
+
+        List<FixedExpensePolicyDTO> policyDTOs = policies.stream()
+                .map(mapper::toDTO)
+                .collect(Collectors.toList());
+
+        return ResponseEntity.ok(policyDTOs);
     }
 
     /**
