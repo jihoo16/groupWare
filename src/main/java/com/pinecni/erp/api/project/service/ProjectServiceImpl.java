@@ -159,7 +159,7 @@ public class ProjectServiceImpl implements ProjectService {
             }
         }
 
-        // 직급별 경비 설정 저장
+        // 직급별 경비 설정 저장 (새 구조: expenseItemName + amount)
         if (createDTO.getExpenseSettings() != null && !createDTO.getExpenseSettings().isEmpty()) {
             log.debug("Saving {} expense settings for project idx={}", createDTO.getExpenseSettings().size(), savedProject.getIdx());
 
@@ -177,21 +177,24 @@ public class ProjectServiceImpl implements ProjectService {
                     continue;
                 }
 
+                // 새 구조: 경비 항목명 + 금액으로 저장
                 ProjectExpenseSetting setting = ProjectExpenseSetting.builder()
                         .projectIdx(savedProject.getIdx())
                         .positionCode(positionCode)
                         .positionName(settingDTO.getPositionName())
-                        .transitAllowance(settingDTO.getTransitAllowance() != null ?
-                                settingDTO.getTransitAllowance() : "실비")
-                        .dailyAllowance(settingDTO.getDailyAllowance())
-                        .mealAllowance(settingDTO.getMealAllowance())
-                        .meetingAllowance(settingDTO.getMeetingAllowance())
-                        .overtimeMealAllowance(settingDTO.getOvertimeMealAllowance())
+                        .expenseItemName(settingDTO.getExpenseItemName())
+                        .expenseItemNameEn(settingDTO.getExpenseItemNameEn())
+                        .amount(settingDTO.getAmount() != null ? settingDTO.getAmount() : 0)
                         .build();
 
+                // BaseEntity 필드 설정
+                setting.setCreatedUserIdx(createdUserIdx);
+                setting.setUpdatedUserIdx(createdUserIdx);
+
                 projectExpenseSettingRepository.save(setting);
-                log.debug("Expense setting saved: position={}, projectIdx={}",
-                         settingDTO.getPositionName(), savedProject.getIdx());
+                log.debug("Expense setting saved: position={}, item={}, amount={}, projectIdx={}",
+                         settingDTO.getPositionName(), settingDTO.getExpenseItemName(),
+                         settingDTO.getAmount(), savedProject.getIdx());
             }
         }
 
@@ -397,68 +400,83 @@ public class ProjectServiceImpl implements ProjectService {
                 }
             }
         }
-        // 직급별 경비 업데이트
+        // 직급별 경비 업데이트 (새 구조: expenseItemName + amount)
         if (updateDTO.getProjectExpenseSettings() != null) {
             log.debug("Updating {} expense settings for project idx={}", updateDTO.getProjectExpenseSettings().size(), idx);
 
             // 1. 기존 직급별 경비 설정 목록 조회
             List<ProjectExpenseSetting> existingSettings = projectExpenseSettingRepository.findByProjectIdx(idx);
-            java.util.Set<String> updatedPositionCodes = new java.util.HashSet<>();
+            java.util.Set<String> updatedKeys = new java.util.HashSet<>();
 
             // 2. DTO의 경비 설정 처리 (생성 또는 업데이트)
             for (ProjectExpenseSettingDTO settingDTO : updateDTO.getProjectExpenseSettings()) {
-                if (settingDTO.getPositionCode() == null) {
-                    log.warn("Position code is null. Skipping expense setting for project idx={}", idx);
+                if (settingDTO.getPositionCode() == null || settingDTO.getExpenseItemName() == null) {
+                    log.warn("Position code or expense item name is null. Skipping expense setting for project idx={}", idx);
                     continue;
                 }
 
-                // 기존 경비 설정 확인 (같은 직급 코드가 이미 등록되어 있는지)
+                String key = settingDTO.getPositionCode() + "_" + settingDTO.getExpenseItemName();
+
+                // 기존 경비 설정 확인 (같은 직급 + 경비 항목 조합)
                 ProjectExpenseSetting existingSetting = existingSettings.stream()
-                        .filter(s -> s.getPositionCode().equals(settingDTO.getPositionCode()))
+                        .filter(s -> s.getPositionCode() != null &&
+                                     s.getPositionCode().equals(settingDTO.getPositionCode()) &&
+                                     s.getExpenseItemName() != null &&
+                                     s.getExpenseItemName().equals(settingDTO.getExpenseItemName()))
                         .findFirst()
                         .orElse(null);
 
                 if (existingSetting != null) {
                     // 기존 경비 설정 업데이트
                     existingSetting.setPositionName(settingDTO.getPositionName());
-                    existingSetting.setTransitAllowance(settingDTO.getTransitAllowance() != null ?
-                            settingDTO.getTransitAllowance() : "실비");
-                    existingSetting.setDailyAllowance(settingDTO.getDailyAllowance());
-                    existingSetting.setMealAllowance(settingDTO.getMealAllowance());
-                    existingSetting.setMeetingAllowance(settingDTO.getMeetingAllowance());
-                    existingSetting.setOvertimeMealAllowance(settingDTO.getOvertimeMealAllowance());
+                    existingSetting.setExpenseItemNameEn(settingDTO.getExpenseItemNameEn());
+                    existingSetting.setAmount(settingDTO.getAmount() != null ? settingDTO.getAmount() : 0);
+                    existingSetting.setUpdatedUserIdx(updatedUserIdx);
 
                     projectExpenseSettingRepository.save(existingSetting);
-                    log.debug("Expense setting updated: positionCode={}, projectIdx={}",
-                             settingDTO.getPositionCode(), idx);
+                    log.debug("Expense setting updated: positionCode={}, item={}, amount={}, projectIdx={}",
+                             settingDTO.getPositionCode(), settingDTO.getExpenseItemName(),
+                             settingDTO.getAmount(), idx);
                 } else {
                     // 신규 경비 설정 생성
                     ProjectExpenseSetting newSetting = ProjectExpenseSetting.builder()
                             .projectIdx(idx)
                             .positionCode(settingDTO.getPositionCode())
                             .positionName(settingDTO.getPositionName())
-                            .transitAllowance(settingDTO.getTransitAllowance() != null ?
-                                    settingDTO.getTransitAllowance() : "실비")
-                            .dailyAllowance(settingDTO.getDailyAllowance())
-                            .mealAllowance(settingDTO.getMealAllowance())
-                            .meetingAllowance(settingDTO.getMeetingAllowance())
-                            .overtimeMealAllowance(settingDTO.getOvertimeMealAllowance())
+                            .expenseItemName(settingDTO.getExpenseItemName())
+                            .expenseItemNameEn(settingDTO.getExpenseItemNameEn())
+                            .amount(settingDTO.getAmount() != null ? settingDTO.getAmount() : 0)
                             .build();
 
+                    // BaseEntity 필드 설정
+                    newSetting.setCreatedUserIdx(updatedUserIdx);
+                    newSetting.setUpdatedUserIdx(updatedUserIdx);
+
                     projectExpenseSettingRepository.save(newSetting);
-                    log.debug("Expense setting created: positionCode={}, projectIdx={}",
-                             settingDTO.getPositionCode(), idx);
+                    log.debug("Expense setting created: positionCode={}, item={}, amount={}, projectIdx={}",
+                             settingDTO.getPositionCode(), settingDTO.getExpenseItemName(),
+                             settingDTO.getAmount(), idx);
                 }
 
-                updatedPositionCodes.add(settingDTO.getPositionCode());
+                updatedKeys.add(key);
             }
 
             // 3. DTO에 포함되지 않은 기존 경비 설정은 삭제
             for (ProjectExpenseSetting existingSetting : existingSettings) {
-                if (!updatedPositionCodes.contains(existingSetting.getPositionCode())) {
+                // expenseItemName이 null인 구 데이터는 무조건 삭제
+                if (existingSetting.getExpenseItemName() == null) {
                     projectExpenseSettingRepository.delete(existingSetting);
-                    log.debug("Expense setting deleted: idx={}, positionCode={}",
+                    log.debug("Old expense setting deleted (null expenseItemName): idx={}, positionCode={}",
                              existingSetting.getIdx(), existingSetting.getPositionCode());
+                    continue;
+                }
+
+                String existingKey = existingSetting.getPositionCode() + "_" + existingSetting.getExpenseItemName();
+                if (!updatedKeys.contains(existingKey)) {
+                    projectExpenseSettingRepository.delete(existingSetting);
+                    log.debug("Expense setting deleted: idx={}, positionCode={}, item={}",
+                             existingSetting.getIdx(), existingSetting.getPositionCode(),
+                             existingSetting.getExpenseItemName());
                 }
             }
         }
@@ -537,18 +555,16 @@ public class ProjectServiceImpl implements ProjectService {
     }
 
     @Override
-  public List<ProjectExpenseSettingDTO> getProjectExpenseSettings(Long projectIdx) {
+    public List<ProjectExpenseSettingDTO> getProjectExpenseSettings(Long projectIdx) {
         log.debug("getProjectExpenseSettings() called with projectIdx: {}", projectIdx);
 
         return projectExpenseSettingRepository.findByProjectIdx(projectIdx).stream()
                 .map(setting -> ProjectExpenseSettingDTO.builder()
                         .positionCode(setting.getPositionCode())
                         .positionName(setting.getPositionName())
-                        .transitAllowance(setting.getTransitAllowance())
-                        .dailyAllowance(setting.getDailyAllowance())
-                        .mealAllowance(setting.getMealAllowance())
-                        .meetingAllowance(setting.getMeetingAllowance())
-                        .overtimeMealAllowance(setting.getOvertimeMealAllowance())
+                        .expenseItemName(setting.getExpenseItemName())
+                        .expenseItemNameEn(setting.getExpenseItemNameEn())
+                        .amount(setting.getAmount())
                         .build())
                 .collect(Collectors.toList());
     }

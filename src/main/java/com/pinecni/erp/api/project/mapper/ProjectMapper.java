@@ -277,6 +277,7 @@ public class ProjectMapper {
 
     /**
      * ProjectExpenseSetting Entity → ProjectExpenseSettingDTO 변환
+     * 새 구조: expenseItemName + amount
      */
     private ProjectExpenseSettingDTO toExpenseSettingDTO(ProjectExpenseSetting setting) {
         if (setting == null) {
@@ -286,11 +287,9 @@ public class ProjectMapper {
         return ProjectExpenseSettingDTO.builder()
                 .positionCode(setting.getPositionCode())
                 .positionName(setting.getPositionName())
-                .transitAllowance(setting.getTransitAllowance())
-                .dailyAllowance(setting.getDailyAllowance())
-                .mealAllowance(setting.getMealAllowance())
-                .meetingAllowance(setting.getMeetingAllowance())
-                .overtimeMealAllowance(setting.getOvertimeMealAllowance())
+                .expenseItemName(setting.getExpenseItemName())
+                .expenseItemNameEn(setting.getExpenseItemNameEn())
+                .amount(setting.getAmount())
                 .build();
     }
 
