@@ -1,0 +1,283 @@
+<!DOCTYPE html>
+<html lang="ko" xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{fragments/layout :: head('ERP 시스템 - 보고체계 관리', '/css/manage-hierarchy.css')}"></head>
+<body>
+    <div class="container">
+        <!-- 좌측 네비게이션 바 -->
+        <div th:replace="~{fragments/sidebar :: sidebar('manage-hierarchy')}"></div>
+
+        <!-- 메인 콘텐츠 영역 -->
+        <main class="main-content">
+            <header class="header">
+                <div class="header-left">
+                    <h1 class="page-title"><i class="fas fa-sitemap"></i> 보고체계 관리</h1>
+                    <p class="mh-page-description">조직의 보고 체계 및 문서 승인 관계를 관리합니다</p>
+                </div>
+                <div class="header-right">
+                    <div class="search-box">
+                        <i class="fas fa-search"></i>
+                        <input type="text" id="hierarchySearch" placeholder="이름, 부서 검색...">
+                    </div>
+                    <button class="btn-secondary" id="viewOrgChartBtn">
+                        <i class="fas fa-project-diagram"></i> 조직도 보기
+                    </button>
+                    <button class="btn-primary" id="saveAllBtn">
+                        <i class="fas fa-save"></i> 전체 저장
+                    </button>
+                </div>
+            </header>
+
+            <!-- 보고체계 관리 컨테이너 -->
+            <div class="mh-container">
+                <!-- 통계 카드 -->
+                <div class="mh-stats-grid">
+                <div class="mh-stat-card">
+                    <div class="mh-stat-icon" style="background: #e3f2fd;">
+                        <i class="fas fa-users" style="color: #1976d2;"></i>
+                    </div>
+                    <div class="mh-stat-content">
+                        <h3>전체 직원</h3>
+                        <p class="mh-stat-number"><span id="totalEmployees">-</span>명</p>
+                    </div>
+                </div>
+                <div class="mh-stat-card">
+                    <div class="mh-stat-icon" style="background: #fff3e0;">
+                        <i class="fas fa-user-tie" style="color: #f57c00;"></i>
+                    </div>
+                    <div class="mh-stat-content">
+                        <h3>팀장급 이상</h3>
+                        <p class="mh-stat-number"><span id="totalLeaders">-</span>명</p>
+                    </div>
+                </div>
+                <div class="mh-stat-card">
+                    <div class="mh-stat-icon" style="background: #e8f5e9;">
+                        <i class="fas fa-check-circle" style="color: #388e3c;"></i>
+                    </div>
+                    <div class="mh-stat-content">
+                        <h3>보고체계 설정 완료</h3>
+                        <p class="mh-stat-number"><span id="completedCount">-</span>명</p>
+                    </div>
+                </div>
+                <div class="mh-stat-card">
+                    <div class="mh-stat-icon" style="background: #ffebee;">
+                        <i class="fas fa-exclamation-triangle" style="color: #d32f2f;"></i>
+                    </div>
+                    <div class="mh-stat-content">
+                        <h3>미설정</h3>
+                        <p class="mh-stat-number"><span id="incompleteCount">-</span>명</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 필터 영역 -->
+            <div class="mh-filter-section">
+                <div class="mh-filter-group">
+                    <label for="deptFilter">부서</label>
+                    <select id="deptFilter">
+                        <option value="">전체 부서</option>
+                        <!-- JavaScript로 동적 생성 -->
+                    </select>
+                </div>
+                <div class="mh-filter-group">
+                    <label for="levelFilter">조직 레벨</label>
+                    <select id="levelFilter">
+                        <option value="">전체 레벨</option>
+                        <option value="1">레벨 1 (대표)</option>
+                        <option value="2">레벨 2 (임원)</option>
+                        <option value="3">레벨 3 (부서장)</option>
+                        <option value="4">레벨 4 (팀장)</option>
+                        <option value="5">레벨 5 (팀원)</option>
+                    </select>
+                </div>
+                <div class="mh-filter-group">
+                    <label for="statusFilter">설정 상태</label>
+                    <select id="statusFilter">
+                        <option value="">전체</option>
+                        <option value="completed">설정 완료</option>
+                        <option value="incomplete">미설정</option>
+                    </select>
+                </div>
+                <button class="btn-secondary" id="resetFilterBtn">
+                    <i class="fas fa-redo"></i> 필터 초기화
+                </button>
+            </div>
+
+            <!-- 보고체계 관리 테이블 -->
+            <div class="mh-hierarchy-table-wrapper">
+                <table class="mh-hierarchy-table">
+                    <thead>
+                        <tr>
+                            <th style="width: 80px;">사번</th>
+                            <th style="width: 100px;">이름</th>
+                            <th style="width: 120px;">부서</th>
+                            <th style="width: 100px;">직급</th>
+                            <th style="width: 100px;">조직 레벨</th>
+                            <th style="width: 80px;">팀장 여부</th>
+                            <th style="width: 180px;">현재 상위보고자</th>
+                            <th style="width: 180px;">상위보고자 변경</th>
+                            <th style="width: 120px;">배정일</th>
+                            <th style="width: 100px;">상태</th>
+                            <th style="width: 120px;">관리</th>
+                        </tr>
+                    </thead>
+                    <tbody id="hierarchyTableBody">
+                        <!-- JavaScript로 동적 생성 -->
+                    </tbody>
+                </table>
+            </div>
+
+            <!-- 로딩 표시 -->
+            <div class="mh-loading-container" id="loadingContainer" style="display: none;">
+                <div class="mh-spinner"></div>
+                <p>데이터를 불러오는 중...</p>
+            </div>
+
+                <!-- 빈 상태 -->
+                <div class="mh-empty-state" id="emptyState" style="display: none;">
+                    <i class="fas fa-inbox"></i>
+                    <p>검색 결과가 없습니다</p>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <!-- 상위보고자 변경 모달 -->
+    <div id="changeManagerModal" class="mh-modal">
+        <div class="mh-modal-content">
+            <div class="mh-modal-header">
+                <h2><i class="fas fa-user-edit"></i> 상위보고자 변경</h2>
+                <button class="mh-modal-close" id="closeChangeManagerModal">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            <div class="mh-modal-body">
+                <div class="mh-change-manager-info">
+                    <div class="mh-info-row">
+                        <span class="mh-info-label">직원</span>
+                        <span class="mh-info-value" id="modalEmpName"></span>
+                    </div>
+                    <div class="mh-info-row">
+                        <span class="mh-info-label">부서</span>
+                        <span class="mh-info-value" id="modalEmpDept"></span>
+                    </div>
+                    <div class="mh-info-row">
+                        <span class="mh-info-label">직급</span>
+                        <span class="mh-info-value" id="modalEmpPosition"></span>
+                    </div>
+                    <div class="mh-info-row">
+                        <span class="mh-info-label">현재 상위보고자</span>
+                        <span class="mh-info-value" id="modalCurrentManager"></span>
+                    </div>
+                </div>
+
+                <form id="changeManagerForm">
+                    <input type="hidden" id="changeEmpIdx">
+
+                    <div class="mh-form-group">
+                        <label for="newManager">새 상위보고자 <span class="mh-required">*</span></label>
+                        <select id="newManager" required>
+                            <option value="">선택하세요</option>
+                            <!-- JavaScript로 동적 생성 -->
+                        </select>
+                        <small class="mh-form-help">본인과 동일하거나 상위 직급의 직원만 선택 가능합니다</small>
+                    </div>
+
+                    <div class="mh-form-group">
+                        <label for="managerStartDate">배정 시작일 <span class="mh-required">*</span></label>
+                        <input type="date" id="managerStartDate" required>
+                    </div>
+
+                    <div class="mh-form-group">
+                        <label for="changeReason">변경 사유</label>
+                        <textarea id="changeReason" rows="3" placeholder="조직 개편, 인사 이동 등"></textarea>
+                    </div>
+                </form>
+            </div>
+            <div class="mh-modal-footer">
+                <button class="btn-secondary" id="cancelChangeBtn">취소</button>
+                <button class="btn-primary" id="confirmChangeBtn">
+                    <i class="fas fa-check"></i> 변경 적용
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 일괄 변경 모달 -->
+    <div id="bulkChangeModal" class="mh-modal">
+        <div class="mh-modal-content">
+            <div class="mh-modal-header">
+                <h2><i class="fas fa-users-cog"></i> 일괄 변경</h2>
+                <button class="mh-modal-close" id="closeBulkChangeModal">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            <div class="mh-modal-body">
+                <p class="mh-bulk-description">
+                    선택한 직원들의 보고 체계를 일괄적으로 변경합니다.
+                </p>
+
+                <div class="mh-form-group">
+                    <label for="bulkDept">대상 부서</label>
+                    <select id="bulkDept">
+                        <option value="">부서 선택</option>
+                        <!-- JavaScript로 동적 생성 -->
+                    </select>
+                </div>
+
+                <div class="mh-form-group">
+                    <label for="bulkNewManager">새 상위보고자 <span class="mh-required">*</span></label>
+                    <select id="bulkNewManager" required>
+                        <option value="">선택하세요</option>
+                        <!-- JavaScript로 동적 생성 -->
+                    </select>
+                </div>
+
+                <div class="mh-form-group">
+                    <label for="bulkStartDate">배정 시작일 <span class="mh-required">*</span></label>
+                    <input type="date" id="bulkStartDate" required>
+                </div>
+
+                <div class="mh-bulk-preview" id="bulkPreview" style="display: none;">
+                    <h4>변경 대상 (<span id="bulkTargetCount">0</span>명)</h4>
+                    <div class="mh-bulk-target-list" id="bulkTargetList">
+                        <!-- JavaScript로 동적 생성 -->
+                    </div>
+                </div>
+            </div>
+            <div class="mh-modal-footer">
+                <button class="btn-secondary" id="cancelBulkBtn">취소</button>
+                <button class="btn-primary" id="confirmBulkBtn">
+                    <i class="fas fa-check"></i> 일괄 적용
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 변경 이력 모달 -->
+    <div id="historyModal" class="mh-modal">
+        <div class="mh-modal-content mh-modal-large">
+            <div class="mh-modal-header">
+                <h2><i class="fas fa-history"></i> 보고체계 변경 이력</h2>
+                <button class="mh-modal-close" id="closeHistoryModal">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            <div class="mh-modal-body">
+                <div class="mh-history-employee-info">
+                    <h3 id="historyEmpName"></h3>
+                    <p id="historyEmpInfo"></p>
+                </div>
+
+                <div class="mh-history-timeline" id="historyTimeline">
+                    <!-- JavaScript로 동적 생성 -->
+                </div>
+            </div>
+            <div class="mh-modal-footer">
+                <button class="btn-secondary" id="closeHistoryBtn">닫기</button>
+            </div>
+        </div>
+    </div>
+
+    <script th:src="@{/js/manage-hierarchy.js}"></script>
+</body>
+</html>

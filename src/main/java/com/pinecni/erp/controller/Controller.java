@@ -200,6 +200,11 @@ public class Controller {
         return "code-detail";
     }
 
+    @GetMapping("/manage-hierarchy")
+    public String manageHierarchy() {
+        return "manage-hierarchy";
+    }
+
     @GetMapping("/login")
     public String login() {
         return "login";

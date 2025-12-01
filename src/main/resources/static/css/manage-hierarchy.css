@@ -1,0 +1,776 @@
+/* ============================================
+   보고체계 관리 페이지 스타일
+   ============================================ */
+
+/* 컨테이너 */
+.mh-container {
+    padding: 24px;
+    background: #f5f7fa;
+    flex: 1;
+    overflow-y: auto;
+}
+
+/* 페이지 설명 (고유 요소) */
+.mh-page-description {
+    font-size: 14px;
+    color: #666;
+    margin: 4px 0 0 0;
+    line-height: 1.5;
+}
+
+/* ============================================
+   통계 카드
+   ============================================ */
+.mh-stats-grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 16px;
+    margin-bottom: 24px;
+}
+
+
+
+.mh-stat-card {
+    background: white;
+    padding: 20px;
+    border-radius: 12px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    transition: transform 0.2s, box-shadow 0.2s;
+}
+
+.mh-stat-card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.12);
+}
+
+.mh-stat-icon {
+    width: 56px;
+    height: 56px;
+    border-radius: 12px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 24px;
+    flex-shrink: 0;
+}
+
+.mh-stat-content {
+    flex: 1;
+    min-width: 0;
+}
+
+.mh-stat-content h3 {
+    font-size: 14px;
+    color: #666;
+    margin: 0 0 8px 0;
+    font-weight: 600;
+    line-height: 1.2;
+}
+
+.mh-stat-number {
+    font-size: 28px;
+    font-weight: 700;
+    color: #333;
+    margin: 0;
+    display: flex;
+    align-items: baseline;
+    gap: 4px;
+    line-height: 1;
+}
+
+.mh-stat-number span:first-child {
+    font-size: 28px;
+}
+
+.mh-stat-number span:last-child {
+    font-size: 28px;
+    font-weight: 500;
+    color: #666;
+}
+
+/* ============================================
+   필터 섹션
+   ============================================ */
+.mh-filter-section {
+    background: white;
+    padding: 20px;
+    border-radius: 12px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+    margin-bottom: 20px;
+    display: flex;
+    gap: 12px;
+    align-items: flex-end;
+    flex-wrap: wrap;
+}
+
+.mh-filter-group {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    flex: 1;
+    min-width: 180px;
+}
+
+.mh-filter-group label {
+    font-size: 14px;
+    font-weight: 600;
+    color: #333;
+    line-height: 1.2;
+}
+
+.mh-filter-group select {
+    padding: 10px 12px;
+    border: 1px solid #ddd;
+    border-radius: 6px;
+    font-size: 14px;
+    height: 40px;
+    background: white;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.mh-filter-group select:hover {
+    border-color: #1976d2;
+}
+
+.mh-filter-group select:focus {
+    outline: none;
+    border-color: #1976d2;
+    box-shadow: 0 0 0 3px rgba(25, 118, 210, 0.1);
+}
+
+/* ============================================
+   보고체계 테이블
+   ============================================ */
+.mh-hierarchy-table-wrapper {
+    background: white;
+    border-radius: 12px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+    overflow: hidden;
+    margin-bottom: 30px;
+}
+
+.mh-hierarchy-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 14px;
+}
+
+.mh-hierarchy-table thead {
+    background: #f8f9fa;
+    border-bottom: 2px solid #e0e0e0;
+}
+
+.mh-hierarchy-table th {
+    padding: 14px 12px;
+    text-align: left;
+    font-weight: 600;
+    color: #333;
+    font-size: 14px;
+    white-space: nowrap;
+    vertical-align: middle;
+}
+
+.mh-hierarchy-table th:first-child {
+    padding-left: 20px;
+}
+
+.mh-hierarchy-table tbody tr {
+    border-bottom: 1px solid #f0f0f0;
+    transition: background-color 0.15s;
+}
+
+.mh-hierarchy-table tbody tr:hover {
+    background-color: #f9f9f9;
+}
+
+.mh-hierarchy-table tbody tr.mh-changed {
+    background-color: #fff3e0;
+}
+
+.mh-hierarchy-table td {
+    padding: 12px;
+    vertical-align: middle;
+    font-size: 14px;
+    color: #333;
+    line-height: 1.5;
+}
+
+.mh-hierarchy-table td:first-child {
+    padding-left: 20px;
+}
+
+.mh-hierarchy-table td strong {
+    font-weight: 600;
+    color: #1a237e;
+}
+
+/* 테이블 내 폼 요소 */
+.mh-level-select,
+.mh-manager-select {
+    padding: 8px 10px;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    font-size: 13px;
+    height: 36px;
+    background: white;
+    cursor: pointer;
+    width: 100%;
+    transition: all 0.2s;
+}
+
+.mh-level-select:hover,
+.mh-manager-select:hover {
+    border-color: #1976d2;
+}
+
+.mh-level-select:focus,
+.mh-manager-select:focus {
+    outline: none;
+    border-color: #1976d2;
+    box-shadow: 0 0 0 2px rgba(25, 118, 210, 0.1);
+}
+
+.mh-manager-select.mh-changed {
+    border-color: #f57c00;
+    background-color: #fff9f0;
+}
+
+/* 팀장 여부 체크박스 */
+.mh-leader-checkbox {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+
+.mh-leader-checkbox input[type="checkbox"] {
+    width: 18px;
+    height: 18px;
+    cursor: pointer;
+    accent-color: #1976d2;
+}
+
+/* 상태 뱃지 */
+.mh-status-badge {
+    display: inline-block;
+    padding: 6px 12px;
+    border-radius: 14px;
+    font-size: 12px;
+    font-weight: 600;
+    text-align: center;
+    line-height: 1;
+}
+
+.mh-status-badge.mh-completed {
+    background: #e8f5e9;
+    color: #388e3c;
+}
+
+.mh-status-badge.mh-incomplete {
+    background: #ffebee;
+    color: #d32f2f;
+}
+
+/* 액션 버튼 */
+.mh-action-buttons {
+    display: flex;
+    gap: 6px;
+    justify-content: center;
+}
+
+.mh-btn-icon {
+    padding: 8px 12px;
+    border: none;
+    border-radius: 6px;
+    font-size: 13px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.2s;
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    height: 32px;
+    white-space: nowrap;
+}
+
+.mh-btn-icon i {
+    font-size: 13px;
+}
+
+.mh-btn-icon.mh-btn-edit {
+    background: #e3f2fd;
+    color: #1976d2;
+}
+
+.mh-btn-icon.mh-btn-edit:hover {
+    background: #1976d2;
+    color: white;
+}
+
+.mh-btn-icon.mh-btn-history {
+    background: #f3e5f5;
+    color: #7b1fa2;
+    padding: 8px;
+}
+
+.mh-btn-icon.mh-btn-history:hover {
+    background: #7b1fa2;
+    color: white;
+}
+
+.mh-btn-icon.mh-btn-reset {
+    background: #fff3e0;
+    color: #f57c00;
+}
+
+.mh-btn-icon.mh-btn-reset:hover {
+    background: #f57c00;
+    color: white;
+}
+
+/* ============================================
+   모달 공통 스타일
+   ============================================ */
+.mh-modal {
+    display: none;
+    position: fixed;
+    z-index: 10000;
+    left: 0;
+    top: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(0, 0, 0, 0.5);
+    backdrop-filter: blur(2px);
+}
+
+.mh-modal-content {
+    background-color: white;
+    margin: 5% auto;
+    border-radius: 12px;
+    width: 90%;
+    max-width: 600px;
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2);
+    animation: mhModalSlideIn 0.3s ease-out;
+}
+
+.mh-modal-content.mh-modal-large {
+    max-width: 800px;
+}
+
+@keyframes mhModalSlideIn {
+    from {
+        opacity: 0;
+        transform: translateY(-20px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.mh-modal-header {
+    padding: 20px 24px;
+    border-bottom: 1px solid #e0e0e0;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.mh-modal-header h2 {
+    font-size: 20px;
+    font-weight: 700;
+    color: #1a237e;
+    margin: 0;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    line-height: 1.2;
+}
+
+.mh-modal-header h2 i {
+    font-size: 20px;
+}
+
+.mh-modal-close {
+    background: transparent;
+    border: none;
+    font-size: 24px;
+    color: #999;
+    cursor: pointer;
+    width: 32px;
+    height: 32px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 6px;
+    transition: all 0.2s;
+}
+
+.mh-modal-close:hover {
+    background: #f5f5f5;
+    color: #333;
+}
+
+.mh-modal-body {
+    padding: 24px;
+    max-height: calc(100vh - 300px);
+    overflow-y: auto;
+}
+
+.mh-modal-footer {
+    padding: 16px 24px;
+    border-top: 1px solid #e0e0e0;
+    display: flex;
+    justify-content: flex-end;
+    gap: 10px;
+}
+
+/* ============================================
+   폼 스타일
+   ============================================ */
+.mh-form-group {
+    margin-bottom: 20px;
+}
+
+.mh-form-group label {
+    display: block;
+    font-size: 14px;
+    font-weight: 600;
+    color: #333;
+    margin-bottom: 8px;
+    line-height: 1.2;
+}
+
+.mh-form-group input[type="date"],
+.mh-form-group select,
+.mh-form-group textarea {
+    width: 100%;
+    padding: 10px 12px;
+    border: 1px solid #ddd;
+    border-radius: 6px;
+    font-size: 14px;
+    transition: all 0.2s;
+    background: white;
+}
+
+.mh-form-group input[type="date"]:focus,
+.mh-form-group select:focus,
+.mh-form-group textarea:focus {
+    outline: none;
+    border-color: #1976d2;
+    box-shadow: 0 0 0 3px rgba(25, 118, 210, 0.1);
+}
+
+.mh-form-group textarea {
+    resize: vertical;
+    font-family: inherit;
+    line-height: 1.5;
+}
+
+.mh-form-help {
+    display: block;
+    margin-top: 6px;
+    font-size: 12px;
+    color: #666;
+    line-height: 1.4;
+}
+
+.mh-required {
+    color: #d32f2f;
+    margin-left: 2px;
+}
+
+/* ============================================
+   모달 - 상위보고자 변경
+   ============================================ */
+.mh-change-manager-info {
+    background: #f8f9fa;
+    padding: 16px;
+    border-radius: 8px;
+    margin-bottom: 24px;
+}
+
+.mh-info-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 10px 0;
+    border-bottom: 1px solid #e0e0e0;
+}
+
+.mh-info-row:last-child {
+    border-bottom: none;
+    padding-bottom: 0;
+}
+
+.mh-info-label {
+    font-weight: 600;
+    color: #555;
+    font-size: 14px;
+}
+
+.mh-info-value {
+    color: #333;
+    font-size: 14px;
+    font-weight: 500;
+}
+
+/* ============================================
+   모달 - 일괄 변경
+   ============================================ */
+.mh-bulk-description {
+    background: #e3f2fd;
+    padding: 14px;
+    border-radius: 8px;
+    margin-bottom: 20px;
+    font-size: 14px;
+    color: #1565c0;
+    border-left: 4px solid #1976d2;
+    line-height: 1.5;
+}
+
+.mh-bulk-preview {
+    margin-top: 24px;
+    padding-top: 20px;
+    border-top: 1px solid #e0e0e0;
+}
+
+.mh-bulk-preview h4 {
+    font-size: 16px;
+    font-weight: 600;
+    margin: 0 0 12px 0;
+    color: #333;
+    line-height: 1.2;
+}
+
+.mh-bulk-target-list {
+    max-height: 200px;
+    overflow-y: auto;
+    background: #f9f9f9;
+    padding: 12px;
+    border-radius: 8px;
+}
+
+.mh-bulk-target-item {
+    padding: 10px;
+    background: white;
+    margin-bottom: 8px;
+    border-radius: 6px;
+    font-size: 14px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    border: 1px solid #e0e0e0;
+}
+
+.mh-bulk-target-item:last-child {
+    margin-bottom: 0;
+}
+
+/* ============================================
+   모달 - 변경 이력
+   ============================================ */
+.mh-history-employee-info {
+    background: #f8f9fa;
+    padding: 20px;
+    border-radius: 8px;
+    margin-bottom: 24px;
+}
+
+.mh-history-employee-info h3 {
+    margin: 0 0 8px 0;
+    font-size: 20px;
+    font-weight: 700;
+    color: #1a237e;
+    line-height: 1.2;
+}
+
+.mh-history-employee-info p {
+    margin: 0;
+    font-size: 14px;
+    color: #666;
+    line-height: 1.5;
+}
+
+.mh-history-timeline {
+    position: relative;
+    padding-left: 40px;
+}
+
+.mh-history-timeline::before {
+    content: '';
+    position: absolute;
+    left: 15px;
+    top: 0;
+    bottom: 0;
+    width: 2px;
+    background: #e0e0e0;
+}
+
+.mh-history-item {
+    position: relative;
+    margin-bottom: 24px;
+    padding-bottom: 24px;
+    border-bottom: 1px solid #f0f0f0;
+}
+
+.mh-history-item:last-child {
+    margin-bottom: 0;
+    padding-bottom: 0;
+    border-bottom: none;
+}
+
+.mh-history-item::before {
+    content: '';
+    position: absolute;
+    left: -33px;
+    top: 5px;
+    width: 12px;
+    height: 12px;
+    border-radius: 50%;
+    background: #1976d2;
+    border: 3px solid white;
+    box-shadow: 0 0 0 2px #1976d2;
+}
+
+.mh-history-date {
+    font-size: 13px;
+    color: #999;
+    margin-bottom: 8px;
+    line-height: 1.2;
+}
+
+.mh-history-content {
+    font-size: 14px;
+    font-weight: 600;
+    color: #333;
+    margin-bottom: 8px;
+    line-height: 1.5;
+}
+
+.mh-history-from-to {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 12px;
+    background: #f9f9f9;
+    border-radius: 6px;
+    font-size: 13px;
+    line-height: 1.4;
+}
+
+.mh-history-from-to .mh-from {
+    color: #d32f2f;
+    text-decoration: line-through;
+}
+
+.mh-history-from-to .mh-to {
+    color: #388e3c;
+    font-weight: 600;
+}
+
+.mh-history-from-to .mh-arrow {
+    color: #999;
+    font-size: 14px;
+}
+
+/* ============================================
+   로딩 및 빈 상태
+   ============================================ */
+.mh-loading-container {
+    text-align: center;
+    padding: 60px 20px;
+    background: white;
+    border-radius: 12px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+}
+
+.mh-spinner {
+    border: 4px solid #f3f3f3;
+    border-top: 4px solid #1976d2;
+    border-radius: 50%;
+    width: 40px;
+    height: 40px;
+    animation: mhSpin 1s linear infinite;
+    margin: 0 auto 16px;
+}
+
+@keyframes mhSpin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+}
+
+.mh-loading-container p {
+    color: #666;
+    font-size: 14px;
+    margin: 0;
+    line-height: 1.5;
+}
+
+.mh-empty-state {
+    text-align: center;
+    padding: 80px 20px;
+    background: white;
+    border-radius: 12px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+}
+
+.mh-empty-state i {
+    font-size: 64px;
+    color: #ccc;
+    margin-bottom: 16px;
+}
+
+.mh-empty-state p {
+    font-size: 16px;
+    color: #999;
+    margin: 0;
+    line-height: 1.5;
+}
+
+/* ============================================
+   반응형
+   ============================================ */
+@media (max-width: 1400px) {
+    .mh-stats-grid {
+        grid-template-columns: repeat(2, 1fr);
+    }
+}
+
+@media (max-width: 768px) {
+    .mh-container {
+        padding: 16px;
+    }
+
+    .mh-stats-grid {
+        grid-template-columns: 1fr;
+    }
+
+    .mh-filter-section {
+        flex-direction: column;
+    }
+
+    .mh-filter-group {
+        width: 100%;
+    }
+
+    .mh-hierarchy-table-wrapper {
+        overflow-x: auto;
+    }
+
+    .mh-hierarchy-table {
+        min-width: 1200px;
+    }
+
+    .mh-modal-content {
+        width: 95%;
+        margin: 10% auto;
+    }
+
+    .mh-action-buttons {
+        flex-direction: column;
+    }
+}
