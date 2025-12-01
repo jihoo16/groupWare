@@ -227,29 +227,80 @@ document.addEventListener('DOMContentLoaded', function() {
             });
     }
 
-    // 직급별 경비 설정 로드 함수
+    // 직급별 경비 설정 로드 함수 (새 구조: expenseItemName + amount)
     function loadExpenseSettings(expenseSettings) {
-        console.log('경비 설정 데이터 로드:', expenseSettings);
+        console.log('===== 경비 설정 데이터 로드 시작 =====');
+        console.log('받은 데이터:', expenseSettings);
+        console.log('데이터 개수:', expenseSettings ? expenseSettings.length : 0);
 
-        expenseSettings.forEach(setting => {
-            const position = setting.positionName;
-            const row = document.querySelector(`tr[data-position="${position}"]`);
+        if (!expenseSettings || expenseSettings.length === 0) {
+            console.log('경비 설정 데이터가 없습니다.');
+            return;
+        }
 
-            if (row) {
-                const inputs = row.querySelectorAll('.expense-input-sm');
-                if (inputs.length >= 4) {
-                    inputs[0].value = setting.dailyAllowance || 0;
-                    inputs[1].value = setting.mealAllowance || 0;
-                    inputs[2].value = setting.meetingAllowance || 0;
-                    inputs[3].value = setting.overtimeMealAllowance || 0;
-                }
+        // 경비 항목명 매핑 (한글 → 인덱스)
+        const expenseItemIndexMap = {
+            '출장비': 0,
+            '중식비': 1,
+            '회의비': 2,
+            '야근석식대': 3
+        };
 
-                // 직급 코드도 data 속성에 저장 (나중에 전송 시 사용)
-                row.setAttribute('data-position-code', setting.positionCode);
+        // 직급별 데이터 그룹화
+        const groupedByPosition = {};
+
+        expenseSettings.forEach((setting, index) => {
+            console.log(`[${index}] 처리 중:`, setting);
+            const positionName = setting.positionName;
+
+            if (!groupedByPosition[positionName]) {
+                groupedByPosition[positionName] = {
+                    positionCode: setting.positionCode,
+                    amounts: [0, 0, 0, 0] // [출장비, 중식비, 회의비, 야근석식대]
+                };
+            }
+
+            const itemIndex = expenseItemIndexMap[setting.expenseItemName];
+            console.log(`  직급: ${positionName}, 항목: ${setting.expenseItemName}, 인덱스: ${itemIndex}, 금액: ${setting.amount}`);
+
+            if (itemIndex !== undefined) {
+                groupedByPosition[positionName].amounts[itemIndex] = setting.amount || 0;
+            } else {
+                console.warn(`  알 수 없는 경비 항목: ${setting.expenseItemName}`);
             }
         });
 
-        console.log('경비 설정 로드 완료');
+        console.log('그룹화된 데이터:', groupedByPosition);
+
+        // 각 직급 행에 데이터 설정
+        Object.keys(groupedByPosition).forEach(positionName => {
+            console.log(`직급 "${positionName}" 행 찾기...`);
+            const row = document.querySelector(`tr[data-position="${positionName}"]`);
+
+            if (row) {
+                console.log('  → 행 찾음!');
+                const data = groupedByPosition[positionName];
+                const inputs = row.querySelectorAll('.expense-input-sm');
+                console.log('  → input 개수:', inputs.length);
+
+                if (inputs.length >= 4) {
+                    inputs[0].value = data.amounts[0]; // 출장비
+                    inputs[1].value = data.amounts[1]; // 중식비
+                    inputs[2].value = data.amounts[2]; // 회의비
+                    inputs[3].value = data.amounts[3]; // 야근석식대
+                    console.log('  → 값 설정 완료:', data.amounts);
+                } else {
+                    console.warn('  → input 개수 부족!');
+                }
+
+                // 직급 코드도 data 속성에 저장 (나중에 전송 시 사용)
+                row.setAttribute('data-position-code', data.positionCode);
+            } else {
+                console.warn(`  → 행을 찾을 수 없음! (data-position="${positionName}")`);
+            }
+        });
+
+        console.log('===== 경비 설정 로드 완료 =====');
     }
 
     // 연구비 카드 목록 로드 함수
@@ -792,23 +843,35 @@ document.addEventListener('DOMContentLoaded', function() {
             }));
             console.log("변환된 projectMembers:", projectMembers);
 
-            // 직급별 경비 설정 데이터 수집
+            // 직급별 경비 설정 데이터 수집 (새 구조: expenseItemName + amount)
             const projectExpenseSettings = [];
             const expenseRows = document.querySelectorAll('#expenseSettingsBody tr[data-position]');
+
+            // 경비 항목 정의
+            const expenseItems = [
+                { name: '출장비', nameEn: 'businessTripAllowance' },
+                { name: '중식비', nameEn: 'lunchAllowance' },
+                { name: '회의비', nameEn: 'businessMealAllowance' },
+                { name: '야근석식대', nameEn: 'nightMealAllowance' }
+            ];
+
+
             expenseRows.forEach(row => {
                 const positionCode = row.getAttribute('data-position-code');
                 const positionName = row.getAttribute('data-position');
                 const inputs = row.querySelectorAll('.expense-input-sm');
 
                 if (inputs.length >= 4) {
-                    projectExpenseSettings.push({
-                        positionCode: positionCode || null,
-                        positionName: positionName,
-                        transitAllowance: "실비",
-                        dailyAllowance: parseInt(inputs[0].value) || 0,
-                        mealAllowance: parseInt(inputs[1].value) || 0,
-                        meetingAllowance: parseInt(inputs[2].value) || 0,
-                        overtimeMealAllowance: parseInt(inputs[3].value) || 0
+                    // 각 경비 항목을 별도의 레코드로 저장
+                    expenseItems.forEach((item, index) => {
+                        const amount = parseInt(inputs[index].value) || 0;
+                        projectExpenseSettings.push({
+                            positionCode: positionCode || null,
+                            positionName: positionName,
+                            expenseItemName: item.name,
+                            expenseItemNameEn: item.nameEn,
+                            amount: amount
+                        });
                     });
                 }
             });
@@ -1307,52 +1370,11 @@ document.addEventListener('DOMContentLoaded', function() {
             fetch('/api/fixed-expense-policies')
                 .then(res => res.json())
                 .then(policies => {
-                    console.log("policies 원본 데이터:");
-                    console.log(policies);
+                    console.log("===== 기초정보관리 데이터 불러오기 =====");
+                    console.log("policies 원본 데이터:", policies);
+                    console.log("데이터 개수:", policies.length);
 
-                    // 경비 항목명 매핑 (기초정보관리 → 프로젝트 수정)
-                    const expenseItemMapping = {
-                        '출장비': 'dailyAllowance',
-                        '중식비': 'mealAllowance',
-                        '회의비': 'meetingAllowance',
-                        '야근석식대': 'overtimeMealAllowance'
-                    };
-
-                    // 직급별로 데이터 그룹화
-                    const groupedByPosition = {};
-
-                    policies.forEach(policy => {
-                        const positionCode = policy.positionCode;
-                        const expenseItemName = policy.expenseItemName;
-                        const amount = policy.amount || 0;
-
-                        // 해당 직급 그룹이 없으면 초기화
-                        if (!groupedByPosition[positionCode]) {
-                            groupedByPosition[positionCode] = {
-                                positionCode: positionCode,
-                                positionName: policy.positionName || positionCode,
-                                dailyAllowance: 0,
-                                mealAllowance: 0,
-                                meetingAllowance: 0,
-                                overtimeMealAllowance: 0
-                            };
-                        }
-
-                        // 매핑된 필드가 있으면 값 할당
-                        const mappedField = expenseItemMapping[expenseItemName];
-                        if (mappedField) {
-                            groupedByPosition[positionCode][mappedField] = amount;
-                        }
-                    });
-
-                    // 객체를 배열로 변환
-                    const expenseSettings = Object.values(groupedByPosition);
-
-                    console.log("변환된 expenseSettings:");
-                    console.log(expenseSettings);
-
-                    // 기존 loadExpenseSettings 함수 호출
-                    loadExpenseSettings(expenseSettings);
+                    loadExpenseSettings(policies);
 
                     alert('기초정보관리의 설정값을 불러왔습니다.');
                 })

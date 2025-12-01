@@ -1,14 +1,17 @@
 package com.pinecni.erp.entity;
 
 import jakarta.persistence.*;
+import jakarta.validation.constraints.NotNull;
+import jakarta.validation.constraints.Size;
 import lombok.*;
+import org.hibernate.annotations.ColumnDefault;
 
 /**
  * 프로젝트별 직급별 경비 설정 Entity
  */
 @Entity
 @Table(name = "project_expense_settings", schema = "erp",
-        uniqueConstraints = @UniqueConstraint(columnNames = {"project_idx", "position_code"}),
+        uniqueConstraints = @UniqueConstraint(columnNames = {"project_idx", "position_code", "expense_item_name"}),
         indexes = {
                 @Index(name = "idx_pes_project", columnList = "project_idx"),
                 @Index(name = "idx_pes_position", columnList = "position_code")
@@ -35,20 +38,17 @@ public class ProjectExpenseSetting extends BaseEntity {
     @Column(name = "position_name", nullable = false, length = 50)
     private String positionName;
 
-    @Column(name = "transit_allowance", length = 50)
-    private String transitAllowance = "실비";
+    @Column(name = "expense_item_name", nullable = false, length = 100)
+    private String expenseItemName;
 
-    @Column(name = "daily_allowance")
-    private Integer dailyAllowance = 0;
+    @Size(max = 100)
+    @Column(name = "expense_item_name_en", length = 100)
+    private String expenseItemNameEn;
 
-    @Column(name = "meal_allowance")
-    private Integer mealAllowance = 0;
-
-    @Column(name = "meeting_allowance")
-    private Integer meetingAllowance = 0;
-
-    @Column(name = "overtime_meal_allowance")
-    private Integer overtimeMealAllowance = 0;
+    @NotNull
+    @ColumnDefault("0")
+    @Column(name = "amount", nullable = false)
+    private Integer amount;
 
     // 관계 매핑
     @ManyToOne(fetch = FetchType.LAZY)

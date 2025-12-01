@@ -6,7 +6,8 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 
 /**
- * 프로젝트 직급별 경비 설정 생성 DTO
+ * 프로젝트 직급별 경비 설정 DTO (조회용)
+ * 새 구조: expenseItemName + amount 방식
  */
 @Data
 @Builder
@@ -25,27 +26,17 @@ public class ProjectExpenseSettingDTO {
     private String positionName;
 
     /**
-     * 교통비 처리 방식 (기본값: "실비")
+     * 경비 항목명 (중식비, 야근석식대, 회의비, 출장비 등)
      */
-    private String transitAllowance;
+    private String expenseItemName;
 
     /**
-     * 일비
+     * 경비 항목명 (영문)
      */
-    private Integer dailyAllowance;
+    private String expenseItemNameEn;
 
     /**
-     * 식비
+     * 금액
      */
-    private Integer mealAllowance;
-
-    /**
-     * 회의비
-     */
-    private Integer meetingAllowance;
-
-    /**
-     * 야근식대
-     */
-    private Integer overtimeMealAllowance;
+    private Integer amount;
 }
