@@ -1301,11 +1301,65 @@ document.addEventListener('DOMContentLoaded', function() {
         alert('경비 설정이 0원으로 초기화되었습니다.');
     }
 
-    // 기초정보관리 설정값 불러오기 (추후 구현)
+    // 기초정보관리 설정값 불러오기
     if (loadDefaultExpensesBtn) {
         loadDefaultExpensesBtn.addEventListener('click', function() {
-            alert('기초정보관리 설정값 불러오기 기능은 추후 구현 예정입니다.');
-            // TODO: 실제로는 /api/basic-info/expenses API를 호출하여 데이터를 가져옴
+            fetch('/api/fixed-expense-policies')
+                .then(res => res.json())
+                .then(policies => {
+                    console.log("policies 원본 데이터:");
+                    console.log(policies);
+
+                    // 경비 항목명 매핑 (기초정보관리 → 프로젝트 수정)
+                    const expenseItemMapping = {
+                        '출장비': 'dailyAllowance',
+                        '중식비': 'mealAllowance',
+                        '회의비': 'meetingAllowance',
+                        '야근석식대': 'overtimeMealAllowance'
+                    };
+
+                    // 직급별로 데이터 그룹화
+                    const groupedByPosition = {};
+
+                    policies.forEach(policy => {
+                        const positionCode = policy.positionCode;
+                        const expenseItemName = policy.expenseItemName;
+                        const amount = policy.amount || 0;
+
+                        // 해당 직급 그룹이 없으면 초기화
+                        if (!groupedByPosition[positionCode]) {
+                            groupedByPosition[positionCode] = {
+                                positionCode: positionCode,
+                                positionName: policy.positionName || positionCode,
+                                dailyAllowance: 0,
+                                mealAllowance: 0,
+                                meetingAllowance: 0,
+                                overtimeMealAllowance: 0
+                            };
+                        }
+
+                        // 매핑된 필드가 있으면 값 할당
+                        const mappedField = expenseItemMapping[expenseItemName];
+                        if (mappedField) {
+                            groupedByPosition[positionCode][mappedField] = amount;
+                        }
+                    });
+
+                    // 객체를 배열로 변환
+                    const expenseSettings = Object.values(groupedByPosition);
+
+                    console.log("변환된 expenseSettings:");
+                    console.log(expenseSettings);
+
+                    // 기존 loadExpenseSettings 함수 호출
+                    loadExpenseSettings(expenseSettings);
+
+                    alert('기초정보관리의 설정값을 불러왔습니다.');
+                })
+                .catch(error => {
+                    console.error('고정경비 정책 조회 실패:', error);
+                    alert('설정값을 불러오는데 실패했습니다.');
+                });
         });
     }
 });
