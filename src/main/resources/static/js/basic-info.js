@@ -396,15 +396,14 @@ document.addEventListener('DOMContentLoaded', function() {
         // 경비 항목 목록 정의
         const expenseItems = [
             { field: 'lunchAllowance', name: '중식비' },
-            { field: 'nightMealAllowance', name: '야근식대' },
+            { field: 'nightMealAllowance', name: '야근석식대' },
             { field: 'businessMealAllowance', name: '회의비' },
             { field: 'businessTripAllowance', name: '출장비' },
             { field: 'transitAllowance', name: '교통비' },
             { field: 'fuelAllowance', name: '유류비' },
-            { field: 'holidayExpense', name: '휴일근무' },
+            { field: 'holidayExpense', name: '휴일근무수당' },
             { field: 'beverageExpense', name: '음료비' }
         ];
-
         tbody.innerHTML = ranks.map(rank => {
             return `
                 <tr data-position-code="${rank.code}">
