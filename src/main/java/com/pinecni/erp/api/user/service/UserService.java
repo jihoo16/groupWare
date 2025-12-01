@@ -86,4 +86,12 @@ public interface UserService {
      * 이메일 중복 확인
      */
     boolean isEmailDuplicate(String empEmail);
+
+    /**
+     * 다음 사번 생성
+     * 형식: YYYYMMddnn (예: 2025120101)
+     * - 오늘 날짜 기준으로 등록된 직원이 없으면 01부터 시작
+     * - 같은 날짜에 이미 등록된 직원이 있으면 nn을 증가
+     */
+    String generateNextEmployeeId();
 }

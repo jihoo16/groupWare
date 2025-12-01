@@ -232,6 +232,46 @@ public class UserServiceImpl implements UserService {
         return userRepository.findByEmpEmail(empEmail).isPresent();
     }
 
+    @Override
+    public String generateNextEmployeeId() {
+        log.debug("generateNextEmployeeId() called");
+
+        // 오늘 날짜를 YYYYMMdd 형식으로 생성
+        LocalDateTime now = LocalDateTime.now();
+        String datePrefix = String.format("%04d%02d%02d",
+                now.getYear(),
+                now.getMonthValue(),
+                now.getDayOfMonth());
+
+        // 오늘 날짜로 시작하는 모든 사번 조회
+        List<String> todayEmpIds = userRepository.findEmpIdsByDatePrefix(datePrefix);
+
+        // 가장 큰 일련번호 찾기
+        int maxSeq = 0;
+        for (String empId : todayEmpIds) {
+            if (empId.length() == 10) { // YYYYMMddnn 형식 확인
+                try {
+                    String seqStr = empId.substring(8, 10); // 마지막 2자리
+                    int seqNum = Integer.parseInt(seqStr);
+                    if (seqNum > maxSeq) {
+                        maxSeq = seqNum;
+                    }
+                } catch (NumberFormatException e) {
+                    log.warn("Invalid empId format: {}. Skipping...", empId);
+                }
+            }
+        }
+
+        // 다음 일련번호 생성 (01부터 시작)
+        int nextSeq = maxSeq + 1;
+        String nextEmpId = String.format("%s%02d", datePrefix, nextSeq);
+
+        log.info("Generated next employee ID: {} (found {} existing IDs for today)",
+                nextEmpId, todayEmpIds.size());
+
+        return nextEmpId;
+    }
+
     /**
      * 비밀번호 SHA-256 해시 생성
      */

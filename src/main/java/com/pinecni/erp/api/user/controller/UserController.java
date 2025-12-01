@@ -206,6 +206,23 @@ public class UserController {
     }
 
     /**
+     * 다음 사번 생성
+     * GET /api/users/next-employee-id
+     *
+     * 형식: YYYYMMddnn (예: 2025120101)
+     * - 오늘 날짜 기준으로 등록된 직원이 없으면 01부터 시작
+     * - 같은 날짜에 이미 등록된 직원이 있으면 nn을 증가
+     */
+    @GetMapping("/next-employee-id")
+    public ResponseEntity<Map<String, String>> getNextEmployeeId() {
+        log.debug("GET /api/users/next-employee-id - getNextEmployeeId()");
+        String nextEmpId = userService.generateNextEmployeeId();
+        Map<String, String> response = new HashMap<>();
+        response.put("empId", nextEmpId);
+        return ResponseEntity.ok(response);
+    }
+
+    /**
      * Exception Handler
      */
     @ExceptionHandler(IllegalArgumentException.class)
