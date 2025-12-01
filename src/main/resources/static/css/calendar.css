@@ -1583,6 +1583,107 @@ input.form-input:read-only {
     color: #d32f2f;
 }
 
+/* ===== 종일 일정 영역 ===== */
+.week-allday-section,
+.day-allday-section {
+    display: grid;
+    grid-template-columns: 60px 1fr;
+    border-bottom: 1px solid #e0e0e0;
+    background: #fafafa;
+    min-height: 36px;
+}
+
+.allday-label {
+    padding: 8px;
+    font-size: 11px;
+    font-weight: 600;
+    color: #666;
+    text-align: center;
+    border-right: 1px solid #e0e0e0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.week-allday-events,
+.day-allday-events {
+    position: relative;
+    min-height: 36px;
+    padding: 4px;
+    display: block;
+}
+
+.week-allday-event,
+.day-allday-event {
+    padding: 4px 8px;
+    font-size: 11px;
+    font-weight: 500;
+    color: white;
+    border-radius: 4px;
+    cursor: pointer;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    height: 24px;
+    line-height: 16px;
+    box-sizing: border-box;
+    transition: all 0.2s ease;
+}
+
+.week-allday-event:hover,
+.day-allday-event:hover {
+    opacity: 0.85;
+    transform: translateY(-1px);
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.15);
+}
+
+/* 종일 일정 유형별 색상 */
+.week-allday-event.business,
+.day-allday-event.business {
+    background: #26c6da;
+}
+
+.week-allday-event.meeting-room,
+.day-allday-event.meeting-room {
+    background: #ff7043;
+}
+
+.week-allday-event.leave,
+.day-allday-event.leave {
+    background: #9ccc65;
+}
+
+.week-allday-event.etc,
+.day-allday-event.etc {
+    background: #ba68c8;
+}
+
+/* 연속 종일 일정 스타일 */
+.week-allday-event.multi-day {
+    border-radius: 4px 4px 4px 4px;
+}
+
+/* 이전 주에서 이어짐 */
+.week-allday-event.continues-from-prev {
+    border-top-left-radius: 0;
+    border-bottom-left-radius: 0;
+    border-left: 2px dashed rgba(255, 255, 255, 0.5);
+    padding-left: 12px;
+}
+
+/* 다음 주로 이어짐 */
+.week-allday-event.continues-to-next {
+    border-top-right-radius: 0;
+    border-bottom-right-radius: 0;
+    border-right: 2px dashed rgba(255, 255, 255, 0.5);
+    padding-right: 12px;
+}
+
+/* 양쪽 모두 이어짐 */
+.week-allday-event.continues-from-prev.continues-to-next {
+    border-radius: 0;
+}
+
 .week-body-wrapper,
 .day-body-wrapper {
     display: grid;

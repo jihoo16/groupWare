@@ -193,11 +193,23 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     });
 
-    // 마우스 휠 스크롤 이벤트 (달력 영역에서)
+    // 마우스 휠 스크롤 이벤트 - 공통 함수
     let isScrolling = false;
     const scrollDebounceTime = 300; // 300ms 디바운스
 
-    calendarGrid.addEventListener('wheel', function(e) {
+    function handleWheelNavigation(e) {
+        // 스크롤바 영역에서의 스크롤은 제외 (세로 스크롤만 허용)
+        const target = e.target;
+        const bodyWrapper = target.closest('.week-body-wrapper, .day-body-wrapper');
+
+        // 주간/일간 뷰의 body-wrapper 내부에서는 세로 스크롤 허용
+        if (bodyWrapper) {
+            // Shift 키를 누른 경우만 날짜 이동
+            if (!e.shiftKey) {
+                return; // 일반 스크롤 허용
+            }
+        }
+
         e.preventDefault();
 
         // 이미 스크롤 중이면 무시
@@ -205,22 +217,46 @@ document.addEventListener('DOMContentLoaded', function() {
 
         isScrolling = true;
 
-        // 스크롤 방향 감지
-        if (e.deltaY > 0) {
-            // 하향 스크롤 - 다음달
-            currentDate.setMonth(currentDate.getMonth() + 1);
-        } else if (e.deltaY < 0) {
-            // 상향 스크롤 - 이전달
-            currentDate.setMonth(currentDate.getMonth() - 1);
+        // 현재 뷰에 따라 다른 동작
+        switch(currentView) {
+            case 'day':
+                // 하루씩 이동
+                if (e.deltaY > 0) {
+                    currentDate.setDate(currentDate.getDate() + 1);
+                } else if (e.deltaY < 0) {
+                    currentDate.setDate(currentDate.getDate() - 1);
+                }
+                renderDayView();
+                break;
+            case 'week':
+                // 일주일씩 이동
+                if (e.deltaY > 0) {
+                    currentDate.setDate(currentDate.getDate() + 7);
+                } else if (e.deltaY < 0) {
+                    currentDate.setDate(currentDate.getDate() - 7);
+                }
+                renderWeekView();
+                break;
+            case 'month':
+            default:
+                // 한달씩 이동
+                if (e.deltaY > 0) {
+                    currentDate.setMonth(currentDate.getMonth() + 1);
+                } else if (e.deltaY < 0) {
+                    currentDate.setMonth(currentDate.getMonth() - 1);
+                }
+                renderCalendar();
+                break;
         }
-
-        renderCalendar();
 
         // 디바운스: 일정 시간 후 다시 스크롤 가능
         setTimeout(() => {
             isScrolling = false;
         }, scrollDebounceTime);
-    }, { passive: false });
+    }
+
+    // 월간 뷰 - 마우스 휠 이벤트
+    calendarGrid.addEventListener('wheel', handleWheelNavigation, { passive: false });
 
     // 달력 렌더링
     async function renderCalendar() {
@@ -1410,6 +1446,7 @@ document.addEventListener('DOMContentLoaded', function() {
         const weekDaysContainer = document.getElementById('weekDays');
         const weekGridContainer = document.getElementById('weekGrid');
         const weekEventsContainer = document.getElementById('weekEvents');
+        const weekAllDayContainer = document.getElementById('weekAllDayEvents');
 
         // 현재 주의 시작일 (일요일) 구하기
         const startOfWeek = new Date(currentDate);
@@ -1496,15 +1533,130 @@ document.addEventListener('DOMContentLoaded', function() {
         }
         weekGridContainer.innerHTML = gridHTML;
 
-        // 이벤트 렌더링
+        // 종일 일정과 시간 일정 분리
+        const allDaySchedules = [];
+        const timedSchedules = [];
+
+        schedules.forEach(schedule => {
+            if (schedule.time === '종일' || schedule.isAllDay) {
+                allDaySchedules.push(schedule);
+            } else {
+                timedSchedules.push(schedule);
+            }
+        });
+
+        // 종일 일정 렌더링 (상단 영역) - 레이아웃 계산
+        if (weekAllDayContainer) {
+            let allDayHTML = '';
+            const processedSchedules = new Set(); // 중복 처리 방지
+            const rows = []; // 각 행에 배치된 일정들
+
+            allDaySchedules.forEach(schedule => {
+                // 이미 처리한 일정은 건너뛰기
+                if (processedSchedules.has(schedule.id)) {
+                    return;
+                }
+                processedSchedules.add(schedule.id);
+
+                const scheduleStart = new Date(schedule.startDate);
+                const scheduleEnd = new Date(schedule.endDate);
+
+                // 주간 범위 내에서 일정이 시작하는 날과 끝나는 날 계산
+                const displayStart = scheduleStart < startOfWeek ? new Date(startOfWeek) : scheduleStart;
+                const displayEnd = scheduleEnd > endOfWeek ? new Date(endOfWeek) : scheduleEnd;
+
+                // 시작 요일과 종료 요일 계산
+                const startDayIdx = displayStart.getDay();
+                const endDayIdx = displayEnd.getDay();
+
+                // 일정이 걸치는 일수 계산
+                const spanDays = Math.ceil((displayEnd - displayStart) / (1000 * 60 * 60 * 24)) + 1;
+
+                // 겹치지 않는 행 찾기
+                let rowIndex = 0;
+                while (rowIndex < rows.length) {
+                    const row = rows[rowIndex];
+                    let canPlace = true;
+
+                    // 현재 행에 이미 배치된 일정과 겹치는지 확인
+                    for (const placed of row) {
+                        if (!(endDayIdx < placed.startDayIdx || startDayIdx > placed.endDayIdx)) {
+                            canPlace = false;
+                            break;
+                        }
+                    }
+
+                    if (canPlace) {
+                        break;
+                    }
+                    rowIndex++;
+                }
+
+                // 새 행 추가가 필요한 경우
+                if (rowIndex === rows.length) {
+                    rows.push([]);
+                }
+
+                // 일정 정보를 행에 추가
+                rows[rowIndex].push({
+                    schedule,
+                    startDayIdx,
+                    endDayIdx,
+                    spanDays
+                });
+            });
+
+            // HTML 생성
+            rows.forEach((row, rowIdx) => {
+                row.forEach(({ schedule, startDayIdx, spanDays }) => {
+                    const scheduleStart = new Date(schedule.startDate);
+                    const scheduleEnd = new Date(schedule.endDate);
+
+                    const typeClass = schedule.type;
+                    const left = (startDayIdx * 100 / 7);
+                    const width = (spanDays * 100 / 7);
+                    const top = rowIdx * 28 + 4; // 각 행의 높이 28px
+
+                    // 연속 일정 클래스 추가
+                    let eventClasses = `week-allday-event ${typeClass}`;
+                    if (schedule.startDate !== schedule.endDate) {
+                        eventClasses += ' multi-day';
+
+                        // 주 범위를 벗어나는지 체크
+                        if (scheduleStart < startOfWeek) {
+                            eventClasses += ' continues-from-prev';
+                        }
+                        if (scheduleEnd > endOfWeek) {
+                            eventClasses += ' continues-to-next';
+                        }
+                    }
+
+                    allDayHTML += `
+                        <div class="${eventClasses}"
+                             style="position: absolute; left: ${left}%; width: calc(${width}% - 8px); top: ${top}px;"
+                             data-schedule-id="${schedule.id}"
+                             data-group-id="${schedule.groupId}">
+                            ${schedule.title}
+                        </div>
+                    `;
+                });
+            });
+
+            // 컨테이너 높이 조정
+            const totalHeight = Math.max(36, rows.length * 28 + 8);
+            weekAllDayContainer.style.minHeight = totalHeight + 'px';
+            weekAllDayContainer.innerHTML = allDayHTML;
+        }
+
+        // 시간 일정 렌더링
         let eventsHTML = '';
-        for (let day = 0; day < 7; day++) {
+        for (let dayIdx = 0; dayIdx < 7; dayIdx++) {
             const dayDate = new Date(startOfWeek);
-            dayDate.setDate(dayDate.getDate() + day);
+            dayDate.setDate(dayDate.getDate() + dayIdx);
             const dateStr = formatDate(dayDate);
 
-            // 해당 날짜의 일정 필터링 (시작일~종료일 사이에 포함되는 일정 모두)
-            const daySchedules = schedules.filter(s => {
+            // 해당 날짜의 시간 일정 필터링
+            const daySchedules = timedSchedules.filter(s => {
                 const scheduleStart = new Date(s.startDate);
                 const scheduleEnd = new Date(s.endDate);
                 const currentDate = new Date(dateStr);
@@ -1512,7 +1664,7 @@ document.addEventListener('DOMContentLoaded', function() {
             });
 
             daySchedules.forEach(schedule => {
-                const position = calculateEventPosition(schedule, day);
+                const position = calculateEventPosition(schedule, dayIdx);
                 if (position) {
                     const typeClass = schedule.type;
                     eventsHTML += `
@@ -1537,6 +1689,22 @@ document.addEventListener('DOMContentLoaded', function() {
 
         // 현재 시간으로 스크롤
         scrollToCurrentTime('week');
+
+        // 주간 뷰 - 마우스 휠 이벤트
+        const weekView = document.getElementById('weekView');
+        const weekHeader = weekView.querySelector('.week-header');
+        const weekAllDaySection = weekView.querySelector('.week-allday-section');
+        const weekBodyWrapper = weekView.querySelector('.week-body-wrapper');
+
+        // 기존 이벤트 리스너 제거 후 추가
+        weekHeader.removeEventListener('wheel', handleWheelNavigation);
+        weekHeader.addEventListener('wheel', handleWheelNavigation, { passive: false });
+
+        weekAllDaySection.removeEventListener('wheel', handleWheelNavigation);
+        weekAllDaySection.addEventListener('wheel', handleWheelNavigation, { passive: false });
+
+        weekBodyWrapper.removeEventListener('wheel', handleWheelNavigation);
+        weekBodyWrapper.addEventListener('wheel', handleWheelNavigation, { passive: false });
     }
 
     // ===== 일간 뷰 렌더링 함수 =====
@@ -1544,6 +1712,7 @@ document.addEventListener('DOMContentLoaded', function() {
         const dayHeaderContainer = document.getElementById('dayTitle');
         const dayGridContainer = document.getElementById('dayGrid');
         const dayEventsContainer = document.getElementById('dayEvents');
+        const dayAllDayContainer = document.getElementById('dayAllDayEvents');
 
         // 공휴일 로드 (해당 년도)
         await loadHolidays(currentDate.getFullYear());
@@ -1614,8 +1783,29 @@ document.addEventListener('DOMContentLoaded', function() {
             return viewDate >= scheduleStart && viewDate <= scheduleEnd;
         });
 
+        // 종일 일정과 시간 일정 분리
+        const allDaySchedules = daySchedules.filter(s => s.time === '종일' || s.isAllDay);
+        const timedSchedules = daySchedules.filter(s => s.time !== '종일' && !s.isAllDay);
+
+        // 종일 일정 렌더링 (상단 영역)
+        if (dayAllDayContainer) {
+            let allDayHTML = '';
+            allDaySchedules.forEach(schedule => {
+                const typeClass = schedule.type;
+                allDayHTML += `
+                    <div class="day-allday-event ${typeClass}"
+                         data-schedule-id="${schedule.id}"
+                         data-group-id="${schedule.groupId}">
+                        ${schedule.title}
+                    </div>
+                `;
+            });
+            dayAllDayContainer.innerHTML = allDayHTML;
+        }
+
+        // 시간 일정 렌더링
         let eventsHTML = '';
-        daySchedules.forEach(schedule => {
+        timedSchedules.forEach(schedule => {
             const position = calculateEventPosition(schedule, 0, true);
             if (position) {
                 const typeClass = schedule.type;
@@ -1640,6 +1830,22 @@ document.addEventListener('DOMContentLoaded', function() {
 
         // 현재 시간으로 스크롤
         scrollToCurrentTime('day');
+
+        // 일간 뷰 - 마우스 휠 이벤트
+        const dayView = document.getElementById('dayView');
+        const dayHeader = dayView.querySelector('.day-header');
+        const dayAllDaySection = dayView.querySelector('.day-allday-section');
+        const dayBodyWrapper = dayView.querySelector('.day-body-wrapper');
+
+        // 기존 이벤트 리스너 제거 후 추가
+        dayHeader.removeEventListener('wheel', handleWheelNavigation);
+        dayHeader.addEventListener('wheel', handleWheelNavigation, { passive: false });
+
+        dayAllDaySection.removeEventListener('wheel', handleWheelNavigation);
+        dayAllDaySection.addEventListener('wheel', handleWheelNavigation, { passive: false });
+
+        dayBodyWrapper.removeEventListener('wheel', handleWheelNavigation);
+        dayBodyWrapper.addEventListener('wheel', handleWheelNavigation, { passive: false });
     }
 
     // ===== 이벤트 위치 계산 함수 =====
@@ -1756,6 +1962,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
     // ===== 주간 뷰 이벤트 핸들러 =====
     function attachWeekEventHandlers() {
+        // 시간 일정 이벤트
         const weekEvents = document.querySelectorAll('.week-event');
         weekEvents.forEach(event => {
             event.addEventListener('click', function(e) {
@@ -1782,10 +1989,38 @@ document.addEventListener('DOMContentLoaded', function() {
                 });
             });
         });
+
+        // 종일 일정 이벤트
+        const allDayEvents = document.querySelectorAll('.week-allday-event');
+        allDayEvents.forEach(event => {
+            event.addEventListener('click', function(e) {
+                e.stopPropagation();
+                const scheduleId = parseInt(this.getAttribute('data-schedule-id'));
+                const groupId = this.getAttribute('data-group-id');
+                openScheduleModal(scheduleId, groupId);
+            });
+
+            event.addEventListener('mouseenter', function() {
+                const groupId = this.getAttribute('data-group-id');
+                const sameGroupItems = document.querySelectorAll(`[data-group-id="${groupId}"]`);
+                sameGroupItems.forEach(groupItem => {
+                    groupItem.classList.add('group-hover');
+                });
+            });
+
+            event.addEventListener('mouseleave', function() {
+                const groupId = this.getAttribute('data-group-id');
+                const sameGroupItems = document.querySelectorAll(`[data-group-id="${groupId}"]`);
+                sameGroupItems.forEach(groupItem => {
+                    groupItem.classList.remove('group-hover');
+                });
+            });
+        });
     }
 
     // ===== 일간 뷰 이벤트 핸들러 =====
     function attachDayEventHandlers() {
+        // 시간 일정 이벤트
         const dayEvents = document.querySelectorAll('.day-event');
         dayEvents.forEach(event => {
             event.addEventListener('click', function(e) {
@@ -1796,6 +2031,33 @@ document.addEventListener('DOMContentLoaded', function() {
             });
 
             // Hover 이벤트 - 같은 그룹 하이라이트
+            event.addEventListener('mouseenter', function() {
+                const groupId = this.getAttribute('data-group-id');
+                const sameGroupItems = document.querySelectorAll(`[data-group-id="${groupId}"]`);
+                sameGroupItems.forEach(groupItem => {
+                    groupItem.classList.add('group-hover');
+                });
+            });
+
+            event.addEventListener('mouseleave', function() {
+                const groupId = this.getAttribute('data-group-id');
+                const sameGroupItems = document.querySelectorAll(`[data-group-id="${groupId}"]`);
+                sameGroupItems.forEach(groupItem => {
+                    groupItem.classList.remove('group-hover');
+                });
+            });
+        });
+
+        // 종일 일정 이벤트
+        const allDayEvents = document.querySelectorAll('.day-allday-event');
+        allDayEvents.forEach(event => {
+            event.addEventListener('click', function(e) {
+                e.stopPropagation();
+                const scheduleId = parseInt(this.getAttribute('data-schedule-id'));
+                const groupId = this.getAttribute('data-group-id');
+                openScheduleModal(scheduleId, groupId);
+            });
+
             event.addEventListener('mouseenter', function() {
                 const groupId = this.getAttribute('data-group-id');
                 const sameGroupItems = document.querySelectorAll(`[data-group-id="${groupId}"]`);
