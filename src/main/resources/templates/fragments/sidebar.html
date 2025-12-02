@@ -9,16 +9,16 @@
         </a>
 
         <ul class="menu">
-            <li class="menu-item" th:classappend="${activeMenu == 'messenger'} ? 'active' : ''" data-tooltip="메신저">
-                <a href="/messenger">
-                    <i class="fas fa-comments"></i>
-                    <span class="menu-text">메신저</span>
-                </a>
-            </li>
             <li class="menu-item" th:classappend="${activeMenu == 'organization'} ? 'active' : ''" data-tooltip="조직도">
                 <a href="/organization">
                     <i class="fas fa-sitemap"></i>
                     <span class="menu-text">조직도</span>
+                </a>
+            </li>
+            <li class="menu-item" th:classappend="${activeMenu == 'calendar'} ? 'active' : ''" data-tooltip="일정관리">
+                <a href="/calendar">
+                    <i class="fas fa-calendar-alt"></i>
+                    <span class="menu-text">일정관리</span>
                 </a>
             </li>
             <li th:class="${(activeMenu == 'approval' or activeMenu == 'vacation' or activeMenu == 'approval-write') ? 'menu-item menu-parent active' : 'menu-item menu-parent'}" data-tooltip="전자결재">
@@ -44,24 +44,6 @@
                         </a>
                     </li>
                 </ul>
-            </li>
-            <li class="menu-item" th:classappend="${activeMenu == 'calendar'} ? 'active' : ''" data-tooltip="일정관리">
-                <a href="/calendar">
-                    <i class="fas fa-calendar-alt"></i>
-                    <span class="menu-text">일정관리</span>
-                </a>
-            </li>
-            <li class="menu-item" th:classappend="${activeMenu == 'board'} ? 'active' : ''" data-tooltip="게시판">
-                <a href="/board">
-                    <i class="fas fa-clipboard-list"></i>
-                    <span class="menu-text">게시판</span>
-                </a>
-            </li>
-            <li class="menu-item" th:classappend="${activeMenu == 'cloud'} ? 'active' : ''" data-tooltip="클라우드">
-                <a href="/cloud">
-                    <i class="fas fa-cloud"></i>
-                    <span class="menu-text">클라우드</span>
-                </a>
             </li>
             <li th:class="${(activeMenu == 'project' or activeMenu == 'project-new' or activeMenu == 'project-card') ? 'menu-item menu-parent active' : 'menu-item menu-parent'}" data-tooltip="프로젝트 관리">
                 <a href="/project" class="menu-toggle-btn">
@@ -115,7 +97,7 @@
                 <ul class="submenu">
                     <li class="submenu-item" th:classappend="${activeMenu == 'hr'} ? 'active' : ''">
                         <a href="/hr">
-                            <span class="submenu-text">인사 관리</span>
+                            <span class="submenu-text">사용자 관리</span>
                         </a>
                     </li>
                     <li class="submenu-item" th:classappend="${activeMenu == 'manage-hierarchy'} ? 'active' : ''">
@@ -126,11 +108,6 @@
                     <li class="submenu-item" th:classappend="${activeMenu == 'attendance'} ? 'active' : ''">
                         <a href="/attendance">
                             <span class="submenu-text">근태 관리</span>
-                        </a>
-                    </li>
-                    <li class="submenu-item" th:classappend="${activeMenu == 'payroll'} ? 'active' : ''">
-                        <a href="/payroll">
-                            <span class="submenu-text">급여 관리</span>
                         </a>
                     </li>
                     <li class="submenu-item" th:classappend="${activeMenu == 'basic-info'} ? 'active' : ''">
