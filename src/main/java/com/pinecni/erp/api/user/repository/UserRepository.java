@@ -53,4 +53,11 @@ public interface UserRepository extends JpaRepository<User, Long> {
      */
     @Query("SELECT u FROM User u WHERE u.empName LIKE %:name% AND u.deletedAt IS NULL ORDER BY u.empId ASC")
     List<User> searchByName(String name);
+
+    /**
+     * 특정 날짜 패턴으로 시작하는 사번 목록 조회 (사번 오름차순)
+     * 예: datePrefix = "20251201" → 2025년 12월 1일에 생성된 사번 조회
+     */
+    @Query("SELECT u.empId FROM User u WHERE u.empId LIKE CONCAT(:datePrefix, '%') ORDER BY u.empId ASC")
+    List<String> findEmpIdsByDatePrefix(String datePrefix);
 }

@@ -410,6 +410,28 @@ function openEmployeeModal() {
     $('#employeeModal').addClass('show');
     $('#employeeForm')[0].reset();
     $('#modalTitle').text('직원 등록');
+
+    // 백엔드 API를 통해 사번 자동 생성
+    $.ajax({
+        url: '/api/users/next-employee-id',
+        method: 'GET',
+        dataType: 'json',
+        success: function(response) {
+            console.log('다음 사번 조회 성공:', response);
+            $('#empId').val(response.empId);
+        },
+        error: function(xhr, status, error) {
+            console.error('사번 생성 실패:', error);
+            // 실패 시 기본값 설정 (날짜 + 01)
+            const today = new Date();
+            const year = today.getFullYear();
+            const month = String(today.getMonth() + 1).padStart(2, '0');
+            const day = String(today.getDate()).padStart(2, '0');
+            const fallbackEmpId = `${year}${month}${day}01`;
+            $('#empId').val(fallbackEmpId);
+            showAlert('사번 생성 중 오류가 발생했습니다. 기본값이 설정되었습니다.', 'warning');
+        }
+    });
 }
 
 /**
