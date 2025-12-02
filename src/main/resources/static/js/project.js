@@ -95,7 +95,7 @@ document.addEventListener('DOMContentLoaded', function() {
                     <div class="project-info">
                         <div class="info-item">
                             <i class="fas fa-user"></i>
-                            <span>PM: ${project.projectManagerName || '-'}</span>
+                            <span>연구책임자: ${project.projectManagerName || '-'}</span>
                         </div>
                         <div class="info-item">
                             <i class="fas fa-users"></i>

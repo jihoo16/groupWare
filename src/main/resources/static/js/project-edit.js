@@ -139,6 +139,11 @@ document.addEventListener('DOMContentLoaded', function() {
                     const deptName = user.empDeptName || user.empDept || '-';
                     const positionName = user.empPositionName || user.empPosition || '-';
                     option.textContent = `${user.empName} (${deptName} / ${positionName})`;
+                    // 사용자 정보를 data 속성에 저장
+                    option.dataset.empName = user.empName;
+                    option.dataset.empDeptName = deptName;
+                    option.dataset.empPositionName = positionName;
+                    option.dataset.empPositionCode = user.empPositionCode || '';
                     projectManagerSelect.appendChild(option);
                 });
             })
@@ -146,6 +151,48 @@ document.addEventListener('DOMContentLoaded', function() {
                 console.error('Error loading project managers:', error);
                 // 에러 발생 시에도 기본 옵션은 유지
             });
+    }
+
+    // 연구책임자 선택 시 팀원에 자동 추가
+    if (projectManagerSelect) {
+        projectManagerSelect.addEventListener('change', function() {
+            const selectedOption = this.options[this.selectedIndex];
+            const piIdx = this.value;
+
+            if (!piIdx || piIdx === '') {
+                // 연구책임자가 선택 해제된 경우, 기존 PI 역할 팀원 제거
+                selectedMemberList = selectedMemberList.filter(m => m.role !== 'PI');
+                renderTeamTable();
+                return;
+            }
+
+            const piName = selectedOption.dataset.empName;
+            const piDept = selectedOption.dataset.empDeptName;
+            const piPosition = selectedOption.dataset.empPositionName;
+            const projectStartDate = document.getElementById('startDate').value;
+            const projectEndDate = document.getElementById('endDate').value;
+
+            // 기존 PI 역할 제거
+            selectedMemberList = selectedMemberList.filter(m => m.role !== 'PI');
+
+            // 새 PI 추가 (이미 팀원 목록에 있는 경우 역할만 변경)
+            const existingMember = selectedMemberList.find(m => m.id === piIdx);
+            if (existingMember) {
+                existingMember.role = 'PI';
+            } else {
+                selectedMemberList.unshift({
+                    id: piIdx,
+                    name: piName,
+                    dept: piDept,
+                    position: piPosition,
+                    role: 'PI',
+                    startDate: projectStartDate || '',
+                    endDate: projectEndDate || ''
+                });
+            }
+
+            renderTeamTable();
+        });
     }
 
     // 프로젝트 데이터 로드 함수
@@ -410,18 +457,27 @@ document.addEventListener('DOMContentLoaded', function() {
             return;
         }
 
-        // 활성 상태 사용자만 표시
-        const activeUsers = users.filter(user => user.empStatus === '재직' || !user.empStatus);
+        // 현재 선택된 연구책임자 ID 가져오기
+        const currentPiIdx = projectManagerSelect ? projectManagerSelect.value : '';
+
+        // 활성 상태 사용자만 표시하고, 연구책임자는 제외
+        const activeUsers = users.filter(user => {
+            const isActive = user.empStatus === '재직' || !user.empStatus;
+            const isNotPI = user.idx != currentPiIdx || !currentPiIdx;
+            return isActive && isNotPI;
+        });
 
         activeUsers.forEach(user => {
             const row = document.createElement('tr');
             const deptName = user.empDeptName || user.empDept || '-';
             const positionName = user.empPositionName || user.empPosition || '-';
+            const positionCode = user.empPositionCode || '';
 
             row.setAttribute('data-id', user.idx);
             row.setAttribute('data-name', user.empName);
             row.setAttribute('data-dept', deptName);
             row.setAttribute('data-position', positionName);
+            row.setAttribute('data-position-code', positionCode);
 
             row.innerHTML = `
                 <td><input type="checkbox" class="member-checkbox" value="${user.idx}"></td>
@@ -510,12 +566,15 @@ document.addEventListener('DOMContentLoaded', function() {
 
             // 중복 체크
             if (!selectedMemberList.some(m => m.id === memberId)) {
+                // 직급에 따라 자동으로 역할 할당
+                const autoRole = getAutoRole(memberPosition);
+
                 selectedMemberList.push({
                     id: memberId,
                     name: memberName,
                     dept: memberDept,
                     position: memberPosition,
-                    role: '', // 역할 기본값
+                    role: autoRole, // 직급에 따라 자동 할당된 역할
                     startDate: projectStartDate || '',
                     endDate: projectEndDate || ''
                 });
@@ -529,33 +588,40 @@ document.addEventListener('DOMContentLoaded', function() {
     // 프로젝트 역할 옵션
     const PROJECT_ROLES = [
         { value: '', label: '선택하세요' },
-        { value: 'PM', label: 'PM (프로젝트 관리자)' },
-        { value: 'PL', label: 'PL (프로젝트 리더)' },
-        { value: 'DEVELOPER', label: '개발자' },
-        { value: 'SENIOR_RESEARCHER', label: '선임연구원' },
-        { value: 'RESEARCHER', label: '연구원' },
-        { value: 'ASSISTANT_RESEARCHER', label: '보조연구원' },
-        { value: 'QA', label: 'QA/테스터' }
+        { value: 'PRACTITIONER', label: '실무자' },
+        { value: 'RESEARCHER', label: '연구원' }
     ];
+
+    // 직급명을 기준으로 역할 자동 할당 함수
+    function getAutoRole(positionName) {
+        // 부장 이상은 실무자
+        const seniorPositions = ['부장', '이사', '상무', '전무', '부사장', '사장', '대표이사'];
+        if (seniorPositions.some(pos => positionName && positionName.includes(pos))) {
+            return 'PRACTITIONER';
+        }
+
+        // 차장 이하는 연구원
+        return 'RESEARCHER';
+    }
 
     // 팀원 테이블 렌더링
     function renderTeamTable() {
         if (!teamTableBody) return;
 
-        const teamTableFooter = document.getElementById('teamTableFooter');
+        const teamAddButtonWrapper = document.getElementById('teamAddButtonWrapper');
 
         teamTableBody.innerHTML = '';
 
         if (selectedMemberList.length === 0) {
-            // 팀원이 없을 때: empty-row 표시, tfoot 숨김
+            // 팀원이 없을 때: empty-row 표시, 버튼 래퍼 숨김
             teamTableBody.innerHTML = '<tr class="empty-row text-center"><td colspan="8" class="text-center">팀원을 추가해주세요</td></tr>';
-            if (teamTableFooter) {
-                teamTableFooter.style.display = 'none';
+            if (teamAddButtonWrapper) {
+                teamAddButtonWrapper.style.display = 'none';
             }
             return;
         }
 
-        // 팀원이 있을 때: 목록 표시, tfoot 표시
+        // 팀원이 있을 때: 목록 표시, 버튼 래퍼 표시
         selectedMemberList.forEach((member, index) => {
             const row = document.createElement('tr');
 
@@ -591,9 +657,9 @@ document.addEventListener('DOMContentLoaded', function() {
             teamTableBody.appendChild(row);
         });
 
-        // tfoot 표시
-        if (teamTableFooter) {
-            teamTableFooter.style.display = '';
+        // 버튼 래퍼 표시
+        if (teamAddButtonWrapper) {
+            teamAddButtonWrapper.style.display = '';
         }
     }
 
@@ -619,6 +685,32 @@ document.addEventListener('DOMContentLoaded', function() {
         renderTeamTable();
         updateCheckboxStates();
     };
+
+    // 프로젝트 시작일/종료일 변경 시 팀원 참여일 자동 업데이트
+    const projectStartDateInput = document.getElementById('startDate');
+    const projectEndDateInput = document.getElementById('endDate');
+
+    if (projectStartDateInput) {
+        projectStartDateInput.addEventListener('change', function() {
+            const newStartDate = this.value;
+            // 모든 팀원의 참여 시작일을 프로젝트 시작일로 업데이트
+            selectedMemberList.forEach(member => {
+                member.startDate = newStartDate;
+            });
+            renderTeamTable();
+        });
+    }
+
+    if (projectEndDateInput) {
+        projectEndDateInput.addEventListener('change', function() {
+            const newEndDate = this.value;
+            // 모든 팀원의 참여 종료일을 프로젝트 종료일로 업데이트
+            selectedMemberList.forEach(member => {
+                member.endDate = newEndDate;
+            });
+            renderTeamTable();
+        });
+    }
 
     // 카드 추가 버튼 클릭
     if (addCardBtn) {
@@ -1061,12 +1153,15 @@ document.addEventListener('DOMContentLoaded', function() {
         // 테이블 초기화
         relatedProjectTableBody.innerHTML = '';
 
-        if (projects.length === 0) {
+        // 현재 수정 중인 프로젝트 제외
+        const filteredProjects = projects.filter(project => project.idx != projectId);
+
+        if (filteredProjects.length === 0) {
             relatedProjectTableBody.innerHTML = '<tr><td colspan="5" class="text-center" style="padding: 40px;">등록된 프로젝트가 없습니다.</td></tr>';
             return;
         }
 
-        projects.forEach(project => {
+        filteredProjects.forEach(project => {
             const row = document.createElement('tr');
             row.setAttribute('data-id', project.idx);
             row.setAttribute('data-name', project.projectName);
