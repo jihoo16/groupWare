@@ -78,6 +78,8 @@ public class ProjectMapper {
                 .projectStatus(entity.getProjectStatus())
                 .description(entity.getDescription())
                 .receiptUrl(entity.getReceiptUrl())
+                .activityBudget(entity.getActivityBudget())
+                .equipmentBudget(entity.getEquipmentBudget())
                 .memberCount(members.size())
                 .progress(calculateProgress(entity))
                 .projectRelations(relations)
@@ -109,6 +111,8 @@ public class ProjectMapper {
                         dto.getProjectStatus() : "PLANNING")
                 .description(dto.getDescription())
                 .isDeleted(false)
+                .activityBudget(dto.getActivityBudget())
+                .equipmentBudget(dto.getEquipmentBudget())
                 .build();
 
         // BaseEntity 필드 설정
@@ -153,6 +157,12 @@ public class ProjectMapper {
         }
         if (dto.getReceiptUrl() != null) {
             entity.setReceiptUrl(dto.getReceiptUrl());
+        }
+        if (dto.getActivityBudget() != null) {
+            entity.setActivityBudget(dto.getActivityBudget());
+        }
+        if (dto.getEquipmentBudget() != null) {
+            entity.setEquipmentBudget(dto.getEquipmentBudget());
         }
 
         // 수정 정보 업데이트
