@@ -8,10 +8,13 @@ document.addEventListener('DOMContentLoaded', function() {
 
     // DOM 요소
     const teamForm = document.getElementById('teamForm');
-    const teamLeaderSelect = document.getElementById('teamLeader');
+    const teamLeaderSearch = document.getElementById('teamLeaderSearch');
+    const teamLeaderHidden = document.getElementById('teamLeader');
+    const teamLeaderDropdown = document.getElementById('teamLeaderDropdown');
     const backBtn = document.getElementById('backBtn');
     const cancelBtn = document.getElementById('cancelBtn');
     const submitBtn = document.getElementById('submitBtn');
+    const addMemberBtn = document.getElementById('addMemberBtn');
     const teamTableBody = document.getElementById('teamTableBody');
 
     // 모달 요소
@@ -43,6 +46,13 @@ document.addEventListener('DOMContentLoaded', function() {
 
     teamForm.addEventListener('submit', handleSubmit);
 
+    submitBtn.addEventListener('click', (e) => {
+        e.preventDefault();
+        teamForm.dispatchEvent(new Event('submit'));
+    });
+
+    addMemberBtn.addEventListener('click', openEmployeeSelectionModal);
+
     closeEmployeeModal.addEventListener('click', closeModal);
     cancelEmployeeSelection.addEventListener('click', closeModal);
     confirmEmployeeSelection.addEventListener('click', confirmSelection);
@@ -62,7 +72,8 @@ document.addEventListener('DOMContentLoaded', function() {
     // 초기화 함수
     async function init() {
         await loadEmployees();
-        populateTeamLeaderSelect();
+        initTeamLeaderDropdown();
+        initColorPicker();
         renderTeamMembersTable(); // 초기 빈 행에 클릭 이벤트 추가
     }
 
@@ -195,30 +206,128 @@ document.addEventListener('DOMContentLoaded', function() {
         return { departments };
     }
 
-    // 팀 리더 선택 옵션 채우기
-    function populateTeamLeaderSelect() {
-        teamLeaderSelect.innerHTML = '<option value="">선택하세요</option>';
+    // 팀 리더 검색 드롭다운 초기화
+    function initTeamLeaderDropdown() {
+        // 검색창 포커스 시 드롭다운 표시
+        teamLeaderSearch.addEventListener('focus', function() {
+            renderTeamLeaderDropdown('');
+            teamLeaderDropdown.classList.add('active');
+        });
 
+        // 검색창 입력 시 필터링
+        teamLeaderSearch.addEventListener('input', function() {
+            const searchTerm = this.value.toLowerCase().trim();
+            renderTeamLeaderDropdown(searchTerm);
+        });
+
+        // 외부 클릭 시 드롭다운 닫기
+        document.addEventListener('click', function(e) {
+            if (!teamLeaderSearch.contains(e.target) && !teamLeaderDropdown.contains(e.target)) {
+                teamLeaderDropdown.classList.remove('active');
+            }
+        });
+    }
+
+    // 팀 리더 드롭다운 렌더링
+    function renderTeamLeaderDropdown(searchTerm) {
         // 직급으로 정렬
-        const sortedEmployees = [...allEmployees].sort((a, b) => {
+        let sortedEmployees = [...allEmployees].sort((a, b) => {
             const posA = getPositionOrder(a.empPositionName || '미지정');
             const posB = getPositionOrder(b.empPositionName || '미지정');
             if (posA !== posB) return posA - posB;
             return (a.empName || '').localeCompare(b.empName || '');
         });
 
-        sortedEmployees.forEach(emp => {
-            const option = document.createElement('option');
-            option.value = emp.idx;
-            option.textContent = `${emp.empName} (${emp.empDeptName || '미지정'} / ${emp.empPositionName || '미지정'})`;
-            teamLeaderSelect.appendChild(option);
+        // 검색어로 필터링
+        if (searchTerm) {
+            sortedEmployees = sortedEmployees.filter(emp => {
+                const name = (emp.empName || '').toLowerCase();
+                const dept = (emp.empDeptName || '').toLowerCase();
+                const position = (emp.empPositionName || '').toLowerCase();
+                return name.includes(searchTerm) || dept.includes(searchTerm) || position.includes(searchTerm);
+            });
+        }
+
+        if (sortedEmployees.length === 0) {
+            teamLeaderDropdown.innerHTML = '<div class="team-leader-dropdown-empty">검색 결과가 없습니다.</div>';
+            return;
+        }
+
+        const html = sortedEmployees.map(emp => {
+            const isSelected = teamLeaderHidden.value == emp.idx;
+            return `
+                <div class="team-leader-item ${isSelected ? 'selected' : ''}" data-idx="${emp.idx}" data-name="${emp.empName}">
+                    <div class="team-leader-item-name">${emp.empName}</div>
+                    <div class="team-leader-item-info">${emp.empDeptName || '미지정'} · ${emp.empPositionName || '미지정'}</div>
+                </div>
+            `;
+        }).join('');
+
+        teamLeaderDropdown.innerHTML = html;
+
+        // 항목 클릭 이벤트
+        teamLeaderDropdown.querySelectorAll('.team-leader-item').forEach(item => {
+            item.addEventListener('click', function() {
+                const idx = parseInt(this.getAttribute('data-idx'));
+                const name = this.getAttribute('data-name');
+
+                teamLeaderHidden.value = idx;
+                teamLeaderSearch.value = name;
+                teamLeaderDropdown.classList.remove('active');
+
+                // 선택 상태 업데이트
+                teamLeaderDropdown.querySelectorAll('.team-leader-item').forEach(i => i.classList.remove('selected'));
+                this.classList.add('selected');
+
+                // 팀원 목록에 자동 추가/업데이트
+                addTeamLeaderToMembers(idx);
+            });
         });
+    }
+
+    // 팀 리더를 팀원 목록에 자동 추가
+    function addTeamLeaderToMembers(leaderIdx) {
+        // 전체 직원 목록에서 해당 직원 찾기
+        const employee = allEmployees.find(emp => emp.idx === leaderIdx);
+        if (!employee) return;
+
+        // 이미 팀원 목록에 있는지 확인
+        const existingMember = teamMembers.find(m => m.idx === leaderIdx);
+
+        if (existingMember) {
+            // 이미 있으면 역할만 팀장으로 변경
+            existingMember.role = '팀장';
+        } else {
+            // 없으면 팀장으로 추가
+            teamMembers.unshift({
+                idx: employee.idx,
+                empName: employee.empName,
+                empDept: employee.empDeptName,
+                empPosition: employee.empPositionName,
+                role: '팀장'
+            });
+        }
+
+        // 테이블 재렌더링
+        renderTeamMembersTable();
     }
 
     // 팀원 선택 모달 열기
     async function openEmployeeSelectionModal() {
         selectedEmployees.clear();
+
+        // 이미 추가된 팀원들을 선택 목록에 추가
+        teamMembers.forEach(member => {
+            selectedEmployees.set(member.idx, {
+                name: member.empName,
+                department: member.empDept || '미지정',
+                rank: member.empPosition || '미지정',
+                id: member.idx
+            });
+        });
+
         buildOrgTree();
+        updateOrgTreeCheckboxes(); // 체크박스 상태 업데이트
         updateSelectedEmployeesList();
         employeeSelectionModal.classList.add('active');
     }
@@ -543,7 +652,7 @@ document.addEventListener('DOMContentLoaded', function() {
                     empName: memberData.name,
                     empDept: memberData.department,
                     empPosition: memberData.rank,
-                    role: ''
+                    role: '팀원'
                 });
             }
         });
@@ -563,11 +672,17 @@ document.addEventListener('DOMContentLoaded', function() {
                 </tr>
             `;
 
+            // 팀원 추가 버튼 숨기기
+            addMemberBtn.style.display = 'none';
+
             // 빈 행 클릭 이벤트
             const emptyRow = teamTableBody.querySelector('.empty-row');
             emptyRow.addEventListener('click', openEmployeeSelectionModal);
             return;
         }
+
+        // 팀원 추가 버튼 보이기
+        addMemberBtn.style.display = 'flex';
 
         const html = teamMembers.map((member, index) => `
             <tr data-member-idx="${member.idx}">
@@ -579,9 +694,7 @@ document.addEventListener('DOMContentLoaded', function() {
                     <select class="member-role-select" data-member-idx="${member.idx}">
                         <option value="">역할 선택</option>
                         <option value="팀장" ${member.role === '팀장' ? 'selected' : ''}>팀장</option>
-                        <option value="부팀장" ${member.role === '부팀장' ? 'selected' : ''}>부팀장</option>
                         <option value="팀원" ${member.role === '팀원' ? 'selected' : ''}>팀원</option>
-                        <option value="서기" ${member.role === '서기' ? 'selected' : ''}>서기</option>
                     </select>
                 </td>
                 <td>
@@ -626,8 +739,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
         // 유효성 검사
         const teamName = document.getElementById('teamName').value.trim();
-        const teamType = document.getElementById('teamType').value;
-        const teamLeaderIdx = teamLeaderSelect.value;
+        const teamLeaderIdx = teamLeaderHidden.value;
         const teamDescription = document.getElementById('teamDescription').value.trim();
 
         if (!teamName) {
@@ -635,17 +747,16 @@ document.addEventListener('DOMContentLoaded', function() {
             return;
         }
 
-        if (!teamType) {
-            alert('팀 유형을 선택해주세요.');
-            return;
-        }
+        // 팀 색상 가져오기
+        const teamColor = document.getElementById('teamColor').value || '#FFD1DC';
 
         // 팀 생성 데이터 준비
         const teamData = {
             teamName: teamName,
-            teamType: teamType,
             teamLeaderIdx: teamLeaderIdx ? parseInt(teamLeaderIdx) : null,
             teamDescription: teamDescription,
+            teamColor: teamColor,
+            createdUserIdx: 1, // TODO: 실제 로그인 사용자 IDX로 변경 필요 (테스트용 하드코딩)
             members: teamMembers.map(member => ({
                 memberIdx: member.idx,
                 role: member.role || null
@@ -683,6 +794,50 @@ document.addEventListener('DOMContentLoaded', function() {
             submitBtn.disabled = false;
             submitBtn.innerHTML = '<i class="fas fa-check"></i> 팀 생성';
         }
+    }
+
+    // 색상 선택 초기화
+    function initColorPicker() {
+        const colorOptions = document.querySelectorAll('.color-option');
+        const teamColorInput = document.getElementById('teamColor');
+        const colorPreviewBox = document.querySelector('.color-preview-box');
+        const colorPreviewName = document.querySelector('.color-preview-name');
+
+        const colorNames = {
+            '#FFD1DC': '파스텔 핑크',
+            '#FFB3BA': '파스텔 코랄',
+            '#FFDFBA': '파스텔 피치',
+            '#FFFFBA': '파스텔 옐로우',
+            '#BAFFC9': '파스텔 민트',
+            '#C1E1C1': '파스텔 그린',
+            '#D4F1F4': '파스텔 티파니',
+            '#BAE1FF': '파스텔 스카이블루',
+            '#D6EAF8': '파스텔 블루',
+            '#C9C9FF': '파스텔 라벤더',
+            '#E8DFF5': '파스텔 라일락',
+            '#E0BBE4': '파스텔 퍼플',
+            '#FCE4EC': '파스텔 로즈',
+            '#FFDFD3': '파스텔 아프리콧',
+            '#F7D9C4': '파스텔 베이지'
+        };
+
+        colorOptions.forEach(option => {
+            option.addEventListener('click', function() {
+                // 모든 옵션의 selected 클래스 제거
+                colorOptions.forEach(opt => opt.classList.remove('selected'));
+
+                // 클릭한 옵션에 selected 클래스 추가
+                this.classList.add('selected');
+
+                // hidden input 값 업데이트
+                const selectedColor = this.getAttribute('data-color');
+                teamColorInput.value = selectedColor;
+
+                // 미리보기 업데이트
+                colorPreviewBox.style.backgroundColor = selectedColor;
+                colorPreviewName.textContent = colorNames[selectedColor] || '알 수 없음';
+            });
+        });
     }
 
     // 유틸리티 함수

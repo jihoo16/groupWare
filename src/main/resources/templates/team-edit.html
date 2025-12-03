@@ -52,20 +52,12 @@
                         </div>
 
                         <div class="form-group">
-                            <label for="teamType">팀 유형 <span class="required">*</span></label>
-                            <select id="teamType" name="teamType" class="form-control" required>
-                                <option value="custom">일반 팀</option>
-                                <option value="project">프로젝트 팀</option>
-                                <option value="temporary">임시 팀</option>
-                            </select>
-                        </div>
-
-                        <div class="form-group">
-                            <label for="teamLeader">팀 리더</label>
-                            <select id="teamLeader" name="teamLeader" class="form-control">
-                                <option value="">선택하세요</option>
-                                <!-- JavaScript에서 동적으로 로드 -->
-                            </select>
+                            <label for="teamLeaderSearch">팀 리더</label>
+                            <div class="team-leader-wrapper">
+                                <input type="text" id="teamLeaderSearch" class="form-control" placeholder="이름, 부서, 직급으로 검색..." autocomplete="off">
+                                <input type="hidden" id="teamLeader" name="teamLeader">
+                                <div id="teamLeaderDropdown" class="team-leader-dropdown"></div>
+                            </div>
                         </div>
 
                         <div class="form-group">
@@ -79,6 +71,38 @@
                         <div class="form-group full-width">
                             <label for="teamDescription">팀 설명</label>
                             <textarea id="teamDescription" name="teamDescription" class="form-control" rows="4" placeholder="팀에 대한 설명을 입력하세요"></textarea>
+                        </div>
+
+                        <div class="form-group full-width">
+                            <label for="teamColor">
+                                팀 색상
+                                <span class="color-label-hint">캘린더 팀별 일정에 표시될 색상입니다</span>
+                            </label>
+                            <input type="hidden" id="teamColor" name="teamColor" value="#FFD1DC">
+                            <div class="color-picker-wrapper">
+                                <div class="color-options">
+                                    <div class="color-option" data-color="#FFD1DC" style="background-color: #FFD1DC;" title="파스텔 핑크"></div>
+                                    <div class="color-option" data-color="#FFB3BA" style="background-color: #FFB3BA;" title="파스텔 코랄"></div>
+                                    <div class="color-option" data-color="#FFDFBA" style="background-color: #FFDFBA;" title="파스텔 피치"></div>
+                                    <div class="color-option" data-color="#FFFFBA" style="background-color: #FFFFBA;" title="파스텔 옐로우"></div>
+                                    <div class="color-option" data-color="#BAFFC9" style="background-color: #BAFFC9;" title="파스텔 민트"></div>
+                                    <div class="color-option" data-color="#C1E1C1" style="background-color: #C1E1C1;" title="파스텔 그린"></div>
+                                    <div class="color-option" data-color="#D4F1F4" style="background-color: #D4F1F4;" title="파스텔 티파니"></div>
+                                    <div class="color-option" data-color="#BAE1FF" style="background-color: #BAE1FF;" title="파스텔 스카이블루"></div>
+                                    <div class="color-option" data-color="#D6EAF8" style="background-color: #D6EAF8;" title="파스텔 블루"></div>
+                                    <div class="color-option" data-color="#C9C9FF" style="background-color: #C9C9FF;" title="파스텔 라벤더"></div>
+                                    <div class="color-option" data-color="#E8DFF5" style="background-color: #E8DFF5;" title="파스텔 라일락"></div>
+                                    <div class="color-option" data-color="#E0BBE4" style="background-color: #E0BBE4;" title="파스텔 퍼플"></div>
+                                    <div class="color-option" data-color="#FCE4EC" style="background-color: #FCE4EC;" title="파스텔 로즈"></div>
+                                    <div class="color-option" data-color="#FFDFD3" style="background-color: #FFDFD3;" title="파스텔 아프리콧"></div>
+                                    <div class="color-option" data-color="#F7D9C4" style="background-color: #F7D9C4;" title="파스텔 베이지"></div>
+                                </div>
+                                <div class="color-preview">
+                                    <span class="color-preview-label">선택한 색상:</span>
+                                    <div class="color-preview-box" style="background-color: #FFD1DC;"></div>
+                                    <span class="color-preview-name">파스텔 핑크</span>
+                                </div>
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -115,21 +139,21 @@
                         </div>
                     </div>
                 </div>
-
-                <!-- 폼 액션 -->
-                <div class="form-actions">
-                    <button type="button" class="btn btn-danger" id="deleteBtn">
-                        <i class="fas fa-trash"></i> 팀 삭제
-                    </button>
-                    <div style="flex: 1;"></div>
-                    <button type="button" class="btn btn-secondary" id="cancelBtn">
-                        취소
-                    </button>
-                    <button type="submit" class="btn btn-primary" id="submitBtn">
-                        <i class="fas fa-save"></i> 저장
-                    </button>
-                </div>
             </form>
+        </div>
+
+        <!-- 폼 액션 -->
+        <div class="form-actions" id="formActions" style="display: none;">
+            <button type="button" class="btn btn-danger" id="deleteBtn">
+                <i class="fas fa-trash"></i> 팀 삭제
+            </button>
+            <div style="flex: 1;"></div>
+            <button type="button" class="btn btn-secondary" id="cancelBtn">
+                취소
+            </button>
+            <button type="submit" class="btn btn-primary" id="submitBtn">
+                <i class="fas fa-save"></i> 저장
+            </button>
         </div>
     </main>
 </div>
