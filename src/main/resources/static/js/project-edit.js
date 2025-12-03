@@ -278,10 +278,6 @@ document.addEventListener('DOMContentLoaded', function() {
 
     // 직급별 경비 설정 로드 함수 (새 구조: expenseItemName + amount)
     function loadExpenseSettings(expenseSettings) {
-        console.log('===== 경비 설정 데이터 로드 시작 =====');
-        console.log('받은 데이터:', expenseSettings);
-        console.log('데이터 개수:', expenseSettings ? expenseSettings.length : 0);
-
         if (!expenseSettings || expenseSettings.length === 0) {
             console.log('경비 설정 데이터가 없습니다.');
             return;
@@ -299,7 +295,6 @@ document.addEventListener('DOMContentLoaded', function() {
         const groupedByPosition = {};
 
         expenseSettings.forEach((setting, index) => {
-            console.log(`[${index}] 처리 중:`, setting);
             const positionCode = setting.positionCode;
 
             if (!groupedByPosition[positionCode]) {
@@ -310,8 +305,6 @@ document.addEventListener('DOMContentLoaded', function() {
             }
 
             const itemIndex = expenseItemIndexMap[setting.expenseItemName];
-            console.log(`  직급코드: ${positionCode}, 항목: ${setting.expenseItemName}, 인덱스: ${itemIndex}, 금액: ${setting.amount}`);
-
             if (itemIndex !== undefined) {
                 groupedByPosition[positionCode].amounts[itemIndex] = setting.amount || 0;
             } else {
@@ -319,25 +312,21 @@ document.addEventListener('DOMContentLoaded', function() {
             }
         });
 
-        console.log('그룹화된 데이터:', groupedByPosition);
 
         // 각 직급 행에 데이터 설정
         Object.keys(groupedByPosition).forEach(positionCode => {
-            console.log(`직급코드 "${positionCode}" 행 찾기...`);
             const row = document.querySelector(`tr[data-position-code="${positionCode}"]`);
 
             if (row) {
-                console.log('  → 행 찾음!');
                 const data = groupedByPosition[positionCode];
                 const inputs = row.querySelectorAll('.expense-input-sm');
-                console.log('  → input 개수:', inputs.length);
+
 
                 if (inputs.length >= 4) {
                     inputs[0].value = data.amounts[0]; // 출장비
                     inputs[1].value = data.amounts[1]; // 중식비
                     inputs[2].value = data.amounts[2]; // 회의비
                     inputs[3].value = data.amounts[3]; // 야근석식대
-                    console.log('  → 값 설정 완료:', data.amounts);
                 } else {
                     console.warn('  → input 개수 부족!');
                 }
@@ -349,7 +338,6 @@ document.addEventListener('DOMContentLoaded', function() {
             }
         });
 
-        console.log('===== 경비 설정 로드 완료 =====');
     }
 
     // 연구비 카드 목록 로드 함수
