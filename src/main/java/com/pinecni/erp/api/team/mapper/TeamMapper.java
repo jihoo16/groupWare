@@ -41,6 +41,7 @@ public class TeamMapper {
                 .createdUserIdx(team.getCreatedUserIdx())
                 .teamLeaderIdx(team.getTeamLeaderIdx())
                 .isActive(team.getIsActive())
+                .teamColor(team.getTeamColor())
                 .createdAt(team.getCreatedAt())
                 .updatedAt(team.getUpdatedAt())
                 .build();
@@ -80,8 +81,8 @@ public class TeamMapper {
                 .teamIdx(member.getTeamIdx())
                 .memberIdx(member.getMemberIdx())
                 .role(member.getRole())
-                .joinDate(member.getJoinDate())
-                .leaveDate(member.getLeaveDate())
+                .joinDate(member.getJoinAt())
+                .leaveDate(member.getLeaveAt())
                 .isActive(member.getIsActive())
                 .build();
 
@@ -119,6 +120,7 @@ public class TeamMapper {
                 .teamDescription(createDTO.getTeamDescription())
                 .teamType(createDTO.getTeamType() != null ? createDTO.getTeamType() : "custom")
                 .teamLeaderIdx(createDTO.getTeamLeaderIdx())
+                .teamColor(createDTO.getTeamColor() != null ? createDTO.getTeamColor() : "#FFD1DC")
                 .isActive("Y")
                 .build();
 
@@ -136,7 +138,7 @@ public class TeamMapper {
                 .teamIdx(createDTO.getTeamIdx())
                 .memberIdx(createDTO.getMemberIdx())
                 .role(createDTO.getRole())
-                .joinDate(LocalDateTime.now())
+                .joinAt(LocalDateTime.now())
                 .isActive("Y")
                 .build();
     }
@@ -159,6 +161,9 @@ public class TeamMapper {
         }
         if (updateDTO.getIsActive() != null) {
             team.setIsActive(updateDTO.getIsActive());
+        }
+        if (updateDTO.getTeamColor() != null) {
+            team.setTeamColor(updateDTO.getTeamColor());
         }
     }
 }

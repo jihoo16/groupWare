@@ -38,4 +38,9 @@ public class TeamUpdateDTO {
      * 활성화 여부
      */
     private String isActive;
+
+    /**
+     * 팀 색상 (Hex 코드)
+     */
+    private String teamColor;
 }

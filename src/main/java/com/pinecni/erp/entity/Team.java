@@ -45,6 +45,9 @@ public class Team extends BaseEntity {
     @Column(name = "is_active", length = 1)
     private String isActive = "Y";
 
+    @Column(name = "team_color", length = 7, nullable = false)
+    private String teamColor = "#FFD1DC"; // 기본값: 파스텔 핑크
+
     // 관계 매핑
     // created_user_idx는 BaseEntity의 createdUserIdx 사용
     @ManyToOne(fetch = FetchType.LAZY)

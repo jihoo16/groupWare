@@ -63,6 +63,11 @@ public class TeamDTO {
     private String isActive;
 
     /**
+     * 팀 색상 (Hex 코드)
+     */
+    private String teamColor;
+
+    /**
      * 생성일
      */
     private LocalDateTime createdAt;

@@ -42,6 +42,11 @@ public class TeamCreateDTO {
     private Long teamLeaderIdx;
 
     /**
+     * 팀 색상 (Hex 코드)
+     */
+    private String teamColor;
+
+    /**
      * 팀원 목록
      */
     private List<TeamMemberCreateDTO> members;
