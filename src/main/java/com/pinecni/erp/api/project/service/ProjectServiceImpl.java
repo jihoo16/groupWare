@@ -166,14 +166,14 @@ public class ProjectServiceImpl implements ProjectService {
             for (ProjectExpenseSettingCreateDTO settingDTO : createDTO.getExpenseSettings()) {
                 // 직급명으로 코드 조회 (positionCode가 없는 경우)
                 String positionCode = settingDTO.getPositionCode();
-                if (positionCode == null && settingDTO.getPositionName() != null) {
-                    positionCode = codeRepository.findByGroupCodeAndCodeName("C02", settingDTO.getPositionName())
+                if (positionCode == null) {
+                    positionCode = codeRepository.findByGroupCodeAndCodeName("C02", settingDTO.getPositionCode())
                             .map(code -> code.getCode())
                             .orElse(null);
                 }
 
                 if (positionCode == null) {
-                    log.warn("Position code not found for position name: {}", settingDTO.getPositionName());
+
                     continue;
                 }
 
@@ -181,7 +181,6 @@ public class ProjectServiceImpl implements ProjectService {
                 ProjectExpenseSetting setting = ProjectExpenseSetting.builder()
                         .projectIdx(savedProject.getIdx())
                         .positionCode(positionCode)
-                        .positionName(settingDTO.getPositionName())
                         .expenseItemName(settingDTO.getExpenseItemName())
                         .expenseItemNameEn(settingDTO.getExpenseItemNameEn())
                         .amount(settingDTO.getAmount() != null ? settingDTO.getAmount() : 0)
@@ -192,8 +191,8 @@ public class ProjectServiceImpl implements ProjectService {
                 setting.setUpdatedUserIdx(createdUserIdx);
 
                 projectExpenseSettingRepository.save(setting);
-                log.debug("Expense setting saved: position={}, item={}, amount={}, projectIdx={}",
-                         settingDTO.getPositionName(), settingDTO.getExpenseItemName(),
+                log.debug("Expense setting saved: item={}, amount={}, projectIdx={}",
+                        settingDTO.getExpenseItemName(),
                          settingDTO.getAmount(), savedProject.getIdx());
             }
         }
@@ -428,7 +427,6 @@ public class ProjectServiceImpl implements ProjectService {
 
                 if (existingSetting != null) {
                     // 기존 경비 설정 업데이트
-                    existingSetting.setPositionName(settingDTO.getPositionName());
                     existingSetting.setExpenseItemNameEn(settingDTO.getExpenseItemNameEn());
                     existingSetting.setAmount(settingDTO.getAmount() != null ? settingDTO.getAmount() : 0);
                     existingSetting.setUpdatedUserIdx(updatedUserIdx);
@@ -442,7 +440,6 @@ public class ProjectServiceImpl implements ProjectService {
                     ProjectExpenseSetting newSetting = ProjectExpenseSetting.builder()
                             .projectIdx(idx)
                             .positionCode(settingDTO.getPositionCode())
-                            .positionName(settingDTO.getPositionName())
                             .expenseItemName(settingDTO.getExpenseItemName())
                             .expenseItemNameEn(settingDTO.getExpenseItemNameEn())
                             .amount(settingDTO.getAmount() != null ? settingDTO.getAmount() : 0)
@@ -561,7 +558,6 @@ public class ProjectServiceImpl implements ProjectService {
         return projectExpenseSettingRepository.findByProjectIdx(projectIdx).stream()
                 .map(setting -> ProjectExpenseSettingDTO.builder()
                         .positionCode(setting.getPositionCode())
-                        .positionName(setting.getPositionName())
                         .expenseItemName(setting.getExpenseItemName())
                         .expenseItemNameEn(setting.getExpenseItemNameEn())
                         .amount(setting.getAmount())

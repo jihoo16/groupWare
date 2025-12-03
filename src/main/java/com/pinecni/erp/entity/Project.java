@@ -3,6 +3,7 @@ package com.pinecni.erp.entity;
 import jakarta.persistence.*;
 import lombok.*;
 
+import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.List;
@@ -55,6 +56,13 @@ public class Project extends BaseEntity {
 
     @Column(name = "is_deleted")
     private Boolean isDeleted = false;
+
+    @Column(name = "activity_budget", precision = 15, scale = 2)
+    private BigDecimal activityBudget = BigDecimal.ZERO;
+
+    @Column(name = "equipment_budget", precision = 15, scale = 2)
+    private BigDecimal equipmentBudget = BigDecimal.ZERO;
+
 
     // 관계 매핑
     @ManyToOne(fetch = FetchType.LAZY)

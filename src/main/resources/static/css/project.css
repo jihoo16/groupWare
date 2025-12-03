@@ -345,9 +345,48 @@ select.form-control {
     max-height: 400px;
     overflow-y: auto;
     border: 2px solid #e9ecef;
-    border-radius: 10px;
+    border-radius: 10px 10px 0 0;
     box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
     text-align: center;
+}
+
+/* 참여인력 추가 버튼 래퍼 (고정) */
+.team-add-button-wrapper {
+    background: #f8f9fa;
+    border: 2px solid #e9ecef;
+    border-top: none;
+    border-radius: 0 0 10px 10px;
+    padding: 12px;
+    text-align: center;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
+}
+
+/* 참여인력 추가 버튼 (고정) */
+.btn-add-member-fixed {
+    background: linear-gradient(135deg, #4361ee 0%, #3730a3 100%);
+    color: white;
+    border: none;
+    padding: 10px 24px;
+    border-radius: 8px;
+    font-size: 14px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    box-shadow: 0 2px 8px rgba(67, 97, 238, 0.3);
+}
+
+.btn-add-member-fixed:hover {
+    background: linear-gradient(135deg, #3730a3 0%, #312e81 100%);
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(67, 97, 238, 0.4);
+}
+
+.btn-add-member-fixed:active {
+    transform: translateY(0);
+}
+
+.btn-add-member-fixed i {
+    margin-right: 6px;
 }
 
 .team-table {

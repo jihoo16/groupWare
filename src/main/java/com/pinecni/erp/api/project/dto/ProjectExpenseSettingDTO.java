@@ -21,11 +21,6 @@ public class ProjectExpenseSettingDTO {
     private String positionCode;
 
     /**
-     * 직급명 (사원, 대리, 과장 등)
-     */
-    private String positionName;
-
-    /**
      * 경비 항목명 (중식비, 야근석식대, 회의비, 출장비 등)
      */
     private String expenseItemName;
