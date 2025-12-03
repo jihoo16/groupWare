@@ -6,6 +6,7 @@ import com.pinecni.erp.api.project.repository.ProjectExpenseSettingRepository;
 import com.pinecni.erp.api.project.repository.ProjectMemberRepository;
 import com.pinecni.erp.api.project.repository.ProjectRelationRepository;
 import com.pinecni.erp.api.project.repository.ProjectRepository;
+import com.pinecni.erp.api.project.repository.ReceiptMeetingRepository;
 import com.pinecni.erp.api.user.repository.UserRepository;
 import com.pinecni.erp.entity.Project;
 import com.pinecni.erp.entity.ProjectExpenseSetting;
@@ -15,6 +16,7 @@ import com.pinecni.erp.entity.User;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 
+import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.temporal.ChronoUnit;
@@ -32,6 +34,7 @@ public class ProjectMapper {
     private final ProjectRepository projectRepository;
     private final ProjectMemberRepository projectMemberRepository;
     private final ProjectExpenseSettingRepository projectExpenseSettingRepository;
+    private final ReceiptMeetingRepository receiptMeetingRepository;
     private final UserRepository userRepository;
     private final CodeRepository codeRepository;
 
@@ -66,6 +69,11 @@ public class ProjectMapper {
                 .map(this::toExpenseSettingDTO)
                 .collect(Collectors.toList());
 
+        // 활동비 사용액 조회 (회의비, 출장비 등 집행 금액 합계)
+        BigDecimal activityUsed = receiptMeetingRepository.sumAmountByProjectIdx(entity.getIdx());
+        // 장비비 사용액 (추후 구현 예정, 현재는 0)
+        BigDecimal equipmentUsed = BigDecimal.ZERO;
+
         return ProjectDTO.builder()
                 .idx(entity.getIdx())
                 .projectName(entity.getProjectName())
@@ -80,6 +88,8 @@ public class ProjectMapper {
                 .receiptUrl(entity.getReceiptUrl())
                 .activityBudget(entity.getActivityBudget())
                 .equipmentBudget(entity.getEquipmentBudget())
+                .activityUsed(activityUsed)
+                .equipmentUsed(equipmentUsed)
                 .memberCount(members.size())
                 .progress(calculateProgress(entity))
                 .projectRelations(relations)
