@@ -121,7 +121,7 @@ public class TeamServiceImpl implements TeamService {
         List<TeamMember> members = teamMemberRepository.findByTeamIdx(teamIdx);
         for (TeamMember member : members) {
             member.setIsActive("N");
-            member.setLeaveDate(LocalDateTime.now());
+            member.setLeaveAt(LocalDateTime.now());
         }
         teamMemberRepository.saveAll(members);
 
@@ -195,7 +195,7 @@ public class TeamServiceImpl implements TeamService {
 
         // 소프트 삭제
         member.setIsActive("N");
-        member.setLeaveDate(LocalDateTime.now());
+        member.setLeaveAt(LocalDateTime.now());
         teamMemberRepository.save(member);
 
         log.debug("Team member removed: teamIdx={}, memberIdx={}", teamIdx, memberIdx);

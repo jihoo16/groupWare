@@ -38,11 +38,11 @@ public class TeamMember extends BaseEntity {
     @Column(name = "role", length = 50)
     private String role;
 
-    @Column(name = "join_date")
-    private LocalDateTime joinDate;
+    @Column(name = "join_at")
+    private LocalDateTime joinAt;
 
-    @Column(name = "leave_date")
-    private LocalDateTime leaveDate;
+    @Column(name = "leave_at")
+    private LocalDateTime leaveAt;
 
     @Column(name = "is_active", length = 1)
     private String isActive = "Y";

@@ -272,14 +272,25 @@ document.addEventListener('DOMContentLoaded', function() {
         // 첫날과 마지막날
         const firstDay = new Date(year, month, 1);
         const lastDay = new Date(year, month + 1, 0);
-
-        // 일정 데이터 로드 (해당 월)
-        const startDate = formatDate(firstDay);
-        const endDate = formatDate(lastDay);
-        await loadSchedules(startDate, endDate);
         const prevLastDay = new Date(year, month, 0);
 
+        // 캘린더에 실제로 표시되는 첫 번째 날짜와 마지막 날짜 계산
         const firstDayWeek = firstDay.getDay();
+
+        // 캘린더 시작일: 이전 달에서 표시되는 첫 날짜
+        const calendarStartDate = new Date(year, month, 1);
+        calendarStartDate.setDate(calendarStartDate.getDate() - firstDayWeek);
+
+        // 캘린더 종료일: 다음 달에서 표시되는 마지막 날짜
+        const totalCells = Math.ceil((firstDayWeek + lastDay.getDate()) / 7) * 7;
+        const remainingCells = totalCells - (firstDayWeek + lastDay.getDate());
+        const calendarEndDate = new Date(year, month + 1, remainingCells);
+
+        // 일정 데이터 로드 (캘린더에 표시되는 전체 범위)
+        const startDate = formatDate(calendarStartDate);
+        const endDate = formatDate(calendarEndDate);
+        await loadSchedules(startDate, endDate);
+
         const lastDate = lastDay.getDate();
         const prevLastDate = prevLastDay.getDate();
 
@@ -306,9 +317,7 @@ document.addEventListener('DOMContentLoaded', function() {
             calendarHTML += createCalendarCell(year, month, day, false);
         }
 
-        // 다음 달 날짜 (6주 채우기)
-        const totalCells = Math.ceil((firstDayWeek + lastDate) / 7) * 7;
-        const remainingCells = totalCells - (firstDayWeek + lastDate);
+        // 다음 달 날짜 (6주 채우기) - 위에서 이미 계산한 remainingCells 사용
         for (let day = 1; day <= remainingCells; day++) {
             calendarHTML += createCalendarCell(year, month + 1, day, true);
         }

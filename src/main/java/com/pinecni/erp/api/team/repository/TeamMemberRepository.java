@@ -17,19 +17,19 @@ public interface TeamMemberRepository extends JpaRepository<TeamMember, Long> {
     /**
      * 팀별 멤버 목록 조회
      */
-    @Query("SELECT m FROM TeamMember m WHERE m.teamIdx = :teamIdx ORDER BY m.joinDate")
+    @Query("SELECT m FROM TeamMember m WHERE m.teamIdx = :teamIdx ORDER BY m.joinAt")
     List<TeamMember> findByTeamIdx(Long teamIdx);
 
     /**
      * 팀별 활성 멤버 목록 조회
      */
-    @Query("SELECT m FROM TeamMember m WHERE m.teamIdx = :teamIdx AND m.isActive = 'Y' ORDER BY m.joinDate")
+    @Query("SELECT m FROM TeamMember m WHERE m.teamIdx = :teamIdx AND m.isActive = 'Y' ORDER BY m.joinAt")
     List<TeamMember> findActiveByTeamIdx(Long teamIdx);
 
     /**
      * 사용자별 참여 팀 조회
      */
-    @Query("SELECT m FROM TeamMember m WHERE m.memberIdx = :memberIdx ORDER BY m.joinDate DESC")
+    @Query("SELECT m FROM TeamMember m WHERE m.memberIdx = :memberIdx ORDER BY m.joinAt DESC")
     List<TeamMember> findByMemberIdx(Long memberIdx);
 
     /**
