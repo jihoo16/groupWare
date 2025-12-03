@@ -284,6 +284,15 @@ document.addEventListener('DOMContentLoaded', function() {
 
     // 카드 이벤트 리스너 부착
     function attachCardEventListeners() {
+        // 카드 클릭 시 상세보기
+        document.querySelectorAll('.team-card').forEach(card => {
+            card.addEventListener('click', function(e) {
+                const teamIdx = parseInt(this.getAttribute('data-team-idx'));
+                showTeamDetail(teamIdx);
+            });
+        });
+
+        // 상세보기 버튼 클릭 (카드 클릭과 동일하게 동작)
         document.querySelectorAll('.view-detail-btn').forEach(btn => {
             btn.addEventListener('click', function(e) {
                 e.stopPropagation();
@@ -292,6 +301,7 @@ document.addEventListener('DOMContentLoaded', function() {
             });
         });
 
+        // 수정 버튼은 이벤트 전파 중지
         document.querySelectorAll('.edit-btn').forEach(btn => {
             btn.addEventListener('click', function(e) {
                 e.stopPropagation();
@@ -300,6 +310,7 @@ document.addEventListener('DOMContentLoaded', function() {
             });
         });
 
+        // 삭제 버튼은 이벤트 전파 중지
         document.querySelectorAll('.delete-btn').forEach(btn => {
             btn.addEventListener('click', function(e) {
                 e.stopPropagation();

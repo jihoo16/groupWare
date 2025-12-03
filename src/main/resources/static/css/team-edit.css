@@ -1,14 +1,26 @@
 /* 팀 수정 페이지 스타일 */
 
+/* Main Content Override */
+.main-content {
+    display: flex;
+    flex-direction: column;
+}
+
 /* 로딩/에러 상태 */
 .loading-state,
 .error-state {
     background: white;
     margin: 24px;
+    margin-bottom: 0;
     border-radius: 12px;
     box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
     padding: 60px 20px;
     text-align: center;
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
 }
 
 .loading-spinner i {
@@ -37,6 +49,8 @@
     border-radius: 12px;
     box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
     padding: 32px;
+    flex: 1;
+    overflow-y: auto;
 }
 
 /* 폼 섹션 */
@@ -46,7 +60,7 @@
     border-bottom: 1px solid #e9ecef;
 }
 
-.form-section:last-child {
+.form-section:last-of-type {
     margin-bottom: 0;
     padding-bottom: 0;
     border-bottom: none;
@@ -146,12 +160,38 @@ select.form-control {
     border: 1px solid #e9ecef;
     border-radius: 8px;
     overflow: hidden;
+    max-height: 400px;
+    overflow-y: auto;
+}
+
+.team-table-container::-webkit-scrollbar {
+    width: 8px;
+}
+
+.team-table-container::-webkit-scrollbar-track {
+    background: #f0f0f0;
+}
+
+.team-table-container::-webkit-scrollbar-thumb {
+    background: #ccc;
+    border-radius: 4px;
+}
+
+.team-table-container::-webkit-scrollbar-thumb:hover {
+    background: #999;
 }
 
 .team-table {
     width: 100%;
     border-collapse: collapse;
     background: white;
+}
+
+.team-table thead {
+    position: sticky;
+    top: 0;
+    background: #f8f9fa;
+    z-index: 10;
 }
 
 .team-table thead tr {
@@ -272,15 +312,42 @@ select.form-control {
     font-size: 16px;
 }
 
-/* 폼 액션 버튼 */
-.form-actions {
-    display: flex;
-    justify-content: space-between;
+/* 버튼 스타일 */
+.btn {
+    padding: 12px 24px;
+    border: none;
+    border-radius: 8px;
+    font-size: 14px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    display: inline-flex;
     align-items: center;
-    gap: 12px;
-    padding-top: 24px;
-    border-top: 1px solid #e9ecef;
-    margin-top: 32px;
+    gap: 8px;
+}
+
+.btn:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+}
+
+.btn-primary {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+}
+
+.btn-primary:hover:not(:disabled) {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 20px rgba(102, 126, 234, 0.4);
+}
+
+.btn-secondary {
+    background: #e0e0e0;
+    color: #555;
+}
+
+.btn-secondary:hover:not(:disabled) {
+    background: #d0d0d0;
 }
 
 .btn-danger {
@@ -288,9 +355,30 @@ select.form-control {
     color: white;
 }
 
-.btn-danger:hover {
+.btn-danger:hover:not(:disabled) {
     background: #c82333;
     box-shadow: 0 4px 12px rgba(220, 53, 69, 0.3);
+}
+
+.btn-sm {
+    padding: 8px 16px;
+    font-size: 13px;
+}
+
+/* 폼 액션 버튼 */
+.form-actions {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 12px;
+    padding: 16px 32px;
+    background: white;
+    border-top: 2px solid #e9ecef;
+    position: sticky;
+    bottom: 0;
+    box-shadow: 0 -2px 10px rgba(0, 0, 0, 0.05);
+    z-index: 100;
+    border-radius: 0 0 12px 12px;
 }
 
 /* 팀원 선택 모달 */
@@ -691,6 +779,182 @@ select.form-control {
     color: #856404;
     font-size: 13px;
     margin-top: 12px;
+}
+
+/* Color Picker */
+.color-label-hint {
+    font-size: 11px;
+    color: #6c757d;
+    font-weight: 400;
+    margin-left: 8px;
+}
+
+.color-picker-wrapper {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+}
+
+.color-options {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(50px, 1fr));
+    gap: 12px;
+    padding: 16px;
+    background: #f8f9fa;
+    border-radius: 8px;
+    border: 1px solid #e9ecef;
+}
+
+.color-option {
+    width: 50px;
+    height: 50px;
+    border-radius: 8px;
+    cursor: pointer;
+    border: 3px solid transparent;
+    transition: all 0.2s ease;
+    position: relative;
+}
+
+.color-option:hover {
+    transform: scale(1.1);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+}
+
+.color-option.selected {
+    border-color: #4361ee;
+    box-shadow: 0 0 0 2px white, 0 0 0 4px #4361ee;
+    transform: scale(1.05);
+}
+
+.color-option.selected::after {
+    content: '\f00c';
+    font-family: 'Font Awesome 5 Free';
+    font-weight: 900;
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    color: #4361ee;
+    font-size: 18px;
+    text-shadow: 0 0 3px white, 0 0 3px white, 0 0 3px white;
+}
+
+.color-preview {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 12px 16px;
+    background: white;
+    border: 1px solid #e9ecef;
+    border-radius: 8px;
+}
+
+.color-preview-label {
+    font-size: 14px;
+    font-weight: 600;
+    color: #495057;
+}
+
+.color-preview-box {
+    width: 32px;
+    height: 32px;
+    border-radius: 6px;
+    border: 2px solid #dee2e6;
+}
+
+.color-preview-name {
+    font-size: 14px;
+    color: #1a1a1a;
+    font-weight: 500;
+}
+
+/* Team Leader Searchable Dropdown */
+.team-leader-wrapper {
+    position: relative;
+    width: 100%;
+}
+
+.team-leader-wrapper #teamLeaderSearch {
+    width: 100%;
+}
+
+.team-leader-dropdown {
+    position: absolute;
+    top: 100%;
+    left: 0;
+    right: 0;
+    max-height: 300px;
+    overflow-y: auto;
+    background: white;
+    border: 2px solid #667eea;
+    border-radius: 8px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+    z-index: 100;
+    display: none;
+    margin-top: 4px;
+}
+
+.team-leader-dropdown.active {
+    display: block;
+}
+
+.team-leader-item {
+    padding: 12px 16px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    border-bottom: 1px solid #f1f3f5;
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+
+.team-leader-item:last-child {
+    border-bottom: none;
+}
+
+.team-leader-item:hover {
+    background: #f8f9fa;
+}
+
+.team-leader-item.selected {
+    background: #e8eaf6;
+    border-left: 3px solid #667eea;
+}
+
+.team-leader-item-name {
+    font-size: 14px;
+    font-weight: 600;
+    color: #333;
+}
+
+.team-leader-item-info {
+    font-size: 12px;
+    color: #6c757d;
+}
+
+.team-leader-dropdown-empty {
+    padding: 20px;
+    text-align: center;
+    color: #adb5bd;
+    font-size: 14px;
+}
+
+.team-leader-dropdown::-webkit-scrollbar {
+    width: 8px;
+}
+
+.team-leader-dropdown::-webkit-scrollbar-track {
+    background: #f0f0f0;
+    border-radius: 4px;
+}
+
+.team-leader-dropdown::-webkit-scrollbar-thumb {
+    background: #ccc;
+    border-radius: 4px;
+}
+
+.team-leader-dropdown::-webkit-scrollbar-thumb:hover {
+    background: #999;
 }
 
 /* 반응형 */
