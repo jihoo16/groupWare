@@ -222,6 +222,8 @@ document.addEventListener('DOMContentLoaded', function() {
                 document.getElementById('endDate').value = project.endDate || '';
                 document.getElementById('receiptUrl').value = project.receiptUrl || '';
                 document.getElementById('projectDescription').value = project.description || '';
+                document.getElementById('activityBudget').value = project.activityBudget || 0;
+                document.getElementById('equipmentBudget').value = project.equipmentBudget || 0;
 
                 // 팀원 목록 로드
                 if (project.projectMembers && project.projectMembers.length > 0) {
@@ -298,20 +300,20 @@ document.addEventListener('DOMContentLoaded', function() {
 
         expenseSettings.forEach((setting, index) => {
             console.log(`[${index}] 처리 중:`, setting);
-            const positionName = setting.positionName;
+            const positionCode = setting.positionCode;
 
-            if (!groupedByPosition[positionName]) {
-                groupedByPosition[positionName] = {
+            if (!groupedByPosition[positionCode]) {
+                groupedByPosition[positionCode] = {
                     positionCode: setting.positionCode,
                     amounts: [0, 0, 0, 0] // [출장비, 중식비, 회의비, 야근석식대]
                 };
             }
 
             const itemIndex = expenseItemIndexMap[setting.expenseItemName];
-            console.log(`  직급: ${positionName}, 항목: ${setting.expenseItemName}, 인덱스: ${itemIndex}, 금액: ${setting.amount}`);
+            console.log(`  직급코드: ${positionCode}, 항목: ${setting.expenseItemName}, 인덱스: ${itemIndex}, 금액: ${setting.amount}`);
 
             if (itemIndex !== undefined) {
-                groupedByPosition[positionName].amounts[itemIndex] = setting.amount || 0;
+                groupedByPosition[positionCode].amounts[itemIndex] = setting.amount || 0;
             } else {
                 console.warn(`  알 수 없는 경비 항목: ${setting.expenseItemName}`);
             }
@@ -320,13 +322,13 @@ document.addEventListener('DOMContentLoaded', function() {
         console.log('그룹화된 데이터:', groupedByPosition);
 
         // 각 직급 행에 데이터 설정
-        Object.keys(groupedByPosition).forEach(positionName => {
-            console.log(`직급 "${positionName}" 행 찾기...`);
-            const row = document.querySelector(`tr[data-position="${positionName}"]`);
+        Object.keys(groupedByPosition).forEach(positionCode => {
+            console.log(`직급코드 "${positionCode}" 행 찾기...`);
+            const row = document.querySelector(`tr[data-position-code="${positionCode}"]`);
 
             if (row) {
                 console.log('  → 행 찾음!');
-                const data = groupedByPosition[positionName];
+                const data = groupedByPosition[positionCode];
                 const inputs = row.querySelectorAll('.expense-input-sm');
                 console.log('  → input 개수:', inputs.length);
 
@@ -343,7 +345,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 // 직급 코드도 data 속성에 저장 (나중에 전송 시 사용)
                 row.setAttribute('data-position-code', data.positionCode);
             } else {
-                console.warn(`  → 행을 찾을 수 없음! (data-position="${positionName}")`);
+                console.warn(`  → 행을 찾을 수 없음! (data-position-code="${positionCode}")`);
             }
         });
 
@@ -588,6 +590,7 @@ document.addEventListener('DOMContentLoaded', function() {
     // 프로젝트 역할 옵션
     const PROJECT_ROLES = [
         { value: '', label: '선택하세요' },
+        { value: 'PI', label: '연구책임자' },
         { value: 'PRACTITIONER', label: '실무자' },
         { value: 'RESEARCHER', label: '연구원' }
     ];
@@ -950,7 +953,6 @@ document.addEventListener('DOMContentLoaded', function() {
 
             expenseRows.forEach(row => {
                 const positionCode = row.getAttribute('data-position-code');
-                const positionName = row.getAttribute('data-position');
                 const inputs = row.querySelectorAll('.expense-input-sm');
 
                 if (inputs.length >= 4) {
@@ -959,7 +961,6 @@ document.addEventListener('DOMContentLoaded', function() {
                         const amount = parseInt(inputs[index].value) || 0;
                         projectExpenseSettings.push({
                             positionCode: positionCode || null,
-                            positionName: positionName,
                             expenseItemName: item.name,
                             expenseItemNameEn: item.nameEn,
                             amount: amount
@@ -979,6 +980,8 @@ document.addEventListener('DOMContentLoaded', function() {
                 projectStatus: document.getElementById('projectStatus').value,
                 description: document.getElementById('projectDescription').value,
                 receiptUrl: document.getElementById('receiptUrl').value || null,
+                activityBudget: parseFloat(document.getElementById('activityBudget').value) || 0,
+                equipmentBudget: parseFloat(document.getElementById('equipmentBudget').value) || 0,
                 projectCards: projectCards,
                 projectRelations: projectRelations,
                 projectMembers: projectMembers,
@@ -1394,7 +1397,7 @@ document.addEventListener('DOMContentLoaded', function() {
                     </div>
                     <div class="related-project-details">
                         <span><span class="status-badge ${statusClass}">${statusLabel}</span></span>
-                        <span><i class="fas fa-user"></i> PM: ${project.pm || '-'}</span>
+                        <span><i class="fas fa-user"></i> 연구 책임자: ${project.pm || '-'}</span>
                         <span><i class="fas fa-calendar"></i> ${project.period || '-'}</span>
                         <span><i class="fas fa-link"></i>연계 타입: ${project.relationType || '-'}</span>
                         <span><i class="fas fa-comment-alt"></i>설명: ${project.description || '-'}</span>

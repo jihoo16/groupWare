@@ -286,7 +286,6 @@ public class ProjectMapper {
 
         return ProjectExpenseSettingDTO.builder()
                 .positionCode(setting.getPositionCode())
-                .positionName(setting.getPositionName())
                 .expenseItemName(setting.getExpenseItemName())
                 .expenseItemNameEn(setting.getExpenseItemNameEn())
                 .amount(setting.getAmount())

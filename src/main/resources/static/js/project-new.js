@@ -337,7 +337,8 @@ document.addEventListener('DOMContentLoaded', function() {
 
     // 프로젝트 역할 옵션
     const PROJECT_ROLES = [
-        { value: '', label: '선택하세요' 
+        { value: '', label: '선택하세요' },
+        { value: 'PI', label: '연구책임자' },
         { value: 'PRACTITIONER', label: '실무자' },
         { value: 'RESEARCHER', label: '연구원' }
     ];
@@ -567,6 +568,8 @@ document.addEventListener('DOMContentLoaded', function() {
                 endDate: document.getElementById('endDate').value,
                 projectDescription: document.getElementById('projectDescription').value,
                 receiptUrl: document.getElementById('receiptUrl').value,
+                activityBudget: document.getElementById('activityBudget').value || '0',
+                equipmentBudget: document.getElementById('equipmentBudget').value || '0',
                 teamMembers: selectedMemberList,
                 cards: cardListData
             };
@@ -587,7 +590,6 @@ document.addEventListener('DOMContentLoaded', function() {
 
             expenseRows.forEach(row => {
                 const positionCode = row.getAttribute('data-position-code');
-                const positionName = row.getAttribute('data-position');
                 const inputs = row.querySelectorAll('.expense-input-sm');
 
                 if (inputs.length >= 4) {
@@ -596,7 +598,6 @@ document.addEventListener('DOMContentLoaded', function() {
                         const amount = parseInt(inputs[index].value) || 0;
                         expenseSettings.push({
                             positionCode: positionCode || null,
-                            positionName: positionName,
                             expenseItemName: item.name,
                             expenseItemNameEn: item.nameEn,
                             amount: amount
@@ -1137,7 +1138,7 @@ document.addEventListener('DOMContentLoaded', function() {
                     </div>
                     <div class="related-project-details">
                         <span><i class="fas fa-circle"></i> ${project.status}</span>
-                        <span><i class="fas fa-user"></i> PM: ${project.pm}</span>
+                        <span><i class="fas fa-user"></i> 연구 책임자: ${project.pm}</span>
                         <span><i class="fas fa-calendar"></i> ${project.period}</span>
                          <span><i class="fas fa-link"></i>연계 타입: ${project.relationType || '-'}</span>
                         <span><i class="fas fa-comment-alt"></i>설명: ${project.description || '-'}</span>
@@ -1241,10 +1242,10 @@ document.addEventListener('DOMContentLoaded', function() {
                     const groupedByPosition = {};
 
                     policies.forEach(policy => {
-                        const positionName = policy.positionName || policy.positionCode;
+                        const positionCode = policy.positionCode;
 
-                        if (!groupedByPosition[positionName]) {
-                            groupedByPosition[positionName] = {
+                        if (!groupedByPosition[positionCode]) {
+                            groupedByPosition[positionCode] = {
                                 positionCode: policy.positionCode,
                                 amounts: [0, 0, 0, 0] // [출장비, 중식비, 회의비, 야근석식대]
                             };
@@ -1252,16 +1253,16 @@ document.addEventListener('DOMContentLoaded', function() {
 
                         const itemIndex = expenseItemIndexMap[policy.expenseItemName];
                         if (itemIndex !== undefined) {
-                            groupedByPosition[positionName].amounts[itemIndex] = policy.amount || 0;
+                            groupedByPosition[positionCode].amounts[itemIndex] = policy.amount || 0;
                         }
                     });
 
                     // 각 직급 행에 데이터 설정
-                    Object.keys(groupedByPosition).forEach(positionName => {
-                        const row = document.querySelector(`tr[data-position="${positionName}"]`);
+                    Object.keys(groupedByPosition).forEach(positionCode => {
+                        const row = document.querySelector(`tr[data-position-code="${positionCode}"]`);
 
                         if (row) {
-                            const data = groupedByPosition[positionName];
+                            const data = groupedByPosition[positionCode];
                             const inputs = row.querySelectorAll('.expense-input-sm');
 
                             if (inputs.length >= 4) {

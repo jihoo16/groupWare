@@ -35,9 +35,6 @@ public class ProjectExpenseSetting extends BaseEntity {
     @Column(name = "position_code", nullable = false, length = 20)
     private String positionCode;
 
-    @Column(name = "position_name", nullable = false, length = 50)
-    private String positionName;
-
     @Column(name = "expense_item_name", nullable = false, length = 100)
     private String expenseItemName;
 

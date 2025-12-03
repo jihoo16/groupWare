@@ -5,6 +5,7 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
+import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.List;
@@ -69,6 +70,16 @@ public class ProjectDTO {
      * 증빙 URL
      */
     private String receiptUrl;
+
+    /**
+     * 활동비 예산
+     */
+    private BigDecimal activityBudget;
+
+    /**
+     * 장비비 예산
+     */
+    private BigDecimal equipmentBudget;
 
     /**
      * 팀원 수 (ProjectMember 개수)
