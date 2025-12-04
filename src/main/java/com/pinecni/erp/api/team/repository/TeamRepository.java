@@ -32,12 +32,6 @@ public interface TeamRepository extends JpaRepository<Team, Long> {
     List<Team> findByTeamLeaderIdx(Long teamLeaderIdx);
 
     /**
-     * 팀 유형별 팀 목록 조회
-     */
-    @Query("SELECT t FROM Team t WHERE t.teamType = :teamType AND t.isActive = 'Y' ORDER BY t.createdAt DESC")
-    List<Team> findByTeamType(String teamType);
-
-    /**
      * 특정 사용자가 속한 팀 목록 조회 (멤버로 참여 중인 팀)
      */
     @Query("SELECT DISTINCT t FROM Team t JOIN t.members m WHERE m.memberIdx = :memberIdx AND m.isActive = 'Y' ORDER BY t.createdAt DESC")

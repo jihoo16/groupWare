@@ -11,11 +11,23 @@ document.addEventListener('DOMContentLoaded', function() {
     let notificationEnabled = false;
     let notificationTime = 10;
 
+    // 탭 및 팀 관련 변수
+    let currentEventTab = 'personal'; // 'personal' or 'team'
+    let selectedTeam = null; // { idx, teamName, teamColor }
+    let teamsList = []; // 팀 목록
+
     // DOM 요소
     const scheduleForm = document.getElementById('newScheduleForm');
     const backBtn = document.getElementById('backBtn');
     const cancelBtn = document.getElementById('cancelBtn');
     const saveBtn = document.getElementById('saveScheduleBtn');
+
+    // 탭 관련 요소
+    const eventTypeTabs = document.querySelectorAll('.event-type-tab');
+    const teamSelect = document.getElementById('teamSelect');
+    const teamColorPreview = document.querySelector('.team-color-preview');
+    const teamColorBox = document.querySelector('.team-color-box');
+    const teamNamePreview = document.querySelector('.team-name-preview');
 
     // 종일 체크박스 관련 요소
     const isAllDayCheckbox = document.getElementById('isAllDayCheckbox');
@@ -24,7 +36,7 @@ document.addEventListener('DOMContentLoaded', function() {
     const scheduleEndTime = document.getElementById('scheduleEndTime');
 
     // 알림 관련 요소
-    const notificationToggleBtn = document.getElementById('notificationToggleBtn');
+    const notificationToggleCheckbox = document.getElementById('notificationToggleCheckbox');
     const notificationTimeButtons = document.getElementById('notificationTimeButtons');
     const notificationTimeBtns = document.querySelectorAll('.notification-time-btn');
 
@@ -73,6 +85,66 @@ document.addEventListener('DOMContentLoaded', function() {
             console.error('사용자 데이터 로드 중 오류:', error);
             showEmployeeLoadError();
             return false;
+        }
+    }
+
+    // 팀 목록 로드
+    async function loadTeamsList() {
+        try {
+            const response = await fetch('/api/teams');
+            if (!response.ok) {
+                throw new Error('팀 목록 로드 실패');
+            }
+            const teams = await response.json();
+            teamsList = teams;
+            console.log('Loaded teams from API:', teams);
+
+            // 팀 선택 드롭다운 렌더링
+            renderTeamSelect();
+            return true;
+        } catch (error) {
+            console.error('팀 목록 로드 중 오류:', error);
+            teamSelect.innerHTML = '<option value="">팀 목록을 불러올 수 없습니다</option>';
+            return false;
+        }
+    }
+
+    // 팀 선택 드롭다운 렌더링
+    function renderTeamSelect() {
+        if (!teamSelect) return;
+
+        teamSelect.innerHTML = '<option value="">팀을 선택하세요</option>';
+
+        teamsList.forEach(team => {
+            const option = document.createElement('option');
+            option.value = team.idx;
+            option.textContent = team.teamName;
+            option.dataset.teamColor = team.teamColor;
+            teamSelect.appendChild(option);
+        });
+    }
+
+    // 탭 전환
+    function switchEventTab(tabType) {
+        currentEventTab = tabType;
+
+        // 탭 버튼 활성화 상태 변경
+        eventTypeTabs.forEach(tab => {
+            if (tab.dataset.tab === tabType) {
+                tab.classList.add('active');
+            } else {
+                tab.classList.remove('active');
+            }
+        });
+
+        // 필드 표시/숨김
+        const teamFields = document.querySelectorAll('.team-only');
+
+        if (tabType === 'personal') {
+            teamFields.forEach(field => field.style.display = 'none');
+            selectedTeam = null;
+        } else if (tabType === 'team') {
+            teamFields.forEach(field => field.style.display = 'block');
         }
     }
 
@@ -241,11 +313,11 @@ document.addEventListener('DOMContentLoaded', function() {
         scheduleEndTime.disabled = !enabled;
 
         if (enabled) {
-            timeInputRow.style.opacity = '1';
+            timeInputRow.style.display = '';
             scheduleStartTime.style.cursor = 'text';
             scheduleEndTime.style.cursor = 'text';
         } else {
-            timeInputRow.style.opacity = '0.5';
+            timeInputRow.style.display = 'none';
             scheduleStartTime.style.cursor = 'not-allowed';
             scheduleEndTime.style.cursor = 'not-allowed';
         }
@@ -268,28 +340,16 @@ document.addEventListener('DOMContentLoaded', function() {
     // 페이지 로드 시 초기화
     initializePage();
 
-    // 알림 토글 버튼 이벤트
-    notificationToggleBtn.addEventListener('click', function() {
-        notificationEnabled = !notificationEnabled;
-        updateNotificationButton();
-    });
-
-    // 알림 버튼 상태 업데이트
-    function updateNotificationButton() {
-        const icon = notificationToggleBtn.querySelector('i');
-        const statusText = notificationToggleBtn.querySelector('.notification-status');
-
-        if (notificationEnabled) {
-            notificationToggleBtn.classList.add('active');
-            icon.className = 'fas fa-bell';
-            statusText.textContent = '알림 켜짐';
-            notificationTimeButtons.style.display = 'flex';
-        } else {
-            notificationToggleBtn.classList.remove('active');
-            icon.className = 'far fa-bell-slash';
-            statusText.textContent = '알림 꺼짐';
-            notificationTimeButtons.style.display = 'none';
-        }
+    // 알림 토글 체크박스 이벤트
+    if (notificationToggleCheckbox) {
+        notificationToggleCheckbox.addEventListener('change', function() {
+            notificationEnabled = this.checked;
+            if (notificationEnabled) {
+                notificationTimeButtons.style.display = 'flex';
+            } else {
+                notificationTimeButtons.style.display = 'none';
+            }
+        });
     }
 
     // 알림 시간 버튼 이벤트
@@ -761,7 +821,6 @@ document.addEventListener('DOMContentLoaded', function() {
         }
 
         const title = document.getElementById('scheduleTitle').value.trim();
-        const type = document.getElementById('scheduleType').value;
         const startDate = document.getElementById('scheduleStartDate').value;
         const endDate = document.getElementById('scheduleEndDate').value;
         const isAllDay = isAllDayCheckbox.checked;
@@ -769,6 +828,19 @@ document.addEventListener('DOMContentLoaded', function() {
         const endTime = isAllDay ? null : (document.getElementById('scheduleEndTime').value || null);
         const location = document.getElementById('scheduleLocation').value.trim() || null;
         const description = document.getElementById('scheduleDescription').value.trim() || null;
+
+        // 탭별 유효성 검사 및 데이터 수집
+        const type = document.getElementById('scheduleType').value;
+        let teamIdx = null;
+
+        if (currentEventTab === 'team') {
+            const selectedTeamIdx = teamSelect.value;
+            if (!selectedTeamIdx) {
+                alert('팀을 선택하세요.');
+                return;
+            }
+            teamIdx = parseInt(selectedTeamIdx);
+        }
 
         // 유효성 검사
         if (!title) {
@@ -794,6 +866,7 @@ document.addEventListener('DOMContentLoaded', function() {
             location: location,
             creatorIdx: currentUserIdx,
             creatorName: currentUser,
+            teamIdx: teamIdx, // 팀 일정인 경우 팀 ID, 개인 일정인 경우 null
             notificationYn: notificationEnabled ? 'Y' : 'N',
             notificationMinutes: notificationTime,
             participants: selectedParticipants.map(participant => ({
@@ -833,6 +906,76 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     });
 
-    // 초기 알림 버튼 상태 설정
-    updateNotificationButton();
+    // 탭 클릭 이벤트
+    eventTypeTabs.forEach(tab => {
+        tab.addEventListener('click', function() {
+            const tabType = this.dataset.tab;
+            switchEventTab(tabType);
+        });
+    });
+
+    // 팀 선택 이벤트
+    if (teamSelect) {
+        teamSelect.addEventListener('change', async function() {
+            const selectedIdx = this.value;
+            if (!selectedIdx) {
+                selectedTeam = null;
+                teamColorPreview.style.display = 'none';
+                return;
+            }
+
+            const team = teamsList.find(t => t.idx === parseInt(selectedIdx));
+            if (team) {
+                selectedTeam = team;
+                teamColorBox.style.backgroundColor = team.teamColor;
+                teamNamePreview.textContent = team.teamName;
+                teamColorPreview.style.display = 'flex';
+
+                // 팀 멤버 자동 추가
+                await loadTeamMembersAsParticipants(parseInt(selectedIdx));
+            }
+        });
+    }
+
+    // 팀 멤버를 참석자로 추가
+    async function loadTeamMembersAsParticipants(teamIdx) {
+        try {
+            const response = await fetch(`/api/teams/${teamIdx}`);
+            if (!response.ok) {
+                throw new Error('팀 정보 로드 실패');
+            }
+            const teamData = await response.json();
+
+            if (teamData.members && teamData.members.length > 0) {
+                // 기존 참석자 목록 초기화 (중복 방지)
+                selectedParticipants = [];
+
+                // 팀 멤버들을 참석자 형식으로 변환하여 추가
+                teamData.members.forEach(member => {
+                    selectedParticipants.push({
+                        id: member.memberIdx,
+                        name: member.memberName,
+                        department: member.memberDeptName || member.memberDept || '미지정',
+                        rank: member.memberPositionName || member.memberPosition || '미지정'
+                    });
+                });
+
+                // 참석자 목록 UI 업데이트
+                renderParticipantsList();
+
+                console.log('팀 멤버 자동 추가:', selectedParticipants);
+            }
+        } catch (error) {
+            console.error('팀 멤버 로드 중 오류:', error);
+        }
+    }
+
+    // 초기화: 팀 목록 로드
+    loadTeamsList();
+
+    // 알림 초기 상태 설정 (기본: 꺼짐)
+    if (notificationToggleCheckbox) {
+        notificationToggleCheckbox.checked = false;
+        notificationTimeButtons.style.display = 'none';
+    }
 });

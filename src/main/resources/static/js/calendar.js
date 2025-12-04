@@ -25,6 +25,10 @@ document.addEventListener('DOMContentLoaded', function() {
     // 현재 사용자 정보 (실제로는 세션에서 가져와야 함)
     const currentUserIdx = 1; // TODO: 실제 로그인 사용자 IDX로 변경
 
+    // 탭 및 팀 관련 변수
+    let currentQuickEventTab = 'personal'; // 'personal' or 'team'
+    let quickTeamsList = []; // 팀 목록
+
     // 일정 데이터 로드 함수
     async function loadSchedules(startDate, endDate) {
         try {
@@ -826,30 +830,19 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     }
 
-    // 알림 토글 버튼 이벤트
-    const notificationToggleBtn = document.getElementById('notificationToggleBtn');
+    // 알림 토글 체크박스 이벤트
+    const notificationToggleCheckbox = document.getElementById('notificationToggleCheckbox');
     const notificationTimeButtons = document.getElementById('notificationTimeButtons');
 
-    notificationToggleBtn.addEventListener('click', function() {
-        notificationEnabled = !notificationEnabled;
-        updateNotificationButton();
-    });
-
-    function updateNotificationButton() {
-        const icon = notificationToggleBtn.querySelector('i');
-        const statusText = notificationToggleBtn.querySelector('.notification-status');
-
-        if (notificationEnabled) {
-            notificationToggleBtn.classList.add('active');
-            icon.className = 'fas fa-bell';
-            statusText.textContent = '알림 켜짐';
-            notificationTimeButtons.style.display = 'flex';
-        } else {
-            notificationToggleBtn.classList.remove('active');
-            icon.className = 'far fa-bell-slash';
-            statusText.textContent = '알림 꺼짐';
-            notificationTimeButtons.style.display = 'none';
-        }
+    if (notificationToggleCheckbox) {
+        notificationToggleCheckbox.addEventListener('change', function() {
+            notificationEnabled = this.checked;
+            if (notificationEnabled) {
+                notificationTimeButtons.style.display = 'flex';
+            } else {
+                notificationTimeButtons.style.display = 'none';
+            }
+        });
     }
 
     // 알림 시간 버튼 이벤트
@@ -994,10 +987,13 @@ document.addEventListener('DOMContentLoaded', function() {
             toggleAddTimeInputs(true);
         }
 
-        // 알림 버튼 초기화 (기본: 꺼짐)
+        // 알림 초기화 (기본: 꺼짐)
         notificationEnabled = false;
         notificationTime = 10;
-        updateNotificationButton();
+        if (notificationToggleCheckbox) {
+            notificationToggleCheckbox.checked = false;
+            notificationTimeButtons.style.display = 'none';
+        }
 
         // 알림 시간 버튼 초기화
         notificationTimeBtns.forEach(b => b.classList.remove('active'));
@@ -1030,10 +1026,13 @@ document.addEventListener('DOMContentLoaded', function() {
             toggleAddTimeInputs(true);
         }
 
-        // 알림 버튼 초기화 (기본: 꺼짐)
+        // 알림 초기화 (기본: 꺼짐)
         notificationEnabled = false;
         notificationTime = 10;
-        updateNotificationButton();
+        if (notificationToggleCheckbox) {
+            notificationToggleCheckbox.checked = false;
+            notificationTimeButtons.style.display = 'none';
+        }
 
         // 알림 시간 버튼 초기화
         notificationTimeBtns.forEach(b => b.classList.remove('active'));
@@ -1108,7 +1107,6 @@ document.addEventListener('DOMContentLoaded', function() {
     // 새 일정 추가 함수
     async function addNewSchedule() {
         const title = document.getElementById('scheduleTitle').value;
-        const type = document.getElementById('scheduleType').value;
         const startDate = document.getElementById('scheduleStartDate').value;
         const endDate = document.getElementById('scheduleEndDate').value;
         const isAllDay = isAllDayCheckbox ? isAllDayCheckbox.checked : false;
@@ -1116,6 +1114,19 @@ document.addEventListener('DOMContentLoaded', function() {
         const endTime = isAllDay ? null : (document.getElementById('scheduleEndTime').value || null);
         const location = document.getElementById('scheduleLocation').value || null;
         const description = document.getElementById('scheduleDescription').value || null;
+
+        // 탭별 유효성 검사 및 데이터 수집
+        const type = document.getElementById('scheduleType').value;
+        let teamIdx = null;
+
+        if (currentQuickEventTab === 'team') {
+            const selectedTeamIdx = document.getElementById('quickTeamSelect').value;
+            if (!selectedTeamIdx) {
+                showAlert('팀을 선택하세요.', 'warning');
+                return;
+            }
+            teamIdx = parseInt(selectedTeamIdx);
+        }
 
         // 날짜 유효성 검사
         if (new Date(endDate) < new Date(startDate)) {
@@ -1136,6 +1147,7 @@ document.addEventListener('DOMContentLoaded', function() {
             location: location,
             creatorIdx: currentUserIdx,
             creatorName: currentUser,
+            teamIdx: teamIdx, // 팀 일정인 경우 팀 ID, 개인 일정인 경우 null
             notificationYn: notificationEnabled ? 'Y' : 'N',
             notificationMinutes: notificationTime,
             participants: selectedParticipants.map(name => ({
@@ -1274,8 +1286,11 @@ document.addEventListener('DOMContentLoaded', function() {
     // 날짜 셀 클릭 이벤트 연결 (한 번만 실행)
     attachDateCellClickEvents();
 
-    // 알림 버튼 초기 상태 설정
-    updateNotificationButton();
+    // 알림 초기 상태 설정 (기본: 꺼짐)
+    if (notificationToggleCheckbox) {
+        notificationToggleCheckbox.checked = false;
+        notificationTimeButtons.style.display = 'none';
+    }
 
     // 현재 페이지에 맞는 메뉴 활성화
     const currentPath = window.location.pathname;
@@ -2084,6 +2099,161 @@ document.addEventListener('DOMContentLoaded', function() {
             });
         });
     }
+
+    // 팀 목록 로드 (간략한 모달용)
+    async function loadQuickTeamsList() {
+        try {
+            const response = await fetch('/api/teams');
+            if (!response.ok) {
+                throw new Error('팀 목록 로드 실패');
+            }
+            const teams = await response.json();
+            quickTeamsList = teams;
+
+            // 팀 선택 드롭다운 렌더링
+            renderQuickTeamSelect();
+            return true;
+        } catch (error) {
+            console.error('팀 목록 로드 중 오류:', error);
+            const quickTeamSelect = document.getElementById('quickTeamSelect');
+            if (quickTeamSelect) {
+                quickTeamSelect.innerHTML = '<option value="">팀 목록을 불러올 수 없습니다</option>';
+            }
+            return false;
+        }
+    }
+
+    // 팀 선택 드롭다운 렌더링
+    function renderQuickTeamSelect() {
+        const quickTeamSelect = document.getElementById('quickTeamSelect');
+        if (!quickTeamSelect) return;
+
+        quickTeamSelect.innerHTML = '<option value="">팀을 선택하세요</option>';
+
+        quickTeamsList.forEach(team => {
+            const option = document.createElement('option');
+            option.value = team.idx;
+            option.textContent = team.teamName;
+            quickTeamSelect.appendChild(option);
+        });
+    }
+
+    // 간략한 탭 전환
+    function switchQuickEventTab(tabType) {
+        currentQuickEventTab = tabType;
+
+        // 탭 버튼 활성화 상태 변경
+        const quickTabs = document.querySelectorAll('.quick-tab');
+        quickTabs.forEach(tab => {
+            if (tab.dataset.tab === tabType) {
+                tab.classList.add('active');
+            } else {
+                tab.classList.remove('active');
+            }
+        });
+
+        // 필드 표시/숨김
+        const teamFields = document.querySelectorAll('.quick-team-only');
+
+        if (tabType === 'personal') {
+            teamFields.forEach(field => field.style.display = 'none');
+        } else if (tabType === 'team') {
+            teamFields.forEach(field => field.style.display = 'block');
+        }
+    }
+
+    // 간략한 탭 클릭 이벤트
+    document.querySelectorAll('.quick-tab').forEach(tab => {
+        tab.addEventListener('click', function() {
+            const tabType = this.dataset.tab;
+            switchQuickEventTab(tabType);
+        });
+    });
+
+    // 간략한 모달 - 팀 선택 이벤트
+    const quickTeamSelect = document.getElementById('quickTeamSelect');
+    if (quickTeamSelect) {
+        quickTeamSelect.addEventListener('change', async function() {
+            const selectedIdx = this.value;
+            if (!selectedIdx) {
+                return;
+            }
+
+            // 팀 멤버 자동 추가
+            await loadQuickTeamMembersAsParticipants(parseInt(selectedIdx));
+        });
+    }
+
+    // 간략한 모달 - 팀 멤버를 참석자로 추가
+    async function loadQuickTeamMembersAsParticipants(teamIdx) {
+        try {
+            const response = await fetch(`/api/teams/${teamIdx}`);
+            if (!response.ok) {
+                throw new Error('팀 정보 로드 실패');
+            }
+            const teamData = await response.json();
+
+            if (teamData.members && teamData.members.length > 0) {
+                // 기존 참석자 목록 초기화 (중복 방지)
+                selectedParticipants = [];
+
+                // 팀 멤버들의 이름만 추가
+                teamData.members.forEach(member => {
+                    if (member.memberName) {
+                        selectedParticipants.push(member.memberName);
+                    }
+                });
+
+                // 참석자 목록 UI 업데이트
+                renderParticipantsList();
+
+                // 세부설정 자동으로 펼치기 (참석자 확인을 위해)
+                const detailSettingsArea = document.getElementById('detailSettingsArea');
+                const toggleDetailSettingsBtn = document.getElementById('toggleDetailSettings');
+                if (detailSettingsArea && toggleDetailSettingsBtn && !detailSettingsArea.classList.contains('show')) {
+                    detailSettingsArea.style.display = 'block';
+                    setTimeout(() => {
+                        detailSettingsArea.classList.add('show');
+                    }, 10);
+                    toggleDetailSettingsBtn.classList.add('expanded');
+                    toggleDetailSettingsBtn.innerHTML = '<i class="fas fa-chevron-up"></i> 세부설정 접기';
+                }
+
+                console.log('팀 멤버 자동 추가:', selectedParticipants);
+            }
+        } catch (error) {
+            console.error('팀 멤버 로드 중 오류:', error);
+        }
+    }
+
+    // 세부설정 토글 버튼
+    const toggleDetailSettingsBtn = document.getElementById('toggleDetailSettings');
+    const detailSettingsArea = document.getElementById('detailSettingsArea');
+
+    if (toggleDetailSettingsBtn && detailSettingsArea) {
+        toggleDetailSettingsBtn.addEventListener('click', function() {
+            const isExpanded = detailSettingsArea.classList.contains('show');
+
+            if (isExpanded) {
+                // 접기
+                detailSettingsArea.classList.remove('show');
+                toggleDetailSettingsBtn.classList.remove('expanded');
+                toggleDetailSettingsBtn.innerHTML = '<i class="fas fa-chevron-down"></i> 세부설정';
+            } else {
+                // 펼치기
+                detailSettingsArea.style.display = 'block';
+                // 약간의 딜레이 후 애니메이션 적용
+                setTimeout(() => {
+                    detailSettingsArea.classList.add('show');
+                }, 10);
+                toggleDetailSettingsBtn.classList.add('expanded');
+                toggleDetailSettingsBtn.innerHTML = '<i class="fas fa-chevron-up"></i> 세부설정 접기';
+            }
+        });
+    }
+
+    // 초기화: 팀 목록 로드
+    loadQuickTeamsList();
 
     // 초기 렌더링
     renderCalendar();

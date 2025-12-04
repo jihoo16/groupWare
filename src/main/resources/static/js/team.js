@@ -198,7 +198,6 @@ document.addEventListener('DOMContentLoaded', function() {
                 <div class="team-card-header">
                     <div>
                         <h3 class="team-card-title">${team.teamName}</h3>
-                        <span class="team-type-badge ${team.teamType}">${getTeamTypeLabel(team.teamType)}</span>
                     </div>
                     <span class="status-badge ${team.isActive === 'Y' ? 'active' : 'inactive'}">
                         ${team.isActive === 'Y' ? '활성' : '비활성'}
@@ -260,7 +259,6 @@ document.addEventListener('DOMContentLoaded', function() {
                 <tr data-team-idx="${team.idx}">
                     <td>${index + 1}</td>
                     <td class="team-name-cell view-detail-btn" data-team-idx="${team.idx}">${team.teamName}</td>
-                    <td><span class="team-type-badge ${team.teamType}">${getTeamTypeLabel(team.teamType)}</span></td>
                     <td>${team.teamLeaderName || '미지정'}</td>
                     <td>${team.memberCount || 0}명</td>
                     <td>${formatDate(team.createdAt)}</td>
@@ -335,7 +333,6 @@ document.addEventListener('DOMContentLoaded', function() {
             // 모달에 데이터 채우기
             document.getElementById('modalTeamName').textContent = team.teamName;
             document.getElementById('detailTeamName').textContent = team.teamName;
-            document.getElementById('detailTeamType').textContent = getTeamTypeLabel(team.teamType);
             document.getElementById('detailTeamLeader').textContent = team.teamLeaderName || '미지정';
             document.getElementById('detailCreator').textContent = team.creatorName || '알 수 없음';
             document.getElementById('detailCreatedAt').textContent = formatDateTime(team.createdAt);
@@ -449,15 +446,6 @@ document.addEventListener('DOMContentLoaded', function() {
     }
 
     // 유틸리티 함수들
-    function getTeamTypeLabel(type) {
-        const labels = {
-            'custom': '일반',
-            'project': '프로젝트',
-            'temporary': '임시'
-        };
-        return labels[type] || type;
-    }
-
     function formatDate(dateString) {
         if (!dateString) return '-';
         const date = new Date(dateString);

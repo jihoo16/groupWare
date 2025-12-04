@@ -37,7 +37,6 @@ public class TeamMapper {
                 .idx(team.getIdx())
                 .teamName(team.getTeamName())
                 .teamDescription(team.getTeamDescription())
-                .teamType(team.getTeamType())
                 .createdUserIdx(team.getCreatedUserIdx())
                 .teamLeaderIdx(team.getTeamLeaderIdx())
                 .isActive(team.getIsActive())
@@ -118,7 +117,6 @@ public class TeamMapper {
         Team team = Team.builder()
                 .teamName(createDTO.getTeamName())
                 .teamDescription(createDTO.getTeamDescription())
-                .teamType(createDTO.getTeamType() != null ? createDTO.getTeamType() : "custom")
                 .teamLeaderIdx(createDTO.getTeamLeaderIdx())
                 .teamColor(createDTO.getTeamColor() != null ? createDTO.getTeamColor() : "#FFD1DC")
                 .isActive("Y")
@@ -152,9 +150,6 @@ public class TeamMapper {
         }
         if (updateDTO.getTeamDescription() != null) {
             team.setTeamDescription(updateDTO.getTeamDescription());
-        }
-        if (updateDTO.getTeamType() != null) {
-            team.setTeamType(updateDTO.getTeamType());
         }
         if (updateDTO.getTeamLeaderIdx() != null) {
             team.setTeamLeaderIdx(updateDTO.getTeamLeaderIdx());

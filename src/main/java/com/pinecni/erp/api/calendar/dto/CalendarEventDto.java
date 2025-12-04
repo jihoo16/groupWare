@@ -65,6 +65,14 @@ public class CalendarEventDto {
 
     private String status;
 
+    // 팀 관련 정보
+    private Long teamIdx;
+    private String teamName;
+    private String teamColor;
+
+    // 화면 표시용 색상 (팀 색상 우선, 없으면 일정 유형 기반)
+    private String displayColor;
+
     @Builder.Default
     private List<CalendarParticipantDto> participants = new ArrayList<>();
 }

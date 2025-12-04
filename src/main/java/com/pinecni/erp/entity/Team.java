@@ -14,8 +14,7 @@ import java.util.List;
         indexes = {
                 @Index(name = "idx_team_creator", columnList = "created_user_idx"),
                 @Index(name = "idx_team_leader", columnList = "team_leader_idx"),
-                @Index(name = "idx_team_active", columnList = "is_active"),
-                @Index(name = "idx_team_type", columnList = "team_type")
+                @Index(name = "idx_team_active", columnList = "is_active")
         })
 @Getter
 @Setter
@@ -35,9 +34,6 @@ public class Team extends BaseEntity {
 
     @Column(name = "team_description", columnDefinition = "TEXT")
     private String teamDescription;
-
-    @Column(name = "team_type", length = 20)
-    private String teamType = "custom"; // custom / project / temporary
 
     @Column(name = "team_leader_idx")
     private Long teamLeaderIdx;

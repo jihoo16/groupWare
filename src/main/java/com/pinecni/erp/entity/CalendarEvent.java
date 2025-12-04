@@ -62,17 +62,14 @@ public class CalendarEvent {
     @Column(name = "location", length = 200)
     private String location;
 
-    @Column(name = "creator_idx", nullable = false)
-    private Long creatorIdx;
-
-    @Column(name = "creator_name", nullable = false, length = 50)
-    private String creatorName;
-
     @Column(name = "approval_idx")
     private Long approvalIdx;
 
     @Column(name = "group_id", length = 100)
     private String groupId;
+
+    @Column(name = "team_idx")
+    private Long teamIdx;
 
     @Column(name = "notification_yn", length = 1)
     private String notificationYn = "N";
@@ -95,25 +92,29 @@ public class CalendarEvent {
     @Column(name = "created_at")
     private LocalDateTime createdAt;
 
-    @Column(name = "created_by")
-    private Long createdBy;
+    @Column(name = "created_user_idx")
+    private Long createdUserIdx;
 
     @Column(name = "updated_at")
     private LocalDateTime updatedAt;
 
-    @Column(name = "updated_by")
-    private Long updatedBy;
+    @Column(name = "updated_user_idx")
+    private Long updatedUserIdx;
 
     @Column(name = "deleted_at")
     private LocalDateTime deletedAt;
 
-    @Column(name = "deleted_by")
-    private Long deletedBy;
+    @Column(name = "deleted_user_idx")
+    private Long deletedUserIdx;
 
     // 관계 매핑
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "creator_idx", insertable = false, updatable = false)
+    @JoinColumn(name = "created_user_idx", insertable = false, updatable = false)
     private User creator;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "team_idx", insertable = false, updatable = false)
+    private Team team;
 
     @OneToMany(mappedBy = "event", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<CalendarParticipant> participants = new ArrayList<>();

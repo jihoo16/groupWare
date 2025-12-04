@@ -25,11 +25,6 @@ public class TeamUpdateDTO {
     private String teamDescription;
 
     /**
-     * 팀 유형 (custom/project/temporary)
-     */
-    private String teamType;
-
-    /**
      * 팀 리더 IDX
      */
     private Long teamLeaderIdx;

@@ -25,7 +25,7 @@ public interface CalendarEventRepository extends JpaRepository<CalendarEvent, Lo
     /**
      * 작성자별 일정 조회
      */
-    @Query("SELECT e FROM CalendarEvent e WHERE e.creatorIdx = :userIdx AND e.deletedAt IS NULL " +
+    @Query("SELECT e FROM CalendarEvent e WHERE e.createdUserIdx = :userIdx AND e.deletedAt IS NULL " +
             "ORDER BY e.startDate DESC")
     List<CalendarEvent> findByCreatorIdx(Long userIdx);
 
@@ -52,4 +52,46 @@ public interface CalendarEventRepository extends JpaRepository<CalendarEvent, Lo
      */
     @Query("SELECT e FROM CalendarEvent e WHERE e.status = :status AND e.deletedAt IS NULL")
     List<CalendarEvent> findByStatus(String status);
+
+    /**
+     * 필터링된 일정 조회 (기간 + 팀 + 일정 유형)
+     * 팀 필터 및 일정 유형 필터 포함
+     */
+    @Query("SELECT e FROM CalendarEvent e " +
+            "WHERE e.deletedAt IS NULL " +
+            "AND e.status = 'ACTIVE' " +
+            "AND ((e.startDate <= :endDate AND e.endDate >= :startDate) " +
+            "     OR (e.isRecurring = true AND e.recurringEndDate >= :startDate)) " +
+            "AND (e.teamIdx IN :teamIds OR e.teamIdx IS NULL) " +
+            "AND e.eventType IN :eventTypes " +
+            "ORDER BY e.startDate, e.startTime")
+    List<CalendarEvent> findEventsWithFilters(
+            LocalDate startDate,
+            LocalDate endDate,
+            List<Long> teamIds,
+            List<String> eventTypes
+    );
+
+    /**
+     * 팀별 일정 개수 조회 (특정 기간)
+     */
+    @Query("SELECT e.teamIdx, COUNT(e) FROM CalendarEvent e " +
+            "WHERE e.deletedAt IS NULL " +
+            "AND e.status = 'ACTIVE' " +
+            "AND e.teamIdx IS NOT NULL " +
+            "AND ((e.startDate <= :endDate AND e.endDate >= :startDate) " +
+            "     OR (e.isRecurring = true AND e.recurringEndDate >= :startDate)) " +
+            "GROUP BY e.teamIdx")
+    List<Object[]> countEventsByTeam(LocalDate startDate, LocalDate endDate);
+
+    /**
+     * 일정 유형별 개수 조회 (특정 기간)
+     */
+    @Query("SELECT e.eventType, COUNT(e) FROM CalendarEvent e " +
+            "WHERE e.deletedAt IS NULL " +
+            "AND e.status = 'ACTIVE' " +
+            "AND ((e.startDate <= :endDate AND e.endDate >= :startDate) " +
+            "     OR (e.isRecurring = true AND e.recurringEndDate >= :startDate)) " +
+            "GROUP BY e.eventType")
+    List<Object[]> countEventsByType(LocalDate startDate, LocalDate endDate);
 }

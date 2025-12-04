@@ -29,6 +29,32 @@
                         <div class="form-section">
                             <h2 class="section-title">기본 정보</h2>
 
+                            <!-- 탭 UI -->
+                            <div class="event-type-tabs">
+                                <button type="button" class="event-type-tab active" data-tab="personal">
+                                    <i class="fas fa-user"></i> 개인 일정
+                                </button>
+                                <button type="button" class="event-type-tab" data-tab="team">
+                                    <i class="fas fa-users"></i> 팀 일정
+                                </button>
+                            </div>
+
+                            <!-- 탭 컨텐츠 영역 -->
+                            <div class="tab-content-area">
+                            <!-- 팀 일정 전용 필드 -->
+                            <div class="form-group team-only" style="display: none;">
+                                <label class="form-label">팀 선택 <span class="required">*</span></label>
+                                <select id="teamSelect" class="form-input">
+                                    <option value="">팀을 선택하세요</option>
+                                    <!-- 팀 목록이 동적으로 로드됩니다 -->
+                                </select>
+                                <div class="team-color-preview" style="display: none; margin-top: 12px;">
+                                    <span style="font-size: 13px; font-weight: 600; color: #666;">선택한 팀 색상:</span>
+                                    <div class="team-color-box" style="display: inline-block; width: 24px; height: 24px; border-radius: 4px; margin-left: 8px; vertical-align: middle; border: 2px solid #e0e0e0;"></div>
+                                    <span class="team-name-preview" style="margin-left: 8px; font-size: 13px; color: #333;"></span>
+                                </div>
+                            </div>
+
                             <div class="form-group">
                                 <label class="form-label">일정 제목 <span class="required">*</span></label>
                                 <input type="text" id="scheduleTitle" class="form-input" placeholder="일정 제목을 입력하세요" required>
@@ -56,8 +82,9 @@
 
                             <div class="form-group">
                                 <label class="form-checkbox-wrapper">
-                                    <input type="checkbox" id="isAllDayCheckbox" class="form-checkbox-input">
                                     <span class="form-checkbox-label">종일</span>
+                                    <input type="checkbox" id="isAllDayCheckbox" class="form-checkbox-input">
+                                    <span class="toggle-switch"></span>
                                 </label>
                             </div>
 
@@ -71,11 +98,7 @@
                                     <input type="time" id="scheduleEndTime" class="form-input" value="18:00">
                                 </div>
                             </div>
-
-                            <div class="form-group">
-                                <label class="form-label">장소</label>
-                                <input type="text" id="scheduleLocation" class="form-input" placeholder="장소를 입력하세요">
-                            </div>
+                            </div><!-- /.tab-content-area -->
                         </div>
 
                         <div class="form-section">
@@ -101,12 +124,19 @@
                             </div>
 
                             <div class="form-group">
-                                <label class="form-label">알림</label>
+                                <label class="form-label">장소</label>
+                                <input type="text" id="scheduleLocation" class="form-input" placeholder="장소를 입력하세요">
+                            </div>
+
+                            <div class="form-group">
                                 <div class="notification-wrapper">
-                                    <button type="button" id="notificationToggleBtn" class="notification-toggle-btn">
-                                        <i class="fas fa-bell"></i>
-                                        <span class="notification-status">알림 끄기</span>
-                                    </button>
+                                    <div class="notification-toggle-wrapper">
+                                        <label class="form-checkbox-wrapper">
+                                            <span class="form-checkbox-label">알림 설정</span>
+                                            <input type="checkbox" id="notificationToggleCheckbox" class="form-checkbox-input">
+                                            <span class="toggle-switch"></span>
+                                        </label>
+                                    </div>
                                     <div id="notificationTimeButtons" class="notification-time-buttons" style="display: none;">
                                         <button type="button" class="notification-time-btn active" data-time="10">10분 전</button>
                                         <button type="button" class="notification-time-btn" data-time="30">30분 전</button>

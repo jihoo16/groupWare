@@ -33,11 +33,6 @@ public class TeamDTO {
     private String teamDescription;
 
     /**
-     * 팀 유형 (custom/project/temporary)
-     */
-    private String teamType;
-
-    /**
      * 생성자 IDX
      */
     private Long createdUserIdx;

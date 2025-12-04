@@ -80,7 +80,7 @@
 
 /* 폼 섹션을 그리드로 배치 */
 .form-section {
-    background: #fafafa;
+    background: white;
     padding: 20px;
     border-radius: 8px;
     border: 1px solid #e0e0e0;
@@ -129,6 +129,76 @@
     border-radius: 2px;
 }
 
+/* 탭 UI */
+.event-type-tabs {
+    display: flex;
+    gap: 4px;
+    margin-bottom: 0;
+    position: relative;
+    z-index: 1;
+    border-bottom: none;
+}
+
+.event-type-tab {
+    flex: 1;
+    padding: 12px 20px;
+    background: #e9ecef;
+    color: #6c757d;
+    border: none;
+    border-bottom: 3px solid transparent;
+    font-size: 14px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    border-radius: 8px 8px 0 0;
+}
+
+.event-type-tab:hover {
+    background: #dee2e6;
+    color: #495057;
+}
+
+.event-type-tab.active {
+    background: #f8f9fa;
+    color: #667eea;
+    border-bottom: none;
+    box-shadow: 0 -2px 4px rgba(0, 0, 0, 0.05);
+}
+
+.event-type-tab i {
+    font-size: 16px;
+}
+
+/* 탭 컨텐츠 영역 */
+.tab-content-area {
+    background: #f8f9fa;
+    padding: 28px 24px 24px 24px;
+    border-radius: 0 0 8px 8px;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+    margin-bottom: 16px;
+    margin-top: 0;
+    position: relative;
+    z-index: 10;
+}
+
+/* 팀 색상 프리뷰 */
+.team-color-preview {
+    padding: 12px;
+    background: #f8f9fa;
+    border-radius: 8px;
+    border: 1px solid #e0e0e0;
+    display: flex;
+    align-items: center;
+}
+
+.team-color-box {
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
 .form-group {
     margin-bottom: 16px;
 }
@@ -150,30 +220,63 @@
     margin-left: 2px;
 }
 
-/* 체크박스 스타일 */
+/* 토글 스위치 스타일 */
 .form-checkbox-wrapper {
-    display: inline-flex;
+    display: flex;
     align-items: center;
-    gap: 8px;
+    gap: 12px;
     cursor: pointer;
     user-select: none;
-    padding: 8px 12px;
-    background: #f5f5f5;
-    border-radius: 6px;
-    border: 2px solid #e0e0e0;
-    transition: all 0.3s ease;
+    padding: 0;
 }
 
-.form-checkbox-wrapper:hover {
-    background: #e8eaf6;
-    border-color: #667eea;
-}
-
-.form-checkbox-input {
-    width: 18px;
-    height: 18px;
+.form-checkbox-wrapper .form-checkbox-label {
+    font-size: 14px;
+    font-weight: 600;
+    color: #333;
     cursor: pointer;
-    accent-color: #667eea;
+    order: -1;
+}
+
+/* 실제 체크박스는 숨김 */
+.form-checkbox-input {
+    position: absolute;
+    opacity: 0;
+    width: 0;
+    height: 0;
+}
+
+/* 토글 스위치 */
+.toggle-switch {
+    position: relative;
+    width: 48px;
+    height: 24px;
+    background: #e0e0e0;
+    border-radius: 24px;
+    transition: all 0.3s ease;
+    cursor: pointer;
+    flex-shrink: 0;
+}
+
+.toggle-switch::after {
+    content: '';
+    position: absolute;
+    top: 2px;
+    left: 2px;
+    width: 20px;
+    height: 20px;
+    background: white;
+    border-radius: 50%;
+    transition: all 0.3s ease;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+}
+
+.form-checkbox-input:checked + .toggle-switch {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+}
+
+.form-checkbox-input:checked + .toggle-switch::after {
+    left: 26px;
 }
 
 .form-checkbox-label {
@@ -192,6 +295,8 @@
     color: #333;
     transition: all 0.3s ease;
     box-sizing: border-box;
+    position: relative;
+    z-index: 20;
 }
 
 .form-input:focus {
@@ -200,12 +305,6 @@
     box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
 }
 
-.form-input:disabled,
-.form-input:read-only {
-    background: #f5f5f5;
-    color: #999;
-    cursor: not-allowed;
-}
 
 .form-textarea {
     width: 100%;
@@ -449,59 +548,40 @@
 /* 알림 래퍼 */
 .notification-wrapper {
     display: flex;
-    align-items: center;
+    align-items: flex-start;
     gap: 16px;
-    flex-wrap: wrap;
+    flex-direction: column;
 }
 
-.notification-toggle-btn {
-    background: #e8eaf6;
-    color: #667eea;
-    border: 2px solid #667eea;
-    padding: 12px 24px;
-    border-radius: 8px;
-    font-size: 14px;
-    font-weight: 600;
-    cursor: pointer;
+/* 알림 토글 영역 */
+.notification-toggle-wrapper {
     display: flex;
     align-items: center;
-    gap: 10px;
-    transition: all 0.3s ease;
+    gap: 12px;
+    width: 100%;
 }
 
-.notification-toggle-btn:hover {
-    background: #667eea;
-    color: white;
-    transform: translateY(-2px);
-    box-shadow: 0 4px 12px rgba(102, 126, 234, 0.3);
-}
-
-.notification-toggle-btn.active {
-    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-    color: white;
-    border-color: #667eea;
-}
-
-.notification-toggle-btn.active:hover {
-    box-shadow: 0 4px 12px rgba(102, 126, 234, 0.5);
-}
-
-.notification-toggle-btn i {
-    font-size: 16px;
+.notification-toggle-wrapper .form-label {
+    margin: 0;
+    font-size: 14px;
+    font-weight: 600;
+    color: #333;
 }
 
 .notification-time-buttons {
     display: flex;
-    gap: 10px;
+    gap: 8px;
     align-items: center;
+    flex-wrap: wrap;
+    padding-left: 0;
 }
 
 .notification-time-btn {
-    background: #f5f5f5;
+    background: white;
     color: #666;
     border: 2px solid #e0e0e0;
-    padding: 10px 20px;
-    border-radius: 8px;
+    padding: 8px 16px;
+    border-radius: 20px;
     font-size: 13px;
     font-weight: 600;
     cursor: pointer;
@@ -509,21 +589,20 @@
 }
 
 .notification-time-btn:hover {
-    background: #e8eaf6;
-    color: #667eea;
+    background: #f8f9fa;
     border-color: #667eea;
-    transform: translateY(-2px);
+    color: #667eea;
 }
 
 .notification-time-btn.active {
-    background: #667eea;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
     color: white;
-    border-color: #667eea;
+    border-color: transparent;
     box-shadow: 0 2px 8px rgba(102, 126, 234, 0.3);
 }
 
 .notification-time-btn.active:hover {
-    background: #5568d3;
+    box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
 }
 
 /* 하단 버튼 */

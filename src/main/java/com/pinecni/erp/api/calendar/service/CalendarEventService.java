@@ -2,10 +2,13 @@ package com.pinecni.erp.api.calendar.service;
 
 import com.pinecni.erp.api.calendar.dto.CalendarEventDto;
 import com.pinecni.erp.api.calendar.dto.CalendarParticipantDto;
+import com.pinecni.erp.api.calendar.dto.TeamFilterDto;
 import com.pinecni.erp.api.calendar.repository.CalendarEventRepository;
 import com.pinecni.erp.api.calendar.repository.CalendarParticipantRepository;
+import com.pinecni.erp.api.team.repository.TeamRepository;
 import com.pinecni.erp.entity.CalendarEvent;
 import com.pinecni.erp.entity.CalendarParticipant;
+import com.pinecni.erp.entity.Team;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -13,8 +16,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
-import java.util.List;
-import java.util.UUID;
+import java.util.*;
 import java.util.stream.Collectors;
 
 /**
@@ -27,6 +29,7 @@ public class CalendarEventService {
 
     private final CalendarEventRepository calendarEventRepository;
     private final CalendarParticipantRepository calendarParticipantRepository;
+    private final TeamRepository teamRepository;
 
     /**
      * 기간별 일정 조회
@@ -76,8 +79,6 @@ public class CalendarEventService {
                 .endTime(eventDto.getEndTime())
                 .isAllDay(eventDto.getIsAllDay() != null ? eventDto.getIsAllDay() : false)
                 .location(eventDto.getLocation())
-                .creatorIdx(eventDto.getCreatorIdx())
-                .creatorName(eventDto.getCreatorName())
                 .groupId(groupId)
                 .notificationYn(eventDto.getNotificationYn() != null ? eventDto.getNotificationYn() : "N")
                 .notificationMinutes(eventDto.getNotificationMinutes())
@@ -86,7 +87,7 @@ public class CalendarEventService {
                 .recurringEndDate(eventDto.getRecurringEndDate())
                 .status("ACTIVE")
                 .createdAt(LocalDateTime.now())
-                .createdBy(eventDto.getCreatorIdx())
+                .createdUserIdx(eventDto.getCreatorIdx())
                 .build();
 
         CalendarEvent savedEvent = calendarEventRepository.save(event);
@@ -138,7 +139,7 @@ public class CalendarEventService {
         event.setRecurringType(eventDto.getRecurringType());
         event.setRecurringEndDate(eventDto.getRecurringEndDate());
         event.setUpdatedAt(LocalDateTime.now());
-        event.setUpdatedBy(eventDto.getCreatorIdx());
+        event.setUpdatedUserIdx(eventDto.getCreatorIdx());
 
         calendarEventRepository.save(event);
 
@@ -178,7 +179,7 @@ public class CalendarEventService {
                 .orElseThrow(() -> new RuntimeException("일정을 찾을 수 없습니다."));
 
         event.setDeletedAt(LocalDateTime.now());
-        event.setDeletedBy(userId);
+        event.setDeletedUserIdx(userId);
 
         calendarEventRepository.save(event);
 
@@ -231,6 +232,89 @@ public class CalendarEventService {
     }
 
     /**
+     * 팀 목록 조회 (일정 개수 포함)
+     */
+    @Transactional(readOnly = true)
+    public List<TeamFilterDto> getTeamsWithEventCount(LocalDate startDate, LocalDate endDate) {
+        log.info("팀 목록 조회 (일정 개수 포함): {} ~ {}", startDate, endDate);
+
+        // 모든 활성 팀 조회
+        List<Team> teams = teamRepository.findByIsActive("Y");
+
+        // 팀별 일정 개수 조회
+        List<Object[]> eventCounts = calendarEventRepository.countEventsByTeam(startDate, endDate);
+        Map<Long, Long> countMap = new HashMap<>();
+        for (Object[] row : eventCounts) {
+            Long teamIdx = (Long) row[0];
+            Long count = (Long) row[1];
+            countMap.put(teamIdx, count);
+        }
+
+        // TeamFilterDto로 변환
+        return teams.stream()
+                .map(team -> TeamFilterDto.builder()
+                        .idx(team.getIdx())
+                        .teamName(team.getTeamName())
+                        .teamColor(team.getTeamColor())
+                        .eventCount(countMap.getOrDefault(team.getIdx(), 0L))
+                        .build())
+                .collect(Collectors.toList());
+    }
+
+    /**
+     * 일정 유형별 개수 조회
+     */
+    @Transactional(readOnly = true)
+    public Map<String, Long> getEventTypeCount(LocalDate startDate, LocalDate endDate) {
+        log.info("일정 유형별 개수 조회: {} ~ {}", startDate, endDate);
+
+        List<Object[]> counts = calendarEventRepository.countEventsByType(startDate, endDate);
+
+        Map<String, Long> result = new HashMap<>();
+        for (Object[] row : counts) {
+            String eventType = (String) row[0];
+            Long count = (Long) row[1];
+            result.put(eventType, count);
+        }
+
+        return result;
+    }
+
+    /**
+     * 필터링된 일정 조회
+     */
+    @Transactional(readOnly = true)
+    public List<CalendarEventDto> getEventsWithFilters(
+            LocalDate startDate,
+            LocalDate endDate,
+            List<Long> teamIds,
+            List<String> eventTypes) {
+
+        log.info("필터링된 일정 조회: {} ~ {}, teamIds={}, eventTypes={}",
+                startDate, endDate, teamIds, eventTypes);
+
+        // 빈 리스트 처리 - null이거나 비어있으면 모든 팀/유형 조회
+        if (teamIds == null || teamIds.isEmpty()) {
+            List<Team> allTeams = teamRepository.findByIsActive("Y");
+            teamIds = allTeams.stream().map(Team::getIdx).collect(Collectors.toList());
+            if (teamIds.isEmpty()) {
+                teamIds = List.of(-1L); // 팀이 없는 경우 빈 결과 방지
+            }
+        }
+
+        if (eventTypes == null || eventTypes.isEmpty()) {
+            eventTypes = List.of("business", "meeting-room", "leave", "etc");
+        }
+
+        List<CalendarEvent> events = calendarEventRepository.findEventsWithFilters(
+                startDate, endDate, teamIds, eventTypes);
+
+        return events.stream()
+                .map(this::convertToDto)
+                .collect(Collectors.toList());
+    }
+
+    /**
      * Entity를 DTO로 변환
      */
     private CalendarEventDto convertToDto(CalendarEvent event) {
@@ -248,6 +332,26 @@ public class CalendarEventService {
                         .build())
                 .collect(Collectors.toList());
 
+        // 팀 정보 조회
+        String teamName = null;
+        String teamColor = null;
+        String displayColor = null;
+
+        if (event.getTeamIdx() != null) {
+            Optional<Team> teamOpt = teamRepository.findById(event.getTeamIdx());
+            if (teamOpt.isPresent()) {
+                Team team = teamOpt.get();
+                teamName = team.getTeamName();
+                teamColor = team.getTeamColor();
+                displayColor = teamColor;
+            }
+        }
+
+        // 팀 색상이 없으면 일정 유형별 색상 사용
+        if (displayColor == null) {
+            displayColor = getEventTypeColor(event.getEventType());
+        }
+
         return CalendarEventDto.builder()
                 .idx(event.getIdx())
                 .eventTitle(event.getEventTitle())
@@ -259,10 +363,13 @@ public class CalendarEventService {
                 .endTime(event.getEndTime())
                 .isAllDay(event.getIsAllDay())
                 .location(event.getLocation())
-                .creatorIdx(event.getCreatorIdx())
-                .creatorName(event.getCreatorName())
+                .creatorIdx(event.getCreatedUserIdx())
                 .approvalIdx(event.getApprovalIdx())
                 .groupId(event.getGroupId())
+                .teamIdx(event.getTeamIdx())
+                .teamName(teamName)
+                .teamColor(teamColor)
+                .displayColor(displayColor)
                 .notificationYn(event.getNotificationYn())
                 .notificationMinutes(event.getNotificationMinutes())
                 .isRecurring(event.getIsRecurring())
@@ -271,5 +378,23 @@ public class CalendarEventService {
                 .status(event.getStatus())
                 .participants(participantDtos)
                 .build();
+    }
+
+    /**
+     * 일정 유형별 기본 색상 반환
+     */
+    private String getEventTypeColor(String eventType) {
+        switch (eventType) {
+            case "business":
+                return "#667eea";
+            case "meeting-room":
+                return "#38b2ac";
+            case "leave":
+                return "#ed8936";
+            case "etc":
+                return "#9f7aea";
+            default:
+                return "#4361ee";
+        }
     }
 }

@@ -212,30 +212,6 @@
     margin-bottom: 4px;
 }
 
-.team-type-badge {
-    display: inline-block;
-    padding: 4px 10px;
-    border-radius: 12px;
-    font-size: 11px;
-    font-weight: 600;
-    text-transform: uppercase;
-}
-
-.team-type-badge.custom {
-    background: #e7f5ff;
-    color: #1971c2;
-}
-
-.team-type-badge.project {
-    background: #fff3bf;
-    color: #f08c00;
-}
-
-.team-type-badge.temporary {
-    background: #f3f0ff;
-    color: #7950f2;
-}
-
 .team-card-description {
     font-size: 14px;
     color: #6c757d;
