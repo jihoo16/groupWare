@@ -616,6 +616,8 @@ document.addEventListener('DOMContentLoaded', function() {
                 endDate: formData.endDate,
                 description: formData.projectDescription,
                 receiptUrl: formData.receiptUrl,
+                activityBudget: formData.activityBudget,
+                equipmentBudget: formData.equipmentBudget,
 
                 // 연구비 카드 데이터 추가 (DTO 구조에 맞게 변환)
                 projectCards: cardListData.map(card => ({

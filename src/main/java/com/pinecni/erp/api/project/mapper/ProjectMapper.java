@@ -6,6 +6,7 @@ import com.pinecni.erp.api.project.repository.ProjectExpenseSettingRepository;
 import com.pinecni.erp.api.project.repository.ProjectMemberRepository;
 import com.pinecni.erp.api.project.repository.ProjectRelationRepository;
 import com.pinecni.erp.api.project.repository.ProjectRepository;
+import com.pinecni.erp.api.project.repository.ReceiptMeetingRepository;
 import com.pinecni.erp.api.user.repository.UserRepository;
 import com.pinecni.erp.entity.Project;
 import com.pinecni.erp.entity.ProjectExpenseSetting;
@@ -15,6 +16,7 @@ import com.pinecni.erp.entity.User;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 
+import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.temporal.ChronoUnit;
@@ -32,12 +34,45 @@ public class ProjectMapper {
     private final ProjectRepository projectRepository;
     private final ProjectMemberRepository projectMemberRepository;
     private final ProjectExpenseSettingRepository projectExpenseSettingRepository;
+    private final ReceiptMeetingRepository receiptMeetingRepository;
     private final UserRepository userRepository;
     private final CodeRepository codeRepository;
 
     /**
+     * Object[] → DTO 변환 (최적화된 쿼리 결과 변환용)
+     */
+    public ProjectDTO toDTOFromArray(Object[] row) {
+        if (row == null) {
+            return null;
+        }
+
+        return ProjectDTO.builder()
+                .idx((Long) row[0])
+                .projectName((String) row[1])
+                .clientName((String) row[2])
+                .projectManagerIdx((Long) row[3])
+                .projectManagerName((String) row[4])
+                .startDate((LocalDate) row[5])
+                .endDate((LocalDate) row[6])
+                .projectStatus((String) row[7])
+                .description((String) row[8])
+                .receiptUrl((String) row[9])
+                .activityBudget((BigDecimal) row[10])
+                .equipmentBudget((BigDecimal) row[11])
+                .memberCount(((Long) row[13]).intValue())
+                .activityUsed((BigDecimal) row[14])
+                .equipmentUsed(BigDecimal.ZERO)  // 장비비는 추후 구현
+                .progress(calculateProgressFromDates((LocalDate) row[5], (LocalDate) row[6]))
+                .createdAt((LocalDateTime) row[15])
+                .updatedAt((LocalDateTime) row[16])
+                .createdUserIdx((Long) row[17])
+                .updatedUserIdx((Long) row[18])
+                .build();
+    }
+
+    /**
      * Entity → DTO 변환
-     * 프로젝트 조회 시 사용
+     * 프로젝트 조회 시 사용 (단건 조회용)
      */
     public ProjectDTO toDTO(Project entity) {
         if (entity == null) {
@@ -66,6 +101,11 @@ public class ProjectMapper {
                 .map(this::toExpenseSettingDTO)
                 .collect(Collectors.toList());
 
+        // 활동비 사용액 조회 (회의비, 출장비 등 집행 금액 합계)
+        BigDecimal activityUsed = receiptMeetingRepository.sumAmountByProjectIdx(entity.getIdx());
+        // 장비비 사용액 (추후 구현 예정, 현재는 0)
+        BigDecimal equipmentUsed = BigDecimal.ZERO;
+
         return ProjectDTO.builder()
                 .idx(entity.getIdx())
                 .projectName(entity.getProjectName())
@@ -78,6 +118,10 @@ public class ProjectMapper {
                 .projectStatus(entity.getProjectStatus())
                 .description(entity.getDescription())
                 .receiptUrl(entity.getReceiptUrl())
+                .activityBudget(entity.getActivityBudget())
+                .equipmentBudget(entity.getEquipmentBudget())
+                .activityUsed(activityUsed)
+                .equipmentUsed(equipmentUsed)
                 .memberCount(members.size())
                 .progress(calculateProgress(entity))
                 .projectRelations(relations)
@@ -109,6 +153,8 @@ public class ProjectMapper {
                         dto.getProjectStatus() : "PLANNING")
                 .description(dto.getDescription())
                 .isDeleted(false)
+                .activityBudget(dto.getActivityBudget())
+                .equipmentBudget(dto.getEquipmentBudget())
                 .build();
 
         // BaseEntity 필드 설정
@@ -153,6 +199,12 @@ public class ProjectMapper {
         }
         if (dto.getReceiptUrl() != null) {
             entity.setReceiptUrl(dto.getReceiptUrl());
+        }
+        if (dto.getActivityBudget() != null) {
+            entity.setActivityBudget(dto.getActivityBudget());
+        }
+        if (dto.getEquipmentBudget() != null) {
+            entity.setEquipmentBudget(dto.getEquipmentBudget());
         }
 
         // 수정 정보 업데이트
@@ -302,24 +354,36 @@ public class ProjectMapper {
         if (project.getStartDate() == null || project.getEndDate() == null) {
             return 0;
         }
+        return calculateProgressFromDates(project.getStartDate(), project.getEndDate());
+    }
+
+    /**
+     * 날짜로부터 진행률 계산 (날짜 기준)
+     *
+     * @param startDate 시작일
+     * @param endDate 종료일
+     * @return 진행률 (0-100)
+     */
+    private Integer calculateProgressFromDates(LocalDate startDate, LocalDate endDate) {
+        if (startDate == null || endDate == null) {
+            return 0;
+        }
 
         LocalDate now = LocalDate.now();
-        LocalDate start = project.getStartDate();
-        LocalDate end = project.getEndDate();
 
         // 시작 전
-        if (now.isBefore(start)) {
+        if (now.isBefore(startDate)) {
             return 0;
         }
 
         // 종료 후
-        if (now.isAfter(end)) {
+        if (now.isAfter(endDate)) {
             return 100;
         }
 
         // 진행 중: (경과일 / 전체일) * 100
-        long totalDays = ChronoUnit.DAYS.between(start, end);
-        long elapsedDays = ChronoUnit.DAYS.between(start, now);
+        long totalDays = ChronoUnit.DAYS.between(startDate, endDate);
+        long elapsedDays = ChronoUnit.DAYS.between(startDate, now);
 
         if (totalDays == 0) {
             return 0;

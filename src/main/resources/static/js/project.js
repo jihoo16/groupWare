@@ -105,6 +105,14 @@ document.addEventListener('DOMContentLoaded', function() {
                             <i class="fas fa-calendar"></i>
                             <span>${project.startDate} ~ ${project.endDate}</span>
                         </div>
+                        <div class="info-item">
+                            <i class="fas fa-archive"></i>
+                            <span>활동비: ${formatBudgetUsage(project.activityUsed, project.activityBudget)}</span>
+                        </div>
+                        <div class="info-item">
+                            <i class="fas fa-microchip"></i>
+                            <span>장비비: ${formatBudgetUsage(project.equipmentUsed, project.equipmentBudget)}</span>
+                        </div>
                     </div>
                     <div class="project-progress">
                         <div class="progress-bar">
@@ -147,6 +155,23 @@ document.addEventListener('DOMContentLoaded', function() {
             'CANCELLED': '취소'
         };
         return labelMap[status] || status;
+    }
+
+    // 숫자를 천 단위 콤마 형식으로 변환
+    function formatCurrency(amount) {
+        if (amount === null || amount === undefined || amount === '') {
+            return '0';
+        }
+        return Number(amount).toLocaleString('ko-KR');
+    }
+
+    // 예산 대비 사용 현황 포맷 (사용액 / 예산액)
+    function formatBudgetUsage(used, budget) {
+        const usedAmount = used || 0;
+        const budgetAmount = budget || 0;
+        const remaining = budgetAmount - usedAmount;
+
+        return `<span style="font-weight: bold">${formatCurrency(remaining)}</span> / ${formatCurrency(budgetAmount)} 원`;
     }
 
     // 과거 프로젝트 상태 필터
@@ -396,6 +421,8 @@ document.addEventListener('DOMContentLoaded', function() {
                 document.getElementById('detailTeamSize').textContent = project.memberCount + '명';
                 document.getElementById('detailStartDate').textContent = project.startDate;
                 document.getElementById('detailEndDate').textContent = project.endDate;
+                document.getElementById('detailActivityBudget').innerHTML = formatBudgetUsage(project.activityUsed, project.activityBudget);
+                document.getElementById('detailEquipmentBudget').innerHTML = formatBudgetUsage(project.equipmentUsed, project.equipmentBudget);
                 document.getElementById('detailDescription').textContent = project.description || '설명이 없습니다.';
                 document.getElementById('detailProgressBar').style.width = project.progress + '%';
                 document.getElementById('detailProgressText').textContent = project.progress + '%';

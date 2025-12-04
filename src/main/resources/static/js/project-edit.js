@@ -278,10 +278,6 @@ document.addEventListener('DOMContentLoaded', function() {
 
     // 직급별 경비 설정 로드 함수 (새 구조: expenseItemName + amount)
     function loadExpenseSettings(expenseSettings) {
-        console.log('===== 경비 설정 데이터 로드 시작 =====');
-        console.log('받은 데이터:', expenseSettings);
-        console.log('데이터 개수:', expenseSettings ? expenseSettings.length : 0);
-
         if (!expenseSettings || expenseSettings.length === 0) {
             console.log('경비 설정 데이터가 없습니다.');
             return;
@@ -299,7 +295,6 @@ document.addEventListener('DOMContentLoaded', function() {
         const groupedByPosition = {};
 
         expenseSettings.forEach((setting, index) => {
-            console.log(`[${index}] 처리 중:`, setting);
             const positionCode = setting.positionCode;
 
             if (!groupedByPosition[positionCode]) {
@@ -310,8 +305,6 @@ document.addEventListener('DOMContentLoaded', function() {
             }
 
             const itemIndex = expenseItemIndexMap[setting.expenseItemName];
-            console.log(`  직급코드: ${positionCode}, 항목: ${setting.expenseItemName}, 인덱스: ${itemIndex}, 금액: ${setting.amount}`);
-
             if (itemIndex !== undefined) {
                 groupedByPosition[positionCode].amounts[itemIndex] = setting.amount || 0;
             } else {
@@ -319,25 +312,21 @@ document.addEventListener('DOMContentLoaded', function() {
             }
         });
 
-        console.log('그룹화된 데이터:', groupedByPosition);
 
         // 각 직급 행에 데이터 설정
         Object.keys(groupedByPosition).forEach(positionCode => {
-            console.log(`직급코드 "${positionCode}" 행 찾기...`);
             const row = document.querySelector(`tr[data-position-code="${positionCode}"]`);
 
             if (row) {
-                console.log('  → 행 찾음!');
                 const data = groupedByPosition[positionCode];
                 const inputs = row.querySelectorAll('.expense-input-sm');
-                console.log('  → input 개수:', inputs.length);
+
 
                 if (inputs.length >= 4) {
                     inputs[0].value = data.amounts[0]; // 출장비
                     inputs[1].value = data.amounts[1]; // 중식비
                     inputs[2].value = data.amounts[2]; // 회의비
                     inputs[3].value = data.amounts[3]; // 야근석식대
-                    console.log('  → 값 설정 완료:', data.amounts);
                 } else {
                     console.warn('  → input 개수 부족!');
                 }
@@ -349,7 +338,6 @@ document.addEventListener('DOMContentLoaded', function() {
             }
         });
 
-        console.log('===== 경비 설정 로드 완료 =====');
     }
 
     // 연구비 카드 목록 로드 함수
@@ -1480,6 +1468,56 @@ document.addEventListener('DOMContentLoaded', function() {
                     console.error('고정경비 정책 조회 실패:', error);
                     alert('설정값을 불러오는데 실패했습니다.');
                 });
+        });
+    }
+
+    // 삭제 버튼 이벤트
+    const deleteProjectBtn = document.getElementById('deleteProjectBtn');
+    if (deleteProjectBtn) {
+        deleteProjectBtn.addEventListener('click', function() {
+            // 삭제 확인 대화상자
+            if (!confirm('정말로 이 프로젝트를 삭제하시겠습니까?\n삭제된 프로젝트는 복구할 수 없습니다.')) {
+                return;
+            }
+
+            // 추가 확인
+            const projectName = document.getElementById('projectName').value;
+            const confirmMessage = `프로젝트명: ${projectName}\n\n위 프로젝트를 삭제하시려면 "삭제"를 입력하세요.`;
+            const userInput = prompt(confirmMessage);
+
+            if (userInput !== '삭제') {
+                alert('삭제가 취소되었습니다.');
+                return;
+            }
+
+            // 삭제 API 호출
+            deleteProjectBtn.disabled = true;
+            deleteProjectBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> 삭제 중...';
+
+            fetch(`/api/projects/${projectId}`, {
+                method: 'DELETE',
+                headers: {
+                    'Content-Type': 'application/json'
+                }
+            })
+            .then(response => {
+                if (!response.ok) {
+                    return response.text().then(text => {
+                        throw new Error(text || '프로젝트 삭제에 실패했습니다.');
+                    });
+                }
+                return response.text();
+            })
+            .then(() => {
+                alert('프로젝트가 삭제되었습니다.');
+                window.location.href = '/project';
+            })
+            .catch(error => {
+                console.error('프로젝트 삭제 실패:', error);
+                alert('프로젝트 삭제에 실패했습니다.\n' + error.message);
+                deleteProjectBtn.disabled = false;
+                deleteProjectBtn.innerHTML = '<i class="fas fa-trash"></i> 삭제';
+            });
         });
     }
 });

@@ -82,6 +82,16 @@ public class ProjectDTO {
     private BigDecimal equipmentBudget;
 
     /**
+     * 활동비 사용액 (집행된 금액)
+     */
+    private BigDecimal activityUsed;
+
+    /**
+     * 장비비 사용액 (집행된 금액)
+     */
+    private BigDecimal equipmentUsed;
+
+    /**
      * 팀원 수 (ProjectMember 개수)
      */
     private Integer memberCount;
