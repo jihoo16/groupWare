@@ -1470,4 +1470,54 @@ document.addEventListener('DOMContentLoaded', function() {
                 });
         });
     }
+
+    // 삭제 버튼 이벤트
+    const deleteProjectBtn = document.getElementById('deleteProjectBtn');
+    if (deleteProjectBtn) {
+        deleteProjectBtn.addEventListener('click', function() {
+            // 삭제 확인 대화상자
+            if (!confirm('정말로 이 프로젝트를 삭제하시겠습니까?\n삭제된 프로젝트는 복구할 수 없습니다.')) {
+                return;
+            }
+
+            // 추가 확인
+            const projectName = document.getElementById('projectName').value;
+            const confirmMessage = `프로젝트명: ${projectName}\n\n위 프로젝트를 삭제하시려면 "삭제"를 입력하세요.`;
+            const userInput = prompt(confirmMessage);
+
+            if (userInput !== '삭제') {
+                alert('삭제가 취소되었습니다.');
+                return;
+            }
+
+            // 삭제 API 호출
+            deleteProjectBtn.disabled = true;
+            deleteProjectBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> 삭제 중...';
+
+            fetch(`/api/projects/${projectId}`, {
+                method: 'DELETE',
+                headers: {
+                    'Content-Type': 'application/json'
+                }
+            })
+            .then(response => {
+                if (!response.ok) {
+                    return response.text().then(text => {
+                        throw new Error(text || '프로젝트 삭제에 실패했습니다.');
+                    });
+                }
+                return response.text();
+            })
+            .then(() => {
+                alert('프로젝트가 삭제되었습니다.');
+                window.location.href = '/project';
+            })
+            .catch(error => {
+                console.error('프로젝트 삭제 실패:', error);
+                alert('프로젝트 삭제에 실패했습니다.\n' + error.message);
+                deleteProjectBtn.disabled = false;
+                deleteProjectBtn.innerHTML = '<i class="fas fa-trash"></i> 삭제';
+            });
+        });
+    }
 });
