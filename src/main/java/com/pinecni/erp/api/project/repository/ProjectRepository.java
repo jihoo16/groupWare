@@ -3,6 +3,7 @@ package com.pinecni.erp.api.project.repository;
 import com.pinecni.erp.entity.Project;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
 import java.time.LocalDate;
@@ -62,4 +63,59 @@ public interface ProjectRepository extends JpaRepository<Project, Long> {
      */
     @Query("SELECT p FROM Project p WHERE p.projectStatus = :status AND p.projectStatus != 'IN_PROGRESS' AND p.isDeleted = false ORDER BY p.createdAt DESC")
     List<Project> findPastProjectsByStatus(String status);
+
+    /**
+     * 프로젝트 목록을 최적화된 방식으로 조회
+     * 한 번의 쿼리로 PM 정보, 팀원 수, 집행액을 모두 가져옴
+     */
+    @Query("SELECT p.idx, p.projectName, p.clientName, p.projectManagerIdx, " +
+            "pm.empName, p.startDate, p.endDate, p.projectStatus, p.description, " +
+            "p.receiptUrl, p.activityBudget, p.equipmentBudget, p.isDeleted, " +
+            "COUNT(DISTINCT m.idx), " +
+            "COALESCE(SUM(rm.amount), 0), " +
+            "p.createdAt, p.updatedAt, p.createdUserIdx, p.updatedUserIdx " +
+            "FROM Project p " +
+            "LEFT JOIN p.projectManager pm " +
+            "LEFT JOIN ProjectMember m ON m.projectIdx = p.idx AND m.isActive = true " +
+            "LEFT JOIN ReceiptMeeting rm ON rm.projectIdx = p.idx " +
+            "WHERE p.isDeleted = false " +
+            "GROUP BY p.idx, pm.empName " +
+            "ORDER BY p.createdAt DESC")
+    List<Object[]> findAllActiveOptimized();
+
+    /**
+     * 상태별 프로젝트 목록을 최적화된 방식으로 조회
+     */
+    @Query("SELECT p.idx, p.projectName, p.clientName, p.projectManagerIdx, " +
+            "pm.empName, p.startDate, p.endDate, p.projectStatus, p.description, " +
+            "p.receiptUrl, p.activityBudget, p.equipmentBudget, p.isDeleted, " +
+            "COUNT(DISTINCT m.idx), " +
+            "COALESCE(SUM( rm.amount), 0), " +
+            "p.createdAt, p.updatedAt, p.createdUserIdx, p.updatedUserIdx " +
+            "FROM Project p " +
+            "LEFT JOIN p.projectManager pm " +
+            "LEFT JOIN ProjectMember m ON m.projectIdx = p.idx AND m.isActive = true " +
+            "LEFT JOIN ReceiptMeeting rm ON rm.projectIdx = p.idx " +
+            "WHERE p.projectStatus = :status AND p.isDeleted = false " +
+            "GROUP BY p.idx, pm.empName " +
+            "ORDER BY p.createdAt DESC")
+    List<Object[]> findByProjectStatusOptimized(@Param("status") String status);
+
+    /**
+     * 과거 프로젝트 목록을 최적화된 방식으로 조회
+     */
+    @Query("SELECT p.idx, p.projectName, p.clientName, p.projectManagerIdx, " +
+            "pm.empName, p.startDate, p.endDate, p.projectStatus, p.description, " +
+            "p.receiptUrl, p.activityBudget, p.equipmentBudget, p.isDeleted, " +
+            "COUNT(DISTINCT m.idx), " +
+            "COALESCE(SUM( rm.amount), 0), " +
+            "p.createdAt, p.updatedAt, p.createdUserIdx, p.updatedUserIdx " +
+            "FROM Project p " +
+            "LEFT JOIN p.projectManager pm " +
+            "LEFT JOIN ProjectMember m ON m.projectIdx = p.idx AND m.isActive = true " +
+            "LEFT JOIN ReceiptMeeting rm ON rm.projectIdx = p.idx " +
+            "WHERE p.projectStatus != 'IN_PROGRESS' AND p.isDeleted = false " +
+            "GROUP BY p.idx, pm.empName " +
+            "ORDER BY p.createdAt DESC")
+    List<Object[]> findPastProjectsOptimized();
 }

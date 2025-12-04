@@ -42,19 +42,21 @@ public class ProjectServiceImpl implements ProjectService {
 
     @Override
     public List<ProjectDTO> getAllProjects() {
-        log.debug("getAllProjects() called");
+        log.debug("getAllProjects() called - using optimized query");
 
-        return projectRepository.findAllActive().stream()
-                .map(mapper::toDTO)
+        // 한 번의 쿼리로 모든 데이터 조회
+        return projectRepository.findAllActiveOptimized().stream()
+                .map(mapper::toDTOFromArray)
                 .collect(Collectors.toList());
     }
 
     @Override
     public List<ProjectDTO> getProjectsByStatus(String status) {
-        log.debug("getProjectsByStatus() called with status: {}", status);
+        log.debug("getProjectsByStatus() called with status: {} - using optimized query", status);
 
-        return projectRepository.findByProjectStatus(status).stream()
-                .map(mapper::toDTO)
+        // 한 번의 쿼리로 모든 데이터 조회
+        return projectRepository.findByProjectStatusOptimized(status).stream()
+                .map(mapper::toDTOFromArray)
                 .collect(Collectors.toList());
     }
 
@@ -519,17 +521,19 @@ public class ProjectServiceImpl implements ProjectService {
 
     @Override
     public List<ProjectDTO> getPastProjects() {
-        log.debug("getPastProjects() called");
+        log.debug("getPastProjects() called - using optimized query");
 
-        return projectRepository.findPastProjects().stream()
-                .map(mapper::toDTO)
+        // 조인한 프로젝트 조회
+        return projectRepository.findPastProjectsOptimized().stream()
+                .map(mapper::toDTOFromArray)
                 .collect(Collectors.toList());
     }
 
     @Override
     public List<ProjectDTO> getPastProjectsByStatus(String status) {
-        log.debug("getPastProjectsByStatus() called with status: {}", status);
+        log.debug("getPastProjectsByStatus() called with status: {} - using optimized query", status);
 
+        // 상태별 프로젝트 조회
         return projectRepository.findPastProjectsByStatus(status).stream()
                 .map(mapper::toDTO)
                 .collect(Collectors.toList());
