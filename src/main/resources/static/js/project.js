@@ -125,12 +125,20 @@ document.addEventListener('DOMContentLoaded', function() {
                     </p>
                 </div>
                 <div class="project-footer">
-                    <button class="btn btn-sm btn-primary" onclick="editProject(${project.idx})">
+                    <button class="btn btn-sm btn-primary" onclick="event.stopPropagation(); editProject(${project.idx})">
                         <i class="fas fa-edit"></i> 수정
                     </button>
                 </div>
             </div>
         `).join('');
+
+        // 프로젝트 카드 클릭 이벤트 추가
+        document.querySelectorAll('.project-card').forEach(card => {
+            card.addEventListener('click', function() {
+                const projectId = this.getAttribute('data-project-id');
+                viewProject(projectId);
+            });
+        });
     }
 
     // 상태 코드 → CSS 클래스
@@ -427,6 +435,9 @@ document.addEventListener('DOMContentLoaded', function() {
                 document.getElementById('detailProgressBar').style.width = project.progress + '%';
                 document.getElementById('detailProgressText').textContent = project.progress + '%';
 
+                // 탭을 기본 정보로 초기화
+                switchDetailTab('info');
+
                 // 모달 열기
                 if (projectDetailModal) {
                     projectDetailModal.classList.add('active');
@@ -458,4 +469,28 @@ document.addEventListener('DOMContentLoaded', function() {
             }
         });
     }
+
+    // 프로젝트 상세 모달 탭 전환 (전역 함수)
+    window.switchDetailTab = function(tabName) {
+        // 모달 내의 탭 버튼에서만 active 클래스 제거
+        document.querySelectorAll('#projectDetailModal .modal-tab').forEach(tab => {
+            tab.classList.remove('active');
+        });
+
+        // 모달 내의 탭 컨텐츠만 숨기기
+        document.getElementById('infoTabContent').style.display = 'none';
+        document.getElementById('scheduleTabContent').style.display = 'none';
+
+        // 선택된 탭 버튼 활성화
+        const selectedTabButton = document.querySelector(`#projectDetailModal .modal-tab[data-tab="${tabName}"]`);
+        if (selectedTabButton) {
+            selectedTabButton.classList.add('active');
+        }
+
+        // 선택된 탭 컨텐츠 표시
+        const selectedTabContent = document.getElementById(`${tabName}TabContent`);
+        if (selectedTabContent) {
+            selectedTabContent.style.display = 'block';
+        }
+    };
 });

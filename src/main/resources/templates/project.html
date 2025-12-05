@@ -265,55 +265,118 @@
                     <i class="fas fa-times"></i>
                 </button>
             </div>
+
+            <!-- 탭 메뉴 -->
+            <div class="modal-tabs">
+                <button class="modal-tab active" data-tab="info" onclick="switchDetailTab('info')">
+                    <i class="fas fa-info-circle"></i> 기본 정보
+                </button>
+                <button class="modal-tab" data-tab="schedule" onclick="switchDetailTab('schedule')">
+                    <i class="fas fa-calendar-alt"></i> 상세 일정
+                </button>
+            </div>
+
             <div class="modal-body">
-                <div class="detail-section">
-                    <h3>기본 정보</h3>
-                    <div class="detail-grid">
-                        <div class="detail-item">
-                            <label>프로젝트명</label>
-                            <span id="detailProjectName">-</span>
+                <!-- 기본 정보 탭 -->
+                <div id="infoTabContent" class="tab-content active">
+                    <div class="detail-section">
+                        <h3>기본 정보</h3>
+                        <div class="detail-grid">
+                            <div class="detail-item">
+                                <label>프로젝트명</label>
+                                <span id="detailProjectName">-</span>
+                            </div>
+                            <div class="detail-item">
+                                <label>상태</label>
+                                <span id="detailStatus">-</span>
+                            </div>
+                            <div class="detail-item">
+                                <label>연구책임자</label>
+                                <span id="detailPM">-</span>
+                            </div>
+                            <div class="detail-item">
+                                <label>팀원 수</label>
+                                <span id="detailTeamSize">-</span>
+                            </div>
+                            <div class="detail-item">
+                                <label>시작일</label>
+                                <span id="detailStartDate">-</span>
+                            </div>
+                            <div class="detail-item">
+                                <label>종료일</label>
+                                <span id="detailEndDate">-</span>
+                            </div>
+                            <div class="detail-item">
+                                <label>활동비</label>
+                                <span id="detailActivityBudget">-</span>
+                            </div>
+                            <div class="detail-item">
+                                <label>장비비</label>
+                                <span id="detailEquipmentBudget">-</span>
+                            </div>
                         </div>
-                        <div class="detail-item">
-                            <label>상태</label>
-                            <span id="detailStatus">-</span>
-                        </div>
-                        <div class="detail-item">
-                            <label>연구책임자</label>
-                            <span id="detailPM">-</span>
-                        </div>
-                        <div class="detail-item">
-                            <label>팀원 수</label>
-                            <span id="detailTeamSize">-</span>
-                        </div>
-                        <div class="detail-item">
-                            <label>시작일</label>
-                            <span id="detailStartDate">-</span>
-                        </div>
-                        <div class="detail-item">
-                            <label>종료일</label>
-                            <span id="detailEndDate">-</span>
-                        </div>
-                        <div class="detail-item">
-                            <label>활동비</label>
-                            <span id="detailActivityBudget">-</span>
-                        </div>
-                        <div class="detail-item">
-                            <label>장비비</label>
-                            <span id="detailEquipmentBudget">-</span>
+                    </div>
+                    <div class="detail-section">
+                        <h3>프로젝트 설명</h3>
+                        <p id="detailDescription">-</p>
+                    </div>
+                    <div class="detail-section">
+                        <h3>진행률</h3>
+                        <div class="project-progress">
+                            <div class="progress-bar">
+                                <div class="progress-fill" id="detailProgressBar"></div>
+                            </div>
+                            <span class="progress-text" id="detailProgressText">0%</span>
                         </div>
                     </div>
                 </div>
-                <div class="detail-section">
-                    <h3>프로젝트 설명</h3>
-                    <p id="detailDescription">-</p>
-                </div>
-                <div class="detail-section">
-                    <h3>진행률</h3>
-                    <div class="project-progress">
-                        <div class="progress-bar">
-                            <div class="progress-fill" id="detailProgressBar"></div>
+
+                <!-- 상세 일정 탭 -->
+                <div id="scheduleTabContent" class="tab-content" style="display: none;">
+                    <div class="detail-section">
+                        <div class="info-note" style="margin-bottom: 20px;">
+                            <i class="fas fa-info-circle"></i>
+                            <span>주간보고서에 작성된 내용이 자동으로 표시됩니다. (추후 구현 예정)</span>
                         </div>
-                        <span class="progress-text" id="detailProgressText">0%</span>
+                        <div class="table-container">
+                            <table class="project-table">
+                                <thead>
+                                    <tr>
+                                        <th width="50">No</th>
+                                        <th width="200">기간</th>
+                                        <th>내용 (주간보고)</th>
+                                        <th width="120">주차별 달성률</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="detailScheduleTableBody">
+                                    <!-- 예시 데이터 -->
+                                    <tr>
+                                        <td class="text-center">1</td>
+                                        <td>2024-01-01 ~ 2024-01-07</td>
+                                        <td>요구사항 분석 및 기본 설계 완료</td>
+                                        <td class="text-center">
+                                            <span class="achievement-badge achievement-high">100%</span>
+                                        </td>
+                                    </tr>
+                                    <tr>
+                                        <td class="text-center">2</td>
+                                        <td>2024-01-08 ~ 2024-01-14</td>
+                                        <td>데이터베이스 스키마 설계 및 API 개발 착수</td>
+                                        <td class="text-center">
+                                            <span class="achievement-badge achievement-medium">60%</span>
+                                        </td>
+                                    </tr>
+                                    <tr>
+                                        <td class="text-center">3</td>
+                                        <td>2024-01-15 ~ 2024-01-21</td>
+                                        <td>프론트엔드 개발 진행 중</td>
+                                        <td class="text-center">
+                                            <span class="achievement-badge achievement-low">30%</span>
+                                        </td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
                     </div>
                 </div>
             </div>
