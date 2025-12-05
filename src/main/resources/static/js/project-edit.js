@@ -33,6 +33,14 @@ document.addEventListener('DOMContentLoaded', function() {
     // 연계 프로젝트 목록
     let relatedProjectList = [];
 
+    // 일정 목록
+    let scheduleList = [
+        { startDate: '2024-01-01', endDate: '2024-01-07', content: '요구사항 분석 및 기본 설계 완료', achievement: 100 },
+        { startDate: '2024-01-08', endDate: '2024-01-14', content: '데이터베이스 스키마 설계 및 API 개발 착수', achievement: 60 },
+        { startDate: '2024-01-15', endDate: '2024-01-21', content: '프론트엔드 개발 진행 중', achievement: 30 }
+    ];
+    let editingScheduleIndex = -1;
+
     // 기존 파일 목록
     let existingFiles = [];
 
@@ -1520,4 +1528,141 @@ document.addEventListener('DOMContentLoaded', function() {
             });
         });
     }
+
+    // ==================== 상세 일정 관리 ====================
+
+    const scheduleModal = document.getElementById('scheduleModal');
+    const addScheduleBtn = document.getElementById('addScheduleBtn');
+
+    // 일정 추가 버튼
+    if (addScheduleBtn) {
+        addScheduleBtn.addEventListener('click', function() {
+            openScheduleModal();
+        });
+    }
+
+    // 일정 모달 열기
+    window.openScheduleModal = function(index = -1) {
+        editingScheduleIndex = index;
+
+        if (index >= 0) {
+            // 수정 모드
+            const schedule = scheduleList[index];
+            document.getElementById('scheduleModalTitle').textContent = '일정 수정';
+            document.getElementById('scheduleStartDate').value = schedule.startDate;
+            document.getElementById('scheduleEndDate').value = schedule.endDate;
+            document.getElementById('scheduleContent').value = schedule.content;
+            document.getElementById('scheduleAchievement').value = schedule.achievement;
+        } else {
+            // 추가 모드
+            document.getElementById('scheduleModalTitle').textContent = '일정 추가';
+            document.getElementById('scheduleStartDate').value = '';
+            document.getElementById('scheduleEndDate').value = '';
+            document.getElementById('scheduleContent').value = '';
+            document.getElementById('scheduleAchievement').value = 0;
+        }
+
+        scheduleModal.classList.add('active');
+    };
+
+    // 일정 모달 닫기
+    window.closeScheduleModal = function() {
+        scheduleModal.classList.remove('active');
+        editingScheduleIndex = -1;
+    };
+
+    // 일정 저장
+    window.saveSchedule = function() {
+        const startDate = document.getElementById('scheduleStartDate').value;
+        const endDate = document.getElementById('scheduleEndDate').value;
+        const content = document.getElementById('scheduleContent').value.trim();
+        const achievement = parseInt(document.getElementById('scheduleAchievement').value);
+
+        // 유효성 검사
+        if (!startDate || !endDate || !content) {
+            alert('모든 필수 항목을 입력해주세요.');
+            return;
+        }
+
+        if (new Date(startDate) > new Date(endDate)) {
+            alert('종료일은 시작일 이후여야 합니다.');
+            return;
+        }
+
+        if (achievement < 0 || achievement > 100) {
+            alert('달성률은 0~100 사이의 값이어야 합니다.');
+            return;
+        }
+
+        const scheduleData = {
+            startDate,
+            endDate,
+            content,
+            achievement
+        };
+
+        if (editingScheduleIndex >= 0) {
+            // 수정
+            scheduleList[editingScheduleIndex] = scheduleData;
+        } else {
+            // 추가
+            scheduleList.push(scheduleData);
+        }
+
+        renderScheduleTable();
+        closeScheduleModal();
+    };
+
+    // 일정 수정
+    window.editSchedule = function(index) {
+        openScheduleModal(index);
+    };
+
+    // 일정 삭제
+    window.deleteSchedule = function(index) {
+        if (!confirm('이 일정을 삭제하시겠습니까?')) {
+            return;
+        }
+
+        scheduleList.splice(index, 1);
+        renderScheduleTable();
+    };
+
+    // 일정 테이블 렌더링
+    function renderScheduleTable() {
+        const tbody = document.getElementById('scheduleTableBody');
+
+        if (scheduleList.length === 0) {
+            tbody.innerHTML = '<tr><td colspan="5" class="text-center" style="padding: 40px; color: #868e96;">등록된 일정이 없습니다.</td></tr>';
+            return;
+        }
+
+        tbody.innerHTML = scheduleList.map((item, index) => {
+            const achievementClass =
+                item.achievement >= 80 ? 'achievement-high' :
+                item.achievement >= 50 ? 'achievement-medium' : 'achievement-low';
+
+            return `
+                <tr>
+                    <td class="text-center">${index + 1}</td>
+                    <td>${item.startDate} ~ ${item.endDate}</td>
+                    <td>${item.content}</td>
+                    <td class="text-center">
+                        <span class="achievement-badge ${achievementClass}">${item.achievement}%</span>
+                    </td>
+                    <td class="text-center action-cell">
+                        <button type="button" class="btn btn-sm btn-secondary" onclick="editSchedule(${index})">
+                            <i class="fas fa-edit"></i>
+                        </button>
+                        <button type="button" class="btn btn-sm btn-delete" onclick="deleteSchedule(${index})">
+                            <i class="fas fa-trash"></i>
+                        </button>
+                    </td>
+                </tr>
+            `;
+        }).join('');
+    }
+
+    // 초기 렌더링
+    renderScheduleTable();
 });
