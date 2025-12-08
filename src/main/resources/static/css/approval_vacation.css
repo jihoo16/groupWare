@@ -501,21 +501,7 @@ div:focus {
     height: 70px;
     width: 80px;
     padding: 4px;
-    cursor: pointer;
     position: relative;
-    background: white;
-    transition: background-color 0.2s ease;
-}
-
-.approval-sign-cell:hover {
-    background: #f8f9fa;
-}
-
-.approval-sign-cell.signed {
-    cursor: default;
-}
-
-.approval-sign-cell.signed:hover {
     background: white;
 }
 
@@ -549,13 +535,6 @@ div:focus {
     padding: 4px 6px;
     background: white;
     color: #333;
-}
-
-.approval-date-cell {
-    font-size: 10px;
-    padding: 4px 6px;
-    background: white;
-    color: #666;
 }
 
 .form-table {

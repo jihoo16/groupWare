@@ -1,37 +1,46 @@
 // 문서 작성 페이지 JavaScript
 document.addEventListener('DOMContentLoaded', function() {
     // 전역 변수
-    let selectedApprovers = [];
     let selectedFiles = [];
-    let selectedEmployee = null;
 
     // DOM 요소
     const templateTreeHeaders = document.querySelectorAll('.tree-node-header[data-template]');
     const categoryNodes = document.querySelectorAll('.tree-node-header.category-node');
     const expandAllBtn = document.getElementById('expandAllBtn');
     const documentForm = document.getElementById('documentForm');
-    const addApproverBtn = document.getElementById('addApproverBtn');
-    const approverChips = document.getElementById('approverChips');
     const fileInput = document.getElementById('fileInput');
     const fileList = document.getElementById('fileList');
     const fileUploadArea = document.getElementById('fileUploadArea');
-    const approverModal = document.getElementById('approverModal');
-    const employeeList = document.getElementById('employeeList');
-    const approverSearch = document.getElementById('approverSearch');
     const saveDraftBtn = document.getElementById('saveDraftBtn');
     const submitBtn = document.getElementById('submitBtn');
 
-    // 샘플 직원 데이터
-    const employees = [
-        { id: 1, name: '김철수', position: '전무', dept: '경영지원본부' },
-        { id: 2, name: '박영희', position: '부장', dept: '경영지원본부 인사팀' },
-        { id: 3, name: '이민수', position: '부장', dept: '경영지원본부 총무팀' },
-        { id: 4, name: '장현우', position: '상무', dept: '개발본부' },
-        { id: 5, name: '임지훈', position: '부장', dept: '개발본부 Frontend팀' },
-        { id: 6, name: '한소희', position: '부장', dept: '개발본부 Backend팀' },
-        { id: 7, name: '권민재', position: '상무', dept: '영업본부' },
-        { id: 8, name: '유재석', position: '부장', dept: '영업본부 영업1팀' }
-    ];
+    // 결재자 정보 (실제로는 서버에서 가져와야 함)
+    const approverInfo = {
+        user: '홍길동',      // 현재 사용자
+        manager: '박팀장',   // 부서장
+        ceo: '김대표'        // 대표이사
+    };
+
+    // 결재자 정보 자동 입력 함수
+    function fillApproverInfo() {
+        // 담당 (현재 사용자)
+        const approverNames = documentForm.querySelectorAll('.approver-name');
+        approverNames.forEach(elem => {
+            elem.textContent = approverInfo.user;
+        });
+
+        // 부서장
+        const managerNames = documentForm.querySelectorAll('.manager-name');
+        managerNames.forEach(elem => {
+            elem.textContent = approverInfo.manager;
+        });
+
+        // 대표이사
+        const ceoNames = documentForm.querySelectorAll('.ceo-name');
+        ceoNames.forEach(elem => {
+            elem.textContent = approverInfo.ceo;
+        });
+    }
 
     // 전체 접기/열기 버튼
     let allExpanded = true; // 초기 상태는 모두 펼쳐진 상태
@@ -114,6 +123,9 @@ document.addEventListener('DOMContentLoaded', function() {
             monthFields.forEach(field => {
                 field.value = currentMonth;
             });
+
+            // 결재자 정보 자동 입력
+            fillApproverInfo();
 
             // 영수증 처리 템플릿인 경우 자동 채우기 이벤트 리스너 추가
             if (templateKey === 'receipt-meeting' || templateKey === 'receipt-trip') {
@@ -904,95 +916,6 @@ document.addEventListener('DOMContentLoaded', function() {
         updateOvertimePersonList();
     }
 
-    // 결재자 추가 버튼
-    addApproverBtn.addEventListener('click', function() {
-        loadEmployeeList();
-        approverModal.classList.add('show');
-    });
-
-    // 직원 목록 로드
-    function loadEmployeeList() {
-        employeeList.innerHTML = '';
-        employees.forEach(emp => {
-            const item = document.createElement('div');
-            item.className = 'employee-item';
-            item.innerHTML = `
-                <i class="fas fa-user-circle"></i>
-                <div class="employee-info">
-                    <div class="employee-name">${emp.name}</div>
-                    <div class="employee-detail">${emp.dept} ${emp.position}</div>
-                </div>
-            `;
-            item.addEventListener('click', function() {
-                document.querySelectorAll('.employee-item').forEach(i => i.classList.remove('selected'));
-                this.classList.add('selected');
-                selectedEmployee = emp;
-            });
-            employeeList.appendChild(item);
-        });
-    }
-
-    // 직원 검색
-    approverSearch.addEventListener('input', function() {
-        const term = this.value.toLowerCase();
-        document.querySelectorAll('.employee-item').forEach(item => {
-            const text = item.textContent.toLowerCase();
-            item.style.display = text.includes(term) ? '' : 'none';
-        });
-    });
-
-    // 결재자 추가
-    window.addApprover = function() {
-        if (!selectedEmployee) {
-            alert('결재자를 선택해주세요.');
-            return;
-        }
-
-        if (selectedApprovers.find(a => a.id === selectedEmployee.id)) {
-            alert('이미 추가된 결재자입니다.');
-            return;
-        }
-
-        selectedApprovers.push(selectedEmployee);
-        updateApproverChips();
-        closeModal();
-        selectedEmployee = null;
-    };
-
-    // 결재자 칩 업데이트
-    function updateApproverChips() {
-        if (selectedApprovers.length === 0) {
-            approverChips.innerHTML = '<div class="empty-message">결재자를 추가해주세요</div>';
-            return;
-        }
-
-        approverChips.innerHTML = '';
-        selectedApprovers.forEach((approver, index) => {
-            const chip = document.createElement('div');
-            chip.className = 'approver-chip';
-            chip.innerHTML = `
-                <span class="order">${index + 1}</span>
-                <span>${approver.name} ${approver.position}</span>
-                <button class="btn-remove" onclick="removeApprover(${index})">
-                    <i class="fas fa-times"></i>
-                </button>
-            `;
-            approverChips.appendChild(chip);
-        });
-    }
-
-    // 결재자 제거
-    window.removeApprover = function(index) {
-        selectedApprovers.splice(index, 1);
-        updateApproverChips();
-    };
-
-    // 모달 닫기
-    window.closeModal = function() {
-        approverModal.classList.remove('show');
-        approverSearch.value = '';
-        loadEmployeeList();
-    };
 
     // 파일 업로드
     fileInput.addEventListener('change', function(e) {
@@ -1087,13 +1010,8 @@ document.addEventListener('DOMContentLoaded', function() {
 
     // 제출
     submitBtn.addEventListener('click', function() {
-        if (selectedApprovers.length === 0) {
-            alert('결재자를 지정해주세요.');
-            return;
-        }
-
-        if (confirm('결재를 요청하시겠습니까?')) {
-            alert('결재 요청이 완료되었습니다.');
+        if (confirm('문서를 제출하시겠습니까?')) {
+            alert('문서가 제출되었습니다.');
             // 실제로는 API 호출 후 목록으로 이동
             window.location.href = '/approval';
         }

@@ -212,20 +212,6 @@
 
                     <!-- 우측: 문서 편집 영역 -->
                     <div class="editor-area">
-                        <!-- 결재선 -->
-                        <div class="approval-line-section">
-                            <div class="section-header">
-                                <h4><i class="fas fa-users"></i> 결재선</h4>
-                                <button class="btn-add" id="addApproverBtn">
-                                    <i class="fas fa-plus"></i>
-                                    결재자 추가
-                                </button>
-                            </div>
-                            <div class="approver-chips" id="approverChips">
-                                <div class="empty-message">결재자를 추가해주세요</div>
-                            </div>
-                        </div>
-
                         <!-- 문서 양식 (동적 로드) -->
                         <div class="document-form" id="documentForm">
                             <!-- 휴가신청서 템플릿 (기본) -->
@@ -236,6 +222,28 @@
                             <!-- 휴가신청서 템플릿 -->
                             <div id="template-vacation">
                                 <h2 class="doc-title">휴 가 계</h2>
+
+                                <!-- 결재란 -->
+                                <table style="width: 400px; margin: 0 0 20px auto; border-collapse: collapse; float: right;">
+                                    <tr>
+                                        <th style="border: 1px solid #000; padding: 8px; width: 80px; background: #f5f5f5;">담당</th>
+                                        <th style="border: 1px solid #000; padding: 8px; width: 80px; background: #f5f5f5;">부서장</th>
+                                        <th style="border: 1px solid #000; padding: 8px; width: 80px; background: #f5f5f5;">대표이사</th>
+                                    </tr>
+                                    <tr>
+                                        <td style="border: 1px solid #000; padding: 30px 8px; text-align: center;">
+                                            <span class="approver-name"></span>
+                                        </td>
+                                        <td style="border: 1px solid #000; padding: 30px 8px; text-align: center;">
+                                            <span class="manager-name"></span>
+                                        </td>
+                                        <td style="border: 1px solid #000; padding: 30px 8px; text-align: center;">
+                                            <span class="ceo-name"></span>
+                                        </td>
+                                    </tr>
+                                </table>
+                                <div style="clear: both;"></div>
+
                                 <table class="form-table">
                                     <tr>
                                         <th>신청자</th>
@@ -283,6 +291,28 @@
                             <!-- 지출결의서 템플릿 -->
                             <div id="template-expense">
                                 <h2 class="doc-title">지 출 결 의 서</h2>
+
+                                <!-- 결재란 -->
+                                <table style="width: 400px; margin: 0 0 20px auto; border-collapse: collapse; float: right;">
+                                    <tr>
+                                        <th style="border: 1px solid #000; padding: 8px; width: 80px; background: #f5f5f5;">담당</th>
+                                        <th style="border: 1px solid #000; padding: 8px; width: 80px; background: #f5f5f5;">부서장</th>
+                                        <th style="border: 1px solid #000; padding: 8px; width: 80px; background: #f5f5f5;">대표이사</th>
+                                    </tr>
+                                    <tr>
+                                        <td style="border: 1px solid #000; padding: 30px 8px; text-align: center;">
+                                            <span class="approver-name"></span>
+                                        </td>
+                                        <td style="border: 1px solid #000; padding: 30px 8px; text-align: center;">
+                                            <span class="manager-name"></span>
+                                        </td>
+                                        <td style="border: 1px solid #000; padding: 30px 8px; text-align: center;">
+                                            <span class="ceo-name"></span>
+                                        </td>
+                                    </tr>
+                                </table>
+                                <div style="clear: both;"></div>
+
                                 <table class="form-table">
                                     <tr>
                                         <th>기안자</th>
@@ -327,6 +357,28 @@
                             <!-- 구매요청서 템플릿 -->
                             <div id="template-purchase">
                                 <h2 class="doc-title">구 매 요 청 서</h2>
+
+                                <!-- 결재란 -->
+                                <table style="width: 400px; margin: 0 0 20px auto; border-collapse: collapse; float: right;">
+                                    <tr>
+                                        <th style="border: 1px solid #000; padding: 8px; width: 80px; background: #f5f5f5;">담당</th>
+                                        <th style="border: 1px solid #000; padding: 8px; width: 80px; background: #f5f5f5;">부서장</th>
+                                        <th style="border: 1px solid #000; padding: 8px; width: 80px; background: #f5f5f5;">대표이사</th>
+                                    </tr>
+                                    <tr>
+                                        <td style="border: 1px solid #000; padding: 30px 8px; text-align: center;">
+                                            <span class="approver-name"></span>
+                                        </td>
+                                        <td style="border: 1px solid #000; padding: 30px 8px; text-align: center;">
+                                            <span class="manager-name"></span>
+                                        </td>
+                                        <td style="border: 1px solid #000; padding: 30px 8px; text-align: center;">
+                                            <span class="ceo-name"></span>
+                                        </td>
+                                    </tr>
+                                </table>
+                                <div style="clear: both;"></div>
+
                                 <table class="form-table">
                                     <tr>
                                         <th>요청자</th>
@@ -368,6 +420,28 @@
                             <!-- 주간업무보고 템플릿 -->
                             <div id="template-weekly-report">
                                 <h2 class="doc-title">주 간 업 무 보 고</h2>
+
+                                <!-- 결재란 -->
+                                <table style="width: 400px; margin: 0 0 20px auto; border-collapse: collapse; float: right;">
+                                    <tr>
+                                        <th style="border: 1px solid #000; padding: 8px; width: 80px; background: #f5f5f5;">담당</th>
+                                        <th style="border: 1px solid #000; padding: 8px; width: 80px; background: #f5f5f5;">부서장</th>
+                                        <th style="border: 1px solid #000; padding: 8px; width: 80px; background: #f5f5f5;">대표이사</th>
+                                    </tr>
+                                    <tr>
+                                        <td style="border: 1px solid #000; padding: 30px 8px; text-align: center;">
+                                            <span class="approver-name"></span>
+                                        </td>
+                                        <td style="border: 1px solid #000; padding: 30px 8px; text-align: center;">
+                                            <span class="manager-name"></span>
+                                        </td>
+                                        <td style="border: 1px solid #000; padding: 30px 8px; text-align: center;">
+                                            <span class="ceo-name"></span>
+                                        </td>
+                                    </tr>
+                                </table>
+                                <div style="clear: both;"></div>
+
                                 <table class="form-table">
                                     <tr>
                                         <th>보고자</th>
@@ -401,6 +475,28 @@
                             <!-- 월간업무보고 템플릿 -->
                             <div id="template-monthly-report">
                                 <h2 class="doc-title">월 간 업 무 보 고</h2>
+
+                                <!-- 결재란 -->
+                                <table style="width: 400px; margin: 0 0 20px auto; border-collapse: collapse; float: right;">
+                                    <tr>
+                                        <th style="border: 1px solid #000; padding: 8px; width: 80px; background: #f5f5f5;">담당</th>
+                                        <th style="border: 1px solid #000; padding: 8px; width: 80px; background: #f5f5f5;">부서장</th>
+                                        <th style="border: 1px solid #000; padding: 8px; width: 80px; background: #f5f5f5;">대표이사</th>
+                                    </tr>
+                                    <tr>
+                                        <td style="border: 1px solid #000; padding: 30px 8px; text-align: center;">
+                                            <span class="approver-name"></span>
+                                        </td>
+                                        <td style="border: 1px solid #000; padding: 30px 8px; text-align: center;">
+                                            <span class="manager-name"></span>
+                                        </td>
+                                        <td style="border: 1px solid #000; padding: 30px 8px; text-align: center;">
+                                            <span class="ceo-name"></span>
+                                        </td>
+                                    </tr>
+                                </table>
+                                <div style="clear: both;"></div>
+
                                 <table class="form-table">
                                     <tr>
                                         <th>보고자</th>
@@ -434,6 +530,28 @@
                             <!-- 회의록 템플릿 -->
                             <div id="template-meeting">
                                 <h2 class="doc-title">회 의 록</h2>
+
+                                <!-- 결재란 -->
+                                <table style="width: 400px; margin: 0 0 20px auto; border-collapse: collapse; float: right;">
+                                    <tr>
+                                        <th style="border: 1px solid #000; padding: 8px; width: 80px; background: #f5f5f5;">담당</th>
+                                        <th style="border: 1px solid #000; padding: 8px; width: 80px; background: #f5f5f5;">부서장</th>
+                                        <th style="border: 1px solid #000; padding: 8px; width: 80px; background: #f5f5f5;">대표이사</th>
+                                    </tr>
+                                    <tr>
+                                        <td style="border: 1px solid #000; padding: 30px 8px; text-align: center;">
+                                            <span class="approver-name"></span>
+                                        </td>
+                                        <td style="border: 1px solid #000; padding: 30px 8px; text-align: center;">
+                                            <span class="manager-name"></span>
+                                        </td>
+                                        <td style="border: 1px solid #000; padding: 30px 8px; text-align: center;">
+                                            <span class="ceo-name"></span>
+                                        </td>
+                                    </tr>
+                                </table>
+                                <div style="clear: both;"></div>
+
                                 <table class="form-table">
                                     <tr>
                                         <th>회의명</th>
@@ -473,6 +591,28 @@
                             <!-- 출장신청서 템플릿 -->
                             <div id="template-business-trip">
                                 <h2 class="doc-title">출 장 신 청 서</h2>
+
+                                <!-- 결재란 -->
+                                <table style="width: 400px; margin: 0 0 20px auto; border-collapse: collapse; float: right;">
+                                    <tr>
+                                        <th style="border: 1px solid #000; padding: 8px; width: 80px; background: #f5f5f5;">담당</th>
+                                        <th style="border: 1px solid #000; padding: 8px; width: 80px; background: #f5f5f5;">부서장</th>
+                                        <th style="border: 1px solid #000; padding: 8px; width: 80px; background: #f5f5f5;">대표이사</th>
+                                    </tr>
+                                    <tr>
+                                        <td style="border: 1px solid #000; padding: 30px 8px; text-align: center;">
+                                            <span class="approver-name"></span>
+                                        </td>
+                                        <td style="border: 1px solid #000; padding: 30px 8px; text-align: center;">
+                                            <span class="manager-name"></span>
+                                        </td>
+                                        <td style="border: 1px solid #000; padding: 30px 8px; text-align: center;">
+                                            <span class="ceo-name"></span>
+                                        </td>
+                                    </tr>
+                                </table>
+                                <div style="clear: both;"></div>
+
                                 <table class="form-table">
                                     <tr>
                                         <th>신청자</th>
@@ -519,6 +659,28 @@
                             <!-- 일반기안서 템플릿 -->
                             <div id="template-general">
                                 <h2 class="doc-title">기 안 서</h2>
+
+                                <!-- 결재란 -->
+                                <table style="width: 400px; margin: 0 0 20px auto; border-collapse: collapse; float: right;">
+                                    <tr>
+                                        <th style="border: 1px solid #000; padding: 8px; width: 80px; background: #f5f5f5;">담당</th>
+                                        <th style="border: 1px solid #000; padding: 8px; width: 80px; background: #f5f5f5;">부서장</th>
+                                        <th style="border: 1px solid #000; padding: 8px; width: 80px; background: #f5f5f5;">대표이사</th>
+                                    </tr>
+                                    <tr>
+                                        <td style="border: 1px solid #000; padding: 30px 8px; text-align: center;">
+                                            <span class="approver-name"></span>
+                                        </td>
+                                        <td style="border: 1px solid #000; padding: 30px 8px; text-align: center;">
+                                            <span class="manager-name"></span>
+                                        </td>
+                                        <td style="border: 1px solid #000; padding: 30px 8px; text-align: center;">
+                                            <span class="ceo-name"></span>
+                                        </td>
+                                    </tr>
+                                </table>
+                                <div style="clear: both;"></div>
+
                                 <table class="form-table">
                                     <tr>
                                         <th>기안자</th>
@@ -577,39 +739,14 @@
                                 PDF 저장
                             </button>
                             <button class="btn-primary btn-lg" id="submitBtn">
-                                <i class="fas fa-paper-plane"></i>
-                                결재 요청
+                                <i class="fas fa-check"></i>
+                                문서 제출
                             </button>
                         </div>
                     </div>
                 </div>
             </div>
         </main>
-    </div>
-
-    <!-- 결재자 선택 모달 -->
-    <div class="modal" id="approverModal">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h3>결재자 선택</h3>
-                <button class="modal-close" onclick="closeModal()">
-                    <i class="fas fa-times"></i>
-                </button>
-            </div>
-            <div class="modal-body">
-                <div class="modal-search">
-                    <i class="fas fa-search"></i>
-                    <input type="text" id="approverSearch" placeholder="이름 또는 부서 검색...">
-                </div>
-                <div class="employee-list" id="employeeList">
-                    <!-- 동적 생성 -->
-                </div>
-            </div>
-            <div class="modal-footer">
-                <button class="btn-secondary" onclick="closeModal()">취소</button>
-                <button class="btn-primary" onclick="addApprover()">추가</button>
-            </div>
-        </div>
     </div>
 
     <!-- jsPDF 라이브러리 -->

@@ -283,74 +283,6 @@ div:focus {
     transform: translateY(-1px);
 }
 
-/* 결재선 섹션 */
-.approval-line-section {
-    background: #f8f9fa;
-    border: 2px solid #e8e8e8;
-    border-radius: 10px;
-    padding: 15px;
-}
-
-.approver-chips {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 10px;
-    min-height: 50px;
-}
-
-.approver-chip {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    padding: 10px 14px;
-    background: white;
-    border: 2px solid #667eea;
-    border-radius: 20px;
-    color: #667eea;
-    font-size: 11.9px;
-    font-weight: 600;
-}
-
-.approver-chip .order {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    width: 24px;
-    height: 24px;
-    background: #667eea;
-    color: white;
-    border-radius: 50%;
-    font-size: 10.3px;
-    font-weight: 700;
-}
-
-.approver-chip .btn-remove {
-    background: none;
-    border: none;
-    color: #999;
-    cursor: pointer;
-    font-size: 13.5px;
-    padding: 0;
-    width: 20px;
-    height: 20px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    transition: color 0.2s ease;
-}
-
-.approver-chip .btn-remove:hover {
-    color: #d32f2f;
-}
-
-.empty-message {
-    color: #999;
-    font-size: 11.9px;
-    padding: 15px;
-    text-align: center;
-    width: 100%;
-}
-
 /* 문서 양식 */
 .document-form {
     background: white;
@@ -889,21 +821,7 @@ div h2{
     height: 70px;
     width: 80px;
     padding: 4px;
-    cursor: pointer;
     position: relative;
-    background: white;
-    transition: background-color 0.2s ease;
-}
-
-.approval-sign-cell:hover {
-    background: #f8f9fa;
-}
-
-.approval-sign-cell.signed {
-    cursor: default;
-}
-
-.approval-sign-cell.signed:hover {
     background: white;
 }
 
@@ -920,16 +838,6 @@ div h2{
     font-size: 11px;
     color: #999;
     user-select: none;
-}
-
-.approval-sign-cell.signed .sign-placeholder {
-    display: none;
-}
-
-.sign-image {
-    max-width: 100%;
-    max-height: 100%;
-    object-fit: contain;
 }
 
 .approval-name-cell {

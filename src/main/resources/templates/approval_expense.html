@@ -149,20 +149,6 @@
 
                     <!-- 우측: 문서 편집 영역 -->
                     <div class="editor-area">
-                        <!-- 결재선 -->
-                        <div class="approval-line-section">
-                            <div class="section-header">
-                                <h4><i class="fas fa-users"></i> 결재선</h4>
-                                <button class="btn-add" id="addApproverBtn">
-                                    <i class="fas fa-plus"></i>
-                                    결재자 추가
-                                </button>
-                            </div>
-                            <div class="approver-chips" id="approverChips">
-                                <div class="empty-message">결재자를 추가해주세요</div>
-                            </div>
-                        </div>
-
                         <!-- 문서 양식 -->
                         <div class="document-form">
                             <!-- 결재라인 -->
@@ -174,17 +160,17 @@
                                         <th class="approval-header">대표이사</th>
                                     </tr>
                                     <tr>
-                                        <td class="approval-sign-cell" data-role="담당" data-approver-id="">
+                                        <td class="approval-sign-cell">
                                             <div class="sign-area">
                                                 <span class="sign-placeholder">결재</span>
                                             </div>
                                         </td>
-                                        <td class="approval-sign-cell" data-role="부서장" data-approver-id="">
+                                        <td class="approval-sign-cell">
                                             <div class="sign-area">
                                                 <span class="sign-placeholder">결재</span>
                                             </div>
                                         </td>
-                                        <td class="approval-sign-cell" data-role="대표이사" data-approver-id="">
+                                        <td class="approval-sign-cell">
                                             <div class="sign-area">
                                                 <span class="sign-placeholder">결재</span>
                                             </div>
@@ -192,26 +178,16 @@
                                     </tr>
                                     <tr>
                                         <td class="approval-name-cell">
-                                            <span class="approver-name" data-role="담당">-</span>
+                                            <span class="approver-name">-</span>
                                         </td>
                                         <td class="approval-name-cell">
-                                            <span class="approver-name" data-role="부서장">-</span>
+                                            <span class="approver-name">-</span>
                                         </td>
                                         <td class="approval-name-cell">
-                                            <span class="approver-name" data-role="대표이사">-</span>
+                                            <span class="approver-name">-</span>
                                         </td>
                                     </tr>
-                                    <tr>
-                                        <td class="approval-date-cell">
-                                            <span class="approval-date" data-role="담당">-</span>
-                                        </td>
-                                        <td class="approval-date-cell">
-                                            <span class="approval-date" data-role="부서장">-</span>
-                                        </td>
-                                        <td class="approval-date-cell">
-                                            <span class="approval-date" data-role="대표이사">-</span>
-                                        </td>
-                                    </tr>
+
                                 </table>
                             </div>
 
@@ -286,38 +262,13 @@
                             </button>
                             <button class="btn-primary btn-lg" id="submitBtn">
                                 <i class="fas fa-paper-plane"></i>
-                                결재 요청
+                                저장
                             </button>
                         </div>
                     </div>
                 </div>
             </div>
         </main>
-    </div>
-
-    <!-- 결재자 선택 모달 -->
-    <div class="modal" id="approverModal">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h3>결재자 선택</h3>
-                <button class="modal-close" onclick="closeModal()">
-                    <i class="fas fa-times"></i>
-                </button>
-            </div>
-            <div class="modal-body">
-                <div class="modal-search">
-                    <i class="fas fa-search"></i>
-                    <input type="text" id="approverSearch" placeholder="이름 또는 부서 검색...">
-                </div>
-                <div class="employee-list" id="employeeList">
-                    <!-- 동적 생성 -->
-                </div>
-            </div>
-            <div class="modal-footer">
-                <button class="btn-secondary" onclick="closeModal()">취소</button>
-                <button class="btn-primary" onclick="addApprover()">추가</button>
-            </div>
-        </div>
     </div>
 
     <script th:src="@{/js/approval_expense.js}"></script>
