@@ -31,3 +31,16 @@ COMMENT ON COLUMN external_person.created_user_idx IS '생성자 ID';
 COMMENT ON COLUMN external_person.created_at IS '생성일시';
 COMMENT ON COLUMN external_person.updated_user_idx IS '수정자 ID';
 COMMENT ON COLUMN external_person.updated_at IS '수정일시';
+
+-- 더미 데이터
+INSERT INTO external_person (company_name, position, name) VALUES
+('(주)테크솔루션', '부장', '김철수'),
+('글로벌시스템즈', '차장', '이영희'),
+('(주)테크솔루션', '과장', '박민수'),
+('스마트코리아', '이사', '정수진'),
+('디지털웨이브', '부장', '최동욱'),
+('넥스트이노베이션', '상무', '강민호'),
+('(주)퓨처테크', '대리', '윤지영'),
+('글로벌시스템즈', '부장', '임성훈'),
+('코리아IT', '과장', '한예린'),
+('스마트코리아', '차장', '신동현');

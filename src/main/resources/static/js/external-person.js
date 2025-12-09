@@ -12,21 +12,14 @@ document.addEventListener('DOMContentLoaded', function() {
     const totalCount = document.getElementById('totalCount');
     const companyCount = document.getElementById('companyCount');
 
-    // Mock 데이터 (실제로는 서버에서 가져옴)
-    let externalPersons = [
-        { idx: 1, companyName: '(주)테크솔루션', position: '부장', name: '김철수' },
-        { idx: 2, companyName: '글로벌시스템즈', position: '차장', name: '이영희' },
-        { idx: 3, companyName: '(주)테크솔루션', position: '과장', name: '박민수' },
-        { idx: 4, companyName: '스마트코리아', position: '이사', name: '정수진' },
-        { idx: 5, companyName: '디지털웨이브', position: '부장', name: '최동욱' }
-    ];
+    // 데이터 저장
+    let externalPersons = [];
 
     let editMode = false;
     let currentIdx = null;
 
     // 초기 로드
-    loadTable();
-    updateStats();
+    loadExternalPersons();
 
     // 외부인원 등록 버튼 클릭
     addPersonBtn.addEventListener('click', function() {
@@ -38,7 +31,7 @@ document.addEventListener('DOMContentLoaded', function() {
     });
 
     // 저장 버튼 클릭
-    saveBtn.addEventListener('click', function() {
+    saveBtn.addEventListener('click', async function() {
         const companyName = document.getElementById('companyName').value.trim();
         const position = document.getElementById('position').value.trim();
         const personName = document.getElementById('personName').value.trim();
@@ -57,33 +50,29 @@ document.addEventListener('DOMContentLoaded', function() {
             return;
         }
 
-        if (editMode) {
-            // 수정
-            const person = externalPersons.find(p => p.idx === currentIdx);
-            if (person) {
-                person.companyName = companyName;
-                person.position = position;
-                person.name = personName;
+        const data = {
+            companyName: companyName,
+            position: position,
+            name: personName
+        };
+
+        try {
+            if (editMode) {
+                // 수정
+                await updatePerson(currentIdx, data);
                 alert('수정되었습니다.');
+            } else {
+                // 등록
+                await createPerson(data);
+                alert('등록되었습니다.');
             }
-        } else {
-            // 등록
-            const newIdx = externalPersons.length > 0
-                ? Math.max(...externalPersons.map(p => p.idx)) + 1
-                : 1;
 
-            externalPersons.push({
-                idx: newIdx,
-                companyName: companyName,
-                position: position,
-                name: personName
-            });
-            alert('등록되었습니다.');
+            closeModal();
+            loadExternalPersons();
+        } catch (error) {
+            alert('저장 중 오류가 발생했습니다.');
+            console.error(error);
         }
-
-        closeModal();
-        loadTable();
-        updateStats();
     });
 
     // 검색
@@ -161,15 +150,16 @@ document.addEventListener('DOMContentLoaded', function() {
     };
 
     // 삭제
-    window.deletePerson = function(idx) {
+    window.deletePerson = async function(idx) {
         if (!confirm('정말 삭제하시겠습니까?')) return;
 
-        const index = externalPersons.findIndex(p => p.idx === idx);
-        if (index > -1) {
-            externalPersons.splice(index, 1);
+        try {
+            await deletePersonApi(idx);
             alert('삭제되었습니다.');
-            loadTable();
-            updateStats();
+            loadExternalPersons();
+        } catch (error) {
+            alert('삭제 중 오류가 발생했습니다.');
+            console.error(error);
         }
     };
 
@@ -187,4 +177,66 @@ document.addEventListener('DOMContentLoaded', function() {
             closeModal();
         }
     });
+
+    // ==================== API 호출 함수 ====================
+
+    // 전체 외부인원 목록 조회
+    async function loadExternalPersons() {
+        try {
+            const response = await fetch('/api/external-persons');
+            if (!response.ok) throw new Error('Failed to fetch external persons');
+
+            externalPersons = await response.json();
+            loadTable();
+            updateStats();
+        } catch (error) {
+            console.error('외부인원 목록 조회 실패:', error);
+            alert('외부인원 목록을 불러오는데 실패했습니다.');
+        }
+    }
+
+    // 외부인원 등록
+    async function createPerson(data) {
+        const response = await fetch('/api/external-persons', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify(data)
+        });
+
+        if (!response.ok) {
+            throw new Error('Failed to create external person');
+        }
+
+        return await response.json();
+    }
+
+    // 외부인원 수정
+    async function updatePerson(idx, data) {
+        const response = await fetch(`/api/external-persons/${idx}`, {
+            method: 'PUT',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify(data)
+        });
+
+        if (!response.ok) {
+            throw new Error('Failed to update external person');
+        }
+
+        return await response.json();
+    }
+
+    // 외부인원 삭제
+    async function deletePersonApi(idx) {
+        const response = await fetch(`/api/external-persons/${idx}`, {
+            method: 'DELETE'
+        });
+
+        if (!response.ok) {
+            throw new Error('Failed to delete external person');
+        }
+    }
 });
