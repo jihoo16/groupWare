@@ -121,12 +121,14 @@ document.addEventListener('DOMContentLoaded', function() {
                 <td>${person.position}</td>
                 <td>${person.name}</td>
                 <td>
-                    <button class="btn-edit" onclick="editPerson(${person.idx})">
-                        <i class="fas fa-edit"></i> 수정
-                    </button>
-                    <button class="btn-delete" onclick="deletePerson(${person.idx})">
-                        <i class="fas fa-trash"></i> 삭제
-                    </button>
+                    <div class="btn-group">
+                        <button class="btn-edit" onclick="editPerson(${person.idx})">
+                            <i class="fas fa-edit"></i> 수정
+                        </button>
+                        <button class="btn-delete" onclick="deletePerson(${person.idx})">
+                            <i class="fas fa-trash"></i> 삭제
+                        </button>
+                    </div>
                 </td>
             `;
             personTableBody.appendChild(row);
