@@ -863,3 +863,131 @@ div h2{
     background: white;
     color: #666;
 }
+
+/* 출장신청 불러오기 섹션 */
+.trip-request-section {
+    margin-bottom: 20px;
+    padding: 15px;
+    background: #f8f9fa;
+    border: 1px solid #e0e0e0;
+    border-radius: 8px;
+    display: flex;
+    align-items: center;
+    gap: 15px;
+}
+
+.btn-load-trip-request {
+    padding: 10px 20px;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+    border: none;
+    border-radius: 6px;
+    font-size: 13px;
+    font-weight: 600;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    transition: all 0.2s ease;
+}
+
+.btn-load-trip-request:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(102, 126, 234, 0.3);
+}
+
+.selected-trip-info {
+    flex: 1;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 10px 15px;
+    background: white;
+    border: 1px solid #667eea;
+    border-radius: 6px;
+}
+
+.trip-info-label {
+    font-size: 12px;
+    font-weight: 600;
+    color: #667eea;
+}
+
+.trip-info-text {
+    font-size: 13px;
+    color: #333;
+    flex: 1;
+}
+
+.btn-clear-trip {
+    background: none;
+    border: none;
+    color: #999;
+    font-size: 16px;
+    cursor: pointer;
+    padding: 4px;
+    transition: color 0.2s ease;
+}
+
+.btn-clear-trip:hover {
+    color: #d32f2f;
+}
+
+/* 출장신청 목록 테이블 */
+.trip-request-list {
+    max-height: 500px;
+    overflow-y: auto;
+}
+
+.trip-request-table {
+    width: 100%;
+    border-collapse: collapse;
+}
+
+.trip-request-table thead {
+    position: sticky;
+    top: 0;
+    background: #f5f7fa;
+    z-index: 10;
+}
+
+.trip-request-table th {
+    padding: 12px;
+    text-align: left;
+    font-size: 13px;
+    font-weight: 600;
+    color: #333;
+    border-bottom: 2px solid #ddd;
+}
+
+.trip-request-table td {
+    padding: 12px;
+    font-size: 13px;
+    color: #555;
+    border-bottom: 1px solid #f0f0f0;
+}
+
+.trip-request-table tbody tr {
+    cursor: pointer;
+    transition: background 0.2s ease;
+}
+
+.trip-request-table tbody tr:hover {
+    background: #f5f7ff;
+}
+
+.btn-select-trip {
+    padding: 6px 12px;
+    background: #667eea;
+    color: white;
+    border: none;
+    border-radius: 4px;
+    font-size: 12px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.btn-select-trip:hover {
+    background: #5568d3;
+}

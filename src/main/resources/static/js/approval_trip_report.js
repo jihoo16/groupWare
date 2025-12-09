@@ -21,6 +21,17 @@ document.addEventListener('DOMContentLoaded', function() {
     const saveDraftBtn = document.getElementById('saveDraftBtn');
     const submitBtn = document.getElementById('submitBtn');
 
+    // 출장신청 불러오기 관련 요소
+    const btnLoadTripRequest = document.getElementById('btnLoadTripRequest');
+    const tripRequestModal = document.getElementById('tripRequestModal');
+    const closeTripRequestModal = document.getElementById('closeTripRequestModal');
+    const cancelTripRequestBtn = document.getElementById('cancelTripRequestBtn');
+    const tripRequestSearch = document.getElementById('tripRequestSearch');
+    const tripRequestTableBody = document.getElementById('tripRequestTableBody');
+    const selectedTripInfo = document.getElementById('selectedTripInfo');
+    const selectedTripText = document.getElementById('selectedTripText');
+    const btnClearTrip = document.getElementById('btnClearTrip');
+
     // 샘플 직원 데이터
     const employees = [
         { id: 1, name: '김철수', position: '전무', dept: '경영지원본부' },
@@ -32,6 +43,36 @@ document.addEventListener('DOMContentLoaded', function() {
         { id: 7, name: '권민재', position: '상무', dept: '영업본부' },
         { id: 8, name: '유재석', position: '부장', dept: '영업본부 영업1팀' }
     ];
+
+    // 샘플 출장신청 데이터
+    const tripRequests = [
+        {
+            id: 1,
+            applicationDate: '2025-01-05',
+            destination: '부산',
+            startDate: '2025-01-15',
+            endDate: '2025-01-17',
+            purpose: '신규 거래처 미팅'
+        },
+        {
+            id: 2,
+            applicationDate: '2025-01-10',
+            destination: '대전 유성구',
+            startDate: '2025-01-20',
+            endDate: '2025-01-21',
+            purpose: '과제 현장 실사'
+        },
+        {
+            id: 3,
+            applicationDate: '2025-01-12',
+            destination: '제주',
+            startDate: '2025-01-25',
+            endDate: '2025-01-27',
+            purpose: '워크샵 및 팀 빌딩'
+        }
+    ];
+
+    let selectedTripRequest = null;
 
     // ============================================
     // 템플릿 사이드바 접기/펼치기 기능
@@ -964,14 +1005,178 @@ document.addEventListener('DOMContentLoaded', function() {
         updateOvertimePersonList();
     }
 
+    // ============================================
+    // 출장신청 불러오기 기능
+    // ============================================
+
+    // 출장신청 불러오기 모달 열기
+    if (btnLoadTripRequest) {
+        btnLoadTripRequest.addEventListener('click', function() {
+            loadTripRequestList();
+            if (tripRequestModal) {
+                tripRequestModal.classList.add('show');
+            }
+        });
+    }
+
+    // 출장신청 목록 로드
+    function loadTripRequestList() {
+        if (!tripRequestTableBody) return;
+
+        tripRequestTableBody.innerHTML = '';
+        tripRequests.forEach(trip => {
+            const row = document.createElement('tr');
+            row.innerHTML = `
+                <td>${trip.applicationDate}</td>
+                <td>${trip.destination}</td>
+                <td>${trip.startDate} ~ ${trip.endDate}</td>
+                <td>${trip.purpose}</td>
+                <td>
+                    <button type="button" class="btn-select-trip" data-trip-id="${trip.id}">
+                        선택
+                    </button>
+                </td>
+            `;
+            tripRequestTableBody.appendChild(row);
+        });
+
+        // 선택 버튼 이벤트 리스너 추가
+        document.querySelectorAll('.btn-select-trip').forEach(btn => {
+            btn.addEventListener('click', function() {
+                const tripId = parseInt(this.getAttribute('data-trip-id'));
+                selectTripRequest(tripId);
+            });
+        });
+    }
+
+    // 출장신청 검색
+    if (tripRequestSearch) {
+        tripRequestSearch.addEventListener('input', function() {
+            const term = this.value.toLowerCase();
+            if (tripRequestTableBody) {
+                const rows = tripRequestTableBody.querySelectorAll('tr');
+                rows.forEach(row => {
+                    const text = row.textContent.toLowerCase();
+                    row.style.display = text.includes(term) ? '' : 'none';
+                });
+            }
+        });
+    }
+
+    // 출장신청 선택
+    function selectTripRequest(tripId) {
+        const trip = tripRequests.find(t => t.id === tripId);
+        if (!trip) return;
+
+        selectedTripRequest = trip;
+
+        // 선택된 출장신청 정보 표시
+        if (selectedTripInfo && selectedTripText) {
+            selectedTripText.textContent = `${trip.destination} (${trip.startDate} ~ ${trip.endDate})`;
+            selectedTripInfo.style.display = 'flex';
+        }
+
+        // 출장보고서 폼에 자동 입력
+        const formTable = document.querySelector('.form-table');
+        if (formTable) {
+            // 출장지 입력
+            const destinationInput = formTable.querySelector('tr:nth-child(2) input[type="text"]');
+            if (destinationInput) {
+                destinationInput.value = trip.destination;
+            }
+
+            // 출장 기간 입력
+            const startDateInput = formTable.querySelector('tr:nth-child(3) input[type="date"]:first-of-type');
+            const endDateInput = formTable.querySelector('tr:nth-child(3) input[type="date"]:last-of-type');
+            if (startDateInput) startDateInput.value = trip.startDate;
+            if (endDateInput) endDateInput.value = trip.endDate;
+
+            // 출장 목적 입력
+            const purposeTextarea = formTable.querySelector('tr:nth-child(4) textarea');
+            if (purposeTextarea) {
+                purposeTextarea.value = trip.purpose;
+            }
+        }
+
+        // 모달 닫기
+        if (tripRequestModal) {
+            tripRequestModal.classList.remove('show');
+        }
+        if (tripRequestSearch) {
+            tripRequestSearch.value = '';
+        }
+        loadTripRequestList(); // 검색 초기화를 위해 다시 로드
+    }
+
+    // 출장신청 선택 취소
+    if (btnClearTrip) {
+        btnClearTrip.addEventListener('click', function() {
+            selectedTripRequest = null;
+
+            // 선택 정보 숨기기
+            if (selectedTripInfo) {
+                selectedTripInfo.style.display = 'none';
+            }
+
+            // 폼 필드 초기화
+            const formTable = document.querySelector('.form-table');
+            if (formTable) {
+                const destinationInput = formTable.querySelector('tr:nth-child(2) input[type="text"]');
+                const startDateInput = formTable.querySelector('tr:nth-child(3) input[type="date"]:first-of-type');
+                const endDateInput = formTable.querySelector('tr:nth-child(3) input[type="date"]:last-of-type');
+                const purposeTextarea = formTable.querySelector('tr:nth-child(4) textarea');
+
+                if (destinationInput) destinationInput.value = '';
+                if (startDateInput) startDateInput.value = '';
+                if (endDateInput) endDateInput.value = '';
+                if (purposeTextarea) purposeTextarea.value = '';
+            }
+        });
+    }
+
+    // 출장신청 모달 닫기
+    if (closeTripRequestModal) {
+        closeTripRequestModal.addEventListener('click', function() {
+            if (tripRequestModal) {
+                tripRequestModal.classList.remove('show');
+            }
+            if (tripRequestSearch) {
+                tripRequestSearch.value = '';
+            }
+            loadTripRequestList(); // 검색 초기화
+        });
+    }
+
+    if (cancelTripRequestBtn) {
+        cancelTripRequestBtn.addEventListener('click', function() {
+            if (tripRequestModal) {
+                tripRequestModal.classList.remove('show');
+            }
+            if (tripRequestSearch) {
+                tripRequestSearch.value = '';
+            }
+            loadTripRequestList(); // 검색 초기화
+        });
+    }
+
+    // ============================================
+    // 결재자 관리 기능
+    // ============================================
+
     // 결재자 추가 버튼
-    addApproverBtn.addEventListener('click', function() {
-        loadEmployeeList();
-        approverModal.classList.add('show');
-    });
+    if (addApproverBtn) {
+        addApproverBtn.addEventListener('click', function() {
+            loadEmployeeList();
+            if (approverModal) {
+                approverModal.classList.add('show');
+            }
+        });
+    }
 
     // 직원 목록 로드
     function loadEmployeeList() {
+        if (!employeeList) return;
+
         employeeList.innerHTML = '';
         employees.forEach(emp => {
             const item = document.createElement('div');
@@ -993,13 +1198,15 @@ document.addEventListener('DOMContentLoaded', function() {
     }
 
     // 직원 검색
-    approverSearch.addEventListener('input', function() {
-        const term = this.value.toLowerCase();
-        document.querySelectorAll('.employee-item').forEach(item => {
-            const text = item.textContent.toLowerCase();
-            item.style.display = text.includes(term) ? '' : 'none';
+    if (approverSearch) {
+        approverSearch.addEventListener('input', function() {
+            const term = this.value.toLowerCase();
+            document.querySelectorAll('.employee-item').forEach(item => {
+                const text = item.textContent.toLowerCase();
+                item.style.display = text.includes(term) ? '' : 'none';
+            });
         });
-    });
+    }
 
     // 결재자 추가
     window.addApprover = function() {
@@ -1021,6 +1228,8 @@ document.addEventListener('DOMContentLoaded', function() {
 
     // 결재자 칩 업데이트
     function updateApproverChips() {
+        if (!approverChips) return;
+
         if (selectedApprovers.length === 0) {
             approverChips.innerHTML = '<div class="empty-message">결재자를 추가해주세요</div>';
             return;
@@ -1049,63 +1258,73 @@ document.addEventListener('DOMContentLoaded', function() {
 
     // 모달 닫기
     window.closeModal = function() {
-        approverModal.classList.remove('show');
-        approverSearch.value = '';
+        if (approverModal) {
+            approverModal.classList.remove('show');
+        }
+        if (approverSearch) {
+            approverSearch.value = '';
+        }
         loadEmployeeList();
     };
 
     // 파일 업로드
-    fileInput.addEventListener('change', function(e) {
-        const files = Array.from(e.target.files);
-        files.forEach(file => {
-            if (selectedFiles.length >= 5) {
-                alert('최대 5개까지만 첨부 가능합니다.');
-                return;
-            }
-            if (file.size > 10 * 1024 * 1024) {
-                alert('파일 크기는 10MB를 초과할 수 없습니다.');
-                return;
-            }
-            selectedFiles.push(file);
+    if (fileInput) {
+        fileInput.addEventListener('change', function(e) {
+            const files = Array.from(e.target.files);
+            files.forEach(file => {
+                if (selectedFiles.length >= 5) {
+                    alert('최대 5개까지만 첨부 가능합니다.');
+                    return;
+                }
+                if (file.size > 10 * 1024 * 1024) {
+                    alert('파일 크기는 10MB를 초과할 수 없습니다.');
+                    return;
+                }
+                selectedFiles.push(file);
+            });
+            updateFileList();
+            fileInput.value = '';
         });
-        updateFileList();
-        fileInput.value = '';
-    });
+    }
 
     // 드래그 앤 드롭
-    fileUploadArea.addEventListener('dragover', function(e) {
-        e.preventDefault();
-        this.style.borderColor = '#667eea';
-        this.style.background = '#f5f7ff';
-    });
-
-    fileUploadArea.addEventListener('dragleave', function() {
-        this.style.borderColor = '#ddd';
-        this.style.background = 'white';
-    });
-
-    fileUploadArea.addEventListener('drop', function(e) {
-        e.preventDefault();
-        this.style.borderColor = '#ddd';
-        this.style.background = 'white';
-
-        const files = Array.from(e.dataTransfer.files);
-        files.forEach(file => {
-            if (selectedFiles.length >= 5) {
-                alert('최대 5개까지만 첨부 가능합니다.');
-                return;
-            }
-            if (file.size > 10 * 1024 * 1024) {
-                alert('파일 크기는 10MB를 초과할 수 없습니다.');
-                return;
-            }
-            selectedFiles.push(file);
+    if (fileUploadArea) {
+        fileUploadArea.addEventListener('dragover', function(e) {
+            e.preventDefault();
+            this.style.borderColor = '#667eea';
+            this.style.background = '#f5f7ff';
         });
-        updateFileList();
-    });
+
+        fileUploadArea.addEventListener('dragleave', function() {
+            this.style.borderColor = '#ddd';
+            this.style.background = 'white';
+        });
+
+        fileUploadArea.addEventListener('drop', function(e) {
+            e.preventDefault();
+            this.style.borderColor = '#ddd';
+            this.style.background = 'white';
+
+            const files = Array.from(e.dataTransfer.files);
+            files.forEach(file => {
+                if (selectedFiles.length >= 5) {
+                    alert('최대 5개까지만 첨부 가능합니다.');
+                    return;
+                }
+                if (file.size > 10 * 1024 * 1024) {
+                    alert('파일 크기는 10MB를 초과할 수 없습니다.');
+                    return;
+                }
+                selectedFiles.push(file);
+            });
+            updateFileList();
+        });
+    }
 
     // 파일 목록 업데이트
     function updateFileList() {
+        if (!fileList) return;
+
         if (selectedFiles.length === 0) {
             fileList.innerHTML = '';
             return;
@@ -1140,24 +1359,28 @@ document.addEventListener('DOMContentLoaded', function() {
     };
 
     // 임시저장
-    saveDraftBtn.addEventListener('click', function() {
-        alert('문서가 임시저장되었습니다.');
-        // 실제로는 API 호출
-    });
+    if (saveDraftBtn) {
+        saveDraftBtn.addEventListener('click', function() {
+            alert('문서가 임시저장되었습니다.');
+            // 실제로는 API 호출
+        });
+    }
 
     // 제출
-    submitBtn.addEventListener('click', function() {
-        if (selectedApprovers.length === 0) {
-            alert('결재자를 지정해주세요.');
-            return;
-        }
+    if (submitBtn) {
+        submitBtn.addEventListener('click', function() {
+            if (selectedApprovers.length === 0) {
+                alert('결재자를 지정해주세요.');
+                return;
+            }
 
-        if (confirm('결재를 요청하시겠습니까?')) {
-            alert('결재 요청이 완료되었습니다.');
-            // 실제로는 API 호출 후 목록으로 이동
-            window.location.href = '/approval';
-        }
-    });
+            if (confirm('결재를 요청하시겠습니까?')) {
+                alert('결재 요청이 완료되었습니다.');
+                // 실제로는 API 호출 후 목록으로 이동
+                window.location.href = '/approval';
+            }
+        });
+    }
 
     // PDF 저장 버튼 이벤트
     const savePdfBtn = document.getElementById('savePdfBtn');

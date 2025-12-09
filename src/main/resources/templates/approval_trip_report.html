@@ -59,7 +59,7 @@
                                     <div class="category-items">
                                         <a href="/approval/expense" class="menu-item">
                                             <i class="fas fa-won-sign"></i>
-                                            <span>지출결의서</span>
+                                            <span>지출승인서</span>
                                         </a>
                                         <a href="/approval/purchase" class="menu-item">
                                             <i class="fas fa-shopping-cart"></i>
@@ -149,6 +149,20 @@
 
                     <!-- 우측: 문서 편집 영역 -->
                     <div class="editor-area">
+                        <!-- 출장신청 불러오기 -->
+                        <div class="trip-request-section">
+                            <button type="button" class="btn-load-trip-request" id="btnLoadTripRequest">
+                                <i class="fas fa-download"></i> 출장신청 불러오기
+                            </button>
+                            <div class="selected-trip-info" id="selectedTripInfo" style="display: none;">
+                                <span class="trip-info-label">선택된 출장신청:</span>
+                                <span class="trip-info-text" id="selectedTripText"></span>
+                                <button type="button" class="btn-clear-trip" id="btnClearTrip">
+                                    <i class="fas fa-times"></i>
+                                </button>
+                            </div>
+                        </div>
+
                         <!-- 문서 양식 -->
                         <div class="document-form">
                             <!-- 결재라인 -->
@@ -222,8 +236,8 @@
                                     <td colspan="3"><textarea placeholder="출장을 통해 얻은 성과 및 결과" rows="5"></textarea></td>
                                 </tr>
                                 <tr>
-                                    <th>향후 계획</th>
-                                    <td colspan="3"><textarea placeholder="출장 결과를 바탕으로 한 향후 계획" rows="4"></textarea></td>
+                                    <th>비고</th>
+                                    <td colspan="3"><textarea placeholder="비고" rows="4"></textarea></td>
                                 </tr>
                             </table>
                         </div>
@@ -263,6 +277,43 @@
                 </div>
             </div>
         </main>
+    </div>
+
+    <!-- 출장신청 목록 모달 -->
+    <div class="modal" id="tripRequestModal">
+        <div class="modal-content modal-lg">
+            <div class="modal-header">
+                <h3><i class="fas fa-plane"></i> 출장신청 목록</h3>
+                <button class="close-modal" id="closeTripRequestModal">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            <div class="modal-body">
+                <div class="search-box">
+                    <input type="text" id="tripRequestSearch" placeholder="출장지 또는 목적으로 검색...">
+                    <i class="fas fa-search"></i>
+                </div>
+                <div class="trip-request-list">
+                    <table class="trip-request-table">
+                        <thead>
+                            <tr>
+                                <th width="80">신청일</th>
+                                <th>출장지</th>
+                                <th width="100">출장 기간</th>
+                                <th>목적</th>
+                                <th width="80">선택</th>
+                            </tr>
+                        </thead>
+                        <tbody id="tripRequestTableBody">
+                            <!-- 출장신청 목록이 여기에 동적으로 추가됩니다 -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn-secondary" id="cancelTripRequestBtn">닫기</button>
+            </div>
+        </div>
     </div>
 
     <script th:src="@{/js/approval_trip_report.js}"></script>
