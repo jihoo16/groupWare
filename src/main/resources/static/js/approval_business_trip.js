@@ -156,6 +156,8 @@ document.addEventListener('DOMContentLoaded', function() {
 
     // 템플릿 로드
     function loadTemplate(templateKey) {
+        if (!documentForm) return;
+
         const templateElement = document.getElementById('template-' + templateKey);
         if (templateElement) {
             // HTML에서 템플릿을 복사
@@ -965,13 +967,17 @@ document.addEventListener('DOMContentLoaded', function() {
     }
 
     // 결재자 추가 버튼
-    addApproverBtn.addEventListener('click', function() {
-        loadEmployeeList();
-        approverModal.classList.add('show');
-    });
+    if (addApproverBtn) {
+        addApproverBtn.addEventListener('click', function() {
+            loadEmployeeList();
+            approverModal.classList.add('show');
+        });
+    }
 
     // 직원 목록 로드
     function loadEmployeeList() {
+        if (!employeeList) return;
+
         employeeList.innerHTML = '';
         employees.forEach(emp => {
             const item = document.createElement('div');
@@ -993,13 +999,15 @@ document.addEventListener('DOMContentLoaded', function() {
     }
 
     // 직원 검색
-    approverSearch.addEventListener('input', function() {
-        const term = this.value.toLowerCase();
-        document.querySelectorAll('.employee-item').forEach(item => {
-            const text = item.textContent.toLowerCase();
-            item.style.display = text.includes(term) ? '' : 'none';
+    if (approverSearch) {
+        approverSearch.addEventListener('input', function() {
+            const term = this.value.toLowerCase();
+            document.querySelectorAll('.employee-item').forEach(item => {
+                const text = item.textContent.toLowerCase();
+                item.style.display = text.includes(term) ? '' : 'none';
+            });
         });
-    });
+    }
 
     // 결재자 추가
     window.addApprover = function() {
@@ -1021,6 +1029,8 @@ document.addEventListener('DOMContentLoaded', function() {
 
     // 결재자 칩 업데이트
     function updateApproverChips() {
+        if (!approverChips) return;
+
         if (selectedApprovers.length === 0) {
             approverChips.innerHTML = '<div class="empty-message">결재자를 추가해주세요</div>';
             return;
@@ -1049,63 +1059,77 @@ document.addEventListener('DOMContentLoaded', function() {
 
     // 모달 닫기
     window.closeModal = function() {
-        approverModal.classList.remove('show');
-        approverSearch.value = '';
+        if (approverModal) {
+            approverModal.classList.remove('show');
+        }
+        if (approverSearch) {
+            approverSearch.value = '';
+        }
         loadEmployeeList();
     };
 
     // 파일 업로드
-    fileInput.addEventListener('change', function(e) {
-        const files = Array.from(e.target.files);
-        files.forEach(file => {
-            if (selectedFiles.length >= 5) {
-                alert('최대 5개까지만 첨부 가능합니다.');
-                return;
-            }
-            if (file.size > 10 * 1024 * 1024) {
-                alert('파일 크기는 10MB를 초과할 수 없습니다.');
-                return;
-            }
-            selectedFiles.push(file);
+    if (fileInput) {
+        fileInput.addEventListener('change', function(e) {
+            const files = Array.from(e.target.files);
+            files.forEach(file => {
+                if (selectedFiles.length >= 5) {
+                    alert('최대 5개까지만 첨부 가능합니다.');
+                    return;
+                }
+                if (file.size > 10 * 1024 * 1024) {
+                    alert('파일 크기는 10MB를 초과할 수 없습니다.');
+                    return;
+                }
+                selectedFiles.push(file);
+            });
+            updateFileList();
+            fileInput.value = '';
         });
-        updateFileList();
-        fileInput.value = '';
-    });
+    }
 
     // 드래그 앤 드롭
-    fileUploadArea.addEventListener('dragover', function(e) {
-        e.preventDefault();
-        this.style.borderColor = '#667eea';
-        this.style.background = '#f5f7ff';
-    });
-
-    fileUploadArea.addEventListener('dragleave', function() {
-        this.style.borderColor = '#ddd';
-        this.style.background = 'white';
-    });
-
-    fileUploadArea.addEventListener('drop', function(e) {
-        e.preventDefault();
-        this.style.borderColor = '#ddd';
-        this.style.background = 'white';
-
-        const files = Array.from(e.dataTransfer.files);
-        files.forEach(file => {
-            if (selectedFiles.length >= 5) {
-                alert('최대 5개까지만 첨부 가능합니다.');
-                return;
-            }
-            if (file.size > 10 * 1024 * 1024) {
-                alert('파일 크기는 10MB를 초과할 수 없습니다.');
-                return;
-            }
-            selectedFiles.push(file);
+    if (fileUploadArea) {
+        fileUploadArea.addEventListener('dragover', function(e) {
+            e.preventDefault();
+            this.style.borderColor = '#667eea';
+            this.style.background = '#f5f7ff';
         });
-        updateFileList();
-    });
+    }
+
+    if (fileUploadArea) {
+        fileUploadArea.addEventListener('dragleave', function() {
+            this.style.borderColor = '#ddd';
+            this.style.background = 'white';
+        });
+    }
+
+    if (fileUploadArea) {
+        fileUploadArea.addEventListener('drop', function(e) {
+            e.preventDefault();
+            this.style.borderColor = '#ddd';
+            this.style.background = 'white';
+
+            const files = Array.from(e.dataTransfer.files);
+            files.forEach(file => {
+                if (selectedFiles.length >= 5) {
+                    alert('최대 5개까지만 첨부 가능합니다.');
+                    return;
+                }
+                if (file.size > 10 * 1024 * 1024) {
+                    alert('파일 크기는 10MB를 초과할 수 없습니다.');
+                    return;
+                }
+                selectedFiles.push(file);
+            });
+            updateFileList();
+        });
+    }
 
     // 파일 목록 업데이트
     function updateFileList() {
+        if (!fileList) return;
+
         if (selectedFiles.length === 0) {
             fileList.innerHTML = '';
             return;
@@ -1140,24 +1164,28 @@ document.addEventListener('DOMContentLoaded', function() {
     };
 
     // 임시저장
-    saveDraftBtn.addEventListener('click', function() {
-        alert('문서가 임시저장되었습니다.');
-        // 실제로는 API 호출
-    });
+    if (saveDraftBtn) {
+        saveDraftBtn.addEventListener('click', function() {
+            alert('문서가 임시저장되었습니다.');
+            // 실제로는 API 호출
+        });
+    }
 
     // 제출
-    submitBtn.addEventListener('click', function() {
-        if (selectedApprovers.length === 0) {
-            alert('결재자를 지정해주세요.');
-            return;
-        }
+    if (submitBtn) {
+        submitBtn.addEventListener('click', function() {
+            if (selectedApprovers.length === 0) {
+                alert('결재자를 지정해주세요.');
+                return;
+            }
 
-        if (confirm('결재를 요청하시겠습니까?')) {
-            alert('결재 요청이 완료되었습니다.');
-            // 실제로는 API 호출 후 목록으로 이동
-            window.location.href = '/approval';
-        }
-    });
+            if (confirm('결재를 요청하시겠습니까?')) {
+                alert('결재 요청이 완료되었습니다.');
+                // 실제로는 API 호출 후 목록으로 이동
+                window.location.href = '/approval';
+            }
+        });
+    }
 
     // PDF 저장 버튼 이벤트
     const savePdfBtn = document.getElementById('savePdfBtn');
@@ -1399,6 +1427,186 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     }
 
-    // 초기 템플릿 로드
-    loadTemplate('vacation');
+    // ============================================
+    // 동행 인원 선택 기능
+    // ============================================
+
+    let selectedCompanions = [];
+    const companionModal = document.getElementById('companionModal');
+    const companionEmpty = document.getElementById('companionEmpty');
+    const companionTableWrapper = document.getElementById('companionTableWrapper');
+    const companionTableBody = document.getElementById('companionTableBody');
+    const btnAddCompanion = document.getElementById('btnAddCompanion');
+    const closeCompanionModal = document.getElementById('closeCompanionModal');
+    const cancelCompanionBtn = document.getElementById('cancelCompanionBtn');
+    const confirmCompanionBtn = document.getElementById('confirmCompanionBtn');
+    const companionSearch = document.getElementById('companionSearch');
+    const employeeTableBody = document.getElementById('employeeTableBody');
+
+    // 동행 인원 빈 상태 클릭
+    if (companionEmpty) {
+        companionEmpty.addEventListener('click', openCompanionModal);
+    }
+
+    // 인원 추가 버튼 클릭
+    if (btnAddCompanion) {
+        btnAddCompanion.addEventListener('click', openCompanionModal);
+    }
+
+    // 동행 인원 선택 모달 열기
+    function openCompanionModal() {
+        if (!companionModal) return;
+        loadCompanionEmployeeList();
+        companionModal.classList.add('show');
+    }
+
+    // 직원 목록 로드 (테이블 형식)
+    function loadCompanionEmployeeList() {
+        if (!employeeTableBody) return;
+
+        employeeTableBody.innerHTML = '';
+        employees.forEach(emp => {
+            const row = document.createElement('tr');
+            row.dataset.employeeId = emp.id;
+
+            // 이미 선택된 직원인지 확인
+            const isSelected = selectedCompanions.some(c => c.id === emp.id);
+            if (isSelected) {
+                row.classList.add('selected');
+            }
+
+            row.innerHTML = `
+                <td><input type="checkbox" class="employee-checkbox" data-id="${emp.id}" ${isSelected ? 'checked' : ''}></td>
+                <td>${emp.name}</td>
+                <td>${emp.dept}</td>
+                <td>${emp.position}</td>
+            `;
+
+            // 행 클릭 시 체크박스 토글
+            row.addEventListener('click', function(e) {
+                if (e.target.tagName !== 'INPUT') {
+                    const checkbox = this.querySelector('.employee-checkbox');
+                    checkbox.checked = !checkbox.checked;
+                    this.classList.toggle('selected');
+                }
+            });
+
+            // 체크박스 클릭 시 행 선택 상태 변경
+            const checkbox = row.querySelector('.employee-checkbox');
+            checkbox.addEventListener('change', function() {
+                row.classList.toggle('selected', this.checked);
+            });
+
+            employeeTableBody.appendChild(row);
+        });
+    }
+
+    // 동행 인원 검색
+    if (companionSearch) {
+        companionSearch.addEventListener('input', function() {
+            if (!employeeTableBody) return;
+
+            const term = this.value.toLowerCase();
+            const rows = employeeTableBody.querySelectorAll('tr');
+            rows.forEach(row => {
+                const text = row.textContent.toLowerCase();
+                row.style.display = text.includes(term) ? '' : 'none';
+            });
+        });
+    }
+
+    // 동행 인원 확인 버튼
+    if (confirmCompanionBtn) {
+        confirmCompanionBtn.addEventListener('click', function() {
+            if (!employeeTableBody) return;
+
+            const checkedBoxes = employeeTableBody.querySelectorAll('.employee-checkbox:checked');
+            selectedCompanions = [];
+
+            checkedBoxes.forEach(checkbox => {
+                const empId = parseInt(checkbox.dataset.id);
+                const employee = employees.find(e => e.id === empId);
+                if (employee) {
+                    selectedCompanions.push(employee);
+                }
+            });
+
+            updateCompanionTable();
+            closeCompanionModalFn();
+        });
+    }
+
+    // 동행 인원 모달 닫기
+    function closeCompanionModalFn() {
+        if (companionModal) {
+            companionModal.classList.remove('show');
+        }
+        if (companionSearch) {
+            companionSearch.value = '';
+        }
+    }
+
+    if (closeCompanionModal) {
+        closeCompanionModal.addEventListener('click', closeCompanionModalFn);
+    }
+
+    if (cancelCompanionBtn) {
+        cancelCompanionBtn.addEventListener('click', closeCompanionModalFn);
+    }
+
+    // 모달 배경 클릭 시 닫기
+    if (companionModal) {
+        companionModal.addEventListener('click', function(e) {
+            if (e.target === companionModal) {
+                closeCompanionModalFn();
+            }
+        });
+    }
+
+    // 동행 인원 테이블 업데이트
+    function updateCompanionTable() {
+        if (!companionEmpty || !companionTableWrapper || !companionTableBody) return;
+
+        if (selectedCompanions.length === 0) {
+            // 빈 상태 표시
+            companionEmpty.style.display = 'block';
+            companionTableWrapper.style.display = 'none';
+            companionTableBody.innerHTML = '';
+            return;
+        }
+
+        // 테이블 표시, 빈 상태 숨김
+        companionEmpty.style.display = 'none';
+        companionTableWrapper.style.display = 'block';
+
+        // 테이블 내용 생성
+        companionTableBody.innerHTML = '';
+        selectedCompanions.forEach((companion, index) => {
+            const row = document.createElement('tr');
+            row.innerHTML = `
+                <td>${index + 1}</td>
+                <td>${companion.name}</td>
+                <td>${companion.dept}</td>
+                <td>${companion.position}</td>
+                <td>
+                    <button type="button" class="btn-remove-companion" data-index="${index}">
+                        <i class="fas fa-times"></i>
+                    </button>
+                </td>
+            `;
+
+            // 삭제 버튼 이벤트
+            const removeBtn = row.querySelector('.btn-remove-companion');
+            removeBtn.addEventListener('click', function() {
+                const idx = parseInt(this.dataset.index);
+                selectedCompanions.splice(idx, 1);
+                updateCompanionTable();
+            });
+
+            companionTableBody.appendChild(row);
+        });
+    }
+
+    // 초기 템플릿 로드 (출장신청 페이지는 템플릿 선택 기능 없음)
+    // loadTemplate('vacation');
 });

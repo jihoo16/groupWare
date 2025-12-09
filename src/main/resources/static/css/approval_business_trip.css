@@ -863,3 +863,200 @@ div h2{
     background: white;
     color: #666;
 }
+
+/* 동행 인원 빈 상태 */
+.companion-empty {
+    padding: 12px;
+    text-align: center;
+    color: #999;
+    font-size: 13px;
+    cursor: pointer;
+    border: 1px dashed #ddd;
+    border-radius: 4px;
+    transition: all 0.2s ease;
+    background: #fafafa;
+}
+
+.companion-empty:hover {
+    background: #f0f0f0;
+    border-color: #999;
+    color: #666;
+}
+
+/* 동행 인원 테이블 */
+.companion-table {
+    width: 100%;
+    border-collapse: collapse;
+    border: 1px solid #333;
+    margin: 0;
+}
+
+.companion-table thead {
+    background: #f5f5f5;
+}
+
+.companion-table th,
+.companion-table td {
+    border: 1px solid #333;
+    padding: 8px;
+    text-align: center;
+    font-size: 13px;
+}
+
+.companion-table th {
+    font-weight: 600;
+    color: #333;
+}
+
+.companion-table td {
+    color: #555;
+}
+
+.companion-table .btn-remove-companion {
+    background: none;
+    border: none;
+    color: #d32f2f;
+    font-size: 16px;
+    cursor: pointer;
+    padding: 0;
+    width: 24px;
+    height: 24px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.companion-table .btn-remove-companion:hover {
+    color: #b71c1c;
+}
+
+/* 인원 추가 버튼 */
+.btn-add-companion {
+    width: 100%;
+    padding: 8px 12px;
+    margin-top: 8px;
+    background: white;
+    color: #333;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    font-size: 13px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+}
+
+.btn-add-companion:hover {
+    background: #f5f5f5;
+    border-color: #999;
+}
+
+.btn-add-companion i {
+    font-size: 12px;
+}
+
+/* 직원 선택 모달 */
+.modal-lg {
+    max-width: 600px;
+}
+
+.search-box {
+    position: relative;
+    margin-bottom: 20px;
+}
+
+.search-box input {
+    width: 100%;
+    padding: 12px 40px 12px 16px;
+    border: 1px solid #ddd;
+    border-radius: 8px;
+    font-size: 14px;
+}
+
+.search-box input:focus {
+    outline: none;
+    border-color: #667eea;
+    box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+}
+
+.search-box i {
+    position: absolute;
+    right: 14px;
+    top: 50%;
+    transform: translateY(-50%);
+    color: #999;
+}
+
+.employee-list {
+    max-height: 400px;
+    overflow-y: auto;
+}
+
+.employee-table {
+    width: 100%;
+    border-collapse: collapse;
+}
+
+.employee-table thead {
+    position: sticky;
+    top: 0;
+    background: #f5f7fa;
+    z-index: 10;
+}
+
+.employee-table th {
+    padding: 12px;
+    text-align: left;
+    font-size: 13px;
+    font-weight: 600;
+    color: #333;
+    border-bottom: 2px solid #ddd;
+}
+
+.employee-table td {
+    padding: 12px;
+    font-size: 13px;
+    color: #555;
+    border-bottom: 1px solid #f0f0f0;
+}
+
+.employee-table tbody tr {
+    cursor: pointer;
+    transition: background 0.2s ease;
+}
+
+.employee-table tbody tr:hover {
+    background: #f5f7ff;
+}
+
+.employee-table tbody tr.selected {
+    background: #e8f0fe;
+}
+
+.employee-checkbox {
+    width: 18px;
+    height: 18px;
+    cursor: pointer;
+    accent-color: #667eea;
+}
+
+.close-modal {
+    background: rgba(255, 255, 255, 0.2);
+    border: none;
+    width: 30px;
+    height: 30px;
+    border-radius: 50%;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: white;
+    font-size: 16px;
+    transition: all 0.2s ease;
+}
+
+.close-modal:hover {
+    background: rgba(255, 255, 255, 0.3);
+}
