@@ -1,6 +1,6 @@
 <!DOCTYPE html>
 <html lang="ko" xmlns:th="http://www.thymeleaf.org">
-<head th:replace="~{fragments/layout :: head('지출결의서', '/css/approval_expense.css')}"></head>
+<head th:replace="~{fragments/layout :: head('지출승인서', '/css/approval_expense.css')}"></head>
 <body>
     <div class="container">
         <!-- 좌측 네비게이션 바 -->
@@ -10,7 +10,7 @@
         <main class="main-content">
             <header class="header">
                 <div class="header-left">
-                    <h1 class="page-title"><i class="fas fa-won-sign"></i> 문서 작성 > 지출결의서</h1>
+                    <h1 class="page-title"><i class="fas fa-won-sign"></i> 문서 작성 > 지출승인서</h1>
                 </div>
                 <div class="header-right">
                     <button class="btn-secondary" onclick="history.back()">
@@ -59,7 +59,7 @@
                                     <div class="category-items">
                                         <a href="/approval/expense" class="menu-item active">
                                             <i class="fas fa-won-sign"></i>
-                                            <span>지출결의서</span>
+                                            <span>지출승인서</span>
                                         </a>
                                         <a href="/approval/purchase" class="menu-item">
                                             <i class="fas fa-shopping-cart"></i>
@@ -151,85 +151,102 @@
                     <div class="editor-area">
                         <!-- 문서 양식 -->
                         <div class="document-form">
-                            <!-- 결재라인 -->
-                            <div class="approval-line-box">
-                                <table class="approval-line-table">
-                                    <tr>
-                                        <th class="approval-header">담당</th>
-                                        <th class="approval-header">부서장</th>
-                                        <th class="approval-header">대표이사</th>
-                                    </tr>
-                                    <tr>
-                                        <td class="approval-sign-cell">
-                                            <div class="sign-area">
-                                                <span class="sign-placeholder">결재</span>
-                                            </div>
-                                        </td>
-                                        <td class="approval-sign-cell">
-                                            <div class="sign-area">
-                                                <span class="sign-placeholder">결재</span>
-                                            </div>
-                                        </td>
-                                        <td class="approval-sign-cell">
-                                            <div class="sign-area">
-                                                <span class="sign-placeholder">결재</span>
-                                            </div>
-                                        </td>
-                                    </tr>
-                                    <tr>
-                                        <td class="approval-name-cell">
-                                            <span class="approver-name">-</span>
-                                        </td>
-                                        <td class="approval-name-cell">
-                                            <span class="approver-name">-</span>
-                                        </td>
-                                        <td class="approval-name-cell">
-                                            <span class="approver-name">-</span>
-                                        </td>
-                                    </tr>
+                            <!-- 상단 헤더: 제목 + 결재라인 -->
+                            <div class="expense-header">
+                                <div class="expense-title-section">
+                                    <h2 class="expense-doc-title">支 出 稟 議 書</h2>
+                                    <div class="expense-date">
+                                        <input type="date" id="documentDate" class="auto-today">
+                                    </div>
+                                </div>
+                                <div class="expense-approval-line">
+                                    <table class="expense-approval-table">
+                                        <tr>
+                                            <th class="approval-position">담 당</th>
+                                            <th class="approval-position">상 무</th>
+                                            <th class="approval-position">대 표</th>
+                                        </tr>
+                                        <tr>
+                                            <td class="approval-sign"></td>
+                                            <td class="approval-sign"></td>
+                                            <td class="approval-sign"></td>
+                                        </tr>
+                                    </table>
+                                </div>
+                            </div>
 
+                            <!-- 기본 정보 테이블 -->
+                            <table class="expense-info-table">
+                                <tr>
+                                    <th style="width: 80px;">부서/팀</th>
+                                    <td style="width: 150px;"><input type="text" value="SI사업부" readonly></td>
+                                    <th style="width: 100px;">프로젝트명</th>
+                                    <td><input type="text" placeholder="프로젝트명 입력"></td>
+                                </tr>
+                                <tr>
+                                    <th>一金</th>
+                                    <td colspan="3">
+                                        <div class="amount-display">
+                                            <span id="amountKorean" class="korean-amount">일금</span>
+                                            <span class="amount-suffix">整</span>
+                                            <span class="amount-number" id="amountNumber">(₩ 0)</span>
+                                        </div>
+                                    </td>
+                                </tr>
+                            </table>
+
+                            <!-- 지출 내역 테이블 -->
+                            <div class="expense-detail-section">
+                                <div class="section-header-with-btn">
+                                    <button type="button" class="btn-add-row" id="addRowBtn">
+                                        <i class="fas fa-plus"></i> 행 추가
+                                    </button>
+                                </div>
+                                <table class="expense-detail-table" id="expenseTable">
+                                    <thead>
+                                        <tr>
+                                            <th style="width: 70px;">월/일</th>
+                                            <th style="width: 35%;">적요</th>
+                                            <th style="width: 100px;">상 호</th>
+                                            <th style="width: 120px;">금 액</th>
+                                            <th style="width: 80px;">비고</th>
+                                            <th style="width: 40px;"></th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="expenseTableBody">
+                                        <tr class="expense-row">
+                                            <td><input type="text" class="date-input" placeholder="10/28"></td>
+                                            <td><input type="text" class="description-input" placeholder="내역 입력"></td>
+                                            <td><input type="text" class="shop-input" placeholder="상호명"></td>
+                                            <td><input type="text" class="amount-input" placeholder="금액"></td>
+                                            <td><input type="text" class="note-input" placeholder=""></td>
+                                            <td>
+                                                <button type="button" class="btn-delete-row">
+                                                    <i class="fas fa-times"></i>
+                                                </button>
+                                            </td>
+                                        </tr>
+                                    </tbody>
                                 </table>
                             </div>
 
-                            <h2 class="doc-title">지 출 결 의 서</h2>
-
-                            <table class="form-table">
+                            <!-- 하단 정보 -->
+                            <table class="expense-summary-table">
                                 <tr>
-                                    <th>기안자</th>
-                                    <td><input type="text" value="홍길동" readonly></td>
-                                    <th>부서</th>
-                                    <td><input type="text" value="개발팀" readonly></td>
-                                </tr>
-                                <tr>
-                                    <th>신청일</th>
+                                    <th style="width: 80px;">합계</th>
+                                    <td style="width: 150px;"><input type="text" id="totalAmount" readonly></td>
+                                    <th style="width: 80px;">기안일자</th>
                                     <td><input type="date" class="auto-today"></td>
-                                    <th>사용일</th>
-                                    <td><input type="date"></td>
-                                </tr>
-                                <tr>
-                                    <th>지출 항목</th>
-                                    <td colspan="3"><input type="text" placeholder="예: 사무용품 구매"></td>
                                 </tr>
                                 <tr>
                                     <th>금액</th>
-                                    <td><input type="number" placeholder="금액 입력"></td>
-                                    <th>지급 방법</th>
-                                    <td>
-                                        <select>
-                                            <option>법인카드</option>
-                                            <option>개인 카드</option>
-                                            <option>현금</option>
-                                            <option>계좌이체</option>
-                                        </select>
-                                    </td>
+                                    <td><input type="text" id="totalAmountCopy" readonly></td>
+                                    <th>기안자</th>
+                                    <td><input type="text" value="홍길동" readonly></td>
                                 </tr>
                                 <tr>
-                                    <th>사용 내역</th>
-                                    <td colspan="3"><textarea placeholder="상세 사용 내역을 입력하세요"></textarea></td>
-                                </tr>
-                                <tr>
-                                    <th>비고</th>
-                                    <td colspan="3"><textarea placeholder="추가 사항이 있으면 입력하세요"></textarea></td>
+                                    <th>품의내용</th>
+                                    <td colspan="3"><textarea placeholder="품의 내용을 입력하세요" rows="3"></textarea></td>
                                 </tr>
                             </table>
                         </div>

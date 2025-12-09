@@ -156,6 +156,8 @@ document.addEventListener('DOMContentLoaded', function() {
 
     // 템플릿 로드
     function loadTemplate(templateKey) {
+        if (!documentForm) return;
+
         const templateElement = document.getElementById('template-' + templateKey);
         if (templateElement) {
             // HTML에서 템플릿을 복사
@@ -965,13 +967,17 @@ document.addEventListener('DOMContentLoaded', function() {
     }
 
     // 결재자 추가 버튼
-    addApproverBtn.addEventListener('click', function() {
-        loadEmployeeList();
-        approverModal.classList.add('show');
-    });
+    if (addApproverBtn) {
+        addApproverBtn.addEventListener('click', function() {
+            loadEmployeeList();
+            approverModal.classList.add('show');
+        });
+    }
 
     // 직원 목록 로드
     function loadEmployeeList() {
+        if (!employeeList) return;
+
         employeeList.innerHTML = '';
         employees.forEach(emp => {
             const item = document.createElement('div');
@@ -993,13 +999,15 @@ document.addEventListener('DOMContentLoaded', function() {
     }
 
     // 직원 검색
-    approverSearch.addEventListener('input', function() {
-        const term = this.value.toLowerCase();
-        document.querySelectorAll('.employee-item').forEach(item => {
-            const text = item.textContent.toLowerCase();
-            item.style.display = text.includes(term) ? '' : 'none';
+    if (approverSearch) {
+        approverSearch.addEventListener('input', function() {
+            const term = this.value.toLowerCase();
+            document.querySelectorAll('.employee-item').forEach(item => {
+                const text = item.textContent.toLowerCase();
+                item.style.display = text.includes(term) ? '' : 'none';
+            });
         });
-    });
+    }
 
     // 결재자 추가
     window.addApprover = function() {
@@ -1021,6 +1029,8 @@ document.addEventListener('DOMContentLoaded', function() {
 
     // 결재자 칩 업데이트
     function updateApproverChips() {
+        if (!approverChips) return;
+
         if (selectedApprovers.length === 0) {
             approverChips.innerHTML = '<div class="empty-message">결재자를 추가해주세요</div>';
             return;
@@ -1049,63 +1059,73 @@ document.addEventListener('DOMContentLoaded', function() {
 
     // 모달 닫기
     window.closeModal = function() {
-        approverModal.classList.remove('show');
-        approverSearch.value = '';
+        if (approverModal) {
+            approverModal.classList.remove('show');
+        }
+        if (approverSearch) {
+            approverSearch.value = '';
+        }
         loadEmployeeList();
     };
 
     // 파일 업로드
-    fileInput.addEventListener('change', function(e) {
-        const files = Array.from(e.target.files);
-        files.forEach(file => {
-            if (selectedFiles.length >= 5) {
-                alert('최대 5개까지만 첨부 가능합니다.');
-                return;
-            }
-            if (file.size > 10 * 1024 * 1024) {
-                alert('파일 크기는 10MB를 초과할 수 없습니다.');
-                return;
-            }
-            selectedFiles.push(file);
+    if (fileInput) {
+        fileInput.addEventListener('change', function(e) {
+            const files = Array.from(e.target.files);
+            files.forEach(file => {
+                if (selectedFiles.length >= 5) {
+                    alert('최대 5개까지만 첨부 가능합니다.');
+                    return;
+                }
+                if (file.size > 10 * 1024 * 1024) {
+                    alert('파일 크기는 10MB를 초과할 수 없습니다.');
+                    return;
+                }
+                selectedFiles.push(file);
+            });
+            updateFileList();
+            fileInput.value = '';
         });
-        updateFileList();
-        fileInput.value = '';
-    });
+    }
 
     // 드래그 앤 드롭
-    fileUploadArea.addEventListener('dragover', function(e) {
-        e.preventDefault();
-        this.style.borderColor = '#667eea';
-        this.style.background = '#f5f7ff';
-    });
-
-    fileUploadArea.addEventListener('dragleave', function() {
-        this.style.borderColor = '#ddd';
-        this.style.background = 'white';
-    });
-
-    fileUploadArea.addEventListener('drop', function(e) {
-        e.preventDefault();
-        this.style.borderColor = '#ddd';
-        this.style.background = 'white';
-
-        const files = Array.from(e.dataTransfer.files);
-        files.forEach(file => {
-            if (selectedFiles.length >= 5) {
-                alert('최대 5개까지만 첨부 가능합니다.');
-                return;
-            }
-            if (file.size > 10 * 1024 * 1024) {
-                alert('파일 크기는 10MB를 초과할 수 없습니다.');
-                return;
-            }
-            selectedFiles.push(file);
+    if (fileUploadArea) {
+        fileUploadArea.addEventListener('dragover', function(e) {
+            e.preventDefault();
+            this.style.borderColor = '#667eea';
+            this.style.background = '#f5f7ff';
         });
-        updateFileList();
-    });
+
+        fileUploadArea.addEventListener('dragleave', function() {
+            this.style.borderColor = '#ddd';
+            this.style.background = 'white';
+        });
+
+        fileUploadArea.addEventListener('drop', function(e) {
+            e.preventDefault();
+            this.style.borderColor = '#ddd';
+            this.style.background = 'white';
+
+            const files = Array.from(e.dataTransfer.files);
+            files.forEach(file => {
+                if (selectedFiles.length >= 5) {
+                    alert('최대 5개까지만 첨부 가능합니다.');
+                    return;
+                }
+                if (file.size > 10 * 1024 * 1024) {
+                    alert('파일 크기는 10MB를 초과할 수 없습니다.');
+                    return;
+                }
+                selectedFiles.push(file);
+            });
+            updateFileList();
+        });
+    }
 
     // 파일 목록 업데이트
     function updateFileList() {
+        if (!fileList) return;
+
         if (selectedFiles.length === 0) {
             fileList.innerHTML = '';
             return;
@@ -1140,24 +1160,23 @@ document.addEventListener('DOMContentLoaded', function() {
     };
 
     // 임시저장
-    saveDraftBtn.addEventListener('click', function() {
-        alert('문서가 임시저장되었습니다.');
-        // 실제로는 API 호출
-    });
+    if (saveDraftBtn) {
+        saveDraftBtn.addEventListener('click', function() {
+            alert('문서가 임시저장되었습니다.');
+            // 실제로는 API 호출
+        });
+    }
 
     // 제출
-    submitBtn.addEventListener('click', function() {
-        if (selectedApprovers.length === 0) {
-            alert('결재자를 지정해주세요.');
-            return;
-        }
-
-        if (confirm('결재를 요청하시겠습니까?')) {
-            alert('결재 요청이 완료되었습니다.');
-            // 실제로는 API 호출 후 목록으로 이동
-            window.location.href = '/approval';
-        }
-    });
+    if (submitBtn) {
+        submitBtn.addEventListener('click', function() {
+            if (confirm('저장하시겠습니까?')) {
+                alert('저장이 완료되었습니다.');
+                // 실제로는 API 호출 후 목록으로 이동
+                window.location.href = '/approval';
+            }
+        });
+    }
 
     // PDF 저장 버튼 이벤트
     const savePdfBtn = document.getElementById('savePdfBtn');
@@ -1399,6 +1418,160 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     }
 
-    // 초기 템플릿 로드
-    loadTemplate('vacation');
+    // ============================================
+    // 지출품의서 전용 기능
+    // ============================================
+
+    // 오늘 날짜 자동 입력
+    const autoTodayFields = document.querySelectorAll('.auto-today');
+    const today = new Date().toISOString().split('T')[0];
+    autoTodayFields.forEach(field => {
+        field.value = today;
+    });
+
+    // 행 추가 버튼
+    const addRowBtn = document.getElementById('addRowBtn');
+    if (addRowBtn) {
+        addRowBtn.addEventListener('click', function() {
+            const tbody = document.getElementById('expenseTableBody');
+            const newRow = document.createElement('tr');
+            newRow.className = 'expense-row';
+            newRow.innerHTML = `
+                <td><input type="text" class="date-input" placeholder="10/28"></td>
+                <td><input type="text" class="description-input" placeholder="내역 입력"></td>
+                <td><input type="text" class="vendor-input" placeholder=""></td>
+                <td><input type="text" class="shop-input" placeholder="상호명"></td>
+                <td><input type="text" class="amount-input" placeholder="금액"></td>
+                <td><input type="text" class="note-input" placeholder=""></td>
+                <td>
+                    <button type="button" class="btn-delete-row">
+                        <i class="fas fa-times"></i>
+                    </button>
+                </td>
+            `;
+            tbody.appendChild(newRow);
+
+            // 새로 추가된 행의 삭제 버튼과 금액 입력에 이벤트 리스너 추가
+            attachRowEventListeners(newRow);
+        });
+    }
+
+    // 행 삭제 기능
+    function attachRowEventListeners(row) {
+        const deleteBtn = row.querySelector('.btn-delete-row');
+        if (deleteBtn) {
+            deleteBtn.addEventListener('click', function() {
+                const tbody = document.getElementById('expenseTableBody');
+                if (tbody.querySelectorAll('.expense-row').length > 1) {
+                    row.remove();
+                    calculateTotal();
+                } else {
+                    alert('최소 1개의 행은 유지해야 합니다.');
+                }
+            });
+        }
+
+        const amountInput = row.querySelector('.amount-input');
+        if (amountInput) {
+            amountInput.addEventListener('input', calculateTotal);
+        }
+    }
+
+    // 초기 행들에 이벤트 리스너 추가
+    document.querySelectorAll('.expense-row').forEach(row => {
+        attachRowEventListeners(row);
+    });
+
+    // 금액 합계 계산
+    function calculateTotal() {
+        const amountInputs = document.querySelectorAll('.amount-input');
+        let total = 0;
+
+        amountInputs.forEach(input => {
+            const value = input.value.replace(/,/g, '');
+            const amount = parseInt(value) || 0;
+            total += amount;
+        });
+
+        // 합계 표시
+        const totalAmountField = document.getElementById('totalAmount');
+        const totalAmountCopyField = document.getElementById('totalAmountCopy');
+        const formattedTotal = total.toLocaleString('ko-KR');
+
+        if (totalAmountField) {
+            totalAmountField.value = formattedTotal;
+        }
+        if (totalAmountCopyField) {
+            totalAmountCopyField.value = formattedTotal;
+        }
+
+        // 한글 금액 변환
+        updateKoreanAmount(total);
+    }
+
+    // 숫자를 한글로 변환
+    function numberToKorean(num) {
+        if (num === 0) return '영';
+
+        const units = ['', '만', '억', '조'];
+        const digits = ['', '일', '이', '삼', '사', '오', '육', '칠', '팔', '구'];
+        const positions = ['', '십', '백', '천'];
+
+        let result = '';
+        let unitIndex = 0;
+
+        while (num > 0) {
+            const part = num % 10000;
+            if (part > 0) {
+                let partStr = '';
+                let tempPart = part;
+                let posIndex = 0;
+
+                while (tempPart > 0) {
+                    const digit = tempPart % 10;
+                    if (digit > 0) {
+                        if (digit === 1 && posIndex > 0) {
+                            partStr = positions[posIndex] + partStr;
+                        } else {
+                            partStr = digits[digit] + positions[posIndex] + partStr;
+                        }
+                    }
+                    tempPart = Math.floor(tempPart / 10);
+                    posIndex++;
+                }
+
+                result = partStr + units[unitIndex] + result;
+            }
+            num = Math.floor(num / 10000);
+            unitIndex++;
+        }
+
+        return result;
+    }
+
+    // 한글 금액 업데이트
+    function updateKoreanAmount(total) {
+        const koreanAmountSpan = document.getElementById('amountKorean');
+        const amountNumberSpan = document.getElementById('amountNumber');
+
+        if (koreanAmountSpan && amountNumberSpan) {
+            const koreanText = total > 0 ? '일금 ' + numberToKorean(total) + '원' : '일금';
+            koreanAmountSpan.textContent = koreanText;
+            amountNumberSpan.textContent = '(₩ ' + total.toLocaleString('ko-KR') + ')';
+        }
+    }
+
+    // 금액 입력 시 자동 포맷팅
+    document.addEventListener('input', function(e) {
+        if (e.target.classList.contains('amount-input')) {
+            let value = e.target.value.replace(/[^0-9]/g, '');
+            if (value) {
+                e.target.value = parseInt(value).toLocaleString('ko-KR');
+            }
+            calculateTotal();
+        }
+    });
+
+    // 초기 합계 계산
+    calculateTotal();
 });

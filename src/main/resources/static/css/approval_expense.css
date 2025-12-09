@@ -853,3 +853,313 @@ div h2{
     background: white;
     color: #666;
 }
+
+/* 지출품의서 전용 스타일 */
+.expense-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    margin-bottom: 20px;
+    padding-bottom: 15px;
+    border-bottom: 2px solid #333;
+}
+
+.expense-title-section {
+    flex: 1;
+}
+
+.expense-doc-title {
+    font-size: 28px;
+    font-weight: 700;
+    color: #333;
+    margin: 0 0 10px 0;
+    letter-spacing: 8px;
+}
+
+.expense-date {
+    margin-top: 5px;
+}
+
+.expense-date input[type="date"] {
+    border: none;
+    font-size: 14px;
+    padding: 4px;
+    font-weight: 600;
+}
+
+.expense-approval-line {
+    margin-left: 20px;
+}
+
+.expense-approval-table {
+    border-collapse: collapse;
+    border: 1px solid #333;
+}
+
+.expense-approval-table th,
+.expense-approval-table td {
+    border: 1px solid #333;
+    text-align: center;
+    padding: 0;
+}
+
+.approval-category {
+    font-size: 11px;
+    font-weight: 700;
+    background: #f5f5f5;
+    padding: 4px 6px;
+    width: 30px;
+    writing-mode: vertical-rl;
+    text-orientation: upright;
+    letter-spacing: 2px;
+}
+
+.approval-position {
+    font-size: 10px;
+    font-weight: 700;
+    background: #f5f5f5;
+    padding: 4px 8px;
+    width: 80px;
+    height: 40px;
+    text-orientation: upright;
+    letter-spacing: 2px;
+}
+
+.approval-sign {
+    width: 50px;
+    height: 80px;
+    background: white;
+}
+
+/* 기본 정보 테이블 */
+.expense-info-table {
+    width: 100%;
+    border-collapse: collapse;
+    border: 1px solid #333;
+    margin-bottom: 15px;
+}
+
+.expense-info-table th,
+.expense-info-table td {
+    border: 1px solid #333;
+    padding: 8px 12px;
+    font-size: 14px;
+}
+
+.expense-info-table th {
+    background: #f5f5f5;
+    font-weight: 700;
+    text-align: center;
+}
+
+.expense-info-table input[type="text"] {
+    width: 100%;
+    border: none;
+    padding: 4px;
+    font-size: 14px;
+    background: transparent;
+}
+
+.expense-info-table input[readonly] {
+    border: none;
+    background: transparent;
+}
+
+.amount-display {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.korean-amount {
+    font-weight: 600;
+    color: #333;
+}
+
+.amount-suffix {
+    font-weight: 700;
+    margin-left: 5px;
+}
+
+.amount-number {
+    margin-left: auto;
+    font-weight: 700;
+    color: #667eea;
+}
+
+/* 지출 내역 테이블 */
+.expense-detail-section {
+    margin-bottom: 15px;
+}
+
+.section-header-with-btn {
+    display: flex;
+    justify-content: flex-end;
+    margin-bottom: 8px;
+}
+
+.btn-add-row {
+    padding: 6px 12px;
+    background: #667eea;
+    color: white;
+    border: none;
+    border-radius: 4px;
+    font-size: 12px;
+    font-weight: 600;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    transition: all 0.2s ease;
+}
+
+.btn-add-row:hover {
+    background: #5568d3;
+}
+
+.expense-detail-table {
+    width: 100%;
+    border-collapse: collapse;
+    border: 1px solid #333;
+}
+
+.expense-detail-table thead th {
+    background: #f5f5f5;
+    font-weight: 700;
+    border: 1px solid #333;
+    padding: 8px 4px;
+    font-size: 13px;
+    text-align: center;
+}
+
+.expense-detail-table tbody td {
+    border: 1px solid #333;
+    padding: 4px;
+}
+
+.expense-detail-table input[type="text"],
+.expense-detail-table select {
+    width: 100%;
+    border: none;
+    padding: 6px 4px;
+    font-size: 13px;
+    background: transparent;
+}
+
+.expense-detail-table input[type="text"]:focus,
+.expense-detail-table select:focus {
+    outline: 1px solid #667eea;
+    background: #f5f7ff;
+}
+
+.date-input {
+    text-align: center;
+}
+
+.amount-input {
+    text-align: right;
+}
+
+.btn-delete-row {
+    background: none;
+    border: none;
+    color: #d32f2f;
+    cursor: pointer;
+    padding: 4px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 100%;
+    transition: all 0.2s ease;
+}
+
+.btn-delete-row:hover {
+    color: #b71c1c;
+    transform: scale(1.2);
+}
+
+/* 하단 요약 테이블 */
+.expense-summary-table {
+    width: 100%;
+    border-collapse: collapse;
+    border: 1px solid #333;
+    margin-bottom: 15px;
+}
+
+.expense-summary-table th,
+.expense-summary-table td {
+    border: 1px solid #333;
+    padding: 8px 12px;
+    font-size: 14px;
+}
+
+.expense-summary-table th {
+    background: #f5f5f5;
+    font-weight: 700;
+    text-align: center;
+}
+
+.expense-summary-table input[type="text"],
+.expense-summary-table input[type="date"] {
+    width: 100%;
+    border: none;
+    padding: 4px;
+    font-size: 14px;
+    background: transparent;
+}
+
+.expense-summary-table input[readonly] {
+    font-weight: 600;
+    color: #333;
+}
+
+.expense-summary-table textarea {
+    width: 100%;
+    border: none;
+    padding: 8px;
+    font-size: 14px;
+    background: transparent;
+    resize: vertical;
+    min-height: 60px;
+}
+
+.expense-summary-table textarea:focus {
+    outline: 1px solid #667eea;
+    background: #f5f7ff;
+}
+
+/* 하단 결재란 */
+.expense-bottom-approval {
+    display: flex;
+    justify-content: flex-start;
+    margin-top: 20px;
+}
+
+.bottom-approval-table {
+    border-collapse: collapse;
+    border: 1px solid #333;
+}
+
+.bottom-approval-table th,
+.bottom-approval-table td {
+    border: 1px solid #333;
+    text-align: center;
+    padding: 0;
+}
+
+.approval-position-bottom {
+    font-size: 11px;
+    font-weight: 700;
+    background: #f5f5f5;
+    padding: 8px 6px;
+    width: 40px;
+    writing-mode: vertical-rl;
+    text-orientation: upright;
+    letter-spacing: 2px;
+}
+
+.approval-sign-bottom {
+    width: 80px;
+    height: 100px;
+    background: white;
+}
