@@ -86,6 +86,10 @@
     background: #f5f5f5;
 }
 
+.person-table th:first-child {
+    padding-left: 20px;
+}
+
 .person-table tbody tr {
     border-bottom: 1px solid #eee;
     transition: background-color 0.2s;
@@ -103,6 +107,7 @@
 .person-table td:first-child {
     text-align: center;
     font-weight: 500;
+    padding-left: 20px;
 }
 
 .person-table td:last-child {
