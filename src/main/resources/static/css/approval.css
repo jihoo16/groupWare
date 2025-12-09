@@ -441,6 +441,7 @@ div[title]:hover::after {
 .doc-type {
     display: flex;
     align-items: center;
+    justify-content: center;
     gap: 6px;
     font-size: 12px;
     font-weight: 600;
