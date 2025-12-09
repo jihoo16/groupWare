@@ -63,7 +63,7 @@ document.addEventListener('DOMContentLoaded', function() {
         { startDate: '2025-03-11', endDate: '2025-03-11', status: 'approved', type: 'full' },
         { startDate: '2025-03-06', endDate: '2025-03-06', status: 'approved', type: 'half-pm' },
         { startDate: '2025-02-25', endDate: '2025-02-27', status: 'approved', type: 'full' },
-        { startDate: '2025-04-10', endDate: '2025-04-10', status: 'pending', type: 'full' }
+        { startDate: '2025-01-22', endDate: '2025-01-24', status: 'approved', type: 'full' }
     ];
 
     // 날짜가 연차 기간에 포함되는지 확인
@@ -184,7 +184,7 @@ document.addEventListener('DOMContentLoaded', function() {
             const leaveStatus = getLeaveStatus(dateStr);
             if (leaveStatus) {
                 if (leaveStatus.type === 'full') {
-                    classes.push(leaveStatus.status === 'approved' ? 'leave-approved' : 'leave-pending');
+                    classes.push('leave-approved');
                 } else {
                     // 반차는 대각선 표시
                     classes.push('half-leave');
@@ -267,7 +267,6 @@ document.addEventListener('DOMContentLoaded', function() {
                             <td>${dateStr}</td>
                             <td><span class="badge ${badgeClass}">${badgeText}</span></td>
                             <td>${getReason(record)}</td>
-                            <td>${getApprovalDate(record)}</td>
                         </tr>
                     `;
                 }
@@ -287,20 +286,17 @@ document.addEventListener('DOMContentLoaded', function() {
             '2025-03-12': '병원 진료',
             '2025-03-11': '가족 행사',
             '2025-03-06': '개인 사유',
-            '2025-02-25': '여행'
+            '2025-02-25': '여행',
+            '2025-01-22': '개인 사유'
         };
         return reasons[record.startDate] || '개인 사유';
     }
 
-    // 승인일 가져오기 (실제로는 서버 데이터에서)
-    function getApprovalDate(record) {
-        const approvalDates = {
-            '2025-03-20': '2025-03-15',
-            '2025-03-12': '2025-03-10',
-            '2025-03-11': '2025-03-08',
-            '2025-03-06': '2025-03-05',
-            '2025-02-25': '2025-02-20'
-        };
-        return approvalDates[record.startDate] || '-';
+    // 날짜 포맷팅 함수 추가
+    function formatDate(date) {
+        const year = date.getFullYear();
+        const month = String(date.getMonth() + 1).padStart(2, '0');
+        const day = String(date.getDate()).padStart(2, '0');
+        return `${year}-${month}-${day}`;
     }
 });

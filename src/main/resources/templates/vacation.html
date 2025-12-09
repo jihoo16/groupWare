@@ -53,16 +53,6 @@
                             <p class="number">7<span>일</span></p>
                         </div>
                     </div>
-
-                    <div class="summary-card pending">
-                        <div class="card-icon">
-                            <i class="fas fa-clock"></i>
-                        </div>
-                        <div class="card-content">
-                            <h3>승인 대기</h3>
-                            <p class="number">1<span>건</span></p>
-                        </div>
-                    </div>
                 </div>
 
                 <!-- 연차 사용 내역 -->
@@ -74,12 +64,6 @@
                                 <option value="all">전체</option>
                                 <option value="2025">2025년</option>
                                 <option value="2024">2024년</option>
-                            </select>
-                            <select class="filter-select">
-                                <option value="all">전체 상태</option>
-                                <option value="approved">승인</option>
-                                <option value="pending">대기</option>
-                                <option value="rejected">반려</option>
                             </select>
                         </div>
                     </div>
@@ -94,8 +78,6 @@
                                     <th>종료일</th>
                                     <th>일수</th>
                                     <th>사유</th>
-                                    <th>상태</th>
-                                    <th>승인자</th>
                                 </tr>
                             </thead>
                             <tbody>
@@ -106,8 +88,6 @@
                                     <td>2025-03-22</td>
                                     <td>3일</td>
                                     <td>개인 사유</td>
-                                    <td><span class="status-badge approved">승인</span></td>
-                                    <td>김대표</td>
                                 </tr>
                                 <tr>
                                     <td>2025-03-10</td>
@@ -116,8 +96,6 @@
                                     <td>2025-03-12</td>
                                     <td>0.5일</td>
                                     <td>병원 진료</td>
-                                    <td><span class="status-badge approved">승인</span></td>
-                                    <td>박CMO</td>
                                 </tr>
                                 <tr>
                                     <td>2025-03-08</td>
@@ -126,8 +104,6 @@
                                     <td>2025-03-11</td>
                                     <td>1일</td>
                                     <td>가족 행사</td>
-                                    <td><span class="status-badge approved">승인</span></td>
-                                    <td>박CMO</td>
                                 </tr>
                                 <tr>
                                     <td>2025-03-05</td>
@@ -136,8 +112,6 @@
                                     <td>2025-03-06</td>
                                     <td>0.5일</td>
                                     <td>개인 사유</td>
-                                    <td><span class="status-badge approved">승인</span></td>
-                                    <td>박CMO</td>
                                 </tr>
                                 <tr>
                                     <td>2025-02-20</td>
@@ -146,18 +120,14 @@
                                     <td>2025-02-27</td>
                                     <td>3일</td>
                                     <td>여행</td>
-                                    <td><span class="status-badge approved">승인</span></td>
-                                    <td>박CMO</td>
                                 </tr>
                                 <tr>
-                                    <td>2025-04-01</td>
+                                    <td>2025-01-20</td>
                                     <td><span class="badge badge-full">연차</span></td>
-                                    <td>2025-04-10</td>
-                                    <td>2025-04-10</td>
-                                    <td>1일</td>
+                                    <td>2025-01-22</td>
+                                    <td>2025-01-24</td>
+                                    <td>3일</td>
                                     <td>개인 사유</td>
-                                    <td><span class="status-badge pending">대기중</span></td>
-                                    <td>-</td>
                                 </tr>
                             </tbody>
                         </table>
@@ -171,11 +141,7 @@
                         <div class="calendar-legend">
                             <div class="legend-item">
                                 <span class="legend-color approved"></span>
-                                <span>승인(사용)</span>
-                            </div>
-                            <div class="legend-item">
-                                <span class="legend-color pending"></span>
-                                <span>대기중</span>
+                                <span>사용 내역</span>
                             </div>
                         </div>
                     </div>
@@ -208,7 +174,6 @@
                                 <th>사용 날짜</th>
                                 <th>구분</th>
                                 <th>사유</th>
-                                <th>승인일</th>
                             </tr>
                         </thead>
                         <tbody id="usedLeaveTableBody">
