@@ -205,6 +205,11 @@ public class Controller {
         return "manage-hierarchy";
     }
 
+    @GetMapping("/external-person")
+    public String externalPerson() {
+        return "external-person";
+    }
+
     @GetMapping("/login")
     public String login() {
         return "login";
