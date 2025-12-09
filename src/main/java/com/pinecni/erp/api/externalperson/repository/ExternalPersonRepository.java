@@ -14,9 +14,9 @@ import java.util.List;
 public interface ExternalPersonRepository extends JpaRepository<ExternalPerson, Long> {
 
     /**
-     * 전체 외부인원 목록 조회 (idx DESC)
+     * 전체 외부인원 목록 조회 (소속회사순, 이름순)
      */
-    @Query("SELECT e FROM ExternalPerson e ORDER BY e.idx DESC")
+    @Query("SELECT e FROM ExternalPerson e ORDER BY e.companyName ASC, e.name ASC")
     List<ExternalPerson> findAllOrderByIdxDesc();
 
     /**
