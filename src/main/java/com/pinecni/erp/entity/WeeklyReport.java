@@ -47,6 +47,8 @@ public class WeeklyReport {
     @Column(name = "next_week_plan", length = Integer.MAX_VALUE)
     private String nextWeekPlan;
 
+    @Column(name = "weekly_achievement_rate")
+    private Integer weeklyAchievementRate;
 
     @Column(name = "created_user_idx")
     private Long createdUserIdx;

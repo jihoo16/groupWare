@@ -195,6 +195,18 @@
 
                             <table class="form-table">
                                 <tr>
+                                    <th>과제명</th>
+                                    <td colspan="3">
+                                        <select id="projectSelect" style="width: 100%; padding: 8px;">
+                                            <option value="">선택 안함</option>
+                                        </select>
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <th>달성률</th>
+                                    <td colspan="3"><input type="number" id="weeklyAchievementRate" placeholder="달성률 입력 (0-100)" min="0" max="100" step="1"></td>
+                                </tr>
+                                <tr>
                                     <th>보고자</th>
                                     <td><input type="text" value="홍길동" readonly></td>
                                     <th>부서</th>

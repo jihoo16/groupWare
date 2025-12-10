@@ -11,6 +11,7 @@ document.addEventListener('DOMContentLoaded', function() {
     const saveDraftBtn = document.getElementById('saveDraftBtn');
     const submitBtn = document.getElementById('submitBtn');
     const projectSelect = document.getElementById('projectSelect');
+    const weeklyAchievementRateInput = document.getElementById('weeklyAchievementRate');
 
     // ============================================
     // 템플릿 사이드바 접기/펼치기 기능
@@ -226,6 +227,7 @@ document.addEventListener('DOMContentLoaded', function() {
             const achievements = inputs[5]?.value || ''; // 주요 성과
             const issues = inputs[6]?.value || ''; // 주요 이슈
             const nextWeekPlan = inputs[7]?.value || ''; // 차주 계획
+            const weeklyAchievementRate = weeklyAchievementRateInput?.value ? parseInt(weeklyAchievementRateInput.value) : null; // 주차별 달성률
 
             // 필수 필드 검증
             if (!reportPeriod.trim()) {
@@ -256,6 +258,7 @@ document.addEventListener('DOMContentLoaded', function() {
                         achievements: achievements,
                         issues: issues,
                         nextWeekPlan: nextWeekPlan,
+                        weeklyAchievementRate: weeklyAchievementRate
                     };
 
                     console.log('전송 데이터:', requestData);
@@ -281,6 +284,7 @@ document.addEventListener('DOMContentLoaded', function() {
                         inputs[5].value = ''; // 주요 성과
                         inputs[6].value = ''; // 주요 이슈
                         inputs[7].value = ''; // 차주 계획
+                        if (weeklyAchievementRateInput) weeklyAchievementRateInput.value = ''; // 주차별 달성률
 
                         // 목록으로 이동 (필요시 주석 해제)
                          window.location.href = '/approval';
