@@ -90,6 +90,55 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     }
 
+    // 3영업일 후 날짜 계산 (주말 제외)
+    function getBusinessDaysLater(businessDays) {
+        let date = new Date();
+        let count = 0;
+
+        while (count < businessDays) {
+            date.setDate(date.getDate() + 1);
+            const dayOfWeek = date.getDay();
+            // 토요일(6), 일요일(0) 제외
+            if (dayOfWeek !== 0 && dayOfWeek !== 6) {
+                count++;
+            }
+        }
+
+        return date.toISOString().split('T')[0];
+    }
+
+    // 연차신청서 기본 날짜 설정 (3영업일 후)
+    function setupVacationDefaultDates() {
+        const defaultDate = getBusinessDaysLater(3);
+
+        const startDateInput = document.getElementById('vif_start_date');
+        const endDateInput = document.getElementById('vif_end_date');
+
+        if (startDateInput && endDateInput) {
+            // 날짜 설정
+            startDateInput.value = defaultDate;
+            endDateInput.value = defaultDate;
+
+            // 달력을 해당 날짜의 년/월로 이동
+            const dateObj = new Date(defaultDate);
+            currentYear = dateObj.getFullYear();
+            currentMonth = dateObj.getMonth();
+
+            // 선택된 날짜 배열 업데이트
+            selectedDates = [defaultDate];
+
+            // 달력 UI 업데이트 및 일수 계산
+            if (typeof renderCalendar === 'function') {
+                renderCalendar();
+            }
+            if (typeof calculateVacationDays === 'function') {
+                calculateVacationDays();
+            }
+
+            console.log('3영업일 후 날짜 자동 설정 완료:', defaultDate);
+        }
+    }
+
     // 템플릿 로드 (제거된 트리 토글 기능)
     function loadTemplate(templateKey) {
         const templateElement = document.getElementById('template-' + templateKey);
@@ -1406,25 +1455,142 @@ document.addEventListener('DOMContentLoaded', function() {
     let selectedDates = [];
     let selectionMode = null; // 'start' or 'range'
 
-    // 공휴일 데이터 (2025년 기준)
-    const holidays = {
-        '2025-01-01': '신정',
-        '2025-01-28': '설날 연휴',
-        '2025-01-29': '설날',
-        '2025-01-30': '설날 연휴',
-        '2025-03-01': '삼일절',
-        '2025-05-05': '어린이날',
-        '2025-05-06': '대체공휴일',
-        '2025-06-06': '현충일',
-        '2025-08-15': '광복절',
-        '2025-09-06': '추석 연휴',
-        '2025-09-07': '추석 연휴',
-        '2025-09-08': '추석',
-        '2025-09-09': '추석 연휴',
-        '2025-10-03': '개천절',
-        '2025-10-09': '한글날',
-        '2025-12-25': '크리스마스'
-    };
+    // 공휴일 데이터 (API에서 로드)
+    let holidays = {};
+
+    // 여러 기간 관리
+    let vacationPeriods = []; // 추가된 휴가 기간 목록
+
+    // 영업일 구간으로 분리하는 함수
+    function splitIntoBusinessDayPeriods(startDate, endDate, vacationType) {
+        const periods = [];
+        let currentPeriodStart = null;
+        let currentPeriodEnd = null;
+        let currentDays = 0;
+
+        const start = new Date(startDate);
+        const end = new Date(endDate);
+
+        // 반차는 분리하지 않음
+        if (vacationType.includes('반차')) {
+            return [{
+                type: vacationType,
+                startDate: startDate,
+                endDate: endDate,
+                days: 0.5,
+                startDateFormatted: formatDateDisplay(new Date(startDate)),
+                endDateFormatted: formatDateDisplay(new Date(endDate))
+            }];
+        }
+
+        for (let d = new Date(start); d <= end; d.setDate(d.getDate() + 1)) {
+            const dateStr = formatDate(d);
+            const dayOfWeek = d.getDay();
+            const isWeekend = dayOfWeek === 0 || dayOfWeek === 6;
+            const isHoliday = holidays[dateStr];
+
+            if (!isWeekend && !isHoliday) {
+                // 영업일
+                if (!currentPeriodStart) {
+                    currentPeriodStart = new Date(d);
+                }
+                currentPeriodEnd = new Date(d);
+                currentDays++;
+            } else {
+                // 주말 또는 공휴일 - 현재 구간 저장
+                if (currentPeriodStart && currentDays > 0) {
+                    periods.push({
+                        type: vacationType,
+                        startDate: formatDate(currentPeriodStart),
+                        endDate: formatDate(currentPeriodEnd),
+                        days: currentDays,
+                        startDateFormatted: formatDateDisplay(currentPeriodStart),
+                        endDateFormatted: formatDateDisplay(currentPeriodEnd)
+                    });
+                    currentPeriodStart = null;
+                    currentPeriodEnd = null;
+                    currentDays = 0;
+                }
+            }
+        }
+
+        // 마지막 구간 저장
+        if (currentPeriodStart && currentDays > 0) {
+            periods.push({
+                type: vacationType,
+                startDate: formatDate(currentPeriodStart),
+                endDate: formatDate(currentPeriodEnd),
+                days: currentDays,
+                startDateFormatted: formatDateDisplay(currentPeriodStart),
+                endDateFormatted: formatDateDisplay(currentPeriodEnd)
+            });
+        }
+
+        return periods;
+    }
+
+    // 날짜를 표시 형식으로 포맷 (YYYY.MM.DD)
+    function formatDateDisplay(date) {
+        const year = date.getFullYear();
+        const month = String(date.getMonth() + 1).padStart(2, '0');
+        const day = String(date.getDate()).padStart(2, '0');
+        return `${year}.${month}.${day}`;
+    }
+
+    // 공휴일 데이터 로드 (API 호출)
+    async function loadHolidays(year) {
+        try {
+            const response = await fetch(`/api/calendar/holidays/year/${year}`);
+            if (!response.ok) {
+                throw new Error('공휴일 데이터를 불러오는데 실패했습니다.');
+            }
+
+            const data = await response.json();
+            console.log('[DEBUG] API 응답:', data);
+
+            if (data.success && data.holidays) {
+                console.log('[DEBUG] 첫 번째 공휴일 원본 데이터:', data.holidays[0]);
+                console.log('[DEBUG] holidayDate 타입:', typeof data.holidays[0]?.holidayDate);
+                console.log('[DEBUG] holidayDate 값:', data.holidays[0]?.holidayDate);
+
+                // holidays 배열을 객체로 변환 (날짜 -> 공휴일명)
+                const holidayMap = {};
+                data.holidays.forEach(holiday => {
+                    // LocalDate가 배열로 오는 경우 처리
+                    let dateStr;
+                    if (Array.isArray(holiday.holidayDate)) {
+                        // [2025, 1, 29] 형식인 경우
+                        const [year, month, day] = holiday.holidayDate;
+                        dateStr = `${year}-${String(month).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
+                    } else if (typeof holiday.holidayDate === 'string') {
+                        // 이미 문자열인 경우
+                        dateStr = holiday.holidayDate;
+                    } else {
+                        console.warn('[DEBUG] 예상치 못한 날짜 형식:', holiday.holidayDate);
+                        return;
+                    }
+                    holidayMap[dateStr] = holiday.holidayName;
+                });
+
+                console.log('[DEBUG] 변환된 공휴일 맵 샘플:', Object.entries(holidayMap).slice(0, 5));
+                console.log('[DEBUG] 공휴일 맵 총 개수:', Object.keys(holidayMap).length);
+                return holidayMap;
+            }
+            return {};
+        } catch (error) {
+            console.error('공휴일 로드 실패:', error);
+            return {};
+        }
+    }
+
+    // 달력에 필요한 년도의 공휴일 로드
+    async function ensureHolidaysLoaded(year) {
+        // 해당 년도 공휴일이 없으면 로드
+        const yearHolidays = await loadHolidays(year);
+        holidays = { ...holidays, ...yearHolidays };
+        console.log(`[DEBUG] ensureHolidaysLoaded 완료 - ${year}년 공휴일:`, Object.keys(holidays).length, '건');
+        console.log('[DEBUG] holidays 객체 샘플:', Object.entries(holidays).slice(0, 3));
+    }
 
     // 달력 렌더링
     function renderCalendar() {
@@ -1439,6 +1605,9 @@ document.addEventListener('DOMContentLoaded', function() {
         calendarTitle.textContent = `${currentYear}년 ${currentMonth + 1}월`;
         calendarDays.innerHTML = '';
 
+        console.log('[DEBUG] 달력 렌더링 - holidays 객체:', holidays);
+        console.log('[DEBUG] 달력 렌더링 - holidays 키 샘플:', Object.keys(holidays).slice(0, 10));
+
         // 이전 달 날짜
         for (let i = firstDayOfWeek - 1; i >= 0; i--) {
             const day = prevLastDate - i;
@@ -1447,16 +1616,49 @@ document.addEventListener('DOMContentLoaded', function() {
         }
 
         // 현재 달 날짜
+        let holidayCount = 0;
+        // 이번 달에 있어야 할 공휴일 찾기
+        const expectedHolidays = Object.keys(holidays).filter(key => {
+            const [year, month] = key.split('-');
+            return parseInt(year) === currentYear && parseInt(month) === (currentMonth + 1);
+        });
+        console.log(`[DEBUG] 이번 달(${currentYear}-${currentMonth + 1}) 예상 공휴일:`, expectedHolidays);
+
         for (let day = 1; day <= lastDate; day++) {
             const date = new Date(currentYear, currentMonth, day);
             const dateStr = formatDate(date);
             const dayOfWeek = date.getDay();
 
+            // 1월 1일~4일은 특별히 디버깅
+            if (currentMonth === 0 && day <= 4) {
+                console.log(`[DEBUG] ${day}일 체크:`, {
+                    dateStr: dateStr,
+                    'holidays[dateStr]': holidays[dateStr],
+                    'dateStr in holidays': (dateStr in holidays),
+                    'holidays 키 타입': typeof Object.keys(holidays)[0],
+                    'dateStr 타입': typeof dateStr
+                });
+            }
+
             let classes = '';
+
+            // 오늘보다 이전 날짜인지 확인 (시각적 효과용)
+            const today = new Date();
+            today.setHours(0, 0, 0, 0);
+            const currentDate = new Date(date);
+            currentDate.setHours(0, 0, 0, 0);
+            if (currentDate < today) {
+                classes += ' past-date';
+            }
+
             if (isToday(date)) classes += ' today';
             if (dayOfWeek === 0) classes += ' sunday';
             if (dayOfWeek === 6) classes += ' saturday';
-            if (holidays[dateStr]) classes += ' holiday';
+            if (holidays[dateStr]) {
+                classes += ' holiday';
+                holidayCount++;
+                console.log(`[DEBUG] ✓ 공휴일 발견: ${dateStr} = ${holidays[dateStr]}`);
+            }
             if (isDateSelected(dateStr)) classes += ' selected';
             if (isDateInRange(dateStr)) classes += ' in-range';
             if (selectedDates.length > 0 && dateStr === selectedDates[0]) classes += ' range-start';
@@ -1465,6 +1667,9 @@ document.addEventListener('DOMContentLoaded', function() {
             const dayEl = createDayElement(day, classes, dateStr);
             calendarDays.appendChild(dayEl);
         }
+
+        console.log(`[DEBUG] 이번 달 공휴일 수: ${holidayCount} / 예상: ${expectedHolidays.length}`);
+
 
         // 다음 달 날짜
         const remainingCells = 42 - calendarDays.children.length;
@@ -1701,24 +1906,28 @@ document.addEventListener('DOMContentLoaded', function() {
 
     // 이전 달
     if (prevMonthBtn) {
-        prevMonthBtn.addEventListener('click', () => {
+        prevMonthBtn.addEventListener('click', async () => {
             currentMonth--;
             if (currentMonth < 0) {
                 currentMonth = 11;
                 currentYear--;
             }
+            // 년도가 변경되었을 때 공휴일 로드
+            await ensureHolidaysLoaded(currentYear);
             renderCalendar();
         });
     }
 
     // 다음 달
     if (nextMonthBtn) {
-        nextMonthBtn.addEventListener('click', () => {
+        nextMonthBtn.addEventListener('click', async () => {
             currentMonth++;
             if (currentMonth > 11) {
                 currentMonth = 0;
                 currentYear++;
             }
+            // 년도가 변경되었을 때 공휴일 로드
+            await ensureHolidaysLoaded(currentYear);
             renderCalendar();
         });
     }
@@ -1726,9 +1935,17 @@ document.addEventListener('DOMContentLoaded', function() {
     // 연차 유형 변경
     if (vifVacationType) {
         vifVacationType.addEventListener('change', () => {
-            selectedDates = [];
-            vifStartDate.value = '';
-            vifEndDate.value = '';
+            const vacationType = vifVacationType.value;
+
+            // 반차로 변경 시: 다중 선택된 날짜가 있으면 첫째 날만 유지
+            if (vacationType.includes('반차') && selectedDates.length > 1) {
+                const firstDate = selectedDates[0];
+                selectedDates = [firstDate];
+                vifStartDate.value = firstDate;
+                vifEndDate.value = firstDate;
+            }
+            // 연차로 변경 시: 기존 선택 유지 (아무 것도 안 함)
+
             renderCalendar();
             calculateVacationDays();
         });
@@ -1774,42 +1991,163 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     }
 
+    // ============================================
+    // 여러 기간 추가 기능
+    // ============================================
+
+    const addPeriodBtn = document.getElementById('addPeriodBtn');
+    const periodsListCard = document.getElementById('periods_list_card');
+    const vacationPeriodsList = document.getElementById('vacation_periods_list');
+    const totalDaysBadge = document.getElementById('total_days_badge');
+
+    // 기간 추가
+    if (addPeriodBtn) {
+        addPeriodBtn.addEventListener('click', () => {
+            if (!vifStartDate.value || !vifEndDate.value) {
+                alert('시작일과 종료일을 선택해주세요.');
+                return;
+            }
+
+            const days = parseFloat(vifCalculatedDays.textContent);
+            if (days <= 0) {
+                alert('유효한 기간을 선택해주세요.');
+                return;
+            }
+
+            // 영업일 구간으로 자동 분리
+            const splitPeriods = splitIntoBusinessDayPeriods(
+                vifStartDate.value,
+                vifEndDate.value,
+                vifVacationType.value
+            );
+
+            if (splitPeriods.length === 0) {
+                alert('선택한 기간에 영업일이 없습니다.');
+                return;
+            }
+
+            // 분리된 구간들을 모두 추가
+            splitPeriods.forEach(period => {
+                vacationPeriods.push(period);
+            });
+
+            updatePeriodsList();
+
+            // 선택 초기화
+            selectedDates = [];
+            vifStartDate.value = '';
+            vifEndDate.value = '';
+            vifCalculatedDays.textContent = '0';
+            renderCalendar();
+            calculateVacationDays();
+
+            // 메시지 표시
+            if (splitPeriods.length > 1) {
+                alert(`주말/공휴일을 제외하고 ${splitPeriods.length}개의 영업일 구간으로 자동 분리되었습니다.`);
+            } else {
+                alert('기간이 추가되었습니다.');
+            }
+        });
+    }
+
+    // 기간 목록 업데이트
+    function updatePeriodsList() {
+        if (vacationPeriods.length === 0) {
+            periodsListCard.style.display = 'none';
+            return;
+        }
+
+        periodsListCard.style.display = 'block';
+        vacationPeriodsList.innerHTML = '';
+
+        const dayNames = ['일', '월', '화', '수', '목', '금', '토'];
+
+        vacationPeriods.forEach((period, index) => {
+            const startDate = new Date(period.startDate);
+            const endDate = new Date(period.endDate);
+
+            const startFormatted = `${period.startDateFormatted} (${dayNames[startDate.getDay()]})`;
+            const endFormatted = `${period.endDateFormatted} (${dayNames[endDate.getDay()]})`;
+            const dateRange = startDate.getTime() === endDate.getTime()
+                ? startFormatted
+                : `${startFormatted} ~ ${endFormatted}`;
+
+            const periodItem = document.createElement('div');
+            periodItem.className = 'period-item';
+            periodItem.innerHTML = `
+                <div class="period-info">
+                    <div class="period-type">${period.type}</div>
+                    <div class="period-dates">${dateRange}</div>
+                    <div class="period-days"><strong>${period.days}일</strong></div>
+                </div>
+                <button class="btn-remove-period" onclick="removePeriod(${index})">
+                    <i class="fas fa-trash"></i>
+                    삭제
+                </button>
+            `;
+            vacationPeriodsList.appendChild(periodItem);
+        });
+
+        // 총 일수 계산 및 표시
+        updateTotalDays();
+    }
+
+    // 총 일수 업데이트
+    function updateTotalDays() {
+        const totalDays = vacationPeriods.reduce((sum, period) => sum + period.days, 0);
+        totalDaysBadge.textContent = `총 ${totalDays}일`;
+
+        // 총 일수로 연차 초과 검증
+        checkVacationBalance(totalDays);
+    }
+
+    // 기간 삭제 (전역 함수로 선언)
+    window.removePeriod = function(index) {
+        if (confirm('이 기간을 삭제하시겠습니까?')) {
+            vacationPeriods.splice(index, 1);
+            updatePeriodsList();
+
+            // 기간이 없으면 경고 숨김
+            if (vacationPeriods.length === 0) {
+                hideVacationWarning();
+            }
+        }
+    };
+
     // 양식에 적용 - 나중에 문서 양식 토글 섹션에서 처리
 
     // 달력 초기 렌더링
     if (calendarDays && vifStartDate && vifEndDate) {
-        try {
-            // 테스트용 더미 데이터 (오늘 날짜 기준: 2025-10-24)
-            // 10월 27일(월) ~ 10월 31일(금) 5일간 연차 신청
-            currentYear = 2025;
-            currentMonth = 9; // 10월 (0-based index)
+        // 공휴일 로드 및 달력 초기화 (async)
+        (async function initCalendar() {
+            try {
+                // 현재 년도 공휴일 먼저 로드
+                await ensureHolidaysLoaded(currentYear);
 
-            // 신청자 정보 초기화 (실제로는 로그인 사용자 정보로 채워야 함)
-            const vifApplicant = document.getElementById('vif_applicant');
-            const vifDepartment = document.getElementById('vif_department');
-            const vifPosition = document.getElementById('vif_position');
-            const vifApplyDate = document.getElementById('vif_apply_date');
+                // 신청자 정보 초기화 (실제로는 로그인 사용자 정보로 채워야 함)
+                const vifApplicant = document.getElementById('vif_applicant');
+                const vifDepartment = document.getElementById('vif_department');
+                const vifPosition = document.getElementById('vif_position');
+                const vifApplyDate = document.getElementById('vif_apply_date');
 
-            if (vifApplicant) vifApplicant.value = '홍길동';
-            if (vifDepartment) vifDepartment.value = '개발팀';
-            if (vifPosition) vifPosition.value = '대리';
-            if (vifApplyDate) vifApplyDate.value = new Date().toISOString().split('T')[0];
+                if (vifApplicant) vifApplicant.textContent = '홍길동';
+                if (vifDepartment) vifDepartment.textContent = '개발팀';
+                if (vifPosition) vifPosition.textContent = '대리';
+                if (vifApplyDate) {
+                    const today = new Date();
+                    vifApplyDate.textContent = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`;
+                }
 
-            renderCalendar(); // 먼저 달력을 렌더링
+                // 달력 렌더링
+                renderCalendar();
 
-            // 그 다음 더미 데이터 설정
-            vifStartDate.value = '2025-10-27';
-            vifEndDate.value = '2025-10-31';
-            selectedDates = fillDateRange('2025-10-27', '2025-10-31');
-
-            // 선택된 날짜로 달력 다시 렌더링
-            renderCalendar();
-            calculateVacationDays(); // 일수 계산 및 연차 초과 검증
-        } catch (error) {
-            console.error('달력 초기화 중 오류:', error);
-            // 오류 발생 시에도 기본 달력은 표시
-            renderCalendar();
-        }
+                console.log('공휴일 데이터 로드 완료:', Object.keys(holidays).length + '건');
+            } catch (error) {
+                console.error('달력 초기화 중 오류:', error);
+                // 오류 발생 시에도 기본 달력은 표시
+                renderCalendar();
+            }
+        })();
     } else {
         console.warn('달력 요소를 찾을 수 없습니다:', {
             calendarDays: !!calendarDays,
@@ -1842,9 +2180,9 @@ document.addEventListener('DOMContentLoaded', function() {
     if (applyToFormBtn) {
         applyToFormBtn.addEventListener('click', function() {
             // 기본 정보 복사
-            document.getElementById('applicant').value = document.getElementById('vif_applicant').value;
-            document.getElementById('department').value = document.getElementById('vif_department').value;
-            document.getElementById('position').value = document.getElementById('vif_position').value;
+            document.getElementById('applicant').textContent = document.getElementById('vif_applicant').textContent;
+            document.getElementById('department').textContent = document.getElementById('vif_department').textContent;
+            document.getElementById('position').textContent = document.getElementById('vif_position').textContent;
             document.getElementById('reason').value = document.getElementById('vif_reason').value;
 
             // 숨겨진 필드들 (데이터 보관용)
@@ -1859,17 +2197,50 @@ document.addEventListener('DOMContentLoaded', function() {
             const birthDateField = document.getElementById('birth_date');
             const contactField = document.getElementById('contact');
 
-            if (addressField && !addressField.value) addressField.value = '서울시 강남구 테헤란로 123';
-            if (birthDateField && !birthDateField.value) birthDateField.value = '1990-01-01';
-            if (contactField && !contactField.value) contactField.value = '010-1234-5678';
+            if (addressField && !addressField.textContent) addressField.textContent = '서울시 강남구 테헤란로 123';
+            if (birthDateField && !birthDateField.textContent) birthDateField.textContent = '1990-01-01';
+            if (contactField && !contactField.textContent) contactField.textContent = '010-1234-5678';
 
-            // 휴가기간 포맷 생성 (YYYY.MM.DD (day) ~ YYYY.MM.DD (day) 총 연차 n일)
-            const vacationPeriod = formatVacationPeriod(
-                vifStartDate.value,
-                vifEndDate.value,
-                vifCalculatedDays.textContent
-            );
-            document.getElementById('vacation_period').value = vacationPeriod;
+            // 휴가기간 포맷 생성
+            let vacationPeriodText = '';
+            let totalDays = 0;
+            let allPeriods = [];
+
+            if (vacationPeriods.length > 0) {
+                // 추가된 기간들 사용
+                allPeriods = vacationPeriods;
+            } else if (vifStartDate.value && vifEndDate.value) {
+                // 단일 기간 선택 시 영업일 구간으로 분리
+                allPeriods = splitIntoBusinessDayPeriods(
+                    vifStartDate.value,
+                    vifEndDate.value,
+                    vifVacationType.value
+                );
+
+                if (allPeriods.length === 0) {
+                    alert('선택한 기간에 영업일이 없습니다.');
+                    return;
+                }
+            } else {
+                alert('휴가 기간을 선택하거나 추가해주세요.');
+                return;
+            }
+
+            // 모든 기간 포맷팅
+            allPeriods.forEach((period, index) => {
+                const formatted = formatVacationPeriod(period.startDate, period.endDate, period.days);
+                vacationPeriodText += formatted;
+                if (index < allPeriods.length - 1) {
+                    vacationPeriodText += '\n';
+                }
+                totalDays += period.days;
+            });
+
+            if (allPeriods.length > 1) {
+                vacationPeriodText += `\n\n총 ${totalDays}일`;
+            }
+
+            document.getElementById('vacation_period').value = vacationPeriodText;
 
             // 신청일 포맷 (YYYY년 MM월 DD일)
             const today = new Date();
@@ -1877,7 +2248,7 @@ document.addEventListener('DOMContentLoaded', function() {
             document.getElementById('apply_date_text').textContent = applyDateText;
 
             // 하단 신청인 이름 설정 (띄어쓰기)
-            const applicantName = document.getElementById('vif_applicant').value;
+            const applicantName = document.getElementById('vif_applicant').textContent;
             const spacedName = applicantName.split('').join(' ');
             document.getElementById('applicant_name_footer').textContent = spacedName;
 
@@ -1942,5 +2313,12 @@ document.addEventListener('DOMContentLoaded', function() {
             }
         });
     }
+
+    // ============================================
+    // 페이지 로드 시 초기화
+    // ============================================
+
+    // 연차신청서 페이지인 경우 기본 날짜 설정 (3영업일 후)
+    setupVacationDefaultDates();
 
 });

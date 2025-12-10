@@ -2,6 +2,7 @@ package com.pinecni.erp.api.calendar.repository;
 
 import com.pinecni.erp.api.calendar.entity.Holiday;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
@@ -40,5 +41,7 @@ public interface HolidayRepository extends JpaRepository<Holiday, Long> {
     /**
      * 특정 년도의 공휴일 삭제
      */
-    void deleteByYear(Integer year);
+    @Modifying
+    @Query("DELETE FROM Holiday h WHERE h.year = :year")
+    void deleteByYear(@Param("year") Integer year);
 }

@@ -664,8 +664,7 @@ div h2{
 }
 
 /* readonly 필드 스타일 - 테두리와 배경 제거 */
-.form-table input[readonly],
-.form-table textarea[readonly] {
+.form-table input[readonly] {
     border: none !important;
     background: transparent !important;
     padding: 8px 0;
@@ -674,10 +673,29 @@ div h2{
     line-height: 1.6;
 }
 
+.form-table textarea[readonly] {
+    border: none !important;
+    background: transparent !important;
+    padding: 8px 0;
+    cursor: default;
+    text-align: left;
+    line-height: 1.6;
+}
+
 .form-table input[readonly]:focus,
 .form-table textarea[readonly]:focus {
     border: none !important;
     outline: none !important;
+}
+
+/* 읽기 전용 텍스트 스타일 */
+.form-table .readonly-text {
+    display: block;
+    padding: 12px 16px;
+    font-size: 14px;
+    color: #555;
+    text-align: left;
+    line-height: 1.6;
 }
 
 /* 회의 품의서 장소/일시 셀 */
@@ -1281,6 +1299,15 @@ div h2{
     cursor: default;
 }
 
+.calendar-day.past-date {
+    background: #f0f0f0;
+    color: #999;
+}
+
+.calendar-day.past-date:hover:not(.other-month):not(.selected):not(.in-range) {
+    background: #e3e3e3;
+}
+
 .calendar-day.disabled {
     color: #dee2e6;
     cursor: not-allowed;
@@ -1321,16 +1348,17 @@ div h2{
     background: #fff5f5;
 }
 
+/* 선택된 날짜 스타일 (과거 날짜여도 우선 적용) */
 .calendar-day.selected {
-    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%) !important;
     color: white !important;
     border-color: #667eea;
     font-weight: 700;
 }
 
 .calendar-day.in-range {
-    background: #e3f2fd;
-    color: #1976d2;
+    background: #e3f2fd !important;
+    color: #1976d2 !important;
 }
 
 .calendar-day.range-start {
@@ -1426,6 +1454,14 @@ div h2{
     font-size: 12px;
     background: #e9ecef;
     cursor: not-allowed;
+}
+
+.applicant-item .info-value {
+    padding: 8px 0;
+    font-size: 13px;
+    font-weight: 500;
+    color: #212529;
+    line-height: 1.5;
 }
 
 /* 연차 정보 컴팩트 스타일 */
@@ -1765,4 +1801,129 @@ div h2{
 
 #remaining_after_row .days-value.positive {
     color: #4caf50 !important;
+}
+
+/* ============================================ */
+/* 여러 기간 추가 기능 스타일 */
+/* ============================================ */
+
+.period-add-notice {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 10px 12px;
+    background: #e3f2fd;
+    border-left: 3px solid #2196f3;
+    border-radius: 6px;
+    font-size: 12px;
+    color: #1565c0;
+}
+
+.period-add-notice i {
+    font-size: 14px;
+    color: #2196f3;
+}
+
+.btn-add-period {
+    width: 100%;
+    padding: 10px 16px;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+    border: none;
+    border-radius: 6px;
+    font-size: 13px;
+    font-weight: 600;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    transition: all 0.2s ease;
+}
+
+.btn-add-period:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
+}
+
+.total-days-badge {
+    margin-left: auto;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+    padding: 4px 12px;
+    border-radius: 12px;
+    font-size: 12px;
+    font-weight: 700;
+}
+
+.periods-list {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+.period-item {
+    background: white;
+    border: 1px solid #dee2e6;
+    border-radius: 8px;
+    padding: 12px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    transition: all 0.2s ease;
+}
+
+.period-item:hover {
+    border-color: #667eea;
+    box-shadow: 0 2px 6px rgba(102, 126, 234, 0.15);
+}
+
+.period-info {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+
+.period-type {
+    font-size: 11px;
+    font-weight: 600;
+    color: #667eea;
+    text-transform: uppercase;
+}
+
+.period-dates {
+    font-size: 13px;
+    color: #333;
+    font-weight: 500;
+}
+
+.period-days {
+    font-size: 12px;
+    color: #6c757d;
+}
+
+.period-days strong {
+    color: #667eea;
+    font-weight: 700;
+}
+
+.btn-remove-period {
+    background: #dc3545;
+    color: white;
+    border: none;
+    border-radius: 6px;
+    padding: 6px 12px;
+    font-size: 12px;
+    font-weight: 600;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    transition: all 0.2s ease;
+}
+
+.btn-remove-period:hover {
+    background: #c82333;
+    transform: scale(1.05);
 }

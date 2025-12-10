@@ -220,19 +220,19 @@
                                         <div class="applicant-grid">
                                             <div class="applicant-item">
                                                 <label>신청자</label>
-                                                <input type="text" id="vif_applicant" placeholder="홍길동" readonly>
+                                                <div class="info-value" id="vif_applicant">홍길동</div>
                                             </div>
                                             <div class="applicant-item">
                                                 <label>부서</label>
-                                                <input type="text" id="vif_department" placeholder="개발팀" readonly>
+                                                <div class="info-value" id="vif_department">개발팀</div>
                                             </div>
                                             <div class="applicant-item">
                                                 <label>직급</label>
-                                                <input type="text" id="vif_position" placeholder="대리" readonly>
+                                                <div class="info-value" id="vif_position">대리</div>
                                             </div>
                                             <div class="applicant-item">
                                                 <label>신청일</label>
-                                                <input type="date" id="vif_apply_date" readonly>
+                                                <div class="info-value" id="vif_apply_date">-</div>
                                             </div>
                                         </div>
                                     </div>
@@ -277,6 +277,32 @@
                                                       style="font-weight: 700;">0</span>
                                                 <span class="days-unit">일</span>
                                             </div>
+                                        </div>
+                                        <div class="info-row">
+                                            <div class="period-add-notice">
+                                                <i class="fas fa-info-circle"></i>
+                                                <span>주말/공휴일은 자동으로 제외되며, 영업일 구간으로 분리됩니다.</span>
+                                            </div>
+                                        </div>
+                                        <div class="info-row">
+                                            <button class="btn-add-period" id="addPeriodBtn">
+                                                <i class="fas fa-plus"></i>
+                                                기간 추가
+                                            </button>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <!-- 추가된 기간 목록 -->
+                                <div class="info-card" id="periods_list_card" style="display: none;">
+                                    <div class="info-card-header">
+                                        <i class="fas fa-list"></i>
+                                        <span>추가된 휴가 기간</span>
+                                        <span class="total-days-badge" id="total_days_badge">총 0일</span>
+                                    </div>
+                                    <div class="info-card-body">
+                                        <div id="vacation_periods_list" class="periods-list">
+                                            <!-- JavaScript로 동적 생성 -->
                                         </div>
                                     </div>
                                 </div>
@@ -389,23 +415,23 @@
                             <table class="form-table">
                                 <tr>
                                     <th style="width: 120px;">주 소</th>
-                                    <td colspan="3"><input type="text" id="address" placeholder="주소"></td>
+                                    <td colspan="3"><span id="address" class="readonly-text"></span></td>
                                 </tr>
                                 <tr>
                                     <th>생년월일</th>
-                                    <td><input type="date" id="birth_date"></td>
+                                    <td><span id="birth_date" class="readonly-text"></span></td>
                                     <th style="width: 120px;">연 락 처</th>
-                                    <td><input type="tel" id="contact" placeholder="010-0000-0000"></td>
+                                    <td><span id="contact" class="readonly-text"></span></td>
                                 </tr>
                                 <tr>
                                     <th>소 속</th>
-                                    <td><input type="text" id="department" placeholder="부서명"></td>
+                                    <td><span id="department" class="readonly-text"></span></td>
                                     <th>직 급</th>
-                                    <td><input type="text" id="position" placeholder="직급"></td>
+                                    <td><span id="position" class="readonly-text"></span></td>
                                 </tr>
                                 <tr>
                                     <th>성 명</th>
-                                    <td colspan="3"><input type="text" id="applicant" placeholder="신청자명"></td>
+                                    <td colspan="3"><span id="applicant" class="readonly-text"></span></td>
                                 </tr>
                                 <tr>
                                     <th>내 용</th>
@@ -421,9 +447,9 @@
                                 <tr>
                                     <th>휴가기간</th>
                                     <td colspan="3">
-                                        <input type="text" id="vacation_period" readonly
+                                        <textarea id="vacation_period" readonly rows="4"
                                                placeholder="2025.01.01 (월) ~ 2025.01.05 (금) 총 연차 5일"
-                                               style="font-weight: 500;">
+                                               style="font-weight: 500; resize: vertical;"></textarea>
                                         <input type="date" id="start_date" style="display: none;">
                                         <input type="date" id="end_date" style="display: none;">
                                         <input type="number" id="days" style="display: none;">

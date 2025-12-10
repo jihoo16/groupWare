@@ -20,6 +20,7 @@ import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Locale;
 import java.util.stream.Collectors;
 
 /**
@@ -51,6 +52,7 @@ public class HolidayService {
             // API 호출
             String url = String.format("%s?serviceKey=%s&solYear=%d&numOfRows=100",
                     apiUrl, apiKey, year);
+            log.info("공공데이터 > 공휴일 조회 API. 조회 연도 >>>> {} ", year);
 
             String response = restTemplate.getForObject(url, String.class);
 
