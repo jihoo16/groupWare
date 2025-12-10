@@ -2336,7 +2336,11 @@ document.addEventListener('DOMContentLoaded', function() {
                 vacationPeriodText += `\n\n총 연차 ${totalDays}일`;
             }
 
-            document.getElementById('vacation_period').value = vacationPeriodText;
+            const vacationPeriodTextarea = document.getElementById('vacation_period');
+            vacationPeriodTextarea.value = vacationPeriodText;
+
+            // 높이 자동 조절
+            autoResizeTextarea(vacationPeriodTextarea);
 
             // 신청일 포맷 (YYYY년 MM월 DD일)
             const today = new Date();
@@ -2380,6 +2384,18 @@ document.addEventListener('DOMContentLoaded', function() {
         const endFormatted = `${endDate.getFullYear()}.${String(endDate.getMonth() + 1).padStart(2, '0')}.${String(endDate.getDate()).padStart(2, '0')} (${dayNames[endDate.getDay()]})`;
 
         return `${startFormatted} ~ ${endFormatted} 연차 ${days}일`;
+    }
+
+    // textarea 높이 자동 조절 함수
+    function autoResizeTextarea(textarea) {
+        if (!textarea) return;
+
+        // 높이를 auto로 설정하여 scrollHeight 정확히 측정
+        textarea.style.height = 'auto';
+
+        // 내용에 맞춰 높이 조절 (최소 높이 80px 유지)
+        const newHeight = Math.max(80, textarea.scrollHeight);
+        textarea.style.height = newHeight + 'px';
     }
 
     // ============================================
