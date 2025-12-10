@@ -518,22 +518,69 @@ div h2{
 }
 
 .btn-primary {
-    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    background: linear-gradient(135deg, #4361ee, #3a51d4);
     color: white;
 }
 
 .btn-primary:hover {
+    background: linear-gradient(135deg, #3a51d4, #2f44c0);
+    box-shadow: 0 4px 12px rgba(67, 97, 238, 0.3);
     transform: translateY(-2px);
-    box-shadow: 0 6px 20px rgba(102, 126, 234, 0.4);
 }
 
 .btn-secondary {
-    background: #e0e0e0;
-    color: #555;
+    background: white;
+    color: #495057;
+    border: 2px solid #e9ecef;
+    box-shadow: none;
 }
 
 .btn-secondary:hover {
-    background: #d0d0d0;
+    background: #f8f9fa;
+    border-color: #cbd5e1;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+    transform: translateY(-1px);
+}
+
+.btn-sm {
+    padding: 7px 14px;
+    font-size: 13px;
+}
+.btn-danger {
+    background: #dc3545;
+    color: white;
+    border: none;
+    padding: 14px 32px;
+    border-radius: 8px;
+    font-size: 15px;
+    font-weight: 600;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    transition: all 0.3s ease;
+}
+
+.btn-danger:hover {
+    background: #c82333;
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(220, 53, 69, 0.4);
+}
+
+.project-form-footer {
+    position: fixed;
+    bottom: 0;
+    right: 0;
+    left: 60px; /* 사이드바 최소 너비 */
+    padding: 20px 32px;
+    background: linear-gradient(to top, #ffffff, #f8f9fa);
+    border-top: 2px solid #e9ecef;
+    box-shadow: 0 -4px 16px rgba(0, 0, 0, 0.08);
+    display: flex;
+    justify-content: flex-end;
+    gap: 16px;
+    z-index: 50;
+    transition: left 0.3s ease;
 }
 
 .btn-outline {

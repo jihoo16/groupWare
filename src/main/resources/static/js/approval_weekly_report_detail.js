@@ -14,6 +14,48 @@ document.addEventListener('DOMContentLoaded', function() {
     loadWeeklyReportDetail(reportId);
 
     // ============================================
+    // 버튼 이벤트 핸들러
+    // ============================================
+
+    // 수정 버튼
+    const editBtn = document.getElementById('editReportBtn');
+    if (editBtn) {
+        editBtn.addEventListener('click', function() {
+            // 수정 페이지로 이동 (추후 구현)
+            alert('수정 기능은 추후 구현 예정입니다.');
+            // window.location.href = `/approval/weekly-report/edit?id=${reportId}`;
+        });
+    }
+
+    // 삭제 버튼
+    const deleteBtn = document.getElementById('deleteReportBtn');
+    if (deleteBtn) {
+        deleteBtn.addEventListener('click', async function() {
+            if (!confirm('정말로 이 주간업무보고를 삭제하시겠습니까?')) {
+                return;
+            }
+
+            try {
+                const response = await fetch(`/api/document/weekly-report/${reportId}`, {
+                    method: 'DELETE'
+                });
+
+                if (response.ok) {
+                    alert('주간업무보고가 삭제되었습니다.');
+                    window.location.href = '/approval';
+                } else {
+                    const errorText = await response.text();
+                    console.error('삭제 실패:', errorText);
+                    alert('삭제에 실패했습니다.');
+                }
+            } catch (error) {
+                console.error('삭제 오류:', error);
+                alert('삭제 중 오류가 발생했습니다.');
+            }
+        });
+    }
+
+    // ============================================
     // API: 주간업무보고 상세 조회
     // ============================================
     async function loadWeeklyReportDetail(id) {
