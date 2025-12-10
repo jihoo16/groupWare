@@ -2026,9 +2026,17 @@ document.addEventListener('DOMContentLoaded', function() {
                 return;
             }
 
-            // 분리된 구간들을 모두 추가
+            // 분리된 구간들을 중복 체크 후 추가/병합
+            let mergedCount = 0;
+            let duplicateCount = 0;
+
             splitPeriods.forEach(period => {
-                vacationPeriods.push(period);
+                const result = addOrMergePeriod(period);
+                if (result === 'merged') {
+                    mergedCount++;
+                } else if (result === 'duplicate') {
+                    duplicateCount++;
+                }
             });
 
             updatePeriodsList();
@@ -2042,12 +2050,81 @@ document.addEventListener('DOMContentLoaded', function() {
             calculateVacationDays();
 
             // 메시지 표시
+            let message = '';
             if (splitPeriods.length > 1) {
-                alert(`주말/공휴일을 제외하고 ${splitPeriods.length}개의 영업일 구간으로 자동 분리되었습니다.`);
+                message = `주말/공휴일을 제외하고 ${splitPeriods.length}개의 영업일 구간으로 자동 분리되었습니다.`;
             } else {
-                alert('기간이 추가되었습니다.');
+                message = '기간이 추가되었습니다.';
             }
+
+            if (mergedCount > 0) {
+                message += `\n${mergedCount}개의 기간이 기존 기간과 병합되었습니다.`;
+            }
+            if (duplicateCount > 0) {
+                message += `\n${duplicateCount}개의 중복 기간은 무시되었습니다.`;
+            }
+
+            alert(message);
         });
+    }
+
+    // 기간 추가 또는 병합
+    function addOrMergePeriod(newPeriod) {
+        const newStart = new Date(newPeriod.startDate);
+        const newEnd = new Date(newPeriod.endDate);
+
+        // 기존 기간과 중복/병합 체크
+        for (let i = 0; i < vacationPeriods.length; i++) {
+            const existingPeriod = vacationPeriods[i];
+            const existingStart = new Date(existingPeriod.startDate);
+            const existingEnd = new Date(existingPeriod.endDate);
+
+            // 완전 중복 체크 (날짜와 타입이 모두 동일)
+            if (newStart.getTime() === existingStart.getTime() &&
+                newEnd.getTime() === existingEnd.getTime() &&
+                newPeriod.type === existingPeriod.type) {
+                return 'duplicate';
+            }
+
+            // 겹치거나 인접한 경우 병합 (같은 타입인 경우만)
+            if (newPeriod.type === existingPeriod.type) {
+                // 하루 차이도 인접으로 간주 (예: 12/10 종료, 12/11 시작)
+                const oneDayMs = 24 * 60 * 60 * 1000;
+                const isOverlapping = (newStart <= existingEnd && newEnd >= existingStart);
+                const isAdjacent =
+                    (Math.abs(newEnd.getTime() - existingStart.getTime()) <= oneDayMs) ||
+                    (Math.abs(existingEnd.getTime() - newStart.getTime()) <= oneDayMs);
+
+                if (isOverlapping || isAdjacent) {
+                    // 병합: 가장 이른 시작일과 가장 늦은 종료일 사용
+                    const mergedStart = newStart < existingStart ? newStart : existingStart;
+                    const mergedEnd = newEnd > existingEnd ? newEnd : existingEnd;
+
+                    // 병합된 기간의 일수 재계산
+                    const mergedDays = calculateBusinessDays(
+                        mergedStart.toISOString().split('T')[0],
+                        mergedEnd.toISOString().split('T')[0],
+                        newPeriod.type
+                    );
+
+                    // 기존 기간을 병합된 기간으로 교체
+                    vacationPeriods[i] = {
+                        startDate: mergedStart.toISOString().split('T')[0],
+                        endDate: mergedEnd.toISOString().split('T')[0],
+                        startDateFormatted: formatDate(mergedStart.toISOString().split('T')[0]),
+                        endDateFormatted: formatDate(mergedEnd.toISOString().split('T')[0]),
+                        type: newPeriod.type,
+                        days: mergedDays
+                    };
+
+                    return 'merged';
+                }
+            }
+        }
+
+        // 중복도 병합도 아니면 새로 추가
+        vacationPeriods.push(newPeriod);
+        return 'added';
     }
 
     // 기간 목록 업데이트
