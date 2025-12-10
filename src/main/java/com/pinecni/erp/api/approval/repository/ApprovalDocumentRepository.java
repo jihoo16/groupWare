@@ -21,13 +21,6 @@ public interface ApprovalDocumentRepository extends JpaRepository<ApprovalDocume
     Optional<ApprovalDocument> findByDocumentNo(String documentNo);
 
     /**
-     * 상태별 문서 조회
-     */
-    @Query("SELECT d FROM ApprovalDocument d WHERE d.status = :status AND d.deletedAt IS NULL " +
-            "ORDER BY d.createdAt DESC")
-    List<ApprovalDocument> findByStatus(String status);
-
-    /**
      * 기안자별 문서 조회
      */
     @Query("SELECT d FROM ApprovalDocument d WHERE d.drafterUserIdx = :userIdx AND d.deletedAt IS NULL " +
