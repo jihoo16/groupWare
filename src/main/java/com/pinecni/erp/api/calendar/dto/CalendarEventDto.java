@@ -66,7 +66,7 @@ public class CalendarEventDto {
     private String status;
 
     // 팀 관련 정보
-    private Long teamIdx;
+    private Integer teamIdx;
     private String teamName;
     private String teamColor;
 

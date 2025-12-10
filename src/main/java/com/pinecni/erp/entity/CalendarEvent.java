@@ -69,7 +69,7 @@ public class CalendarEvent {
     private String groupId;
 
     @Column(name = "team_idx")
-    private Long teamIdx;
+    private Integer teamIdx;
 
     @Column(name = "notification_yn", length = 1)
     private String notificationYn = "N";

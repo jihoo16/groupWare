@@ -338,7 +338,7 @@ public class CalendarEventService {
         String displayColor = null;
 
         if (event.getTeamIdx() != null) {
-            Optional<Team> teamOpt = teamRepository.findById(event.getTeamIdx());
+            Optional<Team> teamOpt = teamRepository.findById(event.getTeamIdx().longValue());
             if (teamOpt.isPresent()) {
                 Team team = teamOpt.get();
                 teamName = team.getTeamName();
