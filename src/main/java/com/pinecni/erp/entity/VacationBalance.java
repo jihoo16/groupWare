@@ -3,18 +3,17 @@ package com.pinecni.erp.entity;
 import jakarta.persistence.*;
 import lombok.*;
 
-import java.time.LocalDate;
+import java.math.BigDecimal;
 import java.time.LocalDateTime;
 
 /**
  * 연차 잔여 현황 Entity
  */
 @Entity
-@Table(name = "vacation_balances", schema = "erp",
-        uniqueConstraints = @UniqueConstraint(columnNames = {"user_idx", "year"}),
+@Table(name = "vacation_balance", schema = "erp",
+        uniqueConstraints = @UniqueConstraint(name = "uq_vacation_balance_user_year", columnNames = {"user_idx", "year"}),
         indexes = {
-                @Index(name = "idx_vb_user", columnList = "user_idx"),
-                @Index(name = "idx_vb_year", columnList = "year")
+                @Index(name = "idx_vacation_balance_user_idx", columnList = "user_idx")
         })
 @Getter
 @Setter
@@ -24,8 +23,8 @@ import java.time.LocalDateTime;
 public class VacationBalance {
 
     @Id
-    @GeneratedValue(strategy = GenerationType.SEQUENCE, generator = "vacation_balances_sequence")
-    @SequenceGenerator(name = "vacation_balances_sequence", sequenceName = "erp.vacation_balances_sequence", allocationSize = 1)
+    @GeneratedValue(strategy = GenerationType.SEQUENCE, generator = "vacation_balance_sequence")
+    @SequenceGenerator(name = "vacation_balance_sequence", sequenceName = "vacation_balance_sequence", allocationSize = 1)
     @Column(name = "idx")
     private Long idx;
 
@@ -35,29 +34,40 @@ public class VacationBalance {
     @Column(name = "year", nullable = false)
     private Integer year;
 
-    @Column(name = "total_days", nullable = true, columnDefinition = "integer default 15")
-    private Integer totalDays = 15;
+    @Column(name = "total_days", nullable = false, precision = 4, scale = 1)
+    private BigDecimal totalDays = new BigDecimal("15.0");
 
-    @Column(name = "used_days", nullable = false, columnDefinition = "integer default 0")
-    private Integer usedDays = 0;
+    @Column(name = "used_days", nullable = false, precision = 4, scale = 1)
+    private BigDecimal usedDays = BigDecimal.ZERO;
 
-    @Column(name = "remaining_days", nullable = true, columnDefinition = "integer default 15")
-    private Integer remainingDays = 15;
+    @Column(name = "remaining_days", nullable = false, precision = 4, scale = 1)
+    private BigDecimal remainingDays = new BigDecimal("15.0");
 
-    @Column(name = "granted_date")
-    private LocalDate grantedDate;
+    @Column(name = "created_user_idx")
+    private Long createdUserIdx;
 
-    @Column(name = "expiry_date")
-    private LocalDate expiryDate;
-
-    @Column(name = "created_at")
+    @Column(name = "created_at", nullable = false)
     private LocalDateTime createdAt;
 
-    @Column(name = "updated_at")
+    @Column(name = "updated_user_idx")
+    private Long updatedUserIdx;
+
+    @Column(name = "updated_at", nullable = false)
     private LocalDateTime updatedAt;
 
     // 관계 매핑
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "user_idx", insertable = false, updatable = false)
     private User user;
+
+    @PrePersist
+    protected void onCreate() {
+        createdAt = LocalDateTime.now();
+        updatedAt = LocalDateTime.now();
+    }
+
+    @PreUpdate
+    protected void onUpdate() {
+        updatedAt = LocalDateTime.now();
+    }
 }

@@ -8,21 +8,21 @@ import java.util.ArrayList;
 import java.util.List;
 
 /**
- * 결재 문서 Entity
+ * 문서 공통 메타데이터 Entity
  */
 @Entity
 @Table(name = "approval_documents", schema = "erp", indexes = {
-        @Index(name = "idx_ad_status", columnList = "status"),
         @Index(name = "idx_ad_drafter", columnList = "drafter_user_idx"),
         @Index(name = "idx_ad_created", columnList = "created_at"),
-        @Index(name = "idx_ad_doc_no", columnList = "document_no")
+        @Index(name = "idx_ad_doc_no", columnList = "document_no"),
+        @Index(name = "idx_ad_doc_type", columnList = "document_type")
 })
 @Getter
 @Setter
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
-public class ApprovalDocument extends BaseEntity {
+public class ApprovalDocument {
 
     @Id
     @GeneratedValue(strategy = GenerationType.SEQUENCE, generator = "approval_documents_sequence")
@@ -39,9 +39,6 @@ public class ApprovalDocument extends BaseEntity {
     @Column(name = "document_type", nullable = false, length = 50)
     private String documentType;
 
-    @Column(name = "status", nullable = false, length = 20)
-    private String status = "대기";
-
     @Column(name = "drafter_user_idx", nullable = false)
     private Long drafterUserIdx;
 
@@ -54,17 +51,14 @@ public class ApprovalDocument extends BaseEntity {
     @Column(name = "amount")
     private Integer amount;
 
-    @Column(name = "approved_at")
-    private LocalDateTime approvedAt;
-
-    @Column(name = "rejected_at")
-    private LocalDateTime rejectedAt;
-
-    @Column(name = "rejection_reason", columnDefinition = "TEXT")
-    private String rejectionReason;
-
     @Column(name = "deleted_at")
     private LocalDateTime deletedAt;
+
+    @Column(name = "created_at")
+    private LocalDateTime createdAt;
+
+    @Column(name = "updated_at")
+    private LocalDateTime updatedAt;
 
     // 관계 매핑
     @ManyToOne(fetch = FetchType.LAZY)
@@ -73,13 +67,16 @@ public class ApprovalDocument extends BaseEntity {
 
     @OneToMany(mappedBy = "approvalDocument", cascade = CascadeType.ALL, orphanRemoval = true)
     @Builder.Default
-    private List<ApprovalLine> approvalLines = new ArrayList<>();
-
-    @OneToMany(mappedBy = "approvalDocument", cascade = CascadeType.ALL, orphanRemoval = true)
-    @Builder.Default
-    private List<ApprovalHistory> approvalHistories = new ArrayList<>();
-
-    @OneToMany(mappedBy = "approvalDocument", cascade = CascadeType.ALL, orphanRemoval = true)
-    @Builder.Default
     private List<ApprovalFile> approvalFiles = new ArrayList<>();
+
+    @PrePersist
+    protected void onCreate() {
+        createdAt = LocalDateTime.now();
+        updatedAt = LocalDateTime.now();
+    }
+
+    @PreUpdate
+    protected void onUpdate() {
+        updatedAt = LocalDateTime.now();
+    }
 }

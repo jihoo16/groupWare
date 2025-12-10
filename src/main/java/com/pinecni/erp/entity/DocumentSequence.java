@@ -31,18 +31,27 @@ public class DocumentSequence {
     @Column(name = "document_type", nullable = false, length = 50)
     private String documentType;
 
+    @Column(name = "prefix", nullable = false, length = 20)
+    private String prefix;
+
     @Column(name = "year", nullable = false)
     private Integer year;
 
-    @Column(name = "current_sequence", nullable = false, columnDefinition = "INTEGER DEFAULT 0")
-    private Integer currentSequence = 0;
-
-    @Column(name = "prefix", length = 20)
-    private String prefix;
+    @Column(name = "last_number", nullable = false, columnDefinition = "INTEGER DEFAULT 0")
+    private Integer lastNumber = 0;
 
     @Column(name = "created_at")
     private LocalDateTime createdAt;
 
+    @Column(name = "created_user_idx")
+    private Long createdUserIdx;
+
     @Column(name = "updated_at")
     private LocalDateTime updatedAt;
+
+    @Column(name = "updated_user_idx")
+    private Long updatedUserIdx;
+
+    @Column(name = "current_sequence", nullable = false, columnDefinition = "INTEGER DEFAULT 0")
+    private Integer currentSequence = 0;
 }

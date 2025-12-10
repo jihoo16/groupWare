@@ -3,6 +3,7 @@ package com.pinecni.erp.entity;
 import jakarta.persistence.*;
 import lombok.*;
 
+import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 
@@ -10,10 +11,10 @@ import java.time.LocalDateTime;
  * 연차 신청 Entity
  */
 @Entity
-@Table(name = "vacation_requests", schema = "erp", indexes = {
-        @Index(name = "idx_vr_document", columnList = "document_idx"),
-        @Index(name = "idx_vr_user", columnList = "user_idx"),
-        @Index(name = "idx_vr_dates", columnList = "start_date, end_date")
+@Table(name = "vacation_request", schema = "erp", indexes = {
+        @Index(name = "idx_vacation_request_user_idx", columnList = "user_idx"),
+        @Index(name = "idx_vacation_request_dates", columnList = "start_date, end_date"),
+        @Index(name = "idx_vacation_request_apply_date", columnList = "apply_date")
 })
 @Getter
 @Setter
@@ -23,18 +24,15 @@ import java.time.LocalDateTime;
 public class VacationRequest {
 
     @Id
-    @GeneratedValue(strategy = GenerationType.SEQUENCE, generator = "vacation_requests_sequence")
-    @SequenceGenerator(name = "vacation_requests_sequence", sequenceName = "erp.vacation_requests_sequence", allocationSize = 1)
+    @GeneratedValue(strategy = GenerationType.SEQUENCE, generator = "vacation_request_sequence")
+    @SequenceGenerator(name = "vacation_request_sequence", sequenceName = "vacation_request_sequence", allocationSize = 1)
     @Column(name = "idx")
     private Long idx;
-
-    @Column(name = "document_idx", nullable = false, unique = true)
-    private Long documentIdx;
 
     @Column(name = "user_idx", nullable = false)
     private Long userIdx;
 
-    @Column(name = "vacation_type", nullable = false, length = 50)
+    @Column(name = "vacation_type", nullable = false, length = 20)
     private String vacationType;
 
     @Column(name = "start_date", nullable = false)
@@ -43,42 +41,59 @@ public class VacationRequest {
     @Column(name = "end_date", nullable = false)
     private LocalDate endDate;
 
-    @Column(name = "days_count", nullable = false)
-    private Integer daysCount;
+    @Column(name = "days", nullable = false, precision = 4, scale = 1)
+    private BigDecimal days;
 
     @Column(name = "reason", columnDefinition = "TEXT")
     private String reason;
 
-    @Column(name = "address", length = 200)
-    private String address;
+    @Column(name = "content", length = 200)
+    private String content;
 
-    @Column(name = "birth_date")
-    private LocalDate birthDate;
+    @Column(name = "allow_minus_vacation")
+    private Boolean allowMinusVacation = false;
 
-    @Column(name = "contact", length = 20)
-    private String contact;
+    @Column(name = "special_approval_reason", columnDefinition = "TEXT")
+    private String specialApprovalReason;
 
-    @Column(name = "emergency_contact", length = 20)
-    private String emergencyContact;
+    @Column(name = "apply_date", nullable = false)
+    private LocalDate applyDate;
 
-    @Column(name = "created_at")
+    @Column(name = "created_user_idx")
+    private Long createdUserIdx;
+
+    @Column(name = "created_at", nullable = false)
     private LocalDateTime createdAt;
 
-    @Column(name = "approved_at")
-    private LocalDateTime approvedAt;
+    @Column(name = "updated_user_idx")
+    private Long updatedUserIdx;
 
-    @Column(name = "cancelled_at")
-    private LocalDateTime cancelledAt;
+    @Column(name = "updated_at", nullable = false)
+    private LocalDateTime updatedAt;
 
-    @Column(name = "cancel_reason", length = 500)
-    private String cancelReason;
+    @Column(name = "document_idx")
+    private Long documentIdx;
 
     // 관계 매핑
-    @OneToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "document_idx", insertable = false, updatable = false)
-    private ApprovalDocument approvalDocument;
-
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "user_idx", insertable = false, updatable = false)
     private User user;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "document_idx", insertable = false, updatable = false)
+    private ApprovalDocument approvalDocument;
+
+    @PrePersist
+    protected void onCreate() {
+        createdAt = LocalDateTime.now();
+        updatedAt = LocalDateTime.now();
+        if (applyDate == null) {
+            applyDate = LocalDate.now();
+        }
+    }
+
+    @PreUpdate
+    protected void onUpdate() {
+        updatedAt = LocalDateTime.now();
+    }
 }
