@@ -8,6 +8,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.Instant;
+import java.util.List;
 
 /**
  * WeeklyReport Service Implementation
@@ -42,5 +43,21 @@ public class WeeklyReportServiceImpl implements WeeklyReportService {
         return saved;
     }
 
+    @Override
+    public List<WeeklyReport> getAllWeeklyReport() {
+        log.debug("getAllWeeklyReport() called");
+        List<WeeklyReport> reports = weeklyReportRepository.findAllOrderByCreatedAtDesc();
+        log.debug("Found {} weekly reports", reports.size());
+        return reports;
+    }
+
+    @Override
+    public WeeklyReport getWeeklyReportById(Long id) {
+        log.debug("getWeeklyReportById() called - id: {}", id);
+        WeeklyReport report = weeklyReportRepository.findById(id)
+                .orElseThrow(() -> new RuntimeException("주간업무보고를 찾을 수 없습니다. ID: " + id));
+        log.debug("WeeklyReport found - id: {}", report.getId());
+        return report;
+    }
 
 }

@@ -1,0 +1,123 @@
+<!DOCTYPE html>
+<html lang="ko" xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{fragments/layout :: head('주간업무보고 상세', '/css/approval_weekly_report.css')}"></head>
+<body>
+    <div class="container">
+        <!-- 좌측 네비게이션 바 -->
+        <div th:replace="~{fragments/sidebar :: sidebar('approval')}"></div>
+
+        <!-- 메인 콘텐츠 영역 -->
+        <main class="main-content">
+            <header class="header">
+                <div class="header-left">
+                    <h1 class="page-title"><i class="fas fa-calendar-week"></i> 주간업무보고 상세</h1>
+                </div>
+                <div class="header-right">
+                    <button class="btn-secondary" onclick="history.back()">
+                        <i class="fas fa-arrow-left"></i>
+                        돌아가기
+                    </button>
+                </div>
+            </header>
+
+            <div class="write-container">
+                <div class="editor-area" style="max-width: 1200px; margin: 0 auto;">
+                    <!-- 문서 양식 -->
+                    <div class="document-form">
+                        <!-- 결재라인 -->
+                        <div class="approval-line-box">
+                            <table class="approval-line-table">
+                                <tr>
+                                    <th class="approval-header">담당</th>
+                                    <th class="approval-header">부서장</th>
+                                    <th class="approval-header">대표이사</th>
+                                </tr>
+                                <tr>
+                                    <td class="approval-sign-cell">
+                                        <div class="sign-area">
+                                            <span class="sign-placeholder">결재</span>
+                                        </div>
+                                    </td>
+                                    <td class="approval-sign-cell">
+                                        <div class="sign-area">
+                                            <span class="sign-placeholder">결재</span>
+                                        </div>
+                                    </td>
+                                    <td class="approval-sign-cell">
+                                        <div class="sign-area">
+                                            <span class="sign-placeholder">결재</span>
+                                        </div>
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td class="approval-name-cell">
+                                        <span class="approver-name">-</span>
+                                    </td>
+                                    <td class="approval-name-cell">
+                                        <span class="approver-name">-</span>
+                                    </td>
+                                    <td class="approval-name-cell">
+                                        <span class="approver-name">-</span>
+                                    </td>
+                                </tr>
+
+                            </table>
+                        </div>
+
+                        <h2 class="doc-title">주 간 업 무 보 고</h2>
+
+                        <table class="form-table">
+                            <tr>
+                                <th>과제명</th>
+                                <td >
+                                    <input type="text" id="projectName" readonly>
+                                </td>
+                                <th>달성률</th>
+                                <td >
+                                    <input type="text" id="weeklyAchievementRate" readonly>
+                                </td>
+                            </tr>
+                            <tr>
+                                <th>보고자</th>
+                                <td><input type="text" id="userName" readonly></td>
+                                <th>부서</th>
+                                <td><input type="text" id="userDept" readonly></td>
+                            </tr>
+                            <tr>
+                                <th>보고 기간</th>
+                                <td colspan="3"><input type="text" id="reportPeriod" readonly style="height: 155px"></td>
+                            </tr>
+                            <tr>
+                                <th>금주 주요 업무</th>
+                                <td colspan="3"><input type="text" id="mainTasks" readonly style="height: 155px"></td>
+                            </tr>
+                            <tr>
+                                <th>주요 성과</th>
+                                <td colspan="3"><input type="text" id="achievements" readonly style="height: 155px"></td>
+                            </tr>
+                            <tr>
+                                <th>주요 이슈</th>
+                                <td colspan="3"><input type="text" id="issues" readonly style="height: 155px"></td>
+                            </tr>
+                            <tr>
+                                <th>차주 계획</th>
+                                <td colspan="3"><input type="text" id="nextWeekPlan" readonly style="height: 155px"></td>
+                            </tr>
+                        </table>
+                    </div>
+
+                    <!-- 첨부파일 (추후 구현) -->
+                    <div class="attachment-section" style="display: none;">
+                        <div class="section-header">
+                            <h4><i class="fas fa-paperclip"></i> 첨부파일</h4>
+                        </div>
+                        <div class="file-list" id="fileList"></div>
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <script th:src="@{/js/approval_weekly_report_detail.js}"></script>
+</body>
+</html>
