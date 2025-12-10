@@ -2333,7 +2333,7 @@ document.addEventListener('DOMContentLoaded', function() {
             });
 
             if (allPeriods.length > 1) {
-                vacationPeriodText += `\n\n총 ${totalDays}일`;
+                vacationPeriodText += `\n\n총 연차 ${totalDays}일`;
             }
 
             document.getElementById('vacation_period').value = vacationPeriodText;
@@ -2379,7 +2379,7 @@ document.addEventListener('DOMContentLoaded', function() {
         const startFormatted = `${startDate.getFullYear()}.${String(startDate.getMonth() + 1).padStart(2, '0')}.${String(startDate.getDate()).padStart(2, '0')} (${dayNames[startDate.getDay()]})`;
         const endFormatted = `${endDate.getFullYear()}.${String(endDate.getMonth() + 1).padStart(2, '0')}.${String(endDate.getDate()).padStart(2, '0')} (${dayNames[endDate.getDay()]})`;
 
-        return `${startFormatted} ~ ${endFormatted} 총 연차 ${days}일`;
+        return `${startFormatted} ~ ${endFormatted} 연차 ${days}일`;
     }
 
     // ============================================
