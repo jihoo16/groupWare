@@ -2,6 +2,7 @@
 document.addEventListener('DOMContentLoaded', function() {
     // 전역 변수
     let selectedFiles = [];
+    let projects = []; // 프로젝트 목록
 
     // DOM 요소
     const fileInput = document.getElementById('fileInput');
@@ -9,6 +10,7 @@ document.addEventListener('DOMContentLoaded', function() {
     const fileUploadArea = document.getElementById('fileUploadArea');
     const saveDraftBtn = document.getElementById('saveDraftBtn');
     const submitBtn = document.getElementById('submitBtn');
+    const projectSelect = document.getElementById('projectSelect');
 
     // ============================================
     // 템플릿 사이드바 접기/펼치기 기능
@@ -63,6 +65,45 @@ document.addEventListener('DOMContentLoaded', function() {
             icon.className = 'fas fa-chevron-down';
         }
     }
+
+    // ============================================
+    // 프로젝트 목록 로드
+    // ============================================
+    async function loadProjects() {
+        try {
+            const response = await fetch('/api/projects');
+            if (response.ok) {
+                projects = await response.json();
+                updateProjectSelect();
+            } else {
+                console.error('프로젝트 목록 로드 실패');
+            }
+        } catch (error) {
+            console.error('프로젝트 목록 로드 오류:', error);
+        }
+    }
+
+    // 프로젝트 셀렉트박스 업데이트
+    function updateProjectSelect() {
+        if (!projectSelect) return;
+
+        // 기존 옵션 제거 (첫 번째 "선택 안함" 제외)
+        while (projectSelect.options.length > 1) {
+            projectSelect.remove(1);
+        }
+
+        // 프로젝트 목록 추가
+        projects.forEach(project => {
+            const option = document.createElement('option');
+            option.value = project.idx;
+            option.textContent = `${project.projectName}`;
+            option.dataset.projectName = project.projectName;
+            projectSelect.appendChild(option);
+        });
+    }
+
+    // 페이지 로드 시 프로젝트 목록 가져오기
+    loadProjects();
 
     // ============================================
     // 파일 업로드 기능
@@ -157,261 +198,100 @@ document.addEventListener('DOMContentLoaded', function() {
         updateFileList();
     };
 
+    // ============================================
+    // 폼 제출 기능
+    // ============================================
+
     // 임시저장
-    saveDraftBtn.addEventListener('click', function() {
-        alert('문서가 임시저장되었습니다.');
-        // 실제로는 API 호출
-    });
+    if (saveDraftBtn) {
+        saveDraftBtn.addEventListener('click', function() {
+            alert('임시저장 기능은 아직 구현되지 않았습니다.');
+        });
+    }
 
-    // 제출
-    submitBtn.addEventListener('click', function() {
-        if (selectedApprovers.length === 0) {
-            alert('결재자를 지정해주세요.');
-            return;
-        }
+    // 제출 (저장)
+    if (submitBtn) {
+        submitBtn.addEventListener('click', async function() {
+            // 폼 데이터 수집
+            const formTable = document.querySelector('.form-table');
+            if (!formTable) {
+                alert('문서 양식을 찾을 수 없습니다.');
+                return;
+            }
 
-        if (confirm('결재를 요청하시겠습니까?')) {
-            alert('결재 요청이 완료되었습니다.');
-            // 실제로는 API 호출 후 목록으로 이동
-            window.location.href = '/approval';
-        }
-    });
+            // 각 필드 값 추출
+            const inputs = formTable.querySelectorAll('input, textarea');
+            const reportPeriod = inputs[3]?.value || ''; // 보고 기간
+            const mainTasks = inputs[4]?.value || ''; // 금주 주요 업무
+            const achievements = inputs[5]?.value || ''; // 주요 성과
+            const issues = inputs[6]?.value || ''; // 주요 이슈
+            const nextWeekPlan = inputs[7]?.value || ''; // 차주 계획
 
-    // PDF 저장 버튼 이벤트
-    const savePdfBtn = document.getElementById('savePdfBtn');
-    if (savePdfBtn) {
-        savePdfBtn.addEventListener('click', async function(e) {
-            e.preventDefault();
+            // 필수 필드 검증
+            if (!reportPeriod.trim()) {
+                alert('보고 기간을 입력해주세요.');
+                return;
+            }
 
-            // 상태 복원을 위한 변수들을 외부에 선언
-            let allDivs = null;
-            let originalDisplays = [];
+            if (!mainTasks.trim()) {
+                alert('금주 주요 업무를 입력해주세요.');
+                return;
+            }
 
-            try {
-                console.log('PDF 저장 시작');
+            if (confirm('주간업무보고를 저장하시겠습니까?')) {
+                try {
+                    // 선택된 프로젝트 정보 추출
+                    const selectedProjectIdx = projectSelect.value ? parseInt(projectSelect.value) : null;
+                    const selectedProjectName = projectSelect.value
+                        ? projectSelect.options[projectSelect.selectedIndex].dataset.projectName
+                        : null;
 
-                // 현재 활성화된 문서 양식 확인
-                const activeTemplate = document.querySelector('.tree-node-header.active');
-                const templateType = activeTemplate ? activeTemplate.getAttribute('data-template') : null;
+                    // API 요청 데이터 구성
+                    const requestData = {
+                        userIdx: 1, // TODO: 실제 로그인 사용자 ID로 변경 필요
+                        projectIdx: selectedProjectIdx,
+                        projectName: selectedProjectName,
+                        reportPeriod: reportPeriod,
+                        mainTasks: mainTasks,
+                        achievements: achievements,
+                        issues: issues,
+                        nextWeekPlan: nextWeekPlan,
+                    };
 
-                if (!activeTemplate || (templateType !== 'receipt-meeting' && templateType !== 'receipt-overtime')) {
-                    alert('영수증 처리(회의록) 또는 영수증 처리(야근식대) 템플릿을 먼저 선택해주세요.');
-                    return;
-                }
+                    console.log('전송 데이터:', requestData);
 
-                // jsPDF와 html2canvas 로드 확인
-                if (typeof window.jspdf === 'undefined' || typeof window.html2canvas === 'undefined') {
-                    alert('PDF 라이브러리를 로드하는 중입니다. 잠시 후 다시 시도해주세요.');
-                    return;
-                }
-
-                const { jsPDF } = window.jspdf;
-                const pdf = new jsPDF('p', 'mm', 'a4');
-
-                // documentForm 내의 모든 최상위 div 찾기
-                allDivs = documentForm.querySelectorAll(':scope > div');
-                console.log('찾은 div 개수:', allDivs.length);
-
-                // 원래 display 스타일 저장
-                originalDisplays = Array.from(allDivs).map(div => div.style.display);
-
-                // 템플릿 타입별로 다른 처리
-                if (templateType === 'receipt-meeting') {
-                    if (allDivs.length < 4) {
-                        alert('문서 구조를 찾을 수 없습니다. 영수증 처리(회의록) 템플릿을 선택했는지 확인해주세요.');
-                        return;
-                    }
-
-                    // 공통 정보 입력 영역 숨기고, 나머지는 모두 표시
-                    allDivs[0].style.display = 'none'; // 공통 정보 입력
-                    allDivs[1].style.display = 'block'; // 회의 품의서
-                    allDivs[2].style.display = 'block'; // 회의록
-                    allDivs[3].style.display = 'block'; // 참석자 명단
-                } else if (templateType === 'receipt-overtime') {
-                    if (allDivs.length < 3) {
-                        alert('문서 구조를 찾을 수 없습니다. 영수증 처리(야근식대) 템플릿을 선택했는지 확인해주세요.');
-                        return;
-                    }
-
-                    // 공통 정보 입력 영역 숨기고, 나머지는 모두 표시
-                    allDivs[0].style.display = 'none'; // 공통 정보 입력
-                    allDivs[1].style.display = 'block'; // 품의서
-                    allDivs[2].style.display = 'block'; // 야근 신청서
-                }
-
-                // 잠시 대기하여 DOM 업데이트 완료
-                await new Promise(resolve => setTimeout(resolve, 100));
-
-                // 공통 렌더링 옵션
-                const renderOptions = {
-                    scale: 3, // 고해상도
-                    useCORS: true,
-                    allowTaint: true,
-                    logging: false,
-                    backgroundColor: '#ffffff',
-                    imageTimeout: 0,
-                    removeContainer: true
-                };
-
-                // PDF 페이지 설정 (A4, 여백 포함)
-                const pdfWidth = 210; // A4 width in mm
-                const pdfHeight = 297; // A4 height in mm
-                const margin = 10; // 여백 10mm
-                const contentWidth = pdfWidth - (margin * 2);
-
-                let fileName = '';
-
-                if (templateType === 'receipt-meeting') {
-                    // 회의록 PDF 생성
-                    // 1. 회의 품의서 페이지
-                    console.log('회의 품의서 렌더링 중...');
-                    const proposalDiv = allDivs[1];
-
-                    if (!proposalDiv) {
-                        throw new Error('회의 품의서를 찾을 수 없습니다.');
-                    }
-
-                    console.log('회의 품의서 div 크기:', proposalDiv.offsetWidth, 'x', proposalDiv.offsetHeight);
-
-                    const proposalCanvas = await window.html2canvas(proposalDiv, renderOptions);
-                    console.log('Canvas 생성 완료:', proposalCanvas.width, 'x', proposalCanvas.height);
-
-                    const canvasWidth = proposalCanvas.width;
-                    const canvasHeight = proposalCanvas.height;
-
-                    if (canvasWidth === 0 || canvasHeight === 0) {
-                        throw new Error('Canvas 크기가 0입니다. 문서가 화면에 표시되어 있는지 확인하세요.');
-                    }
-
-                    const proposalImgData = proposalCanvas.toDataURL('image/jpeg', 0.95);
-                    const imgHeight = (canvasHeight * contentWidth) / canvasWidth;
-
-                    pdf.addImage(proposalImgData, 'JPEG', margin, margin, contentWidth, imgHeight);
-                    console.log('회의 품의서 페이지 완료');
-
-                    // 2. 회의록 페이지
-                    console.log('회의록 렌더링 중...');
-                    const minutesDiv = allDivs[2];
-
-                    if (!minutesDiv) {
-                        throw new Error('회의록을 찾을 수 없습니다.');
-                    }
-
-                    pdf.addPage();
-                    const minutesCanvas = await window.html2canvas(minutesDiv, renderOptions);
-
-                    const minutesCanvasWidth = minutesCanvas.width;
-                    const minutesCanvasHeight = minutesCanvas.height;
-
-                    const minutesImgData = minutesCanvas.toDataURL('image/jpeg', 0.95);
-                    const minutesImgHeight = (minutesCanvasHeight * contentWidth) / minutesCanvasWidth;
-
-                    pdf.addImage(minutesImgData, 'JPEG', margin, margin, contentWidth, minutesImgHeight);
-                    console.log('회의록 페이지 완료');
-
-                    // 3. 참석자 명단 페이지
-                    console.log('참석자 명단 렌더링 중...');
-                    const attendeeDiv = allDivs[3];
-
-                    if (!attendeeDiv) {
-                        throw new Error('참석자 명단을 찾을 수 없습니다.');
-                    }
-
-                    pdf.addPage();
-                    const attendeeCanvas = await window.html2canvas(attendeeDiv, renderOptions);
-
-                    const attendeeCanvasWidth = attendeeCanvas.width;
-                    const attendeeCanvasHeight = attendeeCanvas.height;
-
-                    const attendeeImgData = attendeeCanvas.toDataURL('image/jpeg', 0.95);
-                    const attendeeImgHeight = (attendeeCanvasHeight * contentWidth) / attendeeCanvasWidth;
-
-                    pdf.addImage(attendeeImgData, 'JPEG', margin, margin, contentWidth, attendeeImgHeight);
-                    console.log('참석자 명단 페이지 완료');
-
-                    // 파일명 생성
-                    const dateInput = document.getElementById('common_date');
-                    let dateStr;
-                    if (dateInput && dateInput.value) {
-                        dateStr = dateInput.value.replace(/-/g, '');
-                    } else {
-                        const today = new Date();
-                        dateStr = `${today.getFullYear()}${String(today.getMonth() + 1).padStart(2, '0')}${String(today.getDate()).padStart(2, '0')}`;
-                    }
-                    fileName = `${dateStr}_회의록.pdf`;
-                } else if (templateType === 'receipt-overtime') {
-                    // 야근식대 PDF 생성
-                    // 1. 품의서 페이지
-                    console.log('품의서 렌더링 중...');
-                    const proposalDiv = allDivs[1];
-
-                    if (!proposalDiv) {
-                        throw new Error('품의서를 찾을 수 없습니다.');
-                    }
-
-                    console.log('품의서 div 크기:', proposalDiv.offsetWidth, 'x', proposalDiv.offsetHeight);
-
-                    const proposalCanvas = await window.html2canvas(proposalDiv, renderOptions);
-                    console.log('Canvas 생성 완료:', proposalCanvas.width, 'x', proposalCanvas.height);
-
-                    const canvasWidth = proposalCanvas.width;
-                    const canvasHeight = proposalCanvas.height;
-
-                    if (canvasWidth === 0 || canvasHeight === 0) {
-                        throw new Error('Canvas 크기가 0입니다. 문서가 화면에 표시되어 있는지 확인하세요.');
-                    }
-
-                    const proposalImgData = proposalCanvas.toDataURL('image/jpeg', 0.95);
-                    const imgHeight = (canvasHeight * contentWidth) / canvasWidth;
-
-                    pdf.addImage(proposalImgData, 'JPEG', margin, margin, contentWidth, imgHeight);
-                    console.log('품의서 페이지 완료');
-
-                    // 2. 야근 신청서 페이지
-                    console.log('야근 신청서 렌더링 중...');
-                    const overtimeDiv = allDivs[2];
-
-                    if (!overtimeDiv) {
-                        throw new Error('야근 신청서를 찾을 수 없습니다.');
-                    }
-
-                    pdf.addPage();
-                    const overtimeCanvas = await window.html2canvas(overtimeDiv, renderOptions);
-
-                    const overtimeCanvasWidth = overtimeCanvas.width;
-                    const overtimeCanvasHeight = overtimeCanvas.height;
-
-                    const overtimeImgData = overtimeCanvas.toDataURL('image/jpeg', 0.95);
-                    const overtimeImgHeight = (overtimeCanvasHeight * contentWidth) / overtimeCanvasWidth;
-
-                    pdf.addImage(overtimeImgData, 'JPEG', margin, margin, contentWidth, overtimeImgHeight);
-                    console.log('야근 신청서 페이지 완료');
-
-                    // 파일명 생성
-                    const dateInput = document.getElementById('ot_date');
-                    let dateStr;
-                    if (dateInput && dateInput.value) {
-                        dateStr = dateInput.value.replace(/-/g, '');
-                    } else {
-                        const today = new Date();
-                        dateStr = `${today.getFullYear()}${String(today.getMonth() + 1).padStart(2, '0')}${String(today.getDate()).padStart(2, '0')}`;
-                    }
-                    fileName = `${dateStr}_야근식대비.pdf`;
-                }
-
-                console.log('PDF 저장:', fileName);
-                pdf.save(fileName);
-
-                alert('PDF가 저장되었습니다.');
-            } catch (error) {
-                console.error('PDF 생성 오류:', error);
-                alert('PDF 생성 중 오류가 발생했습니다.\n' + error.message + '\n\n브라우저 콘솔(F12)을 확인해주세요.');
-            } finally {
-                // 에러 발생 여부와 관계없이 항상 원래 스타일 복원
-                if (allDivs && originalDisplays.length > 0) {
-                    allDivs.forEach((div, index) => {
-                        div.style.display = originalDisplays[index];
+                    // API 호출
+                    const response = await fetch('/api/document/weekly-report', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json'
+                        },
+                        body: JSON.stringify(requestData)
                     });
+
+                    if (response.ok) {
+                        const result = await response.json();
+                        console.log('저장 성공:', result);
+                        alert('주간업무보고가 저장되었습니다.');
+
+                        // 폼 초기화
+                        projectSelect.value = ''; // 과제명
+                        inputs[3].value = ''; // 보고 기간
+                        inputs[4].value = ''; // 금주 주요 업무
+                        inputs[5].value = ''; // 주요 성과
+                        inputs[6].value = ''; // 주요 이슈
+                        inputs[7].value = ''; // 차주 계획
+
+                        // 목록으로 이동 (필요시 주석 해제)
+                         window.location.href = '/approval';
+                    } else {
+                        const error = await response.text();
+                        console.error('저장 실패:', error);
+                        alert('저장에 실패했습니다.');
+                    }
+                } catch (error) {
+                    console.error('API 호출 오류:', error);
+                    alert('저장 중 오류가 발생했습니다: ' + error.message);
                 }
             }
         });
