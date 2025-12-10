@@ -1611,7 +1611,9 @@ document.addEventListener('DOMContentLoaded', function() {
         // 이전 달 날짜
         for (let i = firstDayOfWeek - 1; i >= 0; i--) {
             const day = prevLastDate - i;
-            const dayEl = createDayElement(day, 'other-month');
+            const prevMonthDate = new Date(currentYear, currentMonth - 1, day);
+            const dateStr = formatDate(prevMonthDate);
+            const dayEl = createDayElement(day, 'other-month', dateStr);
             calendarDays.appendChild(dayEl);
         }
 
@@ -1674,7 +1676,9 @@ document.addEventListener('DOMContentLoaded', function() {
         // 다음 달 날짜
         const remainingCells = 42 - calendarDays.children.length;
         for (let day = 1; day <= remainingCells; day++) {
-            const dayEl = createDayElement(day, 'other-month');
+            const nextMonthDate = new Date(currentYear, currentMonth + 1, day);
+            const dateStr = formatDate(nextMonthDate);
+            const dayEl = createDayElement(day, 'other-month', dateStr);
             calendarDays.appendChild(dayEl);
         }
     }
@@ -1685,7 +1689,8 @@ document.addEventListener('DOMContentLoaded', function() {
         dayEl.className = `calendar-day ${classes}`;
         dayEl.textContent = day;
 
-        if (dateStr && !classes.includes('other-month')) {
+        // dateStr이 있으면 클릭 가능 (다른 달 날짜도 포함)
+        if (dateStr) {
             dayEl.addEventListener('click', () => selectDate(dateStr));
         }
 
@@ -1696,6 +1701,29 @@ document.addEventListener('DOMContentLoaded', function() {
     function selectDate(dateStr) {
         const vacationType = vifVacationType.value;
 
+        // 클릭한 날짜의 년월 확인
+        const clickedDate = new Date(dateStr);
+        const clickedYear = clickedDate.getFullYear();
+        const clickedMonth = clickedDate.getMonth();
+
+        // 다른 달의 날짜를 클릭한 경우 해당 달로 이동
+        if (clickedYear !== currentYear || clickedMonth !== currentMonth) {
+            currentYear = clickedYear;
+            currentMonth = clickedMonth;
+            // 공휴일 데이터 확인 후 달력 렌더링
+            ensureHolidaysLoaded(currentYear).then(() => {
+                // 날짜 선택 처리
+                processDateSelection(dateStr, vacationType);
+            });
+            return;
+        }
+
+        // 같은 달 날짜 선택 처리
+        processDateSelection(dateStr, vacationType);
+    }
+
+    // 날짜 선택 처리 (별도 함수로 분리)
+    function processDateSelection(dateStr, vacationType) {
         // 반차인 경우 단일 날짜만 선택
         if (vacationType.includes('반차')) {
             selectedDates = [dateStr];
