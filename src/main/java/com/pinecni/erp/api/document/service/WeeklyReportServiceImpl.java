@@ -60,4 +60,18 @@ public class WeeklyReportServiceImpl implements WeeklyReportService {
         return report;
     }
 
+    @Override
+    @Transactional
+    public void deleteWeeklyReport(Long id) {
+        log.debug("deleteWeeklyReport() called - id: {}", id);
+
+        // 존재 여부 확인
+        if (!weeklyReportRepository.existsById(id)) {
+            throw new RuntimeException("주간업무보고를 찾을 수 없습니다. ID: " + id);
+        }
+
+        weeklyReportRepository.deleteById(id);
+        log.debug("WeeklyReport deleted successfully - id: {}", id);
+    }
+
 }

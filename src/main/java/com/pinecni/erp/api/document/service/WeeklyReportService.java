@@ -30,4 +30,10 @@ public interface WeeklyReportService {
      */
     WeeklyReport getWeeklyReportById(Long id);
 
+    /**
+     * 주간업무보고 삭제
+     * @param id 주간업무보고 ID
+     */
+    void deleteWeeklyReport(Long id);
+
 }
