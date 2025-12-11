@@ -54,5 +54,28 @@ public class MonthlyReportServiceImpl implements MonthlyReportService {
         return monthlyReportMapper.toDTO(saved);
     }
 
+    @Override
+    public List<MonthlyReportDTO> getAllMonthlyReport() {
+        log.debug("getAllmonthlyReport() called");
+        List<MonthlyReport> reports = monthlyReportRepository.findAllOrderByCreatedAtDesc();
+        log.debug("Found {} monthly reports", reports.size());
+
+        // Entity List → DTO List 변환
+        return reports.stream()
+                .map(monthlyReportMapper::toDTO)
+                .collect(Collectors.toList());
+    }
+
+    @Override
+    public MonthlyReportDTO getMonthlyReportById(Long id) {
+        log.debug("getMonthlyReportById() called - id: {}", id);
+        MonthlyReport report = monthlyReportRepository.findById(id)
+                .orElseThrow(() -> new RuntimeException("월간업무보고를 찾을 수 없습니다. ID: " + id));
+        log.debug("MonthlyReport found - id: {}", report.getId());
+
+        // Entity → DTO 변환
+        return monthlyReportMapper.toDTO(report);
+    }
+
 
 }

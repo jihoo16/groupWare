@@ -16,6 +16,33 @@ import java.time.Instant;
 @RequiredArgsConstructor
 public class MonthlyReportMapper {
 
+    /**
+     * Entity -> DTO 변환
+     * 월간업무보고 조회 시 사용
+     */
+    public MonthlyReportDTO toDTO(MonthlyReport entity) {
+        if (entity == null) {
+            return null;
+        }
+
+        return MonthlyReportDTO.builder()
+                .id(entity.getId())
+                .userIdx(entity.getUserIdx())
+                .userName(null)  // TODO: User 테이블 JOIN하여 이름 조회
+                .userDept(null)  // TODO: User 테이블 JOIN하여 부서 조회
+                .projectIdx(entity.getProjectIdx())
+                .projectName(entity.getProjectName())
+                .reportMonth(entity.getReportMonth())
+                .mainTasks(entity.getMainTasks())
+                .performance(entity.getPerformance())
+                .improvements(entity.getImprovements())
+                .nextMonthPlan(entity.getNextMonthPlan())
+                .createdAt(entity.getCreatedAt())
+                .updatedAt(entity.getUpdatedAt())
+                .createdUserIdx(entity.getCreatedUserIdx())
+                .updatedUserIdx(entity.getUpdatedUserIdx())
+                .build();
+    }
 
     /**
      * CreateDTO -> Entity 변환

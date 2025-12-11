@@ -36,3 +36,29 @@ public class MonthlyReportController {
         return ResponseEntity.status(HttpStatus.CREATED).body(created);
     }
 
+    /**
+     * 전체 월간업무보고 목록 조회
+     * GET /api/document/monthly-report
+     */
+    @GetMapping
+    public ResponseEntity<List<MonthlyReportDTO>> getAllMonthlyReports() {
+        log.debug("GET /api/document/monthly-report");
+
+        List<MonthlyReportDTO> reports = monthlyReportService.getAllMonthlyReport();
+        return ResponseEntity.ok(reports);
+    }
+
+    /**
+     * 월간업무보고 상세 조회
+     * GET /api/document/monthly-report/{id}
+     */
+    @GetMapping("/{id}")
+    public ResponseEntity<MonthlyReportDTO> getMonthlyReportById(@PathVariable Long id) {
+        log.debug("GET /api/document/monthly-report/{}", id);
+
+        MonthlyReportDTO report = monthlyReportService.getMonthlyReportById(id);
+        return ResponseEntity.ok(report);
+    }
+
+
+}

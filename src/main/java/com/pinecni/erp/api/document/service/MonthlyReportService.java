@@ -19,4 +19,17 @@ public interface MonthlyReportService {
      */
     MonthlyReportDTO createMonthlyReport(MonthlyReportCreateDTO createDTO);
 
+    /**
+     * 전체 월간업무보고 목록 조회
+     * @return 월간업무보고 DTO 목록 (생성일시 내림차순)
+     */
+    List<MonthlyReportDTO> getAllMonthlyReport();
+
+    /**
+     * 월간업무보고 상세 조회
+     * @param id 월간업무보고 ID
+     * @return 월간업무보고 DTO
+     */
+    MonthlyReportDTO getMonthlyReportById(Long id);
+
 }
