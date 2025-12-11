@@ -77,5 +77,25 @@ public class MonthlyReportServiceImpl implements MonthlyReportService {
         return monthlyReportMapper.toDTO(report);
     }
 
+    @Override
+    @Transactional
+    public MonthlyReportDTO updateMonthlyReport(Long id, MonthlyReportUpdateDTO updateDTO, Long updatedUserIdx) {
+        log.debug("updateMonthlyReport() called - id: {}, updatedUserIdx: {}", id, updatedUserIdx);
+
+        // 기존 Entity 조회
+        MonthlyReport report = monthlyReportRepository.findById(id)
+                .orElseThrow(() -> new RuntimeException("월간업무보고를 찾을 수 없습니다. ID: " + id));
+
+        // UpdateDTO로 Entity 업데이트
+        monthlyReportMapper.updateEntity(report, updateDTO, updatedUserIdx);
+
+        // 저장 (dirty checking에 의해 자동 업데이트)
+        MonthlyReport updated = monthlyReportRepository.save(report);
+        log.debug("MonthlyReport updated successfully - id: {}", updated.getId());
+
+        // Entity → DTO 변환
+        return monthlyReportMapper.toDTO(updated);
+    }
+
 
 }

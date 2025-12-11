@@ -60,5 +60,22 @@ public class MonthlyReportController {
         return ResponseEntity.ok(report);
     }
 
+    /**
+     * 월간업무보고 수정
+     * PUT /api/document/monthly-report/{id}
+     */
+    @PutMapping("/{id}")
+    public ResponseEntity<MonthlyReportDTO> updateMonthlyReport(
+            @PathVariable Long id,
+            @Valid @RequestBody MonthlyReportUpdateDTO updateDTO) {
+        log.debug("PUT /api/document/monthly-report/{}", id);
+
+        // TODO: 실제로는 로그인한 사용자 IDX를 가져와야 함
+        Long updatedUserIdx = 1L;
+
+        MonthlyReportDTO updated = monthlyReportService.updateMonthlyReport(id, updateDTO, updatedUserIdx);
+        return ResponseEntity.ok(updated);
+    }
+
 
 }

@@ -32,4 +32,13 @@ public interface MonthlyReportService {
      */
     MonthlyReportDTO getMonthlyReportById(Long id);
 
+
+    /**
+     * 월간업무보고 수정
+     * @param id 월간업무보고 ID
+     * @param updateDTO 수정할 월간업무보고 정보
+     * @param updatedUserIdx 수정자 IDX
+     * @return 수정된 월간업무보고 DTO
+     */
+    MonthlyReportDTO updateMonthlyReport(Long id, MonthlyReportUpdateDTO updateDTO, Long updatedUserIdx);
 }

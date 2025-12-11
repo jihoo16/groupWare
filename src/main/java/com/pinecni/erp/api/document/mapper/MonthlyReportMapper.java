@@ -73,4 +73,40 @@ public class MonthlyReportMapper {
         return report;
     }
 
+    /**
+     * UpdateDTO로 기존 Entity 업데이트
+     * 월간업무보고 수정 시 사용
+     */
+    public void updateEntity(MonthlyReport entity, MonthlyReportUpdateDTO dto, Long updatedUserIdx) {
+        if (entity == null || dto == null) {
+            return;
+        }
+
+        // null이 아닌 필드만 업데이트
+        if (dto.getProjectIdx() != null) {
+            entity.setProjectIdx(dto.getProjectIdx());
+        }
+        if (dto.getProjectName() != null) {
+            entity.setProjectName(dto.getProjectName());
+        }
+        if (dto.getReportMonth() != null) {
+            entity.setReportMonth(dto.getReportMonth());
+        }
+        if (dto.getMainTasks() != null) {
+            entity.setMainTasks(dto.getMainTasks());
+        }
+        if (dto.getPerformance() != null) {
+            entity.setPerformance(dto.getPerformance());
+        }
+        if (dto.getImprovements() != null) {
+            entity.setImprovements(dto.getImprovements());
+        }
+        if (dto.getNextMonthPlan() != null) {
+            entity.setNextMonthPlan(dto.getNextMonthPlan());
+        }
+
+        // 수정 정보 업데이트
+        entity.setUpdatedAt(Instant.now());
+        entity.setUpdatedUserIdx(updatedUserIdx);
+    }
 }
