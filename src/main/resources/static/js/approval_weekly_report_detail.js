@@ -17,14 +17,98 @@ document.addEventListener('DOMContentLoaded', function() {
     // 버튼 이벤트 핸들러
     // ============================================
 
+    // 수정 모드 상태
+    let isEditMode = false;
+
     // 수정 버튼
     const editBtn = document.getElementById('editReportBtn');
     if (editBtn) {
         editBtn.addEventListener('click', function() {
-            // 수정 페이지로 이동 (추후 구현)
-            alert('수정 기능은 추후 구현 예정입니다.');
-            // window.location.href = `/approval/weekly-report/edit?id=${reportId}`;
+            if (!isEditMode) {
+                // 수정 모드 활성화
+                enableEditMode();
+                isEditMode = true;
+                editBtn.innerHTML = '<i class="fas fa-save"></i> 수정 완료';
+            } else {
+                // 수정 완료 (저장)
+                saveWeeklyReport();
+            }
         });
+    }
+
+    // 수정 모드 활성화
+    function enableEditMode() {
+        // 과제명 - 셀렉트박스로 변경
+        const projectNameInput = document.getElementById('projectName');
+        const currentProjectName = projectNameInput.value;
+
+        const projectSelect = document.createElement('select');
+        projectSelect.id = 'projectName';
+        projectSelect.className = 'form-control';
+        projectSelect.innerHTML = '<option value="">선택 안함</option>';
+
+        // 프로젝트 목록 로드 (임시로 하드코딩, 추후 API 연동)
+        projectSelect.innerHTML += `<option value="${currentProjectName}" selected>${currentProjectName}</option>`;
+
+        projectNameInput.parentNode.replaceChild(projectSelect, projectNameInput);
+
+        // 달성률
+        const achievementInput = document.getElementById('weeklyAchievementRate');
+        achievementInput.removeAttribute('readonly');
+        achievementInput.type = 'text';
+        const currentValue = achievementInput.value.replace('%', '');
+        achievementInput.value = currentValue;
+        achievementInput.style.border = '1px solid #ddd';
+        achievementInput.style.background = 'white';
+        achievementInput.style.padding = '8px';
+
+        // 보고 기간
+        const reportPeriodInput = document.getElementById('reportPeriod');
+        reportPeriodInput.removeAttribute('readonly');
+        reportPeriodInput.style.border = '1px solid #ddd';
+        reportPeriodInput.style.background = 'white';
+        reportPeriodInput.style.padding = '8px';
+
+        // textarea들을 편집 가능하게 변경
+        const textareas = ['mainTasks', 'achievements', 'issues', 'nextWeekPlan'];
+        textareas.forEach(id => {
+            const element = document.getElementById(id);
+            if (element) {
+                element.removeAttribute('readonly');
+                element.style.border = '1px solid #ddd';
+                element.style.background = 'white';
+                element.style.padding = '8px';
+            }
+        });
+
+        console.log('수정 모드 활성화');
+    }
+
+    // 수정 내용 저장
+    async function saveWeeklyReport() {
+        const projectName = document.getElementById('projectName').value;
+        const achievementRate = document.getElementById('weeklyAchievementRate').value;
+        const reportPeriod = document.getElementById('reportPeriod').value;
+        const mainTasks = document.getElementById('mainTasks').value;
+        const achievements = document.getElementById('achievements').value;
+        const issues = document.getElementById('issues').value;
+        const nextWeekPlan = document.getElementById('nextWeekPlan').value;
+
+        console.log('수정 데이터:', {
+            projectName,
+            achievementRate,
+            reportPeriod,
+            mainTasks,
+            achievements,
+            issues,
+            nextWeekPlan
+        });
+
+        // TODO: API 호출하여 수정 내용 저장
+        alert('수정 완료! (실제 저장 기능은 추후 구현 예정)');
+
+        // 페이지 새로고침
+        location.reload();
     }
 
     // 삭제 버튼
@@ -99,16 +183,16 @@ document.addEventListener('DOMContentLoaded', function() {
         // 보고 기간
         document.getElementById('reportPeriod').value = report.reportPeriod || '';
 
-        // 금주 주요 업무
-        document.getElementById('mainTasks').value = report.mainTasks || '';
+        // 금주 주요 업무 (textarea)
+        document.getElementById('mainTasks').textContent = report.mainTasks || '';
 
-        // 주요 성과
-        document.getElementById('achievements').value = report.achievements || '';
+        // 주요 성과 (textarea)
+        document.getElementById('achievements').textContent = report.achievements || '';
 
-        // 주요 이슈
-        document.getElementById('issues').value = report.issues || '';
+        // 주요 이슈 (textarea)
+        document.getElementById('issues').textContent = report.issues || '';
 
-        // 차주 계획
-        document.getElementById('nextWeekPlan').value = report.nextWeekPlan || '';
+        // 차주 계획 (textarea)
+        document.getElementById('nextWeekPlan').textContent = report.nextWeekPlan || '';
     }
 });
