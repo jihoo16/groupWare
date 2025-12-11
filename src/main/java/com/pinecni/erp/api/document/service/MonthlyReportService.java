@@ -32,6 +32,11 @@ public interface MonthlyReportService {
      */
     MonthlyReportDTO getMonthlyReportById(Long id);
 
+    /**
+     * 월간업무보고 삭제
+     * @param id 월간업무보고 ID
+     */
+    void deleteMonthlyReport(Long id);
 
     /**
      * 월간업무보고 수정

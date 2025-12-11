@@ -97,5 +97,18 @@ public class MonthlyReportServiceImpl implements MonthlyReportService {
         return monthlyReportMapper.toDTO(updated);
     }
 
+    @Override
+    @Transactional
+    public void deleteMonthlyReport(Long id) {
+        log.debug("deleteMonthlyReport() called - id: {}", id);
+
+        // 존재 여부 확인
+        if (!monthlyReportRepository.existsById(id)) {
+            throw new RuntimeException("월간업무보고를 찾을 수 없습니다. ID: " + id);
+        }
+
+        monthlyReportRepository.deleteById(id);
+        log.debug("MonthlyReport deleted successfully - id: {}", id);
+    }
 
 }

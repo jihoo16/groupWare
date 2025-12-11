@@ -77,5 +77,16 @@ public class MonthlyReportController {
         return ResponseEntity.ok(updated);
     }
 
+    /**
+     * 월간업무보고 삭제
+     * DELETE /api/document/monthly-report/{id}
+     */
+    @DeleteMapping("/{id}")
+    public ResponseEntity<Void> deleteMonthlyReport(@PathVariable Long id) {
+        log.debug("DELETE /api/document/monthly-report/{}", id);
+
+        monthlyReportService.deleteMonthlyReport(id);
+        return ResponseEntity.noContent().build();
+    }
 
 }
