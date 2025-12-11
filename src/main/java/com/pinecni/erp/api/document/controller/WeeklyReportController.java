@@ -1,13 +1,17 @@
 package com.pinecni.erp.api.document.controller;
 
+import com.pinecni.erp.api.document.dto.WeeklyReportCreateDTO;
+import com.pinecni.erp.api.document.dto.WeeklyReportDTO;
+import com.pinecni.erp.api.document.dto.WeeklyReportUpdateDTO;
 import com.pinecni.erp.api.document.service.WeeklyReportService;
-import com.pinecni.erp.entity.WeeklyReport;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+
+import java.util.List;
 
 /**
  * 주간업무보고 REST API Controller
@@ -25,10 +29,10 @@ public class WeeklyReportController {
      * POST /api/document/weekly-report
      */
     @PostMapping
-    public ResponseEntity<WeeklyReport> createWeeklyReport(@Valid @RequestBody WeeklyReport weeklyReport) {
+    public ResponseEntity<WeeklyReportDTO> createWeeklyReport(@Valid @RequestBody WeeklyReportCreateDTO createDTO) {
         log.debug("POST /api/document/weekly-report");
 
-        WeeklyReport created = weeklyReportService.createWeeklyReport(weeklyReport);
+        WeeklyReportDTO created = weeklyReportService.createWeeklyReport(createDTO);
         return ResponseEntity.status(HttpStatus.CREATED).body(created);
     }
 
@@ -37,10 +41,10 @@ public class WeeklyReportController {
      * GET /api/document/weekly-report
      */
     @GetMapping
-    public ResponseEntity<java.util.List<WeeklyReport>> getAllWeeklyReports() {
+    public ResponseEntity<List<WeeklyReportDTO>> getAllWeeklyReports() {
         log.debug("GET /api/document/weekly-report");
 
-        java.util.List<WeeklyReport> reports = weeklyReportService.getAllWeeklyReport();
+        List<WeeklyReportDTO> reports = weeklyReportService.getAllWeeklyReport();
         return ResponseEntity.ok(reports);
     }
 
@@ -49,11 +53,29 @@ public class WeeklyReportController {
      * GET /api/document/weekly-report/{id}
      */
     @GetMapping("/{id}")
-    public ResponseEntity<WeeklyReport> getWeeklyReportById(@PathVariable Long id) {
+    public ResponseEntity<WeeklyReportDTO> getWeeklyReportById(@PathVariable Long id) {
         log.debug("GET /api/document/weekly-report/{}", id);
 
-        WeeklyReport report = weeklyReportService.getWeeklyReportById(id);
+        WeeklyReportDTO report = weeklyReportService.getWeeklyReportById(id);
         return ResponseEntity.ok(report);
     }
+
+    /**
+     * 주간업무보고 수정
+     * PUT /api/document/weekly-report/{id}
+     */
+    @PutMapping("/{id}")
+    public ResponseEntity<WeeklyReportDTO> updateWeeklyReport(
+            @PathVariable Long id,
+            @Valid @RequestBody WeeklyReportUpdateDTO updateDTO) {
+        log.debug("PUT /api/document/weekly-report/{}", id);
+
+        // TODO: 실제로는 로그인한 사용자 IDX를 가져와야 함
+        Long updatedUserIdx = 1L;
+
+        WeeklyReportDTO updated = weeklyReportService.updateWeeklyReport(id, updateDTO, updatedUserIdx);
+        return ResponseEntity.ok(updated);
+    }
+
 
 }

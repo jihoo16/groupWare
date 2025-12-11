@@ -1,6 +1,8 @@
 package com.pinecni.erp.api.document.service;
 
-import com.pinecni.erp.entity.WeeklyReport;
+import com.pinecni.erp.api.document.dto.WeeklyReportCreateDTO;
+import com.pinecni.erp.api.document.dto.WeeklyReportDTO;
+import com.pinecni.erp.api.document.dto.WeeklyReportUpdateDTO;
 
 import java.util.List;
 
@@ -12,23 +14,23 @@ public interface WeeklyReportService {
 
     /**
      * 주간업무보고 생성
-     * @param weeklyReport 생성할 주간업무보고 엔터티
-     * @return 저장된 주간업무보고 엔터티
+     * @param createDTO 생성할 주간업무보고 정보
+     * @return 저장된 주간업무보고 DTO
      */
-    WeeklyReport createWeeklyReport(WeeklyReport weeklyReport);
+    WeeklyReportDTO createWeeklyReport(WeeklyReportCreateDTO createDTO);
 
     /**
      * 전체 주간업무보고 목록 조회
-     * @return 주간업무보고 목록 (생성일시 내림차순)
+     * @return 주간업무보고 DTO 목록 (생성일시 내림차순)
      */
-    List<WeeklyReport> getAllWeeklyReport();
+    List<WeeklyReportDTO> getAllWeeklyReport();
 
     /**
      * 주간업무보고 상세 조회
      * @param id 주간업무보고 ID
-     * @return 주간업무보고 엔터티
+     * @return 주간업무보고 DTO
      */
-    WeeklyReport getWeeklyReportById(Long id);
+    WeeklyReportDTO getWeeklyReportById(Long id);
 
     /**
      * 주간업무보고 삭제
@@ -36,4 +38,12 @@ public interface WeeklyReportService {
      */
     void deleteWeeklyReport(Long id);
 
+    /**
+     * 주간업무보고 수정
+     * @param id 주간업무보고 ID
+     * @param updateDTO 수정할 주간업무보고 정보
+     * @param updatedUserIdx 수정자 IDX
+     * @return 수정된 주간업무보고 DTO
+     */
+    WeeklyReportDTO updateWeeklyReport(Long id, WeeklyReportUpdateDTO updateDTO, Long updatedUserIdx);
 }

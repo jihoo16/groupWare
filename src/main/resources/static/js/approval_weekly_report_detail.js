@@ -62,22 +62,34 @@ document.addEventListener('DOMContentLoaded', function() {
         achievementInput.style.background = 'white';
         achievementInput.style.padding = '8px';
 
-        // 보고 기간
+        // 보고 기간은 input으로 유지
         const reportPeriodInput = document.getElementById('reportPeriod');
         reportPeriodInput.removeAttribute('readonly');
         reportPeriodInput.style.border = '1px solid #ddd';
         reportPeriodInput.style.background = 'white';
         reportPeriodInput.style.padding = '8px';
 
-        // textarea들을 편집 가능하게 변경
-        const textareas = ['mainTasks', 'achievements', 'issues', 'nextWeekPlan'];
-        textareas.forEach(id => {
-            const element = document.getElementById(id);
-            if (element) {
-                element.removeAttribute('readonly');
-                element.style.border = '1px solid #ddd';
-                element.style.background = 'white';
-                element.style.padding = '8px';
+        // 금주 주요 업무, 주요 성과, 주요 이슈, 차주 계획은 textarea로 변경
+        const textFields = ['mainTasks', 'achievements', 'issues', 'nextWeekPlan'];
+        textFields.forEach(id => {
+            const inputElement = document.getElementById(id);
+            if (inputElement) {
+                // 현재 값 저장
+                const currentValue = inputElement.value;
+
+                // textarea 생성
+                const textarea = document.createElement('textarea');
+                textarea.id = id;
+                textarea.value = currentValue;
+                textarea.style.height = '155px';
+                textarea.style.resize = 'none';
+                textarea.style.border = '1px solid #ddd';
+                textarea.style.background = 'white';
+                textarea.style.padding = '8px';
+                textarea.style.width = '100%';
+
+                // input을 textarea로 교체
+                inputElement.parentNode.replaceChild(textarea, inputElement);
             }
         });
 
@@ -94,21 +106,40 @@ document.addEventListener('DOMContentLoaded', function() {
         const issues = document.getElementById('issues').value;
         const nextWeekPlan = document.getElementById('nextWeekPlan').value;
 
-        console.log('수정 데이터:', {
-            projectName,
-            achievementRate,
-            reportPeriod,
-            mainTasks,
-            achievements,
-            issues,
-            nextWeekPlan
-        });
+        // 수정 요청 데이터 구성
+        const updateData = {
+            projectName: projectName,
+            weeklyAchievementRate: achievementRate ? parseInt(achievementRate) : null,
+            reportPeriod: reportPeriod,
+            mainTasks: mainTasks,
+            achievements: achievements,
+            issues: issues,
+            nextWeekPlan: nextWeekPlan
+        };
 
-        // TODO: API 호출하여 수정 내용 저장
-        alert('수정 완료! (실제 저장 기능은 추후 구현 예정)');
+        console.log('수정 데이터:', updateData);
 
-        // 페이지 새로고침
-        location.reload();
+        try {
+            const response = await fetch(`/api/document/weekly-report/${reportId}`, {
+                method: 'PUT',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify(updateData)
+            });
+
+            if (response.ok) {
+                alert('수정이 완료되었습니다.');
+                location.reload();
+            } else {
+                const errorText = await response.text();
+                console.error('수정 실패:', errorText);
+                alert('수정에 실패했습니다.');
+            }
+        } catch (error) {
+            console.error('수정 오류:', error);
+            alert('수정 중 오류가 발생했습니다.');
+        }
     }
 
     // 삭제 버튼
@@ -183,16 +214,16 @@ document.addEventListener('DOMContentLoaded', function() {
         // 보고 기간
         document.getElementById('reportPeriod').value = report.reportPeriod || '';
 
-        // 금주 주요 업무 (textarea)
-        document.getElementById('mainTasks').textContent = report.mainTasks || '';
+        // 금주 주요 업무
+        document.getElementById('mainTasks').value = report.mainTasks || '';
 
-        // 주요 성과 (textarea)
-        document.getElementById('achievements').textContent = report.achievements || '';
+        // 주요 성과
+        document.getElementById('achievements').value = report.achievements || '';
 
-        // 주요 이슈 (textarea)
-        document.getElementById('issues').textContent = report.issues || '';
+        // 주요 이슈
+        document.getElementById('issues').value = report.issues || '';
 
-        // 차주 계획 (textarea)
-        document.getElementById('nextWeekPlan').textContent = report.nextWeekPlan || '';
+        // 차주 계획
+        document.getElementById('nextWeekPlan').value = report.nextWeekPlan || '';
     }
 });
