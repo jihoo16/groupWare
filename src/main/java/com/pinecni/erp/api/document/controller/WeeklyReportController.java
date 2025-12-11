@@ -77,5 +77,16 @@ public class WeeklyReportController {
         return ResponseEntity.ok(updated);
     }
 
+    /**
+     * 주간업무보고 삭제
+     * DELETE /api/document/weekly-report/{id}
+     */
+    @DeleteMapping("/{id}")
+    public ResponseEntity<Void> deleteWeeklyReport(@PathVariable Long id) {
+        log.debug("DELETE /api/document/weekly-report/{}", id);
+
+        weeklyReportService.deleteWeeklyReport(id);
+        return ResponseEntity.noContent().build();
+    }
 
 }
