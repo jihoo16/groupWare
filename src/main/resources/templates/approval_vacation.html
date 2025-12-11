@@ -202,6 +202,10 @@
                                         <span class="legend-text">선택된 날짜</span>
                                     </div>
                                     <div class="legend-item">
+                                        <span class="legend-color period-added"></span>
+                                        <span class="legend-text">추가된 기간</span>
+                                    </div>
+                                    <div class="legend-item">
                                         <span class="legend-color holiday"></span>
                                         <span class="legend-text">공휴일/주말</span>
                                     </div>
@@ -278,6 +282,29 @@
                                                 <span class="days-unit">일</span>
                                             </div>
                                         </div>
+
+                                        <!-- 연차 초과 경고 (신청 후 잔여 바로 밑에 배치) -->
+                                        <div class="info-row" id="vacation_warning_card" style="display: none;">
+                                            <div class="vacation-warning-inline">
+                                                <div class="warning-message">
+                                                    <p><strong><i class="fas fa-exclamation-triangle"></i> 잔여 연차가 부족합니다!</strong></p>
+                                                    <p id="warning_detail">현재 잔여 연차보다 <span class="excess-days">0일</span> 더 신청하셨습니다.</p>
+                                                </div>
+                                                <div class="special-approval-options">
+                                                    <label class="checkbox-wrapper">
+                                                        <input type="checkbox" id="allow_minus_vacation">
+                                                        <span>마이너스 연차 사용</span>
+                                                    </label>
+                                                    <div class="special-reason-wrapper" id="special_reason_wrapper"
+                                                         style="display: none;">
+                                                        <label>특별 신청 사유 <span class="required">*</span></label>
+                                                        <textarea id="special_approval_reason" rows="3"
+                                                                  placeholder="마이너스 연차 사용은 관리직급과 협의 후 신청 가능합니다. &#10;연차 신청 전 반드시 협의 후 신청 해 주세요."></textarea>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+
                                         <div class="info-row">
                                             <div class="period-add-notice">
                                                 <i class="fas fa-info-circle"></i>
@@ -307,33 +334,6 @@
                                     </div>
                                 </div>
 
-                                <!-- 연차 초과 경고 -->
-                                <div class="info-card warning-card" id="vacation_warning_card" style="display: none;">
-                                    <div class="info-card-header warning">
-                                        <i class="fas fa-exclamation-triangle"></i>
-                                        <span>연차 부족 알림</span>
-                                    </div>
-                                    <div class="info-card-body">
-                                        <div class="warning-message">
-                                            <p><strong>잔여 연차가 부족합니다!</strong></p>
-                                            <p id="warning_detail">현재 잔여 연차보다 <span class="excess-days">0일</span> 더
-                                                신청하셨습니다.</p>
-                                        </div>
-                                        <div class="special-approval-options">
-                                            <label class="checkbox-wrapper">
-                                                <input type="checkbox" id="allow_minus_vacation">
-                                                <span>마이너스 연차 사용 허용 요청</span>
-                                            </label>
-                                            <div class="special-reason-wrapper" id="special_reason_wrapper"
-                                                 style="display: none;">
-                                                <label>특별 신청 사유 <span class="required">*</span></label>
-                                                <textarea id="special_approval_reason" rows="3"
-                                                          placeholder="마이너스 연차 사용은 관리직급과 협의 후 신청 가능합니다. &#10;연차 신청 전 반드시 협의 후 신청 해 주세요."></textarea>
-                                            </div>
-                                        </div>
-                                    </div>
-                                </div>
-
                                 <div class="info-card">
                                     <div class="info-card-header">
                                         <i class="fas fa-comment-alt"></i>
@@ -348,14 +348,12 @@
                                 </div>
 
                                 <div class="vif-actions">
-                                    <button class="btn-reset" id="resetSelectionBtn">
-                                        <i class="fas fa-redo"></i>
-                                        선택 초기화
-                                    </button>
-                                    <button class="btn-apply" id="applyToFormBtn">
-                                        <i class="fas fa-check"></i>
-                                        양식에 적용
-                                    </button>
+                                    <div class="vif-actions-buttons">
+                                        <button class="btn-reset" id="resetSelectionBtn">
+                                            <i class="fas fa-redo"></i>
+                                            선택 초기화
+                                        </button>
+                                    </div>
                                 </div>
                             </div>
                         </div>
@@ -447,9 +445,12 @@
                                 <tr>
                                     <th>휴가기간</th>
                                     <td colspan="3">
+                                        <div id="vacation_period_display">
+                                            <!-- JavaScript로 생성될 휴가기간 표시 영역 (HTML 포맷팅 가능) -->
+                                        </div>
                                         <textarea id="vacation_period" readonly
                                                placeholder="2025.01.01 (월) ~ 2025.01.05 (금) 총 연차 5일"
-                                               style="font-weight: 500; resize: none; overflow: hidden; min-height: 80px;"></textarea>
+                                               style="display: none;"></textarea>
                                         <input type="date" id="start_date" style="display: none;">
                                         <input type="date" id="end_date" style="display: none;">
                                         <input type="number" id="days" style="display: none;">
