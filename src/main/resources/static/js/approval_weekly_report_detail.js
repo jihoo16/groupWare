@@ -13,6 +13,31 @@ document.addEventListener('DOMContentLoaded', function() {
     // 주간업무보고 데이터 로드
     loadWeeklyReportDetail(reportId);
 
+    // 전역 변수
+    let projects = []; // 프로젝트 목록
+    let currentReport = null; // 현재 보고서 데이터
+
+    // 프로젝트 목록 로드
+    loadProjects();
+
+    // textarea 자동 높이 조절 함수
+    function autoResizeTextarea(textarea) {
+        textarea.style.height = 'auto';
+        textarea.style.height = textarea.scrollHeight + 'px';
+    }
+
+    // 모든 textarea에 자동 높이 조절 적용
+    function applyAutoResize() {
+        const textareas = document.querySelectorAll('.form-table textarea');
+        textareas.forEach(textarea => {
+            autoResizeTextarea(textarea);
+            // input 이벤트에 자동 높이 조절 추가
+            textarea.addEventListener('input', function() {
+                autoResizeTextarea(this);
+            });
+        });
+    }
+
     // ============================================
     // 버튼 이벤트 핸들러
     // ============================================
@@ -36,19 +61,52 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     }
 
+    // 프로젝트 목록 로드
+    async function loadProjects() {
+        try {
+            const response = await fetch('/api/projects');
+            if (response.ok) {
+                projects = await response.json();
+                console.log('프로젝트 목록 로드 성공:', projects.length + '건');
+            }
+        } catch (error) {
+            console.error('프로젝트 로드 오류:', error);
+        }
+    }
+
     // 수정 모드 활성화
     function enableEditMode() {
         // 과제명 - 셀렉트박스로 변경
         const projectNameInput = document.getElementById('projectName');
-        const currentProjectName = projectNameInput.value;
+        const currentProjectIdx = currentReport ? currentReport.projectIdx : null;
 
         const projectSelect = document.createElement('select');
         projectSelect.id = 'projectName';
         projectSelect.className = 'form-control';
-        projectSelect.innerHTML = '<option value="">선택 안함</option>';
 
-        // 프로젝트 목록 로드 (임시로 하드코딩, 추후 API 연동)
-        projectSelect.innerHTML += `<option value="${currentProjectName}" selected>${currentProjectName}</option>`;
+        // "선택 안함" 옵션
+        const noneOption = document.createElement('option');
+        noneOption.value = '';
+        noneOption.textContent = '선택 안함';
+        if (!currentProjectIdx) {
+            noneOption.selected = true;
+        }
+        projectSelect.appendChild(noneOption);
+
+        // 프로젝트 목록 추가
+        projects.forEach(project => {
+            const option = document.createElement('option');
+            option.value = project.idx;
+            option.textContent = project.projectName;
+            option.dataset.projectName = project.projectName;
+
+            // 저장된 프로젝트가 있으면 선택
+            if (currentProjectIdx && project.idx === currentProjectIdx) {
+                option.selected = true;
+            }
+
+            projectSelect.appendChild(option);
+        });
 
         projectNameInput.parentNode.replaceChild(projectSelect, projectNameInput);
 
@@ -93,12 +151,19 @@ document.addEventListener('DOMContentLoaded', function() {
             }
         });
 
+        // textarea 자동 높이 조절 적용
+        setTimeout(() => applyAutoResize(), 100);
+
         console.log('수정 모드 활성화');
     }
 
     // 수정 내용 저장
     async function saveWeeklyReport() {
-        const projectName = document.getElementById('projectName').value;
+        const projectSelect = document.getElementById('projectName');
+        const selectedOption = projectSelect.options[projectSelect.selectedIndex];
+        const projectIdx = projectSelect.value === '' ? null : parseInt(projectSelect.value);
+        const projectName = selectedOption.dataset.projectName || null;
+
         const achievementRate = document.getElementById('weeklyAchievementRate').value;
         const reportPeriod = document.getElementById('reportPeriod').value;
         const mainTasks = document.getElementById('mainTasks').value;
@@ -108,6 +173,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
         // 수정 요청 데이터 구성
         const updateData = {
+            projectIdx: projectIdx,
             projectName: projectName,
             weeklyAchievementRate: achievementRate ? parseInt(achievementRate) : null,
             reportPeriod: reportPeriod,
@@ -181,6 +247,7 @@ document.addEventListener('DOMContentLoaded', function() {
             if (response.ok) {
                 const report = await response.json();
                 console.log('주간업무보고 상세 로드 성공:', report);
+                currentReport = report; // 전역 변수에 저장
                 renderWeeklyReportDetail(report);
             } else {
                 const errorText = await response.text();
@@ -225,5 +292,8 @@ document.addEventListener('DOMContentLoaded', function() {
 
         // 차주 계획
         document.getElementById('nextWeekPlan').value = report.nextWeekPlan || '';
+
+        // textarea 자동 높이 조절 적용
+        setTimeout(() => applyAutoResize(), 100);
     }
 });

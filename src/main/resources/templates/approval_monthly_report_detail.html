@@ -1,6 +1,6 @@
 <!DOCTYPE html>
 <html lang="ko" xmlns:th="http://www.thymeleaf.org">
-<head th:replace="~{fragments/layout :: head('주간업무보고 상세', '/css/approval_weekly_report.css')}"></head>
+<head th:replace="~{fragments/layout :: head('월간업무보고 상세', '/css/approval_monthly_report.css')}"></head>
 <body>
     <div class="container">
         <!-- 좌측 네비게이션 바 -->
@@ -10,7 +10,7 @@
         <main class="main-content">
             <header class="header">
                 <div class="header-left">
-                    <h1 class="page-title"><i class="fas fa-calendar-week"></i> 주간업무보고 상세</h1>
+                    <h1 class="page-title"><i class="fas fa-calendar-alt"></i> 월간업무보고 상세</h1>
                 </div>
                 <div class="header-right">
                     <button class="btn-secondary" onclick="history.back()">
@@ -64,17 +64,13 @@
                             </table>
                         </div>
 
-                        <h2 class="doc-title">주 간 업 무 보 고</h2>
+                        <h2 class="doc-title">월 간 업 무 보 고</h2>
 
                         <table class="form-table" style="margin-bottom: 100px">
                             <tr>
                                 <th>과제명</th>
-                                <td >
+                                <td colspan="3">
                                     <input type="text" id="projectName" readonly>
-                                </td>
-                                <th>달성률</th>
-                                <td >
-                                    <input type="text" id="weeklyAchievementRate" readonly>
                                 </td>
                             </tr>
                             <tr>
@@ -84,24 +80,24 @@
                                 <td><input type="text" id="userDept" readonly></td>
                             </tr>
                             <tr>
-                                <th>보고 기간</th>
-                                <td colspan="3"><input type="text" id="reportPeriod" readonly></td>
+                                <th>보고 월</th>
+                                <td colspan="3"><input type="text" id="reportMonth" readonly></td>
                             </tr>
                             <tr>
-                                <th>금주 주요 업무</th>
+                                <th>월간 주요 업무</th>
                                 <td colspan="3"><textarea id="mainTasks" readonly rows="6"></textarea></td>
                             </tr>
                             <tr>
-                                <th>주요 성과</th>
-                                <td colspan="3"><textarea id="achievements" readonly rows="5"></textarea></td>
+                                <th>목표 대비 실적</th>
+                                <td colspan="3"><textarea id="performance" readonly rows="5"></textarea></td>
                             </tr>
                             <tr>
-                                <th>주요 이슈</th>
-                                <td colspan="3"><textarea id="issues" readonly rows="4"></textarea></td>
+                                <th>개선사항</th>
+                                <td colspan="3"><textarea id="improvements" readonly rows="4"></textarea></td>
                             </tr>
                             <tr>
-                                <th>차주 계획</th>
-                                <td colspan="3"><textarea id="nextWeekPlan" readonly rows="5"></textarea></td>
+                                <th>차월 계획</th>
+                                <td colspan="3"><textarea id="nextMonthPlan" readonly rows="5"></textarea></td>
                             </tr>
                         </table>
                     </div>
@@ -129,6 +125,6 @@
         </main>
     </div>
 
-    <script th:src="@{/js/approval_weekly_report_detail.js}"></script>
+    <script th:src="@{/js/approval_monthly_report_detail.js}"></script>
 </body>
 </html>

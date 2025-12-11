@@ -139,6 +139,11 @@ public class Controller {
         return "approval_monthly_report";
     }
 
+    @GetMapping("/approval/monthly-report/detail")
+    public String approvalMonthlyReportDetail() {
+        return "approval_monthly_report_detail";
+    }
+
     @GetMapping("/approval/meeting")
     public String approvalMeeting() {
         return "approval_meeting";
