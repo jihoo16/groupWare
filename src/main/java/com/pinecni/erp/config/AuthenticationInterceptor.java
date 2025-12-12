@@ -22,6 +22,13 @@ public class AuthenticationInterceptor implements HandlerInterceptor {
 
         log.debug("Authentication check for URI: {}", requestURI);
 
+        // 개발용: X-Dev-Bypass 헤더가 있으면 인증 패스
+        String devBypass = request.getHeader("X-Dev-Bypass");
+        if ("true".equalsIgnoreCase(devBypass)) {
+            log.warn("DEV MODE: Authentication bypassed for URI: {}", requestURI);
+            return true;
+        }
+
         // 세션이 없거나 user 정보가 없는 경우
         if (session == null || session.getAttribute("user") == null) {
             log.info("Unauthenticated access attempt to: {}", requestURI);
