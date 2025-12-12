@@ -180,6 +180,25 @@ public class ProjectController {
     }
 
     /**
+     * 프로젝트 참여인원 조회
+     * GET /api/projects/{idx}/members
+     */
+    @GetMapping("/{idx}/members")
+    public ResponseEntity<?> getProjectMembers(@PathVariable Long idx) {
+        log.debug("GET /api/projects/{}/members", idx);
+
+        try {
+            ProjectDTO project = projectService.getProjectById(idx);
+            return ResponseEntity.ok(project.getProjectMembers());
+        } catch (Exception e) {
+            log.error("프로젝트 참여인원 조회 실패: {}", e.getMessage());
+            Map<String, String> error = new HashMap<>();
+            error.put("error", "프로젝트 참여인원을 조회할 수 없습니다.");
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(error);
+        }
+    }
+
+    /**
      * Exception Handler
      */
     @ExceptionHandler(Exception.class)

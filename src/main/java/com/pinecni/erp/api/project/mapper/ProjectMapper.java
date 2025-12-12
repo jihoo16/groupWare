@@ -106,13 +106,20 @@ public class ProjectMapper {
         // 장비비 사용액 (추후 구현 예정, 현재는 0)
         BigDecimal equipmentUsed = BigDecimal.ZERO;
 
+        // 프로젝트 관리자 이름 조회 (LAZY 로딩 문제 해결)
+        String projectManagerName = null;
+        if (entity.getProjectManagerIdx() != null) {
+            projectManagerName = userRepository.findById(entity.getProjectManagerIdx())
+                    .map(User::getEmpName)
+                    .orElse(null);
+        }
+
         return ProjectDTO.builder()
                 .idx(entity.getIdx())
                 .projectName(entity.getProjectName())
                 .clientName(entity.getClientName())
                 .projectManagerIdx(entity.getProjectManagerIdx())
-                .projectManagerName(entity.getProjectManager() != null ?
-                        entity.getProjectManager().getEmpName() : null)
+                .projectManagerName(projectManagerName)
                 .startDate(entity.getStartDate())
                 .endDate(entity.getEndDate())
                 .projectStatus(entity.getProjectStatus())
