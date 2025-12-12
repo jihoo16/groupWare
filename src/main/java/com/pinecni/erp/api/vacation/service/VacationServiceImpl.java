@@ -83,7 +83,7 @@ public class VacationServiceImpl implements VacationService {
     }
 
     @Override
-    @Transactional
+    @Transactional(propagation = org.springframework.transaction.annotation.Propagation.REQUIRES_NEW)
     public VacationBalance calculateAndSaveVacationBalance(Long userIdx, Integer year) {
         log.info("연차 계산 시작 - userIdx: {}, year: {}", userIdx, year);
 
