@@ -134,7 +134,30 @@ public class UserController {
     public ResponseEntity<UserDTO> createUser(
             @Valid @RequestBody UserCreateDTO createDTO,
             @RequestHeader(value = "X-User-Idx", required = false, defaultValue = "1") Long createdUserIdx) {
-        log.debug("POST /api/users - createUser() with empId: {}", createDTO.getEmpId());
+        log.info("========== POST /api/users - createUser() ==========");
+        log.info("Request Body:");
+        log.info("  - empId: {}", createDTO.getEmpId());
+        log.info("  - empName: {}", createDTO.getEmpName());
+        log.info("  - empBirth: {}", createDTO.getEmpBirth());
+        log.info("  - empGender: {}", createDTO.getEmpGender());
+        log.info("  - empEmail: {}", createDTO.getEmpEmail());
+        log.info("  - externalEmail: {}", createDTO.getExternalEmail());
+        log.info("  - empPhone: {}", createDTO.getEmpPhone());
+        log.info("  - emergencyContact: {}", createDTO.getEmergencyContact());
+        log.info("  - empAddress: {} (length: {})", createDTO.getEmpAddress(),
+                createDTO.getEmpAddress() != null ? createDTO.getEmpAddress().length() : 0);
+        log.info("  - empDept: {}", createDTO.getEmpDept());
+        log.info("  - empPosition: {}", createDTO.getEmpPosition());
+        log.info("  - empJoinDate: {}", createDTO.getEmpJoinDate());
+        log.info("  - empStatus: {}", createDTO.getEmpStatus());
+        log.info("  - empWorkType: {}", createDTO.getEmpWorkType());
+        log.info("  - empNotes: {} (length: {})", createDTO.getEmpNotes(),
+                createDTO.getEmpNotes() != null ? createDTO.getEmpNotes().length() : 0);
+        log.info("  - password: [PROTECTED] (length: {})",
+                createDTO.getPassword() != null ? createDTO.getPassword().length() : 0);
+        log.info("  - createdUserIdx: {}", createdUserIdx);
+        log.info("====================================================");
+
         UserDTO user = userService.createUser(createDTO, createdUserIdx);
         return ResponseEntity.status(HttpStatus.CREATED).body(user);
     }
