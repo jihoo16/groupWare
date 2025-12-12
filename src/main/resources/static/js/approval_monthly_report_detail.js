@@ -26,6 +26,24 @@ document.addEventListener('DOMContentLoaded', function() {
     // 페이지 로드 시 월간업무보고 데이터 가져오기
     loadMonthlyReportDetail();
 
+    // textarea 자동 높이 조절 함수
+    function autoResizeTextarea(textarea) {
+        textarea.style.height = 'auto';
+        textarea.style.height = textarea.scrollHeight + 'px';
+    }
+
+    // 모든 textarea에 자동 높이 조절 적용
+    function applyAutoResize() {
+        const textareas = document.querySelectorAll('.form-table textarea');
+        textareas.forEach(textarea => {
+            autoResizeTextarea(textarea);
+            // input 이벤트에 자동 높이 조절 추가
+            textarea.addEventListener('input', function() {
+                autoResizeTextarea(this);
+            });
+        });
+    }
+
     // 프로젝트 목록 로드
     async function loadProjects() {
         try {
@@ -89,6 +107,9 @@ document.addEventListener('DOMContentLoaded', function() {
 
         // 차월 계획
         document.getElementById('nextMonthPlan').value = report.nextMonthPlan || '';
+
+        // textarea 자동 높이 조절 적용
+        setTimeout(() => applyAutoResize(), 100);
     }
 
     // 수정 버튼 클릭
@@ -166,9 +187,12 @@ document.addEventListener('DOMContentLoaded', function() {
             textarea.style.width = '100%';
             textarea.style.border = '1px solid #ddd';
             textarea.style.padding = '8px';
-            textarea.style.resize = 'vertical';
+            textarea.style.resize = 'none';
             input.parentNode.replaceChild(textarea, input);
         });
+
+        // textarea 자동 높이 조절 적용
+        setTimeout(() => applyAutoResize(), 100);
     }
 
     // 수정 모드 비활성화 (취소)
@@ -268,6 +292,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
                 // 화면 갱신
                 displayReportDetail(updatedReport);
+                window.location.reload();
             } else {
                 const errorText = await response.text();
                 console.error('월간업무보고 수정 실패:', errorText);
