@@ -2749,10 +2749,10 @@ document.addEventListener('DOMContentLoaded', function() {
             vifApplicant.textContent = userVacationInfo.empName || '홍길동';
         }
         if (vifDepartment) {
-            vifDepartment.textContent = userVacationInfo.empDept || '개발팀';
+            vifDepartment.textContent = userVacationInfo.empDeptName || userVacationInfo.empDept || '개발팀';
         }
         if (vifPosition) {
-            vifPosition.textContent = userVacationInfo.empPosition || '대리';
+            vifPosition.textContent = userVacationInfo.empPositionName || userVacationInfo.empPosition || '대리';
         }
 
         // 연차 잔액 표시 (우측 상단)

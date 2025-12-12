@@ -17,12 +17,14 @@ import java.math.BigDecimal;
 public class VacationUserInfoDTO {
     private Long userIdx;
     private String empName;
-    private String empDept;
-    private String empPosition;
+    private String empDept;          // 부서 코드
+    private String empDeptName;      // 부서명 (한글)
+    private String empPosition;      // 직급 코드
+    private String empPositionName;  // 직급명 (한글)
     private String empAddress;
     private String empBirth;
     private String empPhone;
-    
+
     // 연차 정보
     private BigDecimal totalDays;
     private BigDecimal usedDays;
