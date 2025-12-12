@@ -35,3 +35,10 @@ build/
 .claude
 .gradle/
 db
+
+### SQL scripts and backups ###
+sql/
+*.bak
+*.sql
+*.txt
+*.conf
