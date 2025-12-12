@@ -1,4 +1,4 @@
-/* 인사 관리 영역 */
+/* 사용자 관리 영역 */
 .hr-area {
     padding: 24px 24px 10px 24px;
 }
@@ -77,6 +77,42 @@
     color: #666;
     border-bottom: 2px solid #e0e0e0;
     white-space: nowrap;
+}
+
+.employee-table th.sortable {
+    cursor: pointer;
+    user-select: none;
+    transition: all 0.3s ease;
+}
+
+.employee-table th.sortable:hover {
+    background: #e8eaf6;
+    color: #1a237e;
+}
+
+.employee-table th.sortable i {
+    margin-left: 4px;
+    font-size: 10px;
+    opacity: 0.4;
+    transition: all 0.3s ease;
+}
+
+.employee-table th.sortable:hover i {
+    opacity: 0.7;
+}
+
+.employee-table th.sortable.sorted-asc i,
+.employee-table th.sortable.sorted-desc i {
+    opacity: 1;
+    color: #1a237e;
+}
+
+.employee-table th.sortable.sorted-asc i::before {
+    content: "\f0de"; /* fa-sort-up */
+}
+
+.employee-table th.sortable.sorted-desc i::before {
+    content: "\f0dd"; /* fa-sort-down */
 }
 
 .employee-table td {
@@ -453,4 +489,28 @@
     .modal-content {
         width: 95%;
     }
+}
+
+/* 상세보기 모달 스타일 */
+.view-group {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.view-group label {
+    font-size: 13px;
+    font-weight: 500;
+    color: #666;
+}
+
+.view-group p {
+    font-size: 15px;
+    font-weight: 600;
+    color: #333;
+    margin: 0;
+    padding: 12px;
+    background: #f8f9fa;
+    border-radius: 6px;
+    min-height: 20px;
 }

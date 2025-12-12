@@ -1,6 +1,6 @@
 <!DOCTYPE html>
 <html lang="ko" xmlns:th="http://www.thymeleaf.org">
-<head th:replace="~{fragments/layout :: head('인사 관리', '/css/hr.css')}"></head>
+<head th:replace="~{fragments/layout :: head('사용자 관리', '/css/hr.css')}"></head>
 <body>
     <div class="container">
         <!-- 좌측 네비게이션 바 -->
@@ -10,7 +10,7 @@
         <main class="main-content">
             <header class="header">
                 <div class="header-left">
-                    <h1 class="page-title">인사 관리</h1>
+                    <h1 class="page-title">사용자 관리</h1>
                 </div>
                 <div class="header-right">
                     <div class="search-box">
@@ -75,10 +75,18 @@
                     <table class="employee-table">
                         <thead>
                             <tr>
-                                <th>사번</th>
-                                <th>이름</th>
-                                <th>부서</th>
-                                <th>직급</th>
+                                <th class="sortable" data-sort="empId">
+                                    사번 <i class="fas fa-sort"></i>
+                                </th>
+                                <th class="sortable" data-sort="empName">
+                                    이름 <i class="fas fa-sort"></i>
+                                </th>
+                                <th class="sortable" data-sort="empDept">
+                                    부서 <i class="fas fa-sort"></i>
+                                </th>
+                                <th class="sortable" data-sort="empPosition">
+                                    직급 <i class="fas fa-sort"></i>
+                                </th>
                                 <th>이메일</th>
                                 <th>연락처</th>
                                 <th>입사일</th>
@@ -128,7 +136,6 @@
                         <div class="form-group">
                             <label for="empGender">성별 <span class="required">*</span></label>
                             <select id="empGender" required>
-                                <option value="">선택하세요</option>
                                 <option value="남">남</option>
                                 <option value="여">여</option>
                             </select>
@@ -143,7 +150,7 @@
                         </div>
                         <div class="form-group">
                             <label for="externalEmail">외부 이메일</label>
-                            <input type="email" id="externalEmail" required placeholder="example@gmail.com">
+                            <input type="email" id="externalEmail" placeholder="example@gmail.com">
                         </div>
                     </div>
 
@@ -153,8 +160,8 @@
                             <input type="tel" id="empPhone" required placeholder="010-1234-5678">
                         </div>
                         <div class="form-group">
-                            <label for="emergencyContact">비상 연락처<span class="required">*</span></label>
-                            <input type="email" id="emergencyContact" required placeholder="010-1234-5678">
+                            <label for="emergencyContact">비상 연락처</label>
+                            <input type="tel" id="emergencyContact" placeholder="010-1234-5678">
                         </div>
                     </div>
 
@@ -168,14 +175,12 @@
                         <div class="form-group">
                             <label for="empDept">부서 <span class="required">*</span></label>
                             <select id="empDept" required>
-                                <option value="">선택하세요</option>
                                 <!-- JavaScript에서 동적으로 로드됨 -->
                             </select>
                         </div>
                         <div class="form-group">
                             <label for="empPosition">직급 <span class="required">*</span></label>
                             <select id="empPosition" required>
-                                <option value="">선택하세요</option>
                                 <!-- JavaScript에서 동적으로 로드됨 -->
                             </select>
                         </div>
@@ -217,7 +222,110 @@
             </div>
             <div class="modal-footer">
                 <button type="button" class="btn-secondary" id="cancelEmployee">취소</button>
-                <button type="submit" form="employeeForm" class="btn-primary">저장</button>
+                <button type="submit" form="employeeForm" class="btn-primary" id="saveEmployee">저장</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 직원 상세보기 모달 -->
+    <div id="employeeViewModal" class="modal">
+        <div class="modal-content modal-large">
+            <div class="modal-header">
+                <h2>직원 상세 정보</h2>
+                <button class="modal-close" id="closeEmployeeViewModal">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            <div class="modal-body">
+                <h3 class="form-section-title">기본 정보</h3>
+                <div class="form-row">
+                    <div class="view-group">
+                        <label>이름</label>
+                        <p id="view-empName">-</p>
+                    </div>
+                    <div class="view-group">
+                        <label>사번</label>
+                        <p id="view-empId">-</p>
+                    </div>
+                </div>
+
+                <div class="form-row">
+                    <div class="view-group">
+                        <label>생년월일</label>
+                        <p id="view-empBirth">-</p>
+                    </div>
+                    <div class="view-group">
+                        <label>성별</label>
+                        <p id="view-empGender">-</p>
+                    </div>
+                </div>
+
+                <h3 class="form-section-title">연락처 정보</h3>
+                <div class="form-row">
+                    <div class="view-group">
+                        <label>이메일</label>
+                        <p id="view-empEmail">-</p>
+                    </div>
+                    <div class="view-group">
+                        <label>외부 이메일</label>
+                        <p id="view-externalEmail">-</p>
+                    </div>
+                </div>
+
+                <div class="form-row">
+                    <div class="view-group">
+                        <label>연락처</label>
+                        <p id="view-empPhone">-</p>
+                    </div>
+                    <div class="view-group">
+                        <label>비상 연락처</label>
+                        <p id="view-emergencyContact">-</p>
+                    </div>
+                </div>
+
+                <div class="view-group">
+                    <label>주소</label>
+                    <p id="view-empAddress">-</p>
+                </div>
+
+                <h3 class="form-section-title">근무 정보</h3>
+                <div class="form-row">
+                    <div class="view-group">
+                        <label>부서</label>
+                        <p id="view-empDept">-</p>
+                    </div>
+                    <div class="view-group">
+                        <label>직급</label>
+                        <p id="view-empPosition">-</p>
+                    </div>
+                </div>
+
+                <div class="form-row">
+                    <div class="view-group">
+                        <label>입사일</label>
+                        <p id="view-empJoinDate">-</p>
+                    </div>
+                    <div class="view-group">
+                        <label>재직상태</label>
+                        <p id="view-empStatus">-</p>
+                    </div>
+                </div>
+
+                <div class="form-row">
+                    <div class="view-group">
+                        <label>근무형태</label>
+                        <p id="view-empWorkType">-</p>
+                    </div>
+                </div>
+
+                <h3 class="form-section-title">추가 정보</h3>
+                <div class="view-group">
+                    <label>비고</label>
+                    <p id="view-empNotes" style="white-space: pre-wrap;">-</p>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn-secondary" id="closeEmployeeViewModal2">닫기</button>
             </div>
         </div>
     </div>

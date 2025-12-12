@@ -1,8 +1,10 @@
-// 인사 관리 페이지 JavaScript (jQuery + Ajax)
+// 사용자 관리 페이지 JavaScript (jQuery + Ajax)
 
 // 전역 변수
 let allUsers = []; // 전체 사용자 데이터 캐시
 let currentFilter = 'all'; // 현재 부서 필터
+let sortColumn = null; // 현재 정렬 컬럼
+let sortDirection = 'asc'; // 현재 정렬 방향 (asc/desc)
 
 // jQuery Ready
 $(document).ready(function() {
@@ -31,6 +33,12 @@ $(document).ready(function() {
         searchEmployees(searchTerm);
     });
 
+    // 정렬 헤더 클릭 (이벤트 위임 방식)
+    $('.employee-table thead').on('click', 'th.sortable', function() {
+        const column = $(this).data('sort');
+        sortEmployees(column);
+    });
+
     // 직원 등록 버튼
     $('#addEmployeeBtn').on('click', function() {
         openEmployeeModal();
@@ -45,6 +53,18 @@ $(document).ready(function() {
     $('#employeeModal').on('click', function(e) {
         if (e.target === this) {
             closeEmployeeModal();
+        }
+    });
+
+    // 상세보기 모달 닫기 버튼들
+    $('#closeEmployeeViewModal, #closeEmployeeViewModal2').on('click', function() {
+        $('#employeeViewModal').removeClass('show');
+    });
+
+    // 상세보기 모달 외부 클릭 시 닫기
+    $('#employeeViewModal').on('click', function(e) {
+        if (e.target === this) {
+            $('#employeeViewModal').removeClass('show');
         }
     });
 
@@ -106,7 +126,14 @@ function loadEmployees() {
         success: function(response) {
             console.log('사용자 목록 조회 성공:', response);
             allUsers = response; // 전역 변수에 저장
-            renderEmployeeTable(response);
+
+            // 현재 정렬 상태가 있으면 정렬 적용, 없으면 그대로 렌더링
+            if (sortColumn) {
+                applySortAndRender();
+            } else {
+                renderEmployeeTable(response);
+            }
+
             updateStatistics(response);
         },
         error: function(xhr, status, error) {
@@ -257,8 +284,26 @@ function viewEmployeeDetail(idx) {
         dataType: 'json',
         success: function(user) {
             console.log('직원 상세 조회 성공:', user);
-            // TODO: 상세보기 모달 구현
-            showAlert('직원 상세정보 기능은 추후 구현됩니다.', 'info');
+
+            // 상세보기 모달 열기
+            $('#employeeViewModal').addClass('show');
+
+            // 데이터 채우기 (텍스트 형식)
+            $('#view-empId').text(user.empId || '-');
+            $('#view-empName').text(user.empName || '-');
+            $('#view-empBirth').text(user.empBirth || '-');
+            $('#view-empGender').text(user.empGender || '-');
+            $('#view-empEmail').text(user.empEmail || '-');
+            $('#view-externalEmail').text(user.externalEmail || '-');
+            $('#view-empPhone').text(user.empPhone || '-');
+            $('#view-emergencyContact').text(user.emergencyContact || '-');
+            $('#view-empAddress').text(user.empAddress || '-');
+            $('#view-empDept').text(user.empDeptName || user.empDept || '-');
+            $('#view-empPosition').text(user.empPositionName || user.empPosition || '-');
+            $('#view-empJoinDate').text(user.empJoinDate || '-');
+            $('#view-empStatus').text(user.empStatus || '-');
+            $('#view-empWorkType').text(user.empWorkType || '-');
+            $('#view-empNotes').text(user.empNotes || '-');
         },
         error: function(xhr, status, error) {
             console.error('직원 상세 조회 실패:', error);
@@ -277,8 +322,46 @@ function editEmployee(idx) {
         dataType: 'json',
         success: function(user) {
             console.log('직원 정보 조회 성공:', user);
-            // TODO: 수정 모달에 데이터 채우기
-            showAlert('직원 정보 수정 기능은 추후 구현됩니다.', 'info');
+
+            // 모달 열기
+            $('#employeeModal').addClass('show');
+            $('#modalTitle').text('직원 정보 수정');
+
+            // 부서 및 직급 옵션 로드
+            loadDepartmentOptions();
+            loadPositionOptions();
+
+            // 숨겨진 필드에 idx 저장 (수정 모드 식별용)
+            $('#employeeId').val(user.idx);
+
+            // 모든 입력 필드 활성화 (상세보기 모드에서 넘어올 수 있으므로)
+            $('#employeeForm input, #employeeForm select, #employeeForm textarea').prop('disabled', false);
+
+            // 버튼 원상복구
+            $('#saveEmployee').show();
+            $('#cancelEmployee').text('취소');
+
+            // 폼에 데이터 채우기
+            $('#empId').val(user.empId).prop('readonly', true); // 사번은 수정 불가
+            $('#empName').val(user.empName);
+            $('#empBirth').val(user.empBirth);
+            $('#empGender').val(user.empGender);
+            $('#empEmail').val(user.empEmail);
+            $('#externalEmail').val(user.externalEmail || '');
+            $('#empPhone').val(user.empPhone);
+            $('#emergencyContact').val(user.emergencyContact || '');
+            $('#empAddress').val(user.empAddress || '');
+
+            // 부서와 직급은 옵션 로드 후 설정 (약간의 딜레이 필요)
+            setTimeout(function() {
+                $('#empDept').val(user.empDept);
+                $('#empPosition').val(user.empPosition);
+            }, 100);
+
+            $('#empJoinDate').val(user.empJoinDate);
+            $('#empStatus').val(user.empStatus);
+            $('#empWorkType').val(user.empWorkType);
+            $('#empNotes').val(user.empNotes || '');
         },
         error: function(xhr, status, error) {
             console.error('직원 정보 조회 실패:', error);
@@ -404,12 +487,125 @@ function searchEmployees(searchTerm) {
 }
 
 /**
+ * 현재 정렬 상태 적용 및 렌더링 (방향 토글 없이)
+ */
+function applySortAndRender() {
+    if (!sortColumn) {
+        renderEmployeeTable(allUsers);
+        filterEmployees(); // 필터 재적용
+        return;
+    }
+
+    const sortedUsers = [...allUsers].sort((a, b) => {
+        let valueA, valueB;
+
+        switch(sortColumn) {
+            case 'empId':
+                valueA = a.empId || '';
+                valueB = b.empId || '';
+                break;
+            case 'empName':
+                valueA = a.empName || '';
+                valueB = b.empName || '';
+                break;
+            case 'empDept':
+                // 부서는 코드명으로 정렬 (가나다순)
+                valueA = a.empDeptName || a.empDept || '';
+                valueB = b.empDeptName || b.empDept || '';
+                break;
+            case 'empPosition':
+                // 직급은 코드 값으로 정렬 (C0201=사원이 가장 낮음, 코드 값이 클수록 높은 직급)
+                // 오름차순 = 직급 높은 순 = 코드 값 역순
+                valueA = a.empPosition || '';
+                valueB = b.empPosition || '';
+                // 직급만 정렬 방향 반대로 적용
+                if (sortDirection === 'asc') {
+                    return valueB.localeCompare(valueA, 'ko'); // 역순 (높은 직급부터)
+                } else {
+                    return valueA.localeCompare(valueB, 'ko'); // 정순 (낮은 직급부터)
+                }
+            default:
+                return 0;
+        }
+
+        // 직급 외의 컬럼은 일반 정렬
+        if (sortDirection === 'asc') {
+            return valueA.localeCompare(valueB, 'ko');
+        } else {
+            return valueB.localeCompare(valueA, 'ko');
+        }
+    });
+
+    renderEmployeeTable(sortedUsers);
+    updateSortIndicators();
+    filterEmployees(); // 정렬 후 필터 재적용
+}
+
+/**
+ * 직원 정렬 (컬럼 헤더 클릭 시)
+ */
+function sortEmployees(column) {
+    // 같은 컬럼 클릭 시 정렬 방향 토글, 다른 컬럼 클릭 시 오름차순으로 초기화
+    if (sortColumn === column) {
+        sortDirection = sortDirection === 'asc' ? 'desc' : 'asc';
+    } else {
+        sortColumn = column;
+        sortDirection = 'asc';
+    }
+
+    // 정렬 적용 및 렌더링
+    applySortAndRender();
+}
+
+/**
+ * 정렬 표시 업데이트
+ */
+function updateSortIndicators() {
+    // 모든 정렬 가능한 헤더의 클래스 초기화
+    $('.employee-table th.sortable').removeClass('sorted-asc sorted-desc');
+
+    // 현재 정렬된 컬럼에 클래스 추가
+    if (sortColumn) {
+        $(`.employee-table th.sortable[data-sort="${sortColumn}"]`)
+            .addClass(`sorted-${sortDirection}`);
+    }
+}
+
+/**
  * 직원 등록 모달 열기
  */
 function openEmployeeModal() {
     $('#employeeModal').addClass('show');
     $('#employeeForm')[0].reset();
     $('#modalTitle').text('직원 등록');
+
+    // 등록 모드: employeeId 비우기 (수정 모드와 구분)
+    $('#employeeId').val('');
+
+    // 모든 입력 필드 활성화 (상세보기/수정 모드에서 넘어올 수 있으므로)
+    $('#employeeForm input, #employeeForm select, #employeeForm textarea').prop('disabled', false);
+
+    // 사번 필드 readonly 해제 (등록 모드에서는 자동 생성)
+    $('#empId').prop('readonly', false);
+
+    // 버튼 원상복구
+    $('#saveEmployee').show();
+    $('#cancelEmployee').text('취소');
+
+    // 부서 및 직급 옵션 로드 (모달 열 때마다)
+    loadDepartmentOptions();
+    loadPositionOptions();
+
+    // 생년월일 기본값 설정 (1990-01-01)
+    $('#empBirth').val('1990-01-01');
+
+    // 입사일 기본값 설정 (오늘 날짜)
+    const today = new Date();
+    const year = today.getFullYear();
+    const month = String(today.getMonth() + 1).padStart(2, '0');
+    const day = String(today.getDate()).padStart(2, '0');
+    const todayStr = `${year}-${month}-${day}`;
+    $('#empJoinDate').val(todayStr);
 
     // 백엔드 API를 통해 사번 자동 생성
     $.ajax({
@@ -423,10 +619,6 @@ function openEmployeeModal() {
         error: function(xhr, status, error) {
             console.error('사번 생성 실패:', error);
             // 실패 시 기본값 설정 (날짜 + 01)
-            const today = new Date();
-            const year = today.getFullYear();
-            const month = String(today.getMonth() + 1).padStart(2, '0');
-            const day = String(today.getDate()).padStart(2, '0');
             const fallbackEmpId = `${year}${month}${day}01`;
             $('#empId').val(fallbackEmpId);
             showAlert('사번 생성 중 오류가 발생했습니다. 기본값이 설정되었습니다.', 'warning');
@@ -442,9 +634,12 @@ function closeEmployeeModal() {
 }
 
 /**
- * 직원 저장 (생성)
+ * 직원 저장 (생성 또는 수정)
  */
 function saveEmployee() {
+    const employeeId = $('#employeeId').val(); // 수정 모드인지 확인
+    const isEditMode = employeeId && employeeId.length > 0;
+
     // 폼 데이터 수집
     const employeeData = {
         empId: $('#empId').val().trim(),
@@ -461,9 +656,13 @@ function saveEmployee() {
         empJoinDate: $('#empJoinDate').val(),
         empStatus: $('#empStatus').val(),
         empWorkType: $('#empWorkType').val(),
-        empNotes: $('#empNotes').val().trim(),
-        password: 'temp1234' // 임시 비밀번호 (실제로는 별도 입력 받아야 함)
+        empNotes: $('#empNotes').val().trim()
     };
+
+    // 등록 모드일 때만 password 추가
+    if (!isEditMode) {
+        employeeData.password = 'temp1234'; // 임시 비밀번호
+    }
 
     // 필수 필드 검증
     if (!employeeData.empName || !employeeData.empId || !employeeData.empEmail) {
@@ -471,24 +670,46 @@ function saveEmployee() {
         return;
     }
 
-    // Ajax: 직원 생성 API 호출
-    $.ajax({
-        url: '/api/users',
-        method: 'POST',
-        contentType: 'application/json',
-        data: JSON.stringify(employeeData),
-        success: function(response) {
-            console.log('직원 등록 성공:', response);
-            showAlert('직원이 성공적으로 등록되었습니다.', 'success');
-            closeEmployeeModal();
-            loadEmployees(); // 목록 새로고침
-        },
-        error: function(xhr, status, error) {
-            console.error('직원 등록 실패:', xhr.responseJSON);
-            const errorMsg = xhr.responseJSON?.error || '직원 등록에 실패했습니다.';
-            showAlert(errorMsg, 'error');
-        }
-    });
+    // 수정 모드와 등록 모드 분기
+    if (isEditMode) {
+        // 수정: PUT /api/users/{idx}
+        $.ajax({
+            url: `/api/users/${employeeId}`,
+            method: 'PUT',
+            contentType: 'application/json',
+            data: JSON.stringify(employeeData),
+            success: function(response) {
+                console.log('직원 수정 성공:', response);
+                showAlert('직원 정보가 성공적으로 수정되었습니다.', 'success');
+                closeEmployeeModal();
+                loadEmployees(); // 목록 새로고침
+            },
+            error: function(xhr, status, error) {
+                console.error('직원 수정 실패:', xhr.responseJSON);
+                const errorMsg = xhr.responseJSON?.error || '직원 정보 수정에 실패했습니다.';
+                showAlert(errorMsg, 'error');
+            }
+        });
+    } else {
+        // 등록: POST /api/users
+        $.ajax({
+            url: '/api/users',
+            method: 'POST',
+            contentType: 'application/json',
+            data: JSON.stringify(employeeData),
+            success: function(response) {
+                console.log('직원 등록 성공:', response);
+                showAlert('직원이 성공적으로 등록되었습니다.', 'success');
+                closeEmployeeModal();
+                loadEmployees(); // 목록 새로고침
+            },
+            error: function(xhr, status, error) {
+                console.error('직원 등록 실패:', xhr.responseJSON);
+                const errorMsg = xhr.responseJSON?.error || '직원 등록에 실패했습니다.';
+                showAlert(errorMsg, 'error');
+            }
+        });
+    }
 }
 
 /**
@@ -503,7 +724,6 @@ function loadDepartmentOptions() {
             console.log('부서 옵션 로드 성공:', response);
             const $select = $('#empDept');
             $select.empty();
-            $select.append('<option value="">선택하세요</option>');
 
             response.forEach(function(dept) {
                 $select.append(`<option value="${dept.code}">${dept.codeName}</option>`);
@@ -527,7 +747,6 @@ function loadPositionOptions() {
             console.log('직급 옵션 로드 성공:', response);
             const $select = $('#empPosition');
             $select.empty();
-            $select.append('<option value="">선택하세요</option>');
 
             response.forEach(function(position) {
                 $select.append(`<option value="${position.code}">${position.codeName}</option>`);
