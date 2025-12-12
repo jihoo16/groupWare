@@ -73,4 +73,6 @@ public class UserCreateDTO {
     private String password;
 
     private String memo;
+
+    private Boolean isAdmin = false;
 }

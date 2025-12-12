@@ -48,6 +48,7 @@ public class UserMapper {
                 .profilePhotoPath(user.getProfilePhotoPath())
                 .memo(user.getMemo())
                 .lastLoginDate(user.getLastLoginDate())
+                .isAdmin(user.getIsAdmin())
                 .createdAt(user.getCreatedAt())
                 .createdUserIdx(user.getCreatedUserIdx())
                 .updatedAt(user.getUpdatedAt())
@@ -85,6 +86,7 @@ public class UserMapper {
                 .empPosition(user.getEmpPosition())
                 .empEmail(user.getEmpEmail())
                 .empPhone(user.getEmpPhone())
+                .empJoinDate(user.getEmpJoinDate())
                 .empStatus(user.getEmpStatus())
                 .profilePhotoPath(user.getProfilePhotoPath())
                 .build();
@@ -131,6 +133,7 @@ public class UserMapper {
                 .password(dto.getPassword())
                 .passwordHash(passwordHash)
                 .memo(dto.getMemo())
+                .isAdmin(dto.getIsAdmin() != null ? dto.getIsAdmin() : false)
                 .signatureImage(new byte[0]) // 기본값, 추후 업로드 처리
                 .build();
 
@@ -196,6 +199,9 @@ public class UserMapper {
         if (dto.getPassword() != null && passwordHash != null) {
             user.setPassword(dto.getPassword());
             user.setPasswordHash(passwordHash);
+        }
+        if (dto.getIsAdmin() != null) {
+            user.setIsAdmin(dto.getIsAdmin());
         }
 
         user.setUpdatedAt(LocalDateTime.now());

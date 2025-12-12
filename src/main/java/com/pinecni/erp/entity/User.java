@@ -59,11 +59,7 @@ public class User extends BaseEntity {
     private String empAddress;
 
     @Column(name = "emp_dept", nullable = false, length = 20)
-    private String empDept; // FK to departments.dept_code
-
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "emp_dept", referencedColumnName = "dept_code", insertable = false, updatable = false)
-    private Department department;
+    private String empDept; // FK to code.code (C01 group)
 
     @Column(name = "emp_position", nullable = false, length = 30)
     private String empPosition;
@@ -83,7 +79,7 @@ public class User extends BaseEntity {
     @Column(name = "password", nullable = false, length = 255)
     private String password;
 
-    @Column(name = "password_hash", nullable = false, length = 50)
+    @Column(name = "password_hash", nullable = false, length = 64)
     private String passwordHash;
 
     @Column(name = "profile_photo_path", length = 255)
@@ -97,6 +93,9 @@ public class User extends BaseEntity {
 
     @Column(name = "last_login_date")
     private LocalDateTime lastLoginDate;
+
+    @Column(name = "is_admin", nullable = false)
+    private Boolean isAdmin = false;
 
     // Soft delete
     @Column(name = "deleted_at")

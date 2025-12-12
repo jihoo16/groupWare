@@ -36,6 +36,7 @@ public class UserDTO {
     private String profilePhotoPath;
     private String memo;
     private LocalDateTime lastLoginDate;
+    private Boolean isAdmin;
     private LocalDateTime createdAt;
     private Long createdUserIdx;
     private LocalDateTime updatedAt;

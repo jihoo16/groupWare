@@ -63,4 +63,6 @@ public class UserUpdateDTO {
     private String memo;
 
     private String profilePhotoPath;
+
+    private Boolean isAdmin;
 }
