@@ -61,9 +61,25 @@ document.addEventListener('DOMContentLoaded', function() {
         btnLogin.disabled = true;
 
         try {
-            // TODO: Replace with actual API call
-            // Simulate API call
-            await simulateLogin(username, password);
+            // 실제 로그인 API 호출
+            const response = await fetch('/api/auth/login', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    empId: username,
+                    password: password,
+                    rememberMe: rememberMe
+                })
+            });
+
+            if (!response.ok) {
+                const errorData = await response.json();
+                throw new Error(errorData.error || '로그인에 실패했습니다.');
+            }
+
+            const userData = await response.json();
 
             // Save username if remember me is checked
             if (rememberMe) {
@@ -71,11 +87,6 @@ document.addEventListener('DOMContentLoaded', function() {
             } else {
                 localStorage.removeItem('rememberedUsername');
             }
-
-            // Store session (temporary - replace with actual session management)
-            sessionStorage.setItem('isLoggedIn', 'true');
-            sessionStorage.setItem('username', username);
-            sessionStorage.setItem('loginTime', new Date().toISOString());
 
             // Show success message
             showAlert('로그인 성공! 메인 페이지로 이동합니다...', 'success');
@@ -124,21 +135,6 @@ document.addEventListener('DOMContentLoaded', function() {
         }, 5000);
     }
 
-    // Simulate login API call (replace with actual API)
-    function simulateLogin(username, password) {
-        return new Promise((resolve, reject) => {
-            setTimeout(() => {
-                // Demo credentials
-                if (username === 'admin' && password === 'admin') {
-                    resolve({ success: true, username });
-                } else if (username === 'user' && password === 'user') {
-                    resolve({ success: true, username });
-                } else {
-                    reject(new Error('아이디 또는 비밀번호가 올바르지 않습니다.'));
-                }
-            }, 1000);
-        });
-    }
 
     // ===========================
     // Enter Key Support
