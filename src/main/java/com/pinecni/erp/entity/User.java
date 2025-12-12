@@ -76,10 +76,18 @@ public class User extends BaseEntity {
     @Column(name = "emp_notes", columnDefinition = "TEXT")
     private String empNotes;
 
-    @Column(name = "password", nullable = false, length = 255)
+    /**
+     * 비밀번호 해시값 (password + salt를 SHA-256 해시)
+     * 실제 비밀번호는 저장하지 않음 (보안)
+     */
+    @Column(name = "password", nullable = true, length = 255)
     private String password;
 
-    @Column(name = "password_hash", nullable = false, length = 64)
+    /**
+     * Salt 값 (비밀번호 해시 생성 시 사용된 랜덤 값)
+     * 로그인 검증 시 사용
+     */
+    @Column(name = "password_hash", nullable = true, length = 64)
     private String passwordHash;
 
     @Column(name = "profile_photo_path", length = 255)

@@ -120,11 +120,13 @@ public class UserServiceImpl implements UserService {
             throw new IllegalArgumentException("이미 존재하는 이메일입니다: " + createDTO.getEmpEmail());
         }
 
-        // 비밀번호 해시 생성
-        String passwordHash = generatePasswordHash(createDTO.getPassword());
+        // 비밀번호 해시 생성 (Salt 방식)
+        String[] hashResult = generatePasswordHashWithSalt(createDTO.getPassword());
+        String hashedPassword = hashResult[0]; // password 컬럼에 저장
+        String salt = hashResult[1];            // password_hash 컬럼에 저장
 
-        // Entity 생성
-        User user = userMapper.toEntity(createDTO, passwordHash);
+        // Entity 생성 (password에 해시값, passwordHash에 salt 저장)
+        User user = userMapper.toEntity(createDTO, hashedPassword, salt);
         user.setCreatedUserIdx(createdUserIdx);
         user.setCreatedAt(LocalDateTime.now());
         user.setUpdatedUserIdx(createdUserIdx);
@@ -157,17 +159,20 @@ public class UserServiceImpl implements UserService {
             }
         }
 
-        // 비밀번호 변경 시 해시 생성
-        String passwordHash = null;
+        // 비밀번호 변경 시 해시 생성 (Salt 방식)
+        String hashedPassword = null;
+        String salt = null;
         if (updateDTO.getPassword() != null) {
-            passwordHash = generatePasswordHash(updateDTO.getPassword());
+            String[] hashResult = generatePasswordHashWithSalt(updateDTO.getPassword());
+            hashedPassword = hashResult[0]; // password 컬럼에 저장
+            salt = hashResult[1];            // password_hash 컬럼에 저장
         }
 
         // 기존 부서명 저장
         String oldDept = user.getEmpDept();
 
         // Entity 업데이트
-        userMapper.updateEntity(user, updateDTO, passwordHash);
+        userMapper.updateEntity(user, updateDTO, hashedPassword, salt);
         user.setUpdatedUserIdx(updatedUserIdx);
 
         // 부서가 변경된 경우 부서 코드 재설정
@@ -273,23 +278,76 @@ public class UserServiceImpl implements UserService {
     }
 
     /**
-     * 비밀번호 SHA-256 해시 생성
+     * 비밀번호 해시 생성 (Salt 방식)
+     *
+     * @param password 평문 비밀번호
+     * @return String[] {hashedPassword, salt}
+     *         - hashedPassword: (password + salt)를 SHA-256 해시한 값
+     *         - salt: 랜덤 생성된 salt 값
      */
-    private String generatePasswordHash(String password) {
+    private String[] generatePasswordHashWithSalt(String password) {
         try {
+            // 1. Salt 생성 (32바이트 랜덤)
+            byte[] saltBytes = new byte[32];
+            java.security.SecureRandom random = new java.security.SecureRandom();
+            random.nextBytes(saltBytes);
+
+            // Salt를 Hex String으로 변환
+            String salt = bytesToHex(saltBytes);
+
+            // 2. 비밀번호 + Salt를 SHA-256 해시
             MessageDigest digest = MessageDigest.getInstance("SHA-256");
-            byte[] hash = digest.digest(password.getBytes(StandardCharsets.UTF_8));
-            StringBuilder hexString = new StringBuilder();
-            for (byte b : hash) {
-                String hex = Integer.toHexString(0xff & b);
-                if (hex.length() == 1) hexString.append('0');
-                hexString.append(hex);
-            }
-            return hexString.toString();
+            String passwordWithSalt = password + salt;
+            byte[] hash = digest.digest(passwordWithSalt.getBytes(StandardCharsets.UTF_8));
+            String hashedPassword = bytesToHex(hash);
+
+            log.debug("Password hash generated with salt. Salt length: {}, Hash length: {}",
+                    salt.length(), hashedPassword.length());
+
+            return new String[]{hashedPassword, salt};
+
         } catch (NoSuchAlgorithmException e) {
             log.error("Password hash generation failed", e);
             throw new RuntimeException("비밀번호 해시 생성 실패", e);
         }
+    }
+
+    /**
+     * 비밀번호 검증 (Salt 방식)
+     *
+     * @param inputPassword 사용자가 입력한 평문 비밀번호
+     * @param storedHash DB에 저장된 해시값 (password 컬럼)
+     * @param salt DB에 저장된 salt 값 (password_hash 컬럼)
+     * @return 비밀번호 일치 여부
+     */
+    public boolean verifyPassword(String inputPassword, String storedHash, String salt) {
+        try {
+            // 입력 비밀번호 + Salt를 SHA-256 해시
+            MessageDigest digest = MessageDigest.getInstance("SHA-256");
+            String passwordWithSalt = inputPassword + salt;
+            byte[] hash = digest.digest(passwordWithSalt.getBytes(StandardCharsets.UTF_8));
+            String hashedInput = bytesToHex(hash);
+
+            // 저장된 해시값과 비교
+            return hashedInput.equals(storedHash);
+
+        } catch (NoSuchAlgorithmException e) {
+            log.error("Password verification failed", e);
+            throw new RuntimeException("비밀번호 검증 실패", e);
+        }
+    }
+
+    /**
+     * Byte 배열을 Hex String으로 변환
+     */
+    private String bytesToHex(byte[] bytes) {
+        StringBuilder hexString = new StringBuilder();
+        for (byte b : bytes) {
+            String hex = Integer.toHexString(0xff & b);
+            if (hex.length() == 1) hexString.append('0');
+            hexString.append(hex);
+        }
+        return hexString.toString();
     }
 
     /**

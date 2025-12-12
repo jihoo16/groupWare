@@ -108,8 +108,12 @@ public class UserMapper {
 
     /**
      * CreateDTO -> Entity 변환
+     *
+     * @param dto 사용자 생성 DTO
+     * @param hashedPassword 비밀번호 + salt를 SHA-256 해시한 값 (password 컬럼에 저장)
+     * @param salt 랜덤 생성된 salt 값 (password_hash 컬럼에 저장)
      */
-    public User toEntity(UserCreateDTO dto, String passwordHash) {
+    public User toEntity(UserCreateDTO dto, String hashedPassword, String salt) {
         if (dto == null) {
             return null;
         }
@@ -130,8 +134,8 @@ public class UserMapper {
                 .empStatus(dto.getEmpStatus() != null ? dto.getEmpStatus() : "재직")
                 .empWorkType(dto.getEmpWorkType() != null ? dto.getEmpWorkType() : "정규직")
                 .empNotes(dto.getEmpNotes())
-                .password(dto.getPassword())
-                .passwordHash(passwordHash)
+                .password(hashedPassword)     // 해시값 저장
+                .passwordHash(salt)            // salt 저장
                 .memo(dto.getMemo())
                 .isAdmin(dto.getIsAdmin() != null ? dto.getIsAdmin() : false)
                 .signatureImage(new byte[0]) // 기본값, 추후 업로드 처리
@@ -142,8 +146,13 @@ public class UserMapper {
 
     /**
      * UpdateDTO를 기존 Entity에 적용
+     *
+     * @param user 기존 사용자 엔티티
+     * @param dto 수정 DTO
+     * @param hashedPassword 비밀번호 + salt를 SHA-256 해시한 값 (password 컬럼에 저장)
+     * @param salt 랜덤 생성된 salt 값 (password_hash 컬럼에 저장)
      */
-    public void updateEntity(User user, UserUpdateDTO dto, String passwordHash) {
+    public void updateEntity(User user, UserUpdateDTO dto, String hashedPassword, String salt) {
         if (user == null || dto == null) {
             return;
         }
@@ -196,9 +205,9 @@ public class UserMapper {
         if (dto.getProfilePhotoPath() != null) {
             user.setProfilePhotoPath(dto.getProfilePhotoPath());
         }
-        if (dto.getPassword() != null && passwordHash != null) {
-            user.setPassword(dto.getPassword());
-            user.setPasswordHash(passwordHash);
+        if (hashedPassword != null && salt != null) {
+            user.setPassword(hashedPassword);     // 해시값 저장
+            user.setPasswordHash(salt);            // salt 저장
         }
         if (dto.getIsAdmin() != null) {
             user.setIsAdmin(dto.getIsAdmin());
