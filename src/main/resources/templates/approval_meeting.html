@@ -195,36 +195,46 @@
 
                             <table class="form-table">
                                 <tr>
+                                    <th>과제명</th>
+                                    <td colspan="3">
+                                        <select id="projectName" class="form-control">
+                                            <option value="">선택 안함</option>
+                                        </select>
+                                    </td>
+                                </tr>
+                                <tr>
                                     <th>회의명</th>
-                                    <td colspan="3"><input type="text" placeholder="회의 제목"></td>
+                                    <td colspan="3"><input type="text" id="meetingTitle" placeholder="회의 제목"></td>
                                 </tr>
                                 <tr>
                                     <th>작성자</th>
-                                    <td><input type="text" value="홍길동" readonly></td>
+                                    <td><input type="text" id="userName" value="홍길동" readonly></td>
                                     <th>일시</th>
-                                    <td><input type="datetime-local"></td>
+                                    <td><input type="datetime-local" id="meetingDatetime"></td>
                                 </tr>
                                 <tr>
                                     <th>장소</th>
-                                    <td><input type="text" placeholder="회의 장소"></td>
+                                    <td colspan="3"><input type="text" id="location" placeholder="회의 장소"></td>
+                                </tr>
+                                <tr>
                                     <th>참석자</th>
-                                    <td><input type="text" placeholder="참석자 명단"></td>
+                                    <td colspan="3"><input type="text" id="participants" placeholder="참석자 이름 (예: 홍길동, 김철수, 박영희)"></td>
                                 </tr>
                                 <tr>
                                     <th>회의 목적</th>
-                                    <td colspan="3"><textarea placeholder="회의 목적 및 배경" rows="3"></textarea></td>
+                                    <td colspan="3"><textarea id="purpose" placeholder="회의 목적 및 배경" rows="3"></textarea></td>
                                 </tr>
                                 <tr>
                                     <th>회의 내용</th>
-                                    <td colspan="3"><textarea placeholder="논의된 주요 내용" rows="8"></textarea></td>
+                                    <td colspan="3"><textarea id="content" placeholder="논의된 주요 내용" rows="8"></textarea></td>
                                 </tr>
                                 <tr>
                                     <th>결정 사항</th>
-                                    <td colspan="3"><textarea placeholder="회의를 통해 결정된 사항" rows="5"></textarea></td>
+                                    <td colspan="3"><textarea id="decisions" placeholder="회의를 통해 결정된 사항" rows="5"></textarea></td>
                                 </tr>
                                 <tr>
                                     <th>Action Items</th>
-                                    <td colspan="3"><textarea placeholder="후속 조치 및 담당자" rows="4"></textarea></td>
+                                    <td colspan="3"><textarea id="actionItems" placeholder="후속 조치 및 담당자" rows="4"></textarea></td>
                                 </tr>
                             </table>
                         </div>
