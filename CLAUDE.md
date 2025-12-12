@@ -73,7 +73,7 @@ Database (PostgreSQL)
 ### Module Organization (12 Functional Modules)
 
 1. **Approval (전자결재)** - Multi-state document workflow with 8 types
-2. **HR Management (인사 관리)** - Employee CRUD with department filtering
+2. **HR Management (사용자 관리)** - Employee CRUD with department filtering
 3. **Vacation (연차 관리)** - Leave balance and request management
 4. **Organization (조직도)** - Hierarchical employee tree
 5. **Attendance (근태 관리)** - Clock in/out with BIO star2 integration
