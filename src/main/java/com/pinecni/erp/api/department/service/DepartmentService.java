@@ -66,6 +66,7 @@ public class DepartmentService {
 
     /**
      * 부서 코드 유효성 검증
+     * 활성 상태이고 삭제되지 않은 부서만 유효함
      */
     public boolean isDeptCodeValid(String deptCode) {
         return departmentRepository.findByDeptCode(deptCode)

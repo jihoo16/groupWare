@@ -162,4 +162,41 @@ public class CodeService {
     public List<Code> getActiveDepartments() {
         return getActiveCodesByGroupCode("C01");
     }
+
+    /**
+     * 부서 코드 유효성 검증 (C01 그룹, 활성화된 것만)
+     * @param deptCode 부서 코드 (예: C0101)
+     * @return 활성화된 부서 코드인 경우 true
+     */
+    public boolean isDeptCodeValid(String deptCode) {
+        log.debug("부서 코드 유효성 검증: deptCode={}", deptCode);
+        return codeRepository.findByGroupCodeAndCode("C01", deptCode)
+                .filter(code -> "Y".equals(code.getUseYn()))
+                .isPresent();
+    }
+
+    /**
+     * 부서명으로 부서 코드 조회 (C01 그룹)
+     * @param deptName 부서명 (예: "개발팀")
+     * @return 부서 코드 (예: "C0101"), 없으면 null
+     */
+    public String getDeptCodeByName(String deptName) {
+        log.debug("부서명으로 코드 조회: deptName={}", deptName);
+        return codeRepository.findByGroupCode("C01").stream()
+                .filter(code -> "Y".equals(code.getUseYn()))
+                .filter(code -> deptName.equals(code.getCodeName()))
+                .findFirst()
+                .map(Code::getCode)
+                .orElse(null);
+    }
+
+    /**
+     * 부서 코드로 부서 정보 조회 (C01 그룹, 활성/비활성 모두 포함)
+     * @param deptCode 부서 코드 (예: C0101)
+     * @return Code 엔티티
+     */
+    public Optional<Code> getDepartmentByCode(String deptCode) {
+        log.debug("부서 코드로 조회: deptCode={}", deptCode);
+        return codeRepository.findByGroupCodeAndCode("C01", deptCode);
+    }
 }

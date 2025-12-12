@@ -1,6 +1,6 @@
 package com.pinecni.erp.api.user.service;
 
-import com.pinecni.erp.api.department.service.DepartmentService;
+import com.pinecni.erp.api.code.service.CodeService;
 import com.pinecni.erp.api.user.dto.UserCreateDTO;
 import com.pinecni.erp.api.user.repository.UserRepository;
 import com.pinecni.erp.entity.User;
@@ -31,7 +31,7 @@ public class UserServiceImpl implements UserService {
 
     private final UserRepository userRepository;
     private final UserMapper userMapper;
-    private final DepartmentService departmentService;
+    private final CodeService codeService;
 
     @Override
     public List<UserSimpleDTO> getAllActiveUsers() {
@@ -294,7 +294,12 @@ public class UserServiceImpl implements UserService {
 
     /**
      * 부서명을 부서 코드로 변환
-     * departments 테이블에서 dept_name으로 dept_code 찾아서 설정
+     * code 테이블(C01 그룹)에서 code_name으로 code 찾아서 설정
+     *
+     * 처리 로직:
+     * 1. empDept가 이미 유효한 부서 코드(C01 그룹)라면 그대로 사용
+     * 2. 부서 코드가 아니라면 부서명으로 간주하고 코드 변환 시도
+     * 3. 둘 다 아니라면 에러 발생
      */
     private void setDepartmentCode(User user) {
         if (user.getEmpDept() == null || user.getEmpDept().isEmpty()) {
@@ -302,27 +307,43 @@ public class UserServiceImpl implements UserService {
             return;
         }
 
-        // empDept가 이미 dept_code 형식인지 확인 (예: "DEV", "HR")
-        if (departmentService.isDeptCodeValid(user.getEmpDept())) {
-            log.debug("empDept is already a valid dept_code: {}", user.getEmpDept());
+        String inputValue = user.getEmpDept().trim();
+        log.debug("setDepartmentCode() - input value: '{}'", inputValue);
+
+        // 1. empDept가 이미 유효한 dept_code인지 확인 (C01 그룹, 활성화된 것)
+        if (codeService.isDeptCodeValid(inputValue)) {
+            log.info("✓ empDept is already a valid and active dept_code: {}", inputValue);
+            user.setEmpDept(inputValue);
             return;
         }
 
-        // empDept가 부서명인 경우 dept_code로 변환
-        String deptCode = departmentService.getDeptCodeByName(user.getEmpDept());
-
-        if (deptCode != null) {
-            String oldDeptName = user.getEmpDept();
-            user.setEmpDept(deptCode);
-            log.info("Department name converted to code: {} -> {}",
-                    oldDeptName, deptCode);
-        } else {
-            log.warn("Department not found for name: {}. Please check departments table.",
-                    user.getEmpDept());
+        // 입력값이 부서 코드로 존재하는지 확인 (비활성 포함)
+        var deptByCode = codeService.getDepartmentByCode(inputValue);
+        if (deptByCode.isPresent()) {
+            var dept = deptByCode.get();
+            log.error("✗ Department code '{}' exists but is NOT active. use_yn={}",
+                    inputValue, dept.getUseYn());
             throw new IllegalArgumentException(
-                    "유효하지 않은 부서입니다: " + user.getEmpDept() +
-                    ". 기초정보관리에서 부서를 먼저 등록해주세요."
+                    "비활성화된 부서입니다: " + inputValue +
+                    ". 기초정보관리에서 부서를 활성화해주세요."
             );
         }
+
+        // 2. empDept가 부서명인 경우 dept_code로 변환 시도
+        log.debug("Attempting to convert department name to code: {}", inputValue);
+        String deptCode = codeService.getDeptCodeByName(inputValue);
+
+        if (deptCode != null) {
+            log.info("✓ Department name converted to code: {} -> {}", inputValue, deptCode);
+            user.setEmpDept(deptCode);
+            return;
+        }
+
+        // 3. 부서 코드도 아니고 부서명도 아닌 경우 에러
+        log.error("✗ Invalid department value: '{}'. Not found in code table (C01 group).", inputValue);
+        throw new IllegalArgumentException(
+                "유효하지 않은 부서입니다: " + inputValue +
+                ". 기초정보관리에서 부서를 먼저 등록해주세요."
+        );
     }
 }
