@@ -96,12 +96,38 @@ document.addEventListener('DOMContentLoaded', function() {
     // ============================================
 
     /**
+     * 현재 로그인한 사용자 정보를 가져옴
+     * @returns {Promise<Object>} 로그인한 사용자 정보
+     */
+    async function getCurrentUser() {
+        try {
+            const response = await fetch('/api/auth/me');
+            if (!response.ok) {
+                throw new Error('로그인 정보를 가져오는데 실패했습니다.');
+            }
+            const data = await response.json();
+            console.log('현재 로그인 사용자:', data);
+            return data;
+        } catch (error) {
+            console.error('로그인 사용자 조회 실패:', error);
+            return null;
+        }
+    }
+
+    /**
      * 사용자 연차 정보를 서버에서 가져옴
      * @returns {Promise<Object>} 사용자 정보 + 연차 잔액 정보
      */
     async function fetchUserVacationInfo() {
         try {
-            const response = await fetch('/api/vacation/user-info?userIdx=1');
+            // 현재 로그인한 사용자 정보 가져오기
+            const currentUser = await getCurrentUser();
+            if (!currentUser || !currentUser.idx) {
+                throw new Error('로그인 정보가 없습니다.');
+            }
+
+            // 현재 사용자의 연차 정보 조회
+            const response = await fetch(`/api/vacation/user-info?userIdx=${currentUser.idx}`);
             if (!response.ok) {
                 throw new Error('사용자 연차 정보를 가져오는데 실패했습니다.');
             }
@@ -110,20 +136,10 @@ document.addEventListener('DOMContentLoaded', function() {
             return data;
         } catch (error) {
             console.error('사용자 연차 정보 조회 실패:', error);
-            // 실패 시 기본값 반환
-            return {
-                userIdx: 1,
-                empName: '홍길동',
-                empDept: '개발팀',
-                empPosition: '대리',
-                empAddress: '',
-                empBirth: '',
-                empPhone: '',
-                totalDays: 15,
-                usedDays: 3,
-                remainingDays: 12,
-                year: new Date().getFullYear()
-            };
+            alert('사용자 정보를 불러오는데 실패했습니다. 다시 로그인해주세요.');
+            // 로그인 페이지로 리다이렉트
+            window.location.href = '/login';
+            return null;
         }
     }
 
