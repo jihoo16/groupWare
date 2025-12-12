@@ -4,6 +4,7 @@ document.addEventListener('DOMContentLoaded', function() {
     let selectedApprovers = [];
     let selectedFiles = [];
     let selectedEmployee = null;
+    let userVacationInfo = null; // 사용자 연차 정보 (API에서 가져옴)
 
     // DOM 요소
     const documentForm = document.getElementById('documentForm');
@@ -87,6 +88,42 @@ document.addEventListener('DOMContentLoaded', function() {
             icon.className = 'fas fa-chevron-up';
         } else if (allExpanded) {
             icon.className = 'fas fa-chevron-down';
+        }
+    }
+
+    // ============================================
+    // 사용자 연차 정보 API 조회
+    // ============================================
+
+    /**
+     * 사용자 연차 정보를 서버에서 가져옴
+     * @returns {Promise<Object>} 사용자 정보 + 연차 잔액 정보
+     */
+    async function fetchUserVacationInfo() {
+        try {
+            const response = await fetch('/api/vacation/user-info?userIdx=1');
+            if (!response.ok) {
+                throw new Error('사용자 연차 정보를 가져오는데 실패했습니다.');
+            }
+            const data = await response.json();
+            console.log('사용자 연차 정보 로드 완료:', data);
+            return data;
+        } catch (error) {
+            console.error('사용자 연차 정보 조회 실패:', error);
+            // 실패 시 기본값 반환
+            return {
+                userIdx: 1,
+                empName: '홍길동',
+                empDept: '개발팀',
+                empPosition: '대리',
+                empAddress: '',
+                empBirth: '',
+                empPhone: '',
+                totalDays: 15,
+                usedDays: 3,
+                remainingDays: 12,
+                year: new Date().getFullYear()
+            };
         }
     }
 
@@ -1601,8 +1638,8 @@ document.addEventListener('DOMContentLoaded', function() {
 
     // 날짜가 마이너스 연차에 해당하는지 체크
     function isDateInMinusPeriod(dateStr) {
-        const totalVacation = 15; // 총 연차
-        const usedVacation = 3;   // 사용한 연차
+        const totalVacation = userVacationInfo ? parseFloat(userVacationInfo.totalDays) : 15;
+        const usedVacation = userVacationInfo ? parseFloat(userVacationInfo.usedDays) : 3;
         const remainingVacation = totalVacation - usedVacation;
 
         // 모든 기간을 날짜순으로 정렬
@@ -1662,8 +1699,17 @@ document.addEventListener('DOMContentLoaded', function() {
             const day = prevLastDate - i;
             const prevMonthDate = new Date(currentYear, currentMonth - 1, day);
             const dateStr = formatDate(prevMonthDate);
+            const dayOfWeek = prevMonthDate.getDay();
 
             let classes = 'other-month';
+
+            // 공휴일 체크
+            if (dayOfWeek === 0) classes += ' sunday';
+            if (dayOfWeek === 6) classes += ' saturday';
+            if (holidays[dateStr]) {
+                classes += ' holiday';
+            }
+
             if (isDateInAddedPeriods(dateStr)) {
                 classes += ' period-added';
                 const vacationType = getDateVacationType(dateStr);
@@ -1764,8 +1810,17 @@ document.addEventListener('DOMContentLoaded', function() {
         for (let day = 1; day <= remainingCells; day++) {
             const nextMonthDate = new Date(currentYear, currentMonth + 1, day);
             const dateStr = formatDate(nextMonthDate);
+            const dayOfWeek = nextMonthDate.getDay();
 
             let classes = 'other-month';
+
+            // 공휴일 체크
+            if (dayOfWeek === 0) classes += ' sunday';
+            if (dayOfWeek === 6) classes += ' saturday';
+            if (holidays[dateStr]) {
+                classes += ' holiday';
+            }
+
             if (isDateInAddedPeriods(dateStr)) {
                 classes += ' period-added';
                 const vacationType = getDateVacationType(dateStr);
@@ -1947,8 +2002,8 @@ document.addEventListener('DOMContentLoaded', function() {
 
     // 연차 잔여 확인 및 경고 표시
     function checkVacationBalance(totalUsedDays) {
-        const totalVacation = 15; // 총 연차 (실제로는 서버에서 가져와야 함)
-        const usedVacation = 3;   // 사용한 연차 (실제로는 서버에서 가져와야 함)
+        const totalVacation = userVacationInfo ? parseFloat(userVacationInfo.totalDays) : 15;
+        const usedVacation = userVacationInfo ? parseFloat(userVacationInfo.usedDays) : 3;
         const remainingVacation = totalVacation - usedVacation;
 
         const remainingAfter = remainingVacation - totalUsedDays;
@@ -2452,8 +2507,8 @@ document.addEventListener('DOMContentLoaded', function() {
         }
 
         // 잔여 연차 계산 (마이너스 연차 표시를 위해)
-        const totalVacation = 15; // 총 연차 (실제로는 서버에서 가져와야 함)
-        const usedVacation = 3;   // 사용한 연차 (실제로는 서버에서 가져와야 함)
+        const totalVacation = userVacationInfo ? parseFloat(userVacationInfo.totalDays) : 15;
+        const usedVacation = userVacationInfo ? parseFloat(userVacationInfo.usedDays) : 3;
         const remainingVacation = totalVacation - usedVacation;
 
         let accumulatedDays = 0; // 누적 일수
@@ -2664,26 +2719,57 @@ document.addEventListener('DOMContentLoaded', function() {
 
     // 개인 정보 미리 채우기
     function prefillPersonalInfo() {
-        // 테스트용 개인 정보 (실제로는 서버에서 가져와야 함)
-        const addressField = document.getElementById('address');
-        const birthDateField = document.getElementById('birth_date');
-        const contactField = document.getElementById('contact');
-
-        if (addressField && !addressField.textContent) {
-            addressField.textContent = '서울시 강남구 테헤란로 123';
-        }
-        if (birthDateField && !birthDateField.textContent) {
-            birthDateField.textContent = '1990-01-01';
-        }
-        if (contactField && !contactField.textContent) {
-            contactField.textContent = '010-1234-5678';
+        if (!userVacationInfo) {
+            console.warn('사용자 연차 정보가 아직 로드되지 않았습니다.');
+            return;
         }
 
-        // 소속, 직급, 신청자 정보 복사 (신청자 정보 카드에서 문서 양식으로)
+        // 신청자 정보 카드 (좌측 상단)
         const vifApplicant = document.getElementById('vif_applicant');
         const vifDepartment = document.getElementById('vif_department');
         const vifPosition = document.getElementById('vif_position');
 
+        if (vifApplicant) {
+            vifApplicant.textContent = userVacationInfo.empName || '홍길동';
+        }
+        if (vifDepartment) {
+            vifDepartment.textContent = userVacationInfo.empDept || '개발팀';
+        }
+        if (vifPosition) {
+            vifPosition.textContent = userVacationInfo.empPosition || '대리';
+        }
+
+        // 연차 잔액 표시 (우측 상단)
+        const totalVacationElement = document.querySelector('.balance-value.total');
+        const usedVacationElement = document.querySelector('.balance-value.used');
+        const remainingVacationElement = document.querySelector('.balance-value.remaining');
+
+        if (totalVacationElement) {
+            totalVacationElement.textContent = `${userVacationInfo.totalDays || 15}일`;
+        }
+        if (usedVacationElement) {
+            usedVacationElement.textContent = `${userVacationInfo.usedDays || 3}일`;
+        }
+        if (remainingVacationElement) {
+            remainingVacationElement.textContent = `${userVacationInfo.remainingDays || 12}일`;
+        }
+
+        // 개인 정보 (주소, 생년월일, 연락처)
+        const addressField = document.getElementById('address');
+        const birthDateField = document.getElementById('birth_date');
+        const contactField = document.getElementById('contact');
+
+        if (addressField) {
+            addressField.textContent = userVacationInfo.empAddress || '';
+        }
+        if (birthDateField) {
+            birthDateField.textContent = userVacationInfo.empBirth || '';
+        }
+        if (contactField) {
+            contactField.textContent = userVacationInfo.empPhone || '';
+        }
+
+        // 소속, 직급, 신청자 정보 복사 (신청자 정보 카드에서 문서 양식으로)
         if (vifApplicant) {
             const applicantField = document.getElementById('applicant');
             if (applicantField) {
@@ -2730,9 +2816,15 @@ document.addEventListener('DOMContentLoaded', function() {
         setApprovalLine();
     }
 
-    // 연차신청서 페이지인 경우 기본 날짜 설정 (3영업일 후)
+    // 연차신청서 페이지인 경우 초기화 (사용자 정보 로드 → 기본 날짜 설정 → 개인정보 채우기)
     (async function() {
+        // 1. 사용자 연차 정보 로드
+        userVacationInfo = await fetchUserVacationInfo();
+
+        // 2. 기본 날짜 설정 (3영업일 후)
         await setupVacationDefaultDates();
+
+        // 3. 개인정보 채우기
         prefillPersonalInfo();
     })();
 
