@@ -55,7 +55,19 @@ public class WeeklyReportServiceImpl implements WeeklyReportService {
         log.debug("WeeklyReport created successfully - id: {}", saved.getId());
 
         // Entity → DTO 변환
-        return weeklyReportMapper.toDTO(saved);
+        WeeklyReportDTO dto = weeklyReportMapper.toDTO(saved);
+        // User 정보 조회 및 설정
+        userRepository.findById(saved.getUserIdx()).ifPresent(user -> {
+            dto.setUserName(user.getEmpName());
+            dto.setUserDept(user.getEmpDept());
+            // 부서 이름 조회
+            if (user.getEmpDept() != null) {
+                codeRepository.findByCode(user.getEmpDept()).ifPresent(code -> {
+                    dto.setUserDeptName(code.getCodeName());
+                });
+            }
+        });
+        return dto;
     }
 
     @Override
@@ -124,7 +136,19 @@ public class WeeklyReportServiceImpl implements WeeklyReportService {
         log.debug("WeeklyReport updated successfully - id: {}", updated.getId());
 
         // Entity → DTO 변환
-        return weeklyReportMapper.toDTO(updated);
+        WeeklyReportDTO dto = weeklyReportMapper.toDTO(updated);
+        // User 정보 조회 및 설정
+        userRepository.findById(updated.getUserIdx()).ifPresent(user -> {
+            dto.setUserName(user.getEmpName());
+            dto.setUserDept(user.getEmpDept());
+            // 부서 이름 조회
+            if (user.getEmpDept() != null) {
+                codeRepository.findByCode(user.getEmpDept()).ifPresent(code -> {
+                    dto.setUserDeptName(code.getCodeName());
+                });
+            }
+        });
+        return dto;
     }
 
     @Override

@@ -67,11 +67,17 @@ public class MonthlyReportController {
     @PutMapping("/{id}")
     public ResponseEntity<MonthlyReportDTO> updateMonthlyReport(
             @PathVariable Long id,
-            @Valid @RequestBody MonthlyReportUpdateDTO updateDTO) {
+            @Valid @RequestBody MonthlyReportUpdateDTO updateDTO,
+            jakarta.servlet.http.HttpSession session) {
         log.debug("PUT /api/document/monthly-report/{}", id);
 
-        // TODO: 실제로는 로그인한 사용자 IDX를 가져와야 함
-        Long updatedUserIdx = 1L;
+        // 세션에서 로그인한 사용자 IDX 가져오기
+        Long updatedUserIdx = (Long) session.getAttribute("userIdx");
+        if (updatedUserIdx == null) {
+            updatedUserIdx = 1L; // 기본값 (로그인 안된 경우)
+        }
+
+        log.debug("Updated by userIdx: {}", updatedUserIdx);
 
         MonthlyReportDTO updated = monthlyReportService.updateMonthlyReport(id, updateDTO, updatedUserIdx);
         return ResponseEntity.ok(updated);
