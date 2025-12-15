@@ -11,6 +11,8 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 
 import java.time.Instant;
+import java.util.List;
+import java.util.stream.Collectors;
 
 @Slf4j
 @Service
@@ -39,5 +41,21 @@ private final MeetingMinutesRepository meetingMinutesRepository;
         // 저장
         MeetingsMinutes saved = meetingMinutesRepository.save(meetingMinute);
      return meetingMinutesMapper.toDTO(saved);
+    }
+
+    @Override
+    public List<MeetingMinutesDTO> getAllMeetingMinutes(){
+        log.debug("getAllMeetingMinutes");
+        List<MeetingsMinutes> reports = meetingMinutesRepository.findAllOrderByCreatedAtDesc();
+        return reports.stream()
+                .map(meetingMinutesMapper::toDTO)
+                .collect(Collectors.toList());
+    }
+
+    @Override
+    public MeetingMinutesDTO getMeetingMinutesById(Long id){
+        log.debug("getMeetingMinutesById");
+        MeetingsMinutes report = meetingMinutesRepository.findById(id).orElse(null);
+        return meetingMinutesMapper.toDTO(report);
     }
 }

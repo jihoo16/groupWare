@@ -36,4 +36,25 @@ public class MeetingMinutesController {
         return ResponseEntity.status(HttpStatus.CREATED).body(created);
     }
 
+    /**
+     * 회의록 목록 조회
+     * GET
+     */
+    @GetMapping
+    public ResponseEntity<List<MeetingMinutesDTO>> getMeetingMinutes(){
+        log.debug("GET /api/document/meeting-minutes/");
+
+        List<MeetingMinutesDTO> reports = meetingMinutesService.getAllMeetingMinutes();
+        return ResponseEntity.ok(reports);
+    }
+    /**
+     * 회의록 목록 상세 조회
+     * GET
+     */
+    @GetMapping("/{id}")
+    public ResponseEntity<MeetingMinutesDTO> getMeetingMinutesById(@PathVariable Long id) {
+        log.debug("GET /api/document/meeting-minutes/{}",id);
+        MeetingMinutesDTO report = meetingMinutesService.getMeetingMinutesById(id);
+        return ResponseEntity.ok(report);
+    }
 }
