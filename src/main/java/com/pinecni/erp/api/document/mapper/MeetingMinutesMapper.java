@@ -2,6 +2,7 @@ package com.pinecni.erp.api.document.mapper;
 
 import com.pinecni.erp.api.document.dto.MeetingMinutesCreateDTO;
 import com.pinecni.erp.api.document.dto.MeetingMinutesDTO;
+import com.pinecni.erp.api.document.dto.MeetingMinutesUpdateDTO;
 import com.pinecni.erp.entity.MeetingsMinutes;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
@@ -68,6 +69,52 @@ public class MeetingMinutesMapper {
         report.setCreatedUserIdx(dto.getUserIdx());
         return report;
 
+    }
+
+    /**
+     * UpdateDTO로 Entity 업데이트
+     * 회의록 수정 시 사용
+     */
+    public void updateEntity(MeetingsMinutes entity, MeetingMinutesUpdateDTO dto, Long updatedUserIdx) {
+        if (entity == null || dto == null) {
+            return;
+        }
+
+        // null이 아닌 필드만 업데이트
+        if (dto.getProjectIdx() != null) {
+            entity.setProjectIdx(dto.getProjectIdx());
+        }
+        if (dto.getProjectName() != null) {
+            entity.setProjectName(dto.getProjectName());
+        }
+        if (dto.getMeetingTitle() != null) {
+            entity.setMeetingTitle(dto.getMeetingTitle());
+        }
+        if (dto.getMeetingDatetime() != null) {
+            entity.setMeetingDatetime(dto.getMeetingDatetime());
+        }
+        if (dto.getLocation() != null) {
+            entity.setLocation(dto.getLocation());
+        }
+        if (dto.getParticipants() != null) {
+            entity.setParticipants(dto.getParticipants());
+        }
+        if (dto.getPurpose() != null) {
+            entity.setPurpose(dto.getPurpose());
+        }
+        if (dto.getContent() != null) {
+            entity.setContent(dto.getContent());
+        }
+        if (dto.getDecisions() != null) {
+            entity.setDecisions(dto.getDecisions());
+        }
+        if (dto.getActionItems() != null) {
+            entity.setActionItems(dto.getActionItems());
+        }
+
+        // 수정 시간 및 수정자 업데이트
+        entity.setUpdatedAt(LocalDateTime.now());
+        entity.setUpdatedUserIdx(updatedUserIdx);
     }
 
 }

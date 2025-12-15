@@ -3,6 +3,7 @@ package com.pinecni.erp.api.document.controller;
 import com.pinecni.erp.api.auth.dto.LoginResponseDTO;
 import com.pinecni.erp.api.document.dto.MeetingMinutesCreateDTO;
 import com.pinecni.erp.api.document.dto.MeetingMinutesDTO;
+import com.pinecni.erp.api.document.dto.MeetingMinutesUpdateDTO;
 import com.pinecni.erp.api.document.service.MeetingMinutesService;
 import jakarta.servlet.http.HttpSession;
 import jakarta.validation.Valid;
@@ -57,4 +58,28 @@ public class MeetingMinutesController {
         MeetingMinutesDTO report = meetingMinutesService.getMeetingMinutesById(id);
         return ResponseEntity.ok(report);
     }
+
+    /**
+     * 회의록 수정
+     * PUT /api/document/meeting-minutes/{id}
+     */
+    @PutMapping("/{id}")
+    public ResponseEntity<MeetingMinutesDTO> updateMeetingMinutes(
+            @PathVariable Long id,
+            @Valid @RequestBody MeetingMinutesUpdateDTO updateDTO,
+            HttpSession session) {
+        log.debug("PUT /api/document/meeting-minutes/{}", id);
+
+        // 세션에서 로그인한 사용자 IDX 가져오기
+        Long updatedUserIdx = (Long) session.getAttribute("userIdx");
+        if (updatedUserIdx == null) {
+            updatedUserIdx = 1L; // 기본값 (로그인 안된 경우)
+        }
+
+        log.debug("Updated by userIdx: {}", updatedUserIdx);
+
+        MeetingMinutesDTO updated = meetingMinutesService.updateMeetingMinutes(id, updateDTO, updatedUserIdx);
+        return ResponseEntity.ok(updated);
+    }
+
 }

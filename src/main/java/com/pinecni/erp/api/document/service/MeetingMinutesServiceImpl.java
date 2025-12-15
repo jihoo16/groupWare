@@ -2,6 +2,7 @@ package com.pinecni.erp.api.document.service;
 
 import com.pinecni.erp.api.document.dto.MeetingMinutesCreateDTO;
 import com.pinecni.erp.api.document.dto.MeetingMinutesDTO;
+import com.pinecni.erp.api.document.dto.MeetingMinutesUpdateDTO;
 import com.pinecni.erp.api.document.mapper.MeetingMinutesMapper;
 import com.pinecni.erp.api.document.repository.MeetingMinutesRepository;
 import com.pinecni.erp.entity.MeetingsMinutes;
@@ -10,7 +11,7 @@ import org.springframework.transaction.annotation.Transactional;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 
-import java.time.Instant;
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -28,8 +29,8 @@ private final MeetingMinutesRepository meetingMinutesRepository;
 
         // DTO → Entity 변환
         MeetingsMinutes meetingMinute = meetingMinutesMapper.toEntity(createDTO);
-        // 생성 시간 설정 (Mapper에서 이미 설정되지만 명시적으로 다시 설정)
-        Instant now = Instant.now();
+        // 생성 시간 설정
+        LocalDateTime now = LocalDateTime.now();
         meetingMinute.setCreatedAt(now);
         meetingMinute.setUpdatedAt(now);
 
@@ -54,8 +55,31 @@ private final MeetingMinutesRepository meetingMinutesRepository;
 
     @Override
     public MeetingMinutesDTO getMeetingMinutesById(Long id){
-        log.debug("getMeetingMinutesById");
-        MeetingsMinutes report = meetingMinutesRepository.findById(id).orElse(null);
+        log.debug("getMeetingMinutesById() called - id: {}", id);
+        MeetingsMinutes report = meetingMinutesRepository.findById(id)
+                .orElseThrow(() -> new RuntimeException("회의록을 찾을 수 없습니다. ID: " + id));
+        log.debug("MeetingsMinutes found - id: {}", report.getId());
         return meetingMinutesMapper.toDTO(report);
     }
+
+    @Override
+    @Transactional
+    public MeetingMinutesDTO updateMeetingMinutes(Long id, MeetingMinutesUpdateDTO updateDTO, Long updatedUserIdx) {
+        log.debug("updateMeetingMinutes() called - id: {}, updatedUserIdx: {}", id, updatedUserIdx);
+
+        // 기존 Entity 조회
+        MeetingsMinutes meeting = meetingMinutesRepository.findById(id)
+                .orElseThrow(() -> new RuntimeException("회의록을 찾을 수 없습니다. ID: " + id));
+
+        // UpdateDTO로 Entity 업데이트
+        meetingMinutesMapper.updateEntity(meeting, updateDTO, updatedUserIdx);
+
+        // 저장 (dirty checking에 의해 자동 업데이트)
+        MeetingsMinutes updated = meetingMinutesRepository.save(meeting);
+        log.debug("MeetingsMinutes updated successfully - id: {}", updated.getId());
+
+        // Entity → DTO 변환
+        return meetingMinutesMapper.toDTO(updated);
+    }
+
 }

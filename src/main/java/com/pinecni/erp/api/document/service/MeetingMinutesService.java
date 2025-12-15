@@ -2,6 +2,7 @@ package com.pinecni.erp.api.document.service;
 
 import com.pinecni.erp.api.document.dto.MeetingMinutesCreateDTO;
 import com.pinecni.erp.api.document.dto.MeetingMinutesDTO;
+import com.pinecni.erp.api.document.dto.MeetingMinutesUpdateDTO;
 
 import java.util.List;
 
@@ -19,4 +20,8 @@ public interface MeetingMinutesService {
      *  회의록 상세 조회
      */
     MeetingMinutesDTO getMeetingMinutesById(Long meetingId);
+    /**
+     *  회의록 수정
+     */
+    MeetingMinutesDTO updateMeetingMinutes(Long id, MeetingMinutesUpdateDTO updateDTO, Long updatedUserIdx);
 }
