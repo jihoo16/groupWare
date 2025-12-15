@@ -301,8 +301,10 @@ document.addEventListener('DOMContentLoaded', function() {
         // 회의명
         document.getElementById('meetingTitle').value = meeting.meetingTitle || '';
 
-        // 작성자 (현재는 하드코딩, 추후 API에서 가져와야 함)
-        document.getElementById('userName').value = '홍길동';
+        // 작성자 (이름과 부서 함께 표시)
+        const userInfo = meeting.userName || '-';
+        const userDept = meeting.userDeptName || '';
+        document.getElementById('userName').value = userDept ? `${userInfo} (${userDept})` : userInfo;
 
         // 일시
         if (meeting.meetingDatetime) {

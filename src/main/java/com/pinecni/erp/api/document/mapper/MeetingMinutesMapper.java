@@ -5,10 +5,12 @@ import com.pinecni.erp.api.document.dto.MeetingMinutesDTO;
 import com.pinecni.erp.api.document.dto.MeetingMinutesUpdateDTO;
 import com.pinecni.erp.entity.MeetingsMinutes;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
 
-import java.time.Instant;
+import java.time.LocalDateTime;
 
+@Slf4j
 @Component
 @RequiredArgsConstructor
 public class MeetingMinutesMapper {
@@ -63,7 +65,7 @@ public class MeetingMinutesMapper {
                 .actionItems(dto.getActionItems())
                 .build();
 
-        Instant now = Instant.now();
+        LocalDateTime now = LocalDateTime.now();
         report.setCreatedAt(now);
         report.setUpdatedAt(now);
         report.setCreatedUserIdx(dto.getUserIdx());

@@ -54,7 +54,21 @@ public class MeetingMinutesServiceImpl implements MeetingMinutesService {
         log.debug("getAllMeetingMinutes");
         List<MeetingsMinutes> reports = meetingMinutesRepository.findAllOrderByCreatedAtDesc();
         return reports.stream()
-                .map(meetingMinutesMapper::toDTO)
+                .map(report -> {
+                    MeetingMinutesDTO dto = meetingMinutesMapper.toDTO(report);
+                    // User 정보 조회 및 설정
+                    userRepository.findById(report.getUserIdx()).ifPresent(user -> {
+                        dto.setUserName(user.getEmpName());
+                        dto.setUserDept(user.getEmpDept());
+                        // 부서 이름 조회
+                        if (user.getEmpDept() != null) {
+                            codeRepository.findByCode(user.getEmpDept()).ifPresent(code -> {
+                                dto.setUserDeptName(code.getCodeName());
+                            });
+                        }
+                    });
+                    return dto;
+                })
                 .collect(Collectors.toList());
     }
 
@@ -64,7 +78,21 @@ public class MeetingMinutesServiceImpl implements MeetingMinutesService {
         MeetingsMinutes report = meetingMinutesRepository.findById(id)
                 .orElseThrow(() -> new RuntimeException("회의록을 찾을 수 없습니다. ID: " + id));
         log.debug("MeetingsMinutes found - id: {}", report.getId());
-        return meetingMinutesMapper.toDTO(report);
+
+        MeetingMinutesDTO dto = meetingMinutesMapper.toDTO(report);
+        // User 정보 조회 및 설정
+        userRepository.findById(report.getUserIdx()).ifPresent(user -> {
+            dto.setUserName(user.getEmpName());
+            dto.setUserDept(user.getEmpDept());
+            // 부서 이름 조회
+            if (user.getEmpDept() != null) {
+                codeRepository.findByCode(user.getEmpDept()).ifPresent(code -> {
+                    dto.setUserDeptName(code.getCodeName());
+                });
+            }
+        });
+
+        return dto;
     }
 
     @Override

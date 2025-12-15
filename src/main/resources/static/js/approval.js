@@ -394,8 +394,8 @@ document.addEventListener('DOMContentLoaded', function() {
                     <div class="title-wrap">${report.projectName ? '[' + report.projectName + '] ' : ''}${truncateText(report.mainTasks, 50)}</div>
                     <div class="desc-wrap">${descText}</div>
                 </td>
-                <td>홍길동</td>
-                <td>개발팀</td>
+                <td>${report.userName || '-'}</td>
+                <td>${report.userDeptName || '-'}</td>
                 <td>${formattedDate}</td>
                 <td>
                 <div class="table-actions">
@@ -517,8 +517,8 @@ document.addEventListener('DOMContentLoaded', function() {
                     <div class="title-wrap">${meeting.projectName ? '[' + meeting.projectName + '] ' : ''}${meeting.meetingTitle || '제목 없음'}</div>
                     <div class="desc-wrap">${descText}</div>
                 </td>
-                <td>홍길동</td>
-                <td>개발팀</td>
+                <td>${meeting.userName || '-'}</td>
+                <td>${meeting.userDeptName || '-'}</td>
                 <td>${formattedDate}</td>
                 <td>
                 <div class="table-actions">

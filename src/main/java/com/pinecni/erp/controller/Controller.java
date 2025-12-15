@@ -160,6 +160,16 @@ public class Controller {
         return "approval_meeting";
     }
 
+    @GetMapping("/approval/meeting/detail")
+    public String approvalMeetingDetail(Model model, HttpSession session) {
+        // 세션에서 사용자 정보 가져오기
+        Long userIdxLong = (Long) session.getAttribute("userIdx");
+        String userIdx = userIdxLong != null ? userIdxLong.toString() : "";
+
+        model.addAttribute("userIdx", userIdx);
+        return "approval_meeting_detail";
+    }
+
     @GetMapping("/approval/general")
     public String approvalGeneral() {
         return "approval_general";
