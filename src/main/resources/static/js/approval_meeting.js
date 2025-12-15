@@ -93,6 +93,7 @@ document.addEventListener('DOMContentLoaded', function() {
         const content = document.getElementById('content').value;
         const decisions = document.getElementById('decisions').value;
         const actionItems = document.getElementById('actionItems').value;
+        const userIdx = document.getElementById('userIdx').value;
 
         // 유효성 검사
         if (!meetingTitle) {
@@ -105,9 +106,9 @@ document.addEventListener('DOMContentLoaded', function() {
             return;
         }
 
-        // 요청 데이터 구성
+        // 요청 데이터 구성 (userIdx는 서버에서 세션으로 설정)
         const requestData = {
-            userIdx: 1, // TODO: 실제 로그인 사용자 IDX
+            userIdx: userIdx,
             projectIdx: projectIdx,
             projectName: projectName,
             meetingTitle: meetingTitle,

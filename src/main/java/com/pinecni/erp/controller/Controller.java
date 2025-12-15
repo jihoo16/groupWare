@@ -1,7 +1,11 @@
 package com.pinecni.erp.controller;
 
+import jakarta.servlet.http.HttpSession;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.GetMapping;
 
+@Slf4j
 @org.springframework.stereotype.Controller
 public class Controller {
 
@@ -145,7 +149,14 @@ public class Controller {
     }
 
     @GetMapping("/approval/meeting")
-    public String approvalMeeting() {
+    public String approvalMeeting(Model model, HttpSession session) {
+        // 세션에서 사용자 이름 가져오기
+        String empName = (String) session.getAttribute("empName");
+        Long userIdxLong = (Long) session.getAttribute("userIdx");
+        String userIdx = userIdxLong != null ? userIdxLong.toString() : "";
+        log.debug(userIdx);
+        model.addAttribute("userName", empName != null ? empName : "");
+        model.addAttribute("userIdx", userIdx);
         return "approval_meeting";
     }
 
