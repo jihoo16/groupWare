@@ -88,10 +88,10 @@ document.addEventListener('DOMContentLoaded', function() {
         document.getElementById('projectName').value = report.projectName || '선택 안함';
 
         // 보고자
-        document.getElementById('userName').value = '홍길동'; // TODO: 실제 사용자 이름
+        document.getElementById('userName').value = report.userName || '-';
 
         // 부서
-        document.getElementById('userDept').value = '개발팀'; // TODO: 실제 부서명
+        document.getElementById('userDept').value = report.userDeptName || '-';
 
         // 보고 월
         document.getElementById('reportMonth').value = report.reportMonth || '';

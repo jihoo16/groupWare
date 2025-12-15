@@ -7,7 +7,7 @@ import com.pinecni.erp.entity.MonthlyReport;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 
-import java.time.Instant;
+import java.time.LocalDateTime;
 
 /**
  * MonthlyReport Entity <-> DTO 변환 Mapper
@@ -65,7 +65,7 @@ public class MonthlyReportMapper {
                 .build();
 
         // 타임스탬프는 Service에서 설정
-        Instant now = Instant.now();
+        LocalDateTime now = LocalDateTime.now();
         report.setCreatedAt(now);
         report.setUpdatedAt(now);
         report.setCreatedUserIdx(dto.getUserIdx());
@@ -106,7 +106,7 @@ public class MonthlyReportMapper {
         }
 
         // 수정 정보 업데이트
-        entity.setUpdatedAt(Instant.now());
+        entity.setUpdatedAt(LocalDateTime.now());
         entity.setUpdatedUserIdx(updatedUserIdx);
     }
 }
