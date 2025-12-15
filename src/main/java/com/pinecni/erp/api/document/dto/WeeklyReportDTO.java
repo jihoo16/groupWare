@@ -5,7 +5,7 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
-import java.time.Instant;
+import java.time.LocalDateTime;
 
 /**
  * 주간업무보고 조회 응답 DTO
@@ -33,9 +33,14 @@ public class WeeklyReportDTO {
     private String userName;
 
     /**
-     * 보고자 부서
+     * 보고자 부서 코드
      */
     private String userDept;
+
+    /**
+     * 보고자 부서 이름
+     */
+    private String userDeptName;
 
     /**
      * 프로젝트 IDX
@@ -80,12 +85,12 @@ public class WeeklyReportDTO {
     /**
      * 생성일시
      */
-    private Instant createdAt;
+    private LocalDateTime createdAt;
 
     /**
      * 수정일시
      */
-    private Instant updatedAt;
+    private LocalDateTime updatedAt;
 
     /**
      * 생성자 IDX
