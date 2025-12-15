@@ -41,6 +41,7 @@ public class AuthController {
         // 세션에 사용자 정보 저장
         session.setAttribute("user", response);
         session.setAttribute("empId", response.getEmpId());
+        session.setAttribute("userIdx", response.getIdx());
         session.setAttribute("empName", response.getEmpName());
         session.setAttribute("isAdmin", response.getIsAdmin());
         session.setMaxInactiveInterval(3600 * 8); // 8시간

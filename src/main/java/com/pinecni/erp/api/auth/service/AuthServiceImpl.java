@@ -91,7 +91,7 @@ public class AuthServiceImpl implements AuthService {
                     .ifPresent(code -> response.setEmpPositionName(code.getCodeName()));
         }
 
-        log.info("Login successful - empId: {}, empName: {}", user.getEmpId(), user.getEmpName());
+        log.info("Login successful - userIdx : {}, empId: {}, empName: {}", user.getIdx(), user.getEmpId(), user.getEmpName());
         return response;
     }
 }
