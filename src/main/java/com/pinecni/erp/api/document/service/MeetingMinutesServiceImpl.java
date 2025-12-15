@@ -5,7 +5,10 @@ import com.pinecni.erp.api.document.dto.MeetingMinutesDTO;
 import com.pinecni.erp.api.document.dto.MeetingMinutesUpdateDTO;
 import com.pinecni.erp.api.document.mapper.MeetingMinutesMapper;
 import com.pinecni.erp.api.document.repository.MeetingMinutesRepository;
+import com.pinecni.erp.api.user.repository.UserRepository;
+import com.pinecni.erp.api.code.repository.CodeRepository;
 import com.pinecni.erp.entity.MeetingsMinutes;
+import com.pinecni.erp.entity.User;
 import lombok.RequiredArgsConstructor;
 import org.springframework.transaction.annotation.Transactional;
 import lombok.extern.slf4j.Slf4j;
@@ -20,8 +23,10 @@ import java.util.stream.Collectors;
 @RequiredArgsConstructor
 @Transactional(readOnly = true)
 public class MeetingMinutesServiceImpl implements MeetingMinutesService {
-private final MeetingMinutesRepository meetingMinutesRepository;
+    private final MeetingMinutesRepository meetingMinutesRepository;
     private final MeetingMinutesMapper meetingMinutesMapper;
+    private final UserRepository userRepository;
+    private final CodeRepository codeRepository;
     @Override
     @Transactional
     public MeetingMinutesDTO createMeetingMinute(MeetingMinutesCreateDTO createDTO) {
@@ -82,4 +87,17 @@ private final MeetingMinutesRepository meetingMinutesRepository;
         return meetingMinutesMapper.toDTO(updated);
     }
 
+    @Override
+    @Transactional
+    public void deleteMeetingMinutes(Long id) {
+        log.debug("deleteMeetingMinutes() called - id: {}", id);
+
+        // 존재 여부 확인
+        if (!meetingMinutesRepository.existsById(id)) {
+            throw new RuntimeException("회의록을 찾을 수 없습니다. ID: " + id);
+        }
+
+        meetingMinutesRepository.deleteById(id);
+        log.debug("MeetingsMinutes deleted successfully - id: {}", id);
+    }
 }

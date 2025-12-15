@@ -82,4 +82,15 @@ public class MeetingMinutesController {
         return ResponseEntity.ok(updated);
     }
 
+    /**
+     * 회의록 삭제
+     * DELETE /api/document/meeting-minutes/{id}
+     */
+    @DeleteMapping("/{id}")
+    public ResponseEntity<Void> deleteMeetingMinutes(@PathVariable Long id) {
+        log.debug("DELETE /api/document/meeting-minutes/{}", id);
+
+        meetingMinutesService.deleteMeetingMinutes(id);
+        return ResponseEntity.noContent().build();
+    }
 }

@@ -24,4 +24,8 @@ public interface MeetingMinutesService {
      *  회의록 수정
      */
     MeetingMinutesDTO updateMeetingMinutes(Long id, MeetingMinutesUpdateDTO updateDTO, Long updatedUserIdx);
+    /**
+     *  회의록 삭제
+     */
+    void deleteMeetingMinutes(Long id);
 }
