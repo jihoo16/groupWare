@@ -3,6 +3,7 @@ document.addEventListener('DOMContentLoaded', function() {
     // 전역 변수
     let selectedFiles = [];
     let projects = []; // 프로젝트 목록
+    let currentUser = null; // 현재 로그인한 사용자 정보
 
     // DOM 요소
     const fileInput = document.getElementById('fileInput');
@@ -105,6 +106,45 @@ document.addEventListener('DOMContentLoaded', function() {
 
     // 페이지 로드 시 프로젝트 목록 가져오기
     loadProjects();
+
+    // ============================================
+    // 현재 사용자 정보 로드
+    // ============================================
+    async function loadCurrentUser() {
+        try {
+            const response = await fetch('/api/auth/me');
+            if (response.ok) {
+                currentUser = await response.json();
+                console.log('현재 사용자 정보:', currentUser);
+
+                // 폼에 사용자 정보 채우기
+                const formTable = document.querySelector('.form-table');
+                if (formTable) {
+                    const inputs = formTable.querySelectorAll('input');
+                    // 보고자 (index 1)
+                    if (inputs[1]) {
+                        inputs[1].value = currentUser.empName || '-';
+                    }
+                    // 부서 (index 2)
+                    if (inputs[2]) {
+                        inputs[2].value = currentUser.empDeptName || '-';
+                    }
+                }
+            } else {
+                console.error('사용자 정보 로드 실패');
+                // 로그인되지 않은 경우 로그인 페이지로 리다이렉트
+                if (response.status === 401) {
+                    alert('로그인이 필요합니다.');
+                    window.location.href = '/login';
+                }
+            }
+        } catch (error) {
+            console.error('사용자 정보 로드 오류:', error);
+        }
+    }
+
+    // 페이지 로드 시 사용자 정보 가져오기
+    loadCurrentUser();
 
     // ============================================
     // 파일 업로드 기능
@@ -248,9 +288,16 @@ document.addEventListener('DOMContentLoaded', function() {
                         ? projectSelect.options[projectSelect.selectedIndex].dataset.projectName
                         : null;
 
+                    // 사용자 정보 확인
+                    if (!currentUser || !currentUser.idx) {
+                        alert('사용자 정보를 불러올 수 없습니다. 다시 로그인해주세요.');
+                        window.location.href = '/login';
+                        return;
+                    }
+
                     // API 요청 데이터 구성
                     const requestData = {
-                        userIdx: 1, // TODO: 실제 로그인 사용자 ID로 변경 필요
+                        userIdx: currentUser.idx,
                         projectIdx: selectedProjectIdx,
                         projectName: selectedProjectName,
                         reportPeriod: reportPeriod,
