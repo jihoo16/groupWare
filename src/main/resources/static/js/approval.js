@@ -334,7 +334,6 @@ document.addEventListener('DOMContentLoaded', function() {
                 weeklyReports = await response.json();
                 console.log('주간보고서 로드 성공:', weeklyReports.length + '건');
                 console.log('첫 번째 데이터:', weeklyReports[0]);
-                renderWeeklyReports();
             } else {
                 const errorText = await response.text();
                 console.error('주간보고서 로드 실패 - 상태:', response.status);
@@ -455,7 +454,6 @@ document.addEventListener('DOMContentLoaded', function() {
                 meetingMinutes = await response.json();
                 console.log('회의록 로드 성공:', meetingMinutes.length + '건');
                 console.log('첫 번째 데이터:', meetingMinutes[0]);
-                renderMeetingMinutes();
             } else {
                 const errorText = await response.text();
                 console.error('회의록 로드 실패 - 상태:', response.status);
@@ -535,10 +533,115 @@ document.addEventListener('DOMContentLoaded', function() {
         filterDocuments();
     }
 
+    // 모든 문서를 합쳐서 렌더링 (주간/월간/회의록)
+    function renderAllDocuments() {
+        const tbody = documentList.querySelector('tbody');
+        if (!tbody) return;
+
+        // 기존 문서 행 제거
+        const existingRows = tbody.querySelectorAll('.doc-row[data-category="report"], .doc-row[data-category="meeting"]');
+        existingRows.forEach(row => row.remove());
+
+        // 모든 문서를 하나의 배열로 합치기
+        const allDocuments = [
+            ...weeklyReports.map(report => ({ ...report, docType: 'weekly', category: 'report' })),
+            ...monthlyReports.map(report => ({ ...report, docType: 'monthly', category: 'report' })),
+            ...meetingMinutes.map(meeting => ({ ...meeting, docType: 'meeting', category: 'meeting' }))
+        ];
+
+        // 생성일 기준 최신순 정렬
+        allDocuments.sort((a, b) => {
+            const dateA = new Date(a.createdAt);
+            const dateB = new Date(b.createdAt);
+            return dateB - dateA; // 내림차순 (최신순)
+        });
+
+        // 정렬된 문서를 테이블에 렌더링
+        allDocuments.forEach(doc => {
+            const tr = document.createElement('tr');
+            tr.className = 'doc-row';
+            tr.setAttribute('data-category', doc.category);
+
+            const createdDate = new Date(doc.createdAt);
+            const formattedDate = `${createdDate.getFullYear()}.${String(createdDate.getMonth() + 1).padStart(2, '0')}.${String(createdDate.getDate()).padStart(2, '0')} ${String(createdDate.getHours()).padStart(2, '0')}:${String(createdDate.getMinutes()).padStart(2, '0')}`;
+
+            if (doc.docType === 'weekly' || doc.docType === 'monthly') {
+                // 주간/월간 보고서
+                const isWeekly = doc.docType === 'weekly';
+                const docTypeIcon = isWeekly ? 'fa-calendar-week' : 'fa-calendar-alt';
+                const docTypeName = isWeekly ? '주간업무보고' : '월간업무보고';
+                const descText = isWeekly ? (doc.reportPeriod || '제목 없음') : (doc.reportMonth || '제목 없음');
+
+                tr.innerHTML = `
+                    <td>
+                        <span class="doc-type">
+                            <i class="fas ${docTypeIcon}"></i>
+                            ${docTypeName}
+                        </span>
+                    </td>
+                    <td class="doc-title-cell">
+                        <div class="title-wrap">${doc.projectName ? '[' + doc.projectName + '] ' : ''}${truncateText(doc.mainTasks, 50)}</div>
+                        <div class="desc-wrap">${descText}</div>
+                    </td>
+                    <td>${doc.userName || '-'}</td>
+                    <td>${doc.userDeptName || '-'}</td>
+                    <td>${formattedDate}</td>
+                    <td>
+                    <div class="table-actions">
+                        <button class="btn-icon btn-view" data-id="${doc.id}" data-type="${doc.docType}">
+                            <i class="fas fa-eye"></i>
+                        </button>
+                        </div>
+                    </td>
+                `;
+            } else if (doc.docType === 'meeting') {
+                // 회의록
+                const meetingDate = new Date(doc.meetingDatetime);
+                const meetingDateStr = `${meetingDate.getFullYear()}.${String(meetingDate.getMonth() + 1).padStart(2, '0')}.${String(meetingDate.getDate()).padStart(2, '0')}`;
+
+                let descText = meetingDateStr;
+                if (doc.location) {
+                    descText += ` | ${doc.location}`;
+                }
+                if (doc.participants) {
+                    const participantCount = doc.participants.split(',').length;
+                    descText += ` | 참석 ${participantCount}명`;
+                }
+
+                tr.innerHTML = `
+                    <td>
+                        <span class="doc-type">
+                            <i class="fas fa-users"></i>
+                            회의록
+                        </span>
+                    </td>
+                    <td class="doc-title-cell">
+                        <div class="title-wrap">${doc.projectName ? '[' + doc.projectName + '] ' : ''}${doc.meetingTitle || '제목 없음'}</div>
+                        <div class="desc-wrap">${descText}</div>
+                    </td>
+                    <td>${doc.userName || '-'}</td>
+                    <td>${doc.userDeptName || '-'}</td>
+                    <td>${formattedDate}</td>
+                    <td>
+                    <div class="table-actions">
+                        <button class="btn-icon btn-view" data-id="${doc.id}">
+                            <i class="fas fa-eye"></i>
+                        </button>
+                        </div>
+                    </td>
+                `;
+            }
+
+            tbody.appendChild(tr);
+        });
+
+        filterDocuments();
+    }
+
     // 페이지 로드 시 주간/월간보고서 및 회의록 목록 가져오기
     async function loadAllReports() {
         await Promise.all([loadWeeklyReports(), loadMonthlyReports(), loadMeetingMinutes()]);
-        renderWeeklyReports(); // renderWeeklyReports 안에서 월간보고서도 렌더링됨
+        renderAllDocuments(); // 모든 문서를 합쳐서 렌더링
     }
 
     loadAllReports();
