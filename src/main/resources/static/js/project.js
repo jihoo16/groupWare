@@ -500,9 +500,12 @@ document.addEventListener('DOMContentLoaded', function() {
                 ? `<span class="achievement-badge ${getAchievementClass(report.achievement)}">${report.achievement}%</span>`
                 : '-';
 
+            // No는 역순으로 표시 (맨 아래가 1)
+            const rowNumber = reports.length - index;
+
             return `
-                <tr>
-                    <td class="text-center">${index + 1}</td>
+                <tr style="cursor: pointer;" onclick="viewWeeklyReportDetail(${report.id})">
+                    <td class="text-center">${rowNumber}</td>
                     <td class="text-center"><span class="status-badge ${report.reportType === '주간' ? 'status-in-progress' : 'status-completed'}">${report.reportType}</span></td>
                     <td>${report.period || '-'}</td>
                     <td>${report.content}</td>
@@ -511,6 +514,11 @@ document.addEventListener('DOMContentLoaded', function() {
             `;
         }).join('');
     }
+
+    // 주간보고서 상세 페이지로 이동 (전역 함수)
+    window.viewWeeklyReportDetail = function(reportId) {
+        window.location.href = `/approval/weekly-report/detail?id=${reportId}`;
+    };
 
     // 달성률에 따른 클래스 반환
     function getAchievementClass(rate) {
