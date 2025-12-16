@@ -165,4 +165,31 @@ public class WeeklyReportServiceImpl implements WeeklyReportService {
         log.debug("WeeklyReport deleted successfully - id: {}", id);
     }
 
+    @Override
+    public List<WeeklyReportDTO> getWeeklyReportsByProjectIdx(Long projectIdx) {
+        log.debug("getWeeklyReportsByProjectIdx() called - projectIdx: {}", projectIdx);
+
+        List<WeeklyReport> reports = weeklyReportRepository.findByProjectIdx(projectIdx);
+        log.debug("Found {} weekly reports for project {}", reports.size(), projectIdx);
+
+        // Entity List → DTO List 변환
+        return reports.stream()
+                .map(report -> {
+                    WeeklyReportDTO dto = weeklyReportMapper.toDTO(report);
+                    // User 정보 조회 및 설정
+                    userRepository.findById(report.getUserIdx()).ifPresent(user -> {
+                        dto.setUserName(user.getEmpName());
+                        dto.setUserDept(user.getEmpDept());
+                        // 부서 이름 조회
+                        if (user.getEmpDept() != null) {
+                            codeRepository.findByCode(user.getEmpDept()).ifPresent(code -> {
+                                dto.setUserDeptName(code.getCodeName());
+                            });
+                        }
+                    });
+                    return dto;
+                })
+                .collect(Collectors.toList());
+    }
+
 }

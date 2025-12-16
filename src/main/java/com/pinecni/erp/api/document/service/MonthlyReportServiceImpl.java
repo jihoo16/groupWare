@@ -165,4 +165,31 @@ public class MonthlyReportServiceImpl implements MonthlyReportService {
         log.debug("MonthlyReport deleted successfully - id: {}", id);
     }
 
+    @Override
+    public List<MonthlyReportDTO> getMonthlyReportsByProjectIdx(Long projectIdx) {
+        log.debug("getMonthlyReportsByProjectIdx() called - projectIdx: {}", projectIdx);
+
+        List<MonthlyReport> reports = monthlyReportRepository.findByProjectIdx(projectIdx);
+        log.debug("Found {} monthly reports for project {}", reports.size(), projectIdx);
+
+        // Entity List → DTO List 변환
+        return reports.stream()
+                .map(report -> {
+                    MonthlyReportDTO dto = monthlyReportMapper.toDTO(report);
+                    // User 정보 조회 및 설정
+                    userRepository.findById(report.getUserIdx()).ifPresent(user -> {
+                        dto.setUserName(user.getEmpName());
+                        dto.setUserDept(user.getEmpDept());
+                        // 부서 이름 조회
+                        if (user.getEmpDept() != null) {
+                            codeRepository.findByCode(user.getEmpDept()).ifPresent(code -> {
+                                dto.setUserDeptName(code.getCodeName());
+                            });
+                        }
+                    });
+                    return dto;
+                })
+                .collect(Collectors.toList());
+    }
+
 }

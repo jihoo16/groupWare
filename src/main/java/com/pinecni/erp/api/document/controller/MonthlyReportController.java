@@ -95,4 +95,16 @@ public class MonthlyReportController {
         return ResponseEntity.noContent().build();
     }
 
+    /**
+     * 프로젝트별 월간업무보고 목록 조회
+     * GET /api/document/monthly-report/project/{projectIdx}
+     */
+    @GetMapping("/project/{projectIdx}")
+    public ResponseEntity<List<MonthlyReportDTO>> getMonthlyReportsByProject(@PathVariable Long projectIdx) {
+        log.debug("GET /api/document/monthly-report/project/{}", projectIdx);
+
+        List<MonthlyReportDTO> reports = monthlyReportService.getMonthlyReportsByProjectIdx(projectIdx);
+        return ResponseEntity.ok(reports);
+    }
+
 }

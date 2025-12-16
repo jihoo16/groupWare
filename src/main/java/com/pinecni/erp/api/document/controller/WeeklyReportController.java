@@ -95,4 +95,16 @@ public class WeeklyReportController {
         return ResponseEntity.noContent().build();
     }
 
+    /**
+     * 프로젝트별 주간업무보고 목록 조회
+     * GET /api/document/weekly-report/project/{projectIdx}
+     */
+    @GetMapping("/project/{projectIdx}")
+    public ResponseEntity<List<WeeklyReportDTO>> getWeeklyReportsByProject(@PathVariable Long projectIdx) {
+        log.debug("GET /api/document/weekly-report/project/{}", projectIdx);
+
+        List<WeeklyReportDTO> reports = weeklyReportService.getWeeklyReportsByProjectIdx(projectIdx);
+        return ResponseEntity.ok(reports);
+    }
+
 }
