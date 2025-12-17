@@ -4,6 +4,10 @@ document.addEventListener('DOMContentLoaded', function() {
     let selectedApprovers = [];
     let selectedFiles = [];
     let selectedEmployee = null;
+    let currentUser = null; // 현재 로그인한 사용자
+    let projects = []; // 프로젝트 목록
+    let projectMembers = []; // 선택된 프로젝트의 팀원 목록
+    let currentAttendees = []; // 현재 추가된 참석자 목록 (전역으로 이동)
 
     // DOM 요소
     const templateTreeHeaders = document.querySelectorAll('.tree-node-header[data-template]');
@@ -31,6 +35,67 @@ document.addEventListener('DOMContentLoaded', function() {
         { id: 7, name: '권민재', position: '상무', dept: '영업본부' },
         { id: 8, name: '유재석', position: '부장', dept: '영업본부 영업1팀' }
     ];
+
+    // 현재 사용자 정보 로드
+    async function loadCurrentUser() {
+        try {
+            const response = await fetch('/api/auth/me');
+            if (response.ok) {
+                currentUser = await response.json();
+                console.log('현재 사용자 정보:', currentUser);
+            } else {
+                console.error('사용자 정보 로드 실패');
+            }
+        } catch (error) {
+            console.error('사용자 정보 로드 오류:', error);
+        }
+    }
+
+    // 프로젝트 목록 로드
+    async function loadProjects() {
+        try {
+            const response = await fetch('/api/projects');
+            if (response.ok) {
+                projects = await response.json();
+                console.log('프로젝트 목록 로드 성공:', projects.length + '건');
+            } else {
+                console.error('프로젝트 목록 로드 실패');
+            }
+        } catch (error) {
+            console.error('프로젝트 목록 로드 오류:', error);
+        }
+    }
+
+    // 프로젝트 팀원 목록 로드
+    async function loadProjectMembers(projectIdx) {
+        if (!projectIdx) {
+            projectMembers = [];
+            return;
+        }
+
+        try {
+            const response = await fetch(`/api/projects/${projectIdx}`);
+            if (response.ok) {
+                const project = await response.json();
+                projectMembers = project.projectMembers || [];
+                console.log('프로젝트 팀원 로드 성공:', projectMembers.length + '명');
+                console.log('팀원 데이터:', projectMembers);
+            } else {
+                console.error('프로젝트 팀원 로드 실패');
+                projectMembers = [];
+            }
+        } catch (error) {
+            console.error('프로젝트 팀원 로드 오류:', error);
+            projectMembers = [];
+        }
+    }
+
+    // 페이지 로드 시 데이터 로드
+    Promise.all([loadCurrentUser(), loadProjects()]).then(() => {
+        console.log('초기 데이터 로드 완료');
+        // 데이터 로드 후 템플릿 초기화
+        loadTemplate('receipt-meeting');
+    });
 
     // ============================================
     // 템플릿 사이드바 접기/펼치기 기능
@@ -117,6 +182,7 @@ document.addEventListener('DOMContentLoaded', function() {
     // 회의록 자동 채우기 기능
     function setupReceiptAutoFill() {
         const commonProject = document.getElementById('common_project');
+        const commonAuthor = document.getElementById('common_author'); // 작성자 필드
         const commonDate = document.getElementById('common_date');
         const commonStartTime = document.getElementById('common_start_time');
         const commonEndTime = document.getElementById('common_end_time');
@@ -125,11 +191,66 @@ document.addEventListener('DOMContentLoaded', function() {
         const attendeeArea = document.getElementById('attendeeArea');
         const attendeeList = document.getElementById('attendeeList');
 
-        let attendees = [];
+        // 로컬 변수 대신 전역 currentAttendees 사용
+
+        // 프로젝트 선택 드롭다운 설정
+        if (commonProject && projects.length > 0) {
+            // 기존 input을 select로 변경
+            const selectElement = document.createElement('select');
+            selectElement.id = 'common_project';
+            selectElement.style.width = '100%';
+            selectElement.style.padding = '8px';
+            selectElement.style.border = '1px solid #ddd';
+            selectElement.style.borderRadius = '4px';
+
+            // 기본 옵션
+            const defaultOption = document.createElement('option');
+            defaultOption.value = '';
+            defaultOption.textContent = '프로젝트 선택';
+            selectElement.appendChild(defaultOption);
+
+            // 프로젝트 목록 추가
+            projects.forEach(project => {
+                const option = document.createElement('option');
+                option.value = project.idx;
+                option.textContent = project.projectName;
+                option.dataset.projectName = project.projectName;
+                selectElement.appendChild(option);
+            });
+
+            // 프로젝트 선택 시 팀원 로드
+            selectElement.addEventListener('change', async function() {
+                const projectIdx = this.value;
+                const projectName = this.options[this.selectedIndex].dataset.projectName || '';
+
+                // 자동 채우기
+                document.querySelectorAll('.auto-project').forEach(field => {
+                    field.value = projectName;
+                });
+
+                // 프로젝트 팀원 로드
+                if (projectIdx) {
+                    await loadProjectMembers(projectIdx);
+                } else {
+                    projectMembers = [];
+                }
+            });
+
+            // input을 select로 교체
+            if (commonProject.parentNode) {
+                commonProject.parentNode.replaceChild(selectElement, commonProject);
+            }
+        }
+
+        // 작성자 정보 자동 입력 (수정 가능하도록)
+        if (commonAuthor && currentUser) {
+            commonAuthor.value = currentUser.empName || '';
+            commonAuthor.removeAttribute('readonly'); // 수정 가능하게 설정
+        }
 
         // 회의록 참석자 정보 업데이트
         function updateMeetingMinutesAttendees() {
-            const internalAttendees = attendees.filter(a => a.name && a.name.trim());
+            const internalAttendees = currentAttendees.filter(a => a.name && a.name.trim());
 
             let allAttendeesText = '';
 
@@ -182,7 +303,7 @@ document.addEventListener('DOMContentLoaded', function() {
             existingRows.forEach(row => row.remove());
 
             const grouped = {};
-            attendees.forEach(attendee => {
+            currentAttendees.forEach(attendee => {
                 const key = `내부_${attendee.dept}`;
                 if (!grouped[key]) {
                     grouped[key] = {
@@ -259,7 +380,7 @@ document.addEventListener('DOMContentLoaded', function() {
         function renderAttendeeListInTemplate() {
             if (!attendeeList) return;
 
-            if (attendees.length === 0) {
+            if (currentAttendees.length === 0) {
                 attendeeList.innerHTML = `
                     <div style="text-align: center; color: #94a3b8; font-size: 13px;">
                         <i class="fas fa-user-plus" style="font-size: 20px; margin-bottom: 6px;"></i>
@@ -267,7 +388,7 @@ document.addEventListener('DOMContentLoaded', function() {
                     </div>
                 `;
             } else {
-                attendeeList.innerHTML = attendees.map(attendee => `
+                attendeeList.innerHTML = currentAttendees.map(attendee => `
                     <div class="trip-person-item">
                         <div class="trip-person-info">
                             <span class="name">${attendee.name}</span>
@@ -287,52 +408,27 @@ document.addEventListener('DOMContentLoaded', function() {
 
         // 템플릿 내에서 참석자 제거
         window.removeAttendeeInTemplate = function(attendeeId) {
-            attendees = attendees.filter(a => a.id !== attendeeId);
+            currentAttendees = currentAttendees.filter(a => a.id !== attendeeId);
             renderAttendeeListInTemplate();
+
+            // 모달이 열려있으면 모달도 업데이트
+            const attendeeModal = document.getElementById('attendeeModal');
+            if (attendeeModal && attendeeModal.classList.contains('show')) {
+                renderAttendeeList2();
+            }
         };
 
         // 전역 함수로 등록하여 모달에서 접근 가능하게
         window.addAttendeesToMeeting = function(persons) {
             persons.forEach(person => {
-                if (!attendees.some(a => a.id === person.id)) {
-                    attendees.push(person);
+                if (!currentAttendees.some(a => a.id === person.id)) {
+                    currentAttendees.push(person);
                 }
             });
             renderAttendeeListInTemplate();
         };
 
-        // 사용 금액 기반 자동 참석자 계산
-        if (commonAmount) {
-            commonAmount.addEventListener('input', function() {
-                const amount = parseInt(this.value) || 0;
-
-                if (amount > 0) {
-                    const totalPeople = Math.ceil(amount / 30000);
-                    const externalCount = 1;
-                    const internalCount = totalPeople - externalCount;
-
-                    attendees = [];
-
-                    for (let i = 0; i < internalCount; i++) {
-                        attendees.push({ type: '내부', dept: '파인씨앤아이', name: '' });
-                    }
-
-                    attendees.push({ type: '외부', dept: '', name: '' });
-
-                    updateAttendeeList();
-                }
-            });
-        }
-
-        // 과제명 자동 채우기
-        if (commonProject) {
-            commonProject.addEventListener('input', function() {
-                const value = this.value;
-                document.querySelectorAll('.auto-project').forEach(field => {
-                    field.value = value;
-                });
-            });
-        }
+        // 과제명 자동 채우기는 위 프로젝트 선택 시 처리됨
 
         // 날짜/시간 자동 채우기
         function updateDateTime() {
@@ -517,7 +613,7 @@ document.addEventListener('DOMContentLoaded', function() {
         setTimeout(initializeDefaultValues, 100);
 
         // 초기 참석자 설정
-        attendees = [];
+        currentAttendees = [];
         renderAttendeeListInTemplate();
     }
 
@@ -954,19 +1050,16 @@ document.addEventListener('DOMContentLoaded', function() {
     const attendeeModal = document.getElementById('attendeeModal');
     const attendeeSearchInput = document.getElementById('attendeeSearchInput');
 
-    // 참석자 목록 데이터
-    const attendeePersons = [
-        { id: 1, name: '김철수', position: '전무', dept: '경영지원본부' },
-        { id: 2, name: '박영희', position: '부장', dept: '경영지원본부 인사팀' },
-        { id: 3, name: '이민수', position: '부장', dept: '경영지원본부 총무팀' },
-        { id: 4, name: '최지원', position: '차장', dept: '경영지원본부 인사팀' },
-        { id: 5, name: '정수연', position: '차장', dept: '경영지원본부 총무팀' },
-        { id: 6, name: '강민호', position: '과장', dept: '경영지원본부 인사팀' },
-        { id: 7, name: '윤서영', position: '과장', dept: '경영지원본부 총무팀' },
-        { id: 8, name: '한동훈', position: '대리', dept: '경영지원본부 인사팀' },
-        { id: 9, name: '임채린', position: '대리', dept: '경영지원본부 총무팀' },
-        { id: 10, name: '송재현', position: '사원', dept: '경영지원본부 인사팀' }
-    ];
+    // 참석자 목록 데이터 (프로젝트 팀원에서 가져옴)
+    function getAttendeePersons() {
+        // projectMembers를 참석자 형식으로 변환
+        return projectMembers.map(member => ({
+            id: member.employeeIdx,
+            name: member.employeeName,
+            position: member.employeePositionName || '-',
+            dept: member.employeeDeptName || '-'
+        }));
+    }
 
     // 모달 열기 함수
     window.openAttendeeModal = function() {
@@ -1003,21 +1096,39 @@ document.addEventListener('DOMContentLoaded', function() {
     // 참석자 목록 렌더링
     function renderAttendeeList2(searchText = '') {
         const attendeeList2El = document.getElementById('attendeeList2');
-        if (!attendeeList2El) return;
+        if (!attendeeList2El) {
+            console.error('attendeeList2 요소를 찾을 수 없습니다.');
+            return;
+        }
+
+        const attendeePersons = getAttendeePersons(); // 프로젝트 팀원에서 가져오기
+
+        if (attendeePersons.length === 0) {
+            attendeeList2El.innerHTML = '<div style="text-align: center; padding: 40px; color: #94a3b8;">프로젝트를 선택하면 팀원 목록이 표시됩니다.</div>';
+            return;
+        }
 
         const filtered = attendeePersons.filter(person => {
             const searchStr = (person.name + person.dept + person.position).toLowerCase();
             return searchStr.includes(searchText.toLowerCase());
         });
 
-        attendeeList2El.innerHTML = filtered.map(person => `
-            <div class="employee-item" data-id="${person.id}" onclick="selectAttendee(${person.id})">
-                <div class="employee-info">
-                    <div class="employee-name">${person.name}</div>
-                    <div class="employee-detail">${person.position} · ${person.dept}</div>
+        attendeeList2El.innerHTML = filtered.map(person => {
+            // 이미 추가된 참석자인지 확인
+            const isAdded = currentAttendees.some(a => String(a.id) === String(person.id));
+            const addedClass = isAdded ? ' added' : '';
+            const onclickAttr = isAdded ? '' : `onclick="selectAttendee(${person.id})"`;
+
+
+            return `
+                <div class="employee-item${addedClass}" data-id="${person.id}" ${onclickAttr}>
+                    <div class="employee-info">
+                        <div class="employee-name">${person.name}</div>
+                        <div class="employee-detail">${person.position} · ${person.dept}</div>
+                    </div>
                 </div>
-            </div>
-        `).join('');
+            `;
+        }).join('');
     }
 
     // 참석자 선택
@@ -1025,6 +1136,10 @@ document.addEventListener('DOMContentLoaded', function() {
         const items = document.querySelectorAll('#attendeeList2 .employee-item');
         items.forEach(item => {
             if (parseInt(item.getAttribute('data-id')) === personId) {
+                // 이미 추가된 참석자는 선택 불가
+                if (item.classList.contains('added')) {
+                    return;
+                }
                 item.classList.toggle('selected');
             }
         });
@@ -1040,15 +1155,22 @@ document.addEventListener('DOMContentLoaded', function() {
     // 선택된 참석자 추가
     window.addSelectedAttendees = function() {
         const selectedItems = document.querySelectorAll('#attendeeList2 .employee-item.selected');
+
+        if (selectedItems.length === 0) {
+            alert('참석자를 선택해주세요.');
+            return;
+        }
+
         const personsToAdd = [];
+        const attendeePersons = getAttendeePersons(); // 프로젝트 팀원에서 가져오기
 
         selectedItems.forEach(item => {
             const personId = item.getAttribute('data-id');
-            const person = attendeePersons.find(p => p.id === parseInt(personId));
+            const person = attendeePersons.find(p => String(p.id) === String(personId));
 
             if (person) {
                 personsToAdd.push({
-                    id: personId,
+                    id: String(personId),
                     name: person.name,
                     dept: person.dept,
                     position: person.position
@@ -1056,17 +1178,202 @@ document.addEventListener('DOMContentLoaded', function() {
             }
         });
 
+        console.log('추가할 참석자:', personsToAdd);
+
         // setupReceiptAutoFill에서 정의된 함수 호출
         if (window.addAttendeesToMeeting) {
             window.addAttendeesToMeeting(personsToAdd);
         }
 
+        console.log('추가 후 currentAttendees:', currentAttendees);
+
+        // 모달 목록 새로고침 (추가된 참석자에 체크마크 표시)
+        renderAttendeeList2();
+
         // 모달 닫기
         closeAttendeeModal();
     };
 
-    // 초기 템플릿 로드 (회의록)
-    loadTemplate('receipt-meeting');
+    // 외부인력 모달 관련
+    const externalPersonModal = document.getElementById('externalPersonModal');
+    const externalPersonSearchInput = document.getElementById('externalPersonSearchInput');
+    const externalPersonListEl = document.getElementById('externalPersonList');
+    let allExternalPersons = [];
+
+    // 외부인력 목록 로드
+    async function loadExternalPersons() {
+        try {
+            const response = await fetch('/api/external-persons');
+            if (response.ok) {
+                allExternalPersons = await response.json();
+                console.log('외부인력 로드 성공:', allExternalPersons.length + '명');
+                renderExternalPersonList();
+            } else {
+                console.error('외부인력 목록 로드 실패');
+            }
+        } catch (error) {
+            console.error('외부인력 목록 로드 오류:', error);
+        }
+    }
+
+    // 외부인력 모달 열기
+    window.openExternalPersonModal = function() {
+        loadExternalPersons();
+        if (externalPersonModal) {
+            externalPersonModal.classList.add('show');
+        }
+    };
+
+    // 외부인력 모달 닫기
+    window.closeExternalPersonModal = function() {
+        if (externalPersonModal) {
+            externalPersonModal.classList.remove('show');
+            // 검색 초기화
+            if (externalPersonSearchInput) {
+                externalPersonSearchInput.value = '';
+            }
+            // 선택 초기화
+            const selectedItems = document.querySelectorAll('#externalPersonList .employee-item.selected');
+            selectedItems.forEach(item => item.classList.remove('selected'));
+        }
+    };
+
+    // 외부인력 목록 렌더링
+    function renderExternalPersonList(searchText = '') {
+        if (!externalPersonListEl) return;
+
+        if (allExternalPersons.length === 0) {
+            externalPersonListEl.innerHTML = '<div style="text-align: center; padding: 40px; color: #94a3b8;">등록된 외부인력이 없습니다.</div>';
+            return;
+        }
+
+        const filtered = allExternalPersons.filter(person => {
+            const searchStr = (person.name + person.companyName + person.position).toLowerCase();
+            return searchStr.includes(searchText.toLowerCase());
+        });
+
+        externalPersonListEl.innerHTML = filtered.map(person => {
+            // 이미 추가된 외부인력인지 확인
+            const isAdded = currentAttendees.some(a => String(a.id) === String('ext_' + person.idx));
+            const addedClass = isAdded ? ' added' : '';
+            const onclickAttr = isAdded ? '' : `onclick="selectExternalPerson(${person.idx})"`;
+
+            return `
+                <div class="employee-item${addedClass}" data-id="${person.idx}" ${onclickAttr}>
+                    <div class="employee-info">
+                        <div class="employee-name">${person.name}</div>
+                        <div class="employee-detail">${person.position} · ${person.companyName}</div>
+                    </div>
+                </div>
+            `;
+        }).join('');
+    }
+
+    // 외부인력 선택
+    window.selectExternalPerson = function(personIdx) {
+        const items = document.querySelectorAll('#externalPersonList .employee-item');
+        items.forEach(item => {
+            if (parseInt(item.getAttribute('data-id')) === personIdx) {
+                // 이미 추가된 외부인력은 선택 불가
+                if (item.classList.contains('added')) {
+                    return;
+                }
+                item.classList.toggle('selected');
+            }
+        });
+    };
+
+    // 외부인력 검색
+    if (externalPersonSearchInput) {
+        externalPersonSearchInput.addEventListener('input', function(e) {
+            renderExternalPersonList(e.target.value);
+        });
+    }
+
+    // 선택된 외부인력 추가
+    window.addSelectedExternalPersons = function() {
+        const selectedItems = document.querySelectorAll('#externalPersonList .employee-item.selected');
+
+        if (selectedItems.length === 0) {
+            alert('외부인력을 선택해주세요.');
+            return;
+        }
+
+        const personsToAdd = [];
+
+        selectedItems.forEach(item => {
+            const personIdx = item.getAttribute('data-id');
+            const person = allExternalPersons.find(p => String(p.idx) === String(personIdx));
+
+            if (person) {
+                personsToAdd.push({
+                    id: 'ext_' + person.idx, // 외부인력은 'ext_' 접두사 사용
+                    name: person.name,
+                    dept: person.companyName,
+                    position: person.position
+                });
+            }
+        });
+
+        console.log('추가할 외부인력:', personsToAdd);
+
+        // 참석자로 추가
+        if (window.addAttendeesToMeeting) {
+            window.addAttendeesToMeeting(personsToAdd);
+        }
+
+        // 모달 닫기
+        closeExternalPersonModal();
+    };
+
+    // 신규 외부인력 등록
+    window.createNewExternalPerson = async function() {
+        const name = prompt('외부인력 이름을 입력하세요:');
+        if (!name || !name.trim()) return;
+
+        const companyName = prompt('회사명을 입력하세요:');
+        if (!companyName || !companyName.trim()) return;
+
+        const position = prompt('직급을 입력하세요:');
+        if (!position || !position.trim()) return;
+
+        try {
+            const response = await fetch('/api/external-persons', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    name: name.trim(),
+                    companyName: companyName.trim(),
+                    position: position.trim()
+                })
+            });
+
+            if (response.ok) {
+                const newPerson = await response.json();
+                alert('외부인력이 등록되었습니다.');
+                console.log('신규 외부인력 등록:', newPerson);
+
+                // 목록 새로고침
+                await loadExternalPersons();
+            } else {
+                alert('외부인력 등록에 실패했습니다.');
+            }
+        } catch (error) {
+            console.error('외부인력 등록 오류:', error);
+            alert('외부인력 등록 중 오류가 발생했습니다.');
+        }
+    };
+
+    // 모달 외부 클릭 시 닫기
+    if (externalPersonModal) {
+        externalPersonModal.addEventListener('click', function(e) {
+            if (e.target === externalPersonModal) {
+                closeExternalPersonModal();
+            }
+        });
+    }
 
     // 템플릿 전환 비활성화
     templateTreeHeaders.forEach(header => {
