@@ -892,19 +892,8 @@ document.addEventListener('DOMContentLoaded', function() {
     // 초기 데이터 로드
     loadEmployees();
 
-    // 야근인원 목록 데이터 (직원 목록과 동일)
-    const overtimePersonData = [
-        { id: 1, name: '김철수', position: '전무', dept: '경영지원본부' },
-        { id: 2, name: '박영희', position: '부장', dept: '경영지원본부 인사팀' },
-        { id: 3, name: '이민수', position: '부장', dept: '경영지원본부 총무팀' },
-        { id: 4, name: '최지원', position: '차장', dept: '경영지원본부 인사팀' },
-        { id: 5, name: '정수연', position: '차장', dept: '경영지원본부 총무팀' },
-        { id: 6, name: '강민호', position: '과장', dept: '경영지원본부 인사팀' },
-        { id: 7, name: '윤서영', position: '과장', dept: '경영지원본부 총무팀' },
-        { id: 8, name: '한동훈', position: '대리', dept: '경영지원본부 인사팀' },
-        { id: 9, name: '임채린', position: '대리', dept: '경영지원본부 총무팀' },
-        { id: 10, name: '송재현', position: '사원', dept: '경영지원본부 인사팀' }
-    ];
+    // 야근인원 목록 데이터 (직원 데이터와 동일하게 사용)
+    // employees 배열을 직접 사용
 
     // 모달 열기 함수
     window.openOvertimePersonModal = function() {
@@ -943,7 +932,7 @@ document.addEventListener('DOMContentLoaded', function() {
         const overtimePersonList2El = document.getElementById('overtimePersonList2');
         if (!overtimePersonList2El) return;
 
-        const filtered = overtimePersonData.filter(person => {
+        const filtered = employees.filter(person => {
             const searchStr = (person.name + person.dept + person.position).toLowerCase();
             return searchStr.includes(searchText.toLowerCase());
         });
@@ -982,7 +971,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
         selectedItems.forEach(item => {
             const personId = item.getAttribute('data-id');
-            const person = overtimePersonData.find(p => p.id === parseInt(personId));
+            const person = employees.find(p => p.id === parseInt(personId));
 
             if (person) {
                 personsToAdd.push({

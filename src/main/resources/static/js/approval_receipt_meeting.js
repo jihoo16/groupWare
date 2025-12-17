@@ -262,6 +262,16 @@ document.addEventListener('DOMContentLoaded', function() {
             commonAuthor.removeAttribute('readonly'); // 수정 가능하게 설정
         }
 
+        // 인쇄용 템플릿의 작성자 필드도 채우기
+        const authorText = currentUser ? currentUser.empName : '작성자 미지정';
+        document.querySelectorAll('.auto-author').forEach(field => {
+            field.value = authorText;
+            if (authorText === '작성자 미지정') {
+                field.style.color = '#d32f2f';
+                console.warn('작성자 정보를 가져올 수 없습니다. 로그인 정보를 확인하세요.');
+            }
+        });
+
         // 회의록 참석자 정보 업데이트
         function updateMeetingMinutesAttendees() {
             const internalAttendees = currentAttendees.filter(a => a.name && a.name.trim());

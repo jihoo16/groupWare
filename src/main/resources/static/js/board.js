@@ -203,23 +203,33 @@ let currentFilter = 'all';
 let attachedFiles = [];
 let selectedEmployees = [];
 
-// 더미 사원 데이터
-const employees = [
-    { id: 1, name: '김대표', department: '경영진', position: '대표이사' },
-    { id: 2, name: '이CTO', department: '경영진', position: 'CTO' },
-    { id: 3, name: '박보안', department: 'IT팀', position: '팀장' },
-    { id: 4, name: '최인사', department: '인사팀', position: '팀장' },
-    { id: 5, name: '강총무', department: '총무팀', position: '과장' },
-    { id: 6, name: '김개발', department: '개발팀', position: '팀장' },
-    { id: 7, name: '박프론트', department: '개발팀', position: '과장' },
-    { id: 8, name: '이백엔드', department: '개발팀', position: '대리' },
-    { id: 9, name: '정자바', department: '개발팀', position: '사원' },
-    { id: 10, name: '오마케팅', department: '마케팅팀', position: '과장' },
-    { id: 11, name: '서디자인', department: '디자인팀', position: '대리' },
-    { id: 12, name: '윤기획', department: '기획팀', position: '과장' }
-];
+// 사원 데이터 (API로 로드)
+let employees = [];
+
+async function loadEmployees() {
+    try {
+        const response = await fetch('/api/users');
+        if (response.ok) {
+            const users = await response.json();
+            employees = users.map(user => ({
+                id: user.idx,
+                name: user.empName,
+                department: user.empDept || '부서 미지정',
+                position: user.empPosition || '직급 미지정'
+            }));
+            console.log('직원 데이터 로드 완료:', employees.length + '명');
+        } else {
+            console.error('직원 데이터 로드 실패:', response.status);
+            alert('직원 데이터를 불러오는데 실패했습니다. 관리자에게 문의하세요.');
+        }
+    } catch (error) {
+        console.error('직원 데이터 로드 오류:', error);
+        alert('직원 데이터를 불러오는데 오류가 발생했습니다.');
+    }
+}
 
 document.addEventListener('DOMContentLoaded', () => {
+    loadEmployees();
     renderPosts();
     setupEventListeners();
     updateFilterCounts();
