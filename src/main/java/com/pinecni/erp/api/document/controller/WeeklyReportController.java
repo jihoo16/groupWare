@@ -67,11 +67,17 @@ public class WeeklyReportController {
     @PutMapping("/{id}")
     public ResponseEntity<WeeklyReportDTO> updateWeeklyReport(
             @PathVariable Long id,
-            @Valid @RequestBody WeeklyReportUpdateDTO updateDTO) {
+            @Valid @RequestBody WeeklyReportUpdateDTO updateDTO,
+            jakarta.servlet.http.HttpSession session) {
         log.debug("PUT /api/document/weekly-report/{}", id);
 
-        // TODO: 실제로는 로그인한 사용자 IDX를 가져와야 함
-        Long updatedUserIdx = 1L;
+        // 세션에서 로그인한 사용자 IDX 가져오기
+        Long updatedUserIdx = (Long) session.getAttribute("userIdx");
+        if (updatedUserIdx == null) {
+            updatedUserIdx = 1L; // 기본값 (로그인 안된 경우)
+        }
+
+        log.debug("Updated by userIdx: {}", updatedUserIdx);
 
         WeeklyReportDTO updated = weeklyReportService.updateWeeklyReport(id, updateDTO, updatedUserIdx);
         return ResponseEntity.ok(updated);
@@ -87,6 +93,18 @@ public class WeeklyReportController {
 
         weeklyReportService.deleteWeeklyReport(id);
         return ResponseEntity.noContent().build();
+    }
+
+    /**
+     * 프로젝트별 주간업무보고 목록 조회
+     * GET /api/document/weekly-report/project/{projectIdx}
+     */
+    @GetMapping("/project/{projectIdx}")
+    public ResponseEntity<List<WeeklyReportDTO>> getWeeklyReportsByProject(@PathVariable Long projectIdx) {
+        log.debug("GET /api/document/weekly-report/project/{}", projectIdx);
+
+        List<WeeklyReportDTO> reports = weeklyReportService.getWeeklyReportsByProjectIdx(projectIdx);
+        return ResponseEntity.ok(reports);
     }
 
 }

@@ -435,6 +435,9 @@ document.addEventListener('DOMContentLoaded', function() {
                 document.getElementById('detailProgressBar').style.width = project.progress + '%';
                 document.getElementById('detailProgressText').textContent = project.progress + '%';
 
+                // 프로젝트 보고서 로드
+                loadProjectReports(project.idx);
+
                 // 탭을 기본 정보로 초기화
                 switchDetailTab('info');
 
@@ -448,6 +451,81 @@ document.addEventListener('DOMContentLoaded', function() {
                 alert('프로젝트 정보를 불러올 수 없습니다.');
             });
     };
+
+    // 프로젝트별 보고서 조회 및 렌더링
+    function loadProjectReports(projectIdx) {
+        // 주간보고서만 조회
+        fetch(`/api/document/weekly-report/project/${projectIdx}`)
+            .then(res => res.ok ? res.json() : [])
+            .then(weeklyReports => {
+                // 주간보고서에 분류 추가
+                const weeklyData = weeklyReports.map(report => ({
+                    ...report,
+                    reportType: '주간',
+                    period: report.reportPeriod,
+                    content: report.mainTasks || '-',
+                    achievement: report.weeklyAchievementRate
+                }));
+
+                // 기간 순으로 정렬 (최신순)
+                weeklyData.sort((a, b) => {
+                    if (a.period && b.period) {
+                        return b.period.localeCompare(a.period);
+                    }
+                    return 0;
+                });
+
+                // 테이블 렌더링
+                renderProjectSchedule(weeklyData);
+            })
+            .catch(error => {
+                console.error('Error loading project reports:', error);
+                renderProjectSchedule([]);
+            });
+    }
+
+    // 프로젝트 일정 테이블 렌더링
+    function renderProjectSchedule(reports) {
+        const tbody = document.getElementById('detailScheduleTableBody');
+
+        if (!tbody) return;
+
+        if (reports.length === 0) {
+            tbody.innerHTML = '<tr><td colspan="5" class="text-center" style="padding: 40px; color: #868e96;">등록된 보고서가 없습니다.</td></tr>';
+            return;
+        }
+
+        tbody.innerHTML = reports.map((report, index) => {
+            const achievementBadge = report.achievement !== null && report.achievement !== undefined
+                ? `<span class="achievement-badge ${getAchievementClass(report.achievement)}">${report.achievement}%</span>`
+                : '-';
+
+            // No는 역순으로 표시 (맨 아래가 1)
+            const rowNumber = reports.length - index;
+
+            return `
+                <tr style="cursor: pointer;" onclick="viewWeeklyReportDetail(${report.id})">
+                    <td class="text-center">${rowNumber}</td>
+                    <td class="text-center"><span class="status-badge ${report.reportType === '주간' ? 'status-in-progress' : 'status-completed'}">${report.reportType}</span></td>
+                    <td>${report.period || '-'}</td>
+                    <td>${report.content}</td>
+                    <td class="text-center">${achievementBadge}</td>
+                </tr>
+            `;
+        }).join('');
+    }
+
+    // 주간보고서 상세 페이지로 이동 (전역 함수)
+    window.viewWeeklyReportDetail = function(reportId) {
+        window.location.href = `/approval/weekly-report/detail?id=${reportId}`;
+    };
+
+    // 달성률에 따른 클래스 반환
+    function getAchievementClass(rate) {
+        if (rate >= 80) return 'achievement-high';
+        if (rate >= 50) return 'achievement-medium';
+        return 'achievement-low';
+    }
 
     // 프로젝트 수정 (전역 함수)
     window.editProject = function(projectId) {

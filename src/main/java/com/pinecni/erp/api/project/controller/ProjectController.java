@@ -102,11 +102,17 @@ public class ProjectController {
      */
     @PostMapping
     public ResponseEntity<ProjectDTO> createProject(
-            @RequestBody ProjectCreateDTO createDTO) {
+            @RequestBody ProjectCreateDTO createDTO,
+            jakarta.servlet.http.HttpSession session) {
         log.debug("POST /api/projects - projectName: {}", createDTO.getProjectName());
 
-        // TODO: 실제 사용자 IDX를 세션이나 인증 정보에서 가져와야 함
-        Long currentUserIdx = 1L;
+        // 세션에서 로그인한 사용자 IDX 가져오기
+        Long currentUserIdx = (Long) session.getAttribute("userIdx");
+        if (currentUserIdx == null) {
+            currentUserIdx = 1L; // 기본값 (로그인 안된 경우)
+        }
+
+        log.debug("Created by userIdx: {}", currentUserIdx);
 
         try {
             ProjectDTO project = projectService.createProject(createDTO, currentUserIdx);
@@ -124,11 +130,17 @@ public class ProjectController {
     @PutMapping("/{idx}")
     public ResponseEntity<ProjectDTO> updateProject(
             @PathVariable Long idx,
-            @RequestBody ProjectUpdateDTO updateDTO) {
+            @RequestBody ProjectUpdateDTO updateDTO,
+            jakarta.servlet.http.HttpSession session) {
         log.debug("PUT /api/projects/{}", idx);
 
-        // TODO: 실제 사용자 IDX를 세션이나 인증 정보에서 가져와야 함
-        Long currentUserIdx = 1L;
+        // 세션에서 로그인한 사용자 IDX 가져오기
+        Long currentUserIdx = (Long) session.getAttribute("userIdx");
+        if (currentUserIdx == null) {
+            currentUserIdx = 1L; // 기본값 (로그인 안된 경우)
+        }
+
+        log.debug("Updated by userIdx: {}", currentUserIdx);
 
         try {
             ProjectDTO project = projectService.updateProject(idx, updateDTO, currentUserIdx);

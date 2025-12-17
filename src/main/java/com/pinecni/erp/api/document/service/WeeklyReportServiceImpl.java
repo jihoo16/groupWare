@@ -5,13 +5,15 @@ import com.pinecni.erp.api.document.dto.WeeklyReportDTO;
 import com.pinecni.erp.api.document.dto.WeeklyReportUpdateDTO;
 import com.pinecni.erp.api.document.mapper.WeeklyReportMapper;
 import com.pinecni.erp.api.document.repository.WeeklyReportRepository;
+import com.pinecni.erp.api.user.repository.UserRepository;
+import com.pinecni.erp.api.code.repository.CodeRepository;
 import com.pinecni.erp.entity.WeeklyReport;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.time.Instant;
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -27,6 +29,8 @@ public class WeeklyReportServiceImpl implements WeeklyReportService {
 
     private final WeeklyReportRepository weeklyReportRepository;
     private final WeeklyReportMapper weeklyReportMapper;
+    private final UserRepository userRepository;
+    private final CodeRepository codeRepository;
 
     @Override
     @Transactional
@@ -36,8 +40,8 @@ public class WeeklyReportServiceImpl implements WeeklyReportService {
         // DTO → Entity 변환
         WeeklyReport weeklyReport = weeklyReportMapper.toEntity(createDTO);
 
-        // 생성 시간 설정 (Mapper에서 이미 설정되지만 명시적으로 다시 설정)
-        Instant now = Instant.now();
+        // 생성 시간 설정
+        LocalDateTime now = LocalDateTime.now();
         weeklyReport.setCreatedAt(now);
         weeklyReport.setUpdatedAt(now);
 
@@ -51,7 +55,19 @@ public class WeeklyReportServiceImpl implements WeeklyReportService {
         log.debug("WeeklyReport created successfully - id: {}", saved.getId());
 
         // Entity → DTO 변환
-        return weeklyReportMapper.toDTO(saved);
+        WeeklyReportDTO dto = weeklyReportMapper.toDTO(saved);
+        // User 정보 조회 및 설정
+        userRepository.findById(saved.getUserIdx()).ifPresent(user -> {
+            dto.setUserName(user.getEmpName());
+            dto.setUserDept(user.getEmpDept());
+            // 부서 이름 조회
+            if (user.getEmpDept() != null) {
+                codeRepository.findByCode(user.getEmpDept()).ifPresent(code -> {
+                    dto.setUserDeptName(code.getCodeName());
+                });
+            }
+        });
+        return dto;
     }
 
     @Override
@@ -62,7 +78,21 @@ public class WeeklyReportServiceImpl implements WeeklyReportService {
 
         // Entity List → DTO List 변환
         return reports.stream()
-                .map(weeklyReportMapper::toDTO)
+                .map(report -> {
+                    WeeklyReportDTO dto = weeklyReportMapper.toDTO(report);
+                    // User 정보 조회 및 설정
+                    userRepository.findById(report.getUserIdx()).ifPresent(user -> {
+                        dto.setUserName(user.getEmpName());
+                        dto.setUserDept(user.getEmpDept());
+                        // 부서 이름 조회
+                        if (user.getEmpDept() != null) {
+                            codeRepository.findByCode(user.getEmpDept()).ifPresent(code -> {
+                                dto.setUserDeptName(code.getCodeName());
+                            });
+                        }
+                    });
+                    return dto;
+                })
                 .collect(Collectors.toList());
     }
 
@@ -74,7 +104,19 @@ public class WeeklyReportServiceImpl implements WeeklyReportService {
         log.debug("WeeklyReport found - id: {}", report.getId());
 
         // Entity → DTO 변환
-        return weeklyReportMapper.toDTO(report);
+        WeeklyReportDTO dto = weeklyReportMapper.toDTO(report);
+        // User 정보 조회 및 설정
+        userRepository.findById(report.getUserIdx()).ifPresent(user -> {
+            dto.setUserName(user.getEmpName());
+            dto.setUserDept(user.getEmpDept());
+            // 부서 이름 조회
+            if (user.getEmpDept() != null) {
+                codeRepository.findByCode(user.getEmpDept()).ifPresent(code -> {
+                    dto.setUserDeptName(code.getCodeName());
+                });
+            }
+        });
+        return dto;
     }
 
     @Override
@@ -94,7 +136,19 @@ public class WeeklyReportServiceImpl implements WeeklyReportService {
         log.debug("WeeklyReport updated successfully - id: {}", updated.getId());
 
         // Entity → DTO 변환
-        return weeklyReportMapper.toDTO(updated);
+        WeeklyReportDTO dto = weeklyReportMapper.toDTO(updated);
+        // User 정보 조회 및 설정
+        userRepository.findById(updated.getUserIdx()).ifPresent(user -> {
+            dto.setUserName(user.getEmpName());
+            dto.setUserDept(user.getEmpDept());
+            // 부서 이름 조회
+            if (user.getEmpDept() != null) {
+                codeRepository.findByCode(user.getEmpDept()).ifPresent(code -> {
+                    dto.setUserDeptName(code.getCodeName());
+                });
+            }
+        });
+        return dto;
     }
 
     @Override
@@ -109,6 +163,33 @@ public class WeeklyReportServiceImpl implements WeeklyReportService {
 
         weeklyReportRepository.deleteById(id);
         log.debug("WeeklyReport deleted successfully - id: {}", id);
+    }
+
+    @Override
+    public List<WeeklyReportDTO> getWeeklyReportsByProjectIdx(Long projectIdx) {
+        log.debug("getWeeklyReportsByProjectIdx() called - projectIdx: {}", projectIdx);
+
+        List<WeeklyReport> reports = weeklyReportRepository.findByProjectIdx(projectIdx);
+        log.debug("Found {} weekly reports for project {}", reports.size(), projectIdx);
+
+        // Entity List → DTO List 변환
+        return reports.stream()
+                .map(report -> {
+                    WeeklyReportDTO dto = weeklyReportMapper.toDTO(report);
+                    // User 정보 조회 및 설정
+                    userRepository.findById(report.getUserIdx()).ifPresent(user -> {
+                        dto.setUserName(user.getEmpName());
+                        dto.setUserDept(user.getEmpDept());
+                        // 부서 이름 조회
+                        if (user.getEmpDept() != null) {
+                            codeRepository.findByCode(user.getEmpDept()).ifPresent(code -> {
+                                dto.setUserDeptName(code.getCodeName());
+                            });
+                        }
+                    });
+                    return dto;
+                })
+                .collect(Collectors.toList());
     }
 
 }

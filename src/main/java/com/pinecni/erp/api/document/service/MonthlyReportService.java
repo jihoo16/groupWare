@@ -46,4 +46,11 @@ public interface MonthlyReportService {
      * @return 수정된 월간업무보고 DTO
      */
     MonthlyReportDTO updateMonthlyReport(Long id, MonthlyReportUpdateDTO updateDTO, Long updatedUserIdx);
+
+    /**
+     * 프로젝트별 월간업무보고 목록 조회
+     * @param projectIdx 프로젝트 IDX
+     * @return 월간업무보고 DTO 목록
+     */
+    List<MonthlyReportDTO> getMonthlyReportsByProjectIdx(Long projectIdx);
 }

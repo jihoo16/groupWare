@@ -5,7 +5,7 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
-import java.time.Instant;
+import java.time.LocalDateTime;
 @Data
 @Builder
 @NoArgsConstructor
@@ -20,6 +20,21 @@ public class MeetingMinutesDTO {
      * 작성자 IDX
      */
     private Long userIdx;
+
+    /**
+     * 작성자 이름
+     */
+    private String userName;
+
+    /**
+     * 작성자 부서 코드
+     */
+    private String userDept;
+
+    /**
+     * 작성자 부서 이름
+     */
+    private String userDeptName;
 
     /**
      * 프로젝트 IDX
@@ -39,7 +54,7 @@ public class MeetingMinutesDTO {
     /**
      * 회의 일시
      */
-    private Instant meetingDatetime;
+    private LocalDateTime meetingDatetime;
 
     /**
      * 회의 장소
@@ -79,7 +94,7 @@ public class MeetingMinutesDTO {
     /**
      * 생성자 일시
      */
-    private Instant createdAt;
+    private LocalDateTime createdAt;
 
     /**
      * 수정자 Idx
@@ -88,5 +103,5 @@ public class MeetingMinutesDTO {
     /**
      * 수정자 일시
      */
-    private Instant updatedAt;
+    private LocalDateTime updatedAt;
 }

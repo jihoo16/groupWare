@@ -208,7 +208,8 @@
                                 </tr>
                                 <tr>
                                     <th>작성자</th>
-                                    <td><input type="text" id="userName" value="홍길동" readonly></td>
+                                    <td><input type="text" id="userName" th:value="${userName}" readonly>
+                                    <input type="hidden" id="userIdx" th:value="${userIdx}" readonly></td>
                                     <th>일시</th>
                                     <td><input type="datetime-local" id="meetingDatetime"></td>
                                 </tr>

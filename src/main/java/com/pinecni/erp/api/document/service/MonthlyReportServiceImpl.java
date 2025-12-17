@@ -5,13 +5,15 @@ import com.pinecni.erp.api.document.dto.MonthlyReportDTO;
 import com.pinecni.erp.api.document.dto.MonthlyReportUpdateDTO;
 import com.pinecni.erp.api.document.mapper.MonthlyReportMapper;
 import com.pinecni.erp.api.document.repository.MonthlyReportRepository;
+import com.pinecni.erp.api.user.repository.UserRepository;
+import com.pinecni.erp.api.code.repository.CodeRepository;
 import com.pinecni.erp.entity.MonthlyReport;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.time.Instant;
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -27,6 +29,8 @@ public class MonthlyReportServiceImpl implements MonthlyReportService {
 
     private final MonthlyReportRepository monthlyReportRepository;
     private final MonthlyReportMapper monthlyReportMapper;
+    private final UserRepository userRepository;
+    private final CodeRepository codeRepository;
 
     @Override
     @Transactional
@@ -37,7 +41,7 @@ public class MonthlyReportServiceImpl implements MonthlyReportService {
         MonthlyReport monthlyReport = monthlyReportMapper.toEntity(createDTO);
 
         // 생성 시간 설정 (Mapper에서 이미 설정되지만 명시적으로 다시 설정)
-        Instant now = Instant.now();
+        LocalDateTime now = LocalDateTime.now();
         monthlyReport.setCreatedAt(now);
         monthlyReport.setUpdatedAt(now);
 
@@ -51,7 +55,19 @@ public class MonthlyReportServiceImpl implements MonthlyReportService {
         log.debug("monthlyReport created successfully - id: {}", saved.getId());
 
         // Entity → DTO 변환
-        return monthlyReportMapper.toDTO(saved);
+        MonthlyReportDTO dto = monthlyReportMapper.toDTO(saved);
+        // User 정보 조회 및 설정
+        userRepository.findById(saved.getUserIdx()).ifPresent(user -> {
+            dto.setUserName(user.getEmpName());
+            dto.setUserDept(user.getEmpDept());
+            // 부서 이름 조회
+            if (user.getEmpDept() != null) {
+                codeRepository.findByCode(user.getEmpDept()).ifPresent(code -> {
+                    dto.setUserDeptName(code.getCodeName());
+                });
+            }
+        });
+        return dto;
     }
 
     @Override
@@ -62,7 +78,21 @@ public class MonthlyReportServiceImpl implements MonthlyReportService {
 
         // Entity List → DTO List 변환
         return reports.stream()
-                .map(monthlyReportMapper::toDTO)
+                .map(report -> {
+                    MonthlyReportDTO dto = monthlyReportMapper.toDTO(report);
+                    // User 정보 조회 및 설정
+                    userRepository.findById(report.getUserIdx()).ifPresent(user -> {
+                        dto.setUserName(user.getEmpName());
+                        dto.setUserDept(user.getEmpDept());
+                        // 부서 이름 조회
+                        if (user.getEmpDept() != null) {
+                            codeRepository.findByCode(user.getEmpDept()).ifPresent(code -> {
+                                dto.setUserDeptName(code.getCodeName());
+                            });
+                        }
+                    });
+                    return dto;
+                })
                 .collect(Collectors.toList());
     }
 
@@ -74,7 +104,19 @@ public class MonthlyReportServiceImpl implements MonthlyReportService {
         log.debug("MonthlyReport found - id: {}", report.getId());
 
         // Entity → DTO 변환
-        return monthlyReportMapper.toDTO(report);
+        MonthlyReportDTO dto = monthlyReportMapper.toDTO(report);
+        // User 정보 조회 및 설정
+        userRepository.findById(report.getUserIdx()).ifPresent(user -> {
+            dto.setUserName(user.getEmpName());
+            dto.setUserDept(user.getEmpDept());
+            // 부서 이름 조회
+            if (user.getEmpDept() != null) {
+                codeRepository.findByCode(user.getEmpDept()).ifPresent(code -> {
+                    dto.setUserDeptName(code.getCodeName());
+                });
+            }
+        });
+        return dto;
     }
 
     @Override
@@ -94,7 +136,19 @@ public class MonthlyReportServiceImpl implements MonthlyReportService {
         log.debug("MonthlyReport updated successfully - id: {}", updated.getId());
 
         // Entity → DTO 변환
-        return monthlyReportMapper.toDTO(updated);
+        MonthlyReportDTO dto = monthlyReportMapper.toDTO(updated);
+        // User 정보 조회 및 설정
+        userRepository.findById(updated.getUserIdx()).ifPresent(user -> {
+            dto.setUserName(user.getEmpName());
+            dto.setUserDept(user.getEmpDept());
+            // 부서 이름 조회
+            if (user.getEmpDept() != null) {
+                codeRepository.findByCode(user.getEmpDept()).ifPresent(code -> {
+                    dto.setUserDeptName(code.getCodeName());
+                });
+            }
+        });
+        return dto;
     }
 
     @Override
@@ -109,6 +163,33 @@ public class MonthlyReportServiceImpl implements MonthlyReportService {
 
         monthlyReportRepository.deleteById(id);
         log.debug("MonthlyReport deleted successfully - id: {}", id);
+    }
+
+    @Override
+    public List<MonthlyReportDTO> getMonthlyReportsByProjectIdx(Long projectIdx) {
+        log.debug("getMonthlyReportsByProjectIdx() called - projectIdx: {}", projectIdx);
+
+        List<MonthlyReport> reports = monthlyReportRepository.findByProjectIdx(projectIdx);
+        log.debug("Found {} monthly reports for project {}", reports.size(), projectIdx);
+
+        // Entity List → DTO List 변환
+        return reports.stream()
+                .map(report -> {
+                    MonthlyReportDTO dto = monthlyReportMapper.toDTO(report);
+                    // User 정보 조회 및 설정
+                    userRepository.findById(report.getUserIdx()).ifPresent(user -> {
+                        dto.setUserName(user.getEmpName());
+                        dto.setUserDept(user.getEmpDept());
+                        // 부서 이름 조회
+                        if (user.getEmpDept() != null) {
+                            codeRepository.findByCode(user.getEmpDept()).ifPresent(code -> {
+                                dto.setUserDeptName(code.getCodeName());
+                            });
+                        }
+                    });
+                    return dto;
+                })
+                .collect(Collectors.toList());
     }
 
 }

@@ -115,7 +115,7 @@ document.addEventListener('DOMContentLoaded', function() {
             return;
         }
 
-        // 요청 데이터 구성
+        // 요청 데이터 구성 (userIdx는 서버에서 세션으로 설정)
         const requestData = {
             userIdx: currentUserIdx,
             projectIdx: projectIdx,

@@ -1,0 +1,141 @@
+<!DOCTYPE html>
+<html lang="ko" xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{fragments/layout :: head('회의록 상세', '/css/approval_weekly_report.css')}"></head>
+<body>
+    <div class="container">
+        <!-- 좌측 네비게이션 바 -->
+        <div th:replace="~{fragments/sidebar :: sidebar('approval')}"></div>
+
+        <!-- 메인 콘텐츠 영역 -->
+        <main class="main-content">
+            <header class="header">
+                <div class="header-left">
+                    <h1 class="page-title"><i class="fas fa-users"></i> 회의록 상세</h1>
+                </div>
+                <div class="header-right">
+                    <button class="btn-secondary" onclick="history.back()">
+                        <i class="fas fa-arrow-left"></i>
+                        돌아가기
+                    </button>
+                </div>
+            </header>
+
+            <div class="write-container">
+                <div class="editor-area" style="max-width: 1200px; margin: 0 auto;">
+                    <!-- 문서 양식 -->
+                    <div class="document-form">
+                        <!-- 결재라인 -->
+                        <div class="approval-line-box">
+                            <table class="approval-line-table">
+                                <tr>
+                                    <th class="approval-header">담당</th>
+                                    <th class="approval-header">부서장</th>
+                                    <th class="approval-header">대표이사</th>
+                                </tr>
+                                <tr>
+                                    <td class="approval-sign-cell">
+                                        <div class="sign-area">
+                                            <span class="sign-placeholder">결재</span>
+                                        </div>
+                                    </td>
+                                    <td class="approval-sign-cell">
+                                        <div class="sign-area">
+                                            <span class="sign-placeholder">결재</span>
+                                        </div>
+                                    </td>
+                                    <td class="approval-sign-cell">
+                                        <div class="sign-area">
+                                            <span class="sign-placeholder">결재</span>
+                                        </div>
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td class="approval-name-cell">
+                                        <span class="approver-name">-</span>
+                                    </td>
+                                    <td class="approval-name-cell">
+                                        <span class="approver-name">-</span>
+                                    </td>
+                                    <td class="approval-name-cell">
+                                        <span class="approver-name">-</span>
+                                    </td>
+                                </tr>
+
+                            </table>
+                        </div>
+
+                        <h2 class="doc-title">회 의 록</h2>
+
+                        <!-- 수정자 정보 (hidden) -->
+                        <input type="hidden" id="updatedUserIdx" th:value="${userIdx}">
+
+                        <table class="form-table" style="margin-bottom: 100px">
+                            <tr>
+                                <th>과제명</th>
+                                <td colspan="3">
+                                    <input type="text" id="projectName" readonly>
+                                </td>
+                            </tr>
+                            <tr>
+                                <th>회의명</th>
+                                <td colspan="3"><input type="text" id="meetingTitle" readonly></td>
+                            </tr>
+                            <tr>
+                                <th>작성자</th>
+                                <td><input type="text" id="userName" readonly></td>
+                                <th>일시</th>
+                                <td><input type="text" id="meetingDatetime" readonly></td>
+                            </tr>
+                            <tr>
+                                <th>장소</th>
+                                <td colspan="3"><input type="text" id="location" readonly></td>
+                            </tr>
+                            <tr>
+                                <th>참석자</th>
+                                <td colspan="3"><input type="text" id="participants" readonly></td>
+                            </tr>
+                            <tr>
+                                <th>회의 목적</th>
+                                <td colspan="3"><textarea id="purpose" readonly rows="3"></textarea></td>
+                            </tr>
+                            <tr>
+                                <th>회의 내용</th>
+                                <td colspan="3"><textarea id="content" readonly rows="8"></textarea></td>
+                            </tr>
+                            <tr>
+                                <th>결정 사항</th>
+                                <td colspan="3"><textarea id="decisions" readonly rows="5"></textarea></td>
+                            </tr>
+                            <tr>
+                                <th>Action Items</th>
+                                <td colspan="3"><textarea id="actionItems" readonly rows="4"></textarea></td>
+                            </tr>
+                        </table>
+                    </div>
+
+                    <!-- 첨부파일 (추후 구현) -->
+                    <div class="attachment-section" style="display: none;">
+                        <div class="section-header">
+                            <h4><i class="fas fa-paperclip"></i> 첨부파일</h4>
+                        </div>
+                        <div class="file-list" id="fileList"></div>
+                    </div>
+
+                    <!-- 하단 액션 버튼 -->
+                    <div class="project-form-footer" style="margin-top: 30px;">
+                        <button type="button" class="btn btn-secondary" onclick="history.back()" style="margin-left: auto">취소</button>
+                        <button type="button" class="btn btn-danger" id="deleteMeetingBtn">
+                            <i class="fas fa-trash"></i> 삭제
+                        </button>
+                        <button type="button" class="btn btn-primary" id="editMeetingBtn">
+                            <i class="fas fa-edit"></i> 수정
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <script th:src="@{/js/approval_meeting_detail.js}"></script>
+</body>
+</html>

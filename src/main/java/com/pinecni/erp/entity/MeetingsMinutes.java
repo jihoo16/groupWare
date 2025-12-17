@@ -6,7 +6,7 @@ import jakarta.validation.constraints.Size;
 import lombok.*;
 import org.hibernate.annotations.ColumnDefault;
 
-import java.time.Instant;
+import java.time.LocalDateTime;
 
 
 @Getter
@@ -39,7 +39,7 @@ public class MeetingsMinutes {
     private String meetingTitle;
 
     @Column(name = "meeting_datetime")
-    private Instant meetingDatetime;
+    private LocalDateTime meetingDatetime;
 
     @Size(max = 200)
     @Column(name = "location", length = 200)
@@ -66,7 +66,7 @@ public class MeetingsMinutes {
     @NotNull
     @ColumnDefault("CURRENT_TIMESTAMP")
     @Column(name = "created_at", nullable = false)
-    private Instant createdAt;
+    private LocalDateTime createdAt;
 
     @Column(name = "updated_user_idx")
     private Long updatedUserIdx;
@@ -74,6 +74,6 @@ public class MeetingsMinutes {
     @NotNull
     @ColumnDefault("CURRENT_TIMESTAMP")
     @Column(name = "updated_at", nullable = false)
-    private Instant updatedAt;
+    private LocalDateTime updatedAt;
 
 }

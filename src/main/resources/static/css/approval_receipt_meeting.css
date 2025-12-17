@@ -1154,26 +1154,150 @@ div h2{
     align-items: center;
     gap: 12px;
     padding: 12px;
-    border: 1px solid #e8e8e8;
-    border-radius: 8px;
-    margin-bottom: 8px;
+    border: 2px solid #e8e8e8;
+    border-radius: 10px;
+    margin-bottom: 10px;
     cursor: pointer;
-    transition: all 0.2s ease;
+    transition: all 0.3s ease;
+    position: relative;
 }
 
 .employee-item:hover {
     border-color: #667eea;
     background: #f5f7ff;
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(102, 126, 234, 0.15);
 }
 
 .employee-item.selected {
     border-color: #667eea;
-    background: #e8f0fe;
+    background: linear-gradient(135deg, #e8f0fe 0%, #f5f7ff 100%);
+    box-shadow: 0 4px 12px rgba(102, 126, 234, 0.2);
+}
+
+.employee-item.added {
+    border-color: #10b981;
+    background: #f0fdf4;
+    cursor: default;
+}
+
+.employee-item.added:hover {
+    border-color: #10b981;
+    background: #f0fdf4;
+    transform: none;
+    box-shadow: 0 2px 8px rgba(16, 185, 129, 0.15);
+}
+
+.employee-item.added::after {
+    content: '\f00c';
+    font-family: 'Font Awesome 5 Free';
+    font-weight: 900;
+    position: absolute;
+    right: 12px;
+    top: 50%;
+    transform: translateY(-50%);
+    color: #10b981;
+    font-size: 18px;
+    background: white;
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border: 2px solid #10b981;
 }
 
 .employee-item i {
     font-size: 23.8px;
     color: #667eea;
+}
+
+/* 추가된 참석자 목록 스타일 (프로젝트 참여인력 스타일과 유사) */
+.trip-person-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 14px 16px;
+    background: linear-gradient(135deg, #ffffff 0%, #f8f9fa 100%);
+    border: 2px solid #e2e8f0;
+    border-radius: 10px;
+    margin-bottom: 10px;
+    font-size: 13px;
+    transition: all 0.3s ease;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.04);
+}
+
+.trip-person-item:hover {
+    border-color: #667eea;
+    box-shadow: 0 4px 12px rgba(102, 126, 234, 0.12);
+    transform: translateY(-2px);
+}
+
+.trip-person-info {
+    display: flex;
+    gap: 14px;
+    align-items: center;
+    flex: 1;
+}
+
+.trip-person-info::before {
+    content: '\f007';
+    font-family: 'Font Awesome 5 Free';
+    font-weight: 400;
+    color: #667eea;
+    font-size: 20px;
+    width: 36px;
+    height: 36px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: linear-gradient(135deg, #e8f0fe 0%, #f5f7ff 100%);
+    border-radius: 50%;
+    flex-shrink: 0;
+}
+
+.trip-person-info span {
+    color: #64748b;
+    font-size: 13px;
+    padding: 4px 10px;
+    background: #f1f5f9;
+    border-radius: 6px;
+    white-space: nowrap;
+}
+
+.trip-person-info .name {
+    font-weight: 700;
+    color: #1e293b;
+    font-size: 14px;
+    background: transparent;
+    padding: 0;
+}
+
+.trip-person-remove {
+    padding: 8px 14px;
+    background: linear-gradient(135deg, #fee2e2 0%, #fecaca 100%);
+    color: #dc2626;
+    border: 1px solid #fca5a5;
+    border-radius: 8px;
+    cursor: pointer;
+    font-size: 12px;
+    font-weight: 600;
+    transition: all 0.2s ease;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.trip-person-remove:hover {
+    background: linear-gradient(135deg, #fecaca 0%, #fca5a5 100%);
+    border-color: #f87171;
+    transform: translateY(-1px);
+    box-shadow: 0 2px 8px rgba(220, 38, 38, 0.2);
+}
+
+.trip-person-remove i {
+    font-size: 11px;
 }
 
 .employee-info {
@@ -1196,7 +1320,18 @@ div h2{
     padding: 15px 25px;
     border-top: 1px solid #f0f0f0;
     display: flex;
-    justify-content: flex-end;
+    justify-content: space-between;
+    align-items: center;
+    gap: 10px;
+}
+
+.modal-footer-left {
+    display: flex;
+    gap: 10px;
+}
+
+.modal-footer-right {
+    display: flex;
     gap: 10px;
 }
 
@@ -1207,6 +1342,9 @@ div h2{
     font-weight: 600;
     cursor: pointer;
     transition: all 0.2s ease;
+    display: flex;
+    align-items: center;
+    gap: 6px;
 }
 
 /* 스크롤바 - 호버 시에만 표시 */

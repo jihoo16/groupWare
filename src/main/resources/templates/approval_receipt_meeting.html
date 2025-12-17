@@ -171,7 +171,7 @@
                                         </tr>
                                         <tr>
                                             <th>작성자</th>
-                                            <td><input type="text" id="common_author" value="홍길동" placeholder="프로젝트 과제 연결시 선택으로 변경"></td>
+                                            <td><input type="text" id="common_author" placeholder="작성자 이름"></td>
                                             <th>회의 일자</th>
                                             <td><input type="date" id="common_date"></td>
                                         </tr>
@@ -189,7 +189,7 @@
                                             <th>사용 금액</th>
                                             <td colspan="3">
                                                 <input type="number" id="common_amount" placeholder="사용 금액을 입력하세요 (원)" style="width: 300px; padding: 5px;">
-                                                <small style="color: #666; margin-left: 10px;">* 1인당 30,000원 기준으로 참석자가 자동 계산됩니다</small>
+                                                <small style="color: #666; margin-left: 10px;">* 참석자는 아래에서 수동으로 추가하세요</small>
                                             </td>
                                         </tr>
                                         <tr>
@@ -615,8 +615,17 @@
                 </div>
             </div>
             <div class="modal-footer">
-                <button class="btn-secondary" onclick="closeAttendeeModal()">취소</button>
-                <button class="btn-primary" onclick="addSelectedAttendees()">추가</button>
+                <div class="modal-footer-left">
+                    <button class="btn-outline" onclick="addExternalPerson()">
+                        <i class="fas fa-user-plus"></i> 외부인 추가
+                    </button>
+                </div>
+                <div class="modal-footer-right">
+                    <button class="btn-secondary" onclick="closeAttendeeModal()">취소</button>
+                    <button class="btn-primary" onclick="addSelectedAttendees()">
+                        <i class="fas fa-check"></i> 참석자 추가
+                    </button>
+                </div>
             </div>
         </div>
     </div>

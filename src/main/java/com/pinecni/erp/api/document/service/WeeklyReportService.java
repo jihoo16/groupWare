@@ -46,4 +46,11 @@ public interface WeeklyReportService {
      * @return 수정된 주간업무보고 DTO
      */
     WeeklyReportDTO updateWeeklyReport(Long id, WeeklyReportUpdateDTO updateDTO, Long updatedUserIdx);
+
+    /**
+     * 프로젝트별 주간업무보고 목록 조회
+     * @param projectIdx 프로젝트 IDX
+     * @return 주간업무보고 DTO 목록
+     */
+    List<WeeklyReportDTO> getWeeklyReportsByProjectIdx(Long projectIdx);
 }

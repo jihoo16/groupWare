@@ -274,9 +274,9 @@ document.addEventListener('DOMContentLoaded', function() {
             document.getElementById('weeklyAchievementRate').value = '';
         }
 
-        // 보고자 및 부서 (현재는 하드코딩, 추후 API에서 가져와야 함)
-        document.getElementById('userName').value = '홍길동';
-        document.getElementById('userDept').value = '개발팀';
+        // 보고자 및 부서
+        document.getElementById('userName').value = report.userName || '-';
+        document.getElementById('userDept').value = report.userDeptName || '-';
 
         // 보고 기간
         document.getElementById('reportPeriod').value = report.reportPeriod || '';

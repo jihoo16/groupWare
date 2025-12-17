@@ -6,16 +6,16 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 
 import java.time.LocalDateTime;
+
+/**
+ * 회의록 수정 요청 DTO
+ * 기존 회의록 정보 업데이트 시 사용
+ */
 @Data
 @Builder
-@AllArgsConstructor
 @NoArgsConstructor
-public class MeetingMinutesCreateDTO {
-
-    /**
-     * 작성자 IDX
-     */
-    private Long userIdx;
+@AllArgsConstructor
+public class MeetingMinutesUpdateDTO {
 
     /**
      * 프로젝트 IDX
@@ -23,12 +23,12 @@ public class MeetingMinutesCreateDTO {
     private Long projectIdx;
 
     /**
-     * 프로젝트 명
+     * 프로젝트명
      */
     private String projectName;
 
     /**
-     * 회의 명
+     * 회의명
      */
     private String meetingTitle;
 
@@ -38,12 +38,12 @@ public class MeetingMinutesCreateDTO {
     private LocalDateTime meetingDatetime;
 
     /**
-     * 회의 장소
+     * 장소
      */
     private String location;
 
     /**
-     * 참석자 명단
+     * 참석자
      */
     private String participants;
 
@@ -63,26 +63,7 @@ public class MeetingMinutesCreateDTO {
     private String decisions;
 
     /**
-     * 후속 조치
+     * Action Items
      */
     private String actionItems;
-
-    /**
-     * 생성자 Idx
-     */
-    private Long createdUserIdx;
-
-    /**
-     * 생성자 일시
-     */
-    private LocalDateTime createdAt;
-
-    /**
-     * 수정자 Idx
-     */
-    private Long updatedUserIdx;
-    /**
-     * 수정자 일시
-     */
-    private LocalDateTime updatedAt;
 }

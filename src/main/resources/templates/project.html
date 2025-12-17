@@ -336,44 +336,21 @@
                     <div class="detail-section">
                         <div class="info-note" style="margin-bottom: 20px;">
                             <i class="fas fa-info-circle"></i>
-                            <span>주간보고서에 작성된 내용이 자동으로 표시됩니다. (추후 구현 예정)</span>
+                            <span>프로젝트에 작성된 주간업무보고가 표시됩니다.</span>
                         </div>
                         <div class="table-container">
                             <table class="project-table">
                                 <thead>
                                     <tr>
                                         <th width="50">No</th>
+                                        <th width="80">분류</th>
                                         <th width="200">기간</th>
-                                        <th>내용 (주간보고)</th>
-                                        <th width="120">주차별 달성률</th>
+                                        <th>내용</th>
+                                        <th width="120">달성률</th>
                                     </tr>
                                 </thead>
                                 <tbody id="detailScheduleTableBody">
-                                    <!-- 예시 데이터 -->
-                                    <tr>
-                                        <td class="text-center">1</td>
-                                        <td>2024-01-01 ~ 2024-01-07</td>
-                                        <td>요구사항 분석 및 기본 설계 완료</td>
-                                        <td class="text-center">
-                                            <span class="achievement-badge achievement-high">100%</span>
-                                        </td>
-                                    </tr>
-                                    <tr>
-                                        <td class="text-center">2</td>
-                                        <td>2024-01-08 ~ 2024-01-14</td>
-                                        <td>데이터베이스 스키마 설계 및 API 개발 착수</td>
-                                        <td class="text-center">
-                                            <span class="achievement-badge achievement-medium">60%</span>
-                                        </td>
-                                    </tr>
-                                    <tr>
-                                        <td class="text-center">3</td>
-                                        <td>2024-01-15 ~ 2024-01-21</td>
-                                        <td>프론트엔드 개발 진행 중</td>
-                                        <td class="text-center">
-                                            <span class="achievement-badge achievement-low">30%</span>
-                                        </td>
-                                    </tr>
+                                    <!-- 동적으로 렌더링됩니다 -->
                                 </tbody>
                             </table>
                         </div>
