@@ -1,10 +1,14 @@
 package com.pinecni.erp.api.vacation.service;
 
+import com.pinecni.erp.api.code.repository.CodeRepository;
 import com.pinecni.erp.api.user.repository.UserRepository;
 import com.pinecni.erp.api.vacation.dto.VacationUserInfoDTO;
 import com.pinecni.erp.api.vacation.repository.VacationAccrualScheduleRepository;
+import com.pinecni.erp.api.vacation.repository.VacationBalanceRepository;
+import com.pinecni.erp.entity.Code;
 import com.pinecni.erp.entity.User;
 import com.pinecni.erp.entity.VacationAccrualSchedule;
+import com.pinecni.erp.entity.VacationBalance;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -13,6 +17,7 @@ import org.springframework.transaction.annotation.Transactional;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.time.LocalDate;
+import java.time.format.DateTimeFormatter;
 import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
 import java.util.List;
@@ -24,11 +29,53 @@ public class VacationServiceImpl implements VacationService {
 
     private final UserRepository userRepository;
     private final VacationAccrualScheduleRepository accrualScheduleRepository;
+    private final VacationBalanceRepository vacationBalanceRepository;
+    private final CodeRepository codeRepository;
 
     @Override
+    @Transactional(readOnly = true)
     public VacationUserInfoDTO getUserVacationInfo(Long userIdx, Integer year) {
-        // TODO: 사용자 정보 + 연차 잔액 조회 로직 구현
-        throw new UnsupportedOperationException("Not implemented yet");
+        log.info("[사용자 연차 정보 조회] userIdx: {}, year: {}", userIdx, year);
+
+        // 1. 사용자 조회
+        User user = userRepository.findById(userIdx)
+                .orElseThrow(() -> new IllegalArgumentException("사용자를 찾을 수 없습니다: " + userIdx));
+
+        // 2. 연차 잔액 조회
+        VacationBalance vacationBalance = vacationBalanceRepository.findByUserIdxAndYear(userIdx, year)
+                .orElse(null);
+
+        // 3. 부서명 조회 (C01 그룹)
+        String empDeptName = codeRepository.findByGroupCodeAndCode("C01", user.getEmpDept())
+                .map(Code::getCodeName)
+                .orElse(user.getEmpDept()); // 코드명을 찾지 못하면 코드 자체 반환
+
+        // 4. 직급명 조회 (C02 그룹)
+        String empPositionName = codeRepository.findByGroupCodeAndCode("C02", user.getEmpPosition())
+                .map(Code::getCodeName)
+                .orElse(user.getEmpPosition()); // 코드명을 찾지 못하면 코드 자체 반환
+
+        // 5. DTO 생성
+        VacationUserInfoDTO dto = VacationUserInfoDTO.builder()
+                .userIdx(user.getIdx())
+                .empName(user.getEmpName())
+                .empDept(user.getEmpDept())
+                .empDeptName(empDeptName)
+                .empPosition(user.getEmpPosition())
+                .empPositionName(empPositionName)
+                .empAddress(user.getEmpAddress())
+                .empBirth(user.getEmpBirth() != null ? user.getEmpBirth().format(DateTimeFormatter.ISO_DATE) : null)
+                .empPhone(user.getEmpPhone())
+                .year(year)
+                .totalDays(vacationBalance != null ? vacationBalance.getTotalDays() : BigDecimal.ZERO)
+                .usedDays(vacationBalance != null ? vacationBalance.getUsedDays() : BigDecimal.ZERO)
+                .remainingDays(vacationBalance != null ? vacationBalance.getRemainingDays() : BigDecimal.ZERO)
+                .build();
+
+        log.info("[사용자 연차 정보 조회 완료] empName: {}, totalDays: {}, usedDays: {}, remainingDays: {}",
+                dto.getEmpName(), dto.getTotalDays(), dto.getUsedDays(), dto.getRemainingDays());
+
+        return dto;
     }
 
     @Override
