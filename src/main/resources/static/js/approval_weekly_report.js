@@ -1,5 +1,15 @@
 // 주간업무보고 작성 페이지 JavaScript
 document.addEventListener('DOMContentLoaded', function() {
+    // 전역 변수 CURRENT_USER 사용 (layout.html에서 주입됨)
+    if (!window.CURRENT_USER || !window.CURRENT_USER.idx) {
+        console.warn('세션 정보가 없습니다.');
+        window.location.href = '/login';
+        return;
+    }
+
+    const currentUserIdx = window.CURRENT_USER.idx;
+    console.log('현재 로그인 사용자:', window.CURRENT_USER.empName, '(idx:', currentUserIdx, ')');
+
     // 전역 변수
     let selectedFiles = [];
     let projects = []; // 프로젝트 목록
@@ -250,7 +260,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
                     // API 요청 데이터 구성
                     const requestData = {
-                        userIdx: 1, // TODO: 실제 로그인 사용자 ID로 변경 필요
+                        userIdx: currentUserIdx,
                         projectIdx: selectedProjectIdx,
                         projectName: selectedProjectName,
                         reportPeriod: reportPeriod,

@@ -10,9 +10,16 @@ document.addEventListener('DOMContentLoaded', function() {
         return;
     }
 
-    // 현재 사용자 정보 (실제로는 세션에서 가져와야 함)
-    const currentUser = '사용자'; // TODO: 실제 로그인 사용자 정보로 변경
-    const currentUserIdx = 1; // TODO: 실제 로그인 사용자 IDX로 변경
+    // 전역 변수 CURRENT_USER 사용 (layout.html에서 주입됨)
+    if (!window.CURRENT_USER || !window.CURRENT_USER.idx) {
+        console.warn('세션 정보가 없습니다.');
+        window.location.href = '/login';
+        return;
+    }
+
+    const currentUserIdx = window.CURRENT_USER.idx;
+    const currentUser = window.CURRENT_USER.empName;
+    console.log('현재 로그인 사용자:', currentUser, '(idx:', currentUserIdx, ')');
 
     // 참여자 관련 변수 (객체 배열: { id, name, department, rank })
     let selectedParticipants = [];

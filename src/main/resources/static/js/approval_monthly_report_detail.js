@@ -10,6 +10,17 @@ document.addEventListener('DOMContentLoaded', function() {
         return;
     }
 
+    // 전역 변수 CURRENT_USER 사용 (layout.html에서 주입됨)
+    if (!window.CURRENT_USER || !window.CURRENT_USER.idx) {
+        console.warn('세션 정보가 없습니다.');
+        window.location.href = '/login';
+        return;
+    }
+
+    const currentUserIdx = window.CURRENT_USER.idx;
+    const currentUser = window.CURRENT_USER;
+    console.log('현재 로그인 사용자:', currentUser.empName, '(idx:', currentUserIdx, ')');
+
     // DOM 요소
     const editBtn = document.getElementById('editReportBtn');
     const deleteBtn = document.getElementById('deleteReportBtn');
@@ -88,10 +99,10 @@ document.addEventListener('DOMContentLoaded', function() {
         document.getElementById('projectName').value = report.projectName || '선택 안함';
 
         // 보고자
-        document.getElementById('userName').value = '홍길동'; // TODO: 실제 사용자 이름
+        document.getElementById('userName').value = currentUser.empName || '';
 
         // 부서
-        document.getElementById('userDept').value = '개발팀'; // TODO: 실제 부서명
+        document.getElementById('userDept').value = currentUser.empDept || '';
 
         // 보고 월
         document.getElementById('reportMonth').value = report.reportMonth || '';

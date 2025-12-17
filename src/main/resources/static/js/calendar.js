@@ -1,5 +1,16 @@
 // 일정관리 페이지 스크립트
 document.addEventListener('DOMContentLoaded', function() {
+    // 전역 변수 CURRENT_USER 사용 (layout.html에서 주입됨)
+    if (!window.CURRENT_USER || !window.CURRENT_USER.idx) {
+        console.warn('세션 정보가 없습니다.');
+        window.location.href = '/login';
+        return;
+    }
+
+    const currentUserIdx = window.CURRENT_USER.idx;
+    const currentUser = window.CURRENT_USER.empName;
+    console.log('현재 로그인 사용자:', currentUser, '(idx:', currentUserIdx, ')');
+
     const calendarGrid = document.getElementById('calendarGrid');
     const currentMonthTitle = document.getElementById('currentMonthTitle');
     const prevMonthBtn = document.getElementById('prevMonthBtn');
@@ -8,7 +19,6 @@ document.addEventListener('DOMContentLoaded', function() {
 
     let currentDate = new Date();
     let currentView = 'month'; // 기본값: 월간 뷰
-    const currentUser = '사용자'; // 실제로는 로그인한 사용자 정보
 
     // 공휴일 데이터
     let holidays = [];
@@ -21,9 +31,6 @@ document.addEventListener('DOMContentLoaded', function() {
 
     // 일정 데이터 (서버에서 로드)
     let schedules = [];
-
-    // 현재 사용자 정보 (실제로는 세션에서 가져와야 함)
-    const currentUserIdx = 1; // TODO: 실제 로그인 사용자 IDX로 변경
 
     // 탭 및 팀 관련 변수
     let currentQuickEventTab = 'personal'; // 'personal' or 'team'

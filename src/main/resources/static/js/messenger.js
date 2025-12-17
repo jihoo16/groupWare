@@ -1,6 +1,15 @@
 // 메신저 페이지 스크립트
 document.addEventListener('DOMContentLoaded', function() {
-    const currentUser = '사용자'; // 실제로는 로그인한 사용자 정보
+    // 전역 변수 CURRENT_USER 사용 (layout.html에서 주입됨)
+    if (!window.CURRENT_USER || !window.CURRENT_USER.idx) {
+        console.warn('세션 정보가 없습니다.');
+        window.location.href = '/login';
+        return;
+    }
+
+    const currentUser = window.CURRENT_USER.empName;
+    console.log('현재 로그인 사용자:', currentUser);
+
     let activeChatId = null;
 
     // 샘플 채팅방 데이터
