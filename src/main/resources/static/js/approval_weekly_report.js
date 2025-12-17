@@ -8,8 +8,26 @@ document.addEventListener('DOMContentLoaded', function() {
     }
 
     const currentUserIdx = window.CURRENT_USER.idx;
+    const currentUserName = window.CURRENT_USER.empName;
+   const currentUserDept = window.CURRENT_USER.empDeptName;
     console.log('현재 로그인 사용자:', window.CURRENT_USER.empName, '(idx:', currentUserIdx, ')');
 
+
+    // ============================================
+    // 사용자 정보 채우기
+    // ============================================
+    const formTable = document.querySelector('.form-table');
+    if (formTable) {
+        const inputs = formTable.querySelectorAll('input');
+        // 보고자 (index 1)
+        if (inputs[1]) {
+            inputs[1].value = currentUserName || '-';
+        }
+        // 부서 (index 2)
+        if (inputs[2]) {
+            inputs[2].value = currentUserDept || '-';
+        }
+    }
     // 전역 변수
     let selectedFiles = [];
     let projects = []; // 프로젝트 목록
