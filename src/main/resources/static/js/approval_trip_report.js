@@ -32,17 +32,33 @@ document.addEventListener('DOMContentLoaded', function() {
     const selectedTripText = document.getElementById('selectedTripText');
     const btnClearTrip = document.getElementById('btnClearTrip');
 
-    // 샘플 직원 데이터
-    const employees = [
-        { id: 1, name: '김철수', position: '전무', dept: '경영지원본부' },
-        { id: 2, name: '박영희', position: '부장', dept: '경영지원본부 인사팀' },
-        { id: 3, name: '이민수', position: '부장', dept: '경영지원본부 총무팀' },
-        { id: 4, name: '장현우', position: '상무', dept: '개발본부' },
-        { id: 5, name: '임지훈', position: '부장', dept: '개발본부 Frontend팀' },
-        { id: 6, name: '한소희', position: '부장', dept: '개발본부 Backend팀' },
-        { id: 7, name: '권민재', position: '상무', dept: '영업본부' },
-        { id: 8, name: '유재석', position: '부장', dept: '영업본부 영업1팀' }
-    ];
+    // 직원 데이터 (API로 로드)
+    let employees = [];
+
+    async function loadEmployees() {
+        try {
+            const response = await fetch('/api/users');
+            if (response.ok) {
+                const users = await response.json();
+                employees = users.map(user => ({
+                    id: user.idx,
+                    name: user.empName,
+                    position: user.empPosition || '직급 미지정',
+                    dept: user.empDept || '부서 미지정'
+                }));
+                console.log('직원 데이터 로드 완료:', employees.length + '명');
+            } else {
+                console.error('직원 데이터 로드 실패:', response.status);
+                alert('직원 데이터를 불러오는데 실패했습니다. 관리자에게 문의하세요.');
+            }
+        } catch (error) {
+            console.error('직원 데이터 로드 오류:', error);
+            alert('직원 데이터를 불러오는데 오류가 발생했습니다.');
+        }
+    }
+
+    // 초기 데이터 로드
+    loadEmployees();
 
     // 샘플 출장신청 데이터
     const tripRequests = [

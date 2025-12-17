@@ -58,20 +58,21 @@
                             <div class="profile-form">
                                 <div class="form-group">
                                     <label>이름</label>
-                                    <input type="text" class="form-input" value="홍길동" placeholder="이름을 입력하세요">
+                                    <input type="text" id="userName" class="form-input" placeholder="이름을 입력하세요">
                                 </div>
                                 <div class="form-group">
                                     <label>이메일</label>
-                                    <input type="email" class="form-input" value="hong@pinecni.com" placeholder="이메일을 입력하세요">
+                                    <input type="email" id="userEmail" class="form-input" placeholder="이메일을 입력하세요">
                                 </div>
                                 <div class="form-group">
                                     <label>연락처</label>
-                                    <input type="tel" class="form-input" value="010-1234-5678" placeholder="연락처를 입력하세요">
+                                    <input type="tel" id="userPhone" class="form-input" placeholder="연락처를 입력하세요">
                                 </div>
                                 <div class="form-group">
                                     <label>부서</label>
-                                    <select class="form-select">
-                                        <option value="개발팀" selected>개발팀</option>
+                                    <select id="userDept" class="form-select">
+                                        <option value="">부서 선택</option>
+                                        <option value="개발팀">개발팀</option>
                                         <option value="경영지원팀">경영지원팀</option>
                                         <option value="영업팀">영업팀</option>
                                         <option value="디자인팀">디자인팀</option>
@@ -79,11 +80,11 @@
                                 </div>
                                 <div class="form-group">
                                     <label>직급</label>
-                                    <input type="text" class="form-input" value="사원" readonly>
+                                    <input type="text" id="userPosition" class="form-input" readonly>
                                 </div>
                                 <div class="form-group full-width">
                                     <label>자기소개</label>
-                                    <textarea class="form-textarea" rows="4" placeholder="간단한 자기소개를 입력하세요">안녕하세요. 개발팀에서 근무하고 있는 홍길동입니다.</textarea>
+                                    <textarea id="userBio" class="form-textarea" rows="4" placeholder="간단한 자기소개를 입력하세요"></textarea>
                                 </div>
                             </div>
                         </div>

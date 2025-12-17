@@ -19,19 +19,34 @@ document.addEventListener('DOMContentLoaded', function() {
     const approverSearch = document.getElementById('approverSearch');
     const submitBtn = document.getElementById('submitBtn');
 
-    // 샘플 직원 데이터
-    const employees = [
-        { id: 1, name: '김철수', position: '전무', dept: '경영지원본부' },
-        { id: 2, name: '박영희', position: '부장', dept: '경영지원본부 인사팀' },
-        { id: 3, name: '이민수', position: '부장', dept: '경영지원본부 총무팀' },
-        { id: 4, name: '장현우', position: '상무', dept: '개발본부' },
-        { id: 5, name: '임지훈', position: '부장', dept: '개발본부 Frontend팀' },
-        { id: 6, name: '한소희', position: '부장', dept: '개발본부 Backend팀' },
-        { id: 7, name: '권민재', position: '상무', dept: '영업본부' },
-        { id: 8, name: '유재석', position: '부장', dept: '영업본부 영업1팀' }
-    ];
+    // 직원 데이터 (API에서 로드)
+    let employees = [];
 
-    // 직책 목록
+    // 직원 데이터 로드 함수
+    async function loadEmployees() {
+        try {
+            const response = await fetch('/api/users');
+            if (response.ok) {
+                const users = await response.json();
+                employees = users.map(user => ({
+                    id: user.idx,
+                    name: user.empName,
+                    position: user.empPosition || '직급없음',
+                    dept: user.empDept || '부서없음'
+                }));
+                console.log('직원 데이터 로드 완료:', employees.length + '명');
+            } else {
+                console.error('직원 데이터 로드 실패:', response.status);
+                alert('직원 데이터를 불러오는데 실패했습니다. 관리자에게 문의하세요.');
+            }
+        } catch (error) {
+            console.error('직원 데이터 로드 오류:', error);
+            alert('직원 데이터를 불러오는데 오류가 발생했습니다.');
+        }
+    }
+
+    // 직책 목록 (코드 테이블에서 가져와야 하지만 임시로 유지)
+    // TODO: /api/codes/C02 API로 직급 목록 가져오기
     const positions = ['상무', '연구위원', '부장', '수석', '차장', '책임', '과장', '선임', '대리', '사원', '연구원'];
 
     // ============================================
@@ -365,9 +380,19 @@ document.addEventListener('DOMContentLoaded', function() {
         // 회의 관련 필드 업데이트
         function updateMeetingFields() {
             // 작성자 (회의록, 참석자명단)
-            const authorText = commonAuthor ? commonAuthor.value : '홍길동';
+            let authorText = commonAuthor ? commonAuthor.value : '';
+            if (!authorText && window.CURRENT_USER && window.CURRENT_USER.empName) {
+                authorText = window.CURRENT_USER.empName;
+            }
+            if (!authorText) {
+                console.warn('작성자 정보를 가져올 수 없습니다. 로그인 정보를 확인하세요.');
+                authorText = '작성자 미지정';
+            }
             document.querySelectorAll('.auto-author').forEach(field => {
                 field.value = authorText;
+                if (authorText === '작성자 미지정') {
+                    field.style.color = '#d32f2f';
+                }
             });
 
             // 복명자 (작성자와 동일하게)
@@ -1629,6 +1654,9 @@ document.addEventListener('DOMContentLoaded', function() {
             });
         }
     }
+
+    // 초기화: 직원 데이터 로드
+    loadEmployees();
 
     // 초기 템플릿 로드 (출장+회의)
     loadTemplate('receipt-trip');

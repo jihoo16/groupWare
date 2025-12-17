@@ -2613,15 +2613,14 @@ document.addEventListener('DOMContentLoaded', function() {
                 // 현재 년도 공휴일 먼저 로드
                 await ensureHolidaysLoaded(currentYear);
 
-                // 신청자 정보 초기화 (실제로는 로그인 사용자 정보로 채워야 함)
+                // 신청자 정보 초기화 - 세션 정보에서 가져옴
                 const vifApplicant = document.getElementById('vif_applicant');
                 const vifDepartment = document.getElementById('vif_department');
                 const vifPosition = document.getElementById('vif_position');
                 const vifApplyDate = document.getElementById('vif_apply_date');
 
-                if (vifApplicant) vifApplicant.textContent = '홍길동';
-                if (vifDepartment) vifDepartment.textContent = '개발팀';
-                if (vifPosition) vifPosition.textContent = '대리';
+                // 로그인 사용자 정보는 prefillPersonalInfo()에서 설정됨
+                // 여기서는 신청일자만 설정
                 if (vifApplyDate) {
                     const today = new Date();
                     vifApplyDate.textContent = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`;
@@ -2700,28 +2699,22 @@ document.addEventListener('DOMContentLoaded', function() {
     // 결재라인 자동 설정 및 전자서명 기능
     // ============================================
 
-    function setApprovalLine() {
-        // 실제로는 로그인 사용자 정보 기반으로 서버에서 결재라인을 가져와야 함
-        // 테스트용 더미 데이터
-        const approvalLine = [
-            { role: '담당', name: '홍길동', id: 'user001' },
-            { role: '부서장', name: '김부장', id: 'manager001' },
-            { role: '대표이사', name: '이대표', id: 'ceo001' }
-        ];
+    async function setApprovalLine() {
+        // TODO: 실제 결재라인 API 연동 필요
+        // 현재는 결재라인 설정 기능이 구현되지 않았습니다.
+        // /api/approval/approval-line API 구현 후 연동 필요
 
-        approvalLine.forEach(approver => {
-            // 결재자 이름 설정
-            const nameSpan = document.querySelector(`.approver-name[data-role="${approver.role}"]`);
-            if (nameSpan) {
-                nameSpan.textContent = approver.name;
-            }
+        console.warn('결재라인 API가 구현되지 않았습니다. 결재자를 수동으로 설정해주세요.');
 
-            // 결재 셀에 approver-id 설정
-            const signCell = document.querySelector(`.approval-sign-cell[data-role="${approver.role}"]`);
-            if (signCell) {
-                signCell.setAttribute('data-approver-id', approver.id);
-            }
+        // API 구현 전까지는 결재자 이름을 비워둠
+        const approverNames = document.querySelectorAll('.approver-name');
+        approverNames.forEach(nameSpan => {
+            nameSpan.textContent = '미지정';
+            nameSpan.style.color = '#999';
         });
+
+        // 사용자에게 안내 메시지 표시 (선택사항)
+        // alert('결재라인이 설정되지 않았습니다. 관리자에게 문의하세요.');
     }
 
     // ============================================
@@ -2741,13 +2734,33 @@ document.addEventListener('DOMContentLoaded', function() {
         const vifPosition = document.getElementById('vif_position');
 
         if (vifApplicant) {
-            vifApplicant.textContent = userVacationInfo.empName || '홍길동';
+            if (!userVacationInfo.empName) {
+                vifApplicant.textContent = '정보 없음';
+                vifApplicant.style.color = '#d32f2f';
+                console.error('사용자 이름 정보가 없습니다. 관리자에게 문의하세요.');
+            } else {
+                vifApplicant.textContent = userVacationInfo.empName;
+            }
         }
         if (vifDepartment) {
-            vifDepartment.textContent = userVacationInfo.empDeptName || userVacationInfo.empDept || '개발팀';
+            const deptName = userVacationInfo.empDeptName || userVacationInfo.empDept;
+            if (!deptName) {
+                vifDepartment.textContent = '부서 미지정';
+                vifDepartment.style.color = '#d32f2f';
+                console.error('부서 정보가 없습니다. 관리자에게 문의하세요.');
+            } else {
+                vifDepartment.textContent = deptName;
+            }
         }
         if (vifPosition) {
-            vifPosition.textContent = userVacationInfo.empPositionName || userVacationInfo.empPosition || '대리';
+            const positionName = userVacationInfo.empPositionName || userVacationInfo.empPosition;
+            if (!positionName) {
+                vifPosition.textContent = '직급 미지정';
+                vifPosition.style.color = '#d32f2f';
+                console.error('직급 정보가 없습니다. 관리자에게 문의하세요.');
+            } else {
+                vifPosition.textContent = positionName;
+            }
         }
 
         // 연차 잔액 표시 (우측 상단)
