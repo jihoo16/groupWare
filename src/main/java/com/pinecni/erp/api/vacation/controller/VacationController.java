@@ -3,6 +3,11 @@ package com.pinecni.erp.api.vacation.controller;
 import com.pinecni.erp.api.vacation.dto.VacationUserInfoDTO;
 import com.pinecni.erp.api.vacation.service.VacationService;
 import com.pinecni.erp.entity.VacationBalance;
+import com.pinecni.erp.entity.VacationRequest;
+import com.pinecni.erp.entity.VacationAccrualSchedule;
+import com.pinecni.erp.api.vacation.repository.VacationRequestRepository;
+import com.pinecni.erp.api.vacation.repository.VacationAccrualScheduleRepository;
+import jakarta.servlet.http.HttpSession;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.ResponseEntity;
@@ -10,6 +15,7 @@ import org.springframework.web.bind.annotation.*;
 
 import java.time.LocalDate;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 /**
@@ -22,68 +28,168 @@ import java.util.Map;
 public class VacationController {
 
     private final VacationService vacationService;
+    private final VacationRequestRepository vacationRequestRepository;
+    private final VacationAccrualScheduleRepository vacationAccrualScheduleRepository;
 
     /**
      * 연차 신청서용 사용자 정보 조회 API
-     * @param userIdx 사용자 IDX
+     * @param userIdx 사용자 IDX (선택, 기본값: 세션의 로그인 사용자)
+     * @param year 조회할 연도 (선택, 기본값: 현재 연도)
+     * @param session HTTP 세션
      * @return 사용자 정보 + 연차 잔액 정보
      */
     @GetMapping("/user-info")
     public ResponseEntity<VacationUserInfoDTO> getUserVacationInfo(
-            @RequestParam(defaultValue = "1") Long userIdx) {
+            @RequestParam(required = false) Long userIdx,
+            @RequestParam(required = false) Integer year,
+            HttpSession session) {
 
-        Integer currentYear = LocalDate.now().getYear();
-        log.info("getUserVacationInfo - userIdx: {}, year: {}", userIdx, currentYear);
+        // 세션에서 로그인 사용자 IDX 조회
+        if (userIdx == null) {
+            userIdx = (Long) session.getAttribute("userIdx");
+            if (userIdx == null) {
+                log.error("세션에 userIdx가 없습니다. 로그인이 필요합니다.");
+                return ResponseEntity.status(401).build();
+            }
+        }
 
-        VacationUserInfoDTO userInfo = vacationService.getUserVacationInfo(userIdx, currentYear);
+        if (year == null) {
+            year = LocalDate.now().getYear();
+        }
+
+        log.info("getUserVacationInfo - userIdx: {}, year: {}", userIdx, year);
+
+        VacationUserInfoDTO userInfo = vacationService.getUserVacationInfo(userIdx, year);
 
         return ResponseEntity.ok(userInfo);
     }
 
     /**
-     * 특정 사용자의 연차 계산 및 저장 API
+     * 특정 사용자의 연차 발생 일정 생성 API
      * @param userIdx 사용자 IDX
      * @param year 대상 연도 (선택, 기본값: 현재 연도)
-     * @return 계산된 연차 정보
+     * @param session HTTP 세션
+     * @return 성공 메시지
      */
-    @PostMapping("/calculate")
-    public ResponseEntity<VacationBalance> calculateVacationBalance(
+    @PostMapping("/generate-schedule")
+    public ResponseEntity<Map<String, Object>> generateVacationSchedule(
             @RequestParam Long userIdx,
-            @RequestParam(required = false) Integer year) {
+            @RequestParam(required = false) Integer year,
+            HttpSession session) {
 
         if (year == null) {
             year = LocalDate.now().getYear();
         }
 
-        log.info("POST /api/vacation/calculate - userIdx: {}, year: {}", userIdx, year);
+        // 세션에서 현재 로그인한 사용자 IDX 조회
+        Long operatorUserIdx = (Long) session.getAttribute("userIdx");
+        if (operatorUserIdx == null) {
+            log.warn("세션에 userIdx가 없습니다. 기본값 사용");
+            operatorUserIdx = userIdx;
+        }
 
-        VacationBalance balance = vacationService.calculateAndSaveVacationBalance(userIdx, year);
+        log.info("POST /api/vacation/generate-schedule - userIdx: {}, year: {}, operatorUserIdx: {}",
+                 userIdx, year, operatorUserIdx);
 
-        return ResponseEntity.ok(balance);
+        vacationService.generateVacationAccrualSchedule(userIdx, year, operatorUserIdx);
+
+        Map<String, Object> response = new HashMap<>();
+        response.put("userIdx", userIdx);
+        response.put("year", year);
+        response.put("message", "연차 발생 일정이 생성되었습니다.");
+
+        return ResponseEntity.ok(response);
     }
 
     /**
-     * 전체 사용자의 연차 계산 및 저장 API
+     * 전체 사용자의 연차 발생 일정 생성 API
      * @param year 대상 연도 (선택, 기본값: 현재 연도)
      * @return 처리 결과
      */
-    @PostMapping("/calculate-all")
-    public ResponseEntity<Map<String, Object>> calculateAllVacationBalances(
+    @PostMapping("/generate-all-schedules")
+    public ResponseEntity<Map<String, Object>> generateAllVacationSchedules(
             @RequestParam(required = false) Integer year) {
 
         if (year == null) {
             year = LocalDate.now().getYear();
         }
 
-        log.info("POST /api/vacation/calculate-all - year: {}", year);
+        log.info("POST /api/vacation/generate-all-schedules - year: {}", year);
 
-        int processedCount = vacationService.calculateAndSaveAllVacationBalances(year);
+        int processedCount = vacationService.generateAllVacationAccrualSchedules(year);
 
         Map<String, Object> response = new HashMap<>();
         response.put("year", year);
         response.put("processedCount", processedCount);
-        response.put("message", processedCount + "명의 연차가 계산되었습니다.");
+        response.put("message", processedCount + "명의 연차 발생 일정이 생성되었습니다.");
 
         return ResponseEntity.ok(response);
+    }
+
+    /**
+     * 사용자의 연차 사용 내역 조회 API
+     * @param userIdx 사용자 IDX (선택, 기본값: 세션의 로그인 사용자)
+     * @param year 조회할 연도 (선택, 기본값: 현재 연도)
+     * @param session HTTP 세션
+     * @return 연차 사용 내역 리스트
+     */
+    @GetMapping("/history")
+    public ResponseEntity<List<VacationRequest>> getVacationHistory(
+            @RequestParam(required = false) Long userIdx,
+            @RequestParam(required = false) Integer year,
+            HttpSession session) {
+
+        // 세션에서 로그인 사용자 IDX 조회
+        if (userIdx == null) {
+            userIdx = (Long) session.getAttribute("userIdx");
+            if (userIdx == null) {
+                log.error("세션에 userIdx가 없습니다. 로그인이 필요합니다.");
+                return ResponseEntity.status(401).build();
+            }
+        }
+
+        if (year == null) {
+            year = LocalDate.now().getYear();
+        }
+
+        log.info("GET /api/vacation/history - userIdx: {}, year: {}", userIdx, year);
+
+        List<VacationRequest> history = vacationRequestRepository.findByUserIdxAndYear(userIdx, year);
+
+        return ResponseEntity.ok(history);
+    }
+
+    /**
+     * 연차 발생 일정 조회 API
+     * @param userIdx 사용자 IDX (선택, 기본값: 세션의 로그인 사용자)
+     * @param year 조회할 연도 (선택, 기본값: 현재 연도)
+     * @param session HTTP 세션
+     * @return 연차 발생 일정 리스트
+     */
+    @GetMapping("/accrual-schedule")
+    public ResponseEntity<List<VacationAccrualSchedule>> getAccrualSchedule(
+            @RequestParam(required = false) Long userIdx,
+            @RequestParam(required = false) Integer year,
+            HttpSession session) {
+
+        // 세션에서 로그인 사용자 IDX 조회
+        if (userIdx == null) {
+            userIdx = (Long) session.getAttribute("userIdx");
+            if (userIdx == null) {
+                log.error("세션에 userIdx가 없습니다. 로그인이 필요합니다.");
+                return ResponseEntity.status(401).build();
+            }
+        }
+
+        if (year == null) {
+            year = LocalDate.now().getYear();
+        }
+
+        log.info("GET /api/vacation/accrual-schedule - userIdx: {}, year: {}", userIdx, year);
+
+        List<VacationAccrualSchedule> schedule = vacationAccrualScheduleRepository
+                .findByUserIdxAndYearOrderByAccrualDateAsc(userIdx, year);
+
+        return ResponseEntity.ok(schedule);
     }
 }
