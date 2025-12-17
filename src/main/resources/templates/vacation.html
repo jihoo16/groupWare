@@ -23,13 +23,13 @@
             <div class="leave-content">
                 <!-- 연차 현황 카드 -->
                 <div class="leave-summary">
-                    <div class="summary-card total">
+                    <div class="summary-card total clickable" id="totalLeaveCard">
                         <div class="card-icon">
                             <i class="fas fa-calendar-check"></i>
                         </div>
                         <div class="card-content">
                             <h3>총 연차</h3>
-                            <p class="number">15<span>일</span></p>
+                            <p class="number">-<span>일</span></p>
                         </div>
                     </div>
 
@@ -39,8 +39,8 @@
                         </div>
                         <div class="card-content">
                             <h3>사용 연차</h3>
-                            <p class="number">8<span>일</span></p>
-                            <p class="sub-info">반차 2회 포함</p>
+                            <p class="number">-<span>일</span></p>
+                            <p class="sub-info"></p>
                         </div>
                     </div>
 
@@ -50,7 +50,7 @@
                         </div>
                         <div class="card-content">
                             <h3>잔여 연차</h3>
-                            <p class="number">7<span>일</span></p>
+                            <p class="number">-<span>일</span></p>
                         </div>
                     </div>
                 </div>
@@ -59,13 +59,6 @@
                 <div class="leave-history">
                     <div class="section-header">
                         <h2>연차 사용 내역</h2>
-                        <div class="filter-group">
-                            <select class="filter-select">
-                                <option value="all">전체</option>
-                                <option value="2025">2025년</option>
-                                <option value="2024">2024년</option>
-                            </select>
-                        </div>
                     </div>
 
                     <div class="history-table">
@@ -81,54 +74,7 @@
                                 </tr>
                             </thead>
                             <tbody>
-                                <tr>
-                                    <td>2025-03-15</td>
-                                    <td><span class="badge badge-full">연차</span></td>
-                                    <td>2025-03-20</td>
-                                    <td>2025-03-22</td>
-                                    <td>3일</td>
-                                    <td>개인 사유</td>
-                                </tr>
-                                <tr>
-                                    <td>2025-03-10</td>
-                                    <td><span class="badge badge-half">반차(오전)</span></td>
-                                    <td>2025-03-12</td>
-                                    <td>2025-03-12</td>
-                                    <td>0.5일</td>
-                                    <td>병원 진료</td>
-                                </tr>
-                                <tr>
-                                    <td>2025-03-08</td>
-                                    <td><span class="badge badge-full">연차</span></td>
-                                    <td>2025-03-11</td>
-                                    <td>2025-03-11</td>
-                                    <td>1일</td>
-                                    <td>가족 행사</td>
-                                </tr>
-                                <tr>
-                                    <td>2025-03-05</td>
-                                    <td><span class="badge badge-half">반차(오후)</span></td>
-                                    <td>2025-03-06</td>
-                                    <td>2025-03-06</td>
-                                    <td>0.5일</td>
-                                    <td>개인 사유</td>
-                                </tr>
-                                <tr>
-                                    <td>2025-02-20</td>
-                                    <td><span class="badge badge-full">연차</span></td>
-                                    <td>2025-02-25</td>
-                                    <td>2025-02-27</td>
-                                    <td>3일</td>
-                                    <td>여행</td>
-                                </tr>
-                                <tr>
-                                    <td>2025-01-20</td>
-                                    <td><span class="badge badge-full">연차</span></td>
-                                    <td>2025-01-22</td>
-                                    <td>2025-01-24</td>
-                                    <td>3일</td>
-                                    <td>개인 사유</td>
-                                </tr>
+                                <!-- JavaScript로 동적 생성 -->
                             </tbody>
                         </table>
                     </div>
@@ -138,6 +84,15 @@
                 <div class="annual-calendar-section">
                     <div class="section-header">
                         <h2>연차 캘린더</h2>
+                        <div class="calendar-controls">
+                            <button class="year-nav-btn" id="prevYearBtn">
+                                <i class="fas fa-chevron-left"></i>
+                            </button>
+                            <span class="current-year" id="currentCalendarYear">2025</span>
+                            <button class="year-nav-btn" id="nextYearBtn">
+                                <i class="fas fa-chevron-right"></i>
+                            </button>
+                        </div>
                         <div class="calendar-legend">
                             <div class="legend-item">
                                 <span class="legend-color approved"></span>
@@ -164,7 +119,7 @@
                 <div class="used-summary">
                     <div class="summary-row">
                         <span class="label">총 사용 연차:</span>
-                        <span class="value">8일 (반차 2회 포함)</span>
+                        <span class="value" id="usedLeaveSummary">-</span>
                     </div>
                 </div>
                 <div class="used-table">
@@ -180,6 +135,23 @@
                             <!-- JavaScript로 동적 생성 -->
                         </tbody>
                     </table>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 총 연차 계산 상세 모달 -->
+    <div class="modal" id="totalLeaveModal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2>총 연차 계산 상세</h2>
+                <button class="modal-close" id="closeTotalModal">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            <div class="modal-body">
+                <div class="calculation-detail" id="calculationDetailContent">
+                    <!-- JavaScript로 동적 생성 -->
                 </div>
             </div>
         </div>
