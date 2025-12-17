@@ -5,6 +5,7 @@ import com.pinecni.erp.api.user.dto.UserDTO;
 import com.pinecni.erp.api.user.dto.UserSimpleDTO;
 import com.pinecni.erp.api.user.dto.UserUpdateDTO;
 import com.pinecni.erp.api.user.service.UserService;
+import jakarta.servlet.http.HttpSession;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -133,7 +134,15 @@ public class UserController {
     @PostMapping
     public ResponseEntity<UserDTO> createUser(
             @Valid @RequestBody UserCreateDTO createDTO,
-            @RequestHeader(value = "X-User-Idx", required = false, defaultValue = "1") Long createdUserIdx) {
+            HttpSession session) {
+
+        // 세션에서 현재 로그인한 사용자 IDX 조회
+        Long createdUserIdx = (Long) session.getAttribute("userIdx");
+        if (createdUserIdx == null) {
+            log.error("세션에 userIdx가 없습니다. 로그인이 필요합니다.");
+            return ResponseEntity.status(401).build();
+        }
+
         log.info("========== POST /api/users - createUser() ==========");
         log.info("Request Body:");
         log.info("  - empId: {}", createDTO.getEmpId());
@@ -170,8 +179,16 @@ public class UserController {
     public ResponseEntity<UserDTO> updateUser(
             @PathVariable Long idx,
             @Valid @RequestBody UserUpdateDTO updateDTO,
-            @RequestHeader(value = "X-User-Idx", required = false, defaultValue = "1") Long updatedUserIdx) {
-        log.debug("PUT /api/users/{} - updateUser()", idx);
+            HttpSession session) {
+
+        // 세션에서 현재 로그인한 사용자 IDX 조회
+        Long updatedUserIdx = (Long) session.getAttribute("userIdx");
+        if (updatedUserIdx == null) {
+            log.error("세션에 userIdx가 없습니다. 로그인이 필요합니다.");
+            return ResponseEntity.status(401).build();
+        }
+
+        log.debug("PUT /api/users/{} - updateUser(), updatedUserIdx: {}", idx, updatedUserIdx);
         UserDTO user = userService.updateUser(idx, updateDTO, updatedUserIdx);
         return ResponseEntity.ok(user);
     }
@@ -183,8 +200,16 @@ public class UserController {
     @DeleteMapping("/{idx}")
     public ResponseEntity<Map<String, String>> deleteUser(
             @PathVariable Long idx,
-            @RequestHeader(value = "X-User-Idx", required = false, defaultValue = "1") Long deletedUserIdx) {
-        log.debug("DELETE /api/users/{} - deleteUser()", idx);
+            HttpSession session) {
+
+        // 세션에서 현재 로그인한 사용자 IDX 조회
+        Long deletedUserIdx = (Long) session.getAttribute("userIdx");
+        if (deletedUserIdx == null) {
+            log.error("세션에 userIdx가 없습니다. 로그인이 필요합니다.");
+            return ResponseEntity.status(401).build();
+        }
+
+        log.debug("DELETE /api/users/{} - deleteUser(), deletedUserIdx: {}", idx, deletedUserIdx);
         userService.deleteUser(idx, deletedUserIdx);
         Map<String, String> response = new HashMap<>();
         response.put("message", "사용자가 삭제되었습니다.");

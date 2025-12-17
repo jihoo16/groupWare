@@ -1,5 +1,7 @@
 package com.pinecni.erp.entity;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import jakarta.persistence.*;
 import lombok.*;
 
@@ -21,11 +23,11 @@ import java.time.LocalDateTime;
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
+@JsonIgnoreProperties({"hibernateLazyInitializer", "handler"})
 public class VacationRequest {
 
     @Id
-    @GeneratedValue(strategy = GenerationType.SEQUENCE, generator = "vacation_request_sequence")
-    @SequenceGenerator(name = "vacation_request_sequence", sequenceName = "vacation_request_sequence", allocationSize = 1)
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
     @Column(name = "idx")
     private Long idx;
 
@@ -43,6 +45,9 @@ public class VacationRequest {
 
     @Column(name = "days", nullable = false, precision = 4, scale = 1)
     private BigDecimal days;
+
+    @Column(name = "remaining_days_at_apply", precision = 4, scale = 1)
+    private BigDecimal remainingDaysAtApply;
 
     @Column(name = "reason", columnDefinition = "TEXT")
     private String reason;
@@ -75,10 +80,12 @@ public class VacationRequest {
     private Long documentIdx;
 
     // 관계 매핑
+    @JsonIgnore
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "user_idx", insertable = false, updatable = false)
     private User user;
 
+    @JsonIgnore
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "document_idx", insertable = false, updatable = false)
     private ApprovalDocument approvalDocument;

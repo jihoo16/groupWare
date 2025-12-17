@@ -96,22 +96,17 @@ document.addEventListener('DOMContentLoaded', function() {
     // ============================================
 
     /**
-     * 현재 로그인한 사용자 정보를 가져옴
-     * @returns {Promise<Object>} 로그인한 사용자 정보
+     * 현재 로그인한 사용자 정보를 가져옴 (전역 변수 CURRENT_USER 사용)
+     * @returns {Object} 로그인한 사용자 정보
      */
-    async function getCurrentUser() {
-        try {
-            const response = await fetch('/api/auth/me');
-            if (!response.ok) {
-                throw new Error('로그인 정보를 가져오는데 실패했습니다.');
-            }
-            const data = await response.json();
-            console.log('현재 로그인 사용자:', data);
-            return data;
-        } catch (error) {
-            console.error('로그인 사용자 조회 실패:', error);
+    function getCurrentUser() {
+        if (!window.CURRENT_USER || !window.CURRENT_USER.idx) {
+            console.warn('세션 정보가 없습니다.');
+            window.location.href = '/login';
             return null;
         }
+        console.log('현재 로그인 사용자:', window.CURRENT_USER);
+        return window.CURRENT_USER;
     }
 
     /**

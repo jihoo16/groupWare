@@ -52,6 +52,36 @@ document.addEventListener('DOMContentLoaded', function() {
     }
 
     // ===========================
+    // Current User Info Display
+    // ===========================
+    function loadCurrentUserInfo() {
+        // 전역 변수 CURRENT_USER에서 사용자 정보 가져오기 (layout.html에서 주입됨)
+        if (!window.CURRENT_USER || !window.CURRENT_USER.idx) {
+            console.warn('세션 정보가 없습니다.');
+            return;
+        }
+
+        const user = window.CURRENT_USER;
+
+        // 사용자 이름 업데이트
+        const userNameEl = document.querySelector('.user-name');
+        if (userNameEl && user.empName) {
+            userNameEl.textContent = user.empName;
+        }
+
+        // 사용자 역할 업데이트 (is_admin 기준)
+        const userRoleEl = document.querySelector('.user-role');
+        if (userRoleEl) {
+            userRoleEl.textContent = user.isAdmin ? '관리자' : '사용자';
+        }
+
+        console.log('현재 로그인 사용자:', user.empName, '(idx:', user.idx, ')');
+    }
+
+    // 페이지 로드 시 사용자 정보 표시
+    loadCurrentUserInfo();
+
+    // ===========================
     // Logout Button Handler
     // ===========================
     const logoutBtn = document.getElementById('logoutBtn');

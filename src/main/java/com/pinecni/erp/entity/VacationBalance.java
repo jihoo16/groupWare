@@ -1,30 +1,35 @@
 package com.pinecni.erp.entity;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import jakarta.persistence.*;
 import lombok.*;
+import org.hibernate.annotations.Immutable;
+import org.hibernate.annotations.Subselect;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 
 /**
- * 연차 잔여 현황 Entity
+ * 연차 잔액 VIEW (읽기 전용)
+ * - vacation_accrual_schedule과 vacation_request를 조인하여 실시간 계산
+ * - 오늘까지 발생한 연차(accrual_date <= CURRENT_DATE)만 집계
+ * - 읽기 전용 (Immutable)
+ * - 데이터 불일치 방지를 위해 VIEW로 구현
  */
 @Entity
-@Table(name = "vacation_balance", schema = "erp",
-        uniqueConstraints = @UniqueConstraint(name = "uq_vacation_balance_user_year", columnNames = {"user_idx", "year"}),
-        indexes = {
-                @Index(name = "idx_vacation_balance_user_idx", columnList = "user_idx")
-        })
+@Immutable
+@Subselect("SELECT * FROM erp.vacation_balance")
 @Getter
 @Setter
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
+@JsonIgnoreProperties({"hibernateLazyInitializer", "handler"})
 public class VacationBalance {
 
     @Id
-    @GeneratedValue(strategy = GenerationType.SEQUENCE, generator = "vacation_balance_sequence")
-    @SequenceGenerator(name = "vacation_balance_sequence", sequenceName = "vacation_balance_sequence", allocationSize = 1)
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
     @Column(name = "idx")
     private Long idx;
 
@@ -56,6 +61,7 @@ public class VacationBalance {
     private LocalDateTime updatedAt;
 
     // 관계 매핑
+    @JsonIgnore
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "user_idx", insertable = false, updatable = false)
     private User user;

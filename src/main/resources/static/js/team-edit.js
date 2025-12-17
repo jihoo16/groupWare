@@ -10,6 +10,16 @@ document.addEventListener('DOMContentLoaded', function() {
         return;
     }
 
+    // 전역 변수 CURRENT_USER 사용 (layout.html에서 주입됨)
+    if (!window.CURRENT_USER || !window.CURRENT_USER.idx) {
+        console.warn('세션 정보가 없습니다.');
+        window.location.href = '/login';
+        return;
+    }
+
+    const currentUserIdx = window.CURRENT_USER.idx;
+    console.log('현재 로그인 사용자:', window.CURRENT_USER.empName, '(idx:', currentUserIdx, ')');
+
     // 상태 변수
     let currentTeam = null;
     let allEmployees = [];
@@ -755,7 +765,7 @@ document.addEventListener('DOMContentLoaded', function() {
             teamDescription: teamDescription,
             teamColor: teamColor,
             isActive: isActive,
-            createdUserIdx: 1, // TODO: 실제 로그인 사용자 IDX로 변경 필요 (테스트용 하드코딩)
+            createdUserIdx: currentUserIdx,
             members: teamMembers.map(member => ({
                 memberIdx: member.idx,
                 role: member.role || null

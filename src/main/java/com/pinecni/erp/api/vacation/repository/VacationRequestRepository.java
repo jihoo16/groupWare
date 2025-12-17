@@ -5,6 +5,7 @@ import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.stereotype.Repository;
 
+import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.util.List;
 
@@ -50,4 +51,11 @@ public interface VacationRequestRepository extends JpaRepository<VacationRequest
     @Query("SELECT v FROM VacationRequest v WHERE v.userIdx = :userIdx " +
             "AND YEAR(v.startDate) = :year")
     List<VacationRequest> findByUserIdxAndYear(Long userIdx, int year);
+
+    /**
+     * 사용자의 연간 총 사용 연차 일수 합계
+     */
+    @Query("SELECT COALESCE(SUM(v.days), 0) FROM VacationRequest v " +
+            "WHERE v.userIdx = :userIdx AND YEAR(v.startDate) = :year")
+    BigDecimal sumDaysByUserIdxAndYear(Long userIdx, int year);
 }
