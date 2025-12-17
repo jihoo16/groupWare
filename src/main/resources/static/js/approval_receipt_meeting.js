@@ -274,7 +274,9 @@ document.addEventListener('DOMContentLoaded', function() {
 
         // 회의록 참석자 정보 업데이트
         function updateMeetingMinutesAttendees() {
-            const internalAttendees = currentAttendees.filter(a => a.name && a.name.trim());
+            // 내부/외부 참석자 구분
+            const internalAttendees = currentAttendees.filter(a => a.name && a.name.trim() && !String(a.id).startsWith('ext_'));
+            const externalAttendees = currentAttendees.filter(a => a.name && a.name.trim() && String(a.id).startsWith('ext_'));
 
             let allAttendeesText = '';
 
@@ -284,11 +286,21 @@ document.addEventListener('DOMContentLoaded', function() {
                 allAttendeesText = names.join(', ') + '(파인씨앤아이)';
             }
 
+            // 외부 참석자
+            if (externalAttendees.length > 0) {
+                const externalTexts = externalAttendees.map(a => `${a.name.trim()}(${a.dept || '외부'})`);
+                if (allAttendeesText) {
+                    allAttendeesText += ', ' + externalTexts.join(', ');
+                } else {
+                    allAttendeesText = externalTexts.join(', ');
+                }
+            }
+
             document.querySelectorAll('.auto-all-attendees').forEach(field => {
                 field.textContent = allAttendeesText;
             });
 
-            // 참석자 명단 테이블 업데이트
+            // 참석자 명단 테이블 업데이트 (내부 + 외부 모두)
             const nameFields = document.querySelectorAll('.attendee-sig-name');
             const deptFields = document.querySelectorAll('.attendee-sig-dept');
 
@@ -298,7 +310,9 @@ document.addEventListener('DOMContentLoaded', function() {
             nameFields.forEach(field => field.value = '');
             deptFields.forEach(field => field.value = '');
 
-            internalAttendees.forEach((attendee, idx) => {
+            const allAttendees = [...internalAttendees, ...externalAttendees];
+
+            allAttendees.forEach((attendee, idx) => {
                 let fieldIndex;
                 if (idx < rowCount) {
                     fieldIndex = idx * 2;
@@ -310,7 +324,9 @@ document.addEventListener('DOMContentLoaded', function() {
                     nameFields[fieldIndex].value = attendee.name;
                 }
                 if (deptFields[fieldIndex]) {
-                    deptFields[fieldIndex].value = '파인씨앤아이';
+                    // 외부인력은 회사명, 내부는 파인씨앤아이
+                    const isExternal = String(attendee.id).startsWith('ext_');
+                    deptFields[fieldIndex].value = isExternal ? attendee.dept : '파인씨앤아이';
                 }
             });
         }
@@ -328,11 +344,16 @@ document.addEventListener('DOMContentLoaded', function() {
 
             const grouped = {};
             currentAttendees.forEach(attendee => {
-                const key = `내부_${attendee.dept}`;
+                // 외부인력 구분
+                const isExternal = String(attendee.id).startsWith('ext_');
+                const type = isExternal ? '외부' : '내부';
+                const dept = isExternal ? attendee.dept : '파인씨앤아이';
+
+                const key = `${type}_${dept}`;
                 if (!grouped[key]) {
                     grouped[key] = {
-                        type: '내부',
-                        dept: attendee.dept,
+                        type: type,
+                        dept: dept,
                         names: []
                     };
                 }
@@ -1346,8 +1367,9 @@ document.addEventListener('DOMContentLoaded', function() {
             window.addAttendeesToMeeting(personsToAdd);
         }
 
-        // 모달 닫기
+        // 외부인력 모달과 내부 참석자 모달 모두 닫기
         closeExternalPersonModal();
+        closeAttendeeModal();
     };
 
     // 신규 외부인력 등록
