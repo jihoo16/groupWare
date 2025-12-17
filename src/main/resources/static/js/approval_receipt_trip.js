@@ -45,6 +45,9 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     }
 
+    // 초기 데이터 로드
+    loadEmployees();
+
     // 직책 목록
     const positions = ['상무', '연구위원', '부장', '수석', '차장', '책임', '과장', '선임', '대리', '사원', '연구원'];
 
