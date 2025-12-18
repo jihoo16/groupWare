@@ -1,6 +1,7 @@
 package com.pinecni.erp.api.vacation.service;
 
 import com.pinecni.erp.api.vacation.dto.VacationUserInfoDTO;
+import com.pinecni.erp.api.vacation.dto.VacationCalculationDetailDTO;
 
 import java.time.LocalDate;
 
@@ -39,4 +40,15 @@ public interface VacationService {
      * @return 발생 건수
      */
     int processDailyAccruals(LocalDate targetDate);
+
+    /**
+     * 연차 계산 상세 정보 조회 (총 연차 모달용)
+     * - 입사일 기준으로 해당 연도의 예상 연차 계산
+     * - 미래 연도도 계산 가능
+     * - 근속연차 발생 예정일 포함
+     * @param userIdx 사용자 IDX
+     * @param year 조회할 연도
+     * @return 연차 계산 상세 정보
+     */
+    VacationCalculationDetailDTO getVacationCalculationDetail(Long userIdx, Integer year);
 }

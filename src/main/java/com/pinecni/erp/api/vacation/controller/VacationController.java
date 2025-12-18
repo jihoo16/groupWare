@@ -1,6 +1,7 @@
 package com.pinecni.erp.api.vacation.controller;
 
 import com.pinecni.erp.api.vacation.dto.VacationUserInfoDTO;
+import com.pinecni.erp.api.vacation.dto.VacationCalculationDetailDTO;
 import com.pinecni.erp.api.vacation.service.VacationService;
 import com.pinecni.erp.entity.VacationBalance;
 import com.pinecni.erp.entity.VacationRequest;
@@ -191,5 +192,44 @@ public class VacationController {
                 .findByUserIdxAndYearOrderByAccrualDateAsc(userIdx, year);
 
         return ResponseEntity.ok(schedule);
+    }
+
+    /**
+     * 연차 계산 상세 정보 조회 API (총 연차 모달용)
+     * - 입사일 기준으로 해당 연도의 예상 연차 계산
+     * - 미래 연도도 계산 가능
+     * @param userIdx 사용자 IDX (선택, 기본값: 세션의 로그인 사용자)
+     * @param year 조회할 연도 (선택, 기본값: 현재 연도)
+     * @param session HTTP 세션
+     * @return 연차 계산 상세 정보
+     */
+    @GetMapping("/calculation-detail")
+    public ResponseEntity<VacationCalculationDetailDTO> getCalculationDetail(
+            @RequestParam(required = false) Long userIdx,
+            @RequestParam(required = false) Integer year,
+            HttpSession session) {
+
+        // 세션에서 로그인 사용자 IDX 조회
+        if (userIdx == null) {
+            userIdx = (Long) session.getAttribute("userIdx");
+            if (userIdx == null) {
+                log.error("세션에 userIdx가 없습니다. 로그인이 필요합니다.");
+                return ResponseEntity.status(401).build();
+            }
+        }
+
+        if (year == null) {
+            year = LocalDate.now().getYear();
+        }
+
+        log.info("GET /api/vacation/calculation-detail - userIdx: {}, year: {}", userIdx, year);
+
+        try {
+            VacationCalculationDetailDTO detail = vacationService.getVacationCalculationDetail(userIdx, year);
+            return ResponseEntity.ok(detail);
+        } catch (IllegalArgumentException | IllegalStateException e) {
+            log.error("연차 계산 상세 조회 실패: {}", e.getMessage());
+            return ResponseEntity.badRequest().build();
+        }
     }
 }

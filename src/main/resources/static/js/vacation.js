@@ -159,6 +159,25 @@ document.addEventListener('DOMContentLoaded', function() {
         } else if (subInfoEl) {
             subInfoEl.textContent = '';
         }
+
+        // 총 연차 카드 하단에 근속연차 예정 정보 표시
+        updateTotalDaysSubInfo();
+    }
+
+    // 총 연차 카드 하단에 근속연차 예정 정보 표시
+    function updateTotalDaysSubInfo() {
+        const totalSubInfoEl = document.querySelector('.summary-card.total .sub-info');
+        if (!totalSubInfoEl || !calculationDetail) return;
+
+        // 해당 연도에 새로 발생하는 근속가산이 있는 경우만 표시
+        if (calculationDetail.serviceBonusAccrualDate) {
+            const bonusDate = new Date(calculationDetail.serviceBonusAccrualDate + 'T00:00:00');
+            const month = bonusDate.getMonth() + 1;
+            const day = bonusDate.getDate();
+            totalSubInfoEl.textContent = `${month}월 ${day}일 이후 +1일`;
+        } else {
+            totalSubInfoEl.textContent = '';
+        }
     }
 
     // 연차 사용 내역 테이블 업데이트
@@ -295,10 +314,25 @@ document.addEventListener('DOMContentLoaded', function() {
         updateVacationHistoryTable(vacationHistory);
         console.log(`[DEBUG] ${year}년 연차 사용 내역 로드 완료:`, vacationHistory);
 
-        // 2. 연차 정보 조회 (총 연차, 사용 연차, 잔여 연차)
+        // 2. 연차 계산 상세 조회 (먼저 로드하여 총 연차 카드에 사용)
+        calculationDetail = await fetchCalculationDetail(currentUserIdx, year);
+        console.log(`[DEBUG] ${year}년 연차 계산 상세 로드 완료:`, calculationDetail);
+
+        // 3. 연차 정보 조회 (총 연차, 사용 연차, 잔여 연차)
+        // 미래 연도의 경우 vacationInfo가 null일 수 있으므로 calculationDetail에서 가져옴
         vacationInfo = await fetchVacationInfo(currentUserIdx, year);
-        if (vacationInfo) {
-            updateVacationSummaryCards(vacationInfo); // 이제 vacationHistory가 업데이트된 상태
+
+        if (vacationInfo || calculationDetail) {
+            // vacationInfo가 없거나 totalDays가 0이면 calculationDetail로부터 생성
+            if ((!vacationInfo || vacationInfo.totalDays == 0) && calculationDetail) {
+                console.log(`[DEBUG] ${year}년 VacationBalance 없음, calculationDetail로 생성`);
+                vacationInfo = {
+                    totalDays: calculationDetail.totalVacationDays,
+                    usedDays: 0,
+                    remainingDays: calculationDetail.totalVacationDays
+                };
+            }
+            updateVacationSummaryCards(vacationInfo);
             console.log(`[DEBUG] ${year}년 연차 정보 로드 완료:`, vacationInfo);
         } else {
             console.warn(`[DEBUG] ${year}년 연차 정보 없음`);
@@ -307,16 +341,14 @@ document.addEventListener('DOMContentLoaded', function() {
             const usedDaysEl = document.querySelector('.summary-card.used .number');
             const remainingDaysEl = document.querySelector('.summary-card.remaining .number');
             const subInfoEl = document.querySelector('.summary-card.used .sub-info');
+            const totalSubInfoEl = document.querySelector('.summary-card.total .sub-info');
 
             if (totalDaysEl) totalDaysEl.innerHTML = '-<span>일</span>';
             if (usedDaysEl) usedDaysEl.innerHTML = '-<span>일</span>';
             if (remainingDaysEl) remainingDaysEl.innerHTML = '-<span>일</span>';
-            if (subInfoEl) subInfoEl.textContent = ''; // sub-info도 초기화
+            if (subInfoEl) subInfoEl.textContent = '';
+            if (totalSubInfoEl) totalSubInfoEl.textContent = '';
         }
-
-        // 3. 연차 계산 상세 조회 (총 연차 모달용)
-        calculationDetail = await fetchCalculationDetail(currentUserIdx, year);
-        console.log(`[DEBUG] ${year}년 연차 계산 상세 로드 완료:`, calculationDetail);
 
         // 4. 캘린더 렌더링
         renderAnnualCalendar(year);
@@ -488,18 +520,18 @@ document.addEventListener('DOMContentLoaded', function() {
                 <div class="calc-section">
                     <div class="calc-title">📅 입사 정보</div>
                     <div class="calc-value">${calculationDetail.joinDate}</div>
-                    <div class="calc-description">입사일 기준으로 연차가 계산됩니다</div>
+                    <div class="calc-description">계산 기준일: ${calculationDetail.calculationBaseDate}</div>
                 </div>
 
                 <div class="calc-section">
                     <div class="calc-title">⏱️ 근속 기간</div>
                     <div class="calc-value">${calculationDetail.yearsOfService}년 ${calculationDetail.monthsOfService}개월</div>
-                    <div class="calc-description">입사 첫해 근무자입니다</div>
+                    <div class="calc-description">입사 1년 미만 근무자입니다</div>
                 </div>
 
                 <div class="calc-section">
                     <div class="calc-title">📊 월차 계산</div>
-                    <div class="calc-value">${calculationDetail.monthlyVacationDays}일</div>
+                    <div class="calc-value">${calculationDetail.monthlyVacationDays || 0}일</div>
                     <div class="calc-description">
                         ${calculationDetail.monthlyStartMonth && calculationDetail.monthlyEndMonth
                             ? `${calculationDetail.monthlyStartMonth}월 ~ ${calculationDetail.monthlyEndMonth}월 근무 기간<br>`
@@ -508,9 +540,30 @@ document.addEventListener('DOMContentLoaded', function() {
                     </div>
                 </div>
 
+                <div style="margin: 20px 0; padding: 16px; background: #f8f9fa; border-radius: 8px; border-left: 4px solid #2196f3;">
+                    <div style="font-size: 14px; font-weight: 600; color: #1976d2; margin-bottom: 12px;">
+                        📌 월차 계산 방식 (개인별 상세)
+                    </div>
+                    <div style="font-size: 13px; color: #555; line-height: 1.8;">
+                        <strong>✓ 귀하의 입사일: ${calculationDetail.joinDate}</strong><br>
+                        <strong>✓ 현재 근속: ${calculationDetail.yearsOfService}년 ${calculationDetail.monthsOfService}개월</strong><br>
+                        <br>
+                        <strong style="color: #2196f3;">🔹 1년 미만 근로자 월차 계산</strong><br>
+                        • 입사 후 <strong>매월 1일씩 월차 발생</strong> (최대 11일)<br>
+                        • 귀하의 경우: <strong>${calculationDetail.monthlyStartMonth || ''}${calculationDetail.monthlyEndMonth ? '월 ~ ' + calculationDetail.monthlyEndMonth + '월' : ''}</strong> 근무 기간<br>
+                        • 발생 월차: <strong>${calculationDetail.monthlyVacationDays || 0}일</strong><br>
+                        • 근로기준법 제60조 제2항에 따른 규정<br>
+                        <br>
+                        <strong style="color: #f57c00;">💡 참고</strong><br>
+                        • 1년 미만 근로자는 연차가 아닌 <strong>월차만</strong> 발생<br>
+                        • 1년일 도래 시 <strong>전년도 근로일수 비례하여 연차 부여</strong><br>
+                        • 월차는 1년일 이후 연차로 전환됨<br>
+                    </div>
+                </div>
+
                 <div class="total-result">
                     <div class="result-label">총 연차 일수</div>
-                    <div class="result-value">${calculationDetail.totalVacationDays}<span>일</span></div>
+                    <div class="result-value">${calculationDetail.totalVacationDays || 0}<span>일</span></div>
                 </div>
             `;
         } else {
@@ -530,16 +583,19 @@ document.addEventListener('DOMContentLoaded', function() {
 
                 <div class="calc-section" style="border-left-color: #388e3c;">
                     <div class="calc-title">✓ 기본 연차</div>
-                    <div class="calc-value" style="color: #388e3c;">${calculationDetail.baseVacationDays}일</div>
+                    <div class="calc-value" style="color: #388e3c;">${calculationDetail.baseVacationDays || 0}일</div>
                     <div class="calc-description">근로기준법에 따른 기본 연차 일수</div>
                 </div>
 
-                ${calculationDetail.serviceBonusDays > 0 ? `
+                ${(calculationDetail.serviceBonusDays || 0) > 0 ? `
                 <div class="calc-section" style="border-left-color: #f57c00;">
                     <div class="calc-title">🎁 근속 가산 연차</div>
-                    <div class="calc-value" style="color: #f57c00;">+${calculationDetail.serviceBonusDays}일</div>
+                    <div class="calc-value" style="color: #f57c00;">+${calculationDetail.serviceBonusDays || 0}일</div>
                     <div class="calc-description">
-                        매 만2년마다 1일씩 가산<br>
+                        ${calculationDetail.serviceBonusAccrualDate
+                            ? `<strong style="color: #f57c00;">${formatAccrualDate(calculationDetail.serviceBonusAccrualDate)} 발생 예정</strong><br>`
+                            : ''}
+                        ${calculationDetail.serviceBonusDescription || '매 만2년마다 1일씩 가산'}<br>
                         (기본연차 합산 최대 25일, 근속가산 최대 10일)
                     </div>
                 </div>
@@ -548,14 +604,62 @@ document.addEventListener('DOMContentLoaded', function() {
                 <div style="margin: 20px 0; padding: 16px; background: white; border-radius: 8px; border: 1px solid #e0e0e0;">
                     <div style="font-size: 13px; color: #666; margin-bottom: 8px;">💡 계산식</div>
                     <div style="font-size: 15px; font-weight: 600; color: #333; text-align: center;">
-                        ${calculationDetail.baseVacationDays}일 (기본) ${calculationDetail.serviceBonusDays > 0 ? `+ ${calculationDetail.serviceBonusDays}일 (가산)` : ''}
-                        = <span style="color: #1976d2; font-size: 18px;">${calculationDetail.totalVacationDays}일</span>
+                        ${calculationDetail.proportionalVacationDays
+                            ? `${calculationDetail.monthlyVacationDays || 0}일 (월차) + ${calculationDetail.baseVacationDays || 0}일 (비례연차)`
+                            : `${calculationDetail.baseVacationDays || 0}일 (기본)`}
+                        ${(calculationDetail.serviceBonusDays || 0) > 0 ? ` + ${calculationDetail.serviceBonusDays || 0}일 (가산)` : ''}
+                        = <span style="color: #1976d2; font-size: 18px;">${calculationDetail.totalVacationDays || 0}일</span>
+                    </div>
+                </div>
+
+                <div style="margin: 20px 0; padding: 16px; background: #f8f9fa; border-radius: 8px; border-left: 4px solid #388e3c;">
+                    <div style="font-size: 14px; font-weight: 600; color: #388e3c; margin-bottom: 12px;">
+                        📌 연차 계산 상세 (개인별)
+                    </div>
+                    <div style="font-size: 13px; color: #555; line-height: 1.8;">
+                        <strong>✓ 귀하의 입사일: ${calculationDetail.joinDate}</strong><br>
+                        <strong>✓ 현재 근속: ${calculationDetail.yearsOfService}년 ${calculationDetail.monthsOfService}개월</strong><br>
+                        <br>
+                        ${calculationDetail.proportionalVacationDays ? `
+                        <strong style="color: #2196f3;">🔹 월차 (${calculationDetail.monthlyVacationDays || 0}일)</strong><br>
+                        ${calculationDetail.monthlyStartMonth && calculationDetail.monthlyEndMonth
+                            ? `• <strong>${calculationDetail.monthlyStartMonth}월 ~ ${calculationDetail.monthlyEndMonth}월</strong> 근무 기간<br>`
+                            : ''}
+                        • 매월 1일씩 발생 (입사일부터 1년일 전월까지)<br>
+                        • 귀하의 경우: <strong>${calculationDetail.monthlyVacationDays || 0}일 발생</strong><br>
+                        <br>
+                        <strong style="color: #388e3c;">🔹 비례 연차 (${calculationDetail.baseVacationDays || 0}일)</strong><br>
+                        • 1년일 도래: <strong>${calculationDetail.proportionalStartDate ? formatAccrualDate(calculationDetail.proportionalStartDate) : ''}</strong><br>
+                        • <strong>전년도 근로일수 비례 지급</strong><br>
+                        • 계산식: (전년도 근로일수 / 전년도 전체일수) × 15일 (반올림)<br>
+                        • 귀하의 경우: <strong>${calculationDetail.baseVacationDays}일 부여</strong><br>
+                        • 근로기준법 제60조 제1항에 따른 규정<br>
+                        <br>
+                        ` : `
+                        <strong style="color: #388e3c;">🔹 기본 연차 (${calculationDetail.baseVacationDays || 0}일)</strong><br>
+                        • 1년 이상 근속 시 <strong>15일 부여</strong><br>
+                        • 근로기준법 제60조 제1항에 따른 규정<br>
+                        <br>
+                        `}
+                        ${(calculationDetail.serviceBonusDays || 0) > 0 ? `
+                        <strong style="color: #f57c00;">🔹 근속 가산 연차 (${calculationDetail.serviceBonusDays}일)</strong><br>
+                        • <strong>만 2년마다 1일씩 누적 추가</strong><br>
+                        • 귀하의 경우: <strong>${calculationDetail.serviceBonusDays}일 가산</strong><br>
+                        ${calculationDetail.serviceBonusAccrualDate ? `• <strong>${formatAccrualDate(calculationDetail.serviceBonusAccrualDate)}</strong>에 1일 추가 예정<br>` : ''}
+                        • 기본연차와 합산하여 <strong>최대 25일</strong> (15일 + 10일)<br>
+                        • 근로기준법 제60조 제2항에 따른 규정<br>
+                        <br>
+                        ` : ''}
+                        <strong style="color: #1976d2;">💡 귀하의 ${calculationDetail.year}년 총 연차</strong><br>
+                        ${calculationDetail.proportionalVacationDays ? `• 월차: ${calculationDetail.monthlyVacationDays || 0}일<br>• 비례연차: ${calculationDetail.baseVacationDays || 0}일<br>` : `• 기본연차: ${calculationDetail.baseVacationDays || 0}일<br>`}
+                        ${(calculationDetail.serviceBonusDays || 0) > 0 ? `• 근속가산: ${calculationDetail.serviceBonusDays}일<br>` : ''}
+                        • <strong>합계: ${calculationDetail.totalVacationDays || 0}일</strong><br>
                     </div>
                 </div>
 
                 <div class="total-result">
                     <div class="result-label">총 연차 일수</div>
-                    <div class="result-value">${calculationDetail.totalVacationDays}<span>일</span></div>
+                    <div class="result-value">${calculationDetail.totalVacationDays || 0}<span>일</span></div>
                 </div>
             `;
         }
@@ -623,6 +727,15 @@ document.addEventListener('DOMContentLoaded', function() {
         const month = String(date.getMonth() + 1).padStart(2, '0');
         const day = String(date.getDate()).padStart(2, '0');
         return `${year}-${month}-${day}`;
+    }
+
+    // 발생 예정일 포맷팅 함수 (예: "2026년 7월 1일")
+    function formatAccrualDate(dateStr) {
+        const date = new Date(dateStr + 'T00:00:00');
+        const year = date.getFullYear();
+        const month = date.getMonth() + 1;
+        const day = date.getDate();
+        return `${year}년 ${month}월 ${day}일`;
     }
 
     // 연차 캘린더 연도 변경 버튼
