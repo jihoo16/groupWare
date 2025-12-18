@@ -442,6 +442,36 @@ document.addEventListener('DOMContentLoaded', function() {
             });
     }
 
+    // 직급 순서 반환 함수 (정렬용)
+    function getPositionOrder(positionName) {
+        if (!positionName) {
+            return 999; // 직급 정보 없는 경우 맨 뒤로
+        }
+
+        switch (positionName) {
+            case '대표':
+            case '대표이사':
+                return 1;
+            case '상무':
+            case '상무이사':
+                return 2;
+            case '이사':
+                return 3;
+            case '부장':
+                return 4;
+            case '차장':
+                return 5;
+            case '과장':
+                return 6;
+            case '대리':
+                return 7;
+            case '사원':
+                return 8;
+            default:
+                return 999; // 알 수 없는 직급은 맨 뒤로
+        }
+    }
+
     // 인력 선택 테이블 렌더링
     function renderMemberSelectTable(users) {
         const memberSelectTableBody = document.getElementById('memberSelectTableBody');
@@ -465,7 +495,31 @@ document.addEventListener('DOMContentLoaded', function() {
             return isActive && isNotPI;
         });
 
-        activeUsers.forEach(user => {
+        // 이미 선택된 사용자와 미선택 사용자로 분리
+        const selectedUsers = activeUsers.filter(user =>
+            selectedMemberList.some(m => m.id === user.idx.toString())
+        );
+        const unselectedUsers = activeUsers.filter(user =>
+            !selectedMemberList.some(m => m.id === user.idx.toString())
+        );
+
+        // 각 그룹을 직급 순으로 정렬 (대표 > 상무 > 이사 > 부장 > 차장 > 과장 > 대리 > 사원)
+        selectedUsers.sort((a, b) => {
+            const orderA = getPositionOrder(a.empPositionName);
+            const orderB = getPositionOrder(b.empPositionName);
+            return orderA - orderB;
+        });
+
+        unselectedUsers.sort((a, b) => {
+            const orderA = getPositionOrder(a.empPositionName);
+            const orderB = getPositionOrder(b.empPositionName);
+            return orderA - orderB;
+        });
+
+        // 선택된 사용자를 상단에, 미선택 사용자를 하단에 배치
+        const sortedUsers = [...selectedUsers, ...unselectedUsers];
+
+        sortedUsers.forEach(user => {
             const row = document.createElement('tr');
             const deptName = user.empDeptName || user.empDept || '-';
             const positionName = user.empPositionName || user.empPosition || '-';
@@ -620,8 +674,20 @@ document.addEventListener('DOMContentLoaded', function() {
             return;
         }
 
+        // 팀원 정렬: PI(연구책임자)를 맨 위에, 나머지는 직급 순으로 정렬
+        const sortedMembers = [...selectedMemberList].sort((a, b) => {
+            // PI는 항상 맨 위
+            if (a.role === 'PI') return -1;
+            if (b.role === 'PI') return 1;
+
+            // 나머지는 직급 순으로 정렬 (대표 > 상무 > 이사 > 부장 > 차장 > 과장 > 대리 > 사원)
+            const orderA = getPositionOrder(a.position);
+            const orderB = getPositionOrder(b.position);
+            return orderA - orderB;
+        });
+
         // 팀원이 있을 때: 목록 표시, 버튼 래퍼 표시
-        selectedMemberList.forEach((member, index) => {
+        sortedMembers.forEach((member, index) => {
             const row = document.createElement('tr');
 
             // 역할 select 옵션 생성
