@@ -22,7 +22,6 @@ document.addEventListener('DOMContentLoaded', function() {
     const approverModal = document.getElementById('approverModal');
     const employeeList = document.getElementById('employeeList');
     const approverSearch = document.getElementById('approverSearch');
-    const saveDraftBtn = document.getElementById('saveDraftBtn');
     const submitBtn = document.getElementById('submitBtn');
 
     // 직원 데이터 (API로 로드)
@@ -944,8 +943,8 @@ document.addEventListener('DOMContentLoaded', function() {
     };
 
     // 저장
-    if (saveDraftBtn) {
-        saveDraftBtn.addEventListener('click', async function() {
+    if (submitBtn) {
+        submitBtn.addEventListener('click', async function() {
             // 필수 필드 검증
             const projectSelect = document.getElementById('trip_project');
             const dateInput = document.getElementById('trip_date');
@@ -1054,21 +1053,7 @@ document.addEventListener('DOMContentLoaded', function() {
             }
         });
     }
-
-    // 제출
-    if (submitBtn) {
-        submitBtn.addEventListener('click', function() {
-            if (selectedApprovers.length === 0) {
-                alert('결재자를 지정해주세요.');
-                return;
-            }
-
-            if (confirm('결재를 요청하시겠습니까?')) {
-                alert('결재 요청이 완료되었습니다.');
-                window.location.href = '/approval';
-            }
-        });
-    }
+    
 
     // PDF 저장 버튼 이벤트
     const savePdfBtn = document.getElementById('savePdfBtn');

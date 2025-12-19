@@ -36,7 +36,6 @@ document.addEventListener('DOMContentLoaded', function() {
     const fileInput = document.getElementById('fileInput');
     const fileList = document.getElementById('fileList');
     const fileUploadArea = document.getElementById('fileUploadArea');
-    const saveDraftBtn = document.getElementById('saveDraftBtn');
     const submitBtn = document.getElementById('submitBtn');
     const projectSelect = document.getElementById('projectSelect');
     const weeklyAchievementRateInput = document.getElementById('weeklyAchievementRate');
@@ -231,12 +230,6 @@ document.addEventListener('DOMContentLoaded', function() {
     // 폼 제출 기능
     // ============================================
 
-    // 임시저장
-    if (saveDraftBtn) {
-        saveDraftBtn.addEventListener('click', function() {
-            alert('임시저장 기능은 아직 구현되지 않았습니다.');
-        });
-    }
 
     // 제출 (저장)
     if (submitBtn) {
