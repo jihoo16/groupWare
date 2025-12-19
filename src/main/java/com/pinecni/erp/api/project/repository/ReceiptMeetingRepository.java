@@ -7,6 +7,8 @@ import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
 import java.math.BigDecimal;
+import java.util.List;
+import java.util.Optional;
 
 /**
  * ReceiptMeeting Repository
@@ -22,4 +24,38 @@ public interface ReceiptMeetingRepository extends JpaRepository<ReceiptMeeting, 
     @Query("SELECT COALESCE(SUM(rm.amount), 0) FROM ReceiptMeeting rm " +
             "WHERE rm.projectIdx = :projectIdx ")
     BigDecimal sumAmountByProjectIdx(@Param("projectIdx") Long projectIdx);
+
+    /**
+     * 프로젝트별 회의록 목록 조회
+     */
+    List<ReceiptMeeting> findByProjectIdxOrderByMeetingDateDesc(Long projectIdx);
+
+    /**
+     * 작성자별 회의록 목록 조회
+     */
+    List<ReceiptMeeting> findByAuthorIdxOrderByMeetingDateDesc(Long authorIdx);
+
+    /**
+     * 상태별 회의록 목록 조회
+     */
+    List<ReceiptMeeting> findByStatusOrderByMeetingDateDesc(String status);
+
+    /**
+     * 문서번호로 회의록 조회
+     */
+    Optional<ReceiptMeeting> findByDocumentNumber(String documentNumber);
+
+    /**
+     * 참석자 정보를 포함한 회의록 상세 조회
+     * Note: approvals는 lazy loading으로 필요시 별도 조회
+     */
+    @Query("SELECT DISTINCT rm FROM ReceiptMeeting rm " +
+            "LEFT JOIN FETCH rm.attendees " +
+            "WHERE rm.idx = :idx")
+    Optional<ReceiptMeeting> findByIdWithDetails(@Param("idx") Long idx);
+
+    /**
+     * 전체 회의록 목록 조회 (최신순)
+     */
+    List<ReceiptMeeting> findAllByOrderByMeetingDateDesc();
 }

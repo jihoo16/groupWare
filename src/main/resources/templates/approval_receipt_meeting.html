@@ -241,8 +241,8 @@
                                                 <td style="border: 1px solid #000; padding: 10px 20px; text-align: center; background: #f0f0f0; font-weight: bold;">책임</td>
                                             </tr>
                                             <tr>
-                                                <td style="border: 1px solid #000; height: 80px; padding: 10px 20px; text-align: center; width: 120px">홍길동</td>
-                                                <td style="border: 1px solid #000; height: 80px; padding: 10px 20px; text-align: center; width: 120px">김상무</td>
+                                                <td id="proposal_approval_person" style="border: 1px solid #000; height: 80px; padding: 10px 20px; text-align: center; width: 120px"></td>
+                                                <td id="proposal_approval_manager" style="border: 1px solid #000; height: 80px; padding: 10px 20px; text-align: center; width: 120px"></td>
                                             </tr>
                                         </table>
                                     </div>
@@ -537,6 +537,10 @@
 
                         <!-- 제출 버튼 -->
                         <div class="submit-actions">
+                            <button class="btn-danger btn-lg" id="deleteBtn" style="display: none;">
+                                <i class="fas fa-trash-alt"></i>
+                                삭제
+                            </button>
                             <button class="btn-secondary btn-lg" onclick="history.back()">
                                 <i class="fas fa-times"></i>
                                 취소
@@ -545,9 +549,13 @@
                                 <i class="fas fa-file-pdf"></i>
                                 PDF 저장
                             </button>
-                            <button class="btn-primary btn-lg" id="submitBtn">
-                                <i class="fas fa-paper-plane"></i>
-                                결재 요청
+                            <button class="btn-primary btn-lg" id="saveBtn">
+                                <i class="fas fa-save"></i>
+                                저장
+                            </button>
+                            <button class="btn-primary btn-lg" id="updateBtn" style="display: none;">
+                                <i class="fas fa-edit"></i>
+                                수정
                             </button>
                         </div>
 

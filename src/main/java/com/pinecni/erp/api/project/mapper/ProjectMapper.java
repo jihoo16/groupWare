@@ -86,12 +86,18 @@ public class ProjectMapper {
                 .map(this::toRelationDTO)
                 .collect(Collectors.toList());
 
-        // 팀원 목록 조회 및 변환
+        // 팀원 목록 조회 및 변환 (직급 순으로 정렬)
         List<ProjectMemberDTO> members = projectMemberRepository
                 .findByProjectIdx(entity.getIdx())
                 .stream()
                 .filter(ProjectMember::getIsActive)
                 .map(this::toMemberDTO)
+                .sorted((m1, m2) -> {
+                    // 직급 순서로 정렬 (대표 > 상무 > 이사 > 부장 > 차장 > 과장 > 대리 > 사원)
+                    int order1 = getPositionOrder(m1.getEmployeePositionName());
+                    int order2 = getPositionOrder(m2.getEmployeePositionName());
+                    return Integer.compare(order1, order2);
+                })
                 .collect(Collectors.toList());
 
         // 직급별 경비 설정 목록 조회 및 변환
@@ -397,5 +403,41 @@ public class ProjectMapper {
         }
 
         return (int) ((elapsedDays * 100) / totalDays);
+    }
+
+    /**
+     * 직급 순서 반환 (정렬용)
+     * 대표 > 상무 > 이사 > 부장 > 차장 > 과장 > 대리 > 사원 순
+     *
+     * @param positionName 직급명
+     * @return 순서 (낮을수록 높은 직급)
+     */
+    private int getPositionOrder(String positionName) {
+        if (positionName == null) {
+            return 999; // 직급 정보 없는 경우 맨 뒤로
+        }
+
+        switch (positionName) {
+            case "대표":
+            case "대표이사":
+                return 1;
+            case "상무":
+            case "상무이사":
+                return 2;
+            case "이사":
+                return 3;
+            case "부장":
+                return 4;
+            case "차장":
+                return 5;
+            case "과장":
+                return 6;
+            case "대리":
+                return 7;
+            case "사원":
+                return 8;
+            default:
+                return 999; // 알 수 없는 직급은 맨 뒤로
+        }
     }
 }
