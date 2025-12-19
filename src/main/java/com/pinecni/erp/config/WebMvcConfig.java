@@ -2,7 +2,9 @@ package com.pinecni.erp.config;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.web.client.RestTemplate;
 import org.springframework.web.servlet.config.annotation.InterceptorRegistry;
 import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
 
@@ -33,5 +35,13 @@ public class WebMvcConfig implements WebMvcConfigurer {
                 );
 
         log.info("Authentication interceptor registered successfully");
+    }
+
+    /**
+     * RestTemplate Bean 등록
+     */
+    @Bean
+    public RestTemplate restTemplate() {
+        return new RestTemplate();
     }
 }

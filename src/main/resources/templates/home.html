@@ -38,17 +38,7 @@
                         </div>
                         <div class="stat-content">
                             <h3>잔여 연차</h3>
-                            <p class="stat-number">15<span>일</span></p>
-                        </div>
-                    </div>
-
-                    <div class="stat-card">
-                        <div class="stat-icon" style="background: #fff3e0;">
-                            <i class="fas fa-file-signature" style="color: #f57c00;"></i>
-                        </div>
-                        <div class="stat-content">
-                            <h3>결재 대기</h3>
-                            <p class="stat-number">5<span>건</span></p>
+                            <p class="stat-number" id="remainingVacation">-<span>일</span></p>
                         </div>
                     </div>
 
@@ -58,17 +48,40 @@
                         </div>
                         <div class="stat-content">
                             <h3>오늘 일정</h3>
-                            <p class="stat-number">3<span>건</span></p>
+                            <p class="stat-number" id="todayScheduleCount">-<span>건</span></p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 콘텐츠 영역 -->
+                <div class="content-sections">
+                    <!-- 이번 주 일정 -->
+                    <div class="section-card">
+                        <div class="home-section-header">
+                            <h3><i class="fas fa-calendar-week"></i> 이번 주 일정</h3>
+                            <a href="/calendar" class="view-all">전체보기 <i class="fas fa-arrow-right"></i></a>
+                        </div>
+                        <div class="section-body">
+                            <div id="weeklyScheduleList" class="schedule-list">
+                                <div class="loading-message">
+                                    <i class="fas fa-spinner fa-spin"></i> 일정을 불러오는 중...
+                                </div>
+                            </div>
                         </div>
                     </div>
 
-                    <div class="stat-card" id="unreadMailCard" style="cursor: pointer;">
-                        <div class="stat-icon" style="background: #e8f5e9;">
-                            <i class="fas fa-envelope" style="color: #388e3c;"></i>
+                    <!-- 진행 중인 프로젝트 -->
+                    <div class="section-card">
+                        <div class="home-section-header">
+                            <h3><i class="fas fa-project-diagram"></i> 진행 중인 프로젝트</h3>
+                            <a href="/project" class="view-all">전체보기 <i class="fas fa-arrow-right"></i></a>
                         </div>
-                        <div class="stat-content">
-                            <h3>읽지 않은 메일</h3>
-                            <p class="stat-number">12<span>건</span></p>
+                        <div class="section-body">
+                            <div id="myProjectsList" class="projects-list">
+                                <div class="loading-message">
+                                    <i class="fas fa-spinner fa-spin"></i> 프로젝트를 불러오는 중...
+                                </div>
+                            </div>
                         </div>
                     </div>
                 </div>

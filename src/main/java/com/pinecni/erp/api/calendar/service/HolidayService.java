@@ -33,7 +33,7 @@ import java.util.stream.Collectors;
 public class HolidayService {
 
     private final HolidayRepository holidayRepository;
-    private final RestTemplate restTemplate = new RestTemplate();
+    private final RestTemplate restTemplate;
 
     @Value("${holiday.api.key:YOUR_API_KEY}")
     private String apiKey;

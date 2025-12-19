@@ -24,7 +24,7 @@ dependencies {
     annotationProcessor(libs.org.projectlombok.lombok)
     implementation(libs.com.fasterxml.jackson.datatype.jackson.datatype.jsr310)
     implementation(libs.org.apache.commons.commons.lang3)
-    runtimeOnly(libs.com.h2database.h2)
+    testRuntimeOnly(libs.com.h2database.h2)
     runtimeOnly(libs.org.springframework.boot.spring.boot.devtools)
     runtimeOnly(libs.org.postgresql.postgresql)
     testImplementation(libs.org.springframework.boot.spring.boot.starter.test)

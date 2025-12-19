@@ -44,11 +44,6 @@ public class Controller {
         return "calendar-new";
     }
 
-    @GetMapping("/messenger")
-    public String messenger() {
-        return "messenger";
-    }
-
     @GetMapping("/approval")
     public String approval() {
         return "approval";
@@ -64,24 +59,9 @@ public class Controller {
         return "attendance";
     }
 
-    @GetMapping("/payroll")
-    public String payroll() {
-        return "payroll";
-    }
-
     @GetMapping("/settings")
     public String settings() {
         return "settings";
-    }
-
-    @GetMapping("/cloud")
-    public String cloud() {
-        return "cloud";
-    }
-
-    @GetMapping("/board")
-    public String board() {
-        return "board";
     }
 
     @GetMapping("/approval/write")
