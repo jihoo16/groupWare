@@ -16,7 +16,6 @@ document.addEventListener('DOMContentLoaded', function() {
     const approverModal = document.getElementById('approverModal');
     const employeeList = document.getElementById('employeeList');
     const approverSearch = document.getElementById('approverSearch');
-    const saveDraftBtn = document.getElementById('saveDraftBtn');
     const submitBtn = document.getElementById('submitBtn');
 
     // 샘플 직원 데이터
@@ -1190,14 +1189,8 @@ document.addEventListener('DOMContentLoaded', function() {
         updateFileList();
     };
 
-    // 임시저장
-    saveDraftBtn.addEventListener('click', function() {
-        alert('문서가 임시저장되었습니다.');
-        // 실제로는 API 호출
-    });
-
     // 제출
-    submitBtn.addEventListener('click', function() {
+    submitBtn.addEventListener('click', async function() {
         // 휴가기간 표시 영역 확인
         const vacationPeriodDisplay = document.getElementById('vacation_period_display');
         if (!vacationPeriodDisplay || !vacationPeriodDisplay.innerHTML.trim()) {
@@ -1205,10 +1198,47 @@ document.addEventListener('DOMContentLoaded', function() {
             return;
         }
 
-        if (confirm('연차 신청서를 저장하시겠습니까?')) {
-            alert('연차 신청서가 저장되었습니다.');
-            // 실제로는 API 호출 후 목록으로 이동
-            // window.location.href = '/approval';
+        // 연차 신청 데이터 수집
+        const reasonTextarea = document.querySelector('textarea[placeholder="사유를 입력하세요"]');
+        const minusCheckbox = document.getElementById('allow_minus_vacation');
+        const specialReasonTextarea = document.getElementById('special_approval_reason');
+
+        const saveData = {
+            reason: reasonTextarea ? reasonTextarea.value : '',
+            allowMinusVacation: minusCheckbox ? minusCheckbox.checked : false,
+            specialApprovalReason: specialReasonTextarea ? specialReasonTextarea.value : '',
+            periods: vacationPeriods.map(period => ({
+                vacationType: period.type,  // type -> vacationType 매핑
+                startDate: period.startDate,
+                endDate: period.endDate,
+                days: period.days
+            }))
+        };
+
+        if (!confirm('연차 신청서를 저장하시겠습니까?')) {
+            return;
+        }
+
+        try {
+            const response = await fetch('/api/vacation/request', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify(saveData)
+            });
+
+            const result = await response.json();
+
+            if (response.ok && result.success) {
+                alert('연차 신청서가 저장되었습니다.');
+                window.location.href = '/approval';
+            } else {
+                alert('저장 실패: ' + (result.message || '알 수 없는 오류'));
+            }
+        } catch (error) {
+            console.error('연차 신청서 저장 중 오류:', error);
+            alert('저장 중 오류가 발생했습니다.');
         }
     });
 
@@ -2235,9 +2265,12 @@ document.addEventListener('DOMContentLoaded', function() {
             selectedDates = [];
             vifStartDate.value = '';
             vifEndDate.value = '';
-            document.getElementById('vif_reason').value = '';
+            document.getElementById('vif_reason').value = '연차 휴가 사용.';
+            vacationPeriods = [];
             renderCalendar();
             await calculateVacationDays();
+            updatePeriodsList();
+            await updateDocumentForm();
         });
     }
 
@@ -2320,6 +2353,14 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     }
 
+    // submitGuide 클릭 시 기간 추가 버튼 클릭 효과
+    const submitGuide = document.getElementById('submitGuide');
+    if (submitGuide && addPeriodBtn) {
+        submitGuide.addEventListener('click', () => {
+            addPeriodBtn.click();
+        });
+    }
+
     // 기간 추가 또는 병합
     function addOrMergePeriod(newPeriod) {
         const newStart = new Date(newPeriod.startDate);
@@ -2381,12 +2422,20 @@ document.addEventListener('DOMContentLoaded', function() {
 
     // 기간 목록 업데이트
     function updatePeriodsList() {
+        const submitGuide = document.getElementById('submitGuide');
+
         if (vacationPeriods.length === 0) {
             periodsListCard.style.display = 'none';
+            // 기간이 없으면 안내 메시지 표시, 저장 버튼 숨김
+            if (submitGuide) submitGuide.style.display = 'flex';
+            if (submitBtn) submitBtn.style.display = 'none';
             return;
         }
 
         periodsListCard.style.display = 'block';
+        // 기간이 추가되면 안내 메시지 숨김, 저장 버튼 표시
+        if (submitGuide) submitGuide.style.display = 'none';
+        if (submitBtn) submitBtn.style.display = 'inline-block';
         vacationPeriodsList.innerHTML = '';
 
         const dayNames = ['일', '월', '화', '수', '목', '금', '토'];
@@ -2704,17 +2753,28 @@ document.addEventListener('DOMContentLoaded', function() {
         // 현재는 결재라인 설정 기능이 구현되지 않았습니다.
         // /api/approval/approval-line API 구현 후 연동 필요
 
-        console.warn('결재라인 API가 구현되지 않았습니다. 결재자를 수동으로 설정해주세요.');
+        console.warn('결재라인 API가 구현되지 않았습니다. 기본 결재자를 설정합니다.');
 
-        // API 구현 전까지는 결재자 이름을 비워둠
-        const approverNames = document.querySelectorAll('.approver-name');
-        approverNames.forEach(nameSpan => {
-            nameSpan.textContent = '미지정';
-            nameSpan.style.color = '#999';
-        });
+        // 담당: 현재 로그인한 사용자
+        const damDangApprover = document.querySelector('.approver-name[data-role="담당"]');
+        if (damDangApprover && userVacationInfo && userVacationInfo.empName) {
+            damDangApprover.textContent = userVacationInfo.empName;
+            damDangApprover.style.color = '#333';
+        }
 
-        // 사용자에게 안내 메시지 표시 (선택사항)
-        // alert('결재라인이 설정되지 않았습니다. 관리자에게 문의하세요.');
+        // 부서장: 임시 기본값 (TODO: API 연동 필요)
+        const buseoJangApprover = document.querySelector('.approver-name[data-role="부서장"]');
+        if (buseoJangApprover) {
+            buseoJangApprover.textContent = '부서장';
+            buseoJangApprover.style.color = '#333';
+        }
+
+        // 대표이사: 기본값
+        const ceoApprover = document.querySelector('.approver-name[data-role="대표이사"]');
+        if (ceoApprover) {
+            ceoApprover.textContent = '대표이사';
+            ceoApprover.style.color = '#333';
+        }
     }
 
     // ============================================

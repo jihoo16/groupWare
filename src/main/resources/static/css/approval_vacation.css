@@ -825,6 +825,7 @@ div h2{
 .submit-actions {
     display: flex;
     justify-content: flex-end;
+    align-items: center;
     gap: 12px;
     padding: 16px 24px;
     background: white;
@@ -837,6 +838,53 @@ div h2{
     box-shadow: 0 -4px 12px rgba(0, 0, 0, 0.08);
     border-radius: 12px 12px 0 0;
     transition: left 0.3s ease;
+}
+
+.submit-guide {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 14px 24px;
+    background: linear-gradient(135deg, #fff3e0 0%, #ffe0b2 100%);
+    border: 2px solid #ffb74d;
+    border-radius: 8px;
+    color: #e65100;
+    font-size: 14px;
+    font-weight: 500;
+    animation: pulse-border 2s ease-in-out infinite;
+    cursor: pointer;
+    user-select: none;
+    transition: all 0.2s ease;
+}
+
+.submit-guide:hover {
+    background: linear-gradient(135deg, #ffe0b2 0%, #ffcc80 100%);
+    transform: scale(1.02);
+}
+
+.submit-guide:active {
+    transform: scale(0.98);
+}
+
+.submit-guide i {
+    font-size: 18px;
+    color: #ff9800;
+}
+
+.submit-guide strong {
+    color: #e65100;
+    font-weight: 700;
+}
+
+@keyframes pulse-border {
+    0%, 100% {
+        border-color: #ffb74d;
+        box-shadow: 0 0 0 0 rgba(255, 152, 0, 0.4);
+    }
+    50% {
+        border-color: #ff9800;
+        box-shadow: 0 0 0 4px rgba(255, 152, 0, 0.1);
+    }
 }
 
 /* 사이드바 호버 시 버튼 위치 조정 */
@@ -1129,6 +1177,18 @@ div h2{
     .submit-actions button {
         width: 100%;
         justify-content: center;
+    }
+
+    .submit-guide {
+        width: 100%;
+        justify-content: center;
+        text-align: center;
+        font-size: 13px;
+        padding: 12px 16px;
+    }
+
+    .submit-guide i {
+        font-size: 16px;
     }
 
     .form-table th {
@@ -2088,24 +2148,52 @@ div h2{
 
 .btn-add-period {
     width: 100%;
-    padding: 10px 16px;
+    padding: 12px 16px;
     background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
     color: white;
     border: none;
-    border-radius: 6px;
-    font-size: 13px;
-    font-weight: 600;
+    border-radius: 8px;
+    font-size: 14px;
+    font-weight: 700;
     cursor: pointer;
     display: flex;
     align-items: center;
     justify-content: center;
     gap: 8px;
     transition: all 0.2s ease;
+    box-shadow: 0 2px 8px rgba(102, 126, 234, 0.3);
+    position: relative;
+}
+
+.btn-add-period::before {
+    content: '';
+    position: absolute;
+    inset: -2px;
+    background: linear-gradient(135deg, #667eea, #764ba2);
+    border-radius: 10px;
+    opacity: 0;
+    transition: opacity 0.3s ease;
+    z-index: -1;
+    filter: blur(8px);
 }
 
 .btn-add-period:hover:not(:disabled) {
     transform: translateY(-2px);
-    box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
+    box-shadow: 0 6px 16px rgba(102, 126, 234, 0.5);
+}
+
+.btn-add-period:hover:not(:disabled)::before {
+    opacity: 0.6;
+    animation: glow 1.5s ease-in-out infinite;
+}
+
+@keyframes glow {
+    0%, 100% {
+        opacity: 0.4;
+    }
+    50% {
+        opacity: 0.8;
+    }
 }
 
 .btn-add-period:disabled {
@@ -2113,6 +2201,11 @@ div h2{
     color: #adb5bd;
     cursor: not-allowed;
     opacity: 0.6;
+    box-shadow: none;
+}
+
+.btn-add-period:disabled::before {
+    display: none;
 }
 
 .total-days-badge {
