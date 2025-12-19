@@ -105,6 +105,23 @@ public class User extends BaseEntity {
     @Column(name = "is_admin", nullable = false)
     private Boolean isAdmin = false;
 
+    // 보고체계 관리
+    @Column(name = "manager_idx")
+    private Long managerIdx;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "manager_idx", insertable = false, updatable = false)
+    private User manager;
+
+    @Column(name = "organizational_level", nullable = false)
+    private Integer organizationalLevel = 4;
+
+    @Column(name = "is_team_leader", nullable = false)
+    private Boolean isTeamLeader = false;
+
+    @Column(name = "manager_start_date")
+    private LocalDate managerStartDate;
+
     // Soft delete
     @Column(name = "deleted_at")
     private LocalDateTime deletedAt;
