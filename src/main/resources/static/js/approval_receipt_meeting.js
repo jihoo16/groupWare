@@ -933,15 +933,10 @@ document.addEventListener('DOMContentLoaded', function() {
                     attendeeType: isExternal ? '외부' : '내부',
                     department: attendee.dept || null,
                     name: attendee.name,
-                    userIdx: isExternal ? null : parseInt(attendee.id),
+                    userIdx: isExternal ? parseInt(String(attendee.id).replace('ext_', '')) : parseInt(attendee.id),
                     position: attendee.position || null,
                     displayOrder: index
                 };
-
-                // 외부 참석자인 경우 externalPersonIdx 추가
-                if (isExternal) {
-                    dto.externalPersonIdx = parseInt(String(attendee.id).replace('ext_', ''));
-                }
 
                 return dto;
             });
@@ -1562,9 +1557,17 @@ document.addEventListener('DOMContentLoaded', function() {
             // 폼에 데이터 채우기
             populateForm(data);
 
-            // 저장 버튼 숨기기 (상세보기 모드)
+            // 저장 버튼 숨기기, 수정/삭제 버튼 표시 (상세보기 모드)
             if (saveBtn) {
                 saveBtn.style.display = 'none';
+            }
+            const updateBtn = document.getElementById('updateBtn');
+            const deleteBtn = document.getElementById('deleteBtn');
+            if (updateBtn) {
+                updateBtn.style.display = 'inline-block';
+            }
+            if (deleteBtn) {
+                deleteBtn.style.display = 'inline-block';
             }
 
             return data;
@@ -1908,6 +1911,127 @@ document.addEventListener('DOMContentLoaded', function() {
                 renderExternalPersonList();
             }
         }, 800);
+    }
+
+
+    // 수정 버튼 이벤트
+    const updateBtn = document.getElementById('updateBtn');
+    if (updateBtn) {
+        updateBtn.addEventListener('click', async function() {
+            const receiptMeetingId = getUrlParameter('id');
+            if (!receiptMeetingId) {
+                alert('문서 ID를 찾을 수 없습니다.');
+                return;
+            }
+
+            const projectSelect = document.getElementById('common_project');
+            const dateInput = document.getElementById('common_date');
+            const startTimeInput = document.getElementById('common_start_time');
+            const endTimeInput = document.getElementById('common_end_time');
+            const locationInput = document.getElementById('common_location');
+
+            if (!projectSelect || !projectSelect.value) {
+                alert('프로젝트를 선택해주세요.');
+                return;
+            }
+            if (!dateInput || !dateInput.value) {
+                alert('회의 일자를 입력해주세요.');
+                return;
+            }
+            if (!startTimeInput || !startTimeInput.value) {
+                alert('시작 시간을 입력해주세요.');
+                return;
+            }
+            if (!endTimeInput || !endTimeInput.value) {
+                alert('종료 시간을 입력해주세요.');
+                return;
+            }
+            if (!locationInput || !locationInput.value) {
+                alert('장소를 입력해주세요.');
+                return;
+            }
+
+            if (!confirm('회의록을 수정하시겠습니까?')) {
+                return;
+            }
+
+            const attendeeDTOs = currentAttendees.map((attendee, index) => {
+                const isExternal = String(attendee.id).startsWith('ext_');
+                return {
+                    attendeeType: isExternal ? '외부' : '내부',
+                    department: attendee.dept || null,
+                    name: attendee.name,
+                    userIdx: isExternal ? parseInt(String(attendee.id).replace('ext_', '')) : parseInt(attendee.id),
+                    position: attendee.position || null,
+                    displayOrder: index
+                };
+            });
+
+            const updateData = {
+                projectIdx: parseInt(projectSelect.value),
+                meetingDate: dateInput.value,
+                startTime: startTimeInput.value + ':00',
+                endTime: endTimeInput.value + ':00',
+                location: locationInput.value,
+                amount: document.getElementById('common_amount')?.value ? parseFloat(document.getElementById('common_amount').value) : null,
+                purpose: document.getElementById('common_purpose')?.value || null,
+                content: document.getElementById('common_content')?.value || null,
+                paymentMethod: document.getElementById('common_payment')?.value || null,
+                notes: document.getElementById('common_notes')?.value || null,
+                minutesNotes: document.getElementById('common_minutes_notes')?.value || null,
+                attendees: attendeeDTOs
+            };
+
+            try {
+                const response = await fetch(`/api/receipt-meetings/${receiptMeetingId}`, {
+                    method: 'PUT',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(updateData)
+                });
+
+                if (response.ok) {
+                    alert('회의록이 수정되었습니다.');
+                    window.location.reload();
+                } else {
+                    alert('회의록 수정에 실패했습니다.');
+                }
+            } catch (error) {
+                console.error('수정 오류:', error);
+                alert('회의록 수정 중 오류가 발생했습니다.');
+            }
+        });
+    }
+
+    // 삭제 버튼 이벤트
+    const deleteBtn = document.getElementById('deleteBtn');
+    if (deleteBtn) {
+        deleteBtn.addEventListener('click', async function() {
+            const receiptMeetingId = getUrlParameter('id');
+            if (!receiptMeetingId) {
+                alert('문서 ID를 찾을 수 없습니다.');
+                return;
+            }
+
+            if (!confirm('정말로 이 회의록을 삭제하시겠습니까?\n\n삭제된 데이터는 복구할 수 없습니다.')) {
+                return;
+            }
+
+            try {
+                const response = await fetch(`/api/receipt-meetings/${receiptMeetingId}`, {
+                    method: 'DELETE'
+                });
+
+                if (response.ok) {
+                    alert('회의록이 삭제되었습니다.');
+                    window.location.href = '/approval';
+                } else {
+                    alert('회의록 삭제에 실패했습니다.');
+                }
+            } catch (error) {
+                console.error('삭제 오류:', error);
+                alert('회의록 삭제 중 오류가 발생했습니다.');
+            }
+        });
     }
 
     // 템플릿 전환 비활성화
