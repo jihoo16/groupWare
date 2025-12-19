@@ -1658,7 +1658,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
                 // ID 생성: 외부는 externalPersonIdx 사용, 내부는 userIdx 사용
                 const id = attendee.attendeeType === '외부'
-                    ? `ext_${attendee.externalPersonIdx}`
+                    ? `ext_${attendee.userIdx}`
                     : String(attendee.userIdx);
 
                 return {

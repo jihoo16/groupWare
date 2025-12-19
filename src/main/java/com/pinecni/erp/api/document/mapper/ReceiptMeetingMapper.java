@@ -164,6 +164,27 @@ public class ReceiptMeetingMapper {
         if (entity == null) {
             return null;
         }
+        String position = null;
+
+        // attendee_type에 따라 직책 조회
+        if ("내부".equals(entity.getAttendeeType()) && entity.getUserIdx() != null) {
+            // 내부 참석자: User에서 직급명 조회
+            position = userRepository.findById(entity.getUserIdx())
+                    .map(user -> {
+                        if (user.getEmpPosition() != null) {
+                            return codeRepository.findByGroupCodeAndCode("C02", user.getEmpPosition())
+                                    .map(Code::getCodeName)
+                                    .orElse(null);
+                        }
+                        return null;
+                    })
+                    .orElse(null);
+        } else if ("외부".equals(entity.getAttendeeType()) && entity.getUserIdx() != null) {
+            // 외부 참석자: ExternalPerson에서 직책 조회
+            position = externalPersonRepository.findById(entity.getUserIdx())
+                    .map(ExternalPerson::getPosition)
+                    .orElse(null);
+        }
 
 
         // 직책 정보가 없으면 원본 데이터에서 조회
@@ -188,6 +209,7 @@ public class ReceiptMeetingMapper {
                 .department(entity.getDepartment())
                 .name(entity.getName())
                 .userIdx(entity.getUserIdx())
+                .position(position)
                 .displayOrder(entity.getDisplayOrder())
                 .build();
     }
