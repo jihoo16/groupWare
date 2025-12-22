@@ -657,7 +657,7 @@ document.addEventListener('DOMContentLoaded', function() {
                     <td>${formattedDate}</td>
                     <td>
                     <div class="table-actions">
-                        <button class="btn-icon btn-view" data-id="${doc.id}">
+                        <button class="btn-icon btn-view" data-id="${doc.idx}">
                             <i class="fas fa-eye"></i>
                         </button>
                         </div>
