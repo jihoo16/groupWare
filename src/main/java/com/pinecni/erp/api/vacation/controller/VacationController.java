@@ -2,6 +2,7 @@ package com.pinecni.erp.api.vacation.controller;
 
 import com.pinecni.erp.api.vacation.dto.VacationUserInfoDTO;
 import com.pinecni.erp.api.vacation.dto.VacationCalculationDetailDTO;
+import com.pinecni.erp.api.vacation.dto.VacationRequestSaveDTO;
 import com.pinecni.erp.api.vacation.service.VacationService;
 import com.pinecni.erp.entity.VacationBalance;
 import com.pinecni.erp.entity.VacationRequest;
@@ -230,6 +231,48 @@ public class VacationController {
         } catch (IllegalArgumentException | IllegalStateException e) {
             log.error("연차 계산 상세 조회 실패: {}", e.getMessage());
             return ResponseEntity.badRequest().build();
+        }
+    }
+
+    /**
+     * 연차 신청서 저장 API
+     * - approval_documents에 문서 메타데이터 저장
+     * - vacation_request에 연차 상세 정보 저장 (여러 기간 개별 저장)
+     * @param saveDTO 연차 신청 정보
+     * @param session HTTP 세션
+     * @return 생성된 문서 IDX
+     */
+    @PostMapping("/request")
+    public ResponseEntity<Map<String, Object>> saveVacationRequest(
+            @RequestBody VacationRequestSaveDTO saveDTO,
+            HttpSession session) {
+
+        // 세션에서 로그인 사용자 IDX 조회
+        Long userIdx = (Long) session.getAttribute("userIdx");
+        if (userIdx == null) {
+            log.error("세션에 userIdx가 없습니다. 로그인이 필요합니다.");
+            return ResponseEntity.status(401).build();
+        }
+
+        log.info("POST /api/vacation/request - userIdx: {}, periods: {}", userIdx, saveDTO.getPeriods().size());
+
+        try {
+            Long documentIdx = vacationService.saveVacationRequest(userIdx, saveDTO);
+
+            Map<String, Object> response = new HashMap<>();
+            response.put("success", true);
+            response.put("documentIdx", documentIdx);
+            response.put("message", "연차 신청서가 저장되었습니다.");
+
+            return ResponseEntity.ok(response);
+        } catch (IllegalArgumentException | IllegalStateException e) {
+            log.error("연차 신청서 저장 실패: {}", e.getMessage(), e);
+
+            Map<String, Object> errorResponse = new HashMap<>();
+            errorResponse.put("success", false);
+            errorResponse.put("message", e.getMessage());
+
+            return ResponseEntity.badRequest().body(errorResponse);
         }
     }
 }
