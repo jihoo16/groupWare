@@ -49,17 +49,20 @@ public class ReceiptTrip {
     @Column(name = "trip_date", nullable = false)
     private LocalDate tripDate;
 
-    @Column(name = "start_time")
-    private LocalTime startTime;
-
-    @Column(name = "end_time")
-    private LocalTime endTime;
-
     @Column(name = "location", nullable = false, length = 200)
     private String location;
 
-    @Column(name = "amount", precision = 15, scale = 2)
-    private BigDecimal amount;
+    @Column(name = "transportation_fee", precision = 15, scale = 2)
+    private BigDecimal transportationFee;
+
+    @Column(name = "accommodation_fee", precision = 15, scale = 2)
+    private BigDecimal accommodationFee;
+
+    @Column(name = "meal_fee", precision = 15, scale = 2)
+    private BigDecimal mealFee;
+
+    @Column(name = "other_fee", precision = 15, scale = 2)
+    private BigDecimal otherFee;
 
     @Column(name = "purpose", columnDefinition = "TEXT")
     private String purpose;
@@ -69,9 +72,6 @@ public class ReceiptTrip {
 
     @Column(name = "payment_method", length = 50)
     private String paymentMethod;
-
-    @Column(name = "notes", columnDefinition = "TEXT")
-    private String notes;
 
     @Column(name = "status", length = 20)
     private String status = "PENDING";
