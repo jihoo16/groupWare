@@ -217,84 +217,6 @@
                 </div>
             </div>
 
-            <!-- 상세 일정 섹션 -->
-            <div class="form-section">
-                <div class="section-header">
-                    <h2>상세 일정</h2>
-                    <button type="button" class="btn btn-primary btn-sm" id="addScheduleBtn">
-                        <i class="fas fa-plus"></i> 일정 추가
-                    </button>
-                </div>
-                <div class="info-note">
-                    <i class="fas fa-info-circle"></i>
-                    <span>주간보고서에 작성된 내용이 자동으로 표시됩니다. 추후 구현 예정입니다.</span>
-                </div>
-                <div class="table-container">
-                    <table class="project-table">
-                        <thead>
-                            <tr>
-                                <th width="50">No</th>
-                                <th width="200">기간</th>
-                                <th>내용 (주간보고)</th>
-                                <th width="120">주차별 달성률</th>
-                                <th width="100">작업</th>
-                            </tr>
-                        </thead>
-                        <tbody id="scheduleTableBody">
-                            <!-- 예시 데이터 -->
-                            <tr>
-                                <td class="text-center">1</td>
-                                <td>2024-01-01 ~ 2024-01-07</td>
-                                <td>요구사항 분석 및 기본 설계 완료</td>
-                                <td class="text-center">
-                                    <span class="achievement-badge achievement-high">100%</span>
-                                </td>
-                                <td class="text-center action-cell">
-                                    <button type="button" class="btn btn-sm btn-secondary" onclick="editSchedule(0)">
-                                        <i class="fas fa-edit"></i>
-                                    </button>
-                                    <button type="button" class="btn btn-sm btn-delete" onclick="deleteSchedule(0)">
-                                        <i class="fas fa-trash"></i>
-                                    </button>
-                                </td>
-                            </tr>
-                            <tr>
-                                <td class="text-center">2</td>
-                                <td>2024-01-08 ~ 2024-01-14</td>
-                                <td>데이터베이스 스키마 설계 및 API 개발 착수</td>
-                                <td class="text-center">
-                                    <span class="achievement-badge achievement-medium">60%</span>
-                                </td>
-                                <td class="text-center action-cell">
-                                    <button type="button" class="btn btn-sm btn-secondary" onclick="editSchedule(1)">
-                                        <i class="fas fa-edit"></i>
-                                    </button>
-                                    <button type="button" class="btn btn-sm btn-delete" onclick="deleteSchedule(1)">
-                                        <i class="fas fa-trash"></i>
-                                    </button>
-                                </td>
-                            </tr>
-                            <tr>
-                                <td class="text-center">3</td>
-                                <td>2024-01-15 ~ 2024-01-21</td>
-                                <td>프론트엔드 개발 진행 중</td>
-                                <td class="text-center">
-                                    <span class="achievement-badge achievement-low">30%</span>
-                                </td>
-                                <td class="text-center action-cell">
-                                    <button type="button" class="btn btn-sm btn-secondary" onclick="editSchedule(2)">
-                                        <i class="fas fa-edit"></i>
-                                    </button>
-                                    <button type="button" class="btn btn-sm btn-delete" onclick="deleteSchedule(2)">
-                                        <i class="fas fa-trash"></i>
-                                    </button>
-                                </td>
-                            </tr>
-                        </tbody>
-                    </table>
-                </div>
-            </div>
-
             <div class="form-section">
                 <h2>첨부 파일</h2>
                 <div class="form-group">
@@ -469,43 +391,6 @@
                 <i class="fas fa-arrow-left"></i> 이전
             </button>
             <button class="btn btn-primary" onclick="saveRelatedProjects()">
-                <i class="fas fa-check"></i> 저장
-            </button>
-        </div>
-    </div>
-</div>
-
-<!-- 일정 추가/수정 모달 -->
-<div class="modal" id="scheduleModal">
-    <div class="modal-content" style="max-width: 600px;">
-        <div class="modal-header">
-            <h3 id="scheduleModalTitle">일정 추가</h3>
-            <button class="close-button" onclick="closeScheduleModal()">
-                <i class="fas fa-times"></i>
-            </button>
-        </div>
-        <div class="modal-body">
-            <div class="form-group">
-                <label for="scheduleStartDate">시작일 <span class="required">*</span></label>
-                <input type="date" id="scheduleStartDate" class="form-control" required>
-            </div>
-            <div class="form-group">
-                <label for="scheduleEndDate">종료일 <span class="required">*</span></label>
-                <input type="date" id="scheduleEndDate" class="form-control" required>
-            </div>
-            <div class="form-group">
-                <label for="scheduleContent">내용 <span class="required">*</span></label>
-                <textarea id="scheduleContent" class="form-control" rows="4" placeholder="주간보고 내용을 입력하세요..." required></textarea>
-            </div>
-            <div class="form-group">
-                <label for="scheduleAchievement">주차별 달성률 (%) <span class="required">*</span></label>
-                <input type="number" id="scheduleAchievement" class="form-control" min="0" max="100" value="0" required>
-                <small class="form-text">0 ~ 100 사이의 값을 입력하세요</small>
-            </div>
-        </div>
-        <div class="modal-footer">
-            <button class="btn btn-secondary" onclick="closeScheduleModal()">취소</button>
-            <button class="btn btn-primary" onclick="saveSchedule()">
                 <i class="fas fa-check"></i> 저장
             </button>
         </div>
