@@ -1,16 +1,10 @@
 // 월간업무보고 작성 페이지 JavaScript
 document.addEventListener('DOMContentLoaded', function() {
     // 전역 변수 CURRENT_USER 사용 (layout.html에서 주입됨)
-    if (!window.CURRENT_USER || !window.CURRENT_USER.idx) {
-        console.warn('세션 정보가 없습니다.');
-        window.location.href = '/login';
-        return;
-    }
-
-    const currentUserIdx = window.CURRENT_USER.idx;
-    const currentUserName = window.CURRENT_USER.empName;
-    const currentUserDept = window.CURRENT_USER.empDeptName;
-    console.log('현재 로그인 사용자:', window.CURRENT_USER.empName, '(idx:', currentUserIdx, ')');
+    const currentUserIdx = window.CURRENT_USER?.idx || null;
+    const currentUserName = window.CURRENT_USER?.empName || '';
+    const currentUserDept = window.CURRENT_USER?.empDeptName || '';
+    console.log('현재 로그인 사용자:', window.CURRENT_USER?.empName, '(idx:', currentUserIdx, ')');
 
 
     // ============================================
@@ -30,6 +24,15 @@ document.addEventListener('DOMContentLoaded', function() {
     }
     // 프로젝트 목록 로드
     loadProjects();
+
+    // 보고 월 자동 설정 (오늘 날짜의 연월)
+    const reportMonthInput = document.getElementById('reportMonth');
+    if (reportMonthInput) {
+        const today = new Date();
+        const year = today.getFullYear();
+        const month = String(today.getMonth() + 1).padStart(2, '0');
+        reportMonthInput.value = `${year}-${month}`;
+    }
 
     // 제출 버튼 이벤트
     const submitBtn = document.getElementById('submitBtn');

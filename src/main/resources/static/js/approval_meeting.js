@@ -1,14 +1,8 @@
 // 회의록 작성 페이지 JavaScript
 document.addEventListener('DOMContentLoaded', function() {
     // 전역 변수 CURRENT_USER 사용 (layout.html에서 주입됨)
-    if (!window.CURRENT_USER || !window.CURRENT_USER.idx) {
-        console.warn('세션 정보가 없습니다.');
-        window.location.href = '/login';
-        return;
-    }
-
-    const currentUserIdx = window.CURRENT_USER.idx;
-    console.log('현재 로그인 사용자:', window.CURRENT_USER.empName, '(idx:', currentUserIdx, ')');
+    const currentUserIdx = window.CURRENT_USER?.idx || null;
+    console.log('현재 로그인 사용자:', window.CURRENT_USER?.empName, '(idx:', currentUserIdx, ')');
 
     // 전역 변수
     let projects = []; // 프로젝트 목록
@@ -158,9 +152,23 @@ document.addEventListener('DOMContentLoaded', function() {
     }
 
     // 임시저장
-    saveDraftBtn.addEventListener('click', function() {
-        alert('임시저장 기능은 추후 구현 예정입니다.');
-    });
+    if (saveDraftBtn) {
+        saveDraftBtn.addEventListener('click', function() {
+            alert('임시저장 기능은 추후 구현 예정입니다.');
+        });
+    }
+
+    // 회의 일시 자동 설정 (오늘 날짜와 현재 시간)
+    const meetingDatetimeInput = document.getElementById('meetingDatetime');
+    if (meetingDatetimeInput) {
+        const now = new Date();
+        const year = now.getFullYear();
+        const month = String(now.getMonth() + 1).padStart(2, '0');
+        const day = String(now.getDate()).padStart(2, '0');
+        const hours = String(now.getHours()).padStart(2, '0');
+        const minutes = String(now.getMinutes()).padStart(2, '0');
+        meetingDatetimeInput.value = `${year}-${month}-${day}T${hours}:${minutes}`;
+    }
 
     // 페이지 로드 시 프로젝트 목록 로드
     loadProjects();

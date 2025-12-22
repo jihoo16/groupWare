@@ -1,16 +1,10 @@
 // 주간업무보고 작성 페이지 JavaScript
 document.addEventListener('DOMContentLoaded', function() {
     // 전역 변수 CURRENT_USER 사용 (layout.html에서 주입됨)
-    if (!window.CURRENT_USER || !window.CURRENT_USER.idx) {
-        console.warn('세션 정보가 없습니다.');
-        window.location.href = '/login';
-        return;
-    }
-
-    const currentUserIdx = window.CURRENT_USER.idx;
-    const currentUserName = window.CURRENT_USER.empName;
-   const currentUserDept = window.CURRENT_USER.empDeptName;
-    console.log('현재 로그인 사용자:', window.CURRENT_USER.empName, '(idx:', currentUserIdx, ')');
+    const currentUserIdx = window.CURRENT_USER?.idx || null;
+    const currentUserName = window.CURRENT_USER?.empName || '';
+    const currentUserDept = window.CURRENT_USER?.empDeptName || '';
+    console.log('현재 로그인 사용자:', window.CURRENT_USER?.empName, '(idx:', currentUserIdx, ')');
 
 
     // ============================================
@@ -39,6 +33,8 @@ document.addEventListener('DOMContentLoaded', function() {
     const submitBtn = document.getElementById('submitBtn');
     const projectSelect = document.getElementById('projectSelect');
     const weeklyAchievementRateInput = document.getElementById('weeklyAchievementRate');
+    const reportDatePicker = document.getElementById('reportDatePicker');
+    const reportPeriodDisplay = document.getElementById('reportPeriodDisplay');
 
     // ============================================
     // 템플릿 사이드바 접기/펼치기 기능
@@ -92,6 +88,59 @@ document.addEventListener('DOMContentLoaded', function() {
         } else if (allExpanded) {
             icon.className = 'fas fa-chevron-down';
         }
+    }
+
+    // ============================================
+    // 보고 기간 자동 계산 (해당 주의 평일 월~금)
+    // ============================================
+    function getWeekdayRange(date) {
+        const selected = new Date(date);
+        const day = selected.getDay(); // 0(일) ~ 6(토)
+
+        // 월요일까지의 거리 계산
+        let mondayOffset = day === 0 ? -6 : 1 - day; // 일요일이면 -6, 그 외는 1-day
+
+        // 월요일 날짜 계산
+        const monday = new Date(selected);
+        monday.setDate(selected.getDate() + mondayOffset);
+
+        // 금요일 날짜 계산 (월요일 + 4일)
+        const friday = new Date(monday);
+        friday.setDate(monday.getDate() + 4);
+
+        return { monday, friday };
+    }
+
+    function formatDate(date) {
+        const year = date.getFullYear();
+        const month = String(date.getMonth() + 1).padStart(2, '0');
+        const day = String(date.getDate()).padStart(2, '0');
+        return `${year}.${month}.${day}`;
+    }
+
+    // 날짜 선택 시 해당 주의 평일 범위 자동 계산
+    if (reportDatePicker) {
+        reportDatePicker.addEventListener('change', function() {
+            if (this.value) {
+                const { monday, friday } = getWeekdayRange(this.value);
+                const mondayStr = formatDate(monday);
+                const fridayStr = formatDate(friday);
+                reportPeriodDisplay.value = `${mondayStr} ~ ${fridayStr}`;
+            } else {
+                reportPeriodDisplay.value = '';
+            }
+        });
+
+        // 페이지 로드 시 현재 주의 평일로 초기화
+        const today = new Date();
+        const yyyy = today.getFullYear();
+        const mm = String(today.getMonth() + 1).padStart(2, '0');
+        const dd = String(today.getDate()).padStart(2, '0');
+        reportDatePicker.value = `${yyyy}-${mm}-${dd}`;
+
+        // 초기값 계산
+        const { monday, friday } = getWeekdayRange(reportDatePicker.value);
+        reportPeriodDisplay.value = `${formatDate(monday)} ~ ${formatDate(friday)}`;
     }
 
     // ============================================
@@ -242,12 +291,12 @@ document.addEventListener('DOMContentLoaded', function() {
             }
 
             // 각 필드 값 추출
-            const inputs = formTable.querySelectorAll('input, textarea');
-            const reportPeriod = inputs[3]?.value || ''; // 보고 기간
-            const mainTasks = inputs[4]?.value || ''; // 금주 주요 업무
-            const achievements = inputs[5]?.value || ''; // 주요 성과
-            const issues = inputs[6]?.value || ''; // 주요 이슈
-            const nextWeekPlan = inputs[7]?.value || ''; // 차주 계획
+            const inputs = formTable.querySelectorAll('textarea');
+            const reportPeriod = reportPeriodDisplay?.value || ''; // 보고 기간
+            const mainTasks = inputs[0]?.value || ''; // 금주 주요 업무
+            const achievements = inputs[1]?.value || ''; // 주요 성과
+            const issues = inputs[2]?.value || ''; // 주요 이슈
+            const nextWeekPlan = inputs[3]?.value || ''; // 차주 계획
             const weeklyAchievementRate = weeklyAchievementRateInput?.value ? parseInt(weeklyAchievementRateInput.value) : null; // 주차별 달성률
 
             // 필수 필드 검증
@@ -300,11 +349,12 @@ document.addEventListener('DOMContentLoaded', function() {
 
                         // 폼 초기화
                         projectSelect.value = ''; // 과제명
-                        inputs[3].value = ''; // 보고 기간
-                        inputs[4].value = ''; // 금주 주요 업무
-                        inputs[5].value = ''; // 주요 성과
-                        inputs[6].value = ''; // 주요 이슈
-                        inputs[7].value = ''; // 차주 계획
+                        reportDatePicker.value = ''; // 날짜 선택
+                        reportPeriodDisplay.value = ''; // 보고 기간
+                        inputs[0].value = ''; // 금주 주요 업무
+                        inputs[1].value = ''; // 주요 성과
+                        inputs[2].value = ''; // 주요 이슈
+                        inputs[3].value = ''; // 차주 계획
                         if (weeklyAchievementRateInput) weeklyAchievementRateInput.value = ''; // 주차별 달성률
 
                         // 목록으로 이동 (필요시 주석 해제)

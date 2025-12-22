@@ -214,7 +214,13 @@
                                 </tr>
                                 <tr>
                                     <th>보고 기간</th>
-                                    <td colspan="3"><input type="text" placeholder="예: 2025.01.13 ~ 2025.01.17"></td>
+                                    <td colspan="3">
+                                        <div style="display: flex; gap: 10px; align-items: center;">
+                                            <input type="date" id="reportDatePicker" style="padding: 8px; border: 1px solid #ddd; border-radius: 4px;">
+                                            <span style="color: #666;">→</span>
+                                            <input type="text" id="reportPeriodDisplay" placeholder="날짜를 선택하면 해당 주 평일이 자동 선택됩니다" readonly style="flex: 1; padding: 8px; border: 1px solid #ddd; border-radius: 4px; background: #f8f9fa;">
+                                        </div>
+                                    </td>
                                 </tr>
                                 <tr>
                                     <th>금주 주요 업무</th>
