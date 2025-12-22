@@ -20,11 +20,11 @@ ADD COLUMN IF NOT EXISTS manager_idx BIGINT;
 COMMENT ON COLUMN erp."user".manager_idx IS '상위 보고자 IDX (user.idx 참조)';
 
 -- 1-2. 조직 레벨 (organizational_level) 컬럼 추가
--- 1: 대표이사, 2: 임원급(상무/이사), 3: 팀장급, 4: 일반직원
+-- 1: 대표, 2: 상무/이사, 3: 부장, 4: 그 이하 전부
 ALTER TABLE erp."user"
 ADD COLUMN IF NOT EXISTS organizational_level INTEGER DEFAULT 4;
 
-COMMENT ON COLUMN erp."user".organizational_level IS '조직 레벨 (1:대표, 2:임원, 3:팀장, 4:일반)';
+COMMENT ON COLUMN erp."user".organizational_level IS '조직 레벨 (1:대표, 2:상무/이사, 3:부장, 4:그 이하)';
 
 -- 1-3. 팀장 여부 (is_team_leader) 컬럼 추가
 ALTER TABLE erp."user"
@@ -177,7 +177,7 @@ INCREMENT BY 1;
 -- 실제 운영 환경에서는 아래 샘플 데이터 삽입 부분을 주석 처리하세요
 -- emp_position은 C02 그룹의 코드값으로 저장되어 있으므로 code 테이블과 JOIN하여 처리
 
--- 대표이사 업데이트 (조직도 최상위)
+-- 대표 업데이트 (레벨 1)
 UPDATE erp."user" u
 SET
     organizational_level = 1,
@@ -187,10 +187,10 @@ SET
 FROM erp.code c
 WHERE u.emp_position = c.code
   AND c.group_code = 'C02'
-  AND c.code_name IN ('대표이사', 'CEO')
+  AND c.code_name = '대표'
   AND u.deleted_at IS NULL;
 
--- 상무/이사급 업데이트
+-- 상무/이사급 업데이트 (레벨 2)
 UPDATE erp."user" u
 SET
     organizational_level = 2,
@@ -198,10 +198,10 @@ SET
 FROM erp.code c
 WHERE u.emp_position = c.code
   AND c.group_code = 'C02'
-  AND c.code_name IN ('부사장', '상무', '이사', 'CFO', 'CTO', 'CMO', 'COO', 'CPO', 'CIO')
+  AND c.code_name IN ('상무', '이사')
   AND u.deleted_at IS NULL;
 
--- 팀장/부장급 업데이트
+-- 부장급 업데이트 (레벨 3)
 UPDATE erp."user" u
 SET
     organizational_level = 3,
@@ -209,10 +209,10 @@ SET
 FROM erp.code c
 WHERE u.emp_position = c.code
   AND c.group_code = 'C02'
-  AND c.code_name IN ('팀장', '부장', '본부장', '실장')
+  AND c.code_name = '부장'
   AND u.deleted_at IS NULL;
 
--- 일반 직원 업데이트
+-- 그 이하 전부 (레벨 4) - 대표/상무/이사/부장이 아닌 모든 직급
 UPDATE erp."user" u
 SET
     organizational_level = 4,
@@ -220,9 +220,8 @@ SET
 FROM erp.code c
 WHERE u.emp_position = c.code
   AND c.group_code = 'C02'
-  AND c.code_name IN ('과장', '차장', '대리', '주임', '사원', '인턴')
-  AND u.deleted_at IS NULL
-  AND u.organizational_level IS NULL;
+  AND c.code_name NOT IN ('대표', '상무', '이사', '부장')
+  AND u.deleted_at IS NULL;
 
 -- ============================================
 -- 9. 검증 쿼리 (마이그레이션 후 확인용)
