@@ -72,7 +72,8 @@ public interface ProjectRepository extends JpaRepository<Project, Long> {
             "pm.empName, p.startDate, p.endDate, p.projectStatus, p.description, " +
             "p.receiptUrl, p.activityBudget, p.equipmentBudget, p.isDeleted, " +
             "COUNT(DISTINCT m.idx), " +
-            "(SELECT COALESCE(SUM(rm.amount), 0) FROM ReceiptMeeting rm WHERE rm.projectIdx = p.idx), " +
+            "((SELECT COALESCE(SUM(rm.amount), 0) FROM ReceiptMeeting rm WHERE rm.projectIdx = p.idx) + " +
+            "(SELECT COALESCE(SUM(COALESCE(rt.transportationFee, 0) + COALESCE(rt.accommodationFee, 0) + COALESCE(rt.mealFee, 0) + COALESCE(rt.otherFee, 0)), 0) FROM ReceiptTrip rt WHERE rt.projectIdx = p.idx)), " +
             "p.createdAt, p.updatedAt, p.createdUserIdx, p.updatedUserIdx " +
             "FROM Project p " +
             "LEFT JOIN p.projectManager pm " +
@@ -89,7 +90,8 @@ public interface ProjectRepository extends JpaRepository<Project, Long> {
             "pm.empName, p.startDate, p.endDate, p.projectStatus, p.description, " +
             "p.receiptUrl, p.activityBudget, p.equipmentBudget, p.isDeleted, " +
             "COUNT(DISTINCT m.idx), " +
-            "(SELECT COALESCE(SUM(rm.amount), 0) FROM ReceiptMeeting rm WHERE rm.projectIdx = p.idx), " +
+            "((SELECT COALESCE(SUM(rm.amount), 0) FROM ReceiptMeeting rm WHERE rm.projectIdx = p.idx) + " +
+            "(SELECT COALESCE(SUM(COALESCE(rt.transportationFee, 0) + COALESCE(rt.accommodationFee, 0) + COALESCE(rt.mealFee, 0) + COALESCE(rt.otherFee, 0)), 0) FROM ReceiptTrip rt WHERE rt.projectIdx = p.idx)), " +
             "p.createdAt, p.updatedAt, p.createdUserIdx, p.updatedUserIdx " +
             "FROM Project p " +
             "LEFT JOIN p.projectManager pm " +
@@ -106,7 +108,8 @@ public interface ProjectRepository extends JpaRepository<Project, Long> {
             "pm.empName, p.startDate, p.endDate, p.projectStatus, p.description, " +
             "p.receiptUrl, p.activityBudget, p.equipmentBudget, p.isDeleted, " +
             "COUNT(DISTINCT m.idx), " +
-            "(SELECT COALESCE(SUM(rm.amount), 0) FROM ReceiptMeeting rm WHERE rm.projectIdx = p.idx), " +
+            "((SELECT COALESCE(SUM(rm.amount), 0) FROM ReceiptMeeting rm WHERE rm.projectIdx = p.idx) + " +
+            "(SELECT COALESCE(SUM(COALESCE(rt.transportationFee, 0) + COALESCE(rt.accommodationFee, 0) + COALESCE(rt.mealFee, 0) + COALESCE(rt.otherFee, 0)), 0) FROM ReceiptTrip rt WHERE rt.projectIdx = p.idx)), " +
             "p.createdAt, p.updatedAt, p.createdUserIdx, p.updatedUserIdx " +
             "FROM Project p " +
             "LEFT JOIN p.projectManager pm " +

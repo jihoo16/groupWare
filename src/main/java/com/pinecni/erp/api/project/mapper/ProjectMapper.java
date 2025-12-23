@@ -7,6 +7,7 @@ import com.pinecni.erp.api.project.repository.ProjectMemberRepository;
 import com.pinecni.erp.api.project.repository.ProjectRelationRepository;
 import com.pinecni.erp.api.project.repository.ProjectRepository;
 import com.pinecni.erp.api.project.repository.ReceiptMeetingRepository;
+import com.pinecni.erp.api.project.repository.ReceiptTripRepository;
 import com.pinecni.erp.api.user.repository.UserRepository;
 import com.pinecni.erp.entity.Project;
 import com.pinecni.erp.entity.ProjectExpenseSetting;
@@ -35,6 +36,7 @@ public class ProjectMapper {
     private final ProjectMemberRepository projectMemberRepository;
     private final ProjectExpenseSettingRepository projectExpenseSettingRepository;
     private final ReceiptMeetingRepository receiptMeetingRepository;
+    private final ReceiptTripRepository receiptTripRepository;
     private final UserRepository userRepository;
     private final CodeRepository codeRepository;
 
@@ -108,7 +110,10 @@ public class ProjectMapper {
                 .collect(Collectors.toList());
 
         // 활동비 사용액 조회 (회의비, 출장비 등 집행 금액 합계)
-        BigDecimal activityUsed = receiptMeetingRepository.sumAmountByProjectIdx(entity.getIdx());
+        BigDecimal meetingUsed = receiptMeetingRepository.sumAmountByProjectIdx(entity.getIdx());
+        BigDecimal tripUsed = receiptTripRepository.sumAmountByProjectIdx(entity.getIdx());
+        BigDecimal activityUsed = meetingUsed.add(tripUsed);
+
         // 장비비 사용액 (추후 구현 예정, 현재는 0)
         BigDecimal equipmentUsed = BigDecimal.ZERO;
 
