@@ -42,3 +42,6 @@ sql/
 *.sql
 *.txt
 *.conf
+
+### Log files ###
+*.log
