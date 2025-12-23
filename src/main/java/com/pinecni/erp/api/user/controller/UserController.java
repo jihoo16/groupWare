@@ -46,7 +46,7 @@ public class UserController {
     @GetMapping("/all")
     public ResponseEntity<List<UserSimpleDTO>> getAllUsers() {
         log.debug("GET /api/users/all - getAllUsers()");
-        List<UserSimpleDTO> users = userService.getAllUsers();
+        List<UserSimpleDTO> users = userService.getAllUsers(); 
         return ResponseEntity.ok(users);
     }
 

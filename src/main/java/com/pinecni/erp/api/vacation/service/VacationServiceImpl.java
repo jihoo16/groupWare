@@ -1,15 +1,15 @@
 package com.pinecni.erp.api.vacation.service;
 
+import com.pinecni.erp.api.approval.repository.ApprovalDocumentRepository;
 import com.pinecni.erp.api.code.repository.CodeRepository;
 import com.pinecni.erp.api.user.repository.UserRepository;
 import com.pinecni.erp.api.vacation.dto.VacationUserInfoDTO;
 import com.pinecni.erp.api.vacation.dto.VacationCalculationDetailDTO;
+import com.pinecni.erp.api.vacation.dto.VacationRequestSaveDTO;
 import com.pinecni.erp.api.vacation.repository.VacationAccrualScheduleRepository;
 import com.pinecni.erp.api.vacation.repository.VacationBalanceRepository;
-import com.pinecni.erp.entity.Code;
-import com.pinecni.erp.entity.User;
-import com.pinecni.erp.entity.VacationAccrualSchedule;
-import com.pinecni.erp.entity.VacationBalance;
+import com.pinecni.erp.api.vacation.repository.VacationRequestRepository;
+import com.pinecni.erp.entity.*;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -31,6 +31,8 @@ public class VacationServiceImpl implements VacationService {
     private final UserRepository userRepository;
     private final VacationAccrualScheduleRepository accrualScheduleRepository;
     private final VacationBalanceRepository vacationBalanceRepository;
+    private final VacationRequestRepository vacationRequestRepository;
+    private final ApprovalDocumentRepository approvalDocumentRepository;
     private final CodeRepository codeRepository;
 
     @Override
@@ -526,5 +528,72 @@ public class VacationServiceImpl implements VacationService {
         log.info("[연차 계산 상세 조회 완료] totalDays: {}", totalDays);
 
         return result;
+    }
+
+    @Override
+    @Transactional
+    public Long saveVacationRequest(Long userIdx, VacationRequestSaveDTO saveDTO) {
+        log.info("[연차 신청서 저장] userIdx: {}, periods count: {}", userIdx, saveDTO.getPeriods().size());
+
+        // 1. 사용자 조회
+        User user = userRepository.findById(userIdx)
+                .orElseThrow(() -> new IllegalArgumentException("사용자를 찾을 수 없습니다: " + userIdx));
+
+        // 2. 현재 연차 잔액 조회
+        int currentYear = LocalDate.now().getYear();
+        VacationBalance vacationBalance = vacationBalanceRepository.findByUserIdxAndYear(userIdx, currentYear)
+                .orElse(null);
+
+        BigDecimal remainingDays = vacationBalance != null ? vacationBalance.getRemainingDays() : BigDecimal.ZERO;
+
+        // 3. ApprovalDocument 생성 (문서 메타데이터)
+        // 문서 제목: "연차 신청서 - {첫 번째 기간 시작일}"
+        String title = "연차 신청서";
+        if (!saveDTO.getPeriods().isEmpty()) {
+            LocalDate firstStartDate = saveDTO.getPeriods().get(0).getStartDate();
+            title = "연차 신청서 - " + firstStartDate.format(DateTimeFormatter.ofPattern("yyyy-MM-dd"));
+        }
+
+        // 문서번호 생성 (임시: VAC-{timestamp}-{userIdx})
+        String documentNo = "VAC-" + System.currentTimeMillis() + "-" + userIdx;
+
+        ApprovalDocument document = ApprovalDocument.builder()
+                .documentNo(documentNo)
+                .title(title)
+                .documentType("연차신청서")
+                .drafterUserIdx(userIdx)
+                .content(saveDTO.getReason())
+                .createdUserIdx(userIdx)
+                .updatedUserIdx(userIdx)
+                .build();
+
+        ApprovalDocument savedDocument = approvalDocumentRepository.save(document);
+        log.info("[문서 메타데이터 저장 완료] documentIdx: {}, documentNo: {}", savedDocument.getIdx(), savedDocument.getDocumentNo());
+
+        // 4. VacationRequest 생성 (각 기간별로 개별 저장)
+        for (VacationRequestSaveDTO.VacationPeriod period : saveDTO.getPeriods()) {
+            VacationRequest vacationRequest = VacationRequest.builder()
+                    .userIdx(userIdx)
+                    .documentIdx(savedDocument.getIdx())
+                    .vacationType(period.getVacationType())
+                    .startDate(period.getStartDate())
+                    .endDate(period.getEndDate())
+                    .days(period.getDays())
+                    .remainingDaysAtApply(remainingDays)
+                    .reason(saveDTO.getReason())
+                    .allowMinusVacation(saveDTO.getAllowMinusVacation() != null ? saveDTO.getAllowMinusVacation() : false)
+                    .specialApprovalReason(saveDTO.getSpecialApprovalReason())
+                    .applyDate(LocalDate.now())
+                    .createdUserIdx(userIdx)
+                    .updatedUserIdx(userIdx)
+                    .build();
+
+            vacationRequestRepository.save(vacationRequest);
+            log.info("[연차 기간 저장] startDate: {}, endDate: {}, days: {}, type: {}",
+                    period.getStartDate(), period.getEndDate(), period.getDays(), period.getVacationType());
+        }
+
+        log.info("[연차 신청서 저장 완료] documentIdx: {}, total periods: {}", savedDocument.getIdx(), saveDTO.getPeriods().size());
+        return savedDocument.getIdx();
     }
 }

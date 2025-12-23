@@ -60,4 +60,38 @@ public interface UserRepository extends JpaRepository<User, Long> {
      */
     @Query("SELECT u.empId FROM User u WHERE u.empId LIKE CONCAT(:datePrefix, '%') ORDER BY u.empId ASC")
     List<String> findEmpIdsByDatePrefix(String datePrefix);
+
+    // ========================================
+    // 보고체계 관리 관련 메서드
+    // ========================================
+
+    /**
+     * 팀장 여부로 활성 사용자 조회
+     */
+    @Query("SELECT u FROM User u WHERE u.isTeamLeader = :isTeamLeader AND u.deletedAt IS NULL ORDER BY u.empId ASC")
+    List<User> findActiveByIsTeamLeader(Boolean isTeamLeader);
+
+    /**
+     * 조직 레벨별 활성 사용자 조회
+     */
+    @Query("SELECT u FROM User u WHERE u.organizationalLevel = :level AND u.deletedAt IS NULL ORDER BY u.empId ASC")
+    List<User> findActiveByOrganizationalLevel(Integer level);
+
+    /**
+     * 상위보고자별 활성 사용자 조회
+     */
+    @Query("SELECT u FROM User u WHERE u.managerIdx = :managerIdx AND u.deletedAt IS NULL ORDER BY u.empId ASC")
+    List<User> findActiveByManagerIdx(Long managerIdx);
+
+    /**
+     * 보고체계 미설정 활성 사용자 수 조회
+     */
+    @Query("SELECT COUNT(u) FROM User u WHERE u.managerIdx IS NULL AND u.deletedAt IS NULL")
+    Long countIncompleteHierarchy();
+
+    /**
+     * 보고체계 설정 완료 활성 사용자 수 조회
+     */
+    @Query("SELECT COUNT(u) FROM User u WHERE u.managerIdx IS NOT NULL AND u.deletedAt IS NULL")
+    Long countCompletedHierarchy();
 }

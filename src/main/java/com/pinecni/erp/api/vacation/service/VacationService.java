@@ -2,6 +2,7 @@ package com.pinecni.erp.api.vacation.service;
 
 import com.pinecni.erp.api.vacation.dto.VacationUserInfoDTO;
 import com.pinecni.erp.api.vacation.dto.VacationCalculationDetailDTO;
+import com.pinecni.erp.api.vacation.dto.VacationRequestSaveDTO;
 
 import java.time.LocalDate;
 
@@ -51,4 +52,14 @@ public interface VacationService {
      * @return 연차 계산 상세 정보
      */
     VacationCalculationDetailDTO getVacationCalculationDetail(Long userIdx, Integer year);
+
+    /**
+     * 연차 신청서 저장
+     * - approval_documents에 문서 메타데이터 저장
+     * - vacation_request에 연차 상세 정보 저장 (여러 기간 개별 저장)
+     * @param userIdx 신청자 IDX
+     * @param saveDTO 연차 신청 정보
+     * @return 생성된 문서 IDX
+     */
+    Long saveVacationRequest(Long userIdx, VacationRequestSaveDTO saveDTO);
 }

@@ -46,18 +46,28 @@ document.addEventListener('DOMContentLoaded', function() {
         loadDepartmentFilters();
     }
 
-    // 직원 데이터 로드 (Mock Data)
+    // 직원 데이터 로드
     function loadEmployees() {
         showLoading(true);
 
-        // TODO: 실제 API 호출로 교체
-        // fetch('/api/employees/hierarchy')
-        setTimeout(() => {
-            employeesData = generateMockData();
-            renderEmployeeTable(employeesData);
-            updateStatistics();
-            showLoading(false);
-        }, 500);
+        fetch('/api/hierarchy/employees')
+            .then(response => {
+                if (!response.ok) {
+                    throw new Error('Failed to load employees');
+                }
+                return response.json();
+            })
+            .then(data => {
+                employeesData = data;
+                renderEmployeeTable(employeesData);
+                updateStatistics();
+                showLoading(false);
+            })
+            .catch(error => {
+                console.error('Error loading employees:', error);
+                alert('직원 정보를 불러오는데 실패했습니다.');
+                showLoading(false);
+            });
     }
 
     // Mock 데이터 생성
@@ -121,7 +131,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 empName: '김직원',
                 empDept: '개발',
                 empPosition: '대리',
-                organizationalLevel: 5,
+                organizationalLevel: 4,
                 isTeamLeader: false,
                 managerIdx: null,
                 managerName: null,
@@ -158,16 +168,15 @@ document.addEventListener('DOMContentLoaded', function() {
             <tr data-emp-idx="${emp.idx}" class="${changedEmployees.has(emp.idx) ? 'mh-changed' : ''}">
                 <td>${emp.empId}</td>
                 <td><strong>${emp.empName}</strong></td>
-                <td>${emp.empDept}</td>
-                <td>${emp.empPosition}</td>
+                <td>${emp.empDeptName || emp.empDept}</td>
+                <td>${emp.empPositionName || emp.empPosition}</td>
                 <td>
                     <select class="mh-level-select" data-emp-idx="${emp.idx}" data-field="organizationalLevel">
                         <option value="">미설정</option>
                         <option value="1" ${emp.organizationalLevel === 1 ? 'selected' : ''}>레벨 1 (대표)</option>
-                        <option value="2" ${emp.organizationalLevel === 2 ? 'selected' : ''}>레벨 2 (임원)</option>
-                        <option value="3" ${emp.organizationalLevel === 3 ? 'selected' : ''}>레벨 3 (부서장)</option>
-                        <option value="4" ${emp.organizationalLevel === 4 ? 'selected' : ''}>레벨 4 (팀장)</option>
-                        <option value="5" ${emp.organizationalLevel === 5 ? 'selected' : ''}>레벨 5 (팀원)</option>
+                        <option value="2" ${emp.organizationalLevel === 2 ? 'selected' : ''}>레벨 2 (상무/이사)</option>
+                        <option value="3" ${emp.organizationalLevel === 3 ? 'selected' : ''}>레벨 3 (부장)</option>
+                        <option value="4" ${emp.organizationalLevel === 4 ? 'selected' : ''}>레벨 4 (그 이하)</option>
                     </select>
                 </td>
                 <td class="mh-leader-checkbox">
@@ -205,13 +214,13 @@ document.addEventListener('DOMContentLoaded', function() {
         attachInlineEditEvents();
     }
 
-    // 상위보고자 옵션 생성 (본인 제외, 상위 직급만)
+    // 상위보고자 옵션 생성 (본인 제외, 한글명 표시)
     function generateManagerOptions(employee) {
         return employeesData
             .filter(emp => emp.idx !== employee.idx) // 본인 제외
             .map(emp => `
                 <option value="${emp.idx}" ${emp.idx === employee.managerIdx ? 'selected' : ''}>
-                    ${emp.empName} (${emp.empPosition} / ${emp.empDept})
+                    ${emp.empName} (${emp.empPositionName || emp.empPosition} / ${emp.empDeptName || emp.empDept})
                 </option>
             `)
             .join('');
@@ -368,16 +377,16 @@ document.addEventListener('DOMContentLoaded', function() {
         if (!currentEditingEmployee) return;
 
         document.getElementById('modalEmpName').textContent = currentEditingEmployee.empName;
-        document.getElementById('modalEmpDept').textContent = currentEditingEmployee.empDept;
-        document.getElementById('modalEmpPosition').textContent = currentEditingEmployee.empPosition;
+        document.getElementById('modalEmpDept').textContent = currentEditingEmployee.empDeptName || currentEditingEmployee.empDept;
+        document.getElementById('modalEmpPosition').textContent = currentEditingEmployee.empPositionName || currentEditingEmployee.empPosition;
         document.getElementById('modalCurrentManager').textContent = currentEditingEmployee.managerName || '미설정';
         document.getElementById('changeEmpIdx').value = empIdx;
 
-        // 상위보고자 드롭다운 옵션 생성
+        // 상위보고자 드롭다운 옵션 생성 (한글명 표시)
         const newManagerSelect = document.getElementById('newManager');
         const options = employeesData
             .filter(emp => emp.idx !== empIdx)
-            .map(emp => `<option value="${emp.idx}">${emp.empName} (${emp.empPosition} / ${emp.empDept})</option>`)
+            .map(emp => `<option value="${emp.idx}">${emp.empName} (${emp.empPositionName || emp.empPosition} / ${emp.empDeptName || emp.empDept})</option>`)
             .join('');
         newManagerSelect.innerHTML = '<option value="">선택하세요</option>' + options;
 
@@ -411,14 +420,39 @@ document.addEventListener('DOMContentLoaded', function() {
 
             changedEmployees.add(empIdx);
 
-            // TODO: API 호출하여 서버에 저장
-            console.log('상위보고자 변경:', { empIdx, newManagerIdx, startDate, reason });
+            // API 호출하여 서버에 저장
+            const updateData = {
+                empIdx: empIdx,
+                managerIdx: newManagerIdx,
+                managerStartDate: startDate,
+                changeReason: reason
+            };
 
-            alert(`${employee.empName}의 상위보고자가 ${newManager.empName}으로 변경되었습니다.`);
+            fetch(`/api/hierarchy/employees/${empIdx}`, {
+                method: 'PUT',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify(updateData)
+            })
+            .then(response => {
+                if (!response.ok) {
+                    throw new Error('Failed to update hierarchy');
+                }
+                return response.json();
+            })
+            .then(data => {
+                console.log('상위보고자 변경 성공:', data);
+                alert(`${employee.empName}의 상위보고자가 ${newManager.empName}으로 변경되었습니다.`);
 
-            renderEmployeeTable(employeesData);
-            updateStatistics();
-            closeModal(changeManagerModal);
+                renderEmployeeTable(employeesData);
+                updateStatistics();
+                closeModal(changeManagerModal);
+            })
+            .catch(error => {
+                console.error('Error updating hierarchy:', error);
+                alert('상위보고자 변경에 실패했습니다.');
+            });
         }
     }
 
@@ -428,7 +462,7 @@ document.addEventListener('DOMContentLoaded', function() {
         if (!employee) return;
 
         document.getElementById('historyEmpName').textContent = employee.empName;
-        document.getElementById('historyEmpInfo').textContent = `${employee.empPosition} / ${employee.empDept}`;
+        document.getElementById('historyEmpInfo').textContent = `${employee.empPositionName || employee.empPosition} / ${employee.empDeptName || employee.empDept}`;
 
         // Mock 이력 데이터
         const historyHtml = `
@@ -465,7 +499,7 @@ document.addEventListener('DOMContentLoaded', function() {
         const changedData = Array.from(changedEmployees).map(idx => {
             const emp = employeesData.find(e => e.idx === idx);
             return {
-                idx: emp.idx,
+                empIdx: emp.idx,
                 organizationalLevel: emp.organizationalLevel,
                 isTeamLeader: emp.isTeamLeader,
                 managerIdx: emp.managerIdx,
@@ -473,15 +507,33 @@ document.addEventListener('DOMContentLoaded', function() {
             };
         });
 
-        // TODO: API 호출하여 일괄 저장
-        console.log('전체 저장:', changedData);
+        // API 호출하여 일괄 저장
+        fetch('/api/hierarchy/bulk', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify(changedData)
+        })
+        .then(response => {
+            if (!response.ok) {
+                throw new Error('Failed to bulk update');
+            }
+            return response.text();
+        })
+        .then(() => {
+            console.log('전체 저장 성공');
+            alert(`${changedEmployees.size}명의 보고체계 정보가 저장되었습니다.`);
+            changedEmployees.clear();
 
-        alert(`${changedEmployees.size}명의 보고체계 정보가 저장되었습니다.`);
-        changedEmployees.clear();
-
-        // changed 클래스 제거
-        document.querySelectorAll('tr.mh-changed').forEach(row => {
-            row.classList.remove('mh-changed');
+            // changed 클래스 제거
+            document.querySelectorAll('tr.mh-changed').forEach(row => {
+                row.classList.remove('mh-changed');
+            });
+        })
+        .catch(error => {
+            console.error('Error saving bulk changes:', error);
+            alert('일괄 저장에 실패했습니다.');
         });
     }
 

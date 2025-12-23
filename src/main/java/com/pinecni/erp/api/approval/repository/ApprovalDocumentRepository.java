@@ -35,9 +35,11 @@ public interface ApprovalDocumentRepository extends JpaRepository<ApprovalDocume
     List<ApprovalDocument> findByDocumentType(String documentType);
 
     /**
-     * 부서별 문서 조회
+     * 부서별 문서 조회 (User 테이블 JOIN)
      */
-    @Query("SELECT d FROM ApprovalDocument d WHERE d.departmentCode = :departmentCode AND d.deletedAt IS NULL " +
+    @Query("SELECT d FROM ApprovalDocument d " +
+            "JOIN User u ON d.drafterUserIdx = u.idx " +
+            "WHERE u.empDept = :departmentCode AND d.deletedAt IS NULL " +
             "ORDER BY d.createdAt DESC")
     List<ApprovalDocument> findByDepartmentCode(String departmentCode);
 
