@@ -30,24 +30,29 @@ public class ReceiptTripUpdateDTO {
     private LocalDate tripDate;
 
     /**
-     * 시작 시간
-     */
-    private LocalTime startTime;
-
-    /**
-     * 종료 시간
-     */
-    private LocalTime endTime;
-
-    /**
      * 출장지
      */
     private String location;
 
     /**
-     * 금액
+     * 교통비
      */
-    private BigDecimal amount;
+    private BigDecimal transportationFee;
+
+    /**
+     * 숙박비
+     */
+    private BigDecimal accommodationFee;
+
+    /**
+     * 식비
+     */
+    private BigDecimal mealFee;
+
+    /**
+     * 기타/일비
+     */
+    private BigDecimal otherFee;
 
     /**
      * 목적

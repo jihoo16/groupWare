@@ -18,10 +18,15 @@ import java.util.Optional;
 public interface ReceiptTripRepository extends JpaRepository<ReceiptTrip, Long> {
 
     /**
-     * 프로젝트별 총 출장비 조회
+     * 프로젝트별 총 출장비 조회 (4개 비용 항목 합계)
      */
-    @Query("SELECT COALESCE(SUM(rt.amount), 0) FROM ReceiptTrip rt " +
-            "WHERE rt.projectIdx = :projectIdx ")
+    @Query("SELECT COALESCE(SUM(" +
+            "COALESCE(rt.transportationFee, 0) + " +
+            "COALESCE(rt.accommodationFee, 0) + " +
+            "COALESCE(rt.mealFee, 0) + " +
+            "COALESCE(rt.otherFee, 0)), 0) " +
+            "FROM ReceiptTrip rt " +
+            "WHERE rt.projectIdx = :projectIdx")
     BigDecimal sumAmountByProjectIdx(@Param("projectIdx") Long projectIdx);
 
     /**

@@ -58,14 +58,14 @@ public class ReceiptTripMapper {
                 .authorDept(authorDept)
                 .authorDeptName(authorDeptName)
                 .tripDate(entity.getTripDate())
-                .startTime(entity.getStartTime())
-                .endTime(entity.getEndTime())
                 .location(entity.getLocation())
-                .amount(entity.getAmount())
+                .transportationFee(entity.getTransportationFee())
+                .accommodationFee(entity.getAccommodationFee())
+                .mealFee(entity.getMealFee())
+                .otherFee(entity.getOtherFee())
                 .purpose(entity.getPurpose())
                 .content(entity.getContent())
                 .paymentMethod(entity.getPaymentMethod())
-                .notes(entity.getNotes())
                 .status(entity.getStatus())
                 .attendees(attendeeDTOs)
                 .createdAt(entity.getCreatedAt())
@@ -86,14 +86,14 @@ public class ReceiptTripMapper {
                 .authorIdx(dto.getAuthorIdx())
                 .authorName(dto.getAuthorName())
                 .tripDate(dto.getTripDate())
-                .startTime(dto.getStartTime())
-                .endTime(dto.getEndTime())
                 .location(dto.getLocation())
-                .amount(dto.getAmount())
+                .transportationFee(dto.getTransportationFee())
+                .accommodationFee(dto.getAccommodationFee())
+                .mealFee(dto.getMealFee())
+                .otherFee(dto.getOtherFee())
                 .purpose(dto.getPurpose())
                 .content(dto.getContent())
                 .paymentMethod(dto.getPaymentMethod())
-                .notes(dto.getNotes())
                 .status("PENDING")
                 .build();
     }
@@ -112,17 +112,20 @@ public class ReceiptTripMapper {
         if (dto.getTripDate() != null) {
             entity.setTripDate(dto.getTripDate());
         }
-        if (dto.getStartTime() != null) {
-            entity.setStartTime(dto.getStartTime());
-        }
-        if (dto.getEndTime() != null) {
-            entity.setEndTime(dto.getEndTime());
-        }
         if (dto.getLocation() != null) {
             entity.setLocation(dto.getLocation());
         }
-        if (dto.getAmount() != null) {
-            entity.setAmount(dto.getAmount());
+        if (dto.getTransportationFee() != null) {
+            entity.setTransportationFee(dto.getTransportationFee());
+        }
+        if (dto.getAccommodationFee() != null) {
+            entity.setAccommodationFee(dto.getAccommodationFee());
+        }
+        if (dto.getMealFee() != null) {
+            entity.setMealFee(dto.getMealFee());
+        }
+        if (dto.getOtherFee() != null) {
+            entity.setOtherFee(dto.getOtherFee());
         }
         if (dto.getPurpose() != null) {
             entity.setPurpose(dto.getPurpose());
@@ -132,9 +135,6 @@ public class ReceiptTripMapper {
         }
         if (dto.getPaymentMethod() != null) {
             entity.setPaymentMethod(dto.getPaymentMethod());
-        }
-        if (dto.getNotes() != null) {
-            entity.setNotes(dto.getNotes());
         }
     }
 

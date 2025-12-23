@@ -4,8 +4,10 @@ import com.pinecni.erp.api.document.dto.ReceiptTripCreateDTO;
 import com.pinecni.erp.api.document.dto.ReceiptTripDTO;
 import com.pinecni.erp.api.document.dto.ReceiptTripUpdateDTO;
 import com.pinecni.erp.api.document.mapper.ReceiptTripMapper;
+import com.pinecni.erp.api.project.repository.ProjectRepository;
 import com.pinecni.erp.api.project.repository.ReceiptTripAttendeeRepository;
 import com.pinecni.erp.api.project.repository.ReceiptTripRepository;
+import com.pinecni.erp.entity.Project;
 import com.pinecni.erp.entity.ReceiptTrip;
 import com.pinecni.erp.entity.ReceiptTripAttendee;
 import lombok.RequiredArgsConstructor;
@@ -13,6 +15,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.List;
@@ -28,6 +31,7 @@ public class ReceiptTripServiceImpl implements ReceiptTripService {
 
     private final ReceiptTripRepository receiptTripRepository;
     private final ReceiptTripAttendeeRepository attendeeRepository;
+    private final ProjectRepository projectRepository;
     private final ReceiptTripMapper mapper;
 
     @Override
@@ -170,5 +174,30 @@ public class ReceiptTripServiceImpl implements ReceiptTripService {
                 .count();
 
         return String.format("%s-%03d", prefix, count + 1);
+    }
+
+    /**
+     * 출장 비용 항목들의 합계 계산
+     */
+    private BigDecimal calculateTotalAmount(BigDecimal transportationFee,
+                                            BigDecimal accommodationFee,
+                                            BigDecimal mealFee,
+                                            BigDecimal otherFee) {
+        BigDecimal total = BigDecimal.ZERO;
+
+        if (transportationFee != null) {
+            total = total.add(transportationFee);
+        }
+        if (accommodationFee != null) {
+            total = total.add(accommodationFee);
+        }
+        if (mealFee != null) {
+            total = total.add(mealFee);
+        }
+        if (otherFee != null) {
+            total = total.add(otherFee);
+        }
+
+        return total;
     }
 }
