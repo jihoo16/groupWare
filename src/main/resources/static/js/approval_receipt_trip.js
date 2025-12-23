@@ -221,14 +221,19 @@ document.addEventListener('DOMContentLoaded', function() {
         if (templateElement) {
             documentForm.innerHTML = templateElement.innerHTML;
             if (templateKey === 'receipt-trip') {
-                setupTripAutoFill();
-                setupDocumentFormToggle();
+                // DOM이 완전히 렌더링된 후 초기화 함수 호출
+                setTimeout(() => {
+                    setupTripAutoFill();
+                    setupDocumentFormToggle();
+                }, 0);
             }
         }
     }
 
     // 출장 자동 채우기 기능
     function setupTripAutoFill() {
+        console.log('setupTripAutoFill 시작');
+
         const tripProject = document.getElementById('trip_project');
         const tripLocation = document.getElementById('trip_location');
         const tripDate = document.getElementById('trip_date');
@@ -239,6 +244,11 @@ document.addEventListener('DOMContentLoaded', function() {
         const tripPersonArea = document.getElementById('tripPersonArea');
         const tripPersonList = document.getElementById('tripPersonList');
         const dailyExpenseBody = document.getElementById('dailyExpenseBody');
+
+        console.log('엘리먼트 확인:');
+        console.log('- tripDate:', tripDate);
+        console.log('- tripDuration:', tripDuration);
+        console.log('- dailyExpenseBody:', dailyExpenseBody);
 
         let tripPersons = [];
         let dailyExpenses = [];
@@ -384,11 +394,21 @@ document.addEventListener('DOMContentLoaded', function() {
 
         // 날짜별 비용 입력 행 생성 함수
         function generateDailyExpenseRows() {
-            if (!tripDate || !tripDate.value || !dailyExpenseBody) return;
+            console.log('generateDailyExpenseRows 호출됨');
+            console.log('tripDate:', tripDate);
+            console.log('tripDate.value:', tripDate ? tripDate.value : 'tripDate 없음');
+            console.log('dailyExpenseBody:', dailyExpenseBody);
+
+            if (!tripDate || !tripDate.value || !dailyExpenseBody) {
+                console.log('early return - 조건 불충족');
+                return;
+            }
 
             const startDate = new Date(tripDate.value);
             const duration = parseInt(tripDuration ? tripDuration.value : '0');
             const days = duration + 1; // 당일(0박) = 1일, 1박 = 2일
+
+            console.log('날짜별 행 생성 시작 - days:', days);
 
             // 기존 데이터 초기화
             dailyExpenses = [];
@@ -558,7 +578,11 @@ document.addEventListener('DOMContentLoaded', function() {
 
         // 출장 기간 계산 함수
         function updateTripDateRange() {
-            if (!tripDate || !tripDate.value) return;
+            console.log('updateTripDateRange 호출됨');
+            if (!tripDate || !tripDate.value) {
+                console.log('updateTripDateRange early return');
+                return;
+            }
 
             const startDate = new Date(tripDate.value);
             const duration = parseInt(tripDuration ? tripDuration.value : '0');
@@ -646,16 +670,24 @@ document.addEventListener('DOMContentLoaded', function() {
 
         // 출장기간 자동 채우기 및 작성일/복명일자 계산
         if (tripDate) {
-            tripDate.addEventListener('input', function() {
+            console.log('tripDate 이벤트 리스너 추가');
+            tripDate.addEventListener('change', function() {
+                console.log('tripDate change 이벤트 발생');
                 updateTripDateRange();
             });
+        } else {
+            console.log('tripDate 엘리먼트를 찾을 수 없음!');
         }
 
         // 출장 기간 셀렉트 박스 이벤트
         if (tripDuration) {
+            console.log('tripDuration 이벤트 리스너 추가');
             tripDuration.addEventListener('change', function() {
+                console.log('tripDuration change 이벤트 발생');
                 updateTripDateRange();
             });
+        } else {
+            console.log('tripDuration 엘리먼트를 찾을 수 없음!');
         }
 
         // 출장목적 자동 채우기
@@ -962,15 +994,16 @@ document.addEventListener('DOMContentLoaded', function() {
                 return;
             }
 
-            if (!startTimeInput || !startTimeInput.value) {
-                alert('시작 시간을 입력해주세요.');
-                return;
-            }
+            // 시작/종료 시간은 선택사항 (HTML에 필드가 없을 수 있음)
+            // if (!startTimeInput || !startTimeInput.value) {
+            //     alert('시작 시간을 입력해주세요.');
+            //     return;
+            // }
 
-            if (!endTimeInput || !endTimeInput.value) {
-                alert('종료 시간을 입력해주세요.');
-                return;
-            }
+            // if (!endTimeInput || !endTimeInput.value) {
+            //     alert('종료 시간을 입력해주세요.');
+            //     return;
+            // }
 
             if (!locationInput || !locationInput.value) {
                 alert('출장지를 입력해주세요.');
@@ -994,18 +1027,37 @@ document.addEventListener('DOMContentLoaded', function() {
                 };
             });
 
+            // 비용 합계 계산 (날짜별 비용에서)
+            const expenseInputs = document.querySelectorAll('.expense-input');
+            let totalTransportFee = 0;
+            let totalAccommodationFee = 0;
+            let totalMealFee = 0;
+            let totalOtherFee = 0;
+
+            expenseInputs.forEach(input => {
+                const type = input.getAttribute('data-type');
+                const value = parseFloat(input.value) || 0;
+
+                if (type === 'transport') totalTransportFee += value;
+                else if (type === 'lodging') totalAccommodationFee += value;
+                else if (type === 'meal') totalMealFee += value;
+                else if (type === 'other') totalOtherFee += value;
+            });
+
             // 저장 데이터 생성
             const saveData = {
                 projectIdx: parseInt(projectSelect.value),
+                authorIdx: currentUser ? currentUser.idx : null,
+                authorName: currentUser ? currentUser.empName : null,
                 tripDate: dateInput.value,
-                startTime: startTimeInput.value + ':00',  // HH:mm:ss 형식
-                endTime: endTimeInput.value + ':00',
                 location: locationInput.value,
-                amount: document.getElementById('trip_amount') ? parseFloat(document.getElementById('trip_amount').value) || null : null,
+                transportationFee: totalTransportFee || null,
+                accommodationFee: totalAccommodationFee || null,
+                mealFee: totalMealFee || null,
+                otherFee: totalOtherFee || null,
                 purpose: document.getElementById('trip_purpose') ? document.getElementById('trip_purpose').value : null,
-                content: document.getElementById('trip_content') ? document.getElementById('trip_content').value : null,
-                paymentMethod: document.getElementById('trip_payment') ? document.getElementById('trip_payment').value : null,
-                notes: document.getElementById('trip_notes') ? document.getElementById('trip_notes').value : null,
+                content: document.getElementById('trip_result') ? document.getElementById('trip_result').value : null,
+                paymentMethod: '카드로 결제',
                 attendees: attendeeDTOs
             };
 

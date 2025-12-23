@@ -14,6 +14,7 @@ document.addEventListener('DOMContentLoaded', function() {
     let monthlyReports = []; // 월간보고서 데이터
     let meetingMinutes = []; // 회의록 데이터
     let receiptMeetings = []; // 연구비증빙 회의록 데이터
+    let receiptTrips = []; // 연구비증빙 출장 데이터
 
     // 페이징 관련 변수
     let currentPage = 1;
@@ -290,8 +291,13 @@ document.addEventListener('DOMContentLoaded', function() {
                 // 회의록 상세페이지로 이동
                 window.location.href = `/approval/meeting/detail?id=${reportId}`;
             } else if (category === 'receipt' && reportId) {
-                // 연구비증빙 회의록 상세페이지로 이동
-                window.location.href = `/approval/receipt-meeting?id=${reportId}`;
+                // 연구비증빙 타입에 따라 상세페이지 분기
+                const docType = viewBtn.getAttribute('data-type');
+                if (docType === 'receipt-meeting') {
+                    window.location.href = `/approval/receipt-meeting?id=${reportId}`;
+                } else if (docType === 'receipt-trip') {
+                    window.location.href = `/approval/receipt-trip?id=${reportId}`;
+                }
             } else {
                 const title = docRow.querySelector('.title-wrap').textContent;
                 alert(`"${title}" 상세보기 기능은 추후 구현됩니다.`);
@@ -320,8 +326,13 @@ document.addEventListener('DOMContentLoaded', function() {
                 // 회의록 상세페이지로 이동
                 window.location.href = `/approval/meeting/detail?id=${reportId}`;
             } else if (category === 'receipt' && reportId) {
-                // 연구비증빙 회의록 상세페이지로 이동
-                window.location.href = `/approval/receipt-meeting?id=${reportId}`;
+                // 연구비증빙 타입에 따라 상세페이지 분기
+                const docType = viewBtn ? viewBtn.getAttribute('data-type') : null;
+                if (docType === 'receipt-meeting') {
+                    window.location.href = `/approval/receipt-meeting?id=${reportId}`;
+                } else if (docType === 'receipt-trip') {
+                    window.location.href = `/approval/receipt-trip?id=${reportId}`;
+                }
             } else {
                 const title = titleWrap.textContent;
                 alert(`"${title}" 상세보기 기능은 추후 구현됩니다.`);
@@ -565,6 +576,30 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     }
 
+    // ============================================
+    // API: 연구비증빙 출장 목록 로드
+    // ============================================
+    async function loadReceiptTrips() {
+        try {
+            console.log('연구비증빙 출장 API 호출 시작: /api/receipt-trips');
+            const response = await fetch('/api/receipt-trips');
+            console.log('API 응답 상태:', response.status, response.statusText);
+
+            if (response.ok) {
+                receiptTrips = await response.json();
+                console.log('연구비증빙 출장 로드 성공:', receiptTrips.length + '건');
+                console.log('첫 번째 데이터:', receiptTrips[0]);
+            } else {
+                const errorText = await response.text();
+                console.error('연구비증빙 출장 로드 실패 - 상태:', response.status);
+                console.error('에러 응답:', errorText);
+            }
+        } catch (error) {
+            console.error('연구비증빙 출장 로드 오류:', error);
+            console.error('오류 상세:', error.message, error.stack);
+        }
+    }
+
     // 모든 문서를 합쳐서 렌더링 (주간/월간/회의록/연구비증빙)
     function renderAllDocuments() {
         const tbody = documentList.querySelector('tbody');
@@ -579,7 +614,8 @@ document.addEventListener('DOMContentLoaded', function() {
             ...weeklyReports.map(report => ({ ...report, docType: 'weekly', category: 'report' })),
             ...monthlyReports.map(report => ({ ...report, docType: 'monthly', category: 'report' })),
             ...meetingMinutes.map(meeting => ({ ...meeting, docType: 'meeting', category: 'meeting' })),
-            ...receiptMeetings.map(receipt => ({ ...receipt, docType: 'receipt', category: 'receipt' }))
+            ...receiptMeetings.map(receipt => ({ ...receipt, docType: 'receipt-meeting', category: 'receipt' })),
+            ...receiptTrips.map(trip => ({ ...trip, docType: 'receipt-trip', category: 'receipt' }))
         ];
 
         // 생성일 기준 최신순 정렬
@@ -663,7 +699,7 @@ document.addEventListener('DOMContentLoaded', function() {
                         </div>
                     </td>
                 `;
-            } else if (doc.docType === 'receipt') {
+            } else if (doc.docType === 'receipt-meeting') {
                 // 연구비증빙 회의록
                 const meetingDate = new Date(doc.meetingDate);
                 const meetingDateStr = `${meetingDate.getFullYear()}.${String(meetingDate.getMonth() + 1).padStart(2, '0')}.${String(meetingDate.getDate()).padStart(2, '0')}`;
@@ -681,7 +717,7 @@ document.addEventListener('DOMContentLoaded', function() {
                     <td>
                         <span class="doc-type">
                             <i class="fas fa-receipt"></i>
-                            연구비증빙
+                            연구비증빙 - 회의록
                         </span>
                     </td>
                     <td class="doc-title-cell">
@@ -693,7 +729,43 @@ document.addEventListener('DOMContentLoaded', function() {
                     <td>${formattedDate}</td>
                     <td>
                     <div class="table-actions">
-                        <button class="btn-icon btn-view" data-id="${doc.idx}">
+                        <button class="btn-icon btn-view" data-id="${doc.idx}" data-type="receipt-meeting">
+                            <i class="fas fa-eye"></i>
+                        </button>
+                        </div>
+                    </td>
+                `;
+            } else if (doc.docType === 'receipt-trip') {
+                // 연구비증빙 출장
+                const tripDate = new Date(doc.tripDate);
+                const tripDateStr = `${tripDate.getFullYear()}.${String(tripDate.getMonth() + 1).padStart(2, '0')}.${String(tripDate.getDate()).padStart(2, '0')}`;
+
+                let descText = tripDateStr;
+                if (doc.location) {
+                    descText += ` | ${doc.location}`;
+                }
+                if (doc.amount) {
+                    const formattedAmount = Number(doc.amount).toLocaleString('ko-KR');
+                    descText += ` | ${formattedAmount}원`;
+                }
+
+                tr.innerHTML = `
+                    <td>
+                        <span class="doc-type">
+                            <i class="fas fa-plane"></i>
+                            연구비증빙 - 출장
+                        </span>
+                    </td>
+                    <td class="doc-title-cell">
+                        <div class="title-wrap">${doc.projectName ? '[' + doc.projectName + '] ' : ''}${doc.purpose || doc.location || '출장'}</div>
+                        <div class="desc-wrap">${descText}</div>
+                    </td>
+                    <td>${doc.authorName || '-'}</td>
+                    <td>${doc.authorDeptName || '-'}</td>
+                    <td>${formattedDate}</td>
+                    <td>
+                    <div class="table-actions">
+                        <button class="btn-icon btn-view" data-id="${doc.idx}" data-type="receipt-trip">
                             <i class="fas fa-eye"></i>
                         </button>
                         </div>
@@ -709,7 +781,13 @@ document.addEventListener('DOMContentLoaded', function() {
 
     // 페이지 로드 시 주간/월간보고서, 회의록, 연구비증빙 목록 가져오기
     async function loadAllReports() {
-        await Promise.all([loadWeeklyReports(), loadMonthlyReports(), loadMeetingMinutes(), loadReceiptMeetings()]);
+        await Promise.all([
+            loadWeeklyReports(),
+            loadMonthlyReports(),
+            loadMeetingMinutes(),
+            loadReceiptMeetings(),
+            loadReceiptTrips()
+        ]);
         renderAllDocuments(); // 모든 문서를 합쳐서 렌더링
     }
 
