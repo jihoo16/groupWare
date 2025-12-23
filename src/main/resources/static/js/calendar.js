@@ -464,7 +464,7 @@ document.addEventListener('DOMContentLoaded', function() {
         // 공휴일 표시
         let holidayHTML = '';
         if (holidayInfo && !isOtherMonth) {
-            holidayHTML = `<div class="holiday-name" style="font-size: 10px; color: #d32f2f; font-weight: 600; margin-top: 2px;">${holidayInfo.holidayName}</div>`;
+            holidayHTML = `<span class="holiday-name">${holidayInfo.holidayName}</span>`;
         }
 
         return `
@@ -1537,7 +1537,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
             if (holidayInfo) {
                 dayNameClass = 'holiday';
-                holidayHTML = `<div class="holiday-label" style="font-size: 10px; color: #d32f2f; margin-top: 2px;">${holidayInfo.holidayName}</div>`;
+                holidayHTML = ` <span class="holiday-name">${holidayInfo.holidayName}</span>`;
             } else if (i === 0) {
                 dayNameClass = 'sunday';
             } else if (i === 6) {
@@ -1546,8 +1546,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
             headerHTML += `
                 <div class="week-day-header ${isToday ? 'today' : ''} ${dayNameClass}" data-date="${formatDate(dayDate)}">
-                    <div class="week-day-combined">${dateStr} (${dayNameText})</div>
-                    ${holidayHTML}
+                    <div class="week-day-combined">${dateStr} (${dayNameText})${holidayHTML}</div>
                 </div>
             `;
         }
@@ -1784,7 +1783,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
         if (holidayInfo) {
             dayHeaderClass += ' holiday';
-            holidayHTML = `<div class="holiday-label" style="font-size: 11px; color: #d32f2f; margin-top: 4px;">${holidayInfo.holidayName}</div>`;
+            holidayHTML = ` <span class="holiday-name">${holidayInfo.holidayName}</span>`;
         } else if (dayOfWeek === 0) {
             dayHeaderClass += ' sunday';
         } else if (dayOfWeek === 6) {
@@ -1793,8 +1792,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
         dayHeaderContainer.innerHTML = `
             <div class="day-header-info ${dayHeaderClass}">
-                <div class="day-date-combined">${currentDate.getDate()} (${weekDays[dayOfWeek]})</div>
-                ${holidayHTML}
+                <div class="day-date-combined">${currentDate.getDate()} (${weekDays[dayOfWeek]})${holidayHTML}</div>
             </div>
         `;
 

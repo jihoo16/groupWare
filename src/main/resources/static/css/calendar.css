@@ -467,6 +467,16 @@
     margin: 5px;
     font-weight: 600;
     color: #333;
+    display: flex;
+    align-items: center;
+    gap: 4px;
+}
+
+.holiday-name {
+    font-size: 9px;
+    color: #d32f2f;
+    font-weight: 600;
+    white-space: nowrap;
 }
 
 .calendar-cell.weekend .cell-date {
@@ -525,7 +535,7 @@
     margin-right: -8px;
     padding-right: 16px;
     position: relative;
-    z-index: 2;
+    z-index: 5;
 }
 
 /* 연속 일정 - 중간일 */
@@ -538,7 +548,7 @@
     overflow: hidden;
     text-indent: -9999px;
     position: relative;
-    z-index: 2;
+    z-index: 5;
 }
 
 /* 연속 일정 - 종료일 */
@@ -549,7 +559,7 @@
     overflow: hidden;
     text-indent: -9999px;
     position: relative;
-    z-index: 2;
+    z-index: 5;
 }
 
 /* 단일 일정 */
@@ -1631,6 +1641,11 @@ input.form-input:read-only {
     font-size: 14px;
     font-weight: 700;
     color: #333;
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    flex-wrap: wrap;
+    justify-content: center;
 }
 
 .week-day-header.today .week-day-combined {
@@ -1684,6 +1699,10 @@ input.form-input:read-only {
     font-size: 18px;
     font-weight: 700;
     color: #333;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    justify-content: center;
 }
 
 .day-header-info.today .day-date-combined {
