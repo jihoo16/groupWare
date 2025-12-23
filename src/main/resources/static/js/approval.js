@@ -744,8 +744,9 @@ document.addEventListener('DOMContentLoaded', function() {
                 if (doc.location) {
                     descText += ` | ${doc.location}`;
                 }
-                if (doc.amount) {
-                    const formattedAmount = Number(doc.amount).toLocaleString('ko-KR');
+                const sumAmount = doc.accommodationFee + doc.mealFee + doc.otherFee + doc.transportationFee;
+                if (sumAmount !== 0) {
+                    const formattedAmount = Number(sumAmount).toLocaleString('ko-KR');
                     descText += ` | ${formattedAmount}원`;
                 }
 
