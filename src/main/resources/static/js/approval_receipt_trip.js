@@ -1470,4 +1470,359 @@ document.addEventListener('DOMContentLoaded', function() {
     templateTreeHeaders.forEach(header => {
         header.style.pointerEvents = 'none';
     });
+
+    // ============================================
+    // 상세보기 모드: URL에서 ID 파라미터 확인 및 데이터 로드
+    // ============================================
+    function getUrlParameter(name) {
+        const urlParams = new URLSearchParams(window.location.search);
+        return urlParams.get(name);
+    }
+
+    async function loadReceiptTripData(id) {
+        try {
+            console.log('연구비증빙 출장 데이터 로드 시작 - ID:', id);
+            const response = await fetch(`/api/receipt-trips/${id}`);
+
+            if (!response.ok) {
+                throw new Error(`데이터 로드 실패: ${response.status}`);
+            }
+
+            const data = await response.json();
+            console.log('로드된 데이터:', data);
+
+            // 폼에 데이터 채우기
+            populateForm(data);
+
+            // 저장 버튼 숨기기, 수정/삭제 버튼 표시 (상세보기 모드)
+            if (submitBtn) {
+                submitBtn.style.display = 'none';
+            }
+            const updateBtn = document.getElementById('updateBtn');
+            const deleteBtn = document.getElementById('deleteBtn');
+            if (updateBtn) {
+                updateBtn.style.display = 'inline-block';
+            }
+            if (deleteBtn) {
+                deleteBtn.style.display = 'inline-block';
+            }
+
+            return data;
+        } catch (error) {
+            console.error('데이터 로드 오류:', error);
+            alert('데이터를 불러오는데 실패했습니다.');
+        }
+    }
+
+    function populateForm(data) {
+        console.log('폼 데이터 채우기 시작');
+
+        // 프로젝트 선택
+        const projectSelect = document.getElementById('trip_project');
+        if (projectSelect && data.projectIdx) {
+            projectSelect.value = data.projectIdx;
+            // 프로젝트 변경 이벤트 트리거 (프로젝트명 자동 채우기)
+            const changeEvent = new Event('change');
+            projectSelect.dispatchEvent(changeEvent);
+        }
+
+        // 출장 일자
+        const tripDate = document.getElementById('trip_date');
+        if (tripDate && data.tripDate) {
+            tripDate.value = data.tripDate;
+        }
+
+        // 출장 기간 (duration)은 기본값 0박으로 설정
+        const tripDuration = document.getElementById('trip_duration');
+        if (tripDuration) {
+            tripDuration.value = '0'; // 당일
+        }
+
+        // 출장지
+        const tripLocation = document.getElementById('trip_location');
+        if (tripLocation && data.location) {
+            tripLocation.value = data.location;
+        }
+
+        // 출장 목적
+        const tripPurpose = document.getElementById('trip_purpose');
+        if (tripPurpose && data.purpose) {
+            tripPurpose.value = data.purpose;
+        }
+
+        // 작성자
+        const tripReporter = document.getElementById('trip_reporter');
+        if (tripReporter && data.authorName) {
+            tripReporter.value = data.authorName;
+        }
+
+        // 출장 내용 및 결과
+        const tripResult = document.getElementById('trip_result');
+        if (tripResult && data.content) {
+            tripResult.value = data.content;
+            tripResult.dataset.userModified = 'true'; // 자동 업데이트 방지
+        }
+
+        // 출장인원 로드
+        if (data.attendees && data.attendees.length > 0) {
+            window.currentTripPersons = data.attendees.map(attendee => {
+                let position = attendee.position || '';
+                let dept = attendee.department || '';
+
+                // 내부 참석자인 경우
+                if (attendee.attendeeType === '내부' && attendee.userIdx) {
+                    dept = attendee.department || '파인씨앤아이';
+                }
+
+                // ID 생성: 외부는 ext_ 접두사, 내부는 userIdx
+                const id = attendee.attendeeType === '외부'
+                    ? `ext_${attendee.userIdx}`
+                    : String(attendee.userIdx);
+
+                return {
+                    id: id,
+                    name: attendee.name,
+                    dept: dept,
+                    position: position,
+                    isExternal: attendee.attendeeType === '외부'
+                };
+            });
+
+            console.log('로드된 출장인원:', window.currentTripPersons);
+        }
+
+        // 모든 input 이벤트 트리거하여 자동 채우기 활성화
+        setTimeout(() => {
+            // 날짜 자동 채우기
+            if (tripDate) {
+                tripDate.dispatchEvent(new Event('change'));
+            }
+
+            // 출장지 자동 채우기
+            if (tripLocation) {
+                tripLocation.dispatchEvent(new Event('input'));
+            }
+
+            // 출장 목적 자동 채우기
+            if (tripPurpose) {
+                tripPurpose.dispatchEvent(new Event('input'));
+            }
+
+            // 작성자 자동 채우기
+            if (tripReporter) {
+                tripReporter.dispatchEvent(new Event('input'));
+            }
+
+            // 출장 내용 및 결과 자동 채우기
+            if (tripResult) {
+                document.querySelectorAll('.trip-auto-result').forEach(field => {
+                    field.textContent = tripResult.value;
+                });
+            }
+
+            // 비용 데이터를 날짜별 입력 테이블의 첫 번째 행에 설정
+            const dailyExpenseBody = document.getElementById('dailyExpenseBody');
+            if (dailyExpenseBody && dailyExpenseBody.children.length > 0) {
+                const firstRow = dailyExpenseBody.children[0];
+
+                // 교통비
+                const transportInput = firstRow.querySelector('[data-type="transport"]');
+                if (transportInput && data.transportationFee) {
+                    transportInput.value = data.transportationFee;
+                    transportInput.dispatchEvent(new Event('input'));
+                }
+
+                // 숙박비
+                const lodgingInput = firstRow.querySelector('[data-type="lodging"]');
+                if (lodgingInput && data.accommodationFee) {
+                    lodgingInput.value = data.accommodationFee;
+                    lodgingInput.dispatchEvent(new Event('input'));
+                }
+
+                // 식비
+                const mealInput = firstRow.querySelector('[data-type="meal"]');
+                if (mealInput && data.mealFee) {
+                    mealInput.value = data.mealFee;
+                    mealInput.dispatchEvent(new Event('input'));
+                }
+
+                // 기타(일비)
+                const otherInput = firstRow.querySelector('[data-type="other"]');
+                if (otherInput && data.otherFee) {
+                    otherInput.value = data.otherFee;
+                    otherInput.dispatchEvent(new Event('input'));
+                }
+            }
+
+            // 출장인원 목록 렌더링
+            const tripPersonList = document.getElementById('tripPersonList');
+            if (tripPersonList && window.currentTripPersons && window.currentTripPersons.length > 0) {
+                tripPersonList.innerHTML = window.currentTripPersons.map(person => `
+                    <div class="trip-person-item">
+                        <div class="trip-person-info">
+                            <span class="name">${person.name}</span>
+                            <span>${person.dept}</span>
+                            <span>${person.position || ''}</span>
+                        </div>
+                        <button type="button" class="trip-person-remove" onclick="removeTripPersonInTemplate('${person.id}')">
+                            <i class="fas fa-times"></i> 제거
+                        </button>
+                    </div>
+                `).join('');
+
+                // 출장인원 테이블 업데이트 (공식 문서의 출장품의서)
+                const personRows = document.querySelectorAll('.trip-person-row');
+                personRows.forEach((row, index) => {
+                    const cells = row.querySelectorAll('td');
+                    if (index < window.currentTripPersons.length) {
+                        cells[0].textContent = window.currentTripPersons[index].dept || '';
+                        cells[1].textContent = window.currentTripPersons[index].position || '';
+                        cells[2].textContent = window.currentTripPersons[index].name || '';
+                    } else {
+                        cells[0].textContent = '';
+                        cells[1].textContent = '';
+                        cells[2].textContent = '';
+                    }
+                });
+            }
+
+            console.log('폼 데이터 채우기 완료');
+        }, 200);
+    }
+
+    // URL에 ID 파라미터가 있으면 데이터 로드
+    const receiptTripId = getUrlParameter('id');
+    if (receiptTripId) {
+        console.log('상세보기 모드 - ID:', receiptTripId);
+        setTimeout(async () => {
+            await loadReceiptTripData(receiptTripId);
+        }, 500);
+    }
+
+    // 수정 버튼 이벤트
+    const updateBtn = document.getElementById('updateBtn');
+    if (updateBtn) {
+        updateBtn.addEventListener('click', async function() {
+            const receiptTripId = getUrlParameter('id');
+            if (!receiptTripId) {
+                alert('문서 ID를 찾을 수 없습니다.');
+                return;
+            }
+
+            const projectSelect = document.getElementById('trip_project');
+            const dateInput = document.getElementById('trip_date');
+            const locationInput = document.getElementById('trip_location');
+
+            if (!projectSelect || !projectSelect.value) {
+                alert('프로젝트를 선택해주세요.');
+                return;
+            }
+            if (!dateInput || !dateInput.value) {
+                alert('출장 일자를 입력해주세요.');
+                return;
+            }
+            if (!locationInput || !locationInput.value) {
+                alert('출장지를 입력해주세요.');
+                return;
+            }
+
+            if (!confirm('출장 정보를 수정하시겠습니까?')) {
+                return;
+            }
+
+            // 참석자 목록 변환
+            const attendeeDTOs = (window.currentTripPersons || []).map((person, index) => {
+                const isExternal = String(person.id).startsWith('ext_');
+                return {
+                    attendeeType: isExternal ? '외부' : '내부',
+                    department: person.dept || null,
+                    name: person.name,
+                    userIdx: isExternal ? parseInt(String(person.id).replace('ext_', '')) : parseInt(person.id),
+                    position: person.position || null,
+                    displayOrder: index
+                };
+            });
+
+            // 비용 합계 계산
+            const expenseInputs = document.querySelectorAll('.expense-input');
+            let totalTransportFee = 0;
+            let totalAccommodationFee = 0;
+            let totalMealFee = 0;
+            let totalOtherFee = 0;
+
+            expenseInputs.forEach(input => {
+                const type = input.getAttribute('data-type');
+                const value = parseFloat(input.value) || 0;
+
+                if (type === 'transport') totalTransportFee += value;
+                else if (type === 'lodging') totalAccommodationFee += value;
+                else if (type === 'meal') totalMealFee += value;
+                else if (type === 'other') totalOtherFee += value;
+            });
+
+            const updateData = {
+                projectIdx: parseInt(projectSelect.value),
+                tripDate: dateInput.value,
+                location: locationInput.value,
+                transportationFee: totalTransportFee || null,
+                accommodationFee: totalAccommodationFee || null,
+                mealFee: totalMealFee || null,
+                otherFee: totalOtherFee || null,
+                purpose: document.getElementById('trip_purpose')?.value || null,
+                content: document.getElementById('trip_result')?.value || null,
+                paymentMethod: '카드로 결제',
+                attendees: attendeeDTOs
+            };
+
+            try {
+                const response = await fetch(`/api/receipt-trips/${receiptTripId}`, {
+                    method: 'PUT',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(updateData)
+                });
+
+                if (response.ok) {
+                    alert('출장 정보가 수정되었습니다.');
+                    window.location.reload();
+                } else {
+                    alert('출장 수정에 실패했습니다.');
+                }
+            } catch (error) {
+                console.error('수정 오류:', error);
+                alert('출장 수정 중 오류가 발생했습니다.');
+            }
+        });
+    }
+
+    // 삭제 버튼 이벤트
+    const deleteBtn = document.getElementById('deleteBtn');
+    if (deleteBtn) {
+        deleteBtn.addEventListener('click', async function() {
+            const receiptTripId = getUrlParameter('id');
+            if (!receiptTripId) {
+                alert('문서 ID를 찾을 수 없습니다.');
+                return;
+            }
+
+            if (!confirm('정말로 이 출장 정보를 삭제하시겠습니까?\n\n삭제된 데이터는 복구할 수 없습니다.')) {
+                return;
+            }
+
+            try {
+                const response = await fetch(`/api/receipt-trips/${receiptTripId}`, {
+                    method: 'DELETE'
+                });
+
+                if (response.ok) {
+                    alert('출장 정보가 삭제되었습니다.');
+                    window.location.href = '/approval';
+                } else {
+                    alert('출장 삭제에 실패했습니다.');
+                }
+            } catch (error) {
+                console.error('삭제 오류:', error);
+                alert('출장 삭제 중 오류가 발생했습니다.');
+            }
+        });
+    }
 });
