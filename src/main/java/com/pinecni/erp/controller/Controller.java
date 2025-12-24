@@ -118,6 +118,11 @@ public class Controller {
         return "approval_weekly_report_detail";
     }
 
+    @GetMapping("/approval/project-weekly-report")
+    public String approvalProjectWeeklyReport() {
+        return "approval_project_weekly_report";
+    }
+
     @GetMapping("/approval/monthly-report")
     public String approvalMonthlyReport() {
         return "approval_monthly_report";

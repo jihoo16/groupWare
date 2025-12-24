@@ -1,0 +1,466 @@
+<!DOCTYPE html>
+<html lang="ko" xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{fragments/layout :: head('프로젝트 주간업무보고', '/css/approval_project_weekly_report.css')}"></head>
+<body>
+    <div class="container">
+        <!-- 좌측 네비게이션 바 -->
+        <div th:replace="~{fragments/sidebar :: sidebar('approval')}"></div>
+
+        <!-- 메인 콘텐츠 영역 -->
+        <main class="main-content">
+            <header class="header">
+                <div class="header-left">
+                    <h1 class="page-title"><i class="fas fa-calendar-week"></i> 문서 작성 > 프로젝트 주간업무보고</h1>
+                </div>
+                <div class="header-right">
+                    <button class="btn-secondary" onclick="history.back()">
+                        <i class="fas fa-arrow-left"></i>
+                        돌아가기
+                    </button>
+                </div>
+            </header>
+
+            <div class="write-container">
+                <div class="write-layout">
+                    <!-- 좌측: 템플릿 선택 -->
+                    <aside class="template-sidebar">
+                        <div class="sidebar-section">
+                            <div class="sidebar-header">
+                                <h3 class="sidebar-title"><i class="fas fa-file-alt"></i> 문서 양식</h3>
+                                <button class="btn-toggle-all" id="toggleAllBtn">
+                                    <i class="fas fa-chevron-down"></i>
+                                </button>
+                            </div>
+                            <nav class="sidebar-menu">
+                                <!-- 인사 -->
+                                <div class="menu-category expanded">
+                                    <div class="category-header">
+                                        <i class="fas fa-chevron-right category-toggle"></i>
+                                        <i class="fas fa-user-tie"></i>
+                                        <span>인사</span>
+                                        <span class="category-badge">1</span>
+                                    </div>
+                                    <div class="category-items">
+                                        <a href="/approval/vacation" class="menu-item">
+                                            <i class="fas fa-umbrella-beach"></i>
+                                            <span>연차신청서</span>
+                                        </a>
+                                    </div>
+                                </div>
+
+                                <!-- 지출 -->
+                                <div class="menu-category expanded">
+                                    <div class="category-header">
+                                        <i class="fas fa-chevron-right category-toggle"></i>
+                                        <i class="fas fa-coins"></i>
+                                        <span>지출</span>
+                                        <span class="category-badge">2</span>
+                                    </div>
+                                    <div class="category-items">
+                                        <a href="/approval/expense" class="menu-item">
+                                            <i class="fas fa-won-sign"></i>
+                                            <span>지출승인서</span>
+                                        </a>
+                                        <a href="/approval/purchase" class="menu-item">
+                                            <i class="fas fa-shopping-cart"></i>
+                                            <span>구매요청서</span>
+                                        </a>
+                                    </div>
+                                </div>
+
+                                <!-- 보고 -->
+                                <div class="menu-category expanded">
+                                    <div class="category-header">
+                                        <i class="fas fa-chevron-right category-toggle"></i>
+                                        <i class="fas fa-chart-line"></i>
+                                        <span>보고</span>
+                                        <span class="category-badge">4</span>
+                                    </div>
+                                    <div class="category-items">
+                                        <a href="/approval/weekly-report" class="menu-item">
+                                            <i class="fas fa-calendar-week"></i>
+                                            <span>주간업무보고</span>
+                                    </a>
+                                    <a href="/approval/project-weekly-report" class="menu-item active">
+                                        <i class="fas fa-project-diagram"></i>
+                                        <span>프로젝트 주간업무보고</span>
+                                        </a>
+                                        <a href="/approval/monthly-report" class="menu-item">
+                                            <i class="fas fa-calendar-alt"></i>
+                                            <span>월간업무보고</span>
+                                        </a>
+                                        <a href="/approval/meeting" class="menu-item">
+                                            <i class="fas fa-users"></i>
+                                            <span>회의록</span>
+                                        </a>
+                                        <a href="/approval/general" class="menu-item">
+                                            <i class="fas fa-file-alt"></i>
+                                            <span>일반기안문서</span>
+                                        </a>
+                                    </div>
+                                </div>
+
+                                <!-- 출장 -->
+                                <div class="menu-category expanded">
+                                    <div class="category-header">
+                                        <i class="fas fa-chevron-right category-toggle"></i>
+                                        <i class="fas fa-plane-departure"></i>
+                                        <span>출장</span>
+                                        <span class="category-badge">2</span>
+                                    </div>
+                                    <div class="category-items">
+                                        <a href="/approval/business-trip" class="menu-item">
+                                            <i class="fas fa-plane"></i>
+                                            <span>출장신청</span>
+                                        </a>
+                                        <a href="/approval/trip-report" class="menu-item">
+                                            <i class="fas fa-clipboard-list"></i>
+                                            <span>출장보고서</span>
+                                        </a>
+                                    </div>
+                                </div>
+
+                                <!-- 연구비증빙 -->
+                                <div class="menu-category expanded">
+                                    <div class="category-header">
+                                        <i class="fas fa-chevron-right category-toggle"></i>
+                                        <i class="fas fa-file-invoice-dollar"></i>
+                                        <span>연구비증빙</span>
+                                        <span class="category-badge">4</span>
+                                    </div>
+                                    <div class="category-items">
+                                        <a href="/approval/receipt-meeting" class="menu-item">
+                                            <i class="fas fa-receipt"></i>
+                                            <span>회의록</span>
+                                        </a>
+                                        <a href="/approval/receipt-trip" class="menu-item">
+                                            <i class="fas fa-receipt"></i>
+                                            <span>출장</span>
+                                        </a>
+                                        <a href="/approval/receipt-trip-meeting" class="menu-item">
+                                            <i class="fas fa-file-invoice"></i>
+                                            <span>출장+회의</span>
+                                        </a>
+                                        <a href="/approval/receipt-overtime" class="menu-item">
+                                            <i class="fas fa-receipt"></i>
+                                            <span>야근식대</span>
+                                        </a>
+                                    </div>
+                                </div>
+                            </nav>
+                        </div>
+                    </aside>
+
+                    <!-- 우측: 문서 편집 영역 -->
+                    <div class="editor-area">
+                        <!-- 입력 영역 -->
+                        <div class="input-area">
+                            <div class="input-section">
+                                <div class="section-header">
+                                    <h3><i class="fas fa-edit"></i> 기본 정보</h3>
+                                </div>
+
+                                <!-- 프로젝트 선택 -->
+                                <div class="form-group full-width">
+                                    <label for="projectInput"><i class="fas fa-project-diagram"></i> 프로젝트</label>
+                                    <input type="text" id="projectInput" class="form-input clickable-input" placeholder="클릭하여 프로젝트 선택" readonly>
+                                    <input type="hidden" id="selectedProjectIdx">
+                                </div>
+
+                                <!-- 보고 기간 & 정보 섹션 -->
+                                <div class="report-info-layout">
+                                    <!-- 좌측: 달력 -->
+                                    <div class="calendar-container">
+                                        <label><i class="fas fa-calendar"></i> 보고 기간</label>
+                                        <div class="weekly-calendar-section">
+                                            <div class="calendar-header">
+                                                <button type="button" class="calendar-nav" id="prevMonth">
+                                                    <i class="fas fa-chevron-left"></i>
+                                                </button>
+                                                <h4 class="calendar-title" id="calendarTitle">2025년 1월</h4>
+                                                <button type="button" class="calendar-nav" id="nextMonth">
+                                                    <i class="fas fa-chevron-right"></i>
+                                                </button>
+                                            </div>
+                                            <div class="calendar-weekdays">
+                                                <div class="weekday sun">일</div>
+                                                <div class="weekday">월</div>
+                                                <div class="weekday">화</div>
+                                                <div class="weekday">수</div>
+                                                <div class="weekday">목</div>
+                                                <div class="weekday">금</div>
+                                                <div class="weekday sat">토</div>
+                                            </div>
+                                            <div class="calendar-days" id="calendarDays">
+                                                <!-- JavaScript로 생성 -->
+                                            </div>
+                                            <div class="selected-period-display">
+                                                <i class="fas fa-calendar-check"></i>
+                                                <span id="reportPeriodDisplay"></span>
+                                            </div>
+                                        </div>
+                                        <input type="hidden" id="reportStartDate">
+                                        <input type="hidden" id="reportEndDate">
+                                    </div>
+
+                                    <!-- 우측: 보고자 정보 & 달성률 -->
+                                    <div class="info-container">
+                                        <!-- 보고자 정보 카드 -->
+                                        <div class="info-card">
+                                            <div class="info-card-header">
+                                                <i class="fas fa-user"></i>
+                                                <span>보고자 정보</span>
+                                            </div>
+                                            <div class="info-card-body">
+                                                <div class="info-item">
+                                                    <label>보고자</label>
+                                                    <div class="info-value" id="applicantName">-</div>
+                                                </div>
+                                                <div class="info-item">
+                                                    <label>부서</label>
+                                                    <div class="info-value" id="applicantDept">-</div>
+                                                </div>
+                                            </div>
+                                        </div>
+
+                                        <!-- 달성률 카드 -->
+                                        <div class="info-card">
+                                            <div class="info-card-header">
+                                                <i class="fas fa-chart-line"></i>
+                                                <span>달성률 정보</span>
+                                            </div>
+                                            <div class="info-card-body">
+                                                <div class="info-item">
+                                                    <label><i class="fas fa-history"></i> 마지막 달성률</label>
+                                                    <input type="text" id="currentProgressRate" class="form-input" readonly placeholder="0%">
+                                                </div>
+                                                <div class="info-item">
+                                                    <label><i class="fas fa-chart-line"></i> 주간 달성률</label>
+                                                    <input type="number" id="weeklyAchievementRate" class="form-input" placeholder="0-100" min="0" max="100" step="1">
+                                                </div>
+                                                <div class="info-item">
+                                                    <label><i class="fas fa-plus-circle"></i> 추가 달성률</label>
+                                                    <input type="number" id="inputProgressRate" class="form-input" placeholder="0.00" step="0.01" min="0" max="100">
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="input-section">
+                                <div class="section-header">
+                                    <h3><i class="fas fa-tasks"></i> 업무 내용</h3>
+                                </div>
+                                <div class="form-grid">
+                                    <div class="form-group full-width">
+                                        <label for="weeklyTasks"><i class="fas fa-list-ul"></i> 금주 주요 업무</label>
+                                        <textarea id="weeklyTasks" class="form-textarea" rows="4" placeholder="이번 주 수행한 주요 업무"></textarea>
+                                    </div>
+
+                                    <div class="form-group full-width">
+                                        <label for="achievements"><i class="fas fa-trophy"></i> 주요 성과</label>
+                                        <textarea id="achievements" class="form-textarea" rows="3" placeholder="달성한 성과 및 결과물"></textarea>
+                                    </div>
+
+                                    <div class="form-group full-width">
+                                        <label for="issues"><i class="fas fa-exclamation-triangle"></i> 주요 이슈</label>
+                                        <textarea id="issues" class="form-textarea" rows="3" placeholder="발생한 문제 및 이슈사항"></textarea>
+                                    </div>
+
+                                    <div class="form-group full-width">
+                                        <label for="nextWeekPlan"><i class="fas fa-calendar-check"></i> 차주 계획</label>
+                                        <textarea id="nextWeekPlan" class="form-textarea" rows="4" placeholder="다음 주 진행 예정 업무"></textarea>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="input-section">
+                                <div class="section-header">
+                                    <h3><i class="fas fa-users"></i> 결재자</h3>
+                                </div>
+                                <div class="approver-area" id="approverChips">
+                                    <div style="text-align: center; color: #94a3b8; font-size: 13px; width: 100%; padding: 20px;">
+                                        <i class="fas fa-user-plus" style="font-size: 20px; margin-bottom: 6px; display: block;"></i>
+                                        <div>클릭하여 결재자 추가</div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="input-section">
+                                <div class="section-header">
+                                    <h3><i class="fas fa-paperclip"></i> 첨부파일</h3>
+                                </div>
+                                <div class="file-upload-area" id="fileUploadArea">
+                                    <input type="file" id="fileInput" multiple hidden>
+                                    <label for="fileInput" class="file-upload-label">
+                                        <i class="fas fa-cloud-upload-alt"></i>
+                                        <span>파일을 선택하거나 드래그하세요</span>
+                                        <small>최대 10MB, 최대 5개</small>
+                                    </label>
+                                </div>
+                                <div class="file-list" id="fileList"></div>
+                            </div>
+                        </div>
+
+                        <!-- 공식 문서 미리보기 영역 -->
+                        <div class="document-preview-toggle">
+                            <button class="toggle-btn" id="documentFormToggle">
+                                <i class="fas fa-file-alt"></i>
+                                공식 문서 미리보기
+                                <i class="fas fa-chevron-down toggle-icon"></i>
+                            </button>
+                        </div>
+
+                        <div class="document-form-wrapper collapsed">
+                            <div class="document-form">
+                                <!-- 결재라인 -->
+                                <div class="approval-line-box">
+                                    <table class="approval-line-table">
+                                        <tr>
+                                            <th class="approval-header">담당</th>
+                                            <th class="approval-header">부서장</th>
+                                            <th class="approval-header">대표이사</th>
+                                        </tr>
+                                        <tr>
+                                            <td class="approval-sign-cell">
+                                                <div class="sign-area">
+                                                    <span class="sign-placeholder">결재</span>
+                                                </div>
+                                            </td>
+                                            <td class="approval-sign-cell">
+                                                <div class="sign-area">
+                                                    <span class="sign-placeholder">결재</span>
+                                                </div>
+                                            </td>
+                                            <td class="approval-sign-cell">
+                                                <div class="sign-area">
+                                                    <span class="sign-placeholder">결재</span>
+                                                </div>
+                                            </td>
+                                        </tr>
+                                        <tr>
+                                            <td class="approval-name-cell">
+                                                <span class="approver-name auto-approver-1">-</span>
+                                            </td>
+                                            <td class="approval-name-cell">
+                                                <span class="approver-name auto-approver-2">-</span>
+                                            </td>
+                                            <td class="approval-name-cell">
+                                                <span class="approver-name auto-approver-3">-</span>
+                                            </td>
+                                        </tr>
+                                    </table>
+                                </div>
+
+                                <h2 class="doc-title">주 간 업 무 보 고</h2>
+
+                                <table class="form-table">
+                                    <tr>
+                                        <th>과제명</th>
+                                        <td colspan="3" class="auto-project">-</td>
+                                    </tr>
+                                    <tr>
+                                        <th>달성률</th>
+                                        <td colspan="3"><span class="auto-achievement">0</span>%</td>
+                                    </tr>
+                                    <tr>
+                                        <th>보고자</th>
+                                        <td class="auto-reporter">-</td>
+                                        <th>부서</th>
+                                        <td class="auto-dept">-</td>
+                                    </tr>
+                                    <tr>
+                                        <th>보고 기간</th>
+                                        <td colspan="3" class="auto-period">-</td>
+                                    </tr>
+                                    <tr>
+                                        <th>금주 주요 업무</th>
+                                        <td colspan="3"><div class="auto-tasks" style="white-space: pre-wrap; min-height: 100px;">-</div></td>
+                                    </tr>
+                                    <tr>
+                                        <th>주요 성과</th>
+                                        <td colspan="3"><div class="auto-achievements" style="white-space: pre-wrap; min-height: 80px;">-</div></td>
+                                    </tr>
+                                    <tr>
+                                        <th>주요 이슈</th>
+                                        <td colspan="3"><div class="auto-issues" style="white-space: pre-wrap; min-height: 80px;">-</div></td>
+                                    </tr>
+                                    <tr>
+                                        <th>차주 계획</th>
+                                        <td colspan="3"><div class="auto-next-plan" style="white-space: pre-wrap; min-height: 100px;">-</div></td>
+                                    </tr>
+                                </table>
+                            </div>
+                        </div>
+
+                        <!-- 제출 버튼 -->
+                        <div class="submit-actions">
+                            <button class="btn-secondary btn-lg" onclick="history.back()">
+                                <i class="fas fa-times"></i>
+                                취소
+                            </button>
+                            <button class="btn-outline btn-lg" id="savePdfBtn">
+                                <i class="fas fa-file-pdf"></i>
+                                PDF 저장
+                            </button>
+                            <button class="btn-primary btn-lg" id="submitBtn">
+                                <i class="fas fa-paper-plane"></i>
+                                저장
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <!-- 결재자 선택 모달 -->
+    <div class="modal" id="approverModal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>결재자 선택</h3>
+                <button class="btn-close" onclick="closeApproverModal()">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            <div class="modal-body">
+                <div class="search-box">
+                    <i class="fas fa-search"></i>
+                    <input type="text" id="approverSearch" placeholder="이름, 부서로 검색">
+                </div>
+                <div class="employee-list" id="employeeList"></div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn-secondary" onclick="closeApproverModal()">취소</button>
+                <button class="btn-primary" onclick="addApprover()">추가</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 프로젝트 선택 모달 -->
+    <div class="modal" id="projectModal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>프로젝트 선택</h3>
+                <button class="btn-close" onclick="closeProjectModal()">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            <div class="modal-body">
+                <div class="search-box">
+                    <i class="fas fa-search"></i>
+                    <input type="text" id="projectSearch" placeholder="프로젝트명으로 검색">
+                </div>
+                <div class="employee-list" id="projectList"></div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn-secondary" onclick="closeProjectModal()">취소</button>
+                <button class="btn-primary" onclick="selectProject()">선택</button>
+            </div>
+        </div>
+    </div>
+
+    <script th:src="@{/js/approval_project_weekly_report.js}"></script>
+</body>
+</html>

@@ -525,8 +525,8 @@ document.addEventListener('DOMContentLoaded', function() {
     const createWeeklyReportBtn = document.getElementById('createWeeklyReportBtn');
     if (createWeeklyReportBtn) {
         createWeeklyReportBtn.addEventListener('click', function() {
-            // 신규 작성 페이지로 이동
-            window.location.href = '/approval/weekly-report';
+            // 프로젝트 주간업무보고 작성 페이지로 이동
+            window.location.href = '/approval/project-weekly-report';
         });
     }
 
