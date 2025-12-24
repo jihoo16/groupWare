@@ -46,6 +46,15 @@
     box-shadow: 0 4px 12px rgba(0, 0, 0, 0.12);
 }
 
+/* 클릭 가능한 통계 카드 */
+.mh-stat-clickable {
+    cursor: pointer;
+}
+
+.mh-stat-clickable:active {
+    transform: translateY(0);
+}
+
 .mh-stat-icon {
     width: 56px;
     height: 56px;
@@ -142,6 +151,26 @@
     box-shadow: 0 0 0 3px rgba(25, 118, 210, 0.1);
 }
 
+.mh-filter-group input[type="text"] {
+    padding: 10px 12px;
+    border: 1px solid #ddd;
+    border-radius: 6px;
+    font-size: 14px;
+    height: 40px;
+    background: white;
+    transition: all 0.2s;
+}
+
+.mh-filter-group input[type="text"]:hover {
+    border-color: #1976d2;
+}
+
+.mh-filter-group input[type="text"]:focus {
+    outline: none;
+    border-color: #1976d2;
+    box-shadow: 0 0 0 3px rgba(25, 118, 210, 0.1);
+}
+
 /* ============================================
    보고체계 테이블
    ============================================ */
@@ -192,10 +221,6 @@
     background-color: #f9f9f9;
 }
 
-.mh-hierarchy-table tbody tr.mh-changed {
-    background-color: #fff3e0;
-}
-
 .mh-hierarchy-table td {
     padding: 12px;
     vertical-align: middle;
@@ -239,11 +264,6 @@
     box-shadow: 0 0 0 2px rgba(25, 118, 210, 0.1);
 }
 
-.mh-manager-select.mh-changed {
-    border-color: #f57c00;
-    background-color: #fff9f0;
-}
-
 /* 팀장 여부 체크박스 */
 .mh-leader-checkbox {
     display: flex;
@@ -270,13 +290,19 @@
 }
 
 .mh-status-badge.mh-completed {
-    background: #e8f5e9;
-    color: #388e3c;
+    background: #e3f2fd;
+    color: #1976d2;
 }
 
 .mh-status-badge.mh-incomplete {
-    background: #ffebee;
-    color: #d32f2f;
+    background: #fff3e0;
+    color: #f57c00;
+    font-weight: 700;
+}
+
+.mh-status-badge.mh-not-required {
+    background: #f5f5f5;
+    color: #757575;
 }
 
 /* 액션 버튼 */
@@ -423,6 +449,14 @@
     padding: 24px;
     max-height: calc(100vh - 300px);
     overflow-y: auto;
+}
+
+/* 이력 모달은 내부 스크롤 처리 */
+#historyModal .mh-modal-body {
+    display: flex;
+    flex-direction: column;
+    overflow-y: hidden;
+    padding-bottom: 0;
 }
 
 .mh-modal-footer {
@@ -582,7 +616,8 @@
     background: #f8f9fa;
     padding: 20px;
     border-radius: 8px;
-    margin-bottom: 24px;
+    margin-bottom: 16px;
+    flex-shrink: 0; /* 고정 */
 }
 
 .mh-history-employee-info h3 {
@@ -603,6 +638,11 @@
 .mh-history-timeline {
     position: relative;
     padding-left: 40px;
+    padding-right: 24px;
+    padding-bottom: 24px;
+    flex: 1;
+    overflow-y: auto;
+    min-height: 0; /* flex 자식이 제대로 스크롤되도록 */
 }
 
 .mh-history-timeline::before {
@@ -680,6 +720,84 @@
 .mh-history-from-to .mh-arrow {
     color: #999;
     font-size: 14px;
+}
+
+.mh-history-reason {
+    margin-top: 8px;
+    padding: 8px 12px;
+    background: #fff3e0;
+    border-left: 3px solid #f57c00;
+    border-radius: 4px;
+    font-size: 13px;
+    color: #666;
+    line-height: 1.5;
+}
+
+.mh-history-user {
+    margin-top: 6px;
+    font-size: 12px;
+    color: #999;
+    line-height: 1.4;
+}
+
+.mh-history-empty {
+    text-align: center;
+    padding: 40px 20px;
+    color: #999;
+    font-size: 14px;
+    line-height: 1.6;
+}
+
+/* ============================================
+   모달 - 직원 목록
+   ============================================ */
+.mh-employee-list-container {
+    max-height: 500px;
+    overflow-y: auto;
+}
+
+.mh-employee-list-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 14px;
+}
+
+.mh-employee-list-table thead {
+    background: #f8f9fa;
+    position: sticky;
+    top: 0;
+    z-index: 10;
+}
+
+.mh-employee-list-table th {
+    padding: 12px;
+    text-align: left;
+    font-weight: 600;
+    color: #333;
+    border-bottom: 2px solid #e0e0e0;
+    font-size: 13px;
+    white-space: nowrap;
+}
+
+.mh-employee-list-table tbody tr {
+    border-bottom: 1px solid #f0f0f0;
+    transition: background-color 0.15s;
+}
+
+.mh-employee-list-table tbody tr:hover {
+    background-color: #f9f9f9;
+}
+
+.mh-employee-list-table td {
+    padding: 10px 12px;
+    font-size: 13px;
+    color: #333;
+    vertical-align: middle;
+}
+
+.mh-employee-list-table td strong {
+    font-weight: 600;
+    color: #1a237e;
 }
 
 /* ============================================

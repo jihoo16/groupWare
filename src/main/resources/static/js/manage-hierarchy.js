@@ -9,11 +9,12 @@ document.addEventListener('DOMContentLoaded', function() {
     // DOM 요소
     const hierarchyTableBody = document.getElementById('hierarchyTableBody');
     const hierarchySearch = document.getElementById('hierarchySearch');
+    const nameFilter = document.getElementById('nameFilter');
     const deptFilter = document.getElementById('deptFilter');
+    const positionFilter = document.getElementById('positionFilter');
     const levelFilter = document.getElementById('levelFilter');
     const statusFilter = document.getElementById('statusFilter');
     const resetFilterBtn = document.getElementById('resetFilterBtn');
-    const saveAllBtn = document.getElementById('saveAllBtn');
     const viewOrgChartBtn = document.getElementById('viewOrgChartBtn');
     const loadingContainer = document.getElementById('loadingContainer');
     const emptyState = document.getElementById('emptyState');
@@ -32,10 +33,17 @@ document.addEventListener('DOMContentLoaded', function() {
     const closeHistoryModal = document.getElementById('closeHistoryModal');
     const closeHistoryBtn = document.getElementById('closeHistoryBtn');
 
+    const employeeListModal = document.getElementById('employeeListModal');
+    const closeEmployeeListModal = document.getElementById('closeEmployeeListModal');
+    const closeEmployeeListBtn = document.getElementById('closeEmployeeListBtn');
+
     // 데이터 저장소
     let employeesData = [];
-    let changedEmployees = new Set();
     let currentEditingEmployee = null;
+
+    // 정렬 상태
+    let currentSortColumn = null;
+    let currentSortOrder = 'asc'; // 'asc' or 'desc'
 
     // 초기화
     init();
@@ -43,7 +51,6 @@ document.addEventListener('DOMContentLoaded', function() {
     function init() {
         loadEmployees();
         setupEventListeners();
-        loadDepartmentFilters();
     }
 
     // 직원 데이터 로드
@@ -58,7 +65,13 @@ document.addEventListener('DOMContentLoaded', function() {
                 return response.json();
             })
             .then(data => {
-                employeesData = data;
+                // 각 직원 데이터에 조직 레벨 추가
+                employeesData = data.map(emp => ({
+                    ...emp,
+                    organizationalLevel: getOrganizationalLevel(emp.empPositionSortOrder)
+                }));
+                loadDepartmentFilters(); // 데이터 로드 후 부서 필터 로드
+                loadPositionFilters(); // 직급 필터 로드 (sort_order 순)
                 renderEmployeeTable(employeesData);
                 updateStatistics();
                 showLoading(false);
@@ -79,7 +92,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 empName: '김대표',
                 empDept: '경영지원',
                 empPosition: '대표이사',
-                organizationalLevel: 1,
+                empPositionSortOrder: 1,
                 isTeamLeader: true,
                 managerIdx: null,
                 managerName: null,
@@ -92,7 +105,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 empName: '박CMO',
                 empDept: '마케팅',
                 empPosition: '상무',
-                organizationalLevel: 2,
+                empPositionSortOrder: 3,
                 isTeamLeader: true,
                 managerIdx: 1,
                 managerName: '김대표',
@@ -105,7 +118,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 empName: '이CTO',
                 empDept: '개발',
                 empPosition: '상무',
-                organizationalLevel: 2,
+                empPositionSortOrder: 3,
                 isTeamLeader: true,
                 managerIdx: 1,
                 managerName: '김대표',
@@ -118,7 +131,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 empName: '정지원',
                 empDept: '개발',
                 empPosition: '부장',
-                organizationalLevel: 3,
+                empPositionSortOrder: 5,
                 isTeamLeader: true,
                 managerIdx: 3,
                 managerName: '이CTO',
@@ -131,7 +144,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 empName: '김직원',
                 empDept: '개발',
                 empPosition: '대리',
-                organizationalLevel: 4,
+                empPositionSortOrder: 10,
                 isTeamLeader: false,
                 managerIdx: null,
                 managerName: null,
@@ -144,7 +157,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 empName: '최팀장',
                 empDept: '마케팅',
                 empPosition: '차장',
-                organizationalLevel: 3,
+                empPositionSortOrder: 6,
                 isTeamLeader: true,
                 managerIdx: 2,
                 managerName: '박CMO',
@@ -152,6 +165,27 @@ document.addEventListener('DOMContentLoaded', function() {
                 status: 'completed'
             }
         ];
+    }
+
+    // 직급 sortOrder를 기반으로 조직 레벨 계산
+    function getOrganizationalLevel(sortOrder) {
+        if (!sortOrder || sortOrder === Number.MAX_VALUE) return 4;
+        if (sortOrder === 1) return 1; // 대표
+        if (sortOrder <= 3) return 2; // 상무, 이사
+        if (sortOrder <= 6) return 3; // 부장, 차장, 과장
+        return 4; // 대리, 주임, 사원
+    }
+
+    // 조직 레벨 텍스트 변환
+    function getLevelText(sortOrder) {
+        const level = getOrganizationalLevel(sortOrder);
+        const levelMap = {
+            1: '레벨 1 (대표)',
+            2: '레벨 2 (상무/이사)',
+            3: '레벨 3 (부장/차장/과장)',
+            4: '레벨 4 (대리 이하)'
+        };
+        return levelMap[level] || '-';
     }
 
     // 테이블 렌더링
@@ -164,38 +198,40 @@ document.addEventListener('DOMContentLoaded', function() {
 
         showEmptyState(false);
 
-        const html = data.map(emp => `
-            <tr data-emp-idx="${emp.idx}" class="${changedEmployees.has(emp.idx) ? 'mh-changed' : ''}">
+        const html = data.map(emp => {
+            // 대표이사 여부 확인
+            const isCEO = emp.empPositionSortOrder === 1;
+
+            // 상태 표시
+            let statusClass, statusText;
+            if (isCEO) {
+                statusClass = 'mh-not-required';
+                statusText = '설정불필요';
+            } else if (emp.status === 'completed') {
+                statusClass = 'mh-completed';
+                statusText = '설정완료';
+            } else {
+                statusClass = 'mh-incomplete';
+                statusText = '미설정';
+            }
+
+            return `
+            <tr data-emp-idx="${emp.idx}">
                 <td>${emp.empId}</td>
                 <td><strong>${emp.empName}</strong></td>
                 <td>${emp.empDeptName || emp.empDept}</td>
                 <td>${emp.empPositionName || emp.empPosition}</td>
+                <td>${getLevelText(emp.empPositionSortOrder)}</td>
+                <td>${emp.isTeamLeader ? '예' : '아니오'}</td>
+                <td>${isCEO ? '-' : (emp.managerName || '<span style="color: #999;">미설정</span>')}</td>
+                <td>${isCEO ? '-' : (emp.managerStartDate || '-')}</td>
                 <td>
-                    <select class="mh-level-select" data-emp-idx="${emp.idx}" data-field="organizationalLevel">
-                        <option value="">미설정</option>
-                        <option value="1" ${emp.organizationalLevel === 1 ? 'selected' : ''}>레벨 1 (대표)</option>
-                        <option value="2" ${emp.organizationalLevel === 2 ? 'selected' : ''}>레벨 2 (상무/이사)</option>
-                        <option value="3" ${emp.organizationalLevel === 3 ? 'selected' : ''}>레벨 3 (부장)</option>
-                        <option value="4" ${emp.organizationalLevel === 4 ? 'selected' : ''}>레벨 4 (그 이하)</option>
-                    </select>
-                </td>
-                <td class="mh-leader-checkbox">
-                    <input type="checkbox" data-emp-idx="${emp.idx}" data-field="isTeamLeader" ${emp.isTeamLeader ? 'checked' : ''}>
-                </td>
-                <td>${emp.managerName || '<span style="color: #999;">미설정</span>'}</td>
-                <td>
-                    <select class="mh-manager-select" data-emp-idx="${emp.idx}" data-field="managerIdx">
-                        <option value="">선택하세요</option>
-                        ${generateManagerOptions(emp)}
-                    </select>
-                </td>
-                <td>${emp.managerStartDate || '-'}</td>
-                <td>
-                    <span class="mh-status-badge ${emp.status === 'completed' ? 'mh-completed' : 'mh-incomplete'}">
-                        ${emp.status === 'completed' ? '설정완료' : '미설정'}
+                    <span class="mh-status-badge ${statusClass}">
+                        ${statusText}
                     </span>
                 </td>
                 <td>
+                    ${isCEO ? '<span style="color: #999;">-</span>' : `
                     <div class="mh-action-buttons">
                         <button class="mh-btn-icon mh-btn-edit" onclick="openChangeManagerModal(${emp.idx})">
                             <i class="fas fa-edit"></i> 수정
@@ -204,93 +240,24 @@ document.addEventListener('DOMContentLoaded', function() {
                             <i class="fas fa-history"></i>
                         </button>
                     </div>
+                    `}
                 </td>
             </tr>
-        `).join('');
+            `;
+        }).join('');
 
         hierarchyTableBody.innerHTML = html;
-
-        // 인라인 편집 이벤트 바인딩
-        attachInlineEditEvents();
-    }
-
-    // 상위보고자 옵션 생성 (본인 제외, 한글명 표시)
-    function generateManagerOptions(employee) {
-        return employeesData
-            .filter(emp => emp.idx !== employee.idx) // 본인 제외
-            .map(emp => `
-                <option value="${emp.idx}" ${emp.idx === employee.managerIdx ? 'selected' : ''}>
-                    ${emp.empName} (${emp.empPositionName || emp.empPosition} / ${emp.empDeptName || emp.empDept})
-                </option>
-            `)
-            .join('');
-    }
-
-    // 인라인 편집 이벤트 바인딩
-    function attachInlineEditEvents() {
-        // 조직 레벨 변경
-        document.querySelectorAll('.mh-level-select').forEach(select => {
-            select.addEventListener('change', function() {
-                const empIdx = parseInt(this.dataset.empIdx);
-                const field = this.dataset.field;
-                const value = parseInt(this.value);
-                updateEmployeeField(empIdx, field, value);
-            });
-        });
-
-        // 팀장 여부 변경
-        document.querySelectorAll('.mh-leader-checkbox input[type="checkbox"]').forEach(checkbox => {
-            checkbox.addEventListener('change', function() {
-                const empIdx = parseInt(this.dataset.empIdx);
-                const field = this.dataset.field;
-                const value = this.checked;
-                updateEmployeeField(empIdx, field, value);
-            });
-        });
-
-        // 상위보고자 변경
-        document.querySelectorAll('.mh-manager-select').forEach(select => {
-            select.addEventListener('change', function() {
-                const empIdx = parseInt(this.dataset.empIdx);
-                const field = this.dataset.field;
-                const value = this.value ? parseInt(this.value) : null;
-                updateEmployeeField(empIdx, field, value);
-                this.classList.add('mh-changed');
-            });
-        });
-    }
-
-    // 직원 필드 업데이트
-    function updateEmployeeField(empIdx, field, value) {
-        const employee = employeesData.find(emp => emp.idx === empIdx);
-        if (employee) {
-            employee[field] = value;
-
-            // 상위보고자 이름 업데이트
-            if (field === 'managerIdx') {
-                const manager = employeesData.find(emp => emp.idx === value);
-                employee.managerName = manager ? manager.empName : null;
-                employee.status = value ? 'completed' : 'incomplete';
-            }
-
-            changedEmployees.add(empIdx);
-
-            // 테이블 행에 changed 클래스 추가
-            const row = document.querySelector(`tr[data-emp-idx="${empIdx}"]`);
-            if (row) {
-                row.classList.add('mh-changed');
-            }
-
-            updateStatistics();
-        }
     }
 
     // 통계 업데이트
     function updateStatistics() {
         const totalEmployees = employeesData.length;
         const totalLeaders = employeesData.filter(emp => emp.isTeamLeader).length;
-        const completedCount = employeesData.filter(emp => emp.status === 'completed').length;
-        const incompleteCount = totalEmployees - completedCount;
+
+        // 대표이사(sortOrder === 1) 제외하고 카운트
+        const nonCEOEmployees = employeesData.filter(emp => emp.empPositionSortOrder !== 1);
+        const completedCount = nonCEOEmployees.filter(emp => emp.status === 'completed').length;
+        const incompleteCount = nonCEOEmployees.length - completedCount;
 
         document.getElementById('totalEmployees').textContent = totalEmployees;
         document.getElementById('totalLeaders').textContent = totalLeaders;
@@ -300,29 +267,63 @@ document.addEventListener('DOMContentLoaded', function() {
 
     // 부서 필터 로드
     function loadDepartmentFilters() {
-        const departments = [...new Set(employeesData.map(emp => emp.empDept))];
+        const departments = [...new Set(employeesData.map(emp => emp.empDeptName || emp.empDept))];
         const html = departments.map(dept => `<option value="${dept}">${dept}</option>`).join('');
         deptFilter.innerHTML = '<option value="">전체 부서</option>' + html;
+    }
+
+    // 직급 필터 로드 (sort_order 순)
+    function loadPositionFilters() {
+        fetch('/api/codes/ranks?activeOnly=true')
+            .then(response => {
+                if (!response.ok) {
+                    throw new Error('Failed to load positions');
+                }
+                return response.json();
+            })
+            .then(positions => {
+                // sort_order 순으로 이미 정렬되어 있음
+                const html = positions.map(pos =>
+                    `<option value="${pos.codeName}">${pos.codeName}</option>`
+                ).join('');
+                positionFilter.innerHTML = '<option value="">전체 직급</option>' + html;
+                console.log('직급 필터 로드 완료 (sort_order 순):', positions.length);
+            })
+            .catch(error => {
+                console.error('Error loading positions:', error);
+            });
     }
 
     // 필터링
     function applyFilters() {
         const searchTerm = hierarchySearch.value.toLowerCase();
+        const nameTerm = nameFilter.value.toLowerCase();
         const selectedDept = deptFilter.value;
+        const selectedPosition = positionFilter.value;
         const selectedLevel = levelFilter.value;
         const selectedStatus = statusFilter.value;
 
-        const filtered = employeesData.filter(emp => {
+        let filtered = employeesData.filter(emp => {
+            const deptName = emp.empDeptName || emp.empDept;
+            const positionName = emp.empPositionName || emp.empPosition;
+
             const matchSearch = !searchTerm ||
                 emp.empName.toLowerCase().includes(searchTerm) ||
-                emp.empDept.toLowerCase().includes(searchTerm);
+                emp.empId.toLowerCase().includes(searchTerm) ||
+                deptName.toLowerCase().includes(searchTerm);
 
-            const matchDept = !selectedDept || emp.empDept === selectedDept;
-            const matchLevel = !selectedLevel || emp.organizationalLevel === parseInt(selectedLevel);
+            const matchName = !nameTerm || emp.empName.toLowerCase().includes(nameTerm);
+
+            const matchDept = !selectedDept || deptName === selectedDept;
+            const matchPosition = !selectedPosition || positionName === selectedPosition;
+            const matchLevel = !selectedLevel || getOrganizationalLevel(emp.empPositionSortOrder) === parseInt(selectedLevel);
             const matchStatus = !selectedStatus || emp.status === selectedStatus;
 
-            return matchSearch && matchDept && matchLevel && matchStatus;
+            return matchSearch && matchName && matchDept && matchPosition && matchLevel && matchStatus;
         });
+
+        // 정렬 적용
+        filtered = sortData(filtered);
 
         renderEmployeeTable(filtered);
     }
@@ -331,44 +332,158 @@ document.addEventListener('DOMContentLoaded', function() {
     function setupEventListeners() {
         // 검색 및 필터
         hierarchySearch.addEventListener('input', applyFilters);
+        nameFilter.addEventListener('input', applyFilters);
         deptFilter.addEventListener('change', applyFilters);
+        positionFilter.addEventListener('change', applyFilters);
         levelFilter.addEventListener('change', applyFilters);
         statusFilter.addEventListener('change', applyFilters);
 
         // 필터 초기화
         resetFilterBtn.addEventListener('click', function() {
             hierarchySearch.value = '';
+            nameFilter.value = '';
             deptFilter.value = '';
+            positionFilter.value = '';
             levelFilter.value = '';
             statusFilter.value = '';
+            currentSortColumn = null;
+            currentSortOrder = 'asc';
+            updateSortIcons();
             renderEmployeeTable(employeesData);
         });
-
-        // 전체 저장
-        saveAllBtn.addEventListener('click', saveAllChanges);
 
         // 조직도 보기
         viewOrgChartBtn.addEventListener('click', function() {
             window.location.href = '/organization';
         });
 
+        // 테이블 헤더 정렬
+        document.querySelectorAll('.mh-hierarchy-table th[data-sort]').forEach(th => {
+            th.addEventListener('click', function() {
+                const sortColumn = this.getAttribute('data-sort');
+                handleSort(sortColumn);
+            });
+        });
+
         // 모달 닫기
-        closeChangeManagerModal.addEventListener('click', () => closeModal(changeManagerModal));
-        cancelChangeBtn.addEventListener('click', () => closeModal(changeManagerModal));
+        closeChangeManagerModal.addEventListener('click', () => {
+            document.getElementById('newManager').disabled = false; // 드롭다운 재활성화
+            closeModal(changeManagerModal);
+        });
+        cancelChangeBtn.addEventListener('click', () => {
+            document.getElementById('newManager').disabled = false; // 드롭다운 재활성화
+            closeModal(changeManagerModal);
+        });
         closeBulkChangeModal.addEventListener('click', () => closeModal(bulkChangeModal));
         cancelBulkBtn.addEventListener('click', () => closeModal(bulkChangeModal));
         closeHistoryModal.addEventListener('click', () => closeModal(historyModal));
         closeHistoryBtn.addEventListener('click', () => closeModal(historyModal));
+        closeEmployeeListModal.addEventListener('click', () => closeModal(employeeListModal));
+        closeEmployeeListBtn.addEventListener('click', () => closeModal(employeeListModal));
 
         // 모달 배경 클릭 시 닫기
         window.addEventListener('click', function(e) {
             if (e.target === changeManagerModal) closeModal(changeManagerModal);
             if (e.target === bulkChangeModal) closeModal(bulkChangeModal);
             if (e.target === historyModal) closeModal(historyModal);
+            if (e.target === employeeListModal) closeModal(employeeListModal);
+        });
+
+        // 통계 카드 클릭 이벤트
+        document.querySelectorAll('.mh-stat-clickable').forEach(card => {
+            card.addEventListener('click', function() {
+                const statType = this.getAttribute('data-stat-type');
+                openEmployeeListModal(statType);
+            });
         });
 
         // 상위보고자 변경 확인
         confirmChangeBtn.addEventListener('click', confirmManagerChange);
+    }
+
+    // 정렬 처리
+    function handleSort(column) {
+        if (currentSortColumn === column) {
+            // 같은 컬럼 클릭 시 정렬 순서 토글
+            currentSortOrder = currentSortOrder === 'asc' ? 'desc' : 'asc';
+        } else {
+            // 다른 컬럼 클릭 시 오름차순으로 시작
+            currentSortColumn = column;
+            currentSortOrder = 'asc';
+        }
+
+        updateSortIcons();
+        applyFilters(); // 필터링된 데이터에 정렬 적용
+    }
+
+    // 정렬 아이콘 업데이트
+    function updateSortIcons() {
+        document.querySelectorAll('.mh-hierarchy-table th[data-sort]').forEach(th => {
+            const icon = th.querySelector('i');
+            const column = th.getAttribute('data-sort');
+
+            if (column === currentSortColumn) {
+                icon.className = currentSortOrder === 'asc' ? 'fas fa-sort-up' : 'fas fa-sort-down';
+            } else {
+                icon.className = 'fas fa-sort';
+            }
+        });
+    }
+
+    // 데이터 정렬
+    function sortData(data) {
+        if (!currentSortColumn) {
+            return data;
+        }
+
+        return [...data].sort((a, b) => {
+            let aVal = a[currentSortColumn];
+            let bVal = b[currentSortColumn];
+
+            // null/undefined 처리
+            if (aVal == null) aVal = (currentSortColumn === 'empPositionSortOrder' || currentSortColumn === 'organizationalLevel') ? Number.MAX_VALUE : '';
+            if (bVal == null) bVal = (currentSortColumn === 'empPositionSortOrder' || currentSortColumn === 'organizationalLevel') ? Number.MAX_VALUE : '';
+
+            // 숫자 비교 (직급 sortOrder, 조직 레벨)
+            if (currentSortColumn === 'empPositionSortOrder' || currentSortColumn === 'organizationalLevel') {
+                return currentSortOrder === 'asc' ? aVal - bVal : bVal - aVal;
+            }
+
+            // 상태 정렬 (우선순위: 설정불필요 < 설정완료 < 미설정)
+            if (currentSortColumn === 'status') {
+                const statusPriority = {
+                    'not-required': 0,  // 대표이사
+                    'completed': 1,      // 설정완료
+                    'incomplete': 2      // 미설정
+                };
+
+                // 대표이사 여부로 상태 판단
+                const aIsCEO = a.empPositionSortOrder === 1;
+                const bIsCEO = b.empPositionSortOrder === 1;
+
+                const aStatus = aIsCEO ? 'not-required' : aVal;
+                const bStatus = bIsCEO ? 'not-required' : bVal;
+
+                const aPriority = statusPriority[aStatus] ?? 3;
+                const bPriority = statusPriority[bStatus] ?? 3;
+
+                return currentSortOrder === 'asc' ? aPriority - bPriority : bPriority - aPriority;
+            }
+
+            // 문자열 비교
+            if (typeof aVal === 'string') {
+                aVal = aVal.toLowerCase();
+                bVal = bVal.toLowerCase();
+            }
+
+            if (aVal < bVal) {
+                return currentSortOrder === 'asc' ? -1 : 1;
+            }
+            if (aVal > bVal) {
+                return currentSortOrder === 'asc' ? 1 : -1;
+            }
+            return 0;
+        });
     }
 
     // 상위보고자 변경 모달 열기
@@ -376,19 +491,54 @@ document.addEventListener('DOMContentLoaded', function() {
         currentEditingEmployee = employeesData.find(emp => emp.idx === empIdx);
         if (!currentEditingEmployee) return;
 
+        // 레벨 1 (대표): 상위보고자 설정 불가
+        if (currentEditingEmployee.empPositionSortOrder === 1) {
+            alert('대표이사는 상위보고자를 설정할 수 없습니다.');
+            return;
+        }
+
         document.getElementById('modalEmpName').textContent = currentEditingEmployee.empName;
         document.getElementById('modalEmpDept').textContent = currentEditingEmployee.empDeptName || currentEditingEmployee.empDept;
         document.getElementById('modalEmpPosition').textContent = currentEditingEmployee.empPositionName || currentEditingEmployee.empPosition;
         document.getElementById('modalCurrentManager').textContent = currentEditingEmployee.managerName || '미설정';
         document.getElementById('changeEmpIdx').value = empIdx;
 
-        // 상위보고자 드롭다운 옵션 생성 (한글명 표시)
         const newManagerSelect = document.getElementById('newManager');
-        const options = employeesData
-            .filter(emp => emp.idx !== empIdx)
-            .map(emp => `<option value="${emp.idx}">${emp.empName} (${emp.empPositionName || emp.empPosition} / ${emp.empDeptName || emp.empDept})</option>`)
-            .join('');
-        newManagerSelect.innerHTML = '<option value="">선택하세요</option>' + options;
+
+        // 레벨 2 (상무/이사, sortOrder 2-3): 무조건 대표이사만
+        if (currentEditingEmployee.empPositionSortOrder >= 2 && currentEditingEmployee.empPositionSortOrder <= 3) {
+            const ceo = employeesData.find(emp => emp.empPositionSortOrder === 1);
+
+            if (ceo) {
+                newManagerSelect.innerHTML = `<option value="${ceo.idx}" selected>${ceo.empName} (${ceo.empPositionName || ceo.empPosition} / ${ceo.empDeptName || ceo.empDept})</option>`;
+                newManagerSelect.disabled = true; // 변경 불가
+            } else {
+                alert('대표이사를 찾을 수 없습니다.');
+                return;
+            }
+        } else {
+            // 레벨 3, 4: 같은 부서의 상급자만
+            newManagerSelect.disabled = false;
+
+            const superiors = employeesData
+                .filter(emp =>
+                    emp.idx !== empIdx && // 본인 제외
+                    emp.empDept === currentEditingEmployee.empDept && // 같은 부서
+                    emp.empPositionSortOrder < currentEditingEmployee.empPositionSortOrder // 상급자만
+                )
+                .sort((a, b) => a.empPositionSortOrder - b.empPositionSortOrder); // 직급 높은 순 정렬
+
+            const options = superiors
+                .map(emp => `<option value="${emp.idx}">${emp.empName} (${emp.empPositionName || emp.empPosition} / ${emp.empDeptName || emp.empDept})</option>`)
+                .join('');
+
+            newManagerSelect.innerHTML = '<option value="">선택하세요</option>' + options;
+
+            // 가장 높은 직급을 기본값으로 선택
+            if (superiors.length > 0) {
+                newManagerSelect.value = superiors[0].idx;
+            }
+        }
 
         // 오늘 날짜로 초기화
         document.getElementById('managerStartDate').value = new Date().toISOString().split('T')[0];
@@ -418,8 +568,6 @@ document.addEventListener('DOMContentLoaded', function() {
             employee.managerStartDate = startDate;
             employee.status = 'completed';
 
-            changedEmployees.add(empIdx);
-
             // API 호출하여 서버에 저장
             const updateData = {
                 empIdx: empIdx,
@@ -447,6 +595,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
                 renderEmployeeTable(employeesData);
                 updateStatistics();
+                document.getElementById('newManager').disabled = false; // 드롭다운 재활성화
                 closeModal(changeManagerModal);
             })
             .catch(error => {
@@ -464,77 +613,131 @@ document.addEventListener('DOMContentLoaded', function() {
         document.getElementById('historyEmpName').textContent = employee.empName;
         document.getElementById('historyEmpInfo').textContent = `${employee.empPositionName || employee.empPosition} / ${employee.empDeptName || employee.empDept}`;
 
-        // Mock 이력 데이터
-        const historyHtml = `
-            <div class="mh-history-item">
-                <div class="mh-history-date">2025-11-28 14:30</div>
-                <div class="mh-history-content">상위보고자 변경</div>
-                <div class="mh-history-from-to">
-                    <span class="mh-from">변경 전: 미설정</span>
-                    <span class="mh-arrow">→</span>
-                    <span class="mh-to">변경 후: ${employee.managerName || '미설정'}</span>
-                </div>
-            </div>
-            <div class="mh-history-item">
-                <div class="mh-history-date">2023-01-15 10:00</div>
-                <div class="mh-history-content">조직 레벨 설정</div>
-                <div class="mh-history-from-to">
-                    <span class="mh-to">레벨 ${employee.organizationalLevel}</span>
-                </div>
-            </div>
-        `;
+        // 실제 이력 데이터 로드
+        fetch(`/api/hierarchy/history/${empIdx}`)
+            .then(response => {
+                if (!response.ok) {
+                    throw new Error('Failed to load history');
+                }
+                return response.json();
+            })
+            .then(histories => {
+                let historyHtml = '';
 
-        document.getElementById('historyTimeline').innerHTML = historyHtml;
+                if (histories.length === 0) {
+                    historyHtml = '<div class="mh-history-empty">변경 이력이 없습니다.</div>';
+                } else {
+                    historyHtml = histories.map(history => {
+                        const changeDate = new Date(history.changeDate).toLocaleString('ko-KR');
+                        return `
+                            <div class="mh-history-item">
+                                <div class="mh-history-date">${changeDate}</div>
+                                <div class="mh-history-content">상위보고자 변경</div>
+                                <div class="mh-history-from-to">
+                                    <span class="mh-from">변경 전: ${history.previousManagerName || '미설정'}</span>
+                                    <span class="mh-arrow">→</span>
+                                    <span class="mh-to">변경 후: ${history.newManagerName || '미설정'}</span>
+                                </div>
+                                ${history.changeReason ? `<div class="mh-history-reason">사유: ${history.changeReason}</div>` : ''}
+                                ${history.changedByUserName ? `<div class="mh-history-user">변경자: ${history.changedByUserName}</div>` : ''}
+                            </div>
+                        `;
+                    }).join('');
+                }
 
-        openModal(historyModal);
+                document.getElementById('historyTimeline').innerHTML = historyHtml;
+                openModal(historyModal);
+            })
+            .catch(error => {
+                console.error('Error loading history:', error);
+                document.getElementById('historyTimeline').innerHTML = '<div class="mh-history-empty">이력을 불러오는데 실패했습니다.</div>';
+                openModal(historyModal);
+            });
     };
 
-    // 전체 저장
-    function saveAllChanges() {
-        if (changedEmployees.size === 0) {
-            alert('변경된 내용이 없습니다.');
-            return;
+    // 직원 목록 모달 열기
+    function openEmployeeListModal(statType) {
+        let filteredEmployees = [];
+        let modalTitle = '';
+
+        switch(statType) {
+            case 'all':
+                filteredEmployees = employeesData;
+                modalTitle = '전체 직원';
+                break;
+            case 'leaders':
+                filteredEmployees = employeesData.filter(emp => emp.isTeamLeader);
+                modalTitle = '팀장급 이상 직원';
+                break;
+            case 'completed':
+                // 대표이사 제외하고 설정완료된 사람만
+                filteredEmployees = employeesData.filter(emp =>
+                    emp.empPositionSortOrder !== 1 && emp.status === 'completed'
+                );
+                modalTitle = '보고체계 설정 완료';
+                break;
+            case 'incomplete':
+                // 대표이사 제외하고 미설정된 사람만
+                filteredEmployees = employeesData.filter(emp =>
+                    emp.empPositionSortOrder !== 1 && emp.status !== 'completed'
+                );
+                modalTitle = '보고체계 미설정';
+                break;
+            default:
+                filteredEmployees = employeesData;
+                modalTitle = '직원 목록';
         }
 
-        const changedData = Array.from(changedEmployees).map(idx => {
-            const emp = employeesData.find(e => e.idx === idx);
-            return {
-                empIdx: emp.idx,
-                organizationalLevel: emp.organizationalLevel,
-                isTeamLeader: emp.isTeamLeader,
-                managerIdx: emp.managerIdx,
-                managerStartDate: emp.managerStartDate
-            };
-        });
+        // 모달 제목 설정
+        document.getElementById('employeeListTitle').textContent = modalTitle;
 
-        // API 호출하여 일괄 저장
-        fetch('/api/hierarchy/bulk', {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json'
-            },
-            body: JSON.stringify(changedData)
-        })
-        .then(response => {
-            if (!response.ok) {
-                throw new Error('Failed to bulk update');
-            }
-            return response.text();
-        })
-        .then(() => {
-            console.log('전체 저장 성공');
-            alert(`${changedEmployees.size}명의 보고체계 정보가 저장되었습니다.`);
-            changedEmployees.clear();
+        // 직원 목록 테이블 렌더링
+        const employeeListBody = document.getElementById('employeeListBody');
 
-            // changed 클래스 제거
-            document.querySelectorAll('tr.mh-changed').forEach(row => {
-                row.classList.remove('mh-changed');
-            });
-        })
-        .catch(error => {
-            console.error('Error saving bulk changes:', error);
-            alert('일괄 저장에 실패했습니다.');
-        });
+        if (filteredEmployees.length === 0) {
+            employeeListBody.innerHTML = `
+                <tr>
+                    <td colspan="6" style="text-align: center; padding: 40px; color: #999;">
+                        해당하는 직원이 없습니다.
+                    </td>
+                </tr>
+            `;
+        } else {
+            const html = filteredEmployees.map(emp => {
+                const isCEO = emp.empPositionSortOrder === 1;
+                let statusClass, statusText;
+
+                if (isCEO) {
+                    statusClass = 'mh-not-required';
+                    statusText = '설정불필요';
+                } else if (emp.status === 'completed') {
+                    statusClass = 'mh-completed';
+                    statusText = '설정완료';
+                } else {
+                    statusClass = 'mh-incomplete';
+                    statusText = '미설정';
+                }
+
+                return `
+                    <tr>
+                        <td>${emp.empId}</td>
+                        <td><strong>${emp.empName}</strong></td>
+                        <td>${emp.empDeptName || emp.empDept}</td>
+                        <td>${emp.empPositionName || emp.empPosition}</td>
+                        <td>${isCEO ? '-' : (emp.managerName || '<span style="color: #999;">미설정</span>')}</td>
+                        <td>
+                            <span class="mh-status-badge ${statusClass}">
+                                ${statusText}
+                            </span>
+                        </td>
+                    </tr>
+                `;
+            }).join('');
+
+            employeeListBody.innerHTML = html;
+        }
+
+        openModal(employeeListModal);
     }
 
     // 모달 열기/닫기

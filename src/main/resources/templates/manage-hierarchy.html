@@ -21,9 +21,6 @@
                     <button class="btn-secondary" id="viewOrgChartBtn">
                         <i class="fas fa-project-diagram"></i> 조직도 보기
                     </button>
-                    <button class="btn-primary" id="saveAllBtn">
-                        <i class="fas fa-save"></i> 전체 저장
-                    </button>
                 </div>
             </header>
 
@@ -31,7 +28,7 @@
             <div class="mh-container">
                 <!-- 통계 카드 -->
                 <div class="mh-stats-grid">
-                <div class="mh-stat-card">
+                <div class="mh-stat-card mh-stat-clickable" data-stat-type="all">
                     <div class="mh-stat-icon" style="background: #e3f2fd;">
                         <i class="fas fa-users" style="color: #1976d2;"></i>
                     </div>
@@ -40,7 +37,7 @@
                         <p class="mh-stat-number"><span id="totalEmployees">-</span>명</p>
                     </div>
                 </div>
-                <div class="mh-stat-card">
+                <div class="mh-stat-card mh-stat-clickable" data-stat-type="leaders">
                     <div class="mh-stat-icon" style="background: #fff3e0;">
                         <i class="fas fa-user-tie" style="color: #f57c00;"></i>
                     </div>
@@ -49,7 +46,7 @@
                         <p class="mh-stat-number"><span id="totalLeaders">-</span>명</p>
                     </div>
                 </div>
-                <div class="mh-stat-card">
+                <div class="mh-stat-card mh-stat-clickable" data-stat-type="completed">
                     <div class="mh-stat-icon" style="background: #e8f5e9;">
                         <i class="fas fa-check-circle" style="color: #388e3c;"></i>
                     </div>
@@ -58,7 +55,7 @@
                         <p class="mh-stat-number"><span id="completedCount">-</span>명</p>
                     </div>
                 </div>
-                <div class="mh-stat-card">
+                <div class="mh-stat-card mh-stat-clickable" data-stat-type="incomplete">
                     <div class="mh-stat-icon" style="background: #ffebee;">
                         <i class="fas fa-exclamation-triangle" style="color: #d32f2f;"></i>
                     </div>
@@ -72,9 +69,20 @@
             <!-- 필터 영역 -->
             <div class="mh-filter-section">
                 <div class="mh-filter-group">
+                    <label for="nameFilter">이름 검색</label>
+                    <input type="text" id="nameFilter" placeholder="이름 입력...">
+                </div>
+                <div class="mh-filter-group">
                     <label for="deptFilter">부서</label>
                     <select id="deptFilter">
                         <option value="">전체 부서</option>
+                        <!-- JavaScript로 동적 생성 -->
+                    </select>
+                </div>
+                <div class="mh-filter-group">
+                    <label for="positionFilter">직급</label>
+                    <select id="positionFilter">
+                        <option value="">전체 직급</option>
                         <!-- JavaScript로 동적 생성 -->
                     </select>
                 </div>
@@ -84,8 +92,8 @@
                         <option value="">전체 레벨</option>
                         <option value="1">레벨 1 (대표)</option>
                         <option value="2">레벨 2 (상무/이사)</option>
-                        <option value="3">레벨 3 (부장)</option>
-                        <option value="4">레벨 4 (그 이하)</option>
+                        <option value="3">레벨 3 (부장/차장/과장)</option>
+                        <option value="4">레벨 4 (대리 이하)</option>
                     </select>
                 </div>
                 <div class="mh-filter-group">
@@ -106,16 +114,27 @@
                 <table class="mh-hierarchy-table">
                     <thead>
                         <tr>
-                            <th style="width: 80px;">사번</th>
-                            <th style="width: 100px;">이름</th>
-                            <th style="width: 120px;">부서</th>
-                            <th style="width: 100px;">직급</th>
-                            <th style="width: 100px;">조직 레벨</th>
+                            <th style="width: 80px; cursor: pointer;" data-sort="empId">
+                                사번 <i class="fas fa-sort"></i>
+                            </th>
+                            <th style="width: 100px; cursor: pointer;" data-sort="empName">
+                                이름 <i class="fas fa-sort"></i>
+                            </th>
+                            <th style="width: 120px; cursor: pointer;" data-sort="empDeptName">
+                                부서 <i class="fas fa-sort"></i>
+                            </th>
+                            <th style="width: 100px; cursor: pointer;" data-sort="empPositionSortOrder">
+                                직급 <i class="fas fa-sort"></i>
+                            </th>
+                            <th style="width: 150px; cursor: pointer;" data-sort="organizationalLevel">
+                                조직 레벨 <i class="fas fa-sort"></i>
+                            </th>
                             <th style="width: 80px;">팀장 여부</th>
                             <th style="width: 180px;">현재 상위보고자</th>
-                            <th style="width: 180px;">상위보고자 변경</th>
                             <th style="width: 120px;">배정일</th>
-                            <th style="width: 100px;">상태</th>
+                            <th style="width: 100px; cursor: pointer;" data-sort="status">
+                                상태 <i class="fas fa-sort"></i>
+                            </th>
                             <th style="width: 120px;">관리</th>
                         </tr>
                     </thead>
@@ -178,7 +197,7 @@
                             <option value="">선택하세요</option>
                             <!-- JavaScript로 동적 생성 -->
                         </select>
-                        <small class="mh-form-help">본인과 동일하거나 상위 직급의 직원만 선택 가능합니다</small>
+                        <small class="mh-form-help">같은 부서의 상급자만 선택 가능합니다</small>
                     </div>
 
                     <div class="mh-form-group">
@@ -273,6 +292,40 @@
             </div>
             <div class="mh-modal-footer">
                 <button class="btn-secondary" id="closeHistoryBtn">닫기</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 직원 목록 모달 -->
+    <div id="employeeListModal" class="mh-modal">
+        <div class="mh-modal-content mh-modal-large">
+            <div class="mh-modal-header">
+                <h2><i class="fas fa-users"></i> <span id="employeeListTitle">직원 목록</span></h2>
+                <button class="mh-modal-close" id="closeEmployeeListModal">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            <div class="mh-modal-body">
+                <div class="mh-employee-list-container">
+                    <table class="mh-employee-list-table">
+                        <thead>
+                            <tr>
+                                <th>사번</th>
+                                <th>이름</th>
+                                <th>부서</th>
+                                <th>직급</th>
+                                <th>상위보고자</th>
+                                <th>상태</th>
+                            </tr>
+                        </thead>
+                        <tbody id="employeeListBody">
+                            <!-- JavaScript로 동적 생성 -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+            <div class="mh-modal-footer">
+                <button class="btn-secondary" id="closeEmployeeListBtn">닫기</button>
             </div>
         </div>
     </div>
