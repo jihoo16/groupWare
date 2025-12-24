@@ -199,4 +199,31 @@ public class CodeService {
         log.debug("부서 코드로 조회: deptCode={}", deptCode);
         return codeRepository.findByGroupCodeAndCode("C01", deptCode);
     }
+
+    /**
+     * 직급 코드의 sortOrder 조회 (C02 그룹)
+     * @param positionCode 직급 코드 (예: C0201)
+     * @return sortOrder 값, 코드가 없으면 Integer.MAX_VALUE
+     */
+    public Integer getPositionSortOrder(String positionCode) {
+        log.debug("직급 sortOrder 조회: positionCode={}", positionCode);
+        return codeRepository.findByGroupCodeAndCode("C02", positionCode)
+                .map(Code::getSortOrder)
+                .orElse(Integer.MAX_VALUE); // 코드가 없으면 가장 낮은 우선순위
+    }
+
+    /**
+     * 직급명으로 직급 코드 조회 (C02 그룹)
+     * @param positionName 직급명 (예: "부장")
+     * @return 직급 코드 (예: "C0203"), 없으면 null
+     */
+    public String getPositionCodeByName(String positionName) {
+        log.debug("직급명으로 코드 조회: positionName={}", positionName);
+        return codeRepository.findByGroupCode("C02").stream()
+                .filter(code -> "Y".equals(code.getUseYn()))
+                .filter(code -> positionName.equals(code.getCodeName()))
+                .findFirst()
+                .map(Code::getCode)
+                .orElse(null);
+    }
 }
