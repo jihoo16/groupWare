@@ -6,9 +6,11 @@ import com.pinecni.erp.api.calendar.dto.TeamFilterDto;
 import com.pinecni.erp.api.calendar.repository.CalendarEventRepository;
 import com.pinecni.erp.api.calendar.repository.CalendarParticipantRepository;
 import com.pinecni.erp.api.team.repository.TeamRepository;
+import com.pinecni.erp.api.user.repository.UserRepository;
 import com.pinecni.erp.entity.CalendarEvent;
 import com.pinecni.erp.entity.CalendarParticipant;
 import com.pinecni.erp.entity.Team;
+import com.pinecni.erp.entity.User;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -30,6 +32,7 @@ public class CalendarEventService {
     private final CalendarEventRepository calendarEventRepository;
     private final CalendarParticipantRepository calendarParticipantRepository;
     private final TeamRepository teamRepository;
+    private final UserRepository userRepository;
 
     /**
      * 기간별 일정 조회
@@ -95,10 +98,31 @@ public class CalendarEventService {
         // 참석자 저장
         if (eventDto.getParticipants() != null && !eventDto.getParticipants().isEmpty()) {
             for (CalendarParticipantDto participantDto : eventDto.getParticipants()) {
+                Long userIdx = participantDto.getUserIdx();
+                String userName = participantDto.getUserName();
+
+                // userIdx가 없으면 userName으로 조회
+                if (userIdx == null && userName != null && !userName.trim().isEmpty()) {
+                    List<User> users = userRepository.findByEmpNameAndDeletedAtIsNull(userName.trim());
+                    if (!users.isEmpty()) {
+                        userIdx = users.get(0).getIdx();
+                        log.debug("참석자 '{}' -> userIdx: {}", userName, userIdx);
+                    } else {
+                        log.warn("참석자 '{}'에 해당하는 사용자를 찾을 수 없습니다. 참석자 추가를 건너뜁니다.", userName);
+                        continue; // 사용자를 찾을 수 없으면 건너뛰기
+                    }
+                }
+
+                // userIdx가 여전히 null이면 건너뛰기
+                if (userIdx == null) {
+                    log.warn("참석자 userIdx가 null입니다. 참석자 추가를 건너뜁니다.");
+                    continue;
+                }
+
                 CalendarParticipant participant = CalendarParticipant.builder()
                         .eventIdx(savedEvent.getIdx())
-                        .userIdx(participantDto.getUserIdx())
-                        .userName(participantDto.getUserName())
+                        .userIdx(userIdx)
+                        .userName(userName)
                         .participationStatus("PENDING")
                         .receiveNotification(participantDto.getReceiveNotification() != null ? participantDto.getReceiveNotification() : "Y")
                         .createdAt(LocalDateTime.now())
@@ -150,10 +174,31 @@ public class CalendarEventService {
         // 새 참석자 추가
         if (eventDto.getParticipants() != null && !eventDto.getParticipants().isEmpty()) {
             for (CalendarParticipantDto participantDto : eventDto.getParticipants()) {
+                Long userIdx = participantDto.getUserIdx();
+                String userName = participantDto.getUserName();
+
+                // userIdx가 없으면 userName으로 조회
+                if (userIdx == null && userName != null && !userName.trim().isEmpty()) {
+                    List<User> users = userRepository.findByEmpNameAndDeletedAtIsNull(userName.trim());
+                    if (!users.isEmpty()) {
+                        userIdx = users.get(0).getIdx();
+                        log.debug("참석자 '{}' -> userIdx: {}", userName, userIdx);
+                    } else {
+                        log.warn("참석자 '{}'에 해당하는 사용자를 찾을 수 없습니다. 참석자 추가를 건너뜁니다.", userName);
+                        continue; // 사용자를 찾을 수 없으면 건너뛰기
+                    }
+                }
+
+                // userIdx가 여전히 null이면 건너뛰기
+                if (userIdx == null) {
+                    log.warn("참석자 userIdx가 null입니다. 참석자 추가를 건너뜁니다.");
+                    continue;
+                }
+
                 CalendarParticipant participant = CalendarParticipant.builder()
                         .eventIdx(eventIdx)
-                        .userIdx(participantDto.getUserIdx())
-                        .userName(participantDto.getUserName())
+                        .userIdx(userIdx)
+                        .userName(userName)
                         .participationStatus(participantDto.getParticipationStatus() != null ? participantDto.getParticipationStatus() : "PENDING")
                         .receiveNotification(participantDto.getReceiveNotification() != null ? participantDto.getReceiveNotification() : "Y")
                         .createdAt(LocalDateTime.now())
