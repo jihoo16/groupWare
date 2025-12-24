@@ -63,6 +63,9 @@ public class Project extends BaseEntity {
     @Column(name = "equipment_budget", precision = 15, scale = 2)
     private BigDecimal equipmentBudget = BigDecimal.ZERO;
 
+    @Column(name = "progress_rate", precision = 5, scale = 2)
+    private BigDecimal progressRate = BigDecimal.ZERO;
+
 
     // 관계 매핑
     @ManyToOne(fetch = FetchType.LAZY)

@@ -17,7 +17,7 @@
                         <i class="fas fa-search"></i>
                         <input type="text" id="searchInput" placeholder="문서 검색...">
                     </div>
-                    <button class="btn-primary" onclick="location.href='/approval/write'">
+                    <button class="btn-primary" id="newDocumentBtn">
                         <i class="fas fa-pen"></i>
                         새 문서 작성
                     </button>
@@ -37,9 +37,13 @@
                                 <i class="fas fa-copy"></i>
                                 <span>전체 문서</span>
                             </a>
-                            <a href="#" class="menu-item" data-category="report">
-                                <i class="fas fa-chart-line"></i>
-                                <span>주간/월간 보고</span>
+                            <a href="#" class="menu-item" data-category="weekly-report">
+                                <i class="fas fa-calendar-week"></i>
+                                <span>주간 보고</span>
+                            </a>
+                            <a href="#" class="menu-item" data-category="monthly-report">
+                                <i class="fas fa-calendar-alt"></i>
+                                <span>월간 보고</span>
                             </a>
                             <a href="#" class="menu-item" data-category="vacation">
                                 <i class="fas fa-umbrella-beach"></i>
@@ -97,143 +101,7 @@
                                 </tr>
                             </thead>
                             <tbody>
-                                <tr class="doc-row" data-category="vacation">
-                                    <td>
-                                        <span class="doc-type">
-                                            <i class="fas fa-umbrella-beach"></i>
-                                            휴가신청서
-                                        </span>
-                                    </td>
-                                    <td class="doc-title-cell">
-                                        <div class="title-wrap">연차 휴가 신청 (2025.01.25~26)</div>
-                                        <div class="desc-wrap">가족 행사로 인한 연차 2일 사용 신청</div>
-                                    </td>
-                                    <td>김철수 대리</td>
-                                    <td>개발팀</td>
-                                    <td>2025-01-18 14:23</td>
-                                    <td>
-                                        <div class="table-actions">
-                                            <button class="btn-icon btn-view">
-                                                <i class="fas fa-eye"></i>
-                                            </button>
-                                        </div>
-                                    </td>
-                                </tr>
-
-                                <tr class="doc-row" data-category="expense">
-                                    <td>
-                                        <span class="doc-type">
-                                            <i class="fas fa-won-sign"></i>
-                                            지출승인서
-                                        </span>
-                                    </td>
-                                    <td class="doc-title-cell">
-                                        <div class="title-wrap">사무용품 구매 건</div>
-                                        <div class="desc-wrap">프린터 토너 및 복사용지 구매 (850,000원)</div>
-                                    </td>
-                                    <td>이영희 사원</td>
-                                    <td>총무팀</td>
-                                    <td>2025-01-18 13:45</td>
-                                    <td>
-                                        <div class="table-actions">
-                                            <button class="btn-icon btn-view">
-                                                <i class="fas fa-eye"></i>
-                                            </button>
-                                        </div>
-                                    </td>
-                                </tr>
-
-                                <tr class="doc-row" data-category="report">
-                                    <td>
-                                        <span class="doc-type">
-                                            <i class="fas fa-chart-line"></i>
-                                            주간업무보고
-                                        </span>
-                                    </td>
-                                    <td class="doc-title-cell">
-                                        <div class="title-wrap">2025년 1월 3주차 주간업무보고</div>
-                                        <div class="desc-wrap">신규 프로젝트 진행 현황 및 주요 이슈 보고</div>
-                                    </td>
-                                    <td>정민수 과장</td>
-                                    <td>기획팀</td>
-                                    <td>2025-01-18 11:20</td>
-                                    <td>
-                                        <div class="table-actions">
-                                            <button class="btn-icon btn-view">
-                                                <i class="fas fa-eye"></i>
-                                            </button>
-                                        </div>
-                                    </td>
-                                </tr>
-
-                                <tr class="doc-row" data-category="meeting">
-                                    <td>
-                                        <span class="doc-type">
-                                            <i class="fas fa-users"></i>
-                                            회의록
-                                        </span>
-                                    </td>
-                                    <td class="doc-title-cell">
-                                        <div class="title-wrap">2025 Q1 전략회의 회의록</div>
-                                        <div class="desc-wrap">1분기 사업 계획 및 목표 설정 회의 (참석 8명)</div>
-                                    </td>
-                                    <td>오준호 차장</td>
-                                    <td>경영지원팀</td>
-                                    <td>2025-01-18 09:15</td>
-                                    <td>
-                                        <div class="table-actions">
-                                            <button class="btn-icon btn-view">
-                                                <i class="fas fa-eye"></i>
-                                            </button>
-                                        </div>
-                                    </td>
-                                </tr>
-
-                                <tr class="doc-row" data-category="purchase">
-                                    <td>
-                                        <span class="doc-type">
-                                            <i class="fas fa-shopping-cart"></i>
-                                            구매요청서
-                                        </span>
-                                    </td>
-                                    <td class="doc-title-cell">
-                                        <div class="title-wrap">노트북 2대 구매 요청</div>
-                                        <div class="desc-wrap">신입사원 지급용 노트북 구매 (3,600,000원)</div>
-                                    </td>
-                                    <td>서하늘 대리</td>
-                                    <td>IT지원팀</td>
-                                    <td>2025-01-17 16:40</td>
-                                    <td>
-                                        <div class="table-actions">
-                                            <button class="btn-icon btn-view">
-                                                <i class="fas fa-eye"></i>
-                                            </button>
-                                        </div>
-                                    </td>
-                                </tr>
-
-                                <tr class="doc-row" data-category="general">
-                                    <td>
-                                        <span class="doc-type">
-                                            <i class="fas fa-file-alt"></i>
-                                            일반기안
-                                        </span>
-                                    </td>
-                                    <td class="doc-title-cell">
-                                        <div class="title-wrap">신규 협력업체 계약 건</div>
-                                        <div class="desc-wrap">A사와의 연간 유지보수 계약 체결</div>
-                                    </td>
-                                    <td>최민준 과장</td>
-                                    <td>구매팀</td>
-                                    <td>2025-01-17 15:30</td>
-                                    <td>
-                                        <div class="table-actions">
-                                            <button class="btn-icon btn-view">
-                                                <i class="fas fa-eye"></i>
-                                            </button>
-                                        </div>
-                                    </td>
-                                </tr>
+                                <!-- JavaScript에서 동적으로 렌더링됩니다 -->
                             </tbody>
                         </table>
                         </div>

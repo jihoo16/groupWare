@@ -1,7 +1,6 @@
 document.addEventListener('DOMContentLoaded', function() {
     // 프로젝트 목록 페이지 요소
     const newProjectBtn = document.getElementById('newProjectBtn');
-    const searchCurrentInput = document.getElementById('searchCurrentInput');
     const currentProjectGrid = document.getElementById('currentProjectGrid');
 
     // 프로젝트 데이터
@@ -35,24 +34,6 @@ document.addEventListener('DOMContentLoaded', function() {
         newProjectBtn.addEventListener('click', function() {
             window.location.href = '/project/new';
         });
-    }
-
-    // 현재 진행중인 프로젝트 검색
-    if (searchCurrentInput) {
-        searchCurrentInput.addEventListener('input', function() {
-            filterCurrentProjects();
-        });
-    }
-
-    // 현재 프로젝트 필터링
-    function filterCurrentProjects() {
-        const searchValue = searchCurrentInput.value.toLowerCase();
-
-        const filteredProjects = allCurrentProjects.filter(project => {
-            return !searchValue || project.projectName.toLowerCase().includes(searchValue);
-        });
-
-        renderCurrentProjects(filteredProjects);
     }
 
     // 현재 진행중인 프로젝트 로드
@@ -116,9 +97,9 @@ document.addEventListener('DOMContentLoaded', function() {
                     </div>
                     <div class="project-progress">
                         <div class="progress-bar">
-                            <div class="progress-fill" style="width: ${project.progress}%;"></div>
+                            <div class="progress-fill" style="width: ${project.progressRate || 0}%;"></div>
                         </div>
-                        <span class="progress-text">${project.progress}%</span>
+                        <span class="progress-text">${project.progressRate || 0}%</span>
                     </div>
                     <p class="project-description">
                         ${project.description || '프로젝트 설명이 없습니다.'}
@@ -198,8 +179,8 @@ document.addEventListener('DOMContentLoaded', function() {
 
     // 초기 데이터 로드
     function loadPastProjects() {
-        // 최적화된 과거 프로젝트 전용 API 사용
-        fetch('/api/projects/past')
+        // 모든 프로젝트 조회 (진행중인 프로젝트 포함)
+        fetch('/api/projects')
             .then(response => {
                 if (!response.ok) {
                     throw new Error('프로젝트 목록을 불러오는데 실패했습니다.');
@@ -207,7 +188,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 return response.json();
             })
             .then(projects => {
-                // 이미 백엔드에서 필터링된 과거 프로젝트만 반환됨
+                // 모든 프로젝트 매핑
                 allPastProjectsData = projects.map((project, index) => ({
                     no: index + 1,
                     idx: project.idx,
@@ -218,7 +199,7 @@ document.addEventListener('DOMContentLoaded', function() {
                     pm: project.projectManagerName || '-',
                     teamSize: project.memberCount + '명',
                     period: `${project.startDate} ~ ${project.endDate}`,
-                    progress: project.progress,
+                    progress: project.progressRate || 0,
                     projectId: project.idx
                 }));
 
@@ -432,8 +413,8 @@ document.addEventListener('DOMContentLoaded', function() {
                 document.getElementById('detailActivityBudget').innerHTML = formatBudgetUsage(project.activityUsed, project.activityBudget);
                 document.getElementById('detailEquipmentBudget').innerHTML = formatBudgetUsage(project.equipmentUsed, project.equipmentBudget);
                 document.getElementById('detailDescription').textContent = project.description || '설명이 없습니다.';
-                document.getElementById('detailProgressBar').style.width = project.progress + '%';
-                document.getElementById('detailProgressText').textContent = project.progress + '%';
+                document.getElementById('detailProgressBar').style.width = (project.progressRate || 0) + '%';
+                document.getElementById('detailProgressText').textContent = (project.progressRate || 0) + '%';
 
                 // 프로젝트 보고서 로드
                 loadProjectReports(project.idx);

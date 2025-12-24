@@ -47,7 +47,8 @@ document.addEventListener('DOMContentLoaded', function() {
     function updateContentTitle(category) {
         const titles = {
             'all': '전체 문서',
-            'report': '주간/월간 보고',
+            'weekly-report': '주간 보고',
+            'monthly-report': '월간 보고',
             'vacation': '휴가 신청',
             'expense': '지출 결의',
             'purchase': '구매 요청',
@@ -57,6 +58,28 @@ document.addEventListener('DOMContentLoaded', function() {
         };
 
         contentTitle.textContent = titles[category] || '문서 목록';
+    }
+
+    // 새 문서 작성 버튼
+    const newDocumentBtn = document.getElementById('newDocumentBtn');
+    if (newDocumentBtn) {
+        newDocumentBtn.addEventListener('click', function() {
+            // 현재 선택된 카테고리에 따라 다른 페이지로 이동
+            const categoryUrls = {
+                'weekly-report': '/approval/weekly-report',
+                'monthly-report': '/approval/monthly-report',
+                'meeting': '/approval/meeting',
+                'receipt': '/approval/write', // 연구비증빙은 여러 타입이 있으므로 기본 페이지
+                'vacation': '/approval/write',
+                'expense': '/approval/write',
+                'purchase': '/approval/write',
+                'general': '/approval/write',
+                'all': '/approval/write'
+            };
+
+            const url = categoryUrls[currentCategory] || '/approval/write';
+            window.location.href = url;
+        });
     }
 
     // 문서 필터링
@@ -606,13 +629,13 @@ document.addEventListener('DOMContentLoaded', function() {
         if (!tbody) return;
 
         // 기존 문서 행 제거
-        const existingRows = tbody.querySelectorAll('.doc-row[data-category="report"], .doc-row[data-category="meeting"], .doc-row[data-category="receipt"]');
+        const existingRows = tbody.querySelectorAll('.doc-row[data-category="weekly-report"], .doc-row[data-category="monthly-report"], .doc-row[data-category="meeting"], .doc-row[data-category="receipt"]');
         existingRows.forEach(row => row.remove());
 
         // 모든 문서를 하나의 배열로 합치기
         const allDocuments = [
-            ...weeklyReports.map(report => ({ ...report, docType: 'weekly', category: 'report' })),
-            ...monthlyReports.map(report => ({ ...report, docType: 'monthly', category: 'report' })),
+            ...weeklyReports.map(report => ({ ...report, docType: 'weekly', category: 'weekly-report' })),
+            ...monthlyReports.map(report => ({ ...report, docType: 'monthly', category: 'monthly-report' })),
             ...meetingMinutes.map(meeting => ({ ...meeting, docType: 'meeting', category: 'meeting' })),
             ...receiptMeetings.map(receipt => ({ ...receipt, docType: 'receipt-meeting', category: 'receipt' })),
             ...receiptTrips.map(trip => ({ ...trip, docType: 'receipt-trip', category: 'receipt' }))

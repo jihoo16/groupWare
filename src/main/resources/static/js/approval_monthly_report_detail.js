@@ -102,7 +102,7 @@ document.addEventListener('DOMContentLoaded', function() {
         document.getElementById('userName').value = currentUser.empName || '';
 
         // 부서
-        document.getElementById('userDept').value = currentUser.empDept || '';
+        document.getElementById('userDept').value = currentUser.empDeptName || '';
 
         // 보고 월
         document.getElementById('reportMonth').value = report.reportMonth || '';

@@ -1660,4 +1660,18 @@ document.addEventListener('DOMContentLoaded', function() {
 
     // 초기 템플릿 로드 (출장+회의)
     loadTemplate('receipt-trip');
+
+    // 오늘 날짜 자동 설정
+    setTimeout(() => {
+        const commonDate = document.getElementById('common_date');
+        if (commonDate && !commonDate.value) {
+            const today = new Date();
+            const yyyy = today.getFullYear();
+            const mm = String(today.getMonth() + 1).padStart(2, '0');
+            const dd = String(today.getDate()).padStart(2, '0');
+            commonDate.value = `${yyyy}-${mm}-${dd}`;
+            // 날짜 설정 후 자동 채우기 트리거
+            commonDate.dispatchEvent(new Event('change'));
+        }
+    }, 200);
 });

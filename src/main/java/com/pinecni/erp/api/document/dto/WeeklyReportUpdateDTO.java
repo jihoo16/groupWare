@@ -54,4 +54,10 @@ public class WeeklyReportUpdateDTO {
      * 주차별 달성률 (0-100)
      */
     private Integer weeklyAchievementRate;
+
+    /**
+     * 입력 달성률 (0.00 ~ 100.00)
+     * 프로젝트 전체 달성률에 추가할 증분값
+     */
+    private java.math.BigDecimal inputProgressRate;
 }

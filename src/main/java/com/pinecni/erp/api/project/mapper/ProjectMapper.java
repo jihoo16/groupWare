@@ -61,6 +61,7 @@ public class ProjectMapper {
                 .receiptUrl((String) row[9])
                 .activityBudget((BigDecimal) row[10])
                 .equipmentBudget((BigDecimal) row[11])
+                .progressRate((BigDecimal) row[12])
                 .memberCount(((Long) row[13]).intValue())
                 .activityUsed((BigDecimal) row[14])
                 .equipmentUsed(BigDecimal.ZERO)  // 장비비는 추후 구현
@@ -138,6 +139,7 @@ public class ProjectMapper {
                 .receiptUrl(entity.getReceiptUrl())
                 .activityBudget(entity.getActivityBudget())
                 .equipmentBudget(entity.getEquipmentBudget())
+                .progressRate(entity.getProgressRate())
                 .activityUsed(activityUsed)
                 .equipmentUsed(equipmentUsed)
                 .memberCount(members.size())
@@ -173,6 +175,8 @@ public class ProjectMapper {
                 .isDeleted(false)
                 .activityBudget(dto.getActivityBudget())
                 .equipmentBudget(dto.getEquipmentBudget())
+                .progressRate(dto.getProgressRate() != null ?
+                        dto.getProgressRate() : BigDecimal.ZERO)
                 .build();
 
         // BaseEntity 필드 설정
@@ -223,6 +227,9 @@ public class ProjectMapper {
         }
         if (dto.getEquipmentBudget() != null) {
             entity.setEquipmentBudget(dto.getEquipmentBudget());
+        }
+        if (dto.getProgressRate() != null) {
+            entity.setProgressRate(dto.getProgressRate());
         }
 
         // 수정 정보 업데이트
