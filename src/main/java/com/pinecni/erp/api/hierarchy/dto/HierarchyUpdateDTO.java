@@ -21,8 +21,6 @@ public class HierarchyUpdateDTO {
     private Long empIdx;
 
     private Long managerIdx;
-    private Integer organizationalLevel;
-    private Boolean isTeamLeader;
     private LocalDate managerStartDate;
     private String changeReason;
 }

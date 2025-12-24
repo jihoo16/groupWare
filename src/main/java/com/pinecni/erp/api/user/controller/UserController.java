@@ -271,6 +271,32 @@ public class UserController {
     }
 
     /**
+     * 사용자의 상위 보고자 체인 조회
+     * GET /api/users/{idx}/manager-chain
+     *
+     * 결재선 구성에 활용 (본인 -> 상위보고자 -> 상위보고자의 상위보고자 -> ... -> 최상위)
+     */
+    @GetMapping("/{idx}/manager-chain")
+    public ResponseEntity<List<UserSimpleDTO>> getManagerChain(@PathVariable Long idx) {
+        log.debug("GET /api/users/{}/manager-chain - getManagerChain()", idx);
+        List<UserSimpleDTO> managerChain = userService.getManagerChain(idx);
+        return ResponseEntity.ok(managerChain);
+    }
+
+    /**
+     * 같은 부서 내 상급자 목록 조회
+     * GET /api/users/{idx}/senior-users
+     *
+     * 부서장 선택 드롭다운에 활용 (같은 부서 내에서 자신보다 직급이 높은 사용자만)
+     */
+    @GetMapping("/{idx}/senior-users")
+    public ResponseEntity<List<UserSimpleDTO>> getSeniorUsersInDept(@PathVariable Long idx) {
+        log.debug("GET /api/users/{}/senior-users - getSeniorUsersInDept()", idx);
+        List<UserSimpleDTO> seniorUsers = userService.getSeniorUsersInDept(idx);
+        return ResponseEntity.ok(seniorUsers);
+    }
+
+    /**
      * Exception Handler
      */
     @ExceptionHandler(IllegalArgumentException.class)

@@ -49,18 +49,6 @@ public class ReportingHierarchyHistory extends BaseEntity {
     @JoinColumn(name = "new_manager_idx", insertable = false, updatable = false)
     private User newManager;
 
-    @Column(name = "previous_level")
-    private Integer previousLevel;
-
-    @Column(name = "new_level")
-    private Integer newLevel;
-
-    @Column(name = "previous_is_team_leader")
-    private Boolean previousIsTeamLeader;
-
-    @Column(name = "new_is_team_leader")
-    private Boolean newIsTeamLeader;
-
     @Column(name = "change_reason", length = 500)
     private String changeReason;
 

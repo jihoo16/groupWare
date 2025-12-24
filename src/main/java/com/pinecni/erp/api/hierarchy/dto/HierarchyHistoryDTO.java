@@ -23,14 +23,10 @@ public class HierarchyHistoryDTO {
     // 이전 값
     private Long previousManagerIdx;
     private String previousManagerName;
-    private Integer previousLevel;
-    private Boolean previousIsTeamLeader;
 
     // 새로운 값
     private Long newManagerIdx;
     private String newManagerName;
-    private Integer newLevel;
-    private Boolean newIsTeamLeader;
 
     // 변경 정보
     private String changeReason;

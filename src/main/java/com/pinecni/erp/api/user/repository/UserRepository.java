@@ -55,6 +55,12 @@ public interface UserRepository extends JpaRepository<User, Long> {
     List<User> searchByName(String name);
 
     /**
+     * 이름으로 활성 사용자 조회 (정확히 일치)
+     */
+    @Query("SELECT u FROM User u WHERE u.empName = :empName AND u.deletedAt IS NULL")
+    List<User> findByEmpNameAndDeletedAtIsNull(String empName);
+
+    /**
      * 특정 날짜 패턴으로 시작하는 사번 목록 조회 (사번 오름차순)
      * 예: datePrefix = "20251201" → 2025년 12월 1일에 생성된 사번 조회
      */
@@ -72,26 +78,22 @@ public interface UserRepository extends JpaRepository<User, Long> {
     List<User> findActiveByIsTeamLeader(Boolean isTeamLeader);
 
     /**
-     * 조직 레벨별 활성 사용자 조회
-     */
-    @Query("SELECT u FROM User u WHERE u.organizationalLevel = :level AND u.deletedAt IS NULL ORDER BY u.empId ASC")
-    List<User> findActiveByOrganizationalLevel(Integer level);
-
-    /**
      * 상위보고자별 활성 사용자 조회
      */
     @Query("SELECT u FROM User u WHERE u.managerIdx = :managerIdx AND u.deletedAt IS NULL ORDER BY u.empId ASC")
     List<User> findActiveByManagerIdx(Long managerIdx);
 
     /**
-     * 보고체계 미설정 활성 사용자 수 조회
+     * 보고체계 미설정 활성 사용자 수 조회 (대표이사 제외)
      */
-    @Query("SELECT COUNT(u) FROM User u WHERE u.managerIdx IS NULL AND u.deletedAt IS NULL")
+    @Query("SELECT COUNT(u) FROM User u JOIN Code c ON c.groupCode = 'C02' AND c.code = u.empPosition " +
+           "WHERE u.managerIdx IS NULL AND u.deletedAt IS NULL AND c.sortOrder > 1")
     Long countIncompleteHierarchy();
 
     /**
-     * 보고체계 설정 완료 활성 사용자 수 조회
+     * 보고체계 설정 완료 활성 사용자 수 조회 (대표이사 제외)
      */
-    @Query("SELECT COUNT(u) FROM User u WHERE u.managerIdx IS NOT NULL AND u.deletedAt IS NULL")
+    @Query("SELECT COUNT(u) FROM User u JOIN Code c ON c.groupCode = 'C02' AND c.code = u.empPosition " +
+           "WHERE u.managerIdx IS NOT NULL AND u.deletedAt IS NULL AND c.sortOrder > 1")
     Long countCompletedHierarchy();
 }

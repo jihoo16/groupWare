@@ -17,6 +17,7 @@ import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.time.LocalDateTime;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -135,10 +136,20 @@ public class UserServiceImpl implements UserService {
         // 부서명 → 부서 코드 변환 (empDept 기반)
         setDepartmentCode(user);
 
-        // 저장
+        // 저장 (먼저 저장해서 idx를 생성)
         User savedUser = userRepository.save(user);
         log.info("User created successfully. idx: {}, empId: {}, empDept: {}",
                 savedUser.getIdx(), savedUser.getEmpId(), savedUser.getEmpDept());
+
+        // 상위보고자 자동 설정 (같은 부서 내 자신보다 높은 직급 중 최고 직급자)
+        autoAssignManager(savedUser);
+
+        // 상위보고자가 설정된 경우 다시 저장
+        if (savedUser.getManagerIdx() != null) {
+            savedUser = userRepository.save(savedUser);
+            log.info("Manager auto-assigned for user {}. Manager idx: {}",
+                    savedUser.getEmpId(), savedUser.getManagerIdx());
+        }
 
         return userMapper.toDTO(savedUser);
     }
@@ -277,6 +288,114 @@ public class UserServiceImpl implements UserService {
         return nextEmpId;
     }
 
+    @Override
+    public List<UserSimpleDTO> getManagerChain(Long userIdx) {
+        log.debug("getManagerChain() called with userIdx: {}", userIdx);
+
+        List<UserSimpleDTO> managerChain = new ArrayList<>();
+        User currentUser = userRepository.findById(userIdx).orElse(null);
+
+        if (currentUser == null) {
+            log.warn("사용자를 찾을 수 없습니다. userIdx: {}", userIdx);
+            return managerChain;
+        }
+
+        // 상위 보고자 체인 따라가기 (무한 루프 방지: 최대 10단계)
+        Long currentManagerIdx = currentUser.getManagerIdx();
+        int depth = 0;
+        int maxDepth = 10;
+
+        while (currentManagerIdx != null && depth < maxDepth) {
+            User manager = userRepository.findById(currentManagerIdx).orElse(null);
+
+            if (manager == null || manager.getDeletedAt() != null) {
+                // 상위 보고자가 없거나 삭제된 경우 중단
+                log.debug("상위 보고자를 찾을 수 없거나 삭제됨. managerIdx: {}", currentManagerIdx);
+                break;
+            }
+
+            // 상위 보고자를 리스트에 추가
+            managerChain.add(userMapper.toSimpleDTO(manager));
+            log.debug("상위 보고자 추가: {} (idx: {}, 직급: {})",
+                    manager.getEmpName(), manager.getIdx(), manager.getEmpPosition());
+
+            // 다음 상위 보고자로 이동
+            currentManagerIdx = manager.getManagerIdx();
+            depth++;
+        }
+
+        if (depth >= maxDepth) {
+            log.warn("상위 보고자 체인이 최대 깊이({})를 초과했습니다. 순환 참조 가능성 있음.", maxDepth);
+        }
+
+        log.info("상위 보고자 체인 조회 완료. userIdx: {}, 상위 보고자 수: {}", userIdx, managerChain.size());
+        return managerChain;
+    }
+
+    @Override
+    public List<UserSimpleDTO> getSeniorUsersInDept(Long userIdx) {
+        log.debug("getSeniorUsersInDept() called with userIdx: {}", userIdx);
+
+        // 현재 사용자 조회
+        User user = userRepository.findById(userIdx).orElse(null);
+        if (user == null || user.getDeletedAt() != null) {
+            log.warn("사용자를 찾을 수 없습니다. userIdx: {}", userIdx);
+            return new ArrayList<>();
+        }
+
+        // 사용자의 직급 sortOrder 조회
+        Integer userPositionSortOrder = codeService.getPositionSortOrder(user.getEmpPosition());
+        log.debug("사용자 직급 sortOrder: {} (position: {})", userPositionSortOrder, user.getEmpPosition());
+
+        // 같은 부서의 활성 사용자 조회
+        List<User> deptUsers = userRepository.findActiveByEmpDept(user.getEmpDept());
+
+        // 자신보다 높은 직급(sortOrder가 낮은) 사용자만 필터링 및 정렬
+        List<UserSimpleDTO> seniorUsers = deptUsers.stream()
+                .filter(u -> !u.getIdx().equals(userIdx)) // 본인 제외
+                .filter(u -> {
+                    Integer sortOrder = codeService.getPositionSortOrder(u.getEmpPosition());
+                    return sortOrder < userPositionSortOrder; // sortOrder가 낮을수록 높은 직급
+                })
+                .sorted((u1, u2) -> {
+                    // 1순위: 직급 순서 (sortOrder 낮은 순)
+                    Integer sort1 = codeService.getPositionSortOrder(u1.getEmpPosition());
+                    Integer sort2 = codeService.getPositionSortOrder(u2.getEmpPosition());
+                    int sortCompare = sort1.compareTo(sort2);
+                    if (sortCompare != 0) {
+                        return sortCompare;
+                    }
+
+                    // 2순위: 팀장 여부 (팀장 우선)
+                    int teamLeaderCompare = Boolean.compare(
+                            u2.getIsTeamLeader() != null && u2.getIsTeamLeader(),
+                            u1.getIsTeamLeader() != null && u1.getIsTeamLeader()
+                    );
+                    if (teamLeaderCompare != 0) {
+                        return teamLeaderCompare;
+                    }
+
+                    // 3순위: 입사일 빠른 순
+                    if (u1.getEmpJoinDate() == null && u2.getEmpJoinDate() == null) {
+                        return 0;
+                    }
+                    if (u1.getEmpJoinDate() == null) {
+                        return 1;
+                    }
+                    if (u2.getEmpJoinDate() == null) {
+                        return -1;
+                    }
+                    return u1.getEmpJoinDate().compareTo(u2.getEmpJoinDate());
+                })
+                .map(userMapper::toSimpleDTO)
+                .collect(Collectors.toList());
+
+        log.info("같은 부서 내 상급자 조회 완료. userIdx: {}, 부서: {}, 상급자 수: {}",
+                userIdx, user.getEmpDept(), seniorUsers.size());
+
+        return seniorUsers;
+    }
+
     /**
      * 비밀번호 해시 생성 (Salt 방식)
      *
@@ -403,5 +522,121 @@ public class UserServiceImpl implements UserService {
                 "유효하지 않은 부서입니다: " + inputValue +
                 ". 기초정보관리에서 부서를 먼저 등록해주세요."
         );
+    }
+
+    /**
+     * 상위보고자 자동 설정
+     * 같은 부서 내에서 신규 사용자보다 높은 직급 중 최고 직급자를 자동으로 상위보고자로 설정
+     *
+     * 우선순위:
+     * 1. 같은 부서의 활성 사용자 중
+     * 2. 신규 사용자보다 높은 직급(sortOrder가 낮은) 사용자만 필터링
+     * 3. 그 중 가장 높은 직급(sortOrder가 가장 낮은) 선택
+     * 4. 같은 직급이 여러 명이면: 팀장(isTeamLeader=true) 우선, 그 다음 입사일 빠른 순
+     *
+     * @param user 신규 생성된 사용자
+     */
+    private void autoAssignManager(User user) {
+        if (user.getEmpDept() == null || user.getEmpPosition() == null) {
+            log.debug("부서 또는 직급이 설정되지 않아 상위보고자 자동 설정을 건너뜁니다.");
+            return;
+        }
+
+        // 신규 사용자의 직급 sortOrder 조회
+        Integer userPositionSortOrder = codeService.getPositionSortOrder(user.getEmpPosition());
+        log.debug("신규 사용자 직급 sortOrder: {} (position: {})",
+                userPositionSortOrder, user.getEmpPosition());
+
+        // 레벨 1 (대표, sortOrder = 1): 상위보고자 없음
+        if (userPositionSortOrder == 1) {
+            log.info("대표이사는 상위보고자를 설정하지 않습니다.");
+            return;
+        }
+
+        // 레벨 2 (상무/이사, sortOrder 2-3): 무조건 대표이사를 상위보고자로 설정
+        if (userPositionSortOrder >= 2 && userPositionSortOrder <= 3) {
+            User ceo = userRepository.findAllActive().stream()
+                    .filter(u -> codeService.getPositionSortOrder(u.getEmpPosition()) == 1)
+                    .findFirst()
+                    .orElse(null);
+
+            if (ceo != null) {
+                user.setManagerIdx(ceo.getIdx());
+                user.setManagerStartDate(user.getEmpJoinDate());
+                log.info("✓ 레벨 2 상위보고자 자동 설정: {} (idx: {}) -> 대표이사: {} (idx: {})",
+                        user.getEmpName(), user.getIdx(), ceo.getEmpName(), ceo.getIdx());
+            } else {
+                log.warn("대표이사를 찾을 수 없어 상위보고자를 설정하지 않습니다.");
+            }
+            return;
+        }
+
+        // 레벨 3, 4 (sortOrder 4 이상): 같은 부서의 상급자 할당
+        // 같은 부서의 활성 사용자 조회 (본인 제외)
+        List<User> deptUsers = userRepository.findActiveByEmpDept(user.getEmpDept()).stream()
+                .filter(u -> !u.getIdx().equals(user.getIdx())) // 본인 제외
+                .collect(Collectors.toList());
+
+        if (deptUsers.isEmpty()) {
+            log.info("같은 부서에 다른 활성 사용자가 없어 상위보고자를 설정하지 않습니다.");
+            return;
+        }
+
+        // 자신보다 높은 직급(sortOrder가 낮은) 사용자만 필터링
+        List<User> seniorUsers = deptUsers.stream()
+                .filter(u -> {
+                    Integer sortOrder = codeService.getPositionSortOrder(u.getEmpPosition());
+                    return sortOrder < userPositionSortOrder; // sortOrder가 낮을수록 높은 직급
+                })
+                .collect(Collectors.toList());
+
+        if (seniorUsers.isEmpty()) {
+            log.info("같은 부서에 자신보다 높은 직급의 사용자가 없어 상위보고자를 설정하지 않습니다.");
+            return;
+        }
+
+        // 가장 높은 직급(sortOrder가 가장 낮은) 찾기
+        Integer minSortOrder = seniorUsers.stream()
+                .map(u -> codeService.getPositionSortOrder(u.getEmpPosition()))
+                .min(Integer::compareTo)
+                .orElse(Integer.MAX_VALUE);
+
+        // 최고 직급자들 중에서 선택 (팀장 우선, 입사일 빠른 순)
+        User manager = seniorUsers.stream()
+                .filter(u -> codeService.getPositionSortOrder(u.getEmpPosition()).equals(minSortOrder))
+                .sorted((u1, u2) -> {
+                    // 1순위: 팀장 여부 (팀장이 우선)
+                    int teamLeaderCompare = Boolean.compare(
+                            u2.getIsTeamLeader() != null && u2.getIsTeamLeader(),
+                            u1.getIsTeamLeader() != null && u1.getIsTeamLeader()
+                    );
+                    if (teamLeaderCompare != 0) {
+                        return teamLeaderCompare;
+                    }
+
+                    // 2순위: 입사일 빠른 순
+                    if (u1.getEmpJoinDate() == null && u2.getEmpJoinDate() == null) {
+                        return 0;
+                    }
+                    if (u1.getEmpJoinDate() == null) {
+                        return 1;
+                    }
+                    if (u2.getEmpJoinDate() == null) {
+                        return -1;
+                    }
+                    return u1.getEmpJoinDate().compareTo(u2.getEmpJoinDate());
+                })
+                .findFirst()
+                .orElse(null);
+
+        if (manager != null) {
+            user.setManagerIdx(manager.getIdx());
+            user.setManagerStartDate(user.getEmpJoinDate()); // 입사일을 보고 시작일로 설정
+            log.info("✓ 상위보고자 자동 설정: {} (idx: {}) -> 상위보고자: {} (idx: {}, 직급: {}, 팀장: {})",
+                    user.getEmpName(), user.getIdx(),
+                    manager.getEmpName(), manager.getIdx(),
+                    manager.getEmpPosition(),
+                    manager.getIsTeamLeader() != null && manager.getIsTeamLeader() ? "Y" : "N");
+        }
     }
 }

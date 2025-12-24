@@ -23,9 +23,9 @@ public class HierarchyEmployeeDTO {
     private String empDeptName;    // 부서 한글명
     private String empPosition;    // 직급 코드
     private String empPositionName; // 직급 한글명
+    private Integer empPositionSortOrder; // 직급 정렬 순서 (sort_order)
 
     // 보고체계 정보
-    private Integer organizationalLevel;
     private Boolean isTeamLeader;
     private Long managerIdx;
     private String managerName;

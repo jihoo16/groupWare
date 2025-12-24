@@ -94,4 +94,20 @@ public interface UserService {
      * - 같은 날짜에 이미 등록된 직원이 있으면 nn을 증가
      */
     String generateNextEmployeeId();
+
+    /**
+     * 사용자의 상위 보고자 체인 조회
+     * 결재선 구성에 활용 (본인 -> 상위보고자 -> 상위보고자의 상위보고자 -> ... -> 최상위)
+     * @param userIdx 사용자 idx
+     * @return 상위 보고자 목록 (순서: 직속 상위 -> 최상위)
+     */
+    List<UserSimpleDTO> getManagerChain(Long userIdx);
+
+    /**
+     * 같은 부서 내 상급자 목록 조회
+     * 부서장 선택 드롭다운에 활용
+     * @param userIdx 사용자 idx
+     * @return 같은 부서 내에서 자신보다 직급이 높은 사용자 목록 (직급 순서대로 정렬)
+     */
+    List<UserSimpleDTO> getSeniorUsersInDept(Long userIdx);
 }

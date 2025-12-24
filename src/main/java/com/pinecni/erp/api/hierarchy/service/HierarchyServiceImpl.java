@@ -70,12 +70,6 @@ public class HierarchyServiceImpl implements HierarchyService {
         if (updateDTO.getManagerIdx() != null) {
             user.setManagerIdx(updateDTO.getManagerIdx());
         }
-        if (updateDTO.getOrganizationalLevel() != null) {
-            user.setOrganizationalLevel(updateDTO.getOrganizationalLevel());
-        }
-        if (updateDTO.getIsTeamLeader() != null) {
-            user.setIsTeamLeader(updateDTO.getIsTeamLeader());
-        }
         if (updateDTO.getManagerStartDate() != null) {
             user.setManagerStartDate(updateDTO.getManagerStartDate());
         }
@@ -120,10 +114,11 @@ public class HierarchyServiceImpl implements HierarchyService {
                 .map(Code::getCodeName)
                 .orElse(user.getEmpDept());
 
-        // 직급 한글명 조회 (C02 그룹)
-        String empPositionName = codeRepository.findByGroupCodeAndCode("C02", user.getEmpPosition())
-                .map(Code::getCodeName)
-                .orElse(user.getEmpPosition());
+        // 직급 한글명 및 sortOrder 조회 (C02 그룹)
+        Code positionCode = codeRepository.findByGroupCodeAndCode("C02", user.getEmpPosition())
+                .orElse(null);
+        String empPositionName = positionCode != null ? positionCode.getCodeName() : user.getEmpPosition();
+        Integer empPositionSortOrder = positionCode != null ? positionCode.getSortOrder() : Integer.MAX_VALUE;
 
         String status = user.getManagerIdx() != null ? "completed" : "incomplete";
 
@@ -135,7 +130,7 @@ public class HierarchyServiceImpl implements HierarchyService {
                 .empDeptName(empDeptName)
                 .empPosition(user.getEmpPosition())
                 .empPositionName(empPositionName)
-                .organizationalLevel(user.getOrganizationalLevel())
+                .empPositionSortOrder(empPositionSortOrder)
                 .isTeamLeader(user.getIsTeamLeader())
                 .managerIdx(user.getManagerIdx())
                 .managerName(managerName)
@@ -176,12 +171,8 @@ public class HierarchyServiceImpl implements HierarchyService {
                 .empName(empName)
                 .previousManagerIdx(history.getPreviousManagerIdx())
                 .previousManagerName(previousManagerName)
-                .previousLevel(history.getPreviousLevel())
-                .previousIsTeamLeader(history.getPreviousIsTeamLeader())
                 .newManagerIdx(history.getNewManagerIdx())
                 .newManagerName(newManagerName)
-                .newLevel(history.getNewLevel())
-                .newIsTeamLeader(history.getNewIsTeamLeader())
                 .changeReason(history.getChangeReason())
                 .changeDate(history.getChangeDate())
                 .changedByUserIdx(history.getChangedByUserIdx())
@@ -197,10 +188,6 @@ public class HierarchyServiceImpl implements HierarchyService {
                 .empIdx(user.getIdx())
                 .previousManagerIdx(user.getManagerIdx())
                 .newManagerIdx(updateDTO.getManagerIdx())
-                .previousLevel(user.getOrganizationalLevel())
-                .newLevel(updateDTO.getOrganizationalLevel())
-                .previousIsTeamLeader(user.getIsTeamLeader())
-                .newIsTeamLeader(updateDTO.getIsTeamLeader())
                 .changeReason(updateDTO.getChangeReason())
                 .changeDate(LocalDateTime.now())
                 .changedByUserIdx(currentUserIdx)

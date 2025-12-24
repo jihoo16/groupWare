@@ -113,9 +113,6 @@ public class User extends BaseEntity {
     @JoinColumn(name = "manager_idx", insertable = false, updatable = false)
     private User manager;
 
-    @Column(name = "organizational_level")
-    private Integer organizationalLevel = 4;
-
     @Column(name = "is_team_leader")
     private Boolean isTeamLeader = false;
 
