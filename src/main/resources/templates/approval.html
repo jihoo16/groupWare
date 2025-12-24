@@ -17,7 +17,7 @@
                         <i class="fas fa-search"></i>
                         <input type="text" id="searchInput" placeholder="문서 검색...">
                     </div>
-                    <button class="btn-primary" onclick="location.href='/approval/write'">
+                    <button class="btn-primary" id="newDocumentBtn">
                         <i class="fas fa-pen"></i>
                         새 문서 작성
                     </button>
@@ -37,9 +37,13 @@
                                 <i class="fas fa-copy"></i>
                                 <span>전체 문서</span>
                             </a>
-                            <a href="#" class="menu-item" data-category="report">
-                                <i class="fas fa-chart-line"></i>
-                                <span>주간/월간 보고</span>
+                            <a href="#" class="menu-item" data-category="weekly-report">
+                                <i class="fas fa-calendar-week"></i>
+                                <span>주간 보고</span>
+                            </a>
+                            <a href="#" class="menu-item" data-category="monthly-report">
+                                <i class="fas fa-calendar-alt"></i>
+                                <span>월간 보고</span>
                             </a>
                             <a href="#" class="menu-item" data-category="vacation">
                                 <i class="fas fa-umbrella-beach"></i>
