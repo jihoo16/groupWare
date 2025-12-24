@@ -103,6 +103,12 @@ public class ProjectDTO {
     private Integer progress;
 
     /**
+     * 프로젝트 달성률 (0.00 ~ 100.00)
+     * DB에 저장된 실제 달성률
+     */
+    private BigDecimal progressRate;
+
+    /**
      * 생성일시
      */
     private LocalDateTime createdAt;

@@ -7,7 +7,9 @@ import com.pinecni.erp.api.document.mapper.WeeklyReportMapper;
 import com.pinecni.erp.api.document.repository.WeeklyReportRepository;
 import com.pinecni.erp.api.user.repository.UserRepository;
 import com.pinecni.erp.api.code.repository.CodeRepository;
+import com.pinecni.erp.api.project.repository.ProjectRepository;
 import com.pinecni.erp.entity.WeeklyReport;
+import com.pinecni.erp.entity.Project;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -31,6 +33,7 @@ public class WeeklyReportServiceImpl implements WeeklyReportService {
     private final WeeklyReportMapper weeklyReportMapper;
     private final UserRepository userRepository;
     private final CodeRepository codeRepository;
+    private final ProjectRepository projectRepository;
 
     @Override
     @Transactional
@@ -48,6 +51,25 @@ public class WeeklyReportServiceImpl implements WeeklyReportService {
         // 생성자 정보 설정
         if (weeklyReport.getCreatedUserIdx() == null) {
             weeklyReport.setCreatedUserIdx(createDTO.getUserIdx());
+        }
+
+        // 프로젝트 달성률 업데이트 (inputProgressRate가 있고 projectIdx가 있는 경우)
+        if (createDTO.getProjectIdx() != null && createDTO.getInputProgressRate() != null) {
+            projectRepository.findById(createDTO.getProjectIdx()).ifPresent(project -> {
+                java.math.BigDecimal currentRate = project.getProgressRate() != null ?
+                    project.getProgressRate() : java.math.BigDecimal.ZERO;
+                java.math.BigDecimal newRate = currentRate.add(createDTO.getInputProgressRate());
+                // 100%를 초과하지 않도록 제한
+                if (newRate.compareTo(new java.math.BigDecimal("100")) > 0) {
+                    newRate = new java.math.BigDecimal("100");
+                }
+                project.setProgressRate(newRate);
+                project.setUpdatedAt(now);
+                project.setUpdatedUserIdx(createDTO.getUserIdx());
+                projectRepository.save(project);
+                log.debug("Project progressRate updated - projectIdx: {}, newRate: {}",
+                    createDTO.getProjectIdx(), newRate);
+            });
         }
 
         // 저장
@@ -130,6 +152,25 @@ public class WeeklyReportServiceImpl implements WeeklyReportService {
 
         // UpdateDTO로 Entity 업데이트
         weeklyReportMapper.updateEntity(report, updateDTO, updatedUserIdx);
+
+        // 프로젝트 달성률 업데이트 (inputProgressRate가 있고 projectIdx가 있는 경우)
+        if (updateDTO.getProjectIdx() != null && updateDTO.getInputProgressRate() != null) {
+            projectRepository.findById(updateDTO.getProjectIdx()).ifPresent(project -> {
+                java.math.BigDecimal currentRate = project.getProgressRate() != null ?
+                    project.getProgressRate() : java.math.BigDecimal.ZERO;
+                java.math.BigDecimal newRate = currentRate.add(updateDTO.getInputProgressRate());
+                // 100%를 초과하지 않도록 제한
+                if (newRate.compareTo(new java.math.BigDecimal("100")) > 0) {
+                    newRate = new java.math.BigDecimal("100");
+                }
+                project.setProgressRate(newRate);
+                project.setUpdatedAt(LocalDateTime.now());
+                project.setUpdatedUserIdx(updatedUserIdx);
+                projectRepository.save(project);
+                log.debug("Project progressRate updated - projectIdx: {}, newRate: {}",
+                    updateDTO.getProjectIdx(), newRate);
+            });
+        }
 
         // 저장 (dirty checking에 의해 자동 업데이트)
         WeeklyReport updated = weeklyReportRepository.save(report);

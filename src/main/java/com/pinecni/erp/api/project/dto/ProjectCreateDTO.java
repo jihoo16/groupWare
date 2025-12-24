@@ -67,6 +67,11 @@ public class ProjectCreateDTO {
     private BigDecimal equipmentBudget;
 
     /**
+     * 프로젝트 달성률 (0.00 ~ 100.00)
+     */
+    private BigDecimal progressRate;
+
+    /**
      * 연구비 카드 목록
      */
     private List<ProjectCardCreateDTO> projectCards;
