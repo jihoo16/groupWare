@@ -398,11 +398,14 @@
                                         <td class="approval-name-cell">
                                             <span class="approver-name" data-role="담당">-</span>
                                         </td>
-                                        <td class="approval-name-cell">
-                                            <span class="approver-name" data-role="부서장">-</span>
+                                        <td class="approval-name-cell" style="position: relative;">
+                                            <span class="approver-name" data-role="부서장" id="buseoJangName">-</span>
+                                            <select id="buseoJangSelect" style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; opacity: 0; cursor: pointer;">
+                                                <option value="">부서장 선택</option>
+                                            </select>
                                         </td>
                                         <td class="approval-name-cell">
-                                            <span class="approver-name" data-role="대표이사">-</span>
+                                            <span class="approver-name" data-role="대표이사" id="ceoName">-</span>
                                         </td>
                                     </tr>
                                 </table>

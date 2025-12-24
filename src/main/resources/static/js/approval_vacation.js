@@ -2749,31 +2749,115 @@ document.addEventListener('DOMContentLoaded', function() {
     // ============================================
 
     async function setApprovalLine() {
-        // TODO: 실제 결재라인 API 연동 필요
-        // 현재는 결재라인 설정 기능이 구현되지 않았습니다.
-        // /api/approval/approval-line API 구현 후 연동 필요
+        try {
+            // 현재 로그인한 사용자 정보 확인
+            if (!userVacationInfo || !userVacationInfo.idx) {
+                console.warn('사용자 정보가 없습니다. 기본 결재라인을 설정할 수 없습니다.');
+                return;
+            }
 
-        console.warn('결재라인 API가 구현되지 않았습니다. 기본 결재자를 설정합니다.');
+            // 담당: 현재 로그인한 사용자
+            const damDangApprover = document.querySelector('.approver-name[data-role="담당"]');
+            if (damDangApprover && userVacationInfo.empName) {
+                damDangApprover.textContent = userVacationInfo.empName;
+                damDangApprover.style.color = '#333';
+            }
 
-        // 담당: 현재 로그인한 사용자
-        const damDangApprover = document.querySelector('.approver-name[data-role="담당"]');
-        if (damDangApprover && userVacationInfo && userVacationInfo.empName) {
-            damDangApprover.textContent = userVacationInfo.empName;
-            damDangApprover.style.color = '#333';
-        }
+            // 상위 보고자 체인 조회 API 호출 (대표이사 설정용)
+            const managerResponse = await fetch(`/api/users/${userVacationInfo.idx}/manager-chain`);
+            if (!managerResponse.ok) {
+                throw new Error('상위 보고자 정보를 가져오는데 실패했습니다.');
+            }
 
-        // 부서장: 임시 기본값 (TODO: API 연동 필요)
-        const buseoJangApprover = document.querySelector('.approver-name[data-role="부서장"]');
-        if (buseoJangApprover) {
-            buseoJangApprover.textContent = '부서장';
-            buseoJangApprover.style.color = '#333';
-        }
+            const managerChain = await managerResponse.json();
+            console.log('상위 보고자 체인 로드 완료:', managerChain);
 
-        // 대표이사: 기본값
-        const ceoApprover = document.querySelector('.approver-name[data-role="대표이사"]');
-        if (ceoApprover) {
-            ceoApprover.textContent = '대표이사';
-            ceoApprover.style.color = '#333';
+            // 대표이사: 최상위 보고자 (managerChain의 마지막) - 고정
+            const ceoApprover = document.getElementById('ceoName');
+            if (ceoApprover && managerChain && managerChain.length > 0) {
+                const topManager = managerChain[managerChain.length - 1];
+                ceoApprover.textContent = topManager.empName;
+                ceoApprover.style.color = '#333';
+                ceoApprover.dataset.approverIdx = topManager.idx; // idx 저장
+                console.log('✓ 대표이사 설정:', topManager.empName);
+            } else if (ceoApprover) {
+                ceoApprover.textContent = '대표이사';
+                ceoApprover.style.color = '#999';
+            }
+
+            // 부서 내 상급자 목록 조회 API 호출 (부서장 선택용)
+            const seniorResponse = await fetch(`/api/users/${userVacationInfo.idx}/senior-users`);
+            if (!seniorResponse.ok) {
+                throw new Error('부서 내 상급자 정보를 가져오는데 실패했습니다.');
+            }
+
+            const seniorUsers = await seniorResponse.json();
+            console.log('부서 내 상급자 로드 완료:', seniorUsers);
+
+            // 부서장 드롭다운 옵션 설정
+            const buseoJangSelect = document.getElementById('buseoJangSelect');
+            const buseoJangName = document.getElementById('buseoJangName');
+
+            if (buseoJangSelect && seniorUsers && seniorUsers.length > 0) {
+                // 드롭다운 옵션 추가
+                buseoJangSelect.innerHTML = '<option value="">부서장 선택</option>';
+                seniorUsers.forEach(user => {
+                    const option = document.createElement('option');
+                    option.value = user.idx;
+                    option.textContent = `${user.empName} (${user.empPositionName || user.empPosition})`;
+                    option.dataset.empName = user.empName;
+                    buseoJangSelect.appendChild(option);
+                });
+
+                // 기본값: 첫 번째 상급자 (직속 상위보고자)
+                if (seniorUsers[0]) {
+                    buseoJangSelect.value = seniorUsers[0].idx;
+                    buseoJangName.textContent = seniorUsers[0].empName;
+                    buseoJangName.style.color = '#333';
+                    buseoJangName.dataset.approverIdx = seniorUsers[0].idx; // idx 저장
+                }
+
+                // 드롭다운 변경 이벤트
+                buseoJangSelect.addEventListener('change', function() {
+                    const selectedOption = this.options[this.selectedIndex];
+                    if (selectedOption.value) {
+                        buseoJangName.textContent = selectedOption.dataset.empName;
+                        buseoJangName.style.color = '#333';
+                        buseoJangName.dataset.approverIdx = selectedOption.value; // idx 저장
+                        console.log('✓ 부서장 변경:', selectedOption.dataset.empName);
+                    } else {
+                        buseoJangName.textContent = '부서장';
+                        buseoJangName.style.color = '#999';
+                        delete buseoJangName.dataset.approverIdx;
+                    }
+                });
+
+                console.log('✓ 부서장 드롭다운 설정 완료');
+            } else if (buseoJangName) {
+                // 부서 내 상급자가 없는 경우
+                buseoJangName.textContent = '부서장';
+                buseoJangName.style.color = '#999';
+                if (buseoJangSelect) {
+                    buseoJangSelect.style.display = 'none'; // 드롭다운 숨김
+                }
+                console.warn('부서 내 상급자가 없습니다.');
+            }
+
+            console.log('✓ 결재라인 자동 설정 완료');
+        } catch (error) {
+            console.error('결재라인 설정 중 오류 발생:', error);
+            // 오류 발생 시 기본값으로 표시
+            const buseoJangName = document.getElementById('buseoJangName');
+            if (buseoJangName) {
+                buseoJangName.textContent = '부서장';
+                buseoJangName.style.color = '#999';
+            }
+
+            const ceoApprover = document.getElementById('ceoName');
+            if (ceoApprover) {
+                ceoApprover.textContent = '대표이사';
+                ceoApprover.style.color = '#999';
+            }
         }
     }
 
