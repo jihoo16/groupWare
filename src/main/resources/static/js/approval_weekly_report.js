@@ -1,43 +1,51 @@
 // 주간업무보고 작성 페이지 JavaScript
 document.addEventListener('DOMContentLoaded', function() {
-    // 전역 변수 CURRENT_USER 사용 (layout.html에서 주입됨)
+    // 전역 변수
     const currentUserIdx = window.CURRENT_USER?.idx || null;
     const currentUserName = window.CURRENT_USER?.empName || '';
     const currentUserDept = window.CURRENT_USER?.empDeptName || '';
-    console.log('현재 로그인 사용자:', window.CURRENT_USER?.empName, '(idx:', currentUserIdx, ')');
+    console.log('현재 로그인 사용자:', currentUserName, '(idx:', currentUserIdx, ')');
 
-
-    // ============================================
-    // 사용자 정보 채우기
-    // ============================================
-    const formTable = document.querySelector('.form-table');
-    if (formTable) {
-        const inputs = formTable.querySelectorAll('input');
-        // 보고자 (index 1)
-        if (inputs[1]) {
-            inputs[1].value = currentUserName || '-';
-        }
-        // 부서 (index 2)
-        if (inputs[2]) {
-            inputs[2].value = currentUserDept || '-';
-        }
-    }
-    // 전역 변수
     let selectedFiles = [];
-    let projects = []; // 프로젝트 목록
+    let projects = [];
+    let employees = [];
+    let selectedApprovers = []; // {idx, name, dept, position}
+    let selectedEmployee = null;
+    let selectedProject = null; // 선택된 프로젝트
 
     // DOM 요소
     const fileInput = document.getElementById('fileInput');
     const fileList = document.getElementById('fileList');
     const fileUploadArea = document.getElementById('fileUploadArea');
     const submitBtn = document.getElementById('submitBtn');
-    const projectSelect = document.getElementById('projectSelect');
+    const projectInput = document.getElementById('projectInput');
+    const selectedProjectIdx = document.getElementById('selectedProjectIdx');
     const weeklyAchievementRateInput = document.getElementById('weeklyAchievementRate');
     const reportDatePicker = document.getElementById('reportDatePicker');
     const reportPeriodDisplay = document.getElementById('reportPeriodDisplay');
+    const applicantName = document.getElementById('applicantName');
+    const applicantDept = document.getElementById('applicantDept');
+
+    // 입력 필드
+    const weeklyTasks = document.getElementById('weeklyTasks');
+    const achievements = document.getElementById('achievements');
+    const issues = document.getElementById('issues');
+    const nextWeekPlan = document.getElementById('nextWeekPlan');
 
     // ============================================
-    // 템플릿 사이드바 접기/펼치기 기능
+    // 사용자 정보 채우기
+    // ============================================
+    if (applicantName) applicantName.value = currentUserName || '-';
+    if (applicantDept) applicantDept.value = currentUserDept || '-';
+
+    // 문서 미리보기 영역도 채우기
+    const autoReporter = document.querySelector('.auto-reporter');
+    const autoDept = document.querySelector('.auto-dept');
+    if (autoReporter) autoReporter.textContent = currentUserName || '-';
+    if (autoDept) autoDept.textContent = currentUserDept || '-';
+
+    // ============================================
+    // 템플릿 사이드바 접기/펼치기
     // ============================================
     const toggleAllBtn = document.getElementById('toggleAllBtn');
     if (toggleAllBtn) {
@@ -53,7 +61,6 @@ document.addEventListener('DOMContentLoaded', function() {
                 }
             });
 
-            // 버튼 아이콘 변경
             const icon = this.querySelector('i');
             if (allExpanded) {
                 icon.className = 'fas fa-chevron-up';
@@ -63,48 +70,138 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     }
 
-    // 각 카테고리 헤더 클릭 시 토글
     const categoryHeaders = document.querySelectorAll('.category-header');
     categoryHeaders.forEach(header => {
         header.addEventListener('click', function(e) {
             e.preventDefault();
             const category = this.closest('.menu-category');
             category.classList.toggle('expanded');
-            updateToggleAllButton();
         });
     });
 
-    // 전체 버튼 상태 업데이트
-    function updateToggleAllButton() {
-        if (!toggleAllBtn) return;
+    // ============================================
+    // 프로젝트 목록 로드 및 모달
+    // ============================================
+    const projectModal = document.getElementById('projectModal');
+    const projectSearch = document.getElementById('projectSearch');
+    const projectList = document.getElementById('projectList');
 
-        const categories = document.querySelectorAll('.menu-category');
-        const allExpanded = Array.from(categories).every(cat => cat.classList.contains('expanded'));
-        const allCollapsed = Array.from(categories).every(cat => !cat.classList.contains('expanded'));
-
-        const icon = toggleAllBtn.querySelector('i');
-        if (allCollapsed) {
-            icon.className = 'fas fa-chevron-up';
-        } else if (allExpanded) {
-            icon.className = 'fas fa-chevron-down';
+    async function loadProjects() {
+        try {
+            const response = await fetch('/api/projects');
+            if (response.ok) {
+                projects = await response.json();
+            }
+        } catch (error) {
+            console.error('프로젝트 로드 오류:', error);
         }
     }
 
+    loadProjects();
+
+    // 프로젝트 목록 렌더링
+    function renderProjectList(list) {
+        if (!projectList) return;
+
+        projectList.innerHTML = '';
+        list.forEach(proj => {
+            const item = document.createElement('div');
+            item.className = 'employee-item';
+            if (selectedProject && selectedProject.idx === proj.idx) {
+                item.classList.add('selected');
+            }
+
+            item.innerHTML = `
+                <i class="fas fa-folder"></i>
+                <div class="employee-info">
+                    <div class="employee-name">${proj.projectName}</div>
+                    <div class="employee-detail">${proj.description || '설명 없음'}</div>
+                </div>
+            `;
+
+            item.addEventListener('click', function() {
+                document.querySelectorAll('#projectList .employee-item').forEach(i => i.classList.remove('selected'));
+                this.classList.add('selected');
+                selectedProject = proj;
+            });
+
+            projectList.appendChild(item);
+        });
+    }
+
+    // 프로젝트 검색
+    if (projectSearch) {
+        projectSearch.addEventListener('input', function() {
+            const keyword = this.value.toLowerCase();
+            const filtered = projects.filter(proj =>
+                proj.projectName.toLowerCase().includes(keyword)
+            );
+            renderProjectList(filtered);
+        });
+    }
+
+    // 프로젝트 입력 필드 클릭 시 모달 열기
+    if (projectInput) {
+        projectInput.addEventListener('click', function() {
+            openProjectModal();
+        });
+    }
+
+    window.openProjectModal = function() {
+        if (projectModal) {
+            projectModal.classList.add('show');
+            renderProjectList(projects);
+        }
+    };
+
+    window.closeProjectModal = function() {
+        if (projectModal) {
+            projectModal.classList.remove('show');
+            selectedProject = null;
+            if (projectSearch) projectSearch.value = '';
+        }
+    };
+
+    window.selectProject = function() {
+        if (!selectedProject) {
+            alert('프로젝트를 선택해주세요.');
+            return;
+        }
+
+        // 프로젝트 입력 필드에 표시
+        if (projectInput) {
+            projectInput.value = selectedProject.projectName;
+        }
+        if (selectedProjectIdx) {
+            selectedProjectIdx.value = selectedProject.idx;
+        }
+
+        // 현재 전체 달성률 표시
+        const currentProgressRate = document.getElementById('currentProgressRate');
+        if (currentProgressRate && selectedProject.progressRate !== undefined) {
+            currentProgressRate.value = (selectedProject.progressRate || 0) + '%';
+        }
+
+        // 미리보기 업데이트
+        const autoProject = document.querySelector('.auto-project');
+        if (autoProject) {
+            autoProject.textContent = selectedProject.projectName;
+        }
+
+        closeProjectModal();
+    };
+
     // ============================================
-    // 보고 기간 자동 계산 (해당 주의 평일 월~금)
+    // 보고 기간 자동 계산
     // ============================================
     function getWeekdayRange(date) {
         const selected = new Date(date);
-        const day = selected.getDay(); // 0(일) ~ 6(토)
+        const day = selected.getDay();
+        let mondayOffset = day === 0 ? -6 : 1 - day;
 
-        // 월요일까지의 거리 계산
-        let mondayOffset = day === 0 ? -6 : 1 - day; // 일요일이면 -6, 그 외는 1-day
-
-        // 월요일 날짜 계산
         const monday = new Date(selected);
         monday.setDate(selected.getDate() + mondayOffset);
 
-        // 금요일 날짜 계산 (월요일 + 4일)
         const friday = new Date(monday);
         friday.setDate(monday.getDate() + 4);
 
@@ -118,72 +215,245 @@ document.addEventListener('DOMContentLoaded', function() {
         return `${year}.${month}.${day}`;
     }
 
-    // 날짜 선택 시 해당 주의 평일 범위 자동 계산
     if (reportDatePicker) {
         reportDatePicker.addEventListener('change', function() {
             if (this.value) {
                 const { monday, friday } = getWeekdayRange(this.value);
                 const mondayStr = formatDate(monday);
                 const fridayStr = formatDate(friday);
-                reportPeriodDisplay.value = `${mondayStr} ~ ${fridayStr}`;
+                const periodStr = `${mondayStr} ~ ${fridayStr}`;
+
+                reportPeriodDisplay.value = periodStr;
+
+                // 미리보기 업데이트
+                const autoPeriod = document.querySelector('.auto-period');
+                if (autoPeriod) autoPeriod.textContent = periodStr;
             } else {
                 reportPeriodDisplay.value = '';
+                const autoPeriod = document.querySelector('.auto-period');
+                if (autoPeriod) autoPeriod.textContent = '-';
             }
         });
 
-        // 페이지 로드 시 현재 주의 평일로 초기화
+        // 오늘 날짜로 초기화
         const today = new Date();
         const yyyy = today.getFullYear();
         const mm = String(today.getMonth() + 1).padStart(2, '0');
         const dd = String(today.getDate()).padStart(2, '0');
         reportDatePicker.value = `${yyyy}-${mm}-${dd}`;
-
-        // 초기값 계산
-        const { monday, friday } = getWeekdayRange(reportDatePicker.value);
-        reportPeriodDisplay.value = `${formatDate(monday)} ~ ${formatDate(friday)}`;
+        reportDatePicker.dispatchEvent(new Event('change'));
     }
 
     // ============================================
-    // 프로젝트 목록 로드
+    // 달성률 입력 시 미리보기 업데이트
     // ============================================
-    async function loadProjects() {
-        try {
-            const response = await fetch('/api/projects');
-            if (response.ok) {
-                projects = await response.json();
-                updateProjectSelect();
-            } else {
-                console.error('프로젝트 목록 로드 실패');
+    if (weeklyAchievementRateInput) {
+        weeklyAchievementRateInput.addEventListener('input', function() {
+            const autoAchievement = document.querySelector('.auto-achievement');
+            if (autoAchievement) {
+                autoAchievement.textContent = this.value || '0';
             }
-        } catch (error) {
-            console.error('프로젝트 목록 로드 오류:', error);
-        }
-    }
-
-    // 프로젝트 셀렉트박스 업데이트
-    function updateProjectSelect() {
-        if (!projectSelect) return;
-
-        // 기존 옵션 제거 (첫 번째 "선택 안함" 제외)
-        while (projectSelect.options.length > 1) {
-            projectSelect.remove(1);
-        }
-
-        // 프로젝트 목록 추가
-        projects.forEach(project => {
-            const option = document.createElement('option');
-            option.value = project.idx;
-            option.textContent = `${project.projectName}`;
-            option.dataset.projectName = project.projectName;
-            projectSelect.appendChild(option);
         });
     }
 
-    // 페이지 로드 시 프로젝트 목록 가져오기
-    loadProjects();
+    // ============================================
+    // 업무 내용 입력 시 미리보기 자동 업데이트
+    // ============================================
+    if (weeklyTasks) {
+        weeklyTasks.addEventListener('input', function() {
+            const autoTasks = document.querySelector('.auto-tasks');
+            if (autoTasks) autoTasks.textContent = this.value || '-';
+        });
+    }
+
+    if (achievements) {
+        achievements.addEventListener('input', function() {
+            const autoAchievements = document.querySelector('.auto-achievements');
+            if (autoAchievements) autoAchievements.textContent = this.value || '-';
+        });
+    }
+
+    if (issues) {
+        issues.addEventListener('input', function() {
+            const autoIssues = document.querySelector('.auto-issues');
+            if (autoIssues) autoIssues.textContent = this.value || '-';
+        });
+    }
+
+    if (nextWeekPlan) {
+        nextWeekPlan.addEventListener('input', function() {
+            const autoNextPlan = document.querySelector('.auto-next-plan');
+            if (autoNextPlan) autoNextPlan.textContent = this.value || '-';
+        });
+    }
 
     // ============================================
-    // 파일 업로드 기능
+    // 결재자 선택 모달
+    // ============================================
+    const approverModal = document.getElementById('approverModal');
+    const approverChips = document.getElementById('approverChips');
+    const approverSearch = document.getElementById('approverSearch');
+    const employeeList = document.getElementById('employeeList');
+
+    // 직원 목록 로드
+    async function loadEmployees() {
+        try {
+            const response = await fetch('/api/users');
+            if (response.ok) {
+                employees = await response.json();
+                renderEmployeeList(employees);
+            }
+        } catch (error) {
+            console.error('직원 목록 로드 오류:', error);
+        }
+    }
+
+    function renderEmployeeList(list) {
+        if (!employeeList) return;
+
+        employeeList.innerHTML = '';
+        list.forEach(emp => {
+            const item = document.createElement('div');
+            item.className = 'employee-item';
+            if (selectedEmployee && selectedEmployee.idx === emp.idx) {
+                item.classList.add('selected');
+            }
+
+            item.innerHTML = `
+                <i class="fas fa-user-circle"></i>
+                <div class="employee-info">
+                    <div class="employee-name">${emp.empName}</div>
+                    <div class="employee-detail">${emp.empDeptName || ''} | ${emp.empPosition || ''}</div>
+                </div>
+            `;
+
+            item.addEventListener('click', function() {
+                document.querySelectorAll('.employee-item').forEach(i => i.classList.remove('selected'));
+                this.classList.add('selected');
+                selectedEmployee = emp;
+            });
+
+            employeeList.appendChild(item);
+        });
+    }
+
+    // 검색 기능
+    if (approverSearch) {
+        approverSearch.addEventListener('input', function() {
+            const keyword = this.value.toLowerCase();
+            const filtered = employees.filter(emp =>
+                emp.empName.toLowerCase().includes(keyword) ||
+                (emp.empDeptName && emp.empDeptName.toLowerCase().includes(keyword))
+            );
+            renderEmployeeList(filtered);
+        });
+    }
+
+    // 결재자 영역 클릭 시 모달 열기
+    if (approverChips) {
+        approverChips.addEventListener('click', function() {
+            openApproverModal();
+        });
+    }
+
+    window.openApproverModal = function() {
+        if (approverModal) {
+            approverModal.classList.add('show');
+            loadEmployees();
+        }
+    };
+
+    window.closeApproverModal = function() {
+        if (approverModal) {
+            approverModal.classList.remove('show');
+            selectedEmployee = null;
+            if (approverSearch) approverSearch.value = '';
+        }
+    };
+
+    window.addApprover = function() {
+        if (!selectedEmployee) {
+            alert('결재자를 선택해주세요.');
+            return;
+        }
+
+        // 중복 확인
+        if (selectedApprovers.find(a => a.idx === selectedEmployee.idx)) {
+            alert('이미 추가된 결재자입니다.');
+            return;
+        }
+
+        selectedApprovers.push({
+            idx: selectedEmployee.idx,
+            name: selectedEmployee.empName,
+            dept: selectedEmployee.empDeptName || '',
+            position: selectedEmployee.empPosition || ''
+        });
+
+        renderApproverChips();
+        updateApprovalLine();
+        closeApproverModal();
+    };
+
+    function renderApproverChips() {
+        if (!approverChips) return;
+
+        if (selectedApprovers.length === 0) {
+            approverChips.innerHTML = `
+                <div style="text-align: center; color: #94a3b8; font-size: 13px; width: 100%; padding: 20px;">
+                    <i class="fas fa-user-plus" style="font-size: 20px; margin-bottom: 6px; display: block;"></i>
+                    <div>클릭하여 결재자 추가</div>
+                </div>
+            `;
+            return;
+        }
+
+        approverChips.innerHTML = '';
+        selectedApprovers.forEach((approver, index) => {
+            const chip = document.createElement('div');
+            chip.className = 'approver-chip';
+            chip.innerHTML = `
+                <span class="order">${index + 1}</span>
+                <span>${approver.name}</span>
+                <button class="btn-remove" onclick="removeApprover(${index})">
+                    <i class="fas fa-times"></i>
+                </button>
+            `;
+            approverChips.appendChild(chip);
+        });
+    }
+
+    window.removeApprover = function(index) {
+        selectedApprovers.splice(index, 1);
+        renderApproverChips();
+        updateApprovalLine();
+    };
+
+    function updateApprovalLine() {
+        const approver1 = document.querySelector('.auto-approver-1');
+        const approver2 = document.querySelector('.auto-approver-2');
+        const approver3 = document.querySelector('.auto-approver-3');
+
+        if (approver1) approver1.textContent = selectedApprovers[0]?.name || '-';
+        if (approver2) approver2.textContent = selectedApprovers[1]?.name || '-';
+        if (approver3) approver3.textContent = selectedApprovers[2]?.name || '-';
+    }
+
+    // ============================================
+    // 문서 미리보기 토글
+    // ============================================
+    const documentFormToggle = document.getElementById('documentFormToggle');
+    const documentFormWrapper = document.querySelector('.document-form-wrapper');
+
+    if (documentFormToggle && documentFormWrapper) {
+        documentFormToggle.addEventListener('click', function() {
+            documentFormWrapper.classList.toggle('collapsed');
+            this.classList.toggle('active');
+        });
+    }
+
+    // ============================================
+    // 파일 업로드
     // ============================================
     if (fileInput) {
         fileInput.addEventListener('change', function(e) {
@@ -204,23 +474,22 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     }
 
-    // 드래그 앤 드롭
     if (fileUploadArea) {
         fileUploadArea.addEventListener('dragover', function(e) {
             e.preventDefault();
             this.style.borderColor = '#667eea';
-            this.style.background = '#f5f7ff';
+            this.style.background = '#f0f4ff';
         });
 
         fileUploadArea.addEventListener('dragleave', function() {
-            this.style.borderColor = '#ddd';
-            this.style.background = 'white';
+            this.style.borderColor = '#cbd5e1';
+            this.style.background = '#f8fafc';
         });
 
         fileUploadArea.addEventListener('drop', function(e) {
             e.preventDefault();
-            this.style.borderColor = '#ddd';
-            this.style.background = 'white';
+            this.style.borderColor = '#cbd5e1';
+            this.style.background = '#f8fafc';
 
             const files = Array.from(e.dataTransfer.files);
             files.forEach(file => {
@@ -238,7 +507,6 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     }
 
-    // 파일 목록 업데이트
     function updateFileList() {
         if (!fileList) return;
 
@@ -269,37 +537,33 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     }
 
-    // 파일 제거
     window.removeFile = function(index) {
         selectedFiles.splice(index, 1);
         updateFileList();
     };
 
     // ============================================
-    // 폼 제출 기능
+    // PDF 저장
     // ============================================
+    const savePdfBtn = document.getElementById('savePdfBtn');
+    if (savePdfBtn) {
+        savePdfBtn.addEventListener('click', function() {
+            alert('PDF 저장 기능은 준비 중입니다.');
+        });
+    }
 
-
-    // 제출 (저장)
+    // ============================================
+    // 폼 제출
+    // ============================================
     if (submitBtn) {
         submitBtn.addEventListener('click', async function() {
-            // 폼 데이터 수집
-            const formTable = document.querySelector('.form-table');
-            if (!formTable) {
-                alert('문서 양식을 찾을 수 없습니다.');
-                return;
-            }
+            const reportPeriod = reportPeriodDisplay?.value || '';
+            const mainTasks = weeklyTasks?.value || '';
+            const achievementsVal = achievements?.value || '';
+            const issuesVal = issues?.value || '';
+            const nextWeekPlanVal = nextWeekPlan?.value || '';
+            const achievementRate = weeklyAchievementRateInput?.value ? parseInt(weeklyAchievementRateInput.value) : null;
 
-            // 각 필드 값 추출
-            const inputs = formTable.querySelectorAll('textarea');
-            const reportPeriod = reportPeriodDisplay?.value || ''; // 보고 기간
-            const mainTasks = inputs[0]?.value || ''; // 금주 주요 업무
-            const achievements = inputs[1]?.value || ''; // 주요 성과
-            const issues = inputs[2]?.value || ''; // 주요 이슈
-            const nextWeekPlan = inputs[3]?.value || ''; // 차주 계획
-            const weeklyAchievementRate = weeklyAchievementRateInput?.value ? parseInt(weeklyAchievementRateInput.value) : null; // 주차별 달성률
-
-            // 필수 필드 검증
             if (!reportPeriod.trim()) {
                 alert('보고 기간을 입력해주세요.');
                 return;
@@ -310,64 +574,53 @@ document.addEventListener('DOMContentLoaded', function() {
                 return;
             }
 
-            if (confirm('주간업무보고를 저장하시겠습니까?')) {
-                try {
-                    // 선택된 프로젝트 정보 추출
-                    const selectedProjectIdx = projectSelect.value ? parseInt(projectSelect.value) : null;
-                    const selectedProjectName = projectSelect.value
-                        ? projectSelect.options[projectSelect.selectedIndex].dataset.projectName
-                        : null;
+            if (!confirm('주간업무보고를 저장하시겠습니까?')) {
+                return;
+            }
 
-                    // API 요청 데이터 구성
-                    const requestData = {
-                        userIdx: currentUserIdx,
-                        projectIdx: selectedProjectIdx,
-                        projectName: selectedProjectName,
-                        reportPeriod: reportPeriod,
-                        mainTasks: mainTasks,
-                        achievements: achievements,
-                        issues: issues,
-                        nextWeekPlan: nextWeekPlan,
-                        weeklyAchievementRate: weeklyAchievementRate
-                    };
+            try {
+                const projectIdx = selectedProjectIdx.value ? parseInt(selectedProjectIdx.value) : null;
+                const projectName = selectedProject ? selectedProject.projectName : null;
 
-                    console.log('전송 데이터:', requestData);
+                // 입력 달성률 가져오기
+                const inputProgressRateInput = document.getElementById('inputProgressRate');
+                const inputProgressRateValue = inputProgressRateInput && inputProgressRateInput.value ?
+                    parseFloat(inputProgressRateInput.value) : null;
 
-                    // API 호출
-                    const response = await fetch('/api/document/weekly-report', {
-                        method: 'POST',
-                        headers: {
-                            'Content-Type': 'application/json'
-                        },
-                        body: JSON.stringify(requestData)
-                    });
+                const requestData = {
+                    userIdx: currentUserIdx,
+                    projectIdx: projectIdx,
+                    projectName: projectName,
+                    reportPeriod: reportPeriod,
+                    mainTasks: mainTasks,
+                    achievements: achievementsVal,
+                    issues: issuesVal,
+                    nextWeekPlan: nextWeekPlanVal,
+                    weeklyAchievementRate: achievementRate,
+                    inputProgressRate: inputProgressRateValue
+                };
 
-                    if (response.ok) {
-                        const result = await response.json();
-                        console.log('저장 성공:', result);
-                        alert('주간업무보고가 저장되었습니다.');
+                console.log('전송 데이터:', requestData);
 
-                        // 폼 초기화
-                        projectSelect.value = ''; // 과제명
-                        reportDatePicker.value = ''; // 날짜 선택
-                        reportPeriodDisplay.value = ''; // 보고 기간
-                        inputs[0].value = ''; // 금주 주요 업무
-                        inputs[1].value = ''; // 주요 성과
-                        inputs[2].value = ''; // 주요 이슈
-                        inputs[3].value = ''; // 차주 계획
-                        if (weeklyAchievementRateInput) weeklyAchievementRateInput.value = ''; // 주차별 달성률
+                const response = await fetch('/api/document/weekly-report', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(requestData)
+                });
 
-                        // 목록으로 이동 (필요시 주석 해제)
-                         window.location.href = '/approval';
-                    } else {
-                        const error = await response.text();
-                        console.error('저장 실패:', error);
-                        alert('저장에 실패했습니다.');
-                    }
-                } catch (error) {
-                    console.error('API 호출 오류:', error);
-                    alert('저장 중 오류가 발생했습니다: ' + error.message);
+                if (response.ok) {
+                    alert('주간업무보고가 저장되었습니다.');
+                    window.location.href = '/approval';
+                } else {
+                    const error = await response.text();
+                    console.error('저장 실패:', error);
+                    alert('저장에 실패했습니다.');
                 }
+            } catch (error) {
+                console.error('API 호출 오류:', error);
+                alert('저장 중 오류가 발생했습니다: ' + error.message);
             }
         });
     }

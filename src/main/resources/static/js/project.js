@@ -116,9 +116,9 @@ document.addEventListener('DOMContentLoaded', function() {
                     </div>
                     <div class="project-progress">
                         <div class="progress-bar">
-                            <div class="progress-fill" style="width: ${project.progress}%;"></div>
+                            <div class="progress-fill" style="width: ${project.progressRate || 0}%;"></div>
                         </div>
-                        <span class="progress-text">${project.progress}%</span>
+                        <span class="progress-text">${project.progressRate || 0}%</span>
                     </div>
                     <p class="project-description">
                         ${project.description || '프로젝트 설명이 없습니다.'}
@@ -218,7 +218,7 @@ document.addEventListener('DOMContentLoaded', function() {
                     pm: project.projectManagerName || '-',
                     teamSize: project.memberCount + '명',
                     period: `${project.startDate} ~ ${project.endDate}`,
-                    progress: project.progress,
+                    progress: project.progressRate || 0,
                     projectId: project.idx
                 }));
 
@@ -432,8 +432,8 @@ document.addEventListener('DOMContentLoaded', function() {
                 document.getElementById('detailActivityBudget').innerHTML = formatBudgetUsage(project.activityUsed, project.activityBudget);
                 document.getElementById('detailEquipmentBudget').innerHTML = formatBudgetUsage(project.equipmentUsed, project.equipmentBudget);
                 document.getElementById('detailDescription').textContent = project.description || '설명이 없습니다.';
-                document.getElementById('detailProgressBar').style.width = project.progress + '%';
-                document.getElementById('detailProgressText').textContent = project.progress + '%';
+                document.getElementById('detailProgressBar').style.width = (project.progressRate || 0) + '%';
+                document.getElementById('detailProgressText').textContent = (project.progressRate || 0) + '%';
 
                 // 프로젝트 보고서 로드
                 loadProjectReports(project.idx);
