@@ -1690,8 +1690,24 @@ document.addEventListener('DOMContentLoaded', function() {
         }, 200);
     }
 
-    // URL에 ID 파라미터가 있으면 데이터 로드
+    // 오늘 날짜 자동 설정 (상세보기 모드가 아닐 때만)
     const receiptTripId = getUrlParameter('id');
+    if (!receiptTripId) {
+        setTimeout(() => {
+            const tripDate = document.getElementById('trip_date');
+            if (tripDate && !tripDate.value) {
+                const today = new Date();
+                const yyyy = today.getFullYear();
+                const mm = String(today.getMonth() + 1).padStart(2, '0');
+                const dd = String(today.getDate()).padStart(2, '0');
+                tripDate.value = `${yyyy}-${mm}-${dd}`;
+                // 날짜 설정 후 자동 채우기 트리거
+                tripDate.dispatchEvent(new Event('change'));
+            }
+        }, 200);
+    }
+
+    // URL에 ID 파라미터가 있으면 데이터 로드
     if (receiptTripId) {
         console.log('상세보기 모드 - ID:', receiptTripId);
         setTimeout(async () => {

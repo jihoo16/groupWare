@@ -999,4 +999,16 @@ document.addEventListener('DOMContentLoaded', function() {
     templateTreeHeaders.forEach(header => {
         header.style.pointerEvents = 'none';
     });
+
+    // 오늘 날짜 자동 설정
+    setTimeout(() => {
+        const overtimeDate = document.getElementById('ot_approval_date');
+        if (overtimeDate && !overtimeDate.value) {
+            const today = new Date();
+            const yyyy = today.getFullYear();
+            const mm = String(today.getMonth() + 1).padStart(2, '0');
+            const dd = String(today.getDate()).padStart(2, '0');
+            overtimeDate.value = `${yyyy}-${mm}-${dd}`;
+        }
+    }, 200);
 });

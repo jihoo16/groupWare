@@ -675,6 +675,17 @@ document.addEventListener('DOMContentLoaded', function() {
 
         setTimeout(initializeDefaultValues, 100);
 
+        // 오늘 날짜 자동 설정
+        if (commonDate && !commonDate.value) {
+            const today = new Date();
+            const yyyy = today.getFullYear();
+            const mm = String(today.getMonth() + 1).padStart(2, '0');
+            const dd = String(today.getDate()).padStart(2, '0');
+            commonDate.value = `${yyyy}-${mm}-${dd}`;
+            // 날짜 설정 후 자동 채우기 트리거
+            commonDate.dispatchEvent(new Event('input'));
+        }
+
         // 초기 참석자 설정
         currentAttendees = [];
         renderAttendeeListInTemplate();
