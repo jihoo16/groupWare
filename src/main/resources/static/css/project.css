@@ -1473,6 +1473,15 @@ body:has(.project-form-footer) .main-content {
     .project-info-grid {
         grid-template-columns: 1fr;
     }
+
+    .schedule-header-section {
+        flex-direction: column;
+        align-items: stretch;
+    }
+
+    .schedule-header-section .btn {
+        width: 100%;
+    }
 }
 
 /* 페이지네이션 */
@@ -1862,6 +1871,23 @@ body:has(.project-form-footer) .main-content {
     font-size: 16px;
 }
 
+/* 상세 일정 헤더 섹션 */
+.schedule-header-section {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 16px;
+    margin-bottom: 20px;
+}
+
+.schedule-header-section .info-note {
+    flex: 1;
+}
+
+.schedule-header-section .btn {
+    flex-shrink: 0;
+}
+
 /* 달성률 배지 */
 .achievement-badge {
     display: inline-block;
@@ -1897,6 +1923,45 @@ body:has(.project-form-footer) .main-content {
     border: 1px solid #e9ecef;
     border-radius: 8px;
     background: white;
+}
+
+/* 상세 일정 테이블 컨테이너 (가로 스크롤 제거) */
+.schedule-table-container {
+    overflow-x: hidden;
+}
+
+.schedule-table {
+    table-layout: fixed;
+}
+
+.schedule-table th,
+.schedule-table td {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+/* 내용 컬럼만 여러 줄 허용 */
+.schedule-table td:nth-child(4) {
+    white-space: normal;
+    overflow: visible;
+    text-overflow: clip;
+}
+
+/* 상세 일정 테이블 행 클릭 스타일 */
+.schedule-table tbody tr[onclick] {
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.schedule-table tbody tr[onclick]:hover {
+    background: #f0f4ff;
+    transform: scale(1.002);
+}
+
+.schedule-table tbody tr[onclick]:hover td:nth-child(4) {
+    color: #4361ee;
+    text-decoration: underline;
 }
 
 /* 액션 셀 */

@@ -332,19 +332,24 @@
                 <!-- 상세 일정 탭 -->
                 <div id="scheduleTabContent" class="tab-content" style="display: none;">
                     <div class="detail-section">
-                        <div class="info-note" style="margin-bottom: 20px;">
-                            <i class="fas fa-info-circle"></i>
-                            <span>프로젝트에 작성된 주간업무보고가 표시됩니다.</span>
+                        <div class="schedule-header-section">
+                            <div class="info-note" style="margin-bottom: 0;">
+                                <i class="fas fa-info-circle"></i>
+                                <span>프로젝트에 작성된 주간업무보고가 표시됩니다.</span>
+                            </div>
+                            <button class="btn btn-primary btn-sm" id="createWeeklyReportBtn">
+                                <i class="fas fa-plus"></i> 주간업무보고 작성
+                            </button>
                         </div>
-                        <div class="table-container">
-                            <table class="project-table">
+                        <div class="table-container schedule-table-container">
+                            <table class="project-table schedule-table">
                                 <thead>
                                     <tr>
-                                        <th width="50">No</th>
-                                        <th width="80">분류</th>
-                                        <th width="200">기간</th>
+                                        <th style="width: 60px;">No</th>
+                                        <th style="width: 80px;">분류</th>
+                                        <th style="width: 180px;">기간</th>
                                         <th>내용</th>
-                                        <th width="120">달성률</th>
+                                        <th style="width: 100px;">달성률</th>
                                     </tr>
                                 </thead>
                                 <tbody id="detailScheduleTableBody">
@@ -357,6 +362,9 @@
             </div>
             <div class="modal-footer">
                 <button class="btn btn-secondary" onclick="closeProjectDetailModal()">닫기</button>
+                <button class="btn btn-primary" onclick="editCurrentProject()">
+                    <i class="fas fa-edit"></i> 프로젝트 수정
+                </button>
             </div>
         </div>
     </div>

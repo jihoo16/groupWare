@@ -29,6 +29,9 @@ document.addEventListener('DOMContentLoaded', function() {
 
     const projectDetailModal = document.getElementById('projectDetailModal');
 
+    // 현재 상세보기 중인 프로젝트 ID
+    let currentDetailProjectId = null;
+
     // 신규 프로젝트 페이지로 이동
     if (newProjectBtn) {
         newProjectBtn.addEventListener('click', function() {
@@ -104,11 +107,6 @@ document.addEventListener('DOMContentLoaded', function() {
                     <p class="project-description">
                         ${project.description || '프로젝트 설명이 없습니다.'}
                     </p>
-                </div>
-                <div class="project-footer">
-                    <button class="btn btn-sm btn-primary" onclick="event.stopPropagation(); editProject(${project.idx})">
-                        <i class="fas fa-edit"></i> 수정
-                    </button>
                 </div>
             </div>
         `).join('');
@@ -395,6 +393,9 @@ document.addEventListener('DOMContentLoaded', function() {
 
     // 프로젝트 상세보기 (전역 함수)
     window.viewProject = function(projectId) {
+        // 현재 프로젝트 ID 저장
+        currentDetailProjectId = projectId;
+
         fetch(`/api/projects/${projectId}`)
             .then(response => {
                 if (!response.ok) {
@@ -512,6 +513,22 @@ document.addEventListener('DOMContentLoaded', function() {
     window.editProject = function(projectId) {
         window.location.href = `/project/edit/${projectId}`;
     };
+
+    // 현재 상세보기 중인 프로젝트 수정 (전역 함수)
+    window.editCurrentProject = function() {
+        if (currentDetailProjectId) {
+            window.location.href = `/project/edit/${currentDetailProjectId}`;
+        }
+    };
+
+    // 주간업무보고 작성 버튼 이벤트
+    const createWeeklyReportBtn = document.getElementById('createWeeklyReportBtn');
+    if (createWeeklyReportBtn) {
+        createWeeklyReportBtn.addEventListener('click', function() {
+            // 신규 작성 페이지로 이동
+            window.location.href = '/approval/weekly-report';
+        });
+    }
 
     // 프로젝트 상세 모달 닫기 (전역 함수)
     window.closeProjectDetailModal = function() {
