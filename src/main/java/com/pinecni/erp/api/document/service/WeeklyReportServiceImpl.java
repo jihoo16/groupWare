@@ -89,6 +89,12 @@ public class WeeklyReportServiceImpl implements WeeklyReportService {
                 });
             }
         });
+        // 프로젝트 이름 조회 (projectIdx가 있고 projectName이 없는 경우)
+        if (saved.getProjectIdx() != null && (dto.getProjectName() == null || dto.getProjectName().isEmpty())) {
+            projectRepository.findById(saved.getProjectIdx()).ifPresent(project -> {
+                dto.setProjectName(project.getProjectName());
+            });
+        }
         return dto;
     }
 
@@ -113,6 +119,12 @@ public class WeeklyReportServiceImpl implements WeeklyReportService {
                             });
                         }
                     });
+                    // 프로젝트 이름 조회 (projectIdx가 있고 projectName이 없는 경우)
+                    if (report.getProjectIdx() != null && (dto.getProjectName() == null || dto.getProjectName().isEmpty())) {
+                        projectRepository.findById(report.getProjectIdx()).ifPresent(project -> {
+                            dto.setProjectName(project.getProjectName());
+                        });
+                    }
                     return dto;
                 })
                 .collect(Collectors.toList());
@@ -138,6 +150,12 @@ public class WeeklyReportServiceImpl implements WeeklyReportService {
                 });
             }
         });
+        // 프로젝트 이름 조회 (projectIdx가 있고 projectName이 없는 경우)
+        if (report.getProjectIdx() != null && (dto.getProjectName() == null || dto.getProjectName().isEmpty())) {
+            projectRepository.findById(report.getProjectIdx()).ifPresent(project -> {
+                dto.setProjectName(project.getProjectName());
+            });
+        }
         return dto;
     }
 
@@ -228,6 +246,12 @@ public class WeeklyReportServiceImpl implements WeeklyReportService {
                             });
                         }
                     });
+                    // 프로젝트 이름 조회 (projectIdx가 있고 projectName이 없는 경우)
+                    if (report.getProjectIdx() != null && (dto.getProjectName() == null || dto.getProjectName().isEmpty())) {
+                        projectRepository.findById(report.getProjectIdx()).ifPresent(project -> {
+                            dto.setProjectName(project.getProjectName());
+                        });
+                    }
                     return dto;
                 })
                 .collect(Collectors.toList());
