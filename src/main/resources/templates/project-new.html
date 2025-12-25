@@ -250,11 +250,11 @@
             <button class="modal-close" onclick="closeManagerModal()">&times;</button>
         </div>
         <div class="modal-body">
-            <div class="search-box">
+            <div class="modal-search-box">
                 <i class="fas fa-search"></i>
                 <input type="text" id="managerSearch" placeholder="이름으로 검색">
             </div>
-            <div class="employee-list" id="managerList">
+            <div class="manager-employee-list" id="managerList">
                 <!-- JavaScript로 동적 생성 -->
             </div>
         </div>
@@ -267,36 +267,51 @@
 
 <!-- 팀원 선택 모달 -->
 <div id="memberSelectModal" class="modal">
-    <div class="modal-content">
+    <div class="modal-content modal-lg">
         <div class="modal-header">
             <h2>팀원 선택</h2>
-            <button class="modal-close" onclick="closeMemberModal()">
-                <i class="fas fa-times"></i>
-            </button>
+            <button class="modal-close" onclick="closeMemberModal()">&times;</button>
         </div>
         <div class="modal-body">
-            <div class="form-group">
-                <input type="text" id="memberSearchInput" class="form-control" placeholder="이름으로 검색...">
-            </div>
-            <div class="member-list-container">
-                <table class="member-select-table">
-                    <thead>
-                        <tr>
-                            <th width="60">선택</th>
-                            <th>이름</th>
-                            <th>부서</th>
-                            <th>직급</th>
-                        </tr>
-                    </thead>
-                    <tbody id="memberSelectTableBody">
-                        <!-- 인력 목록은 JavaScript에서 동적으로 로드됩니다 -->
-                    </tbody>
-                </table>
+            <div class="employee-selection-container">
+                <div class="org-tree-panel">
+                    <div class="panel-header">
+                        <input type="text" id="memberSearchInput" class="search-input" placeholder="이름, 부서, 직급으로 검색...">
+                        <div class="panel-header-buttons">
+                            <button type="button" id="selectAllMembersBtn" class="btn-select-all">
+                                <i class="fas fa-check-double"></i> 전체 선택
+                            </button>
+                            <button type="button" id="expandAllMembersBtn" class="btn-expand">
+                                <i class="fas fa-plus-square"></i> 전체 펼치기
+                            </button>
+                        </div>
+                    </div>
+                    <div class="org-tree-wrapper">
+                        <div id="memberOrgTree" class="org-tree">
+                            <!-- 로딩 상태 -->
+                            <div class="tree-loading">
+                                <i class="fas fa-spinner fa-spin"></i>
+                                <p>직원 목록을 불러오는 중...</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="selected-employees-panel">
+                    <div class="panel-header">
+                        <h3>선택된 팀원 (<span id="selectedMemberCount">0</span>)</h3>
+                        <button type="button" id="clearSelectedMembersBtn" class="btn-clear">
+                            <i class="fas fa-times"></i> 전체 해제
+                        </button>
+                    </div>
+                    <div id="selectedMembersList" class="selected-employees-list">
+                        <p style="text-align: center; color: #999; padding: 20px;">선택된 팀원이 없습니다.</p>
+                    </div>
+                </div>
             </div>
         </div>
         <div class="modal-footer">
-            <button class="btn btn-secondary" onclick="closeMemberModal()">취소</button>
-            <button class="btn btn-primary" onclick="addSelectedMembers()">
+            <button type="button" class="btn-cancel" onclick="closeMemberModal()">취소</button>
+            <button type="button" class="btn-confirm" onclick="addSelectedMembers()">
                 <i class="fas fa-check"></i> 선택 완료
             </button>
         </div>
