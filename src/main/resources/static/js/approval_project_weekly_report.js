@@ -103,10 +103,51 @@ document.addEventListener('DOMContentLoaded', function() {
             const response = await fetch('/api/projects');
             if (response.ok) {
                 projects = await response.json();
+
+                // URL 파라미터에서 projectIdx 확인 후 자동 선택
+                const urlParams = new URLSearchParams(window.location.search);
+                const projectIdx = urlParams.get('projectIdx');
+                if (projectIdx) {
+                    await autoSelectProject(parseInt(projectIdx));
+                }
             }
         } catch (error) {
             console.error('프로젝트 로드 오류:', error);
         }
+    }
+
+    // URL 파라미터로 전달된 프로젝트 자동 선택
+    async function autoSelectProject(projectIdx) {
+        const project = projects.find(p => p.idx === projectIdx);
+        if (!project) {
+            console.warn('프로젝트를 찾을 수 없습니다:', projectIdx);
+            return;
+        }
+
+        selectedProject = project;
+
+        // 프로젝트 입력 필드에 표시
+        if (projectInput) {
+            projectInput.value = project.projectName;
+        }
+        if (selectedProjectIdx) {
+            selectedProjectIdx.value = project.idx;
+        }
+
+        // 현재 전체 달성률 표시
+        const currentProgressRate = document.getElementById('currentProgressRate');
+        if (currentProgressRate && project.progressRate !== undefined) {
+            currentProgressRate.value = (project.progressRate || 0) + '%';
+        }
+
+        // 미리보기 업데이트
+        const autoProject = document.querySelector('.auto-project');
+        if (autoProject) {
+            autoProject.textContent = project.projectName;
+        }
+
+        // 결재자 자동 설정: 프로젝트 책임자 & 대표이사
+        await autoSetApprovers(project);
     }
 
     loadProjects();

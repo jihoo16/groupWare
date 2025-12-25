@@ -525,8 +525,12 @@ document.addEventListener('DOMContentLoaded', function() {
     const createWeeklyReportBtn = document.getElementById('createWeeklyReportBtn');
     if (createWeeklyReportBtn) {
         createWeeklyReportBtn.addEventListener('click', function() {
-            // 프로젝트 주간업무보고 작성 페이지로 이동
-            window.location.href = '/approval/project-weekly-report';
+            // 프로젝트 주간업무보고 작성 페이지로 이동 (프로젝트 ID 전달)
+            if (currentDetailProjectId) {
+                window.location.href = `/approval/project-weekly-report?projectIdx=${currentDetailProjectId}`;
+            } else {
+                window.location.href = '/approval/project-weekly-report';
+            }
         });
     }
 
