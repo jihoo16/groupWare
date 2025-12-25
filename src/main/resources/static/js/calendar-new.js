@@ -510,6 +510,44 @@ document.addEventListener('DOMContentLoaded', function() {
             });
         }
 
+        // 부서 인원수 뱃지 클릭 시 해당 부서 전체 선택
+        const treeCount = node.querySelector('.tree-count');
+        if (treeCount && dept.members && dept.members.length > 0) {
+            treeCount.style.cursor = 'pointer';
+            treeCount.addEventListener('click', function(e) {
+                e.stopPropagation();
+
+                // 해당 부서의 모든 팀원이 이미 선택되어 있는지 확인
+                const allSelected = dept.members.every(member =>
+                    tempSelectedEmployees.some(emp => emp.id === member.id)
+                );
+
+                if (allSelected) {
+                    // 전체 해제
+                    dept.members.forEach(member => {
+                        tempSelectedEmployees = tempSelectedEmployees.filter(emp => emp.id !== member.id);
+                    });
+                } else {
+                    // 전체 선택
+                    dept.members.forEach(member => {
+                        if (!tempSelectedEmployees.some(emp => emp.id === member.id)) {
+                            tempSelectedEmployees.push({
+                                id: member.id,
+                                name: member.name,
+                                department: member.department,
+                                rank: member.rank
+                            });
+                        }
+                    });
+                }
+
+                // 체크박스 상태 및 목록 업데이트
+                updateOrgTreeCheckboxes();
+                updateSelectedEmployeesList();
+                updateSelectAllButtonState();
+            });
+        }
+
         attachToggleEvent(node);
         return node;
     }

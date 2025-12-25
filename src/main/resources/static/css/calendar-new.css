@@ -1043,6 +1043,14 @@
     padding: 2px 8px;
     border-radius: 10px;
     font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.tree-count:hover {
+    background: #667eea;
+    color: white;
+    transform: scale(1.05);
 }
 
 .tree-children {
