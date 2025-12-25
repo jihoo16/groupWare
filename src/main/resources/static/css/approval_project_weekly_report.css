@@ -64,6 +64,7 @@ div:focus {
     border-radius: 12px;
     box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
     padding: 24px;
+    padding-bottom: 0; /* submit-actions가 padding 처리 */
     overflow-y: auto;
     display: flex;
     flex-direction: column;
@@ -74,6 +75,7 @@ div:focus {
     display: flex;
     flex-direction: column;
     gap: 20px;
+    padding-bottom: 100px; /* fixed footer 공간 확보 */
 }
 
 .input-section {
@@ -962,14 +964,23 @@ div:focus {
 
 /* ============================================
    버튼
-   ============================================ */
+/*   ============================================ *!*/
 .submit-actions {
     display: flex;
-    gap: 12px;
     justify-content: flex-end;
-    margin-top: 24px;
-    padding-top: 24px;
-    border-top: 2px solid #f1f5f9;
+    align-items: center;
+    gap: 12px;
+    padding: 16px 24px;
+    background: white;
+    border-top: 2px solid #e8e8e8;
+    position: fixed;
+    bottom: 0;
+    left: 380px; /* 사이드바(60px) + 여백(20px) + 템플릿 사이드바(280px) */
+    right: 25px;
+    z-index: 100;
+    box-shadow: 0 -4px 12px rgba(0, 0, 0, 0.08);
+    border-radius: 12px 12px 0 0;
+    transition: left 0.3s ease;
 }
 
 .btn-primary,
