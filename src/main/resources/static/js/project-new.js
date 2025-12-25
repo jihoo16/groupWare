@@ -30,16 +30,24 @@ document.addEventListener('DOMContentLoaded', function() {
     let relatedProjectList = [];
     let relatedProjectIdCounter = 0;
 
-    // 연구 책임자 드롭다운 요소
-    const projectManagerSelect = document.getElementById('projectManager');
+    // 연구 책임자 요소
+    const projectManagerInput = document.getElementById('projectManager');
+    const projectManagerIdxInput = document.getElementById('projectManagerIdx');
+    const managerSelectModal = document.getElementById('managerSelectModal');
+    const managerSearchInput = document.getElementById('managerSearch');
+    const managerListElement = document.getElementById('managerList');
+
+    // 연구책임자 관련 변수
+    let allManagers = []; // 대표이사/상무/이사급 사용자 목록
+    let selectedManager = null;
 
     // 직급 목록 저장 변수
     let positionList = [];
 
-    // 페이지 로드 시 직급 목록과 연구 책임자 목록 로드
+    // 페이지 로드 시 직급 목록 로드
     Promise.all([
         loadPositions(),
-        projectManagerSelect ? loadProjectManagers() : Promise.resolve()
+        loadManagers()
     ]).then(() => {
         console.log('초기 데이터 로드 완료');
     }).catch(error => {
@@ -108,9 +116,9 @@ document.addEventListener('DOMContentLoaded', function() {
         console.log('경비 설정 테이블 생성 완료');
     }
 
-    // 연구 책임자 목록 로드 함수
-    function loadProjectManagers() {
-        fetch('/api/users')
+    // 연구책임자 목록 로드 함수 (대표이사/상무/이사급만)
+    function loadManagers() {
+        return fetch('/api/users')
             .then(response => {
                 if (!response.ok) {
                     throw new Error('사용자 목록을 불러오는데 실패했습니다.');
@@ -118,71 +126,142 @@ document.addEventListener('DOMContentLoaded', function() {
                 return response.json();
             })
             .then(users => {
-                // 기존 옵션 제거 (첫 번째 "선택하세요" 제외)
-                while (projectManagerSelect.options.length > 1) {
-                    projectManagerSelect.remove(1);
-                }
-
-                // 활성 사용자만 필터링하여 드롭다운에 추가
-                users.forEach(user => {
-                    const option = document.createElement('option');
-                    option.value = user.idx;
-                    option.textContent = `${user.empName} (${user.empDeptName} / ${user.empPositionName})`;
-                    // 사용자 정보를 data 속성에 저장
-                    option.dataset.empName = user.empName;
-                    option.dataset.empDeptName = user.empDeptName || '-';
-                    option.dataset.empPositionName = user.empPositionName || '-';
-                    option.dataset.empPositionCode = user.empPositionCode || '';
-                    projectManagerSelect.appendChild(option);
+                // 대표이사(C0201), 상무(C0202), 이사(C0203)만 필터링
+                allManagers = users.filter(user => {
+                    const isActive = user.empStatus === '재직' || !user.empStatus;
+                    const isHighRank = ['C0201', 'C0202', 'C0203'].includes(user.empPosition);
+                    return isActive && isHighRank;
                 });
+                console.log('연구책임자 후보 로드 완료:', allManagers.length + '명');
             })
             .catch(error => {
-                console.error('Error loading project managers:', error);
-                // 에러 발생 시에도 기본 옵션은 유지
+                console.error('Error loading managers:', error);
+                throw error;
             });
     }
 
-    // 연구책임자 선택 시 팀원에 자동 추가
-    if (projectManagerSelect) {
-        projectManagerSelect.addEventListener('change', function() {
-            const selectedOption = this.options[this.selectedIndex];
-            const piIdx = this.value;
-
-            if (!piIdx || piIdx === '') {
-                // 연구책임자가 선택 해제된 경우, 기존 PI 역할 팀원 제거
-                selectedMemberList = selectedMemberList.filter(m => m.role !== 'PI');
-                renderTeamTable();
-                return;
-            }
-
-            const piName = selectedOption.dataset.empName;
-            const piDept = selectedOption.dataset.empDeptName;
-            const piPosition = selectedOption.dataset.empPositionName;
-            const projectStartDate = document.getElementById('startDate').value;
-            const projectEndDate = document.getElementById('endDate').value;
-
-            // 기존 PI 역할 제거
-            selectedMemberList = selectedMemberList.filter(m => m.role !== 'PI');
-
-            // 새 PI 추가 (이미 팀원 목록에 있는 경우 역할만 변경)
-            const existingMember = selectedMemberList.find(m => m.id === piIdx);
-            if (existingMember) {
-                existingMember.role = 'PI';
-            } else {
-                selectedMemberList.unshift({
-                    id: piIdx,
-                    name: piName,
-                    dept: piDept,
-                    position: piPosition,
-                    role: 'PI',
-                    startDate: projectStartDate || '',
-                    endDate: projectEndDate || ''
-                });
-            }
-
-            renderTeamTable();
+    // 연구책임자 input 클릭 시 modal 열기
+    if (projectManagerInput) {
+        projectManagerInput.addEventListener('click', function() {
+            openManagerModal();
         });
     }
+
+    // 연구책임자 선택 modal 열기
+    function openManagerModal() {
+        if (managerSelectModal) {
+            renderManagerList(allManagers);
+            managerSelectModal.classList.add('active');
+        }
+    }
+
+    // 연구책임자 목록 렌더링
+    function renderManagerList(managers) {
+        if (!managerListElement) return;
+
+        managerListElement.innerHTML = '';
+
+        if (managers.length === 0) {
+            managerListElement.innerHTML = '<div class="text-center" style="padding: 40px; color: #868e96;">등록된 연구책임자 후보가 없습니다.</div>';
+            return;
+        }
+
+        managers.forEach(manager => {
+            const item = document.createElement('div');
+            item.className = 'employee-item';
+            if (selectedManager && selectedManager.idx === manager.idx) {
+                item.classList.add('selected');
+            }
+
+            item.innerHTML = `
+                <div class="employee-info">
+                    <div class="employee-name">${manager.empName}</div>
+                    <div class="employee-details">${manager.empDeptName || '-'} · ${manager.empPositionName || '-'}</div>
+                </div>
+            `;
+
+            item.addEventListener('click', function() {
+                // 기존 선택 해제
+                managerListElement.querySelectorAll('.employee-item').forEach(el => {
+                    el.classList.remove('selected');
+                });
+                // 새로운 선택
+                item.classList.add('selected');
+                selectedManager = manager;
+            });
+
+            managerListElement.appendChild(item);
+        });
+    }
+
+    // 연구책임자 검색
+    if (managerSearchInput) {
+        managerSearchInput.addEventListener('input', function() {
+            const searchTerm = this.value.toLowerCase();
+            const filtered = allManagers.filter(manager => {
+                return manager.empName.toLowerCase().includes(searchTerm);
+            });
+            renderManagerList(filtered);
+        });
+    }
+
+    // 연구책임자 선택 확정
+    window.selectManager = function() {
+        if (!selectedManager) {
+            alert('연구책임자를 선택해주세요.');
+            return;
+        }
+
+        if (projectManagerInput) {
+            projectManagerInput.value = `${selectedManager.empName} (${selectedManager.empDeptName || '-'} / ${selectedManager.empPositionName || '-'})`;
+        }
+        if (projectManagerIdxInput) {
+            projectManagerIdxInput.value = selectedManager.idx;
+        }
+
+        // 팀원에 자동 추가
+        addManagerToTeam(selectedManager);
+
+        closeManagerModal();
+    };
+
+    // 연구책임자 modal 닫기
+    window.closeManagerModal = function() {
+        if (managerSelectModal) {
+            managerSelectModal.classList.remove('active');
+            selectedManager = null;
+            if (managerSearchInput) {
+                managerSearchInput.value = '';
+            }
+        }
+    };
+
+    // 연구책임자를 팀원에 자동 추가
+    function addManagerToTeam(manager) {
+        // 기존 PI 역할 제거
+        selectedMemberList = selectedMemberList.filter(m => m.role !== 'PI');
+
+        // 이미 팀원으로 추가되어 있는지 확인
+        const existingMember = selectedMemberList.find(m => m.idx === manager.idx);
+
+        if (!existingMember) {
+            // 새로 추가
+            selectedMemberList.push({
+                id: memberIdCounter++,
+                idx: manager.idx,
+                name: manager.empName,
+                dept: manager.empDeptName || '-',
+                position: manager.empPositionName || '-',
+                role: 'PI'
+            });
+        } else {
+            // 기존 멤버의 역할을 PI로 변경
+            existingMember.role = 'PI';
+        }
+
+        renderTeamTable();
+    }
+
 
     // 팀원 추가 버튼 클릭 시 모달 열기 (tfoot의 버튼과 empty-row 클릭 모두 처리)
     if (addMemberBtn) {
@@ -276,7 +355,7 @@ document.addEventListener('DOMContentLoaded', function() {
         }
 
         // 현재 선택된 연구책임자 ID 가져오기
-        const currentPiIdx = projectManagerSelect ? projectManagerSelect.value : '';
+        const currentPiIdx = projectManagerIdxInput ? projectManagerIdxInput.value : '';
 
         // 활성 상태 사용자만 표시하고, 연구책임자는 제외
         const activeUsers = users.filter(user => {
@@ -629,7 +708,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 projectName: document.getElementById('projectName').value,
                 projectStatus: document.getElementById('projectStatus').value,
                 clientName: document.getElementById('clientName').value,
-                projectManager: document.getElementById('projectManager').value,
+                projectManagerIdx: projectManagerIdxInput.value,
                 startDate: document.getElementById('startDate').value,
                 endDate: document.getElementById('endDate').value,
                 projectDescription: document.getElementById('projectDescription').value,
@@ -677,7 +756,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 projectName: formData.projectName,
                 clientName: formData.clientName,
                 projectStatus: formData.projectStatus,
-                projectManagerIdx: parseInt(formData.projectManager),
+                projectManagerIdx: parseInt(formData.projectManagerIdx),
                 startDate: formData.startDate,
                 endDate: formData.endDate,
                 description: formData.projectDescription,
@@ -740,7 +819,7 @@ document.addEventListener('DOMContentLoaded', function() {
     function validateForm() {
         const projectName = document.getElementById('projectName').value.trim();
         const projectStatus = document.getElementById('projectStatus').value;
-        const projectManager = document.getElementById('projectManager').value;
+        const projectManagerIdx = projectManagerIdxInput.value;
         const startDate = document.getElementById('startDate').value;
         const endDate = document.getElementById('endDate').value;
         const projectDescription = document.getElementById('projectDescription').value.trim();
@@ -755,8 +834,8 @@ document.addEventListener('DOMContentLoaded', function() {
             return false;
         }
 
-        if (!projectManager) {
-            alert('프로젝트 매니저를 선택해주세요.');
+        if (!projectManagerIdx) {
+            alert('연구책임자를 선택해주세요.');
             return false;
         }
 
@@ -1351,6 +1430,15 @@ document.addEventListener('DOMContentLoaded', function() {
                     console.error('고정경비 정책 조회 실패:', error);
                     alert('설정값을 불러오는데 실패했습니다.');
                 });
+        });
+    }
+
+    // 연구책임자 선택 모달 배경 클릭 시 닫기
+    if (managerSelectModal) {
+        managerSelectModal.addEventListener('click', function(e) {
+            if (e.target === managerSelectModal) {
+                closeManagerModal();
+            }
         });
     }
 });
