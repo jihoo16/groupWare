@@ -91,6 +91,14 @@ public class UserServiceImpl implements UserService {
     }
 
     @Override
+    public List<UserSimpleDTO> getHighRankManagers() {
+        log.debug("getHighRankManagers() called - 대표이사/상무/이사만 조회 (sortOrder <= 3)");
+        return userRepository.findActiveHighRankManagers().stream()
+                .map(userMapper::toSimpleDTO)
+                .collect(Collectors.toList());
+    }
+
+    @Override
     public List<UserSimpleDTO> getUsersByStatus(String empStatus) {
         log.debug("getUsersByStatus() called with empStatus: {}", empStatus);
         return userRepository.findByEmpStatus(empStatus).stream()

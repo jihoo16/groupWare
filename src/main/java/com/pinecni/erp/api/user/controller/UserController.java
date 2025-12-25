@@ -106,6 +106,18 @@ public class UserController {
     }
 
     /**
+     * 고위 관리자급 사용자 조회 (대표이사/상무/이사)
+     * GET /api/users/high-rank-managers
+     * 프로젝트 연구책임자 선택 시 사용
+     */
+    @GetMapping("/high-rank-managers")
+    public ResponseEntity<List<UserSimpleDTO>> getHighRankManagers() {
+        log.debug("GET /api/users/high-rank-managers - getHighRankManagers()");
+        List<UserSimpleDTO> managers = userService.getHighRankManagers();
+        return ResponseEntity.ok(managers);
+    }
+
+    /**
      * 상태별 사용자 조회
      * GET /api/users/status/{empStatus}
      */

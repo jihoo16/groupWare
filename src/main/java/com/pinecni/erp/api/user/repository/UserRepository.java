@@ -43,6 +43,15 @@ public interface UserRepository extends JpaRepository<User, Long> {
     List<User> findActiveByEmpPosition(String empPosition);
 
     /**
+     * 고위 관리자급 활성 사용자 조회 (대표이사/상무/이사)
+     * 프로젝트 연구책임자 선택 시 사용
+     * sortOrder <= 3인 직급만 조회
+     */
+    @Query("SELECT u FROM User u JOIN Code c ON c.groupCode = 'C02' AND c.code = u.empPosition " +
+           "WHERE u.deletedAt IS NULL AND c.sortOrder <= 3 ORDER BY c.sortOrder ASC, u.empId ASC")
+    List<User> findActiveHighRankManagers();
+
+    /**
      * 상태별 사용자 조회 (사번 오름차순)
      */
     @Query("SELECT u FROM User u WHERE u.empStatus = :empStatus AND u.deletedAt IS NULL ORDER BY u.empId ASC")

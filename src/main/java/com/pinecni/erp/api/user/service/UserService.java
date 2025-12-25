@@ -48,6 +48,12 @@ public interface UserService {
     List<UserSimpleDTO> getUsersByPosition(String empPosition);
 
     /**
+     * 고위 관리자급 사용자 조회 (대표이사/상무/이사)
+     * 프로젝트 연구책임자 선택 시 사용
+     */
+    List<UserSimpleDTO> getHighRankManagers();
+
+    /**
      * 상태별 사용자 조회
      */
     List<UserSimpleDTO> getUsersByStatus(String empStatus);
