@@ -1030,6 +1030,22 @@ document.addEventListener('DOMContentLoaded', function() {
                 }
             }
 
+            // 저장 직전 중복 참석자 최종 검증
+            if (currentAttendees.length > 0) {
+                const attendeeIds = currentAttendees.map(a => parseInt(a.id));
+                const duplicates = await checkDuplicateAttendees(attendeeIds);
+
+                if (duplicates.length > 0) {
+                    const duplicate = duplicates[0];
+                    const meeting = duplicate.meeting;
+                    const createdAt = new Date(meeting.createdAt).toLocaleString('ko-KR');
+                    const title = meeting.title || '(제목 없음)';
+
+                    alert(`저장 중 중복 발견: ${createdAt}에 "${title}"에 포함된 참가자가 있어 저장할 수 없습니다.`);
+                    return;
+                }
+            }
+
             // 필수 필드 검증
             const projectSelect = document.getElementById('common_project');
             const dateInput = document.getElementById('common_date');
@@ -1089,7 +1105,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 startTime: startTimeInput.value + ':00',  // HH:mm:ss 형식
                 endTime: endTimeInput.value + ':00',
                 location: locationInput.value,
-                amount: amountInput && amountInput.value ? parseFloat(amountInput.value) : null,
+                amount: amountInput && amountInput.value ? parseInt(amountInput.value.replace(/,/g, '')) : null,
                 purpose: purposeInput ? purposeInput.value : null,
                 content: document.getElementById('common_content') ? document.getElementById('common_content').value : null,
                 paymentMethod: document.getElementById('common_payment') ? document.getElementById('common_payment').value : null,
@@ -1468,8 +1484,40 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     }
 
+    // 중복 참석자 검증 함수
+    async function checkDuplicateAttendees(attendeeIds) {
+        const dateInput = document.getElementById('common_date');
+        if (!dateInput || !dateInput.value) {
+            return []; // 날짜가 없으면 검증 스킵
+        }
+
+        const date = dateInput.value; // yyyy-MM-dd 형식
+        const duplicates = [];
+
+        for (const attendeeId of attendeeIds) {
+            try {
+                const response = await fetch(`/api/receipt-meetings/check-duplicate?date=${date}&attendeeIdx=${attendeeId}`);
+                if (response.ok) {
+                    const data = await response.json();
+                    if (data && data.length > 0) {
+                        // 중복된 회의록이 있음
+                        const meeting = data[0]; // 첫 번째 회의록 정보 사용
+                        duplicates.push({
+                            attendeeId: attendeeId,
+                            meeting: meeting
+                        });
+                    }
+                }
+            } catch (error) {
+                console.error('중복 검증 오류:', error);
+            }
+        }
+
+        return duplicates;
+    }
+
     // 선택된 참석자 추가
-    window.addSelectedAttendees = function() {
+    window.addSelectedAttendees = async function() {
         const selectedItems = document.querySelectorAll('#attendeeList2 .employee-item.selected');
 
         if (selectedItems.length === 0) {
@@ -1479,12 +1527,14 @@ document.addEventListener('DOMContentLoaded', function() {
 
         const personsToAdd = [];
         const attendeePersons = getAttendeePersons(); // 프로젝트 팀원에서 가져오기
+        const attendeeIdsToCheck = [];
 
         selectedItems.forEach(item => {
             const personId = item.getAttribute('data-id');
             const person = attendeePersons.find(p => String(p.id) === String(personId));
 
             if (person) {
+                attendeeIdsToCheck.push(person.id);
                 personsToAdd.push({
                     id: String(personId),
                     name: person.name,
@@ -1494,6 +1544,19 @@ document.addEventListener('DOMContentLoaded', function() {
                 });
             }
         });
+
+        // 중복 검증
+        const duplicates = await checkDuplicateAttendees(attendeeIdsToCheck);
+        if (duplicates.length > 0) {
+            // 중복된 참석자가 있음
+            const duplicate = duplicates[0];
+            const meeting = duplicate.meeting;
+            const createdAt = new Date(meeting.createdAt).toLocaleString('ko-KR');
+            const title = meeting.title || '(제목 없음)';
+
+            alert(`${createdAt}에 "${title}"에 포함된 참가자라 선택이 불가합니다.`);
+            return;
+        }
 
         console.log('추가할 참석자:', personsToAdd);
 

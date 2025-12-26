@@ -13,9 +13,10 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
-import java.util.List;
+import java.util.*;
 import java.util.stream.Collectors;
 
 /**
@@ -170,5 +171,45 @@ public class ReceiptMeetingServiceImpl implements ReceiptMeetingService {
                 .count();
 
         return String.format("%s-%03d", prefix, count + 1);
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public List<Map<String, Object>> findDuplicateAttendee(String date, Long attendeeIdx) {
+        log.debug("중복 참석자 검증 - date: {}, attendeeIdx: {}", date, attendeeIdx);
+
+        try {
+            // 날짜 파싱
+            LocalDate meetingDate = LocalDate.parse(date);
+
+            // 해당 날짜의 모든 회의록 조회
+            List<ReceiptMeeting> meetings = receiptMeetingRepository.findAll().stream()
+                    .filter(rm -> rm.getMeetingDate() != null && rm.getMeetingDate().equals(meetingDate))
+                    .collect(Collectors.toList());
+
+            List<Map<String, Object>> duplicates = new ArrayList<>();
+
+            // 각 회의록의 참석자 확인
+            for (ReceiptMeeting meeting : meetings) {
+                List<ReceiptMeetingAttendee> attendees = attendeeRepository.findByReceiptMeetingIdxOrderByDisplayOrder(meeting.getIdx());
+
+                // 해당 참석자가 포함되어 있는지 확인
+                boolean hasDuplicate = attendees.stream()
+                        .anyMatch(attendee -> attendee.getUserIdx().equals(attendeeIdx));
+
+                if (hasDuplicate) {
+                    Map<String, Object> info = new HashMap<>();
+                    info.put("idx", meeting.getIdx());
+                    info.put("title", meeting.getPurpose()); // purpose를 제목으로 사용
+                    info.put("createdAt", meeting.getCreatedAt());
+                    duplicates.add(info);
+                }
+            }
+
+            return duplicates;
+        } catch (Exception e) {
+            log.error("중복 참석자 검증 중 오류 발생: {}", e.getMessage(), e);
+            return List.of();
+        }
     }
 }
