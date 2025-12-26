@@ -8,9 +8,6 @@ document.addEventListener('DOMContentLoaded', function() {
 
     let selectedFiles = [];
     let projects = [];
-    let employees = [];
-    let selectedApprovers = []; // {idx, name, dept, position}
-    let selectedEmployee = null;
     let selectedProject = null; // 선택된 프로젝트
 
     // DOM 요소
@@ -35,8 +32,8 @@ document.addEventListener('DOMContentLoaded', function() {
     // ============================================
     // 사용자 정보 채우기
     // ============================================
-    if (applicantName) applicantName.value = currentUserName || '-';
-    if (applicantDept) applicantDept.value = currentUserDept || '-';
+    if (applicantName) applicantName.textContent = currentUserName || '-';
+    if (applicantDept) applicantDept.textContent = currentUserDept || '-';
 
     // 문서 미리보기 영역도 채우기
     const autoReporter = document.querySelector('.auto-reporter');
@@ -170,7 +167,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
         // 프로젝트 입력 필드에 표시
         if (projectInput) {
-            projectInput.value = selectedProject.projectName;
+            projectInput.textContent = selectedProject.projectName;
         }
         if (selectedProjectIdx) {
             selectedProjectIdx.value = selectedProject.idx;
@@ -179,7 +176,7 @@ document.addEventListener('DOMContentLoaded', function() {
         // 현재 전체 달성률 표시
         const currentProgressRate = document.getElementById('currentProgressRate');
         if (currentProgressRate && selectedProject.progressRate !== undefined) {
-            currentProgressRate.value = (selectedProject.progressRate || 0) + '%';
+            currentProgressRate.textContent = (selectedProject.progressRate || 0) + '%';
         }
 
         // 미리보기 업데이트
@@ -285,158 +282,6 @@ document.addEventListener('DOMContentLoaded', function() {
             const autoNextPlan = document.querySelector('.auto-next-plan');
             if (autoNextPlan) autoNextPlan.textContent = this.value || '-';
         });
-    }
-
-    // ============================================
-    // 결재자 선택 모달
-    // ============================================
-    const approverModal = document.getElementById('approverModal');
-    const approverChips = document.getElementById('approverChips');
-    const approverSearch = document.getElementById('approverSearch');
-    const employeeList = document.getElementById('employeeList');
-
-    // 직원 목록 로드
-    async function loadEmployees() {
-        try {
-            const response = await fetch('/api/users');
-            if (response.ok) {
-                employees = await response.json();
-                renderEmployeeList(employees);
-            }
-        } catch (error) {
-            console.error('직원 목록 로드 오류:', error);
-        }
-    }
-
-    function renderEmployeeList(list) {
-        if (!employeeList) return;
-
-        employeeList.innerHTML = '';
-        list.forEach(emp => {
-            const item = document.createElement('div');
-            item.className = 'employee-item';
-            if (selectedEmployee && selectedEmployee.idx === emp.idx) {
-                item.classList.add('selected');
-            }
-
-            item.innerHTML = `
-                <i class="fas fa-user-circle"></i>
-                <div class="employee-info">
-                    <div class="employee-name">${emp.empName}</div>
-                    <div class="employee-detail">${emp.empDeptName || ''} | ${emp.empPosition || ''}</div>
-                </div>
-            `;
-
-            item.addEventListener('click', function() {
-                document.querySelectorAll('.employee-item').forEach(i => i.classList.remove('selected'));
-                this.classList.add('selected');
-                selectedEmployee = emp;
-            });
-
-            employeeList.appendChild(item);
-        });
-    }
-
-    // 검색 기능
-    if (approverSearch) {
-        approverSearch.addEventListener('input', function() {
-            const keyword = this.value.toLowerCase();
-            const filtered = employees.filter(emp =>
-                emp.empName.toLowerCase().includes(keyword) ||
-                (emp.empDeptName && emp.empDeptName.toLowerCase().includes(keyword))
-            );
-            renderEmployeeList(filtered);
-        });
-    }
-
-    // 결재자 영역 클릭 시 모달 열기
-    if (approverChips) {
-        approverChips.addEventListener('click', function() {
-            openApproverModal();
-        });
-    }
-
-    window.openApproverModal = function() {
-        if (approverModal) {
-            approverModal.classList.add('show');
-            loadEmployees();
-        }
-    };
-
-    window.closeApproverModal = function() {
-        if (approverModal) {
-            approverModal.classList.remove('show');
-            selectedEmployee = null;
-            if (approverSearch) approverSearch.value = '';
-        }
-    };
-
-    window.addApprover = function() {
-        if (!selectedEmployee) {
-            alert('결재자를 선택해주세요.');
-            return;
-        }
-
-        // 중복 확인
-        if (selectedApprovers.find(a => a.idx === selectedEmployee.idx)) {
-            alert('이미 추가된 결재자입니다.');
-            return;
-        }
-
-        selectedApprovers.push({
-            idx: selectedEmployee.idx,
-            name: selectedEmployee.empName,
-            dept: selectedEmployee.empDeptName || '',
-            position: selectedEmployee.empPosition || ''
-        });
-
-        renderApproverChips();
-        updateApprovalLine();
-        closeApproverModal();
-    };
-
-    function renderApproverChips() {
-        if (!approverChips) return;
-
-        if (selectedApprovers.length === 0) {
-            approverChips.innerHTML = `
-                <div style="text-align: center; color: #94a3b8; font-size: 13px; width: 100%; padding: 20px;">
-                    <i class="fas fa-user-plus" style="font-size: 20px; margin-bottom: 6px; display: block;"></i>
-                    <div>클릭하여 결재자 추가</div>
-                </div>
-            `;
-            return;
-        }
-
-        approverChips.innerHTML = '';
-        selectedApprovers.forEach((approver, index) => {
-            const chip = document.createElement('div');
-            chip.className = 'approver-chip';
-            chip.innerHTML = `
-                <span class="order">${index + 1}</span>
-                <span>${approver.name}</span>
-                <button class="btn-remove" onclick="removeApprover(${index})">
-                    <i class="fas fa-times"></i>
-                </button>
-            `;
-            approverChips.appendChild(chip);
-        });
-    }
-
-    window.removeApprover = function(index) {
-        selectedApprovers.splice(index, 1);
-        renderApproverChips();
-        updateApprovalLine();
-    };
-
-    function updateApprovalLine() {
-        const approver1 = document.querySelector('.auto-approver-1');
-        const approver2 = document.querySelector('.auto-approver-2');
-        const approver3 = document.querySelector('.auto-approver-3');
-
-        if (approver1) approver1.textContent = selectedApprovers[0]?.name || '-';
-        if (approver2) approver2.textContent = selectedApprovers[1]?.name || '-';
-        if (approver3) approver3.textContent = selectedApprovers[2]?.name || '-';
     }
 
     // ============================================

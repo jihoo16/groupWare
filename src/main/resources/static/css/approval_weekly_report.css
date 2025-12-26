@@ -160,7 +160,31 @@ div:focus {
     cursor: not-allowed;
 }
 
-/* 클릭 가능한 readonly input */
+/* 텍스트 표시 영역 (readonly 대체) */
+.form-text-display {
+    padding: 10px 0;
+    font-size: 14px;
+    color: #1e293b;
+    font-weight: 500;
+    min-height: 20px;
+}
+
+/* 클릭 가능한 텍스트 필드 */
+.clickable-field {
+    cursor: pointer !important;
+    padding: 10px 14px;
+    border: 1px solid #e2e8f0;
+    border-radius: 8px;
+    transition: all 0.2s;
+    background: white;
+}
+
+.clickable-field:hover {
+    border-color: #667eea;
+    background: #f0f4ff;
+}
+
+/* 클릭 가능한 readonly input (이전 버전 호환성) */
 .clickable-input {
     cursor: pointer !important;
     background: white !important;
