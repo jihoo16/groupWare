@@ -69,7 +69,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 'weekly-report': '/approval/weekly-report',
                 'monthly-report': '/approval/monthly-report',
                 'meeting': '/approval/meeting',
-                'receipt': '/approval/write', // 연구비증빙은 여러 타입이 있으므로 기본 페이지
+                'receipt': '/approval/receipt-meeting', // 연구비증빙 - 회의록
                 'vacation': '/approval/write',
                 'expense': '/approval/write',
                 'purchase': '/approval/write',
