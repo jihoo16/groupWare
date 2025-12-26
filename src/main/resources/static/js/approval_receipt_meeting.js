@@ -8,6 +8,7 @@ document.addEventListener('DOMContentLoaded', function() {
     let projects = []; // 프로젝트 목록
     let projectMembers = []; // 선택된 프로젝트의 팀원 목록
     let currentAttendees = []; // 현재 추가된 참석자 목록 (전역으로 이동)
+    let fixedExpenses = {}; // 기초정보관리의 직급별 고정경비 (회의비)
 
     // DOM 요소
     const templateTreeHeaders = document.querySelectorAll('.tree-node-header[data-template]');
@@ -79,6 +80,29 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     }
 
+    // 기초정보관리에서 직급별 고정경비 로드
+    async function loadFixedExpenses() {
+        try {
+            const response = await fetch('/api/fixed-expense-policies');
+            if (response.ok) {
+                const data = await response.json();
+                // 직급별로 회의비 매핑
+                fixedExpenses = {};
+                data.forEach(item => {
+                    // expenseItemName이 '회의비'인 항목만 필터링
+                    if (item.positionName && item.expenseItemName === '회의비' && item.amount) {
+                        fixedExpenses[item.positionName] = item.amount;
+                    }
+                });
+                console.log('직급별 고정경비(회의비) 로드 완료:', fixedExpenses);
+            } else {
+                console.error('직급별 고정경비 로드 실패:', response.status);
+            }
+        } catch (error) {
+            console.error('직급별 고정경비 로드 오류:', error);
+        }
+    }
+
     // 프로젝트 팀원 목록 로드
     async function loadProjectMembers(projectIdx) {
         if (!projectIdx) {
@@ -112,7 +136,7 @@ document.addEventListener('DOMContentLoaded', function() {
     }
 
     // 페이지 로드 시 데이터 로드
-    Promise.all([loadCurrentUser(), loadProjects(), loadEmployees()]).then(() => {
+    Promise.all([loadCurrentUser(), loadProjects(), loadEmployees(), loadFixedExpenses()]).then(() => {
         console.log('초기 데이터 로드 완료');
         // 데이터 로드 후 템플릿 초기화
         loadTemplate('receipt-meeting');
@@ -446,18 +470,26 @@ document.addEventListener('DOMContentLoaded', function() {
                     </div>
                 `;
             } else {
-                attendeeList.innerHTML = currentAttendees.map(attendee => `
-                    <div class="trip-person-item">
-                        <div class="trip-person-info">
-                            <span class="name">${attendee.name}</span>
-                            <span>${attendee.dept}</span>
-                            <span>${attendee.position}</span>
+                attendeeList.innerHTML = currentAttendees.map(attendee => {
+                    // 금액 포맷팅
+                    const formattedExpense = attendee.meetingExpense
+                        ? attendee.meetingExpense.toLocaleString('ko-KR') + '원'
+                        : '-';
+
+                    return `
+                        <div class="trip-person-item">
+                            <div class="trip-person-info">
+                                <span class="name">${attendee.name}</span>
+                                <span>${attendee.dept}</span>
+                                <span>${attendee.position}</span>
+                                <span style="color: #667eea; font-weight: 600;">${formattedExpense}</span>
+                            </div>
+                            <button type="button" class="trip-person-remove attendee-remove" onclick="removeAttendeeInTemplate('${attendee.id}')">
+                                <i class="fas fa-times"></i> 제거
+                            </button>
                         </div>
-                        <button type="button" class="trip-person-remove attendee-remove" onclick="removeAttendeeInTemplate('${attendee.id}')">
-                            <i class="fas fa-times"></i> 제거
-                        </button>
-                    </div>
-                `).join('');
+                    `;
+                }).join('');
             }
 
             updateProposalAttendees();
@@ -1222,12 +1254,25 @@ document.addEventListener('DOMContentLoaded', function() {
     // 참석자 목록 데이터 (프로젝트 팀원에서 가져옴)
     function getAttendeePersons() {
         // projectMembers를 참석자 형식으로 변환
-        return projectMembers.map(member => ({
-            id: member.employeeIdx,
-            name: member.employeeName,
-            position: member.employeePositionName || '-',
-            dept: member.employeeDeptName || '-'
-        }));
+        return projectMembers.map(member => {
+            const positionName = member.employeePositionName || '-';
+
+            // 기초정보관리의 직급별 고정경비에서 회의비 가져오기
+            let meetingExpense = 0;
+            if (fixedExpenses[positionName]) {
+                meetingExpense = fixedExpenses[positionName];
+            }
+
+            console.log(`참석자: ${member.employeeName}, 직책: ${positionName}, 회의비: ${meetingExpense}`);
+
+            return {
+                id: member.employeeIdx,
+                name: member.employeeName,
+                position: positionName,
+                dept: member.employeeDeptName || '-',
+                meetingExpense: meetingExpense // 회의비 추가
+            };
+        });
     }
 
     // 모달 열기 함수
@@ -1288,12 +1333,16 @@ document.addEventListener('DOMContentLoaded', function() {
             const addedClass = isAdded ? ' added' : '';
             const onclickAttr = isAdded ? '' : `onclick="selectAttendee(${person.id})"`;
 
+            // 금액 포맷팅 (천단위 콤마)
+            const formattedExpense = person.meetingExpense
+                ? person.meetingExpense.toLocaleString('ko-KR') + '원'
+                : '-';
 
             return `
                 <div class="employee-item${addedClass}" data-id="${person.id}" ${onclickAttr}>
                     <div class="employee-info">
                         <div class="employee-name">${person.name}</div>
-                        <div class="employee-detail">${person.position} · ${person.dept}</div>
+                        <div class="employee-detail">${person.position} · ${person.dept} · ${formattedExpense}</div>
                     </div>
                 </div>
             `;
@@ -1342,7 +1391,8 @@ document.addEventListener('DOMContentLoaded', function() {
                     id: String(personId),
                     name: person.name,
                     dept: person.dept,
-                    position: person.position
+                    position: person.position,
+                    meetingExpense: person.meetingExpense || 0 // 회의비 추가
                 });
             }
         });
