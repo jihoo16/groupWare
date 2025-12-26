@@ -547,6 +547,12 @@ document.addEventListener('DOMContentLoaded', function() {
                 // 경고 메시지 숨김
                 warningMessageEl.style.display = 'none';
             }
+
+            // 집행 예정 금액 업데이트 (참석자 금액 합계 그대로)
+            const formattedAmount = totalAmount.toLocaleString('ko-KR') + '원';
+            document.querySelectorAll('.auto-amount-display, .auto-amount-display-2').forEach(field => {
+                field.textContent = formattedAmount;
+            });
         }
 
         // 템플릿 내에서 참석자 제거
@@ -751,15 +757,6 @@ document.addEventListener('DOMContentLoaded', function() {
                 const newLength = this.value.length;
                 const diff = newLength - oldLength;
                 this.setSelectionRange(cursorPosition + diff, cursorPosition + diff);
-
-                // 숫자 값 추출
-                const amount = parseInt(this.value.replace(/,/g, '')) || 0;
-                const roundedAmount = Math.ceil(amount / 30000) * 30000;
-                const formattedRoundedAmount = roundedAmount.toLocaleString('ko-KR') + '원';
-
-                document.querySelectorAll('.auto-amount-display, .auto-amount-display-2').forEach(field => {
-                    field.textContent = formattedRoundedAmount;
-                });
 
                 // 참석자 금액 합계 색상 업데이트
                 updateAttendeeTotalAmount();
