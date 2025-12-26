@@ -174,9 +174,9 @@ document.addEventListener('DOMContentLoaded', function() {
         }
 
         // 현재 전체 달성률 표시
-        const currentProgressRate = document.getElementById('currentProgressRate');
-        if (currentProgressRate && selectedProject.progressRate !== undefined) {
-            currentProgressRate.textContent = (selectedProject.progressRate || 0) + '%';
+        const currentProgressRateValue = document.getElementById('currentProgressRateValue');
+        if (currentProgressRateValue && selectedProject.progressRate !== undefined) {
+            currentProgressRateValue.textContent = (selectedProject.progressRate || 0).toFixed(2) + '%';
         }
 
         // 미리보기 업데이트
