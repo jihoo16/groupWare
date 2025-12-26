@@ -494,6 +494,59 @@ document.addEventListener('DOMContentLoaded', function() {
 
             updateProposalAttendees();
             updateMeetingMinutesAttendees();
+            updateAttendeeTotalAmount(); // 참석자 금액 합계 업데이트
+        }
+
+        // 참석자 금액 합계 계산 및 표시
+        function updateAttendeeTotalAmount() {
+            const totalAmountEl = document.getElementById('attendeeTotalAmount');
+            const commonAmountInput = document.getElementById('common_amount');
+
+            if (!totalAmountEl) return;
+
+            // 참석자 회의비 합계 계산
+            const totalAmount = currentAttendees.reduce((sum, attendee) => {
+                return sum + (attendee.meetingExpense || 0);
+            }, 0);
+
+            // 사용 금액 가져오기 (콤마 제거 후 파싱)
+            const commonAmount = commonAmountInput ? parseInt(commonAmountInput.value.replace(/,/g, '')) || 0 : 0;
+
+            // 금액 포맷팅
+            const formattedTotal = totalAmount.toLocaleString('ko-KR') + '원';
+
+            // 합계 표시 및 색상 설정
+            totalAmountEl.textContent = formattedTotal;
+
+            // 안내 메시지 요소 찾기 또는 생성
+            let warningMessageEl = document.getElementById('attendeeWarningMessage');
+            if (!warningMessageEl) {
+                warningMessageEl = document.createElement('span');
+                warningMessageEl.id = 'attendeeWarningMessage';
+                warningMessageEl.style.marginLeft = '10px';
+                warningMessageEl.style.fontSize = '14px';
+                totalAmountEl.parentNode.appendChild(warningMessageEl);
+            }
+
+            // 색상 및 스타일 적용
+            if (totalAmount < commonAmount) {
+                // 합계가 사용 금액보다 적으면 빨간색
+                totalAmountEl.style.color = '#dc2626';
+                totalAmountEl.style.fontWeight = 'bold';
+
+                // 경고 메시지 표시
+                warningMessageEl.textContent = '참석 인원을 추가하세요';
+                warningMessageEl.style.color = '#dc2626';
+                warningMessageEl.style.fontWeight = 'bold';
+                warningMessageEl.style.display = 'inline';
+            } else {
+                // 합계가 사용 금액과 같거나 크면 초록색
+                totalAmountEl.style.color = '#16a34a';
+                totalAmountEl.style.fontWeight = 'bold';
+
+                // 경고 메시지 숨김
+                warningMessageEl.style.display = 'none';
+            }
         }
 
         // 템플릿 내에서 참석자 제거
@@ -676,14 +729,40 @@ document.addEventListener('DOMContentLoaded', function() {
 
         // 사용 금액 표시 자동 채우기
         if (commonAmount) {
-            commonAmount.addEventListener('input', function() {
-                const amount = parseInt(this.value) || 0;
+            // 천단위 콤마 포맷팅 함수
+            function formatNumberWithComma(value) {
+                // 숫자만 추출
+                const numbers = value.replace(/[^\d]/g, '');
+                if (!numbers) return '';
+                // 천단위 콤마 추가
+                return parseInt(numbers).toLocaleString('ko-KR');
+            }
+
+            // input 이벤트: 입력 중 실시간 포맷팅
+            commonAmount.addEventListener('input', function(e) {
+                const cursorPosition = this.selectionStart;
+                const oldLength = this.value.length;
+
+                // 포맷팅
+                const formatted = formatNumberWithComma(this.value);
+                this.value = formatted;
+
+                // 커서 위치 조정 (콤마 추가로 인한 위치 변경 보정)
+                const newLength = this.value.length;
+                const diff = newLength - oldLength;
+                this.setSelectionRange(cursorPosition + diff, cursorPosition + diff);
+
+                // 숫자 값 추출
+                const amount = parseInt(this.value.replace(/,/g, '')) || 0;
                 const roundedAmount = Math.ceil(amount / 30000) * 30000;
                 const formattedRoundedAmount = roundedAmount.toLocaleString('ko-KR') + '원';
 
                 document.querySelectorAll('.auto-amount-display, .auto-amount-display-2').forEach(field => {
                     field.textContent = formattedRoundedAmount;
                 });
+
+                // 참석자 금액 합계 색상 업데이트
+                updateAttendeeTotalAmount();
             });
         }
 
@@ -931,13 +1010,32 @@ document.addEventListener('DOMContentLoaded', function() {
     // 저장
     if (saveBtn) {
         saveBtn.addEventListener('click', async function() {
+            // 참석자 금액 합계 검증 (빨간색 상태인지 확인)
+            const totalAmountEl = document.getElementById('attendeeTotalAmount');
+            const amountInput = document.getElementById('common_amount');
+
+            if (totalAmountEl && amountInput) {
+                // 참석자 회의비 합계 계산
+                const totalAmount = currentAttendees.reduce((sum, attendee) => {
+                    return sum + (attendee.meetingExpense || 0);
+                }, 0);
+
+                // 사용 금액 가져오기 (콤마 제거 후 파싱)
+                const commonAmount = parseInt(amountInput.value.replace(/,/g, '')) || 0;
+
+                // 합계가 사용 금액보다 적으면 (빨간색 상태)
+                if (totalAmount < commonAmount) {
+                    alert('참석 인원을 추가해주세요.');
+                    return;
+                }
+            }
+
             // 필수 필드 검증
             const projectSelect = document.getElementById('common_project');
             const dateInput = document.getElementById('common_date');
             const startTimeInput = document.getElementById('common_start_time');
             const endTimeInput = document.getElementById('common_end_time');
             const locationInput = document.getElementById('common_location');
-            const amountInput = document.getElementById('common_amount');
             const purposeInput = document.getElementById('common_purpose');
 
             if (!projectSelect || !projectSelect.value) {

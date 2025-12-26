@@ -190,13 +190,6 @@
                                             <td colspan="3"><input type="text" id="common_location" placeholder="회의 장소를 입력하세요" value="파인씨앤아이 (송파)"></td>
                                         </tr>
                                         <tr>
-                                            <th>사용 금액</th>
-                                            <td colspan="3">
-                                                <input type="number" id="common_amount" placeholder="사용 금액을 입력하세요 (원)" style="width: 300px; padding: 5px;">
-                                                <small style="color: #666; margin-left: 10px;">* 참석자는 아래에서 수동으로 추가하세요</small>
-                                            </td>
-                                        </tr>
-                                        <tr>
                                             <th style="padding-top: 14px;">참석자</th>
                                             <td colspan="3">
                                                 <div id="attendeeArea" style="min-height: 60px; padding: 12px; border: 2px dashed #e2e8f0; border-radius: 8px; cursor: pointer; transition: all 0.2s; background: #fafbfc;">
@@ -206,6 +199,18 @@
                                                             <div>클릭하여 참석자 추가</div>
                                                         </div>
                                                     </div>
+                                                </div>
+                                            </td>
+                                        </tr>
+                                        <tr>
+                                            <th>사용 금액 (원)</th>
+                                            <td>
+                                                <input type="text" id="common_amount" placeholder="사용 금액을 입력하세요 (원)" style="width: 100%; padding: 8px; font-size: 14px;">
+                                            </td>
+                                            <th style="background: #f8f9fa;">참석자 금액 합계</th>
+                                            <td style="background: #f8f9fa;">
+                                                <div style="display: flex; align-items: center; gap: 10px;">
+                                                    <span id="attendeeTotalAmount" style="font-size: 16px; font-weight: bold; padding: 8px 16px; border-radius: 6px; min-width: 120px; text-align: center;">0원</span>
                                                 </div>
                                             </td>
                                         </tr>
