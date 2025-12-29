@@ -2129,13 +2129,12 @@ body:has(.project-form-footer) .main-content {
 }
 
 .expense-settings-container {
-    background: transparent;
-    border-radius: 0;
-    box-shadow: none;
-    overflow-x: auto;
-    margin-bottom: 16px;
-    border: 1px solid #e9ecef;
-    border-radius: 8px;
+    background: #ffffff;
+    border-radius: 12px;
+    box-shadow: 0 2px 8px rgba(67, 97, 238, 0.08);
+    overflow: hidden;
+    margin-bottom: 20px;
+    border: 1px solid #e0e6ed;
 }
 
 .expense-settings-table {
@@ -2146,18 +2145,17 @@ body:has(.project-form-footer) .main-content {
 }
 
 .expense-settings-table thead {
-    background: linear-gradient(to bottom, #f8f9fa, #f1f3f5);
+    background: #f8fafc;
 }
 
 .expense-settings-table th {
-    padding: 12px;
+    padding: 14px 12px;
     text-align: center;
     font-size: 12px;
     font-weight: 600;
-    color: #1a237e;
-    border-bottom: 2px solid #4361ee;
-    border-right: 1px solid #e9ecef;
-    text-transform: uppercase;
+    color: #1e293b;
+    border-bottom: 2px solid #e0e6ed;
+    border-right: 1px solid #e0e6ed;
     letter-spacing: 0.3px;
 }
 
@@ -2165,55 +2163,81 @@ body:has(.project-form-footer) .main-content {
     border-right: none;
 }
 
+.expense-settings-table th:first-child {
+    background: linear-gradient(135deg, #4361ee 0%, #3b82f6 100%);
+    color: #ffffff;
+    font-size: 13px;
+    border-bottom: 2px solid #4361ee;
+}
+
 .category-header {
     font-size: 13px !important;
-    font-weight: 600 !important;
-    padding: 14px 12px !important;
-    background: #f8f9fa !important;
-    color: #1a237e !important;
+    font-weight: 700 !important;
+    padding: 16px 12px !important;
+    background: linear-gradient(to bottom, #f1f5f9, #e2e8f0) !important;
+    color: #4361ee !important;
+    position: relative;
+    border-bottom: 3px solid #4361ee !important;
 }
 
-.daily-header {
-    border-left: 3px solid #f59e0b !important;
+.category-header::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 3px;
+    background: linear-gradient(90deg, #4361ee, #3b82f6);
 }
 
-.meeting-header {
-    border-left: 3px solid #8b5cf6 !important;
+.daily-header::before {
+    background: linear-gradient(90deg, #4361ee, #3b82f6);
 }
 
-.overtime-header {
-    border-left: 3px solid #f97316 !important;
+.meeting-header::before {
+    background: linear-gradient(90deg, #3b82f6, #4361ee);
+}
+
+.overtime-header::before {
+    background: linear-gradient(90deg, #5b7aee, #4361ee);
 }
 
 .sub-header {
     font-size: 12px !important;
     font-weight: 500 !important;
-    padding: 10px 8px !important;
-    background: #fefefe !important;
-    color: #495057 !important;
+    padding: 12px 10px !important;
+    background: #ffffff !important;
+    color: #64748b !important;
+    border-bottom: 2px solid #e0e6ed !important;
 }
 
 .sub-header .unit {
     display: inline-block;
     font-size: 10px;
-    color: #6b7280;
+    color: #94a3b8;
     font-weight: 400;
     margin-top: 2px;
 }
 
 .expense-settings-table tbody tr {
-    border-bottom: 1px solid #e9ecef;
+    border-bottom: 1px solid #e0e6ed;
     transition: all 0.2s ease;
+    background: #ffffff;
 }
 
 .expense-settings-table tbody tr:hover {
-    background: #f0f4ff;
+    background: linear-gradient(to right, #f8fafc, #f0f4ff);
+    transform: translateX(2px);
+}
+
+.expense-settings-table tbody tr:last-child {
+    border-bottom: none;
 }
 
 .expense-settings-table td {
-    padding: 12px;
+    padding: 14px 12px;
     text-align: center;
-    border-right: 1px solid #f1f3f5;
+    border-right: 1px solid #e0e6ed;
 }
 
 .expense-settings-table td:last-child {
@@ -2222,37 +2246,38 @@ body:has(.project-form-footer) .main-content {
 
 .position-name-cell {
     font-weight: 600;
-    color: #1a237e;
-    background: #f8f9fa;
+    color: #4361ee;
+    background: linear-gradient(to right, #f8fafc, #ffffff);
     text-align: center !important;
     font-size: 13px;
-    border-right: 2px solid #e9ecef !important;
+    border-right: 2px solid #e0e6ed !important;
 }
 
 .expense-input-sm {
     width: 100%;
     max-width: 110px;
-    padding: 8px 10px;
-    border: 1px solid #dee2e6;
-    border-radius: 6px;
+    padding: 9px 12px;
+    border: 1.5px solid #cbd5e1;
+    border-radius: 8px;
     font-size: 13px;
-    color: #495057;
+    color: #1e293b;
     text-align: right;
     font-weight: 500;
     transition: all 0.2s ease;
-    background: white;
+    background: #ffffff;
 }
 
 .expense-input-sm:focus {
     outline: none;
     border-color: #4361ee;
-    box-shadow: 0 0 0 3px rgba(67, 97, 238, 0.1);
-    background: #f8f9ff;
+    box-shadow: 0 0 0 4px rgba(67, 97, 238, 0.1);
+    background: #f8fafc;
+    transform: translateY(-1px);
 }
 
 .expense-input-sm:hover {
-    border-color: #adb5bd;
-    background: #f8f9fa;
+    border-color: #94a3b8;
+    background: #f8fafc;
 }
 
 /* Remove spinner for number inputs */
