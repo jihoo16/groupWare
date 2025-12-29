@@ -369,6 +369,31 @@
     margin-top: 12px;
 }
 
+/* 참석자 빈 상태 */
+.participants-list .empty-state {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 40px 20px;
+    text-align: center;
+    border: 2px dashed #e0e0e0;
+    border-radius: 10px;
+    background: linear-gradient(to bottom, #f8f9fa, #ffffff);
+}
+
+.participants-list .empty-state i {
+    font-size: 36px;
+    color: #667eea;
+    margin-bottom: 12px;
+}
+
+.participants-list .empty-state p {
+    font-size: 14px;
+    color: #6c757d;
+    margin: 0;
+}
+
 /* 참석자 로딩 UI */
 .participants-loading {
     display: flex;
@@ -1384,4 +1409,203 @@
 .position-badge.ceo {
     background: #101010;
     color: whitesmoke;
+}
+
+/* ============================================
+   일정 달력 UI 스타일
+   ============================================ */
+
+/* 달력 섹션 */
+.schedule-calendar-section {
+    background: #f8f9fa;
+    border-radius: 12px;
+    padding: 16px;
+    margin-top: 16px;
+}
+
+.calendar-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 12px;
+}
+
+.calendar-title {
+    margin: 0;
+    font-size: 14px;
+    font-weight: 600;
+    color: #1a237e;
+}
+
+.calendar-nav {
+    width: 32px;
+    height: 32px;
+    border-radius: 6px;
+    border: 1px solid #dee2e6;
+    background: white;
+    color: #495057;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.calendar-nav:hover {
+    background: #667eea;
+    color: white;
+    border-color: #667eea;
+    transform: scale(1.05);
+}
+
+.calendar-weekdays {
+    display: grid;
+    grid-template-columns: repeat(7, 1fr);
+    gap: 3px;
+    margin-bottom: 6px;
+}
+
+.weekday {
+    text-align: center;
+    font-size: 12px;
+    font-weight: 600;
+    color: #495057;
+    padding: 6px 0;
+}
+
+.weekday.sun {
+    color: #dc3545;
+}
+
+.weekday.sat {
+    color: #0d6efd;
+}
+
+.calendar-days {
+    display: grid;
+    grid-template-columns: repeat(7, 1fr);
+    gap: 3px;
+    min-height: 210px;
+}
+
+.calendar-day {
+    aspect-ratio: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 6px;
+    font-size: 12px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    background: white;
+    border: 2px solid transparent;
+    position: relative;
+}
+
+.calendar-day:hover:not(.disabled):not(.other-month) {
+    background: #e7f3ff;
+    transform: scale(1.05);
+    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.1);
+}
+
+.calendar-day.other-month {
+    color: #adb5bd;
+    cursor: default;
+}
+
+.calendar-day.disabled {
+    color: #dee2e6;
+    cursor: not-allowed;
+    background: #f8f9fa;
+}
+
+.calendar-day.today {
+    font-weight: 700;
+    color: #667eea;
+}
+
+/* 오늘 표시는 ::before 사용 */
+.calendar-day.today::before {
+    content: '';
+    position: absolute;
+    bottom: 4px;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 4px;
+    height: 4px;
+    border-radius: 50%;
+    background: #667eea;
+    z-index: 1;
+}
+
+.calendar-day.weekend {
+    color: #6c757d;
+}
+
+.calendar-day.sunday {
+    color: #dc3545;
+}
+
+.calendar-day.saturday {
+    color: #0d6efd;
+}
+
+.calendar-day.holiday {
+    color: #dc3545;
+    background: #fff5f5;
+}
+
+/* 이전달/다음달 공휴일 스타일 (연한 빨간색) */
+.calendar-day.other-month.holiday {
+    color: rgba(220, 53, 69, 0.6); /* 빨간색 60% 투명도 */
+    background: rgba(255, 245, 245, 0.3); /* 연한 분홍 배경 */
+}
+
+/* 선택된 날짜 스타일 */
+.calendar-day.selected {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%) !important;
+    color: white !important;
+    border-color: #667eea;
+    font-weight: 700;
+}
+
+.calendar-day.in-range {
+    background: #e3f2fd !important;
+    color: #1976d2 !important;
+}
+
+.calendar-day.range-start {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white !important;
+    border-radius: 8px 0 0 8px;
+}
+
+.calendar-day.range-end {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white !important;
+    border-radius: 0 8px 8px 0;
+}
+
+.calendar-day.range-start.range-end {
+    border-radius: 8px;
+}
+
+/* 선택된 기간 표시 영역 */
+.selected-period-display {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-top: 12px;
+    padding: 12px 16px;
+    background: white;
+    border: 1px solid #dee2e6;
+    border-radius: 8px;
+    font-size: 13px;
+    color: #495057;
+}
+
+.selected-period-display i {
+    color: #667eea;
+    font-size: 14px;
 }

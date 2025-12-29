@@ -440,6 +440,16 @@
     opacity: 0.5;
 }
 
+/* 이전달/다음달 공휴일 스타일 */
+.calendar-cell.other-month.holiday {
+    background: rgba(255, 248, 240, 0.5); /* 연한 분홍 배경 */
+    opacity: 1; /* opacity 재설정 */
+}
+
+.calendar-cell.other-month.holiday .cell-date {
+    color: rgba(211, 47, 47, 0.6) !important; /* 연한 빨간색 */
+}
+
 .calendar-cell.today {
     background: #e8eaf6;
     border-color: #667eea;
@@ -495,6 +505,18 @@
 .calendar-cell.past-date {
     background: #f5f5f5;
     opacity: 0.6;
+}
+
+/* 지나간 공휴일 스타일 (빨간색 및 배경색 유지) */
+.calendar-cell.past-date.holiday,
+.calendar-cell.past-date.weekend {
+    background: #fff8f0 !important; /* 연한 노란색 배경 유지 */
+    opacity: 0.8; /* 살짝만 흐리게 */
+}
+
+.calendar-cell.past-date.holiday .cell-date,
+.calendar-cell.past-date.weekend .cell-date {
+    color: #d32f2f !important;
 }
 
 .calendar-cell.past-date .cell-date {

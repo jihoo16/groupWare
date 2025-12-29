@@ -1386,6 +1386,13 @@ div h2{
     color: #999;
 }
 
+/* 지나간 공휴일은 빨간색 및 배경색 유지 */
+.calendar-day.past-date.holiday {
+    color: #dc3545 !important;
+    background: #fff5f5 !important;
+    opacity: 0.8; /* 살짝만 흐리게 */
+}
+
 .calendar-day.past-date:hover:not(.other-month):not(.selected):not(.in-range) {
     background: #e3e3e3;
 }
@@ -1430,6 +1437,12 @@ div h2{
 .calendar-day.holiday {
     color: #dc3545;
     background: #fff5f5;
+}
+
+/* 이전달/다음달 공휴일 스타일 (연한 빨간색) */
+.calendar-day.other-month.holiday {
+    color: rgba(220, 53, 69, 0.6); /* 빨간색 60% 투명도 */
+    background: rgba(255, 245, 245, 0.3); /* 연한 분홍 배경 */
 }
 
 /* 추가된 기간 표시 스타일 (공통) */
