@@ -1,298 +1,311 @@
 package com.pinecni.erp.api.calendar.service;
 
-import com.pinecni.erp.api.calendar.dto.HolidayDto;
-import com.pinecni.erp.api.calendar.entity.Holiday;
-import com.pinecni.erp.api.calendar.repository.HolidayRepository;
-import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.cache.annotation.Cacheable;
 import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.client.RestTemplate;
-import org.w3c.dom.Document;
-import org.w3c.dom.Element;
-import org.w3c.dom.NodeList;
 
-import javax.xml.parsers.DocumentBuilder;
-import javax.xml.parsers.DocumentBuilderFactory;
-import java.io.ByteArrayInputStream;
+import java.net.URI;
 import java.time.LocalDate;
-import java.time.format.DateTimeFormatter;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Locale;
-import java.util.stream.Collectors;
+import java.util.*;
 
 /**
  * 공휴일 Service
- * 공공데이터포털 한국천문연구원 특일 정보 API 연동
+ * Google Calendar API + Fallback 방식
  */
 @Service
-@RequiredArgsConstructor
 @Slf4j
 public class HolidayService {
 
-    private final HolidayRepository holidayRepository;
     private final RestTemplate restTemplate;
 
-    @Value("${holiday.api.key:YOUR_API_KEY}")
-    private String apiKey;
+    @Value("${google.calendar.api.key:}")
+    private String googleApiKey;
 
-    @Value("${holiday.api.url:http://apis.data.go.kr/B090041/openapi/service/SpcdeInfoService/getRestDeInfo}")
-    private String apiUrl;
+    // Already URL-encoded Calendar ID
+    private static final String CALENDAR_ID_ENCODED = "ko.south_korea%23holiday%40group.v.calendar.google.com";
+    private static final String CALENDAR_API_BASE = "https://www.googleapis.com/calendar/v3/calendars/";
+
+    // 제외할 기념일 키워드 (법정 공휴일 아님)
+    private static final List<String> EXCLUDED_KEYWORDS = List.of(
+        "크리스마스 이브", "섣달 그믐날", "국군의날", "어버이날",
+        "노동절", "스승의날", "식목일", "제헌절"
+    );
+
+    public HolidayService() {
+        this.restTemplate = new RestTemplate();
+    }
 
     /**
-     * 공공데이터포털 API를 통해 특정 년도의 공휴일 데이터 가져오기
+     * 특정 년도 공휴일 조회 (캐시됨)
      */
-    @Transactional
-    public List<HolidayDto> fetchAndSaveHolidays(Integer year) {
-        log.info("공휴일 데이터 가져오기 시작: {}", year);
+    @Cacheable(value = "holidays", key = "#year")
+    public Map<String, String> getHolidaysByYear(int year) {
+        log.info("{}년 공휴일 데이터 로드 시작", year);
 
         try {
-            // API 호출
-            String url = String.format("%s?serviceKey=%s&solYear=%d&numOfRows=100",
-                    apiUrl, apiKey, year);
-            log.info("공공데이터 > 공휴일 조회 API. 조회 연도 >>>> {} ", year);
-
-            String response = restTemplate.getForObject(url, String.class);
-
-            if (response == null || response.isEmpty()) {
-                log.warn("API 응답이 비어있습니다.");
-                return getFallbackHolidays(year);
-            }
-
-            // XML 파싱
-            List<Holiday> holidays = parseHolidayXml(response, year);
-
-            // 기존 해당 년도 데이터 삭제
-            holidayRepository.deleteByYear(year);
-
-            // 새로운 데이터 저장
-            List<Holiday> savedHolidays = holidayRepository.saveAll(holidays);
-
-            log.info("공휴일 데이터 저장 완료: {} 건", savedHolidays.size());
-
-            return savedHolidays.stream()
-                    .map(this::convertToDto)
-                    .collect(Collectors.toList());
-
+            // 1순위: Google Calendar API
+            return fetchFromGoogleCalendarByYear(year);
         } catch (Exception e) {
-            log.error("공휴일 데이터 가져오기 실패: {}", e.getMessage(), e);
-
-            // API 실패 시 기본 공휴일 데이터 사용
-            return getFallbackHolidays(year);
+            log.warn("{}년 Google Calendar API 실패, Fallback 데이터 사용: {}", year, e.getMessage());
+            // 2순위: Fallback 데이터
+            return getFallbackHolidaysByYear(year);
         }
     }
 
     /**
-     * XML 응답 파싱
+     * 모든 공휴일 조회 (캐시됨)
+     * @deprecated 년도별 조회(getHolidaysByYear) 사용 권장
      */
-    private List<Holiday> parseHolidayXml(String xmlResponse, Integer year) throws Exception {
-        List<Holiday> holidays = new ArrayList<>();
+    @Cacheable(value = "holidays", key = "'all'")
+    public Map<String, String> getAllHolidays() {
+        log.info("전체 공휴일 데이터 로드 시작");
 
-        DocumentBuilderFactory factory = DocumentBuilderFactory.newInstance();
-        DocumentBuilder builder = factory.newDocumentBuilder();
-        Document document = builder.parse(new ByteArrayInputStream(xmlResponse.getBytes("UTF-8")));
+        try {
+            // 1순위: Google Calendar API
+            return fetchFromGoogleCalendar();
+        } catch (Exception e) {
+            log.warn("Google Calendar API 실패, Fallback 데이터 사용: {}", e.getMessage());
+            // 2순위: Fallback 데이터
+            return getFallbackHolidays();
+        }
+    }
 
-        NodeList itemList = document.getElementsByTagName("item");
+    /**
+     * Google Calendar API에서 특정 년도 공휴일 가져오기
+     */
+    private Map<String, String> fetchFromGoogleCalendarByYear(int year) {
+        if (googleApiKey == null || googleApiKey.isEmpty()) {
+            log.warn("Google API Key가 설정되지 않음, Fallback 사용");
+            return getFallbackHolidaysByYear(year);
+        }
 
-        for (int i = 0; i < itemList.getLength(); i++) {
-            Element item = (Element) itemList.item(i);
+        try {
+            Map<String, String> holidays = new HashMap<>();
+            String timeMin = year + "-01-01T00:00:00Z";
+            String timeMax = year + "-12-31T23:59:59Z";
 
-            String dateStr = getElementText(item, "locdate");
-            String name = getElementText(item, "dateName");
-            String isHoliday = getElementText(item, "isHoliday");
+            // Build URL string with already-encoded calendar ID
+            String urlString = CALENDAR_API_BASE + CALENDAR_ID_ENCODED + "/events" +
+                "?key=" + googleApiKey +
+                "&timeMin=" + timeMin +
+                "&timeMax=" + timeMax +
+                "&singleEvents=true" +
+                "&orderBy=startTime";
 
-            // 공휴일인 경우만 저장
-            if ("Y".equals(isHoliday) && dateStr != null && !dateStr.isEmpty()) {
-                Holiday holiday = new Holiday();
-                holiday.setHolidayDate(LocalDate.parse(dateStr, DateTimeFormatter.ofPattern("yyyyMMdd")));
-                holiday.setHolidayName(name);
-                holiday.setHolidayType("법정공휴일");
-                holiday.setIsLunar(false);
-                holiday.setYear(year);
-                holidays.add(holiday);
+            // Create URI object to prevent RestTemplate from re-encoding
+            URI uri = URI.create(urlString);
+
+            log.debug("Requesting Google Calendar API for year {}", year);
+
+            @SuppressWarnings("unchecked")
+            Map<String, Object> response = restTemplate.getForObject(uri, Map.class);
+
+            if (response != null && response.containsKey("items")) {
+                @SuppressWarnings("unchecked")
+                List<Map<String, Object>> items = (List<Map<String, Object>>) response.get("items");
+
+                for (Map<String, Object> item : items) {
+                    String summary = (String) item.get("summary");
+                    @SuppressWarnings("unchecked")
+                    Map<String, Object> start = (Map<String, Object>) item.get("start");
+                    String date = (String) start.get("date");
+
+                    if (date != null && summary != null) {
+                        // 제외 키워드 체크 (기념일 필터링)
+                        boolean shouldExclude = EXCLUDED_KEYWORDS.stream()
+                            .anyMatch(summary::contains);
+
+                        if (!shouldExclude) {
+                            // 공휴일 이름 정리
+                            String cleanedName = cleanHolidayName(summary);
+                            holidays.put(date, cleanedName);
+                        } else {
+                            log.debug("{}년 기념일 제외: {} - {}", year, date, summary);
+                        }
+                    }
+                }
+            }
+
+            log.info("{}년 Google Calendar API에서 {} 건의 공휴일 로드 완료", year, holidays.size());
+            return holidays;
+
+        } catch (Exception e) {
+            log.error("{}년 Google Calendar API 호출 실패: {}", year, e.getMessage());
+            throw e;
+        }
+    }
+
+    /**
+     * Google Calendar API에서 공휴일 가져오기 (전체 년도)
+     * @deprecated 년도별 조회 사용 권장
+     */
+    private Map<String, String> fetchFromGoogleCalendar() {
+        log.warn("전체 년도 조회는 deprecated되었습니다. 년도별 조회를 사용하세요.");
+
+        // 현재 년도 기준 전후 5년치만 로드 (동적)
+        int currentYear = LocalDate.now().getYear();
+        Map<String, String> allHolidays = new HashMap<>();
+
+        for (int year = currentYear - 5; year <= currentYear + 5; year++) {
+            try {
+                Map<String, String> yearHolidays = fetchFromGoogleCalendarByYear(year);
+                allHolidays.putAll(yearHolidays);
+            } catch (Exception e) {
+                log.warn("{}년 공휴일 로드 실패, 계속 진행", year);
             }
         }
 
+        return allHolidays;
+    }
+
+    /**
+     * 특정 년도 Fallback 공휴일 데이터
+     */
+    private Map<String, String> getFallbackHolidaysByYear(int year) {
+        log.info("{}년 Fallback 공휴일 데이터 사용", year);
+        Map<String, String> holidays = new HashMap<>();
+
+        // 고정 공휴일 추가
+        addFixedHolidays(holidays, year);
+
+        // 음력 공휴일 (2024-2026년만 수동 추가)
+        if (year == 2024) {
+            addLunarHolidays2024(holidays);
+        } else if (year == 2025) {
+            addLunarHolidays2025(holidays);
+        } else if (year == 2026) {
+            addLunarHolidays2026(holidays);
+        }
+
+        log.info("{}년 Fallback 데이터 {} 건 생성", year, holidays.size());
         return holidays;
     }
 
     /**
-     * XML Element에서 텍스트 추출
+     * Fallback 공휴일 데이터 (법정공휴일 + 최근 년도 음력 공휴일)
+     * @deprecated 년도별 조회 사용 권장
      */
-    private String getElementText(Element parent, String tagName) {
-        NodeList nodeList = parent.getElementsByTagName(tagName);
-        if (nodeList.getLength() > 0) {
-            return nodeList.item(0).getTextContent();
+    private Map<String, String> getFallbackHolidays() {
+        log.info("전체 Fallback 공휴일 데이터 사용");
+        Map<String, String> holidays = new HashMap<>();
+
+        // 2018-2030년까지 고정 공휴일 추가
+        for (int year = 2018; year <= 2030; year++) {
+            addFixedHolidays(holidays, year);
         }
-        return null;
+
+        // 음력 공휴일 (2024-2026년만 수동 추가)
+        addLunarHolidays2024(holidays);
+        addLunarHolidays2025(holidays);
+        addLunarHolidays2026(holidays);
+
+        log.info("Fallback 데이터 {} 건 생성", holidays.size());
+        return holidays;
     }
 
     /**
-     * API 실패 시 사용할 기본 공휴일 데이터
+     * 고정 공휴일 추가 (매년 동일)
      */
-    @Transactional
-    public List<HolidayDto> getFallbackHolidays(Integer year) {
-        log.info("기본 공휴일 데이터 사용: {}", year);
-
-        List<Holiday> holidays = new ArrayList<>();
-
-        // 고정 공휴일
-        holidays.add(createHoliday(year, 1, 1, "신정", "법정공휴일"));
-        holidays.add(createHoliday(year, 3, 1, "삼일절", "법정공휴일"));
-        holidays.add(createHoliday(year, 5, 5, "어린이날", "법정공휴일"));
-        holidays.add(createHoliday(year, 6, 6, "현충일", "법정공휴일"));
-        holidays.add(createHoliday(year, 8, 15, "광복절", "법정공휴일"));
-        holidays.add(createHoliday(year, 10, 3, "개천절", "법정공휴일"));
-        holidays.add(createHoliday(year, 10, 9, "한글날", "법정공휴일"));
-        holidays.add(createHoliday(year, 12, 25, "크리스마스", "법정공휴일"));
-
-        // 2025년 기준 음력 공휴일 (실제로는 매년 계산 필요)
-        if (year == 2025) {
-            holidays.add(createHoliday(2025, 1, 28, "설날 연휴", "법정공휴일"));
-            holidays.add(createHoliday(2025, 1, 29, "설날", "법정공휴일"));
-            holidays.add(createHoliday(2025, 1, 30, "설날 연휴", "법정공휴일"));
-            holidays.add(createHoliday(2025, 5, 6, "부처님오신날", "법정공휴일"));
-            holidays.add(createHoliday(2025, 10, 6, "추석 연휴", "법정공휴일"));
-            holidays.add(createHoliday(2025, 10, 7, "추석 연휴", "법정공휴일"));
-            holidays.add(createHoliday(2025, 10, 8, "추석", "법정공휴일"));
-        }
-
-        // 기존 데이터 삭제 후 저장
-        holidayRepository.deleteByYear(year);
-        List<Holiday> savedHolidays = holidayRepository.saveAll(holidays);
-
-        return savedHolidays.stream()
-                .map(this::convertToDto)
-                .collect(Collectors.toList());
+    private void addFixedHolidays(Map<String, String> holidays, int year) {
+        holidays.put(year + "-01-01", "신정");
+        holidays.put(year + "-03-01", "삼일절");
+        holidays.put(year + "-05-05", "어린이날");
+        holidays.put(year + "-06-06", "현충일");
+        holidays.put(year + "-08-15", "광복절");
+        holidays.put(year + "-10-03", "개천절");
+        holidays.put(year + "-10-09", "한글날");
+        holidays.put(year + "-12-25", "크리스마스");
     }
 
     /**
-     * Holiday 객체 생성 헬퍼 메서드
+     * 2024년 음력 공휴일
      */
-    private Holiday createHoliday(Integer year, int month, int day, String name, String type) {
-        Holiday holiday = new Holiday();
-        holiday.setHolidayDate(LocalDate.of(year, month, day));
-        holiday.setHolidayName(name);
-        holiday.setHolidayType(type);
-        holiday.setIsLunar(false);
-        holiday.setYear(year);
-        return holiday;
+    private void addLunarHolidays2024(Map<String, String> holidays) {
+        holidays.put("2024-02-09", "설날 전날");
+        holidays.put("2024-02-10", "설날");
+        holidays.put("2024-02-11", "설날 다음 날");
+        holidays.put("2024-02-12", "대체공휴일");
+        holidays.put("2024-04-10", "제22대 국회의원 선거일");
+        holidays.put("2024-05-06", "대체공휴일");
+        holidays.put("2024-05-15", "부처님 오신 날");
+        holidays.put("2024-09-16", "추석 전날");
+        holidays.put("2024-09-17", "추석");
+        holidays.put("2024-09-18", "추석 다음 날");
     }
 
     /**
-     * 특정 년도의 공휴일 조회
-     * readOnly를 제거하여 내부에서 fetchAndSaveHolidays 호출 가능하도록 수정
+     * 2025년 음력 공휴일
      */
-    @Transactional
-    public List<HolidayDto> getHolidaysByYear(Integer year) {
-        try {
-            List<Holiday> holidays = holidayRepository.findByYearOrderByHolidayDateAsc(year);
-
-            // 데이터가 없으면 가져오기
-            if (holidays.isEmpty()) {
-                return fetchAndSaveHolidays(year);
-            }
-
-            return holidays.stream()
-                    .map(this::convertToDto)
-                    .collect(Collectors.toList());
-        } catch (Exception e) {
-            // 테이블이 없거나 DB 오류 시 fallback 데이터 반환 (저장하지 않음)
-            log.warn("공휴일 조회 실패 (테이블 없거나 DB 오류), fallback 데이터 사용: {}", e.getMessage());
-            return getFallbackHolidaysWithoutSaving(year);
-        }
+    private void addLunarHolidays2025(Map<String, String> holidays) {
+        holidays.put("2025-01-27", "임시공휴일");
+        holidays.put("2025-01-28", "설날 전날");
+        holidays.put("2025-01-29", "설날");
+        holidays.put("2025-01-30", "설날 다음 날");
+        holidays.put("2025-03-03", "대체공휴일");
+        holidays.put("2025-05-05", "부처님 오신 날");
+        holidays.put("2025-05-06", "대체공휴일");
+        holidays.put("2025-06-03", "임시공휴일");
+        holidays.put("2025-10-05", "추석 전날");
+        holidays.put("2025-10-06", "추석");
+        holidays.put("2025-10-07", "추석 다음 날");
+        holidays.put("2025-10-08", "대체공휴일");
     }
 
     /**
-     * 기간 내 공휴일 조회
+     * 2026년 음력 공휴일 (예상)
      */
-    @Transactional(readOnly = true)
-    public List<HolidayDto> getHolidaysByDateRange(LocalDate startDate, LocalDate endDate) {
-        try {
-            List<Holiday> holidays = holidayRepository.findByDateRange(startDate, endDate);
-            return holidays.stream()
-                    .map(this::convertToDto)
-                    .collect(Collectors.toList());
-        } catch (Exception e) {
-            log.warn("기간별 공휴일 조회 실패, 빈 목록 반환: {}", e.getMessage());
-            return new ArrayList<>();
+    private void addLunarHolidays2026(Map<String, String> holidays) {
+        holidays.put("2026-02-16", "설날 전날");
+        holidays.put("2026-02-17", "설날");
+        holidays.put("2026-02-18", "설날 다음 날");
+        holidays.put("2026-05-24", "부처님 오신 날");
+        holidays.put("2026-05-25", "대체공휴일");
+        holidays.put("2026-09-24", "추석 전날");
+        holidays.put("2026-09-25", "추석");
+        holidays.put("2026-09-26", "추석 다음 날");
+    }
+
+    /**
+     * 공휴일 이름 정리
+     */
+    private String cleanHolidayName(String name) {
+        if (name == null) return name;
+
+        // "쉬는 날 XXX" → "XXX (대체공휴일)"
+        if (name.startsWith("쉬는 날 ")) {
+            String baseName = name.substring(5).trim();
+            return baseName + " (대체공휴일)";
         }
+
+        // "새해첫날" → "신정"
+        if (name.equals("새해첫날")) {
+            return "신정";
+        }
+
+        // "기독탄신일" → "크리스마스" (이미 필터링에서 처리했지만 혹시 몰라서)
+        if (name.equals("기독탄신일")) {
+            return "크리스마스";
+        }
+
+        return name;
     }
 
     /**
      * 특정 날짜가 공휴일인지 확인
      */
-    @Transactional(readOnly = true)
     public boolean isHoliday(LocalDate date) {
-        try {
-            return holidayRepository.existsByHolidayDate(date);
-        } catch (Exception e) {
-            log.warn("공휴일 확인 실패, false 반환: {}", e.getMessage());
-            return false;
-        }
+        Map<String, String> holidays = getAllHolidays();
+        String dateStr = date.toString();
+        return holidays.containsKey(dateStr);
     }
 
     /**
-     * API 실패 또는 DB 접근 불가 시 사용할 기본 공휴일 데이터 (저장하지 않음)
+     * 특정 날짜의 공휴일 이름 가져오기
      */
-    private List<HolidayDto> getFallbackHolidaysWithoutSaving(Integer year) {
-        log.info("Fallback 공휴일 데이터 사용 (저장 안 함): {}", year);
-
-        List<HolidayDto> holidays = new ArrayList<>();
-
-        // 고정 공휴일
-        holidays.add(createHolidayDto(year, 1, 1, "신정", "법정공휴일"));
-        holidays.add(createHolidayDto(year, 3, 1, "삼일절", "법정공휴일"));
-        holidays.add(createHolidayDto(year, 5, 5, "어린이날", "법정공휴일"));
-        holidays.add(createHolidayDto(year, 6, 6, "현충일", "법정공휴일"));
-        holidays.add(createHolidayDto(year, 8, 15, "광복절", "법정공휴일"));
-        holidays.add(createHolidayDto(year, 10, 3, "개천절", "법정공휴일"));
-        holidays.add(createHolidayDto(year, 10, 9, "한글날", "법정공휴일"));
-        holidays.add(createHolidayDto(year, 12, 25, "크리스마스", "법정공휴일"));
-
-        // 2025년 기준 음력 공휴일
-        if (year == 2025) {
-            holidays.add(createHolidayDto(2025, 1, 28, "설날 연휴", "법정공휴일"));
-            holidays.add(createHolidayDto(2025, 1, 29, "설날", "법정공휴일"));
-            holidays.add(createHolidayDto(2025, 1, 30, "설날 연휴", "법정공휴일"));
-            holidays.add(createHolidayDto(2025, 5, 6, "부처님오신날", "법정공휴일"));
-            holidays.add(createHolidayDto(2025, 10, 6, "추석 연휴", "법정공휴일"));
-            holidays.add(createHolidayDto(2025, 10, 7, "추석 연휴", "법정공휴일"));
-            holidays.add(createHolidayDto(2025, 10, 8, "추석", "법정공휴일"));
-        }
-
-        return holidays;
-    }
-
-    /**
-     * HolidayDto 객체 생성 헬퍼 메서드
-     */
-    private HolidayDto createHolidayDto(Integer year, int month, int day, String name, String type) {
-        return HolidayDto.builder()
-                .id(null)
-                .holidayDate(LocalDate.of(year, month, day))
-                .holidayName(name)
-                .holidayType(type)
-                .isLunar(false)
-                .year(year)
-                .remark(null)
-                .build();
-    }
-
-    /**
-     * Entity를 DTO로 변환
-     */
-    private HolidayDto convertToDto(Holiday holiday) {
-        return HolidayDto.builder()
-                .id(holiday.getId())
-                .holidayDate(holiday.getHolidayDate())
-                .holidayName(holiday.getHolidayName())
-                .holidayType(holiday.getHolidayType())
-                .isLunar(holiday.getIsLunar())
-                .year(holiday.getYear())
-                .remark(holiday.getRemark())
-                .build();
+    public String getHolidayName(LocalDate date) {
+        Map<String, String> holidays = getAllHolidays();
+        return holidays.get(date.toString());
     }
 }

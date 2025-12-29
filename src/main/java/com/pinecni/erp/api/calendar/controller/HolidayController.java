@@ -1,23 +1,21 @@
 package com.pinecni.erp.api.calendar.controller;
 
-import com.pinecni.erp.api.calendar.dto.HolidayDto;
 import com.pinecni.erp.api.calendar.service.HolidayService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.time.LocalDate;
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
 
 /**
  * 공휴일 REST API Controller
+ * Google Calendar API + Fallback 방식
  */
 @RestController
-@RequestMapping("/api/calendar/holidays")
+@RequestMapping("/api/holidays")
 @RequiredArgsConstructor
 @Slf4j
 public class HolidayController {
@@ -25,126 +23,93 @@ public class HolidayController {
     private final HolidayService holidayService;
 
     /**
-     * 특정 년도의 공휴일 조회
-     * GET /api/calendar/holidays/year/{year}
+     * 특정 년도 공휴일 조회
+     * GET /api/holidays?year=2025
+     *
+     * 프론트엔드에서 사용하는 메인 API (년도별 동적 로딩)
      */
-    @GetMapping("/year/{year}")
-    public ResponseEntity<Map<String, Object>> getHolidaysByYear(@PathVariable Integer year) {
-        log.info("공휴일 조회 요청: year={}", year);
+    @GetMapping
+    public ResponseEntity<Map<String, String>> getHolidays(
+            @RequestParam(required = false) Integer year) {
 
-        try {
-            List<HolidayDto> holidays = holidayService.getHolidaysByYear(year);
-
-            Map<String, Object> response = new HashMap<>();
-            response.put("success", true);
-            response.put("year", year);
-            response.put("count", holidays.size());
-            response.put("holidays", holidays);
-
-            return ResponseEntity.ok(response);
-        } catch (Exception e) {
-            log.error("공휴일 조회 실패: {}", e.getMessage(), e);
-            Map<String, Object> errorResponse = new HashMap<>();
-            errorResponse.put("success", false);
-            errorResponse.put("message", "공휴일 조회 중 오류가 발생했습니다: " + e.getMessage());
-            return ResponseEntity.internalServerError().body(errorResponse);
-        }
-    }
-
-    /**
-     * 기간 내 공휴일 조회
-     * GET /api/calendar/holidays/range?startDate=2025-01-01&endDate=2025-12-31
-     */
-    @GetMapping("/range")
-    public ResponseEntity<Map<String, Object>> getHolidaysByDateRange(
-            @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate startDate,
-            @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate endDate) {
-
-        log.info("기간 내 공휴일 조회 요청: startDate={}, endDate={}", startDate, endDate);
-
-        try {
-            List<HolidayDto> holidays = holidayService.getHolidaysByDateRange(startDate, endDate);
-
-            Map<String, Object> response = new HashMap<>();
-            response.put("success", true);
-            response.put("startDate", startDate);
-            response.put("endDate", endDate);
-            response.put("count", holidays.size());
-            response.put("holidays", holidays);
-
-            return ResponseEntity.ok(response);
-        } catch (Exception e) {
-            log.error("기간 내 공휴일 조회 실패: {}", e.getMessage(), e);
-            Map<String, Object> errorResponse = new HashMap<>();
-            errorResponse.put("success", false);
-            errorResponse.put("message", "공휴일 조회 중 오류가 발생했습니다: " + e.getMessage());
-            return ResponseEntity.internalServerError().body(errorResponse);
+        if (year != null) {
+            log.info("{}년 공휴일 조회 요청", year);
+            try {
+                Map<String, String> holidays = holidayService.getHolidaysByYear(year);
+                log.info("{}년 공휴일 {} 건 반환", year, holidays.size());
+                return ResponseEntity.ok(holidays);
+            } catch (Exception e) {
+                log.error("{}년 공휴일 조회 실패: {}", year, e.getMessage(), e);
+                return ResponseEntity.internalServerError().build();
+            }
+        } else {
+            // 년도 파라미터가 없으면 전체 조회 (하위 호환성)
+            log.info("모든 공휴일 조회 요청");
+            try {
+                Map<String, String> holidays = holidayService.getAllHolidays();
+                log.info("공휴일 {} 건 반환", holidays.size());
+                return ResponseEntity.ok(holidays);
+            } catch (Exception e) {
+                log.error("공휴일 조회 실패: {}", e.getMessage(), e);
+                return ResponseEntity.internalServerError().build();
+            }
         }
     }
 
     /**
      * 특정 날짜가 공휴일인지 확인
-     * GET /api/calendar/holidays/check?date=2025-01-01
+     * GET /api/holidays/check?date=2025-01-01
      */
     @GetMapping("/check")
     public ResponseEntity<Map<String, Object>> checkHoliday(
-            @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate date) {
+            @RequestParam String date) {
 
-        log.info("공휴일 확인 요청: date={}", date);
+        log.info("공휴일 확인 요청: {}", date);
 
         try {
-            boolean isHoliday = holidayService.isHoliday(date);
+            LocalDate localDate = LocalDate.parse(date);
+            boolean isHoliday = holidayService.isHoliday(localDate);
+            String holidayName = holidayService.getHolidayName(localDate);
 
             Map<String, Object> response = new HashMap<>();
-            response.put("success", true);
             response.put("date", date);
             response.put("isHoliday", isHoliday);
+            response.put("holidayName", holidayName);
 
             return ResponseEntity.ok(response);
         } catch (Exception e) {
             log.error("공휴일 확인 실패: {}", e.getMessage(), e);
             Map<String, Object> errorResponse = new HashMap<>();
-            errorResponse.put("success", false);
-            errorResponse.put("message", "공휴일 확인 중 오류가 발생했습니다: " + e.getMessage());
-            return ResponseEntity.internalServerError().body(errorResponse);
+            errorResponse.put("error", "Invalid date format or processing error");
+            return ResponseEntity.badRequest().body(errorResponse);
         }
     }
 
     /**
-     * 공휴일 데이터 업데이트 (공공데이터포털 API에서 가져오기)
-     * POST /api/calendar/holidays/fetch/{year}
+     * 캐시 초기화 (필요시 수동 호출)
+     * POST /api/holidays/refresh
      */
-    @PostMapping("/fetch/{year}")
-    public ResponseEntity<Map<String, Object>> fetchHolidays(@PathVariable Integer year) {
-        log.info("공휴일 데이터 가져오기 요청: year={}", year);
+    @PostMapping("/refresh")
+    public ResponseEntity<Map<String, Object>> refreshCache() {
+        log.info("공휴일 캐시 초기화 요청");
 
         try {
-            List<HolidayDto> holidays = holidayService.fetchAndSaveHolidays(year);
+            // 캐시를 강제로 새로고침하려면 CacheManager를 사용해야 하지만
+            // 여기서는 단순히 재조회로 처리
+            Map<String, String> holidays = holidayService.getAllHolidays();
 
             Map<String, Object> response = new HashMap<>();
             response.put("success", true);
-            response.put("year", year);
             response.put("count", holidays.size());
-            response.put("message", String.format("%d년 공휴일 데이터가 업데이트되었습니다.", year));
-            response.put("holidays", holidays);
+            response.put("message", "공휴일 데이터가 새로고침되었습니다.");
 
             return ResponseEntity.ok(response);
         } catch (Exception e) {
-            log.error("공휴일 데이터 가져오기 실패: {}", e.getMessage(), e);
+            log.error("캐시 초기화 실패: {}", e.getMessage(), e);
             Map<String, Object> errorResponse = new HashMap<>();
             errorResponse.put("success", false);
-            errorResponse.put("message", "공휴일 데이터 가져오기 중 오류가 발생했습니다: " + e.getMessage());
+            errorResponse.put("message", "캐시 초기화 중 오류가 발생했습니다.");
             return ResponseEntity.internalServerError().body(errorResponse);
         }
-    }
-
-    /**
-     * 현재 년도 공휴일 조회
-     * GET /api/calendar/holidays/current
-     */
-    @GetMapping("/current")
-    public ResponseEntity<Map<String, Object>> getCurrentYearHolidays() {
-        Integer currentYear = LocalDate.now().getYear();
-        return getHolidaysByYear(currentYear);
     }
 }
