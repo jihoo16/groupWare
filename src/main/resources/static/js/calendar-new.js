@@ -1015,6 +1015,325 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     }
 
+    // ============================================
+    // 달력 날짜 선택 기능
+    // ============================================
+
+    // 달력 상태 변수
+    let currentYear = new Date().getFullYear();
+    let currentMonth = new Date().getMonth();
+    let selectedDates = [];
+    let holidays = {}; // 공휴일 데이터 (년도별 캐시)
+    let loadedYears = new Set(); // 로드된 년도 추적
+
+    // 달력 DOM 요소 (scheduleStartDate, scheduleEndDate는 이미 위에서 선언됨)
+    const scheduleCalendarTitle = document.getElementById('scheduleCalendarTitle');
+    const scheduleCalendarDays = document.getElementById('scheduleCalendarDays');
+    const prevMonthBtn = document.getElementById('prevMonthBtn');
+    const nextMonthBtn = document.getElementById('nextMonthBtn');
+    const selectedPeriodText = document.getElementById('selectedPeriodText');
+
+    // 특정 년도 공휴일 데이터 로드
+    async function loadHolidaysByYear(year) {
+        try {
+            const response = await fetch(`/api/holidays?year=${year}`);
+            if (!response.ok) {
+                throw new Error(`${year}년 공휴일 데이터를 불러오는데 실패했습니다.`);
+            }
+
+            const yearHolidays = await response.json();
+            console.log(`[Calendar] ${year}년 공휴일 로드 완료:`, Object.keys(yearHolidays).length, '건');
+            return yearHolidays;
+        } catch (error) {
+            console.error(`[Calendar] ${year}년 공휴일 로드 실패:`, error);
+            return {};
+        }
+    }
+
+    // 특정 년도 공휴일 보장 (없으면 로드)
+    async function ensureYearHolidaysLoaded(year) {
+        if (!loadedYears.has(year)) {
+            const yearHolidays = await loadHolidaysByYear(year);
+            Object.assign(holidays, yearHolidays); // 기존 holidays 객체에 병합
+            loadedYears.add(year);
+            console.log(`[Calendar] ${year}년 공휴일 캐시 추가`);
+        }
+    }
+
+    // 달력 렌더링
+    async function renderCalendar() {
+        if (!scheduleCalendarDays) {
+            console.error('scheduleCalendarDays element not found');
+            return;
+        }
+
+        const firstDay = new Date(currentYear, currentMonth, 1);
+        const lastDay = new Date(currentYear, currentMonth + 1, 0);
+        const prevLastDay = new Date(currentYear, currentMonth, 0);
+
+        // 이전달, 현재달, 다음달의 년도 공휴일 로드 (다른 년도일 수 있음)
+        const prevMonthYear = new Date(currentYear, currentMonth - 1, 1).getFullYear();
+        const nextMonthYear = new Date(currentYear, currentMonth + 1, 1).getFullYear();
+
+        await Promise.all([
+            ensureYearHolidaysLoaded(prevMonthYear),
+            ensureYearHolidaysLoaded(currentYear),
+            ensureYearHolidaysLoaded(nextMonthYear)
+        ]);
+
+        const firstDayOfWeek = firstDay.getDay();
+        const lastDate = lastDay.getDate();
+        const prevLastDate = prevLastDay.getDate();
+
+        scheduleCalendarTitle.textContent = `${currentYear}년 ${currentMonth + 1}월`;
+        scheduleCalendarDays.innerHTML = '';
+
+        console.log('[Calendar] 렌더링:', currentYear, currentMonth + 1);
+        console.log('[Calendar] 공휴일 데이터 개수:', Object.keys(holidays).length);
+
+        // 이전 달 날짜
+        for (let i = firstDayOfWeek - 1; i >= 0; i--) {
+            const day = prevLastDate - i;
+            const prevMonthDate = new Date(currentYear, currentMonth - 1, day);
+            const dateStr = formatDate(prevMonthDate);
+            const dayOfWeek = prevMonthDate.getDay();
+
+            let classes = 'other-month';
+            if (dayOfWeek === 0) classes += ' sunday';
+            if (dayOfWeek === 6) classes += ' saturday';
+            if (holidays[dateStr]) classes += ' holiday';
+
+            if (isDateSelected(dateStr)) classes += ' selected';
+            if (isDateInRange(dateStr)) classes += ' in-range';
+            if (selectedDates.length > 0 && dateStr === selectedDates[0]) classes += ' range-start';
+            if (selectedDates.length > 1 && dateStr === selectedDates[selectedDates.length - 1]) classes += ' range-end';
+
+            const dayEl = createDayElement(day, classes, dateStr);
+            scheduleCalendarDays.appendChild(dayEl);
+        }
+
+        // 현재 달 날짜
+        let holidayCount = 0;
+        for (let day = 1; day <= lastDate; day++) {
+            const date = new Date(currentYear, currentMonth, day);
+            const dateStr = formatDate(date);
+            const dayOfWeek = date.getDay();
+
+            let classes = '';
+
+            if (isToday(date)) classes += ' today';
+            if (dayOfWeek === 0) classes += ' sunday';
+            if (dayOfWeek === 6) classes += ' saturday';
+            if (holidays[dateStr]) {
+                classes += ' holiday';
+                holidayCount++;
+                if (day <= 5) { // 초반 5일만 로그
+                    console.log(`[Calendar] 공휴일 발견: ${dateStr} = ${holidays[dateStr]}`);
+                }
+            }
+            if (isDateSelected(dateStr)) classes += ' selected';
+            if (isDateInRange(dateStr)) classes += ' in-range';
+            if (selectedDates.length > 0 && dateStr === selectedDates[0]) classes += ' range-start';
+            if (selectedDates.length > 1 && dateStr === selectedDates[selectedDates.length - 1]) classes += ' range-end';
+
+            const dayEl = createDayElement(day, classes, dateStr);
+            scheduleCalendarDays.appendChild(dayEl);
+        }
+        console.log(`[Calendar] 이번 달 공휴일 수: ${holidayCount}`);
+
+        // 다음 달 날짜
+        const remainingCells = 42 - scheduleCalendarDays.children.length;
+        for (let day = 1; day <= remainingCells; day++) {
+            const nextMonthDate = new Date(currentYear, currentMonth + 1, day);
+            const dateStr = formatDate(nextMonthDate);
+            const dayOfWeek = nextMonthDate.getDay();
+
+            let classes = 'other-month';
+            if (dayOfWeek === 0) classes += ' sunday';
+            if (dayOfWeek === 6) classes += ' saturday';
+            if (holidays[dateStr]) classes += ' holiday';
+
+            if (isDateSelected(dateStr)) classes += ' selected';
+            if (isDateInRange(dateStr)) classes += ' in-range';
+            if (selectedDates.length > 0 && dateStr === selectedDates[0]) classes += ' range-start';
+            if (selectedDates.length > 1 && dateStr === selectedDates[selectedDates.length - 1]) classes += ' range-end';
+
+            const dayEl = createDayElement(day, classes, dateStr);
+            scheduleCalendarDays.appendChild(dayEl);
+        }
+    }
+
+    // 날짜 요소 생성
+    function createDayElement(day, classes, dateStr = null) {
+        const dayEl = document.createElement('div');
+        dayEl.className = `calendar-day ${classes}`;
+        dayEl.textContent = day;
+
+        // dateStr이 있으면 클릭 가능
+        if (dateStr) {
+            dayEl.addEventListener('click', () => selectDate(dateStr));
+        }
+
+        return dayEl;
+    }
+
+    // 날짜 선택
+    function selectDate(dateStr) {
+        if (selectedDates.length === 0) {
+            // 첫 번째 날짜 선택 (시작일)
+            selectedDates = [dateStr];
+            scheduleStartDate.value = dateStr;
+            scheduleEndDate.value = dateStr;
+        } else if (selectedDates.length === 1) {
+            // 두 번째 날짜 선택 (종료일)
+            const startDate = new Date(selectedDates[0]);
+            const endDate = new Date(dateStr);
+
+            if (endDate < startDate) {
+                // 역순 선택시 시작일과 종료일 교체
+                selectedDates = fillDateRange(dateStr, selectedDates[0]);
+                scheduleStartDate.value = dateStr;
+                scheduleEndDate.value = selectedDates[selectedDates.length - 1];
+            } else {
+                selectedDates = fillDateRange(selectedDates[0], dateStr);
+                scheduleEndDate.value = dateStr;
+            }
+        } else {
+            // 이미 범위가 선택된 경우 초기화 후 새로 선택
+            selectedDates = [dateStr];
+            scheduleStartDate.value = dateStr;
+            scheduleEndDate.value = dateStr;
+        }
+
+        renderCalendar();
+        updateSelectedPeriodDisplay();
+    }
+
+    // 날짜 범위 채우기
+    function fillDateRange(startStr, endStr) {
+        const dates = [];
+        const start = new Date(startStr);
+        const end = new Date(endStr);
+
+        for (let date = new Date(start); date <= end; date.setDate(date.getDate() + 1)) {
+            dates.push(formatDate(date));
+        }
+
+        return dates;
+    }
+
+    // 선택된 기간 표시 업데이트
+    function updateSelectedPeriodDisplay() {
+        if (selectedDates.length === 0) {
+            selectedPeriodText.textContent = '날짜를 선택해주세요';
+        } else if (selectedDates.length === 1) {
+            const date = new Date(selectedDates[0]);
+            selectedPeriodText.textContent = formatDateDisplay(date);
+        } else {
+            const startDate = new Date(selectedDates[0]);
+            const endDate = new Date(selectedDates[selectedDates.length - 1]);
+            selectedPeriodText.textContent = `${formatDateDisplay(startDate)} ~ ${formatDateDisplay(endDate)}`;
+        }
+    }
+
+    // 날짜를 표시 형식으로 포맷 (YYYY.MM.DD)
+    function formatDateDisplay(date) {
+        const year = date.getFullYear();
+        const month = String(date.getMonth() + 1).padStart(2, '0');
+        const day = String(date.getDate()).padStart(2, '0');
+        return `${year}.${month}.${day}`;
+    }
+
+    // 날짜가 선택되었는지 확인
+    function isDateSelected(dateStr) {
+        return selectedDates.length > 0 && (
+            dateStr === selectedDates[0] ||
+            dateStr === selectedDates[selectedDates.length - 1]
+        );
+    }
+
+    // 날짜가 범위 내에 있는지 확인
+    function isDateInRange(dateStr) {
+        if (selectedDates.length <= 1) return false;
+        const start = selectedDates[0];
+        const end = selectedDates[selectedDates.length - 1];
+        return dateStr > start && dateStr < end;
+    }
+
+    // 오늘 날짜 확인
+    function isToday(date) {
+        const today = new Date();
+        return date.getFullYear() === today.getFullYear() &&
+               date.getMonth() === today.getMonth() &&
+               date.getDate() === today.getDate();
+    }
+
+    // 날짜 포맷 (YYYY-MM-DD)
+    function formatDate(date) {
+        const year = date.getFullYear();
+        const month = String(date.getMonth() + 1).padStart(2, '0');
+        const day = String(date.getDate()).padStart(2, '0');
+        return `${year}-${month}-${day}`;
+    }
+
+    // 이전 달 버튼
+    if (prevMonthBtn) {
+        prevMonthBtn.addEventListener('click', () => {
+            currentMonth--;
+            if (currentMonth < 0) {
+                currentMonth = 11;
+                currentYear--;
+            }
+            renderCalendar();
+        });
+    }
+
+    // 다음 달 버튼
+    if (nextMonthBtn) {
+        nextMonthBtn.addEventListener('click', () => {
+            currentMonth++;
+            if (currentMonth > 11) {
+                currentMonth = 0;
+                currentYear++;
+            }
+            renderCalendar();
+        });
+    }
+
+    // 초기화: 공휴일 로드 후 달력 렌더링
+    if (scheduleCalendarDays) {
+        (async function() {
+            console.log('[Calendar] 초기화 시작');
+
+            // 현재 년도 기준 전/현재/후년도 공휴일 로드 (3년치)
+            const thisYear = new Date().getFullYear();
+            await Promise.all([
+                ensureYearHolidaysLoaded(thisYear - 1),
+                ensureYearHolidaysLoaded(thisYear),
+                ensureYearHolidaysLoaded(thisYear + 1)
+            ]);
+
+            console.log('[Calendar] 초기 공휴일 로드 완료:', Object.keys(holidays).length, '건');
+
+            // 오늘 날짜 기본 선택
+            const today = new Date();
+            const todayStr = formatDate(today);
+            selectedDates = [todayStr];
+            scheduleStartDate.value = todayStr;
+            scheduleEndDate.value = todayStr;
+            updateSelectedPeriodDisplay();
+
+            console.log('[Calendar] 오늘 날짜:', todayStr);
+            console.log('[Calendar] 달력 렌더링 시작');
+
+            // 달력 렌더링
+            await renderCalendar();
+        })();
+    }
+
+    // 초기화: 참석자 목록 렌더링 (빈 상태 표시)
+    renderParticipantsList();
+
     // 초기화: 팀 목록 로드
     loadTeamsList();
 

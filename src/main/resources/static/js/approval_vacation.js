@@ -1505,7 +1505,8 @@ document.addEventListener('DOMContentLoaded', function() {
     let selectionMode = null; // 'start' or 'range'
 
     // 공휴일 데이터 (API에서 로드)
-    let holidays = {};
+    let holidays = {}; // 공휴일 데이터 (년도별 캐시)
+    let loadedYears = new Set(); // 로드된 년도 추적
 
     // 여러 기간 관리
     let vacationPeriods = []; // 추가된 휴가 기간 목록
@@ -1586,59 +1587,31 @@ document.addEventListener('DOMContentLoaded', function() {
         return `${year}.${month}.${day}`;
     }
 
-    // 공휴일 데이터 로드 (API 호출)
-    async function loadHolidays(year) {
+    // 특정 년도 공휴일 데이터 로드
+    async function loadHolidaysByYear(year) {
         try {
-            const response = await fetch(`/api/calendar/holidays/year/${year}`);
+            const response = await fetch(`/api/holidays?year=${year}`);
             if (!response.ok) {
-                throw new Error('공휴일 데이터를 불러오는데 실패했습니다.');
+                throw new Error(`${year}년 공휴일 데이터를 불러오는데 실패했습니다.`);
             }
 
-            const data = await response.json();
-            console.log('[DEBUG] API 응답:', data);
-
-            if (data.success && data.holidays) {
-                console.log('[DEBUG] 첫 번째 공휴일 원본 데이터:', data.holidays[0]);
-                console.log('[DEBUG] holidayDate 타입:', typeof data.holidays[0]?.holidayDate);
-                console.log('[DEBUG] holidayDate 값:', data.holidays[0]?.holidayDate);
-
-                // holidays 배열을 객체로 변환 (날짜 -> 공휴일명)
-                const holidayMap = {};
-                data.holidays.forEach(holiday => {
-                    // LocalDate가 배열로 오는 경우 처리
-                    let dateStr;
-                    if (Array.isArray(holiday.holidayDate)) {
-                        // [2025, 1, 29] 형식인 경우
-                        const [year, month, day] = holiday.holidayDate;
-                        dateStr = `${year}-${String(month).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
-                    } else if (typeof holiday.holidayDate === 'string') {
-                        // 이미 문자열인 경우
-                        dateStr = holiday.holidayDate;
-                    } else {
-                        console.warn('[DEBUG] 예상치 못한 날짜 형식:', holiday.holidayDate);
-                        return;
-                    }
-                    holidayMap[dateStr] = holiday.holidayName;
-                });
-
-                console.log('[DEBUG] 변환된 공휴일 맵 샘플:', Object.entries(holidayMap).slice(0, 5));
-                console.log('[DEBUG] 공휴일 맵 총 개수:', Object.keys(holidayMap).length);
-                return holidayMap;
-            }
-            return {};
+            const yearHolidays = await response.json();
+            console.log(`[Vacation] ${year}년 공휴일 로드 완료:`, Object.keys(yearHolidays).length, '건');
+            return yearHolidays;
         } catch (error) {
-            console.error('공휴일 로드 실패:', error);
+            console.error(`[Vacation] ${year}년 공휴일 로드 실패:`, error);
             return {};
         }
     }
 
-    // 달력에 필요한 년도의 공휴일 로드
+    // 특정 년도 공휴일 보장 (없으면 로드)
     async function ensureHolidaysLoaded(year) {
-        // 해당 년도 공휴일이 없으면 로드
-        const yearHolidays = await loadHolidays(year);
-        holidays = { ...holidays, ...yearHolidays };
-        console.log(`[DEBUG] ensureHolidaysLoaded 완료 - ${year}년 공휴일:`, Object.keys(holidays).length, '건');
-        console.log('[DEBUG] holidays 객체 샘플:', Object.entries(holidays).slice(0, 3));
+        if (!loadedYears.has(year)) {
+            const yearHolidays = await loadHolidaysByYear(year);
+            Object.assign(holidays, yearHolidays); // 기존 holidays 객체에 병합
+            loadedYears.add(year);
+            console.log(`[Vacation] ${year}년 공휴일 캐시 추가`);
+        }
     }
 
     // 날짜가 추가된 기간에 포함되는지 체크
@@ -1720,10 +1693,20 @@ document.addEventListener('DOMContentLoaded', function() {
     }
 
     // 달력 렌더링
-    function renderCalendar() {
+    async function renderCalendar() {
         const firstDay = new Date(currentYear, currentMonth, 1);
         const lastDay = new Date(currentYear, currentMonth + 1, 0);
         const prevLastDay = new Date(currentYear, currentMonth, 0);
+
+        // 이전달, 현재달, 다음달의 년도 공휴일 로드 (다른 년도일 수 있음)
+        const prevMonthYear = new Date(currentYear, currentMonth - 1, 1).getFullYear();
+        const nextMonthYear = new Date(currentYear, currentMonth + 1, 1).getFullYear();
+
+        await Promise.all([
+            ensureHolidaysLoaded(prevMonthYear),
+            ensureHolidaysLoaded(currentYear),
+            ensureHolidaysLoaded(nextMonthYear)
+        ]);
 
         const firstDayOfWeek = firstDay.getDay();
         const lastDate = lastDay.getDate();
