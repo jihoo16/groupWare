@@ -24,6 +24,10 @@ document.addEventListener('DOMContentLoaded', function() {
     let holidays = {};
     let loadedYears = new Set(); // 로드된 년도 추적
 
+    // 필터링된 유형/팀을 저장하는 전역 변수
+    let activeTypeFilters = ['business', 'meeting-room', 'leave', 'etc'];
+    let activeTeamFilters = [];
+
     // 드래그 선택 관련 변수
     let isDragging = false;
     let dragStartDate = null;
@@ -36,6 +40,16 @@ document.addEventListener('DOMContentLoaded', function() {
     // 탭 및 팀 관련 변수
     let currentQuickEventTab = 'personal'; // 'personal' or 'team'
     let quickTeamsList = []; // 팀 목록
+    let selectedTeam = null; // 선택된 팀 정보
+
+    // 팀 색상 맵
+    const teamColors = {
+        'dev': '#1e88e5',
+        'design': '#ec407a',
+        'marketing': '#fb8c00',
+        'sales': '#43a047',
+        'hr': '#8e24aa'
+    };
 
     // 일정 데이터 로드 함수
     async function loadSchedules(startDate, endDate) {
@@ -284,6 +298,20 @@ document.addEventListener('DOMContentLoaded', function() {
     // 월간 뷰 - 마우스 휠 이벤트
     calendarGrid.addEventListener('wheel', handleWheelNavigation, { passive: false });
 
+    // 일정이 필터를 통과하는지 확인하는 함수
+    function shouldShowSchedule(schedule) {
+        // 유형 필터 체크
+        const typeMatch = activeTypeFilters.length === 0 || activeTypeFilters.includes(schedule.type);
+
+        // 팀 필터 체크 (팀 필터가 있는 경우에만)
+        let teamMatch = true;
+        if (activeTeamFilters.length > 0 && schedule.teamIdx) {
+            teamMatch = activeTeamFilters.includes(schedule.teamIdx.toString());
+        }
+
+        return typeMatch && teamMatch;
+    }
+
     // 달력 렌더링
     async function renderCalendar() {
         const year = currentDate.getFullYear();
@@ -402,7 +430,10 @@ document.addEventListener('DOMContentLoaded', function() {
             const scheduleStart = new Date(s.startDate);
             const scheduleEnd = new Date(s.endDate);
             const currentDate = new Date(dateStr);
-            return currentDate >= scheduleStart && currentDate <= scheduleEnd;
+            const dateMatch = currentDate >= scheduleStart && currentDate <= scheduleEnd;
+
+            // 필터링 조건 추가
+            return dateMatch && shouldShowSchedule(s);
         });
 
         // 연속 일정을 상단에 정렬 (시작일이 빠른 순 -> 종료일이 늦은 순)
@@ -428,10 +459,32 @@ document.addEventListener('DOMContentLoaded', function() {
             return 0;
         });
 
-        // 내 일정이 있는지 확인
-        const hasMySchedule = daySchedules.some(s => s.participants.includes(currentUser));
-        if (hasMySchedule) {
-            classes.push('has-my-schedule');
+        // 내 일정이 있는지 확인 (연속 일정 시작/중간/종료 구분)
+        const mySchedules = daySchedules.filter(s => s.participants.includes(currentUser));
+        if (mySchedules.length > 0) {
+            // 연속 일정이 있는지 확인
+            const hasMultiDayStart = mySchedules.some(s => {
+                const dayDiff = Math.ceil((new Date(s.endDate) - new Date(s.startDate)) / (1000 * 60 * 60 * 24));
+                return dayDiff >= 1 && dateStr === s.startDate;
+            });
+            const hasMultiDayEnd = mySchedules.some(s => {
+                const dayDiff = Math.ceil((new Date(s.endDate) - new Date(s.startDate)) / (1000 * 60 * 60 * 24));
+                return dayDiff >= 1 && dateStr === s.endDate;
+            });
+            const hasMultiDayMiddle = mySchedules.some(s => {
+                const dayDiff = Math.ceil((new Date(s.endDate) - new Date(s.startDate)) / (1000 * 60 * 60 * 24));
+                return dayDiff >= 1 && dateStr !== s.startDate && dateStr !== s.endDate;
+            });
+            const hasSingleDay = mySchedules.some(s => {
+                const dayDiff = Math.ceil((new Date(s.endDate) - new Date(s.startDate)) / (1000 * 60 * 60 * 24));
+                return dayDiff < 1;
+            });
+
+            // 클래스 추가
+            if (hasMultiDayStart) classes.push('has-my-schedule-start');
+            if (hasMultiDayMiddle) classes.push('has-my-schedule-middle');
+            if (hasMultiDayEnd) classes.push('has-my-schedule-end');
+            if (hasSingleDay) classes.push('has-my-schedule');
         }
 
         // 일정 HTML 생성
@@ -821,6 +874,11 @@ document.addEventListener('DOMContentLoaded', function() {
     let notificationTime = 10; // 기본값: 10분 전
     let currentEditingSchedule = null; // 현재 수정 중인 일정 (null이면 추가 모드)
 
+    // 직원 자동완성 관련 변수
+    let allEmployees = []; // 전체 직원 목록
+    let employeeDropdown = null;
+    let participantInput = null;
+
     // 종일 체크박스 관련 요소
     const isAllDayCheckbox = document.getElementById('isAllDayCheckbox');
     const timeInputRow = document.getElementById('timeInputRow');
@@ -1031,9 +1089,18 @@ document.addEventListener('DOMContentLoaded', function() {
         notificationTimeBtns.forEach(b => b.classList.remove('active'));
         notificationTimeBtns[0].classList.add('active'); // 첫 번째 버튼(10분) 활성화
 
-        // 참여자 목록 초기화
-        selectedParticipants = [currentUser]; // 생성자는 기본 참여자
+        // 참여자 목록 초기화 (현재 사용자를 기본 참여자로 추가)
+        selectedParticipants = [{
+            id: currentUserIdx,
+            name: currentUser,
+            department: window.CURRENT_USER.empDeptName || '미지정',
+            rank: window.CURRENT_USER.empPositionName || '미지정'
+        }];
         renderParticipantsList();
+
+        // 팀 선택 초기화
+        selectedTeam = null;
+        renderSelectedTeamTag();
 
         // 모달 표시
         document.getElementById('scheduleAddModal').classList.add('show');
@@ -1070,31 +1137,295 @@ document.addEventListener('DOMContentLoaded', function() {
         notificationTimeBtns.forEach(b => b.classList.remove('active'));
         notificationTimeBtns[0].classList.add('active'); // 첫 번째 버튼(10분) 활성화
 
-        // 참여자 목록 초기화
-        selectedParticipants = [currentUser]; // 생성자는 기본 참여자
+        // 참여자 목록 초기화 (현재 사용자를 기본 참여자로 추가)
+        selectedParticipants = [{
+            id: currentUserIdx,
+            name: currentUser,
+            department: window.CURRENT_USER.empDeptName || '미지정',
+            rank: window.CURRENT_USER.empPositionName || '미지정'
+        }];
         renderParticipantsList();
+
+        // 팀 선택 초기화
+        selectedTeam = null;
+        renderSelectedTeamTag();
 
         // 모달 표시
         document.getElementById('scheduleAddModal').classList.add('show');
     }
 
-    // 참여자 추가 버튼
-    document.getElementById('addParticipantBtn').addEventListener('click', function() {
-        const input = document.getElementById('participantInput');
-        const name = input.value.trim();
+    // 직원 목록 로드
+    async function loadEmployees() {
+        try {
+            const response = await fetch('/api/users');
+            if (!response.ok) {
+                throw new Error('직원 목록 로드 실패');
+            }
+            allEmployees = await response.json();
+            console.log('직원 목록 로드 완료:', allEmployees.length, '명');
+        } catch (error) {
+            console.error('직원 목록 로드 중 오류:', error);
+            allEmployees = [];
+        }
+    }
 
-        if (name && !selectedParticipants.includes(name)) {
-            selectedParticipants.push(name);
+    // 키보드 네비게이션 관련 변수
+    let filteredEmployees = [];
+    let selectedDropdownIndex = -1;
+
+    // 한글 초성 검색 헬퍼 함수
+    const CHO_HANGUL = ['ㄱ','ㄲ','ㄴ','ㄷ','ㄸ','ㄹ','ㅁ','ㅂ','ㅃ','ㅅ','ㅆ','ㅇ','ㅈ','ㅉ','ㅊ','ㅋ','ㅌ','ㅍ','ㅎ'];
+
+    function isHangul(char) {
+        const code = char.charCodeAt(0);
+        return code >= 0xAC00 && code <= 0xD7A3;
+    }
+
+    function isChosung(char) {
+        return CHO_HANGUL.includes(char);
+    }
+
+    function getChosung(str) {
+        let result = '';
+        for (let i = 0; i < str.length; i++) {
+            const char = str[i];
+            if (isHangul(char)) {
+                const code = char.charCodeAt(0) - 0xAC00;
+                const chosungIndex = Math.floor(code / 588); // 588 = 21 * 28
+                result += CHO_HANGUL[chosungIndex];
+            } else {
+                result += char;
+            }
+        }
+        return result;
+    }
+
+    function matchesChosung(text, search) {
+        const textChosung = getChosung(text);
+        return textChosung.includes(search);
+    }
+
+    function isAllChosung(str) {
+        for (let i = 0; i < str.length; i++) {
+            const char = str[i];
+            if (!isChosung(char) && char !== ' ') {
+                return false;
+            }
+        }
+        return str.trim().length > 0;
+    }
+
+    // 직원 드롭다운 표시
+    function showEmployeeDropdown(searchText) {
+        if (!employeeDropdown) {
+            employeeDropdown = document.getElementById('employeeDropdown');
+        }
+
+        if (!searchText || searchText.length === 0) {
+            employeeDropdown.style.display = 'none';
+            filteredEmployees = [];
+            selectedDropdownIndex = -1;
+            return;
+        }
+
+        // 검색어로 필터링 (이름, 부서, 직급 + 초성 검색)
+        filteredEmployees = allEmployees.filter(emp => {
+            const name = emp.empName || '';
+            const dept = emp.empDeptName || '';
+            const position = emp.empPositionName || '';
+            const searchLower = searchText.toLowerCase();
+
+            // 이미 추가된 내부 직원은 제외
+            const isAlreadyAdded = selectedParticipants.some(p => p.id === emp.idx);
+            if (isAlreadyAdded) {
+                return false;
+            }
+
+            // 초성 검색인 경우
+            if (isAllChosung(searchText)) {
+                return matchesChosung(name, searchText) ||
+                       matchesChosung(dept, searchText) ||
+                       matchesChosung(position, searchText);
+            }
+
+            // 일반 검색
+            return name.toLowerCase().includes(searchLower) ||
+                   dept.toLowerCase().includes(searchLower) ||
+                   position.toLowerCase().includes(searchLower);
+        }).slice(0, 10); // 최대 10개
+
+        if (filteredEmployees.length === 0) {
+            employeeDropdown.style.display = 'none';
+            selectedDropdownIndex = -1;
+            return;
+        }
+
+        // 선택 인덱스 초기화
+        selectedDropdownIndex = -1;
+
+        // 드롭다운 렌더링
+        employeeDropdown.innerHTML = '';
+        filteredEmployees.forEach((emp, index) => {
+            const item = document.createElement('div');
+            item.className = 'employee-dropdown-item';
+            item.dataset.index = index;
+
+            const initials = emp.empName ? emp.empName.substring(0, 1) : '?';
+
+            item.innerHTML = `
+                <div class="employee-avatar">${initials}</div>
+                <div class="employee-info">
+                    <div class="employee-name">${emp.empName || '이름 없음'}</div>
+                    <div class="employee-detail">${emp.empDeptName || '부서 없음'} · ${emp.empPositionName || '직급 없음'}</div>
+                </div>
+            `;
+
+            item.addEventListener('click', function() {
+                addParticipantByEmployee(emp);
+                participantInput.value = '';
+                employeeDropdown.style.display = 'none';
+                filteredEmployees = [];
+                selectedDropdownIndex = -1;
+            });
+
+            item.addEventListener('mouseenter', function() {
+                selectedDropdownIndex = index;
+                updateDropdownSelection();
+            });
+
+            employeeDropdown.appendChild(item);
+        });
+
+        employeeDropdown.style.display = 'block';
+    }
+
+    // 드롭다운 선택 상태 업데이트
+    function updateDropdownSelection() {
+        const items = employeeDropdown.querySelectorAll('.employee-dropdown-item');
+        items.forEach((item, index) => {
+            if (index === selectedDropdownIndex) {
+                item.classList.add('active');
+            } else {
+                item.classList.remove('active');
+            }
+        });
+    }
+
+    // 내부 직원으로 참석자 추가
+    function addParticipantByEmployee(emp) {
+        const participant = {
+            id: emp.idx,
+            name: emp.empName,
+            department: emp.empDeptName || '미지정',
+            rank: emp.empPositionName || '미지정'
+        };
+
+        // 중복 체크 (id 기준)
+        if (!selectedParticipants.find(p => p.id === participant.id)) {
+            selectedParticipants.push(participant);
             renderParticipantsList();
-            input.value = '';
+        }
+    }
+
+    // 외부인원으로 참석자 추가
+    function addExternalParticipant(name) {
+        const participant = {
+            id: null,
+            name: name,
+            department: '외부',
+            rank: '외부인원'
+        };
+
+        // 중복 체크 (이름 기준)
+        if (!selectedParticipants.find(p => p.name === name)) {
+            selectedParticipants.push(participant);
+            renderParticipantsList();
+        }
+    }
+
+    // 참석자 추가 (중복 체크) - 하위 호환성
+    function addParticipant(name) {
+        addExternalParticipant(name);
+    }
+
+    // 참여자 입력란 이벤트
+    participantInput = document.getElementById('participantInput');
+    employeeDropdown = document.getElementById('employeeDropdown');
+
+    if (participantInput) {
+        // 입력 시 자동완성
+        participantInput.addEventListener('input', function(e) {
+            const searchText = e.target.value.trim();
+            showEmployeeDropdown(searchText);
+        });
+
+        // 포커스 시 드롭다운 표시
+        participantInput.addEventListener('focus', function(e) {
+            const searchText = e.target.value.trim();
+            if (searchText) {
+                showEmployeeDropdown(searchText);
+            }
+        });
+
+        // 키보드 네비게이션
+        participantInput.addEventListener('keydown', function(e) {
+            const isDropdownOpen = employeeDropdown.style.display === 'block' && filteredEmployees.length > 0;
+
+            if (e.key === 'ArrowDown') {
+                e.preventDefault();
+                if (isDropdownOpen) {
+                    selectedDropdownIndex = Math.min(selectedDropdownIndex + 1, filteredEmployees.length - 1);
+                    updateDropdownSelection();
+                }
+            } else if (e.key === 'ArrowUp') {
+                e.preventDefault();
+                if (isDropdownOpen) {
+                    selectedDropdownIndex = Math.max(selectedDropdownIndex - 1, 0);
+                    updateDropdownSelection();
+                }
+            } else if (e.key === 'Enter') {
+                e.preventDefault();
+                if (isDropdownOpen && selectedDropdownIndex >= 0) {
+                    // 드롭다운에서 선택된 직원 추가
+                    const selectedEmp = filteredEmployees[selectedDropdownIndex];
+                    addParticipantByEmployee(selectedEmp);
+                    participantInput.value = '';
+                    employeeDropdown.style.display = 'none';
+                    filteredEmployees = [];
+                    selectedDropdownIndex = -1;
+                } else {
+                    // 외부인원 추가
+                    const name = participantInput.value.trim();
+                    if (name) {
+                        addExternalParticipant(name);
+                        participantInput.value = '';
+                        employeeDropdown.style.display = 'none';
+                    }
+                }
+            } else if (e.key === 'Escape') {
+                employeeDropdown.style.display = 'none';
+                filteredEmployees = [];
+                selectedDropdownIndex = -1;
+            }
+        });
+    }
+
+    // 참여자 추가 버튼 (외부인원 직접 입력용)
+    document.getElementById('addParticipantBtn').addEventListener('click', function() {
+        const name = participantInput.value.trim();
+        if (name) {
+            addParticipant(name);
+            participantInput.value = '';
+            employeeDropdown.style.display = 'none';
         }
     });
 
-    // 참여자 입력란에서 엔터키 처리
-    document.getElementById('participantInput').addEventListener('keypress', function(e) {
-        if (e.key === 'Enter') {
-            e.preventDefault();
-            document.getElementById('addParticipantBtn').click();
+    // 드롭다운 외부 클릭 시 닫기
+    document.addEventListener('click', function(e) {
+        if (employeeDropdown && participantInput) {
+            if (!participantInput.contains(e.target) && !employeeDropdown.contains(e.target)) {
+                employeeDropdown.style.display = 'none';
+            }
         }
     });
 
@@ -1103,12 +1434,16 @@ document.addEventListener('DOMContentLoaded', function() {
         const listContainer = document.getElementById('participantsList');
         listContainer.innerHTML = '';
 
-        selectedParticipants.forEach(name => {
+        selectedParticipants.forEach(participant => {
             const tag = document.createElement('div');
             tag.className = 'participant-tag';
+            const isExternal = participant.id === null;
+            const badge = isExternal ? ' <span class="external-badge">외부</span>' : '';
+            const canRemove = participant.id !== currentUserIdx;
+
             tag.innerHTML = `
-                ${name}
-                ${name !== currentUser ? `<button type="button" class="participant-remove" data-name="${name}">×</button>` : ''}
+                ${participant.name}${badge}
+                ${canRemove ? `<button type="button" class="participant-remove" data-id="${participant.id}" data-name="${participant.name}">×</button>` : ''}
             `;
             listContainer.appendChild(tag);
         });
@@ -1116,8 +1451,15 @@ document.addEventListener('DOMContentLoaded', function() {
         // 삭제 버튼 이벤트
         listContainer.querySelectorAll('.participant-remove').forEach(btn => {
             btn.addEventListener('click', function() {
+                const id = this.getAttribute('data-id');
                 const name = this.getAttribute('data-name');
-                selectedParticipants = selectedParticipants.filter(p => p !== name);
+                if (id === 'null') {
+                    // 외부인원 (id가 null)
+                    selectedParticipants = selectedParticipants.filter(p => p.name !== name || p.id !== null);
+                } else {
+                    // 내부 직원
+                    selectedParticipants = selectedParticipants.filter(p => p.id !== parseInt(id));
+                }
                 renderParticipantsList();
             });
         });
@@ -1152,12 +1494,11 @@ document.addEventListener('DOMContentLoaded', function() {
         let teamIdx = null;
 
         if (currentQuickEventTab === 'team') {
-            const selectedTeamIdx = document.getElementById('quickTeamSelect').value;
-            if (!selectedTeamIdx) {
+            if (!selectedTeam || !selectedTeam.idx) {
                 showAlert('팀을 선택하세요.', 'warning');
                 return;
             }
-            teamIdx = parseInt(selectedTeamIdx);
+            teamIdx = selectedTeam.idx;
         }
 
         // 날짜 유효성 검사
@@ -1182,9 +1523,9 @@ document.addEventListener('DOMContentLoaded', function() {
             teamIdx: teamIdx, // 팀 일정인 경우 팀 ID, 개인 일정인 경우 null
             notificationYn: notificationEnabled ? 'Y' : 'N',
             notificationMinutes: notificationTime,
-            participants: selectedParticipants.map(name => ({
-                userName: name,
-                userIdx: null, // TODO: 실제 사용자 IDX 매핑 필요
+            participants: selectedParticipants.map(participant => ({
+                userName: participant.name,
+                userIdx: participant.id,
                 receiveNotification: 'Y'
             }))
         };
@@ -1464,11 +1805,13 @@ document.addEventListener('DOMContentLoaded', function() {
             .filter(cb => cb.checked)
             .map(cb => cb.value);
 
+        activeTypeFilters = selectedTypes;
+        activeTeamFilters = selectedTeams;
+
         console.log('선택된 팀:', selectedTeams);
         console.log('선택된 유형:', selectedTypes);
 
-        // TODO: 필터링된 일정만 표시
-        // 실제로는 schedules 배열을 필터링하여 다시 렌더링해야 함
+        // 달력 다시 렌더링
         renderCalendar();
     }
 
@@ -2153,19 +2496,94 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     }
 
-    // 팀 선택 드롭다운 렌더링
-    function renderQuickTeamSelect() {
-        const quickTeamSelect = document.getElementById('quickTeamSelect');
-        if (!quickTeamSelect) return;
+    // 팀 선택 모달 렌더링
+    function renderTeamSelectModal() {
+        const teamSelectList = document.getElementById('teamSelectList');
+        if (!teamSelectList) return;
 
-        quickTeamSelect.innerHTML = '<option value="">팀을 선택하세요</option>';
+        teamSelectList.innerHTML = '';
 
         quickTeamsList.forEach(team => {
-            const option = document.createElement('option');
-            option.value = team.idx;
-            option.textContent = team.teamName;
-            quickTeamSelect.appendChild(option);
+            const teamItem = document.createElement('div');
+            teamItem.className = 'team-select-item';
+            teamItem.dataset.teamIdx = team.idx;
+            teamItem.dataset.teamName = team.teamName;
+
+            // 팀 색상 (팀 이름을 소문자로 변환해서 매칭)
+            const teamKey = team.teamName.toLowerCase();
+            const teamColor = teamColors[teamKey] || '#667eea'; // 기본 색상
+
+            teamItem.innerHTML = `
+                <div class="team-select-color" style="background: ${teamColor};"></div>
+                <div class="team-select-name">${team.teamName}</div>
+                <i class="fas fa-check team-select-check"></i>
+            `;
+
+            // 팀 선택 이벤트
+            teamItem.addEventListener('click', function() {
+                selectTeam(team, teamColor);
+            });
+
+            teamSelectList.appendChild(teamItem);
         });
+    }
+
+    // 팀 선택 처리
+    function selectTeam(team, color) {
+        selectedTeam = {
+            idx: team.idx,
+            name: team.teamName,
+            color: color
+        };
+
+        // 선택된 팀 태그 표시
+        renderSelectedTeamTag();
+
+        // 팀 멤버 자동 추가
+        loadQuickTeamMembersAsParticipants(team.idx);
+
+        // 모달 닫기
+        const teamSelectModal = document.getElementById('teamSelectModal');
+        teamSelectModal.classList.remove('show');
+    }
+
+    // 선택된 팀 태그 렌더링
+    function renderSelectedTeamTag() {
+        const selectedTeamTag = document.getElementById('selectedTeamTag');
+        if (!selectedTeamTag) return;
+
+        if (!selectedTeam) {
+            selectedTeamTag.innerHTML = '';
+            return;
+        }
+
+        selectedTeamTag.innerHTML = `
+            <div class="participant-tag" style="background: ${selectedTeam.color}20; color: ${selectedTeam.color}; border: 2px solid ${selectedTeam.color};">
+                <i class="fas fa-users"></i>
+                ${selectedTeam.name}
+                <button type="button" class="participant-remove" style="color: ${selectedTeam.color};">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+        `;
+
+        // 제거 버튼 이벤트
+        const removeBtn = selectedTeamTag.querySelector('.participant-remove');
+        if (removeBtn) {
+            removeBtn.addEventListener('click', function() {
+                selectedTeam = null;
+                renderSelectedTeamTag();
+                // 참석자 목록도 초기화
+                selectedParticipants = [];
+                renderParticipantsList();
+            });
+        }
+    }
+
+    // 팀 선택 드롭다운 렌더링 (기존 함수 - 사용 안함)
+    function renderQuickTeamSelect() {
+        // 팀 선택 모달로 대체
+        renderTeamSelectModal();
     }
 
     // 간략한 탭 전환
@@ -2200,17 +2618,41 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     });
 
-    // 간략한 모달 - 팀 선택 이벤트
-    const quickTeamSelect = document.getElementById('quickTeamSelect');
-    if (quickTeamSelect) {
-        quickTeamSelect.addEventListener('change', async function() {
-            const selectedIdx = this.value;
-            if (!selectedIdx) {
-                return;
-            }
+    // 팀 선택 모달 열기 버튼
+    const openTeamSelectModalBtn = document.getElementById('openTeamSelectModal');
+    if (openTeamSelectModalBtn) {
+        openTeamSelectModalBtn.addEventListener('click', function() {
+            const teamSelectModal = document.getElementById('teamSelectModal');
+            teamSelectModal.classList.add('show');
+            renderTeamSelectModal();
+        });
+    }
 
-            // 팀 멤버 자동 추가
-            await loadQuickTeamMembersAsParticipants(parseInt(selectedIdx));
+    // 팀 선택 모달 닫기 버튼들
+    const closeTeamSelectModalBtn = document.getElementById('closeTeamSelectModal');
+    const cancelTeamSelectBtn = document.getElementById('cancelTeamSelectBtn');
+
+    if (closeTeamSelectModalBtn) {
+        closeTeamSelectModalBtn.addEventListener('click', function() {
+            const teamSelectModal = document.getElementById('teamSelectModal');
+            teamSelectModal.classList.remove('show');
+        });
+    }
+
+    if (cancelTeamSelectBtn) {
+        cancelTeamSelectBtn.addEventListener('click', function() {
+            const teamSelectModal = document.getElementById('teamSelectModal');
+            teamSelectModal.classList.remove('show');
+        });
+    }
+
+    // 팀 선택 모달 배경 클릭 시 닫기
+    const teamSelectModal = document.getElementById('teamSelectModal');
+    if (teamSelectModal) {
+        teamSelectModal.addEventListener('click', function(e) {
+            if (e.target === this) {
+                this.classList.remove('show');
+            }
         });
     }
 
@@ -2224,13 +2666,43 @@ document.addEventListener('DOMContentLoaded', function() {
             const teamData = await response.json();
 
             if (teamData.members && teamData.members.length > 0) {
+                console.log('팀 멤버 데이터:', teamData.members);
+
                 // 기존 참석자 목록 초기화 (중복 방지)
                 selectedParticipants = [];
 
-                // 팀 멤버들의 이름만 추가
+                // 팀 멤버들을 참석자 형식으로 변환하여 추가
                 teamData.members.forEach(member => {
-                    if (member.memberName) {
-                        selectedParticipants.push(member.memberName);
+                    // member가 문자열인 경우 (이름만 있는 경우)
+                    if (typeof member === 'string') {
+                        // allEmployees에서 이름으로 직원 찾기
+                        const employee = allEmployees.find(emp => emp.empName === member);
+
+                        if (employee) {
+                            // 내부 직원으로 추가
+                            selectedParticipants.push({
+                                id: employee.idx,
+                                name: employee.empName,
+                                department: employee.empDeptName || '미지정',
+                                rank: employee.empPositionName || '미지정'
+                            });
+                        } else {
+                            // 직원을 찾지 못한 경우 외부인원으로 추가
+                            selectedParticipants.push({
+                                id: null,
+                                name: member,
+                                department: '외부',
+                                rank: '외부인원'
+                            });
+                        }
+                    } else {
+                        // member가 객체인 경우
+                        selectedParticipants.push({
+                            id: member.memberIdx || member.idx || member.empIdx,
+                            name: member.memberName || member.empName || member.name || '이름 없음',
+                            department: member.memberDeptName || member.empDeptName || member.memberDept || member.empDept || '미지정',
+                            rank: member.memberPositionName || member.empPositionName || member.memberPosition || member.empPosition || '미지정'
+                        });
                     }
                 });
 
@@ -2282,8 +2754,9 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     }
 
-    // 초기화: 팀 목록 로드
+    // 초기화: 팀 목록 및 직원 목록 로드
     loadQuickTeamsList();
+    loadEmployees();
 
     // 초기 렌더링
     renderCalendar();

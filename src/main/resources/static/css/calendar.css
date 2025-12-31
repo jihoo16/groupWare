@@ -460,9 +460,12 @@
     background: #fff8f0;
 }
 
-.calendar-cell.has-my-schedule {
-    border: 2px solid #ffd766;
-    box-shadow: 0 0 10px rgba(255, 193, 7, 0.3);
+/* 내 일정이 있는 셀 - 하이라이트 제거 (일정 자체에 하이라이트가 있으므로) */
+.calendar-cell.has-my-schedule,
+.calendar-cell.has-my-schedule-start,
+.calendar-cell.has-my-schedule-middle,
+.calendar-cell.has-my-schedule-end {
+    /* 테두리 제거 - 일정 아이템 자체의 하이라이트로 충분함 */
 }
 
 .cell-header {
@@ -483,7 +486,7 @@
 }
 
 .holiday-name {
-    font-size: 9px;
+    font-size: 9.5px;
     color: #d32f2f;
     font-weight: 600;
     white-space: nowrap;
@@ -540,7 +543,7 @@
 
 .schedule-item {
     padding: 3px 5px;
-    font-size: 10.1px;
+    font-size: 10.5px;
     font-weight: 500;
     white-space: nowrap;
     overflow: visible;
@@ -609,14 +612,14 @@
 }
 
 .schedule-item.time-dot .dot-time {
-    font-size: 9px;
+    font-size: 9.5px;
     font-weight: 600;
     color: #5f6368;
     flex-shrink: 0;
 }
 
 .schedule-item.time-dot .dot-title {
-    font-size: 10px;
+    font-size: 10.5px;
     font-weight: 500;
     white-space: nowrap;
     overflow: hidden;
@@ -758,7 +761,7 @@
 
 /* 더보기 표시 */
 .more-schedules {
-    font-size: 10.1px;
+    font-size: 10.5px;
     color: #667eea;
     font-weight: 600;
     padding: 4px 8px;
@@ -1541,6 +1544,66 @@ input.form-input:read-only {
     background: #999 !important;
 }
 
+/* 팀 선택 모달 스타일 */
+.team-select-list {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.team-select-item {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 14px 16px;
+    background: #f8f9fa;
+    border: 2px solid #e0e0e0;
+    border-radius: 8px;
+    cursor: pointer;
+    transition: all 0.3s ease;
+}
+
+.team-select-item:hover {
+    background: #e8eaf6;
+    border-color: #667eea;
+    transform: translateY(-2px);
+    box-shadow: 0 2px 8px rgba(102, 126, 234, 0.2);
+}
+
+.team-select-item.selected {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    border-color: #667eea;
+    color: white;
+}
+
+.team-select-color {
+    width: 16px;
+    height: 16px;
+    border-radius: 50%;
+    flex-shrink: 0;
+}
+
+.team-select-name {
+    font-size: 14px;
+    font-weight: 600;
+    flex: 1;
+}
+
+.team-select-item.selected .team-select-name {
+    color: white;
+}
+
+.team-select-check {
+    font-size: 16px;
+    color: #667eea;
+    display: none;
+}
+
+.team-select-item.selected .team-select-check {
+    display: block;
+    color: white;
+}
+
 /* 연/월 선택 모달 스타일 */
 .year-month-modal {
     max-width: 600px;
@@ -1776,7 +1839,7 @@ input.form-input:read-only {
 .week-allday-event,
 .day-allday-event {
     padding: 4px 8px;
-    font-size: 11px;
+    font-size: 11.5px;
     font-weight: 500;
     color: white;
     border-radius: 4px;
@@ -1953,7 +2016,7 @@ input.form-input:read-only {
     position: absolute;
     padding: 4px 8px;
     border-radius: 4px;
-    font-size: 11px;
+    font-size: 11.5px;
     font-weight: 500;
     color: white;
     cursor: pointer;
@@ -1980,7 +2043,7 @@ input.form-input:read-only {
 }
 
 .event-time {
-    font-size: 10px;
+    font-size: 10.5px;
     opacity: 0.9;
 }
 
@@ -2121,7 +2184,7 @@ input.form-input:read-only {
     }
 
     .schedule-item {
-        font-size: 9.2px;
+        font-size: 9.5px;
     }
 
     .calendar-nav-header {
@@ -2164,7 +2227,7 @@ input.form-input:read-only {
     }
 
     .schedule-item {
-        font-size: 8.3px;
+        font-size: 8.8px;
         padding: 3px 5px;
     }
 
@@ -2181,4 +2244,485 @@ input.form-input:read-only {
     .current-month {
         font-size: 18px;
     }
+}
+
+/* ============================================
+   참석자 자동완성 드롭다운 스타일
+   ============================================ */
+
+.participants-input-wrapper {
+    position: relative;
+}
+
+.employee-dropdown {
+    position: absolute;
+    top: 100%;
+    left: 0;
+    right: 0;
+    background: white;
+    border: 2px solid #667eea;
+    border-top: none;
+    border-radius: 0 0 8px 8px;
+    max-height: 300px;
+    overflow-y: auto;
+    z-index: 1000;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+    margin-top: 2px;
+}
+
+.employee-dropdown-item {
+    padding: 12px 16px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    transition: all 0.2s ease;
+    border-bottom: 1px solid #f0f0f0;
+}
+
+.employee-dropdown-item:last-child {
+    border-bottom: none;
+}
+
+.employee-dropdown-item:hover,
+.employee-dropdown-item.active {
+    background: linear-gradient(135deg, #e8eaf6 0%, #f3e5f5 100%);
+}
+
+.employee-avatar {
+    width: 36px;
+    height: 36px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, #667eea, #764ba2);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: white;
+    font-weight: 600;
+    font-size: 14px;
+    flex-shrink: 0;
+}
+
+.employee-info {
+    flex: 1;
+}
+
+.employee-name {
+    font-size: 14px;
+    font-weight: 600;
+    color: #333;
+    margin-bottom: 2px;
+}
+
+.employee-detail {
+    font-size: 12px;
+    color: #666;
+}
+
+.employee-dropdown::-webkit-scrollbar {
+    width: 6px;
+}
+
+.employee-dropdown::-webkit-scrollbar-track {
+    background: #f0f0f0;
+    border-radius: 3px;
+}
+
+.employee-dropdown::-webkit-scrollbar-thumb {
+    background: #ccc;
+    border-radius: 3px;
+}
+
+.employee-dropdown::-webkit-scrollbar-thumb:hover {
+    background: #999;
+}
+
+/* 외부인원 뱃지 */
+.external-badge {
+    display: inline-block;
+    padding: 2px 8px;
+    margin-left: 6px;
+    background: #ff9800;
+    color: white;
+    border-radius: 4px;
+    font-size: 11px;
+    font-weight: 600;
+    vertical-align: middle;
+}
+
+/* ============================================
+   직원 선택 모달 스타일 (사용 안함 - 제거 예정)
+   ============================================ */
+
+.modal-content.modal-lg {
+    max-width: 1000px;
+}
+
+/* Employee Selection Container */
+.employee-selection-container {
+    display: grid;
+    grid-template-columns: 2fr 1fr;
+    gap: 20px;
+    height: 500px;
+}
+
+/* Org Tree Panel */
+.org-tree-panel {
+    display: flex;
+    flex-direction: column;
+    border: 2px solid #e0e0e0;
+    border-radius: 8px;
+    overflow: hidden;
+}
+
+.org-tree-panel .panel-header {
+    display: flex;
+    gap: 12px;
+    padding: 16px;
+    background: #f5f5f5;
+    border-bottom: 2px solid #e0e0e0;
+    align-items: center;
+}
+
+.panel-header-buttons {
+    display: flex;
+    gap: 8px;
+}
+
+.search-input {
+    flex: 1;
+    padding: 10px 14px;
+    border: 2px solid #e0e0e0;
+    border-radius: 6px;
+    font-size: 14px;
+    transition: all 0.3s ease;
+}
+
+.search-input:focus {
+    outline: none;
+    border-color: #667eea;
+    box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+}
+
+.btn-select-all {
+    background: white;
+    color: #00c853;
+    border: 2px solid #00c853;
+    padding: 10px 16px;
+    border-radius: 6px;
+    font-size: 13px;
+    font-weight: 600;
+    cursor: pointer;
+    white-space: nowrap;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    transition: all 0.3s ease;
+}
+
+.btn-select-all:hover {
+    background: #00c853;
+    color: white;
+    transform: translateY(-1px);
+    box-shadow: 0 2px 8px rgba(0, 200, 83, 0.3);
+}
+
+.btn-expand {
+    background: white;
+    color: #667eea;
+    border: 2px solid #667eea;
+    padding: 10px 16px;
+    border-radius: 6px;
+    font-size: 13px;
+    font-weight: 600;
+    cursor: pointer;
+    white-space: nowrap;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    transition: all 0.3s ease;
+}
+
+.btn-expand:hover {
+    background: #667eea;
+    color: white;
+}
+
+.org-tree-wrapper {
+    flex: 1;
+    overflow-y: auto;
+    padding: 16px;
+    background: white;
+}
+
+/* Organization Tree Styles */
+.org-tree {
+    font-size: 14px;
+}
+
+.tree-node {
+    margin-bottom: 8px;
+}
+
+.tree-node-header {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 8px 12px;
+    cursor: pointer;
+    border-radius: 6px;
+    transition: all 0.2s ease;
+    user-select: none;
+}
+
+.tree-node-header:hover {
+    background: #f5f5f5;
+}
+
+.tree-node.department > .tree-node-header {
+    background: linear-gradient(135deg, #e8eaf6 0%, #f3e5f5 100%);
+    font-weight: 600;
+    border: 2px solid #667eea;
+}
+
+.tree-node.position > .tree-node-header {
+    background: #f5f5f5;
+    font-weight: 500;
+}
+
+.tree-node.member > .tree-node-header {
+    padding-left: 40px;
+}
+
+.tree-toggle {
+    width: 20px;
+    height: 20px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: transform 0.3s ease;
+    color: #667eea;
+    flex-shrink: 0;
+}
+
+.tree-toggle.invisible {
+    visibility: hidden;
+}
+
+.tree-node.expanded > .tree-node-header .tree-toggle {
+    transform: rotate(90deg);
+}
+
+.tree-icon {
+    width: 20px;
+    height: 20px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: #667eea;
+    flex-shrink: 0;
+}
+
+.tree-label {
+    flex: 1;
+    font-size: 14px;
+    color: #333;
+}
+
+.tree-count {
+    font-size: 12px;
+    color: #999;
+    background: white;
+    padding: 2px 8px;
+    border-radius: 10px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.tree-count:hover {
+    background: #667eea;
+    color: white;
+    transform: scale(1.05);
+}
+
+.tree-children {
+    display: none;
+    padding-left: 24px;
+    margin-top: 4px;
+}
+
+.tree-node.expanded > .tree-children {
+    display: block;
+}
+
+.employee-checkbox {
+    width: 18px;
+    height: 18px;
+    cursor: pointer;
+    accent-color: #667eea;
+    flex-shrink: 0;
+}
+
+/* Selected Employees Panel */
+.selected-employees-panel {
+    display: flex;
+    flex-direction: column;
+    border: 2px solid #e0e0e0;
+    border-radius: 8px;
+    overflow: hidden;
+}
+
+.selected-employees-panel .panel-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 16px;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+}
+
+.selected-employees-panel h3 {
+    margin: 0;
+    font-size: 15px;
+    font-weight: 600;
+}
+
+.btn-clear {
+    background: rgba(255, 255, 255, 0.2);
+    color: white;
+    border: 1px solid rgba(255, 255, 255, 0.4);
+    padding: 6px 12px;
+    border-radius: 6px;
+    font-size: 12px;
+    font-weight: 600;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    transition: all 0.2s ease;
+}
+
+.btn-clear:hover {
+    background: rgba(255, 255, 255, 0.3);
+    border-color: rgba(255, 255, 255, 0.6);
+}
+
+.selected-employees-list {
+    flex: 1;
+    overflow-y: auto;
+    padding: 16px;
+    background: white;
+}
+
+.selected-employee-item {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 10px 14px;
+    background: #e8eaf6;
+    border-radius: 8px;
+    margin-bottom: 8px;
+    border: 1px solid #667eea;
+}
+
+.selected-employee-item:last-child {
+    margin-bottom: 0;
+}
+
+.selected-employee-avatar {
+    width: 36px;
+    height: 36px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, #667eea, #764ba2);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: white;
+    font-weight: 600;
+    font-size: 14px;
+    flex-shrink: 0;
+}
+
+.selected-employee-info {
+    flex: 1;
+    min-width: 0;
+}
+
+.selected-employee-name {
+    font-size: 14px;
+    font-weight: 600;
+    color: #333;
+    margin-bottom: 2px;
+}
+
+.selected-employee-dept {
+    font-size: 12px;
+    color: #6c757d;
+}
+
+.employee-name {
+    font-size: 14px;
+    font-weight: 600;
+    color: #667eea;
+}
+
+.remove-employee-btn {
+    background: none;
+    border: none;
+    color: #667eea;
+    cursor: pointer;
+    padding: 4px;
+    width: 24px;
+    height: 24px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 50%;
+    transition: all 0.2s ease;
+}
+
+.remove-employee-btn:hover {
+    background: #667eea;
+    color: white;
+}
+
+.tree-loading {
+    text-align: center;
+    padding: 40px 20px;
+    color: #999;
+}
+
+.tree-loading i {
+    font-size: 24px;
+    margin-bottom: 12px;
+    color: #667eea;
+}
+
+.tree-loading p {
+    font-size: 14px;
+    margin: 0;
+}
+
+/* Scrollbar Customization */
+.org-tree-wrapper::-webkit-scrollbar,
+.selected-employees-list::-webkit-scrollbar {
+    width: 8px;
+}
+
+.org-tree-wrapper::-webkit-scrollbar-track,
+.selected-employees-list::-webkit-scrollbar-track {
+    background: #f0f0f0;
+    border-radius: 4px;
+}
+
+.org-tree-wrapper::-webkit-scrollbar-thumb,
+.selected-employees-list::-webkit-scrollbar-thumb {
+    background: #ccc;
+    border-radius: 4px;
+}
+
+.org-tree-wrapper::-webkit-scrollbar-thumb:hover,
+.selected-employees-list::-webkit-scrollbar-thumb:hover {
+    background: #999;
 }
