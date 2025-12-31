@@ -44,15 +44,11 @@
                             <!-- 팀 일정 전용 필드 -->
                             <div class="form-group team-only" style="display: none;">
                                 <label class="form-label">팀 선택 <span class="required">*</span></label>
-                                <select id="teamSelect" class="form-input">
-                                    <option value="">팀을 선택하세요</option>
-                                    <!-- 팀 목록이 동적으로 로드됩니다 -->
-                                </select>
-                                <div class="team-color-preview" style="display: none; margin-top: 12px;">
-                                    <span style="font-size: 13px; font-weight: 600; color: #666;">선택한 팀 색상:</span>
-                                    <div class="team-color-box" style="display: inline-block; width: 24px; height: 24px; border-radius: 4px; margin-left: 8px; vertical-align: middle; border: 2px solid #e0e0e0;"></div>
-                                    <span class="team-name-preview" style="margin-left: 8px; font-size: 13px; color: #333;"></span>
-                                </div>
+                                <button type="button" id="openTeamSelectModalBtn" class="btn-add" style="width: 100%; justify-content: center;">
+                                    <i class="fas fa-users"></i>
+                                    팀 선택
+                                </button>
+                                <div id="selectedTeamTagContainer" class="participants-list" style="margin-top: 12px;"></div>
                             </div>
 
                             <div class="form-group">
@@ -123,26 +119,22 @@
                             </div><!-- /.tab-content-area -->
                         </div>
 
-                        <div class="form-section">
+                        <div class="form-section" id="participantsSection">
                             <h2 class="section-title">참석자</h2>
 
                             <div class="form-group">
-                                <button type="button" id="addParticipantBtn" class="btn-add">
-                                    <i class="fas fa-users"></i>
-                                    직원 선택
-                                </button>
                                 <div id="participantsList" class="participants-list">
                                     <!-- JavaScript에서 동적으로 렌더링됨 -->
                                 </div>
                             </div>
                         </div>
 
-                        <div class="form-section">
+                        <div class="form-section" id="detailSection">
                             <h2 class="section-title">상세 정보</h2>
 
                             <div class="form-group">
                                 <label class="form-label">설명</label>
-                                <textarea id="scheduleDescription" class="form-textarea" rows="3" placeholder="일정에 대한 설명을 입력하세요"></textarea>
+                                <textarea id="scheduleDescription" class="form-textarea" rows="6" placeholder="일정에 대한 설명을 입력하세요"></textarea>
                             </div>
 
                             <div class="form-group">
@@ -187,7 +179,27 @@
         </main>
     </div>
 
-    <!-- Employee Selection Modal -->
+    <!-- 팀 선택 모달 -->
+    <div id="teamSelectModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2 class="modal-title">팀 선택</h2>
+                <button class="modal-close" id="closeTeamSelectModal">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            <div class="modal-body">
+                <div class="team-select-list" id="teamSelectList">
+                    <!-- JavaScript로 동적 생성 -->
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn-secondary" id="cancelTeamSelectBtn">취소</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 직원 선택 모달 -->
     <div id="employeeSelectionModal" class="modal">
         <div class="modal-content modal-lg">
             <div class="modal-header">
@@ -209,13 +221,7 @@
                             </div>
                         </div>
                         <div class="org-tree-wrapper">
-                            <div id="employeeOrgTree" class="org-tree">
-                                <!-- 로딩 상태 -->
-                                <div class="tree-loading">
-                                    <i class="fas fa-spinner fa-spin"></i>
-                                    <p>직원 목록을 불러오는 중...</p>
-                                </div>
-                            </div>
+                            <div id="employeeOrgTree" class="org-tree"></div>
                         </div>
                     </div>
                     <div class="selected-employees-panel">
@@ -225,9 +231,7 @@
                                 <i class="fas fa-times"></i> 전체 해제
                             </button>
                         </div>
-                        <div id="selectedEmployeesList" class="selected-employees-list">
-                            <p style="text-align: center; color: #999; padding: 20px;">선택된 직원이 없습니다.</p>
-                        </div>
+                        <div id="selectedEmployeesList" class="selected-employees-list"></div>
                     </div>
                 </div>
             </div>

@@ -93,13 +93,22 @@
 }
 
 /* 참석자 섹션 - 우측 상단 */
-.form-section:nth-child(2) {
+#participantsSection {
     grid-column: 2;
     grid-row: 1;
+    padding: 16px;
+}
+
+#participantsSection .section-title {
+    margin-bottom: 12px;
+}
+
+#participantsSection .form-group {
+    margin-bottom: 0;
 }
 
 /* 상세 정보 섹션 - 우측 하단 */
-.form-section:nth-child(3) {
+#detailSection {
     grid-column: 2;
     grid-row: 2;
 }
@@ -369,6 +378,61 @@
     margin-top: 12px;
 }
 
+#participantsSection .participants-list {
+    margin-top: 0;
+}
+
+/* 참석자/팀 태그 스타일 */
+.participant-tag {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    background: #e8eaf6;
+    color: #667eea;
+    padding: 8px 14px;
+    border-radius: 20px;
+    font-size: 13px;
+    font-weight: 500;
+    border: 2px solid transparent;
+    transition: all 0.2s ease;
+}
+
+.participant-tag.team-tag {
+    padding: 10px 16px;
+    font-size: 14px;
+    font-weight: 600;
+}
+
+.team-tag-name {
+    flex: 1;
+}
+
+.participant-remove {
+    background: none;
+    border: none;
+    cursor: pointer;
+    font-size: 13px;
+    padding: 0;
+    width: 20px;
+    height: 20px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 50%;
+    transition: all 0.2s ease;
+    opacity: 0.7;
+}
+
+.participant-remove:hover {
+    opacity: 1;
+    background: rgba(0, 0, 0, 0.1);
+    transform: scale(1.15);
+}
+
+.team-tag-remove:hover {
+    background: rgba(255, 255, 255, 0.3);
+}
+
 /* 참석자 빈 상태 */
 .participants-list .empty-state {
     display: flex;
@@ -424,7 +488,7 @@
 
 /* 참석자 테이블 컨테이너 */
 .participants-table-container {
-    max-height: 350px;
+    max-height: 600px;
     overflow-x: hidden;
     overflow-y: auto;
     border: 2px solid #e0e0e0;
@@ -751,7 +815,8 @@
     backdrop-filter: blur(4px);
 }
 
-.modal.active {
+.modal.active,
+.modal.show {
     display: flex;
     align-items: center;
     justify-content: center;
@@ -1260,10 +1325,14 @@
     }
 
     .form-section:nth-child(1),
-    .form-section:nth-child(2),
-    .form-section:nth-child(3) {
+    #participantsSection,
+    #detailSection {
         grid-column: 1;
         grid-row: auto;
+    }
+
+    #participantsSection {
+        padding: 16px;
     }
 
     .form-actions {
@@ -1345,6 +1414,10 @@
     .modal-content.modal-lg {
         max-width: 95%;
         max-height: 90vh;
+    }
+
+    #teamSelectModal .modal-content {
+        max-width: 95%;
     }
 
     .employee-selection-container {
@@ -1608,4 +1681,200 @@
 .selected-period-display i {
     color: #667eea;
     font-size: 14px;
+}
+
+/* ============================================
+   참석자 자동완성 드롭다운 스타일
+   ============================================ */
+
+.participants-input-wrapper {
+    position: relative;
+}
+
+.participants-input {
+    display: flex;
+    gap: 8px;
+}
+
+.participants-input .form-input {
+    flex: 1;
+}
+
+.employee-dropdown {
+    position: absolute;
+    top: 100%;
+    left: 0;
+    right: 0;
+    background: white;
+    border: 2px solid #667eea;
+    border-top: none;
+    border-radius: 0 0 8px 8px;
+    max-height: 300px;
+    overflow-y: auto;
+    z-index: 1000;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+    margin-top: 2px;
+}
+
+.employee-dropdown-item {
+    padding: 12px 16px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    transition: all 0.2s ease;
+    border-bottom: 1px solid #f0f0f0;
+}
+
+.employee-dropdown-item:last-child {
+    border-bottom: none;
+}
+
+.employee-dropdown-item:hover,
+.employee-dropdown-item.active {
+    background: linear-gradient(135deg, #e8eaf6 0%, #f3e5f5 100%);
+}
+
+.employee-avatar {
+    width: 36px;
+    height: 36px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, #667eea, #764ba2);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: white;
+    font-weight: 600;
+    font-size: 14px;
+    flex-shrink: 0;
+}
+
+.employee-info {
+    flex: 1;
+}
+
+.employee-name {
+    font-size: 14px;
+    font-weight: 600;
+    color: #333;
+    margin-bottom: 2px;
+}
+
+.employee-detail {
+    font-size: 12px;
+    color: #666;
+}
+
+.employee-dropdown::-webkit-scrollbar {
+    width: 6px;
+}
+
+.employee-dropdown::-webkit-scrollbar-track {
+    background: #f0f0f0;
+    border-radius: 3px;
+}
+
+.employee-dropdown::-webkit-scrollbar-thumb {
+    background: #ccc;
+    border-radius: 3px;
+}
+
+.employee-dropdown::-webkit-scrollbar-thumb:hover {
+    background: #999;
+}
+
+/* 외부인원 뱃지 */
+.external-badge {
+    display: inline-block;
+    padding: 2px 8px;
+    margin-left: 6px;
+    background: #ff9800;
+    color: white;
+    border-radius: 4px;
+    font-size: 11px;
+    font-weight: 600;
+    vertical-align: middle;
+}
+
+/* 팀 선택 모달 스타일 */
+#teamSelectModal .modal-content {
+    max-width: 500px;
+}
+
+.team-select-list {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.team-select-item {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 14px 16px;
+    background: #f8f9fa;
+    border: 2px solid #e0e0e0;
+    border-radius: 8px;
+    cursor: pointer;
+    transition: all 0.3s ease;
+}
+
+.team-select-item:hover {
+    background: #e8eaf6;
+    border-color: #667eea;
+    transform: translateY(-2px);
+    box-shadow: 0 2px 8px rgba(102, 126, 234, 0.2);
+}
+
+.team-select-item.selected {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    border-color: #667eea;
+    color: white;
+}
+
+.team-select-color {
+    width: 16px;
+    height: 16px;
+    border-radius: 50%;
+    flex-shrink: 0;
+}
+
+.team-select-info {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+
+.team-select-name {
+    font-size: 14px;
+    font-weight: 600;
+}
+
+.team-select-members {
+    font-size: 12px;
+    color: #6c757d;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.team-select-members i {
+    font-size: 11px;
+}
+
+.team-select-item.selected .team-select-name,
+.team-select-item.selected .team-select-members {
+    color: white;
+}
+
+.team-select-check {
+    font-size: 16px;
+    color: #667eea;
+    display: none;
+}
+
+.team-select-item.selected .team-select-check {
+    display: block;
+    color: white;
 }
