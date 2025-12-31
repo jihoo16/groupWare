@@ -376,9 +376,10 @@
                             <!-- 팀 일정 전용 -->
                             <div class="form-group quick-team-only" style="display: none;">
                                 <label class="form-label">팀 선택 <span class="required">*</span></label>
-                                <select id="quickTeamSelect" class="form-input">
-                                    <option value="">팀을 선택하세요</option>
-                                </select>
+                                <button type="button" id="openTeamSelectModal" class="form-input" style="text-align: left; cursor: pointer; background: white;">
+                                    팀을 선택하세요
+                                </button>
+                                <div id="selectedTeamTag" class="participants-list" style="margin-top: 12px;"></div>
                             </div>
 
                             <div class="form-group">
@@ -439,9 +440,16 @@
 
                         <div class="form-group">
                             <label class="form-label">참석자</label>
-                            <div class="participants-input">
-                                <input type="text" id="participantInput" class="form-input" placeholder="참석자 이름을 입력하세요">
-                                <button type="button" id="addParticipantBtn" class="btn-add">추가</button>
+                            <div class="participants-input-wrapper">
+                                <div class="participants-input">
+                                    <input type="text" id="participantInput" class="form-input" placeholder="직원 이름 검색 또는 외부인원 입력" autocomplete="off">
+                                    <button type="button" id="addParticipantBtn" class="btn-add">
+                                        <i class="fas fa-plus"></i> 추가
+                                    </button>
+                                </div>
+                                <div id="employeeDropdown" class="employee-dropdown" style="display: none;">
+                                    <!-- 검색 결과가 여기 표시됩니다 -->
+                                </div>
                             </div>
                             <div id="participantsList" class="participants-list"></div>
                         </div>
@@ -512,6 +520,26 @@
                     <i class="fas fa-check"></i>
                     이동
                 </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 팀 선택 모달 -->
+    <div id="teamSelectModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2 class="modal-title">팀 선택</h2>
+                <button class="modal-close" id="closeTeamSelectModal">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            <div class="modal-body">
+                <div class="team-select-list" id="teamSelectList">
+                    <!-- JavaScript로 동적 생성 -->
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn-secondary" id="cancelTeamSelectBtn">취소</button>
             </div>
         </div>
     </div>
