@@ -371,99 +371,74 @@ div:focus {
     width: 100%;
 }
 
-/* 문서 양식 래퍼 */
-.document-form-wrapper {
-    background: white;
-    border: 2px solid #e8e8e8;
+/* ============================================
+   문서 미리보기 토글
+   ============================================ */
+.document-preview-toggle {
+    margin-top: 20px;
+}
+
+.toggle-btn {
+    width: 100%;
+    padding: 14px 20px;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+    border: none;
     border-radius: 10px;
-    overflow: visible;
-}
-
-.document-form-wrapper.collapsed {
-    overflow: hidden;
-}
-
-.document-form-header {
-    background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
-    padding: 16px 20px;
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    cursor: pointer;
-    transition: all 0.3s ease;
-    border-bottom: 2px solid #e8e8e8;
-}
-
-.document-form-header:hover {
-    background: linear-gradient(135deg, #e9ecef 0%, #dee2e6 100%);
-}
-
-.document-form-header h3 {
-    margin: 0;
-    font-size: 16px;
+    font-size: 14px;
     font-weight: 600;
-    color: #1a237e;
+    cursor: pointer;
     display: flex;
     align-items: center;
+    justify-content: center;
     gap: 10px;
+    transition: all 0.3s;
+    box-shadow: 0 4px 12px rgba(102, 126, 234, 0.3);
 }
 
-.document-form-header h3 i {
-    color: #667eea;
+.toggle-btn:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 16px rgba(102, 126, 234, 0.4);
 }
 
-.btn-toggle-form {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    padding: 8px 16px;
-    background: white;
-    border: 1px solid #dee2e6;
-    border-radius: 6px;
-    color: #495057;
-    font-size: 13px;
-    font-weight: 600;
-    cursor: pointer;
-    transition: all 0.2s ease;
+.toggle-icon {
+    transition: transform 0.3s;
 }
 
-.btn-toggle-form:hover {
-    background: #f8f9fa;
-    border-color: #adb5bd;
-    transform: translateY(-1px);
-}
-
-.btn-toggle-form i {
-    transition: transform 0.3s ease;
-}
-
-.document-form-wrapper.collapsed .btn-toggle-form i {
+.toggle-btn.active .toggle-icon {
     transform: rotate(180deg);
 }
 
-.document-form-wrapper.collapsed .btn-toggle-form span::before {
-    content: '펼치기';
+/* ============================================
+   문서 미리보기 영역
+   ============================================ */
+.document-form-wrapper {
+    margin-top: 16px;
+    background: white;
+    border-radius: 12px;
+    padding: 30px;
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.08);
+    max-height: 2000px;
+    overflow: hidden;
+    transition: all 0.4s ease-in-out;
 }
 
-.document-form-wrapper:not(.collapsed) .btn-toggle-form span::before {
-    content: '접기';
+.document-form-wrapper.collapsed {
+    max-height: 0;
+    padding: 0;
+    margin-top: 0;
+    opacity: 0;
+    box-shadow: none;
 }
 
-/* 문서 양식 */
 .document-form {
     background: white;
-    padding: 24px;
-    max-height: none;
-    overflow: visible;
-    transition: padding 0.3s ease, opacity 0.3s ease;
-    opacity: 1;
+    padding: 0;
+    transition: opacity 0.3s ease;
 }
 
 .document-form-wrapper.collapsed .document-form {
-    max-height: 0;
-    padding: 0 24px;
     opacity: 0;
-    overflow: hidden;
 }
 
 .doc-title {
@@ -1445,6 +1420,32 @@ div h2{
     background: rgba(255, 245, 245, 0.3); /* 연한 분홍 배경 */
 }
 
+/* 이미 신청된 연차 날짜 스타일 */
+.calendar-day.already-requested {
+    background: #f8f9fa;
+    color: #6c757d;
+    cursor: not-allowed;
+    position: relative;
+    text-decoration: line-through;
+    opacity: 0.6;
+}
+
+.calendar-day.already-requested:hover {
+    background: #f8f9fa !important;
+    cursor: not-allowed !important;
+}
+
+.calendar-day.already-requested::after {
+    content: '신청됨';
+    position: absolute;
+    bottom: 2px;
+    right: 3px;
+    font-size: 8px;
+    color: #6c757d;
+    font-weight: 600;
+    z-index: 1;
+}
+
 /* 추가된 기간 표시 스타일 (공통) */
 .calendar-day.period-added {
     background: linear-gradient(135deg, #d4edda 0%, #c3e6cb 100%);
@@ -1569,6 +1570,11 @@ div h2{
 .legend-color.period-added {
     background: linear-gradient(135deg, #d4edda 0%, #c3e6cb 100%);
     border: 1px solid #28a745;
+}
+
+.legend-color.already-requested {
+    background: #f8f9fa;
+    border: 2px solid #6c757d;
 }
 
 .legend-color.holiday {
@@ -2322,4 +2328,17 @@ div h2{
 .btn-remove-period:hover {
     background: #c82333;
     transform: scale(1.05);
+}
+
+/* 경고 애니메이션 */
+@keyframes shake {
+    0%, 100% {
+        transform: translateX(0);
+    }
+    10%, 30%, 50%, 70%, 90% {
+        transform: translateX(-5px);
+    }
+    20%, 40%, 60%, 80% {
+        transform: translateX(5px);
+    }
 }

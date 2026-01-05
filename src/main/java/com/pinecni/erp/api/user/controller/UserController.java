@@ -309,6 +309,22 @@ public class UserController {
     }
 
     /**
+     * 소속 부서의 상무 조회 (결재라인 자동 설정용)
+     * GET /api/users/{idx}/dept-director
+     *
+     * 전자문서 결재라인 자동 설정 시 부서장을 상무로 고정
+     */
+    @GetMapping("/{idx}/dept-director")
+    public ResponseEntity<UserSimpleDTO> getDeptDirector(@PathVariable Long idx) {
+        log.debug("GET /api/users/{}/dept-director - getDeptDirector()", idx);
+        UserSimpleDTO director = userService.getDeptDirector(idx);
+        if (director == null) {
+            return ResponseEntity.notFound().build();
+        }
+        return ResponseEntity.ok(director);
+    }
+
+    /**
      * Exception Handler
      */
     @ExceptionHandler(IllegalArgumentException.class)

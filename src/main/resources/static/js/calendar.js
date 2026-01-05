@@ -300,8 +300,8 @@ document.addEventListener('DOMContentLoaded', function() {
 
     // 일정이 필터를 통과하는지 확인하는 함수
     function shouldShowSchedule(schedule) {
-        // 유형 필터 체크
-        const typeMatch = activeTypeFilters.length === 0 || activeTypeFilters.includes(schedule.type);
+        // 유형 필터 체크 (선택된 유형만 표시)
+        const typeMatch = activeTypeFilters.length > 0 && activeTypeFilters.includes(schedule.type);
 
         // 팀 필터 체크 (팀 필터가 있는 경우에만)
         let teamMatch = true;
@@ -2476,22 +2476,22 @@ document.addEventListener('DOMContentLoaded', function() {
     // 팀 목록 로드 (간략한 모달용)
     async function loadQuickTeamsList() {
         try {
-            const response = await fetch('/api/teams');
+            const response = await fetch('/api/teams?active=Y');
             if (!response.ok) {
-                throw new Error('팀 목록 로드 실패');
+                console.warn('[팀 목록 로드] API 응답 실패:', response.status, response.statusText);
+                throw new Error(`팀 목록 로드 실패 (${response.status})`);
             }
+
             const teams = await response.json();
             quickTeamsList = teams;
+            console.log('[팀 목록 로드] 성공:', teams.length, '개 팀');
 
             // 팀 선택 드롭다운 렌더링
             renderQuickTeamSelect();
             return true;
         } catch (error) {
-            console.error('팀 목록 로드 중 오류:', error);
-            const quickTeamSelect = document.getElementById('quickTeamSelect');
-            if (quickTeamSelect) {
-                quickTeamSelect.innerHTML = '<option value="">팀 목록을 불러올 수 없습니다</option>';
-            }
+            console.error('[팀 목록 로드] 오류:', error);
+            quickTeamsList = [];
             return false;
         }
     }
@@ -2503,7 +2503,37 @@ document.addEventListener('DOMContentLoaded', function() {
 
         teamSelectList.innerHTML = '';
 
-        quickTeamsList.forEach(team => {
+        // 팀 목록이 아예 없는 경우
+        if (!quickTeamsList || quickTeamsList.length === 0) {
+            teamSelectList.innerHTML = `
+                <div class="team-select-empty">
+                    <i class="fas fa-exclamation-triangle"></i>
+                    <p class="empty-message">등록된 팀이 없습니다</p>
+                    <p class="empty-submessage">먼저 팀을 생성해주세요</p>
+                </div>
+            `;
+            return;
+        }
+
+        // 선택 가능한 팀 필터링
+        const availableTeams = quickTeamsList.filter(team => {
+            // 이미 선택된 팀은 제외
+            return !(selectedTeam && selectedTeam.idx === team.idx);
+        });
+
+        // 선택 가능한 팀이 없는 경우 (이미 선택함)
+        if (availableTeams.length === 0) {
+            teamSelectList.innerHTML = `
+                <div class="team-select-empty">
+                    <i class="fas fa-users-slash"></i>
+                    <p class="empty-message">선택할 수 있는 팀이 없습니다</p>
+                    <p class="empty-submessage">이미 팀을 선택하셨습니다</p>
+                </div>
+            `;
+            return;
+        }
+
+        availableTeams.forEach(team => {
             const teamItem = document.createElement('div');
             teamItem.className = 'team-select-item';
             teamItem.dataset.teamIdx = team.idx;
@@ -2659,72 +2689,85 @@ document.addEventListener('DOMContentLoaded', function() {
     // 간략한 모달 - 팀 멤버를 참석자로 추가
     async function loadQuickTeamMembersAsParticipants(teamIdx) {
         try {
-            const response = await fetch(`/api/teams/${teamIdx}`);
+            console.log('[팀 멤버 로드] 팀 ID:', teamIdx);
+            // 올바른 엔드포인트: /api/teams/{teamIdx}/members
+            const response = await fetch(`/api/teams/${teamIdx}/members?active=Y`);
+
             if (!response.ok) {
-                throw new Error('팀 정보 로드 실패');
+                console.error('[팀 멤버 로드] API 응답 실패:', response.status, response.statusText);
+                throw new Error(`팀 멤버 목록 로드 실패 (${response.status})`);
             }
-            const teamData = await response.json();
 
-            if (teamData.members && teamData.members.length > 0) {
-                console.log('팀 멤버 데이터:', teamData.members);
+            const members = await response.json();
+            console.log('[팀 멤버 로드] API 응답:', members);
 
-                // 기존 참석자 목록 초기화 (중복 방지)
+            if (!members || members.length === 0) {
+                console.warn('[팀 멤버 로드] 팀 멤버가 없습니다.');
+                // 팀 멤버가 없어도 초기화는 진행
                 selectedParticipants = [];
-
-                // 팀 멤버들을 참석자 형식으로 변환하여 추가
-                teamData.members.forEach(member => {
-                    // member가 문자열인 경우 (이름만 있는 경우)
-                    if (typeof member === 'string') {
-                        // allEmployees에서 이름으로 직원 찾기
-                        const employee = allEmployees.find(emp => emp.empName === member);
-
-                        if (employee) {
-                            // 내부 직원으로 추가
-                            selectedParticipants.push({
-                                id: employee.idx,
-                                name: employee.empName,
-                                department: employee.empDeptName || '미지정',
-                                rank: employee.empPositionName || '미지정'
-                            });
-                        } else {
-                            // 직원을 찾지 못한 경우 외부인원으로 추가
-                            selectedParticipants.push({
-                                id: null,
-                                name: member,
-                                department: '외부',
-                                rank: '외부인원'
-                            });
-                        }
-                    } else {
-                        // member가 객체인 경우
-                        selectedParticipants.push({
-                            id: member.memberIdx || member.idx || member.empIdx,
-                            name: member.memberName || member.empName || member.name || '이름 없음',
-                            department: member.memberDeptName || member.empDeptName || member.memberDept || member.empDept || '미지정',
-                            rank: member.memberPositionName || member.empPositionName || member.memberPosition || member.empPosition || '미지정'
-                        });
-                    }
-                });
-
-                // 참석자 목록 UI 업데이트
                 renderParticipantsList();
+                return;
+            }
 
-                // 세부설정 자동으로 펼치기 (참석자 확인을 위해)
-                const detailSettingsArea = document.getElementById('detailSettingsArea');
-                const toggleDetailSettingsBtn = document.getElementById('toggleDetailSettings');
-                if (detailSettingsArea && toggleDetailSettingsBtn && !detailSettingsArea.classList.contains('show')) {
+            console.log('[팀 멤버 로드] 팀 멤버 데이터:', members);
+
+            // 기존 참석자 목록 초기화 (중복 방지)
+            selectedParticipants = [];
+
+            // 팀 멤버들을 참석자 형식으로 변환하여 추가
+            members.forEach(member => {
+                console.log('[팀 멤버 로드] 멤버 처리:', member);
+
+                selectedParticipants.push({
+                    id: member.memberIdx,
+                    name: member.memberName || '이름 없음',
+                    department: member.memberDeptName || member.memberDept || '미지정',
+                    rank: member.memberPositionName || member.memberPosition || '미지정'
+                });
+            });
+
+            console.log('[팀 멤버 로드] 최종 참석자 목록:', selectedParticipants);
+
+            // 참석자 목록 UI 업데이트
+            const participantsList = document.getElementById('participantsList');
+            if (!participantsList) {
+                console.error('[팀 멤버 로드] participantsList 요소를 찾을 수 없습니다!');
+            } else {
+                console.log('[팀 멤버 로드] participantsList 요소 발견, 렌더링 시작');
+                renderParticipantsList();
+                console.log('[팀 멤버 로드] 렌더링 완료');
+            }
+
+            // 세부설정 자동으로 펼치기 (참석자 확인을 위해)
+            const detailSettingsArea = document.getElementById('detailSettingsArea');
+            const toggleDetailSettingsBtn = document.getElementById('toggleDetailSettings');
+
+            console.log('[팀 멤버 로드] detailSettingsArea:', detailSettingsArea);
+            console.log('[팀 멤버 로드] toggleDetailSettingsBtn:', toggleDetailSettingsBtn);
+
+            if (detailSettingsArea && toggleDetailSettingsBtn) {
+                const isAlreadyExpanded = detailSettingsArea.classList.contains('show');
+                console.log('[팀 멤버 로드] 세부설정 이미 펼쳐짐?', isAlreadyExpanded);
+
+                if (!isAlreadyExpanded) {
                     detailSettingsArea.style.display = 'block';
                     setTimeout(() => {
                         detailSettingsArea.classList.add('show');
                     }, 10);
                     toggleDetailSettingsBtn.classList.add('expanded');
                     toggleDetailSettingsBtn.innerHTML = '<i class="fas fa-chevron-up"></i> 세부설정 접기';
+                    console.log('[팀 멤버 로드] 세부설정 펼침 완료');
                 }
-
-                console.log('팀 멤버 자동 추가:', selectedParticipants);
+            } else {
+                console.error('[팀 멤버 로드] 세부설정 요소를 찾을 수 없습니다!');
             }
+
         } catch (error) {
-            console.error('팀 멤버 로드 중 오류:', error);
+            console.error('[팀 멤버 로드] 오류 발생:', error);
+            alert('팀 멤버를 불러오는 중 오류가 발생했습니다.\n참석자를 수동으로 추가해주세요.');
+            // 오류 발생 시 빈 참석자 목록으로 초기화
+            selectedParticipants = [];
+            renderParticipantsList();
         }
     }
 

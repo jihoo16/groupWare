@@ -19,6 +19,7 @@ import java.security.NoSuchAlgorithmException;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Optional;
 import java.util.stream.Collectors;
 
 /**
@@ -402,6 +403,40 @@ public class UserServiceImpl implements UserService {
                 userIdx, user.getEmpDept(), seniorUsers.size());
 
         return seniorUsers;
+    }
+
+    @Override
+    public UserSimpleDTO getDeptDirector(Long userIdx) {
+        log.debug("getDeptDirector() called with userIdx: {}", userIdx);
+
+        // 현재 사용자 조회
+        User user = userRepository.findById(userIdx).orElse(null);
+        if (user == null || user.getDeletedAt() != null) {
+            log.warn("사용자를 찾을 수 없습니다. userIdx: {}", userIdx);
+            return null;
+        }
+
+        // Code 테이블에서 "상무" 직급 코드 조회
+        String directorPositionCode = codeService.getPositionCodeByName("상무");
+        if (directorPositionCode == null) {
+            log.warn("Code 테이블에서 '상무' 직급을 찾을 수 없습니다.");
+            return null;
+        }
+
+        log.debug("상무 직급 코드: {}", directorPositionCode);
+
+        // 소속 부서의 상무 조회
+        Optional<User> director = userRepository.findActiveByEmpDeptAndEmpPosition(
+                user.getEmpDept(), directorPositionCode);
+
+        if (director.isPresent()) {
+            log.info("부서 상무 조회 완료. userIdx: {}, 부서: {}, 상무: {}",
+                    userIdx, user.getEmpDept(), director.get().getEmpName());
+            return userMapper.toSimpleDTO(director.get());
+        } else {
+            log.warn("부서 상무를 찾을 수 없습니다. userIdx: {}, 부서: {}", userIdx, user.getEmpDept());
+            return null;
+        }
     }
 
     /**

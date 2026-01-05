@@ -1,6 +1,8 @@
 package com.pinecni.erp.api.vacation.service;
 
 import com.pinecni.erp.api.approval.repository.ApprovalDocumentRepository;
+import com.pinecni.erp.api.calendar.repository.CalendarEventRepository;
+import com.pinecni.erp.api.calendar.repository.CalendarParticipantRepository;
 import com.pinecni.erp.api.code.repository.CodeRepository;
 import com.pinecni.erp.api.user.repository.UserRepository;
 import com.pinecni.erp.api.vacation.dto.VacationUserInfoDTO;
@@ -18,10 +20,10 @@ import org.springframework.transaction.annotation.Transactional;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.time.temporal.ChronoUnit;
-import java.util.ArrayList;
-import java.util.List;
+import java.util.*;
 
 @Service
 @RequiredArgsConstructor
@@ -34,6 +36,9 @@ public class VacationServiceImpl implements VacationService {
     private final VacationRequestRepository vacationRequestRepository;
     private final ApprovalDocumentRepository approvalDocumentRepository;
     private final CodeRepository codeRepository;
+    private final CalendarEventRepository calendarEventRepository;
+    private final CalendarParticipantRepository calendarParticipantRepository;
+    private final com.pinecni.erp.api.calendar.service.HolidayService holidayService;
 
     @Override
     @Transactional(readOnly = true)
@@ -539,14 +544,39 @@ public class VacationServiceImpl implements VacationService {
         User user = userRepository.findById(userIdx)
                 .orElseThrow(() -> new IllegalArgumentException("사용자를 찾을 수 없습니다: " + userIdx));
 
-        // 2. 현재 연차 잔액 조회
+        // ===== 🔒 보안 검증 시작 =====
+        log.info("[보안 검증 시작] userIdx: {}", userIdx);
+
+        // 2. 기본 입력값 검증
+        if (saveDTO.getPeriods() == null || saveDTO.getPeriods().isEmpty()) {
+            throw new IllegalArgumentException("연차 기간이 지정되지 않았습니다.");
+        }
+
+        // 3. 중복 날짜 검증 (이미 신청된 날짜와 겹치는지)
+        validateNoDuplicateDates(userIdx, saveDTO.getPeriods());
+
+        // 4. 신청 일수 검증 (프론트엔드에서 계산한 값과 백엔드 재계산 값 비교)
+        validateRequestedDays(saveDTO.getPeriods());
+
+        // 5. 총 신청 일수 계산
+        BigDecimal totalRequestedDays = saveDTO.getPeriods().stream()
+                .map(VacationRequestSaveDTO.VacationPeriod::getDays)
+                .reduce(BigDecimal.ZERO, BigDecimal::add);
+
+        // 6. 잔여 연차 검증
+        validateRemainingVacation(userIdx, totalRequestedDays, saveDTO.getAllowMinusVacation());
+
+        log.info("[보안 검증 완료] ✓ 중복 날짜 없음, ✓ 일수 정확, ✓ 잔여 연차 충분 (총 신청: {}일)", totalRequestedDays);
+        // ===== 🔒 보안 검증 완료 =====
+
+        // 7. 현재 연차 잔액 조회
         int currentYear = LocalDate.now().getYear();
         VacationBalance vacationBalance = vacationBalanceRepository.findByUserIdxAndYear(userIdx, currentYear)
                 .orElse(null);
 
         BigDecimal remainingDays = vacationBalance != null ? vacationBalance.getRemainingDays() : BigDecimal.ZERO;
 
-        // 3. ApprovalDocument 생성 (문서 메타데이터)
+        // 8. ApprovalDocument 생성 (문서 메타데이터)
         // 문서 제목: "연차 신청서 - {첫 번째 기간 시작일}"
         String title = "연차 신청서";
         if (!saveDTO.getPeriods().isEmpty()) {
@@ -570,7 +600,7 @@ public class VacationServiceImpl implements VacationService {
         ApprovalDocument savedDocument = approvalDocumentRepository.save(document);
         log.info("[문서 메타데이터 저장 완료] documentIdx: {}, documentNo: {}", savedDocument.getIdx(), savedDocument.getDocumentNo());
 
-        // 4. VacationRequest 생성 (각 기간별로 개별 저장)
+        // 9. VacationRequest 생성 (각 기간별로 개별 저장)
         for (VacationRequestSaveDTO.VacationPeriod period : saveDTO.getPeriods()) {
             VacationRequest vacationRequest = VacationRequest.builder()
                     .userIdx(userIdx)
@@ -591,9 +621,242 @@ public class VacationServiceImpl implements VacationService {
             vacationRequestRepository.save(vacationRequest);
             log.info("[연차 기간 저장] startDate: {}, endDate: {}, days: {}, type: {}",
                     period.getStartDate(), period.getEndDate(), period.getDays(), period.getVacationType());
+
+            // 10. 캘린더 일정 자동 생성
+            createCalendarEventForVacation(userIdx, user, savedDocument.getIdx(), period, saveDTO.getReason());
         }
 
         log.info("[연차 신청서 저장 완료] documentIdx: {}, total periods: {}", savedDocument.getIdx(), saveDTO.getPeriods().size());
         return savedDocument.getIdx();
+    }
+
+    /**
+     * 연차 신청 시 캘린더 일정 자동 생성
+     */
+    private void createCalendarEventForVacation(Long userIdx, User user, Long documentIdx,
+                                                VacationRequestSaveDTO.VacationPeriod period, String reason) {
+        try {
+            // 연차 유형에 따른 이벤트 제목 생성
+            String eventTitle = getVacationTypeTitle(period.getVacationType(), user.getEmpName());
+            String groupId = UUID.randomUUID().toString();
+
+            // CalendarEvent 생성
+            CalendarEvent calendarEvent = CalendarEvent.builder()
+                    .eventTitle(eventTitle)
+                    .eventType("leave") // 연차 일정 타입
+                    .eventDescription(reason)
+                    .startDate(period.getStartDate())
+                    .endDate(period.getEndDate())
+                    .startTime(null) // 종일 일정
+                    .endTime(null) // 종일 일정
+                    .isAllDay(true) // 종일 일정
+                    .location(null)
+                    .approvalIdx(documentIdx) // 결재 문서와 연결
+                    .groupId(groupId)
+                    .teamIdx(null) // 개인 일정
+                    .notificationYn("N")
+                    .notificationMinutes(null)
+                    .isRecurring(false)
+                    .recurringType(null)
+                    .recurringEndDate(null)
+                    .status("ACTIVE")
+                    .createdAt(LocalDateTime.now())
+                    .createdUserIdx(userIdx)
+                    .updatedAt(LocalDateTime.now())
+                    .updatedUserIdx(userIdx)
+                    .build();
+
+            CalendarEvent savedEvent = calendarEventRepository.save(calendarEvent);
+            log.info("[캘린더 일정 생성] eventIdx: {}, eventTitle: {}, startDate: {}, endDate: {}",
+                    savedEvent.getIdx(), eventTitle, period.getStartDate(), period.getEndDate());
+
+            // CalendarParticipant 생성 (신청자를 참석자로 추가)
+            CalendarParticipant participant = CalendarParticipant.builder()
+                    .eventIdx(savedEvent.getIdx())
+                    .userIdx(userIdx)
+                    .userName(user.getEmpName())
+                    .participationStatus("PENDING") // 기본값 사용
+                    .receiveNotification("Y")
+                    .createdAt(LocalDateTime.now())
+                    .build();
+
+            calendarParticipantRepository.save(participant);
+            log.info("[캘린더 참석자 추가] userIdx: {}, userName: {}", userIdx, user.getEmpName());
+
+        } catch (Exception e) {
+            log.error("[캘린더 일정 생성 실패] userIdx: {}, error: {}", userIdx, e.getMessage(), e);
+            // 캘린더 일정 생성 실패해도 연차 신청은 진행되도록 예외를 삼킴
+        }
+    }
+
+    /**
+     * 연차 유형에 따른 이벤트 제목 생성
+     */
+    private String getVacationTypeTitle(String vacationType, String empName) {
+        String typeLabel;
+        switch (vacationType) {
+            case "annual":
+                typeLabel = "연차";
+                break;
+            case "half-morning":
+                typeLabel = "오전 반차";
+                break;
+            case "half-afternoon":
+                typeLabel = "오후 반차";
+                break;
+            case "sick":
+                typeLabel = "병가";
+                break;
+            case "special":
+                typeLabel = "특별휴가";
+                break;
+            default:
+                typeLabel = "휴가";
+                break;
+        }
+        return empName + " " + typeLabel;
+    }
+
+    // ============================================
+    // 보안 검증 메서드
+    // ============================================
+
+    /**
+     * 영업일 일수 계산 (주말/공휴일 제외)
+     * 프론트엔드에서 계산한 값과 비교하기 위해 사용
+     */
+    private BigDecimal calculateBusinessDays(LocalDate startDate, LocalDate endDate, String vacationType) {
+        if (startDate == null || endDate == null) {
+            throw new IllegalArgumentException("시작일과 종료일은 필수입니다.");
+        }
+
+        if (startDate.isAfter(endDate)) {
+            throw new IllegalArgumentException("시작일이 종료일보다 늦을 수 없습니다.");
+        }
+
+        // 반차 처리
+        if ("반차(오전)".equals(vacationType) || "반차(오후)".equals(vacationType)) {
+            // 반차는 0.5일로 고정
+            return new BigDecimal("0.5");
+        }
+
+        // 공휴일 데이터를 년도별로 캐싱하여 조회 (성능 최적화)
+        Map<Integer, Map<String, String>> holidaysByYear = new HashMap<>();
+
+        BigDecimal businessDays = BigDecimal.ZERO;
+        LocalDate current = startDate;
+
+        while (!current.isAfter(endDate)) {
+            // 주말 확인
+            boolean isWeekend = (current.getDayOfWeek().getValue() == 6 || // 토요일
+                                 current.getDayOfWeek().getValue() == 7);  // 일요일
+
+            // 공휴일 확인 (년도별 캐시 활용)
+            int year = current.getYear();
+            if (!holidaysByYear.containsKey(year)) {
+                holidaysByYear.put(year, holidayService.getHolidaysByYear(year));
+            }
+            boolean isHoliday = holidaysByYear.get(year).containsKey(current.toString());
+
+            // 영업일인 경우만 카운트
+            if (!isWeekend && !isHoliday) {
+                businessDays = businessDays.add(BigDecimal.ONE);
+            }
+
+            current = current.plusDays(1);
+        }
+
+        return businessDays;
+    }
+
+    /**
+     * 이미 신청된 날짜와 겹치는지 확인
+     */
+    private void validateNoDuplicateDates(Long userIdx, List<VacationRequestSaveDTO.VacationPeriod> periods) {
+        // 현재 연도의 모든 연차 신청 내역 조회
+        int currentYear = LocalDate.now().getYear();
+        List<VacationRequest> existingRequests = vacationRequestRepository.findByUserIdxAndYear(userIdx, currentYear);
+
+        // 기존 신청 날짜들을 Set에 저장
+        Set<LocalDate> existingDates = new HashSet<>();
+        for (VacationRequest request : existingRequests) {
+            LocalDate current = request.getStartDate();
+            while (!current.isAfter(request.getEndDate())) {
+                existingDates.add(current);
+                current = current.plusDays(1);
+            }
+        }
+
+        // 새로운 신청 날짜들과 비교
+        for (VacationRequestSaveDTO.VacationPeriod period : periods) {
+            LocalDate current = period.getStartDate();
+            while (!current.isAfter(period.getEndDate())) {
+                if (existingDates.contains(current)) {
+                    throw new IllegalStateException(
+                        String.format("이미 연차 신청된 날짜입니다: %s", current)
+                    );
+                }
+                current = current.plusDays(1);
+            }
+        }
+    }
+
+    /**
+     * 신청 일수 검증 (프론트엔드에서 계산한 값과 백엔드 재계산 값 비교)
+     */
+    private void validateRequestedDays(List<VacationRequestSaveDTO.VacationPeriod> periods) {
+        for (VacationRequestSaveDTO.VacationPeriod period : periods) {
+            // 백엔드에서 재계산
+            BigDecimal calculatedDays = calculateBusinessDays(
+                period.getStartDate(),
+                period.getEndDate(),
+                period.getVacationType()
+            );
+
+            // 프론트엔드에서 보낸 값과 비교 (오차 범위 0.1일)
+            BigDecimal difference = period.getDays().subtract(calculatedDays).abs();
+            if (difference.compareTo(new BigDecimal("0.1")) > 0) {
+                throw new IllegalArgumentException(
+                    String.format("신청 일수가 올바르지 않습니다. 기간: %s ~ %s, 신청: %s일, 계산: %s일",
+                        period.getStartDate(), period.getEndDate(),
+                        period.getDays(), calculatedDays)
+                );
+            }
+
+            log.info("[일수 검증 통과] 기간: {} ~ {}, 신청: {}일, 계산: {}일",
+                period.getStartDate(), period.getEndDate(), period.getDays(), calculatedDays);
+        }
+    }
+
+    /**
+     * 잔여 연차 검증 (마이너스 연차 허용 여부 확인)
+     */
+    private void validateRemainingVacation(Long userIdx, BigDecimal totalRequestedDays,
+                                           Boolean allowMinusVacation) {
+        int currentYear = LocalDate.now().getYear();
+        VacationBalance vacationBalance = vacationBalanceRepository.findByUserIdxAndYear(userIdx, currentYear)
+            .orElse(null);
+
+        BigDecimal remainingDays = vacationBalance != null ?
+            vacationBalance.getRemainingDays() : BigDecimal.ZERO;
+
+        // 잔여 연차 부족 시
+        if (totalRequestedDays.compareTo(remainingDays) > 0) {
+            // 마이너스 연차 허용하지 않는 경우
+            if (allowMinusVacation == null || !allowMinusVacation) {
+                throw new IllegalStateException(
+                    String.format("잔여 연차가 부족합니다. 잔여: %s일, 신청: %s일",
+                        remainingDays, totalRequestedDays)
+                );
+            }
+
+            // 마이너스 연차 허용하는 경우 - 로그만 남김
+            log.warn("[마이너스 연차 사용] userIdx: {}, 잔여: {}일, 신청: {}일, 초과: {}일",
+                userIdx, remainingDays, totalRequestedDays,
+                totalRequestedDays.subtract(remainingDays));
+        } else {
+            log.info("[잔여 연차 검증 통과] userIdx: {}, 잔여: {}일, 신청: {}일",
+                userIdx, remainingDays, totalRequestedDays);
+        }
     }
 }

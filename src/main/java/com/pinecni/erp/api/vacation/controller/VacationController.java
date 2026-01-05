@@ -16,9 +16,8 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.time.LocalDate;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
+import java.util.stream.Collectors;
 
 /**
  * Vacation REST API Controller
@@ -274,5 +273,56 @@ public class VacationController {
 
             return ResponseEntity.badRequest().body(errorResponse);
         }
+    }
+
+    /**
+     * 사용자의 신청된 연차 날짜 목록 조회 API (연차 신청 시 비활성화용)
+     * @param userIdx 사용자 IDX (선택, 기본값: 세션의 로그인 사용자)
+     * @param year 조회할 연도 (선택, 기본값: 현재 연도)
+     * @param session HTTP 세션
+     * @return 신청된 날짜 목록 (YYYY-MM-DD 형식)
+     */
+    @GetMapping("/requested-dates")
+    public ResponseEntity<List<String>> getRequestedDates(
+            @RequestParam(required = false) Long userIdx,
+            @RequestParam(required = false) Integer year,
+            HttpSession session) {
+
+        // 세션에서 로그인 사용자 IDX 조회
+        if (userIdx == null) {
+            userIdx = (Long) session.getAttribute("userIdx");
+            if (userIdx == null) {
+                log.error("세션에 userIdx가 없습니다. 로그인이 필요합니다.");
+                return ResponseEntity.status(401).build();
+            }
+        }
+
+        if (year == null) {
+            year = LocalDate.now().getYear();
+        }
+
+        log.info("GET /api/vacation/requested-dates - userIdx: {}, year: {}", userIdx, year);
+
+        // 해당 연도의 연차 신청 내역 조회
+        List<VacationRequest> requests = vacationRequestRepository.findByUserIdxAndYear(userIdx, year);
+
+        // 신청된 모든 날짜 수집
+        Set<String> requestedDates = new HashSet<>();
+        for (VacationRequest request : requests) {
+            LocalDate currentDate = request.getStartDate();
+            LocalDate endDate = request.getEndDate();
+
+            while (!currentDate.isAfter(endDate)) {
+                requestedDates.add(currentDate.toString()); // YYYY-MM-DD 형식
+                currentDate = currentDate.plusDays(1);
+            }
+        }
+
+        List<String> sortedDates = new ArrayList<>(requestedDates);
+        Collections.sort(sortedDates);
+
+        log.info("신청된 연차 날짜 수: {}", sortedDates.size());
+
+        return ResponseEntity.ok(sortedDates);
     }
 }

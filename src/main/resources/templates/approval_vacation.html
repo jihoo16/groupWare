@@ -210,6 +210,10 @@
                                         <span class="legend-text">추가된 기간</span>
                                     </div>
                                     <div class="legend-item">
+                                        <span class="legend-color already-requested"></span>
+                                        <span class="legend-text">이미 신청됨</span>
+                                    </div>
+                                    <div class="legend-item">
                                         <span class="legend-color holiday"></span>
                                         <span class="legend-text">공휴일/주말</span>
                                     </div>
@@ -364,14 +368,15 @@
                     </div>
 
                     <!-- 문서 양식 -->
-                    <div class="document-form-wrapper">
-                        <div class="document-form-header" id="documentFormToggle">
-                            <h3><i class="fas fa-file-alt"></i> 공식 문서 양식</h3>
-                            <button class="btn-toggle-form">
-                                <i class="fas fa-chevron-up"></i>
-                                <span></span>
-                            </button>
-                        </div>
+                    <div class="document-preview-toggle">
+                        <button class="toggle-btn" id="documentFormToggle">
+                            <i class="fas fa-file-alt"></i>
+                            공식 문서 미리보기
+                            <i class="fas fa-chevron-down toggle-icon"></i>
+                        </button>
+                    </div>
+
+                    <div class="document-form-wrapper collapsed">
                         <div class="document-form" id="documentFormContent">
                             <!-- 결재라인 -->
                             <div class="approval-line-box">

@@ -105,4 +105,11 @@ public interface UserRepository extends JpaRepository<User, Long> {
     @Query("SELECT COUNT(u) FROM User u JOIN Code c ON c.groupCode = 'C02' AND c.code = u.empPosition " +
            "WHERE u.managerIdx IS NOT NULL AND u.deletedAt IS NULL AND c.sortOrder > 1")
     Long countCompletedHierarchy();
+
+    /**
+     * 부서와 직급으로 활성 사용자 조회 (결재라인 자동 설정용)
+     * 특정 부서의 상무(또는 특정 직급) 조회
+     */
+    @Query("SELECT u FROM User u WHERE u.empDept = :empDept AND u.empPosition = :empPosition AND u.deletedAt IS NULL")
+    Optional<User> findActiveByEmpDeptAndEmpPosition(String empDept, String empPosition);
 }

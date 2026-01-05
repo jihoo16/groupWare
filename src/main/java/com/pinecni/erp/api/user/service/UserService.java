@@ -116,4 +116,11 @@ public interface UserService {
      * @return 같은 부서 내에서 자신보다 직급이 높은 사용자 목록 (직급 순서대로 정렬)
      */
     List<UserSimpleDTO> getSeniorUsersInDept(Long userIdx);
+
+    /**
+     * 소속 부서의 상무 조회 (결재라인 자동 설정용)
+     * @param userIdx 사용자 idx
+     * @return 해당 부서의 상무 (없으면 null)
+     */
+    UserSimpleDTO getDeptDirector(Long userIdx);
 }

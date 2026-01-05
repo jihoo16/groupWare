@@ -5,6 +5,7 @@ document.addEventListener('DOMContentLoaded', function() {
     let selectedFiles = [];
     let selectedEmployee = null;
     let userVacationInfo = null; // 사용자 연차 정보 (API에서 가져옴)
+    let requestedDates = []; // 이미 신청된 연차 날짜 목록 (YYYY-MM-DD 형식)
 
     // DOM 요소
     const documentForm = document.getElementById('documentForm');
@@ -134,6 +135,32 @@ document.addEventListener('DOMContentLoaded', function() {
             // 로그인 페이지로 리다이렉트
             window.location.href = '/login';
             return null;
+        }
+    }
+
+    /**
+     * 사용자의 이미 신청된 연차 날짜 목록을 서버에서 가져옴
+     * @returns {Promise<Array<string>>} 신청된 날짜 목록 (YYYY-MM-DD 형식)
+     */
+    async function fetchRequestedDates() {
+        try {
+            // 현재 로그인한 사용자 정보 가져오기
+            const currentUser = await getCurrentUser();
+            if (!currentUser || !currentUser.idx) {
+                throw new Error('로그인 정보가 없습니다.');
+            }
+
+            // 현재 연도의 신청된 연차 날짜 조회
+            const response = await fetch(`/api/vacation/requested-dates?userIdx=${currentUser.idx}&year=${currentYear}`);
+            if (!response.ok) {
+                throw new Error('신청된 연차 날짜를 가져오는데 실패했습니다.');
+            }
+            const dates = await response.json();
+            console.log('신청된 연차 날짜 로드 완료:', dates.length + '건');
+            return dates;
+        } catch (error) {
+            console.error('신청된 연차 날짜 조회 실패:', error);
+            return []; // 실패 시 빈 배열 반환
         }
     }
 
@@ -1538,16 +1565,17 @@ document.addEventListener('DOMContentLoaded', function() {
             const dayOfWeek = d.getDay();
             const isWeekend = dayOfWeek === 0 || dayOfWeek === 6;
             const isHoliday = holidays[dateStr];
+            const isAlreadyRequested = requestedDates.includes(dateStr);
 
-            if (!isWeekend && !isHoliday) {
-                // 영업일
+            if (!isWeekend && !isHoliday && !isAlreadyRequested) {
+                // 영업일 (주말, 공휴일, 이미 신청한 날짜 제외)
                 if (!currentPeriodStart) {
                     currentPeriodStart = new Date(d);
                 }
                 currentPeriodEnd = new Date(d);
                 currentDays++;
             } else {
-                // 주말 또는 공휴일 - 현재 구간 저장
+                // 주말, 공휴일, 또는 이미 신청한 날짜 - 현재 구간 저장
                 if (currentPeriodStart && currentDays > 0) {
                     periods.push({
                         type: vacationType,
@@ -1802,6 +1830,12 @@ document.addEventListener('DOMContentLoaded', function() {
                 holidayCount++;
                 console.log(`[DEBUG] ✓ 공휴일 발견: ${dateStr} = ${holidays[dateStr]}`);
             }
+
+            // 이미 신청된 연차 날짜 체크
+            if (requestedDates.includes(dateStr)) {
+                classes += ' already-requested';
+            }
+
             if (isDateInAddedPeriods(dateStr)) {
                 classes += ' period-added';
                 const vacationType = getDateVacationType(dateStr);
@@ -1886,6 +1920,12 @@ document.addEventListener('DOMContentLoaded', function() {
 
     // 날짜 선택
     async function selectDate(dateStr) {
+        // 이미 신청된 날짜인지 확인
+        if (requestedDates.includes(dateStr)) {
+            alert('이미 연차가 신청된 날짜입니다.\n신청 날짜: ' + dateStr);
+            return;
+        }
+
         const vacationType = vifVacationType.value;
 
         // 반차인 경우 단일 날짜만 선택
@@ -2006,8 +2046,8 @@ document.addEventListener('DOMContentLoaded', function() {
                 const dayOfWeek = date.getDay();
                 const dateStr = formatDate(date);
 
-                // 주말(토, 일)과 공휴일 제외
-                if (dayOfWeek !== 0 && dayOfWeek !== 6 && !holidays[dateStr]) {
+                // 주말(토, 일), 공휴일, 이미 신청한 날짜 제외
+                if (dayOfWeek !== 0 && dayOfWeek !== 6 && !holidays[dateStr] && !requestedDates.includes(dateStr)) {
                     workDays++;
                 }
             }
@@ -2266,21 +2306,77 @@ document.addEventListener('DOMContentLoaded', function() {
     const vacationPeriodsList = document.getElementById('vacation_periods_list');
     const totalDaysBadge = document.getElementById('total_days_badge');
 
+    // 마이너스 연차 검증 함수 (공통 사용)
+    function validateMinusVacation(days) {
+        // 마이너스 연차인지 확인 (잔여 연차 부족)
+        const remainingVacation = userVacationInfo ? parseFloat(userVacationInfo.remainingDays) : 12;
+        const currentTotalDays = vacationPeriods.reduce((sum, p) => sum + p.days, 0);
+        const newTotalDays = currentTotalDays + days;
+        const isMinusVacation = newTotalDays > remainingVacation;
+
+        // 마이너스 연차이고 특별승인 사유가 비어있으면
+        if (isMinusVacation) {
+            const specialReasonTextarea = document.getElementById('special_approval_reason');
+            const allowMinusCheckbox = document.getElementById('allow_minus_vacation');
+
+            if (!allowMinusCheckbox || !allowMinusCheckbox.checked) {
+                alert('마이너스 연차 사용을 허용하려면 체크박스를 선택해주세요.');
+                if (allowMinusCheckbox) {
+                    allowMinusCheckbox.focus();
+                    // 체크박스 부모 요소를 하이라이트
+                    const checkboxWrapper = allowMinusCheckbox.closest('.checkbox-wrapper, .form-group, label');
+                    if (checkboxWrapper) {
+                        checkboxWrapper.style.animation = 'shake 0.5s';
+                        setTimeout(() => {
+                            checkboxWrapper.style.animation = '';
+                        }, 500);
+                    }
+                }
+                return false; // 검증 실패
+            }
+
+            if (!specialReasonTextarea || !specialReasonTextarea.value.trim()) {
+                // 특별승인 사유로 포커스 이동
+                if (specialReasonTextarea) {
+                    specialReasonTextarea.focus();
+                    // 입력란 하이라이트 애니메이션
+                    specialReasonTextarea.style.border = '2px solid #dc3545';
+                    specialReasonTextarea.style.animation = 'shake 0.5s';
+
+                    // 플레이스홀더 강조
+                    const originalPlaceholder = specialReasonTextarea.placeholder;
+                    specialReasonTextarea.placeholder = '⚠️ 마이너스 연차 사용 시 특별승인 사유는 필수입니다!';
+
+                    // 3초 후 원래대로
+                    setTimeout(() => {
+                        specialReasonTextarea.style.border = '';
+                        specialReasonTextarea.style.animation = '';
+                        specialReasonTextarea.placeholder = originalPlaceholder;
+                    }, 3000);
+
+                    // 스크롤 이동
+                    specialReasonTextarea.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                }
+                return false; // 검증 실패
+            }
+        }
+        return true; // 검증 통과
+    }
+
     // 기간 추가
     if (addPeriodBtn) {
         addPeriodBtn.addEventListener('click', async (e) => {
-            // 버튼이 비활성화되어 있으면 실행하지 않음
-            if (addPeriodBtn.disabled) {
-                e.preventDefault();
-                return;
-            }
-
             if (!vifStartDate.value || !vifEndDate.value) {
                 alert('시작일과 종료일을 선택해주세요.');
                 return;
             }
 
             const days = parseFloat(vifCalculatedDays.textContent);
+
+            // 마이너스 연차 검증
+            if (!validateMinusVacation(days)) {
+                return;
+            }
             if (days <= 0) {
                 alert('유효한 기간을 선택해주세요.');
                 return;
@@ -2340,7 +2436,25 @@ document.addEventListener('DOMContentLoaded', function() {
     const submitGuide = document.getElementById('submitGuide');
     if (submitGuide && addPeriodBtn) {
         submitGuide.addEventListener('click', () => {
-            addPeriodBtn.click();
+            // 버튼이 disabled 상태라도 검증은 수행
+            if (addPeriodBtn.disabled) {
+                // 날짜 선택 여부 확인
+                if (!vifStartDate.value || !vifEndDate.value) {
+                    alert('시작일과 종료일을 선택해주세요.');
+                    return;
+                }
+
+                // 마이너스 연차 검증 실행
+                const days = parseFloat(vifCalculatedDays.textContent);
+                if (days > 0) {
+                    validateMinusVacation(days);
+                } else {
+                    alert('유효한 기간을 선택해주세요.');
+                }
+            } else {
+                // 버튼이 활성화 상태면 정상 클릭
+                addPeriodBtn.click();
+            }
         });
     }
 
@@ -2550,9 +2664,8 @@ document.addEventListener('DOMContentLoaded', function() {
         }
 
         // 잔여 연차 계산 (마이너스 연차 표시를 위해)
-        const totalVacation = userVacationInfo ? parseFloat(userVacationInfo.totalDays) : 15;
-        const usedVacation = userVacationInfo ? parseFloat(userVacationInfo.usedDays) : 3;
-        const remainingVacation = totalVacation - usedVacation;
+        // 중요: userVacationInfo.remainingDays를 직접 사용해야 기존 마이너스 연차도 반영됨
+        const remainingVacation = userVacationInfo ? parseFloat(userVacationInfo.remainingDays) : 12;
 
         let accumulatedDays = 0; // 누적 일수
         let vacationPeriodHtml = ''; // HTML 포맷팅된 내용 (표시용)
@@ -2575,17 +2688,24 @@ document.addEventListener('DOMContentLoaded', function() {
             const startFormatted = `${startDate.getFullYear()}.${String(startDate.getMonth() + 1).padStart(2, '0')}.${String(startDate.getDate()).padStart(2, '0')} (${dayNames[startDate.getDay()]})`;
             const endFormatted = `${endDate.getFullYear()}.${String(endDate.getMonth() + 1).padStart(2, '0')}.${String(endDate.getDate()).padStart(2, '0')} (${dayNames[endDate.getDay()]})`;
 
-            // 이 기간이 완전히 잔여 연차 내에 있는 경우
-            if (newAccumulated <= remainingVacation) {
-                vacationPeriodHtml += `${startFormatted} ~ ${endFormatted} 연차 ${periodDays}일`;
+            // 기존 잔여가 양수인 경우에만 구간별 마이너스 표시
+            if (remainingVacation > 0) {
+                // 이 기간이 완전히 잔여 연차 내에 있는 경우
+                if (newAccumulated <= remainingVacation) {
+                    vacationPeriodHtml += `${startFormatted} ~ ${endFormatted} 연차 ${periodDays}일`;
+                }
+                // 이 기간이 부분적으로 초과하는 경우
+                else if (accumulatedDays < remainingVacation) {
+                    const normalDays = remainingVacation - accumulatedDays;
+                    const minusDays = periodDays - normalDays;
+                    vacationPeriodHtml += `${startFormatted} ~ ${endFormatted} 연차 ${normalDays}일 + <span style="color: #dc3545; font-weight: 700;">마이너스 ${minusDays}일</span>`;
+                }
+                // 이 기간이 완전히 초과하는 경우 (전체 빨간색)
+                else {
+                    vacationPeriodHtml += `<span style="color: #dc3545; font-weight: 700;">${startFormatted} ~ ${endFormatted} 마이너스 ${periodDays}일</span>`;
+                }
             }
-            // 이 기간이 부분적으로 초과하는 경우
-            else if (accumulatedDays < remainingVacation) {
-                const normalDays = remainingVacation - accumulatedDays;
-                const minusDays = periodDays - normalDays;
-                vacationPeriodHtml += `${startFormatted} ~ ${endFormatted} 연차 ${normalDays}일 + <span style="color: #dc3545; font-weight: 700;">마이너스 ${minusDays}일</span>`;
-            }
-            // 이 기간이 완전히 초과하는 경우 (전체 빨간색)
+            // 기존 잔여가 음수 또는 0인 경우: 모든 기간을 마이너스로 표시
             else {
                 vacationPeriodHtml += `<span style="color: #dc3545; font-weight: 700;">${startFormatted} ~ ${endFormatted} 마이너스 ${periodDays}일</span>`;
             }
@@ -2604,8 +2724,16 @@ document.addEventListener('DOMContentLoaded', function() {
 
             // HTML: 마이너스 연차가 있는 경우 분리 표시
             if (totalDays > remainingVacation) {
-                const minusTotal = totalDays - remainingVacation;
-                vacationPeriodHtml += `\n\n총 연차 ${remainingVacation}일 + <span style="color: #dc3545; font-weight: 700;">마이너스 ${minusTotal}일</span>`;
+                // 기존 잔여가 양수인 경우
+                if (remainingVacation > 0) {
+                    const minusTotal = totalDays - remainingVacation;
+                    vacationPeriodHtml += `\n\n총 연차 ${remainingVacation}일 + <span style="color: #dc3545; font-weight: 700;">마이너스 ${minusTotal}일</span>`;
+                }
+                // 기존 잔여가 음수 또는 0인 경우 (이미 마이너스 상태)
+                // 신청하는 일수만 표시 (기존 마이너스는 합산하지 않음)
+                else {
+                    vacationPeriodHtml += `\n\n<span style="color: #dc3545; font-weight: 700;">총 마이너스 ${totalDays}일</span>`;
+                }
             } else {
                 vacationPeriodHtml += `\n\n총 연차 ${totalDays}일`;
             }
@@ -2631,8 +2759,7 @@ document.addEventListener('DOMContentLoaded', function() {
         const spacedName = applicantName.split('').join(' ');
         document.getElementById('applicant_name_footer').textContent = spacedName;
 
-        // 결재라인 정보 자동 설정 (실제로는 서버에서 불러와야 함)
-        setApprovalLine();
+        // 결재라인 정보는 초기화 함수에서 별도로 설정됨
     }
 
     // 양식에 적용 - 나중에 문서 양식 토글 섹션에서 처리
@@ -2692,6 +2819,8 @@ document.addEventListener('DOMContentLoaded', function() {
         documentFormToggle.addEventListener('click', function() {
             if (documentFormWrapper) {
                 documentFormWrapper.classList.toggle('collapsed');
+                // 버튼 active 상태 토글
+                this.classList.toggle('active');
             }
         });
     }
@@ -2734,7 +2863,7 @@ document.addEventListener('DOMContentLoaded', function() {
     async function setApprovalLine() {
         try {
             // 현재 로그인한 사용자 정보 확인
-            if (!userVacationInfo || !userVacationInfo.idx) {
+            if (!userVacationInfo || !userVacationInfo.userIdx) {
                 console.warn('사용자 정보가 없습니다. 기본 결재라인을 설정할 수 없습니다.');
                 return;
             }
@@ -2747,7 +2876,7 @@ document.addEventListener('DOMContentLoaded', function() {
             }
 
             // 상위 보고자 체인 조회 API 호출 (대표이사 설정용)
-            const managerResponse = await fetch(`/api/users/${userVacationInfo.idx}/manager-chain`);
+            const managerResponse = await fetch(`/api/users/${userVacationInfo.userIdx}/manager-chain`);
             if (!managerResponse.ok) {
                 throw new Error('상위 보고자 정보를 가져오는데 실패했습니다.');
             }
@@ -2768,62 +2897,35 @@ document.addEventListener('DOMContentLoaded', function() {
                 ceoApprover.style.color = '#999';
             }
 
-            // 부서 내 상급자 목록 조회 API 호출 (부서장 선택용)
-            const seniorResponse = await fetch(`/api/users/${userVacationInfo.idx}/senior-users`);
-            if (!seniorResponse.ok) {
-                throw new Error('부서 내 상급자 정보를 가져오는데 실패했습니다.');
-            }
-
-            const seniorUsers = await seniorResponse.json();
-            console.log('부서 내 상급자 로드 완료:', seniorUsers);
-
-            // 부서장 드롭다운 옵션 설정
+            // 부서장: 상위 보고자 체인에서 직속 상위보고자 설정
             const buseoJangSelect = document.getElementById('buseoJangSelect');
             const buseoJangName = document.getElementById('buseoJangName');
 
-            if (buseoJangSelect && seniorUsers && seniorUsers.length > 0) {
-                // 드롭다운 옵션 추가
-                buseoJangSelect.innerHTML = '<option value="">부서장 선택</option>';
-                seniorUsers.forEach(user => {
-                    const option = document.createElement('option');
-                    option.value = user.idx;
-                    option.textContent = `${user.empName} (${user.empPositionName || user.empPosition})`;
-                    option.dataset.empName = user.empName;
-                    buseoJangSelect.appendChild(option);
-                });
+            if (managerChain && managerChain.length > 0) {
+                // 첫 번째가 직속 상위보고자
+                const directManager = managerChain[0];
 
-                // 기본값: 첫 번째 상급자 (직속 상위보고자)
-                if (seniorUsers[0]) {
-                    buseoJangSelect.value = seniorUsers[0].idx;
-                    buseoJangName.textContent = seniorUsers[0].empName;
+                if (buseoJangName) {
+                    buseoJangName.textContent = directManager.empName;
                     buseoJangName.style.color = '#333';
-                    buseoJangName.dataset.approverIdx = seniorUsers[0].idx; // idx 저장
+                    buseoJangName.dataset.approverIdx = directManager.idx; // idx 저장
+                    console.log('✓ 부서장 설정 (직속 상위보고자):', directManager.empName);
                 }
 
-                // 드롭다운 변경 이벤트
-                buseoJangSelect.addEventListener('change', function() {
-                    const selectedOption = this.options[this.selectedIndex];
-                    if (selectedOption.value) {
-                        buseoJangName.textContent = selectedOption.dataset.empName;
-                        buseoJangName.style.color = '#333';
-                        buseoJangName.dataset.approverIdx = selectedOption.value; // idx 저장
-                        console.log('✓ 부서장 변경:', selectedOption.dataset.empName);
-                    } else {
-                        buseoJangName.textContent = '부서장';
-                        buseoJangName.style.color = '#999';
-                        delete buseoJangName.dataset.approverIdx;
-                    }
-                });
-
-                console.log('✓ 부서장 드롭다운 설정 완료');
-            } else if (buseoJangName) {
-                // 부서 내 상급자가 없는 경우
-                buseoJangName.textContent = '부서장';
-                buseoJangName.style.color = '#999';
+                // 드롭다운이 있다면 숨김
                 if (buseoJangSelect) {
-                    buseoJangSelect.style.display = 'none'; // 드롭다운 숨김
+                    buseoJangSelect.style.display = 'none';
                 }
-                console.warn('부서 내 상급자가 없습니다.');
+            } else {
+                // 상위보고자가 없는 경우
+                console.warn('상위보고자를 찾을 수 없습니다.');
+                if (buseoJangName) {
+                    buseoJangName.textContent = '부서장';
+                    buseoJangName.style.color = '#999';
+                }
+                if (buseoJangSelect) {
+                    buseoJangSelect.style.display = 'none';
+                }
             }
 
             console.log('✓ 결재라인 자동 설정 완료');
@@ -2963,8 +3065,7 @@ document.addEventListener('DOMContentLoaded', function() {
             applyDateField.value = new Date().toISOString().split('T')[0];
         }
 
-        // 결재라인 정보 자동 설정
-        setApprovalLine();
+        // 결재라인 정보는 초기화 함수에서 별도로 설정됨
     }
 
     // 연차신청서 페이지인 경우 초기화 (사용자 정보 로드 → 기본 날짜 설정 → 개인정보 채우기)
@@ -2972,11 +3073,17 @@ document.addEventListener('DOMContentLoaded', function() {
         // 1. 사용자 연차 정보 로드
         userVacationInfo = await fetchUserVacationInfo();
 
-        // 2. 기본 날짜 설정 (3영업일 후)
+        // 2. 이미 신청된 연차 날짜 로드
+        requestedDates = await fetchRequestedDates();
+
+        // 3. 기본 날짜 설정 (3영업일 후)
         await setupVacationDefaultDates();
 
-        // 3. 개인정보 채우기
+        // 4. 개인정보 채우기
         prefillPersonalInfo();
+
+        // 5. 결재라인 자동 설정 (async이므로 별도로 await)
+        await setApprovalLine();
     })();
 
 });

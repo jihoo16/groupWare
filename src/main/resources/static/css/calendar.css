@@ -1604,6 +1604,64 @@ input.form-input:read-only {
     color: white;
 }
 
+/* 팀 선택 모달 - 빈 상태 */
+.team-select-empty {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 60px 20px;
+    text-align: center;
+}
+
+.team-select-empty i {
+    font-size: 64px;
+    color: #ddd;
+    margin-bottom: 20px;
+    animation: fadeInScale 0.5s ease-out;
+}
+
+.team-select-empty i.fa-exclamation-triangle {
+    color: #ffa726;
+}
+
+.team-select-empty .empty-message {
+    font-size: 16px;
+    font-weight: 600;
+    color: #666;
+    margin: 0 0 8px 0;
+    animation: fadeInUp 0.5s ease-out 0.1s both;
+}
+
+.team-select-empty .empty-submessage {
+    font-size: 14px;
+    color: #999;
+    margin: 0;
+    animation: fadeInUp 0.5s ease-out 0.2s both;
+}
+
+@keyframes fadeInScale {
+    from {
+        opacity: 0;
+        transform: scale(0.5);
+    }
+    to {
+        opacity: 1;
+        transform: scale(1);
+    }
+}
+
+@keyframes fadeInUp {
+    from {
+        opacity: 0;
+        transform: translateY(10px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
 /* 연/월 선택 모달 스타일 */
 .year-month-modal {
     max-width: 600px;
