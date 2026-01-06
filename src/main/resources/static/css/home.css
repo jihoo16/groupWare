@@ -408,7 +408,7 @@ body {
     gap: 17px;
 }
 
-.search-box {
+.header-right .search-box {
     display: flex;
     align-items: center;
     background: #f5f7fa;
@@ -418,11 +418,11 @@ body {
     min-width: 255px;
 }
 
-.search-box i {
+.header-right .search-box i {
     color: #999;
 }
 
-.search-box input {
+.header-right .search-box input {
     border: none;
     background: none;
     outline: none;

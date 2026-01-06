@@ -134,10 +134,12 @@ document.addEventListener('DOMContentLoaded', function() {
             selectedProjectIdx.value = project.idx;
         }
 
-        // 현재 전체 달성률 표시
+        // 마지막 달성률 표시
         const currentProgressRate = document.getElementById('currentProgressRate');
-        if (currentProgressRate && project.progressRate !== undefined) {
-            currentProgressRate.value = (project.progressRate || 0) + '%';
+        if (currentProgressRate) {
+            const progressRate = project.progressRate ?? 0;
+            currentProgressRate.value = progressRate + '%';
+            console.log('프로젝트 달성률 자동 설정:', project.projectName, '→', progressRate + '%');
         }
 
         // 미리보기 업데이트
@@ -152,44 +154,160 @@ document.addEventListener('DOMContentLoaded', function() {
 
     loadProjects();
 
+    // 텍스트 하이라이트 함수
+    function highlightText(text, keyword) {
+        if (!text || !keyword) return text;
+
+        const lowerText = text.toLowerCase();
+        const lowerKeyword = keyword.toLowerCase();
+
+        // 일반 텍스트 매칭
+        if (lowerText.includes(lowerKeyword)) {
+            const regex = new RegExp(`(${keyword})`, 'gi');
+            return text.replace(regex, '<mark class="search-highlight">$1</mark>');
+        }
+
+        // 초성 매칭
+        const chosung = getChosung(text);
+        if (chosung.includes(keyword)) {
+            let result = '';
+            let chosungIndex = 0;
+            let keywordIndex = 0;
+
+            for (let i = 0; i < text.length; i++) {
+                const char = text[i];
+                const code = text.charCodeAt(i) - 44032;
+
+                if (code > -1 && code < 11172) {
+                    const cho = CHO_HANGUL[Math.floor(code / 588)];
+                    if (keywordIndex < keyword.length && cho === keyword[keywordIndex]) {
+                        result += `<mark class="search-highlight">${char}</mark>`;
+                        keywordIndex++;
+                    } else {
+                        result += char;
+                    }
+                } else {
+                    result += char;
+                }
+            }
+            return result;
+        }
+
+        return text;
+    }
+
     // 프로젝트 목록 렌더링
-    function renderProjectList(list) {
+    function renderProjectList(list, keyword = '') {
         if (!projectList) return;
 
         projectList.innerHTML = '';
+
+        // 목록이 비어있을 때
+        if (list.length === 0) {
+            const emptyMessage = document.createElement('div');
+            emptyMessage.className = 'modal-empty-state';
+            emptyMessage.innerHTML = `
+                <i class="fas fa-folder-open"></i>
+                <p>${keyword ? '검색 결과가 없습니다' : '등록된 프로젝트가 없습니다'}</p>
+            `;
+            projectList.appendChild(emptyMessage);
+            return;
+        }
+
         list.forEach(proj => {
             const item = document.createElement('div');
-            item.className = 'employee-item';
+            item.className = 'modal-item';
             if (selectedProject && selectedProject.idx === proj.idx) {
                 item.classList.add('selected');
             }
 
+            const highlightedName = highlightText(proj.projectName, keyword);
+            const highlightedDesc = highlightText(proj.description || '설명 없음', keyword);
+
             item.innerHTML = `
                 <i class="fas fa-folder"></i>
-                <div class="employee-info">
-                    <div class="employee-name">${proj.projectName}</div>
-                    <div class="employee-detail">${proj.description || '설명 없음'}</div>
+                <div class="modal-item-info">
+                    <div class="modal-item-name">${highlightedName}</div>
+                    <div class="modal-item-detail">${highlightedDesc}</div>
                 </div>
             `;
 
-            item.addEventListener('click', function() {
-                document.querySelectorAll('#projectList .employee-item').forEach(i => i.classList.remove('selected'));
-                this.classList.add('selected');
+            item.addEventListener('click', async function() {
                 selectedProject = proj;
+
+                // 프로젝트 입력 필드에 표시
+                if (projectInput) {
+                    projectInput.value = selectedProject.projectName;
+                }
+                if (selectedProjectIdx) {
+                    selectedProjectIdx.value = selectedProject.idx;
+                }
+
+                // 마지막 달성률 표시
+                const currentProgressRate = document.getElementById('currentProgressRate');
+                if (currentProgressRate) {
+                    const progressRate = selectedProject.progressRate ?? 0;
+                    currentProgressRate.value = progressRate + '%';
+                    console.log('프로젝트 달성률 업데이트:', selectedProject.projectName, '→', progressRate + '%');
+                }
+
+                // 미리보기 업데이트
+                const autoProject = document.querySelector('.auto-project');
+                if (autoProject) {
+                    autoProject.textContent = selectedProject.projectName;
+                }
+
+                // 결재자 자동 설정: 프로젝트 책임자 & 대표이사
+                await autoSetApprovers(selectedProject);
+
+                closeProjectModal();
             });
 
             projectList.appendChild(item);
         });
     }
 
+    // ============================================
+    // 초성 검색 유틸리티
+    // ============================================
+    const CHO_HANGUL = ['ㄱ', 'ㄲ', 'ㄴ', 'ㄷ', 'ㄸ', 'ㄹ', 'ㅁ', 'ㅂ', 'ㅃ', 'ㅅ', 'ㅆ', 'ㅇ', 'ㅈ', 'ㅉ', 'ㅊ', 'ㅋ', 'ㅌ', 'ㅍ', 'ㅎ'];
+
+    function getChosung(str) {
+        let result = '';
+        for (let i = 0; i < str.length; i++) {
+            const code = str.charCodeAt(i) - 44032;
+            if (code > -1 && code < 11172) {
+                result += CHO_HANGUL[Math.floor(code / 588)];
+            } else {
+                result += str.charAt(i);
+            }
+        }
+        return result;
+    }
+
+    function matchesSearch(text, keyword) {
+        if (!text || !keyword) return true;
+
+        const lowerText = text.toLowerCase();
+        const lowerKeyword = keyword.toLowerCase();
+
+        // 일반 검색
+        if (lowerText.includes(lowerKeyword)) return true;
+
+        // 초성 검색
+        const chosung = getChosung(text);
+        return chosung.includes(keyword);
+    }
+
     // 프로젝트 검색
     if (projectSearch) {
         projectSearch.addEventListener('input', function() {
-            const keyword = this.value.toLowerCase();
+            const keyword = this.value.trim();
             const filtered = projects.filter(proj =>
-                proj.projectName.toLowerCase().includes(keyword)
+                matchesSearch(proj.projectName, keyword) ||
+                matchesSearch(proj.description, keyword)
             );
-            renderProjectList(filtered);
+            renderProjectList(filtered, keyword);
         });
     }
 
@@ -577,21 +695,21 @@ document.addEventListener('DOMContentLoaded', function() {
         employeeList.innerHTML = '';
         list.forEach(emp => {
             const item = document.createElement('div');
-            item.className = 'employee-item';
+            item.className = 'modal-item';
             if (selectedEmployee && selectedEmployee.idx === emp.idx) {
                 item.classList.add('selected');
             }
 
             item.innerHTML = `
                 <i class="fas fa-user-circle"></i>
-                <div class="employee-info">
-                    <div class="employee-name">${emp.empName}</div>
-                    <div class="employee-detail">${emp.empDeptName || ''} | ${emp.empPosition || ''}</div>
+                <div class="modal-item-info">
+                    <div class="modal-item-name">${emp.empName}</div>
+                    <div class="modal-item-detail">${emp.empDeptName || ''} | ${emp.empPosition || ''}</div>
                 </div>
             `;
 
             item.addEventListener('click', function() {
-                document.querySelectorAll('.employee-item').forEach(i => i.classList.remove('selected'));
+                document.querySelectorAll('.modal-item').forEach(i => i.classList.remove('selected'));
                 this.classList.add('selected');
                 selectedEmployee = emp;
             });
