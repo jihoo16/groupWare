@@ -1,4 +1,4 @@
-/* 전자결재 메인 컨테이너 */
+/* 전자 문서 메인 컨테이너 */
 .approval-container {
     display: grid;
     grid-template-columns: 280px 1fr;
