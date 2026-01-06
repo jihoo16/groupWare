@@ -5,7 +5,7 @@ import com.pinecni.erp.api.approval.dto.ApprovalDocumentDTO;
 import java.util.List;
 
 /**
- * 전자결재 문서 Service Interface
+ * 전자 문서 Service Interface
  */
 public interface ApprovalDocumentService {
 

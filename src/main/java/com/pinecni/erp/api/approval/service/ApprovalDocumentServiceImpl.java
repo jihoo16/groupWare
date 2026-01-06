@@ -14,7 +14,7 @@ import java.util.List;
 import java.util.stream.Collectors;
 
 /**
- * 전자결재 문서 Service 구현체
+ * 전자 문서 Service 구현체
  */
 @Slf4j
 @Service

@@ -9,8 +9,8 @@ import java.util.ArrayList;
 import java.util.List;
 
 /**
- * 전자결재 문서 공통 메타데이터 Entity
- * - 모든 전자결재 문서의 공통 정보 저장
+ * 전자 문서 공통 메타데이터 Entity
+ * - 모든 전자 문서의 공통 정보 저장
  * - vacation_request, expense_request 등과 1:N 관계
  */
 @Entity

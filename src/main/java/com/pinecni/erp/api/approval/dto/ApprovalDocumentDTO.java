@@ -8,7 +8,7 @@ import lombok.NoArgsConstructor;
 import java.time.LocalDateTime;
 
 /**
- * 전자결재 문서 목록 조회용 DTO
+ * 전자 문서 목록 조회용 DTO
  */
 @Data
 @Builder
