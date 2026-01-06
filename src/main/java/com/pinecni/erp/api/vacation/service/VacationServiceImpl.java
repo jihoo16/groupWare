@@ -540,9 +540,10 @@ public class VacationServiceImpl implements VacationService {
     public Long saveVacationRequest(Long userIdx, VacationRequestSaveDTO saveDTO) {
         log.info("[연차 신청서 저장] userIdx: {}, periods count: {}", userIdx, saveDTO.getPeriods().size());
 
-        // 1. 사용자 조회
-        User user = userRepository.findById(userIdx)
-                .orElseThrow(() -> new IllegalArgumentException("사용자를 찾을 수 없습니다: " + userIdx));
+        try {
+            // 1. 사용자 조회
+            User user = userRepository.findById(userIdx)
+                    .orElseThrow(() -> new IllegalArgumentException("사용자를 찾을 수 없습니다: " + userIdx));
 
         // ===== 🔒 보안 검증 시작 =====
         log.info("[보안 검증 시작] userIdx: {}", userIdx);
@@ -626,8 +627,18 @@ public class VacationServiceImpl implements VacationService {
             createCalendarEventForVacation(userIdx, user, savedDocument.getIdx(), period, saveDTO.getReason());
         }
 
-        log.info("[연차 신청서 저장 완료] documentIdx: {}, total periods: {}", savedDocument.getIdx(), saveDTO.getPeriods().size());
-        return savedDocument.getIdx();
+            log.info("[연차 신청서 저장 완료] documentIdx: {}, total periods: {}", savedDocument.getIdx(), saveDTO.getPeriods().size());
+            return savedDocument.getIdx();
+
+        } catch (IllegalArgumentException e) {
+            // 비즈니스 검증 실패 (사용자 친화적 에러 메시지)
+            log.error("[연차 신청 실패 - 검증 오류] userIdx: {}, error: {}", userIdx, e.getMessage());
+            throw e;
+        } catch (Exception e) {
+            // 시스템 에러 (DB 저장 실패 등)
+            log.error("[연차 신청 실패 - 시스템 오류] userIdx: {}, error: {}", userIdx, e.getMessage(), e);
+            throw new RuntimeException("연차 신청서 저장 중 오류가 발생했습니다. approval_documents, vacation_request, calendar_events가 모두 롤백됩니다.", e);
+        }
     }
 
     /**

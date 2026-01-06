@@ -6,8 +6,10 @@ import com.pinecni.erp.api.document.dto.ReceiptMeetingUpdateDTO;
 import com.pinecni.erp.api.document.mapper.ReceiptMeetingMapper;
 import com.pinecni.erp.api.project.repository.ReceiptMeetingAttendeeRepository;
 import com.pinecni.erp.api.project.repository.ReceiptMeetingRepository;
+import com.pinecni.erp.api.approval.repository.ApprovalDocumentRepository;
 import com.pinecni.erp.entity.ReceiptMeeting;
 import com.pinecni.erp.entity.ReceiptMeetingAttendee;
+import com.pinecni.erp.entity.ApprovalDocument;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -30,6 +32,7 @@ public class ReceiptMeetingServiceImpl implements ReceiptMeetingService {
     private final ReceiptMeetingRepository receiptMeetingRepository;
     private final ReceiptMeetingAttendeeRepository attendeeRepository;
     private final ReceiptMeetingMapper mapper;
+    private final ApprovalDocumentRepository approvalDocumentRepository;
 
     @Override
     @Transactional(readOnly = true)
@@ -87,12 +90,35 @@ public class ReceiptMeetingServiceImpl implements ReceiptMeetingService {
     public ReceiptMeetingDTO createReceiptMeeting(ReceiptMeetingCreateDTO createDTO) {
         log.debug("회의록 생성 - projectIdx: {}, authorIdx: {}", createDTO.getProjectIdx(), createDTO.getAuthorIdx());
 
-        // 1. 문서번호 생성
-        String documentNumber = generateDocumentNumber(createDTO.getProjectIdx());
+        try {
+            // 1. 문서번호 생성
+            String documentNumber = generateDocumentNumber(createDTO.getProjectIdx());
 
-        // 2. 회의록 Entity 생성 및 저장
+        // 2. ApprovalDocument 메타데이터 저장
+        String documentNo = "RECEIPT-MEETING-" + System.currentTimeMillis() + "-" + createDTO.getAuthorIdx();
+        String title = "연구비증빙 회의록";
+        if (createDTO.getPurpose() != null && !createDTO.getPurpose().isEmpty()) {
+            title = "연구비증빙 회의록 - " + createDTO.getPurpose();
+        }
+
+        ApprovalDocument approvalDocument = ApprovalDocument.builder()
+                .documentNo(documentNo)
+                .title(title)
+                .documentType("연구비증빙-회의록")
+                .drafterUserIdx(createDTO.getAuthorIdx())
+                .content(createDTO.getContent())
+                .createdUserIdx(createDTO.getAuthorIdx())
+                .updatedUserIdx(createDTO.getAuthorIdx())
+                .build();
+
+        ApprovalDocument savedDocument = approvalDocumentRepository.save(approvalDocument);
+        log.debug("ApprovalDocument created - documentIdx: {}, documentNo: {}",
+                  savedDocument.getIdx(), savedDocument.getDocumentNo());
+
+        // 3. 회의록 Entity 생성 및 저장
         ReceiptMeeting entity = mapper.toEntity(createDTO);
         entity.setDocumentNumber(documentNumber);
+        entity.setDocumentIdx(savedDocument.getIdx());
         entity = receiptMeetingRepository.save(entity);
 
         // 3. 참석자 목록 저장
@@ -104,12 +130,18 @@ public class ReceiptMeetingServiceImpl implements ReceiptMeetingService {
             attendeeRepository.saveAll(attendees);
         }
 
-        // 4. 저장된 데이터 재조회 (참석자 포함)
-        ReceiptMeeting savedEntity = receiptMeetingRepository.findByIdWithDetails(entity.getIdx())
-                .orElseThrow(() -> new IllegalStateException("저장된 회의록을 조회할 수 없습니다."));
+            // 4. 저장된 데이터 재조회 (참석자 포함)
+            ReceiptMeeting savedEntity = receiptMeetingRepository.findByIdWithDetails(entity.getIdx())
+                    .orElseThrow(() -> new IllegalStateException("저장된 회의록을 조회할 수 없습니다."));
 
-        log.info("회의록 생성 완료 - idx: {}, documentNumber: {}", savedEntity.getIdx(), documentNumber);
-        return mapper.toDTO(savedEntity);
+            log.info("회의록 생성 완료 - idx: {}, documentNumber: {}", savedEntity.getIdx(), documentNumber);
+            return mapper.toDTO(savedEntity);
+
+        } catch (Exception e) {
+            log.error("연구비증빙 회의록 생성 실패 - projectIdx: {}, authorIdx: {}, error: {}",
+                      createDTO.getProjectIdx(), createDTO.getAuthorIdx(), e.getMessage(), e);
+            throw new RuntimeException("연구비증빙 회의록 저장 중 오류가 발생했습니다. approval_documents와 receipt_meeting이 모두 롤백됩니다.", e);
+        }
     }
 
     @Override

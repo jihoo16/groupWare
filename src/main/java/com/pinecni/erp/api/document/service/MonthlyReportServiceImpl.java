@@ -7,7 +7,9 @@ import com.pinecni.erp.api.document.mapper.MonthlyReportMapper;
 import com.pinecni.erp.api.document.repository.MonthlyReportRepository;
 import com.pinecni.erp.api.user.repository.UserRepository;
 import com.pinecni.erp.api.code.repository.CodeRepository;
+import com.pinecni.erp.api.approval.repository.ApprovalDocumentRepository;
 import com.pinecni.erp.entity.MonthlyReport;
+import com.pinecni.erp.entity.ApprovalDocument;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -31,14 +33,16 @@ public class MonthlyReportServiceImpl implements MonthlyReportService {
     private final MonthlyReportMapper monthlyReportMapper;
     private final UserRepository userRepository;
     private final CodeRepository codeRepository;
+    private final ApprovalDocumentRepository approvalDocumentRepository;
 
     @Override
     @Transactional
     public MonthlyReportDTO createMonthlyReport(MonthlyReportCreateDTO createDTO) {
         log.debug("createMonthlyReport() called - userIdx: {}", createDTO.getUserIdx());
 
-        // DTO → Entity 변환
-        MonthlyReport monthlyReport = monthlyReportMapper.toEntity(createDTO);
+        try {
+            // DTO → Entity 변환
+            MonthlyReport monthlyReport = monthlyReportMapper.toEntity(createDTO);
 
         // 생성 시간 설정 (Mapper에서 이미 설정되지만 명시적으로 다시 설정)
         LocalDateTime now = LocalDateTime.now();
@@ -50,24 +54,54 @@ public class MonthlyReportServiceImpl implements MonthlyReportService {
             monthlyReport.setCreatedUserIdx(createDTO.getUserIdx());
         }
 
+        // === 1. ApprovalDocument 메타데이터 저장 ===
+        String documentNo = "MONTHLY-" + System.currentTimeMillis() + "-" + createDTO.getUserIdx();
+        String title = "월간업무보고";
+        if (createDTO.getReportMonth() != null && !createDTO.getReportMonth().isEmpty()) {
+            title = "월간업무보고 - " + createDTO.getReportMonth();
+        }
+
+        ApprovalDocument approvalDocument = ApprovalDocument.builder()
+                .documentNo(documentNo)
+                .title(title)
+                .documentType("월간업무보고")
+                .drafterUserIdx(createDTO.getUserIdx())
+                .content(createDTO.getMainTasks())
+                .createdUserIdx(createDTO.getUserIdx())
+                .updatedUserIdx(createDTO.getUserIdx())
+                .build();
+
+        ApprovalDocument savedDocument = approvalDocumentRepository.save(approvalDocument);
+        log.debug("ApprovalDocument created - documentIdx: {}, documentNo: {}",
+                  savedDocument.getIdx(), savedDocument.getDocumentNo());
+
+        // === 2. MonthlyReport에 documentIdx 연결 ===
+        monthlyReport.setDocumentIdx(savedDocument.getIdx());
+
         // 저장
         MonthlyReport saved = monthlyReportRepository.save(monthlyReport);
-        log.debug("monthlyReport created successfully - id: {}", saved.getId());
+        log.debug("monthlyReport created successfully - id: {}, documentIdx: {}",
+                  saved.getId(), saved.getDocumentIdx());
 
-        // Entity → DTO 변환
-        MonthlyReportDTO dto = monthlyReportMapper.toDTO(saved);
-        // User 정보 조회 및 설정
-        userRepository.findById(saved.getUserIdx()).ifPresent(user -> {
-            dto.setUserName(user.getEmpName());
-            dto.setUserDept(user.getEmpDept());
-            // 부서 이름 조회
-            if (user.getEmpDept() != null) {
-                codeRepository.findByCode(user.getEmpDept()).ifPresent(code -> {
-                    dto.setUserDeptName(code.getCodeName());
-                });
-            }
-        });
-        return dto;
+            // Entity → DTO 변환
+            MonthlyReportDTO dto = monthlyReportMapper.toDTO(saved);
+            // User 정보 조회 및 설정
+            userRepository.findById(saved.getUserIdx()).ifPresent(user -> {
+                dto.setUserName(user.getEmpName());
+                dto.setUserDept(user.getEmpDept());
+                // 부서 이름 조회
+                if (user.getEmpDept() != null) {
+                    codeRepository.findByCode(user.getEmpDept()).ifPresent(code -> {
+                        dto.setUserDeptName(code.getCodeName());
+                    });
+                }
+            });
+            return dto;
+
+        } catch (Exception e) {
+            log.error("월간업무보고 생성 실패 - userIdx: {}, error: {}", createDTO.getUserIdx(), e.getMessage(), e);
+            throw new RuntimeException("월간업무보고 저장 중 오류가 발생했습니다. approval_documents와 monthly_report가 모두 롤백됩니다.", e);
+        }
     }
 
     @Override

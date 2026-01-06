@@ -7,9 +7,11 @@ import com.pinecni.erp.api.document.mapper.ReceiptTripMapper;
 import com.pinecni.erp.api.project.repository.ProjectRepository;
 import com.pinecni.erp.api.project.repository.ReceiptTripAttendeeRepository;
 import com.pinecni.erp.api.project.repository.ReceiptTripRepository;
+import com.pinecni.erp.api.approval.repository.ApprovalDocumentRepository;
 import com.pinecni.erp.entity.Project;
 import com.pinecni.erp.entity.ReceiptTrip;
 import com.pinecni.erp.entity.ReceiptTripAttendee;
+import com.pinecni.erp.entity.ApprovalDocument;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -33,6 +35,7 @@ public class ReceiptTripServiceImpl implements ReceiptTripService {
     private final ReceiptTripAttendeeRepository attendeeRepository;
     private final ProjectRepository projectRepository;
     private final ReceiptTripMapper mapper;
+    private final ApprovalDocumentRepository approvalDocumentRepository;
 
     @Override
     @Transactional(readOnly = true)
@@ -90,12 +93,35 @@ public class ReceiptTripServiceImpl implements ReceiptTripService {
     public ReceiptTripDTO createReceiptTrip(ReceiptTripCreateDTO createDTO) {
         log.debug("출장 생성 - projectIdx: {}, authorIdx: {}", createDTO.getProjectIdx(), createDTO.getAuthorIdx());
 
-        // 1. 문서번호 생성
-        String documentNumber = generateDocumentNumber(createDTO.getProjectIdx());
+        try {
+            // 1. 문서번호 생성
+            String documentNumber = generateDocumentNumber(createDTO.getProjectIdx());
 
-        // 2. 출장 Entity 생성 및 저장
+        // 2. ApprovalDocument 메타데이터 저장
+        String documentNo = "RECEIPT-TRIP-" + System.currentTimeMillis() + "-" + createDTO.getAuthorIdx();
+        String title = "연구비증빙 출장";
+        if (createDTO.getLocation() != null && !createDTO.getLocation().isEmpty()) {
+            title = "연구비증빙 출장 - " + createDTO.getLocation();
+        }
+
+        ApprovalDocument approvalDocument = ApprovalDocument.builder()
+                .documentNo(documentNo)
+                .title(title)
+                .documentType("연구비증빙-출장")
+                .drafterUserIdx(createDTO.getAuthorIdx())
+                .content(createDTO.getContent())
+                .createdUserIdx(createDTO.getAuthorIdx())
+                .updatedUserIdx(createDTO.getAuthorIdx())
+                .build();
+
+        ApprovalDocument savedDocument = approvalDocumentRepository.save(approvalDocument);
+        log.debug("ApprovalDocument created - documentIdx: {}, documentNo: {}",
+                  savedDocument.getIdx(), savedDocument.getDocumentNo());
+
+        // 3. 출장 Entity 생성 및 저장
         ReceiptTrip entity = mapper.toEntity(createDTO);
         entity.setDocumentNumber(documentNumber);
+        entity.setDocumentIdx(savedDocument.getIdx());
         entity = receiptTripRepository.save(entity);
 
         // 3. 참석자 목록 저장
@@ -107,12 +133,18 @@ public class ReceiptTripServiceImpl implements ReceiptTripService {
             attendeeRepository.saveAll(attendees);
         }
 
-        // 4. 저장된 데이터 재조회 (참석자 포함)
-        ReceiptTrip savedEntity = receiptTripRepository.findByIdWithDetails(entity.getIdx())
-                .orElseThrow(() -> new IllegalStateException("저장된 출장 정보를 조회할 수 없습니다."));
+            // 4. 저장된 데이터 재조회 (참석자 포함)
+            ReceiptTrip savedEntity = receiptTripRepository.findByIdWithDetails(entity.getIdx())
+                    .orElseThrow(() -> new IllegalStateException("저장된 출장 정보를 조회할 수 없습니다."));
 
-        log.info("출장 생성 완료 - idx: {}, documentNumber: {}", savedEntity.getIdx(), documentNumber);
-        return mapper.toDTO(savedEntity);
+            log.info("출장 생성 완료 - idx: {}, documentNumber: {}", savedEntity.getIdx(), documentNumber);
+            return mapper.toDTO(savedEntity);
+
+        } catch (Exception e) {
+            log.error("연구비증빙 출장 생성 실패 - projectIdx: {}, authorIdx: {}, error: {}",
+                      createDTO.getProjectIdx(), createDTO.getAuthorIdx(), e.getMessage(), e);
+            throw new RuntimeException("연구비증빙 출장 저장 중 오류가 발생했습니다. approval_documents와 receipt_trip이 모두 롤백됩니다.", e);
+        }
     }
 
     @Override
