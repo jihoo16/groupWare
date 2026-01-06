@@ -104,30 +104,21 @@
                                 <!-- JavaScript에서 동적으로 렌더링됩니다 -->
                             </tbody>
                         </table>
+                            <!-- 빈 상태 -->
+                            <div class="empty-state" id="emptyState" style="display: none;">
+                                <i class="fas fa-inbox"></i>
+                                <h3>문서가 없습니다</h3>
+                                <p>조건에 맞는 문서가 없습니다.</p>
+                            </div>
                         </div>
 
-                        <!-- 페이지네이션 -->
-                        <div class="pagination">
-                            <button class="page-btn" disabled>
-                                <i class="fas fa-chevron-left"></i>
-                            </button>
-                            <button class="page-btn active">1</button>
-                            <button class="page-btn">2</button>
-                            <button class="page-btn">3</button>
-                            <button class="page-btn">4</button>
-                            <button class="page-btn">5</button>
-                            <button class="page-btn">
-                                <i class="fas fa-chevron-right"></i>
-                            </button>
+                        <!-- 페이지네이션 (JavaScript에서 동적 생성) -->
+                        <div class="pagination" style="display: none;">
+                            <!-- 페이지네이션 버튼은 JavaScript에서 동적으로 생성됩니다 -->
                         </div>
                     </div>
 
-                    <!-- 빈 상태 -->
-                    <div class="empty-state" id="emptyState" style="display: none;">
-                        <i class="fas fa-inbox"></i>
-                        <h3>문서가 없습니다</h3>
-                        <p>조건에 맞는 문서가 없습니다.</p>
-                    </div>
+
                 </div>
             </div>
         </main>

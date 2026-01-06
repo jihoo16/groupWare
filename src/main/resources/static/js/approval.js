@@ -1,7 +1,7 @@
 // 전자결재 메인 페이지 JavaScript
 document.addEventListener('DOMContentLoaded', function() {
     // DOM 요소
-    const sidebarMenuItems = document.querySelectorAll('.approval-sidebar .menu-item');
+    const sidebarMenuItems = document.querySelectorAll('.approval-sidebar .sidebar-menu .menu-item');
     const documentList = document.getElementById('documentList');
     const emptyState = document.getElementById('emptyState');
     const contentTitle = document.querySelector('.content-title');
@@ -154,6 +154,15 @@ document.addEventListener('DOMContentLoaded', function() {
         if (!pagination) return;
 
         const totalPages = Math.ceil(filteredRows.length / itemsPerPage);
+
+        // 문서가 없으면 페이지네이션 숨김
+        if (totalPages === 0 || filteredRows.length === 0) {
+            pagination.style.display = 'none';
+            return;
+        }
+
+        // 문서가 있으면 페이지네이션 표시
+        pagination.style.display = 'flex';
 
         // 페이지네이션 초기화
         pagination.innerHTML = '';
@@ -400,239 +409,36 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     }
 
-    // approval_documents 기반 렌더링 (주간/월간보고서)
-    function renderWeeklyReports() {
-        const tbody = documentList.querySelector('tbody');
-        if (!tbody) return;
-
-        // 기존 더미 데이터 제거
-        const existingRows = tbody.querySelectorAll('.doc-row[data-category="report"]');
-        existingRows.forEach(row => row.remove());
-
-        // 주간보고서와 월간보고서를 합치고 타입 표시 추가
-        const allReports = [
-            ...weeklyReports.map(report => ({ ...report, reportType: 'weekly' })),
-            ...monthlyReports.map(report => ({ ...report, reportType: 'monthly' }))
-        ];
-
-        // 생성일 기준 최신순 정렬
-        allReports.sort((a, b) => {
-            const dateA = new Date(a.createdAt);
-            const dateB = new Date(b.createdAt);
-            return dateB - dateA; // 내림차순 (최신순)
-        });
-
-        // 정렬된 보고서를 테이블에 렌더링
-        allReports.forEach(report => {
-            const tr = document.createElement('tr');
-            tr.className = 'doc-row';
-            tr.setAttribute('data-category', 'report');
-
-            const createdDate = new Date(report.createdAt);
-            const formattedDate = `${createdDate.getFullYear()}.${String(createdDate.getMonth() + 1).padStart(2, '0')}.${String(createdDate.getDate()).padStart(2, '0')} ${String(createdDate.getHours()).padStart(2, '0')}:${String(createdDate.getMinutes()).padStart(2, '0')}`;
-
-            // 주간/월간 구분
-            const isWeekly = report.reportType === 'weekly';
-            const docTypeIcon = isWeekly ? 'fa-calendar-week' : 'fa-calendar-alt';
-            const docTypeName = report.documentType; // approval_documents의 documentType 사용
-
-            tr.innerHTML = `
-                <td>
-                    <span class="doc-type">
-                        <i class="fas ${docTypeIcon}"></i>
-                        ${docTypeName}
-                    </span>
-                </td>
-                <td class="doc-title-cell">
-                    <div class="title-wrap">${report.title}</div>
-                    <div class="desc-wrap">${truncateText(report.content, 100)}</div>
-                </td>
-                <td>${report.drafterName || '-'}</td>
-                <td>${report.drafterDeptName || '-'}</td>
-                <td>${formattedDate}</td>
-                <td>
-                <div class="table-actions">
-                    <button class="btn-icon btn-view" data-id="${report.idx}" data-type="${report.reportType}">
-                        <i class="fas fa-eye"></i>
-                    </button>
-                    </div>
-                </td>
-            `;
-
-            tbody.appendChild(tr);
-        });
-
-        filterDocuments();
-    }
-
     // 텍스트 자르기 유틸리티
     function truncateText(text, maxLength) {
         if (!text) return '';
         return text.length > maxLength ? text.substring(0, maxLength) + '...' : text;
     }
 
-    // ============================================
-    // API: 월간보고서 목록 로드
-    // ============================================
-    async function loadMonthlyReports() {
-        try {
-            console.log('월간보고서 API 호출 시작: /api/document/monthly-report');
-            const response = await fetch('/api/document/monthly-report');
-            console.log('API 응답 상태:', response.status, response.statusText);
-
-            if (response.ok) {
-                monthlyReports = await response.json();
-                console.log('월간보고서 로드 성공:', monthlyReports.length + '건');
-                console.log('첫 번째 데이터:', monthlyReports[0]);
-            } else {
-                const errorText = await response.text();
-                console.error('월간보고서 로드 실패 - 상태:', response.status);
-                console.error('에러 응답:', errorText);
-            }
-        } catch (error) {
-            console.error('월간보고서 로드 오류:', error);
-            console.error('오류 상세:', error.message, error.stack);
-        }
+    // documentType을 sidebar category로 매핑
+    function getCategoryFromDocumentType(documentType) {
+        const categoryMap = {
+            '주간업무보고': 'weekly-report',
+            '월간업무보고': 'monthly-report',
+            '회의록': 'meeting',
+            '연구비증빙-회의록': 'receipt',
+            '연구비증빙-출장': 'receipt',
+            '연차신청서': 'vacation'
+        };
+        return categoryMap[documentType] || 'general';
     }
 
-    // ============================================
-    // API: 회의록 목록 로드
-    // ============================================
-    async function loadMeetingMinutes() {
-        try {
-            console.log('회의록 API 호출 시작: /api/document/meeting-minutes');
-            const response = await fetch('/api/document/meeting-minutes');
-            console.log('API 응답 상태:', response.status, response.statusText);
-
-            if (response.ok) {
-                meetingMinutes = await response.json();
-                console.log('회의록 로드 성공:', meetingMinutes.length + '건');
-                console.log('첫 번째 데이터:', meetingMinutes[0]);
-            } else {
-                const errorText = await response.text();
-                console.error('회의록 로드 실패 - 상태:', response.status);
-                console.error('에러 응답:', errorText);
-            }
-        } catch (error) {
-            console.error('회의록 로드 오류:', error);
-            console.error('오류 상세:', error.message, error.stack);
-        }
-    }
-
-    // 회의록 렌더링
-    function renderMeetingMinutes() {
-        const tbody = documentList.querySelector('tbody');
-        if (!tbody) return;
-
-        // 기존 더미 데이터 제거
-        const existingRows = tbody.querySelectorAll('.doc-row[data-category="meeting"]');
-        existingRows.forEach(row => row.remove());
-
-        // 생성일 기준 최신순 정렬
-        meetingMinutes.sort((a, b) => {
-            const dateA = new Date(a.createdAt);
-            const dateB = new Date(b.createdAt);
-            return dateB - dateA; // 내림차순 (최신순)
-        });
-
-        // 회의록을 테이블에 렌더링
-        meetingMinutes.forEach(meeting => {
-            const tr = document.createElement('tr');
-            tr.className = 'doc-row';
-            tr.setAttribute('data-category', 'meeting');
-
-            const createdDate = new Date(meeting.createdAt);
-            const formattedDate = `${createdDate.getFullYear()}.${String(createdDate.getMonth() + 1).padStart(2, '0')}.${String(createdDate.getDate()).padStart(2, '0')} ${String(createdDate.getHours()).padStart(2, '0')}:${String(createdDate.getMinutes()).padStart(2, '0')}`;
-
-            // 회의 일시 포맷팅
-            const meetingDate = new Date(meeting.meetingDatetime);
-            const meetingDateStr = `${meetingDate.getFullYear()}.${String(meetingDate.getMonth() + 1).padStart(2, '0')}.${String(meetingDate.getDate()).padStart(2, '0')}`;
-
-            // 설명 텍스트 생성
-            let descText = meetingDateStr;
-            if (meeting.location) {
-                descText += ` | ${meeting.location}`;
-            }
-            if (meeting.participants) {
-                const participantCount = meeting.participants.split(',').length;
-                descText += ` | 참석 ${participantCount}명`;
-            }
-
-            tr.innerHTML = `
-                <td>
-                    <span class="doc-type">
-                        <i class="fas fa-users"></i>
-                        회의록
-                    </span>
-                </td>
-                <td class="doc-title-cell">
-                    <div class="title-wrap">${meeting.projectName ? '[' + meeting.projectName + '] ' : ''}${meeting.meetingTitle || '제목 없음'}</div>
-                    <div class="desc-wrap">${descText}</div>
-                </td>
-                <td>${meeting.userName || '-'}</td>
-                <td>${meeting.userDeptName || '-'}</td>
-                <td>${formattedDate}</td>
-                <td>
-                <div class="table-actions">
-                    <button class="btn-icon btn-view" data-id="${meeting.idx}" data-type="meeting">
-                        <i class="fas fa-eye"></i>
-                    </button>
-                    </div>
-                </td>
-            `;
-
-            tbody.appendChild(tr);
-        });
-
-        filterDocuments();
-    }
-
-    // ============================================
-    // API: 연구비증빙 회의록 목록 로드
-    // ============================================
-    async function loadReceiptMeetings() {
-        try {
-            console.log('연구비증빙 회의록 API 호출 시작: /api/receipt-meetings');
-            const response = await fetch('/api/receipt-meetings');
-            console.log('API 응답 상태:', response.status, response.statusText);
-
-            if (response.ok) {
-                receiptMeetings = await response.json();
-                console.log('연구비증빙 회의록 로드 성공:', receiptMeetings.length + '건');
-                console.log('첫 번째 데이터:', receiptMeetings[0]);
-            } else {
-                const errorText = await response.text();
-                console.error('연구비증빙 회의록 로드 실패 - 상태:', response.status);
-                console.error('에러 응답:', errorText);
-            }
-        } catch (error) {
-            console.error('연구비증빙 회의록 로드 오류:', error);
-            console.error('오류 상세:', error.message, error.stack);
-        }
-    }
-
-    // ============================================
-    // API: 연구비증빙 출장 목록 로드
-    // ============================================
-    async function loadReceiptTrips() {
-        try {
-            console.log('연구비증빙 출장 API 호출 시작: /api/receipt-trips');
-            const response = await fetch('/api/receipt-trips');
-            console.log('API 응답 상태:', response.status, response.statusText);
-
-            if (response.ok) {
-                receiptTrips = await response.json();
-                console.log('연구비증빙 출장 로드 성공:', receiptTrips.length + '건');
-                console.log('첫 번째 데이터:', receiptTrips[0]);
-            } else {
-                const errorText = await response.text();
-                console.error('연구비증빙 출장 로드 실패 - 상태:', response.status);
-                console.error('에러 응답:', errorText);
-            }
-        } catch (error) {
-            console.error('연구비증빙 출장 로드 오류:', error);
-            console.error('오류 상세:', error.message, error.stack);
-        }
+    // documentType별 아이콘 매핑
+    function getIconFromDocumentType(documentType) {
+        const iconMap = {
+            '주간업무보고': 'fa-calendar-week',
+            '월간업무보고': 'fa-calendar-alt',
+            '회의록': 'fa-users',
+            '연구비증빙-회의록': 'fa-receipt',
+            '연구비증빙-출장': 'fa-plane',
+            '연차신청서': 'fa-umbrella-beach'
+        };
+        return iconMap[documentType] || 'fa-file-alt';
     }
 
     // 모든 문서를 합쳐서 렌더링 (approval_documents 기반)
@@ -646,11 +452,11 @@ document.addEventListener('DOMContentLoaded', function() {
 
         // 모든 문서를 하나의 배열로 합치기
         const allDocuments = [
-            ...weeklyReports.map(report => ({  ...report, docType: 'weekly', category: 'weekly-report' })),
-            ...monthlyReports.map(report => ({ ...report, docType: 'monthly', category: 'monthly-report' })),
-            ...meetingMinutes.map(meeting => ({ ...meeting, docType: 'meeting', category: 'meeting' })),
-            ...receiptMeetings.map(receipt => ({ ...receipt, docType: 'receipt-meeting', category: 'receipt' })),
-            ...receiptTrips.map(trip => ({ ...trip, docType: 'receipt-trip', category: 'receipt' }))
+            ...weeklyReports,
+            ...monthlyReports,
+            ...meetingMinutes,
+            ...receiptMeetings,
+            ...receiptTrips
         ];
 
         // 생성일 기준 최신순 정렬
@@ -664,111 +470,37 @@ document.addEventListener('DOMContentLoaded', function() {
         allDocuments.forEach(doc => {
             const tr = document.createElement('tr');
             tr.className = 'doc-row';
-            tr.setAttribute('data-category', doc.category);
+
+            const category = getCategoryFromDocumentType(doc.documentType);
+            tr.setAttribute('data-category', category);
 
             const createdDate = new Date(doc.createdAt);
             const formattedDate = `${createdDate.getFullYear()}.${String(createdDate.getMonth() + 1).padStart(2, '0')}.${String(createdDate.getDate()).padStart(2, '0')} ${String(createdDate.getHours()).padStart(2, '0')}:${String(createdDate.getMinutes()).padStart(2, '0')}`;
 
-            if (doc.docType === 'weekly' || doc.docType === 'monthly') {
-                // 주간/월간 보고서
-                const isWeekly = doc.docType === 'weekly';
-                const docTypeIcon = isWeekly ? 'fa-calendar-week' : 'fa-calendar-alt';
+            const icon = getIconFromDocumentType(doc.documentType);
 
-                tr.innerHTML = `
-                    <td>
-                        <span class="doc-type">
-                            <i class="fas ${docTypeIcon}"></i>
-                            ${doc.documentType}
-                        </span>
-                    </td>
-                    <td class="doc-title-cell">
-                        <div class="title-wrap">${doc.title}</div>
-                        <div class="desc-wrap">${truncateText(doc.content, 100)}</div>
-                    </td>
-                    <td>${doc.drafterName || '-'}</td>
-                    <td>${doc.drafterDeptName || '-'}</td>
-                    <td>${formattedDate}</td>
-                    <td>
+            tr.innerHTML = `
+                <td>
+                    <span class="doc-type">
+                        <i class="fas ${icon}"></i>
+                        ${doc.documentType}
+                    </span>
+                </td>
+                <td class="doc-title-cell">
+                    <div class="title-wrap">${doc.title}</div>
+                    <div class="desc-wrap">${truncateText(doc.content, 100)}</div>
+                </td>
+                <td>${doc.drafterName || '-'}</td>
+                <td>${doc.drafterDeptName || '-'}</td>
+                <td>${formattedDate}</td>
+                <td>
                     <div class="table-actions">
-                        <button class="btn-icon btn-view" data-id="${doc.idx}" data-type="${doc.docType}">
+                        <button class="btn-icon btn-view" data-id="${doc.idx}" data-type="${category}">
                             <i class="fas fa-eye"></i>
                         </button>
-                        </div>
-                    </td>
-                `;
-            } else if (doc.docType === 'meeting') {
-                // 회의록
-                tr.innerHTML = `
-                    <td>
-                        <span class="doc-type">
-                            <i class="fas fa-users"></i>
-                            ${doc.documentType}
-                        </span>
-                    </td>
-                    <td class="doc-title-cell">
-                        <div class="title-wrap">${doc.title}</div>
-                        <div class="desc-wrap">${truncateText(doc.content, 100)}</div>
-                    </td>
-                    <td>${doc.drafterName || '-'}</td>
-                    <td>${doc.drafterDeptName || '-'}</td>
-                    <td>${formattedDate}</td>
-                    <td>
-                    <div class="table-actions">
-                        <button class="btn-icon btn-view" data-id="${doc.idx}">
-                            <i class="fas fa-eye"></i>
-                        </button>
-                        </div>
-                    </td>
-                `;
-            } else if (doc.docType === 'receipt-meeting') {
-                // 연구비증빙 회의록
-                tr.innerHTML = `
-                    <td>
-                        <span class="doc-type">
-                            <i class="fas fa-receipt"></i>
-                            ${doc.documentType}
-                        </span>
-                    </td>
-                    <td class="doc-title-cell">
-                        <div class="title-wrap">${doc.title}</div>
-                        <div class="desc-wrap">${truncateText(doc.content, 100)}</div>
-                    </td>
-                    <td>${doc.drafterName || '-'}</td>
-                    <td>${doc.drafterDeptName || '-'}</td>
-                    <td>${formattedDate}</td>
-                    <td>
-                    <div class="table-actions">
-                        <button class="btn-icon btn-view" data-id="${doc.idx}" data-type="receipt-meeting">
-                            <i class="fas fa-eye"></i>
-                        </button>
-                        </div>
-                    </td>
-                `;
-            } else if (doc.docType === 'receipt-trip') {
-                // 연구비증빙 출장
-                tr.innerHTML = `
-                    <td>
-                        <span class="doc-type">
-                            <i class="fas fa-plane"></i>
-                            ${doc.documentType}
-                        </span>
-                    </td>
-                    <td class="doc-title-cell">
-                        <div class="title-wrap">${doc.title}</div>
-                        <div class="desc-wrap">${truncateText(doc.content, 100)}</div>
-                    </td>
-                    <td>${doc.drafterName || '-'}</td>
-                    <td>${doc.drafterDeptName || '-'}</td>
-                    <td>${formattedDate}</td>
-                    <td>
-                    <div class="table-actions">
-                        <button class="btn-icon btn-view" data-id="${doc.idx}" data-type="receipt-trip">
-                            <i class="fas fa-eye"></i>
-                        </button>
-                        </div>
-                    </td>
-                `;
-            }
+                    </div>
+                </td>
+            `;
 
             tbody.appendChild(tr);
         });
@@ -778,6 +510,20 @@ document.addEventListener('DOMContentLoaded', function() {
 
     // 페이지 로드 시 approval_documents 통합 조회
     async function init() {
+        console.log('문서함 초기화 시작');
+        console.log('사이드바 메뉴 아이템 개수:', sidebarMenuItems.length);
+
+        // 초기 상태: "전체 문서" 메뉴를 active로 설정
+        sidebarMenuItems.forEach(item => {
+            const category = item.getAttribute('data-category');
+            if (category === 'all') {
+                item.classList.add('active');
+                console.log('✅ "전체 문서" 메뉴 active 설정됨');
+            } else {
+                item.classList.remove('active');
+            }
+        });
+
         await loadAllDocuments();
         renderAllDocuments(); // 모든 문서를 합쳐서 렌더링
     }

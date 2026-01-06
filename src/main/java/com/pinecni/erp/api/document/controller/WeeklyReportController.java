@@ -37,16 +37,10 @@ public class WeeklyReportController {
     }
 
     /**
-     * 전체 주간업무보고 목록 조회
-     * GET /api/document/weekly-report
+     * 전체 주간업무보고 목록 조회는 ApprovalDocumentController의 /api/approval/documents를 사용하세요.
+     * 이 엔드포인트는 더 이상 사용되지 않습니다.
      */
-    @GetMapping
-    public ResponseEntity<List<WeeklyReportDTO>> getAllWeeklyReports() {
-        log.debug("GET /api/document/weekly-report");
-
-        List<WeeklyReportDTO> reports = weeklyReportService.getAllWeeklyReport();
-        return ResponseEntity.ok(reports);
-    }
+    // @GetMapping - 삭제됨 (ApprovalDocumentController로 대체)
 
     /**
      * 주간업무보고 상세 조회

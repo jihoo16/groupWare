@@ -29,9 +29,9 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     });
 
-    // 현재 페이지에 맞는 메뉴 활성화
+    // 현재 페이지에 맞는 메뉴 활성화 (좌측 사이드바만)
     const currentPath = window.location.pathname;
-    const menuItems = document.querySelectorAll('.menu-item');
+    const menuItems = document.querySelectorAll('.sidebar .menu-item');  // .sidebar만 선택
 
     menuItems.forEach(item => {
         const link = item.querySelector('a');

@@ -97,13 +97,13 @@ div[title]:hover::after {
     font-size: 14.7px;
 }
 
-.sidebar-menu {
+.approval-sidebar .sidebar-menu {
     display: flex;
     flex-direction: column;
     gap: 4px;
 }
 
-.sidebar-menu .menu-item {
+.approval-sidebar .sidebar-menu .menu-item {
     display: flex;
     align-items: center;
     gap: 12px;
@@ -117,40 +117,41 @@ div[title]:hover::after {
     cursor: pointer;
 }
 
-.sidebar-menu .menu-item:hover {
+.approval-sidebar .sidebar-menu .menu-item:hover:not(.active) {
     background: #f5f7fa;
     color: #667eea;
     outline: none;
 }
 
-.sidebar-menu .menu-item.active {
-    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-    color: white;
+.approval-sidebar .sidebar-menu .menu-item.active {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%) !important;
+    color: white !important;
     outline: none;
 }
 
-.sidebar-menu .menu-item:focus,
-.sidebar-menu .menu-item:active {
+.approval-sidebar .sidebar-menu .menu-item:focus,
+.approval-sidebar .sidebar-menu .menu-item:active {
     outline: none;
 }
 
-.sidebar-menu .menu-item.active i,
-.sidebar-menu .menu-item.active .badge {
-    color: white;
+.approval-sidebar .sidebar-menu .menu-item.active i,
+.approval-sidebar .sidebar-menu .menu-item.active span,
+.approval-sidebar .sidebar-menu .menu-item.active .badge {
+    color: white !important;
 }
 
-.sidebar-menu .menu-item i {
+.approval-sidebar .sidebar-menu .menu-item i {
     width: 18px;
     text-align: center;
     color: #888;
     transition: color 0.2s ease;
 }
 
-.sidebar-menu .menu-item.active i {
-    color: white;
+.approval-sidebar .sidebar-menu .menu-item.active i {
+    color: white !important;
 }
 
-.sidebar-menu .menu-item span:first-of-type {
+.approval-sidebar .sidebar-menu .menu-item span:first-of-type {
     flex: 1;
 }
 
@@ -189,7 +190,7 @@ div[title]:hover::after {
     color: #757575;
 }
 
-.sidebar-menu .menu-item.active .badge {
+.approval-sidebar .sidebar-menu .menu-item.active .badge {
     background: rgba(255, 255, 255, 0.3);
     color: white;
 }

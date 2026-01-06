@@ -37,16 +37,10 @@ public class MonthlyReportController {
     }
 
     /**
-     * 전체 월간업무보고 목록 조회
-     * GET /api/document/monthly-report
+     * 전체 월간업무보고 목록 조회는 ApprovalDocumentController의 /api/approval/documents를 사용하세요.
+     * 이 엔드포인트는 더 이상 사용되지 않습니다.
      */
-    @GetMapping
-    public ResponseEntity<List<MonthlyReportDTO>> getAllMonthlyReports() {
-        log.debug("GET /api/document/monthly-report");
-
-        List<MonthlyReportDTO> reports = monthlyReportService.getAllMonthlyReport();
-        return ResponseEntity.ok(reports);
-    }
+    // @GetMapping - 삭제됨 (ApprovalDocumentController로 대체)
 
     /**
      * 월간업무보고 상세 조회

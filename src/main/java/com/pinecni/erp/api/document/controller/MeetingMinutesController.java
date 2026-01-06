@@ -38,16 +38,11 @@ public class MeetingMinutesController {
     }
 
     /**
-     * 회의록 목록 조회
-     * GET
+     * 전체 회의록 목록 조회는 ApprovalDocumentController의 /api/approval/documents를 사용하세요.
+     * 이 엔드포인트는 더 이상 사용되지 않습니다.
      */
-    @GetMapping
-    public ResponseEntity<List<MeetingMinutesDTO>> getMeetingMinutes(){
-        log.debug("GET /api/document/meeting-minutes/");
+    // @GetMapping - 삭제됨 (ApprovalDocumentController로 대체)
 
-        List<MeetingMinutesDTO> reports = meetingMinutesService.getAllMeetingMinutes();
-        return ResponseEntity.ok(reports);
-    }
     /**
      * 회의록 목록 상세 조회
      * GET
