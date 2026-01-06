@@ -61,4 +61,25 @@ public interface ApprovalDocumentRepository extends JpaRepository<ApprovalDocume
      */
     @Query("SELECT d FROM ApprovalDocument d WHERE d.deletedAt IS NULL ORDER BY d.createdAt DESC")
     List<ApprovalDocument> findAllActive();
+
+    /**
+     * 전체 문서 조회 (삭제되지 않은, 최신순) - Service용 alias
+     */
+    default List<ApprovalDocument> findAllByDeletedAtIsNullOrderByCreatedAtDesc() {
+        return findAllActive();
+    }
+
+    /**
+     * 문서 타입별 조회 (삭제되지 않은, 최신순) - Service용 alias
+     */
+    default List<ApprovalDocument> findByDocumentTypeAndDeletedAtIsNullOrderByCreatedAtDesc(String documentType) {
+        return findByDocumentType(documentType);
+    }
+
+    /**
+     * 기안자별 조회 (삭제되지 않은, 최신순) - Service용 alias
+     */
+    default List<ApprovalDocument> findByDrafterUserIdxAndDeletedAtIsNullOrderByCreatedAtDesc(Long drafterUserIdx) {
+        return findByDrafterUserIdx(drafterUserIdx);
+    }
 }
