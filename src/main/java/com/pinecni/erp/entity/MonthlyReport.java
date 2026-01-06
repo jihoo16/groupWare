@@ -32,6 +32,9 @@ public class MonthlyReport {
     @Column(name = "project_name", length = 200)
     private String projectName;
 
+    @Column(name = "document_idx")
+    private Long documentIdx;
+
     @Size(max = 7)
     @NotNull
     @Column(name = "report_month", nullable = false, length = 7)

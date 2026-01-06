@@ -33,6 +33,9 @@ public class MeetingsMinutes {
     @Column(name = "project_name", length = 200)
     private String projectName;
 
+    @Column(name = "document_idx")
+    private Long documentIdx;
+
     @Size(max = 300)
     @NotNull
     @Column(name = "meeting_title", nullable = false, length = 300)

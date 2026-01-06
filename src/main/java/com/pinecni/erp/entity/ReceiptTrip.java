@@ -40,6 +40,9 @@ public class ReceiptTrip {
     @Column(name = "document_number", unique = true, length = 50)
     private String documentNumber;
 
+    @Column(name = "document_idx")
+    private Long documentIdx;
+
     @Column(name = "author_idx", nullable = false)
     private Long authorIdx;
 

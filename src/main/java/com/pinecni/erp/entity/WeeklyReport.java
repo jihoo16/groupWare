@@ -32,6 +32,9 @@ public class WeeklyReport {
     @Column(name = "project_name", length = 200)
     private String projectName;
 
+    @Column(name = "document_idx")
+    private Long documentIdx;
+
     @Size(max = 100)
     @NotNull
     @Column(name = "report_period", nullable = false, length = 100)
