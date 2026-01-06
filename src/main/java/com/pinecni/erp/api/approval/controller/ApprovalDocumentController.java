@@ -10,7 +10,7 @@ import org.springframework.web.bind.annotation.*;
 import java.util.List;
 
 /**
- * 전자결재 문서 통합 조회 Controller
+ * 전자 문서 통합 조회 Controller
  */
 @Slf4j
 @RestController

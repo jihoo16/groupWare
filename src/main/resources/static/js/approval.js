@@ -1,4 +1,4 @@
-// 전자결재 메인 페이지 JavaScript
+// 전자 문서 메인 페이지 JavaScript
 document.addEventListener('DOMContentLoaded', function() {
     // DOM 요소
     const sidebarMenuItems = document.querySelectorAll('.approval-sidebar .sidebar-menu .menu-item');
@@ -10,11 +10,13 @@ document.addEventListener('DOMContentLoaded', function() {
     const viewBtns = document.querySelectorAll('.view-btn');
 
     let currentCategory = 'all';
+    let allDocuments = []; // 전체 문서 데이터 (원본)
     let weeklyReports = []; // 주간보고서 데이터
     let monthlyReports = []; // 월간보고서 데이터
     let meetingMinutes = []; // 회의록 데이터
     let receiptMeetings = []; // 연구비증빙 회의록 데이터
     let receiptTrips = []; // 연구비증빙 출장 데이터
+    let vacationRequests = []; // 연차신청서 데이터
 
     // 페이징 관련 변수
     let currentPage = 1;
@@ -386,18 +388,23 @@ document.addEventListener('DOMContentLoaded', function() {
                 console.log('전체 문서 로드 성공:', documents.length + '건');
                 console.log('첫 번째 데이터:', documents[0]);
 
+                // 전체 문서 저장
+                allDocuments = documents;
+
                 // 문서 타입별로 분류
                 weeklyReports = documents.filter(doc => doc.documentType === '주간업무보고');
                 monthlyReports = documents.filter(doc => doc.documentType === '월간업무보고');
                 meetingMinutes = documents.filter(doc => doc.documentType === '회의록');
                 receiptMeetings = documents.filter(doc => doc.documentType === '연구비증빙-회의록');
                 receiptTrips = documents.filter(doc => doc.documentType === '연구비증빙-출장');
+                vacationRequests = documents.filter(doc => doc.documentType === '연차신청서');
 
                 console.log('주간보고서:', weeklyReports.length + '건');
                 console.log('월간보고서:', monthlyReports.length + '건');
                 console.log('회의록:', meetingMinutes.length + '건');
                 console.log('연구비증빙-회의록:', receiptMeetings.length + '건');
                 console.log('연구비증빙-출장:', receiptTrips.length + '건');
+                console.log('연차신청서:', vacationRequests.length + '건');
             } else {
                 const errorText = await response.text();
                 console.error('문서 로드 실패 - 상태:', response.status);
@@ -450,24 +457,21 @@ document.addEventListener('DOMContentLoaded', function() {
         const existingRows = tbody.querySelectorAll('.doc-row');
         existingRows.forEach(row => row.remove());
 
-        // 모든 문서를 하나의 배열로 합치기
-        const allDocuments = [
-            ...weeklyReports,
-            ...monthlyReports,
-            ...meetingMinutes,
-            ...receiptMeetings,
-            ...receiptTrips
-        ];
+        // 전체 문서가 없으면 종료
+        if (!allDocuments || allDocuments.length === 0) {
+            console.log('렌더링할 문서가 없습니다.');
+            return;
+        }
 
         // 생성일 기준 최신순 정렬
-        allDocuments.sort((a, b) => {
+        const sortedDocuments = [...allDocuments].sort((a, b) => {
             const dateA = new Date(a.createdAt);
             const dateB = new Date(b.createdAt);
             return dateB - dateA; // 내림차순 (최신순)
         });
 
         // 정렬된 문서를 테이블에 렌더링
-        allDocuments.forEach(doc => {
+        sortedDocuments.forEach(doc => {
             const tr = document.createElement('tr');
             tr.className = 'doc-row';
 

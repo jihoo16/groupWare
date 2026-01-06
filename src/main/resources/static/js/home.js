@@ -48,6 +48,9 @@ document.addEventListener('DOMContentLoaded', function() {
     // 오늘 일정 데이터 로드
     loadTodaySchedule();
 
+    // 전자 문서 건수 로드
+    loadPendingApprovals();
+
     // 이번 주 일정 로드
     loadWeeklySchedule();
 
@@ -67,6 +70,14 @@ document.addEventListener('DOMContentLoaded', function() {
     if (todayScheduleCard) {
         todayScheduleCard.addEventListener('click', function() {
             window.location.href = '/calendar';
+        });
+    }
+
+    // 전자 문서 카드 클릭 이벤트
+    const approvalCard = document.getElementById('approvalCard');
+    if (approvalCard) {
+        approvalCard.addEventListener('click', function() {
+            window.location.href = '/approval';
         });
     }
 });
@@ -118,6 +129,31 @@ function loadTodaySchedule() {
         .catch(error => {
             console.error('오늘 일정 로드 오류:', error);
             const countElement = document.getElementById('todayScheduleCount');
+            if (countElement) {
+                countElement.innerHTML = `-<span>건</span>`;
+            }
+        });
+}
+
+// 전자 문서 건수 로드 함수
+function loadPendingApprovals() {
+    fetch('/api/approval/documents')
+        .then(response => {
+            if (!response.ok) {
+                throw new Error('전자 문서 로드 실패');
+            }
+            return response.json();
+        })
+        .then(data => {
+            const countElement = document.getElementById('pendingApprovalCount');
+            if (countElement) {
+                const totalCount = data.length || 0;
+                countElement.innerHTML = `${totalCount}<span>건</span>`;
+            }
+        })
+        .catch(error => {
+            console.error('전자 문서 로드 오류:', error);
+            const countElement = document.getElementById('pendingApprovalCount');
             if (countElement) {
                 countElement.innerHTML = `-<span>건</span>`;
             }
