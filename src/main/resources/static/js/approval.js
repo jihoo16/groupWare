@@ -364,30 +364,43 @@ document.addEventListener('DOMContentLoaded', function() {
     });
 
     // ============================================
-    // API: 주간보고서 목록 로드
+    // API: approval_documents 통합 조회
     // ============================================
-    async function loadWeeklyReports() {
+    async function loadAllDocuments() {
         try {
-            console.log('주간보고서 API 호출 시작: /api/document/weekly-report');
-            const response = await fetch('/api/document/weekly-report');
+            console.log('전체 문서 API 호출 시작: /api/approval/documents');
+            const response = await fetch('/api/approval/documents');
             console.log('API 응답 상태:', response.status, response.statusText);
 
             if (response.ok) {
-                weeklyReports = await response.json();
-                console.log('주간보고서 로드 성공:', weeklyReports.length + '건');
-                console.log('첫 번째 데이터:', weeklyReports[0]);
+                const documents = await response.json();
+                console.log('전체 문서 로드 성공:', documents.length + '건');
+                console.log('첫 번째 데이터:', documents[0]);
+
+                // 문서 타입별로 분류
+                weeklyReports = documents.filter(doc => doc.documentType === '주간업무보고');
+                monthlyReports = documents.filter(doc => doc.documentType === '월간업무보고');
+                meetingMinutes = documents.filter(doc => doc.documentType === '회의록');
+                receiptMeetings = documents.filter(doc => doc.documentType === '연구비증빙-회의록');
+                receiptTrips = documents.filter(doc => doc.documentType === '연구비증빙-출장');
+
+                console.log('주간보고서:', weeklyReports.length + '건');
+                console.log('월간보고서:', monthlyReports.length + '건');
+                console.log('회의록:', meetingMinutes.length + '건');
+                console.log('연구비증빙-회의록:', receiptMeetings.length + '건');
+                console.log('연구비증빙-출장:', receiptTrips.length + '건');
             } else {
                 const errorText = await response.text();
-                console.error('주간보고서 로드 실패 - 상태:', response.status);
+                console.error('문서 로드 실패 - 상태:', response.status);
                 console.error('에러 응답:', errorText);
             }
         } catch (error) {
-            console.error('주간보고서 로드 오류:', error);
+            console.error('문서 로드 오류:', error);
             console.error('오류 상세:', error.message, error.stack);
         }
     }
 
-    // 주간보고서와 월간보고서를 합쳐서 렌더링
+    // approval_documents 기반 렌더링 (주간/월간보고서)
     function renderWeeklyReports() {
         const tbody = documentList.querySelector('tbody');
         if (!tbody) return;
@@ -421,8 +434,7 @@ document.addEventListener('DOMContentLoaded', function() {
             // 주간/월간 구분
             const isWeekly = report.reportType === 'weekly';
             const docTypeIcon = isWeekly ? 'fa-calendar-week' : 'fa-calendar-alt';
-            const docTypeName = isWeekly ? '주간업무보고' : '월간업무보고';
-            const descText = isWeekly ? (report.reportPeriod || '제목 없음') : (report.reportMonth || '제목 없음');
+            const docTypeName = report.documentType; // approval_documents의 documentType 사용
 
             tr.innerHTML = `
                 <td>
@@ -432,15 +444,15 @@ document.addEventListener('DOMContentLoaded', function() {
                     </span>
                 </td>
                 <td class="doc-title-cell">
-                    <div class="title-wrap">${report.projectName ? '[' + report.projectName + '] ' : ''}${truncateText(report.mainTasks, 50)}</div>
-                    <div class="desc-wrap">${descText}</div>
+                    <div class="title-wrap">${report.title}</div>
+                    <div class="desc-wrap">${truncateText(report.content, 100)}</div>
                 </td>
-                <td>${report.userName || '-'}</td>
-                <td>${report.userDeptName || '-'}</td>
+                <td>${report.drafterName || '-'}</td>
+                <td>${report.drafterDeptName || '-'}</td>
                 <td>${formattedDate}</td>
                 <td>
                 <div class="table-actions">
-                    <button class="btn-icon btn-view" data-id="${report.id}" data-type="${report.reportType}">
+                    <button class="btn-icon btn-view" data-id="${report.idx}" data-type="${report.reportType}">
                         <i class="fas fa-eye"></i>
                     </button>
                     </div>
@@ -623,18 +635,18 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     }
 
-    // 모든 문서를 합쳐서 렌더링 (주간/월간/회의록/연구비증빙)
+    // 모든 문서를 합쳐서 렌더링 (approval_documents 기반)
     function renderAllDocuments() {
         const tbody = documentList.querySelector('tbody');
         if (!tbody) return;
 
         // 기존 문서 행 제거
-        const existingRows = tbody.querySelectorAll('.doc-row[data-category="weekly-report"], .doc-row[data-category="monthly-report"], .doc-row[data-category="meeting"], .doc-row[data-category="receipt"]');
+        const existingRows = tbody.querySelectorAll('.doc-row');
         existingRows.forEach(row => row.remove());
 
         // 모든 문서를 하나의 배열로 합치기
         const allDocuments = [
-            ...weeklyReports.map(report => ({ ...report, docType: 'weekly', category: 'weekly-report' })),
+            ...weeklyReports.map(report => ({  ...report, docType: 'weekly', category: 'weekly-report' })),
             ...monthlyReports.map(report => ({ ...report, docType: 'monthly', category: 'monthly-report' })),
             ...meetingMinutes.map(meeting => ({ ...meeting, docType: 'meeting', category: 'meeting' })),
             ...receiptMeetings.map(receipt => ({ ...receipt, docType: 'receipt-meeting', category: 'receipt' })),
@@ -661,26 +673,24 @@ document.addEventListener('DOMContentLoaded', function() {
                 // 주간/월간 보고서
                 const isWeekly = doc.docType === 'weekly';
                 const docTypeIcon = isWeekly ? 'fa-calendar-week' : 'fa-calendar-alt';
-                const docTypeName = isWeekly ? '주간업무보고' : '월간업무보고';
-                const descText = isWeekly ? (doc.reportPeriod || '제목 없음') : (doc.reportMonth || '제목 없음');
 
                 tr.innerHTML = `
                     <td>
                         <span class="doc-type">
                             <i class="fas ${docTypeIcon}"></i>
-                            ${docTypeName}
+                            ${doc.documentType}
                         </span>
                     </td>
                     <td class="doc-title-cell">
-                        <div class="title-wrap">${doc.projectName ? '[' + doc.projectName + '] ' : ''}${truncateText(doc.mainTasks, 50)}</div>
-                        <div class="desc-wrap">${descText}</div>
+                        <div class="title-wrap">${doc.title}</div>
+                        <div class="desc-wrap">${truncateText(doc.content, 100)}</div>
                     </td>
-                    <td>${doc.userName || '-'}</td>
-                    <td>${doc.userDeptName || '-'}</td>
+                    <td>${doc.drafterName || '-'}</td>
+                    <td>${doc.drafterDeptName || '-'}</td>
                     <td>${formattedDate}</td>
                     <td>
                     <div class="table-actions">
-                        <button class="btn-icon btn-view" data-id="${doc.id}" data-type="${doc.docType}">
+                        <button class="btn-icon btn-view" data-id="${doc.idx}" data-type="${doc.docType}">
                             <i class="fas fa-eye"></i>
                         </button>
                         </div>
@@ -688,31 +698,19 @@ document.addEventListener('DOMContentLoaded', function() {
                 `;
             } else if (doc.docType === 'meeting') {
                 // 회의록
-                const meetingDate = new Date(doc.meetingDatetime);
-                const meetingDateStr = `${meetingDate.getFullYear()}.${String(meetingDate.getMonth() + 1).padStart(2, '0')}.${String(meetingDate.getDate()).padStart(2, '0')}`;
-
-                let descText = meetingDateStr;
-                if (doc.location) {
-                    descText += ` | ${doc.location}`;
-                }
-                if (doc.participants) {
-                    const participantCount = doc.participants.split(',').length;
-                    descText += ` | 참석 ${participantCount}명`;
-                }
-
                 tr.innerHTML = `
                     <td>
                         <span class="doc-type">
                             <i class="fas fa-users"></i>
-                            회의록
+                            ${doc.documentType}
                         </span>
                     </td>
                     <td class="doc-title-cell">
-                        <div class="title-wrap">${doc.projectName ? '[' + doc.projectName + '] ' : ''}${doc.meetingTitle || '제목 없음'}</div>
-                        <div class="desc-wrap">${descText}</div>
+                        <div class="title-wrap">${doc.title}</div>
+                        <div class="desc-wrap">${truncateText(doc.content, 100)}</div>
                     </td>
-                    <td>${doc.userName || '-'}</td>
-                    <td>${doc.userDeptName || '-'}</td>
+                    <td>${doc.drafterName || '-'}</td>
+                    <td>${doc.drafterDeptName || '-'}</td>
                     <td>${formattedDate}</td>
                     <td>
                     <div class="table-actions">
@@ -724,31 +722,19 @@ document.addEventListener('DOMContentLoaded', function() {
                 `;
             } else if (doc.docType === 'receipt-meeting') {
                 // 연구비증빙 회의록
-                const meetingDate = new Date(doc.meetingDate);
-                const meetingDateStr = `${meetingDate.getFullYear()}.${String(meetingDate.getMonth() + 1).padStart(2, '0')}.${String(meetingDate.getDate()).padStart(2, '0')}`;
-
-                let descText = meetingDateStr;
-                if (doc.location) {
-                    descText += ` | ${doc.location}`;
-                }
-                if (doc.amount) {
-                    const formattedAmount = Number(doc.amount).toLocaleString('ko-KR');
-                    descText += ` | ${formattedAmount}원`;
-                }
-
                 tr.innerHTML = `
                     <td>
                         <span class="doc-type">
                             <i class="fas fa-receipt"></i>
-                            연구비증빙 - 회의록
+                            ${doc.documentType}
                         </span>
                     </td>
                     <td class="doc-title-cell">
-                        <div class="title-wrap">${doc.projectName ? '[' + doc.projectName + '] ' : ''}${doc.purpose || '회의록'}</div>
-                        <div class="desc-wrap">${descText}</div>
+                        <div class="title-wrap">${doc.title}</div>
+                        <div class="desc-wrap">${truncateText(doc.content, 100)}</div>
                     </td>
-                    <td>${doc.authorName || '-'}</td>
-                    <td>${doc.authorDeptName || '-'}</td>
+                    <td>${doc.drafterName || '-'}</td>
+                    <td>${doc.drafterDeptName || '-'}</td>
                     <td>${formattedDate}</td>
                     <td>
                     <div class="table-actions">
@@ -760,32 +746,19 @@ document.addEventListener('DOMContentLoaded', function() {
                 `;
             } else if (doc.docType === 'receipt-trip') {
                 // 연구비증빙 출장
-                const tripDate = new Date(doc.tripDate);
-                const tripDateStr = `${tripDate.getFullYear()}.${String(tripDate.getMonth() + 1).padStart(2, '0')}.${String(tripDate.getDate()).padStart(2, '0')}`;
-
-                let descText = tripDateStr;
-                if (doc.location) {
-                    descText += ` | ${doc.location}`;
-                }
-                const sumAmount = doc.accommodationFee + doc.mealFee + doc.otherFee + doc.transportationFee;
-                if (sumAmount !== 0) {
-                    const formattedAmount = Number(sumAmount).toLocaleString('ko-KR');
-                    descText += ` | ${formattedAmount}원`;
-                }
-
                 tr.innerHTML = `
                     <td>
                         <span class="doc-type">
                             <i class="fas fa-plane"></i>
-                            연구비증빙 - 출장
+                            ${doc.documentType}
                         </span>
                     </td>
                     <td class="doc-title-cell">
-                        <div class="title-wrap">${doc.projectName ? '[' + doc.projectName + '] ' : ''}${doc.purpose || doc.location || '출장'}</div>
-                        <div class="desc-wrap">${descText}</div>
+                        <div class="title-wrap">${doc.title}</div>
+                        <div class="desc-wrap">${truncateText(doc.content, 100)}</div>
                     </td>
-                    <td>${doc.authorName || '-'}</td>
-                    <td>${doc.authorDeptName || '-'}</td>
+                    <td>${doc.drafterName || '-'}</td>
+                    <td>${doc.drafterDeptName || '-'}</td>
                     <td>${formattedDate}</td>
                     <td>
                     <div class="table-actions">
@@ -803,19 +776,13 @@ document.addEventListener('DOMContentLoaded', function() {
         filterDocuments();
     }
 
-    // 페이지 로드 시 주간/월간보고서, 회의록, 연구비증빙 목록 가져오기
-    async function loadAllReports() {
-        await Promise.all([
-            loadWeeklyReports(),
-            loadMonthlyReports(),
-            loadMeetingMinutes(),
-            loadReceiptMeetings(),
-            loadReceiptTrips()
-        ]);
+    // 페이지 로드 시 approval_documents 통합 조회
+    async function init() {
+        await loadAllDocuments();
         renderAllDocuments(); // 모든 문서를 합쳐서 렌더링
     }
 
-    loadAllReports();
+    init();
 
     // 초기 필터링
     filterDocuments();
