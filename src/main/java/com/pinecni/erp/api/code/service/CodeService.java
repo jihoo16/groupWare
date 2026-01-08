@@ -1,6 +1,7 @@
 package com.pinecni.erp.api.code.service;
 
 import com.pinecni.erp.api.code.repository.CodeRepository;
+import com.pinecni.erp.constant.CodeConstants;
 import com.pinecni.erp.entity.Code;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -132,35 +133,35 @@ public class CodeService {
      * 직급 목록 조회 (C02)
      */
     public List<Code> getRanks() {
-        return getCodesByGroupCode("C02");
+        return getCodesByGroupCode(CodeConstants.GroupCode.POSITION.getCode());
     }
 
     /**
      * 활성화된 직급 목록 조회 (C02)
      */
     public List<Code> getActiveRanks() {
-        return getActiveCodesByGroupCode("C02");
+        return getActiveCodesByGroupCode(CodeConstants.GroupCode.POSITION.getCode());
     }
 
     /**
      * 직위 목록 조회 (C08)
      */
     public List<Code> getPositions() {
-        return getCodesByGroupCode("C08");
+        return getCodesByGroupCode(CodeConstants.GroupCode.RANK.getCode());
     }
 
     /**
      * 부서 목록 조회 (C01)
      */
     public List<Code> getDepartments() {
-        return getCodesByGroupCode("C01");
+        return getCodesByGroupCode(CodeConstants.GroupCode.DEPARTMENT.getCode());
     }
 
     /**
      * 활성화된 부서 목록 조회 (C01)
      */
     public List<Code> getActiveDepartments() {
-        return getActiveCodesByGroupCode("C01");
+        return getActiveCodesByGroupCode(CodeConstants.GroupCode.DEPARTMENT.getCode());
     }
 
     /**
@@ -170,7 +171,7 @@ public class CodeService {
      */
     public boolean isDeptCodeValid(String deptCode) {
         log.debug("부서 코드 유효성 검증: deptCode={}", deptCode);
-        return codeRepository.findByGroupCodeAndCode("C01", deptCode)
+        return codeRepository.findByGroupCodeAndCode(CodeConstants.GroupCode.DEPARTMENT.getCode(), deptCode)
                 .filter(code -> "Y".equals(code.getUseYn()))
                 .isPresent();
     }
@@ -182,7 +183,7 @@ public class CodeService {
      */
     public String getDeptCodeByName(String deptName) {
         log.debug("부서명으로 코드 조회: deptName={}", deptName);
-        return codeRepository.findByGroupCode("C01").stream()
+        return codeRepository.findByGroupCode(CodeConstants.GroupCode.DEPARTMENT.getCode()).stream()
                 .filter(code -> "Y".equals(code.getUseYn()))
                 .filter(code -> deptName.equals(code.getCodeName()))
                 .findFirst()
@@ -197,7 +198,7 @@ public class CodeService {
      */
     public Optional<Code> getDepartmentByCode(String deptCode) {
         log.debug("부서 코드로 조회: deptCode={}", deptCode);
-        return codeRepository.findByGroupCodeAndCode("C01", deptCode);
+        return codeRepository.findByGroupCodeAndCode(CodeConstants.GroupCode.DEPARTMENT.getCode(), deptCode);
     }
 
     /**
@@ -207,7 +208,7 @@ public class CodeService {
      */
     public Integer getPositionSortOrder(String positionCode) {
         log.debug("직급 sortOrder 조회: positionCode={}", positionCode);
-        return codeRepository.findByGroupCodeAndCode("C02", positionCode)
+        return codeRepository.findByGroupCodeAndCode(CodeConstants.GroupCode.POSITION.getCode(), positionCode)
                 .map(Code::getSortOrder)
                 .orElse(Integer.MAX_VALUE); // 코드가 없으면 가장 낮은 우선순위
     }
@@ -219,7 +220,7 @@ public class CodeService {
      */
     public String getPositionCodeByName(String positionName) {
         log.debug("직급명으로 코드 조회: positionName={}", positionName);
-        return codeRepository.findByGroupCode("C02").stream()
+        return codeRepository.findByGroupCode(CodeConstants.GroupCode.POSITION.getCode()).stream()
                 .filter(code -> "Y".equals(code.getUseYn()))
                 .filter(code -> positionName.equals(code.getCodeName()))
                 .findFirst()

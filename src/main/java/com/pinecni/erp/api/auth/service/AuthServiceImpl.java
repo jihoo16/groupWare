@@ -5,6 +5,7 @@ import com.pinecni.erp.api.auth.dto.LoginResponseDTO;
 import com.pinecni.erp.api.code.repository.CodeRepository;
 import com.pinecni.erp.api.user.repository.UserRepository;
 import com.pinecni.erp.api.user.service.UserServiceImpl;
+import com.pinecni.erp.constant.CodeConstants;
 import com.pinecni.erp.entity.User;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -81,13 +82,13 @@ public class AuthServiceImpl implements AuthService {
 
         // 부서 코드명 조회
         if (user.getEmpDept() != null) {
-            codeRepository.findByGroupCodeAndCode("C01", user.getEmpDept())
+            codeRepository.findByGroupCodeAndCode(CodeConstants.GroupCode.DEPARTMENT.getCode(), user.getEmpDept())
                     .ifPresent(code -> response.setEmpDeptName(code.getCodeName()));
         }
 
         // 직급 코드명 조회
         if (user.getEmpPosition() != null) {
-            codeRepository.findByGroupCodeAndCode("C02", user.getEmpPosition())
+            codeRepository.findByGroupCodeAndCode(CodeConstants.GroupCode.POSITION.getCode(), user.getEmpPosition())
                     .ifPresent(code -> response.setEmpPositionName(code.getCodeName()));
         }
 

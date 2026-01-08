@@ -12,7 +12,6 @@ document.addEventListener('DOMContentLoaded', function() {
     let selectedApprovers = []; // {idx, name, dept, position}
     let selectedEmployee = null;
     let selectedProject = null; // 선택된 프로젝트
-    let positionConstants = null; // 직급 관련 상수 (백엔드에서 로드)
 
     // DOM 요소
     const fileInput = document.getElementById('fileInput');
@@ -99,9 +98,9 @@ document.addEventListener('DOMContentLoaded', function() {
     });
 
     // ============================================
-    // 초기화: 직급 상수 로드
+    // 초기화: 코드 상수 로드
     // ============================================
-    loadPositionConstants();
+    loadCodeConstants();
 
     // ============================================
     // 프로젝트 목록 로드 및 모달
@@ -439,13 +438,8 @@ document.addEventListener('DOMContentLoaded', function() {
                 positionSortOrder: emp.empPositionSortOrder
             })));
 
-            // 상수가 로드되지 않은 경우 먼저 로드
-            if (!positionConstants) {
-                await loadPositionConstants();
-            }
-
             // sortOrder가 CEO인 사용자 찾기 (백엔드 상수 사용)
-            const ceoSortOrder = positionConstants?.ceoSortOrder || 1;
+            const ceoSortOrder = getCeoSortOrder();
             const ceo = employees.find(emp => emp.empPositionSortOrder === ceoSortOrder);
             console.log(`대표이사 검색 결과 (sortOrder=${ceoSortOrder}):`, ceo);
 
@@ -943,23 +937,6 @@ document.addEventListener('DOMContentLoaded', function() {
             }
         } catch (error) {
             console.error('직원 목록 로드 오류:', error);
-        }
-    }
-
-    // 직급 관련 상수 로드
-    async function loadPositionConstants() {
-        try {
-            const response = await fetch('/api/codes/constants');
-            if (response.ok) {
-                positionConstants = await response.json();
-                console.log('직급 상수 로드 완료:', positionConstants);
-            }
-        } catch (error) {
-            console.error('직급 상수 로드 오류:', error);
-            // 실패 시 기본값 사용
-            positionConstants = {
-                ceoSortOrder: 1
-            };
         }
     }
 

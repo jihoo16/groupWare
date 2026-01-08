@@ -3,6 +3,7 @@ package com.pinecni.erp.api.organization.service;
 import com.pinecni.erp.api.code.repository.CodeRepository;
 import com.pinecni.erp.api.organization.dto.*;
 import com.pinecni.erp.api.user.repository.UserRepository;
+import com.pinecni.erp.constant.CodeConstants;
 import com.pinecni.erp.entity.Code;
 import com.pinecni.erp.entity.User;
 import lombok.RequiredArgsConstructor;
@@ -25,11 +26,6 @@ public class OrganizationServiceImpl implements OrganizationService {
 
     private final CodeRepository codeRepository;
     private final UserRepository userRepository;
-
-    // 부서 그룹 코드
-    private static final String DEPT_GROUP_CODE = "C01";
-    // 직급 그룹 코드
-    private static final String POSITION_GROUP_CODE = "C02";
 
     // 직급 순서 정의 (높은 직급 순서)
     private static final Map<String, Integer> POSITION_ORDER = new HashMap<>();
@@ -67,8 +63,8 @@ public class OrganizationServiceImpl implements OrganizationService {
 
         try {
             // 1. 부서 코드 목록 조회 (code 테이블에서 C01 그룹)
-            List<Code> departmentCodes = codeRepository.findActiveByGroupCode(DEPT_GROUP_CODE);
-            log.info("Found {} active department codes from code table (group: {})", departmentCodes.size(), DEPT_GROUP_CODE);
+            List<Code> departmentCodes = codeRepository.findActiveByGroupCode(CodeConstants.GroupCode.DEPARTMENT.getCode());
+            log.info("Found {} active department codes from code table (group: {})", departmentCodes.size(), CodeConstants.GroupCode.DEPARTMENT.getCode());
 
             if (!departmentCodes.isEmpty()) {
                 departmentCodes.forEach(d -> log.debug("Department Code: {} - {} (sort: {})",
@@ -76,10 +72,10 @@ public class OrganizationServiceImpl implements OrganizationService {
             }
 
             // 2. 직급 코드 목록 조회 및 Map 생성 (코드값 -> 코드명)
-            List<Code> positionCodes = codeRepository.findActiveByGroupCode(POSITION_GROUP_CODE);
+            List<Code> positionCodes = codeRepository.findActiveByGroupCode(CodeConstants.GroupCode.POSITION.getCode());
             Map<String, String> positionCodeMap = positionCodes.stream()
                     .collect(Collectors.toMap(Code::getCode, Code::getCodeName));
-            log.info("Found {} active position codes from code table (group: {})", positionCodes.size(), POSITION_GROUP_CODE);
+            log.info("Found {} active position codes from code table (group: {})", positionCodes.size(), CodeConstants.GroupCode.POSITION.getCode());
 
             // 3. 활성화된 직원 목록 조회
             List<User> users = userRepository.findAllActive();

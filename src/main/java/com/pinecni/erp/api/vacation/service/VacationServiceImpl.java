@@ -11,6 +11,7 @@ import com.pinecni.erp.api.vacation.dto.VacationRequestSaveDTO;
 import com.pinecni.erp.api.vacation.repository.VacationAccrualScheduleRepository;
 import com.pinecni.erp.api.vacation.repository.VacationBalanceRepository;
 import com.pinecni.erp.api.vacation.repository.VacationRequestRepository;
+import com.pinecni.erp.constant.CodeConstants;
 import com.pinecni.erp.entity.*;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -54,12 +55,12 @@ public class VacationServiceImpl implements VacationService {
                 .orElse(null);
 
         // 3. 부서명 조회 (C01 그룹)
-        String empDeptName = codeRepository.findByGroupCodeAndCode("C01", user.getEmpDept())
+        String empDeptName = codeRepository.findByGroupCodeAndCode(CodeConstants.GroupCode.DEPARTMENT.getCode(), user.getEmpDept())
                 .map(Code::getCodeName)
                 .orElse(user.getEmpDept()); // 코드명을 찾지 못하면 코드 자체 반환
 
         // 4. 직급명 조회 (C02 그룹)
-        String empPositionName = codeRepository.findByGroupCodeAndCode("C02", user.getEmpPosition())
+        String empPositionName = codeRepository.findByGroupCodeAndCode(CodeConstants.GroupCode.POSITION.getCode(), user.getEmpPosition())
                 .map(Code::getCodeName)
                 .orElse(user.getEmpPosition()); // 코드명을 찾지 못하면 코드 자체 반환
 

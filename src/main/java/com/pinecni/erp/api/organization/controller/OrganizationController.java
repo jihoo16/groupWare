@@ -4,6 +4,7 @@ import com.pinecni.erp.api.code.repository.CodeRepository;
 import com.pinecni.erp.api.organization.dto.OrganizationTreeDTO;
 import com.pinecni.erp.api.organization.service.OrganizationService;
 import com.pinecni.erp.api.user.repository.UserRepository;
+import com.pinecni.erp.constant.CodeConstants;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.ResponseEntity;
@@ -26,8 +27,6 @@ public class OrganizationController {
     private final OrganizationService organizationService;
     private final CodeRepository codeRepository;
     private final UserRepository userRepository;
-
-    private static final String DEPT_GROUP_CODE = "C01";
 
     /**
      * 조직도 트리 데이터 조회
@@ -61,18 +60,18 @@ public class OrganizationController {
         try {
             long totalCodes = codeRepository.count();
             long userCount = userRepository.count();
-            long activeDeptCodes = codeRepository.findActiveByGroupCode(DEPT_GROUP_CODE).size();
+            long activeDeptCodes = codeRepository.findActiveByGroupCode(CodeConstants.GroupCode.DEPARTMENT.getCode()).size();
             long activeUserCount = userRepository.findAllActive().size();
 
             result.put("totalCodes", totalCodes);
             result.put("totalUsers", userCount);
             result.put("activeDepartmentCodes", activeDeptCodes);
             result.put("activeUsers", activeUserCount);
-            result.put("deptGroupCode", DEPT_GROUP_CODE);
+            result.put("deptGroupCode", CodeConstants.GroupCode.DEPARTMENT.getCode());
             result.put("status", "success");
 
             log.info("Debug data - Dept Codes ({}): {}/{}, Users: {}/{}",
-                    DEPT_GROUP_CODE, activeDeptCodes, totalCodes, activeUserCount, userCount);
+                    CodeConstants.GroupCode.DEPARTMENT.getCode(), activeDeptCodes, totalCodes, activeUserCount, userCount);
 
             return ResponseEntity.ok(result);
         } catch (Exception e) {
