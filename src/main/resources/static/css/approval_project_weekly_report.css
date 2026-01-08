@@ -1337,9 +1337,11 @@ div:focus {
     border-radius: 4px;
     background: linear-gradient(
         to right,
-        #667eea 0%,
-        #667eea var(--slider-percentage, 0%),
-        #e2e8f0 var(--slider-percentage, 0%),
+        #475569 0%,
+        #475569 var(--slider-min, 0%),
+        #667eea var(--slider-min, 0%),
+        #667eea var(--slider-value, 0%),
+        #e2e8f0 var(--slider-value, 0%),
         #e2e8f0 100%
     );
     outline: none;

@@ -140,6 +140,9 @@ document.addEventListener('DOMContentLoaded', function() {
             const progressRate = project.progressRate ?? 0;
             currentProgressRate.textContent = progressRate + '%';
             console.log('프로젝트 달성률 자동 설정:', project.projectName, '→', progressRate + '%');
+
+            // 추가 달성률의 최소값 및 기본값 설정
+            updateInputProgressMin(progressRate);
         }
 
         // 미리보기 업데이트
@@ -249,6 +252,9 @@ document.addEventListener('DOMContentLoaded', function() {
                     const progressRate = selectedProject.progressRate ?? 0;
                     currentProgressRate.textContent = progressRate + '%';
                     console.log('프로젝트 달성률 업데이트:', selectedProject.projectName, '→', progressRate + '%');
+
+                    // 추가 달성률의 최소값 및 기본값 설정
+                    updateInputProgressMin(progressRate);
                 }
 
                 // 미리보기 업데이트
@@ -350,7 +356,11 @@ document.addEventListener('DOMContentLoaded', function() {
         // 현재 전체 달성률 표시
         const currentProgressRate = document.getElementById('currentProgressRate');
         if (currentProgressRate && selectedProject.progressRate !== undefined) {
-            currentProgressRate.textContent = (selectedProject.progressRate || 0) + '%';
+            const progressRate = selectedProject.progressRate || 0;
+            currentProgressRate.textContent = progressRate + '%';
+
+            // 추가 달성률의 최소값 및 기본값 설정
+            updateInputProgressMin(progressRate);
         }
 
         // 미리보기 업데이트
@@ -629,6 +639,9 @@ document.addEventListener('DOMContentLoaded', function() {
     // 달성률 슬라이더 기능
     // ============================================
     const weeklyAchievementValueInput = document.getElementById('weeklyAchievementValue');
+    const inputProgressRateSlider = document.getElementById('inputProgressRate');
+    const inputProgressValueInput = document.getElementById('inputProgressValue');
+    let currentProgressRateValue = 0; // 현재 마지막 달성률 저장
 
     // 5% 단위 근처에서 자석처럼 붙는 기능
     function magneticSnapToFive(value) {
@@ -659,10 +672,10 @@ document.addEventListener('DOMContentLoaded', function() {
             autoAchievement.textContent = displayValue;
         }
 
-        // 슬라이더 진행 바 색상 업데이트
+        // 슬라이더 진행 바 색상 업데이트 (주간 달성률은 0에서 시작)
         if (weeklyAchievementRateInput) {
-            const percentage = (displayValue / 100) * 100;
-            weeklyAchievementRateInput.style.setProperty('--slider-percentage', percentage + '%');
+            weeklyAchievementRateInput.style.setProperty('--slider-min', '0%');
+            weeklyAchievementRateInput.style.setProperty('--slider-value', displayValue + '%');
         }
     }
 
@@ -680,34 +693,42 @@ document.addEventListener('DOMContentLoaded', function() {
             updateAchievementDisplay(snappedValue);
         });
 
-        // 초기 슬라이더 스타일 설정
-        weeklyAchievementRateInput.style.setProperty('--slider-percentage', '0%');
+        // 초기 CSS 변수 설정
+        weeklyAchievementRateInput.style.setProperty('--slider-min', '0%');
+        weeklyAchievementRateInput.style.setProperty('--slider-value', '0%');
     }
 
     if (weeklyAchievementValueInput) {
         // 숫자 입력 필드 수정 시 슬라이더 업데이트
         weeklyAchievementValueInput.addEventListener('input', function() {
-            let value = parseInt(this.value) || 0;
+            let value = parseInt(this.value);
 
-            // 범위 제한
-            if (value < 0) value = 0;
-            if (value > 100) value = 100;
-
-            // 슬라이더 위치 업데이트
-            if (weeklyAchievementRateInput) {
-                weeklyAchievementRateInput.value = value;
+            // 숫자가 아니거나 빈 값이면 입력 허용 (지우는 중)
+            if (isNaN(value) || this.value === '') {
+                return;
             }
 
-            // 미리보기 업데이트
-            const autoAchievement = document.querySelector('.auto-achievement');
-            if (autoAchievement) {
-                autoAchievement.textContent = value;
+            // 100 초과 입력 즉시 차단
+            if (value > 100) {
+                this.value = 100;
+                value = 100;
             }
 
-            // 슬라이더 진행 바 색상 업데이트
-            if (weeklyAchievementRateInput) {
-                const percentage = (value / 100) * 100;
-                weeklyAchievementRateInput.style.setProperty('--slider-percentage', percentage + '%');
+            // 유효한 범위 (0~100)일 때만 슬라이더 업데이트
+            if (value >= 0 && value <= 100) {
+                // 슬라이더 위치 업데이트
+                if (weeklyAchievementRateInput) {
+                    weeklyAchievementRateInput.value = value;
+                    // CSS 변수 업데이트
+                    weeklyAchievementRateInput.style.setProperty('--slider-min', '0%');
+                    weeklyAchievementRateInput.style.setProperty('--slider-value', value + '%');
+                }
+
+                // 미리보기 업데이트
+                const autoAchievement = document.querySelector('.auto-achievement');
+                if (autoAchievement) {
+                    autoAchievement.textContent = value;
+                }
             }
         });
 
@@ -723,6 +744,111 @@ document.addEventListener('DOMContentLoaded', function() {
             }
 
             updateAchievementDisplay(value);
+        });
+    }
+
+    // ============================================
+    // 추가 달성률 슬라이더 기능
+    // ============================================
+
+    // 추가 달성률의 최소값을 마지막 달성률로 설정하는 함수
+    function updateInputProgressMin(minValue) {
+        currentProgressRateValue = minValue;
+
+        if (inputProgressRateSlider) {
+            // CRITICAL: min은 반드시 0으로 유지 (thumb 위치 = value/100)
+            inputProgressRateSlider.min = 0;
+            inputProgressRateSlider.max = 100;
+            inputProgressRateSlider.value = minValue;
+
+            // CSS 변수: 시작점과 현재값
+            inputProgressRateSlider.style.setProperty('--slider-min', minValue + '%');
+            inputProgressRateSlider.style.setProperty('--slider-value', minValue + '%');
+        }
+
+        if (inputProgressValueInput) {
+            inputProgressValueInput.min = minValue;
+            inputProgressValueInput.value = minValue;
+        }
+    }
+
+    if (inputProgressRateSlider) {
+        // 슬라이더 이동 시 숫자 입력 필드 업데이트
+        inputProgressRateSlider.addEventListener('input', function(e) {
+            // 1단계: 즉시 최소값 체크
+            let currentValue = parseFloat(this.value);
+            if (currentValue < currentProgressRateValue) {
+                this.value = currentProgressRateValue;
+                currentValue = currentProgressRateValue;
+            }
+
+            // 2단계: 자석 스냅 적용
+            const snappedValue = magneticSnapToFive(currentValue);
+            const finalValue = Math.max(snappedValue, currentProgressRateValue);
+
+            // 3단계: 스냅된 값으로 슬라이더 값 업데이트
+            if (finalValue !== currentValue) {
+                this.value = finalValue;
+            }
+
+            const displayValue = Math.round(finalValue);
+
+            // 숫자 입력 필드 업데이트
+            if (inputProgressValueInput && inputProgressValueInput !== document.activeElement) {
+                inputProgressValueInput.value = displayValue;
+            }
+
+                // CSS 변수 업데이트: 시작점과 현재값
+            this.style.setProperty('--slider-min', currentProgressRateValue + '%');
+            this.style.setProperty('--slider-value', displayValue + '%');
+        }, false);
+
+        // 초기 CSS 변수 설정
+        inputProgressRateSlider.style.setProperty('--slider-min', '0%');
+        inputProgressRateSlider.style.setProperty('--slider-value', '0%');
+    }
+
+    if (inputProgressValueInput) {
+        // 숫자 입력 필드 수정 시 슬라이더 업데이트
+        inputProgressValueInput.addEventListener('input', function() {
+            let value = parseInt(this.value);
+
+            // 숫자가 아니거나 빈 값이면 입력 허용 (지우는 중)
+            if (isNaN(value) || this.value === '') {
+                return;
+            }
+
+            // 100 초과 입력 즉시 차단
+            if (value > 100) {
+                this.value = 100;
+                value = 100;
+            }
+
+            // 유효한 범위 (마지막 달성률~100)일 때만 슬라이더 업데이트
+            if (value >= currentProgressRateValue && value <= 100) {
+                // 슬라이더 위치 업데이트
+                if (inputProgressRateSlider) {
+                    inputProgressRateSlider.value = value;
+                    // CSS 변수 업데이트
+                    inputProgressRateSlider.style.setProperty('--slider-min', currentProgressRateValue + '%');
+                    inputProgressRateSlider.style.setProperty('--slider-value', value + '%');
+                }
+            }
+        });
+
+        // 범위 벗어난 값 방지 (포커스 해제 시)
+        inputProgressValueInput.addEventListener('blur', function() {
+            let value = parseInt(this.value) || currentProgressRateValue;
+            if (value < currentProgressRateValue) value = currentProgressRateValue;
+            if (value > 100) value = 100;
+            this.value = value;
+
+            if (inputProgressRateSlider) {
+                inputProgressRateSlider.value = value;
+                // CSS 변수 업데이트
+                inputProgressRateSlider.style.setProperty('--slider-min', currentProgressRateValue + '%');
+                inputProgressRateSlider.style.setProperty('--slider-value', value + '%');
+            }
         });
     }
 
@@ -1053,9 +1179,8 @@ document.addEventListener('DOMContentLoaded', function() {
                 const projectName = selectedProject ? selectedProject.projectName : null;
 
                 // 입력 달성률 가져오기
-                const inputProgressRateInput = document.getElementById('inputProgressRate');
-                const inputProgressRateValue = inputProgressRateInput && inputProgressRateInput.value ?
-                    parseFloat(inputProgressRateInput.value) : null;
+                const inputProgressRateValue = inputProgressRateSlider && inputProgressRateSlider.value ?
+                    parseInt(inputProgressRateSlider.value) : null;
 
                 const requestData = {
                     userIdx: currentUserIdx,
