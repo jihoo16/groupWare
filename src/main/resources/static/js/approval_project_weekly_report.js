@@ -138,7 +138,7 @@ document.addEventListener('DOMContentLoaded', function() {
         const currentProgressRate = document.getElementById('currentProgressRate');
         if (currentProgressRate) {
             const progressRate = project.progressRate ?? 0;
-            currentProgressRate.value = progressRate + '%';
+            currentProgressRate.textContent = progressRate + '%';
             console.log('프로젝트 달성률 자동 설정:', project.projectName, '→', progressRate + '%');
         }
 
@@ -247,7 +247,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 const currentProgressRate = document.getElementById('currentProgressRate');
                 if (currentProgressRate) {
                     const progressRate = selectedProject.progressRate ?? 0;
-                    currentProgressRate.value = progressRate + '%';
+                    currentProgressRate.textContent = progressRate + '%';
                     console.log('프로젝트 달성률 업데이트:', selectedProject.projectName, '→', progressRate + '%');
                 }
 
@@ -350,7 +350,7 @@ document.addEventListener('DOMContentLoaded', function() {
         // 현재 전체 달성률 표시
         const currentProgressRate = document.getElementById('currentProgressRate');
         if (currentProgressRate && selectedProject.progressRate !== undefined) {
-            currentProgressRate.value = (selectedProject.progressRate || 0) + '%';
+            currentProgressRate.textContent = (selectedProject.progressRate || 0) + '%';
         }
 
         // 미리보기 업데이트
@@ -626,14 +626,103 @@ document.addEventListener('DOMContentLoaded', function() {
     }
 
     // ============================================
-    // 달성률 입력 시 미리보기 업데이트
+    // 달성률 슬라이더 기능
     // ============================================
+    const weeklyAchievementValueInput = document.getElementById('weeklyAchievementValue');
+
+    // 5% 단위 근처에서 자석처럼 붙는 기능
+    function magneticSnapToFive(value) {
+        const nearest5 = Math.round(value / 5) * 5;
+        const diff = Math.abs(value - nearest5);
+
+        // 5% 단위 ±1.2 범위 내에 있으면 자동으로 5% 단위로 스냅
+        // 예: 3.8~6.2 → 5%, 8.8~11.2 → 10%
+        if (diff <= 1.2) {
+            return nearest5;
+        }
+
+        return value;
+    }
+
+    // 미리보기와 슬라이더 UI 업데이트 함수
+    function updateAchievementDisplay(value) {
+        const displayValue = Math.round(value);
+
+        // 숫자 입력 필드 업데이트
+        if (weeklyAchievementValueInput && weeklyAchievementValueInput !== document.activeElement) {
+            weeklyAchievementValueInput.value = displayValue;
+        }
+
+        // 미리보기 업데이트
+        const autoAchievement = document.querySelector('.auto-achievement');
+        if (autoAchievement) {
+            autoAchievement.textContent = displayValue;
+        }
+
+        // 슬라이더 진행 바 색상 업데이트
+        if (weeklyAchievementRateInput) {
+            const percentage = (displayValue / 100) * 100;
+            weeklyAchievementRateInput.style.setProperty('--slider-percentage', percentage + '%');
+        }
+    }
+
     if (weeklyAchievementRateInput) {
+        // 슬라이더 이동 시 숫자 입력 필드 업데이트
         weeklyAchievementRateInput.addEventListener('input', function() {
+            const rawValue = parseFloat(this.value) || 0;
+            const snappedValue = magneticSnapToFive(rawValue);
+
+            // 자석 효과가 있으면 슬라이더 값도 업데이트
+            if (snappedValue !== rawValue) {
+                this.value = snappedValue;
+            }
+
+            updateAchievementDisplay(snappedValue);
+        });
+
+        // 초기 슬라이더 스타일 설정
+        weeklyAchievementRateInput.style.setProperty('--slider-percentage', '0%');
+    }
+
+    if (weeklyAchievementValueInput) {
+        // 숫자 입력 필드 수정 시 슬라이더 업데이트
+        weeklyAchievementValueInput.addEventListener('input', function() {
+            let value = parseInt(this.value) || 0;
+
+            // 범위 제한
+            if (value < 0) value = 0;
+            if (value > 100) value = 100;
+
+            // 슬라이더 위치 업데이트
+            if (weeklyAchievementRateInput) {
+                weeklyAchievementRateInput.value = value;
+            }
+
+            // 미리보기 업데이트
             const autoAchievement = document.querySelector('.auto-achievement');
             if (autoAchievement) {
-                autoAchievement.textContent = this.value || '0';
+                autoAchievement.textContent = value;
             }
+
+            // 슬라이더 진행 바 색상 업데이트
+            if (weeklyAchievementRateInput) {
+                const percentage = (value / 100) * 100;
+                weeklyAchievementRateInput.style.setProperty('--slider-percentage', percentage + '%');
+            }
+        });
+
+        // 범위 벗어난 값 방지 (포커스 해제 시)
+        weeklyAchievementValueInput.addEventListener('blur', function() {
+            let value = parseInt(this.value) || 0;
+            if (value < 0) value = 0;
+            if (value > 100) value = 100;
+            this.value = value;
+
+            if (weeklyAchievementRateInput) {
+                weeklyAchievementRateInput.value = value;
+            }
+
+            updateAchievementDisplay(value);
         });
     }
 

@@ -1229,3 +1229,180 @@ div:focus {
     width: 20px;
     text-align: center;
 }
+
+/* ============================================
+   주간 달성률 슬라이더
+   ============================================ */
+.slider-wrapper {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    width: 100%;
+}
+
+.slider-container {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    width: 100%;
+}
+
+.slider-input-group {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    flex-shrink: 0;
+}
+
+.slider-number-input {
+    width: 60px;
+    height: 36px;
+    text-align: right;
+    font-size: 16px;
+    font-weight: 700;
+    color: #667eea;
+    border: 2px solid #e2e8f0;
+    border-radius: 8px;
+    padding: 0 8px;
+    transition: all 0.2s ease;
+}
+
+.slider-number-input:focus {
+    border-color: #667eea;
+    outline: none;
+    box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+}
+
+.slider-number-input:hover {
+    border-color: #cbd5e1;
+}
+
+.slider-percent {
+    font-size: 16px;
+    font-weight: 700;
+    color: #667eea;
+}
+
+/* 슬라이더 눈금 표시 */
+.slider-marks {
+    display: flex;
+    justify-content: space-between;
+    padding: 0 10px;
+    margin-right: 88px; /* 숫자 입력 영역 너비만큼 여백 */
+}
+
+.slider-mark {
+    font-size: 10px;
+    color: #94a3b8;
+    position: relative;
+    flex: 0 0 auto;
+}
+
+.slider-mark::before {
+    content: '';
+    position: absolute;
+    top: -8px;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 1px;
+    height: 4px;
+    background: #cbd5e1;
+}
+
+/* 주요 눈금 강조 (0, 25, 50, 75, 100) */
+.slider-mark:nth-child(1)::before,
+.slider-mark:nth-child(6)::before,
+.slider-mark:nth-child(11)::before,
+.slider-mark:nth-child(16)::before,
+.slider-mark:nth-child(21)::before {
+    height: 6px;
+    background: #667eea;
+}
+
+.slider-mark:nth-child(1),
+.slider-mark:nth-child(6),
+.slider-mark:nth-child(11),
+.slider-mark:nth-child(16),
+.slider-mark:nth-child(21) {
+    color: #667eea;
+    font-weight: 600;
+}
+
+/* 슬라이더 기본 스타일 */
+.achievement-slider {
+    -webkit-appearance: none;
+    appearance: none;
+    width: 100%;
+    height: 8px;
+    border-radius: 4px;
+    background: linear-gradient(
+        to right,
+        #667eea 0%,
+        #667eea var(--slider-percentage, 0%),
+        #e2e8f0 var(--slider-percentage, 0%),
+        #e2e8f0 100%
+    );
+    outline: none;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.achievement-slider:hover {
+    height: 10px;
+}
+
+/* 슬라이더 thumb (크롬, 사파리) */
+.achievement-slider::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    appearance: none;
+    width: 20px;
+    height: 20px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    cursor: pointer;
+    box-shadow: 0 2px 8px rgba(102, 126, 234, 0.4);
+    transition: all 0.2s ease;
+}
+
+.achievement-slider::-webkit-slider-thumb:hover {
+    transform: scale(1.2);
+    box-shadow: 0 4px 12px rgba(102, 126, 234, 0.6);
+}
+
+.achievement-slider::-webkit-slider-thumb:active {
+    transform: scale(1.1);
+}
+
+/* 슬라이더 thumb (파이어폭스) */
+.achievement-slider::-moz-range-thumb {
+    width: 20px;
+    height: 20px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    cursor: pointer;
+    border: none;
+    box-shadow: 0 2px 8px rgba(102, 126, 234, 0.4);
+    transition: all 0.2s ease;
+}
+
+.achievement-slider::-moz-range-thumb:hover {
+    transform: scale(1.2);
+    box-shadow: 0 4px 12px rgba(102, 126, 234, 0.6);
+}
+
+.achievement-slider::-moz-range-thumb:active {
+    transform: scale(1.1);
+}
+
+/* 파이어폭스 트랙 스타일 */
+.achievement-slider::-moz-range-track {
+    height: 8px;
+    border-radius: 4px;
+    background: #e2e8f0;
+}
+
+.achievement-slider::-moz-range-progress {
+    height: 8px;
+    border-radius: 4px;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+}
