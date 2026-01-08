@@ -1,6 +1,7 @@
 package com.pinecni.erp.api.code.controller;
 
 import com.pinecni.erp.api.code.service.CodeService;
+import com.pinecni.erp.constant.CodeConstants;
 import com.pinecni.erp.entity.Code;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -8,7 +9,9 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 /**
  * Code Controller
@@ -148,5 +151,41 @@ public class CodeController {
                 ? codeService.getActiveDepartments()
                 : codeService.getDepartments();
         return ResponseEntity.ok(departments);
+    }
+
+    /**
+     * 코드 관련 상수 조회
+     * 프론트엔드에서 하드코딩 방지를 위한 상수 제공
+     */
+    @GetMapping("/constants")
+    public ResponseEntity<Map<String, Object>> getCodeConstants() {
+        log.debug("코드 상수 조회 요청");
+
+        Map<String, Object> constants = new HashMap<>();
+
+        // 그룹 코드
+        Map<String, String> groupCodes = new HashMap<>();
+        for (CodeConstants.GroupCode group : CodeConstants.GroupCode.values()) {
+            groupCodes.put(group.name(), group.getCode());
+        }
+        constants.put("groupCodes", groupCodes);
+
+        // 직급 코드 (sortOrder 기반)
+        Map<String, Object> positions = new HashMap<>();
+        for (CodeConstants.Position position : CodeConstants.Position.values()) {
+            Map<String, Object> positionInfo = new HashMap<>();
+            positionInfo.put("code", position.getCode());
+            positionInfo.put("name", position.getName());
+            positionInfo.put("nameEn", position.getNameEn());
+            positionInfo.put("sortOrder", position.getSortOrder());
+            positions.put(position.name(), positionInfo);
+        }
+        constants.put("positions", positions);
+
+        // 자주 사용하는 상수 직접 제공
+        constants.put("ceoSortOrder", CodeConstants.Position.CEO.getSortOrder());
+        constants.put("positionGroupCode", CodeConstants.GroupCode.POSITION.getCode());
+
+        return ResponseEntity.ok(constants);
     }
 }

@@ -12,6 +12,7 @@ document.addEventListener('DOMContentLoaded', function() {
     let selectedApprovers = []; // {idx, name, dept, position}
     let selectedEmployee = null;
     let selectedProject = null; // 선택된 프로젝트
+    let positionConstants = null; // 직급 관련 상수 (백엔드에서 로드)
 
     // DOM 요소
     const fileInput = document.getElementById('fileInput');
@@ -47,6 +48,12 @@ document.addEventListener('DOMContentLoaded', function() {
     // ============================================
     // 사용자 정보 채우기
     // ============================================
+    // window.CURRENT_USER가 없으면 경고 표시
+    if (!window.CURRENT_USER || !currentUserIdx) {
+        console.warn('경고: window.CURRENT_USER가 설정되지 않았습니다. 사용자 정보를 표시할 수 없습니다.');
+        console.warn('현재 window.CURRENT_USER:', window.CURRENT_USER);
+    }
+
     if (applicantName) applicantName.textContent = currentUserName || '-';
     if (applicantDept) applicantDept.textContent = currentUserDept || '-';
 
@@ -90,6 +97,11 @@ document.addEventListener('DOMContentLoaded', function() {
             category.classList.toggle('expanded');
         });
     });
+
+    // ============================================
+    // 초기화: 직급 상수 로드
+    // ============================================
+    loadPositionConstants();
 
     // ============================================
     // 프로젝트 목록 로드 및 모달
@@ -383,12 +395,32 @@ document.addEventListener('DOMContentLoaded', function() {
                 await loadEmployees();
             }
 
+            console.log('=== 결재자 자동 설정 시작 ===');
+            console.log('직원 목록 개수:', employees.length);
+            console.log('프로젝트:', project);
+
             // 결재자 초기화
             selectedApprovers = [];
 
-            // 1. 프로젝트 책임자 추가 (managerIdx)
+            // 1. 담당 (현재 로그인 사용자) 추가
+            if (currentUserIdx) {
+                const currentUser = employees.find(emp => emp.idx === currentUserIdx);
+                console.log('1. 담당 (현재 사용자):', currentUser);
+                if (currentUser) {
+                    selectedApprovers.push({
+                        idx: currentUser.idx,
+                        name: currentUser.empName,
+                        dept: currentUser.empDeptName || '',
+                        position: currentUser.empPosition || ''
+                    });
+                }
+            }
+
+            // 2. 연구책임자 (프로젝트의 managerIdx) 추가
+            let manager = null;
             if (project.managerIdx) {
-                const manager = employees.find(emp => emp.idx === project.managerIdx);
+                manager = employees.find(emp => emp.idx === project.managerIdx);
+                console.log('2. 연구책임자 (managerIdx=' + project.managerIdx + '):', manager);
                 if (manager) {
                     selectedApprovers.push({
                         idx: manager.idx,
@@ -399,27 +431,37 @@ document.addEventListener('DOMContentLoaded', function() {
                 }
             }
 
-            // 2. 대표이사 추가 (직급 sortOrder = 1인 사용자)
-            // 대표이사 정보를 가져오기 위해 API 호출
-            const ceoResponse = await fetch('/api/users');
-            if (ceoResponse.ok) {
-                const allUsers = await ceoResponse.json();
-                // 직급 정보를 가져오기 위해 각 사용자의 empPosition을 확인
-                // sortOrder는 code 테이블에 있으므로, empPosition이 대표이사인 사용자를 찾음
-                const ceo = allUsers.find(user => {
-                    // empPosition이 C0201 (대표이사)인 경우
-                    return user.empPosition === 'C0201';
-                });
+            // 3. 대표이사 추가 (직급 sortOrder가 CEO인 사용자) - 중복 체크 없이 무조건 추가
+            console.log('3. 대표이사 찾기 중...');
+            console.log('모든 직원의 직급 정보:', employees.map(emp => ({
+                name: emp.empName,
+                position: emp.empPosition,
+                positionSortOrder: emp.empPositionSortOrder
+            })));
 
-                if (ceo && !selectedApprovers.find(a => a.idx === ceo.idx)) {
-                    selectedApprovers.push({
-                        idx: ceo.idx,
-                        name: ceo.empName,
-                        dept: ceo.empDeptName || '',
-                        position: ceo.empPosition || ''
-                    });
-                }
+            // 상수가 로드되지 않은 경우 먼저 로드
+            if (!positionConstants) {
+                await loadPositionConstants();
             }
+
+            // sortOrder가 CEO인 사용자 찾기 (백엔드 상수 사용)
+            const ceoSortOrder = positionConstants?.ceoSortOrder || 1;
+            const ceo = employees.find(emp => emp.empPositionSortOrder === ceoSortOrder);
+            console.log(`대표이사 검색 결과 (sortOrder=${ceoSortOrder}):`, ceo);
+
+            if (ceo) {
+                selectedApprovers.push({
+                    idx: ceo.idx,
+                    name: ceo.empName,
+                    dept: ceo.empDeptName || '',
+                    position: ceo.empPosition || ''
+                });
+                console.log('대표이사 추가됨:', ceo.empName);
+            } else {
+                console.warn(`경고: 대표이사를 찾을 수 없습니다. empPositionSortOrder가 ${ceoSortOrder}인 사용자가 없습니다.`);
+            }
+
+            console.log('최종 결재자 목록:', selectedApprovers);
 
             // 결재자 UI 업데이트
             renderApproverChips();
@@ -901,6 +943,23 @@ document.addEventListener('DOMContentLoaded', function() {
             }
         } catch (error) {
             console.error('직원 목록 로드 오류:', error);
+        }
+    }
+
+    // 직급 관련 상수 로드
+    async function loadPositionConstants() {
+        try {
+            const response = await fetch('/api/codes/constants');
+            if (response.ok) {
+                positionConstants = await response.json();
+                console.log('직급 상수 로드 완료:', positionConstants);
+            }
+        } catch (error) {
+            console.error('직급 상수 로드 오류:', error);
+            // 실패 시 기본값 사용
+            positionConstants = {
+                ceoSortOrder: 1
+            };
         }
     }
 
