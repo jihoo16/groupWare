@@ -4,12 +4,11 @@ document.addEventListener('DOMContentLoaded', function() {
     const currentUserIdx = window.CURRENT_USER?.idx || null;
     const currentUserName = window.CURRENT_USER?.empName || '';
     const currentUserDept = window.CURRENT_USER?.empDeptName || '';
-    console.log('현재 로그인 사용자:', currentUserName, '(idx:', currentUserIdx, ')');
 
     let selectedFiles = [];
     let projects = [];
-    let employees = [];
-    let selectedApprovers = []; // {idx, name, dept, position}
+    let projectMembers = []; // 프로젝트 참여인원 목록 (참고인 선택용)
+    let selectedReferences = []; // 참고인 목록 {idx, name, dept, position}
     let selectedEmployee = null;
     let selectedProject = null; // 선택된 프로젝트
 
@@ -43,6 +42,7 @@ document.addEventListener('DOMContentLoaded', function() {
     const achievements = document.getElementById('achievements');
     const issues = document.getElementById('issues');
     const nextWeekPlan = document.getElementById('nextWeekPlan');
+    const remarks = document.getElementById('remarks');
 
     // ============================================
     // 사용자 정보 채우기
@@ -394,71 +394,72 @@ document.addEventListener('DOMContentLoaded', function() {
                 await loadEmployees();
             }
 
-            console.log('=== 결재자 자동 설정 시작 ===');
-            console.log('직원 목록 개수:', employees.length);
-            console.log('프로젝트:', project);
-
             // 결재자 초기화
             selectedApprovers = [];
 
             // 1. 담당 (현재 로그인 사용자) 추가
+            console.log('1. 본인(담당) 검색 - currentUserIdx:', currentUserIdx);
             if (currentUserIdx) {
                 const currentUser = employees.find(emp => emp.idx === currentUserIdx);
-                console.log('1. 담당 (현재 사용자):', currentUser);
+                console.log('1. 본인(담당) 결과:', currentUser ? currentUser.empName : '없음');
                 if (currentUser) {
                     selectedApprovers.push({
                         idx: currentUser.idx,
                         name: currentUser.empName,
                         dept: currentUser.empDeptName || '',
-                        position: currentUser.empPosition || ''
+                        position: currentUser.empPositionName || '',
+                        isCurrentUser: true,  // 본인 플래그
+                        isProjectManager: false,
+                        isCEO: false
                     });
                 }
+            } else {
+                console.error('1. 본인(담당) 오류: currentUserIdx가 null입니다.');
             }
 
-            // 2. 연구책임자 (프로젝트의 managerIdx) 추가
-            let manager = null;
-            if (project.managerIdx) {
-                manager = employees.find(emp => emp.idx === project.managerIdx);
-                console.log('2. 연구책임자 (managerIdx=' + project.managerIdx + '):', manager);
+            // 2. 연구책임자 (프로젝트의 projectManagerIdx) 추가
+            console.log('2. 연구책임자 검색 - project.projectManagerIdx:', project.projectManagerIdx);
+            if (project.projectManagerIdx) {
+                const manager = employees.find(emp => emp.idx === project.projectManagerIdx);
+                console.log('2. 연구책임자 결과:', manager ? manager.empName : '없음');
                 if (manager) {
                     selectedApprovers.push({
                         idx: manager.idx,
                         name: manager.empName,
                         dept: manager.empDeptName || '',
-                        position: manager.empPosition || ''
+                        position: manager.empPositionName || '',
+                        isCurrentUser: false,
+                        isProjectManager: true,  // 연구책임자 플래그
+                        isCEO: false
                     });
                 }
+            } else {
+                console.error('2. 연구책임자 오류: project.projectManagerIdx가 없습니다.');
             }
 
-            // 3. 대표이사 추가 (직급 sortOrder가 CEO인 사용자) - 중복 체크 없이 무조건 추가
-            console.log('3. 대표이사 찾기 중...');
-            console.log('모든 직원의 직급 정보:', employees.map(emp => ({
-                name: emp.empName,
-                position: emp.empPosition,
-                positionSortOrder: emp.empPositionSortOrder
-            })));
-
-            // sortOrder가 CEO인 사용자 찾기 (백엔드 상수 사용)
+            // 3. 대표이사 추가
             const ceoSortOrder = getCeoSortOrder();
+            console.log('3. 대표이사 검색 - ceoSortOrder:', ceoSortOrder);
             const ceo = employees.find(emp => emp.empPositionSortOrder === ceoSortOrder);
-            console.log(`대표이사 검색 결과 (sortOrder=${ceoSortOrder}):`, ceo);
-
+            console.log('3. 대표이사 결과:', ceo ? ceo.empName : '없음');
             if (ceo) {
                 selectedApprovers.push({
                     idx: ceo.idx,
                     name: ceo.empName,
                     dept: ceo.empDeptName || '',
-                    position: ceo.empPosition || ''
+                    position: ceo.empPositionName || '',
+                    isCurrentUser: false,
+                    isProjectManager: false,
+                    isCEO: true  // 대표이사 플래그
                 });
-                console.log('대표이사 추가됨:', ceo.empName);
             } else {
-                console.warn(`경고: 대표이사를 찾을 수 없습니다. empPositionSortOrder가 ${ceoSortOrder}인 사용자가 없습니다.`);
+                console.error('3. 대표이사 오류: empPositionSortOrder=' + ceoSortOrder + '인 사용자가 없습니다.');
             }
 
             console.log('최종 결재자 목록:', selectedApprovers);
 
             // 결재자 UI 업데이트
-            renderApproverChips();
+            renderApproverTags();
             updateApprovalLine();
         } catch (error) {
             console.error('결재자 자동 설정 오류:', error);
@@ -919,156 +920,297 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     }
 
-    // ============================================
-    // 결재자 선택 모달
-    // ============================================
-    const approverModal = document.getElementById('approverModal');
-    const approverChips = document.getElementById('approverChips');
-    const approverSearch = document.getElementById('approverSearch');
-    const employeeList = document.getElementById('employeeList');
+    if (remarks) {
+        remarks.addEventListener('input', function() {
+            const autoRemarks = document.querySelector('.auto-remarks');
+            if (autoRemarks) autoRemarks.textContent = this.value || '-';
+        });
+    }
 
-    // 직원 목록 로드
-    async function loadEmployees() {
-        try {
-            const response = await fetch('/api/users');
-            if (response.ok) {
-                employees = await response.json();
-                renderEmployeeList(employees);
-            }
-        } catch (error) {
-            console.error('직원 목록 로드 오류:', error);
+    // ============================================
+    // 참고인 선택 모달
+    // ============================================
+    const approverSelectionModal = document.getElementById('approverSelectionModal');
+    const closeApproverModalBtn = document.getElementById('closeApproverModal');
+    const cancelApproverSelection = document.getElementById('cancelApproverSelection');
+    const confirmApproverSelection = document.getElementById('confirmApproverSelection');
+    const approverSearch = document.getElementById('approverSearch');
+    const approverOrgTree = document.getElementById('approverOrgTree');
+    const selectedApproversPanel = document.getElementById('selectedApproversPanel');
+    const selectedApproverCount = document.getElementById('selectedApproverCount');
+    const clearSelectedApproversBtn = document.getElementById('clearSelectedApproversBtn');
+
+    // 대표이사 sortOrder 반환 (대표이사 = 1)
+    function getCeoSortOrder() {
+        return 1;
+    }
+
+    // 모달 닫기
+    function closeApproverModalFunc() {
+        if (approverSelectionModal) {
+            approverSelectionModal.classList.remove('show');
         }
     }
 
-    function renderEmployeeList(list) {
-        if (!employeeList) return;
+    if (closeApproverModalBtn) {
+        closeApproverModalBtn.addEventListener('click', closeApproverModalFunc);
+    }
 
-        employeeList.innerHTML = '';
-        list.forEach(emp => {
+    if (cancelApproverSelection) {
+        cancelApproverSelection.addEventListener('click', closeApproverModalFunc);
+    }
+
+    // 선택 완료
+    if (confirmApproverSelection) {
+        confirmApproverSelection.addEventListener('click', function() {
+            // 참고인 선택 완료
+            selectedReferences = [...tempSelectedReferences];
+            renderReferenceTags();
+            updateReferenceList();
+            closeApproverModalFunc();
+        });
+    }
+
+    // 프로젝트 멤버 목록 렌더링 (참고인 선택용)
+    function renderApproverTree(list, keyword = '') {
+        if (!approverOrgTree) return;
+
+        approverOrgTree.innerHTML = '';
+
+        if (list.length === 0) {
+            approverOrgTree.innerHTML = '<div style="text-align: center; padding: 40px; color: #999;">프로젝트 참여인원이 없습니다.</div>';
+            return;
+        }
+
+        // 결재자(본인, 연구책임자, 대표이사) 제외
+        const filteredList = list.filter(emp => {
+            const isCurrentUser = emp.idx === currentUserIdx;
+            const isProjectManager = selectedProject && emp.idx === selectedProject.projectManagerIdx;
+            const isCEO = emp.empPositionSortOrder === getCeoSortOrder();
+            return !isCurrentUser && !isProjectManager && !isCEO;
+        });
+
+        if (filteredList.length === 0) {
+            approverOrgTree.innerHTML = '<div style="text-align: center; padding: 40px; color: #999;">선택 가능한 참고인이 없습니다.</div>';
+            return;
+        }
+
+        filteredList.forEach(emp => {
             const item = document.createElement('div');
-            item.className = 'modal-item';
-            if (selectedEmployee && selectedEmployee.idx === emp.idx) {
-                item.classList.add('selected');
-            }
+            item.className = 'selected-employee-item';
+
+            const initials = emp.empName.substring(0, 1);
+
+            // 선택 여부 확인
+            const isSelected = tempSelectedReferences.some(a => a.idx === emp.idx);
+
+            // 검색 하이라이트 적용
+            const highlightedName = keyword ? highlightText(emp.empName, keyword) : emp.empName;
+            const highlightedDept = keyword ? highlightText(emp.empDeptName || '-', keyword) : (emp.empDeptName || '-');
+            const highlightedPosition = keyword ? highlightText(emp.empPositionName || '-', keyword) : (emp.empPositionName || '-');
+
+            item.style.cursor = 'pointer';
 
             item.innerHTML = `
-                <i class="fas fa-user-circle"></i>
-                <div class="modal-item-info">
-                    <div class="modal-item-name">${emp.empName}</div>
-                    <div class="modal-item-detail">${emp.empDeptName || ''} | ${emp.empPosition || ''}</div>
+                <div class="selected-employee-info">
+                    <div class="selected-employee-avatar">${initials}</div>
+                    <div class="selected-employee-details">
+                        <div class="selected-employee-name">${highlightedName}</div>
+                        <div class="selected-employee-detail">${highlightedDept} | ${highlightedPosition}</div>
+                    </div>
                 </div>
+                <i class="fas fa-${isSelected ? 'check-circle' : 'circle'}" style="color: ${isSelected ? '#667eea' : '#ddd'}; font-size: 20px;"></i>
             `;
 
             item.addEventListener('click', function() {
-                document.querySelectorAll('.modal-item').forEach(i => i.classList.remove('selected'));
-                this.classList.add('selected');
-                selectedEmployee = emp;
+                toggleReferenceSelection(emp);
             });
 
-            employeeList.appendChild(item);
+            approverOrgTree.appendChild(item);
         });
     }
 
-    // 검색 기능
+    // 참고인 선택/해제 토글
+    function toggleReferenceSelection(emp) {
+        const index = tempSelectedReferences.findIndex(a => a.idx === emp.idx);
+
+        if (index > -1) {
+            tempSelectedReferences.splice(index, 1);
+        } else {
+            tempSelectedReferences.push({
+                idx: emp.idx,
+                name: emp.empName,
+                dept: emp.empDeptName || '',
+                position: emp.empPositionName || ''
+            });
+        }
+
+        renderApproverTree(projectMembers);
+        renderTempReferences();
+    }
+
+
+    // 참고인 전체 해제
+    if (clearSelectedApproversBtn) {
+        clearSelectedApproversBtn.addEventListener('click', function() {
+            tempSelectedReferences = [];
+            renderApproverTree(projectMembers);
+            renderTempReferences();
+        });
+    }
+
+    // 참고인 검색 기능
     if (approverSearch) {
         approverSearch.addEventListener('input', function() {
-            const keyword = this.value.toLowerCase();
-            const filtered = employees.filter(emp =>
-                emp.empName.toLowerCase().includes(keyword) ||
-                (emp.empDeptName && emp.empDeptName.toLowerCase().includes(keyword))
+            const keyword = this.value.trim();
+
+            if (!keyword) {
+                renderApproverTree(projectMembers, '');
+                return;
+            }
+
+            // 초성 검색 포함
+            const filtered = projectMembers.filter(emp =>
+                matchesSearch(emp.empName, keyword) ||
+                matchesSearch(emp.empDeptName, keyword) ||
+                matchesSearch(emp.empPositionName, keyword)
             );
-            renderEmployeeList(filtered);
+
+            renderApproverTree(filtered, keyword);
         });
     }
 
-    // 결재자 영역 클릭 시 모달 열기
-    if (approverChips) {
-        approverChips.addEventListener('click', function() {
-            openApproverModal();
+
+    // ============================================
+    // 참고인 선택
+    // ============================================
+    const openReferenceModalBtn = document.getElementById('openReferenceModalBtn');
+    const selectedReferencesList = document.getElementById('selectedReferencesList');
+
+    let tempSelectedReferences = []; // 모달 내 임시 선택 목록
+
+    // 참고인 선택 모달 열기
+    if (openReferenceModalBtn) {
+        openReferenceModalBtn.addEventListener('click', async function() {
+            // 프로젝트가 선택되지 않은 경우
+            if (!selectedProject || !selectedProject.idx) {
+                alert('프로젝트를 먼저 선택해주세요.');
+                return;
+            }
+
+            tempSelectedReferences = [...selectedReferences]; // 기존 선택 복사
+            if (approverSelectionModal) {
+                approverSelectionModal.classList.add('show');
+                // 모달 제목 설정
+                const modalTitle = document.getElementById('approverModalTitle');
+                if (modalTitle) modalTitle.textContent = '참고인 선택';
+
+                // 프로젝트 멤버 목록 로드
+                try {
+                    const response = await fetch(`/api/projects/${selectedProject.idx}/members`);
+                    if (response.ok) {
+                        const members = await response.json();
+                        // ProjectMemberDTO를 UserSimpleDTO 형식으로 변환하여 projectMembers에 저장
+                        projectMembers = members.map(member => ({
+                            idx: member.employeeIdx,
+                            empName: member.employeeName,
+                            empDeptName: member.employeeDeptName,
+                            empPositionName: member.employeePositionName,
+                            empPositionSortOrder: member.employeePositionSortOrder
+                        }));
+                        renderApproverTree(projectMembers);
+                        renderTempReferences();
+                    } else {
+                        console.error('프로젝트 멤버 로드 실패');
+                        alert('프로젝트 참여인원을 불러올 수 없습니다.');
+                    }
+                } catch (error) {
+                    console.error('프로젝트 멤버 로드 오류:', error);
+                    alert('프로젝트 참여인원을 불러오는 중 오류가 발생했습니다.');
+                }
+            }
         });
     }
 
-    window.openApproverModal = function() {
-        if (approverModal) {
-            approverModal.classList.add('show');
-            loadEmployees();
-        }
-    };
+    // 임시 참고인 목록 렌더링
+    function renderTempReferences() {
+        if (!selectedApproversPanel) return;
 
-    window.closeApproverModal = function() {
-        if (approverModal) {
-            approverModal.classList.remove('show');
-            selectedEmployee = null;
-            if (approverSearch) approverSearch.value = '';
-        }
-    };
+        selectedApproverCount.textContent = tempSelectedReferences.length;
 
-    window.addApprover = function() {
-        if (!selectedEmployee) {
-            alert('결재자를 선택해주세요.');
+        if (tempSelectedReferences.length === 0) {
+            selectedApproversPanel.innerHTML = '<div style="text-align: center; padding: 40px; color: #999;">선택된 참고인이 없습니다.</div>';
             return;
         }
 
-        // 중복 확인
-        if (selectedApprovers.find(a => a.idx === selectedEmployee.idx)) {
-            alert('이미 추가된 결재자입니다.');
-            return;
-        }
+        selectedApproversPanel.innerHTML = '';
+        tempSelectedReferences.forEach((reference, index) => {
+            const item = document.createElement('div');
+            item.className = 'selected-employee-item';
 
-        selectedApprovers.push({
-            idx: selectedEmployee.idx,
-            name: selectedEmployee.empName,
-            dept: selectedEmployee.empDeptName || '',
-            position: selectedEmployee.empPosition || ''
-        });
+            const initials = reference.name.substring(0, 1);
 
-        renderApproverChips();
-        updateApprovalLine();
-        closeApproverModal();
-    };
-
-    function renderApproverChips() {
-        if (!approverChips) return;
-
-        if (selectedApprovers.length === 0) {
-            approverChips.innerHTML = `
-                <div style="text-align: center; color: #94a3b8; font-size: 13px; width: 100%; padding: 20px;">
-                    <i class="fas fa-user-plus" style="font-size: 20px; margin-bottom: 6px; display: block;"></i>
-                    <div>클릭하여 결재자 추가</div>
+            item.innerHTML = `
+                <div class="selected-employee-info">
+                    <div class="selected-employee-avatar">${initials}</div>
+                    <div class="selected-employee-details">
+                        <div class="selected-employee-name">${reference.name}</div>
+                        <div class="selected-employee-detail">${reference.dept} | ${reference.position}</div>
+                    </div>
                 </div>
-            `;
-            return;
-        }
-
-        approverChips.innerHTML = '';
-        selectedApprovers.forEach((approver, index) => {
-            const chip = document.createElement('div');
-            chip.className = 'approver-chip';
-            chip.innerHTML = `
-                <span class="order">${index + 1}</span>
-                <span>${approver.name}</span>
-                <button class="btn-remove" onclick="removeApprover(${index})">
+                <button class="btn-remove-employee" onclick="removeTempReference(${index})">
                     <i class="fas fa-times"></i>
                 </button>
             `;
-            approverChips.appendChild(chip);
+
+            selectedApproversPanel.appendChild(item);
         });
     }
 
-    window.removeApprover = function(index) {
-        selectedApprovers.splice(index, 1);
-        renderApproverChips();
-        updateApprovalLine();
+    // 임시 참고인 제거
+    window.removeTempReference = function(index) {
+        tempSelectedReferences.splice(index, 1);
+        renderApproverTree(employees);
+        renderTempReferences();
     };
 
-    function updateApprovalLine() {
-        const approver1 = document.querySelector('.auto-approver-1');
-        const approver2 = document.querySelector('.auto-approver-2');
-        const approver3 = document.querySelector('.auto-approver-3');
+    // 참고인 태그 렌더링 (메인 화면)
+    function renderReferenceTags() {
+        if (!selectedReferencesList) return;
 
-        if (approver1) approver1.textContent = selectedApprovers[0]?.name || '-';
-        if (approver2) approver2.textContent = selectedApprovers[1]?.name || '-';
-        if (approver3) approver3.textContent = selectedApprovers[2]?.name || '-';
+        selectedReferencesList.innerHTML = '';
+        selectedReferences.forEach((reference, index) => {
+            const tag = document.createElement('div');
+            tag.className = 'reference-tag';
+
+            tag.innerHTML = `
+                <span class="order">${index + 1}</span>
+                <span>${reference.name}</span>
+                <button class="reference-remove" onclick="removeReference(${index})">
+                    <i class="fas fa-times"></i>
+                </button>
+            `;
+            selectedReferencesList.appendChild(tag);
+        });
+    }
+
+    // 참고인 삭제
+    window.removeReference = function(index) {
+        selectedReferences.splice(index, 1);
+        renderReferenceTags();
+        updateReferenceList();
+    };
+
+    // 참조 목록 업데이트 (공식문서)
+    function updateReferenceList() {
+        const autoReferences = document.querySelector('.auto-references');
+        if (autoReferences) {
+            if (selectedReferences.length === 0) {
+                autoReferences.textContent = '-';
+            } else {
+                autoReferences.textContent = selectedReferences.map(r => r.name).join(', ');
+            }
+        }
     }
 
     // ============================================
@@ -1194,6 +1336,7 @@ document.addEventListener('DOMContentLoaded', function() {
             const achievementsVal = achievements?.value || '';
             const issuesVal = issues?.value || '';
             const nextWeekPlanVal = nextWeekPlan?.value || '';
+            const remarksVal = remarks?.value || '';
             const achievementRate = weeklyAchievementRateInput?.value ? parseInt(weeklyAchievementRateInput.value) : null;
 
             if (!reportPeriod.trim()) {
@@ -1218,6 +1361,9 @@ document.addEventListener('DOMContentLoaded', function() {
                 const inputProgressRateValue = inputProgressRateSlider && inputProgressRateSlider.value ?
                     parseInt(inputProgressRateSlider.value) : null;
 
+                // 참조자 이름 목록을 쉼표로 구분된 문자열로 변환
+                const referenceNamesStr = selectedReferences.map(r => r.name).join(', ');
+
                 const requestData = {
                     userIdx: currentUserIdx,
                     projectIdx: projectIdx,
@@ -1227,6 +1373,8 @@ document.addEventListener('DOMContentLoaded', function() {
                     achievements: achievementsVal,
                     issues: issuesVal,
                     nextWeekPlan: nextWeekPlanVal,
+                    remarks: remarksVal,
+                    referenceNames: referenceNamesStr,
                     weeklyAchievementRate: achievementRate,
                     inputProgressRate: inputProgressRateValue
                 };

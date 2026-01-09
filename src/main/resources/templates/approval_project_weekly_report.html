@@ -231,7 +231,7 @@
                                             </div>
                                             <div class="info-card-body">
                                                 <div class="info-item">
-                                                    <label><i class="fas fa-history"></i> 마지막 달성률</label>
+                                                    <label><i class="fas fa-history"></i> 프로젝트 전체 기존 달성률</label>
                                                     <div class="info-value" id="currentProgressRate">0%</div>
                                                 </div>
                                                 <div class="info-item">
@@ -270,7 +270,7 @@
                                                     </div>
                                                 </div>
                                                 <div class="info-item">
-                                                    <label><i class="fas fa-plus-circle"></i> 추가 달성률</label>
+                                                    <label><i class="fas fa-plus-circle"></i> 프로젝트 전체 달성률</label>
                                                     <div class="slider-wrapper">
                                                         <div class="slider-container">
                                                             <input type="range" id="inputProgressRate" class="achievement-slider" min="0" max="100" step="1" value="0">
@@ -334,18 +334,23 @@
                                         <label for="nextWeekPlan"><i class="fas fa-calendar-check"></i> 차주 계획</label>
                                         <textarea id="nextWeekPlan" class="form-textarea" rows="4" placeholder="다음 주 진행 예정 업무"></textarea>
                                     </div>
+
+                                    <div class="form-group full-width">
+                                        <label for="remarks"><i class="fas fa-sticky-note"></i> 기타</label>
+                                        <textarea id="remarks" class="form-textarea" rows="3" placeholder="기타 사항"></textarea>
+                                    </div>
                                 </div>
                             </div>
 
                             <div class="input-section">
                                 <div class="section-header">
-                                    <h3><i class="fas fa-users"></i> 결재자</h3>
+                                    <h3><i class="fas fa-user-tag"></i> 참조</h3>
                                 </div>
-                                <div class="approver-area" id="approverChips">
-                                    <div style="text-align: center; color: #94a3b8; font-size: 13px; width: 100%; padding: 20px;">
-                                        <i class="fas fa-user-plus" style="font-size: 20px; margin-bottom: 6px; display: block;"></i>
-                                        <div>클릭하여 결재자 추가</div>
-                                    </div>
+                                <div class="approver-selection-area" id="referenceSelectionArea">
+                                    <button type="button" class="btn-select-references" id="openReferenceModalBtn">
+                                        <i class="fas fa-user-plus"></i> 참조 추가
+                                    </button>
+                                    <div id="selectedReferencesList" class="selected-references-list"></div>
                                 </div>
                             </div>
 
@@ -386,17 +391,17 @@
                                             <th class="approval-header">대표이사</th>
                                         </tr>
                                         <tr>
-                                            <td class="approval-sign-cell">
+                                            <td class="approval-sign-cell" data-role="담당" data-approver-id="">
                                                 <div class="sign-area">
                                                     <span class="sign-placeholder">결재</span>
                                                 </div>
                                             </td>
-                                            <td class="approval-sign-cell">
+                                            <td class="approval-sign-cell" data-role="연구책임자" data-approver-id="">
                                                 <div class="sign-area">
                                                     <span class="sign-placeholder">결재</span>
                                                 </div>
                                             </td>
-                                            <td class="approval-sign-cell">
+                                            <td class="approval-sign-cell" data-role="대표이사" data-approver-id="">
                                                 <div class="sign-area">
                                                     <span class="sign-placeholder">결재</span>
                                                 </div>
@@ -404,13 +409,19 @@
                                         </tr>
                                         <tr>
                                             <td class="approval-name-cell">
-                                                <span class="approver-name auto-approver-1">-</span>
+                                                <span class="approver-name auto-approver-1" data-role="담당">-</span>
+                                            </td>
+                                            <td class="approval-name-cell" style="position: relative;">
+                                                <span class="approver-name auto-approver-2" data-role="연구책임자">-</span>
                                             </td>
                                             <td class="approval-name-cell">
-                                                <span class="approver-name auto-approver-2">-</span>
+                                                <span class="approver-name auto-approver-3" data-role="대표이사">-</span>
                                             </td>
-                                            <td class="approval-name-cell">
-                                                <span class="approver-name auto-approver-3">-</span>
+                                        </tr>
+                                        <tr>
+                                            <th class="approval-header reference-header">참조</th>
+                                            <td class="reference-cell" colspan="2">
+                                                <span class="auto-references">-</span>
                                             </td>
                                         </tr>
                                     </table>
@@ -424,7 +435,7 @@
                                         <td colspan="3" class="auto-project">-</td>
                                     </tr>
                                     <tr>
-                                        <th>달성률</th>
+                                        <th>주간 달성률</th>
                                         <td colspan="3"><span class="auto-achievement">0</span>%</td>
                                     </tr>
                                     <tr>
@@ -453,6 +464,10 @@
                                         <th>차주 계획</th>
                                         <td colspan="3"><div class="auto-next-plan" style="white-space: pre-wrap; min-height: 100px;">-</div></td>
                                     </tr>
+                                    <tr>
+                                        <th>기타</th>
+                                        <td colspan="3"><div class="auto-remarks" style="white-space: pre-wrap; min-height: 80px;">-</div></td>
+                                    </tr>
                                 </table>
                             </div>
                         </div>
@@ -479,24 +494,38 @@
     </div>
 
     <!-- 결재자 선택 모달 -->
-    <div class="modal" id="approverModal">
-        <div class="modal-content">
+    <div id="approverSelectionModal" class="modal">
+        <div class="modal-content modal-lg">
             <div class="modal-header">
-                <h3>결재자 선택</h3>
-                <button class="btn-close" onclick="closeApproverModal()">
-                    <i class="fas fa-times"></i>
-                </button>
+                <h2 id="approverModalTitle">결재자 선택</h2>
+                <button class="modal-close" id="closeApproverModal">&times;</button>
             </div>
             <div class="modal-body">
-                <div class="search-box">
-                    <i class="fas fa-search"></i>
-                    <input type="text" id="approverSearch" placeholder="이름, 부서로 검색">
+                <div class="employee-selection-container">
+                    <div class="org-tree-panel">
+                        <div class="panel-header">
+                            <input type="text" id="approverSearch" class="search-input" placeholder="이름, 부서, 직급으로 검색...">
+                        </div>
+                        <div class="org-tree-wrapper">
+                            <div id="approverOrgTree" class="org-tree"></div>
+                        </div>
+                    </div>
+                    <div class="selected-employees-panel">
+                        <div class="panel-header">
+                            <h3>선택된 참조 (<span id="selectedApproverCount">0</span>)</h3>
+                            <button type="button" id="clearSelectedApproversBtn" class="btn-clear">
+                                <i class="fas fa-times"></i> 전체 해제
+                            </button>
+                        </div>
+                        <div id="selectedApproversPanel" class="selected-employees-list"></div>
+                    </div>
                 </div>
-                <div class="modal-item-list" id="employeeList"></div>
             </div>
             <div class="modal-footer">
-                <button class="btn-secondary" onclick="closeApproverModal()">취소</button>
-                <button class="btn-primary" onclick="addApprover()">추가</button>
+                <button type="button" class="btn-cancel" id="cancelApproverSelection">취소</button>
+                <button type="button" class="btn-confirm" id="confirmApproverSelection">
+                    <i class="fas fa-check"></i> 선택 완료
+                </button>
             </div>
         </div>
     </div>

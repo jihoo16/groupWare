@@ -78,6 +78,11 @@ div:focus {
     padding-bottom: 100px; /* fixed footer 공간 확보 */
 }
 
+/* 공식 문서가 펼쳐졌을 때는 input-area 하단 여백 제거 */
+.editor-area:has(.document-form-wrapper:not(.collapsed)) .input-area {
+    padding-bottom: 0;
+}
+
 .input-section {
     /* background와 box-shadow는 editor-area에서 처리 */
 }
@@ -481,66 +486,379 @@ div:focus {
     flex: 1;
 }
 
-/* 결재자 영역 */
-.approver-area {
-    min-height: 80px;
-    padding: 12px;
-    border: 2px dashed #e2e8f0;
+/* 결재자 선택 영역 */
+.approver-selection-area {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+.btn-select-approvers {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+    border: none;
+    padding: 12px 20px;
     border-radius: 8px;
+    font-size: 13px;
+    font-weight: 600;
     cursor: pointer;
-    transition: all 0.2s;
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    transition: all 0.3s ease;
+    align-self: flex-start;
+}
+
+.btn-select-approvers:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
+}
+
+/* 참고인 선택 버튼 */
+.btn-select-references {
+    background: #6c757d;
+    color: white;
+    border: none;
+    padding: 12px 20px;
+    border-radius: 8px;
+    font-size: 13px;
+    font-weight: 600;
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    transition: all 0.3s ease;
+    align-self: flex-start;
+}
+
+.btn-select-references:hover {
+    background: #5a6268;
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(108, 117, 125, 0.4);
+}
+
+.selected-approvers-list,
+.selected-references-list {
     display: flex;
     flex-wrap: wrap;
     gap: 8px;
-    align-items: center;
 }
 
-.approver-area:hover {
-    border-color: #cbd5e1;
-    background: #f8fafc;
-}
-
-.approver-chip {
-    display: flex;
+.approver-tag {
+    display: inline-flex;
     align-items: center;
     gap: 8px;
-    padding: 8px 12px;
     background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
     color: white;
+    padding: 8px 14px;
     border-radius: 20px;
-    font-size: 13px;
+    font-size: 12.9px;
     font-weight: 500;
 }
 
-.approver-chip .order {
+/* 참고인 태그 */
+.reference-tag {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    background: #6c757d;
+    color: white;
+    padding: 8px 14px;
+    border-radius: 20px;
+    font-size: 12.9px;
+    font-weight: 500;
+}
+
+.reference-tag .order {
     display: inline-flex;
     align-items: center;
     justify-content: center;
-    width: 20px;
-    height: 20px;
+    width: 22px;
+    height: 22px;
     background: rgba(255, 255, 255, 0.3);
     border-radius: 50%;
     font-size: 11px;
     font-weight: 700;
 }
 
-.approver-chip .btn-remove {
+.reference-remove {
     background: rgba(255, 255, 255, 0.2);
     border: none;
     color: white;
-    width: 20px;
-    height: 20px;
+    width: 22px;
+    height: 22px;
     border-radius: 50%;
     cursor: pointer;
     display: flex;
     align-items: center;
     justify-content: center;
-    font-size: 11px;
+    font-size: 12px;
+    padding: 0;
     transition: background 0.2s;
 }
 
-.approver-chip .btn-remove:hover {
+.reference-remove:hover {
     background: rgba(255, 255, 255, 0.4);
+}
+
+.approver-tag .order {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 22px;
+    height: 22px;
+    background: rgba(255, 255, 255, 0.3);
+    border-radius: 50%;
+    font-size: 11px;
+    font-weight: 700;
+}
+
+.approver-remove {
+    background: rgba(255, 255, 255, 0.2);
+    border: none;
+    color: white;
+    width: 22px;
+    height: 22px;
+    border-radius: 50%;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 12px;
+    padding: 0;
+    transition: background 0.2s;
+}
+
+.approver-remove:hover {
+    background: rgba(255, 255, 255, 0.4);
+}
+
+/* 결재자 선택 모달 - 캘린더 스타일 */
+.modal-content.modal-lg {
+    max-width: 1000px;
+}
+
+.employee-selection-container {
+    display: grid;
+    grid-template-columns: 2fr 1fr;
+    gap: 20px;
+    height: 500px;
+}
+
+/* Org Tree Panel */
+.org-tree-panel {
+    display: flex;
+    flex-direction: column;
+    border: 2px solid #e0e0e0;
+    border-radius: 8px;
+    overflow: hidden;
+}
+
+.org-tree-panel .panel-header {
+    display: flex;
+    gap: 12px;
+    padding: 16px;
+    background: #f5f5f5;
+    border-bottom: 2px solid #e0e0e0;
+    align-items: center;
+}
+
+.panel-header-buttons {
+    display: flex;
+    gap: 8px;
+}
+
+.search-input {
+    flex: 1;
+    padding: 10px 14px;
+    border: 2px solid #e0e0e0;
+    border-radius: 6px;
+    font-size: 14px;
+    transition: all 0.3s ease;
+}
+
+.search-input:focus {
+    outline: none;
+    border-color: #667eea;
+    box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+}
+
+.btn-select-all,
+.btn-expand {
+    background: white;
+    border: 2px solid #e0e0e0;
+    padding: 8px 14px;
+    border-radius: 6px;
+    font-size: 12px;
+    font-weight: 600;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    transition: all 0.2s ease;
+    white-space: nowrap;
+}
+
+.btn-select-all:hover,
+.btn-expand:hover {
+    background: #667eea;
+    border-color: #667eea;
+    color: white;
+}
+
+.org-tree-wrapper {
+    flex: 1;
+    overflow-y: auto;
+    padding: 16px;
+    background: white;
+}
+
+.org-tree {
+    /* 조직도 트리 스타일은 JavaScript로 생성 */
+}
+
+/* Selected Employees Panel */
+.selected-employees-panel {
+    display: flex;
+    flex-direction: column;
+    border: 2px solid #e0e0e0;
+    border-radius: 8px;
+    overflow: hidden;
+}
+
+.selected-employees-panel .panel-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 16px;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+}
+
+.selected-employees-panel h3 {
+    margin: 0;
+    font-size: 15px;
+    font-weight: 600;
+}
+
+.btn-clear {
+    background: rgba(255, 255, 255, 0.2);
+    color: white;
+    border: 1px solid rgba(255, 255, 255, 0.4);
+    padding: 6px 12px;
+    border-radius: 6px;
+    font-size: 12px;
+    font-weight: 600;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    transition: all 0.2s ease;
+}
+
+.btn-clear:hover {
+    background: rgba(255, 255, 255, 0.3);
+    border-color: rgba(255, 255, 255, 0.6);
+}
+
+.selected-employees-list {
+    flex: 1;
+    overflow-y: auto;
+    padding: 12px;
+    background: white;
+}
+
+.selected-employee-item {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 10px 12px;
+    background: #f8f9fa;
+    border-radius: 8px;
+    margin-bottom: 8px;
+    transition: all 0.2s ease;
+}
+
+.selected-employee-item:hover {
+    background: #e8eaf6;
+}
+
+.selected-employee-info {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.selected-employee-avatar {
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, #667eea, #764ba2);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: white;
+    font-weight: 600;
+    font-size: 13px;
+}
+
+.selected-employee-details {
+    display: flex;
+    flex-direction: column;
+}
+
+.selected-employee-name {
+    font-weight: 600;
+    font-size: 13px;
+    color: #333;
+}
+
+.selected-employee-detail {
+    font-size: 11px;
+    color: #888;
+}
+
+.btn-remove-employee {
+    background: #ff5252;
+    color: white;
+    border: none;
+    width: 24px;
+    height: 24px;
+    border-radius: 50%;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 12px;
+    transition: all 0.2s ease;
+}
+
+.btn-remove-employee:hover {
+    background: #d32f2f;
+    transform: scale(1.1);
+}
+
+/* 스크롤바 스타일 */
+.org-tree-wrapper::-webkit-scrollbar,
+.selected-employees-list::-webkit-scrollbar {
+    width: 8px;
+}
+
+.org-tree-wrapper::-webkit-scrollbar-track,
+.selected-employees-list::-webkit-scrollbar-track {
+    background: #f0f0f0;
+    border-radius: 4px;
+}
+
+.org-tree-wrapper::-webkit-scrollbar-thumb,
+.selected-employees-list::-webkit-scrollbar-thumb {
+    background: #ccc;
+    border-radius: 4px;
+}
+
+.org-tree-wrapper::-webkit-scrollbar-thumb:hover,
+.selected-employees-list::-webkit-scrollbar-thumb:hover {
+    background: #999;
 }
 
 /* 파일 업로드 영역 */
@@ -671,6 +989,7 @@ div:focus {
    ============================================ */
 .document-form-wrapper {
     margin-top: 16px;
+    margin-bottom: 100px; /* submit-actions 버튼 공간 확보 */
     background: white;
     border-radius: 12px;
     padding: 30px;
@@ -685,6 +1004,7 @@ div:focus {
     max-height: 0;
     padding: 0;
     margin-top: 0;
+    margin-bottom: 0;
     opacity: 0;
     box-shadow: none;
 }
@@ -697,55 +1017,83 @@ div:focus {
 
 /* 결재라인 */
 .approval-line-box {
-    float: right;
-    margin: 0 0 20px 20px;
+    display: flex;
+    justify-content: flex-end;
+    margin-bottom: 25px;
 }
 
 .approval-line-table {
     border-collapse: collapse;
     border: 2px solid #333;
-    background: white;
 }
 
 .approval-line-table th,
 .approval-line-table td {
     border: 1px solid #333;
     text-align: center;
-    padding: 8px 12px;
-    min-width: 80px;
+    padding: 0;
+    vertical-align: middle;
 }
 
 .approval-header {
-    background: #f5f5f5;
-    font-weight: 600;
     font-size: 12px;
+    font-weight: 700;
     color: #333;
-    height: 30px;
+    background: #f5f5f5;
+    padding: 6px 12px;
+    min-width: 80px;
 }
 
 .approval-sign-cell {
-    height: 60px;
-    vertical-align: middle;
+    height: 70px;
+    width: 80px;
+    padding: 4px;
+    position: relative;
     background: white;
 }
 
 .sign-area {
+    width: 100%;
+    height: 100%;
     display: flex;
     align-items: center;
     justify-content: center;
-    height: 100%;
 }
 
 .sign-placeholder {
-    color: #999;
     font-size: 11px;
+    color: #999;
+    user-select: none;
+}
+
+.approval-sign-cell.signed .sign-placeholder {
+    display: none;
+}
+
+.sign-image {
+    max-width: 100%;
+    max-height: 100%;
+    object-fit: contain;
 }
 
 .approval-name-cell {
-    font-size: 12px;
-    font-weight: 500;
+    font-size: 11px;
+    padding: 4px 6px;
+    background: white;
     color: #333;
-    height: 32px;
+}
+
+/* 참조 행 */
+.reference-header {
+    background: #f8f9fa;
+}
+
+.reference-cell {
+    font-size: 11px;
+    padding: 6px 10px;
+    background: white;
+    color: #333;
+    text-align: left;
 }
 
 /* 문서 제목 */
@@ -836,14 +1184,40 @@ div:focus {
     justify-content: space-between;
     align-items: center;
     padding: 20px 24px;
-    border-bottom: 1px solid #e2e8f0;
+    border-bottom: 2px solid #e0e0e0;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+    border-top-left-radius: 16px;
+    border-top-right-radius: 16px;
 }
 
+.modal-header h2,
 .modal-header h3 {
     margin: 0;
     font-size: 18px;
     font-weight: 700;
-    color: #1e293b;
+    color: white;
+}
+
+.modal-close {
+    background: none;
+    border: none;
+    font-size: 28px;
+    color: white;
+    cursor: pointer;
+    padding: 0;
+    width: 32px;
+    height: 32px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 50%;
+    transition: all 0.2s ease;
+}
+
+.modal-close:hover {
+    background: rgba(255, 255, 255, 0.2);
+    transform: rotate(90deg);
 }
 
 .btn-close {
@@ -986,9 +1360,47 @@ div:focus {
 .modal-footer {
     display: flex;
     justify-content: flex-end;
-    gap: 10px;
+    gap: 12px;
     padding: 16px 24px;
-    border-top: 1px solid #e2e8f0;
+    border-top: 2px solid #e0e0e0;
+}
+
+.btn-cancel {
+    background: #6c757d;
+    color: white;
+    border: none;
+    padding: 12px 24px;
+    border-radius: 8px;
+    font-size: 14px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.3s ease;
+}
+
+.btn-cancel:hover {
+    background: #5a6268;
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(108, 117, 125, 0.3);
+}
+
+.btn-confirm {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+    border: none;
+    padding: 12px 24px;
+    border-radius: 8px;
+    font-size: 14px;
+    font-weight: 600;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    transition: all 0.3s ease;
+}
+
+.btn-confirm:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 20px rgba(102, 126, 234, 0.4);
 }
 
 /* ============================================
