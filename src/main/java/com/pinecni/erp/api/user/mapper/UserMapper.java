@@ -97,10 +97,13 @@ public class UserMapper {
                     .ifPresent(code -> dto.setEmpDeptName(code.getCodeName()));
         }
 
-        // 직급 코드명 조회
+        // 직급 코드명 및 sortOrder 조회
         if (user.getEmpPosition() != null) {
             codeRepository.findByGroupCodeAndCode("C02", user.getEmpPosition())
-                    .ifPresent(code -> dto.setEmpPositionName(code.getCodeName()));
+                    .ifPresent(code -> {
+                        dto.setEmpPositionName(code.getCodeName());
+                        dto.setEmpPositionSortOrder(code.getSortOrder());
+                    });
         }
 
         return dto;

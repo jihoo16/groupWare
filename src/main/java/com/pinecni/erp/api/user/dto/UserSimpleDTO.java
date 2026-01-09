@@ -21,6 +21,7 @@ public class UserSimpleDTO {
     private String empDeptName; // 부서 코드명
     private String empPosition; // 직급 코드
     private String empPositionName; // 직급 코드명
+    private Integer empPositionSortOrder; // 직급 정렬 순서
     private String empEmail;
     private String empPhone;
     private LocalDate empJoinDate; // 입사일

@@ -27,6 +27,7 @@ public class WebMvcConfig implements WebMvcConfigurer {
                 .excludePathPatterns(
                         "/login",           // 로그인 페이지
                         "/api/auth/**",     // 인증 API
+                        "/api/users",       // 사용자 목록 API (개발용)
                         "/css/**",          // CSS 정적 리소스
                         "/js/**",           // JavaScript 정적 리소스
                         "/images/**",       // 이미지 정적 리소스
