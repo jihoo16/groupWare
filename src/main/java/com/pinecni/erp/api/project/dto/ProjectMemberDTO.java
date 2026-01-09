@@ -84,4 +84,9 @@ public class ProjectMemberDTO {
      */
     private String employeePositionName;
 
+    /**
+     * 직원 직급 정렬 순서 (Code 테이블에서 가져옴)
+     */
+    private Integer employeePositionSortOrder;
+
 }
