@@ -37,6 +37,8 @@ public class WeeklyReportMapper {
                 .achievements(entity.getAchievements())
                 .issues(entity.getIssues())
                 .nextWeekPlan(entity.getNextWeekPlan())
+                .remarks(entity.getRemarks())
+                .referenceNames(entity.getReferenceNames())
                 .weeklyAchievementRate(entity.getWeeklyAchievementRate())
                 .createdAt(entity.getCreatedAt())
                 .updatedAt(entity.getUpdatedAt())
@@ -63,6 +65,8 @@ public class WeeklyReportMapper {
                 .achievements(dto.getAchievements())
                 .issues(dto.getIssues())
                 .nextWeekPlan(dto.getNextWeekPlan())
+                .remarks(dto.getRemarks())
+                .referenceNames(dto.getReferenceNames())
                 .weeklyAchievementRate(dto.getWeeklyAchievementRate())
                 .build();
 
@@ -105,6 +109,12 @@ public class WeeklyReportMapper {
         }
         if (dto.getNextWeekPlan() != null) {
             entity.setNextWeekPlan(dto.getNextWeekPlan());
+        }
+        if (dto.getRemarks() != null) {
+            entity.setRemarks(dto.getRemarks());
+        }
+        if (dto.getReferenceNames() != null) {
+            entity.setReferenceNames(dto.getReferenceNames());
         }
         if (dto.getWeeklyAchievementRate() != null) {
             entity.setWeeklyAchievementRate(dto.getWeeklyAchievementRate());

@@ -51,6 +51,16 @@ public class WeeklyReportUpdateDTO {
     private String nextWeekPlan;
 
     /**
+     * 기타 사항
+     */
+    private String remarks;
+
+    /**
+     * 참조자 이름 목록 (쉼표로 구분, 예: "홍길동, 김철수")
+     */
+    private String referenceNames;
+
+    /**
      * 주차별 달성률 (0-100)
      */
     private Integer weeklyAchievementRate;
