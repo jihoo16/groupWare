@@ -229,39 +229,9 @@ div:focus {
     color: white;
 }
 
-/* 우측 에디터 영역 */
-.editor-area {
-    background: white;
-    border-radius: 12px;
-    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
-    padding: 24px;
-    overflow-y: auto;
-    display: flex;
-    flex-direction: column;
-    gap: 21px;
-}
+/* 우측 에디터 영역은 1170줄 이후 참조 */
 
-/* 섹션 공통 스타일 */
-.section-header {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    margin-bottom: 15px;
-}
-
-.section-header h4 {
-    font-size: 13.5px;
-    font-weight: 700;
-    color: #333;
-    margin: 0;
-    display: flex;
-    align-items: center;
-    gap: 8px;
-}
-
-.section-header h4 i {
-    color: #667eea;
-}
+/* 섹션 공통 스타일은 1187줄 이후 참조 */
 
 .btn-add {
     padding: 8px 16px;
@@ -920,7 +890,7 @@ div h2{
     background: #f5f5f5;
     padding: 4px 8px;
     width: 80px;
-    height: 40px;
+    height: 20px;
     text-orientation: upright;
     letter-spacing: 2px;
 }
@@ -1162,4 +1132,774 @@ div h2{
     width: 80px;
     height: 100px;
     background: white;
+}
+
+/* ============================================
+   입력 영역 스타일 (연차신청서 패턴)
+   ============================================ */
+.editor-area {
+    background: white;
+    border-radius: 12px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+    padding: 24px;
+    padding-bottom: 120px;
+    overflow-y: auto;
+    display: flex;
+    flex-direction: column;
+    gap: 21px;
+}
+
+.input-area {
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+    padding-bottom: 20px;
+}
+
+.editor-area:has(.document-form-wrapper:not(.collapsed)) .input-area {
+    padding-bottom: 20px;
+}
+
+.input-section {
+    background: white;
+}
+
+.section-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 16px;
+    padding-bottom: 10px;
+    border-bottom: 2px solid #f0f0f0;
+}
+
+.section-header h3,
+.section-header h4 {
+    font-size: 14px;
+    font-weight: 700;
+    color: #1a1a1a;
+    margin: 0;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.section-header h3 i,
+.section-header h4 i {
+    font-size: 15px;
+    color: #667eea;
+}
+
+/* 폼 그리드 */
+.form-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 14px;
+}
+
+.form-group {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+}
+
+.form-group.full-width {
+    grid-column: 1 / -1;
+}
+
+.form-group label {
+    font-size: 13px;
+    font-weight: 600;
+    color: #334155;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.form-group label i {
+    color: #667eea;
+    font-size: 13px;
+}
+
+.form-input,
+.form-textarea {
+    padding: 10px 14px;
+    border: 1px solid #e2e8f0;
+    border-radius: 6px;
+    font-size: 13.5px;
+    color: #334155;
+    transition: all 0.2s;
+    font-family: inherit;
+    background: white;
+}
+
+.form-input:hover {
+    border-color: #cbd5e1;
+}
+
+.form-input:focus,
+.form-textarea:focus {
+    border-color: #667eea;
+    box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+    outline: none;
+}
+
+.form-input[readonly]:not(.expense-date-picker) {
+    background: #f8fafc;
+    color: #64748b;
+    cursor: not-allowed;
+}
+
+/* 텍스트 표시용 (input 대신 사용) */
+.form-text-display {
+    padding: 10px 0;
+    font-size: 14px;
+    color: #1e293b;
+    font-weight: 600;
+    min-height: 41px;
+    display: flex;
+    align-items: center;
+}
+
+.form-textarea {
+    resize: vertical;
+    min-height: 80px;
+    line-height: 1.5;
+}
+
+/* 폼 행 (flex) */
+.form-row {
+    display: flex;
+    gap: 12px;
+    margin-bottom: 12px;
+}
+
+.form-row:last-child {
+    margin-bottom: 0;
+}
+
+/* ============================================
+   지출 항목 카드 스타일
+   ============================================ */
+.expense-items-container {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+}
+
+.expense-item {
+    background: #f8fafc;
+    border: 1px solid #e2e8f0;
+    border-radius: 8px;
+    padding: 16px;
+    transition: all 0.2s;
+}
+
+.expense-item:hover {
+    border-color: #cbd5e1;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+}
+
+.expense-item-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 12px;
+}
+
+.expense-item-number {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 28px;
+    height: 28px;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+    border-radius: 50%;
+    font-size: 13px;
+    font-weight: 700;
+}
+
+.btn-remove-item {
+    background: #ef4444;
+    color: white;
+    border: none;
+    width: 28px;
+    height: 28px;
+    border-radius: 50%;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 14px;
+    transition: all 0.2s;
+}
+
+.btn-remove-item:hover {
+    background: #dc2626;
+    transform: scale(1.1);
+}
+
+.expense-item-body {
+    /* 폼 행들이 들어감 */
+}
+
+/* 총 합계 표시 */
+.total-amount-display {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+    padding: 16px 20px;
+    border-radius: 8px;
+    margin-top: 16px;
+}
+
+.total-amount-display label {
+    font-size: 15px;
+    font-weight: 600;
+}
+
+.total-amount-display .total-amount {
+    font-size: 20px;
+    font-weight: 700;
+}
+
+/* 항목 추가 버튼 */
+.btn-add-row {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+    border: none;
+    padding: 8px 16px;
+    border-radius: 6px;
+    font-size: 13px;
+    font-weight: 600;
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    transition: all 0.2s;
+}
+
+.btn-add-row:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
+}
+
+/* ============================================
+   문서 미리보기 토글
+   ============================================ */
+.document-preview-toggle {
+    margin-top: 20px;
+}
+
+.toggle-btn {
+    width: 100%;
+    padding: 14px 20px;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+    border: none;
+    border-radius: 10px;
+    font-size: 14px;
+    font-weight: 600;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+    transition: all 0.3s;
+    box-shadow: 0 4px 12px rgba(102, 126, 234, 0.3);
+}
+
+.toggle-btn:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 16px rgba(102, 126, 234, 0.4);
+}
+
+.toggle-icon {
+    transition: transform 0.3s;
+}
+
+.document-form-wrapper:not(.collapsed) ~ .document-preview-toggle .toggle-icon,
+.toggle-btn.active .toggle-icon {
+    transform: rotate(180deg);
+}
+
+/* ============================================
+   문서 미리보기 영역
+   ============================================ */
+.document-form-wrapper {
+    margin-top: 16px;
+    margin-bottom: 0;
+    background: white;
+    border-radius: 12px;
+    padding: 30px;
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.08);
+    height: auto;
+    max-height: 5000px;
+    transition: all 0.4s ease-in-out;
+    opacity: 1;
+}
+
+.document-form-wrapper.collapsed {
+    max-height: 0;
+    padding: 0;
+    margin-top: 0;
+    margin-bottom: 0;
+    opacity: 0;
+    box-shadow: none;
+    overflow: hidden;
+}
+
+.document-form {
+    width: 100%;
+    max-width: 800px;
+    margin: 0 auto;
+    transition: opacity 0.3s ease;
+}
+
+.document-form-wrapper.collapsed .document-form {
+    opacity: 0;
+}
+
+/* 공식 문서 내 빈 행 스타일 */
+.empty-row {
+    text-align: center;
+    color: #94a3b8;
+    font-style: italic;
+    padding: 20px !important;
+}
+
+/* ============================================
+   제출 버튼
+   ============================================ */
+.submit-actions {
+    display: flex;
+    justify-content: flex-end;
+    align-items: center;
+    gap: 12px;
+    padding: 16px 24px;
+    background: white;
+    border-top: 2px solid #e8e8e8;
+    position: fixed;
+    bottom: 0;
+    left: 380px;
+    right: 25px;
+    z-index: 100;
+    box-shadow: 0 -4px 12px rgba(0, 0, 0, 0.08);
+    border-radius: 12px 12px 0 0;
+    transition: left 0.3s ease;
+}
+
+.btn-primary,
+.btn-secondary,
+.btn-outline {
+    padding: 12px 24px;
+    border-radius: 8px;
+    font-size: 14px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s;
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    border: none;
+}
+
+.btn-lg {
+    padding: 14px 28px;
+    font-size: 15px;
+}
+
+.btn-primary {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+    box-shadow: 0 4px 12px rgba(102, 126, 234, 0.3);
+}
+
+.btn-primary:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 16px rgba(102, 126, 234, 0.4);
+}
+
+.btn-secondary {
+    background: #f1f5f9;
+    color: #475569;
+}
+
+.btn-secondary:hover {
+    background: #e2e8f0;
+}
+
+.btn-outline {
+    background: white;
+    border: 2px solid #e2e8f0;
+    color: #475569;
+}
+
+.btn-outline:hover {
+    border-color: #667eea;
+    color: #667eea;
+}
+
+/* ============================================
+   날짜 선택기 (Date Picker) 스타일
+   ============================================ */
+.form-group {
+    position: relative;
+}
+
+.expense-date-picker {
+    cursor: pointer !important;
+    background: white !important;
+    font-family: inherit;
+    color: #334155 !important;
+    font-weight: 500;
+    padding-right: 40px !important;
+    user-select: none;
+    border: 1px solid #e2e8f0 !important;
+    transition: all 0.2s ease;
+}
+
+.expense-date-picker[readonly] {
+    background: white !important;
+    color: #334155 !important;
+    cursor: pointer !important;
+}
+
+/* 캘린더 아이콘 커스텀 */
+.expense-date-picker + label::after,
+.form-group:has(.expense-date-picker)::after {
+    content: '\f133';
+    font-family: 'Font Awesome 5 Free';
+    font-weight: 900;
+    position: absolute;
+    right: 12px;
+    top: 50%;
+    transform: translateY(-50%);
+    color: #667eea;
+    font-size: 14px;
+    pointer-events: none;
+    margin-top: 12px;
+}
+
+/* 날짜 입력 필드 hover 시 */
+.expense-date-picker:hover {
+    border-color: #cbd5e1;
+    background: #f8fafc;
+}
+
+.expense-date-picker:hover + label::after,
+.form-group:has(.expense-date-picker:hover)::after {
+    color: #764ba2;
+}
+
+/* 날짜 입력 필드 포커스/클릭 시 */
+.expense-date-picker:focus,
+.expense-date-picker:active {
+    border-color: #667eea !important;
+    box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1) !important;
+    background: white;
+    outline: none;
+}
+
+.expense-date-picker:focus + label::after,
+.expense-date-picker:active + label::after,
+.form-group:has(.expense-date-picker:focus)::after,
+.form-group:has(.expense-date-picker:active)::after {
+    color: #667eea;
+}
+
+/* 값이 입력되었을 때 스타일 */
+.expense-date-picker:not([value=""]) {
+    font-weight: 600;
+    color: #1e293b;
+}
+
+/* 플레이스홀더 스타일 */
+.expense-date-picker::placeholder {
+    color: #94a3b8;
+    font-weight: 400;
+}
+
+/* ============================================
+   날짜 선택 모달 (Calendar Modal)
+   ============================================ */
+
+.date-modal {
+    display: none;
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.5);
+    backdrop-filter: blur(4px);
+    z-index: 10000;
+    align-items: center;
+    justify-content: center;
+}
+
+.date-modal.show {
+    display: flex;
+}
+
+.date-modal-content {
+    background: white;
+    border-radius: 16px;
+    width: 90%;
+    max-width: 400px;
+    box-shadow: 0 10px 40px rgba(0, 0, 0, 0.2);
+    animation: slideUp 0.3s ease;
+    overflow: hidden;
+}
+
+@keyframes slideUp {
+    from {
+        transform: translateY(30px);
+        opacity: 0;
+    }
+    to {
+        transform: translateY(0);
+        opacity: 1;
+    }
+}
+
+.date-modal-header {
+    padding: 20px 24px;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.date-modal-header h3 {
+    margin: 0;
+    font-size: 18px;
+    font-weight: 700;
+    color: white;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.date-modal-close {
+    background: rgba(255, 255, 255, 0.2);
+    border: none;
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: white;
+    font-size: 14px;
+    transition: all 0.2s ease;
+}
+
+.date-modal-close:hover {
+    background: rgba(255, 255, 255, 0.3);
+    transform: scale(1.1);
+}
+
+.date-modal-body {
+    padding: 24px;
+}
+
+.date-calendar-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 16px;
+}
+
+.date-calendar-title {
+    margin: 0;
+    font-size: 16px;
+    font-weight: 700;
+    color: #333;
+}
+
+.date-calendar-nav {
+    width: 36px;
+    height: 36px;
+    border-radius: 8px;
+    border: 1px solid #dee2e6;
+    background: white;
+    color: #495057;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.date-calendar-nav:hover {
+    background: #667eea;
+    color: white;
+    border-color: #667eea;
+    transform: scale(1.05);
+}
+
+.date-calendar-weekdays {
+    display: grid;
+    grid-template-columns: repeat(7, 1fr);
+    gap: 4px;
+    margin-bottom: 8px;
+}
+
+.date-weekday {
+    text-align: center;
+    font-size: 13px;
+    font-weight: 600;
+    color: #495057;
+    padding: 8px 0;
+}
+
+.date-weekday.sun {
+    color: #dc3545;
+}
+
+.date-weekday.sat {
+    color: #0d6efd;
+}
+
+.date-calendar-days {
+    display: grid;
+    grid-template-columns: repeat(7, 1fr);
+    gap: 4px;
+}
+
+.date-calendar-day {
+    aspect-ratio: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 8px;
+    font-size: 14px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    background: white;
+    border: 2px solid transparent;
+    position: relative;
+}
+
+.date-calendar-day:hover:not(.disabled):not(.future-date) {
+    background: #e7f3ff;
+    transform: scale(1.05);
+    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.1);
+}
+
+.date-calendar-day.other-month {
+    color: #adb5bd;
+    cursor: pointer;
+}
+
+.date-calendar-day.other-month.future-date {
+    cursor: not-allowed;
+}
+
+.date-calendar-day.today {
+    font-weight: 700;
+    color: #667eea;
+}
+
+.date-calendar-day.today::before {
+    content: '';
+    position: absolute;
+    bottom: 4px;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 4px;
+    height: 4px;
+    border-radius: 50%;
+    background: #667eea;
+    z-index: 1;
+}
+
+.date-calendar-day.sunday {
+    color: #dc3545;
+}
+
+.date-calendar-day.saturday {
+    color: #0d6efd;
+}
+
+.date-calendar-day.holiday {
+    color: #dc3545;
+    background: #fff5f5;
+}
+
+.date-calendar-day.holiday:hover:not(.future-date) {
+    background: #ffe0e0 !important;
+}
+
+/* 이전달/다음달 공휴일 스타일 (연한 빨간색) */
+.date-calendar-day.other-month.holiday {
+    color: rgba(220, 53, 69, 0.6);
+    background: rgba(255, 245, 245, 0.3);
+}
+
+/* 휴가 날짜 스타일 (연한 보라색) - 선택 불가 */
+.date-calendar-day.vacation-day {
+    background: #f3e8ff;
+    border: 1px solid #c084fc;
+    cursor: not-allowed;
+    position: relative;
+    opacity: 0.7;
+}
+
+.date-calendar-day.vacation-day:hover {
+    background: #f3e8ff !important;
+    transform: none !important;
+    box-shadow: none !important;
+    cursor: not-allowed !important;
+}
+
+/* 휴가 표시 텍스트 */
+.date-calendar-day.vacation-day::after {
+    content: '휴가';
+    position: absolute;
+    bottom: 2px;
+    right: 2px;
+    font-size: 8px;
+    font-weight: 700;
+    color: #9333ea;
+    background: white;
+    padding: 1px 3px;
+    border-radius: 3px;
+    line-height: 1;
+}
+
+/* 이전달/다음달 휴가 날짜 스타일 */
+.date-calendar-day.other-month.vacation-day {
+    background: rgba(243, 232, 255, 0.4);
+    border: 1px solid rgba(192, 132, 252, 0.3);
+    opacity: 0.5;
+}
+
+.date-calendar-day.other-month.vacation-day::after {
+    opacity: 0.6;
+}
+
+.date-calendar-day.selected {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%) !important;
+    color: white !important;
+    font-weight: 700;
+    border-color: #667eea;
+}
+
+.date-calendar-day.future-date {
+    color: #dee2e6;
+    cursor: not-allowed;
+    background: #f8f9fa;
+}
+
+.date-calendar-day.future-date:hover {
+    background: #f8f9fa !important;
+    transform: none !important;
+    box-shadow: none !important;
 }

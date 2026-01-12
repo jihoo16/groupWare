@@ -18,7 +18,6 @@ document.addEventListener('DOMContentLoaded', function() {
     const approverModal = document.getElementById('approverModal');
     const employeeList = document.getElementById('employeeList');
     const approverSearch = document.getElementById('approverSearch');
-    const saveDraftBtn = document.getElementById('saveDraftBtn');
     const submitBtn = document.getElementById('submitBtn');
 
     // 직원 데이터 (API로 로드)
@@ -46,8 +45,38 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     }
 
+    // 로그인한 사용자 정보 로드
+    function loadCurrentUserInfo() {
+        if (window.CURRENT_USER && window.CURRENT_USER.idx) {
+            const user = window.CURRENT_USER;
+
+            // 부서/팀 표시 (부서명 우선, 없으면 부서 코드)
+            const deptElement = document.getElementById('applicantDept');
+            if (deptElement) {
+                const deptName = user.empDeptName || user.empDept || '-';
+                deptElement.textContent = deptName;
+            }
+
+            // 기안자 이름 표시
+            const nameElement = document.getElementById('applicantName');
+            if (nameElement) {
+                nameElement.textContent = user.empName || '-';
+            }
+
+            console.log('로그인 사용자 정보 로드:', user.empName, user.empDeptName || user.empDept);
+
+            // 미리보기 업데이트
+            if (typeof updatePreview === 'function') {
+                updatePreview();
+            }
+        } else {
+            console.warn('로그인 정보가 없습니다.');
+        }
+    }
+
     // 초기 데이터 로드
     loadEmployees();
+    loadCurrentUserInfo();
 
     // ============================================
     // 템플릿 사이드바 접기/펼치기 기능
@@ -1175,23 +1204,164 @@ document.addEventListener('DOMContentLoaded', function() {
         updateFileList();
     };
 
-    // 임시저장
-    if (saveDraftBtn) {
-        saveDraftBtn.addEventListener('click', function() {
-            alert('문서가 임시저장되었습니다.');
-            // 실제로는 API 호출
-        });
+    // 입력값 검증
+    function validateForm() {
+        // 1. 프로젝트명 확인
+        const projectName = document.getElementById('projectName');
+        if (!projectName || !projectName.value.trim()) {
+            alert('프로젝트명을 입력해주세요.');
+            projectName?.focus();
+            return false;
+        }
+
+        // 2. 기안일자 확인
+        const documentDate = document.getElementById('documentDate');
+        if (!documentDate || !documentDate.value) {
+            alert('기안일자를 선택해주세요.');
+            documentDate?.focus();
+            return false;
+        }
+
+        // 3. 지출 내역 확인
+        const expenseItems = document.querySelectorAll('.expense-item');
+        if (expenseItems.length === 0) {
+            alert('최소 1개의 지출 항목을 추가해주세요.');
+            return false;
+        }
+
+        let hasValidItem = false;
+
+        for (let i = 0; i < expenseItems.length; i++) {
+            const item = expenseItems[i];
+            const itemNumber = i + 1;
+
+            const dateInput = item.querySelector('.date-input');
+            const descInput = item.querySelector('.description-input');
+            const shopInput = item.querySelector('.shop-input');
+            const amountInput = item.querySelector('.amount-input');
+
+            // 모든 필드가 비어있으면 건너뛰기 (빈 항목은 무시)
+            const isEmpty = !dateInput?.value && !descInput?.value && !shopInput?.value && !amountInput?.value;
+            if (isEmpty) {
+                continue;
+            }
+
+            // 하나라도 입력된 경우 모든 필수 필드 검증
+            if (!dateInput || !dateInput.value) {
+                alert(`${itemNumber}번 항목의 날짜를 선택해주세요.`);
+                dateInput?.focus();
+                return false;
+            }
+
+            if (!descInput || !descInput.value.trim()) {
+                alert(`${itemNumber}번 항목의 적요를 입력해주세요.`);
+                descInput?.focus();
+                return false;
+            }
+
+            if (!shopInput || !shopInput.value.trim()) {
+                alert(`${itemNumber}번 항목의 상호를 입력해주세요.`);
+                shopInput?.focus();
+                return false;
+            }
+
+            if (!amountInput || !amountInput.value.trim()) {
+                alert(`${itemNumber}번 항목의 금액을 입력해주세요.`);
+                amountInput?.focus();
+                return false;
+            }
+
+            hasValidItem = true;
+        }
+
+        // 모든 항목이 비어있는 경우
+        if (!hasValidItem) {
+            alert('최소 1개의 지출 항목을 입력해주세요.');
+            return false;
+        }
+
+        return true;
     }
 
     // 제출
     if (submitBtn) {
-        submitBtn.addEventListener('click', function() {
+        submitBtn.addEventListener('click', async function() {
+            // 입력값 검증
+            if (!validateForm()) {
+                return;
+            }
+
             if (confirm('저장하시겠습니까?')) {
-                alert('저장이 완료되었습니다.');
-                // 실제로는 API 호출 후 목록으로 이동
-                window.location.href = '/approval';
+                try {
+                    // 폼 데이터 수집
+                    const formData = collectFormData();
+
+                    // API 호출
+                    const response = await fetch('/api/approval/expense', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json'
+                        },
+                        body: JSON.stringify(formData)
+                    });
+
+                    if (!response.ok) {
+                        throw new Error(`서버 응답 오류: ${response.status}`);
+                    }
+
+                    const result = await response.json();
+                    console.log('지출승인서 생성 완료:', result);
+
+                    alert('저장이 완료되었습니다.');
+                    window.location.href = '/approval';
+                } catch (error) {
+                    console.error('저장 중 오류 발생:', error);
+                    alert('저장 중 오류가 발생했습니다. 다시 시도해주세요.');
+                }
             }
         });
+    }
+
+    // 폼 데이터 수집 함수
+    function collectFormData() {
+        // 기본 정보
+        const projectName = document.getElementById('projectName')?.value.trim() || '';
+        const documentDate = document.getElementById('documentDate')?.value || '';
+        const content = document.getElementById('content')?.value.trim() || '';
+
+        // 사용자 정보 (세션에서 가져올 것이므로 프론트에서는 null로 전송)
+        const userIdx = window.CURRENT_USER?.idx || null;
+
+        // 지출 항목 수집
+        const expenseItems = document.querySelectorAll('.expense-item');
+        const expenseDetails = [];
+
+        expenseItems.forEach(item => {
+            const dateInput = item.querySelector('.date-input')?.value;
+            const descInput = item.querySelector('.description-input')?.value.trim();
+            const shopInput = item.querySelector('.shop-input')?.value.trim();
+            const amountInput = item.querySelector('.amount-input')?.value.trim();
+            const noteInput = item.querySelector('.note-input')?.value.trim();
+
+            // 빈 항목은 제외
+            if (dateInput && descInput && shopInput && amountInput) {
+                expenseDetails.push({
+                    expenseDate: dateInput,
+                    description: descInput,
+                    shopName: shopInput,
+                    amount: parseInt(amountInput.replace(/,/g, ''), 10),
+                    note: noteInput || ''
+                });
+            }
+        });
+
+        return {
+            userIdx: userIdx,
+            documentDate: documentDate,
+            projectName: projectName,
+            content: content,
+            expenseDetails: expenseDetails
+        };
     }
 
     // PDF 저장 버튼 이벤트
@@ -1445,58 +1615,7 @@ document.addEventListener('DOMContentLoaded', function() {
         field.value = today;
     });
 
-    // 행 추가 버튼
-    const addRowBtn = document.getElementById('addRowBtn');
-    if (addRowBtn) {
-        addRowBtn.addEventListener('click', function() {
-            const tbody = document.getElementById('expenseTableBody');
-            const newRow = document.createElement('tr');
-            newRow.className = 'expense-row';
-            newRow.innerHTML = `
-                <td><input type="text" class="date-input" placeholder="10/28"></td>
-                <td><input type="text" class="description-input" placeholder="내역 입력"></td>
-                <td><input type="text" class="vendor-input" placeholder=""></td>
-                <td><input type="text" class="shop-input" placeholder="상호명"></td>
-                <td><input type="text" class="amount-input" placeholder="금액"></td>
-                <td><input type="text" class="note-input" placeholder=""></td>
-                <td>
-                    <button type="button" class="btn-delete-row">
-                        <i class="fas fa-times"></i>
-                    </button>
-                </td>
-            `;
-            tbody.appendChild(newRow);
-
-            // 새로 추가된 행의 삭제 버튼과 금액 입력에 이벤트 리스너 추가
-            attachRowEventListeners(newRow);
-        });
-    }
-
-    // 행 삭제 기능
-    function attachRowEventListeners(row) {
-        const deleteBtn = row.querySelector('.btn-delete-row');
-        if (deleteBtn) {
-            deleteBtn.addEventListener('click', function() {
-                const tbody = document.getElementById('expenseTableBody');
-                if (tbody.querySelectorAll('.expense-row').length > 1) {
-                    row.remove();
-                    calculateTotal();
-                } else {
-                    alert('최소 1개의 행은 유지해야 합니다.');
-                }
-            });
-        }
-
-        const amountInput = row.querySelector('.amount-input');
-        if (amountInput) {
-            amountInput.addEventListener('input', calculateTotal);
-        }
-    }
-
-    // 초기 행들에 이벤트 리스너 추가
-    document.querySelectorAll('.expense-row').forEach(row => {
-        attachRowEventListeners(row);
-    });
+    // 구버전 코드 삭제됨 - 새버전은 1670줄 이후 참조
 
     // 금액 합계 계산
     function calculateTotal() {
@@ -1577,17 +1696,631 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     }
 
-    // 금액 입력 시 자동 포맷팅
+    // ============================================
+    // 새로운 구조: 입력 영역 + 미리보기 토글
+    // ============================================
+
+    // 미리보기 토글 버튼
+    const documentFormToggle = document.getElementById('documentFormToggle');
+    const documentFormWrapper = document.querySelector('.document-form-wrapper');
+
+    if (documentFormToggle && documentFormWrapper) {
+        documentFormToggle.addEventListener('click', function() {
+            documentFormWrapper.classList.toggle('collapsed');
+            this.classList.toggle('active');
+        });
+    }
+
+    // 오늘 날짜를 YYYY-MM-DD 형식으로 반환
+    function getTodayDate() {
+        const today = new Date();
+        const year = today.getFullYear();
+        const month = String(today.getMonth() + 1).padStart(2, '0');
+        const day = String(today.getDate()).padStart(2, '0');
+        return `${year}-${month}-${day}`;
+    }
+
+    // 날짜 형식 변환 (YYYY-MM-DD → MM/DD)
+    function formatDateForDisplay(dateStr) {
+        if (!dateStr) return '-';
+        const date = new Date(dateStr);
+        const month = String(date.getMonth() + 1).padStart(2, '0');
+        const day = String(date.getDate()).padStart(2, '0');
+        return `${month}/${day}`;
+    }
+
+    // 실시간 미리보기 업데이트
+    function updatePreview() {
+        // 기본 정보 업데이트
+        const dept = document.getElementById('applicantDept')?.textContent || '';
+        const name = document.getElementById('applicantName')?.textContent || '';
+        const project = document.getElementById('projectName')?.value || '';
+        const docDate = document.getElementById('documentDate')?.value || '';
+        const requestContent = document.getElementById('requestContent')?.value || '';
+
+        const autoDept = document.querySelector('.auto-dept');
+        const autoApplicant = document.querySelector('.auto-applicant');
+        const autoProject = document.querySelector('.auto-project');
+        const autoDate = document.querySelector('.auto-date');
+        const autoDocDate = document.querySelector('.auto-doc-date');
+        const autoRequestContent = document.querySelector('.auto-request-content');
+
+        if (autoDept) autoDept.textContent = dept || '-';
+        if (autoApplicant) autoApplicant.textContent = name || '-';
+        if (autoProject) autoProject.textContent = project || '-';
+        if (autoRequestContent) autoRequestContent.textContent = requestContent || '-';
+
+        if (docDate) {
+            const date = new Date(docDate);
+            const formatted = date.getFullYear() + '. ' +
+                              String(date.getMonth() + 1).padStart(2, '0') + '. ' +
+                              String(date.getDate()).padStart(2, '0');
+            if (autoDate) autoDate.textContent = formatted;
+            if (autoDocDate) autoDocDate.textContent = formatted;
+        }
+
+        // 지출 내역 테이블 업데이트
+        updatePreviewTable();
+    }
+
+    // 지출 내역 미리보기 테이블 업데이트
+    function updatePreviewTable() {
+        const previewBody = document.getElementById('expensePreviewBody');
+        if (!previewBody) return;
+
+        const expenseItems = document.querySelectorAll('.expense-item');
+
+        previewBody.innerHTML = '';
+
+        if (expenseItems.length === 0) {
+            previewBody.innerHTML = '<tr><td class="empty-row" colspan="5">지출 내역이 없습니다</td></tr>';
+            return;
+        }
+
+        let hasData = false;
+        expenseItems.forEach(item => {
+            const dateVal = item.querySelector('.date-input')?.value || '';
+            const descVal = item.querySelector('.description-input')?.value || '';
+            const shopVal = item.querySelector('.shop-input')?.value || '';
+            const amountVal = item.querySelector('.amount-input')?.value || '';
+            const noteVal = item.querySelector('.note-input')?.value || '';
+
+            if (dateVal || descVal || shopVal || amountVal) {
+                hasData = true;
+                const row = document.createElement('tr');
+                row.innerHTML = `
+                    <td style="text-align: center;">${formatDateForDisplay(dateVal)}</td>
+                    <td>${descVal || '-'}</td>
+                    <td style="text-align: center;">${shopVal || '-'}</td>
+                    <td style="text-align: right;">${amountVal || '-'}</td>
+                    <td style="text-align: center;">${noteVal || '-'}</td>
+                `;
+                previewBody.appendChild(row);
+            }
+        });
+
+        if (!hasData) {
+            previewBody.innerHTML = '<tr><td class="empty-row" colspan="5">입력된 지출 내역이 없습니다</td></tr>';
+        }
+    }
+
+    // 지출 항목 추가
+    let itemCounter = 1;
+    const expenseItemsContainer = document.getElementById('expenseItemsContainer');
+    const addRowBtnNew = document.getElementById('addRowBtn');
+
+    if (addRowBtnNew && expenseItemsContainer) {
+        addRowBtnNew.addEventListener('click', function() {
+            itemCounter++;
+            const newItem = document.createElement('div');
+            newItem.className = 'expense-item';
+            newItem.innerHTML = `
+                <div class="expense-item-header">
+                    <span class="expense-item-number">${itemCounter}</span>
+                    <button type="button" class="btn-remove-item" onclick="removeExpenseItem(this)">
+                        <i class="fas fa-times"></i>
+                    </button>
+                </div>
+                <div class="expense-item-body">
+                    <div class="form-row">
+                        <div class="form-group" style="flex: 0 0 180px;">
+                            <label><i class="fas fa-calendar-day"></i> 날짜</label>
+                            <input type="text" class="form-input date-input expense-date-picker" placeholder="날짜 선택" readonly>
+                        </div>
+                        <div class="form-group" style="flex: 1;">
+                            <label><i class="fas fa-edit"></i> 적요</label>
+                            <input type="text" class="form-input description-input" placeholder="지출 내역 입력">
+                        </div>
+                    </div>
+                    <div class="form-row">
+                        <div class="form-group" style="flex: 1;">
+                            <label><i class="fas fa-store"></i> 상호</label>
+                            <input type="text" class="form-input shop-input" placeholder="상호명 입력">
+                        </div>
+                        <div class="form-group" style="flex: 0 0 200px;">
+                            <label><i class="fas fa-won-sign"></i> 금액</label>
+                            <input type="text" class="form-input amount-input" placeholder="금액 입력">
+                        </div>
+                        <div class="form-group" style="flex: 0 0 150px;">
+                            <label><i class="fas fa-sticky-note"></i> 비고</label>
+                            <input type="text" class="form-input note-input" placeholder="">
+                        </div>
+                    </div>
+                </div>
+            `;
+            expenseItemsContainer.appendChild(newItem);
+
+            updateItemNumbers();
+            updatePreview();
+        });
+    }
+
+    // 항목 번호 재정렬 (전역 함수로 선언하여 HTML onclick에서 사용 가능)
+    window.removeExpenseItem = function(button) {
+        const item = button.closest('.expense-item');
+        const container = document.getElementById('expenseItemsContainer');
+        if (container && container.children.length > 1) {
+            item.remove();
+            updateItemNumbers();
+            calculateTotal();
+            updatePreview();
+        } else {
+            alert('최소 1개의 항목은 유지되어야 합니다.');
+        }
+    };
+
+    function updateItemNumbers() {
+        const items = document.querySelectorAll('.expense-item');
+        items.forEach((item, index) => {
+            const numberSpan = item.querySelector('.expense-item-number');
+            if (numberSpan) {
+                numberSpan.textContent = index + 1;
+            }
+        });
+        itemCounter = items.length;
+    }
+
+    // 입력 필드 변경 시 실시간 미리보기 업데이트 및 금액 포맷팅
     document.addEventListener('input', function(e) {
+        // 일반 입력 필드 미리보기 업데이트
+        if (e.target.matches('#projectName, #documentDate, #requestContent, .date-input, .description-input, .shop-input, .note-input')) {
+            updatePreview();
+        }
+
+        // 금액 입력 시 자동 포맷팅 + 합계 재계산 + 미리보기 업데이트
         if (e.target.classList.contains('amount-input')) {
             let value = e.target.value.replace(/[^0-9]/g, '');
             if (value) {
                 e.target.value = parseInt(value).toLocaleString('ko-KR');
             }
             calculateTotal();
+            updatePreview();
         }
     });
 
-    // 초기 합계 계산
+    // 합계 계산 함수 개선
+    const originalCalculateTotal = window.calculateTotal || function() {};
+
+    calculateTotal = function() {
+        let total = 0;
+        const amountInputs = document.querySelectorAll('.amount-input');
+
+        amountInputs.forEach(input => {
+            const value = input.value.replace(/[^0-9]/g, '');
+            if (value) {
+                total += parseInt(value);
+            }
+        });
+
+        // 입력 영역 합계 표시
+        const totalDisplay = document.getElementById('totalAmountDisplay');
+        if (totalDisplay) {
+            totalDisplay.textContent = '₩ ' + total.toLocaleString('ko-KR');
+        }
+
+        // 미리보기 영역 합계 표시
+        const autoTotals = document.querySelectorAll('.auto-total, .auto-total-copy');
+        autoTotals.forEach(el => {
+            el.textContent = '₩ ' + total.toLocaleString('ko-KR');
+        });
+
+        // 한글 금액 업데이트
+        if (typeof updateKoreanAmount === 'function') {
+            updateKoreanAmount(total);
+        }
+
+        return total;
+    };
+
+    // ============================================
+    // 날짜 선택 모달 (Calendar Modal)
+    // ============================================
+
+    let currentCalendarYear = new Date().getFullYear();
+    let currentCalendarMonth = new Date().getMonth();
+    let activeInput = null; // 현재 선택 중인 input 요소
+    let holidays = {}; // 공휴일 데이터 (년도별 캐시)
+    let loadedYears = new Set(); // 로드된 년도 목록
+    let vacationDates = []; // 휴가 날짜 목록 (YYYY-MM-DD 형식)
+
+    const dateModal = document.getElementById('dateModal');
+    const dateCalendarTitle = document.getElementById('dateCalendarTitle');
+    const dateCalendarDays = document.getElementById('dateCalendarDays');
+    const datePrevMonth = document.getElementById('datePrevMonth');
+    const dateNextMonth = document.getElementById('dateNextMonth');
+
+    // 공휴일 데이터 로드
+    async function loadHolidaysByYear(year) {
+        try {
+            const response = await fetch(`/api/holidays?year=${year}`);
+            if (!response.ok) {
+                throw new Error(`${year}년 공휴일 데이터를 불러오는데 실패했습니다.`);
+            }
+            const yearHolidays = await response.json();
+            console.log(`[Expense] ${year}년 공휴일 로드 완료:`, Object.keys(yearHolidays).length, '건');
+            return yearHolidays;
+        } catch (error) {
+            console.error(`[Expense] ${year}년 공휴일 로드 실패:`, error);
+            return {};
+        }
+    }
+
+    // 특정 년도 공휴일 보장 (없으면 로드)
+    async function ensureHolidaysLoaded(year) {
+        if (!loadedYears.has(year)) {
+            const yearHolidays = await loadHolidaysByYear(year);
+            Object.assign(holidays, yearHolidays); // 기존 holidays 객체에 병합
+            loadedYears.add(year);
+            console.log(`[Expense] ${year}년 공휴일 캐시 추가`);
+        }
+    }
+
+    // 휴가 날짜 데이터 로드
+    async function loadVacationDates() {
+        try {
+            if (!window.CURRENT_USER || !window.CURRENT_USER.idx) {
+                console.warn('[Expense] 로그인 정보가 없어 휴가 날짜를 불러올 수 없습니다.');
+                return [];
+            }
+
+            const currentUser = window.CURRENT_USER;
+            const currentYear = new Date().getFullYear();
+
+            const response = await fetch(`/api/vacation/requested-dates?userIdx=${currentUser.idx}&year=${currentYear}`);
+            if (!response.ok) {
+                throw new Error('휴가 날짜를 가져오는데 실패했습니다.');
+            }
+
+            const dates = await response.json();
+            console.log(`[Expense] 휴가 날짜 로드 완료:`, dates.length + '건');
+            return dates;
+        } catch (error) {
+            console.error('[Expense] 휴가 날짜 로드 실패:', error);
+            return [];
+        }
+    }
+
+    // 날짜 포맷 함수
+    function formatDateForInput(year, month, day) {
+        return `${year}-${String(month + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
+    }
+
+    function formatDateForDisplay(dateStr) {
+        if (!dateStr) return '';
+        const [year, month, day] = dateStr.split('-');
+        return `${month}/${day}`;
+    }
+
+    function formatDateFull(year, month, day) {
+        return `${year}년 ${month + 1}월 ${day}일`;
+    }
+
+    // 오늘 날짜 체크
+    function isToday(year, month, day) {
+        const today = new Date();
+        return year === today.getFullYear() && month === today.getMonth() && day === today.getDate();
+    }
+
+    // 미래 날짜 체크
+    function isFutureDate(year, month, day) {
+        const checkDate = new Date(year, month, day);
+        const today = new Date();
+        today.setHours(0, 0, 0, 0);
+        checkDate.setHours(0, 0, 0, 0);
+        return checkDate > today;
+    }
+
+    // 공휴일 및 휴가 데이터 업데이트 (달력이 이미 렌더링된 후)
+    function updateCalendarHolidays() {
+        const allDays = dateCalendarDays.querySelectorAll('.date-calendar-day');
+
+        allDays.forEach(dayEl => {
+            const day = parseInt(dayEl.textContent);
+            let dateStr;
+
+            if (dayEl.classList.contains('other-month')) {
+                // 이전달 또는 다음달 날짜 계산
+                const firstDayOfWeek = new Date(currentCalendarYear, currentCalendarMonth, 1).getDay();
+                const prevLastDate = new Date(currentCalendarYear, currentCalendarMonth, 0).getDate();
+
+                if (day > 15) {
+                    // 이전 달 날짜
+                    const prevMonth = currentCalendarMonth - 1;
+                    const prevYear = prevMonth < 0 ? currentCalendarYear - 1 : currentCalendarYear;
+                    const prevMonthActual = prevMonth < 0 ? 11 : prevMonth;
+                    dateStr = formatDateForInput(prevYear, prevMonthActual, day);
+                } else {
+                    // 다음 달 날짜
+                    const nextMonth = currentCalendarMonth + 1;
+                    const nextYear = nextMonth > 11 ? currentCalendarYear + 1 : currentCalendarYear;
+                    const nextMonthActual = nextMonth > 11 ? 0 : nextMonth;
+                    dateStr = formatDateForInput(nextYear, nextMonthActual, day);
+                }
+            } else {
+                // 현재 달 날짜
+                dateStr = formatDateForInput(currentCalendarYear, currentCalendarMonth, day);
+            }
+
+            // 공휴일 체크 및 클래스 추가
+            if (holidays[dateStr] && !dayEl.classList.contains('holiday')) {
+                dayEl.classList.add('holiday');
+                console.log(`[Expense] ✓ 공휴일 업데이트: ${dateStr} = ${holidays[dateStr]}`);
+            }
+
+            // 휴가 날짜 체크 및 클래스 추가
+            if (vacationDates.includes(dateStr) && !dayEl.classList.contains('vacation-day')) {
+                dayEl.classList.add('vacation-day');
+                console.log(`[Expense] ✓ 휴가 날짜 업데이트: ${dateStr}`);
+            }
+        });
+    }
+
+    // 달력 렌더링
+    async function renderDateCalendar() {
+        const firstDay = new Date(currentCalendarYear, currentCalendarMonth, 1);
+        const lastDay = new Date(currentCalendarYear, currentCalendarMonth + 1, 0);
+        const prevLastDay = new Date(currentCalendarYear, currentCalendarMonth, 0);
+
+        // 이전달, 현재달, 다음달의 년도 공휴일 비동기 로드 (기다리지 않음)
+        const prevMonthYear = new Date(currentCalendarYear, currentCalendarMonth - 1, 1).getFullYear();
+        const nextMonthYear = new Date(currentCalendarYear, currentCalendarMonth + 1, 1).getFullYear();
+
+        // 공휴일 및 휴가 데이터 백그라운드 로딩
+        Promise.all([
+            ensureHolidaysLoaded(prevMonthYear),
+            ensureHolidaysLoaded(currentCalendarYear),
+            ensureHolidaysLoaded(nextMonthYear),
+            loadVacationDates().then(dates => { vacationDates = dates; })
+        ]).then(() => {
+            // 공휴일 및 휴가 데이터 로드 완료 후 달력 업데이트
+            updateCalendarHolidays();
+        });
+
+        const firstDayOfWeek = firstDay.getDay();
+        const lastDate = lastDay.getDate();
+        const prevLastDate = prevLastDay.getDate();
+
+        dateCalendarTitle.textContent = `${currentCalendarYear}년 ${currentCalendarMonth + 1}월`;
+        dateCalendarDays.innerHTML = '';
+
+        // 현재 선택된 날짜
+        let selectedDateStr = activeInput ? activeInput.value : '';
+
+        // 이전 달 날짜
+        for (let i = firstDayOfWeek - 1; i >= 0; i--) {
+            const day = prevLastDate - i;
+            const prevMonthDate = new Date(currentCalendarYear, currentCalendarMonth - 1, day);
+            const prevYear = prevMonthDate.getFullYear();
+            const prevMonth = prevMonthDate.getMonth();
+            const dateStr = formatDateForInput(prevYear, prevMonth, day);
+            const dayOfWeek = prevMonthDate.getDay();
+
+            let classes = 'date-calendar-day other-month';
+
+            // 주말 체크
+            if (dayOfWeek === 0) classes += ' sunday';
+            if (dayOfWeek === 6) classes += ' saturday';
+
+            // 선택된 날짜 표시
+            if (dateStr === selectedDateStr) {
+                classes += ' selected';
+            }
+
+            // 미래 날짜 체크
+            if (isFutureDate(prevYear, prevMonth, day)) {
+                classes += ' future-date';
+            }
+
+            const dayEl = document.createElement('div');
+            dayEl.className = classes;
+            dayEl.textContent = day;
+
+            // 미래 날짜와 휴가 날짜가 아닌 경우만 클릭 가능
+            if (!isFutureDate(prevYear, prevMonth, day) && !vacationDates.includes(dateStr)) {
+                dayEl.addEventListener('click', () => {
+                    selectCalendarDate(prevYear, prevMonth, day);
+                });
+            }
+
+            dateCalendarDays.appendChild(dayEl);
+        }
+
+        // 현재 달 날짜
+        for (let day = 1; day <= lastDate; day++) {
+            const dayEl = document.createElement('div');
+            const dayOfWeek = new Date(currentCalendarYear, currentCalendarMonth, day).getDay();
+
+            let classes = 'date-calendar-day';
+
+            if (isToday(currentCalendarYear, currentCalendarMonth, day)) {
+                classes += ' today';
+            }
+            if (dayOfWeek === 0) {
+                classes += ' sunday';
+            }
+            if (dayOfWeek === 6) {
+                classes += ' saturday';
+            }
+            if (isFutureDate(currentCalendarYear, currentCalendarMonth, day)) {
+                classes += ' future-date';
+            }
+
+            // 선택된 날짜 표시
+            const dateStr = formatDateForInput(currentCalendarYear, currentCalendarMonth, day);
+            if (dateStr === selectedDateStr) {
+                classes += ' selected';
+            }
+
+            dayEl.className = classes;
+            dayEl.textContent = day;
+
+            // 미래 날짜와 휴가 날짜가 아닌 경우만 클릭 가능
+            if (!isFutureDate(currentCalendarYear, currentCalendarMonth, day) && !vacationDates.includes(dateStr)) {
+                dayEl.addEventListener('click', () => {
+                    selectCalendarDate(currentCalendarYear, currentCalendarMonth, day);
+                });
+            }
+
+            dateCalendarDays.appendChild(dayEl);
+        }
+
+        // 다음 달 날짜
+        const remainingCells = 42 - dateCalendarDays.children.length;
+        for (let day = 1; day <= remainingCells; day++) {
+            const nextMonthDate = new Date(currentCalendarYear, currentCalendarMonth + 1, day);
+            const nextYear = nextMonthDate.getFullYear();
+            const nextMonth = nextMonthDate.getMonth();
+            const dateStr = formatDateForInput(nextYear, nextMonth, day);
+            const dayOfWeek = nextMonthDate.getDay();
+
+            let classes = 'date-calendar-day other-month';
+
+            // 주말 체크
+            if (dayOfWeek === 0) classes += ' sunday';
+            if (dayOfWeek === 6) classes += ' saturday';
+
+            // 선택된 날짜 표시
+            if (dateStr === selectedDateStr) {
+                classes += ' selected';
+            }
+
+            // 미래 날짜 체크
+            if (isFutureDate(nextYear, nextMonth, day)) {
+                classes += ' future-date';
+            }
+
+            const dayEl = document.createElement('div');
+            dayEl.className = classes;
+            dayEl.textContent = day;
+
+            // 미래 날짜와 휴가 날짜가 아닌 경우만 클릭 가능
+            if (!isFutureDate(nextYear, nextMonth, day) && !vacationDates.includes(dateStr)) {
+                dayEl.addEventListener('click', () => {
+                    selectCalendarDate(nextYear, nextMonth, day);
+                });
+            }
+
+            dateCalendarDays.appendChild(dayEl);
+        }
+    }
+
+    // 날짜 선택
+    function selectCalendarDate(year, month, day) {
+        if (!activeInput) return;
+
+        const dateStr = formatDateForInput(year, month, day);
+
+        // 휴가 날짜인 경우 선택 불가
+        if (vacationDates.includes(dateStr)) {
+            alert('휴가 기간에는 지출을 신청할 수 없습니다.');
+            return;
+        }
+
+        const displayStr = formatDateForDisplay(dateStr);
+
+        activeInput.value = dateStr;
+        activeInput.setAttribute('data-display', displayStr);
+
+        // 미리보기 업데이트
+        updatePreview();
+
+        // 모달 닫기
+        closeDateModal();
+    }
+
+    // 모달 열기
+    async function openDateModal(inputElement) {
+        activeInput = inputElement;
+        dateModal.classList.add('show');
+
+        // 현재 선택된 날짜가 있으면 해당 월로 이동
+        if (inputElement.value) {
+            const [year, month] = inputElement.value.split('-');
+            currentCalendarYear = parseInt(year);
+            currentCalendarMonth = parseInt(month) - 1;
+        } else {
+            // 없으면 오늘 날짜의 년/월로 설정
+            const today = new Date();
+            currentCalendarYear = today.getFullYear();
+            currentCalendarMonth = today.getMonth();
+        }
+
+        await renderDateCalendar();
+    }
+
+    // 모달 닫기
+    window.closeDateModal = function() {
+        dateModal.classList.remove('show');
+        activeInput = null;
+    };
+
+    // 이전 달
+    if (datePrevMonth) {
+        datePrevMonth.addEventListener('click', async () => {
+            currentCalendarMonth--;
+            if (currentCalendarMonth < 0) {
+                currentCalendarMonth = 11;
+                currentCalendarYear--;
+            }
+            await renderDateCalendar();
+        });
+    }
+
+    // 다음 달
+    if (dateNextMonth) {
+        dateNextMonth.addEventListener('click', async () => {
+            currentCalendarMonth++;
+            if (currentCalendarMonth > 11) {
+                currentCalendarMonth = 0;
+                currentCalendarYear++;
+            }
+            await renderDateCalendar();
+        });
+    }
+
+    // 모달 배경 클릭 시 닫기
+    if (dateModal) {
+        dateModal.addEventListener('click', (e) => {
+            if (e.target === dateModal) {
+                closeDateModal();
+            }
+        });
+    }
+
+    // 날짜 입력 필드 초기화
+    function initializeDateInputs() {
+        // 모든 날짜 입력 필드에 이벤트 리스너 추가
+        document.addEventListener('click', (e) => {
+            if (e.target.classList.contains('expense-date-picker')) {
+                e.preventDefault();
+                openDateModal(e.target);
+            }
+        });
+    }
+
+    // 초기화
+    initializeDateInputs();
+    updateItemNumbers();
+    updatePreview();
     calculateTotal();
 });

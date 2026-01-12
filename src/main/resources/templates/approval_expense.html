@@ -153,122 +153,207 @@
 
                     <!-- 우측: 문서 편집 영역 -->
                     <div class="editor-area">
-                        <!-- 문서 양식 -->
-                        <div class="document-form">
-                            <!-- 상단 헤더: 제목 + 결재라인 -->
-                            <div class="expense-header">
-                                <div class="expense-title-section">
-                                    <h2 class="expense-doc-title">支 出 稟 議 書</h2>
-                                    <div class="expense-date">
-                                        <input type="date" id="documentDate" class="auto-today">
+                        <!-- 입력 영역 -->
+                        <div class="input-area">
+                            <!-- 기본 정보 -->
+                            <div class="input-section">
+                                <div class="section-header">
+                                    <h3><i class="fas fa-info-circle"></i> 기본 정보</h3>
+                                </div>
+                                <div class="form-grid">
+                                    <div class="form-group">
+                                        <label><i class="fas fa-building"></i> 부서/팀</label>
+                                        <div class="form-text-display" id="applicantDept">-</div>
+                                    </div>
+                                    <div class="form-group">
+                                        <label><i class="fas fa-user"></i> 기안자</label>
+                                        <div class="form-text-display" id="applicantName">-</div>
+                                    </div>
+                                    <div class="form-group">
+                                        <label for="documentDate"><i class="fas fa-calendar"></i> 기안일자</label>
+                                        <input type="date" id="documentDate" class="form-input auto-today">
+                                    </div>
+                                    <div class="form-group">
+                                        <label for="projectName"><i class="fas fa-project-diagram"></i> 프로젝트명</label>
+                                        <input type="text" id="projectName" class="form-input" placeholder="프로젝트명 입력">
                                     </div>
                                 </div>
-                                <div class="expense-approval-line">
-                                    <table class="expense-approval-table">
-                                        <tr>
-                                            <th class="approval-position">담 당</th>
-                                            <th class="approval-position">상 무</th>
-                                            <th class="approval-position">대 표</th>
-                                        </tr>
-                                        <tr>
-                                            <td class="approval-sign"></td>
-                                            <td class="approval-sign"></td>
-                                            <td class="approval-sign"></td>
-                                        </tr>
-                                    </table>
-                                </div>
                             </div>
 
-                            <!-- 기본 정보 테이블 -->
-                            <table class="expense-info-table">
-                                <tr>
-                                    <th style="width: 80px;">부서/팀</th>
-                                    <td style="width: 150px;"><input type="text" id="applicantDept" readonly></td>
-                                    <th style="width: 100px;">프로젝트명</th>
-                                    <td><input type="text" placeholder="프로젝트명 입력"></td>
-                                </tr>
-                                <tr>
-                                    <th>一金</th>
-                                    <td colspan="3">
-                                        <div class="amount-display">
-                                            <span id="amountKorean" class="korean-amount">일금</span>
-                                            <span class="amount-suffix">整</span>
-                                            <span class="amount-number" id="amountNumber">(₩ 0)</span>
-                                        </div>
-                                    </td>
-                                </tr>
-                            </table>
-
-                            <!-- 지출 내역 테이블 -->
-                            <div class="expense-detail-section">
-                                <div class="section-header-with-btn">
+                            <!-- 지출 내역 -->
+                            <div class="input-section">
+                                <div class="section-header">
+                                    <h3><i class="fas fa-list"></i> 지출 내역</h3>
                                     <button type="button" class="btn-add-row" id="addRowBtn">
-                                        <i class="fas fa-plus"></i> 행 추가
+                                        <i class="fas fa-plus"></i> 항목 추가
                                     </button>
                                 </div>
-                                <table class="expense-detail-table" id="expenseTable">
-                                    <thead>
-                                        <tr>
-                                            <th style="width: 70px;">월/일</th>
-                                            <th style="width: 35%;">적요</th>
-                                            <th style="width: 100px;">상 호</th>
-                                            <th style="width: 120px;">금 액</th>
-                                            <th style="width: 80px;">비고</th>
-                                            <th style="width: 40px;"></th>
-                                        </tr>
-                                    </thead>
-                                    <tbody id="expenseTableBody">
-                                        <tr class="expense-row">
-                                            <td><input type="text" class="date-input" placeholder="10/28"></td>
-                                            <td><input type="text" class="description-input" placeholder="내역 입력"></td>
-                                            <td><input type="text" class="shop-input" placeholder="상호명"></td>
-                                            <td><input type="text" class="amount-input" placeholder="금액"></td>
-                                            <td><input type="text" class="note-input" placeholder=""></td>
-                                            <td>
-                                                <button type="button" class="btn-delete-row">
-                                                    <i class="fas fa-times"></i>
-                                                </button>
-                                            </td>
-                                        </tr>
-                                    </tbody>
-                                </table>
+                                <div class="expense-items-container" id="expenseItemsContainer">
+                                    <!-- 지출 항목이 여기에 추가됩니다 -->
+                                    <div class="expense-item">
+                                        <div class="expense-item-header">
+                                            <span class="expense-item-number">1</span>
+                                            <button type="button" class="btn-remove-item" onclick="removeExpenseItem(this)">
+                                                <i class="fas fa-times"></i>
+                                            </button>
+                                        </div>
+                                        <div class="expense-item-body">
+                                            <div class="form-row">
+                                                <div class="form-group" style="flex: 0 0 180px;">
+                                                    <label><i class="fas fa-calendar-day"></i> 날짜</label>
+                                                    <input type="text" class="form-input date-input expense-date-picker" placeholder="날짜 선택" readonly>
+                                                </div>
+                                                <div class="form-group" style="flex: 1;">
+                                                    <label><i class="fas fa-edit"></i> 적요</label>
+                                                    <input type="text" class="form-input description-input" placeholder="지출 내역 입력">
+                                                </div>
+                                            </div>
+                                            <div class="form-row">
+                                                <div class="form-group" style="flex: 1;">
+                                                    <label><i class="fas fa-store"></i> 상호</label>
+                                                    <input type="text" class="form-input shop-input" placeholder="상호명 입력">
+                                                </div>
+                                                <div class="form-group" style="flex: 0 0 200px;">
+                                                    <label><i class="fas fa-won-sign"></i> 금액</label>
+                                                    <input type="text" class="form-input amount-input" placeholder="금액 입력">
+                                                </div>
+                                                <div class="form-group" style="flex: 0 0 150px;">
+                                                    <label><i class="fas fa-sticky-note"></i> 비고</label>
+                                                    <input type="text" class="form-input note-input" placeholder="">
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="total-amount-display">
+                                    <label>총 합계</label>
+                                    <span class="total-amount" id="totalAmountDisplay">₩ 0</span>
+                                </div>
                             </div>
 
-                            <!-- 하단 정보 -->
-                            <table class="expense-summary-table">
-                                <tr>
-                                    <th style="width: 80px;">합계</th>
-                                    <td style="width: 150px;"><input type="text" id="totalAmount" readonly></td>
-                                    <th style="width: 80px;">기안일자</th>
-                                    <td><input type="date" class="auto-today"></td>
-                                </tr>
-                                <tr>
-                                    <th>금액</th>
-                                    <td><input type="text" id="totalAmountCopy" readonly></td>
-                                    <th>기안자</th>
-                                    <td><input type="text" id="applicantName" readonly></td>
-                                </tr>
-                                <tr>
-                                    <th>품의내용</th>
-                                    <td colspan="3"><textarea placeholder="품의 내용을 입력하세요" rows="3"></textarea></td>
-                                </tr>
-                            </table>
+                            <!-- 품의 내용 -->
+                            <div class="input-section">
+                                <div class="section-header">
+                                    <h3><i class="fas fa-file-alt"></i> 품의 내용</h3>
+                                </div>
+                                <div class="form-group full-width">
+                                    <textarea id="requestContent" class="form-textarea" rows="5" placeholder="품의 내용을 입력하세요"></textarea>
+                                </div>
+                            </div>
+
+                            <!-- 첨부파일 -->
+                            <div class="input-section">
+                                <div class="section-header">
+                                    <h4><i class="fas fa-paperclip"></i> 첨부파일</h4>
+                                </div>
+                                <div class="file-upload-area" id="fileUploadArea">
+                                    <input type="file" id="fileInput" multiple hidden>
+                                    <label for="fileInput" class="file-upload-label">
+                                        <i class="fas fa-cloud-upload-alt"></i>
+                                        <span>파일을 선택하거나 드래그하세요</span>
+                                        <small>최대 10MB, 최대 5개</small>
+                                    </label>
+                                </div>
+                                <div class="file-list" id="fileList"></div>
+                            </div>
+
+                            <!-- 공식 문서 미리보기 토글 -->
+                            <div class="document-preview-toggle">
+                                <button class="toggle-btn" id="documentFormToggle">
+                                    <i class="fas fa-file-alt"></i>
+                                    공식 문서 미리보기
+                                    <i class="fas fa-chevron-down toggle-icon"></i>
+                                </button>
+                            </div>
                         </div>
 
-                        <!-- 첨부파일 -->
-                        <div class="attachment-section">
-                            <div class="section-header">
-                                <h4><i class="fas fa-paperclip"></i> 첨부파일</h4>
+                        <!-- 공식 문서 미리보기 영역 -->
+                        <div class="document-form-wrapper collapsed">
+                            <div class="document-form">
+                                <!-- 상단 헤더: 제목 + 결재라인 -->
+                                <div class="expense-header">
+                                    <div class="expense-title-section">
+                                        <h2 class="expense-doc-title">支 出 稟 議 書</h2>
+                                        <div class="expense-date">
+                                            <span class="auto-date">2025. 01. 12</span>
+                                        </div>
+                                    </div>
+                                    <div class="expense-approval-line">
+                                        <table class="expense-approval-table">
+                                            <tr>
+                                                <th class="approval-position">담 당</th>
+                                                <th class="approval-position">상 무</th>
+                                                <th class="approval-position">대 표</th>
+                                            </tr>
+                                            <tr>
+                                                <td class="approval-sign"></td>
+                                                <td class="approval-sign"></td>
+                                                <td class="approval-sign"></td>
+                                            </tr>
+                                        </table>
+                                    </div>
+                                </div>
+
+                                <!-- 기본 정보 테이블 -->
+                                <table class="expense-info-table">
+                                    <tr>
+                                        <th style="width: 80px;">부서/팀</th>
+                                        <td style="width: 150px;" class="auto-dept">-</td>
+                                        <th style="width: 100px;">프로젝트명</th>
+                                        <td class="auto-project">-</td>
+                                    </tr>
+                                    <tr>
+                                        <th>一金</th>
+                                        <td colspan="3">
+                                            <div class="amount-display">
+                                                <span id="amountKorean" class="korean-amount">일금</span>
+                                                <span class="amount-suffix">整</span>
+                                                <span class="amount-number" id="amountNumber">(₩ 0)</span>
+                                            </div>
+                                        </td>
+                                    </tr>
+                                </table>
+
+                                <!-- 지출 내역 테이블 -->
+                                <div class="expense-detail-section">
+                                    <table class="expense-detail-table" id="expensePreviewTable">
+                                        <thead>
+                                            <tr>
+                                                <th style="width: 70px;">월/일</th>
+                                                <th style="width: 35%;">적요</th>
+                                                <th style="width: 100px;">상 호</th>
+                                                <th style="width: 120px;">금 액</th>
+                                                <th style="width: 80px;">비고</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody id="expensePreviewBody">
+                                            <tr>
+                                                <td class="empty-row" colspan="5">지출 내역이 없습니다</td>
+                                            </tr>
+                                        </tbody>
+                                    </table>
+                                </div>
+
+                                <!-- 하단 정보 -->
+                                <table class="expense-summary-table">
+                                    <tr>
+                                        <th style="width: 100px;">합계</th>
+                                        <td style="width: 150px;" class="auto-total">₩ 0</td>
+                                        <th style="width: 100px;">기안일자</th>
+                                        <td class="auto-doc-date">-</td>
+                                    </tr>
+                                    <tr>
+                                        <th>금액</th>
+                                        <td class="auto-total-copy">₩ 0</td>
+                                        <th>기안자</th>
+                                        <td class="auto-applicant">-</td>
+                                    </tr>
+                                    <tr>
+                                        <th>품의내용</th>
+                                        <td colspan="3"><div class="auto-request-content" style="white-space: pre-wrap; min-height: 60px;">-</div></td>
+                                    </tr>
+                                </table>
                             </div>
-                            <div class="file-upload-area" id="fileUploadArea">
-                                <input type="file" id="fileInput" multiple hidden>
-                                <label for="fileInput" class="file-upload-label">
-                                    <i class="fas fa-cloud-upload-alt"></i>
-                                    <span>파일을 선택하거나 드래그하세요</span>
-                                    <small>최대 10MB, 최대 5개</small>
-                                </label>
-                            </div>
-                            <div class="file-list" id="fileList"></div>
                         </div>
 
                         <!-- 제출 버튼 -->
@@ -276,10 +361,6 @@
                             <button class="btn-secondary btn-lg" onclick="history.back()">
                                 <i class="fas fa-times"></i>
                                 취소
-                            </button>
-                            <button class="btn-outline btn-lg" id="saveDraftBtn">
-                                <i class="fas fa-save"></i>
-                                임시저장
                             </button>
                             <button class="btn-primary btn-lg" id="submitBtn">
                                 <i class="fas fa-paper-plane"></i>
@@ -290,6 +371,41 @@
                 </div>
             </div>
         </main>
+    </div>
+
+    <!-- 날짜 선택 모달 -->
+    <div class="date-modal" id="dateModal">
+        <div class="date-modal-content">
+            <div class="date-modal-header">
+                <h3><i class="fas fa-calendar-alt"></i> 날짜 선택</h3>
+                <button class="date-modal-close" onclick="closeDateModal()">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            <div class="date-modal-body">
+                <div class="date-calendar-header">
+                    <button class="date-calendar-nav" id="datePrevMonth">
+                        <i class="fas fa-chevron-left"></i>
+                    </button>
+                    <h4 class="date-calendar-title" id="dateCalendarTitle">2025년 1월</h4>
+                    <button class="date-calendar-nav" id="dateNextMonth">
+                        <i class="fas fa-chevron-right"></i>
+                    </button>
+                </div>
+                <div class="date-calendar-weekdays">
+                    <div class="date-weekday sun">일</div>
+                    <div class="date-weekday">월</div>
+                    <div class="date-weekday">화</div>
+                    <div class="date-weekday">수</div>
+                    <div class="date-weekday">목</div>
+                    <div class="date-weekday">금</div>
+                    <div class="date-weekday sat">토</div>
+                </div>
+                <div class="date-calendar-days" id="dateCalendarDays">
+                    <!-- JavaScript로 생성 -->
+                </div>
+            </div>
+        </div>
     </div>
 
     <script th:src="@{/js/approval_expense.js}"></script>
