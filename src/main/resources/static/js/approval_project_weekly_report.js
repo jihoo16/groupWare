@@ -367,7 +367,6 @@ document.addEventListener('DOMContentLoaded', function() {
     window.closeProjectModal = function() {
         if (projectModal) {
             projectModal.classList.remove('show');
-            selectedProject = null;
             if (projectSearch) projectSearch.value = '';
         }
     };
@@ -1413,7 +1412,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 return;
             }
 
-            if (!confirm('주간업무보고를 저장하시겠습니까?')) {
+            if (!confirm('프로젝트 주간업무보고를 저장하시겠습니까?')) {
                 return;
             }
 
@@ -1454,7 +1453,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 });
 
                 if (response.ok) {
-                    alert('주간업무보고가 저장되었습니다.');
+                    alert('프로젝트 주간업무보고가 저장되었습니다.');
                     window.location.href = '/approval';
                 } else {
                     const error = await response.text();
