@@ -68,7 +68,7 @@ document.addEventListener('DOMContentLoaded', function() {
         newDocumentBtn.addEventListener('click', function() {
             // 현재 선택된 카테고리에 따라 다른 페이지로 이동
             const categoryUrls = {
-                'weekly-report': '/approval/weekly-report',
+                'weekly-report': '/approval/project-weekly-report',
                 'monthly-report': '/approval/monthly-report',
                 'meeting': '/approval/meeting',
                 'receipt': '/approval/receipt-meeting', // 연구비증빙 - 회의록
