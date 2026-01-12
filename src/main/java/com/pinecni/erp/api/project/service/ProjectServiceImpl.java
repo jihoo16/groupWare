@@ -568,4 +568,14 @@ public class ProjectServiceImpl implements ProjectService {
                         .build())
                 .collect(Collectors.toList());
     }
+
+    @Override
+    public List<ProjectDTO> getProjectsByMemberIdx(Long memberIdx) {
+        log.debug("getProjectsByMemberIdx() called with memberIdx: {} - using optimized query", memberIdx);
+
+        // 한 번의 쿼리로 해당 사용자가 참여중인 프로젝트 조회
+        return projectRepository.findByMemberIdxOptimized(memberIdx).stream()
+                .map(mapper::toDTOFromArray)
+                .collect(Collectors.toList());
+    }
 }

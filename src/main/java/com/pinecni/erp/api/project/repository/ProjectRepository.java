@@ -118,4 +118,24 @@ public interface ProjectRepository extends JpaRepository<Project, Long> {
             "GROUP BY p.idx, pm.empName " +
             "ORDER BY p.createdAt DESC")
     List<Object[]> findPastProjectsOptimized();
+
+    /**
+     * 특정 사용자가 참여중인 프로젝트 목록 조회 (최적화)
+     * memberIdx로 필터링하여 해당 사용자가 참여연구원으로 등록된 프로젝트만 반환
+     */
+    @Query("SELECT p.idx, p.projectName, p.clientName, p.projectManagerIdx, " +
+            "pm.empName, p.startDate, p.endDate, p.projectStatus, p.description, " +
+            "p.receiptUrl, p.activityBudget, p.equipmentBudget, p.progressRate, " +
+            "COUNT(DISTINCT m2.idx), " +
+            "((SELECT COALESCE(SUM(rm.amount), 0) FROM ReceiptMeeting rm WHERE rm.projectIdx = p.idx) + " +
+            "(SELECT COALESCE(SUM(COALESCE(rt.transportationFee, 0) + COALESCE(rt.accommodationFee, 0) + COALESCE(rt.mealFee, 0) + COALESCE(rt.otherFee, 0)), 0) FROM ReceiptTrip rt WHERE rt.projectIdx = p.idx)), " +
+            "p.createdAt, p.updatedAt, p.createdUserIdx, p.updatedUserIdx " +
+            "FROM Project p " +
+            "LEFT JOIN p.projectManager pm " +
+            "INNER JOIN ProjectMember m ON m.projectIdx = p.idx AND m.employeeIdx = :memberIdx AND m.isActive = true " +
+            "LEFT JOIN ProjectMember m2 ON m2.projectIdx = p.idx AND m2.isActive = true " +
+            "WHERE p.isDeleted = false " +
+            "GROUP BY p.idx, pm.empName " +
+            "ORDER BY p.createdAt DESC")
+    List<Object[]> findByMemberIdxOptimized(@Param("memberIdx") Long memberIdx);
 }

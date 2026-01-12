@@ -30,14 +30,20 @@ public class ProjectController {
      * 전체 프로젝트 목록 조회
      * GET /api/projects
      * GET /api/projects?status=IN_PROGRESS
+     * GET /api/projects?memberIdx=123 (특정 사용자가 참여중인 프로젝트만 조회)
      */
     @GetMapping
     public ResponseEntity<List<ProjectDTO>> getAllProjects(
-            @RequestParam(required = false) String status) {
-        log.debug("GET /api/projects - status: {}", status);
+            @RequestParam(required = false) String status,
+            @RequestParam(required = false) Long memberIdx) {
+        log.debug("GET /api/projects - status: {}, memberIdx: {}", status, memberIdx);
 
         List<ProjectDTO> projects;
-        if (status != null && !status.isEmpty()) {
+
+        // memberIdx가 있으면 해당 사용자가 참여중인 프로젝트만 조회
+        if (memberIdx != null) {
+            projects = projectService.getProjectsByMemberIdx(memberIdx);
+        } else if (status != null && !status.isEmpty()) {
             projects = projectService.getProjectsByStatus(status);
         } else {
             projects = projectService.getAllProjects();

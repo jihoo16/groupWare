@@ -48,4 +48,9 @@ public interface ProjectService {
      * 프로젝트의 직급별 경비 설정 조회
      */
     List<ProjectExpenseSettingDTO> getProjectExpenseSettings(Long projectIdx);
+
+    /**
+     * 특정 사용자가 참여중인 프로젝트 목록 조회
+     */
+    List<ProjectDTO> getProjectsByMemberIdx(Long memberIdx);
 }

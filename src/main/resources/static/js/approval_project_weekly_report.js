@@ -111,7 +111,8 @@ document.addEventListener('DOMContentLoaded', function() {
 
     async function loadProjects() {
         try {
-            const response = await fetch('/api/projects');
+            // 현재 사용자가 참여중인 프로젝트만 조회
+            const response = await fetch(`/api/projects?memberIdx=${currentUserIdx}`);
             if (response.ok) {
                 projects = await response.json();
 
@@ -730,9 +731,19 @@ document.addEventListener('DOMContentLoaded', function() {
             updateAchievementDisplay(snappedValue);
         });
 
-        // 초기 CSS 변수 설정
+        // 초기 CSS 변수 설정 (기본값 100%)
+        const initialValue = parseInt(weeklyAchievementRateInput.value) || 100;
         weeklyAchievementRateInput.style.setProperty('--slider-min', '0%');
-        weeklyAchievementRateInput.style.setProperty('--slider-value', '0%');
+        weeklyAchievementRateInput.style.setProperty('--slider-value', initialValue + '%');
+
+        // 초기 표시값 업데이트
+        if (weeklyAchievementValueInput) {
+            weeklyAchievementValueInput.value = initialValue;
+        }
+        const autoAchievement = document.querySelector('.auto-achievement');
+        if (autoAchievement) {
+            autoAchievement.textContent = initialValue;
+        }
     }
 
     if (weeklyAchievementValueInput) {
