@@ -14,7 +14,7 @@ import java.time.LocalDateTime;
 @NoArgsConstructor
 @AllArgsConstructor
 @Entity
-@Table(name = "weekly_report", schema = "erp")
+@Table(name = "project_weekly_report", schema = "erp")
 public class WeeklyReport {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
