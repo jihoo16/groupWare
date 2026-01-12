@@ -11,6 +11,8 @@ document.addEventListener('DOMContentLoaded', function() {
     let selectedReferences = []; // 참고인 목록 {idx, name, dept, position}
     let selectedEmployee = null;
     let selectedProject = null; // 선택된 프로젝트
+    let employees = []; // 전체 직원 목록 (결재자 자동 설정용)
+    let selectedApprovers = []; // 선택된 결재자 목록
 
     // DOM 요소
     const fileInput = document.getElementById('fileInput');
@@ -103,6 +105,23 @@ document.addEventListener('DOMContentLoaded', function() {
     loadCodeConstants();
 
     // ============================================
+    // 직원 목록 로드 (결재자 자동 설정용)
+    // ============================================
+    async function loadEmployees() {
+        try {
+            const response = await fetch('/api/users');
+            if (response.ok) {
+                employees = await response.json();
+                console.log('직원 데이터 로드 완료:', employees.length + '명');
+            } else {
+                console.error('직원 데이터 로드 실패:', response.status);
+            }
+        } catch (error) {
+            console.error('직원 데이터 로드 오류:', error);
+        }
+    }
+
+    // ============================================
     // 프로젝트 목록 로드 및 모달
     // ============================================
     const projectModal = document.getElementById('projectModal');
@@ -167,6 +186,8 @@ document.addEventListener('DOMContentLoaded', function() {
         await autoSetApprovers(project);
     }
 
+    // 페이지 로드 시 데이터 로드
+    loadEmployees();
     loadProjects();
 
     // 텍스트 하이라이트 함수
@@ -465,6 +486,38 @@ document.addEventListener('DOMContentLoaded', function() {
         } catch (error) {
             console.error('결재자 자동 설정 오류:', error);
         }
+    }
+
+    // 결재자 태그 렌더링 함수 (미리보기 영역 업데이트)
+    function renderApproverTags() {
+        // 미리보기 영역의 결재자 이름 업데이트
+        const approverNames = document.querySelectorAll('.approver-name');
+
+        // 초기화
+        approverNames.forEach(el => {
+            el.textContent = '-';
+        });
+
+        // 결재자 정보 업데이트
+        selectedApprovers.forEach((approver, index) => {
+            const nameEl = document.querySelector(`.auto-approver-${index + 1}`);
+            if (nameEl) {
+                nameEl.textContent = approver.name || '-';
+            }
+        });
+    }
+
+    // 결재라인 업데이트 함수 (결재 서명 셀에 데이터 속성 설정)
+    function updateApprovalLine() {
+        // 결재 셀에 데이터 속성 설정
+        const signCells = document.querySelectorAll('.approval-sign-cell');
+
+        selectedApprovers.forEach((approver, index) => {
+            if (signCells[index]) {
+                signCells[index].setAttribute('data-approver-id', approver.idx);
+                signCells[index].setAttribute('data-approver-name', approver.name);
+            }
+        });
     }
 
     // ============================================
