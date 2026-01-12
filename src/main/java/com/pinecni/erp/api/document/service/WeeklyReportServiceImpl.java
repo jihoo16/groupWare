@@ -77,10 +77,10 @@ public class WeeklyReportServiceImpl implements WeeklyReportService {
             }
 
             // === 1. ApprovalDocument 메타데이터 저장 ===
-            String documentNo = "WEEKLY-" + System.currentTimeMillis() + "-" + createDTO.getUserIdx();
-            String title = "주간업무보고";
+            String documentNo = "PROJECT-WEEKLY-" + System.currentTimeMillis() + "-" + createDTO.getUserIdx();
+            String title = "프로젝트 주간업무보고";
             if (createDTO.getReportPeriod() != null && !createDTO.getReportPeriod().isEmpty()) {
-                title = "주간업무보고 - " + createDTO.getReportPeriod();
+                title = "프로젝트 주간업무보고 - " + createDTO.getReportPeriod();
             }
 
             ApprovalDocument approvalDocument = ApprovalDocument.builder()
@@ -127,8 +127,8 @@ public class WeeklyReportServiceImpl implements WeeklyReportService {
             return dto;
 
         } catch (Exception e) {
-            log.error("주간업무보고 생성 실패 - userIdx: {}, error: {}", createDTO.getUserIdx(), e.getMessage(), e);
-            throw new RuntimeException("주간업무보고 저장 중 오류가 발생했습니다. approval_documents와 weekly_report가 모두 롤백됩니다.", e);
+            log.error("프로젝트 주간업무보고 생성 실패 - userIdx: {}, error: {}", createDTO.getUserIdx(), e.getMessage(), e);
+            throw new RuntimeException("프로젝트 주간업무보고 저장 중 오류가 발생했습니다. approval_documents와 project_weekly_report가 모두 롤백됩니다.", e);
         }
     }
 
