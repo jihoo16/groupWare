@@ -1145,6 +1145,12 @@ div:focus {
     height: 100%;
 }
 
+/* 상세 페이지: 텍스트 좌측 정렬 */
+.form-table td div[style*="text-align: left"] {
+    justify-content: flex-start;
+    text-align: left;
+}
+
 /* ============================================
    모달
    ============================================ */
