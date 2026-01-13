@@ -1,0 +1,138 @@
+<!DOCTYPE html>
+<html lang="ko" xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{fragments/layout :: head('프로젝트 주간업무보고 상세', '/css/approval_project_weekly_report.css')}"></head>
+<body>
+    <div class="container">
+        <!-- 좌측 네비게이션 바 -->
+        <div th:replace="~{fragments/sidebar :: sidebar('approval')}"></div>
+
+        <!-- 메인 콘텐츠 영역 -->
+        <main class="main-content">
+            <header class="header">
+                <div class="header-left">
+                    <h1 class="page-title"><i class="fas fa-project-diagram"></i> 프로젝트 주간업무보고 상세</h1>
+                </div>
+                <div class="header-right">
+                    <button class="btn-secondary" onclick="history.back()">
+                        <i class="fas fa-arrow-left"></i>
+                        돌아가기
+                    </button>
+                </div>
+            </header>
+
+            <div class="write-container">
+                <div class="editor-area" style="max-width: 1200px; margin: 0 auto;">
+                    <!-- 문서 미리보기 영역 (항상 펼쳐진 상태) -->
+                    <div class="document-form-wrapper">
+                        <div class="document-form">
+                            <!-- 결재라인 -->
+                            <div class="approval-line-box">
+                                <table class="approval-line-table">
+                                    <tr>
+                                        <th class="approval-header">담당</th>
+                                        <th class="approval-header">연구책임자</th>
+                                        <th class="approval-header">대표이사</th>
+                                    </tr>
+                                    <tr>
+                                        <td class="approval-sign-cell" data-role="담당" data-approver-id="">
+                                            <div class="sign-area">
+                                                <span class="sign-placeholder">결재</span>
+                                            </div>
+                                        </td>
+                                        <td class="approval-sign-cell" data-role="연구책임자" data-approver-id="">
+                                            <div class="sign-area">
+                                                <span class="sign-placeholder">결재</span>
+                                            </div>
+                                        </td>
+                                        <td class="approval-sign-cell" data-role="대표이사" data-approver-id="">
+                                            <div class="sign-area">
+                                                <span class="sign-placeholder">결재</span>
+                                            </div>
+                                        </td>
+                                    </tr>
+                                    <tr>
+                                        <td class="approval-name-cell">
+                                            <span class="approver-name auto-approver-1" data-role="담당" id="approver1">-</span>
+                                        </td>
+                                        <td class="approval-name-cell" style="position: relative;">
+                                            <span class="approver-name auto-approver-2" data-role="연구책임자" id="approver2">-</span>
+                                        </td>
+                                        <td class="approval-name-cell">
+                                            <span class="approver-name auto-approver-3" data-role="대표이사" id="approver3">-</span>
+                                        </td>
+                                    </tr>
+                                    <tr>
+                                        <th class="approval-header reference-header">참조</th>
+                                        <td class="reference-cell" colspan="2">
+                                            <span class="auto-references" id="referenceNames">-</span>
+                                        </td>
+                                    </tr>
+                                </table>
+                            </div>
+
+                            <h2 class="doc-title">주 간 업 무 보 고</h2>
+
+                            <table class="form-table">
+                                <tr>
+                                    <th>프로젝트명</th>
+                                    <td colspan="3" class="auto-project" id="projectName">-</td>
+                                </tr>
+                                <tr>
+                                    <th>주간 달성률</th>
+                                    <td colspan="3"><span class="auto-achievement" id="weeklyAchievementRate">0</span>%</td>
+                                </tr>
+                                <tr>
+                                    <th>보고자</th>
+                                    <td class="auto-reporter" id="userName">-</td>
+                                    <th>부서</th>
+                                    <td class="auto-dept" id="userDept">-</td>
+                                </tr>
+                                <tr>
+                                    <th>보고 기간</th>
+                                    <td colspan="3" class="auto-period" id="reportPeriod">-</td>
+                                </tr>
+                                <tr>
+                                    <th>금주 주요 업무</th>
+                                    <td colspan="3"><div class="auto-tasks" id="mainTasks" style="white-space: pre-wrap; min-height: 100px;">-</div></td>
+                                </tr>
+                                <tr>
+                                    <th>주요 성과</th>
+                                    <td colspan="3"><div class="auto-achievements" id="achievements" style="white-space: pre-wrap; min-height: 80px;">-</div></td>
+                                </tr>
+                                <tr>
+                                    <th>주요 이슈</th>
+                                    <td colspan="3"><div class="auto-issues" id="issues" style="white-space: pre-wrap; min-height: 80px;">-</div></td>
+                                </tr>
+                                <tr>
+                                    <th>차주 계획</th>
+                                    <td colspan="3"><div class="auto-next-plan" id="nextWeekPlan" style="white-space: pre-wrap; min-height: 100px;">-</div></td>
+                                </tr>
+                                <tr>
+                                    <th>기타</th>
+                                    <td colspan="3"><div class="auto-remarks" id="remarks" style="white-space: pre-wrap; min-height: 80px;">-</div></td>
+                                </tr>
+                            </table>
+                        </div>
+                    </div>
+
+                    <!-- 하단 액션 버튼 -->
+                    <div class="submit-actions">
+                        <button type="button" class="btn-secondary btn-lg" onclick="history.back()">
+                            <i class="fas fa-arrow-left"></i>
+                            돌아가기
+                        </button>
+                        <button type="button" class="btn-outline btn-lg" id="deleteReportBtn">
+                            <i class="fas fa-trash"></i> 삭제
+                        </button>
+                        <button type="button" class="btn-primary btn-lg" id="editReportBtn">
+                            <i class="fas fa-edit"></i> 수정
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <script th:src="@{/js/approval_project_weekly_report_detail.js}"></script>
+</body>
+</html>

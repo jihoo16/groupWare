@@ -3,6 +3,7 @@ package com.pinecni.erp.api.approval.service;
 import com.pinecni.erp.api.approval.dto.ApprovalDocumentDTO;
 import com.pinecni.erp.api.approval.repository.ApprovalDocumentRepository;
 import com.pinecni.erp.api.code.repository.CodeRepository;
+import com.pinecni.erp.api.document.repository.WeeklyReportRepository;
 import com.pinecni.erp.api.user.repository.UserRepository;
 import com.pinecni.erp.entity.ApprovalDocument;
 import lombok.RequiredArgsConstructor;
@@ -25,6 +26,7 @@ public class ApprovalDocumentServiceImpl implements ApprovalDocumentService {
     private final ApprovalDocumentRepository approvalDocumentRepository;
     private final UserRepository userRepository;
     private final CodeRepository codeRepository;
+    private final WeeklyReportRepository weeklyReportRepository;
 
     @Override
     public List<ApprovalDocumentDTO> getAllDocuments() {
@@ -97,6 +99,17 @@ public class ApprovalDocumentServiceImpl implements ApprovalDocumentService {
                 });
             }
         });
+
+        // 원본 문서 ID 조회 및 설정
+        String documentType = document.getDocumentType();
+        if ("주간업무보고".equals(documentType) || "프로젝트 주간업무보고".equals(documentType)) {
+            weeklyReportRepository.findByDocumentIdx(document.getIdx()).ifPresent(weeklyReport -> {
+                dto.setSourceDocumentId(weeklyReport.getId());
+            });
+        }
+        // 다른 문서 타입들도 필요시 추가
+        // else if ("월간업무보고".equals(documentType)) { ... }
+        // else if ("회의록".equals(documentType)) { ... }
 
         return dto;
     }

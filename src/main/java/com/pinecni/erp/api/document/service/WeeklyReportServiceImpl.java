@@ -86,7 +86,7 @@ public class WeeklyReportServiceImpl implements WeeklyReportService {
             ApprovalDocument approvalDocument = ApprovalDocument.builder()
                     .documentNo(documentNo)
                     .title(title)
-                    .documentType("주간업무보고")
+                    .documentType("프로젝트 주간업무보고")
                     .drafterUserIdx(createDTO.getUserIdx())
                     .content(createDTO.getMainTasks())
                     .createdUserIdx(createDTO.getUserIdx())

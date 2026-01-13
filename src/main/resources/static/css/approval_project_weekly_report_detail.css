@@ -1,0 +1,311 @@
+/* ============================================
+   프로젝트 주간업무보고 상세 페이지 CSS
+   ============================================ */
+
+/* 기본 레이아웃 */
+.container {
+    display: flex;
+    height: 100vh;
+}
+
+.main-content {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    overflow-y: auto;
+    background: #f5f7fa;
+}
+
+/* 헤더 */
+.header {
+    background: white;
+    padding: 15px 30px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+    position: sticky;
+    top: 0;
+    z-index: 100;
+}
+
+.header-left {
+    display: flex;
+    align-items: center;
+    gap: 17px;
+}
+
+.page-title {
+    font-size: 17.5px;
+    font-weight: 600;
+    color: #1a237e;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.page-title i {
+    font-size: 20px;
+}
+
+.header-right {
+    display: flex;
+    align-items: center;
+    gap: 17px;
+}
+
+/* 버튼 스타일 */
+.btn-secondary {
+    background: #6c757d;
+    color: white;
+    border: none;
+    padding: 10px 20px;
+    border-radius: 8px;
+    font-size: 14px;
+    font-weight: 600;
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    transition: all 0.3s ease;
+}
+
+.btn-secondary:hover {
+    background: #5a6268;
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(108, 117, 125, 0.3);
+}
+
+.btn-secondary i {
+    font-size: 14px;
+}
+
+/* write-container는 approval_project_weekly_report.css에 정의되어 있음 */
+.write-container {
+    padding: 20px 20px 10px 20px;
+}
+
+/* editor-area */
+.editor-area {
+    background: white;
+    border-radius: 12px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+    padding: 24px;
+    overflow-y: auto;
+}
+
+/* 상세 페이지는 항상 펼쳐진 상태로 표시 */
+.document-form-wrapper {
+    background: white;
+    border-radius: 12px;
+    padding: 30px;
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.08);
+    margin-top: 16px;
+    margin-bottom: 100px;
+}
+
+.document-form {
+    width: 100%;
+    max-width: 800px;
+    margin: 0 auto;
+}
+
+/* 결재라인 */
+.approval-line-box {
+    display: flex;
+    justify-content: flex-end;
+    margin-bottom: 25px;
+}
+
+.approval-line-table {
+    border-collapse: collapse;
+    border: 2px solid #333;
+}
+
+.approval-line-table th,
+.approval-line-table td {
+    border: 1px solid #333;
+    text-align: center;
+    padding: 0;
+    vertical-align: middle;
+}
+
+.approval-header {
+    font-size: 12px;
+    font-weight: 700;
+    color: #333;
+    background: #f5f5f5;
+    padding: 6px 12px;
+    min-width: 80px;
+}
+
+.approval-sign-cell {
+    height: 70px;
+    width: 80px;
+    padding: 4px;
+    position: relative;
+    background: white;
+}
+
+.sign-area {
+    width: 100%;
+    height: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.sign-placeholder {
+    font-size: 11px;
+    color: #999;
+    user-select: none;
+}
+
+.approval-name-cell {
+    font-size: 11px;
+    padding: 4px 6px;
+    background: white;
+    color: #333;
+}
+
+/* 참조 행 */
+.reference-header {
+    background: #f8f9fa;
+}
+
+.reference-cell {
+    font-size: 11px;
+    padding: 6px 10px;
+    background: white;
+    color: #333;
+    text-align: left;
+}
+
+/* 문서 제목 */
+.doc-title {
+    text-align: center;
+    font-size: 24px;
+    font-weight: 700;
+    color: #1e293b;
+    margin: 30px 0;
+    letter-spacing: 0.5em;
+    clear: both;
+}
+
+/* 폼 테이블 */
+.form-table {
+    width: 100%;
+    border-collapse: collapse;
+    border: 2px solid #333;
+    margin-top: 20px;
+}
+
+.form-table th,
+.form-table td {
+    border: 1px solid #333;
+    padding: 12px;
+    font-size: 13.5px;
+    text-align: center;
+    vertical-align: middle;
+}
+
+.form-table th {
+    background: #f8f9fa;
+    font-weight: 600;
+    width: 120px;
+    color: #334155;
+}
+
+.form-table td {
+    background: white;
+    color: #475569;
+}
+
+/* 테이블 내부 div 요소 */
+.form-table td div {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 100%;
+    height: 100%;
+    white-space: pre-wrap;
+}
+
+/* 하단 액션 버튼 */
+.submit-actions {
+    display: flex;
+    justify-content: flex-end;
+    align-items: center;
+    gap: 12px;
+    padding: 16px 24px;
+    background: white;
+    border-top: 2px solid #e8e8e8;
+    position: relative;
+    border-radius: 12px;
+    box-shadow: 0 -4px 12px rgba(0, 0, 0, 0.08);
+    margin-top: 30px;
+}
+
+.btn-lg {
+    padding: 14px 28px;
+    font-size: 15px;
+}
+
+.btn-primary {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+    border: none;
+    padding: 12px 24px;
+    border-radius: 8px;
+    font-size: 14px;
+    font-weight: 600;
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    transition: all 0.3s ease;
+    box-shadow: 0 4px 12px rgba(102, 126, 234, 0.3);
+}
+
+.btn-primary:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 16px rgba(102, 126, 234, 0.4);
+}
+
+.btn-outline {
+    background: white;
+    border: 2px solid #e2e8f0;
+    color: #475569;
+    padding: 12px 24px;
+    border-radius: 8px;
+    font-size: 14px;
+    font-weight: 600;
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    transition: all 0.2s;
+}
+
+.btn-outline:hover {
+    border-color: #667eea;
+    color: #667eea;
+}
+
+/* 스크롤바 */
+.main-content::-webkit-scrollbar {
+    width: 8px;
+}
+
+.main-content::-webkit-scrollbar-track {
+    background: #f1f1f1;
+}
+
+.main-content::-webkit-scrollbar-thumb {
+    background: #888;
+    border-radius: 4px;
+}
+
+.main-content::-webkit-scrollbar-thumb:hover {
+    background: #555;
+}
