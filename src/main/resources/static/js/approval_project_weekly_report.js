@@ -1581,7 +1581,16 @@ document.addEventListener('DOMContentLoaded', function() {
                 return;
             }
 
-            if (!confirm('프로젝트 주간업무보고를 저장하시겠습니까?')) {
+            // 수정 모드 확인
+            const urlParams = new URLSearchParams(window.location.search);
+            const editingReportId = urlParams.get('id');
+            const isEditMode = !!editingReportId;
+
+            const confirmMessage = isEditMode ?
+                '프로젝트 주간업무보고를 수정하시겠습니까?' :
+                '프로젝트 주간업무보고를 저장하시겠습니까?';
+
+            if (!confirm(confirmMessage)) {
                 return;
             }
 
@@ -1613,16 +1622,32 @@ document.addEventListener('DOMContentLoaded', function() {
 
                 console.log('전송 데이터:', requestData);
 
-                const response = await fetch('/api/document/weekly-report', {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json'
-                    },
-                    body: JSON.stringify(requestData)
-                });
+                let response;
+                if (isEditMode) {
+                    // 수정 모드: PUT 요청
+                    response = await fetch(`/api/document/weekly-report/${editingReportId}`, {
+                        method: 'PUT',
+                        headers: {
+                            'Content-Type': 'application/json'
+                        },
+                        body: JSON.stringify(requestData)
+                    });
+                } else {
+                    // 생성 모드: POST 요청
+                    response = await fetch('/api/document/weekly-report', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json'
+                        },
+                        body: JSON.stringify(requestData)
+                    });
+                }
 
                 if (response.ok) {
-                    alert('프로젝트 주간업무보고가 저장되었습니다.');
+                    const successMessage = isEditMode ?
+                        '프로젝트 주간업무보고가 수정되었습니다.' :
+                        '프로젝트 주간업무보고가 저장되었습니다.';
+                    alert(successMessage);
                     window.location.href = '/approval';
                 } else {
                     const error = await response.text();
