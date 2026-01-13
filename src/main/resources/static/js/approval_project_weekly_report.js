@@ -1504,9 +1504,43 @@ document.addEventListener('DOMContentLoaded', function() {
                 }
             }
 
-            // 보고 기간 설정
+            // 보고 기간 설정 및 달력 반영
             if (data.reportPeriod && reportPeriodDisplay) {
                 reportPeriodDisplay.textContent = data.reportPeriod;
+
+                // 보고 기간 파싱 (예: "2026.01.12 ~ 2026.01.16")
+                const periodParts = data.reportPeriod.split('~').map(p => p.trim());
+                if (periodParts.length === 2) {
+                    const startParts = periodParts[0].split('.');
+                    const endParts = periodParts[1].split('.');
+
+                    if (startParts.length === 3 && endParts.length === 3) {
+                        const startYear = parseInt(startParts[0]);
+                        const startMonth = parseInt(startParts[1]) - 1;
+                        const startDay = parseInt(startParts[2]);
+
+                        const endYear = parseInt(endParts[0]);
+                        const endMonth = parseInt(endParts[1]) - 1;
+                        const endDay = parseInt(endParts[2]);
+
+                        const startDate = new Date(startYear, startMonth, startDay);
+                        const endDate = new Date(endYear, endMonth, endDay);
+
+                        // 주의 평일 날짜들 계산
+                        selectedWeekDates = getWeekdaysInWeek(startDate);
+
+                        // hidden input에 값 설정
+                        if (reportStartDate) reportStartDate.value = formatDate(startDate);
+                        if (reportEndDate) reportEndDate.value = formatDate(endDate);
+
+                        // 달력 월/년도를 해당 날짜로 이동
+                        currentYear = startYear;
+                        currentMonth = startMonth;
+
+                        // 달력 다시 렌더링
+                        renderCalendar();
+                    }
+                }
             }
 
             // 주간 달성률
