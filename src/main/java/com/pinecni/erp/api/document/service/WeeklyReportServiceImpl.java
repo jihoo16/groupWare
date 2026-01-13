@@ -224,6 +224,30 @@ public class WeeklyReportServiceImpl implements WeeklyReportService {
             });
         }
 
+        // 연결된 ApprovalDocument도 업데이트
+        if (report.getDocumentIdx() != null) {
+            approvalDocumentRepository.findById(report.getDocumentIdx()).ifPresent(approvalDocument -> {
+                // 제목 업데이트
+                String title = "프로젝트 주간업무보고";
+                if (updateDTO.getReportPeriod() != null && !updateDTO.getReportPeriod().isEmpty()) {
+                    title = "프로젝트 주간업무보고 - " + updateDTO.getReportPeriod();
+                }
+                approvalDocument.setTitle(title);
+
+                // 내용 업데이트 (mainTasks)
+                if (updateDTO.getMainTasks() != null) {
+                    approvalDocument.setContent(updateDTO.getMainTasks());
+                }
+
+                // 수정 정보 업데이트
+                approvalDocument.setUpdatedUserIdx(updatedUserIdx);
+                approvalDocument.setUpdatedAt(LocalDateTime.now());
+
+                approvalDocumentRepository.save(approvalDocument);
+                log.debug("ApprovalDocument updated - documentIdx: {}", report.getDocumentIdx());
+            });
+        }
+
         // 저장 (dirty checking에 의해 자동 업데이트)
         WeeklyReport updated = weeklyReportRepository.save(report);
         log.debug("WeeklyReport updated successfully - id: {}", updated.getId());
