@@ -100,9 +100,23 @@ document.addEventListener('DOMContentLoaded', function() {
     });
 
     // ============================================
+    // 초기화: 수정 모드 확인
+    // ============================================
+    const urlParams = new URLSearchParams(window.location.search);
+    const reportId = urlParams.get('id');
+    const isEditMode = !!reportId;
+
+    // ============================================
     // 초기화: 코드 상수 로드
     // ============================================
     loadCodeConstants();
+
+    // ============================================
+    // 수정 모드: 기존 데이터 로드
+    // ============================================
+    if (isEditMode) {
+        loadReportForEdit(reportId);
+    }
 
     // ============================================
     // 직원 목록 로드 (결재자 자동 설정용)
@@ -1093,6 +1107,85 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     }
 
+    // 프로젝트 멤버 목록 로드
+    async function loadProjectMembers(projectIdx) {
+        try {
+            const response = await fetch(`/api/projects/${projectIdx}/members`);
+            if (response.ok) {
+                const members = await response.json();
+                // ProjectMemberDTO를 UserSimpleDTO 형식으로 변환하여 projectMembers에 저장
+                projectMembers = members.map(member => ({
+                    idx: member.employeeIdx,
+                    empName: member.employeeName,
+                    empDeptName: member.employeeDeptName,
+                    empPositionName: member.employeePositionName,
+                    empPositionSortOrder: member.employeePositionSortOrder
+                }));
+                return projectMembers;
+            } else {
+                console.error('프로젝트 멤버 로드 실패');
+                throw new Error('프로젝트 참여인원을 불러올 수 없습니다.');
+            }
+        } catch (error) {
+            console.error('프로젝트 멤버 로드 오류:', error);
+            throw error;
+        }
+    }
+
+    // 미리보기 영역 업데이트 함수
+    function updatePreview() {
+        // 프로젝트명
+        const autoProject = document.querySelector('.auto-project');
+        if (autoProject && selectedProject) {
+            autoProject.textContent = selectedProject.projectName || '-';
+        }
+
+        // 주간 달성률
+        const autoAchievement = document.querySelector('.auto-achievement');
+        if (autoAchievement && weeklyAchievementRateInput) {
+            autoAchievement.textContent = weeklyAchievementRateInput.value || '0';
+        }
+
+        // 보고 기간
+        const autoPeriod = document.querySelector('.auto-period');
+        if (autoPeriod && reportPeriodDisplay) {
+            autoPeriod.textContent = reportPeriodDisplay.textContent || '-';
+        }
+
+        // 금주 주요 업무
+        const autoTasks = document.querySelector('.auto-tasks');
+        if (autoTasks && weeklyTasks) {
+            autoTasks.textContent = weeklyTasks.value || '-';
+        }
+
+        // 주요 성과
+        const autoAchievements = document.querySelector('.auto-achievements');
+        if (autoAchievements && achievements) {
+            autoAchievements.textContent = achievements.value || '-';
+        }
+
+        // 주요 이슈
+        const autoIssues = document.querySelector('.auto-issues');
+        if (autoIssues && issues) {
+            autoIssues.textContent = issues.value || '-';
+        }
+
+        // 차주 계획
+        const autoNextPlan = document.querySelector('.auto-next-plan');
+        if (autoNextPlan && nextWeekPlan) {
+            autoNextPlan.textContent = nextWeekPlan.value || '-';
+        }
+
+        // 기타
+        const autoRemarks = document.querySelector('.auto-remarks');
+        if (autoRemarks && remarks) {
+            autoRemarks.textContent = remarks.value || '-';
+        }
+
+        // 참조자 (updateReferenceList 함수 사용)
+        updateReferenceList();
+    }
+
     // 참고인 선택/해제 토글
     function toggleReferenceSelection(emp) {
         const index = tempSelectedReferences.findIndex(a => a.idx === emp.idx);
@@ -1170,25 +1263,10 @@ document.addEventListener('DOMContentLoaded', function() {
 
                 // 프로젝트 멤버 목록 로드
                 try {
-                    const response = await fetch(`/api/projects/${selectedProject.idx}/members`);
-                    if (response.ok) {
-                        const members = await response.json();
-                        // ProjectMemberDTO를 UserSimpleDTO 형식으로 변환하여 projectMembers에 저장
-                        projectMembers = members.map(member => ({
-                            idx: member.employeeIdx,
-                            empName: member.employeeName,
-                            empDeptName: member.employeeDeptName,
-                            empPositionName: member.employeePositionName,
-                            empPositionSortOrder: member.employeePositionSortOrder
-                        }));
-                        renderApproverTree(projectMembers);
-                        renderTempReferences();
-                    } else {
-                        console.error('프로젝트 멤버 로드 실패');
-                        alert('프로젝트 참여인원을 불러올 수 없습니다.');
-                    }
+                    await loadProjectMembers(selectedProject.idx);
+                    renderApproverTree(projectMembers);
+                    renderTempReferences();
                 } catch (error) {
-                    console.error('프로젝트 멤버 로드 오류:', error);
                     alert('프로젝트 참여인원을 불러오는 중 오류가 발생했습니다.');
                 }
             }
@@ -1255,13 +1333,15 @@ document.addEventListener('DOMContentLoaded', function() {
             `;
             selectedReferencesList.appendChild(tag);
         });
+
+        // 미리보기 영역도 업데이트
+        updateReferenceList();
     }
 
     // 참고인 삭제
     window.removeReference = function(index) {
         selectedReferences.splice(index, 1);
         renderReferenceTags();
-        updateReferenceList();
     };
 
     // 참조 목록 업데이트 (공식문서)
@@ -1378,6 +1458,95 @@ document.addEventListener('DOMContentLoaded', function() {
         selectedFiles.splice(index, 1);
         updateFileList();
     };
+
+    // ============================================
+    // 수정 모드: 기존 보고서 데이터 로드 함수
+    // ============================================
+    async function loadReportForEdit(reportId) {
+        try {
+            const response = await fetch(`/api/document/weekly-report/${reportId}`);
+
+            if (!response.ok) {
+                alert('보고서를 불러올 수 없습니다.');
+                window.location.href = '/approval';
+                return;
+            }
+
+            const data = await response.json();
+
+            // 프로젝트 선택
+            if (data.projectIdx) {
+                // 프로젝트 목록 로드 후 선택
+                await loadProjects();
+
+                const project = projects.find(p => p.idx === data.projectIdx);
+
+                if (project) {
+                    selectedProject = project;
+                    selectedProjectIdx.value = project.idx;
+                    if (projectInput) {
+                        projectInput.value = project.projectName;
+                    }
+
+                    // 프로젝트 전체 달성률 표시
+                    const currentProgressRate = document.getElementById('currentProgressRate');
+                    if (currentProgressRate) {
+                        const progressRate = project.progressRate ?? 0;
+                        currentProgressRate.textContent = progressRate + '%';
+                        updateInputProgressMin(progressRate);
+                    }
+
+                    // 프로젝트 선택 후 참여인원 로드
+                    await loadProjectMembers(project.idx);
+
+                    // 결재자 자동 설정
+                    await autoSetApprovers(project);
+                }
+            }
+
+            // 보고 기간 설정
+            if (data.reportPeriod && reportPeriodDisplay) {
+                reportPeriodDisplay.textContent = data.reportPeriod;
+            }
+
+            // 주간 달성률
+            if (data.weeklyAchievementRate !== null && weeklyAchievementRateInput) {
+                weeklyAchievementRateInput.value = data.weeklyAchievementRate;
+            }
+
+            // 입력 필드 채우기
+            if (weeklyTasks) weeklyTasks.value = data.mainTasks || '';
+            if (achievements) achievements.value = data.achievements || '';
+            if (issues) issues.value = data.issues || '';
+            if (nextWeekPlan) nextWeekPlan.value = data.nextWeekPlan || '';
+            if (remarks) remarks.value = data.remarks || '';
+
+            // 참조자 복원
+            if (data.referenceNames) {
+                const referenceNameList = data.referenceNames.split(',').map(name => name.trim());
+
+                // 프로젝트 멤버에서 이름으로 찾아서 참조자 목록에 추가
+                selectedReferences = projectMembers.filter(member =>
+                    referenceNameList.includes(member.empName)
+                ).map(member => ({
+                    idx: member.idx,
+                    name: member.empName,
+                    dept: member.empDeptName || '',
+                    position: member.empPositionName || ''
+                }));
+
+                renderReferenceTags();
+            }
+
+            // 미리보기 영역 업데이트
+            updatePreview();
+
+        } catch (error) {
+            console.error('보고서 로드 오류:', error);
+            alert('보고서를 불러오는 중 오류가 발생했습니다: ' + error.message);
+            window.location.href = '/approval';
+        }
+    }
 
     // ============================================
     // PDF 저장
