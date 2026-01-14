@@ -39,6 +39,42 @@ document.addEventListener('DOMContentLoaded', function() {
     let currentMonth = new Date().getMonth();
     let selectedWeekDates = []; // 선택된 주의 평일들 (월~금)
 
+    // 공휴일 데이터 (서버에서 동적으로 로드)
+    let holidaysCache = {}; // { '2024': { '2024-01-01': '신정', ... }, '2025': { ... } }
+
+    // 공휴일 데이터 로드 (API 사용)
+    async function loadHolidays(year) {
+        // 이미 로드된 경우 캐시 사용
+        if (holidaysCache[year]) {
+            return holidaysCache[year];
+        }
+
+        try {
+            const response = await fetch(`/api/holidays?year=${year}`);
+            if (response.ok) {
+                const holidays = await response.json();
+                holidaysCache[year] = holidays;
+                return holidays;
+            } else {
+                console.error(`${year}년 공휴일 로드 실패`);
+                return {};
+            }
+        } catch (error) {
+            console.error(`${year}년 공휴일 로드 오류:`, error);
+            return {};
+        }
+    }
+
+    // 공휴일 확인 함수
+    function isPublicHoliday(dateStr) {
+        const year = dateStr.split('-')[0];
+        const yearHolidays = holidaysCache[year];
+        if (!yearHolidays) {
+            return false;
+        }
+        return yearHolidays[dateStr] ? true : false;
+    }
+
     // 입력 필드
     const weeklyTasks = document.getElementById('weeklyTasks');
     const achievements = document.getElementById('achievements');
@@ -587,8 +623,17 @@ document.addEventListener('DOMContentLoaded', function() {
     }
 
     // 달력 렌더링
-    function renderCalendar() {
+    async function renderCalendar() {
         if (!calendarDays || !calendarTitle) return;
+
+        // 현재 표시 중인 년도의 공휴일 데이터 로드
+        await loadHolidays(currentYear);
+
+        // 이전/다음 달이 다른 년도인 경우 해당 년도도 로드
+        const prevMonthYear = currentMonth === 0 ? currentYear - 1 : currentYear;
+        const nextMonthYear = currentMonth === 11 ? currentYear + 1 : currentYear;
+        if (prevMonthYear !== currentYear) await loadHolidays(prevMonthYear);
+        if (nextMonthYear !== currentYear) await loadHolidays(nextMonthYear);
 
         const firstDay = new Date(currentYear, currentMonth, 1);
         const lastDay = new Date(currentYear, currentMonth + 1, 0);
@@ -611,6 +656,7 @@ document.addEventListener('DOMContentLoaded', function() {
             let classes = 'other-month';
             if (dayOfWeek === 0) classes += ' sunday';
             if (dayOfWeek === 6) classes += ' saturday';
+            if (isPublicHoliday(dateStr)) classes += ' holiday';
             if (isDateInSelectedWeek(dateStr)) classes += ' selected';
 
             const dayEl = createDayElement(day, classes, dateStr);
@@ -627,6 +673,7 @@ document.addEventListener('DOMContentLoaded', function() {
             if (isToday(date)) classes += ' today';
             if (dayOfWeek === 0) classes += ' sunday';
             if (dayOfWeek === 6) classes += ' saturday';
+            if (isPublicHoliday(dateStr)) classes += ' holiday';
             if (isDateInSelectedWeek(dateStr)) classes += ' selected';
 
             const dayEl = createDayElement(day, classes, dateStr);
@@ -643,6 +690,7 @@ document.addEventListener('DOMContentLoaded', function() {
             let classes = 'other-month';
             if (dayOfWeek === 0) classes += ' sunday';
             if (dayOfWeek === 6) classes += ' saturday';
+            if (isPublicHoliday(dateStr)) classes += ' holiday';
             if (isDateInSelectedWeek(dateStr)) classes += ' selected';
 
             const dayEl = createDayElement(day, classes, dateStr);
