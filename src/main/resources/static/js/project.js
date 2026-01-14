@@ -499,7 +499,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
     // 주간보고서 상세 페이지로 이동 (전역 함수)
     window.viewWeeklyReportDetail = function(reportId) {
-        window.location.href = `/approval/weekly-report/detail?id=${reportId}`;
+        window.location.href = `/approval/project-weekly-report/detail?id=${reportId}`;
     };
 
     // 달성률에 따른 클래스 반환
