@@ -13,6 +13,7 @@ document.addEventListener('DOMContentLoaded', function() {
     let selectedProject = null; // 선택된 프로젝트
     let employees = []; // 전체 직원 목록 (결재자 자동 설정용)
     let selectedApprovers = []; // 선택된 결재자 목록
+    let currentDocumentIdx = null; // 수정 모드일 때 현재 문서의 documentIdx
 
     // DOM 요소
     const fileInput = document.getElementById('fileInput');
@@ -1428,8 +1429,8 @@ document.addEventListener('DOMContentLoaded', function() {
                     alert('최대 5개까지만 첨부 가능합니다.');
                     return;
                 }
-                if (file.size > 10 * 1024 * 1024) {
-                    alert('파일 크기는 10MB를 초과할 수 없습니다.');
+                if (file.size > 50 * 1024 * 1024) {
+                    alert('파일 크기는 50MB를 초과할 수 없습니다.');
                     return;
                 }
                 selectedFiles.push(file);
@@ -1462,8 +1463,8 @@ document.addEventListener('DOMContentLoaded', function() {
                     alert('최대 5개까지만 첨부 가능합니다.');
                     return;
                 }
-                if (file.size > 10 * 1024 * 1024) {
-                    alert('파일 크기는 10MB를 초과할 수 없습니다.');
+                if (file.size > 50 * 1024 * 1024) {
+                    alert('파일 크기는 50MB를 초과할 수 없습니다.');
                     return;
                 }
                 selectedFiles.push(file);
@@ -1505,6 +1506,134 @@ document.addEventListener('DOMContentLoaded', function() {
     window.removeFile = function(index) {
         selectedFiles.splice(index, 1);
         updateFileList();
+    };
+
+    // ============================================
+    // 파일 업로드 (서버로 전송)
+    // ============================================
+    async function uploadFilesToServer(documentIdx) {
+        if (!selectedFiles || selectedFiles.length === 0) {
+            console.log('업로드할 파일이 없습니다.');
+            return true; // 파일이 없어도 성공으로 처리
+        }
+
+        try {
+            for (const file of selectedFiles) {
+                const formData = new FormData();
+                formData.append('file', file);
+                formData.append('documentIdx', documentIdx);
+                formData.append('uploadUserIdx', currentUserIdx);
+
+                const response = await fetch('/api/files/upload', {
+                    method: 'POST',
+                    body: formData
+                });
+
+                if (!response.ok) {
+                    const error = await response.text();
+                    console.error(`파일 업로드 실패 (${file.name}):`, error);
+                    throw new Error(`파일 업로드 실패: ${file.name}`);
+                }
+
+                console.log(`파일 업로드 성공: ${file.name}`);
+            }
+
+            return true;
+        } catch (error) {
+            console.error('파일 업로드 오류:', error);
+            alert('파일 업로드 중 오류가 발생했습니다: ' + error.message);
+            return false;
+        }
+    }
+
+    // ============================================
+    // 기존 파일 로드 (수정 모드)
+    // ============================================
+    async function loadExistingFiles(documentIdx) {
+        if (!documentIdx) {
+            console.log('documentIdx가 없어 파일을 로드하지 않습니다.');
+            return;
+        }
+
+        try {
+            const response = await fetch(`/api/files/document/${documentIdx}`);
+
+            if (!response.ok) {
+                console.error('파일 목록 조회 실패');
+                return;
+            }
+
+            const files = await response.json();
+
+            // 파일 목록 초기화
+            fileList.innerHTML = '';
+
+            if (!files || files.length === 0) {
+                console.log('첨부된 파일이 없습니다.');
+                fileList.innerHTML = '<p style="color: #999; font-size: 12px; padding: 10px 0;">첨부된 파일이 없습니다.</p>';
+                return;
+            }
+
+            // 파일 목록 표시
+            files.forEach(file => {
+                const item = document.createElement('div');
+                item.className = 'file-item';
+
+                let icon = 'fa-file';
+                const filename = file.originalFilename.toLowerCase();
+                if (filename.match(/\.(jpg|jpeg|png|gif)$/i)) icon = 'fa-file-image';
+                else if (filename.match(/\.(pdf)$/i)) icon = 'fa-file-pdf';
+                else if (filename.match(/\.(doc|docx)$/i)) icon = 'fa-file-word';
+                else if (filename.match(/\.(xls|xlsx)$/i)) icon = 'fa-file-excel';
+
+                const fileSizeKB = (file.fileSize / 1024).toFixed(1);
+
+                item.innerHTML = `
+                    <i class="fas ${icon}"></i>
+                    <span>${file.originalFilename} (${fileSizeKB} KB)</span>
+                    <a href="/api/files/download/${file.idx}" class="btn-download-file" download>
+                        <i class="fas fa-download"></i>
+                    </a>
+                    <button class="btn-remove-file" onclick="removeExistingFile(${file.idx})">
+                        <i class="fas fa-times"></i>
+                    </button>
+                `;
+                fileList.appendChild(item);
+            });
+
+            console.log(`${files.length}개의 파일을 로드했습니다.`);
+        } catch (error) {
+            console.error('파일 로드 오류:', error);
+        }
+    }
+
+    // ============================================
+    // 기존 파일 삭제
+    // ============================================
+    window.removeExistingFile = async function(fileIdx) {
+        if (!confirm('이 파일을 삭제하시겠습니까?')) {
+            return;
+        }
+
+        try {
+            const response = await fetch(`/api/files/${fileIdx}?deletedUserIdx=${currentUserIdx}`, {
+                method: 'DELETE'
+            });
+
+            if (!response.ok) {
+                throw new Error('파일 삭제 실패');
+            }
+
+            alert('파일이 삭제되었습니다.');
+
+            // 파일 목록 새로고침
+            if (currentDocumentIdx) {
+                await loadExistingFiles(currentDocumentIdx);
+            }
+        } catch (error) {
+            console.error('파일 삭제 오류:', error);
+            alert('파일 삭제 중 오류가 발생했습니다: ' + error.message);
+        }
     };
 
     // ============================================
@@ -1623,6 +1752,12 @@ document.addEventListener('DOMContentLoaded', function() {
             // 미리보기 영역 업데이트
             updatePreview();
 
+            // 첨부 파일 로드
+            if (data.documentIdx) {
+                currentDocumentIdx = data.documentIdx; // 전역 변수에 저장
+                await loadExistingFiles(data.documentIdx);
+            }
+
         } catch (error) {
             console.error('보고서 로드 오류:', error);
             alert('보고서를 불러오는 중 오류가 발생했습니다: ' + error.message);
@@ -1717,6 +1852,21 @@ document.addEventListener('DOMContentLoaded', function() {
                 }
 
                 if (response.ok) {
+                    const responseData = await response.json();
+                    console.log('보고서 저장 성공:', responseData);
+
+                    // 파일 업로드 (documentIdx가 있는 경우만)
+                    if (responseData.documentIdx && selectedFiles.length > 0) {
+                        console.log(`파일 업로드 시작 (documentIdx: ${responseData.documentIdx})`);
+                        const uploadSuccess = await uploadFilesToServer(responseData.documentIdx);
+
+                        if (!uploadSuccess) {
+                            alert('보고서는 저장되었으나 파일 업로드에 실패했습니다.');
+                            window.location.href = '/approval';
+                            return;
+                        }
+                    }
+
                     const successMessage = isEditMode ?
                         '프로젝트 주간업무보고가 수정되었습니다.' :
                         '프로젝트 주간업무보고가 저장되었습니다.';

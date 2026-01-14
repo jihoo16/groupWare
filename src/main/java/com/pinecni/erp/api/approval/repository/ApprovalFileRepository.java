@@ -21,6 +21,13 @@ public interface ApprovalFileRepository extends JpaRepository<ApprovalFile, Long
     List<ApprovalFile> findByDocumentIdx(Long documentIdx);
 
     /**
+     * 문서별 첨부파일 조회
+     */
+    default List<ApprovalFile> findByDocumentIdxAndIsDeletedFalseOrderByCreatedAtDesc(Long documentIdx) {
+        return findByDocumentIdx(documentIdx);
+    }
+
+    /**
      * 업로드 사용자별 파일 조회
      */
     @Query("SELECT f FROM ApprovalFile f WHERE f.uploadUserIdx = :userIdx AND (f.isDeleted IS NULL OR f.isDeleted = false) " +

@@ -21,7 +21,7 @@
             </header>
 
             <div class="write-container">
-                <div class="editor-area" style="max-width: 1200px; margin: 0 auto;">
+                <div class="editor-area" style="max-width: 1200px; margin: 0 auto 80px;">
                     <!-- 문서 미리보기 영역 (항상 펼쳐진 상태) -->
                     <div class="document-form-wrapper">
                         <div class="document-form">
@@ -115,8 +115,18 @@
                         </div>
                     </div>
 
+                    <!-- 첨부파일 섹션 (PDF 변환 제외 영역) -->
+                    <div class="attachments-section">
+                        <h3 class="attachments-title">
+                            <i class="fas fa-paperclip"></i> 첨부파일
+                        </h3>
+                        <div id="attachedFileList" class="attachments-list">
+                            <p style="color: #999; font-size: 13px;">첨부된 파일이 없습니다.</p>
+                        </div>
+                    </div>
+
                     <!-- 하단 액션 버튼 -->
-                    <div class="submit-actions">
+                    <div class="submit-actions" style="left: 0">
                         <button type="button" class="btn-secondary btn-lg" onclick="history.back()">
                             <i class="fas fa-arrow-left"></i>
                             돌아가기

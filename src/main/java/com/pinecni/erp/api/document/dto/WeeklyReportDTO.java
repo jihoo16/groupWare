@@ -53,6 +53,11 @@ public class WeeklyReportDTO {
     private String projectName;
 
     /**
+     * 전자결재 문서 IDX (approval_documents 테이블 참조)
+     */
+    private Long documentIdx;
+
+    /**
      * 보고 기간
      */
     private String reportPeriod;

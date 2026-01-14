@@ -131,6 +131,69 @@ function displayReportData(data) {
             approver1El.textContent = data.userName || '-';
         }
     }
+
+    // 첨부파일 로드
+    if (data.documentIdx) {
+        loadAttachedFiles(data.documentIdx);
+    }
+}
+
+// 첨부파일 목록 로드
+async function loadAttachedFiles(documentIdx) {
+    if (!documentIdx) {
+        console.log('documentIdx가 없어 파일을 로드하지 않습니다.');
+        return;
+    }
+
+    try {
+        const response = await fetch(`/api/files/document/${documentIdx}`);
+
+        if (!response.ok) {
+            console.error('파일 목록 조회 실패');
+            return;
+        }
+
+        const files = await response.json();
+
+        const attachedFileList = document.getElementById('attachedFileList');
+        if (!attachedFileList) {
+            return;
+        }
+
+        if (!files || files.length === 0) {
+            attachedFileList.innerHTML = '<p style="color: #999; font-size: 13px;">첨부된 파일이 없습니다.</p>';
+            return;
+        }
+
+        // 파일 목록 HTML 생성
+        let filesHTML = '';
+        files.forEach(file => {
+            let icon = 'fa-file';
+            const filename = file.originalFilename.toLowerCase();
+            if (filename.match(/\.(jpg|jpeg|png|gif)$/i)) icon = 'fa-file-image';
+            else if (filename.match(/\.(pdf)$/i)) icon = 'fa-file-pdf';
+            else if (filename.match(/\.(doc|docx)$/i)) icon = 'fa-file-word';
+            else if (filename.match(/\.(xls|xlsx)$/i)) icon = 'fa-file-excel';
+
+            const fileSizeKB = (file.fileSize / 1024).toFixed(1);
+
+            filesHTML += `
+                <div class="file-item">
+                    <i class="fas ${icon}"></i>
+                    <span>${file.originalFilename} (${fileSizeKB} KB)</span>
+                    <a href="/api/files/download/${file.idx}" class="btn-download-file" download>
+                        <i class="fas fa-download"></i>
+                    </a>
+                </div>
+            `;
+        });
+
+        attachedFileList.innerHTML = filesHTML;
+        console.log(`${files.length}개의 파일을 표시했습니다.`);
+
+    } catch (error) {
+        console.error('파일 로드 오류:', error);
+    }
 }
 
 // 프로젝트의 결재자 정보 로드
