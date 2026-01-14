@@ -1582,15 +1582,6 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     }
 
-    // ============================================
-    // PDF 저장
-    // ============================================
-    const savePdfBtn = document.getElementById('savePdfBtn');
-    if (savePdfBtn) {
-        savePdfBtn.addEventListener('click', function() {
-            alert('PDF 저장 기능은 준비 중입니다.');
-        });
-    }
 
     // ============================================
     // 폼 제출
