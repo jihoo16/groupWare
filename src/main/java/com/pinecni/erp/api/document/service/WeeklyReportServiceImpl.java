@@ -273,11 +273,28 @@ public class WeeklyReportServiceImpl implements WeeklyReportService {
     public void deleteWeeklyReport(Long id) {
         log.debug("deleteWeeklyReport() called - id: {}", id);
 
-        // 존재 여부 확인
-        if (!weeklyReportRepository.existsById(id)) {
-            throw new RuntimeException("주간업무보고를 찾을 수 없습니다. ID: " + id);
+        // WeeklyReport 조회 (documentIdx 가져오기 위함)
+        WeeklyReport report = weeklyReportRepository.findById(id)
+                .orElseThrow(() -> new RuntimeException("주간업무보고를 찾을 수 없습니다. ID: " + id));
+
+        // 연결된 ApprovalDocument 소프트 딜리트 (deletedAt, deletedUserIdx 설정)
+        if (report.getDocumentIdx() != null) {
+            approvalDocumentRepository.findById(report.getDocumentIdx()).ifPresent(approvalDocument -> {
+                LocalDateTime now = LocalDateTime.now();
+                approvalDocument.setDeletedAt(now);
+
+                // 삭제자 정보 설정 (WeeklyReport의 updatedUserIdx 또는 userIdx 사용)
+                Long deletedUserIdx = report.getUpdatedUserIdx() != null ?
+                    report.getUpdatedUserIdx() : report.getUserIdx();
+                approvalDocument.setDeletedUserIdx(deletedUserIdx);
+
+                approvalDocumentRepository.save(approvalDocument);
+                log.debug("ApprovalDocument soft deleted - documentIdx: {}, deletedAt: {}, deletedUserIdx: {}",
+                    report.getDocumentIdx(), now, deletedUserIdx);
+            });
         }
 
+        // WeeklyReport는 실제 삭제 (hard delete)
         weeklyReportRepository.deleteById(id);
         log.debug("WeeklyReport deleted successfully - id: {}", id);
     }
