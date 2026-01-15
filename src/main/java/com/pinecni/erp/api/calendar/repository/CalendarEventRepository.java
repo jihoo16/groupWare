@@ -94,4 +94,12 @@ public interface CalendarEventRepository extends JpaRepository<CalendarEvent, Lo
             "     OR (e.isRecurring = true AND e.recurringEndDate >= :startDate)) " +
             "GROUP BY e.eventType")
     List<Object[]> countEventsByType(LocalDate startDate, LocalDate endDate);
+
+    /**
+     * 사용자별 기간 내 일정 조회
+     */
+    @Query("SELECT e FROM CalendarEvent e WHERE e.createdUserIdx = :userIdx " +
+            "AND e.deletedAt IS NULL " +
+            "AND ((e.startDate <= :endDate AND e.endDate >= :startDate))")
+    List<CalendarEvent> findByUserIdxAndDateRange(Long userIdx, LocalDate startDate, LocalDate endDate);
 }

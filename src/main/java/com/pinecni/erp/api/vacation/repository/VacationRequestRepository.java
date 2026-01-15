@@ -65,4 +65,12 @@ public interface VacationRequestRepository extends JpaRepository<VacationRequest
      * - 예: vacationType="본인결혼" -> "경조사(본인결혼)" 검색
      */
     boolean existsByUserIdxAndVacationTypeContaining(Long userIdx, String vacationType);
+
+    /**
+     * 문서 IDX로 연차 신청 목록 조회
+     * - 한 문서에 여러 개의 연차 기간이 있을 수 있음
+     */
+    @Query("SELECT v FROM VacationRequest v WHERE v.documentIdx = :documentIdx " +
+            "ORDER BY v.startDate")
+    List<VacationRequest> findByDocumentIdx(Long documentIdx);
 }

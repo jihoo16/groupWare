@@ -982,4 +982,215 @@ public class VacationServiceImpl implements VacationService {
                 userIdx, remainingDays, totalRequestedDays);
         }
     }
+
+    @Override
+    @Transactional(readOnly = true)
+    public com.pinecni.erp.api.vacation.dto.VacationDetailDTO getVacationDetail(Long documentIdx) {
+        log.info("[연차신청서 상세 조회 시작] documentIdx: {}", documentIdx);
+
+        // 1. ApprovalDocument 조회
+        ApprovalDocument document = approvalDocumentRepository.findById(documentIdx)
+                .orElseThrow(() -> new IllegalArgumentException("문서를 찾을 수 없습니다. documentIdx: " + documentIdx));
+
+        // 2. VacationRequest 목록 조회 (document_idx로 조회)
+        List<VacationRequest> vacationRequests = vacationRequestRepository.findByDocumentIdx(documentIdx);
+        if (vacationRequests.isEmpty()) {
+            throw new IllegalStateException("연차 신청 정보를 찾을 수 없습니다. documentIdx: " + documentIdx);
+        }
+
+        // 3. 기안자 정보 조회
+        User drafter = userRepository.findById(document.getDrafterUserIdx())
+                .orElseThrow(() -> new IllegalArgumentException("기안자 정보를 찾을 수 없습니다."));
+
+        // 4. 부서명 조회
+        String deptName = codeRepository.findByCode(drafter.getEmpDept())
+                .map(Code::getCodeName)
+                .orElse(drafter.getEmpDept());
+
+        // 4-2. 직급명 조회
+        String positionName = codeRepository.findByCode(drafter.getEmpPosition())
+                .map(Code::getCodeName)
+                .orElse(drafter.getEmpPosition());
+
+        // 5. 잔여 연차 조회 (첫 번째 요청의 remainingDaysAtApply 사용)
+        BigDecimal remainingDays = vacationRequests.getFirst().getRemainingDaysAtApply();
+
+        // 6. 연차 기간 목록 생성
+        List<com.pinecni.erp.api.vacation.dto.VacationDetailDTO.PeriodDTO> periods = vacationRequests.stream()
+                .map(vr -> com.pinecni.erp.api.vacation.dto.VacationDetailDTO.PeriodDTO.builder()
+                        .vacationType(vr.getVacationType())
+                        .startDate(vr.getStartDate())
+                        .endDate(vr.getEndDate())
+                        .days(vr.getDays())
+                        .build())
+                .toList();
+
+        // 7. 첨부파일 목록 조회
+        List<VacationDocumentFile> files = vacationDocumentFileRepository.findAllByDocumentIdx(documentIdx);
+        List<com.pinecni.erp.api.vacation.dto.VacationDetailDTO.AttachmentDTO> attachments = files.stream()
+                .map(file -> com.pinecni.erp.api.vacation.dto.VacationDetailDTO.AttachmentDTO.builder()
+                        .idx(file.getIdx())
+                        .originalFileName(file.getFileName())
+                        .fileSize(file.getFileSize())
+                        .build())
+                .toList();
+
+        // 8. 결재라인 정보 생성
+        List<com.pinecni.erp.api.vacation.dto.VacationDetailDTO.ApproverDTO> approvers = new ArrayList<>();
+
+        // 8-1. 담당 (기안자 본인)
+        approvers.add(com.pinecni.erp.api.vacation.dto.VacationDetailDTO.ApproverDTO.builder()
+                .userIdx(drafter.getIdx())
+                .name(drafter.getEmpName())
+                .position(positionName)
+                .status("APPROVED")  // 담당은 신청과 동시에 승인
+                .approvedAt(vacationRequests.getFirst().getCreatedAt().toString())
+                .build());
+
+        // 8-2. 부서장 (기안자의 상사)
+        if (drafter.getManagerIdx() != null) {
+            User manager = userRepository.findById(drafter.getManagerIdx()).orElse(null);
+            if (manager != null) {
+                String managerPositionName = codeRepository.findByCode(manager.getEmpPosition())
+                        .map(Code::getCodeName)
+                        .orElse(manager.getEmpPosition());
+
+                approvers.add(com.pinecni.erp.api.vacation.dto.VacationDetailDTO.ApproverDTO.builder()
+                        .userIdx(manager.getIdx())
+                        .name(manager.getEmpName())
+                        .position(managerPositionName)
+                        .status("PENDING")  // 대기 중
+                        .approvedAt(null)
+                        .build());
+
+                // 8-3. 대표이사 (부서장의 상사 또는 isAdmin=true인 최상위 관리자)
+                User ceo = null;
+                if (manager.getManagerIdx() != null) {
+                    ceo = userRepository.findById(manager.getManagerIdx()).orElse(null);
+                }
+                // 부서장의 상사가 없으면 isAdmin=true인 사용자 찾기
+                if (ceo == null) {
+                    ceo = userRepository.findAll().stream()
+                            .filter(u -> Boolean.TRUE.equals(u.getIsAdmin()))
+                            .findFirst()
+                            .orElse(null);
+                }
+
+                if (ceo != null) {
+                    String ceoPositionName = codeRepository.findByCode(ceo.getEmpPosition())
+                            .map(Code::getCodeName)
+                            .orElse(ceo.getEmpPosition());
+
+                    approvers.add(com.pinecni.erp.api.vacation.dto.VacationDetailDTO.ApproverDTO.builder()
+                            .userIdx(ceo.getIdx())
+                            .name(ceo.getEmpName())
+                            .position(ceoPositionName)
+                            .status("PENDING")  // 대기 중
+                            .approvedAt(null)
+                            .build());
+                }
+            }
+        }
+
+        // 9. 사유 (첫 번째 요청의 reason 사용)
+        String reason = vacationRequests.getFirst().getReason();
+
+        // 10. DTO 생성
+        com.pinecni.erp.api.vacation.dto.VacationDetailDTO detailDTO = com.pinecni.erp.api.vacation.dto.VacationDetailDTO.builder()
+                .documentIdx(documentIdx)
+                .documentNo(document.getDocumentNo())
+                .applyDate(vacationRequests.getFirst().getApplyDate())
+                .drafterName(drafter.getEmpName())
+                .drafterDept(deptName)
+                .drafterPosition(positionName)
+                .remainingDays(remainingDays)
+                .reason(reason)
+                .status("PENDING")  // TODO: ApprovalDocument에 status 필드 추가 후 실제 상태 반환
+                .periods(periods)
+                .approvers(approvers)
+                .attachments(attachments)
+                .build();
+
+        log.info("[연차신청서 상세 조회 완료] documentIdx: {}, 기간 수: {}, 첨부파일 수: {}",
+                documentIdx, periods.size(), attachments.size());
+
+        return detailDTO;
+    }
+
+    @Override
+    @Transactional
+    public void approveVacation(Long documentIdx, Long approverUserIdx) {
+        log.info("[연차신청서 승인 시작] documentIdx: {}, approverUserIdx: {}", documentIdx, approverUserIdx);
+
+        // TODO: 결재 워크플로우 구현 필요
+        // 1. ApprovalLine에서 현재 결재자가 대기 중인 결재건인지 확인
+        // 2. 결재 상태를 APPROVED로 변경
+        // 3. 다음 결재자가 있으면 다음 결재자에게 알림
+        // 4. 마지막 결재자라면 ApprovalDocument의 status를 APPROVED로 변경
+        // 5. 연차 잔액 차감 (VacationBalance 업데이트)
+        // 6. 캘린더에 연차 일정 등록 (CalendarEvent 생성)
+
+        throw new UnsupportedOperationException("결재 워크플로우가 아직 구현되지 않았습니다.");
+    }
+
+    @Override
+    @Transactional
+    public void rejectVacation(Long documentIdx, Long approverUserIdx, String reason) {
+        log.info("[연차신청서 반려 시작] documentIdx: {}, approverUserIdx: {}, reason: {}",
+                documentIdx, approverUserIdx, reason);
+
+        // TODO: 결재 워크플로우 구현 필요
+        // 1. ApprovalLine에서 현재 결재자가 대기 중인 결재건인지 확인
+        // 2. 결재 상태를 REJECTED로 변경, 반려 사유 저장
+        // 3. ApprovalDocument의 status를 REJECTED로 변경
+        // 4. 기안자에게 반려 알림
+
+        throw new UnsupportedOperationException("결재 워크플로우가 아직 구현되지 않았습니다.");
+    }
+
+    @Override
+    @Transactional
+    public void deleteVacation(Long documentIdx, Long currentUserIdx) {
+        log.info("[연차신청서 삭제 시작] documentIdx: {}, currentUserIdx: {}", documentIdx, currentUserIdx);
+
+        // 1. ApprovalDocument 조회
+        ApprovalDocument document = approvalDocumentRepository.findById(documentIdx)
+                .orElseThrow(() -> new IllegalArgumentException("문서를 찾을 수 없습니다. documentIdx: " + documentIdx));
+
+        // 2. Soft delete 확인
+        if (document.getDeletedAt() != null) {
+            throw new IllegalStateException("이미 삭제된 문서입니다.");
+        }
+
+        // 3. ApprovalDocument soft delete
+        document.setDeletedAt(LocalDateTime.now());
+        document.setDeletedUserIdx(currentUserIdx);
+        approvalDocumentRepository.save(document);
+
+        // 4. VacationRequest 조회 및 캘린더 일정 삭제
+        List<VacationRequest> vacationRequests = vacationRequestRepository.findByDocumentIdx(documentIdx);
+
+        for (VacationRequest vr : vacationRequests) {
+            // 캘린더 일정 삭제 (vacation_request와 연결된 calendar_event 찾아서 삭제)
+            // calendar_event의 title이나 description에 vacation 관련 정보가 있거나
+            // 별도의 연결 테이블이 있을 경우 해당 로직 추가
+
+            // 기간에 해당하는 캘린더 일정 조회 및 완전 삭제
+            List<CalendarEvent> events = calendarEventRepository.findByUserIdxAndDateRange(
+                    vr.getUserIdx(), vr.getStartDate(), vr.getEndDate()
+            );
+
+            for (CalendarEvent event : events) {
+                // 연차 관련 일정인지 확인 (eventTitle에 "연차" 또는 특정 키워드 포함)
+                if (event.getEventTitle() != null &&
+                    (event.getEventTitle().contains("연차") || event.getEventTitle().contains("휴가"))) {
+                    // 완전 삭제 (hard delete)
+                    calendarEventRepository.delete(event);
+                    log.info("[캘린더 일정 삭제] eventIdx: {}, eventTitle: {}", event.getIdx(), event.getEventTitle());
+                }
+            }
+        }
+
+        log.info("[연차신청서 삭제 완료] documentIdx: {}, 연차 기간 수: {}", documentIdx, vacationRequests.size());
+    }
 }
