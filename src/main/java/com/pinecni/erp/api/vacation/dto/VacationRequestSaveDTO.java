@@ -38,6 +38,16 @@ public class VacationRequestSaveDTO {
      */
     private List<VacationPeriod> periods;
 
+    /**
+     * 프론트엔드에서 렌더링된 HTML (PDF 생성용)
+     */
+    private String renderedHtml;
+
+    /**
+     * 프론트엔드에서 수집한 CSS (PDF 생성용)
+     */
+    private String renderedCss;
+
     @Data
     @NoArgsConstructor
     @AllArgsConstructor
