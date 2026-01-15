@@ -36,6 +36,15 @@ public class ApprovalDocumentServiceImpl implements ApprovalDocumentService {
 
         List<ApprovalDocumentDTO> result = documents.stream()
                 .map(this::convertToDTO)
+                .filter(dto -> {
+                    // 원본 문서가 존재하는 것만 포함 (sourceDocumentId가 null이 아닌 경우)
+                    // 원본 문서가 삭제된 경우를 필터링
+                    if ("주간업무보고".equals(dto.getDocumentType()) || "프로젝트 주간업무보고".equals(dto.getDocumentType())) {
+                        return dto.getSourceDocumentId() != null;
+                    }
+                    // 다른 문서 타입은 일단 모두 포함
+                    return true;
+                })
                 .collect(Collectors.toList());
 
         log.debug("[전체 문서 조회] 완료 - 총 {}건", result.size());
@@ -51,6 +60,13 @@ public class ApprovalDocumentServiceImpl implements ApprovalDocumentService {
 
         List<ApprovalDocumentDTO> result = documents.stream()
                 .map(this::convertToDTO)
+                .filter(dto -> {
+                    // 원본 문서가 존재하는 것만 포함
+                    if ("주간업무보고".equals(dto.getDocumentType()) || "프로젝트 주간업무보고".equals(dto.getDocumentType())) {
+                        return dto.getSourceDocumentId() != null;
+                    }
+                    return true;
+                })
                 .collect(Collectors.toList());
 
         log.debug("[문서 타입별 조회] 완료 - 타입: {}, 총 {}건", documentType, result.size());
@@ -66,6 +82,13 @@ public class ApprovalDocumentServiceImpl implements ApprovalDocumentService {
 
         List<ApprovalDocumentDTO> result = documents.stream()
                 .map(this::convertToDTO)
+                .filter(dto -> {
+                    // 원본 문서가 존재하는 것만 포함
+                    if ("주간업무보고".equals(dto.getDocumentType()) || "프로젝트 주간업무보고".equals(dto.getDocumentType())) {
+                        return dto.getSourceDocumentId() != null;
+                    }
+                    return true;
+                })
                 .collect(Collectors.toList());
 
         log.debug("[작성자별 조회] 완료 - userIdx: {}, 총 {}건", drafterUserIdx, result.size());

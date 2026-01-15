@@ -1,7 +1,7 @@
 package com.pinecni.erp.api.file.controller;
 
 import com.pinecni.erp.api.file.dto.FileUploadDTO;
-import com.pinecni.erp.api.file.service.FileStorageService;
+import com.pinecni.erp.api.file.service.FileService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.core.io.Resource;
@@ -26,7 +26,7 @@ import java.util.List;
 @RequiredArgsConstructor
 public class FileController {
 
-    private final FileStorageService fileStorageService;
+    private final FileService fileService;  // Interface 타입으로 의존
 
     /**
      * 파일 업로드
@@ -42,11 +42,10 @@ public class FileController {
             @RequestParam("documentIdx") Long documentIdx,
             @RequestParam("uploadUserIdx") Long uploadUserIdx) {
 
-        log.info("파일 업로드 요청 - filename: {}, documentIdx: {}, uploadUserIdx: {}",
-            file.getOriginalFilename(), documentIdx, uploadUserIdx);
+        log.debug("POST /api/files/upload - uploadFile() with filename: {}", file.getOriginalFilename());
 
         try {
-            FileUploadDTO result = fileStorageService.uploadFile(file, documentIdx, uploadUserIdx);
+            FileUploadDTO result = fileService.uploadFile(file, documentIdx, uploadUserIdx);
             return ResponseEntity.ok(result);
         } catch (Exception e) {
             log.error("파일 업로드 실패: {}", e.getMessage(), e);
@@ -63,15 +62,15 @@ public class FileController {
      */
     @GetMapping("/download/{fileIdx}")
     public ResponseEntity<Resource> downloadFile(@PathVariable Long fileIdx) {
-        log.info("파일 다운로드 요청 - fileIdx: {}", fileIdx);
+        log.debug("GET /api/files/download/{} - downloadFile()", fileIdx);
 
         try {
             // 파일 정보 조회
-            FileUploadDTO fileInfo = fileStorageService.getFileInfo(fileIdx);
+            FileUploadDTO fileInfo = fileService.getFileInfo(fileIdx);
             String filename = fileInfo.getOriginalFilename();
 
             // 파일 리소스 조회
-            Resource resource = fileStorageService.downloadFile(fileIdx);
+            Resource resource = fileService.downloadFile(fileIdx);
 
             // 파일명 인코딩 (한글 지원)
             String encodedFilename = URLEncoder.encode(filename, StandardCharsets.UTF_8.toString())
@@ -100,10 +99,10 @@ public class FileController {
      */
     @GetMapping("/document/{documentIdx}")
     public ResponseEntity<?> getFilesByDocument(@PathVariable Long documentIdx) {
-        log.info("문서 파일 목록 조회 요청 - documentIdx: {}", documentIdx);
+        log.debug("GET /api/files/document/{} - getFilesByDocument()", documentIdx);
 
         try {
-            List<FileUploadDTO> files = fileStorageService.getFilesByDocument(documentIdx);
+            List<FileUploadDTO> files = fileService.getFilesByDocument(documentIdx);
             return ResponseEntity.ok(files);
         } catch (Exception e) {
             log.error("파일 목록 조회 실패: {}", e.getMessage(), e);
@@ -124,10 +123,10 @@ public class FileController {
             @PathVariable Long fileIdx,
             @RequestParam("deletedUserIdx") Long deletedUserIdx) {
 
-        log.info("파일 삭제 요청 - fileIdx: {}, deletedUserIdx: {}", fileIdx, deletedUserIdx);
+        log.debug("DELETE /api/files/{} - deleteFile()", fileIdx);
 
         try {
-            fileStorageService.deleteFile(fileIdx, deletedUserIdx);
+            fileService.deleteFile(fileIdx, deletedUserIdx);
             return ResponseEntity.ok().build();
         } catch (Exception e) {
             log.error("파일 삭제 실패: {}", e.getMessage(), e);

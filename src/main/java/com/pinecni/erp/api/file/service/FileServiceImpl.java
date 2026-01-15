@@ -2,6 +2,7 @@ package com.pinecni.erp.api.file.service;
 
 import com.pinecni.erp.api.approval.repository.ApprovalFileRepository;
 import com.pinecni.erp.api.file.dto.FileUploadDTO;
+import com.pinecni.erp.api.file.mapper.FileMapper;
 import com.pinecni.erp.entity.ApprovalFile;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -13,7 +14,6 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.StringUtils;
 import org.springframework.web.multipart.MultipartFile;
 
-import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -26,14 +26,16 @@ import java.util.UUID;
 import java.util.stream.Collectors;
 
 /**
- * 파일 저장/관리 Service
+ * 파일 저장/관리 Service 구현체
  */
 @Slf4j
 @Service
 @RequiredArgsConstructor
-public class FileStorageService {
+@Transactional(readOnly = true)
+public class FileServiceImpl implements FileService {
 
     private final ApprovalFileRepository approvalFileRepository;
+    private final FileMapper fileMapper;
 
     @Value("${file.upload.dir}")
     private String uploadDir;
@@ -50,10 +52,11 @@ public class FileStorageService {
     /**
      * 파일 업로드
      */
+    @Override
     @Transactional
     public FileUploadDTO uploadFile(MultipartFile file, Long documentIdx, Long uploadUserIdx) {
-        log.debug("파일 업로드 시작 - originalFilename: {}, documentIdx: {}",
-            file.getOriginalFilename(), documentIdx);
+        log.debug("uploadFile() called - originalFilename: {}, documentIdx: {}, uploadUserIdx: {}",
+            file.getOriginalFilename(), documentIdx, uploadUserIdx);
 
         // 파일 검증
         validateFile(file);
@@ -95,7 +98,7 @@ public class FileStorageService {
             log.info("파일 업로드 완료 - idx: {}, originalFilename: {}",
                 saved.getIdx(), originalFilename);
 
-            return convertToDTO(saved);
+            return fileMapper.toDTO(saved);
 
         } catch (IOException e) {
             log.error("파일 저장 실패: {}", e.getMessage(), e);
@@ -106,8 +109,9 @@ public class FileStorageService {
     /**
      * 파일 다운로드
      */
+    @Override
     public Resource downloadFile(Long fileIdx) {
-        log.debug("파일 다운로드 요청 - fileIdx: {}", fileIdx);
+        log.debug("downloadFile() called - fileIdx: {}", fileIdx);
 
         ApprovalFile approvalFile = approvalFileRepository.findById(fileIdx)
             .orElseThrow(() -> new RuntimeException("파일을 찾을 수 없습니다. ID: " + fileIdx));
@@ -136,22 +140,24 @@ public class FileStorageService {
     /**
      * 문서의 파일 목록 조회
      */
+    @Override
     public List<FileUploadDTO> getFilesByDocument(Long documentIdx) {
-        log.debug("문서 파일 목록 조회 - documentIdx: {}", documentIdx);
+        log.debug("getFilesByDocument() called - documentIdx: {}", documentIdx);
 
         List<ApprovalFile> files = approvalFileRepository
             .findByDocumentIdxAndIsDeletedFalseOrderByCreatedAtDesc(documentIdx);
 
         return files.stream()
-            .map(this::convertToDTO)
+            .map(fileMapper::toDTO)
             .collect(Collectors.toList());
     }
 
     /**
      * 파일 정보 조회
      */
+    @Override
     public FileUploadDTO getFileInfo(Long fileIdx) {
-        log.debug("파일 정보 조회 - fileIdx: {}", fileIdx);
+        log.debug("getFileInfo() called - fileIdx: {}", fileIdx);
 
         ApprovalFile approvalFile = approvalFileRepository.findById(fileIdx)
             .orElseThrow(() -> new RuntimeException("파일을 찾을 수 없습니다. ID: " + fileIdx));
@@ -160,15 +166,16 @@ public class FileStorageService {
             throw new RuntimeException("삭제된 파일입니다.");
         }
 
-        return convertToDTO(approvalFile);
+        return fileMapper.toDTO(approvalFile);
     }
 
     /**
      * 파일 삭제 (소프트 딜리트)
      */
+    @Override
     @Transactional
     public void deleteFile(Long fileIdx, Long deletedUserIdx) {
-        log.debug("파일 삭제 요청 - fileIdx: {}", fileIdx);
+        log.debug("deleteFile() called - fileIdx: {}, deletedUserIdx: {}", fileIdx, deletedUserIdx);
 
         ApprovalFile approvalFile = approvalFileRepository.findById(fileIdx)
             .orElseThrow(() -> new RuntimeException("파일을 찾을 수 없습니다. ID: " + fileIdx));
@@ -235,23 +242,5 @@ public class FileStorageService {
             return "";
         }
         return filename.substring(lastDotIndex + 1);
-    }
-
-    /**
-     * Entity → DTO 변환
-     */
-    private FileUploadDTO convertToDTO(ApprovalFile file) {
-        return FileUploadDTO.builder()
-            .idx(file.getIdx())
-            .documentIdx(file.getDocumentIdx())
-            .originalFilename(file.getOriginalFilename())
-            .storedFilename(file.getStoredFilename())
-            .filePath(file.getFilePath())
-            .fileSize(file.getFileSize())
-            .fileType(file.getFileType())
-            .uploadUserIdx(file.getUploadUserIdx())
-            .createdAt(file.getCreatedAt())
-            .downloadUrl("/api/files/download/" + file.getIdx())
-            .build();
     }
 }

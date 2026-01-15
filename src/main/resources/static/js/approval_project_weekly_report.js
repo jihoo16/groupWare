@@ -6,6 +6,7 @@ document.addEventListener('DOMContentLoaded', function() {
     const currentUserDept = window.CURRENT_USER?.empDeptName || '';
 
     let selectedFiles = [];
+    let existingFiles = []; // 서버에서 로드한 기존 파일 목록
     let projects = [];
     let projectMembers = []; // 프로젝트 참여인원 목록 (참고인 선택용)
     let selectedReferences = []; // 참고인 목록 {idx, name, dept, position}
@@ -1476,12 +1477,36 @@ document.addEventListener('DOMContentLoaded', function() {
     function updateFileList() {
         if (!fileList) return;
 
-        if (selectedFiles.length === 0) {
-            fileList.innerHTML = '';
-            return;
-        }
-
         fileList.innerHTML = '';
+
+        // 기존 파일 표시 (서버에서 로드한 파일)
+        existingFiles.forEach(file => {
+            const item = document.createElement('div');
+            item.className = 'file-item';
+
+            let icon = 'fa-file';
+            const filename = file.originalFilename.toLowerCase();
+            if (filename.match(/\.(jpg|jpeg|png|gif)$/i)) icon = 'fa-file-image';
+            else if (filename.match(/\.(pdf)$/i)) icon = 'fa-file-pdf';
+            else if (filename.match(/\.(doc|docx)$/i)) icon = 'fa-file-word';
+            else if (filename.match(/\.(xls|xlsx)$/i)) icon = 'fa-file-excel';
+
+            const fileSizeKB = (file.fileSize / 1024).toFixed(1);
+
+            item.innerHTML = `
+                <i class="fas ${icon}"></i>
+                <span>${file.originalFilename} (${fileSizeKB} KB)</span>
+                <a href="/api/files/download/${file.idx}" class="btn-download-file" download>
+                    <i class="fas fa-download"></i>
+                </a>
+                <button class="btn-remove-file" onclick="removeExistingFile(${file.idx})">
+                    <i class="fas fa-times"></i>
+                </button>
+            `;
+            fileList.appendChild(item);
+        });
+
+        // 새로 선택한 파일 표시
         selectedFiles.forEach((file, index) => {
             const item = document.createElement('div');
             item.className = 'file-item';
@@ -1494,13 +1519,18 @@ document.addEventListener('DOMContentLoaded', function() {
 
             item.innerHTML = `
                 <i class="fas ${icon}"></i>
-                <span>${file.name} (${(file.size / 1024).toFixed(1)} KB)</span>
+                <span>${file.name} (${(file.size / 1024).toFixed(1)} KB) <span style="color: #667eea; font-size: 11px;">[신규]</span></span>
                 <button class="btn-remove-file" onclick="removeFile(${index})">
                     <i class="fas fa-times"></i>
                 </button>
             `;
             fileList.appendChild(item);
         });
+
+        // 파일이 하나도 없을 때 메시지 표시
+        if (existingFiles.length === 0 && selectedFiles.length === 0) {
+            fileList.innerHTML = '<p style="color: #999; font-size: 12px; padding: 10px 0;">첨부된 파일이 없습니다.</p>';
+        }
     }
 
     window.removeFile = function(index) {
@@ -1552,6 +1582,8 @@ document.addEventListener('DOMContentLoaded', function() {
     async function loadExistingFiles(documentIdx) {
         if (!documentIdx) {
             console.log('documentIdx가 없어 파일을 로드하지 않습니다.');
+            existingFiles = [];
+            updateFileList();
             return;
         }
 
@@ -1560,50 +1592,26 @@ document.addEventListener('DOMContentLoaded', function() {
 
             if (!response.ok) {
                 console.error('파일 목록 조회 실패');
+                existingFiles = [];
+                updateFileList();
                 return;
             }
 
             const files = await response.json();
 
-            // 파일 목록 초기화
-            fileList.innerHTML = '';
-
             if (!files || files.length === 0) {
                 console.log('첨부된 파일이 없습니다.');
-                fileList.innerHTML = '<p style="color: #999; font-size: 12px; padding: 10px 0;">첨부된 파일이 없습니다.</p>';
-                return;
+                existingFiles = [];
+            } else {
+                existingFiles = files;
+                console.log(`${files.length}개의 파일을 로드했습니다.`);
             }
 
-            // 파일 목록 표시
-            files.forEach(file => {
-                const item = document.createElement('div');
-                item.className = 'file-item';
-
-                let icon = 'fa-file';
-                const filename = file.originalFilename.toLowerCase();
-                if (filename.match(/\.(jpg|jpeg|png|gif)$/i)) icon = 'fa-file-image';
-                else if (filename.match(/\.(pdf)$/i)) icon = 'fa-file-pdf';
-                else if (filename.match(/\.(doc|docx)$/i)) icon = 'fa-file-word';
-                else if (filename.match(/\.(xls|xlsx)$/i)) icon = 'fa-file-excel';
-
-                const fileSizeKB = (file.fileSize / 1024).toFixed(1);
-
-                item.innerHTML = `
-                    <i class="fas ${icon}"></i>
-                    <span>${file.originalFilename} (${fileSizeKB} KB)</span>
-                    <a href="/api/files/download/${file.idx}" class="btn-download-file" download>
-                        <i class="fas fa-download"></i>
-                    </a>
-                    <button class="btn-remove-file" onclick="removeExistingFile(${file.idx})">
-                        <i class="fas fa-times"></i>
-                    </button>
-                `;
-                fileList.appendChild(item);
-            });
-
-            console.log(`${files.length}개의 파일을 로드했습니다.`);
+            updateFileList();
         } catch (error) {
             console.error('파일 로드 오류:', error);
+            existingFiles = [];
+            updateFileList();
         }
     }
 
@@ -1626,10 +1634,11 @@ document.addEventListener('DOMContentLoaded', function() {
 
             alert('파일이 삭제되었습니다.');
 
-            // 파일 목록 새로고침
-            if (currentDocumentIdx) {
-                await loadExistingFiles(currentDocumentIdx);
-            }
+            // existingFiles 배열에서 삭제된 파일 제거
+            existingFiles = existingFiles.filter(file => file.idx !== fileIdx);
+
+            // 화면 업데이트
+            updateFileList();
         } catch (error) {
             console.error('파일 삭제 오류:', error);
             alert('파일 삭제 중 오류가 발생했습니다: ' + error.message);

@@ -30,7 +30,7 @@ public class WeeklyReportController {
      */
     @PostMapping
     public ResponseEntity<WeeklyReportDTO> createWeeklyReport(@Valid @RequestBody WeeklyReportCreateDTO createDTO) {
-        log.debug("POST /api/document/weekly-report");
+        log.debug("POST /api/document/weekly-report - createWeeklyReport()");
 
         WeeklyReportDTO created = weeklyReportService.createWeeklyReport(createDTO);
         return ResponseEntity.status(HttpStatus.CREATED).body(created);
@@ -48,7 +48,7 @@ public class WeeklyReportController {
      */
     @GetMapping("/{id}")
     public ResponseEntity<WeeklyReportDTO> getWeeklyReportById(@PathVariable Long id) {
-        log.debug("GET /api/document/weekly-report/{}", id);
+        log.debug("GET /api/document/weekly-report/{} - getWeeklyReportById()", id);
 
         WeeklyReportDTO report = weeklyReportService.getWeeklyReportById(id);
         return ResponseEntity.ok(report);
@@ -63,7 +63,7 @@ public class WeeklyReportController {
             @PathVariable Long id,
             @Valid @RequestBody WeeklyReportUpdateDTO updateDTO,
             jakarta.servlet.http.HttpSession session) {
-        log.debug("PUT /api/document/weekly-report/{}", id);
+        log.debug("PUT /api/document/weekly-report/{} - updateWeeklyReport()", id);
 
         // 세션에서 로그인한 사용자 IDX 가져오기
         Long updatedUserIdx = (Long) session.getAttribute("userIdx");
@@ -83,7 +83,7 @@ public class WeeklyReportController {
      */
     @DeleteMapping("/{id}")
     public ResponseEntity<Void> deleteWeeklyReport(@PathVariable Long id) {
-        log.debug("DELETE /api/document/weekly-report/{}", id);
+        log.debug("DELETE /api/document/weekly-report/{} - deleteWeeklyReport()", id);
 
         weeklyReportService.deleteWeeklyReport(id);
         return ResponseEntity.noContent().build();
@@ -95,7 +95,7 @@ public class WeeklyReportController {
      */
     @GetMapping("/project/{projectIdx}")
     public ResponseEntity<List<WeeklyReportDTO>> getWeeklyReportsByProject(@PathVariable Long projectIdx) {
-        log.debug("GET /api/document/weekly-report/project/{}", projectIdx);
+        log.debug("GET /api/document/weekly-report/project/{} - getWeeklyReportsByProject()", projectIdx);
 
         List<WeeklyReportDTO> reports = weeklyReportService.getWeeklyReportsByProjectIdx(projectIdx);
         return ResponseEntity.ok(reports);
