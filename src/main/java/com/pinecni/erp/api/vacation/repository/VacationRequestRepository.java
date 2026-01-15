@@ -58,4 +58,11 @@ public interface VacationRequestRepository extends JpaRepository<VacationRequest
     @Query("SELECT COALESCE(SUM(v.days), 0) FROM VacationRequest v " +
             "WHERE v.userIdx = :userIdx AND YEAR(v.startDate) = :year")
     BigDecimal sumDaysByUserIdxAndYear(Long userIdx, int year);
+
+    /**
+     * 사용자의 특정 연차 유형 신청 이력 확인 (경조사 등)
+     * - vacationType에 특정 문자열이 포함되어 있는지 확인
+     * - 예: vacationType="본인결혼" -> "경조사(본인결혼)" 검색
+     */
+    boolean existsByUserIdxAndVacationTypeContaining(Long userIdx, String vacationType);
 }
