@@ -202,7 +202,7 @@ div[title]:hover::after {
     box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
     display: flex;
     flex-direction: column;
-    overflow: hidden;
+    overflow: visible;
 }
 
 .content-header {
@@ -255,13 +255,15 @@ div[title]:hover::after {
     display: flex;
     flex-direction: column;
     overflow: hidden;
+    min-height: 0;
 }
 
-/* 문서 테이블 컨테이너 (스크롤 영역) */
+/* 문서 테이블 컨테이너 (페이징 전용 - 스크롤 없음) */
 .document-table-container {
     flex: 1;
     overflow-y: auto;
-    overflow-x: hidden;
+    overflow-x: auto;
+    min-height: 0;
 }
 
 .document-table {
@@ -552,31 +554,26 @@ div[title]:hover::after {
 
 
 /* 스크롤바 커스터마이징 - 호버 시에만 표시 */
-.approval-sidebar::-webkit-scrollbar,
-.document-table-container::-webkit-scrollbar {
+.approval-sidebar::-webkit-scrollbar {
     width: 6px;
 }
 
-.approval-sidebar::-webkit-scrollbar-track,
-.document-table-container::-webkit-scrollbar-track {
+.approval-sidebar::-webkit-scrollbar-track {
     background: transparent;
     border-radius: 3px;
 }
 
-.approval-sidebar::-webkit-scrollbar-thumb,
-.document-table-container::-webkit-scrollbar-thumb {
+.approval-sidebar::-webkit-scrollbar-thumb {
     background: transparent;
     border-radius: 3px;
     transition: background 0.3s ease;
 }
 
-.approval-sidebar:hover::-webkit-scrollbar-thumb,
-.document-table-container:hover::-webkit-scrollbar-thumb {
+.approval-sidebar:hover::-webkit-scrollbar-thumb {
     background: #ccc;
 }
 
-.approval-sidebar::-webkit-scrollbar-thumb:hover,
-.document-table-container::-webkit-scrollbar-thumb:hover {
+.approval-sidebar::-webkit-scrollbar-thumb:hover {
     background: #999 !important;
 }
 

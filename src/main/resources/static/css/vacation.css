@@ -301,6 +301,8 @@
 
 /* 테이블 스타일 */
 .history-table {
+    max-height: 400px;
+    overflow-y: auto;
     overflow-x: auto;
 }
 
@@ -311,6 +313,9 @@
 
 .history-table thead {
     background: #f5f7fa;
+    position: sticky;
+    top: 0;
+    z-index: 10;
 }
 
 .history-table th {
