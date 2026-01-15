@@ -2153,6 +2153,7 @@ document.addEventListener('DOMContentLoaded', function() {
         const excessDaysSpan = document.querySelector('.excess-days');
         const allowMinusCheckbox = document.getElementById('allow_minus_vacation');
         const specialReasonWrapper = document.getElementById('special_reason_wrapper');
+        const specialReasonTextarea = document.getElementById('special_approval_reason');
 
         if (warningCard && excessDaysSpan) {
             excessDaysSpan.textContent = excessDays + '일';
@@ -2167,6 +2168,18 @@ document.addEventListener('DOMContentLoaded', function() {
         // 특별 승인 사유 입력란 자동 표시
         if (specialReasonWrapper) {
             specialReasonWrapper.style.display = 'block';
+        }
+
+        // 사유 입력란에 자동 포커스 (사유가 비어있을 때만)
+        if (specialReasonTextarea && !specialReasonTextarea.value.trim()) {
+            setTimeout(() => {
+                specialReasonTextarea.focus();
+                // 입력란 하이라이트
+                specialReasonTextarea.style.border = '2px solid #667eea';
+                setTimeout(() => {
+                    specialReasonTextarea.style.border = '';
+                }, 2000);
+            }, 300);
         }
 
         // 버튼 상태 업데이트
