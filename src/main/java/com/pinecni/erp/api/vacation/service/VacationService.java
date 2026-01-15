@@ -3,6 +3,7 @@ package com.pinecni.erp.api.vacation.service;
 import com.pinecni.erp.api.vacation.dto.VacationUserInfoDTO;
 import com.pinecni.erp.api.vacation.dto.VacationCalculationDetailDTO;
 import com.pinecni.erp.api.vacation.dto.VacationRequestSaveDTO;
+import com.pinecni.erp.api.vacation.dto.VacationDetailDTO;
 
 import java.time.LocalDate;
 
@@ -62,4 +63,33 @@ public interface VacationService {
      * @return 생성된 문서 IDX
      */
     Long saveVacationRequest(Long userIdx, VacationRequestSaveDTO saveDTO);
+
+    /**
+     * 연차신청서 상세 조회
+     * @param documentIdx 문서 IDX (approval_documents의 idx)
+     * @return 연차신청서 상세 정보
+     */
+    VacationDetailDTO getVacationDetail(Long documentIdx);
+
+    /**
+     * 연차신청서 승인
+     * @param documentIdx 문서 IDX (approval_documents의 idx)
+     * @param approverUserIdx 승인자 사용자 IDX
+     */
+    void approveVacation(Long documentIdx, Long approverUserIdx);
+
+    /**
+     * 연차신청서 반려
+     * @param documentIdx 문서 IDX (approval_documents의 idx)
+     * @param approverUserIdx 반려자 사용자 IDX
+     * @param reason 반려 사유
+     */
+    void rejectVacation(Long documentIdx, Long approverUserIdx, String reason);
+
+    /**
+     * 연차신청서 삭제 (soft delete + 캘린더 일정 삭제)
+     * @param documentIdx 문서 IDX (approval_documents의 idx)
+     * @param currentUserIdx 삭제 요청자 사용자 IDX
+     */
+    void deleteVacation(Long documentIdx, Long currentUserIdx);
 }
