@@ -43,7 +43,7 @@ public class FileServiceImpl implements FileService {
     // 허용되는 파일 확장자
     private static final List<String> ALLOWED_EXTENSIONS = List.of(
         "pdf", "doc", "docx", "xls", "xlsx", "ppt", "pptx",
-        "hwp", "txt", "jpg", "jpeg", "png", "gif", "zip", "csv"
+        "hwp", "txt", "jpg", "jpeg", "png", "gif", "zip", "csv", "ttl", "rdf", "json"
     );
 
     // 최대 파일 크기 (50MB)
