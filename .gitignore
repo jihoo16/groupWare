@@ -45,3 +45,11 @@ sql/
 
 ### Log files ###
 *.log
+
+### Font files ###
+*.ttf
+*.otf
+
+### PDF Storage ###
+pdf_storage/
+*.pdf

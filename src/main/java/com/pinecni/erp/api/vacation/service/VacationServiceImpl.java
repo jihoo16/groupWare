@@ -11,8 +11,10 @@ import com.pinecni.erp.api.vacation.dto.VacationRequestSaveDTO;
 import com.pinecni.erp.api.vacation.repository.VacationAccrualScheduleRepository;
 import com.pinecni.erp.api.vacation.repository.VacationBalanceRepository;
 import com.pinecni.erp.api.vacation.repository.VacationRequestRepository;
+import com.pinecni.erp.api.vacation.repository.VacationDocumentFileRepository;
 import com.pinecni.erp.constant.CodeConstants;
 import com.pinecni.erp.entity.*;
+import com.pinecni.erp.service.PdfGenerationService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -35,11 +37,13 @@ public class VacationServiceImpl implements VacationService {
     private final VacationAccrualScheduleRepository accrualScheduleRepository;
     private final VacationBalanceRepository vacationBalanceRepository;
     private final VacationRequestRepository vacationRequestRepository;
+    private final VacationDocumentFileRepository vacationDocumentFileRepository;
     private final ApprovalDocumentRepository approvalDocumentRepository;
     private final CodeRepository codeRepository;
     private final CalendarEventRepository calendarEventRepository;
     private final CalendarParticipantRepository calendarParticipantRepository;
     private final com.pinecni.erp.api.calendar.service.HolidayService holidayService;
+    private final PdfGenerationService pdfGenerationService;
 
     @Override
     @Transactional(readOnly = true)
@@ -557,28 +561,36 @@ public class VacationServiceImpl implements VacationService {
         // 3. 중복 날짜 검증 (이미 신청된 날짜와 겹치는지)
         validateNoDuplicateDates(userIdx, saveDTO.getPeriods());
 
-        // 4. 신청 일수 검증 (프론트엔드에서 계산한 값과 백엔드 재계산 값 비교)
+        // 4. 본인결혼 휴가 중복 신청 검증 (인생에 한 번만 가능)
+        validateMarriageLeave(userIdx, saveDTO.getPeriods());
+
+        // 5. 신청 일수 검증 (프론트엔드에서 계산한 값과 백엔드 재계산 값 비교)
         validateRequestedDays(saveDTO.getPeriods());
 
-        // 5. 총 신청 일수 계산
+        // 6. 총 신청 일수 계산
         BigDecimal totalRequestedDays = saveDTO.getPeriods().stream()
                 .map(VacationRequestSaveDTO.VacationPeriod::getDays)
                 .reduce(BigDecimal.ZERO, BigDecimal::add);
 
-        // 6. 잔여 연차 검증
-        validateRemainingVacation(userIdx, totalRequestedDays, saveDTO.getAllowMinusVacation());
+        // 7. 잔여 연차 검증 (경조사는 연차 차감 대상이 아니므로 제외)
+        BigDecimal totalRequestedDaysExcludingGyeongjosa = saveDTO.getPeriods().stream()
+                .filter(period -> !period.getVacationType().contains("경조사"))
+                .map(VacationRequestSaveDTO.VacationPeriod::getDays)
+                .reduce(BigDecimal.ZERO, BigDecimal::add);
 
-        log.info("[보안 검증 완료] ✓ 중복 날짜 없음, ✓ 일수 정확, ✓ 잔여 연차 충분 (총 신청: {}일)", totalRequestedDays);
+        validateRemainingVacation(userIdx, totalRequestedDaysExcludingGyeongjosa, saveDTO.getAllowMinusVacation());
+
+        log.info("[보안 검증 완료] ✓ 중복 날짜 없음, ✓ 본인결혼 중복 없음, ✓ 일수 정확, ✓ 잔여 연차 충분 (총 신청: {}일)", totalRequestedDays);
         // ===== 🔒 보안 검증 완료 =====
 
-        // 7. 현재 연차 잔액 조회
+        // 8. 현재 연차 잔액 조회
         int currentYear = LocalDate.now().getYear();
         VacationBalance vacationBalance = vacationBalanceRepository.findByUserIdxAndYear(userIdx, currentYear)
                 .orElse(null);
 
         BigDecimal remainingDays = vacationBalance != null ? vacationBalance.getRemainingDays() : BigDecimal.ZERO;
 
-        // 8. ApprovalDocument 생성 (문서 메타데이터)
+        // 9. ApprovalDocument 생성 (문서 메타데이터)
         // 문서 제목: "연차 신청서 - {첫 번째 기간 시작일}"
         String title = "연차 신청서";
         if (!saveDTO.getPeriods().isEmpty()) {
@@ -602,7 +614,7 @@ public class VacationServiceImpl implements VacationService {
         ApprovalDocument savedDocument = approvalDocumentRepository.save(document);
         log.info("[문서 메타데이터 저장 완료] documentIdx: {}, documentNo: {}", savedDocument.getIdx(), savedDocument.getDocumentNo());
 
-        // 9. VacationRequest 생성 (각 기간별로 개별 저장)
+        // 10. VacationRequest 생성 (각 기간별로 개별 저장)
         for (VacationRequestSaveDTO.VacationPeriod period : saveDTO.getPeriods()) {
             VacationRequest vacationRequest = VacationRequest.builder()
                     .userIdx(userIdx)
@@ -624,8 +636,75 @@ public class VacationServiceImpl implements VacationService {
             log.info("[연차 기간 저장] startDate: {}, endDate: {}, days: {}, type: {}",
                     period.getStartDate(), period.getEndDate(), period.getDays(), period.getVacationType());
 
-            // 10. 캘린더 일정 자동 생성
+            // 11. 캘린더 일정 자동 생성
             createCalendarEventForVacation(userIdx, user, savedDocument.getIdx(), period, saveDTO.getReason());
+        }
+
+        // 12. PDF 파일 생성 및 저장
+        try {
+            log.info("[PDF 생성 시작] documentIdx: {}", savedDocument.getIdx());
+
+            // 프론트엔드에서 렌더링된 HTML/CSS로 PDF 생성
+            String renderedHtml = saveDTO.getRenderedHtml();
+            String renderedCss = saveDTO.getRenderedCss();
+
+            if (renderedHtml == null || renderedHtml.isEmpty()) {
+                log.warn("[PDF 생성 스킵] 렌더링된 HTML이 없습니다. documentIdx: {}", savedDocument.getIdx());
+                throw new IllegalArgumentException("렌더링된 HTML이 없습니다.");
+            }
+
+            // HTML 전체 문서 구성
+            String fullHtml = "<!DOCTYPE html>\n" +
+                    "<html>\n" +
+                    "<head>\n" +
+                    "    <meta charset=\"UTF-8\">\n" +
+                    "    <style>\n" +
+                    "        * { box-sizing: border-box; margin: 0; padding: 0; }\n" +
+                    "        body { font-family: 'Malgun Gothic', '맑은 고딕', sans-serif; margin: 1.5cm; background: white; }\n" +
+                    (renderedCss != null ? renderedCss : "") +
+                    "\n" +
+                    "        /* PDF 전용 글자 크기 조정 */\n" +
+                    "        .document-form * { font-size: 10px !important; }\n" +
+                    "        .document-form th, .document-form td { font-size: 10px !important; padding: 8px 12px !important; }\n" +
+                    "        .doc-title { font-size: 22px !important; }\n" +
+                    "        .approval-header { font-size: 9px !important; width: 80px !important; padding: 5px 10px !important; }\n" +
+                    "        .approval-sign-cell { width: 80px !important; height: 80px !important; padding: 3px !important; }\n" +
+                    "        .approval-name-cell { font-size: 9px !important; padding: 6px 5px !important; }\n" +
+                    "    </style>\n" +
+                    "</head>\n" +
+                    "<body>\n" +
+                    renderedHtml +
+                    "</body>\n" +
+                    "</html>";
+
+            // PDF 생성: Playwright로 HTML을 PDF로 변환
+            byte[] pdfBytes = pdfGenerationService.generatePdfFromRenderedHtml(fullHtml);
+
+            // 파일명 생성
+            String firstStartDate = saveDTO.getPeriods().get(0).getStartDate().toString().replace("-", "");
+            String year = saveDTO.getPeriods().get(0).getStartDate().toString().substring(0, 4);
+            String userIdentifier = user.getEmpId() != null && !user.getEmpId().isEmpty() ? user.getEmpId() : String.valueOf(userIdx);
+            String fileName = String.format("%s_vacation_request_%s.pdf", firstStartDate, userIdentifier);
+
+            // PDF 서버에 저장
+            String savePath = pdfGenerationService.saveVacationPdf(pdfBytes, fileName, year, userIdentifier);
+            log.info("[PDF 저장 완료] path: {}", savePath);
+
+            // DB에 파일 정보 저장
+            VacationDocumentFile documentFile = VacationDocumentFile.builder()
+                    .documentIdx(savedDocument.getIdx())
+                    .filePath(savePath)
+                    .fileName(fileName)
+                    .fileSize((long) pdfBytes.length)
+                    .createdUserIdx(userIdx)
+                    .build();
+
+            vacationDocumentFileRepository.save(documentFile);
+            log.info("[PDF 파일 정보 DB 저장 완료] fileIdx: {}, documentIdx: {}", documentFile.getIdx(), savedDocument.getIdx());
+
+        } catch (Exception e) {
+            log.error("[PDF 생성 실패] documentIdx: {}, error: {}", savedDocument.getIdx(), e.getMessage(), e);
+            // PDF 생성 실패는 전체 트랜잭션을 롤백하지 않음 (연차 신청은 유지)
         }
 
             log.info("[연차 신청서 저장 완료] documentIdx: {}, total periods: {}", savedDocument.getIdx(), saveDTO.getPeriods().size());
@@ -716,9 +795,6 @@ public class VacationServiceImpl implements VacationService {
             case "half-afternoon":
                 typeLabel = "오후 반차";
                 break;
-            case "sick":
-                typeLabel = "병가";
-                break;
             case "special":
                 typeLabel = "특별휴가";
                 break;
@@ -734,7 +810,7 @@ public class VacationServiceImpl implements VacationService {
     // ============================================
 
     /**
-     * 영업일 일수 계산 (주말/공휴일 제외)
+     * 휴가 일수 계산 (연차 유형에 따라 영업일 또는 전체 일수)
      * 프론트엔드에서 계산한 값과 비교하기 위해 사용
      */
     private BigDecimal calculateBusinessDays(LocalDate startDate, LocalDate endDate, String vacationType) {
@@ -752,6 +828,14 @@ public class VacationServiceImpl implements VacationService {
             return new BigDecimal("0.5");
         }
 
+        // 경조사 처리 (배우자출산 제외 - 휴무일 포함)
+        if (vacationType != null && vacationType.contains("경조사") && !vacationType.contains("배우자출산")) {
+            // 경조사는 주말/공휴일 포함하여 전체 일수로 계산
+            long totalDays = ChronoUnit.DAYS.between(startDate, endDate) + 1;
+            return new BigDecimal(totalDays);
+        }
+
+        // 배우자출산 또는 일반 연차: 영업일만 카운트 (주말/공휴일 제외)
         // 공휴일 데이터를 년도별로 캐싱하여 조회 (성능 최적화)
         Map<Integer, Map<String, String>> holidaysByYear = new HashMap<>();
 
@@ -779,6 +863,33 @@ public class VacationServiceImpl implements VacationService {
         }
 
         return businessDays;
+    }
+
+    /**
+     * 본인결혼 휴가 중복 신청 검증
+     * - 결혼은 인생에 한 번만 가능하므로, 본인결혼 휴가도 한 번만 신청 가능
+     */
+    private void validateMarriageLeave(Long userIdx, List<VacationRequestSaveDTO.VacationPeriod> periods) {
+        // 현재 신청 중인 기간에 "본인결혼"이 포함되어 있는지 확인
+        boolean hasMarriageLeave = periods.stream()
+                .anyMatch(period -> period.getVacationType() != null &&
+                                   period.getVacationType().contains("본인결혼"));
+
+        if (!hasMarriageLeave) {
+            // 본인결혼 휴가가 포함되지 않았다면 검증 불필요
+            return;
+        }
+
+        // 과거에 이미 본인결혼 휴가를 신청한 적이 있는지 확인
+        boolean alreadyApplied = vacationRequestRepository.existsByUserIdxAndVacationTypeContaining(userIdx, "본인결혼");
+
+        if (alreadyApplied) {
+            throw new IllegalStateException(
+                "본인결혼 휴가는 이미 신청하셨습니다. 결혼 휴가는 한 번만 신청 가능합니다."
+            );
+        }
+
+        log.info("[본인결혼 휴가 검증 통과] userIdx: {}, 첫 신청", userIdx);
     }
 
     /**

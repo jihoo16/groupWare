@@ -9,13 +9,19 @@ import com.pinecni.erp.entity.VacationRequest;
 import com.pinecni.erp.entity.VacationAccrualSchedule;
 import com.pinecni.erp.api.vacation.repository.VacationRequestRepository;
 import com.pinecni.erp.api.vacation.repository.VacationAccrualScheduleRepository;
+import com.pinecni.erp.service.PdfGenerationService;
 import jakarta.servlet.http.HttpSession;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.core.io.ByteArrayResource;
+import org.springframework.core.io.Resource;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.time.LocalDate;
+import java.time.format.DateTimeFormatter;
 import java.util.*;
 import java.util.stream.Collectors;
 
@@ -31,6 +37,7 @@ public class VacationController {
     private final VacationService vacationService;
     private final VacationRequestRepository vacationRequestRepository;
     private final VacationAccrualScheduleRepository vacationAccrualScheduleRepository;
+    private final PdfGenerationService pdfGenerationService;
 
     /**
      * 연차 신청서용 사용자 정보 조회 API
@@ -324,5 +331,80 @@ public class VacationController {
         log.info("신청된 연차 날짜 수: {}", sortedDates.size());
 
         return ResponseEntity.ok(sortedDates);
+    }
+
+    /**
+     * 연차신청서 PDF 생성 API
+     * @param pdfData PDF 생성에 필요한 데이터
+     * @param session HTTP 세션
+     * @return PDF 파일 (application/pdf)
+     */
+    @PostMapping("/generate-pdf")
+    public ResponseEntity<Resource> generateVacationPdf(
+            @RequestBody Map<String, Object> pdfData,
+            HttpSession session) {
+
+        try {
+            log.info("POST /api/vacation/generate-pdf - PDF 생성 시작");
+
+            // 세션에서 로그인 사용자 IDX 조회
+            Long userIdx = (Long) session.getAttribute("userIdx");
+            if (userIdx == null) {
+                log.error("세션에 userIdx가 없습니다. 로그인이 필요합니다.");
+                return ResponseEntity.status(401).build();
+            }
+
+            // PDF 데이터 추출
+            String userName = (String) pdfData.getOrDefault("userName", "");
+            String userId = (String) pdfData.getOrDefault("userId", "");
+            String userDept = (String) pdfData.getOrDefault("userDept", "");
+            String userPosition = (String) pdfData.getOrDefault("userPosition", "");
+            String reason = (String) pdfData.getOrDefault("reason", "");
+            @SuppressWarnings("unchecked")
+            List<Map<String, Object>> periods = (List<Map<String, Object>>) pdfData.getOrDefault("periods", new ArrayList<>());
+
+            // PDF 생성 (Flying Saucer + iText 사용)
+            byte[] pdfBytes = pdfGenerationService.generateVacationPdf(
+                    userName, userDept, userPosition, reason, periods
+            );
+
+            // 휴가 기간 중 가장 첫날 찾기
+            String firstVacationDate = periods.stream()
+                    .map(p -> (String) p.get("startDate"))
+                    .filter(date -> date != null && !date.isEmpty())
+                    .sorted()
+                    .findFirst()
+                    .orElse(LocalDate.now().toString());
+
+            // 날짜 포맷 변환 (YYYY-MM-DD -> YYYYMMDD)
+            String datePrefix = firstVacationDate.replace("-", "");
+
+            // 연도 추출 (YYYY-MM-DD -> YYYY)
+            String year = firstVacationDate.substring(0, 4);
+
+            // userId가 없으면 userIdx 사용
+            String userIdentifier = (userId != null && !userId.isEmpty()) ? userId : String.valueOf(userIdx);
+
+            // 파일명 생성: YYYYMMDD_vacation_request_{userId}.pdf
+            String fileName = String.format("%s_vacation_request_%s.pdf", datePrefix, userIdentifier);
+
+            // 서버의 정해진 경로에 PDF 파일 저장
+            // 경로: C:\PDF_STORAGE\vacation\YYYY\{userId}\filename
+            String savePath = pdfGenerationService.saveVacationPdf(pdfBytes, fileName, year, userIdentifier);
+            log.info("PDF 파일 저장 완료: {}", savePath);
+
+            // 브라우저로 PDF 다운로드
+            ByteArrayResource resource = new ByteArrayResource(pdfBytes);
+
+            return ResponseEntity.ok()
+                    .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=\"" + fileName + "\"")
+                    .contentType(MediaType.APPLICATION_PDF)
+                    .contentLength(pdfBytes.length)
+                    .body(resource);
+
+        } catch (Exception e) {
+            log.error("PDF 생성 중 오류 발생", e);
+            return ResponseEntity.internalServerError().build();
+        }
     }
 }

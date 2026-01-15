@@ -477,12 +477,12 @@ div:focus {
     color: #333;
     background: #f5f5f5;
     padding: 6px 12px;
-    width: 80px;
+    width: 100px;
 }
 
 .approval-sign-cell {
-    height: 70px;
-    width: 80px;
+    height: 100px;
+    width: 100px;
     padding: 4px;
     position: relative;
     background: white;
@@ -542,7 +542,7 @@ div:focus {
     font-weight: 700;
     color: #333;
     text-align: center;
-    width: 102px;
+    width: 120px;
 }
 td, td span, td input {
     font-size: 14px;
@@ -681,6 +681,7 @@ div h2{
     color: #555;
     text-align: left;
     line-height: 1.6;
+    white-space: pre-line;
 }
 
 /* 휴가기간 표시 영역 */
@@ -693,6 +694,12 @@ div h2{
     color: #333;
     overflow: visible;
     word-wrap: break-word;
+}
+
+/* 경조휴가 텍스트 파란색 */
+#vacation_period_display .gyeongjosa-text {
+    color: #4a90e2;
+    font-weight: 600;
 }
 
 /* 회의 품의서 장소/일시 셀 */
@@ -1514,6 +1521,17 @@ div h2{
     color: #dc3545 !important;
 }
 
+/* 경조휴가 표시 스타일 */
+.calendar-day.gyeongjosa-period {
+    border: 2px solid #4a90e2 !important;
+    box-shadow: 0 0 0 2px rgba(74, 144, 226, 0.2);
+}
+
+/* 경조휴가의 체크마크는 파란색 */
+.calendar-day.gyeongjosa-period.full-day::after {
+    color: #4a90e2 !important;
+}
+
 /* 선택된 날짜 스타일 (과거 날짜여도 우선 적용) */
 .calendar-day.selected {
     background: linear-gradient(135deg, #667eea 0%, #764ba2 100%) !important;
@@ -1715,6 +1733,14 @@ div h2{
     color: #495057;
 }
 
+.info-row .info-value {
+    padding: 8px 0;
+    font-size: 14px;
+    font-weight: 500;
+    color: #212529;
+    line-height: 1.5;
+}
+
 .info-row input,
 .info-row select,
 .info-row textarea {
@@ -1747,6 +1773,104 @@ div h2{
 
 .info-row.highlight {
     background: linear-gradient(135deg, #fff9e6 0%, #fff3cc 100%);
+}
+
+/* 라디오 버튼 그룹 */
+.radio-group {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+.gyeongjo-section {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    margin-bottom: 8px;
+}
+
+.gyeongjo-section-title {
+    font-size: 12px;
+    font-weight: 700;
+    color: #667eea;
+    padding: 8px 12px;
+    background: linear-gradient(135deg, #e3f2fd 0%, #dce8ff 100%);
+    border-left: 3px solid #667eea;
+    border-radius: 4px;
+    margin-bottom: 4px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    cursor: pointer;
+    user-select: none;
+    transition: all 0.2s ease;
+    box-shadow: 0 1px 3px rgba(102, 126, 234, 0.1);
+}
+
+.gyeongjo-section-title:hover {
+    background: linear-gradient(135deg, #d1e7ff 0%, #c5d9ff 100%);
+    box-shadow: 0 2px 4px rgba(102, 126, 234, 0.15);
+}
+
+.gyeongjo-section-title i {
+    font-size: 10px;
+    transition: transform 0.2s ease;
+}
+
+.gyeongjo-section-title.collapsed i {
+    transform: rotate(-90deg);
+}
+
+.gyeongjo-items {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    max-height: 500px;
+    overflow: hidden;
+    transition: max-height 0.3s ease, opacity 0.3s ease, margin-top 0.3s ease;
+    opacity: 1;
+}
+
+.gyeongjo-items.collapsed {
+    max-height: 0;
+    opacity: 0;
+    margin-top: 0;
+}
+
+.radio-label {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    cursor: pointer;
+    padding: 10px 12px;
+    border: 1px solid #dee2e6;
+    border-radius: 6px;
+    transition: all 0.2s ease;
+    background: white;
+}
+
+.radio-label:hover {
+    border-color: #667eea;
+    background: #f8f9ff;
+}
+
+.radio-label input[type="radio"] {
+    width: 18px;
+    height: 18px;
+    margin: 0;
+    cursor: pointer;
+    accent-color: #667eea;
+}
+
+.radio-label span {
+    font-size: 14px;
+    color: #495057;
+    font-weight: 500;
+}
+
+.radio-label input[type="radio"]:checked + span {
+    color: #667eea;
+    font-weight: 600;
 }
 
 .calculated-days {
@@ -2165,6 +2289,174 @@ div h2{
     color: #2196f3;
 }
 
+.period-add-notice.gyeongjo {
+    background: #fff3e0;
+    border-left: 3px solid #ff9800;
+    color: #e65100;
+}
+
+.period-add-notice.gyeongjo i {
+    color: #ff9800;
+}
+
+.period-add-notice.gyeongjo span {
+    line-height: 1.6;
+}
+
+/* 미추가 날짜 경고 */
+.pending-dates-alert {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 12px 16px;
+    background: linear-gradient(135deg, #fff3cd 0%, #ffe8a1 100%);
+    border: 2px solid #ffc107;
+    border-radius: 8px;
+    color: #856404;
+    font-size: 14px;
+    font-weight: 600;
+    animation: pulse-warning 2s ease-in-out infinite;
+}
+
+.pending-dates-alert i {
+    font-size: 18px;
+    color: #ffc107;
+    animation: shake-icon 1.5s ease-in-out infinite;
+    flex-shrink: 0;
+}
+
+.pending-dates-alert span {
+    flex: 1;
+}
+
+@keyframes pulse-warning {
+    0%, 100% {
+        border-color: #ffc107;
+        box-shadow: 0 0 0 0 rgba(255, 193, 7, 0.4);
+    }
+    50% {
+        border-color: #ff9800;
+        box-shadow: 0 0 0 4px rgba(255, 193, 7, 0.2);
+    }
+}
+
+@keyframes shake-icon {
+    0%, 100% {
+        transform: rotate(0deg);
+    }
+    10%, 30%, 50%, 70%, 90% {
+        transform: rotate(-10deg);
+    }
+    20%, 40%, 60%, 80% {
+        transform: rotate(10deg);
+    }
+}
+
+.gyeongjo-date-guide {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 14px 16px;
+    background: linear-gradient(135deg, #e3f2fd 0%, #dce8ff 100%);
+    border: 2px solid #667eea;
+    border-radius: 8px;
+    color: #1565c0;
+    font-size: 14px;
+    font-weight: 700;
+    animation: pulse-border 2s ease-in-out infinite;
+}
+
+.gyeongjo-date-guide > i.fa-hand-pointer {
+    font-size: 18px;
+    color: #667eea;
+    animation: bounce-icon 1.5s ease-in-out infinite;
+    flex-shrink: 0;
+}
+
+.gyeongjo-date-guide > span {
+    flex: 1;
+}
+
+@keyframes pulse-border {
+    0%, 100% {
+        border-color: #667eea;
+        box-shadow: 0 0 0 0 rgba(102, 126, 234, 0.4);
+    }
+    50% {
+        border-color: #764ba2;
+        box-shadow: 0 0 0 4px rgba(102, 126, 234, 0.1);
+    }
+}
+
+@keyframes bounce-icon {
+    0%, 100% {
+        transform: translateY(0);
+    }
+    50% {
+        transform: translateY(-5px);
+    }
+}
+
+/* 툴팁 wrapper */
+.gyeongjo-tooltip-wrapper {
+    position: relative;
+    display: flex;
+    align-items: center;
+    margin-left: auto;
+    flex-shrink: 0;
+}
+
+.gyeongjo-tooltip-icon {
+    font-size: 16px;
+    color: #667eea;
+    cursor: help;
+    transition: color 0.2s ease;
+    animation: none !important;
+    transform: none !important;
+    flex-shrink: 0;
+}
+
+.gyeongjo-tooltip-icon:hover {
+    color: #5568d3;
+}
+
+/* 툴팁 박스 */
+.gyeongjo-tooltip {
+    position: absolute;
+    bottom: calc(100% + 10px);
+    right: 0;
+    background: #2d3748;
+    color: white;
+    padding: 10px 14px;
+    border-radius: 6px;
+    font-size: 12px;
+    line-height: 1.5;
+    white-space: normal;
+    width: 280px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+    opacity: 0;
+    visibility: hidden;
+    transition: opacity 0.3s ease, visibility 0.3s ease;
+    z-index: 1000;
+    pointer-events: none;
+}
+
+/* 툴팁 화살표 */
+.gyeongjo-tooltip::after {
+    content: '';
+    position: absolute;
+    top: 100%;
+    right: 10px;
+    border: 6px solid transparent;
+    border-top-color: #2d3748;
+}
+
+/* 호버 시 툴팁 표시 */
+.gyeongjo-tooltip-wrapper:hover .gyeongjo-tooltip {
+    opacity: 1;
+    visibility: visible;
+}
+
 .btn-add-period {
     width: 100%;
     padding: 12px 16px;
@@ -2340,5 +2632,144 @@ div h2{
     }
     20%, 40%, 60%, 80% {
         transform: translateX(5px);
+    }
+}
+
+/* 액션 버튼 그룹 */
+.action-buttons {
+    display: flex;
+    gap: 12px;
+    align-items: center;
+}
+
+/* 인쇄 버튼 */
+.btn-print {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+    border: none;
+    padding: 12px 24px;
+    border-radius: 8px;
+    font-size: 15px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    box-shadow: 0 4px 12px rgba(102, 126, 234, 0.3);
+}
+
+.btn-print:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 16px rgba(102, 126, 234, 0.4);
+}
+
+/* PDF 저장 버튼 */
+.btn-pdf {
+    background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+    color: white;
+    border: none;
+    padding: 12px 24px;
+    border-radius: 8px;
+    font-size: 15px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    box-shadow: 0 4px 12px rgba(245, 87, 108, 0.3);
+}
+
+.btn-pdf:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 16px rgba(245, 87, 108, 0.4);
+}
+
+/* 인쇄 스타일 */
+@media print {
+    /* 브라우저 기본 헤더/푸터 제거 (URL, 페이지 번호 등) */
+    @page {
+        margin: 0;
+        size: A4;
+    }
+
+    /* 인쇄 시 숨길 요소들 */
+    .sidebar,
+    .template-sidebar,
+    .header,
+    .submit-actions,
+    .action-buttons,
+    .btn-secondary,
+    .btn-primary,
+    .btn-print,
+    .btn-pdf,
+    .submit-guide,
+    .vacation-interactive-form,
+    .document-preview-toggle {
+        display: none !important;
+    }
+
+    /* 메인 콘텐츠만 표시 */
+    .main-content {
+        margin: 0 !important;
+        padding: 0 !important;
+        width: 100% !important;
+        max-width: 100% !important;
+    }
+
+    .write-container {
+        padding: 0 !important;
+        max-width: 100% !important;
+    }
+
+    .write-layout {
+        display: block !important;
+    }
+
+    .editor-area {
+        padding: 0 !important;
+        box-shadow: none !important;
+        background: white !important;
+    }
+
+    /* document-form-wrapper를 펼쳐서 표시 */
+    .document-form-wrapper {
+        max-height: none !important;
+        padding: 20px !important;
+        margin: 0 !important;
+        opacity: 1 !important;
+        box-shadow: none !important;
+    }
+
+    .document-form-wrapper.collapsed {
+        max-height: none !important;
+        padding: 20px !important;
+        margin: 0 !important;
+        opacity: 1 !important;
+    }
+
+    .document-form {
+        box-shadow: none !important;
+        border: 1px solid #333 !important;
+        padding: 20px !important;
+    }
+
+    /* 배경색 제거 및 여백 설정 */
+    body {
+        background: white !important;
+        margin: 1.5cm !important;
+    }
+
+    /* 페이지 나누기 방지 */
+    .approval-line-box,
+    .form-table,
+    .document-footer {
+        page-break-inside: avoid;
+    }
+
+    /* 문서 제목 스타일 유지 */
+    .doc-title {
+        page-break-after: avoid;
     }
 }

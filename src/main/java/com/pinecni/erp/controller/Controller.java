@@ -96,6 +96,18 @@ public class Controller {
         return "approval_vacation";
     }
 
+    /**
+     * 연차신청서 PDF 미리보기 (Playwright용)
+     * JavaScript가 실행되는 완전한 페이지
+     */
+    @GetMapping("/approval/vacation/pdf-preview/{documentId}")
+    public String vacationPdfPreview(@org.springframework.web.bind.annotation.PathVariable Long documentId, Model model) {
+        log.info("[PDF 미리보기] 문서 ID: {}", documentId);
+        model.addAttribute("documentId", documentId);
+        model.addAttribute("pdfPreviewMode", true);
+        return "approval_vacation";
+    }
+
     // 지출
     @GetMapping("/approval/expense")
     public String approvalExpense() {
