@@ -97,6 +97,14 @@ public class Controller {
     }
 
     /**
+     * 연차신청서 상세보기 페이지
+     */
+    @GetMapping("/approval/vacation/detail")
+    public String approvalVacationDetail() {
+        return "approval_vacation_detail";
+    }
+
+    /**
      * 연차신청서 PDF 미리보기 (Playwright용)
      * JavaScript가 실행되는 완전한 페이지
      */

@@ -1,0 +1,100 @@
+<!DOCTYPE html>
+<html lang="ko" xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{fragments/layout :: head('연차신청서 상세', '/css/approval_vacation_detail.css')}"></head>
+<body>
+    <div class="container">
+        <!-- 좌측 네비게이션 바 -->
+        <div th:replace="~{fragments/sidebar :: sidebar('approval')}"></div>
+
+        <!-- 메인 콘텐츠 영역 -->
+        <main class="main-content">
+            <header class="header">
+                <div class="header-left">
+                    <h1 class="page-title"><i class="fas fa-calendar-check"></i> 연차신청서 상세</h1>
+                </div>
+                <div class="header-right">
+                    <button class="btn-secondary" onclick="history.back()">
+                        <i class="fas fa-arrow-left"></i>
+                        돌아가기
+                    </button>
+                </div>
+            </header>
+
+            <div class="write-container">
+                <div class="editor-area" style="max-width: 1000px; margin: 0 auto;">
+                    <!-- 문서 양식 -->
+                    <div class="document-form">
+                        <h2 class="doc-title">연 차 신 청 서</h2>
+
+                        <!-- 기본 정보 -->
+                        <table class="form-table">
+                            <tr>
+                                <th style="width: 15%;">문서번호</th>
+                                <td style="width: 35%;">
+                                    <input type="text" id="documentNo" readonly>
+                                </td>
+                                <th style="width: 15%;">신청일</th>
+                                <td style="width: 35%;">
+                                    <input type="text" id="applyDate" readonly>
+                                </td>
+                            </tr>
+                            <tr>
+                                <th>신청자</th>
+                                <td>
+                                    <input type="text" id="drafterName" readonly>
+                                </td>
+                                <th>부서</th>
+                                <td>
+                                    <input type="text" id="drafterDept" readonly>
+                                </td>
+                            </tr>
+                            <tr>
+                                <th>직급</th>
+                                <td>
+                                    <input type="text" id="drafterPosition" readonly>
+                                </td>
+                                <th>잔여 연차</th>
+                                <td>
+                                    <input type="text" id="remainingDays" readonly>
+                                </td>
+                            </tr>
+                        </table>
+
+                        <!-- 연차 기간 정보 -->
+                        <h3 class="section-title">연차 기간</h3>
+                        <div id="periodsList" class="periods-list">
+                            <!-- JavaScript로 동적 생성 -->
+                        </div>
+
+                        <!-- 신청 사유 -->
+                        <h3 class="section-title">신청 사유</h3>
+                        <div class="reason-box">
+                            <p id="reason" class="reason-text"></p>
+                        </div>
+
+                        <!-- 첨부파일 (PDF) -->
+                        <h3 class="section-title">첨부파일</h3>
+                        <div id="attachmentsList" class="attachments-list">
+                            <!-- JavaScript로 동적 생성 -->
+                        </div>
+
+                        <!-- 액션 버튼 -->
+                        <div class="action-buttons">
+                            <button type="button" class="btn-danger" id="deleteBtn">
+                                <i class="fas fa-trash"></i>
+                                삭제
+                            </button>
+                            <button type="button" class="btn-secondary" onclick="history.back()">
+                                <i class="fas fa-arrow-left"></i>
+                                목록으로
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <script th:src="@{/js/approval_vacation_detail.js}"></script>
+</body>
+</html>

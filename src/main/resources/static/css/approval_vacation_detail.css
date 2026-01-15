@@ -1,0 +1,441 @@
+/* 연차신청서 상세보기 CSS */
+
+/* 기본 레이아웃 */
+.write-container {
+    padding: 20px;
+    background: #f5f7fa;
+    min-height: calc(100vh - 70px);
+}
+
+.editor-area {
+    background: white;
+    border-radius: 12px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+    padding: 40px;
+}
+
+/* 문서 양식 */
+.document-form {
+    max-width: 900px;
+    margin: 0 auto;
+}
+
+.doc-title {
+    text-align: center;
+    font-size: 28px;
+    font-weight: 700;
+    color: #1a1a1a;
+    margin: 30px 0;
+    letter-spacing: 8px;
+}
+
+/* 결재라인 */
+.approval-line-box {
+    float: right;
+    margin-bottom: 20px;
+    border: 2px solid #333;
+}
+
+.approval-line-table {
+    border-collapse: collapse;
+    background: white;
+}
+
+.approval-line-table th,
+.approval-line-table td {
+    border: 1px solid #333;
+    text-align: center;
+    min-width: 80px;
+}
+
+.approval-header {
+    padding: 8px 12px;
+    font-size: 12px;
+    font-weight: 600;
+    background: #f8f9fa;
+}
+
+.approval-sign-cell {
+    padding: 0;
+    height: 60px;
+}
+
+.sign-area {
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    position: relative;
+}
+
+.sign-area.approved {
+    background: #e8f5e9;
+}
+
+.sign-area.rejected {
+    background: #ffebee;
+}
+
+.sign-area.pending {
+    background: #fff3e0;
+}
+
+.sign-text {
+    font-size: 14px;
+    font-weight: 600;
+}
+
+.sign-area.approved .sign-text {
+    color: #2e7d32;
+}
+
+.sign-area.rejected .sign-text {
+    color: #c62828;
+}
+
+.sign-area.pending .sign-text {
+    color: #f57c00;
+}
+
+.sign-date {
+    font-size: 10px;
+    color: #666;
+    margin-top: 4px;
+}
+
+.approval-name-cell {
+    padding: 8px 12px;
+    font-size: 13px;
+    font-weight: 500;
+}
+
+.approver-name {
+    display: block;
+}
+
+/* 폼 테이블 */
+.form-table {
+    width: 100%;
+    border-collapse: collapse;
+    margin: 20px 0;
+    clear: both;
+}
+
+.form-table th,
+.form-table td {
+    border: 1px solid #ddd;
+    padding: 12px 15px;
+}
+
+.form-table th {
+    background: #f8f9fa;
+    font-weight: 600;
+    text-align: left;
+    width: 15%;
+}
+
+.form-table td {
+    background: white;
+}
+
+.form-table input[type="text"],
+.form-table textarea {
+    width: 100%;
+    border: none;
+    outline: none;
+    background: transparent;
+    font-size: 14px;
+    color: #333;
+    padding: 0;
+}
+
+.form-table textarea {
+    resize: none;
+    line-height: 1.6;
+}
+
+/* 섹션 타이틀 */
+.section-title {
+    font-size: 16px;
+    font-weight: 600;
+    color: #333;
+    margin: 30px 0 15px;
+    padding-left: 10px;
+    border-left: 4px solid #667eea;
+}
+
+/* 신청 사유 박스 */
+.reason-box {
+    background: #f8f9fa;
+    border: 1px solid #ddd;
+    border-radius: 6px;
+    padding: 16px;
+    margin: 20px 0;
+}
+
+.reason-text {
+    margin: 0;
+    line-height: 1.6;
+    color: #333;
+    white-space: pre-wrap;
+    word-wrap: break-word;
+}
+
+/* 연차 기간 테이블 */
+.periods-list {
+    margin: 20px 0;
+}
+
+.periods-table {
+    width: 100%;
+    border-collapse: collapse;
+}
+
+.periods-table thead {
+    background: #f8f9fa;
+}
+
+.periods-table th,
+.periods-table td {
+    border: 1px solid #ddd;
+    padding: 12px 15px;
+    text-align: center;
+}
+
+.periods-table th {
+    font-weight: 600;
+    font-size: 14px;
+}
+
+.periods-table td {
+    font-size: 14px;
+}
+
+.periods-table .gyeongjosa-row {
+    background: #e3f2fd;
+}
+
+.periods-table tfoot td {
+    background: #f8f9fa;
+    font-weight: 600;
+}
+
+/* 첨부파일 */
+.attachments-list {
+    margin: 20px 0;
+}
+
+.attachment-list {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+}
+
+.attachment-item {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 12px 15px;
+    border: 1px solid #ddd;
+    border-radius: 6px;
+    margin-bottom: 8px;
+    background: white;
+    transition: background 0.2s;
+}
+
+.attachment-item:hover {
+    background: #f8f9fa;
+}
+
+.attachment-item i {
+    color: #d32f2f;
+    font-size: 18px;
+}
+
+.attachment-item a {
+    flex: 1;
+    color: #667eea;
+    text-decoration: none;
+    font-weight: 500;
+}
+
+.attachment-item a:hover {
+    text-decoration: underline;
+}
+
+.file-size {
+    font-size: 12px;
+    color: #999;
+}
+
+/* 액션 버튼 */
+.action-buttons {
+    display: flex;
+    justify-content: center;
+    gap: 10px;
+    margin-top: 40px;
+    padding-top: 30px;
+    border-top: 1px solid #e0e0e0;
+}
+
+.btn-primary,
+.btn-secondary,
+.btn-danger {
+    padding: 12px 30px;
+    border: none;
+    border-radius: 8px;
+    font-size: 14px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.3s;
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.btn-primary {
+    background: #667eea;
+    color: white;
+}
+
+.btn-primary:hover {
+    background: #5568d3;
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
+}
+
+.btn-secondary {
+    background: #f0f0f0;
+    color: #666;
+}
+
+.btn-secondary:hover {
+    background: #e0e0e0;
+}
+
+.btn-danger {
+    background: #ef5350;
+    color: white;
+}
+
+.btn-danger:hover {
+    background: #e53935;
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(239, 83, 80, 0.4);
+}
+
+/* 반려 모달 */
+.modal {
+    display: none;
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.5);
+    z-index: 9999;
+    justify-content: center;
+    align-items: center;
+}
+
+.modal-content {
+    background: white;
+    border-radius: 12px;
+    width: 90%;
+    max-width: 500px;
+    box-shadow: 0 10px 40px rgba(0, 0, 0, 0.2);
+}
+
+.modal-header {
+    padding: 20px 24px;
+    border-bottom: 1px solid #e0e0e0;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.modal-header h3 {
+    font-size: 18px;
+    font-weight: 600;
+    margin: 0;
+}
+
+.modal-close {
+    background: none;
+    border: none;
+    font-size: 24px;
+    color: #999;
+    cursor: pointer;
+    padding: 0;
+    width: 30px;
+    height: 30px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.modal-close:hover {
+    color: #333;
+}
+
+.modal-body {
+    padding: 24px;
+}
+
+.modal-body textarea {
+    width: 100%;
+    min-height: 120px;
+    padding: 12px;
+    border: 1px solid #ddd;
+    border-radius: 6px;
+    font-size: 14px;
+    resize: vertical;
+    font-family: inherit;
+}
+
+.modal-body textarea:focus {
+    outline: none;
+    border-color: #667eea;
+}
+
+.modal-footer {
+    padding: 16px 24px;
+    border-top: 1px solid #e0e0e0;
+    display: flex;
+    justify-content: flex-end;
+    gap: 10px;
+}
+
+/* 반응형 */
+@media (max-width: 768px) {
+    .editor-area {
+        padding: 20px;
+    }
+
+    .doc-title {
+        font-size: 22px;
+        letter-spacing: 4px;
+    }
+
+    .approval-line-box {
+        float: none;
+        margin: 20px auto;
+        width: fit-content;
+    }
+
+    .form-table th {
+        width: 25%;
+    }
+
+    .action-buttons {
+        flex-direction: column;
+    }
+
+    .btn-primary,
+    .btn-secondary,
+    .btn-danger {
+        width: 100%;
+        justify-content: center;
+    }
+}

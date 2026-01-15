@@ -338,6 +338,9 @@ document.addEventListener('DOMContentLoaded', function() {
                 } else if (docType === 'receipt-trip') {
                     window.location.href = `/approval/receipt-trip?id=${reportId}`;
                 }
+            } else if (category === 'vacation' && reportId) {
+                // 연차신청서 상세페이지로 이동 (documentIdx 사용)
+                window.location.href = `/approval/vacation/detail?documentIdx=${reportId}`;
             } else {
                 const title = docRow.querySelector('.title-wrap').textContent;
                 alert(`"${title}" 상세보기 기능은 추후 구현됩니다.`);
@@ -379,6 +382,9 @@ document.addEventListener('DOMContentLoaded', function() {
                 } else if (docType === 'receipt-trip') {
                     window.location.href = `/approval/receipt-trip?id=${reportId}`;
                 }
+            } else if (category === 'vacation' && reportId) {
+                // 연차신청서 상세페이지로 이동 (documentIdx 사용)
+                window.location.href = `/approval/vacation/detail?documentIdx=${reportId}`;
             } else {
                 const title = titleWrap.textContent;
                 alert(`"${title}" 상세보기 기능은 추후 구현됩니다.`);
