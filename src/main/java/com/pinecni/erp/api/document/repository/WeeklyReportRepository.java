@@ -39,4 +39,9 @@ public interface WeeklyReportRepository extends JpaRepository<WeeklyReport, Long
      */
     @Query("SELECT w FROM WeeklyReport w ORDER BY w.createdAt DESC")
     List<WeeklyReport> findAllOrderByCreatedAtDesc();
+
+    /**
+     * documentIdx로 조회
+     */
+    Optional<WeeklyReport> findByDocumentIdx(Long documentIdx);
 }

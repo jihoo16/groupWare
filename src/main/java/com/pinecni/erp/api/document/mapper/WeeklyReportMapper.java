@@ -32,6 +32,7 @@ public class WeeklyReportMapper {
                 .userDept(null)  // TODO: User 테이블 JOIN하여 부서 조회
                 .projectIdx(entity.getProjectIdx())
                 .projectName(entity.getProjectName())
+                .documentIdx(entity.getDocumentIdx())
                 .reportPeriod(entity.getReportPeriod())
                 .mainTasks(entity.getMainTasks())
                 .achievements(entity.getAchievements())

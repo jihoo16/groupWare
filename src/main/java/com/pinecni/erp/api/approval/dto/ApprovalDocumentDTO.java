@@ -15,7 +15,8 @@ import java.time.LocalDateTime;
 @NoArgsConstructor
 @AllArgsConstructor
 public class ApprovalDocumentDTO {
-    private Long idx;
+    private Long idx;                // approval_documents 테이블의 idx
+    private Long sourceDocumentId;   // 원본 문서 테이블의 idx (weekly_report, monthly_report 등)
     private String documentNo;
     private String title;
     private String documentType;

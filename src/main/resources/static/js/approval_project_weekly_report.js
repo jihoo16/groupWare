@@ -13,6 +13,7 @@ document.addEventListener('DOMContentLoaded', function() {
     let selectedProject = null; // 선택된 프로젝트
     let employees = []; // 전체 직원 목록 (결재자 자동 설정용)
     let selectedApprovers = []; // 선택된 결재자 목록
+    let currentDocumentIdx = null; // 수정 모드일 때 현재 문서의 documentIdx
 
     // DOM 요소
     const fileInput = document.getElementById('fileInput');
@@ -38,6 +39,42 @@ document.addEventListener('DOMContentLoaded', function() {
     let currentYear = new Date().getFullYear();
     let currentMonth = new Date().getMonth();
     let selectedWeekDates = []; // 선택된 주의 평일들 (월~금)
+
+    // 공휴일 데이터 (서버에서 동적으로 로드)
+    let holidaysCache = {}; // { '2024': { '2024-01-01': '신정', ... }, '2025': { ... } }
+
+    // 공휴일 데이터 로드 (API 사용)
+    async function loadHolidays(year) {
+        // 이미 로드된 경우 캐시 사용
+        if (holidaysCache[year]) {
+            return holidaysCache[year];
+        }
+
+        try {
+            const response = await fetch(`/api/holidays?year=${year}`);
+            if (response.ok) {
+                const holidays = await response.json();
+                holidaysCache[year] = holidays;
+                return holidays;
+            } else {
+                console.error(`${year}년 공휴일 로드 실패`);
+                return {};
+            }
+        } catch (error) {
+            console.error(`${year}년 공휴일 로드 오류:`, error);
+            return {};
+        }
+    }
+
+    // 공휴일 확인 함수
+    function isPublicHoliday(dateStr) {
+        const year = dateStr.split('-')[0];
+        const yearHolidays = holidaysCache[year];
+        if (!yearHolidays) {
+            return false;
+        }
+        return yearHolidays[dateStr] ? true : false;
+    }
 
     // 입력 필드
     const weeklyTasks = document.getElementById('weeklyTasks');
@@ -100,9 +137,23 @@ document.addEventListener('DOMContentLoaded', function() {
     });
 
     // ============================================
+    // 초기화: 수정 모드 확인
+    // ============================================
+    const urlParams = new URLSearchParams(window.location.search);
+    const reportId = urlParams.get('id');
+    const isEditMode = !!reportId;
+
+    // ============================================
     // 초기화: 코드 상수 로드
     // ============================================
     loadCodeConstants();
+
+    // ============================================
+    // 수정 모드: 기존 데이터 로드
+    // ============================================
+    if (isEditMode) {
+        loadReportForEdit(reportId);
+    }
 
     // ============================================
     // 직원 목록 로드 (결재자 자동 설정용)
@@ -573,8 +624,17 @@ document.addEventListener('DOMContentLoaded', function() {
     }
 
     // 달력 렌더링
-    function renderCalendar() {
+    async function renderCalendar() {
         if (!calendarDays || !calendarTitle) return;
+
+        // 현재 표시 중인 년도의 공휴일 데이터 로드
+        await loadHolidays(currentYear);
+
+        // 이전/다음 달이 다른 년도인 경우 해당 년도도 로드
+        const prevMonthYear = currentMonth === 0 ? currentYear - 1 : currentYear;
+        const nextMonthYear = currentMonth === 11 ? currentYear + 1 : currentYear;
+        if (prevMonthYear !== currentYear) await loadHolidays(prevMonthYear);
+        if (nextMonthYear !== currentYear) await loadHolidays(nextMonthYear);
 
         const firstDay = new Date(currentYear, currentMonth, 1);
         const lastDay = new Date(currentYear, currentMonth + 1, 0);
@@ -597,6 +657,7 @@ document.addEventListener('DOMContentLoaded', function() {
             let classes = 'other-month';
             if (dayOfWeek === 0) classes += ' sunday';
             if (dayOfWeek === 6) classes += ' saturday';
+            if (isPublicHoliday(dateStr)) classes += ' holiday';
             if (isDateInSelectedWeek(dateStr)) classes += ' selected';
 
             const dayEl = createDayElement(day, classes, dateStr);
@@ -613,6 +674,7 @@ document.addEventListener('DOMContentLoaded', function() {
             if (isToday(date)) classes += ' today';
             if (dayOfWeek === 0) classes += ' sunday';
             if (dayOfWeek === 6) classes += ' saturday';
+            if (isPublicHoliday(dateStr)) classes += ' holiday';
             if (isDateInSelectedWeek(dateStr)) classes += ' selected';
 
             const dayEl = createDayElement(day, classes, dateStr);
@@ -629,6 +691,7 @@ document.addEventListener('DOMContentLoaded', function() {
             let classes = 'other-month';
             if (dayOfWeek === 0) classes += ' sunday';
             if (dayOfWeek === 6) classes += ' saturday';
+            if (isPublicHoliday(dateStr)) classes += ' holiday';
             if (isDateInSelectedWeek(dateStr)) classes += ' selected';
 
             const dayEl = createDayElement(day, classes, dateStr);
@@ -1093,6 +1156,85 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     }
 
+    // 프로젝트 멤버 목록 로드
+    async function loadProjectMembers(projectIdx) {
+        try {
+            const response = await fetch(`/api/projects/${projectIdx}/members`);
+            if (response.ok) {
+                const members = await response.json();
+                // ProjectMemberDTO를 UserSimpleDTO 형식으로 변환하여 projectMembers에 저장
+                projectMembers = members.map(member => ({
+                    idx: member.employeeIdx,
+                    empName: member.employeeName,
+                    empDeptName: member.employeeDeptName,
+                    empPositionName: member.employeePositionName,
+                    empPositionSortOrder: member.employeePositionSortOrder
+                }));
+                return projectMembers;
+            } else {
+                console.error('프로젝트 멤버 로드 실패');
+                throw new Error('프로젝트 참여인원을 불러올 수 없습니다.');
+            }
+        } catch (error) {
+            console.error('프로젝트 멤버 로드 오류:', error);
+            throw error;
+        }
+    }
+
+    // 미리보기 영역 업데이트 함수
+    function updatePreview() {
+        // 프로젝트명
+        const autoProject = document.querySelector('.auto-project');
+        if (autoProject && selectedProject) {
+            autoProject.textContent = selectedProject.projectName || '-';
+        }
+
+        // 주간 달성률
+        const autoAchievement = document.querySelector('.auto-achievement');
+        if (autoAchievement && weeklyAchievementRateInput) {
+            autoAchievement.textContent = weeklyAchievementRateInput.value || '0';
+        }
+
+        // 보고 기간
+        const autoPeriod = document.querySelector('.auto-period');
+        if (autoPeriod && reportPeriodDisplay) {
+            autoPeriod.textContent = reportPeriodDisplay.textContent || '-';
+        }
+
+        // 금주 주요 업무
+        const autoTasks = document.querySelector('.auto-tasks');
+        if (autoTasks && weeklyTasks) {
+            autoTasks.textContent = weeklyTasks.value || '-';
+        }
+
+        // 주요 성과
+        const autoAchievements = document.querySelector('.auto-achievements');
+        if (autoAchievements && achievements) {
+            autoAchievements.textContent = achievements.value || '-';
+        }
+
+        // 주요 이슈
+        const autoIssues = document.querySelector('.auto-issues');
+        if (autoIssues && issues) {
+            autoIssues.textContent = issues.value || '-';
+        }
+
+        // 차주 계획
+        const autoNextPlan = document.querySelector('.auto-next-plan');
+        if (autoNextPlan && nextWeekPlan) {
+            autoNextPlan.textContent = nextWeekPlan.value || '-';
+        }
+
+        // 기타
+        const autoRemarks = document.querySelector('.auto-remarks');
+        if (autoRemarks && remarks) {
+            autoRemarks.textContent = remarks.value || '-';
+        }
+
+        // 참조자 (updateReferenceList 함수 사용)
+        updateReferenceList();
+    }
+
     // 참고인 선택/해제 토글
     function toggleReferenceSelection(emp) {
         const index = tempSelectedReferences.findIndex(a => a.idx === emp.idx);
@@ -1170,25 +1312,10 @@ document.addEventListener('DOMContentLoaded', function() {
 
                 // 프로젝트 멤버 목록 로드
                 try {
-                    const response = await fetch(`/api/projects/${selectedProject.idx}/members`);
-                    if (response.ok) {
-                        const members = await response.json();
-                        // ProjectMemberDTO를 UserSimpleDTO 형식으로 변환하여 projectMembers에 저장
-                        projectMembers = members.map(member => ({
-                            idx: member.employeeIdx,
-                            empName: member.employeeName,
-                            empDeptName: member.employeeDeptName,
-                            empPositionName: member.employeePositionName,
-                            empPositionSortOrder: member.employeePositionSortOrder
-                        }));
-                        renderApproverTree(projectMembers);
-                        renderTempReferences();
-                    } else {
-                        console.error('프로젝트 멤버 로드 실패');
-                        alert('프로젝트 참여인원을 불러올 수 없습니다.');
-                    }
+                    await loadProjectMembers(selectedProject.idx);
+                    renderApproverTree(projectMembers);
+                    renderTempReferences();
                 } catch (error) {
-                    console.error('프로젝트 멤버 로드 오류:', error);
                     alert('프로젝트 참여인원을 불러오는 중 오류가 발생했습니다.');
                 }
             }
@@ -1255,13 +1382,15 @@ document.addEventListener('DOMContentLoaded', function() {
             `;
             selectedReferencesList.appendChild(tag);
         });
+
+        // 미리보기 영역도 업데이트
+        updateReferenceList();
     }
 
     // 참고인 삭제
     window.removeReference = function(index) {
         selectedReferences.splice(index, 1);
         renderReferenceTags();
-        updateReferenceList();
     };
 
     // 참조 목록 업데이트 (공식문서)
@@ -1300,8 +1429,8 @@ document.addEventListener('DOMContentLoaded', function() {
                     alert('최대 5개까지만 첨부 가능합니다.');
                     return;
                 }
-                if (file.size > 10 * 1024 * 1024) {
-                    alert('파일 크기는 10MB를 초과할 수 없습니다.');
+                if (file.size > 50 * 1024 * 1024) {
+                    alert('파일 크기는 50MB를 초과할 수 없습니다.');
                     return;
                 }
                 selectedFiles.push(file);
@@ -1334,8 +1463,8 @@ document.addEventListener('DOMContentLoaded', function() {
                     alert('최대 5개까지만 첨부 가능합니다.');
                     return;
                 }
-                if (file.size > 10 * 1024 * 1024) {
-                    alert('파일 크기는 10MB를 초과할 수 없습니다.');
+                if (file.size > 50 * 1024 * 1024) {
+                    alert('파일 크기는 50MB를 초과할 수 없습니다.');
                     return;
                 }
                 selectedFiles.push(file);
@@ -1380,14 +1509,262 @@ document.addEventListener('DOMContentLoaded', function() {
     };
 
     // ============================================
-    // PDF 저장
+    // 파일 업로드 (서버로 전송)
     // ============================================
-    const savePdfBtn = document.getElementById('savePdfBtn');
-    if (savePdfBtn) {
-        savePdfBtn.addEventListener('click', function() {
-            alert('PDF 저장 기능은 준비 중입니다.');
-        });
+    async function uploadFilesToServer(documentIdx) {
+        if (!selectedFiles || selectedFiles.length === 0) {
+            console.log('업로드할 파일이 없습니다.');
+            return true; // 파일이 없어도 성공으로 처리
+        }
+
+        try {
+            for (const file of selectedFiles) {
+                const formData = new FormData();
+                formData.append('file', file);
+                formData.append('documentIdx', documentIdx);
+                formData.append('uploadUserIdx', currentUserIdx);
+
+                const response = await fetch('/api/files/upload', {
+                    method: 'POST',
+                    body: formData
+                });
+
+                if (!response.ok) {
+                    const error = await response.text();
+                    console.error(`파일 업로드 실패 (${file.name}):`, error);
+                    throw new Error(`파일 업로드 실패: ${file.name}`);
+                }
+
+                console.log(`파일 업로드 성공: ${file.name}`);
+            }
+
+            return true;
+        } catch (error) {
+            console.error('파일 업로드 오류:', error);
+            alert('파일 업로드 중 오류가 발생했습니다: ' + error.message);
+            return false;
+        }
     }
+
+    // ============================================
+    // 기존 파일 로드 (수정 모드)
+    // ============================================
+    async function loadExistingFiles(documentIdx) {
+        if (!documentIdx) {
+            console.log('documentIdx가 없어 파일을 로드하지 않습니다.');
+            return;
+        }
+
+        try {
+            const response = await fetch(`/api/files/document/${documentIdx}`);
+
+            if (!response.ok) {
+                console.error('파일 목록 조회 실패');
+                return;
+            }
+
+            const files = await response.json();
+
+            // 파일 목록 초기화
+            fileList.innerHTML = '';
+
+            if (!files || files.length === 0) {
+                console.log('첨부된 파일이 없습니다.');
+                fileList.innerHTML = '<p style="color: #999; font-size: 12px; padding: 10px 0;">첨부된 파일이 없습니다.</p>';
+                return;
+            }
+
+            // 파일 목록 표시
+            files.forEach(file => {
+                const item = document.createElement('div');
+                item.className = 'file-item';
+
+                let icon = 'fa-file';
+                const filename = file.originalFilename.toLowerCase();
+                if (filename.match(/\.(jpg|jpeg|png|gif)$/i)) icon = 'fa-file-image';
+                else if (filename.match(/\.(pdf)$/i)) icon = 'fa-file-pdf';
+                else if (filename.match(/\.(doc|docx)$/i)) icon = 'fa-file-word';
+                else if (filename.match(/\.(xls|xlsx)$/i)) icon = 'fa-file-excel';
+
+                const fileSizeKB = (file.fileSize / 1024).toFixed(1);
+
+                item.innerHTML = `
+                    <i class="fas ${icon}"></i>
+                    <span>${file.originalFilename} (${fileSizeKB} KB)</span>
+                    <a href="/api/files/download/${file.idx}" class="btn-download-file" download>
+                        <i class="fas fa-download"></i>
+                    </a>
+                    <button class="btn-remove-file" onclick="removeExistingFile(${file.idx})">
+                        <i class="fas fa-times"></i>
+                    </button>
+                `;
+                fileList.appendChild(item);
+            });
+
+            console.log(`${files.length}개의 파일을 로드했습니다.`);
+        } catch (error) {
+            console.error('파일 로드 오류:', error);
+        }
+    }
+
+    // ============================================
+    // 기존 파일 삭제
+    // ============================================
+    window.removeExistingFile = async function(fileIdx) {
+        if (!confirm('이 파일을 삭제하시겠습니까?')) {
+            return;
+        }
+
+        try {
+            const response = await fetch(`/api/files/${fileIdx}?deletedUserIdx=${currentUserIdx}`, {
+                method: 'DELETE'
+            });
+
+            if (!response.ok) {
+                throw new Error('파일 삭제 실패');
+            }
+
+            alert('파일이 삭제되었습니다.');
+
+            // 파일 목록 새로고침
+            if (currentDocumentIdx) {
+                await loadExistingFiles(currentDocumentIdx);
+            }
+        } catch (error) {
+            console.error('파일 삭제 오류:', error);
+            alert('파일 삭제 중 오류가 발생했습니다: ' + error.message);
+        }
+    };
+
+    // ============================================
+    // 수정 모드: 기존 보고서 데이터 로드 함수
+    // ============================================
+    async function loadReportForEdit(reportId) {
+        try {
+            const response = await fetch(`/api/document/weekly-report/${reportId}`);
+
+            if (!response.ok) {
+                alert('보고서를 불러올 수 없습니다.');
+                window.location.href = '/approval';
+                return;
+            }
+
+            const data = await response.json();
+
+            // 프로젝트 선택
+            if (data.projectIdx) {
+                // 프로젝트 목록 로드 후 선택
+                await loadProjects();
+
+                const project = projects.find(p => p.idx === data.projectIdx);
+
+                if (project) {
+                    selectedProject = project;
+                    selectedProjectIdx.value = project.idx;
+                    if (projectInput) {
+                        projectInput.value = project.projectName;
+                    }
+
+                    // 프로젝트 전체 달성률 표시
+                    const currentProgressRate = document.getElementById('currentProgressRate');
+                    if (currentProgressRate) {
+                        const progressRate = project.progressRate ?? 0;
+                        currentProgressRate.textContent = progressRate + '%';
+                        updateInputProgressMin(progressRate);
+                    }
+
+                    // 프로젝트 선택 후 참여인원 로드
+                    await loadProjectMembers(project.idx);
+
+                    // 결재자 자동 설정
+                    await autoSetApprovers(project);
+                }
+            }
+
+            // 보고 기간 설정 및 달력 반영
+            if (data.reportPeriod && reportPeriodDisplay) {
+                reportPeriodDisplay.textContent = data.reportPeriod;
+
+                // 보고 기간 파싱 (예: "2026.01.12 ~ 2026.01.16")
+                const periodParts = data.reportPeriod.split('~').map(p => p.trim());
+                if (periodParts.length === 2) {
+                    const startParts = periodParts[0].split('.');
+                    const endParts = periodParts[1].split('.');
+
+                    if (startParts.length === 3 && endParts.length === 3) {
+                        const startYear = parseInt(startParts[0]);
+                        const startMonth = parseInt(startParts[1]) - 1;
+                        const startDay = parseInt(startParts[2]);
+
+                        const endYear = parseInt(endParts[0]);
+                        const endMonth = parseInt(endParts[1]) - 1;
+                        const endDay = parseInt(endParts[2]);
+
+                        const startDate = new Date(startYear, startMonth, startDay);
+                        const endDate = new Date(endYear, endMonth, endDay);
+
+                        // 주의 평일 날짜들 계산
+                        selectedWeekDates = getWeekdaysInWeek(startDate);
+
+                        // hidden input에 값 설정
+                        if (reportStartDate) reportStartDate.value = formatDate(startDate);
+                        if (reportEndDate) reportEndDate.value = formatDate(endDate);
+
+                        // 달력 월/년도를 해당 날짜로 이동
+                        currentYear = startYear;
+                        currentMonth = startMonth;
+
+                        // 달력 다시 렌더링
+                        renderCalendar();
+                    }
+                }
+            }
+
+            // 주간 달성률
+            if (data.weeklyAchievementRate !== null && weeklyAchievementRateInput) {
+                weeklyAchievementRateInput.value = data.weeklyAchievementRate;
+            }
+
+            // 입력 필드 채우기
+            if (weeklyTasks) weeklyTasks.value = data.mainTasks || '';
+            if (achievements) achievements.value = data.achievements || '';
+            if (issues) issues.value = data.issues || '';
+            if (nextWeekPlan) nextWeekPlan.value = data.nextWeekPlan || '';
+            if (remarks) remarks.value = data.remarks || '';
+
+            // 참조자 복원
+            if (data.referenceNames) {
+                const referenceNameList = data.referenceNames.split(',').map(name => name.trim());
+
+                // 프로젝트 멤버에서 이름으로 찾아서 참조자 목록에 추가
+                selectedReferences = projectMembers.filter(member =>
+                    referenceNameList.includes(member.empName)
+                ).map(member => ({
+                    idx: member.idx,
+                    name: member.empName,
+                    dept: member.empDeptName || '',
+                    position: member.empPositionName || ''
+                }));
+
+                renderReferenceTags();
+            }
+
+            // 미리보기 영역 업데이트
+            updatePreview();
+
+            // 첨부 파일 로드
+            if (data.documentIdx) {
+                currentDocumentIdx = data.documentIdx; // 전역 변수에 저장
+                await loadExistingFiles(data.documentIdx);
+            }
+
+        } catch (error) {
+            console.error('보고서 로드 오류:', error);
+            alert('보고서를 불러오는 중 오류가 발생했습니다: ' + error.message);
+            window.location.href = '/approval';
+        }
+    }
+
 
     // ============================================
     // 폼 제출
@@ -1412,7 +1789,16 @@ document.addEventListener('DOMContentLoaded', function() {
                 return;
             }
 
-            if (!confirm('프로젝트 주간업무보고를 저장하시겠습니까?')) {
+            // 수정 모드 확인
+            const urlParams = new URLSearchParams(window.location.search);
+            const editingReportId = urlParams.get('id');
+            const isEditMode = !!editingReportId;
+
+            const confirmMessage = isEditMode ?
+                '프로젝트 주간업무보고를 수정하시겠습니까?' :
+                '프로젝트 주간업무보고를 저장하시겠습니까?';
+
+            if (!confirm(confirmMessage)) {
                 return;
             }
 
@@ -1444,16 +1830,47 @@ document.addEventListener('DOMContentLoaded', function() {
 
                 console.log('전송 데이터:', requestData);
 
-                const response = await fetch('/api/document/weekly-report', {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json'
-                    },
-                    body: JSON.stringify(requestData)
-                });
+                let response;
+                if (isEditMode) {
+                    // 수정 모드: PUT 요청
+                    response = await fetch(`/api/document/weekly-report/${editingReportId}`, {
+                        method: 'PUT',
+                        headers: {
+                            'Content-Type': 'application/json'
+                        },
+                        body: JSON.stringify(requestData)
+                    });
+                } else {
+                    // 생성 모드: POST 요청
+                    response = await fetch('/api/document/weekly-report', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json'
+                        },
+                        body: JSON.stringify(requestData)
+                    });
+                }
 
                 if (response.ok) {
-                    alert('프로젝트 주간업무보고가 저장되었습니다.');
+                    const responseData = await response.json();
+                    console.log('보고서 저장 성공:', responseData);
+
+                    // 파일 업로드 (documentIdx가 있는 경우만)
+                    if (responseData.documentIdx && selectedFiles.length > 0) {
+                        console.log(`파일 업로드 시작 (documentIdx: ${responseData.documentIdx})`);
+                        const uploadSuccess = await uploadFilesToServer(responseData.documentIdx);
+
+                        if (!uploadSuccess) {
+                            alert('보고서는 저장되었으나 파일 업로드에 실패했습니다.');
+                            window.location.href = '/approval';
+                            return;
+                        }
+                    }
+
+                    const successMessage = isEditMode ?
+                        '프로젝트 주간업무보고가 수정되었습니다.' :
+                        '프로젝트 주간업무보고가 저장되었습니다.';
+                    alert(successMessage);
                     window.location.href = '/approval';
                 } else {
                     const error = await response.text();

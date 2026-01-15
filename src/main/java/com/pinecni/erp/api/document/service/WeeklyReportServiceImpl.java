@@ -86,7 +86,7 @@ public class WeeklyReportServiceImpl implements WeeklyReportService {
             ApprovalDocument approvalDocument = ApprovalDocument.builder()
                     .documentNo(documentNo)
                     .title(title)
-                    .documentType("주간업무보고")
+                    .documentType("프로젝트 주간업무보고")
                     .drafterUserIdx(createDTO.getUserIdx())
                     .content(createDTO.getMainTasks())
                     .createdUserIdx(createDTO.getUserIdx())
@@ -224,6 +224,30 @@ public class WeeklyReportServiceImpl implements WeeklyReportService {
             });
         }
 
+        // 연결된 ApprovalDocument도 업데이트
+        if (report.getDocumentIdx() != null) {
+            approvalDocumentRepository.findById(report.getDocumentIdx()).ifPresent(approvalDocument -> {
+                // 제목 업데이트
+                String title = "프로젝트 주간업무보고";
+                if (updateDTO.getReportPeriod() != null && !updateDTO.getReportPeriod().isEmpty()) {
+                    title = "프로젝트 주간업무보고 - " + updateDTO.getReportPeriod();
+                }
+                approvalDocument.setTitle(title);
+
+                // 내용 업데이트 (mainTasks)
+                if (updateDTO.getMainTasks() != null) {
+                    approvalDocument.setContent(updateDTO.getMainTasks());
+                }
+
+                // 수정 정보 업데이트
+                approvalDocument.setUpdatedUserIdx(updatedUserIdx);
+                approvalDocument.setUpdatedAt(LocalDateTime.now());
+
+                approvalDocumentRepository.save(approvalDocument);
+                log.debug("ApprovalDocument updated - documentIdx: {}", report.getDocumentIdx());
+            });
+        }
+
         // 저장 (dirty checking에 의해 자동 업데이트)
         WeeklyReport updated = weeklyReportRepository.save(report);
         log.debug("WeeklyReport updated successfully - id: {}", updated.getId());
@@ -249,11 +273,28 @@ public class WeeklyReportServiceImpl implements WeeklyReportService {
     public void deleteWeeklyReport(Long id) {
         log.debug("deleteWeeklyReport() called - id: {}", id);
 
-        // 존재 여부 확인
-        if (!weeklyReportRepository.existsById(id)) {
-            throw new RuntimeException("주간업무보고를 찾을 수 없습니다. ID: " + id);
+        // WeeklyReport 조회 (documentIdx 가져오기 위함)
+        WeeklyReport report = weeklyReportRepository.findById(id)
+                .orElseThrow(() -> new RuntimeException("주간업무보고를 찾을 수 없습니다. ID: " + id));
+
+        // 연결된 ApprovalDocument 소프트 딜리트 (deletedAt, deletedUserIdx 설정)
+        if (report.getDocumentIdx() != null) {
+            approvalDocumentRepository.findById(report.getDocumentIdx()).ifPresent(approvalDocument -> {
+                LocalDateTime now = LocalDateTime.now();
+                approvalDocument.setDeletedAt(now);
+
+                // 삭제자 정보 설정 (WeeklyReport의 updatedUserIdx 또는 userIdx 사용)
+                Long deletedUserIdx = report.getUpdatedUserIdx() != null ?
+                    report.getUpdatedUserIdx() : report.getUserIdx();
+                approvalDocument.setDeletedUserIdx(deletedUserIdx);
+
+                approvalDocumentRepository.save(approvalDocument);
+                log.debug("ApprovalDocument soft deleted - documentIdx: {}, deletedAt: {}, deletedUserIdx: {}",
+                    report.getDocumentIdx(), now, deletedUserIdx);
+            });
         }
 
+        // WeeklyReport는 실제 삭제 (hard delete)
         weeklyReportRepository.deleteById(id);
         log.debug("WeeklyReport deleted successfully - id: {}", id);
     }

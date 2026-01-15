@@ -419,6 +419,13 @@ div:focus {
     color: #0d6efd;
 }
 
+.calendar-day.holiday {
+    background: #ffebee;
+    border-color: #ef9a9a;
+    color: #c62828 !important;
+    font-weight: 600;
+}
+
 .calendar-day.selected {
     background: linear-gradient(135deg, #667eea 0%, #764ba2 100%) !important;
     color: white !important;
@@ -931,6 +938,23 @@ div:focus {
     color: #333;
 }
 
+.file-item .btn-download-file {
+    background: none;
+    border: none;
+    color: #999;
+    font-size: 15.2px;
+    cursor: pointer;
+    transition: color 0.2s ease;
+    padding: 4px;
+    text-decoration: none;
+    display: inline-flex;
+    align-items: center;
+}
+
+.file-item .btn-download-file:hover {
+    color: #1976d2;
+}
+
 .file-item .btn-remove-file {
     background: none;
     border: none;
@@ -1120,12 +1144,13 @@ div:focus {
     border: 1px solid #333;
     padding: 12px;
     font-size: 13.5px;
+    text-align: center;
+    vertical-align: middle;
 }
 
 .form-table th {
     background: #f8f9fa;
     font-weight: 600;
-    text-align: center;
     width: 120px;
     color: #334155;
 }
@@ -1133,6 +1158,21 @@ div:focus {
 .form-table td {
     background: white;
     color: #475569;
+}
+
+/* 테이블 내부 div 요소 세로 정렬 */
+.form-table td div {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 100%;
+    height: 100%;
+}
+
+/* 상세 페이지: 텍스트 좌측 정렬 */
+.form-table td div[style*="text-align: left"] {
+    justify-content: flex-start;
+    text-align: left;
 }
 
 /* ============================================
@@ -1473,6 +1513,20 @@ div:focus {
 .btn-outline:hover {
     border-color: #667eea;
     color: #667eea;
+}
+
+.btn-outline:disabled {
+    background: #f1f5f9;
+    border-color: #e2e8f0;
+    color: #cbd5e1;
+    cursor: not-allowed;
+    opacity: 0.6;
+}
+
+.btn-outline:disabled:hover {
+    border-color: #e2e8f0;
+    color: #cbd5e1;
+    transform: none;
 }
 
 /* ============================================
@@ -1819,4 +1873,91 @@ div:focus {
     height: 8px;
     border-radius: 4px;
     background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+}
+
+/* ============================================
+   첨부파일 섹션 (상세보기 페이지)
+   ============================================ */
+.attachments-section {
+    margin-top: 30px;
+    margin-bottom: 30px;
+    background: white;
+    border-radius: 12px;
+    padding: 24px;
+    border: 1px solid #e0e0e0;
+}
+
+.attachments-title {
+    font-size: 16px;
+    font-weight: 600;
+    color: #333;
+    margin: 0 0 16px 0;
+    padding-bottom: 12px;
+    border-bottom: 2px solid #f0f0f0;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.attachments-title i {
+    color: #667eea;
+    font-size: 18px;
+}
+
+.attachments-list {
+    padding: 0;
+}
+
+.attachments-list .file-item {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 12px 16px;
+    border: 1px solid #e0e0e0;
+    border-radius: 8px;
+    margin-bottom: 10px;
+    background: #fafafa;
+    transition: all 0.2s ease;
+}
+
+.attachments-list .file-item:hover {
+    background: #f5f5f5;
+    border-color: #d0d0d0;
+    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.05);
+}
+
+.attachments-list .file-item i.fas {
+    font-size: 18px;
+    color: #667eea;
+}
+
+.attachments-list .file-item span {
+    flex: 1;
+    font-size: 13.5px;
+    color: #333;
+}
+
+.attachments-list .btn-download-file {
+    background: none;
+    border: none;
+    color: #999;
+    cursor: pointer;
+    font-size: 16px;
+    transition: color 0.2s ease;
+    padding: 6px 10px;
+    text-decoration: none;
+    display: inline-flex;
+    align-items: center;
+}
+
+.attachments-list .btn-download-file:hover {
+    color: #1976d2;
+}
+
+.attachments-list p {
+    margin: 0;
+    padding: 12px 0;
+    color: #999;
+    font-size: 13px;
+    text-align: center;
 }

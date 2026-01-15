@@ -409,19 +409,19 @@
                                         </tr>
                                         <tr>
                                             <td class="approval-name-cell">
-                                                <span class="approver-name auto-approver-1" data-role="담당">-</span>
+                                                <span class="approver-name auto-approver-1" data-role="담당" id="approver1">-</span>
                                             </td>
                                             <td class="approval-name-cell" style="position: relative;">
-                                                <span class="approver-name auto-approver-2" data-role="연구책임자">-</span>
+                                                <span class="approver-name auto-approver-2" data-role="연구책임자" id="approver2">-</span>
                                             </td>
                                             <td class="approval-name-cell">
-                                                <span class="approver-name auto-approver-3" data-role="대표이사">-</span>
+                                                <span class="approver-name auto-approver-3" data-role="대표이사" id="approver3">-</span>
                                             </td>
                                         </tr>
                                         <tr>
                                             <th class="approval-header reference-header">참조</th>
                                             <td class="reference-cell" colspan="2">
-                                                <span class="auto-references">-</span>
+                                                <span class="auto-references" id="referenceNames">-</span>
                                             </td>
                                         </tr>
                                     </table>
@@ -431,42 +431,42 @@
 
                                 <table class="form-table">
                                     <tr>
-                                        <th>과제명</th>
-                                        <td colspan="3" class="auto-project">-</td>
+                                        <th>프로젝트명</th>
+                                        <td colspan="3" class="auto-project" id="projectName">-</td>
                                     </tr>
                                     <tr>
                                         <th>주간 달성률</th>
-                                        <td colspan="3"><span class="auto-achievement">0</span>%</td>
+                                        <td colspan="3"><span class="auto-achievement" id="weeklyAchievementRate">0</span>%</td>
                                     </tr>
                                     <tr>
                                         <th>보고자</th>
-                                        <td class="auto-reporter">-</td>
+                                        <td class="auto-reporter" id="userName">-</td>
                                         <th>부서</th>
-                                        <td class="auto-dept">-</td>
+                                        <td class="auto-dept" id="userDept">-</td>
                                     </tr>
                                     <tr>
                                         <th>보고 기간</th>
-                                        <td colspan="3" class="auto-period">-</td>
+                                        <td colspan="3" class="auto-period" id="reportPeriod">-</td>
                                     </tr>
                                     <tr>
                                         <th>금주 주요 업무</th>
-                                        <td colspan="3"><div class="auto-tasks" style="white-space: pre-wrap; min-height: 100px;">-</div></td>
+                                        <td colspan="3"><div class="auto-tasks" id="mainTasks" style="white-space: pre-wrap; min-height: 100px;">-</div></td>
                                     </tr>
                                     <tr>
                                         <th>주요 성과</th>
-                                        <td colspan="3"><div class="auto-achievements" style="white-space: pre-wrap; min-height: 80px;">-</div></td>
+                                        <td colspan="3"><div class="auto-achievements" id="achievements" style="white-space: pre-wrap; min-height: 80px;">-</div></td>
                                     </tr>
                                     <tr>
                                         <th>주요 이슈</th>
-                                        <td colspan="3"><div class="auto-issues" style="white-space: pre-wrap; min-height: 80px;">-</div></td>
+                                        <td colspan="3"><div class="auto-issues" id="issues" style="white-space: pre-wrap; min-height: 80px;">-</div></td>
                                     </tr>
                                     <tr>
                                         <th>차주 계획</th>
-                                        <td colspan="3"><div class="auto-next-plan" style="white-space: pre-wrap; min-height: 100px;">-</div></td>
+                                        <td colspan="3"><div class="auto-next-plan" id="nextWeekPlan" style="white-space: pre-wrap; min-height: 100px;">-</div></td>
                                     </tr>
                                     <tr>
                                         <th>기타</th>
-                                        <td colspan="3"><div class="auto-remarks" style="white-space: pre-wrap; min-height: 80px;">-</div></td>
+                                        <td colspan="3"><div class="auto-remarks" id="remarks" style="white-space: pre-wrap; min-height: 80px;">-</div></td>
                                     </tr>
                                 </table>
                             </div>
@@ -477,10 +477,6 @@
                             <button class="btn-secondary btn-lg" onclick="history.back()">
                                 <i class="fas fa-times"></i>
                                 취소
-                            </button>
-                            <button class="btn-outline btn-lg" id="savePdfBtn">
-                                <i class="fas fa-file-pdf"></i>
-                                PDF 저장
                             </button>
                             <button class="btn-primary btn-lg" id="submitBtn">
                                 <i class="fas fa-paper-plane"></i>

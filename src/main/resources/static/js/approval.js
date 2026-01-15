@@ -313,7 +313,13 @@ document.addEventListener('DOMContentLoaded', function() {
             const docRow = viewBtn.closest('.doc-row');
             const category = docRow.getAttribute('data-category');
 
-            if (category === 'report' && reportId) {
+            if (category === 'weekly-report' && reportId) {
+                window.location.href = `/approval/weekly-report/detail?id=${reportId}`;
+            } else if (category === 'project-weekly-report' && reportId) {
+                window.location.href = `/approval/project-weekly-report/detail?id=${reportId}`;
+            } else if (category === 'monthly-report' && reportId) {
+                window.location.href = `/approval/monthly-report/detail?id=${reportId}`;
+            } else if (category === 'report' && reportId) {
                 // 보고서 타입에 따라 상세페이지 분기
                 const docType = viewBtn.getAttribute('data-type');
                 if (docType === 'weekly') {
@@ -348,7 +354,13 @@ document.addEventListener('DOMContentLoaded', function() {
             const viewBtn = docRow.querySelector('.btn-view');
             const reportId = viewBtn ? viewBtn.getAttribute('data-id') : null;
 
-            if (category === 'report' && reportId) {
+            if (category === 'weekly-report' && reportId) {
+                window.location.href = `/approval/weekly-report/detail?id=${reportId}`;
+            } else if (category === 'project-weekly-report' && reportId) {
+                window.location.href = `/approval/project-weekly-report/detail?id=${reportId}`;
+            } else if (category === 'monthly-report' && reportId) {
+                window.location.href = `/approval/monthly-report/detail?id=${reportId}`;
+            } else if (category === 'report' && reportId) {
                 // 보고서 타입에 따라 상세페이지 분기
                 const docType = viewBtn ? viewBtn.getAttribute('data-type') : null;
                 if (docType === 'weekly') {
@@ -393,13 +405,17 @@ document.addEventListener('DOMContentLoaded', function() {
 
                 // 문서 타입별로 분류
                 weeklyReports = documents.filter(doc => doc.documentType === '주간업무보고');
+                const projectWeeklyReports = documents.filter(doc => doc.documentType === '프로젝트 주간업무보고');
                 monthlyReports = documents.filter(doc => doc.documentType === '월간업무보고');
                 meetingMinutes = documents.filter(doc => doc.documentType === '회의록');
                 receiptMeetings = documents.filter(doc => doc.documentType === '연구비증빙-회의록');
                 receiptTrips = documents.filter(doc => doc.documentType === '연구비증빙-출장');
                 vacationRequests = documents.filter(doc => doc.documentType === '연차신청서');
 
-                console.log('주간보고서:', weeklyReports.length + '건');
+                // 주간업무보고에 프로젝트 주간업무보고 합치기
+                weeklyReports = weeklyReports.concat(projectWeeklyReports);
+
+                console.log('주간보고서:', weeklyReports.length + '건 (프로젝트: ' + projectWeeklyReports.length + '건)');
                 console.log('월간보고서:', monthlyReports.length + '건');
                 console.log('회의록:', meetingMinutes.length + '건');
                 console.log('연구비증빙-회의록:', receiptMeetings.length + '건');
@@ -426,6 +442,7 @@ document.addEventListener('DOMContentLoaded', function() {
     function getCategoryFromDocumentType(documentType) {
         const categoryMap = {
             '주간업무보고': 'weekly-report',
+            '프로젝트 주간업무보고': 'project-weekly-report',
             '월간업무보고': 'monthly-report',
             '회의록': 'meeting',
             '연구비증빙-회의록': 'receipt',
@@ -439,6 +456,7 @@ document.addEventListener('DOMContentLoaded', function() {
     function getIconFromDocumentType(documentType) {
         const iconMap = {
             '주간업무보고': 'fa-calendar-week',
+            '프로젝트 주간업무보고': 'fa-project-diagram',
             '월간업무보고': 'fa-calendar-alt',
             '회의록': 'fa-users',
             '연구비증빙-회의록': 'fa-receipt',
@@ -475,7 +493,13 @@ document.addEventListener('DOMContentLoaded', function() {
             const tr = document.createElement('tr');
             tr.className = 'doc-row';
 
-            const category = getCategoryFromDocumentType(doc.documentType);
+            let category = getCategoryFromDocumentType(doc.documentType);
+
+            // 제목이나 문서 타입에 "프로젝트"가 포함되어 있으면 프로젝트 주간업무보고로 처리
+            if (category === 'weekly-report' && (doc.title.includes('프로젝트') || doc.documentType.includes('프로젝트'))) {
+                category = 'project-weekly-report';
+            }
+
             tr.setAttribute('data-category', category);
 
             const createdDate = new Date(doc.createdAt);
@@ -499,7 +523,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 <td>${formattedDate}</td>
                 <td>
                     <div class="table-actions">
-                        <button class="btn-icon btn-view" data-id="${doc.idx}" data-type="${category}">
+                        <button class="btn-icon btn-view" data-id="${doc.sourceDocumentId || doc.idx}" data-type="${category}">
                             <i class="fas fa-eye"></i>
                         </button>
                     </div>
