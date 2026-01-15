@@ -3,12 +3,14 @@ package com.pinecni.erp.api.vacation.controller;
 import com.pinecni.erp.api.vacation.dto.VacationUserInfoDTO;
 import com.pinecni.erp.api.vacation.dto.VacationCalculationDetailDTO;
 import com.pinecni.erp.api.vacation.dto.VacationRequestSaveDTO;
+import com.pinecni.erp.api.vacation.dto.VacationDetailDTO;
 import com.pinecni.erp.api.vacation.service.VacationService;
 import com.pinecni.erp.entity.VacationBalance;
 import com.pinecni.erp.entity.VacationRequest;
 import com.pinecni.erp.entity.VacationAccrualSchedule;
 import com.pinecni.erp.api.vacation.repository.VacationRequestRepository;
 import com.pinecni.erp.api.vacation.repository.VacationAccrualScheduleRepository;
+import com.pinecni.erp.api.vacation.repository.VacationDocumentFileRepository;
 import com.pinecni.erp.service.PdfGenerationService;
 import jakarta.servlet.http.HttpSession;
 import lombok.RequiredArgsConstructor;
@@ -37,6 +39,7 @@ public class VacationController {
     private final VacationService vacationService;
     private final VacationRequestRepository vacationRequestRepository;
     private final VacationAccrualScheduleRepository vacationAccrualScheduleRepository;
+    private final VacationDocumentFileRepository vacationDocumentFileRepository;
     private final PdfGenerationService pdfGenerationService;
 
     /**
@@ -405,6 +408,153 @@ public class VacationController {
         } catch (Exception e) {
             log.error("PDF 생성 중 오류 발생", e);
             return ResponseEntity.internalServerError().build();
+        }
+    }
+
+    /**
+     * 연차신청서 PDF 다운로드 API
+     * @param fileIdx VacationDocumentFile의 idx
+     * @return PDF 파일
+     */
+    @GetMapping("/download/{fileIdx}")
+    public ResponseEntity<Resource> downloadVacationPdf(@PathVariable Long fileIdx) {
+        try {
+            log.info("[연차신청서 PDF 다운로드] fileIdx: {}", fileIdx);
+
+            // 파일 정보 조회
+            com.pinecni.erp.entity.VacationDocumentFile file = vacationDocumentFileRepository.findById(fileIdx)
+                    .orElseThrow(() -> new IllegalArgumentException("파일을 찾을 수 없습니다. fileIdx: " + fileIdx));
+
+            // 파일 경로에서 파일 읽기
+            java.nio.file.Path filePath = java.nio.file.Paths.get(file.getFilePath());
+            if (!java.nio.file.Files.exists(filePath)) {
+                log.error("파일이 존재하지 않습니다: {}", file.getFilePath());
+                return ResponseEntity.notFound().build();
+            }
+
+            byte[] fileBytes = java.nio.file.Files.readAllBytes(filePath);
+            ByteArrayResource resource = new ByteArrayResource(fileBytes);
+
+            // 한글 파일명 인코딩 처리
+            String encodedFileName = java.net.URLEncoder.encode(file.getFileName(), "UTF-8")
+                    .replaceAll("\\+", "%20");
+
+            return ResponseEntity.ok()
+                    .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename*=UTF-8''" + encodedFileName)
+                    .contentType(MediaType.APPLICATION_PDF)
+                    .contentLength(fileBytes.length)
+                    .body(resource);
+
+        } catch (IllegalArgumentException e) {
+            log.error("[PDF 다운로드 실패] fileIdx: {}, error: {}", fileIdx, e.getMessage());
+            return ResponseEntity.notFound().build();
+        } catch (Exception e) {
+            log.error("[PDF 다운로드 실패] fileIdx: {}, error: {}", fileIdx, e.getMessage(), e);
+            return ResponseEntity.internalServerError().build();
+        }
+    }
+
+    /**
+     * 연차신청서 상세 조회 API
+     * @param documentIdx ApprovalDocument의 idx
+     * @return 연차신청서 상세 정보
+     */
+    @GetMapping("/detail")
+    public ResponseEntity<?> getVacationDetail(@RequestParam Long documentIdx) {
+        try {
+            log.info("[연차신청서 상세 조회] documentIdx: {}", documentIdx);
+
+            VacationDetailDTO detail = vacationService.getVacationDetail(documentIdx);
+
+            return ResponseEntity.ok(detail);
+        } catch (IllegalArgumentException e) {
+            log.error("[연차신청서 상세 조회 실패] documentIdx: {}, error: {}", documentIdx, e.getMessage());
+            return ResponseEntity.badRequest().body(Map.of("error", e.getMessage()));
+        } catch (Exception e) {
+            log.error("[연차신청서 상세 조회 실패] documentIdx: {}, error: {}", documentIdx, e.getMessage(), e);
+            return ResponseEntity.internalServerError().body(Map.of("error", "문서 조회 중 오류가 발생했습니다."));
+        }
+    }
+
+    /**
+     * 연차신청서 승인 API
+     * @param documentIdx ApprovalDocument의 idx
+     * @return 승인 결과
+     */
+    @PostMapping("/approve")
+    public ResponseEntity<?> approveVacation(@RequestParam Long documentIdx, HttpSession session) {
+        try {
+            log.info("[연차신청서 승인] documentIdx: {}", documentIdx);
+
+            // TODO: 세션에서 현재 사용자 정보 가져오기
+            Long currentUserIdx = 1L; // 임시값
+
+            vacationService.approveVacation(documentIdx, currentUserIdx);
+
+            return ResponseEntity.ok(Map.of("message", "승인되었습니다."));
+        } catch (UnsupportedOperationException e) {
+            log.warn("[연차신청서 승인 미구현] documentIdx: {}, error: {}", documentIdx, e.getMessage());
+            return ResponseEntity.status(501).body(Map.of("error", e.getMessage()));
+        } catch (Exception e) {
+            log.error("[연차신청서 승인 실패] documentIdx: {}, error: {}", documentIdx, e.getMessage(), e);
+            return ResponseEntity.internalServerError().body(Map.of("error", "승인 처리 중 오류가 발생했습니다."));
+        }
+    }
+
+    /**
+     * 연차신청서 반려 API
+     * @param documentIdx ApprovalDocument의 idx
+     * @param request 반려 사유
+     * @return 반려 결과
+     */
+    @PostMapping("/reject")
+    public ResponseEntity<?> rejectVacation(@RequestParam Long documentIdx,
+                                           @RequestBody Map<String, String> request,
+                                           HttpSession session) {
+        try {
+            String reason = request.get("reason");
+            log.info("[연차신청서 반려] documentIdx: {}, reason: {}", documentIdx, reason);
+
+            // TODO: 세션에서 현재 사용자 정보 가져오기
+            Long currentUserIdx = 1L; // 임시값
+
+            vacationService.rejectVacation(documentIdx, currentUserIdx, reason);
+
+            return ResponseEntity.ok(Map.of("message", "반려되었습니다."));
+        } catch (UnsupportedOperationException e) {
+            log.warn("[연차신청서 반려 미구현] documentIdx: {}, error: {}", documentIdx, e.getMessage());
+            return ResponseEntity.status(501).body(Map.of("error", e.getMessage()));
+        } catch (Exception e) {
+            log.error("[연차신청서 반려 실패] documentIdx: {}, error: {}", documentIdx, e.getMessage(), e);
+            return ResponseEntity.internalServerError().body(Map.of("error", "반려 처리 중 오류가 발생했습니다."));
+        }
+    }
+
+    /**
+     * 연차신청서 삭제 API (soft delete + 캘린더 일정 삭제)
+     * @param documentIdx ApprovalDocument의 idx
+     * @return 삭제 결과
+     */
+    @DeleteMapping("/delete")
+    public ResponseEntity<?> deleteVacation(@RequestParam Long documentIdx, HttpSession session) {
+        try {
+            log.info("[연차신청서 삭제] documentIdx: {}", documentIdx);
+
+            // TODO: 세션에서 현재 사용자 정보 가져오기
+            Long currentUserIdx = 1L; // 임시값
+
+            vacationService.deleteVacation(documentIdx, currentUserIdx);
+
+            return ResponseEntity.ok(Map.of("message", "삭제되었습니다."));
+        } catch (IllegalArgumentException e) {
+            log.error("[연차신청서 삭제 실패] documentIdx: {}, error: {}", documentIdx, e.getMessage());
+            return ResponseEntity.badRequest().body(Map.of("error", e.getMessage()));
+        } catch (IllegalStateException e) {
+            log.error("[연차신청서 삭제 실패] documentIdx: {}, error: {}", documentIdx, e.getMessage());
+            return ResponseEntity.badRequest().body(Map.of("error", e.getMessage()));
+        } catch (Exception e) {
+            log.error("[연차신청서 삭제 실패] documentIdx: {}, error: {}", documentIdx, e.getMessage(), e);
+            return ResponseEntity.internalServerError().body(Map.of("error", "삭제 처리 중 오류가 발생했습니다."));
         }
     }
 }
