@@ -7,6 +7,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
     let selectedFiles = [];
     let existingFiles = []; // 서버에서 로드한 기존 파일 목록
+    let deletedFileIds = []; // 삭제 예정인 파일 ID 목록 (저장 시에만 실제 삭제)
     let projects = [];
     let projectMembers = []; // 프로젝트 참여인원 목록 (참고인 선택용)
     let selectedReferences = []; // 참고인 목록 {idx, name, dept, position}
@@ -1479,8 +1480,13 @@ document.addEventListener('DOMContentLoaded', function() {
 
         fileList.innerHTML = '';
 
-        // 기존 파일 표시 (서버에서 로드한 파일)
+        // 기존 파일 표시 (서버에서 로드한 파일, 삭제 예정인 파일 제외)
         existingFiles.forEach(file => {
+            // 삭제 예정 목록에 있는 파일은 표시하지 않음
+            if (deletedFileIds.includes(file.idx)) {
+                return;
+            }
+
             const item = document.createElement('div');
             item.className = 'file-item';
 
@@ -1528,7 +1534,8 @@ document.addEventListener('DOMContentLoaded', function() {
         });
 
         // 파일이 하나도 없을 때 메시지 표시
-        if (existingFiles.length === 0 && selectedFiles.length === 0) {
+        const visibleExistingFiles = existingFiles.filter(f => !deletedFileIds.includes(f.idx));
+        if (visibleExistingFiles.length === 0 && selectedFiles.length === 0) {
             fileList.innerHTML = '<p style="color: #999; font-size: 12px; padding: 10px 0;">첨부된 파일이 없습니다.</p>';
         }
     }
@@ -1616,33 +1623,20 @@ document.addEventListener('DOMContentLoaded', function() {
     }
 
     // ============================================
-    // 기존 파일 삭제
+    // 기존 파일 삭제 (저장 시에만 실제 삭제)
     // ============================================
-    window.removeExistingFile = async function(fileIdx) {
+    window.removeExistingFile = function(fileIdx) {
         if (!confirm('이 파일을 삭제하시겠습니까?')) {
             return;
         }
 
-        try {
-            const response = await fetch(`/api/files/${fileIdx}?deletedUserIdx=${currentUserIdx}`, {
-                method: 'DELETE'
-            });
-
-            if (!response.ok) {
-                throw new Error('파일 삭제 실패');
-            }
-
-            alert('파일이 삭제되었습니다.');
-
-            // existingFiles 배열에서 삭제된 파일 제거
-            existingFiles = existingFiles.filter(file => file.idx !== fileIdx);
-
-            // 화면 업데이트
-            updateFileList();
-        } catch (error) {
-            console.error('파일 삭제 오류:', error);
-            alert('파일 삭제 중 오류가 발생했습니다: ' + error.message);
+        // 삭제 예정 목록에 추가
+        if (!deletedFileIds.includes(fileIdx)) {
+            deletedFileIds.push(fileIdx);
         }
+
+        // 화면 업데이트
+        updateFileList();
     };
 
     // ============================================
@@ -1650,6 +1644,9 @@ document.addEventListener('DOMContentLoaded', function() {
     // ============================================
     async function loadReportForEdit(reportId) {
         try {
+            // 삭제 예정 목록 초기화
+            deletedFileIds = [];
+
             const response = await fetch(`/api/document/weekly-report/${reportId}`);
 
             if (!response.ok) {
@@ -1876,6 +1873,24 @@ document.addEventListener('DOMContentLoaded', function() {
                         }
                     }
 
+                    // 삭제 예정인 파일들을 실제로 삭제
+                    if (deletedFileIds.length > 0) {
+                        console.log(`${deletedFileIds.length}개의 파일 삭제 시작`);
+                        for (const fileIdx of deletedFileIds) {
+                            try {
+                                const deleteResponse = await fetch(`/api/files/${fileIdx}?deletedUserIdx=${currentUserIdx}`, {
+                                    method: 'DELETE'
+                                });
+                                if (!deleteResponse.ok) {
+                                    console.error(`파일 삭제 실패 (fileIdx: ${fileIdx})`);
+                                }
+                            } catch (error) {
+                                console.error(`파일 삭제 오류 (fileIdx: ${fileIdx}):`, error);
+                            }
+                        }
+                        console.log('파일 삭제 완료');
+                    }
+
                     const successMessage = isEditMode ?
                         '프로젝트 주간업무보고가 수정되었습니다.' :
                         '프로젝트 주간업무보고가 저장되었습니다.';
@@ -1890,6 +1905,26 @@ document.addEventListener('DOMContentLoaded', function() {
                 console.error('API 호출 오류:', error);
                 alert('저장 중 오류가 발생했습니다: ' + error.message);
             }
+        });
+    }
+
+    // ============================================
+    // 취소 버튼
+    // ============================================
+    const cancelBtn = document.getElementById('cancelBtn');
+    if (cancelBtn) {
+        cancelBtn.addEventListener('click', function() {
+            // 변경사항이 있는지 확인
+            const hasChanges = selectedFiles.length > 0 || deletedFileIds.length > 0;
+
+            if (hasChanges) {
+                if (!confirm('변경사항이 저장되지 않습니다. 취소하시겠습니까?')) {
+                    return;
+                }
+            }
+
+            // 전자결재 목록으로 이동
+            window.location.href = '/approval';
         });
     }
 });
