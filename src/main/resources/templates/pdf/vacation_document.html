@@ -1,0 +1,309 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8"/>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+    <title>휴가계</title>
+    <style>
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            font-family: 'Malgun Gothic', '맑은 고딕', 'Apple SD Gothic Neo', sans-serif;
+            background: white;
+            margin: 1.5cm;
+        }
+
+        .document-form-wrapper {
+            background: white;
+            padding: 30px;
+        }
+
+        .document-form {
+            background: white;
+        }
+
+        .doc-title {
+            text-align: center;
+            font-size: 30px;
+            font-weight: 700;
+            color: #333;
+            margin: 30px 0;
+            padding-bottom: 15px;
+            border-bottom: 3px double #333;
+            letter-spacing: 8px;
+        }
+
+        /* 결재라인 */
+        .approval-line-box {
+            display: flex;
+            justify-content: flex-end;
+            margin-bottom: 25px;
+        }
+
+        .approval-line-table {
+            border-collapse: collapse;
+            border: 2px solid #333;
+        }
+
+        .approval-line-table th,
+        .approval-line-table td {
+            border: 1px solid #333;
+            text-align: center;
+            padding: 0;
+            vertical-align: middle;
+        }
+
+        .approval-header {
+            font-size: 12px;
+            font-weight: 700;
+            color: #333;
+            background: #f5f5f5;
+            padding: 6px 12px;
+            width: 100px;
+        }
+
+        .approval-sign-cell {
+            height: 100px;
+            width: 100px;
+            padding: 4px;
+            position: relative;
+            background: white;
+        }
+
+        .approval-name-cell {
+            font-size: 11px;
+            padding: 8px 6px;
+            background: white;
+            color: #333;
+        }
+
+        .approver-name {
+            font-weight: 600;
+        }
+
+        /* 양식 테이블 */
+        .form-table {
+            width: 100%;
+            border-collapse: collapse;
+            border: 1px solid #333;
+            margin-bottom: 20px;
+            table-layout: fixed;
+        }
+
+        .form-table th,
+        .form-table td {
+            border: 1px solid #333;
+            padding: 12px 16px;
+            font-size: 14px;
+            vertical-align: middle;
+        }
+
+        .form-table th {
+            background: #f5f5f5;
+            font-weight: 700;
+            color: #333;
+            text-align: center;
+            width: 120px;
+        }
+
+        .form-table td {
+            color: #555;
+        }
+
+        .readonly-text {
+            display: block;
+            padding: 0;
+            font-size: 14px;
+            color: #555;
+            text-align: left;
+            line-height: 1.6;
+        }
+
+        /* 휴가기간 표시 스타일 */
+        .vacation-period-item {
+            padding: 10px 0;
+            border-bottom: 1px solid #e0e0e0;
+            line-height: 1.8;
+        }
+
+        .vacation-period-item:last-child {
+            border-bottom: none;
+        }
+
+        .period-type {
+            display: inline-block;
+            padding: 4px 10px;
+            background: #e3f2fd;
+            border-radius: 3px;
+            font-weight: 600;
+            font-size: 13px;
+            margin-right: 10px;
+            min-width: 60px;
+            text-align: center;
+        }
+
+        .period-dates {
+            font-size: 14px;
+            color: #333;
+        }
+
+        /* 문서 하단 */
+        .document-footer {
+            margin-top: 30px;
+            padding: 20px 0;
+        }
+
+        .footer-text {
+            text-align: center;
+            font-size: 14px;
+            font-weight: 500;
+            color: #333;
+            margin: 0 0 30px 0;
+            line-height: 1.6;
+        }
+
+        .footer-date {
+            text-align: center;
+            font-size: 14px;
+            font-weight: 600;
+            color: #333;
+            margin-bottom: 40px;
+        }
+
+        .footer-signature {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            gap: 20px;
+            font-size: 14px;
+            color: #333;
+        }
+
+        .signature-label {
+            font-weight: 600;
+        }
+
+        .signature-name {
+            font-weight: 700;
+            font-size: 16px;
+            letter-spacing: 0.3em;
+            min-width: 100px;
+            text-align: center;
+        }
+
+        .signature-seal {
+            font-weight: 500;
+            color: #666;
+        }
+
+        @page {
+            margin: 0;
+            size: A4;
+        }
+
+        @media print {
+            body {
+                margin: 1.5cm;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="document-form-wrapper">
+        <div class="document-form">
+            <!-- 결재라인 -->
+            <div class="approval-line-box">
+                <table class="approval-line-table">
+                    <tr>
+                        <th class="approval-header">담당</th>
+                        <th class="approval-header">부서장</th>
+                        <th class="approval-header">대표이사</th>
+                    </tr>
+                    <tr>
+                        <td class="approval-sign-cell"></td>
+                        <td class="approval-sign-cell"></td>
+                        <td class="approval-sign-cell"></td>
+                    </tr>
+                    <tr>
+                        <td class="approval-name-cell">
+                            <span class="approver-name">-</span>
+                        </td>
+                        <td class="approval-name-cell">
+                            <span class="approver-name" th:text="${deptManagerName}">-</span>
+                        </td>
+                        <td class="approval-name-cell">
+                            <span class="approver-name" th:text="${ceoName}">-</span>
+                        </td>
+                    </tr>
+                </table>
+            </div>
+
+            <h2 class="doc-title">휴 가 계</h2>
+
+            <table class="form-table">
+                <colgroup>
+                    <col style="width: 120px;">
+                    <col>
+                    <col style="width: 120px;">
+                    <col>
+                </colgroup>
+                <tr>
+                    <th>주 소</th>
+                    <td colspan="3"><span class="readonly-text" th:text="${address}"></span></td>
+                </tr>
+                <tr>
+                    <th>생년월일</th>
+                    <td><span class="readonly-text" th:text="${birthDate}"></span></td>
+                    <th>연 락 처</th>
+                    <td><span class="readonly-text" th:text="${contact}"></span></td>
+                </tr>
+                <tr>
+                    <th>소 속</th>
+                    <td><span class="readonly-text" th:text="${department}"></span></td>
+                    <th>직 급</th>
+                    <td><span class="readonly-text" th:text="${position}"></span></td>
+                </tr>
+                <tr>
+                    <th>성 명</th>
+                    <td colspan="3"><span class="readonly-text" th:text="${applicant}"></span></td>
+                </tr>
+                <tr>
+                    <th>내 용</th>
+                    <td colspan="3"><span class="readonly-text">휴가 신청</span></td>
+                </tr>
+                <tr>
+                    <th>사 유</th>
+                    <td colspan="3"><span class="readonly-text" th:text="${reason}"></span></td>
+                </tr>
+                <tr>
+                    <th>휴가기간</th>
+                    <td colspan="3">
+                        <div th:each="period : ${periods}" class="vacation-period-item">
+                            <span class="period-type" th:text="${period['type']}">연차</span>
+                            <span class="period-dates">
+                                <span th:text="${period['startDate']} + ' ~ ' + ${period['endDate']}"></span>
+                                <span th:if="${period['isMinus']}" style="color: #dc3545; font-weight: 700;" th:text="' ' + ${period['minusText']}"></span>
+                                <span th:unless="${period['isMinus']}" th:text="' 연차 ' + ${period['days']} + '일'"></span>
+                            </span>
+                        </div>
+                    </td>
+                </tr>
+            </table>
+
+            <div class="document-footer">
+                <p class="footer-text">위 사유로 상기기간 동안 휴가사용을 신청하오니 허가하여 주시기 바랍니다.</p>
+                <div class="footer-date" th:text="${applyDate}">2026년 01월 13일</div>
+                <div class="footer-signature">
+                    <span class="signature-label">신청인</span>
+                    <span class="signature-name" th:text="${applicant}">홍 길 동</span>
+                    <span class="signature-seal">(서명 또는 인)</span>
+                </div>
+            </div>
+        </div>
+    </div>
+</body>
+</html>
