@@ -213,6 +213,70 @@
     color: #868e96;
 }
 
+/* 예산 섹션 */
+.project-budget-section {
+    margin-bottom: 16px;
+}
+
+.budget-section-title {
+    font-size: 13px;
+    font-weight: 600;
+    color: #495057;
+    margin-bottom: 12px;
+}
+
+.budget-boxes {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 10px;
+}
+
+.budget-box {
+    border: 1px solid #dee2e6;
+    border-radius: 8px;
+    overflow: hidden;
+}
+
+.budget-box-header {
+    background: #f8f9fa;
+    padding: 8px;
+    text-align: center;
+    font-size: 12px;
+    font-weight: 600;
+    color: #495057;
+    border-bottom: 1px solid #dee2e6;
+}
+
+.budget-box-body {
+    padding: 8px;
+}
+
+.budget-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 4px 0;
+    font-size: 11px;
+}
+
+.budget-row:not(:last-child) {
+    border-bottom: 1px solid #f1f3f5;
+}
+
+.budget-label {
+    color: #868e96;
+}
+
+.budget-value {
+    color: #495057;
+    font-weight: 500;
+}
+
+.budget-remaining {
+    color: #4361ee;
+    font-weight: 600;
+}
+
 /* 진행률 바 */
 .project-progress {
     display: flex;

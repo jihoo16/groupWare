@@ -72,8 +72,24 @@ document.addEventListener('DOMContentLoaded', function() {
             return;
         }
 
-        currentProjectGrid.innerHTML = projects.map(project => `
-            <div class="project-card" data-project-name="${project.projectName}" data-project-id="${project.idx}">
+        currentProjectGrid.innerHTML = projects.map(project => {
+            const formatBudgetBox = (used, budget) => {
+                const usedAmount = used || 0;
+                const budgetAmount = budget || 0;
+                const remaining = budgetAmount - usedAmount;
+                return {
+                    used: formatCurrency(usedAmount),
+                    total: formatCurrency(budgetAmount),
+                    remaining: formatCurrency(remaining)
+                };
+            };
+
+            const activity = formatBudgetBox(project.activityUsed, project.activityBudget);
+            const equipment = formatBudgetBox(project.equipmentUsed, project.equipmentBudget);
+            const material = formatBudgetBox(project.materialUsed, project.materialBudget);
+
+            return `
+            <div class="project-card" daㅇta-project-name="${project.projectName}" data-project-id="${project.idx}">
                 <div class="project-header">
                     <h3>${project.projectName}</h3>
                     <span class="status-badge ${getStatusClass(project.projectStatus)}">${getStatusLabel(project.projectStatus)}</span>
@@ -92,17 +108,60 @@ document.addEventListener('DOMContentLoaded', function() {
                             <i class="fas fa-calendar"></i>
                             <span>${project.startDate} ~ ${project.endDate}</span>
                         </div>
-                        <div class="info-item">
-                            <i class="fas fa-archive"></i>
-                            <span>활동비: ${formatBudgetUsage(project.activityUsed, project.activityBudget)}</span>
-                        </div>
-                        <div class="info-item">
-                            <i class="fas fa-microchip"></i>
-                            <span>장비비: ${formatBudgetUsage(project.equipmentUsed, project.equipmentBudget)}</span>
-                        </div>
-                        <div class="info-item">
-                            <i class="fas fa-flask"></i>
-                            <span>재료비: ${formatBudgetUsage(project.materialUsed, project.materialBudget)}</span>
+                    </div>
+                    <div class="project-budget-section">
+                        <div class="budget-boxes">
+                            <div class="budget-box">
+                                <div class="budget-box-header">활동비</div>
+                                <div class="budget-box-body">
+                                    <div class="budget-row">
+                                        <span class="budget-label">사용금액</span>
+                                        <span class="budget-value">${activity.used}</span>
+                                    </div>
+                                    <div class="budget-row">
+                                        <span class="budget-label">총 금액</span>
+                                        <span class="budget-value">${activity.total}</span>
+                                    </div>
+                                    <div class="budget-row">
+                                        <span class="budget-label">잔여금액</span>
+                                        <span class="budget-value budget-remaining">${activity.remaining}</span>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="budget-box">
+                                <div class="budget-box-header">장비비</div>
+                                <div class="budget-box-body">
+                                    <div class="budget-row">
+                                        <span class="budget-label">사용금액</span>
+                                        <span class="budget-value">${equipment.used}</span>
+                                    </div>
+                                    <div class="budget-row">
+                                        <span class="budget-label">총 금액</span>
+                                        <span class="budget-value">${equipment.total}</span>
+                                    </div>
+                                    <div class="budget-row">
+                                        <span class="budget-label">잔여금액</span>
+                                        <span class="budget-value budget-remaining">${equipment.remaining}</span>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="budget-box">
+                                <div class="budget-box-header">재료비</div>
+                                <div class="budget-box-body">
+                                    <div class="budget-row">
+                                        <span class="budget-label">사용금액</span>
+                                        <span class="budget-value">${material.used}</span>
+                                    </div>
+                                    <div class="budget-row">
+                                        <span class="budget-label">총 금액</span>
+                                        <span class="budget-value">${material.total}</span>
+                                    </div>
+                                    <div class="budget-row">
+                                        <span class="budget-label">잔여금액</span>
+                                        <span class="budget-value budget-remaining">${material.remaining}</span>
+                                    </div>
+                                </div>
+                            </div>
                         </div>
                     </div>
                     <div class="project-progress">
@@ -116,7 +175,8 @@ document.addEventListener('DOMContentLoaded', function() {
                     </p>
                 </div>
             </div>
-        `).join('');
+        `;
+        }).join('');
 
         // 프로젝트 카드 클릭 이벤트 추가
         document.querySelectorAll('.project-card').forEach(card => {
@@ -165,7 +225,7 @@ document.addEventListener('DOMContentLoaded', function() {
         const budgetAmount = budget || 0;
         const remaining = budgetAmount - usedAmount;
 
-        return `<span style="font-weight: bold">${formatCurrency(remaining)}</span> / ${formatCurrency(budgetAmount)} 원`;
+        return `사용 금액 : ${formatCurrency(usedAmount)} / 총 금액 : ${formatCurrency(budgetAmount)} / 잔여 금액 : <span style="font-weight: bold">${formatCurrency(remaining)}</span> 원`;
     }
 
     // 필터 버튼 클릭 이벤트
