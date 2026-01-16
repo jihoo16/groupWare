@@ -63,8 +63,17 @@ public class Project extends BaseEntity {
     @Column(name = "equipment_budget", precision = 15, scale = 2)
     private BigDecimal equipmentBudget = BigDecimal.ZERO;
 
+    @Column(name = "material_budget", precision = 15, scale = 2)
+    private BigDecimal materialBudget = BigDecimal.ZERO;
+
     @Column(name = "progress_rate", precision = 5, scale = 2)
     private BigDecimal progressRate = BigDecimal.ZERO;
+
+    @Column(name = "total_period_start")
+    private LocalDate totalPeriodStart;
+
+    @Column(name = "total_period_end")
+    private LocalDate totalPeriodEnd;
 
 
     // 관계 매핑
