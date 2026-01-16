@@ -33,14 +33,14 @@
         <div class="card-header">
             <h2>프로젝트 목록</h2>
             <div class="filter-group">
-                <select id="pastStatusFilter" class="filter-select">
-                    <option value="">전체 상태</option>
-                    <option value="PLANNING">기획</option>
-                    <option value="IN_PROGRESS">진행중</option>
-                    <option value="COMPLETED">완료</option>
-                    <option value="ON_HOLD">보류</option>
-                    <option value="CANCELLED">취소</option>
-                </select>
+                <div class="status-filter-buttons">
+                    <button class="filter-btn active" data-status="">전체</button>
+                    <button class="filter-btn" data-status="PLANNING">기획</button>
+                    <button class="filter-btn" data-status="IN_PROGRESS">진행중</button>
+                    <button class="filter-btn" data-status="COMPLETED">완료</button>
+                    <button class="filter-btn" data-status="PENDING">대기</button>
+                    <button class="filter-btn" data-status="CANCELLED">취소</button>
+                </div>
                 <input type="text" id="searchPastInput" class="search-input" placeholder="프로젝트명 검색...">
             </div>
         </div>
@@ -297,20 +297,32 @@
                                 <span id="detailTeamSize">-</span>
                             </div>
                             <div class="detail-item">
-                                <label>시작일</label>
+                                <label>현재 차수 시작일</label>
                                 <span id="detailStartDate">-</span>
                             </div>
                             <div class="detail-item">
-                                <label>종료일</label>
+                                <label>현재 차수 종료일</label>
                                 <span id="detailEndDate">-</span>
                             </div>
                             <div class="detail-item">
-                                <label>활동비</label>
+                                <label>총 프로젝트 시작일</label>
+                                <span id="detailTotalPeriodStart">-</span>
+                            </div>
+                            <div class="detail-item">
+                                <label>총 프로젝트 종료일</label>
+                                <span id="detailTotalPeriodEnd">-</span>
+                            </div>
+                            <div class="detail-item">
+                                <label>활동비 예산</label>
                                 <span id="detailActivityBudget">-</span>
                             </div>
                             <div class="detail-item">
-                                <label>장비비</label>
+                                <label>장비비 예산</label>
                                 <span id="detailEquipmentBudget">-</span>
+                            </div>
+                            <div class="detail-item">
+                                <label>재료비 예산</label>
+                                <span id="detailMaterialBudget">-</span>
                             </div>
                         </div>
                     </div>

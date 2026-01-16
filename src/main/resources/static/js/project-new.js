@@ -105,23 +105,17 @@ document.addEventListener('DOMContentLoaded', function() {
 
             row.innerHTML = `
                 <td class="position-name-cell">${position.codeName}</td>
-                <td><input type="number" class="expense-input-sm" name="daily_allowance_${position.code}" value="0" min="0" step="1000" placeholder="일비"></td>
-                <td><input type="number" class="expense-input-sm" name="meal_allowance_${position.code}" value="0" min="0" step="1000" placeholder="식비"></td>
-                <td><input type="number" class="expense-input-sm" name="meeting_allowance_${position.code}" value="0" min="0" step="1000" placeholder="회의비"></td>
-                <td><input type="number" class="expense-input-sm" name="overtime_meal_${position.code}" value="0" min="0" step="1000" placeholder="야근식대"></td>
+                <td><input type="text" class="expense-input-sm currency-input-sm" name="daily_allowance_${position.code}" value="0" placeholder="일비"></td>
+                <td><input type="text" class="expense-input-sm currency-input-sm" name="meal_allowance_${position.code}" value="0" placeholder="식비"></td>
+                <td><input type="text" class="expense-input-sm currency-input-sm" name="meeting_allowance_${position.code}" value="0" placeholder="회의비"></td>
+                <td><input type="text" class="expense-input-sm currency-input-sm" name="overtime_meal_${position.code}" value="0" placeholder="야근식대"></td>
             `;
 
             expenseSettingsBody.appendChild(row);
         });
 
-        // 숫자 입력 필드 포맷팅 이벤트 추가
-        document.querySelectorAll('.expense-input-sm').forEach(input => {
-            input.addEventListener('keypress', function(e) {
-                if (!/[0-9]/.test(e.key)) {
-                    e.preventDefault();
-                }
-            });
-        });
+        // 금액 포맷팅 적용
+        applyCurrencyFormatting();
 
         console.log('경비 설정 테이블 생성 완료');
     }
@@ -246,8 +240,11 @@ document.addEventListener('DOMContentLoaded', function() {
         // 기존 PI 역할 제거
         selectedMemberList = selectedMemberList.filter(m => m.role !== 'PI');
 
-        // 이미 팀원으로 추가되어 있는지 확인
-        const existingMember = selectedMemberList.find(m => m.idx === manager.idx);
+        // 이미 팀원으로 추가되어 있는지 확인 (idx 또는 id로 체크)
+        const existingMember = selectedMemberList.find(m => {
+            const memberId = parseInt(m.idx || m.id);
+            return memberId === manager.idx;
+        });
 
         if (!existingMember) {
             // 새로 추가
@@ -262,6 +259,10 @@ document.addEventListener('DOMContentLoaded', function() {
         } else {
             // 기존 멤버의 역할을 PI로 변경
             existingMember.role = 'PI';
+            // idx가 없는 경우 추가 (일반 팀원에서 PI로 변경된 경우)
+            if (!existingMember.idx) {
+                existingMember.idx = parseInt(existingMember.id);
+            }
         }
 
         renderTeamTable();
@@ -288,13 +289,15 @@ document.addEventListener('DOMContentLoaded', function() {
     function openMemberModal() {
         if (!memberSelectModal) return;
 
-        // 임시 선택 목록 초기화 (기존 선택된 팀원들로 초기화)
-        tempSelectedMembers = selectedMemberList.map(m => ({
-            id: parseInt(m.id || m.idx),
-            name: m.name,
-            department: m.dept,
-            rank: m.position
-        }));
+        // 임시 선택 목록 초기화 (기존 선택된 팀원들로 초기화, PI 제외)
+        tempSelectedMembers = selectedMemberList
+            .filter(m => m.role !== 'PI')
+            .map(m => ({
+                id: parseInt(m.id || m.idx),
+                name: m.name,
+                department: m.dept,
+                rank: m.position
+            }));
 
         // 인력 목록을 먼저 로드한 후 모달 표시
         loadMembersForModal();
@@ -973,10 +976,13 @@ document.addEventListener('DOMContentLoaded', function() {
                 projectManagerIdx: projectManagerIdxInput.value,
                 startDate: document.getElementById('startDate').value,
                 endDate: document.getElementById('endDate').value,
+                totalPeriodStart: document.getElementById('totalPeriodStart').value || null,
+                totalPeriodEnd: document.getElementById('totalPeriodEnd').value || null,
                 projectDescription: document.getElementById('projectDescription').value,
                 receiptUrl: document.getElementById('receiptUrl').value,
-                activityBudget: document.getElementById('activityBudget').value || '0',
-                equipmentBudget: document.getElementById('equipmentBudget').value || '0',
+                activityBudget: parseCurrencyValue(document.getElementById('activityBudget').value),
+                equipmentBudget: parseCurrencyValue(document.getElementById('equipmentBudget').value),
+                materialBudget: parseCurrencyValue(document.getElementById('materialBudget').value),
                 teamMembers: selectedMemberList,
                 cards: cardListData
             };
@@ -1002,7 +1008,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 if (inputs.length >= 4) {
                     // 각 경비 항목을 별도의 레코드로 저장
                     expenseItems.forEach((item, index) => {
-                        const amount = parseInt(inputs[index].value) || 0;
+                        const amount = parseCurrencyValue(inputs[index].value);
                         expenseSettings.push({
                             positionCode: positionCode || null,
                             expenseItemName: item.name,
@@ -1021,10 +1027,13 @@ document.addEventListener('DOMContentLoaded', function() {
                 projectManagerIdx: parseInt(formData.projectManagerIdx),
                 startDate: formData.startDate,
                 endDate: formData.endDate,
+                totalPeriodStart: formData.totalPeriodStart,
+                totalPeriodEnd: formData.totalPeriodEnd,
                 description: formData.projectDescription,
                 receiptUrl: formData.receiptUrl,
                 activityBudget: formData.activityBudget,
                 equipmentBudget: formData.equipmentBudget,
+                materialBudget: formData.materialBudget,
 
                 // 연구비 카드 데이터 추가 (DTO 구조에 맞게 변환)
                 projectCards: cardListData.map(card => ({
@@ -1035,7 +1044,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
                 // 팀원 데이터 추가 (DTO 구조에 맞게 변환)
                 projectMembers: selectedMemberList.map(member => ({
-                    employeeIdx: parseInt(member.id),
+                    employeeIdx: parseInt(member.idx || member.id),
                     participationStartDate: member.startDate,
                     participationEndDate: member.endDate,
                     role: member.role || null
@@ -1505,13 +1514,80 @@ document.addEventListener('DOMContentLoaded', function() {
         }
 
         // 연계 프로젝트 목록에 추가
+        const wasEmpty = relatedProjectList.length === 0;
         relatedProjectList.push(...newRelations);
         renderRelatedProjectList();
+
+        // 첫 번째 연계 프로젝트가 추가된 경우, 해당 프로젝트 정보를 폼에 자동 입력
+        if (wasEmpty && newRelations.length > 0) {
+            loadProjectInfoToForm(newRelations[0].id);
+        }
 
         // 모달 닫기
         closeRelationDetailsModal();
         closeRelatedProjectModal();
     };
+
+    // 연계 프로젝트 정보를 폼에 자동 입력
+    function loadProjectInfoToForm(projectId) {
+        // 프로젝트 상세 정보 조회
+        fetch(`/api/projects/${projectId}`)
+            .then(response => {
+                if (!response.ok) {
+                    throw new Error('프로젝트 정보를 불러오는데 실패했습니다.');
+                }
+                return response.json();
+            })
+            .then(project => {
+                // 프로젝트명 설정
+                const projectNameInput = document.getElementById('projectName');
+                if (projectNameInput && !projectNameInput.value) {
+                    projectNameInput.value = project.projectName + ' (연계)';
+                }
+
+                // 발주사 설정
+                const clientNameInput = document.getElementById('clientName');
+                if (clientNameInput && !clientNameInput.value) {
+                    clientNameInput.value = project.clientName || '';
+                }
+
+                // 총 프로젝트 시작일 설정
+                const totalPeriodStartInput = document.getElementById('totalPeriodStart');
+                if (totalPeriodStartInput && !totalPeriodStartInput.value) {
+                    totalPeriodStartInput.value = project.totalPeriodStart || project.startDate || '';
+                }
+
+                // 총 프로젝트 종료일 설정
+                const totalPeriodEndInput = document.getElementById('totalPeriodEnd');
+                if (totalPeriodEndInput && !totalPeriodEndInput.value) {
+                    totalPeriodEndInput.value = project.totalPeriodEnd || project.endDate || '';
+                }
+
+                // 연구책임자 설정
+                if (project.projectManagerIdx && project.projectManagerName) {
+                    // allManagers 목록에서 해당 연구책임자 찾기
+                    const manager = allManagers.find(m => m.idx === project.projectManagerIdx);
+                    if (manager) {
+                        selectedManager = manager;
+                        if (projectManagerInput) {
+                            projectManagerInput.value = `${manager.empName} (${manager.empDeptName || '-'} / ${manager.empPositionName || '-'})`;
+                        }
+                        if (projectManagerIdxInput) {
+                            projectManagerIdxInput.value = manager.idx;
+                        }
+
+                        // 팀원에 자동 추가
+                        addManagerToTeam(manager);
+                    }
+                }
+
+                console.log('연계 프로젝트 정보를 폼에 자동 입력했습니다:', project);
+            })
+            .catch(error => {
+                console.error('Error loading project info:', error);
+                // 에러가 발생해도 사용자 작업을 방해하지 않음
+            });
+    }
 
     // 연계 정보 입력 모달 닫기 (전역 함수)
     window.closeRelationDetailsModal = function() {
@@ -1675,10 +1751,10 @@ document.addEventListener('DOMContentLoaded', function() {
                             const inputs = row.querySelectorAll('.expense-input-sm');
 
                             if (inputs.length >= 4) {
-                                inputs[0].value = data.amounts[0]; // 출장비
-                                inputs[1].value = data.amounts[1]; // 중식비
-                                inputs[2].value = data.amounts[2]; // 회의비
-                                inputs[3].value = data.amounts[3]; // 야근석식대
+                                inputs[0].value = formatCurrencyValue(data.amounts[0]); // 출장비
+                                inputs[1].value = formatCurrencyValue(data.amounts[1]); // 중식비
+                                inputs[2].value = formatCurrencyValue(data.amounts[2]); // 회의비
+                                inputs[3].value = formatCurrencyValue(data.amounts[3]); // 야근석식대
                             }
 
                             // 직급 코드도 data 속성에 저장
@@ -1703,4 +1779,121 @@ document.addEventListener('DOMContentLoaded', function() {
             }
         });
     }
+
+    // ===========================
+    // 금액 포맷팅 기능
+    // ===========================
+
+    /**
+     * 입력 필드에서 금액을 파싱하여 숫자로 변환
+     */
+    function parseCurrencyValue(value) {
+        if (!value) return 0;
+        // 콤마 제거 후 숫자로 변환
+        return parseInt(value.replace(/,/g, ''), 10) || 0;
+    }
+
+    /**
+     * 숫자를 천단위 콤마 형식으로 포맷팅
+     */
+    function formatCurrencyValue(value) {
+        const num = parseCurrencyValue(value.toString());
+        return num.toLocaleString('ko-KR');
+    }
+
+    /**
+     * 모든 금액 입력 필드에 포맷팅 적용
+     */
+    function applyCurrencyFormatting() {
+        // 예산 입력 필드
+        const currencyInputs = document.querySelectorAll('.currency-input');
+        currencyInputs.forEach(input => {
+            applyCurrencyInput(input);
+        });
+
+        // 직급별 경비 입력 필드
+        const currencyInputsSm = document.querySelectorAll('.currency-input-sm');
+        currencyInputsSm.forEach(input => {
+            applyCurrencyInput(input);
+        });
+    }
+
+    /**
+     * 개별 입력 필드에 금액 포맷팅 이벤트 적용
+     */
+    function applyCurrencyInput(input) {
+        // 초기값 포맷팅
+        if (input.value) {
+            input.value = formatCurrencyValue(input.value);
+        }
+
+        // 입력 중 실시간 포맷팅
+        input.addEventListener('input', function(e) {
+            const cursorPosition = this.selectionStart;
+            const oldValue = this.value;
+            const oldLength = oldValue.length;
+
+            // 숫자만 추출
+            const numericValue = this.value.replace(/\D/g, '');
+
+            // 빈 값 처리
+            if (numericValue === '') {
+                this.value = '';
+                return;
+            }
+
+            // 포맷팅 적용
+            const formattedValue = parseInt(numericValue, 10).toLocaleString('ko-KR');
+            this.value = formattedValue;
+
+            // 커서 위치 계산 (콤마 개수 차이 고려)
+            const newLength = formattedValue.length;
+            const commasBefore = (oldValue.substring(0, cursorPosition).match(/,/g) || []).length;
+            const commasAfter = (formattedValue.substring(0, cursorPosition).match(/,/g) || []).length;
+            const newCursorPosition = cursorPosition + (commasAfter - commasBefore) + (newLength - oldLength);
+
+            // 커서 위치 복원
+            this.setSelectionRange(newCursorPosition, newCursorPosition);
+        });
+
+        // 블러 시: 빈 값이면 0으로 설정
+        input.addEventListener('blur', function() {
+            if (this.value === '') {
+                this.value = '0';
+            }
+        });
+
+        // 포커스 시: 0이면 빈 값으로
+        input.addEventListener('focus', function() {
+            if (this.value === '0') {
+                this.value = '';
+            }
+        });
+
+        // 키 입력 시: 숫자만 허용
+        input.addEventListener('keypress', function(e) {
+            if (!/[0-9]/.test(e.key)) {
+                e.preventDefault();
+            }
+        });
+
+        // 붙여넣기 시: 숫자만 허용하고 실시간 포맷팅
+        input.addEventListener('paste', function(e) {
+            e.preventDefault();
+            const pastedText = (e.clipboardData || window.clipboardData).getData('text');
+            const numericValue = pastedText.replace(/\D/g, '');
+            if (numericValue) {
+                const cursorPosition = this.selectionStart;
+                const currentValue = this.value.replace(/\D/g, '');
+                const newValue = currentValue.substring(0, this.selectionStart) + numericValue + currentValue.substring(this.selectionEnd);
+
+                // input 이벤트를 트리거하여 포맷팅 적용
+                this.value = newValue;
+                this.dispatchEvent(new Event('input', { bubbles: true }));
+            }
+        });
+    }
+
+    // 페이지 로드 시 금액 포맷팅 적용
+    applyCurrencyFormatting();
 });

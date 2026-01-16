@@ -8,10 +8,13 @@ document.addEventListener('DOMContentLoaded', function() {
     let allPastProjectsData = [];
 
     // 과거 프로젝트 테이블 요소
-    const pastStatusFilter = document.getElementById('pastStatusFilter');
+    const filterButtons = document.querySelectorAll('.filter-btn');
     const searchPastInput = document.getElementById('searchPastInput');
     const pastProjectTableBody = document.getElementById('pastProjectTableBody');
     const pastProjectRows = document.querySelectorAll('#pastProjectTable tbody tr');
+
+    // 현재 선택된 필터 상태
+    let currentStatusFilter = '';
 
     // 페이지네이션 요소
     const firstPageBtn = document.getElementById('firstPageBtn');
@@ -97,6 +100,10 @@ document.addEventListener('DOMContentLoaded', function() {
                             <i class="fas fa-microchip"></i>
                             <span>장비비: ${formatBudgetUsage(project.equipmentUsed, project.equipmentBudget)}</span>
                         </div>
+                        <div class="info-item">
+                            <i class="fas fa-flask"></i>
+                            <span>재료비: ${formatBudgetUsage(project.materialUsed, project.materialBudget)}</span>
+                        </div>
                     </div>
                     <div class="project-progress">
                         <div class="progress-bar">
@@ -161,12 +168,22 @@ document.addEventListener('DOMContentLoaded', function() {
         return `<span style="font-weight: bold">${formatCurrency(remaining)}</span> / ${formatCurrency(budgetAmount)} 원`;
     }
 
-    // 과거 프로젝트 상태 필터
-    if (pastStatusFilter) {
-        pastStatusFilter.addEventListener('change', function() {
+    // 필터 버튼 클릭 이벤트
+    filterButtons.forEach(button => {
+        button.addEventListener('click', function() {
+            // 모든 버튼에서 active 클래스 제거
+            filterButtons.forEach(btn => btn.classList.remove('active'));
+
+            // 클릭한 버튼에 active 클래스 추가
+            this.classList.add('active');
+
+            // 현재 필터 상태 업데이트
+            currentStatusFilter = this.getAttribute('data-status');
+
+            // 필터 적용
             filterPastProjects();
         });
-    }
+    });
 
     // 과거 프로젝트 검색
     if (searchPastInput) {
@@ -216,7 +233,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
     // 과거 프로젝트 필터링
     function filterPastProjects() {
-        const statusValue = pastStatusFilter ? pastStatusFilter.value : '';
+        const statusValue = currentStatusFilter;
         const searchValue = searchPastInput ? searchPastInput.value.toLowerCase() : '';
 
         filteredPastProjects = allPastProjects.filter(project => {
@@ -409,10 +426,13 @@ document.addEventListener('DOMContentLoaded', function() {
                 document.getElementById('detailStatus').textContent = getStatusLabel(project.projectStatus);
                 document.getElementById('detailPM').textContent = project.projectManagerName || '-';
                 document.getElementById('detailTeamSize').textContent = project.memberCount + '명';
-                document.getElementById('detailStartDate').textContent = project.startDate;
-                document.getElementById('detailEndDate').textContent = project.endDate;
+                document.getElementById('detailStartDate').textContent = project.startDate || '-';
+                document.getElementById('detailEndDate').textContent = project.endDate || '-';
+                document.getElementById('detailTotalPeriodStart').textContent = project.totalPeriodStart || '-';
+                document.getElementById('detailTotalPeriodEnd').textContent = project.totalPeriodEnd || '-';
                 document.getElementById('detailActivityBudget').innerHTML = formatBudgetUsage(project.activityUsed, project.activityBudget);
                 document.getElementById('detailEquipmentBudget').innerHTML = formatBudgetUsage(project.equipmentUsed, project.equipmentBudget);
+                document.getElementById('detailMaterialBudget').innerHTML = formatBudgetUsage(project.materialUsed, project.materialBudget);
                 document.getElementById('detailDescription').textContent = project.description || '설명이 없습니다.';
                 document.getElementById('detailProgressBar').style.width = (project.progressRate || 0) + '%';
                 document.getElementById('detailProgressText').textContent = (project.progressRate || 0) + '%';
