@@ -2,12 +2,17 @@
 document.addEventListener('DOMContentLoaded', function() {
     const totalLeaveCard = document.getElementById('totalLeaveCard');
     const usedLeaveCard = document.getElementById('usedLeaveCard');
+    const remainingLeaveCard = document.getElementById('remainingLeaveCard');
     const totalLeaveModal = document.getElementById('totalLeaveModal');
     const usedLeaveModal = document.getElementById('usedLeaveModal');
+    const remainingLeaveModal = document.getElementById('remainingLeaveModal');
     const closeTotalModal = document.getElementById('closeTotalModal');
     const closeUsedModal = document.getElementById('closeUsedModal');
+    const closeRemainingModal = document.getElementById('closeRemainingModal');
     const usedLeaveTableBody = document.getElementById('usedLeaveTableBody');
     const usedLeaveSummary = document.getElementById('usedLeaveSummary');
+    const remainingLeaveTableBody = document.getElementById('remainingLeaveTableBody');
+    const remainingLeaveSummary = document.getElementById('remainingLeaveSummary');
     const calculationDetailContent = document.getElementById('calculationDetailContent');
 
     // 전역 변수
@@ -101,7 +106,26 @@ document.addEventListener('DOMContentLoaded', function() {
     async function fetchVacationHistory(userIdx, year = new Date().getFullYear()) {
         try {
             const response = await fetch(`/api/vacation/history?userIdx=${userIdx}&year=${year}`);
-            if (!response.ok) throw new Error('Failed to fetch vacation history');
+
+            // 401 Unauthorized - 세션 만료
+            if (response.status === 401) {
+                console.error('세션이 만료되었습니다. 로그인 페이지로 이동합니다.');
+                alert('세션이 만료되었습니다. 다시 로그인해주세요.');
+                window.location.href = '/login';
+                return [];
+            }
+
+            // 응답 타입 확인
+            const contentType = response.headers.get('content-type');
+            if (!contentType || !contentType.includes('application/json')) {
+                console.error('JSON이 아닌 응답을 받았습니다:', contentType);
+                console.error('응답 상태:', response.status);
+                const text = await response.text();
+                console.error('응답 내용 (처음 200자):', text.substring(0, 200));
+                return [];
+            }
+
+            if (!response.ok) throw new Error(`Failed to fetch vacation history: ${response.status}`);
             return await response.json();
         } catch (error) {
             console.error('연차 내역 조회 실패:', error);
@@ -145,14 +169,17 @@ document.addEventListener('DOMContentLoaded', function() {
         const remainingDaysEl = document.querySelector('.summary-card.remaining .number');
         const subInfoEl = document.querySelector('.summary-card.used .sub-info');
 
+        // 서버에서 계산된 값을 그대로 사용 (VIEW에서 이미 경조사 제외하고 계산함)
         if (totalDaysEl) totalDaysEl.innerHTML = `${info.totalDays}<span>일</span>`;
         if (usedDaysEl) usedDaysEl.innerHTML = `${info.usedDays}<span>일</span>`;
         if (remainingDaysEl) remainingDaysEl.innerHTML = `${info.remainingDays}<span>일</span>`;
 
-        // 반차 카운트
-        const halfDayCount = vacationHistory.filter(v =>
-            v.vacationType && (v.vacationType.includes('반차') || v.vacationType.includes('HALF'))
-        ).length;
+        // 반차 카운트 (연차 내역의 days 필드를 보고 판단)
+        const halfDayCount = vacationHistory.filter(v => {
+            // days가 0.5인 경우 또는 vacationType에 반차가 포함된 경우
+            return (v.days === 0.5 || v.days === '0.5') ||
+                   (v.vacationType && (v.vacationType.includes('반차') || v.vacationType.includes('HALF')));
+        }).length;
 
         if (subInfoEl && halfDayCount > 0) {
             subInfoEl.textContent = `반차 ${halfDayCount}회 포함`;
@@ -190,20 +217,54 @@ document.addEventListener('DOMContentLoaded', function() {
             return;
         }
 
-        const rows = history.map(item => {
+        // days > 0인 레코드만 표시 (경조사만 있는 레코드는 제외)
+        const filteredHistory = history.filter(item => item.days && parseFloat(item.days) > 0);
+
+        if (filteredHistory.length === 0) {
+            tbody.innerHTML = '<tr><td colspan="6" style="text-align: center; padding: 40px;">연차 사용 내역이 없습니다.</td></tr>';
+            return;
+        }
+
+        const dayNames = ['일', '월', '화', '수', '목', '금', '토'];
+
+        const rows = filteredHistory.map(item => {
             const vacType = getVacationTypeBadge(item.vacationType);
-            const applyDate = item.applyDate || item.createdAt?.substring(0, 10) || '-';
-            const startDate = item.startDate || '-';
-            const endDate = item.endDate || '-';
+
+            // 신청일에 요일 추가
+            let applyDateWithDay = '-';
+            if (item.applyDate || item.createdAt) {
+                const applyDateStr = item.applyDate || item.createdAt.substring(0, 10);
+                const applyDateObj = new Date(applyDateStr + 'T00:00:00');
+                const applyDayOfWeek = applyDateObj.getDay();
+                applyDateWithDay = `${applyDateStr} (${dayNames[applyDayOfWeek]})`;
+            }
+
+            // 시작일에 요일 추가
+            let startDateWithDay = '-';
+            if (item.startDate) {
+                const startDateObj = new Date(item.startDate + 'T00:00:00');
+                const startDayOfWeek = startDateObj.getDay();
+                startDateWithDay = `${item.startDate} (${dayNames[startDayOfWeek]})`;
+            }
+
+            // 종료일에 요일 추가
+            let endDateWithDay = '-';
+            if (item.endDate) {
+                const endDateObj = new Date(item.endDate + 'T00:00:00');
+                const endDayOfWeek = endDateObj.getDay();
+                endDateWithDay = `${item.endDate} (${dayNames[endDayOfWeek]})`;
+            }
+
             const days = item.days || 0;
             const reason = item.reason || item.content || '개인 사유';
+            const documentIdx = item.documentIdx || '';
 
             return `
-                <tr>
-                    <td>${applyDate}</td>
+                <tr data-document-idx="${documentIdx}" onclick="location.href='/approval/vacation/detail?documentIdx=${documentIdx}'">
+                    <td>${applyDateWithDay}</td>
                     <td>${vacType}</td>
-                    <td>${startDate}</td>
-                    <td>${endDate}</td>
+                    <td>${startDateWithDay}</td>
+                    <td>${endDateWithDay}</td>
                     <td>${days}일</td>
                     <td>${reason}</td>
                 </tr>
@@ -215,6 +276,11 @@ document.addEventListener('DOMContentLoaded', function() {
 
     // 연차 타입 뱃지 생성
     function getVacationTypeBadge(vacationType) {
+        // 경조사는 별도 스타일로 표시
+        if (vacationType && vacationType.includes('경조사')) {
+            return `<span class="badge" style="background: #2196F3; color: white;">${vacationType}</span>`;
+        }
+
         const typeMap = {
             'FULL': '<span class="badge badge-full">연차</span>',
             'HALF_AM': '<span class="badge badge-half">반차(오전)</span>',
@@ -229,6 +295,11 @@ document.addEventListener('DOMContentLoaded', function() {
     // 날짜가 연차 기간에 포함되는지 확인
     function getLeaveStatus(dateStr) {
         for (let record of vacationHistory) {
+            // days가 0이면 경조사만 있는 레코드이므로 달력에 표시하지 않음
+            if (!record.days || parseFloat(record.days) === 0) {
+                continue;
+            }
+
             // 날짜 문자열을 직접 비교 (타임존 문제 방지)
             // dateStr: "2025-03-15", record.startDate: "2025-03-15"
             if (dateStr >= record.startDate && dateStr <= record.endDate) {
@@ -473,6 +544,11 @@ document.addEventListener('DOMContentLoaded', function() {
         openUsedLeaveModal();
     });
 
+    // 잔여 연차 카드 클릭
+    remainingLeaveCard.addEventListener('click', function() {
+        openRemainingLeaveModal();
+    });
+
     // 총 연차 모달 닫기
     closeTotalModal.addEventListener('click', function() {
         totalLeaveModal.classList.remove('show');
@@ -481,6 +557,11 @@ document.addEventListener('DOMContentLoaded', function() {
     // 사용 연차 모달 닫기
     closeUsedModal.addEventListener('click', function() {
         usedLeaveModal.classList.remove('show');
+    });
+
+    // 잔여 연차 모달 닫기
+    closeRemainingModal.addEventListener('click', function() {
+        remainingLeaveModal.classList.remove('show');
     });
 
     // 총 연차 모달 배경 클릭 시 닫기
@@ -494,6 +575,13 @@ document.addEventListener('DOMContentLoaded', function() {
     usedLeaveModal.addEventListener('click', function(e) {
         if (e.target === usedLeaveModal) {
             usedLeaveModal.classList.remove('show');
+        }
+    });
+
+    // 잔여 연차 모달 배경 클릭 시 닫기
+    remainingLeaveModal.addEventListener('click', function(e) {
+        if (e.target === remainingLeaveModal) {
+            remainingLeaveModal.classList.remove('show');
         }
     });
 
@@ -670,10 +758,14 @@ document.addEventListener('DOMContentLoaded', function() {
 
     // 사용 연차 모달 열기 및 데이터 채우기
     function openUsedLeaveModal() {
-        // 사용 연차 요약 업데이트
+        // 사용 연차 요약 업데이트 (서버 값 사용)
         if (vacationInfo && vacationInfo.usedDays !== undefined) {
             const usedDays = parseFloat(vacationInfo.usedDays);
-            const halfDayCount = vacationHistory ? vacationHistory.filter(v => v.vacationType && v.vacationType.includes('반차')).length : 0;
+            const halfDayCount = vacationHistory ? vacationHistory.filter(v =>
+                (v.days === 0.5 || v.days === '0.5') ||
+                (v.vacationType && (v.vacationType.includes('반차') || v.vacationType.includes('HALF')))
+            ).length : 0;
+
             usedLeaveSummary.textContent = halfDayCount > 0
                 ? `${usedDays}일 (반차 ${halfDayCount}회 포함)`
                 : `${usedDays}일`;
@@ -690,6 +782,12 @@ document.addEventListener('DOMContentLoaded', function() {
         let tableHTML = '';
 
         vacationHistory.forEach(record => {
+            // days가 0이면 경조사만 있는 레코드이므로 스킵
+            // days > 0이면 연차가 포함된 레코드이므로 표시
+            if (!record.days || parseFloat(record.days) === 0) {
+                return;
+            }
+
             const startDate = new Date(record.startDate);
             const endDate = new Date(record.endDate);
             const currentDateLoop = new Date(startDate);
@@ -704,9 +802,13 @@ document.addEventListener('DOMContentLoaded', function() {
                     const badgeHtml = getVacationTypeBadge(record.vacationType);
                     const reason = record.reason || record.content || '개인 사유';
 
+                    // 요일 추가
+                    const dayNames = ['일', '월', '화', '수', '목', '금', '토'];
+                    const dateWithDay = `${dateStr} (${dayNames[dayOfWeek]})`;
+
                     tableHTML += `
                         <tr>
-                            <td>${dateStr}</td>
+                            <td>${dateWithDay}</td>
                             <td>${badgeHtml}</td>
                             <td>${reason}</td>
                         </tr>
@@ -719,6 +821,99 @@ document.addEventListener('DOMContentLoaded', function() {
 
         usedLeaveTableBody.innerHTML = tableHTML || '<tr><td colspan="3" style="text-align: center; padding: 40px;">연차 사용 내역이 없습니다.</td></tr>';
         usedLeaveModal.classList.add('show');
+    }
+
+    // 잔여 연차 모달 열기 및 데이터 채우기
+    function openRemainingLeaveModal() {
+        // 현재 잔여 연차 요약
+        if (vacationInfo && vacationInfo.remainingDays !== undefined) {
+            remainingLeaveSummary.textContent = `${vacationInfo.remainingDays}일`;
+        } else {
+            remainingLeaveSummary.textContent = '-';
+        }
+
+        if (!vacationHistory || vacationHistory.length === 0 || !vacationInfo) {
+            remainingLeaveTableBody.innerHTML = '<tr><td colspan="5" style="text-align: center; padding: 40px;">연차 사용 내역이 없습니다.</td></tr>';
+            remainingLeaveModal.classList.add('show');
+            return;
+        }
+
+        // days > 0인 레코드만 필터링하고, 날짜별로 펼치기
+        const usageDates = [];
+        const dayNames = ['일', '월', '화', '수', '목', '금', '토'];
+
+        vacationHistory.forEach(record => {
+            // days가 0이면 경조사만 있는 레코드이므로 스킵
+            if (!record.days || parseFloat(record.days) === 0) {
+                return;
+            }
+
+            const startDate = new Date(record.startDate);
+            const endDate = new Date(record.endDate);
+            const currentDateLoop = new Date(startDate);
+
+            // 날짜 범위 내의 각 영업일 처리
+            while (currentDateLoop <= endDate) {
+                const dateStr = formatDate(currentDateLoop);
+                const dayOfWeek = currentDateLoop.getDay();
+
+                // 주말과 공휴일 제외
+                if (dayOfWeek !== 0 && dayOfWeek !== 6 && !isPublicHoliday(dateStr)) {
+                    // 경조사는 차감하지 않음 (0일), 반차는 0.5일, 연차는 1일
+                    let usageDays = 1; // 기본값: 연차 1일
+                    if (record.vacationType && record.vacationType.includes('경조사')) {
+                        usageDays = 0; // 경조사는 차감 안함
+                    } else if (record.vacationType && (record.vacationType.includes('반차') || record.vacationType.includes('HALF'))) {
+                        usageDays = 0.5; // 반차
+                    }
+
+                    usageDates.push({
+                        date: dateStr,
+                        dateWithDay: `${dateStr} (${dayNames[dayOfWeek]})`,
+                        vacationType: record.vacationType,
+                        reason: record.reason || record.content || '개인 사유',
+                        days: usageDays
+                    });
+                }
+
+                currentDateLoop.setDate(currentDateLoop.getDate() + 1);
+            }
+        });
+
+        // 날짜순으로 정렬 (오래된 날짜부터)
+        usageDates.sort((a, b) => a.date.localeCompare(b.date));
+
+        // 초기 잔여 연차 계산 (총 연차에서 모든 사용 일수를 뺀 후 다시 더해가는 방식)
+        const totalDays = parseFloat(vacationInfo.totalDays);
+        const totalUsedDays = usageDates.reduce((sum, item) => sum + item.days, 0);
+        let currentRemaining = totalDays; // 사용 전 초기 잔여
+
+        let tableHTML = '';
+
+        usageDates.forEach((usage, index) => {
+            const beforeRemaining = currentRemaining;
+            const afterRemaining = currentRemaining - usage.days;
+            currentRemaining = afterRemaining;
+
+            const badgeHtml = getVacationTypeBadge(usage.vacationType);
+
+            // 음수 잔여는 빨간색으로 표시
+            const beforeStyle = beforeRemaining < 0 ? 'color: #dc3545; font-weight: bold;' : '';
+            const afterStyle = afterRemaining < 0 ? 'color: #dc3545; font-weight: bold;' : '';
+
+            tableHTML += `
+                <tr>
+                    <td>${usage.dateWithDay}</td>
+                    <td>${badgeHtml}</td>
+                    <td style="${beforeStyle}">${beforeRemaining}일</td>
+                    <td>${usage.days}일</td>
+                    <td style="${afterStyle}">${afterRemaining}일</td>
+                </tr>
+            `;
+        });
+
+        remainingLeaveTableBody.innerHTML = tableHTML || '<tr><td colspan="5" style="text-align: center; padding: 40px;">연차 사용 내역이 없습니다.</td></tr>';
+        remainingLeaveModal.classList.add('show');
     }
 
     // 날짜 포맷팅 함수 추가

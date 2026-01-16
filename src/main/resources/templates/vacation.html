@@ -45,7 +45,7 @@
                         </div>
                     </div>
 
-                    <div class="summary-card remaining">
+                    <div class="summary-card remaining clickable" id="remainingLeaveCard">
                         <div class="card-icon">
                             <i class="fas fa-umbrella-beach"></i>
                         </div>
@@ -153,6 +153,42 @@
             <div class="modal-body">
                 <div class="calculation-detail" id="calculationDetailContent">
                     <!-- JavaScript로 동적 생성 -->
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 잔여 연차 상세 모달 -->
+    <div class="modal" id="remainingLeaveModal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2>잔여 연차 상세</h2>
+                <button class="modal-close" id="closeRemainingModal">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            <div class="modal-body">
+                <div class="remaining-summary">
+                    <div class="summary-row">
+                        <span class="label">현재 잔여 연차:</span>
+                        <span class="value" id="remainingLeaveSummary">-</span>
+                    </div>
+                </div>
+                <div class="remaining-table">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>사용 날짜</th>
+                                <th>구분</th>
+                                <th>사용 전 잔여</th>
+                                <th>사용 일수</th>
+                                <th>사용 후 잔여</th>
+                            </tr>
+                        </thead>
+                        <tbody id="remainingLeaveTableBody">
+                            <!-- JavaScript로 동적 생성 -->
+                        </tbody>
+                    </table>
                 </div>
             </div>
         </div>
