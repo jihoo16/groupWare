@@ -13,6 +13,17 @@
                     <h1 class="page-title"><i class="fas fa-calendar-check"></i> 연차신청서 상세</h1>
                 </div>
                 <div class="header-right">
+                    <div class="button-with-tooltip">
+                        <button class="btn-danger" id="deleteBtn">
+                            <i class="fas fa-trash"></i>
+                            삭제
+                        </button>
+                        <div class="tooltip-text">
+                            <i class="fas fa-info-circle"></i>
+                            연차신청서는 PDF로 자동 생성되므로 수정이 불가능합니다.<br>
+                            문서를 삭제하고 새로 작성해주세요.
+                        </div>
+                    </div>
                     <button class="btn-secondary" onclick="history.back()">
                         <i class="fas fa-arrow-left"></i>
                         돌아가기
@@ -53,7 +64,7 @@
                                 <td>
                                     <input type="text" id="drafterPosition" readonly>
                                 </td>
-                                <th>잔여 연차</th>
+                                <th>신청 후 잔여 연차</th>
                                 <td>
                                     <input type="text" id="remainingDays" readonly>
                                 </td>
@@ -76,18 +87,6 @@
                         <h3 class="section-title">첨부파일</h3>
                         <div id="attachmentsList" class="attachments-list">
                             <!-- JavaScript로 동적 생성 -->
-                        </div>
-
-                        <!-- 액션 버튼 -->
-                        <div class="action-buttons">
-                            <button type="button" class="btn-danger" id="deleteBtn">
-                                <i class="fas fa-trash"></i>
-                                삭제
-                            </button>
-                            <button type="button" class="btn-secondary" onclick="history.back()">
-                                <i class="fas fa-arrow-left"></i>
-                                목록으로
-                            </button>
                         </div>
                     </div>
                 </div>

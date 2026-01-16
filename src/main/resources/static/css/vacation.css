@@ -335,6 +335,11 @@
     vertical-align: middle;
 }
 
+.history-table tbody tr {
+    cursor: pointer;
+    transition: background-color 0.2s ease;
+}
+
 .history-table tbody tr:hover {
     background: #f9fafb;
 }
@@ -899,6 +904,94 @@
 }
 
 .used-table .badge-half {
+    background: #fff3e0;
+    color: #f57c00;
+}
+
+/* 잔여 연차 상세 모달 */
+.remaining-summary {
+    background: #f1f8f4;
+    border-radius: 8px;
+    padding: 15px;
+    margin-bottom: 20px;
+}
+
+.remaining-summary .summary-row .value {
+    font-size: 16.6px;
+    font-weight: 700;
+    color: #2e7d32;
+}
+
+.remaining-table {
+    max-height: 450px;
+    overflow-y: auto;
+    display: block;
+}
+
+.remaining-table table {
+    width: 100%;
+    border-collapse: collapse;
+    display: table;
+}
+
+.remaining-table thead {
+    background: #f5f7fa;
+    position: sticky;
+    top: 0;
+    z-index: 10;
+    display: table-header-group;
+}
+
+.remaining-table tbody {
+    display: table-row-group;
+}
+
+.remaining-table th {
+    padding: 12px 10px;
+    text-align: center;
+    font-size: 12px;
+    font-weight: 600;
+    color: #666;
+    border-bottom: 2px solid #e0e0e0;
+    background: #f5f7fa;
+}
+
+.remaining-table th:first-child {
+    text-align: left;
+}
+
+.remaining-table td {
+    padding: 12px 10px;
+    font-size: 12.9px;
+    color: #333;
+    border-bottom: 1px solid #f0f0f0;
+    vertical-align: middle;
+    text-align: center;
+}
+
+.remaining-table td:first-child {
+    text-align: left;
+}
+
+.remaining-table tbody tr:hover {
+    background: #f9fafb;
+}
+
+.remaining-table .badge {
+    display: inline-block;
+    padding: 4px 12px;
+    border-radius: 12px;
+    font-size: 11px;
+    font-weight: 500;
+    position: static;
+}
+
+.remaining-table .badge-full {
+    background: #e3f2fd;
+    color: #1976d2;
+}
+
+.remaining-table .badge-half {
     background: #fff3e0;
     color: #f57c00;
 }

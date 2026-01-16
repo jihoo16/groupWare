@@ -588,7 +588,10 @@ public class VacationServiceImpl implements VacationService {
         VacationBalance vacationBalance = vacationBalanceRepository.findByUserIdxAndYear(userIdx, currentYear)
                 .orElse(null);
 
-        BigDecimal remainingDays = vacationBalance != null ? vacationBalance.getRemainingDays() : BigDecimal.ZERO;
+        BigDecimal currentRemainingDays = vacationBalance != null ? vacationBalance.getRemainingDays() : BigDecimal.ZERO;
+
+        // 신청 후 잔여 연차 계산 (경조사는 연차 차감 대상이 아니므로 제외)
+        BigDecimal remainingDaysAfterApply = currentRemainingDays.subtract(totalRequestedDaysExcludingGyeongjosa);
 
         // 9. ApprovalDocument 생성 (문서 메타데이터)
         // 문서 제목: "연차 신청서 - {첫 번째 기간 시작일}"
@@ -623,7 +626,7 @@ public class VacationServiceImpl implements VacationService {
                     .startDate(period.getStartDate())
                     .endDate(period.getEndDate())
                     .days(period.getDays())
-                    .remainingDaysAtApply(remainingDays)
+                    .remainingDaysAtApply(remainingDaysAfterApply)  // 신청 후 잔여 연차
                     .reason(saveDTO.getReason())
                     .allowMinusVacation(saveDTO.getAllowMinusVacation() != null ? saveDTO.getAllowMinusVacation() : false)
                     .specialApprovalReason(saveDTO.getSpecialApprovalReason())
@@ -1170,11 +1173,40 @@ public class VacationServiceImpl implements VacationService {
         // 4. VacationRequest 조회 및 캘린더 일정 삭제
         List<VacationRequest> vacationRequests = vacationRequestRepository.findByDocumentIdx(documentIdx);
 
-        for (VacationRequest vr : vacationRequests) {
-            // 캘린더 일정 삭제 (vacation_request와 연결된 calendar_event 찾아서 삭제)
-            // calendar_event의 title이나 description에 vacation 관련 정보가 있거나
-            // 별도의 연결 테이블이 있을 경우 해당 로직 추가
+        // 5. 삭제할 총 연차 일수 계산 (경조사는 연차 차감 대상이 아니므로 제외)
+        BigDecimal totalDaysToRestore = vacationRequests.stream()
+                .filter(vr -> !vr.getVacationType().contains("경조사"))
+                .map(VacationRequest::getDays)
+                .reduce(BigDecimal.ZERO, BigDecimal::add);
 
+        log.info("[연차 일수 복구 계산] 총 복구할 일수: {}일 (경조사 제외)", totalDaysToRestore);
+
+        // 6. VacationBalance 업데이트 (연차 잔액 복구)
+        if (totalDaysToRestore.compareTo(BigDecimal.ZERO) > 0 && !vacationRequests.isEmpty()) {
+            Long userIdx = vacationRequests.getFirst().getUserIdx();
+            int currentYear = LocalDate.now().getYear();
+
+            VacationBalance vacationBalance = vacationBalanceRepository.findByUserIdxAndYear(userIdx, currentYear)
+                    .orElseThrow(() -> new IllegalStateException("연차 잔액 정보를 찾을 수 없습니다. userIdx: " + userIdx));
+
+            // 사용 연차 감소, 잔여 연차 증가
+            BigDecimal currentUsedDays = vacationBalance.getUsedDays();
+            BigDecimal currentRemainingDays = vacationBalance.getRemainingDays();
+
+            vacationBalance.setUsedDays(currentUsedDays.subtract(totalDaysToRestore));
+            vacationBalance.setRemainingDays(currentRemainingDays.add(totalDaysToRestore));
+            vacationBalance.setUpdatedUserIdx(currentUserIdx);
+
+            vacationBalanceRepository.save(vacationBalance);
+
+            log.info("[연차 잔액 복구] userIdx: {}, 복구 일수: {}일, 사용: {} → {}일, 잔여: {} → {}일",
+                    userIdx, totalDaysToRestore,
+                    currentUsedDays, vacationBalance.getUsedDays(),
+                    currentRemainingDays, vacationBalance.getRemainingDays());
+        }
+
+        // 7. 캘린더 일정 삭제
+        for (VacationRequest vr : vacationRequests) {
             // 기간에 해당하는 캘린더 일정 조회 및 완전 삭제
             List<CalendarEvent> events = calendarEventRepository.findByUserIdxAndDateRange(
                     vr.getUserIdx(), vr.getStartDate(), vr.getEndDate()
@@ -1191,6 +1223,7 @@ public class VacationServiceImpl implements VacationService {
             }
         }
 
-        log.info("[연차신청서 삭제 완료] documentIdx: {}, 연차 기간 수: {}", documentIdx, vacationRequests.size());
+        log.info("[연차신청서 삭제 완료] documentIdx: {}, 연차 기간 수: {}, 복구 일수: {}일",
+                documentIdx, vacationRequests.size(), totalDaysToRestore);
     }
 }
