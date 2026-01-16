@@ -249,10 +249,6 @@ document.addEventListener('DOMContentLoaded', function() {
         const endDateInput = document.getElementById('vif_end_date');
 
         if (startDateInput && endDateInput) {
-            // 날짜 설정
-            startDateInput.value = defaultDate;
-            endDateInput.value = defaultDate;
-
             // 달력을 해당 날짜의 년/월로 이동
             const dateObj = new Date(defaultDate);
             currentYear = dateObj.getFullYear();
@@ -261,10 +257,16 @@ document.addEventListener('DOMContentLoaded', function() {
             // 선택된 날짜 배열 업데이트
             selectedDates = [defaultDate];
 
-            // 달력 UI 업데이트 및 일수 계산
+            // 달력 UI 업데이트
             if (typeof renderCalendar === 'function') {
                 renderCalendar();
             }
+
+            // 날짜 표시 (formatDateWithDay 함수 사용)
+            startDateInput.textContent = formatDateWithDay(defaultDate);
+            endDateInput.textContent = formatDateWithDay(defaultDate);
+
+            // 일수 계산 (마이너스 연차 체크 포함)
             if (typeof calculateVacationDays === 'function') {
                 await calculateVacationDays();
             }
@@ -1337,11 +1339,17 @@ document.addEventListener('DOMContentLoaded', function() {
         const minusCheckbox = document.getElementById('allow_minus_vacation');
         const specialReasonTextarea = document.getElementById('special_approval_reason');
 
+        // 사유 병합 (마이너스 연차일 경우 특별 사유 포함)
+        let fullReason = reasonInput ? reasonInput.value : '';
+        if (minusCheckbox && minusCheckbox.checked && specialReasonTextarea && specialReasonTextarea.value.trim()) {
+            fullReason = `${fullReason}\n\n[마이너스연차 특별 요청 사유]\n${specialReasonTextarea.value.trim()}`;
+        }
+
         // 렌더링된 문서 HTML/CSS 캡처
         const { html, css } = captureRenderedDocument();
 
         const saveData = {
-            reason: reasonInput ? reasonInput.value : '',
+            reason: fullReason,  // 특별 사유가 병합된 전체 사유
             allowMinusVacation: minusCheckbox ? minusCheckbox.checked : false,
             specialApprovalReason: specialReasonTextarea ? specialReasonTextarea.value : '',
             periods: vacationPeriods.map(period => ({
@@ -2058,18 +2066,34 @@ document.addEventListener('DOMContentLoaded', function() {
         currentSelectionDays = 0;
 
         if (!vifStartDate.textContent || vifStartDate.textContent === '-' || !vifEndDate.textContent || vifEndDate.textContent === '-') {
-            // 이미 추가된 기간들만 있는 경우에도 검증 (경조사 제외)
-            const addedDays = vacationPeriods
-                .filter(period => !period.type.includes('경조사'))
-                .reduce((sum, period) => sum + period.days, 0);
-            checkVacationBalance(addedDays);
+            // 선택이 없는 경우 (기간 추가 후): 경고 카드만 숨김 (체크박스와 사유는 유지)
+            // 새로운 날짜를 선택했을 때 다시 계산하여 필요시 표시됨
+            const warningCard = document.getElementById('vacation_warning_card');
+            if (warningCard) {
+                warningCard.style.display = 'none';
+            }
             return;
         }
 
         const vacationType = vifVacationType.value;
 
         if (vacationType.includes('반차')) {
-            currentSelectionDays = 0.5;
+            // 반차도 영업일 검증 필요
+            const startDateStr = parseDateFromDisplay(vifStartDate.textContent);
+            const start = new Date(startDateStr);
+
+            // 해당 년도의 공휴일 로드
+            await ensureHolidaysLoaded(start.getFullYear());
+
+            const dayOfWeek = start.getDay();
+            const dateStr = formatDate(start);
+
+            // 주말, 공휴일, 이미 신청한 날짜인지 확인
+            if (dayOfWeek === 0 || dayOfWeek === 6 || holidays[dateStr] || requestedDates.includes(dateStr)) {
+                currentSelectionDays = 0; // 영업일이 아니면 0
+            } else {
+                currentSelectionDays = 0.5;
+            }
         } else {
             // 주말과 공휴일 제외 계산
             let workDays = 0;
@@ -2106,10 +2130,13 @@ document.addEventListener('DOMContentLoaded', function() {
 
         // 현재 선택 중인 기간이 경조사가 아닌 경우만 합산
         const currentVacationType = vifVacationType.value;
-        const totalDays = currentVacationType === '경조사' ? addedDays : (currentSelectionDays + addedDays);
 
-        // 연차 초과 검증 (경조사 제외한 합산 일수로)
-        checkVacationBalance(totalDays);
+        // 경조사가 아닌 경우만 연차 초과 검증
+        if (currentVacationType !== '경조사') {
+            const totalDays = currentSelectionDays + addedDays;
+            checkVacationBalance(totalDays);
+        }
+        // 경조사는 연차 차감이 없으므로 경고 카드 표시 안 함
     }
 
     // 연차 잔여 확인 및 경고 표시
@@ -2434,6 +2461,22 @@ document.addEventListener('DOMContentLoaded', function() {
     gyeongjoRadios.forEach(radio => {
         radio.addEventListener('change', async () => {
             if (radio.checked) {
+                // 이미 추가된 경조사 유형인지 체크
+                const gyeongjoType = radio.value;
+                const alreadyAdded = vacationPeriods.some(period =>
+                    period.type && period.type.includes(`경조사(${gyeongjoType})`)
+                );
+
+                if (alreadyAdded) {
+                    alert(`${gyeongjoType} 경조사는 이미 추가되었습니다.\n날짜 변경을 원하시면 기존 기간을 삭제 후 다시 추가해주세요.`);
+                    radio.checked = false;
+                    // 안내 메시지 숨김
+                    if (gyeongjoDateGuide) {
+                        gyeongjoDateGuide.style.display = 'none';
+                    }
+                    return;
+                }
+
                 // 안내 메시지 표시
                 if (gyeongjoDateGuide) {
                     gyeongjoDateGuide.style.display = 'flex';
@@ -2626,6 +2669,185 @@ document.addEventListener('DOMContentLoaded', function() {
                 await ensureHolidaysLoaded(year);
             }
 
+            // 이미 신청된 날짜와 겹치는지 확인
+            const overlappingDates = [];
+            const startDateStr = parseDateFromDisplay(vifStartDate.textContent);
+            const endDateStr = parseDateFromDisplay(vifEndDate.textContent);
+
+            for (let date = new Date(startDateStr); date <= new Date(endDateStr); date.setDate(date.getDate() + 1)) {
+                const dateStr = formatDate(date);
+                if (requestedDates.includes(dateStr)) {
+                    overlappingDates.push(dateStr);
+                }
+            }
+
+            // 겹치는 날짜가 있으면 사용자에게 경고 후 확인
+            if (overlappingDates.length > 0) {
+                // 겹치는 날짜가 어떤 기간에 속하는지 찾기
+                const overlappingPeriods = [];
+                const overlappingPeriodTypes = new Set();
+
+                for (const period of vacationPeriods) {
+                    const periodStart = new Date(period.startDate);
+                    const periodEnd = new Date(period.endDate);
+
+                    let hasOverlap = false;
+                    for (const dateStr of overlappingDates) {
+                        const date = new Date(dateStr);
+                        if (date >= periodStart && date <= periodEnd) {
+                            overlappingPeriodTypes.add(period.type);
+                            hasOverlap = true;
+                            break;
+                        }
+                    }
+
+                    if (hasOverlap) {
+                        overlappingPeriods.push(period);
+                    }
+                }
+
+                // 겹치는 날짜 범위를 포맷팅
+                const formatOverlappingRange = () => {
+                    if (overlappingDates.length === 1) {
+                        const date = new Date(overlappingDates[0]);
+                        return `${date.getMonth() + 1}/${date.getDate()}`;
+                    } else {
+                        const firstDate = new Date(overlappingDates[0]);
+                        const lastDate = new Date(overlappingDates[overlappingDates.length - 1]);
+                        return `${firstDate.getMonth() + 1}/${firstDate.getDate()}-${lastDate.getMonth() + 1}/${lastDate.getDate()}`;
+                    }
+                };
+
+                const periodTypesList = Array.from(overlappingPeriodTypes).join(', ');
+                const overlappingRange = formatOverlappingRange();
+
+                let confirmMessage;
+
+                // 경조사를 추가하는 경우: 기존 연차를 경조사로 대체
+                if (isGyeongjosa) {
+                    confirmMessage = `${overlappingRange}는 이미 ${periodTypesList}로 신청되어 있습니다.\n경조사로 변경하면 해당 날짜의 연차 차감이 취소됩니다.\n\n계속하시겠습니까?`;
+                } else {
+                    // 연차/반차를 추가하는 경우: 겹치는 부분 제외
+                    confirmMessage = `${overlappingRange}는 이미 ${periodTypesList}로 신청되어 제외되며,\n겹치지 않는 날짜만 ${vacationType}로 신청됩니다.\n\n계속하시겠습니까?`;
+                }
+
+                if (!confirm(confirmMessage)) {
+                    return;
+                }
+
+                // 경조사를 추가하는 경우: 겹치는 기존 기간들을 조정
+                if (isGyeongjosa) {
+                    // 겹치는 날짜들을 Set으로 변환 (빠른 조회)
+                    const overlappingDatesSet = new Set(overlappingDates);
+
+                    // 겹치는 기간들을 제거하고 분할된 새 기간들을 수집
+                    const periodsToRemove = [];
+                    const periodsToAdd = [];
+
+                    for (const period of overlappingPeriods) {
+                        periodsToRemove.push(period);
+
+                        // 기존 기간의 모든 영업일을 배열로 수집
+                        const periodStart = new Date(period.startDate);
+                        const periodEnd = new Date(period.endDate);
+                        const businessDays = [];
+
+                        for (let d = new Date(periodStart); d <= periodEnd; d.setDate(d.getDate() + 1)) {
+                            const dateStr = formatDate(d);
+                            const dayOfWeek = d.getDay();
+                            const isWeekend = dayOfWeek === 0 || dayOfWeek === 6;
+                            const isHoliday = holidays[dateStr];
+
+                            // 영업일이고 경조사와 겹치지 않는 날짜만 수집
+                            if (!isWeekend && !isHoliday && !overlappingDatesSet.has(dateStr)) {
+                                businessDays.push(dateStr);
+                            }
+                        }
+
+                        // 연속된 영업일을 구간으로 그룹화
+                        if (businessDays.length > 0) {
+                            let groupStart = businessDays[0];
+                            let groupEnd = businessDays[0];
+                            let groupDays = 1;
+
+                            for (let i = 1; i < businessDays.length; i++) {
+                                const prevDate = new Date(businessDays[i - 1]);
+                                const currDate = new Date(businessDays[i]);
+
+                                // 연속된 날짜인지 확인 (영업일 기준, 주말/공휴일 건너뛰기 가능)
+                                let isConsecutive = true;
+                                for (let checkDate = new Date(prevDate); checkDate < currDate; checkDate.setDate(checkDate.getDate() + 1)) {
+                                    const checkDateStr = formatDate(checkDate);
+                                    const checkDayOfWeek = checkDate.getDay();
+                                    const checkIsWeekend = checkDayOfWeek === 0 || checkDayOfWeek === 6;
+                                    const checkIsHoliday = holidays[checkDateStr];
+
+                                    // 영업일이 중간에 끊겼는지 확인
+                                    if (!checkIsWeekend && !checkIsHoliday && checkDateStr !== formatDate(prevDate) && !businessDays.includes(checkDateStr)) {
+                                        isConsecutive = false;
+                                        break;
+                                    }
+                                }
+
+                                if (isConsecutive) {
+                                    // 같은 그룹으로 계속
+                                    groupEnd = businessDays[i];
+                                    groupDays++;
+                                } else {
+                                    // 새 그룹 시작 전에 현재 그룹 저장
+                                    periodsToAdd.push({
+                                        type: period.type,
+                                        startDate: groupStart,
+                                        endDate: groupEnd,
+                                        days: period.type.includes('반차') ? 0.5 : groupDays,
+                                        startDateFormatted: formatDateDisplay(new Date(groupStart)),
+                                        endDateFormatted: formatDateDisplay(new Date(groupEnd))
+                                    });
+
+                                    groupStart = businessDays[i];
+                                    groupEnd = businessDays[i];
+                                    groupDays = 1;
+                                }
+                            }
+
+                            // 마지막 그룹 저장
+                            periodsToAdd.push({
+                                type: period.type,
+                                startDate: groupStart,
+                                endDate: groupEnd,
+                                days: period.type.includes('반차') ? 0.5 : groupDays,
+                                startDateFormatted: formatDateDisplay(new Date(groupStart)),
+                                endDateFormatted: formatDateDisplay(new Date(groupEnd))
+                            });
+                        }
+                    }
+
+                    // 기존 기간 제거
+                    for (const period of periodsToRemove) {
+                        const index = vacationPeriods.indexOf(period);
+                        if (index > -1) {
+                            vacationPeriods.splice(index, 1);
+                        }
+                    }
+
+                    // 분할된 새 기간 추가
+                    vacationPeriods.push(...periodsToAdd);
+
+                    // requestedDates 재계산
+                    requestedDates = [];
+                    for (const period of vacationPeriods) {
+                        const start = new Date(period.startDate);
+                        const end = new Date(period.endDate);
+                        for (let d = new Date(start); d <= end; d.setDate(d.getDate() + 1)) {
+                            const dateStr = formatDate(d);
+                            if (!requestedDates.includes(dateStr)) {
+                                requestedDates.push(dateStr);
+                            }
+                        }
+                    }
+                }
+            }
+
             // 영업일 구간으로 자동 분리
             const splitPeriods = splitIntoBusinessDayPeriods(
                 parseDateFromDisplay(vifStartDate.textContent),
@@ -2662,12 +2884,25 @@ document.addEventListener('DOMContentLoaded', function() {
 
             updatePeriodsList();
 
+            // requestedDates 재계산 (새로 추가된 기간 반영)
+            requestedDates = [];
+            for (const period of vacationPeriods) {
+                const start = new Date(period.startDate);
+                const end = new Date(period.endDate);
+                for (let d = new Date(start); d <= end; d.setDate(d.getDate() + 1)) {
+                    const dateStr = formatDate(d);
+                    if (!requestedDates.includes(dateStr)) {
+                        requestedDates.push(dateStr);
+                    }
+                }
+            }
+
             // 선택 초기화
             selectedDates = [];
             vifStartDate.textContent = '-';
             vifEndDate.textContent = '-';
             currentSelectionDays = 0;
-            renderCalendar();
+            await renderCalendar();
             await calculateVacationDays();
 
             // 미추가 날짜 경고 업데이트 (선택 초기화 후)
@@ -2884,28 +3119,12 @@ document.addEventListener('DOMContentLoaded', function() {
                 // 잔여 연차가 마이너스인 경우 빨간색으로 표시
                 if (afterDays < 0) {
                     vifRemainingAfterEl.style.color = '#dc3545';
-
-                    // 마이너스 연차 경고 표시
-                    if (warningCard) {
-                        const excessDaysSpan = document.querySelector('.excess-days');
-                        if (excessDaysSpan) {
-                            excessDaysSpan.textContent = Math.abs(afterDays).toFixed(1);
-                        }
-                        warningCard.style.display = 'flex';
-                    }
                 } else {
                     vifRemainingAfterEl.style.color = '#667eea';
-
-                    // 마이너스 연차 경고 숨김
-                    if (warningCard) {
-                        warningCard.style.display = 'none';
-                    }
                 }
+                // 경고 카드는 calculateVacationDays()에서만 관리
             } else {
                 remainingAfterRow.style.display = 'none';
-                if (warningCard) {
-                    warningCard.style.display = 'none';
-                }
             }
         }
     }
@@ -2913,7 +3132,24 @@ document.addEventListener('DOMContentLoaded', function() {
     // 기간 삭제 (전역 함수로 선언)
     window.removePeriod = async function(index) {
         vacationPeriods.splice(index, 1);
+
+        // requestedDates 재계산 (삭제된 기간 반영)
+        requestedDates = [];
+        for (const period of vacationPeriods) {
+            const start = new Date(period.startDate);
+            const end = new Date(period.endDate);
+            for (let d = new Date(start); d <= end; d.setDate(d.getDate() + 1)) {
+                const dateStr = formatDate(d);
+                if (!requestedDates.includes(dateStr)) {
+                    requestedDates.push(dateStr);
+                }
+            }
+        }
+
         updatePeriodsList();
+
+        // 달력 다시 렌더링 (삭제된 기간이 달력에서 사라지도록)
+        renderCalendar();
 
         // 현재 선택 중인 기간 포함하여 재계산
         await calculateVacationDays();
@@ -2936,12 +3172,13 @@ document.addEventListener('DOMContentLoaded', function() {
         document.getElementById('position').textContent = document.getElementById('vif_position').textContent;
 
         // 사유 복사 (마이너스 연차일 경우 특별 사유 추가)
-        const warningCard = document.getElementById('vacation_warning_card');
+        const allowMinusCheckbox = document.getElementById('allow_minus_vacation');
         const specialReasonTextarea = document.getElementById('special_approval_reason');
         const vifReason = document.getElementById('vif_reason').value;
 
         let reasonText = vifReason;
-        if (warningCard && warningCard.style.display !== 'none' && specialReasonTextarea && specialReasonTextarea.value.trim()) {
+        // 체크박스가 체크되어 있고 특별 사유가 입력되어 있으면 문서에 포함
+        if (allowMinusCheckbox && allowMinusCheckbox.checked && specialReasonTextarea && specialReasonTextarea.value.trim()) {
             reasonText = `${vifReason}\n\n[마이너스연차 특별 요청 사유]\n${specialReasonTextarea.value.trim()}`;
         }
         document.getElementById('reason').textContent = reasonText;
@@ -3040,25 +3277,25 @@ document.addEventListener('DOMContentLoaded', function() {
                 const gyeongjoType = period.type.replace('경조사(', '').replace(')', '');
                 vacationPeriodHtml += `<span class="gyeongjosa-text">${dateDisplay} 경조사 ${periodDays}일 (${gyeongjoType})</span>`;
             }
-            // 반차인 경우
-            else if (period.type && period.type.includes('반차')) {
-                // "반차(오전)" -> "오전반차", "반차(오후)" -> "오후반차"
-                const bancha = period.type.replace('반차(오전)', '오전반차').replace('반차(오후)', '오후반차');
-                vacationPeriodHtml += `${dateDisplay} ${bancha} ${periodDays}일`;
-            }
-            // 일반 연차인 경우 기존 로직
+            // 반차 및 일반 연차인 경우
             else {
+                // 반차인 경우 표시명 변환
+                let displayType = '연차';
+                if (period.type && period.type.includes('반차')) {
+                    // "반차(오전)" -> "오전반차", "반차(오후)" -> "오후반차"
+                    displayType = period.type.replace('반차(오전)', '오전반차').replace('반차(오후)', '오후반차');
+                }
                 // 기존 잔여가 양수인 경우에만 구간별 마이너스 표시
                 if (remainingVacation > 0) {
                     // 이 기간이 완전히 잔여 연차 내에 있는 경우
                     if (newAccumulated <= remainingVacation) {
-                        vacationPeriodHtml += `${dateDisplay} 연차 ${periodDays}일`;
+                        vacationPeriodHtml += `${dateDisplay} ${displayType} ${periodDays}일`;
                     }
                     // 이 기간이 부분적으로 초과하는 경우
                     else if (accumulatedDays < remainingVacation) {
                         const normalDays = remainingVacation - accumulatedDays;
                         const minusDays = periodDays - normalDays;
-                        vacationPeriodHtml += `${dateDisplay} 연차 ${normalDays}일 + <span style="color: #dc3545; font-weight: 700;">마이너스 ${minusDays}일</span>`;
+                        vacationPeriodHtml += `${dateDisplay} ${displayType} ${normalDays}일 + <span style="color: #dc3545; font-weight: 700;">마이너스 ${minusDays}일</span>`;
                     }
                     // 이 기간이 완전히 초과하는 경우 (전체 빨간색)
                     else {
@@ -3366,13 +3603,13 @@ document.addEventListener('DOMContentLoaded', function() {
         const remainingVacationElement = document.querySelector('.balance-value.remaining');
 
         if (totalVacationElement) {
-            totalVacationElement.textContent = `${userVacationInfo.totalDays || 15}일`;
+            totalVacationElement.textContent = `${userVacationInfo.totalDays ?? 15}일`;
         }
         if (usedVacationElement) {
-            usedVacationElement.textContent = `${userVacationInfo.usedDays || 3}일`;
+            usedVacationElement.textContent = `${userVacationInfo.usedDays ?? 0}일`;
         }
         if (remainingVacationElement) {
-            remainingVacationElement.textContent = `${userVacationInfo.remainingDays || 12}일`;
+            remainingVacationElement.textContent = `${userVacationInfo.remainingDays ?? 15}일`;
         }
 
         // 개인 정보 (주소, 생년월일, 연락처)
