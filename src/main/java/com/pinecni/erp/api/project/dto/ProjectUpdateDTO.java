@@ -35,14 +35,24 @@ public class ProjectUpdateDTO {
     private Long projectManagerIdx;
 
     /**
-     * 시작일
+     * 현재 차수 시작일
      */
     private LocalDate startDate;
 
     /**
-     * 종료일
+     * 현재 차수 종료일
      */
     private LocalDate endDate;
+
+    /**
+     * 전체 프로젝트 시작일 (1차년도 시작일)
+     */
+    private LocalDate totalPeriodStart;
+
+    /**
+     * 전체 프로젝트 종료일 (최종 차수 종료일)
+     */
+    private LocalDate totalPeriodEnd;
 
     /**
      * 프로젝트 상태
@@ -69,6 +79,11 @@ public class ProjectUpdateDTO {
      * 장비비 예산
      */
     private BigDecimal equipmentBudget;
+
+    /**
+     * 재료비 예산
+     */
+    private BigDecimal materialBudget;
 
     /**
      * 프로젝트 달성률 (0.00 ~ 100.00)

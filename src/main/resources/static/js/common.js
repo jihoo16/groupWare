@@ -108,3 +108,73 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     }
 });
+
+// ===========================
+// 유틸리티 함수들 (전역)
+// ===========================
+
+/**
+ * 숫자를 한국 통화 형식으로 포맷팅 (천단위 콤마 + 원)
+ * @param {number|string} value - 포맷팅할 숫자
+ * @param {boolean} showUnit - '원' 단위 표시 여부 (기본값: true)
+ * @returns {string} 포맷팅된 문자열 (예: "1,234,567원" 또는 "1,234,567")
+ */
+function formatCurrency(value, showUnit = true) {
+    if (value === null || value === undefined || value === '') {
+        return showUnit ? '0원' : '0';
+    }
+
+    const numValue = typeof value === 'string' ? parseFloat(value) : value;
+
+    if (isNaN(numValue)) {
+        return showUnit ? '0원' : '0';
+    }
+
+    const formatted = Math.floor(numValue).toLocaleString('ko-KR');
+    return showUnit ? formatted + '원' : formatted;
+}
+
+/**
+ * 숫자를 천단위 콤마로 포맷팅 (단위 없음)
+ * @param {number|string} value - 포맷팅할 숫자
+ * @returns {string} 포맷팅된 문자열 (예: "1,234,567")
+ */
+function formatNumber(value) {
+    return formatCurrency(value, false);
+}
+
+/**
+ * 날짜 포맷팅 (YYYY-MM-DD)
+ * @param {string|Date} date - 포맷팅할 날짜
+ * @returns {string} 포맷팅된 날짜 문자열
+ */
+function formatDate(date) {
+    if (!date) return '';
+
+    const d = typeof date === 'string' ? new Date(date) : date;
+
+    if (isNaN(d.getTime())) return '';
+
+    const year = d.getFullYear();
+    const month = String(d.getMonth() + 1).padStart(2, '0');
+    const day = String(d.getDate()).padStart(2, '0');
+
+    return `${year}-${month}-${day}`;
+}
+
+/**
+ * 날짜 범위 포맷팅 (YYYY-MM-DD ~ YYYY-MM-DD)
+ * @param {string|Date} startDate - 시작일
+ * @param {string|Date} endDate - 종료일
+ * @returns {string} 포맷팅된 날짜 범위 문자열
+ */
+function formatDateRange(startDate, endDate) {
+    const start = formatDate(startDate);
+    const end = formatDate(endDate);
+
+    if (!start && !end) return '';
+    if (!start) return end;
+    if (!end) return start;
+
+    return `${start} ~ ${end}`;
+}

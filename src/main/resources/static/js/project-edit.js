@@ -220,10 +220,13 @@ document.addEventListener('DOMContentLoaded', function() {
 
                 document.getElementById('startDate').value = project.startDate || '';
                 document.getElementById('endDate').value = project.endDate || '';
+                document.getElementById('totalPeriodStart').value = project.totalPeriodStart || '';
+                document.getElementById('totalPeriodEnd').value = project.totalPeriodEnd || '';
                 document.getElementById('receiptUrl').value = project.receiptUrl || '';
                 document.getElementById('projectDescription').value = project.description || '';
-                document.getElementById('activityBudget').value = project.activityBudget || 0;
-                document.getElementById('equipmentBudget').value = project.equipmentBudget || 0;
+                document.getElementById('activityBudget').value = formatCurrencyValue(project.activityBudget || 0);
+                document.getElementById('equipmentBudget').value = formatCurrencyValue(project.equipmentBudget || 0);
+                document.getElementById('materialBudget').value = formatCurrencyValue(project.materialBudget || 0);
 
                 // 팀원 목록 로드
                 if (project.projectMembers && project.projectMembers.length > 0) {
@@ -323,10 +326,10 @@ document.addEventListener('DOMContentLoaded', function() {
 
 
                 if (inputs.length >= 4) {
-                    inputs[0].value = data.amounts[0]; // 출장비
-                    inputs[1].value = data.amounts[1]; // 중식비
-                    inputs[2].value = data.amounts[2]; // 회의비
-                    inputs[3].value = data.amounts[3]; // 야근석식대
+                    inputs[0].value = formatCurrencyValue(data.amounts[0]); // 출장비
+                    inputs[1].value = formatCurrencyValue(data.amounts[1]); // 중식비
+                    inputs[2].value = formatCurrencyValue(data.amounts[2]); // 회의비
+                    inputs[3].value = formatCurrencyValue(data.amounts[3]); // 야근석식대
                 } else {
                     console.warn('  → input 개수 부족!');
                 }
@@ -551,7 +554,8 @@ document.addEventListener('DOMContentLoaded', function() {
         const checkboxes = document.querySelectorAll('.member-checkbox');
         checkboxes.forEach(checkbox => {
             const memberId = checkbox.value;
-            const isSelected = selectedMemberList.some(m => m.id === memberId);
+            // PI 역할을 제외한 멤버만 체크 상태 유지
+            const isSelected = selectedMemberList.some(m => m.id === memberId && m.role !== 'PI');
             checkbox.checked = isSelected;
 
             // 행 선택 스타일
@@ -985,7 +989,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
             // 팀원 데이터 변환
             const projectMembers = selectedMemberList.map(member => ({
-                employeeIdx: parseInt(member.id),
+                employeeIdx: parseInt(member.idx || member.id),
                 role: member.role || null,
                 participationStartDate: member.startDate || null,
                 participationEndDate: member.endDate || null
@@ -1012,7 +1016,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 if (inputs.length >= 4) {
                     // 각 경비 항목을 별도의 레코드로 저장
                     expenseItems.forEach((item, index) => {
-                        const amount = parseInt(inputs[index].value) || 0;
+                        const amount = parseCurrencyValue(inputs[index].value);
                         projectExpenseSettings.push({
                             positionCode: positionCode || null,
                             expenseItemName: item.name,
@@ -1031,11 +1035,14 @@ document.addEventListener('DOMContentLoaded', function() {
                 projectManagerIdx: parseInt(document.getElementById('projectManager').value),
                 startDate: document.getElementById('startDate').value,
                 endDate: document.getElementById('endDate').value,
+                totalPeriodStart: document.getElementById('totalPeriodStart').value || null,
+                totalPeriodEnd: document.getElementById('totalPeriodEnd').value || null,
                 projectStatus: document.getElementById('projectStatus').value,
                 description: document.getElementById('projectDescription').value,
                 receiptUrl: document.getElementById('receiptUrl').value || null,
-                activityBudget: parseFloat(document.getElementById('activityBudget').value) || 0,
-                equipmentBudget: parseFloat(document.getElementById('equipmentBudget').value) || 0,
+                activityBudget: parseCurrencyValue(document.getElementById('activityBudget').value),
+                equipmentBudget: parseCurrencyValue(document.getElementById('equipmentBudget').value),
+                materialBudget: parseCurrencyValue(document.getElementById('materialBudget').value),
                 projectCards: projectCards,
                 projectRelations: projectRelations,
                 projectMembers: projectMembers,
@@ -1588,4 +1595,120 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     }
 
+    // ===========================
+    // 금액 포맷팅 기능
+    // ===========================
+
+    /**
+     * 입력 필드에서 금액을 파싱하여 숫자로 변환
+     */
+    function parseCurrencyValue(value) {
+        if (!value) return 0;
+        // 콤마 제거 후 숫자로 변환
+        return parseInt(value.replace(/,/g, ''), 10) || 0;
+    }
+
+    /**
+     * 숫자를 천단위 콤마 형식으로 포맷팅
+     */
+    function formatCurrencyValue(value) {
+        const num = parseCurrencyValue(value.toString());
+        return num.toLocaleString('ko-KR');
+    }
+
+    /**
+     * 모든 금액 입력 필드에 포맷팅 적용
+     */
+    function applyCurrencyFormatting() {
+        // 예산 입력 필드
+        const currencyInputs = document.querySelectorAll('.currency-input');
+        currencyInputs.forEach(input => {
+            applyCurrencyInput(input);
+        });
+
+        // 직급별 경비 입력 필드
+        const currencyInputsSm = document.querySelectorAll('.currency-input-sm');
+        currencyInputsSm.forEach(input => {
+            applyCurrencyInput(input);
+        });
+    }
+
+    /**
+     * 개별 입력 필드에 금액 포맷팅 이벤트 적용
+     */
+    function applyCurrencyInput(input) {
+        // 초기값 포맷팅
+        if (input.value) {
+            input.value = formatCurrencyValue(input.value);
+        }
+
+        // 입력 중 실시간 포맷팅
+        input.addEventListener('input', function(e) {
+            const cursorPosition = this.selectionStart;
+            const oldValue = this.value;
+            const oldLength = oldValue.length;
+
+            // 숫자만 추출
+            const numericValue = this.value.replace(/\D/g, '');
+
+            // 빈 값 처리
+            if (numericValue === '') {
+                this.value = '';
+                return;
+            }
+
+            // 포맷팅 적용
+            const formattedValue = parseInt(numericValue, 10).toLocaleString('ko-KR');
+            this.value = formattedValue;
+
+            // 커서 위치 계산 (콤마 개수 차이 고려)
+            const newLength = formattedValue.length;
+            const commasBefore = (oldValue.substring(0, cursorPosition).match(/,/g) || []).length;
+            const commasAfter = (formattedValue.substring(0, cursorPosition).match(/,/g) || []).length;
+            const newCursorPosition = cursorPosition + (commasAfter - commasBefore) + (newLength - oldLength);
+
+            // 커서 위치 복원
+            this.setSelectionRange(newCursorPosition, newCursorPosition);
+        });
+
+        // 블러 시: 빈 값이면 0으로 설정
+        input.addEventListener('blur', function() {
+            if (this.value === '') {
+                this.value = '0';
+            }
+        });
+
+        // 포커스 시: 0이면 빈 값으로
+        input.addEventListener('focus', function() {
+            if (this.value === '0') {
+                this.value = '';
+            }
+        });
+
+        // 키 입력 시: 숫자만 허용
+        input.addEventListener('keypress', function(e) {
+            if (!/[0-9]/.test(e.key)) {
+                e.preventDefault();
+            }
+        });
+
+        // 붙여넣기 시: 숫자만 허용하고 실시간 포맷팅
+        input.addEventListener('paste', function(e) {
+            e.preventDefault();
+            const pastedText = (e.clipboardData || window.clipboardData).getData('text');
+            const numericValue = pastedText.replace(/\D/g, '');
+            if (numericValue) {
+                const cursorPosition = this.selectionStart;
+                const currentValue = this.value.replace(/\D/g, '');
+                const newValue = currentValue.substring(0, this.selectionStart) + numericValue + currentValue.substring(this.selectionEnd);
+
+                // input 이벤트를 트리거하여 포맷팅 적용
+                this.value = newValue;
+                this.dispatchEvent(new Event('input', { bubbles: true }));
+            }
+        });
+    }
+
+    // 페이지 로드 시 금액 포맷팅 적용
+    applyCurrencyFormatting();
 });

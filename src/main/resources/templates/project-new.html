@@ -21,6 +21,17 @@
         <form id="projectForm">
             <div class="form-section">
                 <h2>기본 정보</h2>
+                <div class="form-group" style="margin-bottom: 20px">
+                    <label>연계 프로젝트</label>
+                    <button type="button" class="btn btn-secondary btn-sm form-control" id="addRelatedProjectBtn">
+                        <i class="fas fa-link"></i> 연계 프로젝트 추가
+                    </button>
+                    <div id="relatedProjectList" class="related-project-list">
+                        <!-- 연계 프로젝트 목록이 여기에 표시됩니다 -->
+                    </div>
+                    <small class="form-text">연계 프로젝트를 선택하면 프로젝트명, 발주사, 연구책임자, 총 프로젝트 기간이 자동으로 입력됩니다.</small>
+                </div>
+
                 <div class="form-grid" style="margin-bottom: 20px">
                     <div class="form-group">
                         <label for="projectName">프로젝트명 <span class="required">*</span></label>
@@ -52,13 +63,23 @@
 
 
                     <div class="form-group">
-                        <label for="startDate">시작일 <span class="required">*</span></label>
+                        <label for="startDate">현재 차수 시작일 <span class="required">*</span></label>
                         <input type="date" id="startDate" name="startDate" class="form-control" required>
                     </div>
 
                     <div class="form-group">
-                        <label for="endDate">종료일 <span class="required">*</span></label>
+                        <label for="endDate">현재 차수 종료일 <span class="required">*</span></label>
                         <input type="date" id="endDate" name="endDate" class="form-control" required>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="totalPeriodStart">총 프로젝트 시작일</label>
+                        <input type="date" id="totalPeriodStart" name="totalPeriodStart" class="form-control">
+                    </div>
+
+                    <div class="form-group">
+                        <label for="totalPeriodEnd">총 프로젝트 종료일</label>
+                        <input type="date" id="totalPeriodEnd" name="totalPeriodEnd" class="form-control">
                     </div>
 
                     <div class="form-group">
@@ -73,15 +94,22 @@
 
                     <div class="form-group">
                         <label for="activityBudget">활동비 예산</label>
-                        <input type="number" id="activityBudget" name="activityBudget" class="form-control"
-                               min="0" step="10000" value="0" placeholder="0">
+                        <input type="text" id="activityBudget" name="activityBudget" class="form-control currency-input"
+                               value="0" placeholder="0">
                         <small class="form-text">원 단위로 입력하세요.</small>
                     </div>
 
                     <div class="form-group">
                         <label for="equipmentBudget">장비비 예산</label>
-                        <input type="number" id="equipmentBudget" name="equipmentBudget" class="form-control"
-                               min="0" step="10000" value="0" placeholder="0">
+                        <input type="text" id="equipmentBudget" name="equipmentBudget" class="form-control currency-input"
+                               value="0" placeholder="0">
+                        <small class="form-text">원 단위로 입력하세요.</small>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="materialBudget">재료비 예산</label>
+                        <input type="text" id="materialBudget" name="materialBudget" class="form-control currency-input"
+                               value="0" placeholder="0">
                         <small class="form-text">원 단위로 입력하세요.</small>
                     </div>
 
@@ -95,17 +123,6 @@
                     <label for="projectDescription">프로젝트 설명 <span class="required">*</span></label>
                     <textarea id="projectDescription" name="projectDescription" class="form-control" rows="4" required></textarea>
                 </div>
-                <div class="form-group" style="margin-bottom: 20px">
-                    <label>연계 프로젝트</label>
-                    <button type="button" class="btn btn-secondary btn-sm form-control" id="addRelatedProjectBtn">
-                        <i class="fas fa-link"></i> 연계 프로젝트 추가
-                    </button>
-                    <div id="relatedProjectList" class="related-project-list">
-                        <!-- 연계 프로젝트 목록이 여기에 표시됩니다 -->
-                    </div>
-                </div>
-
-
             </div>
 
             <div class="form-section">
@@ -167,38 +184,38 @@
                         <tbody id="expenseSettingsBody">
                             <tr data-position="사원">
                                 <td class="position-name-cell">사원</td>
-                                <td><input type="number" class="expense-input-sm" name="daily_allowance_사원" value="30000" min="0" step="1000" placeholder="일비"></td>
-                                <td><input type="number" class="expense-input-sm" name="meal_allowance_사원" value="30000" min="0" step="1000" placeholder="식비"></td>
-                                <td><input type="number" class="expense-input-sm" name="meeting_allowance_사원" value="15000" min="0" step="1000" placeholder="회의비"></td>
-                                <td><input type="number" class="expense-input-sm" name="overtime_meal_사원" value="10000" min="0" step="1000" placeholder="야근식대"></td>
+                                <td><input type="text" class="expense-input-sm currency-input-sm" name="daily_allowance_사원" value="30,000" placeholder="일비"></td>
+                                <td><input type="text" class="expense-input-sm currency-input-sm" name="meal_allowance_사원" value="30,000" placeholder="식비"></td>
+                                <td><input type="text" class="expense-input-sm currency-input-sm" name="meeting_allowance_사원" value="15,000" placeholder="회의비"></td>
+                                <td><input type="text" class="expense-input-sm currency-input-sm" name="overtime_meal_사원" value="10,000" placeholder="야근식대"></td>
                             </tr>
                             <tr data-position="대리">
                                 <td class="position-name-cell">대리</td>
-                                <td><input type="number" class="expense-input-sm" name="daily_allowance_대리" value="35000" min="0" step="1000" placeholder="일비"></td>
-                                <td><input type="number" class="expense-input-sm" name="meal_allowance_대리" value="35000" min="0" step="1000" placeholder="식비"></td>
-                                <td><input type="number" class="expense-input-sm" name="meeting_allowance_대리" value="20000" min="0" step="1000" placeholder="회의비"></td>
-                                <td><input type="number" class="expense-input-sm" name="overtime_meal_대리" value="12000" min="0" step="1000" placeholder="야근식대"></td>
+                                <td><input type="text" class="expense-input-sm currency-input-sm" name="daily_allowance_대리" value="35,000" placeholder="일비"></td>
+                                <td><input type="text" class="expense-input-sm currency-input-sm" name="meal_allowance_대리" value="35,000" placeholder="식비"></td>
+                                <td><input type="text" class="expense-input-sm currency-input-sm" name="meeting_allowance_대리" value="20,000" placeholder="회의비"></td>
+                                <td><input type="text" class="expense-input-sm currency-input-sm" name="overtime_meal_대리" value="12,000" placeholder="야근식대"></td>
                             </tr>
                             <tr data-position="과장">
                                 <td class="position-name-cell">과장</td>
-                                <td><input type="number" class="expense-input-sm" name="daily_allowance_과장" value="40000" min="0" step="1000" placeholder="일비"></td>
-                                <td><input type="number" class="expense-input-sm" name="meal_allowance_과장" value="40000" min="0" step="1000" placeholder="식비"></td>
-                                <td><input type="number" class="expense-input-sm" name="meeting_allowance_과장" value="25000" min="0" step="1000" placeholder="회의비"></td>
-                                <td><input type="number" class="expense-input-sm" name="overtime_meal_과장" value="15000" min="0" step="1000" placeholder="야근식대"></td>
+                                <td><input type="text" class="expense-input-sm currency-input-sm" name="daily_allowance_과장" value="40,000" placeholder="일비"></td>
+                                <td><input type="text" class="expense-input-sm currency-input-sm" name="meal_allowance_과장" value="40,000" placeholder="식비"></td>
+                                <td><input type="text" class="expense-input-sm currency-input-sm" name="meeting_allowance_과장" value="25,000" placeholder="회의비"></td>
+                                <td><input type="text" class="expense-input-sm currency-input-sm" name="overtime_meal_과장" value="15,000" placeholder="야근식대"></td>
                             </tr>
                             <tr data-position="차장">
                                 <td class="position-name-cell">차장</td>
-                                <td><input type="number" class="expense-input-sm" name="daily_allowance_차장" value="50000" min="0" step="1000" placeholder="일비"></td>
-                                <td><input type="number" class="expense-input-sm" name="meal_allowance_차장" value="50000" min="0" step="1000" placeholder="식비"></td>
-                                <td><input type="number" class="expense-input-sm" name="meeting_allowance_차장" value="30000" min="0" step="1000" placeholder="회의비"></td>
-                                <td><input type="number" class="expense-input-sm" name="overtime_meal_차장" value="18000" min="0" step="1000" placeholder="야근식대"></td>
+                                <td><input type="text" class="expense-input-sm currency-input-sm" name="daily_allowance_차장" value="50,000" placeholder="일비"></td>
+                                <td><input type="text" class="expense-input-sm currency-input-sm" name="meal_allowance_차장" value="50,000" placeholder="식비"></td>
+                                <td><input type="text" class="expense-input-sm currency-input-sm" name="meeting_allowance_차장" value="30,000" placeholder="회의비"></td>
+                                <td><input type="text" class="expense-input-sm currency-input-sm" name="overtime_meal_차장" value="18,000" placeholder="야근식대"></td>
                             </tr>
                             <tr data-position="부장">
                                 <td class="position-name-cell">부장</td>
-                                <td><input type="number" class="expense-input-sm" name="daily_allowance_부장" value="60000" min="0" step="1000" placeholder="일비"></td>
-                                <td><input type="number" class="expense-input-sm" name="meal_allowance_부장" value="60000" min="0" step="1000" placeholder="식비"></td>
-                                <td><input type="number" class="expense-input-sm" name="meeting_allowance_부장" value="40000" min="0" step="1000" placeholder="회의비"></td>
-                                <td><input type="number" class="expense-input-sm" name="overtime_meal_부장" value="20000" min="0" step="1000" placeholder="야근식대"></td>
+                                <td><input type="text" class="expense-input-sm currency-input-sm" name="daily_allowance_부장" value="60,000" placeholder="일비"></td>
+                                <td><input type="text" class="expense-input-sm currency-input-sm" name="meal_allowance_부장" value="60,000" placeholder="식비"></td>
+                                <td><input type="text" class="expense-input-sm currency-input-sm" name="meeting_allowance_부장" value="40,000" placeholder="회의비"></td>
+                                <td><input type="text" class="expense-input-sm currency-input-sm" name="overtime_meal_부장" value="20,000" placeholder="야근식대"></td>
                             </tr>
                         </tbody>
                     </table>

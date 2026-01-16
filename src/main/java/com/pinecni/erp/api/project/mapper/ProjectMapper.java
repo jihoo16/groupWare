@@ -61,15 +61,19 @@ public class ProjectMapper {
                 .receiptUrl((String) row[9])
                 .activityBudget((BigDecimal) row[10])
                 .equipmentBudget((BigDecimal) row[11])
-                .progressRate((BigDecimal) row[12])
-                .memberCount(((Long) row[13]).intValue())
-                .activityUsed((BigDecimal) row[14])
+                .materialBudget((BigDecimal) row[12])
+                .progressRate((BigDecimal) row[13])
+                .memberCount(((Long) row[14]).intValue())
+                .activityUsed((BigDecimal) row[15])
                 .equipmentUsed(BigDecimal.ZERO)  // 장비비는 추후 구현
+                .materialUsed(BigDecimal.ZERO)   // 재료비는 추후 구현
+                .totalPeriodStart((LocalDate) row[16])
+                .totalPeriodEnd((LocalDate) row[17])
                 .progress(calculateProgressFromDates((LocalDate) row[5], (LocalDate) row[6]))
-                .createdAt((LocalDateTime) row[15])
-                .updatedAt((LocalDateTime) row[16])
-                .createdUserIdx((Long) row[17])
-                .updatedUserIdx((Long) row[18])
+                .createdAt((LocalDateTime) row[18])
+                .updatedAt((LocalDateTime) row[19])
+                .createdUserIdx((Long) row[20])
+                .updatedUserIdx((Long) row[21])
                 .build();
     }
 
@@ -118,6 +122,9 @@ public class ProjectMapper {
         // 장비비 사용액 (추후 구현 예정, 현재는 0)
         BigDecimal equipmentUsed = BigDecimal.ZERO;
 
+        // 재료비 사용액 (추후 구현 예정, 현재는 0)
+        BigDecimal materialUsed = BigDecimal.ZERO;
+
         // 프로젝트 관리자 이름 조회 (LAZY 로딩 문제 해결)
         String projectManagerName = null;
         if (entity.getProjectManagerIdx() != null) {
@@ -134,14 +141,18 @@ public class ProjectMapper {
                 .projectManagerName(projectManagerName)
                 .startDate(entity.getStartDate())
                 .endDate(entity.getEndDate())
+                .totalPeriodStart(entity.getTotalPeriodStart())
+                .totalPeriodEnd(entity.getTotalPeriodEnd())
                 .projectStatus(entity.getProjectStatus())
                 .description(entity.getDescription())
                 .receiptUrl(entity.getReceiptUrl())
                 .activityBudget(entity.getActivityBudget())
                 .equipmentBudget(entity.getEquipmentBudget())
+                .materialBudget(entity.getMaterialBudget())
                 .progressRate(entity.getProgressRate())
                 .activityUsed(activityUsed)
                 .equipmentUsed(equipmentUsed)
+                .materialUsed(materialUsed)
                 .memberCount(members.size())
                 .progress(calculateProgress(entity))
                 .projectRelations(relations)
@@ -169,12 +180,17 @@ public class ProjectMapper {
                 .projectManagerIdx(dto.getProjectManagerIdx())
                 .startDate(dto.getStartDate())
                 .endDate(dto.getEndDate())
+                .totalPeriodStart(dto.getTotalPeriodStart() != null ?
+                        dto.getTotalPeriodStart() : dto.getStartDate())
+                .totalPeriodEnd(dto.getTotalPeriodEnd() != null ?
+                        dto.getTotalPeriodEnd() : dto.getEndDate())
                 .projectStatus(dto.getProjectStatus() != null ?
                         dto.getProjectStatus() : "PLANNING")
                 .description(dto.getDescription())
                 .isDeleted(false)
                 .activityBudget(dto.getActivityBudget())
                 .equipmentBudget(dto.getEquipmentBudget())
+                .materialBudget(dto.getMaterialBudget())
                 .progressRate(dto.getProgressRate() != null ?
                         dto.getProgressRate() : BigDecimal.ZERO)
                 .build();
@@ -228,8 +244,17 @@ public class ProjectMapper {
         if (dto.getEquipmentBudget() != null) {
             entity.setEquipmentBudget(dto.getEquipmentBudget());
         }
+        if (dto.getMaterialBudget() != null) {
+            entity.setMaterialBudget(dto.getMaterialBudget());
+        }
         if (dto.getProgressRate() != null) {
             entity.setProgressRate(dto.getProgressRate());
+        }
+        if (dto.getTotalPeriodStart() != null) {
+            entity.setTotalPeriodStart(dto.getTotalPeriodStart());
+        }
+        if (dto.getTotalPeriodEnd() != null) {
+            entity.setTotalPeriodEnd(dto.getTotalPeriodEnd());
         }
 
         // 수정 정보 업데이트
