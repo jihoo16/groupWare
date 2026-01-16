@@ -163,6 +163,7 @@
                 <div class="expense-info-note">
                     <i class="fas fa-info-circle"></i>
                     <span>본 프로젝트에서 적용될 직급별 일비, 식비, 회의비, 야근식대를 설정합니다. 미설정 시 기본값이 적용됩니다.</span>
+                    <span>금액은 원(₩) 단위 입니다.</span>
                 </div>
 
                 <div class="expense-settings-container">
@@ -182,35 +183,35 @@
                             </tr>
                         </thead>
                         <tbody id="expenseSettingsBody">
-                            <tr data-position="사원">
+                            <tr data-position="사원" data-position-code="P7">
                                 <td class="position-name-cell">사원</td>
                                 <td><input type="text" class="expense-input-sm currency-input-sm" name="daily_allowance_사원" value="30,000" placeholder="일비"></td>
                                 <td><input type="text" class="expense-input-sm currency-input-sm" name="meal_allowance_사원" value="30,000" placeholder="식비"></td>
                                 <td><input type="text" class="expense-input-sm currency-input-sm" name="meeting_allowance_사원" value="15,000" placeholder="회의비"></td>
                                 <td><input type="text" class="expense-input-sm currency-input-sm" name="overtime_meal_사원" value="10,000" placeholder="야근식대"></td>
                             </tr>
-                            <tr data-position="대리">
+                            <tr data-position="대리" data-position-code="P6">
                                 <td class="position-name-cell">대리</td>
                                 <td><input type="text" class="expense-input-sm currency-input-sm" name="daily_allowance_대리" value="35,000" placeholder="일비"></td>
                                 <td><input type="text" class="expense-input-sm currency-input-sm" name="meal_allowance_대리" value="35,000" placeholder="식비"></td>
                                 <td><input type="text" class="expense-input-sm currency-input-sm" name="meeting_allowance_대리" value="20,000" placeholder="회의비"></td>
                                 <td><input type="text" class="expense-input-sm currency-input-sm" name="overtime_meal_대리" value="12,000" placeholder="야근식대"></td>
                             </tr>
-                            <tr data-position="과장">
+                            <tr data-position="과장" data-position-code="P5">
                                 <td class="position-name-cell">과장</td>
                                 <td><input type="text" class="expense-input-sm currency-input-sm" name="daily_allowance_과장" value="40,000" placeholder="일비"></td>
                                 <td><input type="text" class="expense-input-sm currency-input-sm" name="meal_allowance_과장" value="40,000" placeholder="식비"></td>
                                 <td><input type="text" class="expense-input-sm currency-input-sm" name="meeting_allowance_과장" value="25,000" placeholder="회의비"></td>
                                 <td><input type="text" class="expense-input-sm currency-input-sm" name="overtime_meal_과장" value="15,000" placeholder="야근식대"></td>
                             </tr>
-                            <tr data-position="차장">
+                            <tr data-position="차장" data-position-code="P4">
                                 <td class="position-name-cell">차장</td>
                                 <td><input type="text" class="expense-input-sm currency-input-sm" name="daily_allowance_차장" value="50,000" placeholder="일비"></td>
                                 <td><input type="text" class="expense-input-sm currency-input-sm" name="meal_allowance_차장" value="50,000" placeholder="식비"></td>
                                 <td><input type="text" class="expense-input-sm currency-input-sm" name="meeting_allowance_차장" value="30,000" placeholder="회의비"></td>
                                 <td><input type="text" class="expense-input-sm currency-input-sm" name="overtime_meal_차장" value="18,000" placeholder="야근식대"></td>
                             </tr>
-                            <tr data-position="부장">
+                            <tr data-position="부장" data-position-code="P3">
                                 <td class="position-name-cell">부장</td>
                                 <td><input type="text" class="expense-input-sm currency-input-sm" name="daily_allowance_부장" value="60,000" placeholder="일비"></td>
                                 <td><input type="text" class="expense-input-sm currency-input-sm" name="meal_allowance_부장" value="60,000" placeholder="식비"></td>
