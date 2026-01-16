@@ -4,7 +4,14 @@
 .write-container {
     padding: 20px;
     background: #f5f7fa;
-    min-height: calc(100vh - 70px);
+    min-height: 100vh;
+}
+
+/* 스크롤 하단 여백 확보를 위한 가상 요소 */
+.write-container::after {
+    content: '';
+    display: block;
+    height: 40px;
 }
 
 .editor-area {
@@ -269,16 +276,14 @@
     color: #999;
 }
 
-/* 액션 버튼 */
-.action-buttons {
+/* 헤더 버튼 */
+.header-right {
     display: flex;
-    justify-content: center;
     gap: 10px;
-    margin-top: 40px;
-    padding-top: 30px;
-    border-top: 1px solid #e0e0e0;
+    align-items: center;
 }
 
+/* 버튼 공통 스타일 */
 .btn-primary,
 .btn-secondary,
 .btn-danger {
@@ -323,6 +328,51 @@
     background: #e53935;
     transform: translateY(-2px);
     box-shadow: 0 4px 12px rgba(239, 83, 80, 0.4);
+}
+
+/* 버튼 툴팁 */
+.button-with-tooltip {
+    position: relative;
+    display: inline-block;
+}
+
+.tooltip-text {
+    visibility: hidden;
+    opacity: 0;
+    position: absolute;
+    bottom: 110%;
+    left: 50%;
+    transform: translateX(-50%);
+    background: #333;
+    color: white;
+    padding: 12px 16px;
+    border-radius: 8px;
+    font-size: 13px;
+    line-height: 1.5;
+    white-space: nowrap;
+    z-index: 1000;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+    transition: opacity 0.3s, visibility 0.3s;
+}
+
+.tooltip-text::after {
+    content: '';
+    position: absolute;
+    top: 100%;
+    left: 50%;
+    transform: translateX(-50%);
+    border: 8px solid transparent;
+    border-top-color: #333;
+}
+
+.tooltip-text i {
+    margin-right: 6px;
+    color: #64b5f6;
+}
+
+.button-with-tooltip:hover .tooltip-text {
+    visibility: visible;
+    opacity: 1;
 }
 
 /* 반려 모달 */
@@ -428,14 +478,22 @@
         width: 25%;
     }
 
-    .action-buttons {
-        flex-direction: column;
+    .header-right {
+        flex-wrap: wrap;
     }
 
     .btn-primary,
     .btn-secondary,
     .btn-danger {
-        width: 100%;
-        justify-content: center;
+        padding: 10px 20px;
+        font-size: 13px;
+    }
+
+    .tooltip-text {
+        white-space: normal;
+        max-width: 280px;
+        left: 50%;
+        transform: translateX(-50%);
+        text-align: left;
     }
 }
