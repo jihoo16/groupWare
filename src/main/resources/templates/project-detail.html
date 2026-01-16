@@ -1,0 +1,236 @@
+<!DOCTYPE html>
+<html lang="ko" xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{fragments/layout :: head('프로젝트 상세', '/css/project-detail.css')}"></head>
+<body>
+<div class="container">
+    <!-- 좌측 네비게이션 바 -->
+    <div th:replace="~{fragments/sidebar :: sidebar('project')}"></div>
+
+    <!-- 메인 콘텐츠 영역 -->
+    <main class="main-content">
+        <header class="header">
+            <div class="header-left">
+                <h1 class="page-title"><i class="fas fa-project-diagram"></i> 프로젝트 상세</h1>
+            </div>
+            <div class="header-right">
+                <button class="btn-secondary" onclick="history.back()">
+                    <i class="fas fa-arrow-left"></i>
+                    돌아가기
+                </button>
+            </div>
+        </header>
+
+        <div class="write-container">
+            <div class="editor-area" style="max-width: 1200px; margin: 0 auto;">
+                <!-- 문서 양식 -->
+                <div class="document-form">
+                    <h2 class="doc-title">프로젝트 상세 정보</h2>
+
+                    <!-- 기본 정보 -->
+                    <h3 class="section-title">기본 정보</h3>
+                    <table class="form-table">
+                        <colgroup>
+                            <col style="width: 15%;">
+                            <col style="width: 35%;">
+                            <col style="width: 15%;">
+                            <col style="width: 35%;">
+                        </colgroup>
+                        <tr>
+                            <th>프로젝트명</th>
+                            <td colspan="3">
+                                <input type="text" id="projectName" readonly>
+                            </td>
+                        </tr>
+                        <tr>
+                            <th>발주사</th>
+                            <td>
+                                <input type="text" id="clientName" readonly>
+                            </td>
+                            <th>상태</th>
+                            <td>
+                                <input type="text" id="projectStatus" readonly>
+                            </td>
+                        </tr>
+                        <tr>
+                            <th>연구책임자</th>
+                            <td>
+                                <input type="text" id="projectManager" readonly>
+                            </td>
+                            <th>팀원 수</th>
+                            <td>
+                                <input type="text" id="memberCount" readonly>
+                            </td>
+                        </tr>
+                        <tr>
+                            <th>현재 차수 시작일</th>
+                            <td>
+                                <input type="text" id="startDate" readonly>
+                            </td>
+                            <th>현재 차수 종료일</th>
+                            <td>
+                                <input type="text" id="endDate" readonly>
+                            </td>
+                        </tr>
+                        <tr>
+                            <th>총 프로젝트 시작일</th>
+                            <td>
+                                <input type="text" id="totalPeriodStart" readonly>
+                            </td>
+                            <th>총 프로젝트 종료일</th>
+                            <td>
+                                <input type="text" id="totalPeriodEnd" readonly>
+                            </td>
+                        </tr>
+                        <tr>
+                            <th>진행률</th>
+                            <td colspan="3">
+                                <div class="progress-container">
+                                    <div class="progress-bar-wrapper">
+                                        <div class="progress-bar-fill" id="progressBar"></div>
+                                    </div>
+                                    <span class="progress-percentage" id="progressRate">0%</span>
+                                </div>
+                            </td>
+                        </tr>
+                    </table>
+
+                    <!-- 예산 정보 -->
+                    <h3 class="section-title">예산 정보</h3>
+                    <table class="form-table">
+                        <colgroup>
+                            <col style="width: 15%;">
+                            <col style="width: 35%;">
+                            <col style="width: 15%;">
+                            <col style="width: 35%;">
+                        </colgroup>
+                        <tr>
+                            <th>활동비 예산</th>
+                            <td>
+                                <span id="activityBudget"></span>
+                            </td>
+                            <th>활동비 사용액</th>
+                            <td>
+                                <span id="activityUsed"></span>
+                            </td>
+                        </tr>
+                        <tr>
+                            <th>장비비 예산</th>
+                            <td>
+                                <span id="equipmentBudget"></span>
+                            </td>
+                            <th>장비비 사용액</th>
+                            <td>
+                                <span id="equipmentUsed"></span>
+                            </td>
+                        </tr>
+                        <tr>
+                            <th>재료비 예산</th>
+                            <td>
+                                <span id="materialBudget"></span>
+                            </td>
+                            <th>재료비 사용액</th>
+                            <td>
+                                <span id="materialUsed"></span>
+                            </td>
+                        </tr>
+                    </table>
+
+                    <!-- 연구비 카드 -->
+                    <h3 class="section-title">연구비 카드</h3>
+                    <div id="cardList" class="card-list-display">
+                        <!-- JavaScript로 동적 생성 -->
+                    </div>
+
+                    <!-- 영수증 등록 URL -->
+                    <h3 class="section-title">영수증 등록 페이지</h3>
+                    <div class="receipt-url-box">
+                        <p id="receiptUrl" class="receipt-url-text"></p>
+                    </div>
+
+                    <!-- 프로젝트 설명 -->
+                    <h3 class="section-title">프로젝트 설명</h3>
+                    <div class="description-box">
+                        <p id="projectDescription" class="description-text"></p>
+                    </div>
+
+                    <!-- 연계 프로젝트 -->
+                    <h3 class="section-title">연계 프로젝트</h3>
+                    <div id="relatedProjectList" class="related-project-display">
+                        <!-- JavaScript로 동적 생성 -->
+                    </div>
+
+                    <!-- 참여연구원 구성 -->
+                    <h3 class="section-title">참여연구원 구성</h3>
+                    <div class="team-table-container">
+                        <table class="team-table" id="teamTable">
+                            <thead>
+                            <tr>
+                                <th width="40">No</th>
+                                <th>이름</th>
+                                <th>부서</th>
+                                <th>직급</th>
+                                <th>역할</th>
+                                <th>참여 시작일</th>
+                                <th>참여 종료일</th>
+                            </tr>
+                            </thead>
+                            <tbody id="teamTableBody">
+                            <!-- JavaScript로 동적 생성 -->
+                            </tbody>
+                        </table>
+                    </div>
+
+                    <!-- 직급별 경비 설정 -->
+                    <h3 class="section-title">직급별 경비 설정</h3>
+                    <div class="expense-settings-container">
+                        <table class="expense-settings-table">
+                            <thead>
+                            <tr>
+                                <th rowspan="2" style="width: 120px;">직급</th>
+                                <th colspan="2" class="category-header daily-header">출장</th>
+                                <th colspan="1" class="category-header meeting-header">회의</th>
+                                <th colspan="1" class="category-header overtime-header">야근</th>
+                            </tr>
+                            <tr>
+                                <th class="sub-header">일비<br><span class="unit">(원/1일)</span></th>
+                                <th class="sub-header">식비<br><span class="unit">(원/1일)</span></th>
+                                <th class="sub-header">회의비<br><span class="unit">(원/1인)</span></th>
+                                <th class="sub-header">야근식대<br><span class="unit">(원/1인)</span></th>
+                            </tr>
+                            </thead>
+                            <tbody id="expenseSettingsBody">
+                            <!-- JavaScript로 동적 생성 -->
+                            </tbody>
+                        </table>
+                    </div>
+
+                    <!-- 첨부파일 -->
+                    <h3 class="section-title">첨부파일</h3>
+                    <div id="attachmentsList" class="attachments-list">
+                        <!-- JavaScript로 동적 생성 -->
+                    </div>
+
+                    <!-- 액션 버튼 -->
+                    <div class="action-buttons">
+                        <button type="button" class="btn-primary" id="editBtn">
+                            <i class="fas fa-edit"></i>
+                            수정
+                        </button>
+                        <button type="button" class="btn-danger" id="deleteBtn">
+                            <i class="fas fa-trash"></i>
+                            삭제
+                        </button>
+                        <button type="button" class="btn-secondary" onclick="history.back()">
+                            <i class="fas fa-arrow-left"></i>
+                            목록으로
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </main>
+</div>
+
+<script th:src="@{/js/project-detail.js}"></script>
+</body>
+</html>

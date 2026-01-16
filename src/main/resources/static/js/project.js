@@ -470,48 +470,8 @@ document.addEventListener('DOMContentLoaded', function() {
 
     // 프로젝트 상세보기 (전역 함수)
     window.viewProject = function(projectId) {
-        // 현재 프로젝트 ID 저장
-        currentDetailProjectId = projectId;
-
-        fetch(`/api/projects/${projectId}`)
-            .then(response => {
-                if (!response.ok) {
-                    throw new Error('프로젝트 정보를 불러오는데 실패했습니다.');
-                }
-                return response.json();
-            })
-            .then(project => {
-                // 모달에 데이터 채우기
-                document.getElementById('detailProjectName').textContent = project.projectName;
-                document.getElementById('detailStatus').textContent = getStatusLabel(project.projectStatus);
-                document.getElementById('detailPM').textContent = project.projectManagerName || '-';
-                document.getElementById('detailTeamSize').textContent = project.memberCount + '명';
-                document.getElementById('detailStartDate').textContent = project.startDate || '-';
-                document.getElementById('detailEndDate').textContent = project.endDate || '-';
-                document.getElementById('detailTotalPeriodStart').textContent = project.totalPeriodStart || '-';
-                document.getElementById('detailTotalPeriodEnd').textContent = project.totalPeriodEnd || '-';
-                document.getElementById('detailActivityBudget').innerHTML = formatBudgetUsage(project.activityUsed, project.activityBudget);
-                document.getElementById('detailEquipmentBudget').innerHTML = formatBudgetUsage(project.equipmentUsed, project.equipmentBudget);
-                document.getElementById('detailMaterialBudget').innerHTML = formatBudgetUsage(project.materialUsed, project.materialBudget);
-                document.getElementById('detailDescription').textContent = project.description || '설명이 없습니다.';
-                document.getElementById('detailProgressBar').style.width = (project.progressRate || 0) + '%';
-                document.getElementById('detailProgressText').textContent = (project.progressRate || 0) + '%';
-
-                // 프로젝트 보고서 로드
-                loadProjectReports(project.idx);
-
-                // 탭을 기본 정보로 초기화
-                switchDetailTab('info');
-
-                // 모달 열기
-                if (projectDetailModal) {
-                    projectDetailModal.classList.add('active');
-                }
-            })
-            .catch(error => {
-                console.error('Error loading project details:', error);
-                alert('프로젝트 정보를 불러올 수 없습니다.');
-            });
+        // 프로젝트 상세 페이지로 이동
+        location.href = `/project/detail?projectId=${projectId}`;
     };
 
     // 프로젝트별 보고서 조회 및 렌더링

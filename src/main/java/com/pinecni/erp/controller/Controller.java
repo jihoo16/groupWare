@@ -216,6 +216,11 @@ public class Controller {
         return "project-edit";
     }
 
+    @GetMapping("/project/detail")
+    public String projectDetail() {
+        return "project-detail";
+    }
+
     @GetMapping("/team")
     public String team() {
         return "team";
