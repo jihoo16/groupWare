@@ -69,6 +69,11 @@ public class ProjectCreateDTO {
     private String description;
 
     /**
+     * 증빙 URL
+     */
+    private String receiptUrl;
+
+    /**
      * 활동비 예산
      */
     private BigDecimal activityBudget;
