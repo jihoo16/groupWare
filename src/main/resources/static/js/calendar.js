@@ -37,6 +37,15 @@ document.addEventListener('DOMContentLoaded', function() {
     // 일정 데이터 (서버에서 로드)
     let schedules = [];
 
+    // 디버깅을 위한 전역 접근 (개발용)
+    window.DEBUG_getSchedules = () => ({
+        schedules: schedules,
+        activeTypeFilters: activeTypeFilters,
+        activeTeamFilters: activeTeamFilters,
+        count: schedules.length,
+        leaveCount: schedules.filter(s => s.type === 'leave').length
+    });
+
     // 탭 및 팀 관련 변수
     let currentQuickEventTab = 'personal'; // 'personal' or 'team'
     let quickTeamsList = []; // 팀 목록
@@ -781,6 +790,29 @@ document.addEventListener('DOMContentLoaded', function() {
             notificationText = '알림 없음';
         }
         document.getElementById('detailNotification').textContent = notificationText;
+
+        // 수정/삭제 버튼 표시 여부 결정
+        const editBtn = document.getElementById('editScheduleBtn');
+        const deleteBtn = document.getElementById('deleteScheduleBtn');
+
+        // 1. 휴가/연차 일정은 수정/삭제 불가
+        // 2. 본인이 생성한 일정만 수정/삭제 가능
+        const isLeaveSchedule = schedule.type === 'leave';
+        const isMySchedule = schedule.creatorIdx === currentUserIdx;
+
+        if (isLeaveSchedule) {
+            // 휴가는 전자결재 문서와 연동되므로 수정/삭제 불가
+            editBtn.style.display = 'none';
+            deleteBtn.style.display = 'none';
+        } else if (!isMySchedule) {
+            // 내가 생성한 일정이 아니면 수정/삭제 불가
+            editBtn.style.display = 'none';
+            deleteBtn.style.display = 'none';
+        } else {
+            // 내가 생성한 일반 일정은 수정/삭제 가능
+            editBtn.style.display = 'inline-flex';
+            deleteBtn.style.display = 'inline-flex';
+        }
 
         // 모달 표시
         document.getElementById('scheduleDetailModal').classList.add('show');

@@ -1,13 +1,19 @@
 package com.pinecni.erp.controller;
 
+import com.pinecni.erp.api.calendar.service.CalendarEventService;
 import jakarta.servlet.http.HttpSession;
+import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 
 @Slf4j
 @org.springframework.stereotype.Controller
+@RequiredArgsConstructor
 public class Controller {
+
+    private final CalendarEventService calendarEventService;
 
     @GetMapping("/")
     public String root() {
@@ -35,7 +41,47 @@ public class Controller {
     }
 
     @GetMapping("/calendar/edit")
-    public String calendarEdit() {
+    public String calendarEdit(@RequestParam(required = false) Long id, HttpSession session) {
+        // id가 없으면 잘못된 접근 - oops 페이지로
+        if (id == null) {
+            log.warn("일정 수정 페이지 접근 시 id 누락");
+            return "redirect:/oops";
+        }
+
+        // 현재 로그인한 사용자 정보
+        Long currentUserIdx = (Long) session.getAttribute("userIdx");
+        if (currentUserIdx == null) {
+            log.warn("로그인하지 않은 사용자의 일정 수정 시도");
+            return "redirect:/login";
+        }
+
+        try {
+            // 일정 타입 확인
+            var event = calendarEventService.getEventById(id);
+
+            // 일정이 존재하지 않으면 oops 페이지로
+            if (event == null) {
+                log.warn("존재하지 않는 일정 수정 시도: id={}", id);
+                return "redirect:/oops";
+            }
+
+            // 연차/휴가 일정은 수정 불가 - oops 페이지로 리다이렉트
+            if ("leave".equals(event.getEventType())) {
+                log.info("연차/휴가 일정 수정 시도 차단: id={}", id);
+                return "redirect:/oops";
+            }
+
+            // 본인이 생성한 일정이 아니면 수정 불가
+            if (event.getCreatorIdx() != null && !event.getCreatorIdx().equals(currentUserIdx)) {
+                log.warn("다른 사용자의 일정 수정 시도: eventId={}, creatorIdx={}, currentUserIdx={}",
+                    id, event.getCreatorIdx(), currentUserIdx);
+                return "redirect:/oops";
+            }
+        } catch (Exception e) {
+            log.error("일정 조회 중 오류 발생: id={}, error={}", id, e.getMessage());
+            return "redirect:/oops";
+        }
+
         return "calendar-edit";
     }
 
@@ -254,5 +300,10 @@ public class Controller {
     @GetMapping("/login")
     public String login() {
         return "login";
+    }
+
+    @GetMapping("/oops")
+    public String notFound() {
+        return "404";
     }
 }
