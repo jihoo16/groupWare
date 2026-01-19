@@ -29,8 +29,8 @@ public class ApprovalDocumentServiceImpl implements ApprovalDocumentService {
     private final WeeklyReportRepository weeklyReportRepository;
 
     @Override
-    public List<ApprovalDocumentDTO> getAllDocuments() {
-        log.debug("[전체 문서 조회] 시작");
+    public List<ApprovalDocumentDTO> getAllDocuments(Long currentUserIdx) {
+        log.debug("[전체 문서 조회] 시작 - 현재 사용자: {}", currentUserIdx);
 
         List<ApprovalDocument> documents = approvalDocumentRepository.findAllByDeletedAtIsNullOrderByCreatedAtDesc();
 
@@ -42,12 +42,16 @@ public class ApprovalDocumentServiceImpl implements ApprovalDocumentService {
                     if ("주간업무보고".equals(dto.getDocumentType()) || "프로젝트 주간업무보고".equals(dto.getDocumentType())) {
                         return dto.getSourceDocumentId() != null;
                     }
+                    // 연차신청서는 본인이 작성한 것만 포함
+                    if ("연차신청서".equals(dto.getDocumentType())) {
+                        return dto.getDrafterUserIdx().equals(currentUserIdx);
+                    }
                     // 다른 문서 타입은 일단 모두 포함
                     return true;
                 })
                 .collect(Collectors.toList());
 
-        log.debug("[전체 문서 조회] 완료 - 총 {}건", result.size());
+        log.debug("[전체 문서 조회] 완료 - 총 {}건 (현재 사용자: {})", result.size(), currentUserIdx);
         return result;
     }
 

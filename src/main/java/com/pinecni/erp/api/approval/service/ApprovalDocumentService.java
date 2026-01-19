@@ -11,9 +11,11 @@ public interface ApprovalDocumentService {
 
     /**
      * 전체 문서 목록 조회 (최신순)
+     * - 연차신청서는 본인이 작성한 것만 조회
+     * @param currentUserIdx 현재 로그인한 사용자 IDX
      * @return 문서 목록
      */
-    List<ApprovalDocumentDTO> getAllDocuments();
+    List<ApprovalDocumentDTO> getAllDocuments(Long currentUserIdx);
 
     /**
      * 문서 타입별 목록 조회
