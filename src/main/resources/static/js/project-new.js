@@ -886,11 +886,26 @@ document.addEventListener('DOMContentLoaded', function() {
     if (projectStartDateInput) {
         projectStartDateInput.addEventListener('change', function() {
             const newStartDate = this.value;
+            if (!newStartDate) return;
+
             // 모든 팀원의 참여 시작일을 프로젝트 시작일로 업데이트
             selectedMemberList.forEach(member => {
                 member.startDate = newStartDate;
             });
             renderTeamTable();
+
+            // 시작일의 년도의 마지막 영업일로 종료일 자동 설정
+            const year = new Date(newStartDate).getFullYear();
+            const lastBusinessDay = getLastBusinessDayOfYear(year);
+            if (projectEndDateInput) {
+                projectEndDateInput.value = lastBusinessDay;
+
+                // 모든 팀원의 참여 종료일도 업데이트
+                selectedMemberList.forEach(member => {
+                    member.endDate = lastBusinessDay;
+                });
+                renderTeamTable();
+            }
         });
     }
 
@@ -903,6 +918,65 @@ document.addEventListener('DOMContentLoaded', function() {
             });
             renderTeamTable();
         });
+    }
+
+    /**
+     * 해당 년도의 마지막 영업일 계산
+     * 주말(토,일)과 공휴일을 제외한 12월의 마지막 근무일
+     */
+    function getLastBusinessDayOfYear(year) {
+        // 한국 공휴일 (12월에 해당하는 것)
+        const holidays = getKoreanHolidays(year);
+
+        // 12월 31일부터 역순으로 검사
+        let date = new Date(year, 11, 31); // 12월 31일
+
+        while (date.getMonth() === 11) { // 12월인 동안
+            const dayOfWeek = date.getDay();
+            const dateString = formatDateToString(date);
+
+            // 주말이 아니고 공휴일이 아니면 영업일
+            const isWeekend = (dayOfWeek === 0 || dayOfWeek === 6); // 일요일(0) 또는 토요일(6)
+            const isHoliday = holidays.includes(dateString);
+
+            if (!isWeekend && !isHoliday) {
+                return dateString;
+            }
+
+            // 하루 전으로 이동
+            date.setDate(date.getDate() - 1);
+        }
+
+        // 만약 12월에 영업일이 없으면 (거의 불가능) 12월 31일 반환
+        return `${year}-12-31`;
+    }
+
+    /**
+     * 한국 공휴일 목록 반환 (12월 관련)
+     */
+    function getKoreanHolidays(year) {
+        const holidays = [];
+
+        // 고정 공휴일
+        holidays.push(`${year}-12-25`); // 크리스마스
+
+        // 대체공휴일 처리: 크리스마스가 일요일이면 12/26이 대체공휴일
+        const christmas = new Date(year, 11, 25);
+        if (christmas.getDay() === 0) { // 일요일
+            holidays.push(`${year}-12-26`);
+        }
+
+        return holidays;
+    }
+
+    /**
+     * Date 객체를 YYYY-MM-DD 형식 문자열로 변환
+     */
+    function formatDateToString(date) {
+        const year = date.getFullYear();
+        const month = String(date.getMonth() + 1).padStart(2, '0');
+        const day = String(date.getDate()).padStart(2, '0');
+        return `${year}-${month}-${day}`;
     }
 
     // 파일 선택
@@ -1415,18 +1489,30 @@ document.addEventListener('DOMContentLoaded', function() {
             return;
         }
 
-        // 선택된 프로젝트 정보 수집
+        // 선택된 프로젝트 정보 수집 (이미 등록된 프로젝트는 제외)
         const selectedProjects = [];
         checkboxes.forEach(checkbox => {
+            const projectId = checkbox.value;
+
+            // 이미 등록된 프로젝트인지 확인
+            const alreadyAdded = relatedProjectList.some(p => p.id === projectId);
+            if (alreadyAdded) return; // 이미 등록된 프로젝트는 건너뜀
+
             const row = checkbox.closest('tr');
             selectedProjects.push({
-                id: checkbox.value,
+                id: projectId,
                 name: row.getAttribute('data-name'),
                 status: row.getAttribute('data-status'),
                 pm: row.getAttribute('data-pm'),
                 period: row.getAttribute('data-period')
             });
         });
+
+        // 새로 추가할 프로젝트가 없으면 알림
+        if (selectedProjects.length === 0) {
+            alert('새로 추가할 프로젝트가 없습니다. 선택한 프로젝트는 이미 등록되어 있습니다.');
+            return;
+        }
 
         // 상세 정보 입력 폼 생성
         relationDetailsContainer.innerHTML = '';
@@ -1528,65 +1614,216 @@ document.addEventListener('DOMContentLoaded', function() {
         closeRelatedProjectModal();
     };
 
+    // n차 패턴을 찾아 n+1차로 변환하거나, 없으면 2차 추가
+    function generateNextProjectName(projectName) {
+        // n차 패턴 확인 (예: "1차", "2차", "10차" 등)
+        const pattern = /(\d+)차/;
+        const match = projectName.match(pattern);
+
+        if (match) {
+            // n차가 있으면 n+1차로 변환
+            const currentNum = parseInt(match[1], 10);
+            const nextNum = currentNum + 1;
+            return projectName.replace(pattern, nextNum + '차');
+        } else {
+            // n차가 없으면 뒤에 2차 추가
+            return projectName + ' 2차';
+        }
+    }
+
     // 연계 프로젝트 정보를 폼에 자동 입력
     function loadProjectInfoToForm(projectId) {
-        // 프로젝트 상세 정보 조회
-        fetch(`/api/projects/${projectId}`)
-            .then(response => {
-                if (!response.ok) {
-                    throw new Error('프로젝트 정보를 불러오는데 실패했습니다.');
-                }
-                return response.json();
-            })
-            .then(project => {
-                // 프로젝트명 설정
-                const projectNameInput = document.getElementById('projectName');
-                if (projectNameInput && !projectNameInput.value) {
-                    projectNameInput.value = project.projectName + ' (연계)';
-                }
+        // 프로젝트 상세 정보와 연구비 카드를 병렬로 조회
+        Promise.all([
+            fetch(`/api/projects/${projectId}`).then(res => res.ok ? res.json() : Promise.reject('프로젝트 조회 실패')),
+            fetch(`/api/projects/${projectId}/cards`).then(res => res.ok ? res.json() : [])
+        ])
+        .then(([project, cards]) => {
+            console.log('연계 프로젝트 데이터:', project);
+            console.log('연구비 카드 데이터:', cards);
 
-                // 발주사 설정
-                const clientNameInput = document.getElementById('clientName');
-                if (clientNameInput && !clientNameInput.value) {
-                    clientNameInput.value = project.clientName || '';
-                }
+            // === 가져오는 필드들 (연계프로젝트, 상태, 현재차수 시작일/종료일 제외) ===
 
-                // 총 프로젝트 시작일 설정
-                const totalPeriodStartInput = document.getElementById('totalPeriodStart');
-                if (totalPeriodStartInput && !totalPeriodStartInput.value) {
-                    totalPeriodStartInput.value = project.totalPeriodStart || project.startDate || '';
-                }
+            // 1. 프로젝트명 설정 (n차 → n+1차, 없으면 2차 추가)
+            const projectNameInput = document.getElementById('projectName');
+            if (projectNameInput && !projectNameInput.value) {
+                projectNameInput.value = generateNextProjectName(project.projectName);
+            }
 
-                // 총 프로젝트 종료일 설정
-                const totalPeriodEndInput = document.getElementById('totalPeriodEnd');
-                if (totalPeriodEndInput && !totalPeriodEndInput.value) {
-                    totalPeriodEndInput.value = project.totalPeriodEnd || project.endDate || '';
-                }
+            // 2. 발주사 설정
+            const clientNameInput = document.getElementById('clientName');
+            if (clientNameInput && !clientNameInput.value) {
+                clientNameInput.value = project.clientName || '';
+            }
 
-                // 연구책임자 설정
-                if (project.projectManagerIdx && project.projectManagerName) {
-                    // allManagers 목록에서 해당 연구책임자 찾기
-                    const manager = allManagers.find(m => m.idx === project.projectManagerIdx);
-                    if (manager) {
-                        selectedManager = manager;
-                        if (projectManagerInput) {
-                            projectManagerInput.value = `${manager.empName} (${manager.empDeptName || '-'} / ${manager.empPositionName || '-'})`;
-                        }
-                        if (projectManagerIdxInput) {
-                            projectManagerIdxInput.value = manager.idx;
-                        }
+            // 3. 총 프로젝트 시작일 설정
+            const totalPeriodStartInput = document.getElementById('totalPeriodStart');
+            if (totalPeriodStartInput && !totalPeriodStartInput.value) {
+                totalPeriodStartInput.value = project.totalPeriodStart || project.startDate || '';
+            }
 
-                        // 팀원에 자동 추가
-                        addManagerToTeam(manager);
+            // 4. 총 프로젝트 종료일 설정
+            const totalPeriodEndInput = document.getElementById('totalPeriodEnd');
+            if (totalPeriodEndInput && !totalPeriodEndInput.value) {
+                totalPeriodEndInput.value = project.totalPeriodEnd || project.endDate || '';
+            }
+
+            // 5. 프로젝트 설명 설정
+            const projectDescriptionInput = document.getElementById('projectDescription');
+            if (projectDescriptionInput && !projectDescriptionInput.value) {
+                projectDescriptionInput.value = project.description || '';
+            }
+
+            // 6. 영수증 등록 페이지 URL 설정
+            const receiptUrlInput = document.getElementById('receiptUrl');
+            if (receiptUrlInput && !receiptUrlInput.value) {
+                receiptUrlInput.value = project.receiptUrl || '';
+            }
+
+            // 7. 활동비 예산 설정
+            const activityBudgetInput = document.getElementById('activityBudget');
+            if (activityBudgetInput && (!activityBudgetInput.value || activityBudgetInput.value === '0')) {
+                activityBudgetInput.value = formatCurrencyValue(project.activityBudget || 0);
+            }
+
+            // 8. 장비비 예산 설정
+            const equipmentBudgetInput = document.getElementById('equipmentBudget');
+            if (equipmentBudgetInput && (!equipmentBudgetInput.value || equipmentBudgetInput.value === '0')) {
+                equipmentBudgetInput.value = formatCurrencyValue(project.equipmentBudget || 0);
+            }
+
+            // 9. 재료비 예산 설정
+            const materialBudgetInput = document.getElementById('materialBudget');
+            if (materialBudgetInput && (!materialBudgetInput.value || materialBudgetInput.value === '0')) {
+                materialBudgetInput.value = formatCurrencyValue(project.materialBudget || 0);
+            }
+
+            // 10. 연구책임자 설정
+            if (project.projectManagerIdx && project.projectManagerName) {
+                // allManagers 목록에서 해당 연구책임자 찾기
+                const manager = allManagers.find(m => m.idx === project.projectManagerIdx);
+                if (manager) {
+                    selectedManager = manager;
+                    if (projectManagerInput && !projectManagerInput.value) {
+                        projectManagerInput.value = `${manager.empName} (${manager.empDeptName || '-'} / ${manager.empPositionName || '-'})`;
                     }
-                }
+                    if (projectManagerIdxInput && !projectManagerIdxInput.value) {
+                        projectManagerIdxInput.value = manager.idx;
+                    }
 
-                console.log('연계 프로젝트 정보를 폼에 자동 입력했습니다:', project);
-            })
-            .catch(error => {
-                console.error('Error loading project info:', error);
-                // 에러가 발생해도 사용자 작업을 방해하지 않음
-            });
+                    // 팀원에 자동 추가
+                    addManagerToTeam(manager);
+                }
+            }
+
+            // 11. 연구비 카드 설정 (별도 API에서 조회)
+            if (cards && cards.length > 0 && cardListData.length === 0) {
+                cards.forEach(card => {
+                    cardIdCounter++;
+                    cardListData.push({
+                        id: cardIdCounter,
+                        company: card.cardCompany,
+                        number: card.cardLastDigits,
+                        name: card.cardNickname || ''
+                    });
+                });
+                renderCardList();
+            }
+
+            // 12. 참여연구원 설정 (PI 제외, 기존 팀원이 없을 때만)
+            if (project.projectMembers && project.projectMembers.length > 0 && selectedMemberList.filter(m => m.role !== 'PI').length === 0) {
+                loadTeamMembersFromProject(project.projectMembers);
+            }
+
+            // 13. 직급별 경비 설정
+            if (project.projectExpenseSettings && project.projectExpenseSettings.length > 0) {
+                loadExpenseSettingsFromProject(project.projectExpenseSettings);
+            }
+
+            console.log('연계 프로젝트 정보를 폼에 자동 입력했습니다:', project);
+        })
+        .catch(error => {
+            console.error('Error loading project info:', error);
+            // 에러가 발생해도 사용자 작업을 방해하지 않음
+        });
+    }
+
+    // 프로젝트 참여연구원을 팀원 목록에 추가
+    function loadTeamMembersFromProject(projectMembers) {
+        const projectStartDate = document.getElementById('startDate').value;
+        const projectEndDate = document.getElementById('endDate').value;
+
+        projectMembers.forEach(member => {
+            // PI는 이미 연구책임자로 추가되어 있으므로 제외
+            if (member.role === 'PI') return;
+
+            // 중복 체크
+            const exists = selectedMemberList.some(m =>
+                parseInt(m.idx || m.id) === member.employeeIdx
+            );
+
+            if (!exists) {
+                selectedMemberList.push({
+                    id: member.employeeIdx.toString(),
+                    idx: member.employeeIdx,
+                    name: member.employeeName || '',
+                    dept: member.employeeDeptName || '-',
+                    position: member.employeePositionName || '-',
+                    role: member.role || 'RESEARCHER',
+                    startDate: projectStartDate || member.participationStartDate || '',
+                    endDate: projectEndDate || member.participationEndDate || ''
+                });
+            }
+        });
+
+        renderTeamTable();
+    }
+
+    // 프로젝트 경비 설정을 폼에 적용
+    function loadExpenseSettingsFromProject(expenseSettings) {
+        // 경비 항목명 매핑
+        const expenseItemIndexMap = {
+            '출장비': 0,
+            '중식비': 1,
+            '회의비': 2,
+            '야근석식대': 3
+        };
+
+        // 직급별 데이터 그룹화
+        const groupedByPosition = {};
+
+        expenseSettings.forEach(setting => {
+            const positionCode = setting.positionCode;
+
+            if (!groupedByPosition[positionCode]) {
+                groupedByPosition[positionCode] = {
+                    positionCode: setting.positionCode,
+                    amounts: [0, 0, 0, 0] // [출장비, 중식비, 회의비, 야근석식대]
+                };
+            }
+
+            const itemIndex = expenseItemIndexMap[setting.expenseItemName];
+            if (itemIndex !== undefined) {
+                groupedByPosition[positionCode].amounts[itemIndex] = setting.amount || 0;
+            }
+        });
+
+        // 각 직급 행에 데이터 설정
+        Object.keys(groupedByPosition).forEach(positionCode => {
+            const row = document.querySelector(`tr[data-position-code="${positionCode}"]`);
+
+            if (row) {
+                const data = groupedByPosition[positionCode];
+                const inputs = row.querySelectorAll('.expense-input-sm');
+
+                if (inputs.length >= 4) {
+                    inputs[0].value = formatCurrencyValue(data.amounts[0]); // 출장비
+                    inputs[1].value = formatCurrencyValue(data.amounts[1]); // 중식비
+                    inputs[2].value = formatCurrencyValue(data.amounts[2]); // 회의비
+                    inputs[3].value = formatCurrencyValue(data.amounts[3]); // 야근석식대
+                }
+            }
+        });
     }
 
     // 연계 정보 입력 모달 닫기 (전역 함수)
@@ -1644,7 +1881,106 @@ document.addEventListener('DOMContentLoaded', function() {
         relatedProjectList = relatedProjectList.filter(p => p.id !== projectId);
         renderRelatedProjectList();
         updateRelatedProjectCheckboxStates();
+
+        // 필드 초기화 후 남은 프로젝트 데이터 로드
+        clearRelatedProjectFields();
+
+        // 남은 연계 프로젝트가 있으면 첫 번째 프로젝트 데이터 로드
+        if (relatedProjectList.length > 0) {
+            loadProjectInfoToForm(relatedProjectList[0].id);
+        }
     };
+
+    // 연계 프로젝트 관련 필드 초기화
+    function clearRelatedProjectFields() {
+        // 1. 프로젝트명 초기화
+        const projectNameInput = document.getElementById('projectName');
+        if (projectNameInput) {
+            projectNameInput.value = '';
+        }
+
+        // 2. 발주사 초기화
+        const clientNameInput = document.getElementById('clientName');
+        if (clientNameInput) {
+            clientNameInput.value = '';
+        }
+
+        // 3. 총 프로젝트 시작일 초기화
+        const totalPeriodStartInput = document.getElementById('totalPeriodStart');
+        if (totalPeriodStartInput) {
+            totalPeriodStartInput.value = '';
+        }
+
+        // 4. 총 프로젝트 종료일 초기화
+        const totalPeriodEndInput = document.getElementById('totalPeriodEnd');
+        if (totalPeriodEndInput) {
+            totalPeriodEndInput.value = '';
+        }
+
+        // 5. 프로젝트 설명 초기화
+        const projectDescriptionInput = document.getElementById('projectDescription');
+        if (projectDescriptionInput) {
+            projectDescriptionInput.value = '';
+        }
+
+        // 6. 영수증 등록 페이지 URL 초기화
+        const receiptUrlInput = document.getElementById('receiptUrl');
+        if (receiptUrlInput) {
+            receiptUrlInput.value = '';
+        }
+
+        // 7. 활동비 예산 초기화
+        const activityBudgetInput = document.getElementById('activityBudget');
+        if (activityBudgetInput) {
+            activityBudgetInput.value = '0';
+        }
+
+        // 8. 장비비 예산 초기화
+        const equipmentBudgetInput = document.getElementById('equipmentBudget');
+        if (equipmentBudgetInput) {
+            equipmentBudgetInput.value = '0';
+        }
+
+        // 9. 재료비 예산 초기화
+        const materialBudgetInput = document.getElementById('materialBudget');
+        if (materialBudgetInput) {
+            materialBudgetInput.value = '0';
+        }
+
+        // 10. 연구책임자 초기화
+        if (projectManagerInput) {
+            projectManagerInput.value = '';
+        }
+        if (projectManagerIdxInput) {
+            projectManagerIdxInput.value = '';
+        }
+
+        // 선택된 연구책임자 초기화
+        selectedManager = null;
+
+        // 11. 전체 팀원 초기화 (PI 포함)
+        selectedMemberList = [];
+        renderTeamTable();
+
+        // 12. 연구비 카드 초기화
+        cardListData = [];
+        cardIdCounter = 0;
+        renderCardList();
+
+        // 13. 직급별 경비 설정 초기화
+        resetExpenseSettingsToZero();
+    }
+
+    // 직급별 경비 설정을 0으로 초기화
+    function resetExpenseSettingsToZero() {
+        const expenseRows = document.querySelectorAll('#expenseSettingsBody tr[data-position]');
+        expenseRows.forEach(row => {
+            const inputs = row.querySelectorAll('.expense-input-sm');
+            inputs.forEach(input => {
+                input.value = '0';
+            });
+        });
+    }
 
     // 연계 프로젝트 타입 업데이트 (전역 함수)
     window.updateRelatedProjectType = function(projectId, value) {
