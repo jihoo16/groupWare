@@ -187,6 +187,7 @@ public class ProjectMapper {
                 .projectStatus(dto.getProjectStatus() != null ?
                         dto.getProjectStatus() : "PLANNING")
                 .description(dto.getDescription())
+                .receiptUrl(dto.getReceiptUrl())
                 .isDeleted(false)
                 .activityBudget(dto.getActivityBudget())
                 .equipmentBudget(dto.getEquipmentBudget())

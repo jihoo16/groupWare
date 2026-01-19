@@ -157,24 +157,24 @@
     padding: 24px;
 }
 
-/* 현재 진행중인 프로젝트 그리드 - 최대 4개 */
+/* 현재 진행중인 프로젝트 그리드 - 최대 4개, 카드 최소 440px (컨테이너에 맞게 조절) */
 #currentProjectGrid {
-    grid-template-columns: repeat(4, 1fr);
+    grid-template-columns: repeat(4, minmax(min(440px, 100%), 1fr));
 }
 
-@media (max-width: 1400px) {
+@media (max-width: 1900px) {
     #currentProjectGrid {
-        grid-template-columns: repeat(3, 1fr);
+        grid-template-columns: repeat(3, minmax(min(440px, 100%), 1fr));
     }
 }
 
-@media (max-width: 1100px) {
+@media (max-width: 1450px) {
     #currentProjectGrid {
-        grid-template-columns: repeat(2, 1fr);
+        grid-template-columns: repeat(2, minmax(min(440px, 100%), 1fr));
     }
 }
 
-@media (max-width: 768px) {
+@media (max-width: 1000px) {
     #currentProjectGrid {
         grid-template-columns: 1fr;
     }
@@ -250,7 +250,7 @@
 
 .budget-boxes {
     display: grid;
-    grid-template-columns: repeat(3, 1fr);
+    grid-template-columns: repeat(3, minmax(min(130px, 100%), 1fr));
     gap: 10px;
 }
 
@@ -850,6 +850,18 @@ select.form-control {
 .related-project-name i {
     color: #4361ee;
     font-size: 16px;
+}
+
+.related-project-name .project-title {
+    font-weight: 600;
+    color: #1a237e;
+}
+
+.related-project-name .project-period {
+    font-weight: 400;
+    font-size: 13px;
+    color: #868e96;
+    margin-left: 4px;
 }
 
 .related-project-details {
