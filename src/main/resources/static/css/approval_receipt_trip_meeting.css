@@ -989,12 +989,13 @@ div h2{
 }
 
 .btn-secondary {
-    background: #e0e0e0;
-    color: #555;
+    background: #f1f5f9;
+    border: none;
+    color: #475569;
 }
 
 .btn-secondary:hover {
-    background: #d0d0d0;
+    background: #e2e8f0;
 }
 
 .btn-outline {

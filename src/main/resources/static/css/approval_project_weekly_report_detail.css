@@ -56,9 +56,9 @@
 
 /* 버튼 스타일 */
 .btn-secondary {
-    background: #6c757d;
-    color: white;
+    background: #f1f5f9;
     border: none;
+    color: #475569;
     padding: 10px 20px;
     border-radius: 8px;
     font-size: 14px;
@@ -71,9 +71,7 @@
 }
 
 .btn-secondary:hover {
-    background: #5a6268;
-    transform: translateY(-2px);
-    box-shadow: 0 4px 12px rgba(108, 117, 125, 0.3);
+    background: #e2e8f0;
 }
 
 .btn-secondary i {

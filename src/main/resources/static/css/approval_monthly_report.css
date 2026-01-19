@@ -539,17 +539,13 @@ div h2{
 }
 
 .btn-secondary {
-    background: white;
-    color: #495057;
-    border: 2px solid #e9ecef;
-    box-shadow: none;
+    background: #f1f5f9;
+    border: none;
+    color: #475569;
 }
 
 .btn-secondary:hover {
-    background: #f8f9fa;
-    border-color: #cbd5e1;
-    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
-    transform: translateY(-1px);
+    background: #e2e8f0;
 }
 
 .btn-sm {

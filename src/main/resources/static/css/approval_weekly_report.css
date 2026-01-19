@@ -815,6 +815,7 @@ div:focus {
 
 .btn-secondary {
     background: #f1f5f9;
+    border: none;
     color: #475569;
 }
 
