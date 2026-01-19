@@ -170,6 +170,7 @@ function loadWeeklySchedule() {
 
     const startDate = startOfWeek.toISOString().split('T')[0];
     const endDate = endOfWeek.toISOString().split('T')[0];
+    const todayStr = today.toISOString().split('T')[0];
 
     fetch(`/api/calendar/events?startDate=${startDate}&endDate=${endDate}`)
         .then(response => {
@@ -182,7 +183,7 @@ function loadWeeklySchedule() {
             const listElement = document.getElementById('weeklyScheduleList');
             if (!listElement) return;
 
-            const events = data.events || [];
+            let events = data.events || [];
 
             if (events.length === 0) {
                 listElement.innerHTML = `
@@ -194,14 +195,32 @@ function loadWeeklySchedule() {
                 return;
             }
 
+            // 오늘 일정인지 판별하는 함수
+            const isToday = (schedule) => {
+                const startDate = schedule.startDate;
+                const endDate = schedule.endDate || schedule.startDate;
+                return startDate <= todayStr && todayStr <= endDate;
+            };
+
+            // 오늘 일정을 상단으로 정렬
+            events.sort((a, b) => {
+                const aTodayFlag = isToday(a) ? 1 : 0;
+                const bTodayFlag = isToday(b) ? 1 : 0;
+                if (aTodayFlag !== bTodayFlag) {
+                    return bTodayFlag - aTodayFlag; // 오늘 일정이 먼저
+                }
+                return new Date(a.startDate) - new Date(b.startDate); // 날짜순
+            });
+
             // 최대 5개만 표시
             const schedules = events.slice(0, 5);
             listElement.innerHTML = schedules.map(schedule => {
                 const dateStr = formatScheduleDateFromStrings(schedule.startDate, schedule.endDate);
                 const timeStr = schedule.isAllDay ? '종일' : formatScheduleTimeFromStrings(schedule.startTime, schedule.endTime);
+                const todayClass = isToday(schedule) ? 'today-schedule' : '';
 
                 return `
-                    <div class="schedule-item" onclick="window.location.href='/calendar'">
+                    <div class="schedule-item ${todayClass}" onclick="openScheduleModal(${schedule.idx})">
                         <div class="schedule-item-header">
                             <span class="schedule-title">${escapeHtml(schedule.eventTitle)}</span>
                             <span class="schedule-time">${timeStr}</span>
@@ -210,6 +229,9 @@ function loadWeeklySchedule() {
                     </div>
                 `;
             }).join('');
+
+            // 일정 데이터를 전역 변수에 저장 (모달에서 사용)
+            window.weeklySchedules = events;
         })
         .catch(error => {
             console.error('이번 주 일정 로드 오류:', error);
@@ -291,13 +313,13 @@ function formatScheduleDateFromStrings(startDateStr, endDateStr) {
     if (!startDateStr) return '';
 
     const start = new Date(startDateStr);
-    const startStr = `${start.getMonth() + 1}/${start.getDate()}`;
+    const startStr = `${start.getMonth() + 1}/${start.getDate()} (${getDayOfWeek(start)})`;
 
     if (!endDateStr || startDateStr === endDateStr) {
-        return `${startStr} (${getDayOfWeek(start)})`;
+        return startStr;
     } else {
         const end = new Date(endDateStr);
-        const endStr = `${end.getMonth() + 1}/${end.getDate()}`;
+        const endStr = `${end.getMonth() + 1}/${end.getDate()} (${getDayOfWeek(end)})`;
         return `${startStr} - ${endStr}`;
     }
 }
@@ -330,3 +352,105 @@ function escapeHtml(text) {
     div.textContent = text;
     return div.innerHTML;
 }
+
+// 일정 상세 모달 열기
+function openScheduleModal(scheduleIdx) {
+    const schedule = window.weeklySchedules?.find(s => s.idx === scheduleIdx);
+    if (!schedule) return;
+
+    // 상세 정보 표시
+    document.getElementById('detailTitle').textContent = schedule.eventTitle || '-';
+
+    // 일정 유형 한글 변환
+    const typeMap = {
+        'leave': '연차/휴가',
+        'business': '업무 일정',
+        'meeting-room': '회의실 예약',
+        'etc': '기타'
+    };
+    document.getElementById('detailType').textContent = typeMap[schedule.eventType] || schedule.eventType || '-';
+
+    // 기간 표시
+    const startDate = new Date(schedule.startDate);
+    const endDate = new Date(schedule.endDate || schedule.startDate);
+    const startDateStr = `${startDate.getFullYear()}.${String(startDate.getMonth() + 1).padStart(2, '0')}.${String(startDate.getDate()).padStart(2, '0')}`;
+    const endDateStr = `${endDate.getFullYear()}.${String(endDate.getMonth() + 1).padStart(2, '0')}.${String(endDate.getDate()).padStart(2, '0')}`;
+
+    if (schedule.startDate === schedule.endDate || !schedule.endDate) {
+        document.getElementById('detailPeriod').textContent = startDateStr;
+    } else {
+        document.getElementById('detailPeriod').textContent = `${startDateStr} ~ ${endDateStr}`;
+    }
+
+    // 시간 표시
+    if (schedule.isAllDay) {
+        document.getElementById('detailTime').textContent = '종일';
+    } else {
+        const timeStr = formatScheduleTimeFromStrings(schedule.startTime, schedule.endTime);
+        document.getElementById('detailTime').textContent = timeStr || '-';
+    }
+
+    // 장소 표시
+    document.getElementById('detailLocation').textContent = schedule.eventLocation || '-';
+
+    // 참석자 표시
+    if (schedule.participants && schedule.participants.length > 0) {
+        // 참석자가 객체 배열인 경우와 문자열 배열인 경우 모두 처리
+        const participantNames = schedule.participants.map(p => {
+            if (typeof p === 'string') {
+                return p;
+            } else if (p && p.name) {
+                return p.name;
+            } else if (p && p.employeeName) {
+                return p.employeeName;
+            } else {
+                return '';
+            }
+        }).filter(name => name).join(', ');
+        document.getElementById('detailParticipants').textContent = participantNames || '-';
+    } else {
+        document.getElementById('detailParticipants').textContent = '-';
+    }
+
+    // 설명 표시
+    document.getElementById('detailDescription').textContent = schedule.eventDescription || '-';
+
+    // 알림 표시
+    let notificationText = '-';
+    if (schedule.notification) {
+        const minutes = schedule.notificationTime || 10;
+        if (minutes >= 60) {
+            notificationText = `${minutes / 60}시간 전`;
+        } else {
+            notificationText = `${minutes}분 전`;
+        }
+    } else {
+        notificationText = '알림 없음';
+    }
+    document.getElementById('detailNotification').textContent = notificationText;
+
+    // 모달 표시
+    document.getElementById('scheduleDetailModal').classList.add('show');
+}
+
+// 모달 닫기 함수
+function closeScheduleModal() {
+    const modal = document.getElementById('scheduleDetailModal');
+    modal.classList.remove('show');
+}
+
+// 모달 닫기 이벤트 리스너
+document.getElementById('closeModal').addEventListener('click', closeScheduleModal);
+document.getElementById('closeModalBtn').addEventListener('click', closeScheduleModal);
+
+// 모달 배경 클릭 시 닫기
+document.getElementById('scheduleDetailModal').addEventListener('click', function(e) {
+    if (e.target === this) {
+        closeScheduleModal();
+    }
+});
+
+// 캘린더에서 보기 버튼
+document.getElementById('goToCalendarBtn').addEventListener('click', function() {
+    window.location.href = '/calendar';
+});
