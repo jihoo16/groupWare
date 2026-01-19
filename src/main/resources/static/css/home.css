@@ -223,11 +223,22 @@ body {
     padding-left: 55px;
 }
 
-.submenu-item:hover a::before {
+.submenu-item:not(.submenu-parent):hover a::before {
     content: '→';
     position: absolute;
     left: 38px;
     opacity: 1;
+}
+
+.submenu-parent:hover .submenu-toggle-btn::before {
+    content: '→';
+    position: absolute;
+    left: 38px;
+    opacity: 1;
+}
+
+.submenu-parent:hover .submenu-toggle-btn {
+    padding-left: 55px;
 }
 
 .submenu-item.active a {
@@ -238,6 +249,96 @@ body {
 }
 
 .submenu-text {
+    white-space: nowrap;
+}
+
+/* 중첩된 서브메뉴 (3단계 메뉴) */
+.submenu-parent {
+    position: relative;
+}
+
+.submenu-toggle-btn {
+    padding: 10px 15px 10px 50px !important;
+    display: flex !important;
+    align-items: center;
+    justify-content: space-between;
+    color: rgba(255, 255, 255, 0.7);
+    text-decoration: none;
+    transition: all 0.3s ease;
+    font-size: 12px;
+    cursor: pointer;
+}
+
+.submenu-toggle-btn:hover {
+    background: rgba(255, 255, 255, 0.15);
+    color: #fff;
+}
+
+.submenu-parent.active > .submenu-toggle-btn {
+    background: rgba(255, 255, 255, 0.2);
+    color: #fff;
+    font-weight: 600;
+}
+
+.submenu-arrow {
+    font-size: 10px;
+    transition: transform 0.3s ease;
+    margin-left: 5px;
+}
+
+.submenu-parent.open .submenu-arrow {
+    transform: rotate(180deg);
+}
+
+.nested-submenu {
+    list-style: none;
+    max-height: 0;
+    overflow: hidden;
+    transition: max-height 0.3s ease;
+    background: rgba(0, 0, 0, 0.15);
+    padding: 0;
+    margin: 0;
+}
+
+.submenu-parent.open .nested-submenu {
+    max-height: 400px;
+}
+
+.nested-submenu-item {
+    margin: 0;
+}
+
+.nested-submenu-item a {
+    padding: 8px 15px 8px 65px;
+    display: block;
+    color: rgba(255, 255, 255, 0.65);
+    text-decoration: none;
+    transition: all 0.3s ease;
+    font-size: 11px;
+    position: relative;
+}
+
+.nested-submenu-item:hover a {
+    background: rgba(255, 255, 255, 0.15);
+    color: #fff;
+    padding-left: 70px;
+}
+
+.nested-submenu-item:hover a::before {
+    content: '▸';
+    position: absolute;
+    left: 55px;
+    opacity: 1;
+}
+
+.nested-submenu-item.active a {
+    background: rgba(255, 255, 255, 0.25);
+    color: #fff;
+    border-left: 4px solid #64b5f6;
+    font-weight: 600;
+}
+
+.nested-submenu-text {
     white-space: nowrap;
 }
 
