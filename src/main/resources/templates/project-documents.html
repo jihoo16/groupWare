@@ -1,0 +1,141 @@
+<!DOCTYPE html>
+<html lang="ko" xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{fragments/layout :: head('프로젝트 문서함', '/css/approval.css')}"></head>
+<body>
+    <div class="container">
+        <!-- 좌측 네비게이션 바 -->
+        <div th:replace="~{fragments/sidebar :: sidebar('project-documents')}"></div>
+
+        <!-- 메인 콘텐츠 영역 -->
+        <main class="main-content">
+            <header class="header">
+                <div class="header-left">
+                    <h1 class="page-title"><i class="fas fa-folder-open"></i> 프로젝트 문서함</h1>
+                </div>
+                <div class="header-right">
+                    <div class="search-box">
+                        <i class="fas fa-search"></i>
+                        <input type="text" id="searchInput" placeholder="문서 검색...">
+                    </div>
+                    <div class="dropdown-container">
+                        <button class="btn-primary" id="newDocumentBtn">
+                            <i class="fas fa-pen"></i>
+                            새 문서 작성
+                        </button>
+                        <div class="dropdown-menu" id="documentTypeMenu">
+                            <a href="/approval/project-weekly-report" class="dropdown-item">
+                                <i class="fas fa-calendar-week"></i>
+                                프로젝트 주간보고
+                            </a>
+                            <a href="/approval/receipt-meeting" class="dropdown-item">
+                                <i class="fas fa-utensils"></i>
+                                회의비 증빙
+                            </a>
+                            <a href="/approval/receipt-trip" class="dropdown-item">
+                                <i class="fas fa-plane"></i>
+                                여비 증빙
+                            </a>
+                            <a href="/approval/receipt-trip-meeting" class="dropdown-item">
+                                <i class="fas fa-suitcase"></i>
+                                여비+회의비 증빙
+                            </a>
+                            <a href="/approval/receipt-overtime" class="dropdown-item">
+                                <i class="fas fa-moon"></i>
+                                야근식대 증빙
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </header>
+
+            <div class="approval-container">
+                <!-- 좌측: 문서함 메뉴 -->
+                <aside class="approval-sidebar">
+                    <div class="sidebar-section">
+                        <h3 class="sidebar-title">
+                            <i class="fas fa-folder"></i>
+                            프로젝트 문서
+                        </h3>
+                        <nav class="sidebar-menu">
+                            <a href="#" class="menu-item active" data-category="all">
+                                <i class="fas fa-copy"></i>
+                                <span>전체 문서</span>
+                            </a>
+                            <a href="#" class="menu-item" data-category="project-weekly-report">
+                                <i class="fas fa-calendar-week"></i>
+                                <span>프로젝트 주간보고</span>
+                            </a>
+                            <a href="#" class="menu-item" data-category="receipt-meeting">
+                                <i class="fas fa-utensils"></i>
+                                <span>회의비 증빙</span>
+                            </a>
+                            <a href="#" class="menu-item" data-category="receipt-trip">
+                                <i class="fas fa-plane"></i>
+                                <span>여비 증빙</span>
+                            </a>
+                            <a href="#" class="menu-item" data-category="receipt-trip-meeting">
+                                <i class="fas fa-suitcase"></i>
+                                <span>여비+회의비 증빙</span>
+                            </a>
+                            <a href="#" class="menu-item" data-category="receipt-overtime">
+                                <i class="fas fa-moon"></i>
+                                <span>야근식대 증빙</span>
+                            </a>
+                        </nav>
+                    </div>
+                </aside>
+
+                <!-- 우측: 문서 목록 -->
+                <div class="approval-content">
+                    <div class="content-header">
+                        <h2 class="content-title">전체 문서</h2>
+                        <div class="content-controls">
+                            <select class="sort-select" id="sortSelect">
+                                <option value="date-desc">최신순</option>
+                                <option value="date-asc">오래된순</option>
+                                <option value="title">제목순</option>
+                                <option value="drafter">기안자순</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <div class="document-table-wrapper">
+                        <div class="document-table-container" id="documentList">
+                            <table class="document-table">
+                            <thead>
+                                <tr>
+                                    <th width="150">문서종류</th>
+                                    <th>제목</th>
+                                    <th width="100">작성자</th>
+                                    <th width="120">부서</th>
+                                    <th width="120">작성일시</th>
+                                    <th width="100">관리</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <!-- JavaScript에서 동적으로 렌더링됩니다 -->
+                            </tbody>
+                        </table>
+                            <!-- 빈 상태 -->
+                            <div class="empty-state" id="emptyState" style="display: none;">
+                                <i class="fas fa-inbox"></i>
+                                <h3>문서가 없습니다</h3>
+                                <p>조건에 맞는 프로젝트 문서가 없습니다.</p>
+                            </div>
+                        </div>
+
+                        <!-- 페이지네이션 (JavaScript에서 동적 생성) -->
+                        <div class="pagination" style="display: none;">
+                            <!-- 페이지네이션 버튼은 JavaScript에서 동적으로 생성됩니다 -->
+                        </div>
+                    </div>
+
+
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <script th:src="@{/js/project-documents.js}"></script>
+</body>
+</html>

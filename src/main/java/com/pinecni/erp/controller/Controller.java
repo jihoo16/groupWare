@@ -257,6 +257,11 @@ public class Controller {
         return "project-card";
     }
 
+    @GetMapping("/project/documents")
+    public String projectDocuments() {
+        return "project-documents";
+    }
+
     @GetMapping("/project/edit/{id}")
     public String projectEdit() {
         return "project-edit";
