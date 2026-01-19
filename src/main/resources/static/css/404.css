@@ -1,0 +1,205 @@
+/* 404 에러 페이지 스타일 */
+
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+body {
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    min-height: 100vh;
+    display: flex;
+    justify-content: center;
+    color: #333;
+    padding: 60px 20px;
+}
+
+.error-container {
+    width: 100%;
+    max-width: 1200px;
+    padding: 20px;
+    margin: auto 0;
+}
+
+.error-content {
+    background: white;
+    border-radius: 20px;
+    padding: 80px 100px;
+    box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+    text-align: center;
+    animation: slideUp 0.6s ease-out;
+    max-width: 100%;
+}
+
+@keyframes slideUp {
+    from {
+        opacity: 0;
+        transform: translateY(30px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.error-icon {
+    font-size: 80px;
+    color: #667eea;
+    margin-bottom: 20px;
+    animation: spin 3s ease-in-out infinite;
+}
+
+@keyframes spin {
+    0%, 100% {
+        transform: rotate(0deg);
+    }
+    25% {
+        transform: rotate(-10deg);
+    }
+    75% {
+        transform: rotate(10deg);
+    }
+}
+
+.error-code {
+    font-size: 72px;
+    font-weight: 900;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+    margin-bottom: 15px;
+    line-height: 1;
+    letter-spacing: 2px;
+}
+
+.error-title {
+    font-size: 36px;
+    font-weight: 700;
+    color: #333;
+    margin-bottom: 20px;
+}
+
+.error-message {
+    font-size: 16px;
+    color: #666;
+    line-height: 1.6;
+    margin-bottom: 40px;
+}
+
+.error-actions {
+    display: flex;
+    gap: 15px;
+    justify-content: center;
+    flex-wrap: wrap;
+    margin-bottom: 20px;
+}
+
+.btn-home,
+.btn-back {
+    padding: 14px 30px;
+    border: none;
+    border-radius: 8px;
+    font-size: 16px;
+    font-weight: 600;
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    transition: all 0.3s ease;
+}
+
+.btn-home {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+    box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
+}
+
+.btn-home:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 16px rgba(102, 126, 234, 0.5);
+}
+
+.btn-back {
+    background: #f5f7fa;
+    color: #555;
+    border: 2px solid #e0e0e0;
+}
+
+.btn-back:hover {
+    background: #e3f2fd;
+    color: #1976d2;
+    border-color: #1976d2;
+    transform: translateY(-2px);
+}
+
+/* 반응형 디자인 */
+@media (max-width: 1024px) {
+    .error-content {
+        padding: 70px 60px;
+    }
+}
+
+@media (max-width: 768px) {
+    body {
+        padding: 20px 15px;
+    }
+
+    .error-container {
+        max-width: 100%;
+        padding: 15px;
+    }
+
+    .error-content {
+        padding: 50px 30px;
+    }
+
+    .error-code {
+        font-size: 64px;
+    }
+
+    .error-title {
+        font-size: 28px;
+    }
+
+    .error-message {
+        font-size: 15px;
+    }
+}
+
+@media (max-width: 480px) {
+    body {
+        padding: 15px 10px;
+    }
+
+    .error-content {
+        padding: 40px 25px;
+    }
+
+    .error-icon {
+        font-size: 60px;
+    }
+
+    .error-code {
+        font-size: 56px;
+    }
+
+    .error-title {
+        font-size: 24px;
+    }
+
+    .error-message {
+        font-size: 14px;
+    }
+
+    .error-actions {
+        flex-direction: column;
+    }
+
+    .btn-home,
+    .btn-back {
+        width: 100%;
+    }
+}
