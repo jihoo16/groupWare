@@ -168,7 +168,8 @@ function displayRelatedProjects(projects) {
              style="cursor: pointer;"
              title="클릭하여 프로젝트로 이동">
             <i class="fas fa-link"></i>
-            <span>${project.targetProjectName || '프로젝트명 없음'}</span>
+            <span class="project-title">${project.targetProjectName || '프로젝트명 없음'}</span>
+            <span class="project-period">| 기간 : ${project.targetPeriod || '-'}</span>
             <i class="fas fa-external-link-alt" style="margin-left: auto; font-size: 11px; color: #868e96;"></i>
         </div>
     `).join('');

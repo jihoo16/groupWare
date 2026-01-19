@@ -203,9 +203,21 @@
 }
 
 .related-project-item span {
-    flex: 1;
     color: #333;
     font-weight: 500;
+}
+
+.related-project-item .project-title {
+    font-weight: 600;
+    color: #1a237e;
+}
+
+.related-project-item .project-period {
+    font-weight: 400;
+    font-size: 13px;
+    color: #868e96;
+    margin-left: 8px;
+    flex: 1;
 }
 
 .related-project-display:empty::before {

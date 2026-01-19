@@ -852,6 +852,18 @@ select.form-control {
     font-size: 16px;
 }
 
+.related-project-name .project-title {
+    font-weight: 600;
+    color: #1a237e;
+}
+
+.related-project-name .project-period {
+    font-weight: 400;
+    font-size: 13px;
+    color: #868e96;
+    margin-left: 4px;
+}
+
 .related-project-details {
     display: flex;
     gap: 16px;
