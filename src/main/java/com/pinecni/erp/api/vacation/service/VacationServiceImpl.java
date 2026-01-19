@@ -730,8 +730,13 @@ public class VacationServiceImpl implements VacationService {
     private void createCalendarEventForVacation(Long userIdx, User user, Long documentIdx,
                                                 VacationRequestSaveDTO.VacationPeriod period, String reason) {
         try {
+            log.info("[캘린더 일정 생성 시작] userIdx: {}, documentIdx: {}, vacationType: {}, startDate: {}, endDate: {}",
+                    userIdx, documentIdx, period.getVacationType(), period.getStartDate(), period.getEndDate());
+
             // 연차 유형에 따른 이벤트 제목 생성
             String eventTitle = getVacationTypeTitle(period.getVacationType(), user.getEmpName());
+            log.info("[이벤트 제목 생성] eventTitle: {}", eventTitle);
+
             String groupId = UUID.randomUUID().toString();
 
             // CalendarEvent 생성
@@ -755,13 +760,14 @@ public class VacationServiceImpl implements VacationService {
                     .recurringEndDate(null)
                     .status("ACTIVE")
                     .createdAt(LocalDateTime.now())
-                    .createdUserIdx(userIdx)
+                    .createdUserIdx(userIdx) // 생성자 설정 (중요!)
                     .updatedAt(LocalDateTime.now())
                     .updatedUserIdx(userIdx)
                     .build();
 
+            log.info("[CalendarEvent 객체 생성 완료] 저장 시작...");
             CalendarEvent savedEvent = calendarEventRepository.save(calendarEvent);
-            log.info("[캘린더 일정 생성] eventIdx: {}, eventTitle: {}, startDate: {}, endDate: {}",
+            log.info("[캘린더 일정 저장 성공] eventIdx: {}, eventTitle: {}, startDate: {}, endDate: {}",
                     savedEvent.getIdx(), eventTitle, period.getStartDate(), period.getEndDate());
 
             // CalendarParticipant 생성 (신청자를 참석자로 추가)
@@ -774,11 +780,24 @@ public class VacationServiceImpl implements VacationService {
                     .createdAt(LocalDateTime.now())
                     .build();
 
+            log.info("[CalendarParticipant 객체 생성 완료] 저장 시작...");
             calendarParticipantRepository.save(participant);
-            log.info("[캘린더 참석자 추가] userIdx: {}, userName: {}", userIdx, user.getEmpName());
+            log.info("[캘린더 참석자 추가 성공] participantIdx: {}, userIdx: {}, userName: {}",
+                    participant.getIdx(), userIdx, user.getEmpName());
+
+            log.info("[캘린더 일정 생성 완료] ✓ eventIdx: {}, title: {}", savedEvent.getIdx(), eventTitle);
 
         } catch (Exception e) {
-            log.error("[캘린더 일정 생성 실패] userIdx: {}, error: {}", userIdx, e.getMessage(), e);
+            log.error("========================================");
+            log.error("[캘린더 일정 생성 실패] ❌❌❌");
+            log.error("userIdx: {}", userIdx);
+            log.error("documentIdx: {}", documentIdx);
+            log.error("vacationType: {}", period.getVacationType());
+            log.error("startDate: {}, endDate: {}", period.getStartDate(), period.getEndDate());
+            log.error("Exception Type: {}", e.getClass().getName());
+            log.error("Error Message: {}", e.getMessage());
+            log.error("Stack Trace:", e);
+            log.error("========================================");
             // 캘린더 일정 생성 실패해도 연차 신청은 진행되도록 예외를 삼킴
         }
     }
@@ -789,20 +808,23 @@ public class VacationServiceImpl implements VacationService {
     private String getVacationTypeTitle(String vacationType, String empName) {
         String typeLabel;
         switch (vacationType) {
-            case "annual":
+            case "연차":
                 typeLabel = "연차";
                 break;
-            case "half-morning":
+            case "반차(오전)":
                 typeLabel = "오전 반차";
                 break;
-            case "half-afternoon":
+            case "반차(오후)":
                 typeLabel = "오후 반차";
                 break;
-            case "special":
-                typeLabel = "특별휴가";
-                break;
             default:
-                typeLabel = "휴가";
+                // 경조사(본인결혼), 경조사(부모상) 등은 그냥 "경조사"로만 표시
+                if (vacationType != null && vacationType.startsWith("경조사")) {
+                    typeLabel = "경조사";
+                } else {
+                    log.warn("[알 수 없는 연차 유형] vacationType: {}, empName: {}", vacationType, empName);
+                    typeLabel = "휴가";
+                }
                 break;
         }
         return empName + " " + typeLabel;

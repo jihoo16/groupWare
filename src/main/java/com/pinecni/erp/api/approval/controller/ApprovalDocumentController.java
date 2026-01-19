@@ -2,6 +2,7 @@ package com.pinecni.erp.api.approval.controller;
 
 import com.pinecni.erp.api.approval.dto.ApprovalDocumentDTO;
 import com.pinecni.erp.api.approval.service.ApprovalDocumentService;
+import jakarta.servlet.http.HttpSession;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.ResponseEntity;
@@ -23,13 +24,22 @@ public class ApprovalDocumentController {
     /**
      * 전체 문서 목록 조회 (모든 문서 타입 통합)
      * - 주간업무보고, 월간업무보고, 회의록, 연구비증빙, 연차신청서 등
+     * - 연차신청서는 본인이 작성한 것만 조회
+     * @param session HTTP 세션
      * @return 문서 목록
      */
     @GetMapping
-    public ResponseEntity<List<ApprovalDocumentDTO>> getAllDocuments() {
+    public ResponseEntity<List<ApprovalDocumentDTO>> getAllDocuments(HttpSession session) {
         log.debug("GET /api/approval/documents - 전체 문서 목록 조회");
 
-        List<ApprovalDocumentDTO> documents = approvalDocumentService.getAllDocuments();
+        // 세션에서 현재 사용자 IDX 조회
+        Long currentUserIdx = (Long) session.getAttribute("userIdx");
+        if (currentUserIdx == null) {
+            log.warn("세션에 userIdx가 없습니다.");
+            return ResponseEntity.status(401).build();
+        }
+
+        List<ApprovalDocumentDTO> documents = approvalDocumentService.getAllDocuments(currentUserIdx);
 
         log.debug("전체 문서 목록 조회 완료 - 총 {}건", documents.size());
         return ResponseEntity.ok(documents);

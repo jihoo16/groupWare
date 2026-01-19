@@ -6,6 +6,7 @@ document.addEventListener('DOMContentLoaded', function() {
     let selectedEmployee = null;
     let userVacationInfo = null; // 사용자 연차 정보 (API에서 가져옴)
     let requestedDates = []; // 이미 신청된 연차 날짜 목록 (YYYY-MM-DD 형식)
+    let initialRequestedDates = []; // 서버에서 로드한 초기 신청 날짜 (수정 불가)
 
     // DOM 요소
     const documentForm = document.getElementById('documentForm');
@@ -2834,17 +2835,7 @@ document.addEventListener('DOMContentLoaded', function() {
                     vacationPeriods.push(...periodsToAdd);
 
                     // requestedDates 재계산
-                    requestedDates = [];
-                    for (const period of vacationPeriods) {
-                        const start = new Date(period.startDate);
-                        const end = new Date(period.endDate);
-                        for (let d = new Date(start); d <= end; d.setDate(d.getDate() + 1)) {
-                            const dateStr = formatDate(d);
-                            if (!requestedDates.includes(dateStr)) {
-                                requestedDates.push(dateStr);
-                            }
-                        }
-                    }
+                    recalculateRequestedDates();
                 }
             }
 
@@ -2885,17 +2876,7 @@ document.addEventListener('DOMContentLoaded', function() {
             updatePeriodsList();
 
             // requestedDates 재계산 (새로 추가된 기간 반영)
-            requestedDates = [];
-            for (const period of vacationPeriods) {
-                const start = new Date(period.startDate);
-                const end = new Date(period.endDate);
-                for (let d = new Date(start); d <= end; d.setDate(d.getDate() + 1)) {
-                    const dateStr = formatDate(d);
-                    if (!requestedDates.includes(dateStr)) {
-                        requestedDates.push(dateStr);
-                    }
-                }
-            }
+            recalculateRequestedDates();
 
             // 선택 초기화
             selectedDates = [];
@@ -3016,6 +2997,25 @@ document.addEventListener('DOMContentLoaded', function() {
         return 'added';
     }
 
+    /**
+     * requestedDates 재계산 (초기 신청 날짜 + 현재 세션에서 추가한 기간)
+     */
+    function recalculateRequestedDates() {
+        requestedDates = [...initialRequestedDates]; // 서버에서 로드한 초기 날짜로 시작
+
+        // 현재 세션에서 추가한 기간들의 날짜 추가
+        for (const period of vacationPeriods) {
+            const start = new Date(period.startDate);
+            const end = new Date(period.endDate);
+            for (let d = new Date(start); d <= end; d.setDate(d.getDate() + 1)) {
+                const dateStr = formatDate(d);
+                if (!requestedDates.includes(dateStr)) {
+                    requestedDates.push(dateStr);
+                }
+            }
+        }
+    }
+
     // 기간 목록 업데이트
     function updatePeriodsList() {
         const submitGuide = document.getElementById('submitGuide');
@@ -3134,17 +3134,7 @@ document.addEventListener('DOMContentLoaded', function() {
         vacationPeriods.splice(index, 1);
 
         // requestedDates 재계산 (삭제된 기간 반영)
-        requestedDates = [];
-        for (const period of vacationPeriods) {
-            const start = new Date(period.startDate);
-            const end = new Date(period.endDate);
-            for (let d = new Date(start); d <= end; d.setDate(d.getDate() + 1)) {
-                const dateStr = formatDate(d);
-                if (!requestedDates.includes(dateStr)) {
-                    requestedDates.push(dateStr);
-                }
-            }
-        }
+        recalculateRequestedDates();
 
         updatePeriodsList();
 
@@ -3680,6 +3670,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
         // 2. 이미 신청된 연차 날짜 로드
         requestedDates = await fetchRequestedDates();
+        initialRequestedDates = [...requestedDates]; // 초기 값 복사 (수정 불가)
 
         // 3. 기본 날짜 설정 (3영업일 후)
         await setupVacationDefaultDates();

@@ -312,6 +312,12 @@ document.addEventListener('DOMContentLoaded', function() {
             if (data.success) {
                 const schedule = data.event;
 
+                // 연차/휴가 일정은 수정 불가 - oops 페이지로 리다이렉트
+                if (schedule.eventType === 'leave') {
+                    window.location.href = '/oops';
+                    return;
+                }
+
                 // 폼 필드에 값 설정
                 document.getElementById('scheduleTitle').value = schedule.eventTitle || '';
                 document.getElementById('scheduleType').value = schedule.eventType || 'business';
