@@ -95,23 +95,17 @@ document.addEventListener('DOMContentLoaded', function() {
 
             row.innerHTML = `
                 <td class="position-name-cell">${position.codeName}</td>
-                <td><input type="number" class="expense-input-sm" name="daily_allowance_${position.code}" value="0" min="0" step="1000" placeholder="일비"></td>
-                <td><input type="number" class="expense-input-sm" name="meal_allowance_${position.code}" value="0" min="0" step="1000" placeholder="식비"></td>
-                <td><input type="number" class="expense-input-sm" name="meeting_allowance_${position.code}" value="0" min="0" step="1000" placeholder="회의비"></td>
-                <td><input type="number" class="expense-input-sm" name="overtime_meal_${position.code}" value="0" min="0" step="1000" placeholder="야근식대"></td>
+                <td><input type="text" class="expense-input-sm currency-input-sm" name="daily_allowance_${position.code}" value="0" placeholder="일비"></td>
+                <td><input type="text" class="expense-input-sm currency-input-sm" name="meal_allowance_${position.code}" value="0" placeholder="식비"></td>
+                <td><input type="text" class="expense-input-sm currency-input-sm" name="meeting_allowance_${position.code}" value="0" placeholder="회의비"></td>
+                <td><input type="text" class="expense-input-sm currency-input-sm" name="overtime_meal_${position.code}" value="0" placeholder="야근식대"></td>
             `;
 
             expenseSettingsBody.appendChild(row);
         });
 
-        // 숫자 입력 필드 포맷팅 이벤트 추가
-        document.querySelectorAll('.expense-input-sm').forEach(input => {
-            input.addEventListener('keypress', function(e) {
-                if (!/[0-9]/.test(e.key)) {
-                    e.preventDefault();
-                }
-            });
-        });
+        // 실시간 금액 포맷팅 적용
+        applyCurrencyFormatting();
 
         console.log('경비 설정 테이블 생성 완료');
     }
@@ -311,7 +305,6 @@ document.addEventListener('DOMContentLoaded', function() {
             if (itemIndex !== undefined) {
                 groupedByPosition[positionCode].amounts[itemIndex] = setting.amount || 0;
             } else {
-                console.warn(`  알 수 없는 경비 항목: ${setting.expenseItemName}`);
             }
         });
 
@@ -324,20 +317,17 @@ document.addEventListener('DOMContentLoaded', function() {
                 const data = groupedByPosition[positionCode];
                 const inputs = row.querySelectorAll('.expense-input-sm');
 
-
                 if (inputs.length >= 4) {
                     inputs[0].value = formatCurrencyValue(data.amounts[0]); // 출장비
                     inputs[1].value = formatCurrencyValue(data.amounts[1]); // 중식비
                     inputs[2].value = formatCurrencyValue(data.amounts[2]); // 회의비
                     inputs[3].value = formatCurrencyValue(data.amounts[3]); // 야근석식대
                 } else {
-                    console.warn('  → input 개수 부족!');
                 }
 
                 // 직급 코드도 data 속성에 저장 (나중에 전송 시 사용)
                 row.setAttribute('data-position-code', data.positionCode);
             } else {
-                console.warn(`  → 행을 찾을 수 없음! (data-position-code="${positionCode}")`);
             }
         });
 
@@ -1050,6 +1040,8 @@ document.addEventListener('DOMContentLoaded', function() {
             };
 
             console.log('수정된 프로젝트 데이터:', updateData);
+            console.log('프로젝트 ID:', projectId);
+            console.log('요청 URL:', `/api/projects/${projectId}`);
 
             // 백엔드 API 연동
             fetch(`/api/projects/${projectId}`, {

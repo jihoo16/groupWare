@@ -391,10 +391,32 @@ public class ProjectMapper {
 
         return ProjectExpenseSettingDTO.builder()
                 .positionCode(setting.getPositionCode())
+                .positionName(getPositionNameFromCode(setting.getPositionCode()))
                 .expenseItemName(setting.getExpenseItemName())
                 .expenseItemNameEn(setting.getExpenseItemNameEn())
                 .amount(setting.getAmount())
                 .build();
+    }
+
+    /**
+     * 직급 코드를 직급명으로 변환
+     */
+    private String getPositionNameFromCode(String positionCode) {
+        if (positionCode == null) {
+            return null;
+        }
+
+        switch (positionCode) {
+            case "C0201": return "대표이사";
+            case "C0202": return "상무";
+            case "C0203": return "이사";
+            case "C0204": return "부장";
+            case "C0205": return "차장";
+            case "C0206": return "과장";
+            case "C0207": return "대리";
+            case "C0208": return "사원";
+            default: return positionCode;
+        }
     }
 
     /**

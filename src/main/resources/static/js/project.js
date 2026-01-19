@@ -72,8 +72,24 @@ document.addEventListener('DOMContentLoaded', function() {
             return;
         }
 
-        currentProjectGrid.innerHTML = projects.map(project => `
-            <div class="project-card" data-project-name="${project.projectName}" data-project-id="${project.idx}">
+        currentProjectGrid.innerHTML = projects.map(project => {
+            const formatBudgetBox = (used, budget) => {
+                const usedAmount = used || 0;
+                const budgetAmount = budget || 0;
+                const remaining = budgetAmount - usedAmount;
+                return {
+                    used: formatCurrency(usedAmount),
+                    total: formatCurrency(budgetAmount),
+                    remaining: formatCurrency(remaining)
+                };
+            };
+
+            const activity = formatBudgetBox(project.activityUsed, project.activityBudget);
+            const equipment = formatBudgetBox(project.equipmentUsed, project.equipmentBudget);
+            const material = formatBudgetBox(project.materialUsed, project.materialBudget);
+
+            return `
+            <div class="project-card" daㅇta-project-name="${project.projectName}" data-project-id="${project.idx}">
                 <div class="project-header">
                     <h3>${project.projectName}</h3>
                     <span class="status-badge ${getStatusClass(project.projectStatus)}">${getStatusLabel(project.projectStatus)}</span>
@@ -92,17 +108,60 @@ document.addEventListener('DOMContentLoaded', function() {
                             <i class="fas fa-calendar"></i>
                             <span>${project.startDate} ~ ${project.endDate}</span>
                         </div>
-                        <div class="info-item">
-                            <i class="fas fa-archive"></i>
-                            <span>활동비: ${formatBudgetUsage(project.activityUsed, project.activityBudget)}</span>
-                        </div>
-                        <div class="info-item">
-                            <i class="fas fa-microchip"></i>
-                            <span>장비비: ${formatBudgetUsage(project.equipmentUsed, project.equipmentBudget)}</span>
-                        </div>
-                        <div class="info-item">
-                            <i class="fas fa-flask"></i>
-                            <span>재료비: ${formatBudgetUsage(project.materialUsed, project.materialBudget)}</span>
+                    </div>
+                    <div class="project-budget-section">
+                        <div class="budget-boxes">
+                            <div class="budget-box">
+                                <div class="budget-box-header">활동비</div>
+                                <div class="budget-box-body">
+                                    <div class="budget-row">
+                                        <span class="budget-label">사용금액</span>
+                                        <span class="budget-value">${activity.used}</span>
+                                    </div>
+                                    <div class="budget-row">
+                                        <span class="budget-label">총 금액</span>
+                                        <span class="budget-value">${activity.total}</span>
+                                    </div>
+                                    <div class="budget-row">
+                                        <span class="budget-label">잔여금액</span>
+                                        <span class="budget-value budget-remaining">${activity.remaining}</span>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="budget-box">
+                                <div class="budget-box-header">장비비</div>
+                                <div class="budget-box-body">
+                                    <div class="budget-row">
+                                        <span class="budget-label">사용금액</span>
+                                        <span class="budget-value">${equipment.used}</span>
+                                    </div>
+                                    <div class="budget-row">
+                                        <span class="budget-label">총 금액</span>
+                                        <span class="budget-value">${equipment.total}</span>
+                                    </div>
+                                    <div class="budget-row">
+                                        <span class="budget-label">잔여금액</span>
+                                        <span class="budget-value budget-remaining">${equipment.remaining}</span>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="budget-box">
+                                <div class="budget-box-header">재료비</div>
+                                <div class="budget-box-body">
+                                    <div class="budget-row">
+                                        <span class="budget-label">사용금액</span>
+                                        <span class="budget-value">${material.used}</span>
+                                    </div>
+                                    <div class="budget-row">
+                                        <span class="budget-label">총 금액</span>
+                                        <span class="budget-value">${material.total}</span>
+                                    </div>
+                                    <div class="budget-row">
+                                        <span class="budget-label">잔여금액</span>
+                                        <span class="budget-value budget-remaining">${material.remaining}</span>
+                                    </div>
+                                </div>
+                            </div>
                         </div>
                     </div>
                     <div class="project-progress">
@@ -116,7 +175,8 @@ document.addEventListener('DOMContentLoaded', function() {
                     </p>
                 </div>
             </div>
-        `).join('');
+        `;
+        }).join('');
 
         // 프로젝트 카드 클릭 이벤트 추가
         document.querySelectorAll('.project-card').forEach(card => {
@@ -165,7 +225,7 @@ document.addEventListener('DOMContentLoaded', function() {
         const budgetAmount = budget || 0;
         const remaining = budgetAmount - usedAmount;
 
-        return `<span style="font-weight: bold">${formatCurrency(remaining)}</span> / ${formatCurrency(budgetAmount)} 원`;
+        return `사용 금액 : ${formatCurrency(usedAmount)} / 총 금액 : ${formatCurrency(budgetAmount)} / 잔여 금액 : <span style="font-weight: bold">${formatCurrency(remaining)}</span> 원`;
     }
 
     // 필터 버튼 클릭 이벤트
@@ -410,48 +470,8 @@ document.addEventListener('DOMContentLoaded', function() {
 
     // 프로젝트 상세보기 (전역 함수)
     window.viewProject = function(projectId) {
-        // 현재 프로젝트 ID 저장
-        currentDetailProjectId = projectId;
-
-        fetch(`/api/projects/${projectId}`)
-            .then(response => {
-                if (!response.ok) {
-                    throw new Error('프로젝트 정보를 불러오는데 실패했습니다.');
-                }
-                return response.json();
-            })
-            .then(project => {
-                // 모달에 데이터 채우기
-                document.getElementById('detailProjectName').textContent = project.projectName;
-                document.getElementById('detailStatus').textContent = getStatusLabel(project.projectStatus);
-                document.getElementById('detailPM').textContent = project.projectManagerName || '-';
-                document.getElementById('detailTeamSize').textContent = project.memberCount + '명';
-                document.getElementById('detailStartDate').textContent = project.startDate || '-';
-                document.getElementById('detailEndDate').textContent = project.endDate || '-';
-                document.getElementById('detailTotalPeriodStart').textContent = project.totalPeriodStart || '-';
-                document.getElementById('detailTotalPeriodEnd').textContent = project.totalPeriodEnd || '-';
-                document.getElementById('detailActivityBudget').innerHTML = formatBudgetUsage(project.activityUsed, project.activityBudget);
-                document.getElementById('detailEquipmentBudget').innerHTML = formatBudgetUsage(project.equipmentUsed, project.equipmentBudget);
-                document.getElementById('detailMaterialBudget').innerHTML = formatBudgetUsage(project.materialUsed, project.materialBudget);
-                document.getElementById('detailDescription').textContent = project.description || '설명이 없습니다.';
-                document.getElementById('detailProgressBar').style.width = (project.progressRate || 0) + '%';
-                document.getElementById('detailProgressText').textContent = (project.progressRate || 0) + '%';
-
-                // 프로젝트 보고서 로드
-                loadProjectReports(project.idx);
-
-                // 탭을 기본 정보로 초기화
-                switchDetailTab('info');
-
-                // 모달 열기
-                if (projectDetailModal) {
-                    projectDetailModal.classList.add('active');
-                }
-            })
-            .catch(error => {
-                console.error('Error loading project details:', error);
-                alert('프로젝트 정보를 불러올 수 없습니다.');
-            });
+        // 프로젝트 상세 페이지로 이동
+        location.href = `/project/detail?projectId=${projectId}`;
     };
 
     // 프로젝트별 보고서 조회 및 렌더링
