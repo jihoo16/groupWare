@@ -1,0 +1,61 @@
+<!DOCTYPE html>
+<html lang="ko" xmlns:th="http://www.thymeleaf.org">
+<body>
+<!-- 프로젝트 문서 작성용 템플릿 사이드바 -->
+<aside th:fragment="project-document-sidebar(activePage)" class="template-sidebar">
+    <div class="sidebar-section">
+        <div class="sidebar-header">
+            <h3 class="sidebar-title"><i class="fas fa-file-alt"></i> 프로젝트 문서 양식</h3>
+            <button class="btn-toggle-all" id="toggleAllBtn">
+                <i class="fas fa-chevron-down"></i>
+            </button>
+        </div>
+        <nav class="sidebar-menu">
+            <!-- 프로젝트 -->
+            <div class="menu-category expanded">
+                <div class="category-header">
+                    <i class="fas fa-chevron-right category-toggle"></i>
+                    <i class="fas fa-project-diagram"></i>
+                    <span>프로젝트</span>
+                    <span class="category-badge">1</span>
+                </div>
+                <div class="category-items">
+                    <a href="/approval/project-weekly-report" th:classappend="${activePage == 'project-weekly-report'} ? 'menu-item active' : 'menu-item'">
+                        <i class="fas fa-calendar-week"></i>
+                        <span>프로젝트 주간업무보고</span>
+                    </a>
+                </div>
+            </div>
+
+            <!-- 연구비증빙 -->
+            <div class="menu-category expanded">
+                <div class="category-header">
+                    <i class="fas fa-chevron-right category-toggle"></i>
+                    <i class="fas fa-file-invoice-dollar"></i>
+                    <span>연구비증빙</span>
+                    <span class="category-badge">4</span>
+                </div>
+                <div class="category-items">
+                    <a href="/approval/receipt-meeting" th:classappend="${activePage == 'receipt-meeting'} ? 'menu-item active' : 'menu-item'">
+                        <i class="fas fa-receipt"></i>
+                        <span>회의록</span>
+                    </a>
+                    <a href="/approval/receipt-trip" th:classappend="${activePage == 'receipt-trip'} ? 'menu-item active' : 'menu-item'">
+                        <i class="fas fa-receipt"></i>
+                        <span>출장</span>
+                    </a>
+                    <a href="/approval/receipt-trip-meeting" th:classappend="${activePage == 'receipt-trip-meeting'} ? 'menu-item active' : 'menu-item'">
+                        <i class="fas fa-file-invoice"></i>
+                        <span>출장+회의</span>
+                    </a>
+                    <a href="/approval/receipt-overtime" th:classappend="${activePage == 'receipt-overtime'} ? 'menu-item active' : 'menu-item'">
+                        <i class="fas fa-receipt"></i>
+                        <span>야근식대</span>
+                    </a>
+                </div>
+            </div>
+        </nav>
+    </div>
+</aside>
+</body>
+</html>

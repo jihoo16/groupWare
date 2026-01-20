@@ -1,0 +1,101 @@
+<!DOCTYPE html>
+<html lang="ko" xmlns:th="http://www.thymeleaf.org">
+<body>
+<!-- 전자문서 작성용 템플릿 사이드바 -->
+<aside th:fragment="approval-sidebar(activePage)" class="template-sidebar">
+    <div class="sidebar-section">
+        <div class="sidebar-header">
+            <h3 class="sidebar-title"><i class="fas fa-file-alt"></i> 문서 양식</h3>
+            <button class="btn-toggle-all" id="toggleAllBtn">
+                <i class="fas fa-chevron-down"></i>
+            </button>
+        </div>
+        <nav class="sidebar-menu">
+            <!-- 인사 -->
+            <div class="menu-category expanded">
+                <div class="category-header">
+                    <i class="fas fa-chevron-right category-toggle"></i>
+                    <i class="fas fa-user-tie"></i>
+                    <span>인사</span>
+                    <span class="category-badge">1</span>
+                </div>
+                <div class="category-items">
+                    <a href="/approval/vacation" th:classappend="${activePage == 'vacation'} ? 'menu-item active' : 'menu-item'">
+                        <i class="fas fa-umbrella-beach"></i>
+                        <span>연차신청서</span>
+                    </a>
+                </div>
+            </div>
+
+            <!-- 지출 -->
+            <div class="menu-category expanded">
+                <div class="category-header">
+                    <i class="fas fa-chevron-right category-toggle"></i>
+                    <i class="fas fa-coins"></i>
+                    <span>지출</span>
+                    <span class="category-badge">2</span>
+                </div>
+                <div class="category-items">
+                    <a href="/approval/expense" th:classappend="${activePage == 'expense'} ? 'menu-item active' : 'menu-item'">
+                        <i class="fas fa-won-sign"></i>
+                        <span>지출승인서</span>
+                    </a>
+                    <a href="/approval/purchase" th:classappend="${activePage == 'purchase'} ? 'menu-item active' : 'menu-item'">
+                        <i class="fas fa-shopping-cart"></i>
+                        <span>구매요청서</span>
+                    </a>
+                </div>
+            </div>
+
+            <!-- 보고 -->
+            <div class="menu-category expanded">
+                <div class="category-header">
+                    <i class="fas fa-chevron-right category-toggle"></i>
+                    <i class="fas fa-chart-line"></i>
+                    <span>보고</span>
+                    <span class="category-badge">4</span>
+                </div>
+                <div class="category-items">
+                    <a href="/approval/weekly-report" th:classappend="${activePage == 'weekly-report'} ? 'menu-item active' : 'menu-item'">
+                        <i class="fas fa-calendar-week"></i>
+                        <span>주간업무보고</span>
+                    </a>
+                    <a href="/approval/monthly-report" th:classappend="${activePage == 'monthly-report'} ? 'menu-item active' : 'menu-item'">
+                        <i class="fas fa-calendar-alt"></i>
+                        <span>월간업무보고</span>
+                    </a>
+                    <a href="/approval/meeting" th:classappend="${activePage == 'meeting'} ? 'menu-item active' : 'menu-item'">
+                        <i class="fas fa-users"></i>
+                        <span>회의록</span>
+                    </a>
+                    <a href="/approval/general" th:classappend="${activePage == 'general'} ? 'menu-item active' : 'menu-item'">
+                        <i class="fas fa-file-alt"></i>
+                        <span>일반기안문서</span>
+                    </a>
+                </div>
+            </div>
+
+            <!-- 출장 -->
+            <div class="menu-category expanded">
+                <div class="category-header">
+                    <i class="fas fa-chevron-right category-toggle"></i>
+                    <i class="fas fa-plane-departure"></i>
+                    <span>출장</span>
+                    <span class="category-badge">2</span>
+                </div>
+                <div class="category-items">
+                    <a href="/approval/business-trip" th:classappend="${activePage == 'business-trip'} ? 'menu-item active' : 'menu-item'">
+                        <i class="fas fa-plane"></i>
+                        <span>출장신청</span>
+                    </a>
+                    <a href="/approval/trip-report" th:classappend="${activePage == 'trip-report'} ? 'menu-item active' : 'menu-item'">
+                        <i class="fas fa-clipboard-list"></i>
+                        <span>출장보고서</span>
+                    </a>
+                </div>
+            </div>
+        </nav>
+    </div>
+</aside>
+</body>
+</html>
