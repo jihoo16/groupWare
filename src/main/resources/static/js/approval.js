@@ -62,25 +62,21 @@ document.addEventListener('DOMContentLoaded', function() {
         contentTitle.textContent = titles[category] || '문서 목록';
     }
 
-    // 새 문서 작성 버튼
+    // 새 문서 작성 드롭다운
     const newDocumentBtn = document.getElementById('newDocumentBtn');
-    if (newDocumentBtn) {
-        newDocumentBtn.addEventListener('click', function() {
-            // 현재 선택된 카테고리에 따라 다른 페이지로 이동
-            const categoryUrls = {
-                'weekly-report': '/approval/project-weekly-report',
-                'monthly-report': '/approval/monthly-report',
-                'meeting': '/approval/meeting',
-                'receipt': '/approval/receipt-meeting', // 연구비증빙 - 회의록
-                'vacation': '/approval/write',
-                'expense': '/approval/write',
-                'purchase': '/approval/write',
-                'general': '/approval/write',
-                'all': '/approval/write'
-            };
+    const documentTypeMenu = document.getElementById('documentTypeMenu');
 
-            const url = categoryUrls[currentCategory] || '/approval/write';
-            window.location.href = url;
+    if (newDocumentBtn && documentTypeMenu) {
+        newDocumentBtn.addEventListener('click', function(e) {
+            e.stopPropagation();
+            documentTypeMenu.classList.toggle('show');
+        });
+
+        // 드롭다운 외부 클릭 시 닫기
+        document.addEventListener('click', function(e) {
+            if (!e.target.closest('.dropdown-container')) {
+                documentTypeMenu.classList.remove('show');
+            }
         });
     }
 

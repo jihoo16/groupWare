@@ -51,6 +51,35 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     }
 
+    // nested-submenu-item에 active가 있으면 상위 submenu-parent와 menu-parent에도 active 추가
+    const activeNestedSubmenuItem = document.querySelector('.nested-submenu-item.active');
+    if (activeNestedSubmenuItem) {
+        const parentSubmenuItem = activeNestedSubmenuItem.closest('.submenu-parent');
+        if (parentSubmenuItem) {
+            parentSubmenuItem.classList.add('active');
+        }
+        const parentMenuItem = activeNestedSubmenuItem.closest('.menu-parent');
+        if (parentMenuItem) {
+            parentMenuItem.classList.add('active');
+        }
+    }
+
+    // 중첩된 서브메뉴 호버로 열기/닫기
+    const submenuParents = document.querySelectorAll('.submenu-parent');
+    submenuParents.forEach(parent => {
+        parent.addEventListener('mouseenter', function() {
+            // 상위 menu-parent가 열려있을 때만 작동
+            const menuParent = this.closest('.menu-parent');
+            if (menuParent && menuParent.classList.contains('open')) {
+                this.classList.add('open');
+            }
+        });
+
+        parent.addEventListener('mouseleave', function() {
+            this.classList.remove('open');
+        });
+    });
+
     // ===========================
     // Current User Info Display
     // ===========================

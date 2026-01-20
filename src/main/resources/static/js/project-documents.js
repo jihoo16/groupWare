@@ -1,0 +1,407 @@
+// 프로젝트 문서함 메인 페이지 JavaScript
+document.addEventListener('DOMContentLoaded', function() {
+    // DOM 요소
+    const sidebarMenuItems = document.querySelectorAll('.approval-sidebar .sidebar-menu .menu-item');
+    const documentList = document.getElementById('documentList');
+    const emptyState = document.getElementById('emptyState');
+    const contentTitle = document.querySelector('.content-title');
+    const searchInput = document.getElementById('searchInput');
+    const sortSelect = document.getElementById('sortSelect');
+
+    let currentCategory = 'all';
+    let allDocuments = []; // 전체 문서 데이터 (원본)
+
+    // 페이징 관련 변수
+    let currentPage = 1;
+    const itemsPerPage = 10;
+    let filteredRows = []; // 필터링된 행들
+
+    // 프로젝트 관련 문서 타입 정의
+    const PROJECT_DOCUMENT_TYPES = [
+        '프로젝트 주간업무보고',
+        '연구비증빙(회의록)',
+        '연구비증빙(출장)',
+        '연구비증빙(출장+회의)',
+        '연구비증빙(야근식대)'
+    ];
+
+    // 새 문서 작성 드롭다운
+    const newDocumentBtn = document.getElementById('newDocumentBtn');
+    const documentTypeMenu = document.getElementById('documentTypeMenu');
+
+    if (newDocumentBtn && documentTypeMenu) {
+        newDocumentBtn.addEventListener('click', function(e) {
+            e.stopPropagation();
+            documentTypeMenu.classList.toggle('show');
+        });
+
+        // 드롭다운 외부 클릭 시 닫기
+        document.addEventListener('click', function(e) {
+            if (!e.target.closest('.dropdown-container')) {
+                documentTypeMenu.classList.remove('show');
+            }
+        });
+    }
+
+    // 사이드바 메뉴 클릭
+    sidebarMenuItems.forEach(item => {
+        item.addEventListener('click', function(e) {
+            e.preventDefault();
+
+            // 활성화 상태 변경
+            sidebarMenuItems.forEach(i => i.classList.remove('active'));
+            this.classList.add('active');
+
+            // 문서함 선택
+            const category = this.getAttribute('data-category');
+
+            if (category) {
+                currentCategory = category;
+                updateContentTitle(category);
+            }
+
+            currentPage = 1; // 카테고리 변경 시 첫 페이지로
+            filterDocuments();
+        });
+    });
+
+    // 제목 업데이트
+    function updateContentTitle(category) {
+        const titles = {
+            'all': '전체 문서',
+            'project-weekly-report': '프로젝트 주간보고',
+            'receipt-meeting': '회의비 증빙',
+            'receipt-trip': '여비 증빙',
+            'receipt-trip-meeting': '여비+회의비 증빙',
+            'receipt-overtime': '야근식대 증빙'
+        };
+
+        contentTitle.textContent = titles[category] || '문서 목록';
+    }
+
+    // 문서 필터링
+    function filterDocuments() {
+        const docRows = documentList.querySelectorAll('.doc-row');
+        filteredRows = [];
+
+        docRows.forEach(row => {
+            const category = row.getAttribute('data-category');
+
+            let show = true;
+
+            // 문서함 필터
+            if (currentCategory && currentCategory !== 'all') {
+                show = category === currentCategory;
+            }
+
+            // 검색 필터
+            if (searchInput.value.trim()) {
+                const searchTerm = searchInput.value.toLowerCase();
+                const titleCell = row.querySelector('.doc-title-cell');
+                const title = titleCell ? titleCell.querySelector('.title-wrap').textContent.toLowerCase() : '';
+                const desc = titleCell ? titleCell.querySelector('.desc-wrap').textContent.toLowerCase() : '';
+                const allText = row.textContent.toLowerCase();
+
+                show = show && (title.includes(searchTerm) || desc.includes(searchTerm) || allText.includes(searchTerm));
+            }
+
+            if (show) {
+                filteredRows.push(row);
+            }
+        });
+
+        // 페이징 적용
+        applyPagination();
+    }
+
+    // 페이징 적용
+    function applyPagination() {
+        const table = documentList.querySelector('.document-table');
+        const tbody = documentList.querySelector('tbody');
+
+        // 모든 행 숨기기
+        const allRows = tbody.querySelectorAll('.doc-row');
+        allRows.forEach(row => row.style.display = 'none');
+
+        // 현재 페이지에 해당하는 행만 표시
+        const startIndex = (currentPage - 1) * itemsPerPage;
+        const endIndex = startIndex + itemsPerPage;
+        const pageRows = filteredRows.slice(startIndex, endIndex);
+
+        pageRows.forEach(row => {
+            row.style.display = '';
+        });
+
+        // 빈 상태 표시
+        if (filteredRows.length === 0) {
+            if (table) table.style.display = 'none';
+            emptyState.style.display = 'flex';
+        } else {
+            if (table) table.style.display = 'table';
+            emptyState.style.display = 'none';
+        }
+
+        // 페이지네이션 UI 업데이트
+        updatePagination();
+    }
+
+    // 페이지네이션 UI 업데이트
+    function updatePagination() {
+        const totalPages = Math.ceil(filteredRows.length / itemsPerPage);
+        const paginationContainer = document.querySelector('.pagination');
+
+        if (totalPages <= 1) {
+            paginationContainer.style.display = 'none';
+            return;
+        }
+
+        paginationContainer.style.display = 'flex';
+        paginationContainer.innerHTML = '';
+
+        // 이전 버튼
+        const prevBtn = document.createElement('button');
+        prevBtn.className = 'page-btn';
+        prevBtn.innerHTML = '<i class="fas fa-chevron-left"></i>';
+        prevBtn.disabled = currentPage === 1;
+        prevBtn.addEventListener('click', () => {
+            if (currentPage > 1) {
+                currentPage--;
+                applyPagination();
+            }
+        });
+        paginationContainer.appendChild(prevBtn);
+
+        // 페이지 번호
+        for (let i = 1; i <= totalPages; i++) {
+            if (i === 1 || i === totalPages || (i >= currentPage - 2 && i <= currentPage + 2)) {
+                const pageBtn = document.createElement('button');
+                pageBtn.className = 'page-btn' + (i === currentPage ? ' active' : '');
+                pageBtn.textContent = i;
+                pageBtn.addEventListener('click', () => {
+                    currentPage = i;
+                    applyPagination();
+                });
+                paginationContainer.appendChild(pageBtn);
+            } else if (i === currentPage - 3 || i === currentPage + 3) {
+                const dots = document.createElement('span');
+                dots.className = 'page-dots';
+                dots.textContent = '...';
+                paginationContainer.appendChild(dots);
+            }
+        }
+
+        // 다음 버튼
+        const nextBtn = document.createElement('button');
+        nextBtn.className = 'page-btn';
+        nextBtn.innerHTML = '<i class="fas fa-chevron-right"></i>';
+        nextBtn.disabled = currentPage === totalPages;
+        nextBtn.addEventListener('click', () => {
+            if (currentPage < totalPages) {
+                currentPage++;
+                applyPagination();
+            }
+        });
+        paginationContainer.appendChild(nextBtn);
+    }
+
+    // 검색 입력
+    searchInput.addEventListener('input', function() {
+        currentPage = 1;
+        filterDocuments();
+    });
+
+    // 정렬 변경
+    sortSelect.addEventListener('change', function() {
+        sortDocuments(this.value);
+    });
+
+    // 문서 정렬
+    function sortDocuments(sortType) {
+        const tbody = documentList.querySelector('tbody');
+        const rows = Array.from(tbody.querySelectorAll('.doc-row'));
+
+        rows.sort((a, b) => {
+            if (sortType === 'date-desc') {
+                return new Date(b.getAttribute('data-created-at')) - new Date(a.getAttribute('data-created-at'));
+            } else if (sortType === 'date-asc') {
+                return new Date(a.getAttribute('data-created-at')) - new Date(b.getAttribute('data-created-at'));
+            } else if (sortType === 'title') {
+                const titleA = a.querySelector('.title-wrap').textContent;
+                const titleB = b.querySelector('.title-wrap').textContent;
+                return titleA.localeCompare(titleB, 'ko');
+            } else if (sortType === 'drafter') {
+                const drafterA = a.querySelector('td:nth-child(3)').textContent;
+                const drafterB = b.querySelector('td:nth-child(3)').textContent;
+                return drafterA.localeCompare(drafterB, 'ko');
+            }
+            return 0;
+        });
+
+        // 정렬된 순서로 다시 추가
+        rows.forEach(row => tbody.appendChild(row));
+
+        // 필터링 다시 적용
+        filterDocuments();
+    }
+
+    // 문서 카테고리 매핑
+    function getCategoryFromDocumentType(documentType) {
+        if (documentType === '프로젝트 주간업무보고') return 'project-weekly-report';
+        if (documentType === '연구비증빙(회의록)') return 'receipt-meeting';
+        if (documentType === '연구비증빙(출장)') return 'receipt-trip';
+        if (documentType === '연구비증빙(출장+회의)') return 'receipt-trip-meeting';
+        if (documentType === '연구비증빙(야근식대)') return 'receipt-overtime';
+        return 'unknown';
+    }
+
+    // 문서 로드
+    async function loadAllDocuments() {
+        try {
+            console.log('프로젝트 문서 API 호출 시작: /api/approval/documents');
+            const response = await fetch('/api/approval/documents');
+            console.log('API 응답 상태:', response.status, response.statusText);
+
+            if (response.ok) {
+                const documents = await response.json();
+                console.log('전체 문서 로드 성공:', documents.length + '건');
+
+                // 프로젝트 관련 문서만 필터링
+                allDocuments = documents.filter(doc =>
+                    PROJECT_DOCUMENT_TYPES.includes(doc.documentType)
+                );
+                console.log('프로젝트 문서 필터링 완료:', allDocuments.length + '건');
+
+                renderDocumentTable();
+            } else {
+                console.error('문서 로드 실패:', response.status, response.statusText);
+                showError('문서 목록을 불러올 수 없습니다.');
+            }
+        } catch (error) {
+            console.error('문서 로드 중 오류:', error);
+            showError('문서 목록을 불러오는 중 오류가 발생했습니다.');
+        }
+    }
+
+    // 문서 테이블 렌더링
+    function renderDocumentTable() {
+        const tbody = documentList.querySelector('tbody');
+        tbody.innerHTML = '';
+
+        if (allDocuments.length === 0) {
+            emptyState.style.display = 'flex';
+            documentList.querySelector('.document-table').style.display = 'none';
+            return;
+        }
+
+        allDocuments.forEach(doc => {
+            const row = createDocumentRow(doc);
+            tbody.appendChild(row);
+        });
+
+        // 초기 필터링 적용
+        filterDocuments();
+    }
+
+    // 문서 행 생성
+    function createDocumentRow(doc) {
+        const tr = document.createElement('tr');
+        tr.className = 'doc-row';
+        tr.setAttribute('data-category', getCategoryFromDocumentType(doc.documentType));
+        tr.setAttribute('data-created-at', doc.createdAt);
+        tr.setAttribute('data-document-idx', doc.idx);
+
+        // 문서종류
+        const typeCell = document.createElement('td');
+        typeCell.className = 'doc-type-cell';
+        typeCell.innerHTML = `<span class="doc-type-badge">${doc.documentType || '-'}</span>`;
+        tr.appendChild(typeCell);
+
+        // 제목
+        const titleCell = document.createElement('td');
+        titleCell.className = 'doc-title-cell';
+        titleCell.innerHTML = `
+            <div class="title-wrap">${doc.title || '제목 없음'}</div>
+            <div class="desc-wrap">${doc.content ? doc.content.substring(0, 50) : ''}</div>
+        `;
+        tr.appendChild(titleCell);
+
+        // 작성자
+        const drafterCell = document.createElement('td');
+        drafterCell.textContent = doc.drafterName || '-';
+        tr.appendChild(drafterCell);
+
+        // 부서
+        const deptCell = document.createElement('td');
+        deptCell.textContent = doc.drafterDepartment || '-';
+        tr.appendChild(deptCell);
+
+        // 작성일시
+        const dateCell = document.createElement('td');
+        dateCell.textContent = formatDateTime(doc.createdAt);
+        tr.appendChild(dateCell);
+
+        // 관리
+        const actionCell = document.createElement('td');
+        actionCell.innerHTML = `
+            <button class="btn-icon view-btn" title="상세보기">
+                <i class="fas fa-eye"></i>
+            </button>
+        `;
+        tr.appendChild(actionCell);
+
+        // 상세보기 버튼 이벤트
+        const viewBtn = actionCell.querySelector('.view-btn');
+        viewBtn.addEventListener('click', () => viewDocument(doc));
+
+        return tr;
+    }
+
+    // 문서 상세보기
+    function viewDocument(doc) {
+        // 문서 타입에 따라 다른 상세 페이지로 이동
+        const urls = {
+            '프로젝트 주간업무보고': '/approval/project-weekly-report/detail',
+            '연구비증빙(회의록)': '/approval/receipt-meeting',
+            '연구비증빙(출장)': '/approval/receipt-trip',
+            '연구비증빙(출장+회의)': '/approval/receipt-trip-meeting',
+            '연구비증빙(야근식대)': '/approval/receipt-overtime'
+        };
+
+        const url = urls[doc.documentType];
+        if (url) {
+            window.location.href = `${url}?id=${doc.idx}`;
+        } else {
+            alert('해당 문서 타입의 상세 페이지가 구현되지 않았습니다.');
+        }
+    }
+
+    // 날짜 포맷팅
+    function formatDateTime(dateTimeStr) {
+        if (!dateTimeStr) return '-';
+
+        const date = new Date(dateTimeStr);
+        const year = date.getFullYear();
+        const month = String(date.getMonth() + 1).padStart(2, '0');
+        const day = String(date.getDate()).padStart(2, '0');
+        const hours = String(date.getHours()).padStart(2, '0');
+        const minutes = String(date.getMinutes()).padStart(2, '0');
+
+        return `${year}-${month}-${day} ${hours}:${minutes}`;
+    }
+
+    // 에러 표시
+    function showError(message) {
+        const tbody = documentList.querySelector('tbody');
+        tbody.innerHTML = `
+            <tr>
+                <td colspan="6" style="text-align: center; padding: 40px; color: #999;">
+                    <i class="fas fa-exclamation-triangle" style="font-size: 32px; margin-bottom: 10px;"></i>
+                    <p>${message}</p>
+                </td>
+            </tr>
+        `;
+    }
+
+    // 초기 로드
+    loadAllDocuments();
+});

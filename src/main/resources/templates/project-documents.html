@@ -1,16 +1,16 @@
 <!DOCTYPE html>
 <html lang="ko" xmlns:th="http://www.thymeleaf.org">
-<head th:replace="~{fragments/layout :: head('전자 문서', '/css/approval.css')}"></head>
+<head th:replace="~{fragments/layout :: head('프로젝트 문서함', '/css/approval.css')}"></head>
 <body>
     <div class="container">
         <!-- 좌측 네비게이션 바 -->
-        <div th:replace="~{fragments/sidebar :: sidebar('approval')}"></div>
+        <div th:replace="~{fragments/sidebar :: sidebar('project-documents')}"></div>
 
         <!-- 메인 콘텐츠 영역 -->
         <main class="main-content">
             <header class="header">
                 <div class="header-left">
-                    <h1 class="page-title"><i class="fas fa-file-signature"></i> 문서함</h1>
+                    <h1 class="page-title"><i class="fas fa-folder-open"></i> 프로젝트 문서함</h1>
                 </div>
                 <div class="header-right">
                     <div class="search-box">
@@ -23,41 +23,25 @@
                             새 문서 작성
                         </button>
                         <div class="dropdown-menu" id="documentTypeMenu">
-                            <a href="/approval/vacation" class="dropdown-item">
-                                <i class="fas fa-umbrella-beach"></i>
-                                연차신청서
-                            </a>
-                            <a href="/approval/weekly-report" class="dropdown-item">
+                            <a href="/approval/project-weekly-report" class="dropdown-item">
                                 <i class="fas fa-calendar-week"></i>
-                                주간업무보고
+                                프로젝트 주간보고
                             </a>
-                            <a href="/approval/monthly-report" class="dropdown-item">
-                                <i class="fas fa-calendar-alt"></i>
-                                월간업무보고
+                            <a href="/approval/receipt-meeting" class="dropdown-item">
+                                <i class="fas fa-utensils"></i>
+                                회의비 증빙
                             </a>
-                            <a href="/approval/meeting" class="dropdown-item">
-                                <i class="fas fa-users"></i>
-                                회의록
+                            <a href="/approval/receipt-trip" class="dropdown-item">
+                                <i class="fas fa-plane"></i>
+                                여비 증빙
                             </a>
-                            <a href="/approval/business-trip" class="dropdown-item">
-                                <i class="fas fa-plane-departure"></i>
-                                출장신청서
+                            <a href="/approval/receipt-trip-meeting" class="dropdown-item">
+                                <i class="fas fa-suitcase"></i>
+                                여비+회의비 증빙
                             </a>
-                            <a href="/approval/trip-report" class="dropdown-item">
-                                <i class="fas fa-file-alt"></i>
-                                출장결과보고서
-                            </a>
-                            <a href="/approval/expense" class="dropdown-item">
-                                <i class="fas fa-won-sign"></i>
-                                지출결의서
-                            </a>
-                            <a href="/approval/purchase" class="dropdown-item">
-                                <i class="fas fa-shopping-cart"></i>
-                                구매요청서
-                            </a>
-                            <a href="/approval/general" class="dropdown-item">
-                                <i class="fas fa-file-alt"></i>
-                                일반기안서
+                            <a href="/approval/receipt-overtime" class="dropdown-item">
+                                <i class="fas fa-moon"></i>
+                                야근식대 증빙
                             </a>
                         </div>
                     </div>
@@ -70,44 +54,32 @@
                     <div class="sidebar-section">
                         <h3 class="sidebar-title">
                             <i class="fas fa-folder"></i>
-                            문서함
+                            프로젝트 문서
                         </h3>
                         <nav class="sidebar-menu">
                             <a href="#" class="menu-item active" data-category="all">
                                 <i class="fas fa-copy"></i>
                                 <span>전체 문서</span>
                             </a>
-                            <a href="#" class="menu-item" data-category="weekly-report">
+                            <a href="#" class="menu-item" data-category="project-weekly-report">
                                 <i class="fas fa-calendar-week"></i>
-                                <span>주간 보고</span>
+                                <span>프로젝트 주간보고</span>
                             </a>
-                            <a href="#" class="menu-item" data-category="monthly-report">
-                                <i class="fas fa-calendar-alt"></i>
-                                <span>월간 보고</span>
+                            <a href="#" class="menu-item" data-category="receipt-meeting">
+                                <i class="fas fa-utensils"></i>
+                                <span>회의비 증빙</span>
                             </a>
-                            <a href="#" class="menu-item" data-category="vacation">
-                                <i class="fas fa-umbrella-beach"></i>
-                                <span>휴가 신청</span>
+                            <a href="#" class="menu-item" data-category="receipt-trip">
+                                <i class="fas fa-plane"></i>
+                                <span>여비 증빙</span>
                             </a>
-                            <a href="#" class="menu-item" data-category="expense">
-                                <i class="fas fa-won-sign"></i>
-                                <span>지출 결의</span>
+                            <a href="#" class="menu-item" data-category="receipt-trip-meeting">
+                                <i class="fas fa-suitcase"></i>
+                                <span>여비+회의비 증빙</span>
                             </a>
-                            <a href="#" class="menu-item" data-category="purchase">
-                                <i class="fas fa-shopping-cart"></i>
-                                <span>구매 요청</span>
-                            </a>
-                            <a href="#" class="menu-item" data-category="meeting">
-                                <i class="fas fa-users"></i>
-                                <span>회의록</span>
-                            </a>
-                            <a href="#" class="menu-item" data-category="general">
-                                <i class="fas fa-file-alt"></i>
-                                <span>일반 기안</span>
-                            </a>
-                            <a href="#" class="menu-item" data-category="receipt">
-                                <i class="fas fa-receipt"></i>
-                                <span>연구비증빙</span>
+                            <a href="#" class="menu-item" data-category="receipt-overtime">
+                                <i class="fas fa-moon"></i>
+                                <span>야근식대 증빙</span>
                             </a>
                         </nav>
                     </div>
@@ -148,7 +120,7 @@
                             <div class="empty-state" id="emptyState" style="display: none;">
                                 <i class="fas fa-inbox"></i>
                                 <h3>문서가 없습니다</h3>
-                                <p>조건에 맞는 문서가 없습니다.</p>
+                                <p>조건에 맞는 프로젝트 문서가 없습니다.</p>
                             </div>
                         </div>
 
@@ -164,6 +136,6 @@
         </main>
     </div>
 
-    <script th:src="@{/js/approval.js}"></script>
+    <script th:src="@{/js/project-documents.js}"></script>
 </body>
 </html>

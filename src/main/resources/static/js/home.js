@@ -51,6 +51,9 @@ document.addEventListener('DOMContentLoaded', function() {
     // 전자 문서 건수 로드
     loadPendingApprovals();
 
+    // 프로젝트 문서 건수 로드
+    loadProjectDocuments();
+
     // 이번 주 일정 로드
     loadWeeklySchedule();
 
@@ -78,6 +81,14 @@ document.addEventListener('DOMContentLoaded', function() {
     if (approvalCard) {
         approvalCard.addEventListener('click', function() {
             window.location.href = '/approval';
+        });
+    }
+
+    // 프로젝트 문서 카드 클릭 이벤트
+    const projectDocCard = document.getElementById('projectDocCard');
+    if (projectDocCard) {
+        projectDocCard.addEventListener('click', function() {
+            window.location.href = '/project/documents';
         });
     }
 });
@@ -154,6 +165,43 @@ function loadPendingApprovals() {
         .catch(error => {
             console.error('전자 문서 로드 오류:', error);
             const countElement = document.getElementById('pendingApprovalCount');
+            if (countElement) {
+                countElement.innerHTML = `-<span>건</span>`;
+            }
+        });
+}
+
+// 프로젝트 문서 건수 로드 함수
+function loadProjectDocuments() {
+    const PROJECT_DOCUMENT_TYPES = [
+        '프로젝트 주간업무보고',
+        '연구비증빙(회의록)',
+        '연구비증빙(출장)',
+        '연구비증빙(출장+회의)',
+        '연구비증빙(야근식대)'
+    ];
+
+    fetch('/api/approval/documents')
+        .then(response => {
+            if (!response.ok) {
+                throw new Error('프로젝트 문서 로드 실패');
+            }
+            return response.json();
+        })
+        .then(data => {
+            const countElement = document.getElementById('projectDocCount');
+            if (countElement) {
+                // 프로젝트 관련 문서만 필터링
+                const projectDocs = data.filter(doc =>
+                    PROJECT_DOCUMENT_TYPES.includes(doc.documentType)
+                );
+                const totalCount = projectDocs.length || 0;
+                countElement.innerHTML = `${totalCount}<span>건</span>`;
+            }
+        })
+        .catch(error => {
+            console.error('프로젝트 문서 로드 오류:', error);
+            const countElement = document.getElementById('projectDocCount');
             if (countElement) {
                 countElement.innerHTML = `-<span>건</span>`;
             }
