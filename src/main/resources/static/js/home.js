@@ -310,7 +310,7 @@ function loadMyProjects() {
 
             // 진행 중인 프로젝트만 필터링
             const activeProjects = data.filter(p =>
-                p.projectStatus === 'ACTIVE' || p.projectStatus === 'PLANNING'
+                p.projectStatus === 'IN_PROGRESS'
             );
 
             if (activeProjects.length === 0) {
@@ -326,8 +326,8 @@ function loadMyProjects() {
             // 최대 5개만 표시
             const projects = activeProjects.slice(0, 5);
             listElement.innerHTML = projects.map(project => {
-                const statusClass = project.projectStatus === 'ACTIVE' ? 'active' : 'planning';
-                const statusText = project.projectStatus === 'ACTIVE' ? '진행중' : '기획중';
+                const statusClass = 'active';
+                const statusText = '진행중';
                 const period = formatProjectPeriod(project.projectStartDate, project.projectEndDate);
 
                 return `
