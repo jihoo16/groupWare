@@ -513,16 +513,16 @@ function goToDocument(documentType, sourceDocumentId) {
 }
 
 /**
- * 더보기 클릭 시 전자결재 목록으로 이동
+ * 더보기 클릭 시 문서 목록으로 이동
  */
 function viewMoreDocuments(type) {
     const urlParams = new URLSearchParams(window.location.search);
     const projectId = urlParams.get('projectId');
 
     if (type === 'weekly') {
-        location.href = `/approval?projectIdx=${projectId}&documentType=WEEKLY_REPORT`;
+        location.href = `/project/documents?projectId=${projectId}&tab=weekly`;
     } else if (type === 'expense') {
-        location.href = `/approval?projectIdx=${projectId}&documentTypes=RECEIPT_MEETING,BUSINESS_TRIP`;
+        location.href = `/project/documents?projectId=${projectId}&tab=expense`;
     }
 }
 
