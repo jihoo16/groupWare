@@ -1,6 +1,9 @@
 package com.pinecni.erp.controller;
 
+import com.pinecni.erp.api.approval.repository.ApprovalDocumentRepository;
 import com.pinecni.erp.api.calendar.service.CalendarEventService;
+import com.pinecni.erp.entity.ApprovalDocument;
+import com.pinecni.erp.util.AuthorizationUtil;
 import jakarta.servlet.http.HttpSession;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -14,6 +17,7 @@ import org.springframework.web.bind.annotation.RequestParam;
 public class Controller {
 
     private final CalendarEventService calendarEventService;
+    private final ApprovalDocumentRepository approvalDocumentRepository;
 
     @GetMapping("/")
     public String root() {
@@ -144,9 +148,20 @@ public class Controller {
 
     /**
      * 연차신청서 상세보기 페이지
+     * - 작성자만 접근 가능
      */
     @GetMapping("/approval/vacation/detail")
-    public String approvalVacationDetail() {
+    public String approvalVacationDetail(@RequestParam Long documentIdx, HttpSession session) {
+        // 세션에서 현재 로그인한 사용자 IDX 조회
+        Long currentUserIdx = (Long) session.getAttribute("userIdx");
+
+        // 문서 조회
+        ApprovalDocument document = approvalDocumentRepository.findById(documentIdx)
+                .orElse(null);
+
+        // 권한 체크: 작성자가 아니면 UnauthorizedException 발생 -> 404 페이지로 리다이렉트
+        AuthorizationUtil.validateDocumentOwner(currentUserIdx, document);
+
         return "approval_vacation_detail";
     }
 
