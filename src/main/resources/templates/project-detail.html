@@ -99,9 +99,11 @@
                     <table class="form-table">
                         <colgroup>
                             <col style="width: 15%;">
-                            <col style="width: 35%;">
                             <col style="width: 15%;">
-                            <col style="width: 35%;">
+                            <col style="width: 15%;">
+                            <col style="width: 15%;">
+                            <col style="width: 15%;">
+                            <col style="width: 15%;">
                         </colgroup>
                         <tr>
                             <th>활동비 예산</th>
@@ -111,7 +113,10 @@
                             <th>활동비 사용액</th>
                             <td>
                                 <span id="activityUsed"></span>
-                            </td>
+                            <th>활동비 잔여금액</th>
+                            <td>
+                            <span id="activityRemaining" style="font-weight: bold; color: #4361ee;"></span>
+                             </td>
                         </tr>
                         <tr>
                             <th>장비비 예산</th>
@@ -122,6 +127,10 @@
                             <td>
                                 <span id="equipmentUsed"></span>
                             </td>
+                            <th>장비비 잔여금액</th>
+                            <td>
+                                <span id="equipmentRemaining" style="font-weight: bold; color: #4361ee;"></span>
+                            </td>
                         </tr>
                         <tr>
                             <th>재료비 예산</th>
@@ -131,6 +140,10 @@
                             <th>재료비 사용액</th>
                             <td>
                                 <span id="materialUsed"></span>
+                            </td>
+                            <th>장비비 잔여금액</th>
+                            <td>
+                                <span id="materialRemaining" style="font-weight: bold; color: #4361ee;"></span>
                             </td>
                         </tr>
                     </table>
@@ -151,6 +164,48 @@
                     <h3 class="section-title">프로젝트 설명</h3>
                     <div class="description-box">
                         <p id="projectDescription" class="description-text"></p>
+                    </div>
+
+                    <!-- 관련 문서 -->
+                    <h3 class="section-title">관련 문서</h3>
+                    <div class="document-grid">
+                        <!-- 프로젝트 주간업무보고 -->
+                        <div class="document-card">
+                            <div class="document-card-header">
+                                <div class="document-card-title">
+                                    <i class="fas fa-file-alt"></i>
+                                    <span>프로젝트 주간업무보고</span>
+                                </div>
+                                <span class="document-count" id="weeklyReportCount">0건</span>
+                            </div>
+                            <div class="document-card-body" id="weeklyReportList">
+                                <p class="empty-message">문서가 없습니다.</p>
+                            </div>
+                            <div class="document-card-footer" id="weeklyReportFooter" style="display: none;">
+                                <button type="button" class="btn-more" onclick="viewMoreDocuments('weekly')">
+                                    더보기 <i class="fas fa-chevron-right"></i>
+                                </button>
+                            </div>
+                        </div>
+
+                        <!-- 연구비증빙 -->
+                        <div class="document-card">
+                            <div class="document-card-header">
+                                <div class="document-card-title">
+                                    <i class="fas fa-receipt"></i>
+                                    <span>연구비증빙</span>
+                                </div>
+                                <span class="document-count" id="expenseReportCount">0건</span>
+                            </div>
+                            <div class="document-card-body" id="expenseReportList">
+                                <p class="empty-message">문서가 없습니다.</p>
+                            </div>
+                            <div class="document-card-footer" id="expenseReportFooter" style="display: none;">
+                                <button type="button" class="btn-more" onclick="viewMoreDocuments('expense')">
+                                    더보기 <i class="fas fa-chevron-right"></i>
+                                </button>
+                            </div>
+                        </div>
                     </div>
 
                     <!-- 연계 프로젝트 -->

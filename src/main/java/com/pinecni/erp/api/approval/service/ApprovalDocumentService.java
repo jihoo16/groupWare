@@ -30,4 +30,27 @@ public interface ApprovalDocumentService {
      * @return 작성자의 문서 목록
      */
     List<ApprovalDocumentDTO> getDocumentsByDrafter(Long drafterUserIdx);
+
+    /**
+     * 프로젝트별 문서 목록 조회
+     * @param projectIdx 프로젝트 IDX
+     * @return 프로젝트의 문서 목록
+     */
+    List<ApprovalDocumentDTO> getDocumentsByProject(Long projectIdx);
+
+    /**
+     * 프로젝트별 + 타입별 문서 목록 조회
+     * @param projectIdx 프로젝트 IDX
+     * @param documentType 문서 타입
+     * @return 필터링된 문서 목록
+     */
+    List<ApprovalDocumentDTO> getDocumentsByProjectAndType(Long projectIdx, String documentType);
+
+    /**
+     * 프로젝트별 + 복수 타입별 문서 목록 조회
+     * @param projectIdx 프로젝트 IDX
+     * @param documentTypes 문서 타입 배열
+     * @return 필터링된 문서 목록
+     */
+    List<ApprovalDocumentDTO> getDocumentsByProjectAndTypes(Long projectIdx, String[] documentTypes);
 }

@@ -169,7 +169,33 @@ public class ReceiptMeetingServiceImpl implements ReceiptMeetingService {
             }
         }
 
-        // 4. 수정된 데이터 재조회
+        // 4. 연결된 ApprovalDocument도 업데이트
+        final Long documentIdx = entity.getDocumentIdx();
+        final Long authorIdx = entity.getAuthorIdx();
+        if (documentIdx != null) {
+            approvalDocumentRepository.findById(documentIdx).ifPresent(approvalDocument -> {
+                // 제목 업데이트
+                String title = "연구비증빙 회의록";
+                if (updateDTO.getPurpose() != null && !updateDTO.getPurpose().isEmpty()) {
+                    title = "연구비증빙 회의록 - " + updateDTO.getPurpose();
+                }
+                approvalDocument.setTitle(title);
+
+                // 내용 업데이트
+                if (updateDTO.getContent() != null) {
+                    approvalDocument.setContent(updateDTO.getContent());
+                }
+
+                // 수정 정보 업데이트
+                approvalDocument.setUpdatedUserIdx(authorIdx);
+                approvalDocument.setUpdatedAt(LocalDateTime.now());
+
+                approvalDocumentRepository.save(approvalDocument);
+                log.debug("ApprovalDocument updated - documentIdx: {}", documentIdx);
+            });
+        }
+
+        // 5. 수정된 데이터 재조회
         ReceiptMeeting updatedEntity = receiptMeetingRepository.findByIdWithDetails(idx)
                 .orElseThrow(() -> new IllegalStateException("수정된 회의록을 조회할 수 없습니다."));
 
@@ -184,6 +210,18 @@ public class ReceiptMeetingServiceImpl implements ReceiptMeetingService {
 
         ReceiptMeeting entity = receiptMeetingRepository.findById(idx)
                 .orElseThrow(() -> new IllegalArgumentException("회의록을 찾을 수 없습니다. idx: " + idx));
+
+        // 연결된 ApprovalDocument 소프트 딜리트
+        if (entity.getDocumentIdx() != null) {
+            approvalDocumentRepository.findById(entity.getDocumentIdx()).ifPresent(approvalDocument -> {
+                LocalDateTime now = LocalDateTime.now();
+                approvalDocument.setDeletedAt(now);
+                approvalDocument.setDeletedUserIdx(entity.getAuthorIdx());
+                approvalDocumentRepository.save(approvalDocument);
+                log.debug("ApprovalDocument soft deleted - documentIdx: {}, deletedAt: {}",
+                        entity.getDocumentIdx(), now);
+            });
+        }
 
         receiptMeetingRepository.delete(entity);
         log.info("회의록 삭제 완료 - idx: {}", idx);

@@ -53,6 +53,9 @@ async function loadProjectDetail(projectId) {
 
         // 연구비 카드는 별도 API로 조회
         loadProjectCards(projectId);
+
+        // 관련 문서 로드
+        loadProjectDocuments(projectId);
     } catch (error) {
         console.error('프로젝트 조회 오류:', error);
         alert('프로젝트를 불러오는데 실패했습니다.');
@@ -86,10 +89,13 @@ function displayBasicInfo(data) {
 function displayBudgetInfo(data) {
     document.getElementById('activityBudget').textContent = formatCurrency(data.activityBudget || 0);
     document.getElementById('activityUsed').textContent = formatCurrency(data.activityUsed || 0);
+    document.getElementById('activityRemaining').textContent = formatCurrency((data.activityBudget-data.activityUsed) || 0);
     document.getElementById('equipmentBudget').textContent = formatCurrency(data.equipmentBudget || 0);
     document.getElementById('equipmentUsed').textContent = formatCurrency(data.equipmentUsed || 0);
+    document.getElementById('equipmentRemaining').textContent = formatCurrency((data.equipmentBudget-data.equipmentUsed) || 0);
     document.getElementById('materialBudget').textContent = formatCurrency(data.materialBudget || 0);
     document.getElementById('materialUsed').textContent = formatCurrency(data.materialUsed || 0);
+    document.getElementById('materialRemaining').textContent = formatCurrency((data.materialBudget-data.materialUsed) || 0);
 }
 
 /**
@@ -385,4 +391,187 @@ function formatFileSize(bytes) {
     const sizes = ['Bytes', 'KB', 'MB', 'GB'];
     const i = Math.floor(Math.log(bytes) / Math.log(k));
     return Math.round(bytes / Math.pow(k, i) * 100) / 100 + ' ' + sizes[i];
+}
+
+/**
+ * 프로젝트 관련 문서 로드
+ */
+async function loadProjectDocuments(projectId) {
+    try {
+        // 주간업무보고 로드
+        const weeklyResponse = await fetch(`/api/approval/documents/project/${projectId}?documentType=WEEKLY_REPORT`);
+        if (weeklyResponse.ok) {
+            const weeklyData = await weeklyResponse.json();
+            displayWeeklyReports(weeklyData || []);
+        } else {
+            displayWeeklyReports([]);
+        }
+
+        // 연구비증빙 로드 (회의록, 출장)
+        const expenseResponse = await fetch(`/api/approval/documents/project/${projectId}?documentTypes=RECEIPT_MEETING,BUSINESS_TRIP`);
+        if (expenseResponse.ok) {
+            const expenseData = await expenseResponse.json();
+            displayExpenseReports(expenseData || []);
+        } else {
+            displayExpenseReports([]);
+        }
+    } catch (error) {
+        console.error('관련 문서 로드 오류:', error);
+        // 에러 시에도 빈 상태로 표시
+        displayWeeklyReports([]);
+        displayExpenseReports([]);
+    }
+}
+
+/**
+ * 주간업무보고 목록 표시
+ */
+function displayWeeklyReports(reports) {
+    const listContainer = document.getElementById('weeklyReportList');
+    const countElement = document.getElementById('weeklyReportCount');
+    const footerElement = document.getElementById('weeklyReportFooter');
+
+    const totalCount = reports.length || 0;
+    countElement.textContent = `${totalCount}건`;
+
+    if (!reports || reports.length === 0) {
+        listContainer.innerHTML = '<p class="empty-message">문서가 없습니다.</p>';
+        footerElement.style.display = 'none';
+        return;
+    }
+
+    listContainer.innerHTML = reports.slice(0, 5).map(doc => `
+        <div class="document-item" onclick="goToDocument('${doc.documentType}', ${doc.sourceDocumentId})">
+            <div class="document-item-icon">
+                <i class="fas fa-file-alt"></i>
+            </div>
+            <div class="document-item-info">
+                <div class="document-item-title">${doc.title || '제목 없음'}</div>
+                <div class="document-item-meta">${doc.drafterName || '-'} · ${formatDocumentDate(doc.createdAt)}</div>
+            </div>
+        </div>
+    `).join('');
+
+    // 5건 이상이면 더보기 버튼 표시
+    footerElement.style.display = totalCount > 5 ? 'block' : 'none';
+}
+
+/**
+ * 연구비증빙 목록 표시
+ */
+function displayExpenseReports(reports) {
+    const listContainer = document.getElementById('expenseReportList');
+    const countElement = document.getElementById('expenseReportCount');
+    const footerElement = document.getElementById('expenseReportFooter');
+
+    const totalCount = reports.length || 0;
+    countElement.textContent = `${totalCount}건`;
+
+    if (!reports || reports.length === 0) {
+        listContainer.innerHTML = '<p class="empty-message">문서가 없습니다.</p>';
+        footerElement.style.display = 'none';
+        return;
+    }
+
+    listContainer.innerHTML = reports.slice(0, 5).map(doc => `
+        <div class="document-item" onclick="goToDocument('${doc.documentType}', ${doc.sourceDocumentId})">
+            <div class="document-item-icon">
+                <i class="fas fa-receipt"></i>
+            </div>
+            <div class="document-item-info">
+                <div class="document-item-title">${doc.title || '제목 없음'}</div>
+                <div class="document-item-meta">${getDocumentTypeLabel(doc.documentType)} · ${doc.drafterName || '-'} · ${formatDocumentDate(doc.createdAt)}</div>
+            </div>
+        </div>
+    `).join('');
+
+    // 5건 이상이면 더보기 버튼 표시
+    footerElement.style.display = totalCount > 5 ? 'block' : 'none';
+}
+
+/**
+ * 문서 상세 페이지로 이동
+ */
+function goToDocument(documentType, sourceDocumentId) {
+    if (!sourceDocumentId) return;
+
+    let url;
+    switch (documentType) {
+        case 'WEEKLY_REPORT':
+            url = `/approval/project-weekly-report/detail?id=${sourceDocumentId}`;
+            break;
+        case 'MEETING_MINUTES':
+        case 'BUSINESS_TRIP':
+        case 'RECEIPT_MEETING':
+            alert('상세 페이지 구현 중입니다.');
+            return;
+        default:
+            url = `/approval/detail?documentId=${sourceDocumentId}`;
+    }
+
+    location.href = url;
+}
+
+/**
+ * 더보기 클릭 시 전자결재 목록으로 이동
+ */
+function viewMoreDocuments(type) {
+    const urlParams = new URLSearchParams(window.location.search);
+    const projectId = urlParams.get('projectId');
+
+    if (type === 'weekly') {
+        location.href = `/approval?projectIdx=${projectId}&documentType=WEEKLY_REPORT`;
+    } else if (type === 'expense') {
+        location.href = `/approval?projectIdx=${projectId}&documentTypes=RECEIPT_MEETING,BUSINESS_TRIP`;
+    }
+}
+
+/**
+ * 문서 상태 클래스 반환
+ */
+function getStatusClass(status) {
+    const classMap = {
+        'APPROVED': 'approved',
+        'PENDING': 'pending',
+        'REJECTED': 'rejected',
+        'IN_PROGRESS': 'pending',
+        'DRAFT': 'pending'
+    };
+    return classMap[status] || 'pending';
+}
+
+/**
+ * 문서 상태 라벨 반환
+ */
+function getDocumentStatusLabel(status) {
+    const statusMap = {
+        'DRAFT': '임시저장',
+        'PENDING': '대기',
+        'IN_PROGRESS': '진행중',
+        'APPROVED': '승인',
+        'REJECTED': '반려'
+    };
+    return statusMap[status] || status || '-';
+}
+
+/**
+ * 문서 유형 라벨 반환
+ */
+function getDocumentTypeLabel(type) {
+    const typeMap = {
+        'WEEKLY_REPORT': '프로젝트 주간업무보고',
+        'MEETING_MINUTES': '회의록',
+        'BUSINESS_TRIP': '출장',
+        'RECEIPT_MEETING': '회의록'
+    };
+    return typeMap[type] || type || '-';
+}
+
+/**
+ * 문서 날짜 포맷
+ */
+function formatDocumentDate(dateString) {
+    if (!dateString) return '-';
+    const date = new Date(dateString);
+    return `${date.getFullYear()}.${String(date.getMonth() + 1).padStart(2, '0')}.${String(date.getDate()).padStart(2, '0')}`;
 }

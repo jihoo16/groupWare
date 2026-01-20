@@ -25,6 +25,7 @@ public class ApprovalDocumentDTO {
     private String drafterDept;       // 작성자 부서 코드
     private String drafterDeptName;   // 작성자 부서명
     private String content;
+    private String status;            // 결재 상태 (PENDING, APPROVED, REJECTED 등)
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;
 }

@@ -76,4 +76,37 @@ public class ApprovalDocumentController {
         log.debug("작성자별 조회 완료 - userIdx: {}, 총 {}건", drafterUserIdx, documents.size());
         return ResponseEntity.ok(documents);
     }
+
+    /**
+     * 프로젝트별 문서 목록 조회
+     * @param projectIdx 프로젝트 IDX
+     * @param documentType 문서 타입 (선택) - WEEKLY_REPORT, MEETING_MINUTES, BUSINESS_TRIP, BUSINESS_TRIP_MEETING
+     * @param documentTypes 복수 문서 타입 (선택, 콤마로 구분)
+     * @return 프로젝트의 문서 목록
+     */
+    @GetMapping("/project/{projectIdx}")
+    public ResponseEntity<List<ApprovalDocumentDTO>> getDocumentsByProject(
+            @PathVariable Long projectIdx,
+            @RequestParam(required = false) String documentType,
+            @RequestParam(required = false) String documentTypes) {
+        log.debug("GET /api/approval/documents/project/{} - 프로젝트별 조회, documentType: {}, documentTypes: {}",
+                projectIdx, documentType, documentTypes);
+
+        List<ApprovalDocumentDTO> documents;
+
+        if (documentTypes != null && !documentTypes.isEmpty()) {
+            // 복수 타입 조회
+            String[] types = documentTypes.split(",");
+            documents = approvalDocumentService.getDocumentsByProjectAndTypes(projectIdx, types);
+        } else if (documentType != null && !documentType.isEmpty()) {
+            // 단일 타입 조회
+            documents = approvalDocumentService.getDocumentsByProjectAndType(projectIdx, documentType);
+        } else {
+            // 전체 조회
+            documents = approvalDocumentService.getDocumentsByProject(projectIdx);
+        }
+
+        log.debug("프로젝트별 조회 완료 - projectIdx: {}, 총 {}건", projectIdx, documents.size());
+        return ResponseEntity.ok(documents);
+    }
 }

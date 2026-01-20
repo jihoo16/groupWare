@@ -3,14 +3,20 @@ package com.pinecni.erp.api.approval.service;
 import com.pinecni.erp.api.approval.dto.ApprovalDocumentDTO;
 import com.pinecni.erp.api.approval.repository.ApprovalDocumentRepository;
 import com.pinecni.erp.api.code.repository.CodeRepository;
+import com.pinecni.erp.api.document.repository.MeetingMinutesRepository;
 import com.pinecni.erp.api.document.repository.WeeklyReportRepository;
+import com.pinecni.erp.api.project.repository.ReceiptMeetingRepository;
+import com.pinecni.erp.api.project.repository.ReceiptTripRepository;
 import com.pinecni.erp.api.user.repository.UserRepository;
-import com.pinecni.erp.entity.ApprovalDocument;
+import com.pinecni.erp.entity.*;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Comparator;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -27,6 +33,9 @@ public class ApprovalDocumentServiceImpl implements ApprovalDocumentService {
     private final UserRepository userRepository;
     private final CodeRepository codeRepository;
     private final WeeklyReportRepository weeklyReportRepository;
+    private final MeetingMinutesRepository meetingMinutesRepository;
+    private final ReceiptTripRepository receiptTripRepository;
+    private final ReceiptMeetingRepository receiptMeetingRepository;
 
     @Override
     public List<ApprovalDocumentDTO> getAllDocuments(Long currentUserIdx) {
@@ -137,6 +146,257 @@ public class ApprovalDocumentServiceImpl implements ApprovalDocumentService {
         // 다른 문서 타입들도 필요시 추가
         // else if ("월간업무보고".equals(documentType)) { ... }
         // else if ("회의록".equals(documentType)) { ... }
+
+        return dto;
+    }
+
+    @Override
+    public List<ApprovalDocumentDTO> getDocumentsByProject(Long projectIdx) {
+        log.debug("[프로젝트별 문서 조회] projectIdx: {}", projectIdx);
+
+        List<ApprovalDocumentDTO> result = new ArrayList<>();
+
+        // 주간업무보고 조회
+        result.addAll(getWeeklyReportsByProject(projectIdx));
+
+        // 회의록 조회
+        result.addAll(getMeetingMinutesByProject(projectIdx));
+
+        // 출장 조회
+        result.addAll(getReceiptTripsByProject(projectIdx));
+
+        // 출장+회의 조회
+        result.addAll(getReceiptMeetingsByProject(projectIdx));
+
+        // 최신순 정렬
+        result.sort(Comparator.comparing(ApprovalDocumentDTO::getCreatedAt, Comparator.nullsLast(Comparator.reverseOrder())));
+
+        log.debug("[프로젝트별 문서 조회] 완료 - projectIdx: {}, 총 {}건", projectIdx, result.size());
+        return result;
+    }
+
+    @Override
+    public List<ApprovalDocumentDTO> getDocumentsByProjectAndType(Long projectIdx, String documentType) {
+        log.debug("[프로젝트+타입별 문서 조회] projectIdx: {}, documentType: {}", projectIdx, documentType);
+
+        List<ApprovalDocumentDTO> result;
+
+        switch (documentType) {
+            case "WEEKLY_REPORT":
+                result = getWeeklyReportsByProject(projectIdx);
+                break;
+            case "MEETING_MINUTES":
+                result = getMeetingMinutesByProject(projectIdx);
+                break;
+            case "BUSINESS_TRIP":
+                result = getReceiptTripsByProject(projectIdx);
+                break;
+            case "RECEIPT_MEETING":
+                result = getReceiptMeetingsByProject(projectIdx);
+                break;
+            default:
+                result = new ArrayList<>();
+        }
+
+        log.debug("[프로젝트+타입별 문서 조회] 완료 - projectIdx: {}, documentType: {}, 총 {}건",
+                projectIdx, documentType, result.size());
+        return result;
+    }
+
+    @Override
+    public List<ApprovalDocumentDTO> getDocumentsByProjectAndTypes(Long projectIdx, String[] documentTypes) {
+        log.debug("[프로젝트+복수타입별 문서 조회] projectIdx: {}, documentTypes: {}",
+                projectIdx, Arrays.toString(documentTypes));
+
+        List<ApprovalDocumentDTO> result = new ArrayList<>();
+
+        for (String type : documentTypes) {
+            result.addAll(getDocumentsByProjectAndType(projectIdx, type.trim()));
+        }
+
+        // 최신순 정렬
+        result.sort(Comparator.comparing(ApprovalDocumentDTO::getCreatedAt, Comparator.nullsLast(Comparator.reverseOrder())));
+
+        log.debug("[프로젝트+복수타입별 문서 조회] 완료 - projectIdx: {}, 총 {}건", projectIdx, result.size());
+        return result;
+    }
+
+    /**
+     * 프로젝트별 주간업무보고 조회
+     */
+    private List<ApprovalDocumentDTO> getWeeklyReportsByProject(Long projectIdx) {
+        List<WeeklyReport> reports = weeklyReportRepository.findByProjectIdx(projectIdx);
+
+        return reports.stream()
+                .map(this::convertWeeklyReportToDTO)
+                .collect(Collectors.toList());
+    }
+
+    /**
+     * 프로젝트별 회의록 조회
+     */
+    private List<ApprovalDocumentDTO> getMeetingMinutesByProject(Long projectIdx) {
+        List<MeetingsMinutes> minutes = meetingMinutesRepository.findByProjectIdxOrderByCreatedAtDesc(projectIdx);
+
+        return minutes.stream()
+                .map(this::convertMeetingMinutesToDTO)
+                .collect(Collectors.toList());
+    }
+
+    /**
+     * 프로젝트별 출장 조회
+     */
+    private List<ApprovalDocumentDTO> getReceiptTripsByProject(Long projectIdx) {
+        List<ReceiptTrip> trips = receiptTripRepository.findByProjectIdxOrderByTripDateDesc(projectIdx);
+
+        return trips.stream()
+                .map(this::convertReceiptTripToDTO)
+                .collect(Collectors.toList());
+    }
+
+    /**
+     * 프로젝트별 출장+회의 조회
+     */
+    private List<ApprovalDocumentDTO> getReceiptMeetingsByProject(Long projectIdx) {
+        List<ReceiptMeeting> meetings = receiptMeetingRepository.findByProjectIdxOrderByMeetingDateDesc(projectIdx);
+
+        return meetings.stream()
+                .map(this::convertReceiptMeetingToDTO)
+                .collect(Collectors.toList());
+    }
+
+    /**
+     * WeeklyReport → DTO 변환
+     */
+    private ApprovalDocumentDTO convertWeeklyReportToDTO(WeeklyReport report) {
+        ApprovalDocumentDTO dto = ApprovalDocumentDTO.builder()
+                .idx(report.getDocumentIdx())
+                .sourceDocumentId(report.getId())
+                .title(report.getProjectName() + " - " + report.getReportPeriod())
+                .documentType("WEEKLY_REPORT")
+                .drafterUserIdx(report.getUserIdx())
+                .createdAt(report.getCreatedAt())
+                .updatedAt(report.getUpdatedAt())
+                .build();
+
+        // 작성자 정보 조회
+        userRepository.findById(report.getUserIdx()).ifPresent(user -> {
+            dto.setDrafterName(user.getEmpName());
+            dto.setDrafterDept(user.getEmpDept());
+            if (user.getEmpDept() != null) {
+                codeRepository.findByCode(user.getEmpDept()).ifPresent(code -> {
+                    dto.setDrafterDeptName(code.getCodeName());
+                });
+            }
+        });
+
+        // 결재상태 조회
+        if (report.getDocumentIdx() != null) {
+            approvalDocumentRepository.findById(report.getDocumentIdx()).ifPresent(doc -> {
+                dto.setDocumentNo(doc.getDocumentNo());
+            });
+        }
+
+        return dto;
+    }
+
+    /**
+     * MeetingsMinutes → DTO 변환
+     */
+    private ApprovalDocumentDTO convertMeetingMinutesToDTO(MeetingsMinutes minutes) {
+        ApprovalDocumentDTO dto = ApprovalDocumentDTO.builder()
+                .idx(minutes.getDocumentIdx())
+                .sourceDocumentId(minutes.getId())
+                .title(minutes.getMeetingTitle())
+                .documentType("MEETING_MINUTES")
+                .drafterUserIdx(minutes.getUserIdx())
+                .createdAt(minutes.getCreatedAt())
+                .updatedAt(minutes.getUpdatedAt())
+                .build();
+
+        // 작성자 정보 조회
+        userRepository.findById(minutes.getUserIdx()).ifPresent(user -> {
+            dto.setDrafterName(user.getEmpName());
+            dto.setDrafterDept(user.getEmpDept());
+            if (user.getEmpDept() != null) {
+                codeRepository.findByCode(user.getEmpDept()).ifPresent(code -> {
+                    dto.setDrafterDeptName(code.getCodeName());
+                });
+            }
+        });
+
+        // 문서번호 조회
+        if (minutes.getDocumentIdx() != null) {
+            approvalDocumentRepository.findById(minutes.getDocumentIdx()).ifPresent(doc -> {
+                dto.setDocumentNo(doc.getDocumentNo());
+            });
+        }
+
+        return dto;
+    }
+
+    /**
+     * ReceiptTrip → DTO 변환
+     */
+    private ApprovalDocumentDTO convertReceiptTripToDTO(ReceiptTrip trip) {
+        ApprovalDocumentDTO dto = ApprovalDocumentDTO.builder()
+                .idx(trip.getDocumentIdx())
+                .sourceDocumentId(trip.getIdx())
+                .documentNo(trip.getDocumentNumber())
+                .title(trip.getLocation() + " 출장")
+                .documentType("BUSINESS_TRIP")
+                .drafterUserIdx(trip.getAuthorIdx())
+                .status(trip.getStatus())
+                .createdAt(trip.getCreatedAt())
+                .updatedAt(trip.getUpdatedAt())
+                .build();
+
+        // 작성자 정보
+        dto.setDrafterName(trip.getAuthorName());
+        userRepository.findById(trip.getAuthorIdx()).ifPresent(user -> {
+            dto.setDrafterDept(user.getEmpDept());
+            if (user.getEmpDept() != null) {
+                codeRepository.findByCode(user.getEmpDept()).ifPresent(code -> {
+                    dto.setDrafterDeptName(code.getCodeName());
+                });
+            }
+        });
+
+        return dto;
+    }
+
+    /**
+     * ReceiptMeeting → DTO 변환
+     */
+    private ApprovalDocumentDTO convertReceiptMeetingToDTO(ReceiptMeeting meeting) {
+        // 제목 생성: 장소 + 회의 또는 목적
+        String title = meeting.getLocation() + " 회의";
+        if (meeting.getPurpose() != null && !meeting.getPurpose().isEmpty()) {
+            title = meeting.getPurpose();
+        }
+
+        ApprovalDocumentDTO dto = ApprovalDocumentDTO.builder()
+                .idx(meeting.getDocumentIdx())
+                .sourceDocumentId(meeting.getIdx())
+                .documentNo(meeting.getDocumentNumber())
+                .title(title)
+                .documentType("RECEIPT_MEETING")
+                .drafterUserIdx(meeting.getAuthorIdx())
+                .status(meeting.getStatus())
+                .createdAt(meeting.getCreatedAt())
+                .updatedAt(meeting.getUpdatedAt())
+                .build();
+
+        // 작성자 정보
+        dto.setDrafterName(meeting.getAuthorName());
+        userRepository.findById(meeting.getAuthorIdx()).ifPresent(user -> {
+            dto.setDrafterDept(user.getEmpDept());
+            if (user.getEmpDept() != null) {
+                codeRepository.findByCode(user.getEmpDept()).ifPresent(code -> {
+                    dto.setDrafterDeptName(code.getCodeName());
+                });
+            }
+        });
 
         return dto;
     }
