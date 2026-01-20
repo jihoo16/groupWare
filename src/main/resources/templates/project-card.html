@@ -39,92 +39,9 @@
             </div>
 
             <div class="card-grid-container">
-                <!-- 카드 그리드 -->
+                <!-- 카드 그리드 - JavaScript로 동적 생성 -->
                 <div class="research-card-grid" id="cardGrid">
-                    <!-- Sample cards - 실제로는 백엔드에서 데이터를 받아옴 -->
-                    <div class="research-card-item" data-company="신한카드" data-number="1234" data-project="ERP 시스템 개발" data-project-id="1">
-                        <div class="research-card-visual" onclick="showProjectInfo(1)">
-                            <div class="research-card-chip">
-                                <i class="fas fa-microchip"></i>
-                            </div>
-                            <div class="research-card-company">신한카드</div>
-                            <div class="research-card-number">**** **** **** 1234</div>
-                        </div>
-                        <div class="research-card-info" onclick="showProjectInfo(1)">
-                            <div class="info-row">
-                                <span class="info-label">연결 프로젝트</span>
-                                <span class="info-value">ERP 시스템 개발</span>
-                            </div>
-                            <div class="info-row">
-                                <span class="info-label">등록일</span>
-                                <span class="info-value">2025-01-15</span>
-                            </div>
-                        </div>
-                        <div class="research-card-actions">
-                            <button class="btn btn-sm btn-secondary" onclick="editCard(1)">
-                                <i class="fas fa-edit"></i> 수정
-                            </button>
-                            <button class="btn btn-sm btn-delete" onclick="deleteCard(1)">
-                                <i class="fas fa-trash"></i> 삭제
-                            </button>
-                        </div>
-                    </div>
-
-                    <div class="research-card-item" data-company="KB국민카드" data-number="5678" data-project="모바일 앱 개발" data-project-id="2">
-                        <div class="research-card-visual" onclick="showProjectInfo(2)">
-                            <div class="research-card-chip">
-                                <i class="fas fa-microchip"></i>
-                            </div>
-                            <div class="research-card-company">KB국민카드</div>
-                            <div class="research-card-number">**** **** **** 5678</div>
-                        </div>
-                        <div class="research-card-info" onclick="showProjectInfo(2)">
-                            <div class="info-row">
-                                <span class="info-label">연결 프로젝트</span>
-                                <span class="info-value">모바일 앱 개발</span>
-                            </div>
-                            <div class="info-row">
-                                <span class="info-label">등록일</span>
-                                <span class="info-value">2025-01-10</span>
-                            </div>
-                        </div>
-                        <div class="research-card-actions">
-                            <button class="btn btn-sm btn-secondary" onclick="editCard(2)">
-                                <i class="fas fa-edit"></i> 수정
-                            </button>
-                            <button class="btn btn-sm btn-delete" onclick="deleteCard(2)">
-                                <i class="fas fa-trash"></i> 삭제
-                            </button>
-                        </div>
-                    </div>
-
-                    <div class="research-card-item" data-company="삼성카드" data-number="9012" data-project="ERP 시스템 개발">
-                        <div class="research-card-visual">
-                            <div class="research-card-chip">
-                                <i class="fas fa-microchip"></i>
-                            </div>
-                            <div class="research-card-company">삼성카드</div>
-                            <div class="research-card-number">**** **** **** 9012</div>
-                        </div>
-                        <div class="research-card-info">
-                            <div class="info-row">
-                                <span class="info-label">연결 프로젝트</span>
-                                <span class="info-value">ERP 시스템 개발</span>
-                            </div>
-                            <div class="info-row">
-                                <span class="info-label">등록일</span>
-                                <span class="info-value">2025-01-05</span>
-                            </div>
-                        </div>
-                        <div class="research-card-actions">
-                            <button class="btn btn-sm btn-secondary" onclick="editCard(3)">
-                                <i class="fas fa-edit"></i> 수정
-                            </button>
-                            <button class="btn btn-sm btn-delete" onclick="deleteCard(3)">
-                                <i class="fas fa-trash"></i> 삭제
-                            </button>
-                        </div>
-                    </div>
+                    <p class="empty-message">카드 목록을 불러오는 중...</p>
                 </div>
             </div>
         </div>
@@ -249,6 +166,6 @@
     </div>
 </div>
 
-<script th:src="@{/js/project.js}"></script>
+<script th:src="@{/js/project-card.js}"></script>
 </body>
 </html>
