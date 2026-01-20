@@ -402,6 +402,35 @@ document.addEventListener('DOMContentLoaded', function() {
         `;
     }
 
+    // URL 파라미터에서 탭 선택
+    function selectTabFromUrl() {
+        const urlParams = new URLSearchParams(window.location.search);
+        const tab = urlParams.get('tab');
+
+        if (tab) {
+            // tab 파라미터를 category로 매핑
+            const tabToCategoryMap = {
+                'weekly': 'project-weekly-report',
+                'expense': 'receipt-meeting',  // 연구비증빙은 회의록 탭으로
+                'receipt-meeting': 'receipt-meeting',
+                'receipt-trip': 'receipt-trip',
+                'receipt-trip-meeting': 'receipt-trip-meeting',
+                'receipt-overtime': 'receipt-overtime'
+            };
+
+            const category = tabToCategoryMap[tab] || tab;
+
+            // 해당 카테고리 메뉴 아이템 찾아서 클릭
+            const menuItem = document.querySelector(`.sidebar-menu .menu-item[data-category="${category}"]`);
+            if (menuItem) {
+                menuItem.click();
+            }
+        }
+    }
+
     // 초기 로드
-    loadAllDocuments();
+    loadAllDocuments().then(() => {
+        // 문서 로드 후 URL 파라미터에 따라 탭 선택
+        setTimeout(() => selectTabFromUrl(), 100);
+    });
 });
