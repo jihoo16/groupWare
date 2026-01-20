@@ -1136,28 +1136,71 @@ document.addEventListener('DOMContentLoaded', function() {
 
             };
 
-            fetch('/api/projects', {
+            // 프로젝트 생성 및 파일 업로드
+            createProjectWithFiles(createData);
+        });
+    }
+
+    /**
+     * 프로젝트 생성 및 파일 업로드
+     */
+    async function createProjectWithFiles(createData) {
+        try {
+            // 1. 프로젝트 생성
+            const response = await fetch('/api/projects', {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json'
                 },
                 body: JSON.stringify(createData)
-            })
-            .then(response => {
-                if (!response.ok) {
-                    throw new Error('프로젝트 등록에 실패했습니다.');
-                }
-                return response.json();
-            })
-            .then(data => {
-                alert('프로젝트가 등록되었습니다.');
-                window.location.href = '/project';
-            })
-            .catch(error => {
-                console.error('Error creating project:', error);
-                alert('프로젝트 등록 중 오류가 발생했습니다.');
             });
-        });
+
+            if (!response.ok) {
+                throw new Error('프로젝트 등록에 실패했습니다.');
+            }
+
+            const project = await response.json();
+            const projectIdx = project.idx;
+            console.log('프로젝트 생성 완료:', projectIdx);
+
+            // 2. 첨부파일 업로드
+            const files = projectFiles ? Array.from(projectFiles.files) : [];
+            if (files.length > 0) {
+                console.log(`${files.length}개 파일 업로드 시작...`);
+
+                // 현재 사용자 IDX (임시로 1 사용, 실제로는 로그인 사용자 정보 사용)
+                const uploadUserIdx = 1;
+
+                for (const file of files) {
+                    const formData = new FormData();
+                    formData.append('file', file);
+                    formData.append('projectIdx', projectIdx);
+                    formData.append('uploadUserIdx', uploadUserIdx);
+
+                    try {
+                        const uploadResponse = await fetch('/api/project-files/upload', {
+                            method: 'POST',
+                            body: formData
+                        });
+
+                        if (!uploadResponse.ok) {
+                            console.error(`파일 업로드 실패 (${file.name})`);
+                        } else {
+                            console.log(`파일 업로드 성공: ${file.name}`);
+                        }
+                    } catch (uploadError) {
+                        console.error(`파일 업로드 오류 (${file.name}):`, uploadError);
+                    }
+                }
+            }
+
+            alert('프로젝트가 등록되었습니다.');
+            window.location.href = '/project';
+
+        } catch (error) {
+            console.error('Error creating project:', error);
+            alert('프로젝트 등록 중 오류가 발생했습니다.');
+        }
     }
 
     // 폼 유효성 검사
