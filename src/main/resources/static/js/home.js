@@ -148,6 +148,16 @@ function loadTodaySchedule() {
 
 // 전자 문서 건수 로드 함수
 function loadPendingApprovals() {
+    const PROJECT_DOCUMENT_TYPES = [
+        '프로젝트 주간업무보고',
+        '연구비증빙(회의록)',
+        '연구비증빙(출장)',
+        '연구비증빙(출장+회의)',
+        '연구비증빙(야근식대)',
+        '연구비증빙-회의록',
+        '연구비증빙-출장'
+    ];
+
     fetch('/api/approval/documents')
         .then(response => {
             if (!response.ok) {
@@ -158,7 +168,11 @@ function loadPendingApprovals() {
         .then(data => {
             const countElement = document.getElementById('pendingApprovalCount');
             if (countElement) {
-                const totalCount = data.length || 0;
+                // 프로젝트 문서 제외
+                const approvalDocs = data.filter(doc =>
+                    !PROJECT_DOCUMENT_TYPES.includes(doc.documentType)
+                );
+                const totalCount = approvalDocs.length || 0;
                 countElement.innerHTML = `${totalCount}<span>건</span>`;
             }
         })
@@ -178,7 +192,9 @@ function loadProjectDocuments() {
         '연구비증빙(회의록)',
         '연구비증빙(출장)',
         '연구비증빙(출장+회의)',
-        '연구비증빙(야근식대)'
+        '연구비증빙(야근식대)',
+        '연구비증빙-회의록',
+        '연구비증빙-출장'
     ];
 
     fetch('/api/approval/documents')
