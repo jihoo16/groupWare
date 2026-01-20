@@ -14,8 +14,6 @@ document.addEventListener('DOMContentLoaded', function() {
     let weeklyReports = []; // 주간보고서 데이터
     let monthlyReports = []; // 월간보고서 데이터
     let meetingMinutes = []; // 회의록 데이터
-    let receiptMeetings = []; // 연구비증빙 회의록 데이터
-    let receiptTrips = []; // 연구비증빙 출장 데이터
     let vacationRequests = []; // 연차신청서 데이터
 
     // 페이징 관련 변수
@@ -55,8 +53,7 @@ document.addEventListener('DOMContentLoaded', function() {
             'expense': '지출 결의',
             'purchase': '구매 요청',
             'meeting': '회의록',
-            'general': '일반 기안',
-            'receipt': '연구비증빙'
+            'general': '일반 기안'
         };
 
         contentTitle.textContent = titles[category] || '문서 목록';
@@ -153,13 +150,13 @@ document.addEventListener('DOMContentLoaded', function() {
 
         const totalPages = Math.ceil(filteredRows.length / itemsPerPage);
 
-        // 문서가 없으면 페이지네이션 숨김
-        if (totalPages === 0 || filteredRows.length === 0) {
+        // 페이지가 1페이지 이하면 페이지네이션 숨김
+        if (totalPages <= 1) {
             pagination.style.display = 'none';
             return;
         }
 
-        // 문서가 있으면 페이지네이션 표시
+        // 페이지가 2페이지 이상이면 페이지네이션 표시
         pagination.style.display = 'flex';
 
         // 페이지네이션 초기화
@@ -311,8 +308,6 @@ document.addEventListener('DOMContentLoaded', function() {
 
             if (category === 'weekly-report' && reportId) {
                 window.location.href = `/approval/weekly-report/detail?id=${reportId}`;
-            } else if (category === 'project-weekly-report' && reportId) {
-                window.location.href = `/approval/project-weekly-report/detail?id=${reportId}`;
             } else if (category === 'monthly-report' && reportId) {
                 window.location.href = `/approval/monthly-report/detail?id=${reportId}`;
             } else if (category === 'report' && reportId) {
@@ -326,14 +321,6 @@ document.addEventListener('DOMContentLoaded', function() {
             } else if (category === 'meeting' && reportId) {
                 // 회의록 상세페이지로 이동
                 window.location.href = `/approval/meeting/detail?id=${reportId}`;
-            } else if (category === 'receipt' && reportId) {
-                // 연구비증빙 타입에 따라 상세페이지 분기
-                const docType = viewBtn.getAttribute('data-type');
-                if (docType === 'receipt-meeting') {
-                    window.location.href = `/approval/receipt-meeting?id=${reportId}`;
-                } else if (docType === 'receipt-trip') {
-                    window.location.href = `/approval/receipt-trip?id=${reportId}`;
-                }
             } else if (category === 'vacation' && reportId) {
                 // 연차신청서 상세페이지로 이동 (documentIdx 사용)
                 window.location.href = `/approval/vacation/detail?documentIdx=${reportId}`;
@@ -355,8 +342,6 @@ document.addEventListener('DOMContentLoaded', function() {
 
             if (category === 'weekly-report' && reportId) {
                 window.location.href = `/approval/weekly-report/detail?id=${reportId}`;
-            } else if (category === 'project-weekly-report' && reportId) {
-                window.location.href = `/approval/project-weekly-report/detail?id=${reportId}`;
             } else if (category === 'monthly-report' && reportId) {
                 window.location.href = `/approval/monthly-report/detail?id=${reportId}`;
             } else if (category === 'report' && reportId) {
@@ -370,14 +355,6 @@ document.addEventListener('DOMContentLoaded', function() {
             } else if (category === 'meeting' && reportId) {
                 // 회의록 상세페이지로 이동
                 window.location.href = `/approval/meeting/detail?id=${reportId}`;
-            } else if (category === 'receipt' && reportId) {
-                // 연구비증빙 타입에 따라 상세페이지 분기
-                const docType = viewBtn ? viewBtn.getAttribute('data-type') : null;
-                if (docType === 'receipt-meeting') {
-                    window.location.href = `/approval/receipt-meeting?id=${reportId}`;
-                } else if (docType === 'receipt-trip') {
-                    window.location.href = `/approval/receipt-trip?id=${reportId}`;
-                }
             } else if (category === 'vacation' && reportId) {
                 // 연차신청서 상세페이지로 이동 (documentIdx 사용)
                 window.location.href = `/approval/vacation/detail?documentIdx=${reportId}`;
@@ -402,26 +379,33 @@ document.addEventListener('DOMContentLoaded', function() {
                 console.log('전체 문서 로드 성공:', documents.length + '건');
                 console.log('첫 번째 데이터:', documents[0]);
 
-                // 전체 문서 저장
-                allDocuments = documents;
+                // 프로젝트 관련 문서 타입 제외
+                const PROJECT_DOCUMENT_TYPES = [
+                    '프로젝트 주간업무보고',
+                    '연구비증빙(회의록)',
+                    '연구비증빙(출장)',
+                    '연구비증빙(출장+회의)',
+                    '연구비증빙(야근식대)',
+                    '연구비증빙-회의록',
+                    '연구비증빙-출장'
+                ];
+
+                // 전체 문서 저장 (프로젝트 문서 제외)
+                allDocuments = documents.filter(doc =>
+                    !PROJECT_DOCUMENT_TYPES.includes(doc.documentType)
+                );
+
+                console.log('프로젝트 문서 제외 후:', allDocuments.length + '건');
 
                 // 문서 타입별로 분류
-                weeklyReports = documents.filter(doc => doc.documentType === '주간업무보고');
-                const projectWeeklyReports = documents.filter(doc => doc.documentType === '프로젝트 주간업무보고');
-                monthlyReports = documents.filter(doc => doc.documentType === '월간업무보고');
-                meetingMinutes = documents.filter(doc => doc.documentType === '회의록');
-                receiptMeetings = documents.filter(doc => doc.documentType === '연구비증빙-회의록');
-                receiptTrips = documents.filter(doc => doc.documentType === '연구비증빙-출장');
-                vacationRequests = documents.filter(doc => doc.documentType === '연차신청서');
+                weeklyReports = allDocuments.filter(doc => doc.documentType === '주간업무보고');
+                monthlyReports = allDocuments.filter(doc => doc.documentType === '월간업무보고');
+                meetingMinutes = allDocuments.filter(doc => doc.documentType === '회의록');
+                vacationRequests = allDocuments.filter(doc => doc.documentType === '연차신청서');
 
-                // 주간업무보고에 프로젝트 주간업무보고 합치기
-                weeklyReports = weeklyReports.concat(projectWeeklyReports);
-
-                console.log('주간보고서:', weeklyReports.length + '건 (프로젝트: ' + projectWeeklyReports.length + '건)');
+                console.log('주간보고서:', weeklyReports.length + '건');
                 console.log('월간보고서:', monthlyReports.length + '건');
                 console.log('회의록:', meetingMinutes.length + '건');
-                console.log('연구비증빙-회의록:', receiptMeetings.length + '건');
-                console.log('연구비증빙-출장:', receiptTrips.length + '건');
                 console.log('연차신청서:', vacationRequests.length + '건');
             } else {
                 const errorText = await response.text();
@@ -444,11 +428,8 @@ document.addEventListener('DOMContentLoaded', function() {
     function getCategoryFromDocumentType(documentType) {
         const categoryMap = {
             '주간업무보고': 'weekly-report',
-            '프로젝트 주간업무보고': 'project-weekly-report',
             '월간업무보고': 'monthly-report',
             '회의록': 'meeting',
-            '연구비증빙-회의록': 'receipt',
-            '연구비증빙-출장': 'receipt',
             '연차신청서': 'vacation'
         };
         return categoryMap[documentType] || 'general';
@@ -458,11 +439,8 @@ document.addEventListener('DOMContentLoaded', function() {
     function getIconFromDocumentType(documentType) {
         const iconMap = {
             '주간업무보고': 'fa-calendar-week',
-            '프로젝트 주간업무보고': 'fa-project-diagram',
             '월간업무보고': 'fa-calendar-alt',
             '회의록': 'fa-users',
-            '연구비증빙-회의록': 'fa-receipt',
-            '연구비증빙-출장': 'fa-plane',
             '연차신청서': 'fa-umbrella-beach'
         };
         return iconMap[documentType] || 'fa-file-alt';
@@ -496,11 +474,6 @@ document.addEventListener('DOMContentLoaded', function() {
             tr.className = 'doc-row';
 
             let category = getCategoryFromDocumentType(doc.documentType);
-
-            // 제목이나 문서 타입에 "프로젝트"가 포함되어 있으면 프로젝트 주간업무보고로 처리
-            if (category === 'weekly-report' && (doc.title.includes('프로젝트') || doc.documentType.includes('프로젝트'))) {
-                category = 'project-weekly-report';
-            }
 
             tr.setAttribute('data-category', category);
 
