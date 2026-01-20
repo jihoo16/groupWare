@@ -254,6 +254,18 @@ document.addEventListener('DOMContentLoaded', function() {
         return 'unknown';
     }
 
+    // 문서 타입별 아이콘 매핑
+    function getIconFromDocumentType(documentType) {
+        const iconMap = {
+            '프로젝트 주간업무보고': 'fa-calendar-week',
+            '연구비증빙(회의록)': 'fa-utensils',
+            '연구비증빙(출장)': 'fa-plane',
+            '연구비증빙(출장+회의)': 'fa-suitcase',
+            '연구비증빙(야근식대)': 'fa-moon'
+        };
+        return iconMap[documentType] || 'fa-file-alt';
+    }
+
     // 문서 로드
     async function loadAllDocuments() {
         try {
@@ -313,7 +325,13 @@ document.addEventListener('DOMContentLoaded', function() {
         // 문서종류
         const typeCell = document.createElement('td');
         typeCell.className = 'doc-type-cell';
-        typeCell.innerHTML = `<span class="doc-type-badge">${doc.documentType || '-'}</span>`;
+        const icon = getIconFromDocumentType(doc.documentType);
+        typeCell.innerHTML = `
+            <span class="doc-type">
+                <i class="fas ${icon}"></i>
+                ${doc.documentType || '-'}
+            </span>
+        `;
         tr.appendChild(typeCell);
 
         // 제목
