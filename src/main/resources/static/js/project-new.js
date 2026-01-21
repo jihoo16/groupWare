@@ -17,6 +17,10 @@ document.addEventListener('DOMContentLoaded', function() {
     const cardList = document.getElementById('cardList');
     const projectFiles = document.getElementById('projectFiles');
     const fileList = document.getElementById('fileList');
+    const fileUploadArea = document.getElementById('fileUploadArea');
+
+    // 파일 관련 변수
+    let selectedFiles = [];
     const addRelatedProjectBtn = document.getElementById('addRelatedProjectBtn');
     const relatedProjectModal = document.getElementById('relatedProjectModal');
     const relatedProjectSearchInput = document.getElementById('relatedProjectSearchInput');
@@ -979,28 +983,83 @@ document.addEventListener('DOMContentLoaded', function() {
         return `${year}-${month}-${day}`;
     }
 
-    // 파일 선택
+    // ============================================
+    // 파일 관련 로직
+    // ============================================
+
+    // 파일 선택 이벤트
     if (projectFiles) {
-        projectFiles.addEventListener('change', function() {
+        projectFiles.addEventListener('change', function(e) {
+            const files = Array.from(e.target.files);
+            files.forEach(file => {
+                // 파일 크기 체크 (50MB)
+                if (file.size > 50 * 1024 * 1024) {
+                    alert(`파일 크기가 너무 큽니다: ${file.name} (최대 50MB)`);
+                    return;
+                }
+                selectedFiles.push(file);
+            });
+            projectFiles.value = ''; // 입력 초기화
+            renderFileList();
+        });
+    }
+
+    // 드래그 앤 드롭 이벤트
+    if (fileUploadArea) {
+        fileUploadArea.addEventListener('dragover', function(e) {
+            e.preventDefault();
+            this.style.borderColor = '#667eea';
+            this.style.background = '#f0f4ff';
+        });
+
+        fileUploadArea.addEventListener('dragleave', function() {
+            this.style.borderColor = '#cbd5e1';
+            this.style.background = '#f8fafc';
+        });
+
+        fileUploadArea.addEventListener('drop', function(e) {
+            e.preventDefault();
+            this.style.borderColor = '#cbd5e1';
+            this.style.background = '#f8fafc';
+
+            const files = Array.from(e.dataTransfer.files);
+            files.forEach(file => {
+                if (file.size > 50 * 1024 * 1024) {
+                    alert(`파일 크기가 너무 큽니다: ${file.name} (최대 50MB)`);
+                    return;
+                }
+                selectedFiles.push(file);
+            });
             renderFileList();
         });
     }
 
     // 파일 목록 렌더링
     function renderFileList() {
-        if (!fileList || !projectFiles.files.length) {
-            fileList.innerHTML = '';
-            return;
-        }
+        if (!fileList) return;
 
         fileList.innerHTML = '';
 
-        Array.from(projectFiles.files).forEach((file, index) => {
+        if (selectedFiles.length === 0) {
+            fileList.innerHTML = '<p style="color: #999; font-size: 12px; padding: 10px 0;">첨부된 파일이 없습니다.</p>';
+            return;
+        }
+
+        selectedFiles.forEach((file, index) => {
             const item = document.createElement('div');
             item.className = 'file-item';
+
+            // 파일 확장자에 따른 아이콘
+            let icon = 'fa-file';
+            if (file.name.match(/\.(jpg|jpeg|png|gif)$/i)) icon = 'fa-file-image';
+            else if (file.name.match(/\.(pdf)$/i)) icon = 'fa-file-pdf';
+            else if (file.name.match(/\.(doc|docx)$/i)) icon = 'fa-file-word';
+            else if (file.name.match(/\.(xls|xlsx)$/i)) icon = 'fa-file-excel';
+
             item.innerHTML = `
-                <span><i class="fas fa-file"></i> ${file.name} (${formatFileSize(file.size)})</span>
-                <button type="button" onclick="removeFile(${index})">
+                <i class="fas ${icon}"></i>
+                <span>${file.name} (${(file.size / 1024).toFixed(1)} KB)</span>
+                <button class="btn-remove-file" type="button" onclick="removeFile(${index})">
                     <i class="fas fa-times"></i>
                 </button>
             `;
@@ -1019,16 +1078,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
     // 파일 제거 (전역 함수)
     window.removeFile = function(index) {
-        const dt = new DataTransfer();
-        const files = Array.from(projectFiles.files);
-
-        files.forEach((file, i) => {
-            if (i !== index) {
-                dt.items.add(file);
-            }
-        });
-
-        projectFiles.files = dt.files;
+        selectedFiles.splice(index, 1);
         renderFileList();
     };
 
@@ -1164,14 +1214,13 @@ document.addEventListener('DOMContentLoaded', function() {
             console.log('프로젝트 생성 완료:', projectIdx);
 
             // 2. 첨부파일 업로드
-            const files = projectFiles ? Array.from(projectFiles.files) : [];
-            if (files.length > 0) {
-                console.log(`${files.length}개 파일 업로드 시작...`);
+            if (selectedFiles.length > 0) {
+                console.log(`${selectedFiles.length}개 파일 업로드 시작...`);
 
                 // 현재 사용자 IDX (임시로 1 사용, 실제로는 로그인 사용자 정보 사용)
                 const uploadUserIdx = 1;
 
-                for (const file of files) {
+                for (const file of selectedFiles) {
                     const formData = new FormData();
                     formData.append('file', file);
                     formData.append('projectIdx', projectIdx);

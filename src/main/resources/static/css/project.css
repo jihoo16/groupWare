@@ -961,9 +961,51 @@ select.form-control {
     transform: scale(1.1);
 }
 
-/* 파일 선택 영역 */
+/* 파일 드래그앤드롭 영역 */
 .file-upload-area {
-    margin-top: 16px;
+    border: 2px dashed #cbd5e1;
+    border-radius: 8px;
+    padding: 30px 20px;
+    text-align: center;
+    background: #f8fafc;
+    transition: all 0.2s ease;
+    cursor: pointer;
+}
+
+.file-upload-area:hover {
+    border-color: #667eea;
+    background: #f0f4ff;
+}
+
+.file-upload-area.dragover {
+    border-color: #667eea;
+    background: #f0f4ff;
+}
+
+.file-upload-label {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    cursor: pointer;
+    color: #777;
+}
+
+.file-upload-label i {
+    font-size: 32px;
+    color: #667eea;
+}
+
+.file-upload-label span {
+    font-size: 14px;
+    font-weight: 500;
+    color: #495057;
+}
+
+.file-upload-label small {
+    font-size: 12px;
+    color: #868e96;
 }
 
 .file-input-hidden {
@@ -1002,56 +1044,65 @@ select.form-control {
 
 /* 파일 목록 */
 .file-list {
-    margin-top: 16px;
-    display: flex;
-    flex-direction: column;
-    gap: 10px;
+    margin-top: 15px;
 }
 
 .file-item {
     display: flex;
     align-items: center;
-    justify-content: space-between;
+    gap: 12px;
     padding: 12px 16px;
-    background: linear-gradient(to right, #f8f9fa, #ffffff);
-    border: 2px solid #e9ecef;
+    background: #fff;
+    border: 1px solid #e0e0e0;
     border-radius: 8px;
-    font-size: 13px;
+    margin-bottom: 8px;
     transition: all 0.2s ease;
 }
 
 .file-item:hover {
-    border-color: #cbd5e1;
-    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
-    transform: translateX(4px);
+    background: #f5f5f5;
+    border-color: #d0d0d0;
+    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.05);
+}
+
+.file-item > i {
+    font-size: 18px;
+    color: #667eea;
 }
 
 .file-item span {
-    display: flex;
-    align-items: center;
-    gap: 10px;
-    color: #495057;
+    flex: 1;
+    font-size: 13.5px;
+    color: #333;
 }
 
-.file-item span i {
-    color: #4361ee;
-    font-size: 16px;
-}
-
-.file-item button {
+.file-item .btn-download-file {
     background: none;
     border: none;
-    color: #dc3545;
+    color: #999;
     cursor: pointer;
-    font-size: 16px;
-    padding: 4px 8px;
-    border-radius: 4px;
-    transition: all 0.2s ease;
+    font-size: 15px;
+    padding: 4px;
+    display: flex;
+    align-items: center;
+    text-decoration: none;
 }
 
-.file-item button:hover {
-    background: #ffe6e6;
-    transform: scale(1.1);
+.file-item .btn-download-file:hover {
+    color: #1976d2;
+}
+
+.file-item .btn-remove-file {
+    background: none;
+    border: none;
+    color: #999;
+    cursor: pointer;
+    font-size: 15px;
+    padding: 4px;
+}
+
+.file-item .btn-remove-file:hover {
+    color: #d32f2f;
 }
 
 /* 폼 액션 */
