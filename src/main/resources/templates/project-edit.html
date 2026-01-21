@@ -237,16 +237,13 @@
 
             <div class="form-section">
                 <h2>첨부 파일</h2>
-                <div class="form-group">
-                    <label>파일 첨부</label>
-                    <input type="file" id="projectFiles" name="projectFiles" class="file-input-hidden" multiple>
-                    <button type="button" class="file-upload-button" onclick="document.getElementById('projectFiles').click()">
-                        <i class="fas fa-paperclip"></i> 파일 선택
-                    </button>
-                    <small class="form-text">프로젝트 관련 문서, 기획서, 디자인 파일 등을 첨부할 수 있습니다.</small>
-                </div>
-                <div id="existingFileList" class="file-list">
-                    <!-- 기존 파일 목록 -->
+                <div class="file-upload-area" id="fileUploadArea">
+                    <input type="file" id="projectFiles" name="projectFiles" multiple hidden>
+                    <label for="projectFiles" class="file-upload-label">
+                        <i class="fas fa-cloud-upload-alt"></i>
+                        <span>파일을 선택하거나 드래그하세요</span>
+                        <small>최대 50MB</small>
+                    </label>
                 </div>
                 <div id="fileList" class="file-list">
                     <!-- 첨부된 파일 목록 -->
