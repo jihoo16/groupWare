@@ -49,10 +49,12 @@ async function loadProjectDetail(projectId) {
         displayRelatedProjects(data.projectRelations || []);
         displayTeamMembers(data.projectMembers || []);
         displayExpenseSettings(data.projectExpenseSettings || []);
-        displayAttachments(data.attachments || []);
 
         // 연구비 카드는 별도 API로 조회
         loadProjectCards(projectId);
+
+        // 첨부파일 로드
+        loadProjectFiles(projectId);
 
         // 관련 문서 로드
         loadProjectDocuments(projectId);
@@ -291,6 +293,24 @@ function getPositionName(positionCode) {
 }
 
 /**
+ * 프로젝트 첨부파일 로드
+ */
+async function loadProjectFiles(projectId) {
+    try {
+        const response = await fetch(`/api/project-files/project/${projectId}`);
+        if (!response.ok) {
+            throw new Error('첨부파일 조회 실패');
+        }
+
+        const files = await response.json();
+        displayAttachments(files || []);
+    } catch (error) {
+        console.error('첨부파일 조회 오류:', error);
+        displayAttachments([]);
+    }
+}
+
+/**
  * 첨부파일 표시
  */
 function displayAttachments(attachments) {
@@ -305,13 +325,42 @@ function displayAttachments(attachments) {
         <ul class="attachment-list">
             ${attachments.map(file => `
                 <li class="attachment-item">
-                    <i class="fas fa-file-pdf"></i>
-                    <a href="${file.url}" target="_blank">${file.name}</a>
-                    ${file.size ? `<span class="file-size">${formatFileSize(file.size)}</span>` : ''}
+                    <i class="${getFileIcon(file.originalFilename)}"></i>
+                    <a href="/api/project-files/download/${file.idx}" target="_blank">${file.originalFilename}</a>
+                    ${file.fileSize ? `<span class="file-size">${formatFileSize(file.fileSize)}</span>` : ''}
                 </li>
             `).join('')}
         </ul>
     `;
+}
+
+/**
+ * 파일 확장자에 따른 아이콘 반환
+ */
+function getFileIcon(filename) {
+    if (!filename) return 'fas fa-file';
+
+    const ext = filename.split('.').pop().toLowerCase();
+    const iconMap = {
+        'pdf': 'fas fa-file-pdf',
+        'doc': 'fas fa-file-word',
+        'docx': 'fas fa-file-word',
+        'xls': 'fas fa-file-excel',
+        'xlsx': 'fas fa-file-excel',
+        'ppt': 'fas fa-file-powerpoint',
+        'pptx': 'fas fa-file-powerpoint',
+        'jpg': 'fas fa-file-image',
+        'jpeg': 'fas fa-file-image',
+        'png': 'fas fa-file-image',
+        'gif': 'fas fa-file-image',
+        'zip': 'fas fa-file-archive',
+        'rar': 'fas fa-file-archive',
+        '7z': 'fas fa-file-archive',
+        'txt': 'fas fa-file-alt',
+        'hwp': 'fas fa-file-alt'
+    };
+
+    return iconMap[ext] || 'fas fa-file';
 }
 
 /**
