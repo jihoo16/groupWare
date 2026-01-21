@@ -77,7 +77,6 @@
     overflow-x: visible;
     margin: 24px;
 }
-
 .card-header {
     padding: 20px 24px;
     border-bottom: 1px solid #e9ecef;
@@ -160,6 +159,8 @@
 /* 현재 진행중인 프로젝트 그리드 - 최대 4개, 카드 최소 440px (컨테이너에 맞게 조절) */
 #currentProjectGrid {
     grid-template-columns: repeat(4, minmax(min(440px, 100%), 1fr));
+    max-height: 750px;
+    overflow-y: auto;
 }
 
 @media (max-width: 2030px) {
