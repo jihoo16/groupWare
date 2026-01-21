@@ -347,7 +347,7 @@ function loadMyProjects() {
                 const period = formatProjectPeriod(project.projectStartDate, project.projectEndDate);
 
                 return `
-                    <div class="project-item" onclick="window.location.href='/project/edit/${project.idx}'">
+                    <div class="project-item" onclick="window.location.href='/project/detail?projectId=${project.idx}'">
                         <div class="project-item-header">
                             <span class="project-title">${escapeHtml(project.projectName)}</span>
                             <span class="project-status ${statusClass}">${statusText}</span>
