@@ -539,7 +539,7 @@ function displayExpenseReports(reports) {
 }
 
 /**
- * 문서 상세 페이지로 이동
+ * 문서 상세 페이지로 이동 (새 탭에서 열기)
  */
 function goToDocument(documentType, sourceDocumentId) {
     if (!sourceDocumentId) return;
@@ -558,7 +558,7 @@ function goToDocument(documentType, sourceDocumentId) {
             url = `/approval/detail?documentId=${sourceDocumentId}`;
     }
 
-    location.href = url;
+    window.open(url, '_blank');
 }
 
 /**
