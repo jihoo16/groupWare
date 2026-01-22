@@ -1894,9 +1894,8 @@ document.addEventListener('DOMContentLoaded', function() {
                 return;
             }
 
-            // 주간 달성률 확인 (0이면 안됨)
+            // 주간 달성률 확인 (0이면 확인 요청)
             if (achievementRate === null || achievementRate === 0) {
-                alert('❌ 주간 달성률을 입력해주세요.\n\n주간 달성률은 0보다 커야 합니다.');
                 // 주간 달성률 영역으로 스크롤 및 포커스
                 if (weeklyAchievementRateInput) {
                     weeklyAchievementRateInput.scrollIntoView({ behavior: 'smooth', block: 'center' });
@@ -1904,15 +1903,18 @@ document.addEventListener('DOMContentLoaded', function() {
                     // 숫자 입력 필드 강조
                     if (weeklyAchievementValueInput) {
                         weeklyAchievementValueInput.focus();
-                        weeklyAchievementValueInput.style.border = '2px solid #ef5350';
-                        weeklyAchievementValueInput.style.boxShadow = '0 0 0 3px rgba(239, 83, 80, 0.2)';
+                        weeklyAchievementValueInput.style.border = '2px solid #ff9800';
+                        weeklyAchievementValueInput.style.boxShadow = '0 0 0 3px rgba(255, 152, 0, 0.2)';
                         setTimeout(() => {
                             weeklyAchievementValueInput.style.border = '';
                             weeklyAchievementValueInput.style.boxShadow = '';
                         }, 2000);
                     }
                 }
-                return;
+
+                if (!confirm('⚠️ 주간 달성률이 0%입니다.\n\n이대로 저장하시겠습니까?')) {
+                    return;
+                }
             }
 
             // 프로젝트 전체 달성률 변화 확인
@@ -1920,7 +1922,6 @@ document.addEventListener('DOMContentLoaded', function() {
                 parseInt(inputProgressRateSlider.value) : null;
 
             if (inputProgressRateValue !== null && inputProgressRateValue === currentProgressRateValue) {
-                alert('❌ 프로젝트 전체 달성률에 변화가 없습니다.\n\n프로젝트 전체 달성률을 업데이트해주세요.');
                 // 프로젝트 전체 달성률 영역으로 스크롤 및 포커스
                 if (inputProgressRateSlider) {
                     inputProgressRateSlider.scrollIntoView({ behavior: 'smooth', block: 'center' });
@@ -1928,15 +1929,18 @@ document.addEventListener('DOMContentLoaded', function() {
                     // 숫자 입력 필드 강조
                     if (inputProgressValueInput) {
                         inputProgressValueInput.focus();
-                        inputProgressValueInput.style.border = '2px solid #ef5350';
-                        inputProgressValueInput.style.boxShadow = '0 0 0 3px rgba(239, 83, 80, 0.2)';
+                        inputProgressValueInput.style.border = '2px solid #ff9800';
+                        inputProgressValueInput.style.boxShadow = '0 0 0 3px rgba(255, 152, 0, 0.2)';
                         setTimeout(() => {
                             inputProgressValueInput.style.border = '';
                             inputProgressValueInput.style.boxShadow = '';
                         }, 2000);
                     }
                 }
-                return;
+
+                if (!confirm('⚠️ 프로젝트 전체 달성률에 변화가 없습니다.\n\n이대로 저장하시겠습니까?')) {
+                    return;
+                }
             }
 
             // 수정 모드 확인
