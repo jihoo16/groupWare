@@ -8,13 +8,13 @@ import lombok.NoArgsConstructor;
 import java.time.LocalDateTime;
 
 /**
- * 연구비 카드 조회 DTO
+ * 연구비카드 조회 DTO
  */
 @Data
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
-public class ResearchCardDTO {
+public class ProjectCardDTO {
 
     /**
      * 카드 IDX

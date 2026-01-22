@@ -4,7 +4,7 @@ import com.pinecni.erp.api.project.dto.ProjectCreateDTO;
 import com.pinecni.erp.api.project.dto.ProjectDTO;
 import com.pinecni.erp.api.project.dto.ProjectExpenseSettingDTO;
 import com.pinecni.erp.api.project.dto.ProjectUpdateDTO;
-import com.pinecni.erp.api.project.dto.ResearchCardDTO;
+import com.pinecni.erp.api.project.dto.ProjectCardDTO;
 
 import java.util.List;
 
@@ -42,7 +42,7 @@ public interface ProjectService {
     List<ProjectDTO> getPastProjectsByStatus(String status);
 
 
-    List<ResearchCardDTO> getProjectCards(Long projectIdx);
+    List<ProjectCardDTO> getProjectCards(Long projectIdx);
 
     /**
      * 프로젝트의 직급별 경비 설정 조회

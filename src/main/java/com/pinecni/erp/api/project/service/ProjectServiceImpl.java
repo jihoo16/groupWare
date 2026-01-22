@@ -2,18 +2,18 @@ package com.pinecni.erp.api.project.service;
 
 import com.pinecni.erp.api.code.repository.CodeRepository;
 import com.pinecni.erp.api.project.dto.*;
-import com.pinecni.erp.api.project.dto.ResearchCardDTO;
+import com.pinecni.erp.api.project.dto.ProjectCardDTO;
 import com.pinecni.erp.api.project.mapper.ProjectMapper;
 import com.pinecni.erp.api.project.repository.ProjectExpenseSettingRepository;
 import com.pinecni.erp.api.project.repository.ProjectMemberRepository;
 import com.pinecni.erp.api.project.repository.ProjectRelationRepository;
 import com.pinecni.erp.api.project.repository.ProjectRepository;
-import com.pinecni.erp.api.project.repository.ResearchCardRepository;
+import com.pinecni.erp.api.project.repository.ProjectCardRepository;
 import com.pinecni.erp.entity.Project;
 import com.pinecni.erp.entity.ProjectExpenseSetting;
 import com.pinecni.erp.entity.ProjectMember;
 import com.pinecni.erp.entity.ProjectRelation;
-import com.pinecni.erp.entity.ResearchCard;
+import com.pinecni.erp.entity.ProjectCard;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -34,7 +34,7 @@ public class ProjectServiceImpl implements ProjectService {
 
     private final ProjectRepository projectRepository;
     private final ProjectMemberRepository projectMemberRepository;
-    private final ResearchCardRepository researchCardRepository;
+    private final ProjectCardRepository projectCardRepository;
     private final ProjectRelationRepository projectRelationRepository;
     private final ProjectExpenseSettingRepository projectExpenseSettingRepository;
     private final CodeRepository codeRepository;
@@ -128,7 +128,7 @@ public class ProjectServiceImpl implements ProjectService {
                     continue;
                 }
 
-                ResearchCard card = ResearchCard.builder()
+                ProjectCard card = ProjectCard.builder()
                         .projectIdx(savedProject.getIdx())
                         .cardCompany(cardDTO.getCardCompany())
                         .cardLastDigits(cardDTO.getCardLastDigits())
@@ -136,7 +136,7 @@ public class ProjectServiceImpl implements ProjectService {
                         .isActive(true)
                         .build();
 
-                researchCardRepository.save(card);
+                projectCardRepository.save(card);
                 log.debug("Research card saved: company={}, lastDigits={}, projectIdx={}",
                          cardDTO.getCardCompany(), cardDTO.getCardLastDigits(), savedProject.getIdx());
             }
@@ -239,7 +239,7 @@ public class ProjectServiceImpl implements ProjectService {
             log.debug("Updating {} research cards for project idx={}", updateDTO.getProjectCards().size(), idx);
 
             // 1. 기존 활성 카드 목록 조회
-            List<ResearchCard> existingCards = researchCardRepository.findByProjectIdx(idx);
+            List<ProjectCard> existingCards = projectCardRepository.findByProjectIdx(idx);
             java.util.Set<Long> updatedCardIds = new java.util.HashSet<>();
 
             // 2. DTO의 카드 처리 (생성 또는 업데이트)
@@ -253,7 +253,7 @@ public class ProjectServiceImpl implements ProjectService {
 
                 if (cardDTO.getIdx() != null && cardDTO.getIdx() > 0) {
                     // 기존 카드 업데이트
-                    ResearchCard existingCard = researchCardRepository.findById(cardDTO.getIdx())
+                    ProjectCard existingCard = projectCardRepository.findById(cardDTO.getIdx())
                             .orElseThrow(() -> new IllegalArgumentException("카드를 찾을 수 없습니다: " + cardDTO.getIdx()));
 
                     existingCard.setCardCompany(cardDTO.getCardCompany());
@@ -261,14 +261,14 @@ public class ProjectServiceImpl implements ProjectService {
                     existingCard.setCardNickname(cardDTO.getCardNickname());
                     existingCard.setIsActive(true);
 
-                    researchCardRepository.save(existingCard);
+                    projectCardRepository.save(existingCard);
                     updatedCardIds.add(existingCard.getIdx());
 
                     log.debug("Research card updated: idx={}, company={}, lastDigits={}",
                              existingCard.getIdx(), cardDTO.getCardCompany(), cardDTO.getCardLastDigits());
                 } else {
                     // 신규 카드 생성
-                    ResearchCard newCard = ResearchCard.builder()
+                    ProjectCard newCard = ProjectCard.builder()
                             .projectIdx(idx)
                             .cardCompany(cardDTO.getCardCompany())
                             .cardLastDigits(cardDTO.getCardLastDigits())
@@ -276,7 +276,7 @@ public class ProjectServiceImpl implements ProjectService {
                             .isActive(true)
                             .build();
 
-                    ResearchCard savedCard = researchCardRepository.save(newCard);
+                    ProjectCard savedCard = projectCardRepository.save(newCard);
                     updatedCardIds.add(savedCard.getIdx());
 
                     log.debug("Research card created: idx={}, company={}, lastDigits={}",
@@ -285,10 +285,10 @@ public class ProjectServiceImpl implements ProjectService {
             }
 
             // 3. DTO에 포함되지 않은 기존 카드는 비활성화 (삭제된 것으로 간주)
-            for (ResearchCard existingCard : existingCards) {
+            for (ProjectCard existingCard : existingCards) {
                 if (!updatedCardIds.contains(existingCard.getIdx())) {
                     existingCard.setIsActive(false);
-                    researchCardRepository.save(existingCard);
+                    projectCardRepository.save(existingCard);
                     log.debug("Research card deactivated: idx={}", existingCard.getIdx());
                 }
             }
@@ -540,11 +540,11 @@ public class ProjectServiceImpl implements ProjectService {
     }
 
     @Override
-    public List<ResearchCardDTO> getProjectCards(Long projectIdx) {
+    public List<ProjectCardDTO> getProjectCards(Long projectIdx) {
         log.debug("getProjectCards() called with projectIdx: {}", projectIdx);
 
-        return researchCardRepository.findByProjectIdx(projectIdx).stream()
-                .map(card -> ResearchCardDTO.builder()
+        return projectCardRepository.findByProjectIdx(projectIdx).stream()
+                .map(card -> ProjectCardDTO.builder()
                         .idx(card.getIdx())
                         .projectIdx(card.getProjectIdx())
                         .cardCompany(card.getCardCompany())

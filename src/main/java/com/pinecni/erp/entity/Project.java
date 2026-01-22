@@ -85,7 +85,7 @@ public class Project extends BaseEntity {
     private List<ProjectMember> projectMembers = new ArrayList<>();
 
     @OneToMany(mappedBy = "project", cascade = CascadeType.ALL, orphanRemoval = true)
-    private List<ResearchCard> researchCards = new ArrayList<>();
+    private List<ProjectCard> projectCards = new ArrayList<>();
 
     @OneToMany(mappedBy = "project", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<ProjectFile> projectFiles = new ArrayList<>();

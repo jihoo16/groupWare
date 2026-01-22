@@ -42,7 +42,7 @@ document.addEventListener('DOMContentLoaded', function() {
      */
     async function loadAllCards() {
         try {
-            const response = await fetch('/api/research-cards');
+            const response = await fetch('/api/project-cards');
             if (!response.ok) {
                 throw new Error('카드 목록 조회 실패');
             }
@@ -233,14 +233,14 @@ document.addEventListener('DOMContentLoaded', function() {
             let response;
             if (editingCardIdx) {
                 // 수정
-                response = await fetch(`/api/research-cards/${editingCardIdx}`, {
+                response = await fetch(`/api/project-cards/${editingCardIdx}`, {
                     method: 'PUT',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify(cardData)
                 });
             } else {
                 // 등록
-                response = await fetch('/api/research-cards', {
+                response = await fetch('/api/project-cards', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify(cardData)
@@ -277,7 +277,7 @@ document.addEventListener('DOMContentLoaded', function() {
         }
 
         try {
-            const response = await fetch(`/api/research-cards/${cardIdx}`, {
+            const response = await fetch(`/api/project-cards/${cardIdx}`, {
                 method: 'DELETE'
             });
 

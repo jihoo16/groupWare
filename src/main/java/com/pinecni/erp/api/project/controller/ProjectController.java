@@ -3,7 +3,7 @@ package com.pinecni.erp.api.project.controller;
 import com.pinecni.erp.api.project.dto.ProjectCreateDTO;
 import com.pinecni.erp.api.project.dto.ProjectDTO;
 import com.pinecni.erp.api.project.dto.ProjectUpdateDTO;
-import com.pinecni.erp.api.project.dto.ResearchCardDTO;
+import com.pinecni.erp.api.project.dto.ProjectCardDTO;
 import com.pinecni.erp.api.project.service.ProjectService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -185,11 +185,11 @@ public class ProjectController {
      * GET /api/projects/{idx}/cards
      */
     @GetMapping("/{idx}/cards")
-    public ResponseEntity<List<ResearchCardDTO>> getProjectCards(@PathVariable Long idx) {
+    public ResponseEntity<List<ProjectCardDTO>> getProjectCards(@PathVariable Long idx) {
         log.debug("GET /api/projects/{}/cards", idx);
 
         try {
-            List<ResearchCardDTO> cards = projectService.getProjectCards(idx);
+            List<ProjectCardDTO> cards = projectService.getProjectCards(idx);
             return ResponseEntity.ok(cards);
         } catch (Exception e) {
             log.error("연구비 카드 조회 실패: {}", e.getMessage());

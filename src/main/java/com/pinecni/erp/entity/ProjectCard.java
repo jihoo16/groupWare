@@ -4,24 +4,24 @@ import jakarta.persistence.*;
 import lombok.*;
 
 /**
- * 연구비 카드 Entity
+ * 연구비카드 Entity
  */
 @Entity
-@Table(name = "research_cards", schema = "erp", indexes = {
-        @Index(name = "idx_rc_project", columnList = "project_idx"),
-        @Index(name = "idx_rc_company", columnList = "card_company"),
-        @Index(name = "idx_rc_digits", columnList = "card_last_digits")
+@Table(name = "project_cards", schema = "erp", indexes = {
+        @Index(name = "idx_pc_project", columnList = "project_idx"),
+        @Index(name = "idx_pc_company", columnList = "card_company"),
+        @Index(name = "idx_pc_digits", columnList = "card_last_digits")
 })
 @Getter
 @Setter
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
-public class ResearchCard extends BaseEntity {
+public class ProjectCard extends BaseEntity {
 
     @Id
-    @GeneratedValue(strategy = GenerationType.SEQUENCE, generator = "research_cards_sequence")
-    @SequenceGenerator(name = "research_cards_sequence", sequenceName = "erp.research_cards_sequence", allocationSize = 1)
+    @GeneratedValue(strategy = GenerationType.SEQUENCE, generator = "project_cards_sequence")
+    @SequenceGenerator(name = "project_cards_sequence", sequenceName = "erp.project_cards_sequence", allocationSize = 1)
     @Column(name = "idx")
     private Long idx;
 

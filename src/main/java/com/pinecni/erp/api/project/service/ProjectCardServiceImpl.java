@@ -1,10 +1,9 @@
 package com.pinecni.erp.api.project.service;
 
-import com.pinecni.erp.api.project.dto.ResearchCardDTO;
+import com.pinecni.erp.api.project.dto.ProjectCardDTO;
+import com.pinecni.erp.api.project.repository.ProjectCardRepository;
 import com.pinecni.erp.api.project.repository.ProjectRepository;
-import com.pinecni.erp.api.project.repository.ResearchCardRepository;
-import com.pinecni.erp.entity.Project;
-import com.pinecni.erp.entity.ResearchCard;
+import com.pinecni.erp.entity.ProjectCard;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -15,33 +14,22 @@ import java.util.List;
 import java.util.stream.Collectors;
 
 /**
- * 연구비 카드 Service 구현체
+ * 연구비카드 Service 구현체
  */
 @Slf4j
 @Service
 @RequiredArgsConstructor
 @Transactional(readOnly = true)
-public class ResearchCardServiceImpl implements ResearchCardService {
+public class ProjectCardServiceImpl implements ProjectCardService {
 
-    private final ResearchCardRepository researchCardRepository;
+    private final ProjectCardRepository projectCardRepository;
     private final ProjectRepository projectRepository;
 
     @Override
-    public List<ResearchCardDTO> getAllCards() {
-        log.debug("[전체 연구비 카드 조회]");
+    public List<ProjectCardDTO> getAllCards() {
+        log.debug("[전체 연구비카드 조회]");
 
-        List<ResearchCard> cards = researchCardRepository.findAllActive();
-
-        return cards.stream()
-                .map(this::convertToDTO)
-                .collect(Collectors.toList());
-    }
-
-    @Override
-    public List<ResearchCardDTO> getCardsByCompany(String cardCompany) {
-        log.debug("[카드사별 연구비 카드 조회] cardCompany: {}", cardCompany);
-
-        List<ResearchCard> cards = researchCardRepository.findByCardCompany(cardCompany);
+        List<ProjectCard> cards = projectCardRepository.findAllActive();
 
         return cards.stream()
                 .map(this::convertToDTO)
@@ -49,19 +37,30 @@ public class ResearchCardServiceImpl implements ResearchCardService {
     }
 
     @Override
-    public ResearchCardDTO getCardById(Long idx) {
-        log.debug("[연구비 카드 상세 조회] idx: {}", idx);
+    public List<ProjectCardDTO> getCardsByCompany(String cardCompany) {
+        log.debug("[카드사별 연구비카드 조회] cardCompany: {}", cardCompany);
 
-        ResearchCard card = researchCardRepository.findById(idx)
-                .orElseThrow(() -> new IllegalArgumentException("연구비 카드를 찾을 수 없습니다. idx: " + idx));
+        List<ProjectCard> cards = projectCardRepository.findByCardCompany(cardCompany);
+
+        return cards.stream()
+                .map(this::convertToDTO)
+                .collect(Collectors.toList());
+    }
+
+    @Override
+    public ProjectCardDTO getCardById(Long idx) {
+        log.debug("[연구비카드 상세 조회] idx: {}", idx);
+
+        ProjectCard card = projectCardRepository.findById(idx)
+                .orElseThrow(() -> new IllegalArgumentException("연구비카드를 찾을 수 없습니다. idx: " + idx));
 
         return convertToDTO(card);
     }
 
     @Override
     @Transactional
-    public ResearchCardDTO createCard(ResearchCardDTO cardDTO) {
-        log.debug("[연구비 카드 등록] projectIdx: {}, cardCompany: {}",
+    public ProjectCardDTO createCard(ProjectCardDTO cardDTO) {
+        log.debug("[연구비카드 등록] projectIdx: {}, cardCompany: {}",
                 cardDTO.getProjectIdx(), cardDTO.getCardCompany());
 
         // 유효성 검사
@@ -80,7 +79,7 @@ public class ResearchCardServiceImpl implements ResearchCardService {
                 .orElseThrow(() -> new IllegalArgumentException("프로젝트를 찾을 수 없습니다."));
 
         // Entity 생성
-        ResearchCard card = ResearchCard.builder()
+        ProjectCard card = ProjectCard.builder()
                 .projectIdx(cardDTO.getProjectIdx())
                 .cardCompany(cardDTO.getCardCompany())
                 .cardLastDigits(cardDTO.getCardLastDigits())
@@ -89,19 +88,19 @@ public class ResearchCardServiceImpl implements ResearchCardService {
                 .build();
 
         // 저장
-        ResearchCard saved = researchCardRepository.save(card);
-        log.info("[연구비 카드 등록 완료] idx: {}", saved.getIdx());
+        ProjectCard saved = projectCardRepository.save(card);
+        log.info("[연구비카드 등록 완료] idx: {}", saved.getIdx());
 
         return convertToDTO(saved);
     }
 
     @Override
     @Transactional
-    public ResearchCardDTO updateCard(Long idx, ResearchCardDTO cardDTO) {
-        log.debug("[연구비 카드 수정] idx: {}", idx);
+    public ProjectCardDTO updateCard(Long idx, ProjectCardDTO cardDTO) {
+        log.debug("[연구비카드 수정] idx: {}", idx);
 
-        ResearchCard card = researchCardRepository.findById(idx)
-                .orElseThrow(() -> new IllegalArgumentException("연구비 카드를 찾을 수 없습니다. idx: " + idx));
+        ProjectCard card = projectCardRepository.findById(idx)
+                .orElseThrow(() -> new IllegalArgumentException("연구비카드를 찾을 수 없습니다. idx: " + idx));
 
         // 수정
         if (cardDTO.getProjectIdx() != null) {
@@ -121,8 +120,8 @@ public class ResearchCardServiceImpl implements ResearchCardService {
 
         card.setUpdatedAt(LocalDateTime.now());
 
-        ResearchCard updated = researchCardRepository.save(card);
-        log.info("[연구비 카드 수정 완료] idx: {}", updated.getIdx());
+        ProjectCard updated = projectCardRepository.save(card);
+        log.info("[연구비카드 수정 완료] idx: {}", updated.getIdx());
 
         return convertToDTO(updated);
     }
@@ -130,24 +129,24 @@ public class ResearchCardServiceImpl implements ResearchCardService {
     @Override
     @Transactional
     public void deleteCard(Long idx) {
-        log.debug("[연구비 카드 삭제] idx: {}", idx);
+        log.debug("[연구비카드 삭제] idx: {}", idx);
 
-        ResearchCard card = researchCardRepository.findById(idx)
-                .orElseThrow(() -> new IllegalArgumentException("연구비 카드를 찾을 수 없습니다. idx: " + idx));
+        ProjectCard card = projectCardRepository.findById(idx)
+                .orElseThrow(() -> new IllegalArgumentException("연구비카드를 찾을 수 없습니다. idx: " + idx));
 
         // 소프트 삭제 (비활성화)
         card.setIsActive(false);
         card.setUpdatedAt(LocalDateTime.now());
 
-        researchCardRepository.save(card);
-        log.info("[연구비 카드 삭제 완료] idx: {}", idx);
+        projectCardRepository.save(card);
+        log.info("[연구비카드 삭제 완료] idx: {}", idx);
     }
 
     /**
      * Entity → DTO 변환
      */
-    private ResearchCardDTO convertToDTO(ResearchCard card) {
-        ResearchCardDTO dto = ResearchCardDTO.builder()
+    private ProjectCardDTO convertToDTO(ProjectCard card) {
+        ProjectCardDTO dto = ProjectCardDTO.builder()
                 .idx(card.getIdx())
                 .projectIdx(card.getProjectIdx())
                 .cardCompany(card.getCardCompany())
