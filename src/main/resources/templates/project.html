@@ -19,12 +19,41 @@
 
     <!-- 현재 진행중인 프로젝트 -->
     <div class="content-card">
-        <div class="card-header">
+        <div class="card-header card-header-sticky">
             <h2>현재 진행중인 프로젝트</h2>
+            <div class="view-toggle-buttons">
+                <button class="view-toggle-btn active" id="cardViewBtn" title="카드형">
+                    <i class="fas fa-th-large"></i>
+                </button>
+                <button class="view-toggle-btn" id="listViewBtn" title="리스트형">
+                    <i class="fas fa-list"></i>
+                </button>
+            </div>
         </div>
 
+        <!-- 카드형 뷰 -->
         <div class="project-grid" id="currentProjectGrid">
             <!-- JavaScript에서 동적으로 렌더링됩니다 -->
+        </div>
+
+        <!-- 리스트형 뷰 -->
+        <div class="current-project-list-container" id="currentProjectListContainer" style="display: none;">
+            <table class="project-table current-project-table" id="currentProjectTable">
+                <thead>
+                    <tr>
+                        <th width="50">No</th>
+                        <th>프로젝트명</th>
+                        <th width="100">상태</th>
+                        <th width="120">연구책임자</th>
+                        <th width="80">팀원</th>
+                        <th width="200">기간</th>
+                        <th width="100">진행률</th>
+                    </tr>
+                </thead>
+                <tbody id="currentProjectListBody">
+                    <!-- JavaScript에서 동적으로 렌더링됩니다 -->
+                </tbody>
+            </table>
         </div>
     </div>
 

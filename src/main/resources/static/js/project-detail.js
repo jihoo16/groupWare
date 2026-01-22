@@ -1,5 +1,8 @@
-﻿// 프로젝트 상세보기 JavaScript
-document.addEventListener('DOMContentLoaded', async function() {
+// 프로젝트 상세보기 JavaScript
+document.addEventListener('DOMContentLoaded', function() {
+    // 현재 로그인한 사용자 정보
+    const currentUserIdx = window.CURRENT_USER?.idx || null;
+
     // URL에서 프로젝트 ID 가져오기
     const urlParams = new URLSearchParams(window.location.search);
     const projectId = urlParams.get('projectId');
@@ -10,8 +13,14 @@ document.addEventListener('DOMContentLoaded', async function() {
         return;
     }
 
+    // 주간업무보고 작성 버튼 초기 숨김
+    const createWeeklyReportBtn = document.getElementById('createWeeklyReportBtn');
+    if (createWeeklyReportBtn) {
+        createWeeklyReportBtn.style.display = 'none';
+    }
+
     // 프로젝트 상세 정보 로드
-    loadProjectDetail(projectId);
+    loadProjectDetail(projectId, currentUserIdx);
 
     // 수정 버튼 이벤트 리스너
     const editBtn = document.getElementById('editBtn');
@@ -20,7 +29,6 @@ document.addEventListener('DOMContentLoaded', async function() {
             location.href = `/project/edit/${projectId}`;
         });
     }
-    const createWeeklyReportBtn = document.getElementById('createWeeklyReportBtn');
     if (createWeeklyReportBtn) {
         createWeeklyReportBtn.addEventListener('click', function() {
             // 프로젝트 주간업무보고 작성 페이지로 이동 (프로젝트 ID 전달)
@@ -42,7 +50,7 @@ document.addEventListener('DOMContentLoaded', async function() {
 /**
  * 프로젝트 상세 정보 로드
  */
-async function loadProjectDetail(projectId) {
+async function loadProjectDetail(projectId, currentUserIdx) {
     try {
         const response = await fetch(`/api/projects/${projectId}`);
         if (!response.ok) {
@@ -61,6 +69,9 @@ async function loadProjectDetail(projectId) {
         displayTeamMembers(data.projectMembers || []);
         displayExpenseSettings(data.projectExpenseSettings || []);
 
+        // 현재 사용자가 프로젝트 참여자인지 확인하고 버튼 표시
+        checkAndShowParticipantButtons(data.projectMembers || [], currentUserIdx);
+
         // 연구비 카드는 별도 API로 조회
         loadProjectCards(projectId);
 
@@ -73,6 +84,40 @@ async function loadProjectDetail(projectId) {
         console.error('프로젝트 조회 오류:', error);
         await showError('프로젝트를 불러오는데 실패했습니다.');
         history.back();
+    }
+}
+
+/**
+ * 현재 사용자가 프로젝트 참여자인지 확인하고 주간업무보고 작성 버튼 표시
+ */
+function checkAndShowParticipantButtons(projectMembers, currentUserIdx) {
+    const createWeeklyReportBtn = document.getElementById('createWeeklyReportBtn');
+    const editBtn = document.getElementById('editBtn');
+    const deleteBtn = document.getElementById('deleteBtn');
+
+    // 로그인하지 않은 경우 모든 버튼 숨김
+    if (!currentUserIdx) {
+        if (createWeeklyReportBtn) createWeeklyReportBtn.style.display = 'none';
+        if (editBtn) editBtn.style.display = 'none';
+        if (deleteBtn) deleteBtn.style.display = 'none';
+        return;
+    }
+
+    // projectMembers에서 현재 사용자가 포함되어 있는지 확인
+    const isParticipant = projectMembers.some(member =>
+        member.employeeIdx === currentUserIdx || member.empIdx === currentUserIdx
+    );
+
+    if (isParticipant) {
+        if (createWeeklyReportBtn) createWeeklyReportBtn.style.display = 'inline-flex';
+        if (editBtn) editBtn.style.display = 'inline-flex';
+        if (deleteBtn) deleteBtn.style.display = 'inline-flex';
+        console.log('현재 사용자가 프로젝트 참여자입니다. 버튼 표시.');
+    } else {
+        if (createWeeklyReportBtn) createWeeklyReportBtn.style.display = 'none';
+        if (editBtn) editBtn.style.display = 'none';
+        if (deleteBtn) deleteBtn.style.display = 'none';
+        console.log('현재 사용자가 프로젝트 참여자가 아닙니다. 버튼 숨김.');
     }
 }
 
