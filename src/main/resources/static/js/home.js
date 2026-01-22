@@ -344,7 +344,7 @@ function loadMyProjects() {
             listElement.innerHTML = projects.map(project => {
                 const statusClass = 'active';
                 const statusText = '진행중';
-                const period = formatProjectPeriod(project.projectStartDate, project.projectEndDate);
+                const period = formatProjectPeriod(project.startDate, project.endDate);
 
                 return `
                     <div class="project-item" onclick="window.location.href='/project/detail?projectId=${project.idx}'">
