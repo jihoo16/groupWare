@@ -480,6 +480,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
         // 관리
         const actionCell = document.createElement('td');
+        actionCell.style.textAlign = 'center';
         actionCell.innerHTML = `
             <button class="btn-icon view-btn" title="상세보기">
                 <i class="fas fa-eye"></i>
@@ -508,6 +509,9 @@ document.addEventListener('DOMContentLoaded', function() {
         const url = urls[doc.documentType];
         if (url) {
             window.location.href = `${url}?documentIdx=${doc.idx}`;
+            // sourceDocumentId: 원본 문서 테이블의 idx (project_weekly_report 등)
+            const documentId = doc.sourceDocumentId || doc.idx;
+            window.open(`${url}?id=${documentId}`, '_blank');
         } else {
             alert('해당 문서 타입의 상세 페이지가 구현되지 않았습니다.');
         }
