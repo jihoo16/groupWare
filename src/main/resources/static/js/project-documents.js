@@ -16,6 +16,79 @@ document.addEventListener('DOMContentLoaded', function() {
     const itemsPerPage = 10;
     let filteredRows = []; // 필터링된 행들
 
+    // ============================================
+    // 초성 검색 유틸리티
+    // ============================================
+    const CHO_HANGUL = ['ㄱ', 'ㄲ', 'ㄴ', 'ㄷ', 'ㄸ', 'ㄹ', 'ㅁ', 'ㅂ', 'ㅃ', 'ㅅ', 'ㅆ', 'ㅇ', 'ㅈ', 'ㅉ', 'ㅊ', 'ㅋ', 'ㅌ', 'ㅍ', 'ㅎ'];
+
+    function getChosung(str) {
+        let result = '';
+        for (let i = 0; i < str.length; i++) {
+            const code = str.charCodeAt(i) - 44032;
+            if (code > -1 && code < 11172) {
+                result += CHO_HANGUL[Math.floor(code / 588)];
+            } else {
+                result += str.charAt(i);
+            }
+        }
+        return result;
+    }
+
+    function matchesSearch(text, keyword) {
+        if (!text || !keyword) return true;
+
+        const lowerText = text.toLowerCase();
+        const lowerKeyword = keyword.toLowerCase();
+
+        // 일반 검색
+        if (lowerText.includes(lowerKeyword)) return true;
+
+        // 초성 검색
+        const chosung = getChosung(text);
+        return chosung.includes(keyword);
+    }
+
+    // 텍스트 하이라이트 함수
+    function highlightText(text, keyword) {
+        if (!text || !keyword) return text;
+
+        const lowerText = text.toLowerCase();
+        const lowerKeyword = keyword.toLowerCase();
+
+        // 일반 텍스트 매칭
+        if (lowerText.includes(lowerKeyword)) {
+            const regex = new RegExp(`(${keyword})`, 'gi');
+            return text.replace(regex, '<mark class="search-highlight">$1</mark>');
+        }
+
+        // 초성 매칭
+        const chosung = getChosung(text);
+        if (chosung.includes(keyword)) {
+            let result = '';
+            let keywordIndex = 0;
+
+            for (let i = 0; i < text.length; i++) {
+                const char = text[i];
+                const code = text.charCodeAt(i) - 44032;
+
+                if (code > -1 && code < 11172) {
+                    const cho = CHO_HANGUL[Math.floor(code / 588)];
+                    if (keywordIndex < keyword.length && cho === keyword[keywordIndex]) {
+                        result += `<mark class="search-highlight">${char}</mark>`;
+                        keywordIndex++;
+                    } else {
+                        result += char;
+                    }
+                } else {
+                    result += char;
+                }
+            }
+            return result;
+        }
+
+        return text;
+    }
+
     // 프로젝트 관련 문서 타입 정의
     const PROJECT_DOCUMENT_TYPES = [
         '프로젝트 주간업무보고',
@@ -81,6 +154,16 @@ document.addEventListener('DOMContentLoaded', function() {
 
     // 문서 필터링
     function filterDocuments() {
+        const searchKeyword = searchInput.value.trim();
+
+        // 검색어가 변경되었으면 문서 테이블 다시 렌더링 (하이라이트 적용)
+        if (searchKeyword) {
+            renderDocumentTableWithHighlight(searchKeyword);
+        } else {
+            // 검색어가 없으면 일반 렌더링
+            renderDocumentTable();
+        }
+
         const docRows = documentList.querySelectorAll('.doc-row');
         filteredRows = [];
 
@@ -94,15 +177,20 @@ document.addEventListener('DOMContentLoaded', function() {
                 show = category === currentCategory;
             }
 
-            // 검색 필터
-            if (searchInput.value.trim()) {
-                const searchTerm = searchInput.value.toLowerCase();
+            // 검색 필터 (초성 검색 지원)
+            if (searchKeyword) {
                 const titleCell = row.querySelector('.doc-title-cell');
-                const title = titleCell ? titleCell.querySelector('.title-wrap').textContent.toLowerCase() : '';
-                const desc = titleCell ? titleCell.querySelector('.desc-wrap').textContent.toLowerCase() : '';
-                const allText = row.textContent.toLowerCase();
+                const title = titleCell ? titleCell.querySelector('.title-wrap').textContent : '';
+                const desc = titleCell ? titleCell.querySelector('.desc-wrap').textContent : '';
+                const drafterName = row.querySelector('td:nth-child(3)').textContent;
+                const deptName = row.querySelector('td:nth-child(4)').textContent;
 
-                show = show && (title.includes(searchTerm) || desc.includes(searchTerm) || allText.includes(searchTerm));
+                show = show && (
+                    matchesSearch(title, searchKeyword) ||
+                    matchesSearch(desc, searchKeyword) ||
+                    matchesSearch(drafterName, searchKeyword) ||
+                    matchesSearch(deptName, searchKeyword)
+                );
             }
 
             if (show) {
@@ -284,6 +372,9 @@ document.addEventListener('DOMContentLoaded', function() {
                 console.log('프로젝트 문서 필터링 완료:', allDocuments.length + '건');
 
                 renderDocumentTable();
+
+                // 초기 필터링 적용
+                filterDocuments();
             } else {
                 console.error('문서 로드 실패:', response.status, response.statusText);
                 showError('문서 목록을 불러올 수 없습니다.');
@@ -311,11 +402,28 @@ document.addEventListener('DOMContentLoaded', function() {
         });
 
         // 초기 필터링 적용
-        filterDocuments();
+        // filterDocuments(); // 무한 루프 방지를 위해 주석 처리
+    }
+
+    // 하이라이트 적용된 문서 테이블 렌더링
+    function renderDocumentTableWithHighlight(keyword) {
+        const tbody = documentList.querySelector('tbody');
+        tbody.innerHTML = '';
+
+        if (allDocuments.length === 0) {
+            emptyState.style.display = 'flex';
+            documentList.querySelector('.document-table').style.display = 'none';
+            return;
+        }
+
+        allDocuments.forEach(doc => {
+            const row = createDocumentRow(doc, keyword);
+            tbody.appendChild(row);
+        });
     }
 
     // 문서 행 생성
-    function createDocumentRow(doc) {
+    function createDocumentRow(doc, keyword = '') {
         const tr = document.createElement('tr');
         tr.className = 'doc-row';
         tr.setAttribute('data-category', getCategoryFromDocumentType(doc.documentType));
@@ -326,10 +434,12 @@ document.addEventListener('DOMContentLoaded', function() {
         const typeCell = document.createElement('td');
         typeCell.className = 'doc-type-cell';
         const icon = getIconFromDocumentType(doc.documentType);
+        const documentType = doc.documentType || '-';
+        const highlightedDocType = keyword ? highlightText(documentType, keyword) : documentType;
         typeCell.innerHTML = `
             <span class="doc-type">
                 <i class="fas ${icon}"></i>
-                ${doc.documentType || '-'}
+                ${highlightedDocType}
             </span>
         `;
         tr.appendChild(typeCell);
@@ -337,20 +447,30 @@ document.addEventListener('DOMContentLoaded', function() {
         // 제목
         const titleCell = document.createElement('td');
         titleCell.className = 'doc-title-cell';
+        titleCell.style.cursor = 'pointer';
+        const title = doc.title || '제목 없음';
+        const content = doc.content ? doc.content.substring(0, 50) : '';
+        const highlightedTitle = keyword ? highlightText(title, keyword) : title;
+        const highlightedContent = keyword ? highlightText(content, keyword) : content;
         titleCell.innerHTML = `
-            <div class="title-wrap">${doc.title || '제목 없음'}</div>
-            <div class="desc-wrap">${doc.content ? doc.content.substring(0, 50) : ''}</div>
+            <div class="title-wrap">${highlightedTitle}</div>
+            <div class="desc-wrap">${highlightedContent}</div>
         `;
+        titleCell.addEventListener('click', () => viewDocument(doc));
         tr.appendChild(titleCell);
 
         // 작성자
         const drafterCell = document.createElement('td');
-        drafterCell.textContent = doc.drafterName || '-';
+        const drafterName = doc.drafterName || '-';
+        const highlightedDrafter = keyword ? highlightText(drafterName, keyword) : drafterName;
+        drafterCell.innerHTML = highlightedDrafter;
         tr.appendChild(drafterCell);
 
         // 부서
         const deptCell = document.createElement('td');
-        deptCell.textContent = doc.drafterDepartment || '-';
+        const deptName = doc.drafterDepartment || '-';
+        const highlightedDept = keyword ? highlightText(deptName, keyword) : deptName;
+        deptCell.innerHTML = highlightedDept;
         tr.appendChild(deptCell);
 
         // 작성일시
@@ -387,7 +507,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
         const url = urls[doc.documentType];
         if (url) {
-            window.location.href = `${url}?id=${doc.idx}`;
+            window.location.href = `${url}?documentIdx=${doc.idx}`;
         } else {
             alert('해당 문서 타입의 상세 페이지가 구현되지 않았습니다.');
         }
