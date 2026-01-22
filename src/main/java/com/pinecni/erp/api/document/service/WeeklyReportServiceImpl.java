@@ -12,6 +12,7 @@ import com.pinecni.erp.api.approval.repository.ApprovalDocumentRepository;
 import com.pinecni.erp.entity.WeeklyReport;
 import com.pinecni.erp.entity.Project;
 import com.pinecni.erp.entity.ApprovalDocument;
+import com.pinecni.erp.service.PdfGenerationService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -37,6 +38,8 @@ public class WeeklyReportServiceImpl implements WeeklyReportService {
     private final CodeRepository codeRepository;
     private final ProjectRepository projectRepository;
     private final ApprovalDocumentRepository approvalDocumentRepository;
+    private final PdfGenerationService pdfGenerationService;
+    private final com.pinecni.erp.api.document.repository.WeeklyReportOfficialPdfRepository weeklyReportOfficialPdfRepository;
 
     @Override
     @Transactional
@@ -105,6 +108,9 @@ public class WeeklyReportServiceImpl implements WeeklyReportService {
             log.debug("WeeklyReport created successfully - id: {}, documentIdx: {}",
                       saved.getId(), saved.getDocumentIdx());
 
+            // === PDF 생성 및 저장 ===
+            generateAndSaveWeeklyReportPdf(createDTO, saved, savedDocument);
+
             // Entity → DTO 변환
             WeeklyReportDTO dto = weeklyReportMapper.toDTO(saved);
             // User 정보 조회 및 설정
@@ -128,7 +134,7 @@ public class WeeklyReportServiceImpl implements WeeklyReportService {
 
         } catch (Exception e) {
             log.error("프로젝트 주간업무보고 생성 실패 - userIdx: {}, error: {}", createDTO.getUserIdx(), e.getMessage(), e);
-            throw new RuntimeException("프로젝트 주간업무보고 저장 중 오류가 발생했습니다. approval_documents와 project_weekly_report가 모두 롤백됩니다.", e);
+            throw new RuntimeException("프로젝트 주간업무보고 저장 중 오류가 발생했습니다.\n잠시 후 다시 시도하거나 관리자에게 문의해주세요.", e);
         }
     }
 
@@ -330,6 +336,139 @@ public class WeeklyReportServiceImpl implements WeeklyReportService {
                     return dto;
                 })
                 .collect(Collectors.toList());
+    }
+
+    @Override
+    public WeeklyReportDTO getWeeklyReportByDocumentIdx(Long documentIdx) {
+        log.debug("getWeeklyReportByDocumentIdx() called - documentIdx: {}", documentIdx);
+        WeeklyReport report = weeklyReportRepository.findByDocumentIdx(documentIdx)
+                .orElseThrow(() -> new RuntimeException("주간업무보고를 찾을 수 없습니다. DocumentIdx: " + documentIdx));
+        log.debug("WeeklyReport found - id: {}, documentIdx: {}", report.getId(), report.getDocumentIdx());
+
+        // Entity → DTO 변환
+        WeeklyReportDTO dto = weeklyReportMapper.toDTO(report);
+        // User 정보 조회 및 설정
+        userRepository.findById(report.getUserIdx()).ifPresent(user -> {
+            dto.setUserName(user.getEmpName());
+            dto.setUserDept(user.getEmpDept());
+            // 부서 이름 조회
+            if (user.getEmpDept() != null) {
+                codeRepository.findByCode(user.getEmpDept()).ifPresent(code -> {
+                    dto.setUserDeptName(code.getCodeName());
+                });
+            }
+        });
+        // 프로젝트 이름 조회 (projectIdx가 있고 projectName이 없는 경우)
+        if (report.getProjectIdx() != null && (dto.getProjectName() == null || dto.getProjectName().isEmpty())) {
+            projectRepository.findById(report.getProjectIdx()).ifPresent(project -> {
+                dto.setProjectName(project.getProjectName());
+            });
+        }
+        return dto;
+    }
+
+    @Override
+    @Transactional
+    public void deleteWeeklyReportByDocumentIdx(Long documentIdx) {
+        log.debug("deleteWeeklyReportByDocumentIdx() called - documentIdx: {}", documentIdx);
+
+        // WeeklyReport 조회
+        WeeklyReport report = weeklyReportRepository.findByDocumentIdx(documentIdx)
+                .orElseThrow(() -> new RuntimeException("주간업무보고를 찾을 수 없습니다. DocumentIdx: " + documentIdx));
+
+        // 연결된 ApprovalDocument 소프트 딜리트 (deletedAt, deletedUserIdx 설정)
+        approvalDocumentRepository.findById(documentIdx).ifPresent(approvalDocument -> {
+            LocalDateTime now = LocalDateTime.now();
+            approvalDocument.setDeletedAt(now);
+
+            // 삭제자 정보 설정 (WeeklyReport의 updatedUserIdx 또는 userIdx 사용)
+            Long deletedUserIdx = report.getUpdatedUserIdx() != null ?
+                report.getUpdatedUserIdx() : report.getUserIdx();
+            approvalDocument.setDeletedUserIdx(deletedUserIdx);
+
+            approvalDocumentRepository.save(approvalDocument);
+            log.debug("ApprovalDocument soft deleted - documentIdx: {}, deletedAt: {}, deletedUserIdx: {}",
+                documentIdx, now, deletedUserIdx);
+        });
+
+        // WeeklyReport는 실제 삭제 (hard delete)
+        weeklyReportRepository.deleteById(report.getId());
+        log.debug("WeeklyReport deleted successfully - id: {}, documentIdx: {}", report.getId(), documentIdx);
+    }
+
+    /**
+     * 프로젝트 주간업무보고 PDF 생성 및 저장
+     *
+     * @param createDTO       생성 요청 DTO (렌더링된 HTML/CSS 포함)
+     * @param saved           저장된 WeeklyReport 엔티티
+     * @param savedDocument   저장된 ApprovalDocument 엔티티
+     */
+    private void generateAndSaveWeeklyReportPdf(WeeklyReportCreateDTO createDTO,
+                                                 WeeklyReport saved,
+                                                 ApprovalDocument savedDocument) {
+        try {
+            // 프론트엔드에서 렌더링된 HTML과 CSS가 있는 경우에만 PDF 생성
+            if (createDTO.getRenderedHtml() != null && !createDTO.getRenderedHtml().isEmpty()) {
+                String renderedHtml = createDTO.getRenderedHtml();
+                String renderedCss = createDTO.getRenderedCss() != null ? createDTO.getRenderedCss() : "";
+
+                log.info("[프로젝트 주간업무보고 PDF 생성] documentIdx: {}, weeklyReportId: {}",
+                         savedDocument.getIdx(), saved.getId());
+
+                // 완전한 HTML 문서 생성 (CSS 인라인 포함)
+                String fullHtml = "<!DOCTYPE html>\n" +
+                        "<html lang=\"ko\">\n" +
+                        "<head>\n" +
+                        "    <meta charset=\"UTF-8\">\n" +
+                        "    <meta name=\"viewport\" content=\"width=device-width, initial-scale=1.0\">\n" +
+                        "    <title>프로젝트 주간업무보고</title>\n" +
+                        "    <style>\n" +
+                        "        * { margin: 0; padding: 0; box-sizing: border-box; }\n" +
+                        "        body { font-family: 'Malgun Gothic', '맑은 고딕', sans-serif; font-size: 11px; line-height: 1.5; padding: 20px; }\n" +
+                        renderedCss + "\n" +
+                        "    </style>\n" +
+                        "</head>\n" +
+                        "<body>\n" +
+                        renderedHtml +
+                        "</body>\n" +
+                        "</html>";
+
+                // PDF 생성: Playwright로 HTML을 PDF로 변환
+                byte[] pdfBytes = pdfGenerationService.generatePdfFromRenderedHtml(fullHtml);
+
+                // 파일명 생성 (보고기간 시작일 + 프로젝트명)
+                String year = String.valueOf(LocalDateTime.now().getYear());
+                String projectIdx = saved.getProjectIdx() != null ? saved.getProjectIdx().toString() : "0";
+                String reportPeriod = saved.getReportPeriod() != null ?
+                    saved.getReportPeriod().replaceAll("[^0-9]", "").substring(0, 8) :
+                    LocalDateTime.now().format(java.time.format.DateTimeFormatter.ofPattern("yyyyMMdd"));
+                String fileName = String.format("%s_weekly_report_project_%s.pdf", reportPeriod, projectIdx);
+
+                // PDF 서버에 저장 (경로: project/{year}/{projectIdx})
+                String savePath = pdfGenerationService.saveWeeklyReportPdf(pdfBytes, fileName, year, projectIdx);
+                log.info("[PDF 저장 완료] path: {}", savePath);
+
+                // DB에 PDF 파일 정보 저장
+                com.pinecni.erp.entity.WeeklyReportOfficialPdf officialPdf = com.pinecni.erp.entity.WeeklyReportOfficialPdf.builder()
+                        .documentIdx(savedDocument.getIdx())
+                        .filePath(savePath)
+                        .fileName(fileName)
+                        .fileSize((long) pdfBytes.length)
+                        .createdUserIdx(createDTO.getUserIdx())
+                        .build();
+
+                weeklyReportOfficialPdfRepository.save(officialPdf);
+                log.info("[PDF 파일 정보 DB 저장 완료] fileIdx: {}, documentIdx: {}",
+                         officialPdf.getIdx(), savedDocument.getIdx());
+
+            } else {
+                log.warn("[PDF 생성 스킵] renderedHtml이 비어있음 - documentIdx: {}", savedDocument.getIdx());
+            }
+
+        } catch (Exception e) {
+            log.error("[PDF 생성 실패] documentIdx: {}, error: {}", savedDocument.getIdx(), e.getMessage(), e);
+            // PDF 생성 실패는 전체 트랜잭션을 롤백하지 않음 (주간보고는 유지)
+        }
     }
 
 }

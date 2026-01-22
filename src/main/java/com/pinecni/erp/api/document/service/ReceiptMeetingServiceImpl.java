@@ -140,7 +140,7 @@ public class ReceiptMeetingServiceImpl implements ReceiptMeetingService {
         } catch (Exception e) {
             log.error("연구비증빙 회의록 생성 실패 - projectIdx: {}, authorIdx: {}, error: {}",
                       createDTO.getProjectIdx(), createDTO.getAuthorIdx(), e.getMessage(), e);
-            throw new RuntimeException("연구비증빙 회의록 저장 중 오류가 발생했습니다. approval_documents와 receipt_meeting이 모두 롤백됩니다.", e);
+            throw new RuntimeException("연구비증빙 회의록 저장 중 오류가 발생했습니다.\n잠시 후 다시 시도하거나 관리자에게 문의해주세요.", e);
         }
     }
 

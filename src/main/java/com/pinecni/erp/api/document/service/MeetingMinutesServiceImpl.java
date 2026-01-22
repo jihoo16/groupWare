@@ -82,7 +82,7 @@ public class MeetingMinutesServiceImpl implements MeetingMinutesService {
 
         } catch (Exception e) {
             log.error("회의록 생성 실패 - userIdx: {}, error: {}", createDTO.getUserIdx(), e.getMessage(), e);
-            throw new RuntimeException("회의록 저장 중 오류가 발생했습니다. approval_documents와 meeting_minutes가 모두 롤백됩니다.", e);
+            throw new RuntimeException("회의록 저장 중 오류가 발생했습니다.\n잠시 후 다시 시도하거나 관리자에게 문의해주세요.", e);
         }
     }
 

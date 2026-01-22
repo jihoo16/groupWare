@@ -11,7 +11,7 @@ import com.pinecni.erp.api.vacation.dto.VacationRequestSaveDTO;
 import com.pinecni.erp.api.vacation.repository.VacationAccrualScheduleRepository;
 import com.pinecni.erp.api.vacation.repository.VacationBalanceRepository;
 import com.pinecni.erp.api.vacation.repository.VacationRequestRepository;
-import com.pinecni.erp.api.vacation.repository.VacationDocumentFileRepository;
+import com.pinecni.erp.api.vacation.repository.VacationOfficialPdfRepository;
 import com.pinecni.erp.constant.CodeConstants;
 import com.pinecni.erp.entity.*;
 import com.pinecni.erp.service.PdfGenerationService;
@@ -37,7 +37,7 @@ public class VacationServiceImpl implements VacationService {
     private final VacationAccrualScheduleRepository accrualScheduleRepository;
     private final VacationBalanceRepository vacationBalanceRepository;
     private final VacationRequestRepository vacationRequestRepository;
-    private final VacationDocumentFileRepository vacationDocumentFileRepository;
+    private final VacationOfficialPdfRepository vacationOfficialPdfRepository;
     private final ApprovalDocumentRepository approvalDocumentRepository;
     private final CodeRepository codeRepository;
     private final CalendarEventRepository calendarEventRepository;
@@ -694,7 +694,7 @@ public class VacationServiceImpl implements VacationService {
             log.info("[PDF 저장 완료] path: {}", savePath);
 
             // DB에 파일 정보 저장
-            VacationDocumentFile documentFile = VacationDocumentFile.builder()
+            VacationOfficialPdf officialPdf = VacationOfficialPdf.builder()
                     .documentIdx(savedDocument.getIdx())
                     .filePath(savePath)
                     .fileName(fileName)
@@ -702,8 +702,8 @@ public class VacationServiceImpl implements VacationService {
                     .createdUserIdx(userIdx)
                     .build();
 
-            vacationDocumentFileRepository.save(documentFile);
-            log.info("[PDF 파일 정보 DB 저장 완료] fileIdx: {}, documentIdx: {}", documentFile.getIdx(), savedDocument.getIdx());
+            vacationOfficialPdfRepository.save(officialPdf);
+            log.info("[PDF 파일 정보 DB 저장 완료] fileIdx: {}, documentIdx: {}", officialPdf.getIdx(), savedDocument.getIdx());
 
         } catch (Exception e) {
             log.error("[PDF 생성 실패] documentIdx: {}, error: {}", savedDocument.getIdx(), e.getMessage(), e);
@@ -720,7 +720,7 @@ public class VacationServiceImpl implements VacationService {
         } catch (Exception e) {
             // 시스템 에러 (DB 저장 실패 등)
             log.error("[연차 신청 실패 - 시스템 오류] userIdx: {}, error: {}", userIdx, e.getMessage(), e);
-            throw new RuntimeException("연차 신청서 저장 중 오류가 발생했습니다. approval_documents, vacation_request, calendar_events가 모두 롤백됩니다.", e);
+            throw new RuntimeException("연차 신청서 저장 중 오류가 발생했습니다.\n잠시 후 다시 시도하거나 관리자에게 문의해주세요.", e);
         }
     }
 
@@ -1051,7 +1051,7 @@ public class VacationServiceImpl implements VacationService {
                 .toList();
 
         // 7. 첨부파일 목록 조회
-        List<VacationDocumentFile> files = vacationDocumentFileRepository.findAllByDocumentIdx(documentIdx);
+        List<VacationOfficialPdf> files = vacationOfficialPdfRepository.findAllByDocumentIdx(documentIdx);
         List<com.pinecni.erp.api.vacation.dto.VacationDetailDTO.AttachmentDTO> attachments = files.stream()
                 .map(file -> com.pinecni.erp.api.vacation.dto.VacationDetailDTO.AttachmentDTO.builder()
                         .idx(file.getIdx())

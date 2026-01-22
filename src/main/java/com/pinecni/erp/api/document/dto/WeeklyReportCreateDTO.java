@@ -75,4 +75,14 @@ public class WeeklyReportCreateDTO {
      * 프로젝트 전체 달성률에 추가할 증분값
      */
     private java.math.BigDecimal inputProgressRate;
+
+    /**
+     * 렌더링된 HTML (PDF 생성용)
+     */
+    private String renderedHtml;
+
+    /**
+     * 렌더링된 CSS (PDF 생성용)
+     */
+    private String renderedCss;
 }

@@ -159,13 +159,20 @@ public class FileServiceImpl implements FileService {
 
         try {
             Path filePath = Paths.get(uploadDir, approvalFile.getFilePath(), approvalFile.getStoredFilename());
+            log.debug("파일 다운로드 시도 - uploadDir: {}, filePath: {}, storedFilename: {}",
+                uploadDir, approvalFile.getFilePath(), approvalFile.getStoredFilename());
+            log.debug("전체 파일 경로: {}", filePath.toAbsolutePath());
+            log.debug("파일 존재 여부: {}", Files.exists(filePath));
+
             Resource resource = new UrlResource(filePath.toUri());
 
             if (resource.exists() && resource.isReadable()) {
-                log.info("파일 다운로드 - fileIdx: {}, originalFilename: {}",
+                log.info("파일 다운로드 성공 - fileIdx: {}, originalFilename: {}",
                     fileIdx, approvalFile.getOriginalFilename());
                 return resource;
             } else {
+                log.error("파일을 읽을 수 없음 - 존재: {}, 읽기가능: {}, 경로: {}",
+                    resource.exists(), resource.isReadable(), filePath.toAbsolutePath());
                 throw new RuntimeException("파일을 읽을 수 없습니다: " + approvalFile.getOriginalFilename());
             }
         } catch (Exception e) {

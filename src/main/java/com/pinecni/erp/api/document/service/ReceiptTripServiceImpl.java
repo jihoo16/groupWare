@@ -143,7 +143,7 @@ public class ReceiptTripServiceImpl implements ReceiptTripService {
         } catch (Exception e) {
             log.error("연구비증빙 출장 생성 실패 - projectIdx: {}, authorIdx: {}, error: {}",
                       createDTO.getProjectIdx(), createDTO.getAuthorIdx(), e.getMessage(), e);
-            throw new RuntimeException("연구비증빙 출장 저장 중 오류가 발생했습니다. approval_documents와 receipt_trip이 모두 롤백됩니다.", e);
+            throw new RuntimeException("연구비증빙 출장 저장 중 오류가 발생했습니다.\n잠시 후 다시 시도하거나 관리자에게 문의해주세요.", e);
         }
     }
 

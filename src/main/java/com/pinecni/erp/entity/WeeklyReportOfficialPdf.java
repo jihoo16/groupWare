@@ -8,12 +8,12 @@ import lombok.*;
 import java.time.LocalDateTime;
 
 /**
- * 연차 신청서 PDF 파일 정보 Entity
+ * 프로젝트 주간업무보고 공식 PDF 파일 정보 Entity
  */
 @Entity
-@Table(name = "vacation_document_files", schema = "erp", indexes = {
-        @Index(name = "idx_vacation_document_files_document_idx", columnList = "document_idx"),
-        @Index(name = "idx_vacation_document_files_created_at", columnList = "created_at")
+@Table(name = "weekly_report_official_pdf", schema = "erp", indexes = {
+        @Index(name = "idx_weekly_report_official_pdf_document_idx", columnList = "document_idx"),
+        @Index(name = "idx_weekly_report_official_pdf_created_at", columnList = "created_at")
 })
 @Getter
 @Setter
@@ -21,10 +21,11 @@ import java.time.LocalDateTime;
 @AllArgsConstructor
 @Builder
 @JsonIgnoreProperties({"hibernateLazyInitializer", "handler"})
-public class VacationDocumentFile {
+public class WeeklyReportOfficialPdf {
 
     @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @GeneratedValue(strategy = GenerationType.SEQUENCE, generator = "weekly_report_official_pdf_sequence")
+    @SequenceGenerator(name = "weekly_report_official_pdf_sequence", sequenceName = "erp.weekly_report_official_pdf_sequence", allocationSize = 1)
     @Column(name = "idx")
     private Long idx;
 

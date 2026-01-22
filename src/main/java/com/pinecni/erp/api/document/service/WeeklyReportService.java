@@ -53,4 +53,17 @@ public interface WeeklyReportService {
      * @return 주간업무보고 DTO 목록
      */
     List<WeeklyReportDTO> getWeeklyReportsByProjectIdx(Long projectIdx);
+
+    /**
+     * documentIdx로 주간업무보고 조회
+     * @param documentIdx 결재 문서 IDX
+     * @return 주간업무보고 DTO
+     */
+    WeeklyReportDTO getWeeklyReportByDocumentIdx(Long documentIdx);
+
+    /**
+     * documentIdx로 주간업무보고 삭제
+     * @param documentIdx 결재 문서 IDX
+     */
+    void deleteWeeklyReportByDocumentIdx(Long documentIdx);
 }

@@ -10,7 +10,7 @@ import com.pinecni.erp.entity.VacationRequest;
 import com.pinecni.erp.entity.VacationAccrualSchedule;
 import com.pinecni.erp.api.vacation.repository.VacationRequestRepository;
 import com.pinecni.erp.api.vacation.repository.VacationAccrualScheduleRepository;
-import com.pinecni.erp.api.vacation.repository.VacationDocumentFileRepository;
+import com.pinecni.erp.api.vacation.repository.VacationOfficialPdfRepository;
 import com.pinecni.erp.service.PdfGenerationService;
 import jakarta.servlet.http.HttpSession;
 import lombok.RequiredArgsConstructor;
@@ -39,7 +39,7 @@ public class VacationController {
     private final VacationService vacationService;
     private final VacationRequestRepository vacationRequestRepository;
     private final VacationAccrualScheduleRepository vacationAccrualScheduleRepository;
-    private final VacationDocumentFileRepository vacationDocumentFileRepository;
+    private final VacationOfficialPdfRepository vacationOfficialPdfRepository;
     private final PdfGenerationService pdfGenerationService;
 
     /**
@@ -413,7 +413,7 @@ public class VacationController {
 
     /**
      * 연차신청서 PDF 다운로드 API
-     * @param fileIdx VacationDocumentFile의 idx
+     * @param fileIdx VacationOfficialPdf의 idx
      * @return PDF 파일
      */
     @GetMapping("/download/{fileIdx}")
@@ -422,7 +422,7 @@ public class VacationController {
             log.info("[연차신청서 PDF 다운로드] fileIdx: {}", fileIdx);
 
             // 파일 정보 조회
-            com.pinecni.erp.entity.VacationDocumentFile file = vacationDocumentFileRepository.findById(fileIdx)
+            com.pinecni.erp.entity.VacationOfficialPdf file = vacationOfficialPdfRepository.findById(fileIdx)
                     .orElseThrow(() -> new IllegalArgumentException("파일을 찾을 수 없습니다. fileIdx: " + fileIdx));
 
             // 파일 경로에서 파일 읽기
