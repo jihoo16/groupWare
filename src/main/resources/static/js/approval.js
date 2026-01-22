@@ -1,5 +1,8 @@
 // 전자 문서 메인 페이지 JavaScript
 document.addEventListener('DOMContentLoaded', function() {
+    // 검색 유틸리티 초기화
+    const searchUtils = new SearchUtils();
+
     // DOM 요소
     const sidebarMenuItems = document.querySelectorAll('.approval-sidebar .sidebar-menu .menu-item');
     const documentList = document.getElementById('documentList');
@@ -79,6 +82,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
     // 문서 필터링
     function filterDocuments() {
+        const searchKeyword = searchInput.value.trim();
         const docRows = documentList.querySelectorAll('.doc-row');
         filteredRows = [];
 
@@ -92,19 +96,56 @@ document.addEventListener('DOMContentLoaded', function() {
                 show = category === currentCategory;
             }
 
-            // 검색 필터
-            if (searchInput.value.trim()) {
-                const searchTerm = searchInput.value.toLowerCase();
+            // 검색 필터 (초성 검색 지원)
+            if (searchKeyword) {
                 const titleCell = row.querySelector('.doc-title-cell');
-                const title = titleCell ? titleCell.querySelector('.title-wrap').textContent.toLowerCase() : '';
-                const desc = titleCell ? titleCell.querySelector('.desc-wrap').textContent.toLowerCase() : '';
-                const allText = row.textContent.toLowerCase();
+                const title = titleCell ? titleCell.querySelector('.title-wrap').textContent : '';
+                const desc = titleCell ? titleCell.querySelector('.desc-wrap').textContent : '';
+                const drafterName = row.querySelector('td:nth-child(3)')?.textContent || '';
+                const deptName = row.querySelector('td:nth-child(4)')?.textContent || '';
 
-                show = show && (title.includes(searchTerm) || desc.includes(searchTerm) || allText.includes(searchTerm));
+                show = show && searchUtils.matchesAny(
+                    searchKeyword,
+                    title,
+                    desc,
+                    drafterName,
+                    deptName
+                );
             }
 
             if (show) {
                 filteredRows.push(row);
+
+                // 하이라이트 적용
+                if (searchKeyword) {
+                    const titleCell = row.querySelector('.doc-title-cell');
+                    if (titleCell) {
+                        const titleWrap = titleCell.querySelector('.title-wrap');
+                        const descWrap = titleCell.querySelector('.desc-wrap');
+
+                        if (titleWrap) {
+                            const originalTitle = titleWrap.textContent;
+                            titleWrap.innerHTML = searchUtils.highlightText(originalTitle, searchKeyword);
+                        }
+                        if (descWrap) {
+                            const originalDesc = descWrap.textContent;
+                            descWrap.innerHTML = searchUtils.highlightText(originalDesc, searchKeyword);
+                        }
+                    }
+
+                    // 작성자, 부서명 하이라이트
+                    const drafterCell = row.querySelector('td:nth-child(3)');
+                    const deptCell = row.querySelector('td:nth-child(4)');
+
+                    if (drafterCell) {
+                        const originalDrafter = drafterCell.textContent;
+                        drafterCell.innerHTML = searchUtils.highlightText(originalDrafter, searchKeyword);
+                    }
+                    if (deptCell) {
+                        const originalDept = deptCell.textContent;
+                        deptCell.innerHTML = searchUtils.highlightText(originalDept, searchKeyword);
+                    }
+                }
             }
         });
 

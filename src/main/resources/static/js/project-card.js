@@ -1,5 +1,8 @@
 // 연구비카드 관리 JavaScript
 document.addEventListener('DOMContentLoaded', function() {
+    // 검색 유틸리티 초기화
+    const searchUtils = new SearchUtils();
+
     // DOM 요소
     const cardGrid = document.getElementById('cardGrid');
     const addCardBtn = document.getElementById('addCardBtn');
@@ -11,6 +14,7 @@ document.addEventListener('DOMContentLoaded', function() {
     let allCards = []; // 전체 카드 데이터
     let allProjects = []; // 전체 프로젝트 목록
     let editingCardIdx = null; // 수정 중인 카드 IDX
+    let currentSearchKeyword = ''; // 현재 검색어 저장
 
     // 초기 데이터 로드
     loadAllCards();
@@ -99,40 +103,55 @@ document.addEventListener('DOMContentLoaded', function() {
             return;
         }
 
-        cardGrid.innerHTML = cards.map(card => `
-            <div class="research-card-item"
-                 data-idx="${card.idx}"
-                 data-company="${card.cardCompany || ''}"
-                 data-number="${card.cardLastDigits || ''}"
-                 data-project="${card.projectName || ''}"
-                 data-project-id="${card.projectIdx || ''}">
-                <div class="research-card-visual" onclick="showProjectInfo(${card.projectIdx})">
-                    <div class="research-card-chip">
-                        <i class="fas fa-microchip"></i>
+        cardGrid.innerHTML = cards.map(card => {
+            // 하이라이트 적용
+            const cardCompany = currentSearchKeyword ?
+                searchUtils.highlightText(card.cardCompany || '-', currentSearchKeyword) :
+                (card.cardCompany || '-');
+
+            const cardLastDigits = currentSearchKeyword ?
+                searchUtils.highlightText(card.cardLastDigits || '****', currentSearchKeyword) :
+                (card.cardLastDigits || '****');
+
+            const projectName = currentSearchKeyword ?
+                searchUtils.highlightText(card.projectName || '-', currentSearchKeyword) :
+                (card.projectName || '-');
+
+            return `
+                <div class="research-card-item"
+                     data-idx="${card.idx}"
+                     data-company="${card.cardCompany || ''}"
+                     data-number="${card.cardLastDigits || ''}"
+                     data-project="${card.projectName || ''}"
+                     data-project-id="${card.projectIdx || ''}">
+                    <div class="research-card-visual" onclick="showProjectInfo(${card.projectIdx})">
+                        <div class="research-card-chip">
+                            <i class="fas fa-microchip"></i>
+                        </div>
+                        <div class="research-card-company">${cardCompany}</div>
+                        <div class="research-card-number">**** **** **** ${cardLastDigits}</div>
                     </div>
-                    <div class="research-card-company">${card.cardCompany || '-'}</div>
-                    <div class="research-card-number">**** **** **** ${card.cardLastDigits || '****'}</div>
-                </div>
-                <div class="research-card-info" onclick="showProjectInfo(${card.projectIdx})">
-                    <div class="info-row">
-                        <span class="info-label">연결 프로젝트</span>
-                        <span class="info-value">${card.projectName || '-'}</span>
+                    <div class="research-card-info" onclick="showProjectInfo(${card.projectIdx})">
+                        <div class="info-row">
+                            <span class="info-label">연결 프로젝트</span>
+                            <span class="info-value">${projectName}</span>
+                        </div>
+                        <div class="info-row">
+                            <span class="info-label">등록일</span>
+                            <span class="info-value">${formatDate(card.createdAt)}</span>
+                        </div>
                     </div>
-                    <div class="info-row">
-                        <span class="info-label">등록일</span>
-                        <span class="info-value">${formatDate(card.createdAt)}</span>
+                    <div class="research-card-actions">
+                        <button class="btn btn-sm btn-secondary" onclick="editCard(${card.idx})">
+                            <i class="fas fa-edit"></i> 수정
+                        </button>
+                        <button class="btn btn-sm btn-delete" onclick="deleteCard(${card.idx})">
+                            <i class="fas fa-trash"></i> 삭제
+                        </button>
                     </div>
                 </div>
-                <div class="research-card-actions">
-                    <button class="btn btn-sm btn-secondary" onclick="editCard(${card.idx})">
-                        <i class="fas fa-edit"></i> 수정
-                    </button>
-                    <button class="btn btn-sm btn-delete" onclick="deleteCard(${card.idx})">
-                        <i class="fas fa-trash"></i> 삭제
-                    </button>
-                </div>
-            </div>
-        `).join('');
+            `;
+        }).join('');
     }
 
     /**
@@ -140,7 +159,8 @@ document.addEventListener('DOMContentLoaded', function() {
      */
     function filterCards() {
         const companyFilter = cardCompanyFilter ? cardCompanyFilter.value : '';
-        const searchTerm = searchInput ? searchInput.value.toLowerCase() : '';
+        const searchKeyword = searchInput ? searchInput.value.trim() : '';
+        currentSearchKeyword = searchKeyword; // 검색어 저장
 
         const filtered = allCards.filter(card => {
             // 카드사 필터
@@ -148,14 +168,13 @@ document.addEventListener('DOMContentLoaded', function() {
                 return false;
             }
 
-            // 검색 필터
-            if (searchTerm) {
-                const matchNumber = card.cardLastDigits && card.cardLastDigits.includes(searchTerm);
-                const matchProject = card.projectName && card.projectName.toLowerCase().includes(searchTerm);
-                const matchNickname = card.cardNickname && card.cardNickname.toLowerCase().includes(searchTerm);
-                if (!matchNumber && !matchProject && !matchNickname) {
-                    return false;
-                }
+            // 검색 필터 (초성 검색 지원)
+            if (searchKeyword) {
+                return searchUtils.matchesObject(
+                    card,
+                    searchKeyword,
+                    ['cardLastDigits', 'projectName', 'cardNickname', 'cardCompany']
+                );
             }
 
             return true;

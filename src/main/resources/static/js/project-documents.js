@@ -1,5 +1,8 @@
 // 프로젝트 문서함 메인 페이지 JavaScript
 document.addEventListener('DOMContentLoaded', function() {
+    // 검색 유틸리티 초기화
+    const searchUtils = new SearchUtils();
+
     // DOM 요소
     const sidebarMenuItems = document.querySelectorAll('.approval-sidebar .sidebar-menu .menu-item');
     const documentList = document.getElementById('documentList');
@@ -15,79 +18,6 @@ document.addEventListener('DOMContentLoaded', function() {
     let currentPage = 1;
     const itemsPerPage = 10;
     let filteredRows = []; // 필터링된 행들
-
-    // ============================================
-    // 초성 검색 유틸리티
-    // ============================================
-    const CHO_HANGUL = ['ㄱ', 'ㄲ', 'ㄴ', 'ㄷ', 'ㄸ', 'ㄹ', 'ㅁ', 'ㅂ', 'ㅃ', 'ㅅ', 'ㅆ', 'ㅇ', 'ㅈ', 'ㅉ', 'ㅊ', 'ㅋ', 'ㅌ', 'ㅍ', 'ㅎ'];
-
-    function getChosung(str) {
-        let result = '';
-        for (let i = 0; i < str.length; i++) {
-            const code = str.charCodeAt(i) - 44032;
-            if (code > -1 && code < 11172) {
-                result += CHO_HANGUL[Math.floor(code / 588)];
-            } else {
-                result += str.charAt(i);
-            }
-        }
-        return result;
-    }
-
-    function matchesSearch(text, keyword) {
-        if (!text || !keyword) return true;
-
-        const lowerText = text.toLowerCase();
-        const lowerKeyword = keyword.toLowerCase();
-
-        // 일반 검색
-        if (lowerText.includes(lowerKeyword)) return true;
-
-        // 초성 검색
-        const chosung = getChosung(text);
-        return chosung.includes(keyword);
-    }
-
-    // 텍스트 하이라이트 함수
-    function highlightText(text, keyword) {
-        if (!text || !keyword) return text;
-
-        const lowerText = text.toLowerCase();
-        const lowerKeyword = keyword.toLowerCase();
-
-        // 일반 텍스트 매칭
-        if (lowerText.includes(lowerKeyword)) {
-            const regex = new RegExp(`(${keyword})`, 'gi');
-            return text.replace(regex, '<mark class="search-highlight">$1</mark>');
-        }
-
-        // 초성 매칭
-        const chosung = getChosung(text);
-        if (chosung.includes(keyword)) {
-            let result = '';
-            let keywordIndex = 0;
-
-            for (let i = 0; i < text.length; i++) {
-                const char = text[i];
-                const code = text.charCodeAt(i) - 44032;
-
-                if (code > -1 && code < 11172) {
-                    const cho = CHO_HANGUL[Math.floor(code / 588)];
-                    if (keywordIndex < keyword.length && cho === keyword[keywordIndex]) {
-                        result += `<mark class="search-highlight">${char}</mark>`;
-                        keywordIndex++;
-                    } else {
-                        result += char;
-                    }
-                } else {
-                    result += char;
-                }
-            }
-            return result;
-        }
-
-        return text;
-    }
 
     // 프로젝트 관련 문서 타입 정의
     const PROJECT_DOCUMENT_TYPES = [
@@ -186,10 +116,10 @@ document.addEventListener('DOMContentLoaded', function() {
                 const deptName = row.querySelector('td:nth-child(4)').textContent;
 
                 show = show && (
-                    matchesSearch(title, searchKeyword) ||
-                    matchesSearch(desc, searchKeyword) ||
-                    matchesSearch(drafterName, searchKeyword) ||
-                    matchesSearch(deptName, searchKeyword)
+                    searchUtils.matchesSearch(title, searchKeyword) ||
+                    searchUtils.matchesSearch(desc, searchKeyword) ||
+                    searchUtils.matchesSearch(drafterName, searchKeyword) ||
+                    searchUtils.matchesSearch(deptName, searchKeyword)
                 );
             }
 
@@ -435,7 +365,7 @@ document.addEventListener('DOMContentLoaded', function() {
         typeCell.className = 'doc-type-cell';
         const icon = getIconFromDocumentType(doc.documentType);
         const documentType = doc.documentType || '-';
-        const highlightedDocType = keyword ? highlightText(documentType, keyword) : documentType;
+        const highlightedDocType = keyword ? searchUtils.highlightText(documentType, keyword) : documentType;
         typeCell.innerHTML = `
             <span class="doc-type">
                 <i class="fas ${icon}"></i>
@@ -450,8 +380,8 @@ document.addEventListener('DOMContentLoaded', function() {
         titleCell.style.cursor = 'pointer';
         const title = doc.title || '제목 없음';
         const content = doc.content ? doc.content.substring(0, 50) : '';
-        const highlightedTitle = keyword ? highlightText(title, keyword) : title;
-        const highlightedContent = keyword ? highlightText(content, keyword) : content;
+        const highlightedTitle = keyword ? searchUtils.highlightText(title, keyword) : title;
+        const highlightedContent = keyword ? searchUtils.highlightText(content, keyword) : content;
         titleCell.innerHTML = `
             <div class="title-wrap">${highlightedTitle}</div>
             <div class="desc-wrap">${highlightedContent}</div>
@@ -462,14 +392,14 @@ document.addEventListener('DOMContentLoaded', function() {
         // 작성자
         const drafterCell = document.createElement('td');
         const drafterName = doc.drafterName || '-';
-        const highlightedDrafter = keyword ? highlightText(drafterName, keyword) : drafterName;
+        const highlightedDrafter = keyword ? searchUtils.highlightText(drafterName, keyword) : drafterName;
         drafterCell.innerHTML = highlightedDrafter;
         tr.appendChild(drafterCell);
 
         // 부서
         const deptCell = document.createElement('td');
         const deptName = doc.drafterDepartment || '-';
-        const highlightedDept = keyword ? highlightText(deptName, keyword) : deptName;
+        const highlightedDept = keyword ? searchUtils.highlightText(deptName, keyword) : deptName;
         deptCell.innerHTML = highlightedDept;
         tr.appendChild(deptCell);
 

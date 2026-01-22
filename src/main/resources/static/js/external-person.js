@@ -1,3 +1,6 @@
+// SearchUtils 초기화
+const searchUtils = new SearchUtils();
+
 document.addEventListener('DOMContentLoaded', function() {
     // DOM 요소
     const addPersonBtn = document.getElementById('addPersonBtn');
@@ -14,6 +17,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
     // 데이터 저장
     let externalPersons = [];
+    let currentSearchKeyword = ''; // 현재 검색어
 
     let editMode = false;
     let currentIdx = null;
@@ -75,40 +79,71 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     });
 
-    // 검색
+    // 검색 (SearchUtils 사용 - 초성 검색 지원)
     personSearch.addEventListener('input', function() {
-        const searchTerm = this.value.toLowerCase().trim();
-        const rows = personTableBody.querySelectorAll('tr');
+        const searchTerm = this.value.trim();
+        currentSearchKeyword = searchTerm;
 
-        rows.forEach(row => {
-            const text = row.textContent.toLowerCase();
-            row.style.display = text.includes(searchTerm) ? '' : 'none';
-        });
+        if (!searchTerm) {
+            // 검색어가 없으면 전체 목록 다시 렌더링
+            loadTable();
+            return;
+        }
+
+        // 필터링된 인원 목록 렌더링
+        const filtered = externalPersons.filter(person =>
+            searchUtils.matchesObject(
+                person,
+                searchTerm,
+                ['companyName', 'position', 'name']
+            )
+        );
+
+        renderFilteredTable(filtered);
     });
 
-    // 테이블 로드
+    // 테이블 로드 (SearchUtils 하이라이트 적용)
     function loadTable() {
+        currentSearchKeyword = ''; // 검색어 초기화
+        renderFilteredTable(externalPersons);
+    }
+
+    // 필터링된 테이블 렌더링
+    function renderFilteredTable(persons) {
         personTableBody.innerHTML = '';
 
-        if (externalPersons.length === 0) {
+        if (persons.length === 0) {
             personTableBody.innerHTML = `
                 <tr>
                     <td colspan="5" class="empty-state">
                         <i class="fas fa-user-friends"></i>
-                        <p>등록된 외부인원이 없습니다.</p>
+                        <p>${currentSearchKeyword ? '검색 결과가 없습니다.' : '등록된 외부인원이 없습니다.'}</p>
                     </td>
                 </tr>
             `;
             return;
         }
 
-        externalPersons.forEach((person, index) => {
+        persons.forEach((person, index) => {
+            // 하이라이트 적용
+            const companyName = currentSearchKeyword ?
+                searchUtils.highlightText(person.companyName || '', currentSearchKeyword) :
+                (person.companyName || '');
+
+            const position = currentSearchKeyword ?
+                searchUtils.highlightText(person.position || '', currentSearchKeyword) :
+                (person.position || '');
+
+            const name = currentSearchKeyword ?
+                searchUtils.highlightText(person.name || '', currentSearchKeyword) :
+                (person.name || '');
+
             const row = document.createElement('tr');
             row.innerHTML = `
                 <td>${index + 1}</td>
-                <td>${person.companyName}</td>
-                <td>${person.position}</td>
-                <td>${person.name}</td>
+                <td>${companyName}</td>
+                <td>${position}</td>
+                <td>${name}</td>
                 <td>
                     <div class="btn-group">
                         <button class="btn-edit" onclick="editPerson(${person.idx})">
