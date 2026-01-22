@@ -2141,12 +2141,13 @@ body:has(.project-form-footer) .main-content {
 }
 
 /* 미래 프로젝트 (시작일이 오늘 이후) */
-.project-table tbody tr.future-project {
+/* 내가 참여한 프로젝트 표시 */
+.project-table tbody tr.my-project {
     background: linear-gradient(to right, #f0f9ff, #e0f2fe);
     border-left: 3px solid #0ea5e9;
 }
 
-.project-table tbody tr.future-project:hover {
+.project-table tbody tr.my-project:hover {
     background: linear-gradient(to right, #e0f2fe, #bae6fd);
     transform: scale(1.005);
 }

@@ -1,4 +1,8 @@
 document.addEventListener('DOMContentLoaded', function() {
+    // 현재 로그인한 사용자 정보
+    const currentUserIdx = window.CURRENT_USER?.idx || null;
+    console.log('현재 로그인 사용자:', window.CURRENT_USER?.empName, '(idx:', currentUserIdx, ')');
+
     // 프로젝트 목록 페이지 요소
     const newProjectBtn = document.getElementById('newProjectBtn');
     const currentProjectGrid = document.getElementById('currentProjectGrid');
@@ -6,6 +10,7 @@ document.addEventListener('DOMContentLoaded', function() {
     // 프로젝트 데이터
     let allCurrentProjects = [];
     let allPastProjectsData = [];
+    let myProjectIds = []; // 내가 참여한 프로젝트 ID 목록
 
     // 과거 프로젝트 테이블 요소
     const filterButtons = document.querySelectorAll('.filter-btn');
@@ -252,6 +257,22 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     }
 
+    // 내가 참여한 프로젝트 ID 목록 로드
+    async function loadMyProjects() {
+        if (!currentUserIdx) return;
+
+        try {
+            const response = await fetch(`/api/projects?memberIdx=${currentUserIdx}`);
+            if (response.ok) {
+                const projects = await response.json();
+                myProjectIds = projects.map(p => p.idx);
+                console.log('내가 참여한 프로젝트 IDs:', myProjectIds);
+            }
+        } catch (error) {
+            console.error('내 프로젝트 로드 오류:', error);
+        }
+    }
+
     // 초기 데이터 로드
     function loadPastProjects() {
         // 모든 프로젝트 조회 (진행중인 프로젝트 포함)
@@ -330,14 +351,12 @@ document.addEventListener('DOMContentLoaded', function() {
                 row.setAttribute('data-project-name', project.name);
                 row.setAttribute('data-project-id', project.projectId);
 
-                // 시작일이 오늘 이후인지 확인
-                const startDate = new Date(project.period.split(' ~ ')[0]);
-                startDate.setHours(0, 0, 0, 0);
-                const isFutureProject = startDate > today;
+                // 현재 로그인한 사용자가 참여한 프로젝트인지 확인
+                const isMyProject = myProjectIds.includes(project.projectId);
 
-                // 미래 프로젝트인 경우 클래스 추가
-                if (isFutureProject) {
-                    row.classList.add('future-project');
+                // 내가 참여한 프로젝트인 경우 클래스 추가
+                if (isMyProject) {
+                    row.classList.add('my-project');
                 }
 
                 row.innerHTML = `
@@ -459,14 +478,16 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     }
 
-    // 초기 로드
-    if (currentProjectGrid) {
-        loadCurrentProjects();
-    }
+    // 초기 로드 (내 프로젝트 목록을 먼저 로드한 후 전체 프로젝트 로드)
+    loadMyProjects().then(() => {
+        if (currentProjectGrid) {
+            loadCurrentProjects();
+        }
 
-    if (pastProjectTableBody) {
-        loadPastProjects();
-    }
+        if (pastProjectTableBody) {
+            loadPastProjects();
+        }
+    });
 
     // 프로젝트 상세보기 (전역 함수)
     window.viewProject = function(projectId) {
