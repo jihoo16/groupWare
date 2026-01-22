@@ -9,6 +9,13 @@ document.addEventListener('DOMContentLoaded', function() {
     // 프로젝트 목록 페이지 요소
     const newProjectBtn = document.getElementById('newProjectBtn');
     const currentProjectGrid = document.getElementById('currentProjectGrid');
+    const currentProjectListContainer = document.getElementById('currentProjectListContainer');
+    const currentProjectListBody = document.getElementById('currentProjectListBody');
+
+    // 뷰 토글 버튼
+    const cardViewBtn = document.getElementById('cardViewBtn');
+    const listViewBtn = document.getElementById('listViewBtn');
+    let currentViewType = 'card'; // 'card' 또는 'list'
 
     // 프로젝트 데이터
     let allCurrentProjects = [];
@@ -48,6 +55,30 @@ document.addEventListener('DOMContentLoaded', function() {
     if (newProjectBtn) {
         newProjectBtn.addEventListener('click', function() {
             window.location.href = '/project/new';
+        });
+    }
+
+    // 뷰 토글 버튼 이벤트
+    if (cardViewBtn) {
+        cardViewBtn.addEventListener('click', function() {
+            if (currentViewType === 'card') return;
+            currentViewType = 'card';
+            cardViewBtn.classList.add('active');
+            listViewBtn.classList.remove('active');
+            currentProjectGrid.style.display = 'grid';
+            currentProjectListContainer.style.display = 'none';
+        });
+    }
+
+    if (listViewBtn) {
+        listViewBtn.addEventListener('click', function() {
+            if (currentViewType === 'list') return;
+            currentViewType = 'list';
+            listViewBtn.classList.add('active');
+            cardViewBtn.classList.remove('active');
+            currentProjectGrid.style.display = 'none';
+            currentProjectListContainer.style.display = 'block';
+            renderCurrentProjectsList(allCurrentProjects);
         });
     }
 
@@ -200,6 +231,53 @@ document.addEventListener('DOMContentLoaded', function() {
             card.addEventListener('click', function() {
                 const projectId = this.getAttribute('data-project-id');
                 viewProject(projectId);
+            });
+        });
+    }
+
+    // 현재 프로젝트 리스트 렌더링
+    function renderCurrentProjectsList(projects) {
+        if (!currentProjectListBody) return;
+
+        if (projects.length === 0) {
+            currentProjectListBody.innerHTML = '<tr><td colspan="7" class="text-center" style="padding: 40px; color: #868e96;">진행중인 프로젝트가 없습니다.</td></tr>';
+            return;
+        }
+
+        currentProjectListBody.innerHTML = projects.map((project, index) => {
+            const isMyProject = myProjectIds.includes(project.idx);
+            const myProjectClass = isMyProject ? ' my-project-row' : '';
+            const myProjectBadge = isMyProject ? '<span class="my-project-badge"><i class="fas fa-user-check"></i></span>' : '';
+
+            return `
+                <tr class="${myProjectClass}" data-project-id="${project.idx}">
+                    <td class="text-center">${index + 1}</td>
+                    <td>
+                        <strong>${project.projectName}</strong>${myProjectBadge}
+                    </td>
+                    <td><span class="status-badge ${getStatusClass(project.projectStatus)}">${getStatusLabel(project.projectStatus)}</span></td>
+                    <td>${project.projectManagerName || '-'}</td>
+                    <td class="text-center">${project.memberCount || 0}명</td>
+                    <td>${project.startDate || '-'} ~ ${project.endDate || '-'}</td>
+                    <td>
+                        <div class="table-progress">
+                            <div class="progress-bar-small">
+                                <div class="progress-fill" style="width: ${project.progressRate || 0}%;"></div>
+                            </div>
+                            <span class="progress-text-small">${project.progressRate || 0}%</span>
+                        </div>
+                    </td>
+                </tr>
+            `;
+        }).join('');
+
+        // 리스트 행 클릭 이벤트 추가
+        currentProjectListBody.querySelectorAll('tr').forEach(row => {
+            row.addEventListener('click', function() {
+                const projectId = this.getAttribute('data-project-id');
+                if (projectId) {
+                    viewProject(projectId);
+                }
             });
         });
     }
