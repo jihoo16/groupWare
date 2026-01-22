@@ -36,7 +36,10 @@
 
                                 <!-- 프로젝트 선택 -->
                                 <div class="form-group full-width">
-                                    <label for="projectInput"><i class="fas fa-project-diagram"></i> 프로젝트</label>
+                                    <label for="projectInput">
+                                        <i class="fas fa-project-diagram"></i> 프로젝트
+                                        <span class="required-mark">*</span>
+                                    </label>
                                     <input type="text" id="projectInput" class="form-input clickable-input" placeholder="클릭하여 프로젝트 선택" readonly>
                                     <input type="hidden" id="selectedProjectIdx">
                                 </div>
@@ -112,9 +115,9 @@
                                                     <label><i class="fas fa-chart-line"></i> 주간 달성률</label>
                                                     <div class="slider-wrapper">
                                                         <div class="slider-container">
-                                                            <input type="range" id="weeklyAchievementRate" class="achievement-slider" min="0" max="100" step="1" value="100">
+                                                            <input type="range" id="weeklyAchievementRate" class="achievement-slider" min="0" max="100" step="1" value="0">
                                                             <div class="slider-input-group">
-                                                                <input type="number" id="weeklyAchievementValue" class="slider-number-input" min="0" max="100" step="1" value="100">
+                                                                <input type="number" id="weeklyAchievementValue" class="slider-number-input" min="0" max="100" step="1" value="0">
                                                                 <span class="slider-percent">%</span>
                                                             </div>
                                                         </div>
@@ -190,8 +193,11 @@
                                 </div>
                                 <div class="form-grid">
                                     <div class="form-group full-width">
-                                        <label for="weeklyTasks"><i class="fas fa-list-ul"></i> 금주 주요 업무</label>
-                                        <textarea id="weeklyTasks" class="form-textarea" rows="4" placeholder="이번 주 수행한 주요 업무"></textarea>
+                                        <label for="weeklyTasks">
+                                            <i class="fas fa-list-ul"></i> 금주 주요 업무
+                                            <span class="required-mark">*</span>
+                                        </label>
+                                        <textarea id="weeklyTasks" class="form-textarea" rows="4" placeholder="이번 주 수행한 주요 업무 (필수)" required></textarea>
                                     </div>
 
                                     <div class="form-group full-width">
@@ -213,18 +219,6 @@
                                         <label for="remarks"><i class="fas fa-sticky-note"></i> 기타</label>
                                         <textarea id="remarks" class="form-textarea" rows="3" placeholder="기타 사항"></textarea>
                                     </div>
-                                </div>
-                            </div>
-
-                            <div class="input-section">
-                                <div class="section-header">
-                                    <h3><i class="fas fa-user-tag"></i> 참조</h3>
-                                </div>
-                                <div class="approver-selection-area" id="referenceSelectionArea">
-                                    <button type="button" class="btn-select-references" id="openReferenceModalBtn">
-                                        <i class="fas fa-user-plus"></i> 참조 추가
-                                    </button>
-                                    <div id="selectedReferencesList" class="selected-references-list"></div>
                                 </div>
                             </div>
 
@@ -262,7 +256,6 @@
                                         <tr>
                                             <th class="approval-header">담당</th>
                                             <th class="approval-header">연구책임자</th>
-                                            <th class="approval-header">대표이사</th>
                                         </tr>
                                         <tr>
                                             <td class="approval-sign-cell" data-role="담당" data-approver-id="">
@@ -275,11 +268,6 @@
                                                     <span class="sign-placeholder">결재</span>
                                                 </div>
                                             </td>
-                                            <td class="approval-sign-cell" data-role="대표이사" data-approver-id="">
-                                                <div class="sign-area">
-                                                    <span class="sign-placeholder">결재</span>
-                                                </div>
-                                            </td>
                                         </tr>
                                         <tr>
                                             <td class="approval-name-cell">
@@ -287,15 +275,6 @@
                                             </td>
                                             <td class="approval-name-cell" style="position: relative;">
                                                 <span class="approver-name auto-approver-2" data-role="연구책임자" id="approver2">-</span>
-                                            </td>
-                                            <td class="approval-name-cell">
-                                                <span class="approver-name auto-approver-3" data-role="대표이사" id="approver3">-</span>
-                                            </td>
-                                        </tr>
-                                        <tr>
-                                            <th class="approval-header reference-header">참조</th>
-                                            <td class="reference-cell" colspan="2">
-                                                <span class="auto-references" id="referenceNames">-</span>
                                             </td>
                                         </tr>
                                     </table>
@@ -310,7 +289,7 @@
                                     </tr>
                                     <tr>
                                         <th>주간 달성률</th>
-                                        <td colspan="3"><span class="auto-achievement" id="weeklyAchievementRate">0</span>%</td>
+                                        <td colspan="3"><span class="auto-achievement">0</span>%</td>
                                     </tr>
                                     <tr>
                                         <th>보고자</th>
@@ -328,19 +307,19 @@
                                     </tr>
                                     <tr>
                                         <th>주요 성과</th>
-                                        <td colspan="3"><div class="auto-achievements" id="achievements" style="white-space: pre-wrap; min-height: 80px;">-</div></td>
+                                        <td colspan="3"><div class="auto-achievements" style="white-space: pre-wrap; min-height: 80px;">-</div></td>
                                     </tr>
                                     <tr>
                                         <th>주요 이슈</th>
-                                        <td colspan="3"><div class="auto-issues" id="issues" style="white-space: pre-wrap; min-height: 80px;">-</div></td>
+                                        <td colspan="3"><div class="auto-issues" style="white-space: pre-wrap; min-height: 80px;">-</div></td>
                                     </tr>
                                     <tr>
                                         <th>차주 계획</th>
-                                        <td colspan="3"><div class="auto-next-plan" id="nextWeekPlan" style="white-space: pre-wrap; min-height: 100px;">-</div></td>
+                                        <td colspan="3"><div class="auto-next-plan" style="white-space: pre-wrap; min-height: 100px;">-</div></td>
                                     </tr>
                                     <tr>
                                         <th>기타</th>
-                                        <td colspan="3"><div class="auto-remarks" id="remarks" style="white-space: pre-wrap; min-height: 80px;">-</div></td>
+                                        <td colspan="3"><div class="auto-remarks" style="white-space: pre-wrap; min-height: 80px;">-</div></td>
                                     </tr>
                                 </table>
                             </div>

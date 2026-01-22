@@ -145,6 +145,12 @@ div:focus {
     font-size: 13px;
 }
 
+.required-mark {
+    color: #ef5350;
+    font-weight: 700;
+    margin-left: 2px;
+}
+
 .form-input,
 .form-textarea {
     padding: 10px 14px;
@@ -155,6 +161,15 @@ div:focus {
     transition: all 0.2s;
     font-family: inherit;
     background: white;
+}
+
+.form-textarea[required]:invalid {
+    border-color: #fecaca;
+}
+
+.form-textarea[required]:focus {
+    border-color: #667eea;
+    box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
 }
 
 .form-input:hover {
@@ -468,6 +483,12 @@ div:focus {
 
 .clickable-input::placeholder {
     color: #94a3b8;
+}
+
+/* 프로젝트 미선택 시 빨간 테두리 */
+#projectInput.required-missing {
+    border-color: #ef5350 !important;
+    background: #ffebee !important;
 }
 
 .form-textarea {
