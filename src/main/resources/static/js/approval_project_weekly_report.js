@@ -719,7 +719,18 @@ document.addEventListener('DOMContentLoaded', function() {
         dayEl.textContent = day;
 
         if (dateStr) {
-            dayEl.addEventListener('click', () => selectWeek(dateStr));
+            // 미래 날짜인지 확인
+            const date = new Date(dateStr);
+            const today = new Date();
+            today.setHours(0, 0, 0, 0); // 시간 정보 제거
+
+            if (date > today) {
+                // 미래 날짜는 비활성화
+                dayEl.classList.add('future-disabled');
+            } else {
+                // 현재 또는 과거 날짜만 클릭 가능
+                dayEl.addEventListener('click', () => selectWeek(dateStr));
+            }
         }
 
         return dayEl;
@@ -728,6 +739,15 @@ document.addEventListener('DOMContentLoaded', function() {
     // 주 선택 (클릭한 날짜가 속한 주의 평일들을 자동 선택)
     function selectWeek(dateStr) {
         const clickedDate = new Date(dateStr);
+        const today = new Date();
+        today.setHours(0, 0, 0, 0);
+
+        // 미래 날짜는 선택 불가
+        if (clickedDate > today) {
+            alert('미래의 주간보고서는 작성할 수 없습니다.\n현재 또는 과거 날짜를 선택해주세요.');
+            return;
+        }
+
         selectedWeekDates = getWeekdaysInWeek(clickedDate);
 
         // hidden input에 시작일과 종료일 저장

@@ -404,6 +404,19 @@ div:focus {
     background: #f8f9fa;
 }
 
+.calendar-day.future-disabled {
+    color: #ced4da;
+    cursor: not-allowed;
+    background: #f8f9fa;
+    opacity: 0.5;
+}
+
+.calendar-day.future-disabled:hover {
+    background: #f8f9fa;
+    transform: none;
+    box-shadow: none;
+}
+
 .calendar-day.today {
     font-weight: 700;
     color: #667eea;
