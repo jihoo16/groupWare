@@ -14,6 +14,10 @@
     <!-- jQuery -->
     <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
 
+    <!-- SweetAlert2 -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/sweetalert2@11/dist/sweetalert2.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+
     <!-- 세션 정보를 JavaScript 전역 변수로 주입 -->
     <script th:inline="javascript">
         // 현재 로그인한 사용자 정보 (서버 세션에서 주입)
@@ -38,6 +42,7 @@
     </script>
 
     <!-- 공통 JavaScript -->
+    <script th:src="@{/js/common-alert.js}" defer></script>
     <script th:src="@{/js/common.js}" defer></script>
     <script th:src="@{/js/common-modal.js}" defer></script>
 </head>
