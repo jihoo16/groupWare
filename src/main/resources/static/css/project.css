@@ -197,6 +197,28 @@
     border-color: #4361ee;
 }
 
+/* 내가 참여한 프로젝트 카드 스타일 */
+.project-card.my-project-card {
+    border: 2px solid #0ea5e9;
+    background: linear-gradient(to bottom right, #f0f9ff, #ffffff);
+}
+
+.project-card.my-project-card:hover {
+    border-color: #0284c7;
+    box-shadow: 0 4px 16px rgba(14, 165, 233, 0.25);
+}
+
+.header-badges {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.my-project-icon {
+    color: #0ea5e9;
+    font-size: 14px;
+}
+
 .project-header {
     padding: 20px;
     border-bottom: 1px solid #e9ecef;

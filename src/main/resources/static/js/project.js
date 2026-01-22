@@ -93,11 +93,19 @@ document.addEventListener('DOMContentLoaded', function() {
             const equipment = formatBudgetBox(project.equipmentUsed, project.equipmentBudget);
             const material = formatBudgetBox(project.materialUsed, project.materialBudget);
 
+            // 내가 참여한 프로젝트인지 확인
+            const isMyProject = myProjectIds.includes(project.idx);
+            const myProjectClass = isMyProject ? ' my-project-card' : '';
+            const myProjectIcon = isMyProject ? '<i class="fas fa-user-check my-project-icon" title="내가 참여한 프로젝트"></i>' : '';
+
             return `
-            <div class="project-card" daㅇta-project-name="${project.projectName}" data-project-id="${project.idx}">
+            <div class="project-card${myProjectClass}" data-project-name="${project.projectName}" data-project-id="${project.idx}">
                 <div class="project-header">
                     <h3>${project.projectName}</h3>
-                    <span class="status-badge ${getStatusClass(project.projectStatus)}">${getStatusLabel(project.projectStatus)}</span>
+                    <div class="header-badges">
+                        ${myProjectIcon}
+                        <span class="status-badge ${getStatusClass(project.projectStatus)}">${getStatusLabel(project.projectStatus)}</span>
+                    </div>
                 </div>
                 <div class="project-body">
                     <div class="project-info">

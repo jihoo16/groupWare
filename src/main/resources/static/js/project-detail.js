@@ -1,5 +1,8 @@
 // 프로젝트 상세보기 JavaScript
 document.addEventListener('DOMContentLoaded', function() {
+    // 현재 로그인한 사용자 정보
+    const currentUserIdx = window.CURRENT_USER?.idx || null;
+
     // URL에서 프로젝트 ID 가져오기
     const urlParams = new URLSearchParams(window.location.search);
     const projectId = urlParams.get('projectId');
@@ -10,8 +13,14 @@ document.addEventListener('DOMContentLoaded', function() {
         return;
     }
 
+    // 주간업무보고 작성 버튼 초기 숨김
+    const createWeeklyReportBtn = document.getElementById('createWeeklyReportBtn');
+    if (createWeeklyReportBtn) {
+        createWeeklyReportBtn.style.display = 'none';
+    }
+
     // 프로젝트 상세 정보 로드
-    loadProjectDetail(projectId);
+    loadProjectDetail(projectId, currentUserIdx);
 
     // 수정 버튼 이벤트 리스너
     const editBtn = document.getElementById('editBtn');
@@ -20,7 +29,6 @@ document.addEventListener('DOMContentLoaded', function() {
             location.href = `/project/edit/${projectId}`;
         });
     }
-    const createWeeklyReportBtn = document.getElementById('createWeeklyReportBtn');
     if (createWeeklyReportBtn) {
         createWeeklyReportBtn.addEventListener('click', function() {
             // 프로젝트 주간업무보고 작성 페이지로 이동 (프로젝트 ID 전달)
