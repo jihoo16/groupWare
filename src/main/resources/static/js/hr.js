@@ -1,10 +1,14 @@
 // 사용자 관리 페이지 JavaScript (jQuery + Ajax)
 
+// SearchUtils 초기화
+const searchUtils = new SearchUtils();
+
 // 전역 변수
 let allUsers = []; // 전체 사용자 데이터 캐시
 let currentFilter = 'all'; // 현재 부서 필터
 let sortColumn = null; // 현재 정렬 컬럼
 let sortDirection = 'asc'; // 현재 정렬 방향 (asc/desc)
+let currentSearchKeyword = ''; // 현재 검색어
 
 // jQuery Ready
 $(document).ready(function() {
@@ -29,7 +33,8 @@ $(document).ready(function() {
 
     // 검색 기능
     $('#employeeSearch').on('input', function() {
-        const searchTerm = $(this).val().toLowerCase();
+        const searchTerm = $(this).val().trim();
+        currentSearchKeyword = searchTerm;
         searchEmployees(searchTerm);
     });
 
@@ -184,7 +189,7 @@ function renderEmployeeTable(users) {
 }
 
 /**
- * 직원 행(TR) 생성
+ * 직원 행(TR) 생성 (SearchUtils 하이라이트 적용)
  */
 function createEmployeeRow(user) {
     // 이름 첫 글자 (아바타용)
@@ -217,19 +222,44 @@ function createEmployeeRow(user) {
     const isNewEmployee = checkNewEmployee(user.empJoinDate);
     const newBadge = isNewEmployee ? 'new' : '';
 
+    // 하이라이트 적용
+    const empId = currentSearchKeyword ?
+        searchUtils.highlightText(user.empId || '-', currentSearchKeyword) :
+        (user.empId || '-');
+
+    const empName = currentSearchKeyword ?
+        searchUtils.highlightText(user.empName || '-', currentSearchKeyword) :
+        (user.empName || '-');
+
+    const empDeptName = currentSearchKeyword ?
+        searchUtils.highlightText(user.empDeptName || '-', currentSearchKeyword) :
+        (user.empDeptName || '-');
+
+    const empPositionName = currentSearchKeyword ?
+        searchUtils.highlightText(user.empPositionName || '-', currentSearchKeyword) :
+        (user.empPositionName || '-');
+
+    const empEmail = currentSearchKeyword ?
+        searchUtils.highlightText(user.empEmail || '-', currentSearchKeyword) :
+        (user.empEmail || '-');
+
+    const empPhone = currentSearchKeyword ?
+        searchUtils.highlightText(user.empPhone || '-', currentSearchKeyword) :
+        (user.empPhone || '-');
+
     return `
         <tr data-idx="${user.idx}" data-dept="${user.empDept}">
-            <td>${user.empId || '-'}</td>
+            <td>${empId}</td>
             <td>
                 <div class="employee-name">
                     <div class="emp-avatar ${newBadge}">${initial}</div>
-                    <span>${user.empName || '-'}</span>
+                    <span>${empName}</span>
                 </div>
             </td>
-            <td>${user.empDeptName || '-'}</td>
-            <td><span class="position-badge ${positionClass}">${user.empPositionName || '-'}</span></td>
-            <td>${user.empEmail || '-'}</td>
-            <td>${user.empPhone || '-'}</td>
+            <td>${empDeptName}</td>
+            <td><span class="position-badge ${positionClass}">${empPositionName}</span></td>
+            <td>${empEmail}</td>
+            <td>${empPhone}</td>
             <td>${user.empJoinDate || '-'}</td>
             <td><span class="status-badge ${statusClass}">${user.empStatus || '-'}</span></td>
             <td>
@@ -437,7 +467,7 @@ function filterEmployees() {
 }
 
 /**
- * 검색 기능
+ * 검색 기능 (SearchUtils 사용 - 초성 검색 지원)
  */
 function searchEmployees(searchTerm) {
     const $tbody = $('#employeeTableBody');
@@ -448,22 +478,40 @@ function searchEmployees(searchTerm) {
 
     if (!searchTerm) {
         // 검색어가 없으면 현재 필터만 적용
+        currentSearchKeyword = '';
         filterEmployees();
         return;
     }
 
     $rows.each(function() {
-        const text = $(this).text().toLowerCase();
-        const dept = $(this).data('dept');
+        const $row = $(this);
+        const idx = $row.data('idx');
+        const dept = $row.data('dept');
+
+        // 전역 allUsers에서 해당 사용자 데이터 찾기
+        const user = allUsers.find(u => u.idx === idx);
+
+        if (!user) {
+            $row.hide();
+            return;
+        }
 
         // 부서 필터와 검색어 둘 다 만족해야 함
         const matchDept = (currentFilter === 'all' || dept === currentFilter);
-        const matchSearch = text.includes(searchTerm);
+
+        // SearchUtils를 사용한 초성 검색
+        const matchSearch = searchUtils.matchesObject(
+            user,
+            searchTerm,
+            ['empId', 'empName', 'empDeptName', 'empPositionName', 'empEmail', 'empPhone']
+        );
 
         if (matchDept && matchSearch) {
-            $(this).show();
+            // 하이라이트 적용하여 행 다시 렌더링
+            const highlightedRow = createEmployeeRow(user);
+            $row.replaceWith(highlightedRow);
         } else {
-            $(this).hide();
+            $row.hide();
         }
     });
 

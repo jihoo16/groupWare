@@ -1,4 +1,8 @@
 // 팀 관리 페이지 스크립트
+
+// SearchUtils 초기화
+const searchUtils = new SearchUtils();
+
 document.addEventListener('DOMContentLoaded', function() {
     // 현재 사용자 정보 (TODO: 실제로는 세션에서 가져와야 함)
     const currentUser = {
@@ -11,6 +15,7 @@ document.addEventListener('DOMContentLoaded', function() {
     let currentFilter = 'all';
     let currentView = 'grid';
     let selectedTeamIdx = null;
+    let currentSearchKeyword = ''; // 현재 검색어
 
     // DOM 요소
     const newTeamBtn = document.getElementById('newTeamBtn');
@@ -135,7 +140,7 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     }
 
-    // 필터링된 팀 가져오기
+    // 필터링된 팀 가져오기 (SearchUtils 사용 - 초성 검색 지원)
     function getFilteredTeams() {
         let filtered = [...allTeams];
 
@@ -154,11 +159,17 @@ document.addEventListener('DOMContentLoaded', function() {
                 break;
         }
 
-        // 검색어 적용
-        const searchTerm = teamSearchInput.value.toLowerCase().trim();
+        // 검색어 적용 (SearchUtils 사용)
+        const searchTerm = teamSearchInput.value.trim();
+        currentSearchKeyword = searchTerm;
+
         if (searchTerm) {
             filtered = filtered.filter(team =>
-                team.teamName.toLowerCase().includes(searchTerm)
+                searchUtils.matchesObject(
+                    team,
+                    searchTerm,
+                    ['teamName', 'teamLeaderName', 'teamDescription']
+                )
             );
         }
 
@@ -191,53 +202,64 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     }
 
-    // 그리드 뷰 렌더링
+    // 그리드 뷰 렌더링 (SearchUtils 하이라이트 적용)
     function renderGridView(teams) {
-        teamGrid.innerHTML = teams.map(team => `
-            <div class="team-card" data-team-idx="${team.idx}">
-                <div class="team-card-header">
-                    <div>
-                        <h3 class="team-card-title">${team.teamName}</h3>
+        teamGrid.innerHTML = teams.map(team => {
+            // 하이라이트 적용
+            const teamName = currentSearchKeyword ?
+                searchUtils.highlightText(team.teamName || '', currentSearchKeyword) :
+                (team.teamName || '');
+
+            const teamLeaderName = currentSearchKeyword ?
+                searchUtils.highlightText(team.teamLeaderName || '미지정', currentSearchKeyword) :
+                (team.teamLeaderName || '미지정');
+
+            return `
+                <div class="team-card" data-team-idx="${team.idx}">
+                    <div class="team-card-header">
+                        <div>
+                            <h3 class="team-card-title">${teamName}</h3>
+                        </div>
+                        <span class="status-badge ${team.isActive === 'Y' ? 'active' : 'inactive'}">
+                            ${team.isActive === 'Y' ? '활성' : '비활성'}
+                        </span>
                     </div>
-                    <span class="status-badge ${team.isActive === 'Y' ? 'active' : 'inactive'}">
-                        ${team.isActive === 'Y' ? '활성' : '비활성'}
-                    </span>
-                </div>
-                <p class="team-card-description">${team.teamDescription || '설명 없음'}</p>
-                <div class="team-card-info">
-                    <div class="team-info-item">
-                        <i class="fas fa-crown"></i>
-                        <span>리더: ${team.teamLeaderName || '미지정'}</span>
+                    <p class="team-card-description">${team.teamDescription || '설명 없음'}</p>
+                    <div class="team-card-info">
+                        <div class="team-info-item">
+                            <i class="fas fa-crown"></i>
+                            <span>리더: ${teamLeaderName}</span>
+                        </div>
+                        <div class="team-info-item">
+                            <i class="fas fa-users"></i>
+                            <span>멤버: ${team.memberCount || 0}명</span>
+                        </div>
+                        <div class="team-info-item">
+                            <i class="fas fa-calendar"></i>
+                            <span>${formatDate(team.createdAt)}</span>
+                        </div>
                     </div>
-                    <div class="team-info-item">
-                        <i class="fas fa-users"></i>
-                        <span>멤버: ${team.memberCount || 0}명</span>
-                    </div>
-                    <div class="team-info-item">
-                        <i class="fas fa-calendar"></i>
-                        <span>${formatDate(team.createdAt)}</span>
-                    </div>
-                </div>
-                <div class="team-card-footer">
-                    <button class="btn btn-sm btn-secondary view-detail-btn" data-team-idx="${team.idx}">
-                        <i class="fas fa-eye"></i> 상세보기
-                    </button>
-                    <div class="team-card-actions">
-                        <button class="btn-icon edit-btn" data-team-idx="${team.idx}" title="수정">
-                            <i class="fas fa-edit"></i>
+                    <div class="team-card-footer">
+                        <button class="btn btn-sm btn-secondary view-detail-btn" data-team-idx="${team.idx}">
+                            <i class="fas fa-eye"></i> 상세보기
                         </button>
-                        <button class="btn-icon danger delete-btn" data-team-idx="${team.idx}" title="삭제">
-                            <i class="fas fa-trash"></i>
-                        </button>
+                        <div class="team-card-actions">
+                            <button class="btn-icon edit-btn" data-team-idx="${team.idx}" title="수정">
+                                <i class="fas fa-edit"></i>
+                            </button>
+                            <button class="btn-icon danger delete-btn" data-team-idx="${team.idx}" title="삭제">
+                                <i class="fas fa-trash"></i>
+                            </button>
+                        </div>
                     </div>
                 </div>
-            </div>
-        `).join('');
+            `;
+        }).join('');
 
         attachCardEventListeners();
     }
 
-    // 리스트 뷰 렌더링
+    // 리스트 뷰 렌더링 (SearchUtils 하이라이트 적용)
     function renderListView(teams) {
         if (teams.length === 0) {
             // 빈 행 표시 (클릭 가능)
@@ -255,20 +277,30 @@ document.addEventListener('DOMContentLoaded', function() {
                 window.location.href = '/team/new';
             });
         } else {
-            teamTableBody.innerHTML = teams.map((team, index) => `
-                <tr data-team-idx="${team.idx}">
-                    <td>${index + 1}</td>
-                    <td class="team-name-cell view-detail-btn" data-team-idx="${team.idx}">${team.teamName}</td>
-                    <td>${team.teamLeaderName || '미지정'}</td>
-                    <td>${team.memberCount || 0}명</td>
-                    <td>${formatDate(team.createdAt)}</td>
-                    <td><span class="status-badge ${team.isActive === 'Y' ? 'active' : 'inactive'}">${team.isActive === 'Y' ? '활성' : '비활성'}</span></td>
-                    <td>
-                        <div class="team-table-actions">
-                            <button class="btn-icon edit-btn" data-team-idx="${team.idx}" title="수정">
-                                <i class="fas fa-edit"></i>
-                            </button>
-                            <button class="btn-icon danger delete-btn" data-team-idx="${team.idx}" title="삭제">
+            teamTableBody.innerHTML = teams.map((team, index) => {
+                // 하이라이트 적용
+                const teamName = currentSearchKeyword ?
+                    searchUtils.highlightText(team.teamName || '', currentSearchKeyword) :
+                    (team.teamName || '');
+
+                const teamLeaderName = currentSearchKeyword ?
+                    searchUtils.highlightText(team.teamLeaderName || '미지정', currentSearchKeyword) :
+                    (team.teamLeaderName || '미지정');
+
+                return `
+                    <tr data-team-idx="${team.idx}">
+                        <td>${index + 1}</td>
+                        <td class="team-name-cell view-detail-btn" data-team-idx="${team.idx}">${teamName}</td>
+                        <td>${teamLeaderName}</td>
+                        <td>${team.memberCount || 0}명</td>
+                        <td>${formatDate(team.createdAt)}</td>
+                        <td><span class="status-badge ${team.isActive === 'Y' ? 'active' : 'inactive'}">${team.isActive === 'Y' ? '활성' : '비활성'}</span></td>
+                        <td>
+                            <div class="team-table-actions">
+                                <button class="btn-icon edit-btn" data-team-idx="${team.idx}" title="수정">
+                                    <i class="fas fa-edit"></i>
+                                </button>
+                                <button class="btn-icon danger delete-btn" data-team-idx="${team.idx}" title="삭제">
                                 <i class="fas fa-trash"></i>
                             </button>
                         </div>

@@ -6,6 +6,12 @@
     'use strict';
 
     // ============================================
+    // SearchUtils 초기화
+    // ============================================
+    const searchUtils = new SearchUtils();
+    let currentSearchKeyword = ''; // 현재 검색어
+
+    // ============================================
     // 상수 정의
     // ============================================
     const DOM_SELECTORS = {
@@ -384,17 +390,24 @@
     }
 
     /**
-     * 검색을 처리합니다.
+     * 검색을 처리합니다. (SearchUtils 사용 - 초성 검색 지원)
      * @param {string} searchTerm - 검색어
      */
     function handleSearch(searchTerm) {
-        const term = searchTerm.toLowerCase().trim();
+        const term = searchTerm.trim();
+        currentSearchKeyword = term;
         const allMemberNodes = document.querySelectorAll(`.${CSS_CLASSES.TREE_NODE}.${CSS_CLASSES.MEMBER}`);
 
         if (term === '') {
             // 검색어가 없으면 모두 표시
             allMemberNodes.forEach(node => {
                 node.style.display = '';
+                // 하이라이트 제거
+                const label = node.querySelector(`.${CSS_CLASSES.TREE_LABEL}`);
+                if (label) {
+                    const memberData = JSON.parse(node.getAttribute('data-member'));
+                    label.innerHTML = `${memberData.name} ${memberData.rank}`;
+                }
             });
             return;
         }
@@ -404,16 +417,24 @@
         allMemberNodes.forEach(node => {
             try {
                 const memberData = JSON.parse(node.getAttribute('data-member'));
-                const name = (memberData.name || '').toLowerCase();
-                const department = (memberData.department || '').toLowerCase();
-                const position = (memberData.position || '').toLowerCase();
-                const rank = (memberData.rank || '').toLowerCase();
 
-                if (name.includes(term) ||
-                    department.includes(term) ||
-                    position.includes(term) ||
-                    rank.includes(term)) {
+                // SearchUtils를 사용한 초성 검색
+                const matchSearch = searchUtils.matchesObject(
+                    memberData,
+                    term,
+                    ['name', 'department', 'position', 'rank']
+                );
+
+                if (matchSearch) {
                     node.style.display = '';
+
+                    // 하이라이트 적용
+                    const label = node.querySelector(`.${CSS_CLASSES.TREE_LABEL}`);
+                    if (label) {
+                        const highlightedName = searchUtils.highlightText(memberData.name || '', term);
+                        const highlightedRank = searchUtils.highlightText(memberData.rank || '', term);
+                        label.innerHTML = `${highlightedName} ${highlightedRank}`;
+                    }
 
                     // 부모 노드들 펼치기
                     let parent = node.parentElement;

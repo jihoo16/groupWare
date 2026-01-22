@@ -1,3 +1,6 @@
+// SearchUtils 초기화
+const searchUtils = new SearchUtils();
+
 document.addEventListener('DOMContentLoaded', function() {
     // 현재 로그인한 사용자 정보
     const currentUserIdx = window.CURRENT_USER?.idx || null;
@@ -20,6 +23,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
     // 현재 선택된 필터 상태
     let currentStatusFilter = '';
+    let currentSearchKeyword = ''; // 현재 검색어
 
     // 페이지네이션 요소
     const firstPageBtn = document.getElementById('firstPageBtn');
@@ -320,14 +324,22 @@ document.addEventListener('DOMContentLoaded', function() {
             });
     }
 
-    // 과거 프로젝트 필터링
+    // 과거 프로젝트 필터링 (SearchUtils 사용 - 초성 검색 지원)
     function filterPastProjects() {
         const statusValue = currentStatusFilter;
-        const searchValue = searchPastInput ? searchPastInput.value.toLowerCase() : '';
+        const searchValue = searchPastInput ? searchPastInput.value.trim() : '';
+        currentSearchKeyword = searchValue;
 
         filteredPastProjects = allPastProjects.filter(project => {
             const statusMatch = !statusValue || project.status === statusValue;
-            const searchMatch = !searchValue || project.name.toLowerCase().includes(searchValue);
+
+            // SearchUtils를 사용한 초성 검색
+            const searchMatch = !searchValue || searchUtils.matchesObject(
+                project,
+                searchValue,
+                ['name', 'managerName']
+            );
+
             return statusMatch && searchMatch;
         });
 
@@ -335,7 +347,7 @@ document.addEventListener('DOMContentLoaded', function() {
         renderPastProjects();
     }
 
-    // 과거 프로젝트 렌더링
+    // 과거 프로젝트 렌더링 (SearchUtils 하이라이트 적용)
     function renderPastProjects() {
         if (!pastProjectTableBody) return;
 
@@ -367,11 +379,20 @@ document.addEventListener('DOMContentLoaded', function() {
                     row.classList.add('my-project');
                 }
 
+                // 하이라이트 적용
+                const projectName = currentSearchKeyword ?
+                    searchUtils.highlightText(project.name || '', currentSearchKeyword) :
+                    (project.name || '');
+
+                const managerName = currentSearchKeyword ?
+                    searchUtils.highlightText(project.pm || '-', currentSearchKeyword) :
+                    (project.pm || '-');
+
                 row.innerHTML = `
                     <td class="text-center">${project.no}</td>
-                    <td><strong>${project.name}</strong></td>
+                    <td><strong>${projectName}</strong></td>
                     <td><span class="status-badge ${project.statusClass}">${project.statusLabel}</span></td>
-                    <td>${project.pm}</td>
+                    <td>${managerName}</td>
                     <td class="text-center">${project.teamSize}</td>
                     <td>${project.period}</td>
                     <td>
