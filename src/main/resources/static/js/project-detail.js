@@ -20,6 +20,17 @@ document.addEventListener('DOMContentLoaded', function() {
             location.href = `/project/edit/${projectId}`;
         });
     }
+    const createWeeklyReportBtn = document.getElementById('createWeeklyReportBtn');
+    if (createWeeklyReportBtn) {
+        createWeeklyReportBtn.addEventListener('click', function() {
+            // 프로젝트 주간업무보고 작성 페이지로 이동 (프로젝트 ID 전달)
+            if (projectId) {
+                window.location.href = `/approval/project-weekly-report?projectIdx=${projectId}`;
+            } else {
+                window.location.href = '/approval/project-weekly-report';
+            }
+        });
+    }
 
     // 삭제 버튼 이벤트 리스너
     const deleteBtn = document.getElementById('deleteBtn');
