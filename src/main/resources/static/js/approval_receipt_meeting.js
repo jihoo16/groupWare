@@ -1127,7 +1127,7 @@ document.addEventListener('DOMContentLoaded', function() {
                     alert('회의록이 저장되었습니다.');
                     console.log('저장 결과:', result);
                     // 저장 후 목록 페이지로 이동
-                    window.location.href = '/approval';
+                    window.location.href = '/project/documents';
                 } else {
                     let errorMessage = '회의록 저장에 실패했습니다.';
                     try {
@@ -2242,7 +2242,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
                 if (response.ok) {
                     alert('회의록이 삭제되었습니다.');
-                    window.location.href = '/approval';
+                    window.location.href = '/project/documents';
                 } else {
                     alert('회의록 삭제에 실패했습니다.');
                 }

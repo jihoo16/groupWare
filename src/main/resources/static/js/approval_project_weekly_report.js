@@ -213,6 +213,8 @@ document.addEventListener('DOMContentLoaded', function() {
         // 프로젝트 입력 필드에 표시
         if (projectInput) {
             projectInput.value = project.projectName;
+            // 프로젝트 선택 시 필수 표시 제거
+            projectInput.classList.remove('required-missing');
         }
         if (selectedProjectIdx) {
             selectedProjectIdx.value = project.idx;
@@ -242,6 +244,11 @@ document.addEventListener('DOMContentLoaded', function() {
     // 페이지 로드 시 데이터 로드
     loadEmployees();
     loadProjects();
+
+    // 초기 로드 시 프로젝트 미선택 상태 표시
+    if (!selectedProject && projectInput) {
+        projectInput.classList.add('required-missing');
+    }
 
     // 텍스트 하이라이트 함수
     function highlightText(text, keyword) {
@@ -327,6 +334,8 @@ document.addEventListener('DOMContentLoaded', function() {
                 // 프로젝트 입력 필드에 표시
                 if (projectInput) {
                     projectInput.value = selectedProject.projectName;
+                    // 프로젝트 선택 시 필수 표시 제거
+                    projectInput.classList.remove('required-missing');
                 }
                 if (selectedProjectIdx) {
                     selectedProjectIdx.value = selectedProject.idx;
@@ -433,6 +442,8 @@ document.addEventListener('DOMContentLoaded', function() {
         // 프로젝트 입력 필드에 표시
         if (projectInput) {
             projectInput.value = selectedProject.projectName;
+            // 프로젝트 선택 시 필수 표시 제거
+            projectInput.classList.remove('required-missing');
         }
         if (selectedProjectIdx) {
             selectedProjectIdx.value = selectedProject.idx;
@@ -848,8 +859,8 @@ document.addEventListener('DOMContentLoaded', function() {
             updateAchievementDisplay(snappedValue);
         });
 
-        // 초기 CSS 변수 설정 (기본값 100%)
-        const initialValue = parseInt(weeklyAchievementRateInput.value) || 100;
+        // 초기 CSS 변수 설정 (기본값 0%)
+        const initialValue = parseInt(weeklyAchievementRateInput.value) ?? 0;
         weeklyAchievementRateInput.style.setProperty('--slider-min', '0%');
         weeklyAchievementRateInput.style.setProperty('--slider-value', initialValue + '%');
 
@@ -1651,7 +1662,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
             if (!response.ok) {
                 alert('보고서를 불러올 수 없습니다.');
-                window.location.href = '/approval';
+                window.location.href = '/project/documents';
                 return;
             }
 
@@ -1669,6 +1680,8 @@ document.addEventListener('DOMContentLoaded', function() {
                     selectedProjectIdx.value = project.idx;
                     if (projectInput) {
                         projectInput.value = project.projectName;
+                        // 프로젝트 선택 시 필수 표시 제거
+                        projectInput.classList.remove('required-missing');
                     }
 
                     // 프로젝트 전체 달성률 표시
@@ -1767,10 +1780,57 @@ document.addEventListener('DOMContentLoaded', function() {
         } catch (error) {
             console.error('보고서 로드 오류:', error);
             alert('보고서를 불러오는 중 오류가 발생했습니다: ' + error.message);
-            window.location.href = '/approval';
+            window.location.href = '/project/documents';
         }
     }
 
+
+    // ============================================
+    // 렌더링된 HTML/CSS 수집 함수 (PDF 생성용)
+    // ============================================
+    function captureRenderedDocument() {
+        // 문서 양식 영역의 HTML 가져오기
+        const documentForm = document.querySelector('.document-form');
+        if (!documentForm) {
+            console.error('문서 양식을 찾을 수 없습니다.');
+            return { html: '', css: '' };
+        }
+
+        // HTML 복사 및 정리
+        const clonedForm = documentForm.cloneNode(true);
+
+        // 불필요한 요소 제거 (편집 관련 요소 등)
+        clonedForm.querySelectorAll('button, input[type="button"]').forEach(el => el.remove());
+
+        const documentHtml = clonedForm.outerHTML;
+
+        // CSS 수집 (approval_project_weekly_report.css만)
+        let collectedCss = '';
+        try {
+            // 페이지의 모든 스타일시트 순회
+            Array.from(document.styleSheets).forEach(sheet => {
+                try {
+                    // approval_project_weekly_report.css 파일만 선택
+                    if (sheet.href && sheet.href.includes('approval_project_weekly_report.css')) {
+                        const rules = Array.from(sheet.cssRules || sheet.rules);
+                        rules.forEach(rule => {
+                            collectedCss += rule.cssText + '\n';
+                        });
+                    }
+                } catch (e) {
+                    // CORS 에러 등으로 접근 불가능한 스타일시트는 무시
+                    console.warn('스타일시트 접근 불가:', sheet.href, e);
+                }
+            });
+        } catch (error) {
+            console.error('CSS 수집 중 오류:', error);
+        }
+
+        return {
+            html: documentHtml,
+            css: collectedCss
+        };
+    }
 
     // ============================================
     // 폼 제출
@@ -1785,13 +1845,77 @@ document.addEventListener('DOMContentLoaded', function() {
             const remarksVal = remarks?.value || '';
             const achievementRate = weeklyAchievementRateInput?.value ? parseInt(weeklyAchievementRateInput.value) : null;
 
+            // 필수 항목 유효성 검사
+            // 프로젝트 선택 확인
+            if (!selectedProject || !selectedProjectIdx.value) {
+                alert('❌ 프로젝트를 선택해주세요.');
+                // 프로젝트 입력 필드 강조
+                if (projectInput) {
+                    projectInput.classList.add('required-missing');
+                    projectInput.focus();
+                }
+                return;
+            }
+
             if (!reportPeriod.trim()) {
-                alert('보고 기간을 선택해주세요.');
+                alert('❌ 보고 기간을 선택해주세요.');
                 return;
             }
 
             if (!mainTasks.trim()) {
-                alert('금주 주요 업무를 입력해주세요.');
+                alert('❌ 필수 입력 항목\n\n금주 주요 업무를 입력해주세요.');
+                // 포커스 이동
+                weeklyTasks.focus();
+                // 필드 강조
+                weeklyTasks.style.border = '2px solid #ef5350';
+                setTimeout(() => {
+                    weeklyTasks.style.border = '';
+                }, 2000);
+                return;
+            }
+
+            // 주간 달성률 확인 (0이면 안됨)
+            if (achievementRate === null || achievementRate === 0) {
+                alert('❌ 주간 달성률을 입력해주세요.\n\n주간 달성률은 0보다 커야 합니다.');
+                // 주간 달성률 영역으로 스크롤 및 포커스
+                if (weeklyAchievementRateInput) {
+                    weeklyAchievementRateInput.scrollIntoView({ behavior: 'smooth', block: 'center' });
+
+                    // 숫자 입력 필드 강조
+                    if (weeklyAchievementValueInput) {
+                        weeklyAchievementValueInput.focus();
+                        weeklyAchievementValueInput.style.border = '2px solid #ef5350';
+                        weeklyAchievementValueInput.style.boxShadow = '0 0 0 3px rgba(239, 83, 80, 0.2)';
+                        setTimeout(() => {
+                            weeklyAchievementValueInput.style.border = '';
+                            weeklyAchievementValueInput.style.boxShadow = '';
+                        }, 2000);
+                    }
+                }
+                return;
+            }
+
+            // 프로젝트 전체 달성률 변화 확인
+            const inputProgressRateValue = inputProgressRateSlider && inputProgressRateSlider.value ?
+                parseInt(inputProgressRateSlider.value) : null;
+
+            if (inputProgressRateValue !== null && inputProgressRateValue === currentProgressRateValue) {
+                alert('❌ 프로젝트 전체 달성률에 변화가 없습니다.\n\n프로젝트 전체 달성률을 업데이트해주세요.');
+                // 프로젝트 전체 달성률 영역으로 스크롤 및 포커스
+                if (inputProgressRateSlider) {
+                    inputProgressRateSlider.scrollIntoView({ behavior: 'smooth', block: 'center' });
+
+                    // 숫자 입력 필드 강조
+                    if (inputProgressValueInput) {
+                        inputProgressValueInput.focus();
+                        inputProgressValueInput.style.border = '2px solid #ef5350';
+                        inputProgressValueInput.style.boxShadow = '0 0 0 3px rgba(239, 83, 80, 0.2)';
+                        setTimeout(() => {
+                            inputProgressValueInput.style.border = '';
+                            inputProgressValueInput.style.boxShadow = '';
+                        }, 2000);
+                    }
+                }
                 return;
             }
 
@@ -1812,12 +1936,11 @@ document.addEventListener('DOMContentLoaded', function() {
                 const projectIdx = selectedProjectIdx.value ? parseInt(selectedProjectIdx.value) : null;
                 const projectName = selectedProject ? selectedProject.projectName : null;
 
-                // 입력 달성률 가져오기
-                const inputProgressRateValue = inputProgressRateSlider && inputProgressRateSlider.value ?
-                    parseInt(inputProgressRateSlider.value) : null;
-
                 // 참조자 이름 목록을 쉼표로 구분된 문자열로 변환
                 const referenceNamesStr = selectedReferences.map(r => r.name).join(', ');
+
+                // 렌더링된 문서 HTML/CSS 캡처 (PDF 생성용)
+                const { html, css } = captureRenderedDocument();
 
                 const requestData = {
                     userIdx: currentUserIdx,
@@ -1831,7 +1954,9 @@ document.addEventListener('DOMContentLoaded', function() {
                     remarks: remarksVal,
                     referenceNames: referenceNamesStr,
                     weeklyAchievementRate: achievementRate,
-                    inputProgressRate: inputProgressRateValue
+                    inputProgressRate: inputProgressRateValue,
+                    renderedHtml: html,
+                    renderedCss: css
                 };
 
                 console.log('전송 데이터:', requestData);
@@ -1868,7 +1993,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
                         if (!uploadSuccess) {
                             alert('보고서는 저장되었으나 파일 업로드에 실패했습니다.');
-                            window.location.href = '/approval';
+                            window.location.href = '/project/documents';
                             return;
                         }
                     }
@@ -1895,7 +2020,7 @@ document.addEventListener('DOMContentLoaded', function() {
                         '프로젝트 주간업무보고가 수정되었습니다.' :
                         '프로젝트 주간업무보고가 저장되었습니다.';
                     alert(successMessage);
-                    window.location.href = '/approval';
+                    window.location.href = '/project/documents';
                 } else {
                     const error = await response.text();
                     console.error('저장 실패:', error);
@@ -1923,8 +2048,8 @@ document.addEventListener('DOMContentLoaded', function() {
                 }
             }
 
-            // 전자결재 목록으로 이동
-            window.location.href = '/approval';
+            // 프로젝트 문서함으로 이동
+            window.location.href = '/project/documents';
         });
     }
 });
