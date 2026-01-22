@@ -37,11 +37,11 @@ document.addEventListener('DOMContentLoaded', function() {
                 console.log('직원 데이터 로드 완료:', employees.length + '명');
             } else {
                 console.error('직원 데이터 로드 실패:', response.status);
-                alert('직원 데이터를 불러오는데 실패했습니다. 관리자에게 문의하세요.');
+                showError('직원 데이터를 불러오는데 실패했습니다. 관리자에게 문의하세요.');
             }
         } catch (error) {
             console.error('직원 데이터 로드 오류:', error);
-            alert('직원 데이터를 불러오는데 오류가 발생했습니다.');
+            showError('직원 데이터를 불러오는데 오류가 발생했습니다.');
         }
     }
 
@@ -511,12 +511,12 @@ document.addEventListener('DOMContentLoaded', function() {
     // 결재자 추가
     window.addApprover = function() {
         if (!selectedEmployee) {
-            alert('결재자를 선택해주세요.');
+            showWarning('결재자를 선택해주세요.');
             return;
         }
 
         if (selectedApprovers.find(a => a.id === selectedEmployee.id)) {
-            alert('이미 추가된 결재자입니다.');
+            showWarning('이미 추가된 결재자입니다.');
             return;
         }
 
@@ -571,11 +571,11 @@ document.addEventListener('DOMContentLoaded', function() {
         const files = Array.from(e.target.files);
         files.forEach(file => {
             if (selectedFiles.length >= 5) {
-                alert('최대 5개까지만 첨부 가능합니다.');
+                showWarning('최대 5개까지만 첨부 가능합니다.');
                 return;
             }
             if (file.size > 10 * 1024 * 1024) {
-                alert('파일 크기는 10MB를 초과할 수 없습니다.');
+                showWarning('파일 크기는 10MB를 초과할 수 없습니다.');
                 return;
             }
             selectedFiles.push(file);
@@ -604,11 +604,11 @@ document.addEventListener('DOMContentLoaded', function() {
         const files = Array.from(e.dataTransfer.files);
         files.forEach(file => {
             if (selectedFiles.length >= 5) {
-                alert('최대 5개까지만 첨부 가능합니다.');
+                showWarning('최대 5개까지만 첨부 가능합니다.');
                 return;
             }
             if (file.size > 10 * 1024 * 1024) {
-                alert('파일 크기는 10MB를 초과할 수 없습니다.');
+                showWarning('파일 크기는 10MB를 초과할 수 없습니다.');
                 return;
             }
             selectedFiles.push(file);
@@ -654,20 +654,20 @@ document.addEventListener('DOMContentLoaded', function() {
     // 임시저장
     if (saveDraftBtn) {
         saveDraftBtn.addEventListener('click', function() {
-            alert('문서가 임시저장되었습니다.');
+            showSuccess('문서가 임시저장되었습니다.');
         });
     }
 
     // 제출
     if (submitBtn) {
-        submitBtn.addEventListener('click', function() {
+        submitBtn.addEventListener(\'click\', async function() {
             if (selectedApprovers.length === 0) {
-                alert('결재자를 지정해주세요.');
+                showWarning('결재자를 지정해주세요.');
                 return;
             }
 
-            if (confirm('결재를 요청하시겠습니까?')) {
-                alert('결재 요청이 완료되었습니다.');
+            if (await showConfirm('결재를 요청하시겠습니까?')) {
+                showSuccess('결재 요청이 완료되었습니다.');
                 window.location.href = '/project/documents';
             }
         });
@@ -701,7 +701,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 const templateType = 'receipt-overtime';
 
                 if (typeof window.jspdf === 'undefined' || typeof window.html2canvas === 'undefined') {
-                    alert('PDF 라이브러리를 로드하는 중입니다. 잠시 후 다시 시도해주세요.');
+                    showWarning('PDF 라이브러리를 로드하는 중입니다. 잠시 후 다시 시도해주세요.');
                     if (loadingModal) loadingModal.classList.remove('active');
                     return;
                 }
@@ -725,7 +725,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 originalDisplays = Array.from(allDivs).map(div => div.style.display);
 
                 if (allDivs.length < 3) {
-                    alert('문서 구조를 찾을 수 없습니다. 영수증 처리(야근식대) 템플릿을 선택했는지 확인해주세요.');
+                    showError('문서 구조를 찾을 수 없습니다. 영수증 처리(야근식대) 템플릿을 선택했는지 확인해주세요.');
                     if (loadingModal) loadingModal.classList.remove('active');
                     return;
                 }
@@ -869,12 +869,12 @@ document.addEventListener('DOMContentLoaded', function() {
                 // 잠시 후 모달 닫기
                 setTimeout(() => {
                     if (loadingModal) loadingModal.classList.remove('active');
-                    alert('PDF가 저장되었습니다.');
+                    showSuccess('PDF가 저장되었습니다.');
                 }, 500);
             } catch (error) {
                 console.error('PDF 생성 오류:', error);
                 if (loadingModal) loadingModal.classList.remove('active');
-                alert('PDF 생성 중 오류가 발생했습니다.\n' + error.message + '\n\n브라우저 콘솔(F12)을 확인해주세요.');
+                showError('PDF 생성 중 오류가 발생했습니다.\n' + error.message + '\n\n브라우저 콘솔(F12)을 확인해주세요.');
             } finally {
                 if (allDivs && originalDisplays.length > 0) {
                     allDivs.forEach((div, index) => {

@@ -110,7 +110,7 @@ document.addEventListener('DOMContentLoaded', function() {
             // 401 Unauthorized - 세션 만료
             if (response.status === 401) {
                 console.error('세션이 만료되었습니다. 로그인 페이지로 이동합니다.');
-                alert('세션이 만료되었습니다. 다시 로그인해주세요.');
+                await showError('세션이 만료되었습니다. 다시 로그인해주세요.');
                 window.location.href = '/login';
                 return [];
             }

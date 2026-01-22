@@ -78,7 +78,7 @@ document.addEventListener('DOMContentLoaded', function() {
             })
             .catch(error => {
                 console.error('Error loading employees:', error);
-                alert('직원 정보를 불러오는데 실패했습니다.');
+                showError('직원 정보를 불러오는데 실패했습니다.');
                 showLoading(false);
             });
     }
@@ -493,7 +493,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
         // 레벨 1 (대표): 상위보고자 설정 불가
         if (currentEditingEmployee.empPositionSortOrder === 1) {
-            alert('대표이사는 상위보고자를 설정할 수 없습니다.');
+            await showWarning('대표이사는 상위보고자를 설정할 수 없습니다.');
             return;
         }
 
@@ -513,7 +513,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 newManagerSelect.innerHTML = `<option value="${ceo.idx}" selected>${ceo.empName} (${ceo.empPositionName || ceo.empPosition} / ${ceo.empDeptName || ceo.empDept})</option>`;
                 newManagerSelect.disabled = true; // 변경 불가
             } else {
-                alert('대표이사를 찾을 수 없습니다.');
+                await showError('대표이사를 찾을 수 없습니다.');
                 return;
             }
         } else {
@@ -547,14 +547,14 @@ document.addEventListener('DOMContentLoaded', function() {
     };
 
     // 상위보고자 변경 확인
-    function confirmManagerChange() {
+    async function confirmManagerChange() {
         const empIdx = parseInt(document.getElementById('changeEmpIdx').value);
         const newManagerIdx = parseInt(document.getElementById('newManager').value);
         const startDate = document.getElementById('managerStartDate').value;
         const reason = document.getElementById('changeReason').value;
 
         if (!newManagerIdx || !startDate) {
-            alert('필수 항목을 입력해주세요.');
+            await showWarning('필수 항목을 입력해주세요.');
             return;
         }
 
@@ -591,7 +591,7 @@ document.addEventListener('DOMContentLoaded', function() {
             })
             .then(data => {
                 console.log('상위보고자 변경 성공:', data);
-                alert(`${employee.empName}의 상위보고자가 ${newManager.empName}으로 변경되었습니다.`);
+                await showSuccess(`${employee.empName}의 상위보고자가 ${newManager.empName}으로 변경되었습니다.`);
 
                 renderEmployeeTable(employeesData);
                 updateStatistics();
@@ -600,7 +600,7 @@ document.addEventListener('DOMContentLoaded', function() {
             })
             .catch(error => {
                 console.error('Error updating hierarchy:', error);
-                alert('상위보고자 변경에 실패했습니다.');
+                await showError('상위보고자 변경에 실패했습니다.');
             });
         }
     }

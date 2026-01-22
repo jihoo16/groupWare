@@ -5,7 +5,7 @@ document.addEventListener('DOMContentLoaded', function() {
     const reportId = urlParams.get('id');
 
     if (!reportId) {
-        alert('보고서 ID가 없습니다.');
+        showError('보고서 ID가 없습니다.');
         window.location.href = '/approval';
         return;
     }
@@ -83,12 +83,12 @@ document.addEventListener('DOMContentLoaded', function() {
             } else {
                 const errorText = await response.text();
                 console.error('월간업무보고 상세 조회 실패:', errorText);
-                alert('월간업무보고를 불러올 수 없습니다.');
+                showError('월간업무보고를 불러올 수 없습니다.');
                 window.location.href = '/approval';
             }
         } catch (error) {
             console.error('월간업무보고 상세 조회 오류:', error);
-            alert('월간업무보고 조회 중 오류가 발생했습니다.');
+            showError('월간업무보고 조회 중 오류가 발생했습니다.');
             window.location.href = '/approval';
         }
     }
@@ -137,9 +137,10 @@ document.addEventListener('DOMContentLoaded', function() {
     });
 
     // 삭제 버튼 클릭
-    deleteBtn.addEventListener('click', function() {
-        if (confirm('정말로 이 월간업무보고를 삭제하시겠습니까?')) {
-            deleteMonthlyReport();
+    deleteBtn.addEventListener('click', async function() {
+        const confirmed = await showDeleteConfirm('이 월간업무보고를 삭제하시겠습니까?');
+        if (confirmed) {
+            await deleteMonthlyReport();
         }
     });
 
@@ -259,12 +260,12 @@ document.addEventListener('DOMContentLoaded', function() {
 
         // 유효성 검사
         if (!reportMonth) {
-            alert('보고 월을 입력해주세요.');
+            showWarning('보고 월을 입력해주세요.');
             return;
         }
 
         if (!mainTasks) {
-            alert('월간 주요 업무를 입력해주세요.');
+            showWarning('월간 주요 업무를 입력해주세요.');
             return;
         }
 
@@ -293,7 +294,7 @@ document.addEventListener('DOMContentLoaded', function() {
             if (response.ok) {
                 const updatedReport = await response.json();
                 console.log('월간업무보고 수정 성공:', updatedReport);
-                alert('월간업무보고가 수정되었습니다.');
+                await showSuccess('월간업무보고가 수정되었습니다.');
 
                 // 원본 데이터 업데이트
                 originalData = { ...updatedReport };
@@ -307,11 +308,11 @@ document.addEventListener('DOMContentLoaded', function() {
             } else {
                 const errorText = await response.text();
                 console.error('월간업무보고 수정 실패:', errorText);
-                alert('월간업무보고 수정에 실패했습니다.');
+                showError('월간업무보고 수정에 실패했습니다.');
             }
         } catch (error) {
             console.error('월간업무보고 수정 오류:', error);
-            alert('월간업무보고 수정 중 오류가 발생했습니다.');
+            showError('월간업무보고 수정 중 오류가 발생했습니다.');
         }
     }
 
@@ -324,16 +325,16 @@ document.addEventListener('DOMContentLoaded', function() {
 
             if (response.ok) {
                 console.log('월간업무보고 삭제 성공');
-                alert('월간업무보고가 삭제되었습니다.');
+                await showSuccess('월간업무보고가 삭제되었습니다.');
                 window.location.href = '/approval';
             } else {
                 const errorText = await response.text();
                 console.error('월간업무보고 삭제 실패:', errorText);
-                alert('월간업무보고 삭제에 실패했습니다.');
+                showError('월간업무보고 삭제에 실패했습니다.');
             }
         } catch (error) {
             console.error('월간업무보고 삭제 오류:', error);
-            alert('월간업무보고 삭제 중 오류가 발생했습니다.');
+            showError('월간업무보고 삭제 중 오류가 발생했습니다.');
         }
     }
 });

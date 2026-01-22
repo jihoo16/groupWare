@@ -42,15 +42,15 @@ document.addEventListener('DOMContentLoaded', function() {
 
         // 유효성 검사
         if (!companyName) {
-            alert('소속회사를 입력하세요.');
+            showWarning('소속회사를 입력하세요.');
             return;
         }
         if (!position) {
-            alert('직급을 입력하세요.');
+            showWarning('직급을 입력하세요.');
             return;
         }
         if (!personName) {
-            alert('이름을 입력하세요.');
+            showWarning('이름을 입력하세요.');
             return;
         }
 
@@ -64,17 +64,17 @@ document.addEventListener('DOMContentLoaded', function() {
             if (editMode) {
                 // 수정
                 await updatePerson(currentIdx, data);
-                alert('수정되었습니다.');
+                await showSuccess('수정되었습니다.');
             } else {
                 // 등록
                 await createPerson(data);
-                alert('등록되었습니다.');
+                await showSuccess('등록되었습니다.');
             }
 
             closeModal();
             loadExternalPersons();
         } catch (error) {
-            alert('저장 중 오류가 발생했습니다.');
+            showError('저장 중 오류가 발생했습니다.');
             console.error(error);
         }
     });
@@ -186,14 +186,14 @@ document.addEventListener('DOMContentLoaded', function() {
 
     // 삭제
     window.deletePerson = async function(idx) {
-        if (!confirm('정말 삭제하시겠습니까?')) return;
+        if (!await showDeleteConfirm('정말 삭제하시겠습니까?')) return;
 
         try {
             await deletePersonApi(idx);
-            alert('삭제되었습니다.');
+            await showSuccess('삭제되었습니다.');
             loadExternalPersons();
         } catch (error) {
-            alert('삭제 중 오류가 발생했습니다.');
+            showError('삭제 중 오류가 발생했습니다.');
             console.error(error);
         }
     };
@@ -226,7 +226,7 @@ document.addEventListener('DOMContentLoaded', function() {
             updateStats();
         } catch (error) {
             console.error('외부인원 목록 조회 실패:', error);
-            alert('외부인원 목록을 불러오는데 실패했습니다.');
+            showError('외부인원 목록을 불러오는데 실패했습니다.');
         }
     }
 

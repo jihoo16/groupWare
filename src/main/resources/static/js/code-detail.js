@@ -27,7 +27,7 @@ document.addEventListener('DOMContentLoaded', function() {
             })
             .catch(error => {
                 console.error('코드 목록 조회 실패:', error);
-                alert('코드 목록을 불러오는데 실패했습니다.');
+                showError('코드 목록을 불러오는데 실패했습니다.');
             });
     }
 
@@ -116,7 +116,7 @@ document.addEventListener('DOMContentLoaded', function() {
     });
 
     // Edit code
-    function editCode(idx) {
+    async function editCode(idx) {
         fetch(`/api/codes/${idx}`)
             .then(response => response.json())
             .then(code => {
@@ -129,13 +129,14 @@ document.addEventListener('DOMContentLoaded', function() {
             })
             .catch(error => {
                 console.error('코드 조회 실패:', error);
-                alert('코드 정보를 불러오는데 실패했습니다.');
+                await showError('코드 정보를 불러오는데 실패했습니다.');
             });
     }
 
     // Delete code
-    function deleteCode(idx) {
-        if (!confirm('정말 삭제하시겠습니까?')) {
+    async function deleteCode(idx) {
+        const confirmed = await showDeleteConfirm('정말 삭제하시겠습니까?');
+        if (!confirmed) {
             return;
         }
 
@@ -146,24 +147,24 @@ document.addEventListener('DOMContentLoaded', function() {
             if (!response.ok) {
                 throw new Error('코드 삭제 실패');
             }
-            alert('코드가 성공적으로 삭제되었습니다.');
+            await showSuccess('코드가 성공적으로 삭제되었습니다.');
             loadCodes();
         })
         .catch(error => {
             console.error('코드 삭제 실패:', error);
-            alert('코드 삭제에 실패했습니다.');
+            await showError('코드 삭제에 실패했습니다.');
         });
     }
 
     // Save code
-    codeSaveBtn.addEventListener('click', () => {
+    codeSaveBtn.addEventListener('click', async () => {
         const codePrefix = document.getElementById('code-prefix').value.trim();
         const codeSuffix = document.getElementById('code-suffix').value.trim();
         const code = codePrefix + codeSuffix;
         const codeName = document.getElementById('code-name').value.trim();
 
         if (!codeSuffix || !codeName) {
-            alert('코드와 코드명은 필수입니다.');
+            await showWarning('코드와 코드명은 필수입니다.');
             return;
         }
 
@@ -178,14 +179,14 @@ document.addEventListener('DOMContentLoaded', function() {
         };
 
         if (isEditMode) {
-            updateCode(editingCodeIdx, formData);
+            await updateCode(editingCodeIdx, formData);
         } else {
-            createCode(formData);
+            await createCode(formData);
         }
     });
 
     // Create code
-    function createCode(data) {
+    async function createCode(data) {
         fetch('/api/codes', {
             method: 'POST',
             headers: {
@@ -200,18 +201,18 @@ document.addEventListener('DOMContentLoaded', function() {
             return response.json();
         })
         .then(() => {
-            alert('코드가 성공적으로 등록되었습니다.');
+            await showSuccess('코드가 성공적으로 등록되었습니다.');
             closeModal(codeModal);
             loadCodes();
         })
         .catch(error => {
             console.error('코드 생성 실패:', error);
-            alert('코드 등록에 실패했습니다. 이미 존재하는 코드일 수 있습니다.');
+            await showError('코드 등록에 실패했습니다. 이미 존재하는 코드일 수 있습니다.');
         });
     }
 
     // Update code
-    function updateCode(idx, data) {
+    async function updateCode(idx, data) {
         fetch(`/api/codes/${idx}`, {
             method: 'PUT',
             headers: {
@@ -226,13 +227,13 @@ document.addEventListener('DOMContentLoaded', function() {
             return response.json();
         })
         .then(() => {
-            alert('코드가 성공적으로 수정되었습니다.');
+            await showSuccess('코드가 성공적으로 수정되었습니다.');
             closeModal(codeModal);
             loadCodes();
         })
         .catch(error => {
             console.error('코드 수정 실패:', error);
-            alert('코드 수정에 실패했습니다.');
+            await showError('코드 수정에 실패했습니다.');
         });
     }
 

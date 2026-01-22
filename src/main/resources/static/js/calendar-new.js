@@ -415,12 +415,12 @@ document.addEventListener('DOMContentLoaded', function() {
     });
 
     // 종료 날짜 변경 시 유효성 검사
-    scheduleEndDate.addEventListener('change', function() {
+    scheduleEndDate.addEventListener('change', async function() {
         const startDate = scheduleStartDate.value;
         const endDate = this.value;
 
         if (startDate && endDate && endDate < startDate) {
-            alert('종료 날짜는 시작 날짜보다 이전일 수 없습니다.');
+            await showWarning('종료 날짜는 시작 날짜보다 이전일 수 없습니다.');
             this.value = startDate;
         }
     });
@@ -1224,20 +1224,22 @@ document.addEventListener('DOMContentLoaded', function() {
     }
 
     // 뒤로가기/취소 버튼 이벤트
-    backBtn.addEventListener('click', function() {
-        if (confirm('일정 목록으로 돌아가시겠습니까? 작성 중인 내용은 사라집니다.')) {
+    backBtn.addEventListener('click', async function() {
+        const confirmed = await showConfirm('일정 목록으로 돌아가시겠습니까? 작성 중인 내용은 사라집니다.');
+        if (confirmed) {
             window.location.href = '/calendar';
         }
     });
 
-    cancelBtn.addEventListener('click', function() {
-        if (confirm('일정 목록으로 돌아가시겠습니까? 작성 중인 내용은 사라집니다.')) {
+    cancelBtn.addEventListener('click', async function() {
+        const confirmed = await showConfirm('일정 목록으로 돌아가시겠습니까? 작성 중인 내용은 사라집니다.');
+        if (confirmed) {
             window.location.href = '/calendar';
         }
     });
 
     // 저장 버튼 클릭 시 폼 제출
-    saveBtn.addEventListener('click', function() {
+    saveBtn.addEventListener('click', async function() {
         scheduleForm.requestSubmit();
     });
 
@@ -1265,7 +1267,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
         if (currentEventTab === 'team') {
             if (!selectedTeam || !selectedTeam.idx) {
-                alert('팀을 선택하세요.');
+                await showWarning('팀을 선택하세요.');
                 return;
             }
             teamIdx = selectedTeam.idx;
@@ -1273,12 +1275,12 @@ document.addEventListener('DOMContentLoaded', function() {
 
         // 유효성 검사
         if (!title) {
-            alert('일정 제목을 입력하세요.');
+            await showWarning('일정 제목을 입력하세요.');
             return;
         }
 
         if (new Date(endDate) < new Date(startDate)) {
-            alert('종료 날짜는 시작 날짜보다 이전일 수 없습니다.');
+            await showWarning('종료 날짜는 시작 날짜보다 이전일 수 없습니다.');
             return;
         }
 
@@ -1320,16 +1322,16 @@ document.addEventListener('DOMContentLoaded', function() {
             const data = await response.json();
 
             if (data.success) {
-                alert('일정이 성공적으로 추가되었습니다.');
+                await showSuccess('일정이 성공적으로 추가되었습니다.');
                 window.location.href = '/calendar';
             } else {
-                alert('일정 추가 실패: ' + data.message);
+                await showError('일정 추가 실패: ' + data.message);
                 saveBtn.disabled = false;
                 saveBtn.innerHTML = '<i class="fas fa-check"></i> 저장';
             }
         } catch (error) {
             console.error('일정 추가 중 오류:', error);
-            alert('일정 추가 중 오류가 발생했습니다.');
+            await showError('일정 추가 중 오류가 발생했습니다.');
             saveBtn.disabled = false;
             saveBtn.innerHTML = '<i class="fas fa-check"></i> 저장';
         }

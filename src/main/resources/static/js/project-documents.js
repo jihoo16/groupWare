@@ -443,7 +443,7 @@ document.addEventListener('DOMContentLoaded', function() {
             const documentId = doc.sourceDocumentId || doc.idx;
             window.open(`${url}?id=${documentId}`, '_blank');
         } else {
-            alert('해당 문서 타입의 상세 페이지가 구현되지 않았습니다.');
+            showWarning('해당 문서 타입의 상세 페이지가 구현되지 않았습니다.');
         }
     }
 

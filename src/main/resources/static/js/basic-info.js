@@ -49,7 +49,7 @@ document.addEventListener('DOMContentLoaded', function() {
             })
             .catch(error => {
                 console.error('그룹코드 목록 조회 실패:', error);
-                alert('그룹코드 목록을 불러오는데 실패했습니다.');
+                showError('그룹코드 목록을 불러오는데 실패했습니다.');
             });
     }
 
@@ -135,7 +135,7 @@ document.addEventListener('DOMContentLoaded', function() {
     });
 
     // Edit code group
-    function editCodeGroup(idx) {
+    async function editCodeGroup(idx) {
         fetch(`/api/code-groups/${idx}`)
             .then(response => response.json())
             .then(group => {
@@ -148,13 +148,14 @@ document.addEventListener('DOMContentLoaded', function() {
             })
             .catch(error => {
                 console.error('그룹코드 조회 실패:', error);
-                alert('그룹코드 정보를 불러오는데 실패했습니다.');
+                await showError('그룹코드 정보를 불러오는데 실패했습니다.');
             });
     }
 
     // Delete code group
-    function deleteCodeGroup(idx) {
-        if (!confirm('정말 삭제하시겠습니까?\n이 그룹에 속한 하위 코드들도 영향을 받을 수 있습니다.')) {
+    async function deleteCodeGroup(idx) {
+        const confirmed = await showDeleteConfirm('정말 삭제하시겠습니까?
+        if (!confirmed) {
             return;
         }
 
@@ -165,22 +166,22 @@ document.addEventListener('DOMContentLoaded', function() {
             if (!response.ok) {
                 throw new Error('그룹코드 삭제 실패');
             }
-            alert('그룹코드가 성공적으로 삭제되었습니다.');
+            await showSuccess('그룹코드가 성공적으로 삭제되었습니다.');
             loadCodeGroups();
         })
         .catch(error => {
             console.error('그룹코드 삭제 실패:', error);
-            alert('그룹코드 삭제에 실패했습니다.');
+            await showError('그룹코드 삭제에 실패했습니다.');
         });
     }
 
     // Save code group
-    codeGroupSaveBtn.addEventListener('click', () => {
+    codeGroupSaveBtn.addEventListener('click', async () => {
         const groupCode = document.getElementById('code-group-code').value.trim();
         const groupName = document.getElementById('code-group-name').value.trim();
 
         if (!groupCode || !groupName) {
-            alert('그룹코드와 그룹명은 필수입니다.');
+            await showWarning('그룹코드와 그룹명은 필수입니다.');
             return;
         }
 
@@ -199,7 +200,7 @@ document.addEventListener('DOMContentLoaded', function() {
     });
 
     // Create code group
-    function createCodeGroup(data) {
+    async function createCodeGroup(data) {
         fetch('/api/code-groups', {
             method: 'POST',
             headers: {
@@ -214,18 +215,18 @@ document.addEventListener('DOMContentLoaded', function() {
             return response.json();
         })
         .then(() => {
-            alert('그룹코드가 성공적으로 등록되었습니다.');
+            await showSuccess('그룹코드가 성공적으로 등록되었습니다.');
             closeModal(codeGroupModal);
             loadCodeGroups();
         })
         .catch(error => {
             console.error('그룹코드 생성 실패:', error);
-            alert('그룹코드 등록에 실패했습니다. 이미 존재하는 코드일 수 있습니다.');
+            await showError('그룹코드 등록에 실패했습니다. 이미 존재하는 코드일 수 있습니다.');
         });
     }
 
     // Update code group
-    function updateCodeGroup(idx, data) {
+    async function updateCodeGroup(idx, data) {
         fetch(`/api/code-groups/${idx}`, {
             method: 'PUT',
             headers: {
@@ -240,13 +241,13 @@ document.addEventListener('DOMContentLoaded', function() {
             return response.json();
         })
         .then(() => {
-            alert('그룹코드가 성공적으로 수정되었습니다.');
+            await showSuccess('그룹코드가 성공적으로 수정되었습니다.');
             closeModal(codeGroupModal);
             loadCodeGroups();
         })
         .catch(error => {
             console.error('그룹코드 수정 실패:', error);
-            alert('그룹코드 수정에 실패했습니다.');
+            await showError('그룹코드 수정에 실패했습니다.');
         });
     }
 
@@ -305,18 +306,18 @@ document.addEventListener('DOMContentLoaded', function() {
     }
 
     if (logoFileInput) {
-        logoFileInput.addEventListener('change', (e) => {
+        logoFileInput.addEventListener('change', async (e) => {
             const file = e.target.files[0];
             if (file) {
                 // Validate file size (2MB max)
                 if (file.size > 2 * 1024 * 1024) {
-                    alert('파일 크기는 2MB를 초과할 수 없습니다.');
+                    await showWarning('파일 크기는 2MB를 초과할 수 없습니다.');
                     return;
                 }
 
                 // Validate file type
                 if (!file.type.match('image/(png|jpeg|svg\\+xml)')) {
-                    alert('PNG, JPG, SVG 파일만 업로드 가능합니다.');
+                    await showWarning('PNG, JPG, SVG 파일만 업로드 가능합니다.');
                     return;
                 }
 
@@ -331,15 +332,16 @@ document.addEventListener('DOMContentLoaded', function() {
     }
 
     if (logoSaveBtn) {
-        logoSaveBtn.addEventListener('click', () => {
+        logoSaveBtn.addEventListener('click', async () => {
             // TODO: Implement logo save logic (upload to server)
-            alert('로고가 저장되었습니다.');
+            await showSuccess('로고가 저장되었습니다.');
         });
     }
 
     if (logoResetBtn) {
-        logoResetBtn.addEventListener('click', () => {
-            if (confirm('로고를 초기화하시겠습니까?')) {
+        logoResetBtn.addEventListener('click', async () => {
+            const confirmed = await showConfirm('로고를 초기화하시겠습니까?');
+            if (confirmed) {
                 logoImage.src = '/images/logo-placeholder.png';
                 logoFileInput.value = '';
             }
@@ -378,7 +380,7 @@ document.addEventListener('DOMContentLoaded', function() {
             })
             .catch(error => {
                 console.error('직급별 고정경비 조회 실패:', error);
-                alert('직급별 고정경비를 불러오는데 실패했습니다.');
+                showError('직급별 고정경비를 불러오는데 실패했습니다.');
             });
     }
 
@@ -460,12 +462,12 @@ document.addEventListener('DOMContentLoaded', function() {
                 return response.json();
             })
             .then(result => {
-                alert(`직급별 고정경비가 성공적으로 저장되었습니다.\n저장된 항목: ${result.count}개`);
+                await showSuccess(`직급별 고정경비가 성공적으로 저장되었습니다.\n저장된 항목: ${result.count}개`);
                 loadExpensePolicies(); // Reload to reflect changes
             })
             .catch(error => {
                 console.error('고정경비 저장 실패:', error);
-                alert('고정경비 저장에 실패했습니다.');
+                await showError('고정경비 저장에 실패했습니다.');
             });
         });
     }
@@ -476,9 +478,9 @@ document.addEventListener('DOMContentLoaded', function() {
     const saveAllBtn = document.querySelector('.btn-save-all');
 
     if (saveAllBtn) {
-        saveAllBtn.addEventListener('click', () => {
+        saveAllBtn.addEventListener('click', async () => {
             // TODO: Implement save logic for all settings
-            alert('설정이 저장되었습니다.');
+            await showSuccess('설정이 저장되었습니다.');
         });
     }
 

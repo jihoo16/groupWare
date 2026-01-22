@@ -26,7 +26,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
     // 설정 저장
     if (saveSettingsBtn) {
-        saveSettingsBtn.addEventListener('click', function() {
+        saveSettingsBtn.addEventListener('click', async function() {
             console.log('설정 저장');
 
             // 모든 설정 값 수집
@@ -43,7 +43,7 @@ document.addEventListener('DOMContentLoaded', function() {
             };
 
             console.log('저장될 설정:', settings);
-            showAlert('설정이 저장되었습니다.', 'success');
+            await showSuccess('설정이 저장되었습니다.');
             // TODO: 서버에 설정 저장
         });
     }
@@ -63,7 +63,7 @@ document.addEventListener('DOMContentLoaded', function() {
     if (changeAvatarBtn) {
         changeAvatarBtn.addEventListener('click', function() {
             console.log('프로필 사진 변경');
-            showAlert('프로필 사진 변경 기능은 추후 구현됩니다.', 'info');
+            showAlert('프로필 사진 변경 기능은 추후 구현됩니다.');
             // TODO: 파일 업로드 모달 표시
         });
     }
@@ -71,35 +71,35 @@ document.addEventListener('DOMContentLoaded', function() {
     // 비밀번호 변경
     const passwordChangeBtn = document.getElementById('changePasswordBtn');
     if (passwordChangeBtn) {
-        passwordChangeBtn.addEventListener('click', function() {
+        passwordChangeBtn.addEventListener('click', async function() {
             const currentPassword = document.getElementById('currentPassword')?.value;
             const newPassword = document.getElementById('newPassword')?.value;
             const confirmPassword = document.getElementById('confirmPassword')?.value;
 
             if (!currentPassword || !newPassword || !confirmPassword) {
-                showAlert('모든 필드를 입력해주세요.', 'warning');
+                showWarning('모든 필드를 입력해주세요.');
                 return;
             }
 
             if (newPassword.length < 8) {
-                showAlert('새 비밀번호는 8자 이상이어야 합니다.', 'warning');
+                showWarning('새 비밀번호는 8자 이상이어야 합니다.');
                 return;
             }
 
             // 비밀번호 강도 검증 (영문, 숫자, 특수문자 포함)
             const passwordRegex = /^(?=.*[A-Za-z])(?=.*\d)(?=.*[@$!%*#?&])[A-Za-z\d@$!%*#?&]{8,}$/;
             if (!passwordRegex.test(newPassword)) {
-                showAlert('비밀번호는 영문, 숫자, 특수문자를 포함해야 합니다.', 'warning');
+                showWarning('비밀번호는 영문, 숫자, 특수문자를 포함해야 합니다.');
                 return;
             }
 
             if (newPassword !== confirmPassword) {
-                showAlert('새 비밀번호가 일치하지 않습니다.', 'warning');
+                showWarning('새 비밀번호가 일치하지 않습니다.');
                 return;
             }
 
             console.log('비밀번호 변경 요청');
-            showAlert('비밀번호가 성공적으로 변경되었습니다.', 'success');
+            await showSuccess('비밀번호가 성공적으로 변경되었습니다.');
 
             // 입력 필드 초기화
             document.getElementById('currentPassword').value = '';
@@ -113,21 +113,22 @@ document.addEventListener('DOMContentLoaded', function() {
     // 캐시 삭제
     const deleteCacheBtn = document.querySelector('.data-section .btn-danger-outline');
     if (deleteCacheBtn) {
-        deleteCacheBtn.addEventListener('click', function() {
-            showConfirm('캐시 데이터를 삭제하시겠습니까?', function() {
+        deleteCacheBtn.addEventListener('click', async function() {
+            const confirmed = await showConfirm('캐시 데이터를 삭제하시겠습니까?');
+            if (confirmed) {
                 console.log('캐시 삭제');
-                showAlert('캐시가 삭제되었습니다.', 'success');
+                await showSuccess('캐시가 삭제되었습니다.');
                 // TODO: 캐시 삭제 처리
-            });
+            }
         });
     }
 
     // 데이터 다운로드
     const downloadDataBtn = document.querySelector('.data-section .btn-secondary');
     if (downloadDataBtn) {
-        downloadDataBtn.addEventListener('click', function() {
+        downloadDataBtn.addEventListener('click', async function() {
             console.log('내 데이터 다운로드');
-            showAlert('데이터 다운로드가 시작됩니다.', 'success');
+            await showSuccess('데이터 다운로드가 시작됩니다.');
             // TODO: 데이터 다운로드 처리
         });
     }
@@ -139,7 +140,7 @@ document.addEventListener('DOMContentLoaded', function() {
             const theme = this.value;
             console.log('테마 변경:', theme);
             // TODO: 테마 변경 적용
-            showAlert(`테마가 "${this.options[this.selectedIndex].text}"로 변경됩니다.`, 'info');
+            showAlert(`테마가 "${this.options[this.selectedIndex].text}"로 변경됩니다.`);
         });
     }
 
@@ -150,7 +151,7 @@ document.addEventListener('DOMContentLoaded', function() {
             const language = this.value;
             console.log('언어 변경:', language);
             // TODO: 언어 변경 적용
-            showAlert(`언어가 "${this.options[this.selectedIndex].text}"로 변경됩니다.`, 'info');
+            showAlert(`언어가 "${this.options[this.selectedIndex].text}"로 변경됩니다.`);
         });
     }
 
@@ -301,7 +302,7 @@ function initSignatureCanvas() {
     if (saveBtn) {
         saveBtn.addEventListener('click', function() {
             if (!hasDrawn) {
-                showAlert('서명을 작성해주세요.', 'warning');
+                showWarning('서명을 작성해주세요.');
                 return;
             }
 
@@ -356,7 +357,7 @@ function showCompetencyForm(type) {
 
     // 이미 입력 중인 폼이 있는지 확인
     if (listContainer.querySelector('.competency-form')) {
-        showAlert('현재 입력 중인 항목을 먼저 완료해주세요.', 'warning');
+        showWarning('현재 입력 중인 항목을 먼저 완료해주세요.');
         return;
     }
 
@@ -526,7 +527,7 @@ function showCompetencyForm(type) {
 }
 
 // 역량 항목 저장
-function saveCompetencyItem(type, form) {
+async function saveCompetencyItem(type, form) {
     const inputs = form.querySelectorAll('[data-field]');
     const item = {
         id: Date.now(),
@@ -550,7 +551,7 @@ function saveCompetencyItem(type, form) {
     });
 
     if (!isValid) {
-        showAlert('필수 항목을 입력해주세요.', 'warning');
+        showWarning('필수 항목을 입력해주세요.');
         return;
     }
 
@@ -566,17 +567,18 @@ function saveCompetencyItem(type, form) {
     // 목록 다시 렌더링
     renderCompetencyList(type);
 
-    showAlert('저장되었습니다.', 'success');
+    await showSuccess('저장되었습니다.');
 }
 
 // 역량 항목 삭제
-function deleteCompetencyItem(type, id) {
-    showConfirm('삭제하시겠습니까?', function() {
+async function deleteCompetencyItem(type, id) {
+    const confirmed = await showDeleteConfirm('삭제하시겠습니까?');
+    if (confirmed) {
         competencyData[type] = competencyData[type].filter(item => item.id !== id);
         saveCompetencyData();
         renderCompetencyList(type);
-        showAlert('삭제되었습니다.', 'success');
-    });
+        await showSuccess('삭제되었습니다.');
+    }
 }
 
 // 역량 항목 수정
@@ -585,7 +587,7 @@ function editCompetencyItem(type, id) {
     if (!item) return;
 
     // TODO: 수정 폼 표시 및 처리
-    showAlert('수정 기능은 추후 구현됩니다.', 'info');
+    showAlert('수정 기능은 추후 구현됩니다.');
 }
 
 // 역량 목록 렌더링
@@ -787,7 +789,7 @@ function initSignatureConfirmModal(ctx, canvas, placeholder, hasDrawn) {
 
     // 확인 버튼 - 실제 저장 처리
     if (confirmBtn) {
-        confirmBtn.addEventListener('click', function() {
+        confirmBtn.addEventListener('click', async function() {
             // 체크박스 확인
             if (consentCheckbox && !consentCheckbox.checked) {
                 // 체크박스가 체크되지 않은 경우 강조 표시
@@ -801,12 +803,12 @@ function initSignatureConfirmModal(ctx, canvas, placeholder, hasDrawn) {
                     }, 3000);
                 }
 
-                showAlert('동의 내용을 확인하고 체크박스를 체크해주세요.', 'warning');
+                showWarning('동의 내용을 확인하고 체크박스를 체크해주세요.');
                 return;
             }
 
             if (!window.tempSignatureData) {
-                showAlert('서명 데이터가 없습니다.', 'error');
+                showError('서명 데이터가 없습니다.');
                 return;
             }
 
@@ -823,7 +825,7 @@ function initSignatureConfirmModal(ctx, canvas, placeholder, hasDrawn) {
             const consentDate = new Date().toISOString();
             localStorage.setItem('signatureConsentDate', consentDate);
 
-            showAlert('서명이 저장되었습니다.', 'success');
+            await showSuccess('서명이 저장되었습니다.');
 
             // 캔버스 초기화
             const signatureCanvas = document.getElementById('signatureCanvas');

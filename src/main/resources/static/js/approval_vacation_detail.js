@@ -5,7 +5,7 @@ document.addEventListener('DOMContentLoaded', function() {
     const documentIdx = urlParams.get('documentIdx');
 
     if (!documentIdx) {
-        alert('문서 ID가 없습니다.');
+        showError('문서 ID가 없습니다.');
         history.back();
         return;
     }
@@ -39,7 +39,7 @@ async function loadDocumentDetail(documentIdx) {
         displayAttachments(data.attachments || []);
     } catch (error) {
         console.error('문서 조회 오류:', error);
-        alert('문서를 불러오는데 실패했습니다.');
+        showError('문서를 불러오는데 실패했습니다.');
         history.back();
     }
 }
@@ -161,7 +161,8 @@ function displayAttachments(attachments) {
  * 문서 삭제
  */
 async function deleteDocument(documentIdx) {
-    if (!confirm('이 연차신청서를 삭제하시겠습니까?\n삭제된 문서는 복구할 수 없습니다.')) {
+    const confirmed = await showDeleteConfirm('이 연차신청서를 삭제하시겠습니까?', '삭제된 문서는 복구할 수 없습니다.');
+    if (!confirmed) {
         return;
     }
 
@@ -178,11 +179,11 @@ async function deleteDocument(documentIdx) {
             throw new Error(error.error || '삭제 처리 실패');
         }
 
-        alert('연차신청서가 삭제되었습니다.');
+        await showSuccess('연차신청서가 삭제되었습니다.');
         window.location.href = '/approval';
     } catch (error) {
         console.error('삭제 오류:', error);
-        alert('삭제 처리 중 오류가 발생했습니다: ' + error.message);
+        showError('삭제 처리 중 오류가 발생했습니다: ' + error.message);
     }
 }
 
