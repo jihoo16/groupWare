@@ -69,8 +69,8 @@ async function loadProjectDetail(projectId, currentUserIdx) {
         displayTeamMembers(data.projectMembers || []);
         displayExpenseSettings(data.projectExpenseSettings || []);
 
-        // 현재 사용자가 프로젝트 참여자인지 확인
-        checkAndShowWeeklyReportButton(data.projectMembers || [], currentUserIdx);
+        // 현재 사용자가 프로젝트 참여자인지 확인하고 버튼 표시
+        checkAndShowParticipantButtons(data.projectMembers || [], currentUserIdx);
 
         // 연구비 카드는 별도 API로 조회
         loadProjectCards(projectId);
@@ -90,12 +90,16 @@ async function loadProjectDetail(projectId, currentUserIdx) {
 /**
  * 현재 사용자가 프로젝트 참여자인지 확인하고 주간업무보고 작성 버튼 표시
  */
-function checkAndShowWeeklyReportButton(projectMembers, currentUserIdx) {
+function checkAndShowParticipantButtons(projectMembers, currentUserIdx) {
     const createWeeklyReportBtn = document.getElementById('createWeeklyReportBtn');
-    if (!createWeeklyReportBtn) return;
+    const editBtn = document.getElementById('editBtn');
+    const deleteBtn = document.getElementById('deleteBtn');
 
+    // 로그인하지 않은 경우 모든 버튼 숨김
     if (!currentUserIdx) {
-        createWeeklyReportBtn.style.display = 'none';
+        if (createWeeklyReportBtn) createWeeklyReportBtn.style.display = 'none';
+        if (editBtn) editBtn.style.display = 'none';
+        if (deleteBtn) deleteBtn.style.display = 'none';
         return;
     }
 
@@ -105,11 +109,15 @@ function checkAndShowWeeklyReportButton(projectMembers, currentUserIdx) {
     );
 
     if (isParticipant) {
-        createWeeklyReportBtn.style.display = 'inline-flex';
-        console.log('현재 사용자가 프로젝트 참여자입니다. 주간업무보고 작성 버튼 표시.');
+        if (createWeeklyReportBtn) createWeeklyReportBtn.style.display = 'inline-flex';
+        if (editBtn) editBtn.style.display = 'inline-flex';
+        if (deleteBtn) deleteBtn.style.display = 'inline-flex';
+        console.log('현재 사용자가 프로젝트 참여자입니다. 버튼 표시.');
     } else {
-        createWeeklyReportBtn.style.display = 'none';
-        console.log('현재 사용자가 프로젝트 참여자가 아닙니다. 주간업무보고 작성 버튼 숨김.');
+        if (createWeeklyReportBtn) createWeeklyReportBtn.style.display = 'none';
+        if (editBtn) editBtn.style.display = 'none';
+        if (deleteBtn) deleteBtn.style.display = 'none';
+        console.log('현재 사용자가 프로젝트 참여자가 아닙니다. 버튼 숨김.');
     }
 }
 

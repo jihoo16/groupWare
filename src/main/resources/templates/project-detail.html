@@ -13,8 +13,14 @@
                 <h1 class="page-title"><i class="fas fa-project-diagram"></i> 프로젝트 상세</h1>
             </div>
             <div class="header-right">
-                <button class="btn btn-primary btn-sm" id="createWeeklyReportBtn">
+                <button class="btn btn-primary btn-sm" id="createWeeklyReportBtn" style="display: none;">
                     <i class="fas fa-plus"></i> 주간업무보고 작성
+                </button>
+                <button class="btn btn-primary btn-sm" id="editBtn" style="display: none;">
+                    <i class="fas fa-edit"></i> 수정
+                </button>
+                <button class="btn btn-danger btn-sm" id="deleteBtn" style="display: none;">
+                    <i class="fas fa-trash"></i> 삭제
                 </button>
                 <button class="btn-secondary" onclick="history.back()">
                     <i class="fas fa-arrow-left"></i>
@@ -266,22 +272,6 @@
                     <h3 class="section-title">첨부파일</h3>
                     <div id="attachmentsList" class="attachments-list">
                         <!-- JavaScript로 동적 생성 -->
-                    </div>
-
-                    <!-- 액션 버튼 -->
-                    <div class="action-buttons">
-                        <button type="button" class="btn-primary" id="editBtn">
-                            <i class="fas fa-edit"></i>
-                            수정
-                        </button>
-                        <button type="button" class="btn-danger" id="deleteBtn">
-                            <i class="fas fa-trash"></i>
-                            삭제
-                        </button>
-                        <button type="button" class="btn-secondary" onclick="history.back()">
-                            <i class="fas fa-arrow-left"></i>
-                            목록으로
-                        </button>
                     </div>
                 </div>
             </div>
