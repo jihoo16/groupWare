@@ -51,7 +51,7 @@
     ]).then(() => {
         // 모든 기본 데이터 로드 완료 후 프로젝트 데이터 로드
         loadProjectData(projectId);
-    }).catch(error => {
+    }).catch(async error => {
         console.error('초기 데이터 로드 실패:', error);
         await showError('페이지 로드 중 오류가 발생했습니다.');
     });
@@ -268,7 +268,7 @@
                 // 프로젝트 파일 목록 로드
                 loadProjectFiles(project.idx);
             })
-            .catch(error => {
+            .catch(async error => {
                 console.error('Error loading project data:', error);
                 await showError('프로젝트 정보를 불러올 수 없습니다.');
                 location.href = '/project';
@@ -423,7 +423,7 @@
                 // 이미 추가된 팀원들의 체크박스 상태 유지
                 updateCheckboxStates();
             })
-            .catch(error => {
+            .catch(async error => {
                 console.error('Error loading members:', error);
                 await showError('인력 목록을 불러올 수 없습니다.');
             });
@@ -793,7 +793,7 @@
     };
 
     // 카드 저장 (전역 함수)
-    window.saveCard = function() {
+    window.saveCard = async function () {
         const cardCompany = document.getElementById('cardCompany').value;
         const cardNumber = document.getElementById('cardNumber').value;
         const cardName = document.getElementById('cardName').value;
@@ -813,7 +813,7 @@
             await showWarning('카드 닉네임을 입력해주세요.');
             return;
         }
-        console.log("cardIdCounter : "+cardIdCounter)
+        console.log("cardIdCounter : " + cardIdCounter)
         // 카드 추가 (신규 카드는 음수 ID 사용)
         cardIdCounter--;
         cardListData.push({
@@ -869,16 +869,16 @@
 
     // 파일 선택 이벤트
     if (projectFiles) {
-        projectFiles.addEventListener('change', function(e) {
+        projectFiles.addEventListener('change', async function(e) {
             const files = Array.from(e.target.files);
-            files.forEach(file => {
+            for (const file of files) {
                 // 파일 크기 체크 (50MB)
                 if (file.size > 50 * 1024 * 1024) {
                     await showWarning(`파일 크기가 너무 큽니다: ${file.name} (최대 50MB)`);
-                    return;
+                    continue;
                 }
                 selectedFiles.push(file);
-            });
+            }
             projectFiles.value = ''; // 입력 초기화
             updateFileList();
         });
@@ -897,19 +897,19 @@
             this.style.background = '#f8fafc';
         });
 
-        fileUploadArea.addEventListener('drop', function(e) {
+        fileUploadArea.addEventListener('drop', async function (e) {
             e.preventDefault();
             this.style.borderColor = '#cbd5e1';
             this.style.background = '#f8fafc';
 
             const files = Array.from(e.dataTransfer.files);
-            files.forEach(file => {
+            for (const file of files) {
                 if (file.size > 50 * 1024 * 1024) {
                     await showWarning(`파일 크기가 너무 큽니다: ${file.name} (최대 50MB)`);
-                    return;
+                    continue;
                 }
                 selectedFiles.push(file);
-            });
+            }
             updateFileList();
         });
     }
@@ -1231,7 +1231,7 @@
     }
 
     // 폼 유효성 검사
-    function validateForm() {
+    async function validateForm() {
         const projectName = document.getElementById('projectName').value.trim();
         const clientName = document.getElementById('clientName').value.trim();
         const projectStatus = document.getElementById('projectStatus').value;
@@ -1333,7 +1333,7 @@
                 // 이미 추가된 프로젝트들의 체크박스 상태 유지
                 updateRelatedProjectCheckboxStates();
             })
-            .catch(error => {
+            .catch(async error => {
                 console.error('Error loading related projects:', error);
                 await showError('프로젝트 목록을 불러올 수 없습니다.');
             });
@@ -1461,7 +1461,7 @@
     });
 
     // 연계 정보 입력 모달 표시 (전역 함수)
-    window.showRelationDetailsModal = function() {
+    window.showRelationDetailsModal = async function () {
         const checkboxes = document.querySelectorAll('.related-project-checkbox:checked');
 
         if (checkboxes.length === 0) {
@@ -1534,7 +1534,7 @@
     };
 
     // 연계 정보 저장 (전역 함수)
-    window.saveRelatedProjects = function() {
+    window.saveRelatedProjects = async function () {
         const formSections = relationDetailsContainer.querySelectorAll('.form-section');
         const newRelations = [];
 
@@ -1658,7 +1658,7 @@
 
     // 기본값으로 초기화
     if (resetExpensesBtn) {
-        resetExpensesBtn.addEventListener('click', function() {
+        resetExpensesBtn.addEventListener('click', async function () {
             const confirmed = await showConfirm('경비 설정을 0원으로 초기화하시겠습니까?');
             if (confirmed) {
                 resetExpensesToDefault();
@@ -1666,7 +1666,7 @@
         });
     }
 
-    function resetExpensesToDefault() {
+    async function resetExpensesToDefault() {
         const expenseRows = document.querySelectorAll('#expenseSettingsBody tr[data-position]');
 
         expenseRows.forEach(row => {
@@ -1684,7 +1684,7 @@
         loadDefaultExpensesBtn.addEventListener('click', function() {
             fetch('/api/fixed-expense-policies')
                 .then(res => res.json())
-                .then(policies => {
+                .then(async policies => {
                     console.log("===== 기초정보관리 데이터 불러오기 =====");
                     console.log("policies 원본 데이터:", policies);
                     console.log("데이터 개수:", policies.length);
@@ -1693,7 +1693,7 @@
 
                     await showSuccess('기초정보관리의 설정값을 불러왔습니다.');
                 })
-                .catch(error => {
+                .catch(async error => {
                     console.error('고정경비 정책 조회 실패:', error);
                     await showError('설정값을 불러오는데 실패했습니다.');
                 });
@@ -1738,11 +1738,11 @@
                 }
                 return response.text();
             })
-            .then(() => {
+            .then(async () => {
                 await showSuccess('프로젝트가 삭제되었습니다.');
                 window.location.href = '/project';
             })
-            .catch(error => {
+            .catch(async error => {
                 console.error('프로젝트 삭제 실패:', error);
                 await showError('프로젝트 삭제에 실패했습니다.\n' + error.message);
                 deleteProjectBtn.disabled = false;
