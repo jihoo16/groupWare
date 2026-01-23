@@ -1035,6 +1035,139 @@ div h2{
     color: white;
 }
 
+/* 클릭 가능한 readonly input (프로젝트 선택) */
+.clickable-input {
+    cursor: pointer !important;
+    background: #fafbfc !important;
+    color: #334155 !important;
+    border: 1px solid #e2e8f0 !important;
+    border-radius: 6px !important;
+    padding: 8px 12px !important;
+    text-align: left !important;
+}
+
+.clickable-input:hover {
+    border-color: #667eea !important;
+    background: #f0f4ff !important;
+}
+
+.clickable-input::placeholder {
+    color: #94a3b8;
+}
+
+/* 프로젝트 선택 모달 - 검색박스 */
+.search-box {
+    position: relative;
+    margin-bottom: 16px;
+}
+
+.search-box i {
+    position: absolute;
+    left: 14px;
+    top: 50%;
+    transform: translateY(-50%);
+    color: #94a3b8;
+    font-size: 14px;
+}
+
+.search-box input {
+    width: 100%;
+    padding: 10px 14px 10px 38px;
+    border: 1px solid #e2e8f0;
+    border-radius: 8px;
+    font-size: 13.5px;
+    transition: all 0.2s;
+}
+
+.search-box input:focus {
+    border-color: #667eea;
+    box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+    outline: none;
+}
+
+/* 프로젝트 선택 모달 - 항목 목록 */
+.modal-item-list {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    max-height: 500px;
+    overflow-y: auto;
+}
+
+.modal-item {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 12px;
+    border: 1px solid #e2e8f0;
+    border-radius: 8px;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.modal-item:hover {
+    border-color: #667eea;
+    background: #f5f7ff;
+}
+
+.modal-item.selected {
+    border-color: #667eea;
+    background: #e8f0fe;
+}
+
+.modal-item i {
+    font-size: 24px;
+    color: #667eea;
+}
+
+.modal-item-info {
+    flex: 1;
+}
+
+.modal-item-name {
+    font-size: 14px;
+    font-weight: 600;
+    color: #1e293b;
+    margin-bottom: 2px;
+}
+
+.modal-item-detail {
+    font-size: 12px;
+    color: #64748b;
+}
+
+/* 검색 하이라이트 */
+.search-highlight {
+    background: #ffeb3b;
+    color: #333;
+    font-weight: 600;
+    padding: 2px 0;
+    border-radius: 2px;
+}
+
+/* 빈 상태 메시지 */
+.modal-empty-state {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 60px 20px;
+    text-align: center;
+    color: #94a3b8;
+}
+
+.modal-empty-state i {
+    font-size: 48px;
+    margin-bottom: 16px;
+    color: #cbd5e1;
+}
+
+.modal-empty-state p {
+    font-size: 14px;
+    margin: 0;
+    color: #64748b;
+}
+
 /* 모달 */
 .modal {
     display: none;
