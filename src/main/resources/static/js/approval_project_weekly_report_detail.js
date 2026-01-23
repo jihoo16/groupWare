@@ -5,7 +5,7 @@ document.addEventListener('DOMContentLoaded', function() {
     const documentIdx = urlParams.get('documentIdx');
 
     if (!documentIdx) {
-        alert('문서 ID가 없습니다.');
+        showError('문서 ID가 없습니다.');
         history.back();
         return;
     }
@@ -48,7 +48,7 @@ async function loadReportData(documentIdx) {
 
     } catch (error) {
         console.error('보고서 로드 오류:', error);
-        alert('보고서를 불러오는 중 오류가 발생했습니다: ' + error.message);
+        showError('보고서를 불러오는 중 오류가 발생했습니다: ' + error.message);
         history.back();
     }
 }
@@ -185,9 +185,9 @@ async function downloadOfficialPdf(fileIdx, fileName) {
 
         if (!response.ok) {
             if (response.status === 404) {
-                alert(`❌ PDF 파일을 찾을 수 없습니다.\n\n파일: ${fileName}\n\n파일이 삭제되었거나 저장 위치가 변경되었을 수 있습니다.\n관리자에게 문의해주세요.`);
+                showError(``❌ PDF 파일을 찾을 수 없습니다.\n\n파일: ${fileName}\n\n파일이 삭제되었거나 저장 위치가 변경되었을 수 있습니다.\n관리자에게 문의해주세요.`);
             } else {
-                alert(`❌ PDF 다운로드 중 오류가 발생했습니다.\n\n파일: ${fileName}\n\n잠시 후 다시 시도해주세요.`);
+                showError(``❌ PDF 다운로드 중 오류가 발생했습니다.\n\n파일: ${fileName}\n\n잠시 후 다시 시도해주세요.`);
             }
             console.error('PDF 다운로드 실패:', response.status, response.statusText);
             return;
@@ -208,7 +208,7 @@ async function downloadOfficialPdf(fileIdx, fileName) {
 
     } catch (error) {
         console.error('공식 PDF 다운로드 오류:', error);
-        alert(`❌ PDF 다운로드 중 오류가 발생했습니다.\n\n파일: ${fileName}\n\n네트워크 연결을 확인하거나 관리자에게 문의해주세요.`);
+        showError(``❌ PDF 다운로드 중 오류가 발생했습니다.\n\n파일: ${fileName}\n\n네트워크 연결을 확인하거나 관리자에게 문의해주세요.`);
     }
 }
 
@@ -278,9 +278,9 @@ async function downloadFile(fileIdx, originalFilename) {
 
         if (!response.ok) {
             if (response.status === 404) {
-                alert(`❌ 파일을 찾을 수 없습니다.\n\n파일: ${originalFilename}\n\n파일이 삭제되었거나 저장 위치가 변경되었을 수 있습니다.\n관리자에게 문의해주세요.`);
+                showError(``❌ 파일을 찾을 수 없습니다.\n\n파일: ${originalFilename}\n\n파일이 삭제되었거나 저장 위치가 변경되었을 수 있습니다.\n관리자에게 문의해주세요.`);
             } else {
-                alert(`❌ 파일 다운로드 중 오류가 발생했습니다.\n\n파일: ${originalFilename}\n\n잠시 후 다시 시도해주세요.`);
+                showError(``❌ 파일 다운로드 중 오류가 발생했습니다.\n\n파일: ${originalFilename}\n\n잠시 후 다시 시도해주세요.`);
             }
             console.error('파일 다운로드 실패:', response.status, response.statusText);
             return;
@@ -299,13 +299,14 @@ async function downloadFile(fileIdx, originalFilename) {
 
     } catch (error) {
         console.error('파일 다운로드 오류:', error);
-        alert(`❌ 파일 다운로드 중 오류가 발생했습니다.\n\n파일: ${originalFilename}\n\n네트워크 연결을 확인하거나 관리자에게 문의해주세요.`);
+        showError(``❌ 파일 다운로드 중 오류가 발생했습니다.\n\n파일: ${originalFilename}\n\n네트워크 연결을 확인하거나 관리자에게 문의해주세요.`);
     }
 }
 
 // 보고서 삭제
 async function deleteReport(documentIdx) {
-    if (!confirm('정말로 이 보고서를 삭제하시겠습니까?')) {
+    const confirmed = await showDeleteConfirm('이 보고서를 삭제하시겠습니까?');
+    if (!confirmed) {
         return;
     }
 
@@ -315,14 +316,14 @@ async function deleteReport(documentIdx) {
         });
 
         if (response.ok) {
-            alert('보고서가 삭제되었습니다.');
+            await showSuccess('보고서가 삭제되었습니다.');
             window.location.href = '/project/documents';
         } else {
             throw new Error('삭제 실패');
         }
     } catch (error) {
         console.error('삭제 오류:', error);
-        alert('보고서 삭제 중 오류가 발생했습니다.');
+        showError('보고서 삭제 중 오류가 발생했습니다.');
     }
 }
 

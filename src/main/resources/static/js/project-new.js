@@ -1,4 +1,4 @@
-document.addEventListener('DOMContentLoaded', function() {
+﻿document.addEventListener('DOMContentLoaded', function() {
     // 신규 프로젝트 페이지 요소
     const projectForm = document.getElementById('projectForm');
     const addMemberBtn = document.getElementById('addMemberBtn');
@@ -211,7 +211,7 @@ document.addEventListener('DOMContentLoaded', function() {
     // 연구책임자 선택 확정
     window.selectManager = function() {
         if (!selectedManager) {
-            alert('연구책임자를 선택해주세요.');
+            await showWarning('연구책임자를 선택해주세요.');
             return;
         }
 
@@ -359,7 +359,7 @@ document.addEventListener('DOMContentLoaded', function() {
             })
             .catch(error => {
                 console.error('Error loading members:', error);
-                alert('인력 목록을 불러올 수 없습니다.');
+                await showError('인력 목록을 불러올 수 없습니다.');
             });
     }
 
@@ -994,7 +994,7 @@ document.addEventListener('DOMContentLoaded', function() {
             files.forEach(file => {
                 // 파일 크기 체크 (50MB)
                 if (file.size > 50 * 1024 * 1024) {
-                    alert(`파일 크기가 너무 큽니다: ${file.name} (최대 50MB)`);
+                    await showWarning(`파일 크기가 너무 큽니다: ${file.name} (최대 50MB)`);
                     return;
                 }
                 selectedFiles.push(file);
@@ -1025,7 +1025,7 @@ document.addEventListener('DOMContentLoaded', function() {
             const files = Array.from(e.dataTransfer.files);
             files.forEach(file => {
                 if (file.size > 50 * 1024 * 1024) {
-                    alert(`파일 크기가 너무 큽니다: ${file.name} (최대 50MB)`);
+                    await showWarning(`파일 크기가 너무 큽니다: ${file.name} (최대 50MB)`);
                     return;
                 }
                 selectedFiles.push(file);
@@ -1243,12 +1243,12 @@ document.addEventListener('DOMContentLoaded', function() {
                 }
             }
 
-            alert('프로젝트가 등록되었습니다.');
+            await showSuccess('프로젝트가 등록되었습니다.');
             window.location.href = '/project';
 
         } catch (error) {
             console.error('Error creating project:', error);
-            alert('프로젝트 등록 중 오류가 발생했습니다.');
+            await showError('프로젝트 등록 중 오류가 발생했습니다.');
         }
     }
 
@@ -1262,37 +1262,37 @@ document.addEventListener('DOMContentLoaded', function() {
         const projectDescription = document.getElementById('projectDescription').value.trim();
 
         if (!projectName) {
-            alert('프로젝트명을 입력해주세요.');
+            await showWarning('프로젝트명을 입력해주세요.');
             return false;
         }
 
         if (!projectStatus) {
-            alert('프로젝트 상태를 선택해주세요.');
+            await showWarning('프로젝트 상태를 선택해주세요.');
             return false;
         }
 
         if (!projectManagerIdx) {
-            alert('연구책임자를 선택해주세요.');
+            await showWarning('연구책임자를 선택해주세요.');
             return false;
         }
 
         if (!startDate) {
-            alert('시작일을 선택해주세요.');
+            await showWarning('시작일을 선택해주세요.');
             return false;
         }
 
         if (!endDate) {
-            alert('종료일을 선택해주세요.');
+            await showWarning('종료일을 선택해주세요.');
             return false;
         }
 
         if (new Date(startDate) > new Date(endDate)) {
-            alert('종료일은 시작일 이후여야 합니다.');
+            await showWarning('종료일은 시작일 이후여야 합니다.');
             return false;
         }
 
         if (!projectDescription) {
-            alert('프로젝트 설명을 입력해주세요.');
+            await showWarning('프로젝트 설명을 입력해주세요.');
             return false;
         }
 
@@ -1343,17 +1343,17 @@ document.addEventListener('DOMContentLoaded', function() {
 
         // 유효성 검사
         if (!cardCompany) {
-            alert('카드사를 선택해주세요.');
+            await showWarning('카드사를 선택해주세요.');
             return;
         }
 
         if (!cardNumber || cardNumber.length !== 4 || !/^\d{4}$/.test(cardNumber)) {
-            alert('카드 뒷 4자리를 정확히 입력해주세요.');
+            await showWarning('카드 뒷 4자리를 정확히 입력해주세요.');
             return;
         }
 
         if (!cardName) {
-            alert('카드 닉네임을 입력해주세요.');
+            await showWarning('카드 닉네임을 입력해주세요.');
             return;
         }
 
@@ -1450,7 +1450,7 @@ document.addEventListener('DOMContentLoaded', function() {
             })
             .catch(error => {
                 console.error('Error loading related projects:', error);
-                alert('프로젝트 목록을 불러올 수 없습니다.');
+                await showError('프로젝트 목록을 불러올 수 없습니다.');
             });
     }
 
@@ -1577,7 +1577,7 @@ document.addEventListener('DOMContentLoaded', function() {
         const checkboxes = document.querySelectorAll('.related-project-checkbox:checked');
 
         if (checkboxes.length === 0) {
-            alert('연계할 프로젝트를 선택해주세요.');
+            await showWarning('연계할 프로젝트를 선택해주세요.');
             return;
         }
 
@@ -1602,7 +1602,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
         // 새로 추가할 프로젝트가 없으면 알림
         if (selectedProjects.length === 0) {
-            alert('새로 추가할 프로젝트가 없습니다. 선택한 프로젝트는 이미 등록되어 있습니다.');
+            await showWarning('새로 추가할 프로젝트가 없습니다. 선택한 프로젝트는 이미 등록되어 있습니다.');
             return;
         }
 
@@ -1673,7 +1673,7 @@ document.addEventListener('DOMContentLoaded', function() {
             const projectPeriod = document.getElementById(`relationProjectPeriod_${i}`).value;
 
             if (!relationType) {
-                alert(`"${projectName}" 프로젝트의 연계 유형을 선택해주세요.`);
+                await showWarning(`"${projectName}" 프로젝트의 연계 유형을 선택해주세요.`);
                 return;
             }
 
@@ -2115,7 +2115,8 @@ document.addEventListener('DOMContentLoaded', function() {
     // 기본값으로 초기화
     if (resetExpensesBtn) {
         resetExpensesBtn.addEventListener('click', function() {
-            if (confirm('경비 설정을 0원으로 초기화하시겠습니까?')) {
+            const confirmed = await showConfirm('경비 설정을 0원으로 초기화하시겠습니까?');
+            if (confirmed) {
                 resetExpensesToDefault();
             }
         });
@@ -2131,7 +2132,7 @@ document.addEventListener('DOMContentLoaded', function() {
             });
         });
 
-        alert('경비 설정이 0원으로 초기화되었습니다.');
+        await showSuccess('경비 설정이 0원으로 초기화되었습니다.');
     }
 
     // 기초정보관리 설정값 불러오기
@@ -2190,11 +2191,11 @@ document.addEventListener('DOMContentLoaded', function() {
                         }
                     });
 
-                    alert('기초정보관리의 설정값을 불러왔습니다.');
+                    await showSuccess('기초정보관리의 설정값을 불러왔습니다.');
                 })
                 .catch(error => {
                     console.error('고정경비 정책 조회 실패:', error);
-                    alert('설정값을 불러오는데 실패했습니다.');
+                    await showError('설정값을 불러오는데 실패했습니다.');
                 });
         });
     }

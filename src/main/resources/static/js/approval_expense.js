@@ -37,11 +37,11 @@ document.addEventListener('DOMContentLoaded', function() {
                 console.log('직원 데이터 로드 완료:', employees.length + '명');
             } else {
                 console.error('직원 데이터 로드 실패:', response.status);
-                alert('직원 데이터를 불러오는데 실패했습니다. 관리자에게 문의하세요.');
+                showError('직원 데이터를 불러오는데 실패했습니다. 관리자에게 문의하세요.');
             }
         } catch (error) {
             console.error('직원 데이터 로드 오류:', error);
-            alert('직원 데이터를 불러오는데 오류가 발생했습니다.');
+            showError('직원 데이터를 불러오는데 오류가 발생했습니다.');
         }
     }
 
@@ -502,7 +502,7 @@ document.addEventListener('DOMContentLoaded', function() {
             removeAttendeeBtn.addEventListener('click', function() {
                 const checkboxes = document.querySelectorAll('.attendee-checkbox:checked');
                 if (checkboxes.length === 0) {
-                    alert('제거할 참석자를 선택해주세요.');
+                    showWarning('제거할 참석자를 선택해주세요.');
                     return;
                 }
 
@@ -843,7 +843,7 @@ document.addEventListener('DOMContentLoaded', function() {
             removeOvertimePersonBtn.addEventListener('click', function() {
                 const checkboxes = document.querySelectorAll('.overtime-checkbox:checked');
                 if (checkboxes.length === 0) {
-                    alert('제거할 인원을 선택해주세요.');
+                    showWarning('제거할 인원을 선택해주세요.');
                     return;
                 }
 
@@ -1057,12 +1057,12 @@ document.addEventListener('DOMContentLoaded', function() {
     // 결재자 추가
     window.addApprover = function() {
         if (!selectedEmployee) {
-            alert('결재자를 선택해주세요.');
+            showWarning('결재자를 선택해주세요.');
             return;
         }
 
         if (selectedApprovers.find(a => a.id === selectedEmployee.id)) {
-            alert('이미 추가된 결재자입니다.');
+            showWarning('이미 추가된 결재자입니다.');
             return;
         }
 
@@ -1119,11 +1119,11 @@ document.addEventListener('DOMContentLoaded', function() {
             const files = Array.from(e.target.files);
             files.forEach(file => {
                 if (selectedFiles.length >= 5) {
-                    alert('최대 5개까지만 첨부 가능합니다.');
+                    showWarning('최대 5개까지만 첨부 가능합니다.');
                     return;
                 }
                 if (file.size > 10 * 1024 * 1024) {
-                    alert('파일 크기는 10MB를 초과할 수 없습니다.');
+                    showWarning('파일 크기는 10MB를 초과할 수 없습니다.');
                     return;
                 }
                 selectedFiles.push(file);
@@ -1154,11 +1154,11 @@ document.addEventListener('DOMContentLoaded', function() {
             const files = Array.from(e.dataTransfer.files);
             files.forEach(file => {
                 if (selectedFiles.length >= 5) {
-                    alert('최대 5개까지만 첨부 가능합니다.');
+                    showWarning('최대 5개까지만 첨부 가능합니다.');
                     return;
                 }
                 if (file.size > 10 * 1024 * 1024) {
-                    alert('파일 크기는 10MB를 초과할 수 없습니다.');
+                    showWarning('파일 크기는 10MB를 초과할 수 없습니다.');
                     return;
                 }
                 selectedFiles.push(file);
@@ -1209,7 +1209,7 @@ document.addEventListener('DOMContentLoaded', function() {
         // 1. 프로젝트명 확인
         const projectName = document.getElementById('projectName');
         if (!projectName || !projectName.value.trim()) {
-            alert('프로젝트명을 입력해주세요.');
+            showWarning('프로젝트명을 입력해주세요.');
             projectName?.focus();
             return false;
         }
@@ -1217,7 +1217,7 @@ document.addEventListener('DOMContentLoaded', function() {
         // 2. 기안일자 확인
         const documentDate = document.getElementById('documentDate');
         if (!documentDate || !documentDate.value) {
-            alert('기안일자를 선택해주세요.');
+            showWarning('기안일자를 선택해주세요.');
             documentDate?.focus();
             return false;
         }
@@ -1225,7 +1225,7 @@ document.addEventListener('DOMContentLoaded', function() {
         // 3. 지출 내역 확인
         const expenseItems = document.querySelectorAll('.expense-item');
         if (expenseItems.length === 0) {
-            alert('최소 1개의 지출 항목을 추가해주세요.');
+            showWarning('최소 1개의 지출 항목을 추가해주세요.');
             return false;
         }
 
@@ -1248,25 +1248,25 @@ document.addEventListener('DOMContentLoaded', function() {
 
             // 하나라도 입력된 경우 모든 필수 필드 검증
             if (!dateInput || !dateInput.value) {
-                alert(`${itemNumber}번 항목의 날짜를 선택해주세요.`);
+                showWarning(`${itemNumber}번 항목의 날짜를 선택해주세요.`);
                 dateInput?.focus();
                 return false;
             }
 
             if (!descInput || !descInput.value.trim()) {
-                alert(`${itemNumber}번 항목의 적요를 입력해주세요.`);
+                showWarning(`${itemNumber}번 항목의 적요를 입력해주세요.`);
                 descInput?.focus();
                 return false;
             }
 
             if (!shopInput || !shopInput.value.trim()) {
-                alert(`${itemNumber}번 항목의 상호를 입력해주세요.`);
+                showWarning(`${itemNumber}번 항목의 상호를 입력해주세요.`);
                 shopInput?.focus();
                 return false;
             }
 
             if (!amountInput || !amountInput.value.trim()) {
-                alert(`${itemNumber}번 항목의 금액을 입력해주세요.`);
+                showWarning(`${itemNumber}번 항목의 금액을 입력해주세요.`);
                 amountInput?.focus();
                 return false;
             }
@@ -1276,7 +1276,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
         // 모든 항목이 비어있는 경우
         if (!hasValidItem) {
-            alert('최소 1개의 지출 항목을 입력해주세요.');
+            showWarning('최소 1개의 지출 항목을 입력해주세요.');
             return false;
         }
 
@@ -1291,7 +1291,8 @@ document.addEventListener('DOMContentLoaded', function() {
                 return;
             }
 
-            if (confirm('저장하시겠습니까?')) {
+            const confirmed = await showConfirm('저장하시겠습니까?');
+            if (confirmed) {
                 try {
                     // 폼 데이터 수집
                     const formData = collectFormData();
@@ -1312,16 +1313,15 @@ document.addEventListener('DOMContentLoaded', function() {
                     const result = await response.json();
                     console.log('지출승인서 생성 완료:', result);
 
-                    alert('저장이 완료되었습니다.');
+                    showSuccess('저장이 완료되었습니다.');
                     window.location.href = '/approval';
                 } catch (error) {
                     console.error('저장 중 오류 발생:', error);
-                    alert('저장 중 오류가 발생했습니다. 다시 시도해주세요.');
+                    showError('저장 중 오류가 발생했습니다. 다시 시도해주세요.');
                 }
             }
         });
     }
-
     // 폼 데이터 수집 함수
     function collectFormData() {
         // 기본 정보
@@ -1382,13 +1382,13 @@ document.addEventListener('DOMContentLoaded', function() {
                 const templateType = activeTemplate ? activeTemplate.getAttribute('data-template') : null;
 
                 if (!activeTemplate || (templateType !== 'receipt-meeting' && templateType !== 'receipt-overtime')) {
-                    alert('영수증 처리(회의록) 또는 영수증 처리(야근식대) 템플릿을 먼저 선택해주세요.');
+                    showWarning('영수증 처리(회의록) 또는 영수증 처리(야근식대) 템플릿을 먼저 선택해주세요.');
                     return;
                 }
 
                 // jsPDF와 html2canvas 로드 확인
                 if (typeof window.jspdf === 'undefined' || typeof window.html2canvas === 'undefined') {
-                    alert('PDF 라이브러리를 로드하는 중입니다. 잠시 후 다시 시도해주세요.');
+                    showWarning('PDF 라이브러리를 로드하는 중입니다. 잠시 후 다시 시도해주세요.');
                     return;
                 }
 
@@ -1405,7 +1405,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 // 템플릿 타입별로 다른 처리
                 if (templateType === 'receipt-meeting') {
                     if (allDivs.length < 4) {
-                        alert('문서 구조를 찾을 수 없습니다. 영수증 처리(회의록) 템플릿을 선택했는지 확인해주세요.');
+                        showError('문서 구조를 찾을 수 없습니다. 영수증 처리(회의록) 템플릿을 선택했는지 확인해주세요.');
                         return;
                     }
 
@@ -1416,7 +1416,7 @@ document.addEventListener('DOMContentLoaded', function() {
                     allDivs[3].style.display = 'block'; // 참석자 명단
                 } else if (templateType === 'receipt-overtime') {
                     if (allDivs.length < 3) {
-                        alert('문서 구조를 찾을 수 없습니다. 영수증 처리(야근식대) 템플릿을 선택했는지 확인해주세요.');
+                        showError('문서 구조를 찾을 수 없습니다. 영수증 처리(야근식대) 템플릿을 선택했는지 확인해주세요.');
                         return;
                     }
 
@@ -1589,10 +1589,10 @@ document.addEventListener('DOMContentLoaded', function() {
                 console.log('PDF 저장:', fileName);
                 pdf.save(fileName);
 
-                alert('PDF가 저장되었습니다.');
+                showSuccess('PDF가 저장되었습니다.');
             } catch (error) {
                 console.error('PDF 생성 오류:', error);
-                alert('PDF 생성 중 오류가 발생했습니다.\n' + error.message + '\n\n브라우저 콘솔(F12)을 확인해주세요.');
+                showError('PDF 생성 중 오류가 발생했습니다.\n' + error.message + '\n\n브라우저 콘솔(F12)을 확인해주세요.');
             } finally {
                 // 에러 발생 여부와 관계없이 항상 원래 스타일 복원
                 if (allDivs && originalDisplays.length > 0) {
@@ -1865,7 +1865,7 @@ document.addEventListener('DOMContentLoaded', function() {
             calculateTotal();
             updatePreview();
         } else {
-            alert('최소 1개의 항목은 유지되어야 합니다.');
+            showWarning('최소 1개의 항목은 유지되어야 합니다.');
         }
     };
 
@@ -2232,7 +2232,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
         // 휴가 날짜인 경우 선택 불가
         if (vacationDates.includes(dateStr)) {
-            alert('휴가 기간에는 지출을 신청할 수 없습니다.');
+            showWarning('휴가 기간에는 지출을 신청할 수 없습니다.');
             return;
         }
 

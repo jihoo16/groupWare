@@ -230,15 +230,15 @@ document.addEventListener('DOMContentLoaded', function() {
 
         // 유효성 검사
         if (!cardCompany) {
-            alert('카드사를 선택해주세요.');
+            showWarning('카드사를 선택해주세요.');
             return;
         }
         if (!cardNumber || cardNumber.length !== 4 || !/^\d{4}$/.test(cardNumber)) {
-            alert('카드 뒷 4자리를 정확히 입력해주세요.');
+            showWarning('카드 뒷 4자리를 정확히 입력해주세요.');
             return;
         }
         if (!projectIdx) {
-            alert('연결 프로젝트를 선택해주세요.');
+            showWarning('연결 프로젝트를 선택해주세요.');
             return;
         }
 
@@ -271,12 +271,12 @@ document.addEventListener('DOMContentLoaded', function() {
                 throw new Error(errorData.error || '저장에 실패했습니다.');
             }
 
-            alert(editingCardIdx ? '카드가 수정되었습니다.' : '카드가 등록되었습니다.');
+            await showSuccess(editingCardIdx ? '카드가 수정되었습니다.' : '카드가 등록되었습니다.');
             closeCardModal();
             loadAllCards(); // 목록 새로고침
         } catch (error) {
             console.error('카드 저장 오류:', error);
-            alert(error.message);
+            showError(error.message);
         }
     };
 
@@ -291,7 +291,7 @@ document.addEventListener('DOMContentLoaded', function() {
      * 카드 삭제
      */
     window.deleteCard = async function(cardIdx) {
-        if (!confirm('이 카드를 삭제하시겠습니까?')) {
+        if (!await showDeleteConfirm('이 카드를 삭제하시겠습니까?')) {
             return;
         }
 
@@ -305,11 +305,11 @@ document.addEventListener('DOMContentLoaded', function() {
                 throw new Error(errorData.error || '삭제에 실패했습니다.');
             }
 
-            alert('카드가 삭제되었습니다.');
+            await showSuccess('카드가 삭제되었습니다.');
             loadAllCards(); // 목록 새로고침
         } catch (error) {
             console.error('카드 삭제 오류:', error);
-            alert(error.message);
+            showError(error.message);
         }
     };
 
@@ -318,7 +318,7 @@ document.addEventListener('DOMContentLoaded', function() {
      */
     window.showProjectInfo = async function(projectIdx) {
         if (!projectIdx) {
-            alert('연결된 프로젝트가 없습니다.');
+            showWarning('연결된 프로젝트가 없습니다.');
             return;
         }
 
@@ -358,7 +358,7 @@ document.addEventListener('DOMContentLoaded', function() {
             projectInfoModal.classList.add('show');
         } catch (error) {
             console.error('프로젝트 정보 조회 오류:', error);
-            alert('프로젝트 정보를 불러오는데 실패했습니다.');
+            showError('프로젝트 정보를 불러오는데 실패했습니다.');
         }
     };
 

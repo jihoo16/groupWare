@@ -48,8 +48,9 @@ document.addEventListener('DOMContentLoaded', function() {
         window.location.href = '/team';
     });
 
-    cancelBtn.addEventListener('click', () => {
-        if (confirm('작성 중인 내용이 있습니다. 정말 취소하시겠습니까?')) {
+    cancelBtn.addEventListener('click', async () => {
+        const confirmed = await showConfirm('작성 중인 내용이 있습니다. 정말 취소하시겠습니까?');
+        if (confirmed) {
             window.location.href = '/team';
         }
     });
@@ -753,7 +754,7 @@ document.addEventListener('DOMContentLoaded', function() {
         const teamDescription = document.getElementById('teamDescription').value.trim();
 
         if (!teamName) {
-            alert('팀 이름을 입력해주세요.');
+            await showWarning('팀 이름을 입력해주세요.');
             return;
         }
 
@@ -794,12 +795,12 @@ document.addEventListener('DOMContentLoaded', function() {
             const result = await response.json();
             console.log('Team created:', result);
 
-            alert('팀이 성공적으로 생성되었습니다.');
+            await showSuccess('팀이 성공적으로 생성되었습니다.');
             window.location.href = '/team';
 
         } catch (error) {
             console.error('팀 생성 중 오류:', error);
-            alert('팀 생성에 실패했습니다. 다시 시도해주세요.');
+            await showError('팀 생성에 실패했습니다. 다시 시도해주세요.');
 
             submitBtn.disabled = false;
             submitBtn.innerHTML = '<i class="fas fa-check"></i> 팀 생성';

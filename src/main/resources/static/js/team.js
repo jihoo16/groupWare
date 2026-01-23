@@ -398,7 +398,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
         } catch (error) {
             console.error('팀 상세 정보 로드 중 오류:', error);
-            alert('팀 정보를 불러오는데 실패했습니다.');
+            window.showError('팀 정보를 불러오는데 실패했습니다.');
         }
     }
 
@@ -425,11 +425,11 @@ document.addEventListener('DOMContentLoaded', function() {
             // 목록 새로고침
             await loadTeams();
 
-            alert('팀이 삭제되었습니다.');
+            await window.showSuccess('팀이 삭제되었습니다.');
 
         } catch (error) {
             console.error('팀 삭제 중 오류:', error);
-            alert('팀 삭제에 실패했습니다.');
+            window.showError('팀 삭제에 실패했습니다.');
         }
     }
 

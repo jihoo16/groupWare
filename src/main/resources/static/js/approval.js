@@ -367,7 +367,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 window.location.href = `/approval/vacation/detail?documentIdx=${reportId}`;
             } else {
                 const title = docRow.querySelector('.title-wrap').textContent;
-                alert(`"${title}" 상세보기 기능은 추후 구현됩니다.`);
+                showWarning(`"${title}" 상세보기 기능은 추후 구현됩니다.`);
             }
         }
     });
@@ -401,7 +401,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 window.location.href = `/approval/vacation/detail?documentIdx=${reportId}`;
             } else {
                 const title = titleWrap.textContent;
-                alert(`"${title}" 상세보기 기능은 추후 구현됩니다.`);
+                showWarning(`"${title}" 상세보기 기능은 추후 구현됩니다.`);
             }
         }
     });

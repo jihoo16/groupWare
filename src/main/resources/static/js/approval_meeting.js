@@ -100,12 +100,12 @@ document.addEventListener('DOMContentLoaded', function() {
 
         // 유효성 검사
         if (!meetingTitle) {
-            alert('회의명을 입력해주세요.');
+            showWarning('회의명을 입력해주세요.');
             return;
         }
 
         if (!meetingDatetime) {
-            alert('회의 일시를 입력해주세요.');
+            showWarning('회의 일시를 입력해주세요.');
             return;
         }
 
@@ -138,23 +138,23 @@ document.addEventListener('DOMContentLoaded', function() {
             if (response.ok) {
                 const result = await response.json();
                 console.log('회의록 저장 성공:', result);
-                alert('회의록이 저장되었습니다.');
+                await showSuccess('회의록이 저장되었습니다.');
                 window.location.href = '/approval';
             } else {
                 const errorText = await response.text();
                 console.error('회의록 저장 실패:', errorText);
-                alert('회의록 저장에 실패했습니다.');
+                showError('회의록 저장에 실패했습니다.');
             }
         } catch (error) {
             console.error('회의록 저장 오류:', error);
-            alert('회의록 저장 중 오류가 발생했습니다.');
+            showError('회의록 저장 중 오류가 발생했습니다.');
         }
     }
 
     // 임시저장
     if (saveDraftBtn) {
         saveDraftBtn.addEventListener('click', function() {
-            alert('임시저장 기능은 추후 구현 예정입니다.');
+            showAlert('임시저장 기능은 추후 구현 예정입니다.');
         });
     }
 

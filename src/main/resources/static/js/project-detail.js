@@ -8,7 +8,7 @@ document.addEventListener('DOMContentLoaded', function() {
     const projectId = urlParams.get('projectId');
 
     if (!projectId) {
-        alert('프로젝트 ID가 없습니다.');
+        await showError('프로젝트 ID가 없습니다.');
         history.back();
         return;
     }
@@ -82,7 +82,7 @@ async function loadProjectDetail(projectId, currentUserIdx) {
         loadProjectDocuments(projectId);
     } catch (error) {
         console.error('프로젝트 조회 오류:', error);
-        alert('프로젝트를 불러오는데 실패했습니다.');
+        await showError('프로젝트를 불러오는데 실패했습니다.');
         history.back();
     }
 }
@@ -461,7 +461,8 @@ function getFileIcon(filename) {
  * 프로젝트 삭제
  */
 async function deleteProject(projectId) {
-    if (!confirm('정말 이 프로젝트를 삭제하시겠습니까?')) {
+    const confirmed = await showDeleteConfirm('정말 이 프로젝트를 삭제하시겠습니까?');
+    if (!confirmed) {
         return;
     }
 
@@ -474,11 +475,11 @@ async function deleteProject(projectId) {
             throw new Error('프로젝트 삭제 실패');
         }
 
-        alert('프로젝트가 삭제되었습니다.');
+        await showSuccess('프로젝트가 삭제되었습니다.');
         location.href = '/project';
     } catch (error) {
         console.error('프로젝트 삭제 오류:', error);
-        alert('프로젝트 삭제에 실패했습니다.');
+        await showError('프로젝트 삭제에 실패했습니다.');
     }
 }
 
@@ -635,7 +636,7 @@ function displayExpenseReports(reports) {
 /**
  * 문서 상세 페이지로 이동 (새 탭에서 열기)
  */
-function goToDocument(documentType, sourceDocumentId) {
+async function goToDocument(documentType, sourceDocumentId) {
     if (!sourceDocumentId) return;
 
     let url;
@@ -646,7 +647,7 @@ function goToDocument(documentType, sourceDocumentId) {
         case 'MEETING_MINUTES':
         case 'BUSINESS_TRIP':
         case 'RECEIPT_MEETING':
-            alert('상세 페이지 구현 중입니다.');
+            await showWarning('상세 페이지 구현 중입니다.');
             return;
         default:
             url = `/approval/detail?documentId=${sourceDocumentId}`;

@@ -5,7 +5,7 @@ document.addEventListener('DOMContentLoaded', function() {
     const reportId = urlParams.get('id');
 
     if (!reportId) {
-        alert('잘못된 접근입니다.');
+        showError('잘못된 접근입니다.');
         history.back();
         return;
     }
@@ -195,16 +195,16 @@ document.addEventListener('DOMContentLoaded', function() {
             });
 
             if (response.ok) {
-                alert('수정이 완료되었습니다.');
+                await showSuccess('수정이 완료되었습니다.');
                 location.reload();
             } else {
                 const errorText = await response.text();
                 console.error('수정 실패:', errorText);
-                alert('수정에 실패했습니다.');
+                showError('수정에 실패했습니다.');
             }
         } catch (error) {
             console.error('수정 오류:', error);
-            alert('수정 중 오류가 발생했습니다.');
+            showError('수정 중 오류가 발생했습니다.');
         }
     }
 
@@ -212,7 +212,8 @@ document.addEventListener('DOMContentLoaded', function() {
     const deleteBtn = document.getElementById('deleteReportBtn');
     if (deleteBtn) {
         deleteBtn.addEventListener('click', async function() {
-            if (!confirm('정말로 이 주간업무보고를 삭제하시겠습니까?')) {
+            const confirmed = await showDeleteConfirm('이 주간업무보고를 삭제하시겠습니까?');
+            if (!confirmed) {
                 return;
             }
 
@@ -222,16 +223,16 @@ document.addEventListener('DOMContentLoaded', function() {
                 });
 
                 if (response.ok) {
-                    alert('주간업무보고가 삭제되었습니다.');
+                    await showSuccess('주간업무보고가 삭제되었습니다.');
                     window.location.href = '/approval';
                 } else {
                     const errorText = await response.text();
                     console.error('삭제 실패:', errorText);
-                    alert('삭제에 실패했습니다.');
+                    showError('삭제에 실패했습니다.');
                 }
             } catch (error) {
                 console.error('삭제 오류:', error);
-                alert('삭제 중 오류가 발생했습니다.');
+                showError('삭제 중 오류가 발생했습니다.');
             }
         });
     }
@@ -252,12 +253,12 @@ document.addEventListener('DOMContentLoaded', function() {
             } else {
                 const errorText = await response.text();
                 console.error('주간업무보고 상세 로드 실패:', errorText);
-                alert('주간업무보고를 불러오는데 실패했습니다.');
+                showError('주간업무보고를 불러오는데 실패했습니다.');
                 history.back();
             }
         } catch (error) {
             console.error('주간업무보고 상세 로드 오류:', error);
-            alert('주간업무보고를 불러오는 중 오류가 발생했습니다.');
+            showError('주간업무보고를 불러오는 중 오류가 발생했습니다.');
             history.back();
         }
     }

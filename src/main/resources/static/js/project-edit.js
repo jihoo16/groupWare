@@ -1,4 +1,4 @@
-document.addEventListener('DOMContentLoaded', function() {
+﻿document.addEventListener('DOMContentLoaded', function() {
     // 페이지 로드 시 프로젝트 ID 가져오기
     const pathParts = window.location.pathname.split('/');
     const projectId = pathParts[pathParts.length - 1];
@@ -53,7 +53,7 @@ document.addEventListener('DOMContentLoaded', function() {
         loadProjectData(projectId);
     }).catch(error => {
         console.error('초기 데이터 로드 실패:', error);
-        alert('페이지 로드 중 오류가 발생했습니다.');
+        await showError('페이지 로드 중 오류가 발생했습니다.');
     });
 
     // 직급 목록 로드 함수
@@ -270,7 +270,7 @@ document.addEventListener('DOMContentLoaded', function() {
             })
             .catch(error => {
                 console.error('Error loading project data:', error);
-                alert('프로젝트 정보를 불러올 수 없습니다.');
+                await showError('프로젝트 정보를 불러올 수 없습니다.');
                 location.href = '/project';
             });
     }
@@ -425,7 +425,7 @@ document.addEventListener('DOMContentLoaded', function() {
             })
             .catch(error => {
                 console.error('Error loading members:', error);
-                alert('인력 목록을 불러올 수 없습니다.');
+                await showError('인력 목록을 불러올 수 없습니다.');
             });
     }
 
@@ -800,17 +800,17 @@ document.addEventListener('DOMContentLoaded', function() {
 
         // 유효성 검사
         if (!cardCompany) {
-            alert('카드사를 선택해주세요.');
+            await showWarning('카드사를 선택해주세요.');
             return;
         }
 
         if (!cardNumber || cardNumber.length !== 4 || !/^\d{4}$/.test(cardNumber)) {
-            alert('카드 뒷 4자리를 정확히 입력해주세요.');
+            await showWarning('카드 뒷 4자리를 정확히 입력해주세요.');
             return;
         }
 
         if (!cardName) {
-            alert('카드 닉네임을 입력해주세요.');
+            await showWarning('카드 닉네임을 입력해주세요.');
             return;
         }
         console.log("cardIdCounter : "+cardIdCounter)
@@ -874,7 +874,7 @@ document.addEventListener('DOMContentLoaded', function() {
             files.forEach(file => {
                 // 파일 크기 체크 (50MB)
                 if (file.size > 50 * 1024 * 1024) {
-                    alert(`파일 크기가 너무 큽니다: ${file.name} (최대 50MB)`);
+                    await showWarning(`파일 크기가 너무 큽니다: ${file.name} (최대 50MB)`);
                     return;
                 }
                 selectedFiles.push(file);
@@ -905,7 +905,7 @@ document.addEventListener('DOMContentLoaded', function() {
             const files = Array.from(e.dataTransfer.files);
             files.forEach(file => {
                 if (file.size > 50 * 1024 * 1024) {
-                    alert(`파일 크기가 너무 큽니다: ${file.name} (최대 50MB)`);
+                    await showWarning(`파일 크기가 너무 큽니다: ${file.name} (최대 50MB)`);
                     return;
                 }
                 selectedFiles.push(file);
@@ -1014,8 +1014,9 @@ document.addEventListener('DOMContentLoaded', function() {
     };
 
     // 기존 파일 삭제 예약 (전역 함수) - 저장 시에만 실제 삭제
-    window.removeExistingFile = function(fileIdx) {
-        if (confirm('이 파일을 삭제하시겠습니까?\n(저장 버튼을 눌러야 실제로 삭제됩니다)')) {
+    window.removeExistingFile = async function(fileIdx) {
+        const confirmed = await showConfirm('이 파일을 삭제하시겠습니까?\n(저장 버튼을 눌러야 실제로 삭제됩니다)');
+        if (confirmed) {
             if (!deletedFileIds.includes(fileIdx)) {
                 deletedFileIds.push(fileIdx);
             }
@@ -1220,12 +1221,12 @@ document.addEventListener('DOMContentLoaded', function() {
                 await deleteFilesFromServer();
             }
 
-            alert('프로젝트가 수정되었습니다.');
+            await showSuccess('프로젝트가 수정되었습니다.');
             window.location.href = '/project';
 
         } catch (error) {
             console.error('Error updating project:', error);
-            alert('프로젝트 수정 중 오류가 발생했습니다.');
+            await showError('프로젝트 수정 중 오류가 발생했습니다.');
         }
     }
 
@@ -1240,42 +1241,42 @@ document.addEventListener('DOMContentLoaded', function() {
         const projectDescription = document.getElementById('projectDescription').value.trim();
 
         if (!projectName) {
-            alert('프로젝트명을 입력해주세요.');
+            await showWarning('프로젝트명을 입력해주세요.');
             return false;
         }
 
         if (!clientName) {
-            alert('발주사를 입력해주세요.');
+            await showWarning('발주사를 입력해주세요.');
             return false;
         }
 
         if (!projectStatus) {
-            alert('프로젝트 상태를 선택해주세요.');
+            await showWarning('프로젝트 상태를 선택해주세요.');
             return false;
         }
 
         if (!projectManager) {
-            alert('연구 책임자를 선택해주세요.');
+            await showWarning('연구 책임자를 선택해주세요.');
             return false;
         }
 
         if (!startDate) {
-            alert('시작일을 선택해주세요.');
+            await showWarning('시작일을 선택해주세요.');
             return false;
         }
 
         if (!endDate) {
-            alert('종료일을 선택해주세요.');
+            await showWarning('종료일을 선택해주세요.');
             return false;
         }
 
         if (new Date(startDate) > new Date(endDate)) {
-            alert('종료일은 시작일 이후여야 합니다.');
+            await showWarning('종료일은 시작일 이후여야 합니다.');
             return false;
         }
 
         if (!projectDescription) {
-            alert('프로젝트 설명을 입력해주세요.');
+            await showWarning('프로젝트 설명을 입력해주세요.');
             return false;
         }
 
@@ -1334,7 +1335,7 @@ document.addEventListener('DOMContentLoaded', function() {
             })
             .catch(error => {
                 console.error('Error loading related projects:', error);
-                alert('프로젝트 목록을 불러올 수 없습니다.');
+                await showError('프로젝트 목록을 불러올 수 없습니다.');
             });
     }
 
@@ -1464,7 +1465,7 @@ document.addEventListener('DOMContentLoaded', function() {
         const checkboxes = document.querySelectorAll('.related-project-checkbox:checked');
 
         if (checkboxes.length === 0) {
-            alert('연계할 프로젝트를 선택해주세요.');
+            await showWarning('연계할 프로젝트를 선택해주세요.');
             return;
         }
 
@@ -1548,7 +1549,7 @@ document.addEventListener('DOMContentLoaded', function() {
             const projectPeriod = document.getElementById(`relationProjectPeriod_${i}`).value;
 
             if (!relationType) {
-                alert(`"${projectName}" 프로젝트의 연계 유형을 선택해주세요.`);
+                await showWarning(`"${projectName}" 프로젝트의 연계 유형을 선택해주세요.`);
                 return;
             }
 
@@ -1658,7 +1659,8 @@ document.addEventListener('DOMContentLoaded', function() {
     // 기본값으로 초기화
     if (resetExpensesBtn) {
         resetExpensesBtn.addEventListener('click', function() {
-            if (confirm('경비 설정을 0원으로 초기화하시겠습니까?')) {
+            const confirmed = await showConfirm('경비 설정을 0원으로 초기화하시겠습니까?');
+            if (confirmed) {
                 resetExpensesToDefault();
             }
         });
@@ -1674,7 +1676,7 @@ document.addEventListener('DOMContentLoaded', function() {
             });
         });
 
-        alert('경비 설정이 0원으로 초기화되었습니다.');
+        await showSuccess('경비 설정이 0원으로 초기화되었습니다.');
     }
 
     // 기초정보관리 설정값 불러오기
@@ -1689,11 +1691,11 @@ document.addEventListener('DOMContentLoaded', function() {
 
                     loadExpenseSettings(policies);
 
-                    alert('기초정보관리의 설정값을 불러왔습니다.');
+                    await showSuccess('기초정보관리의 설정값을 불러왔습니다.');
                 })
                 .catch(error => {
                     console.error('고정경비 정책 조회 실패:', error);
-                    alert('설정값을 불러오는데 실패했습니다.');
+                    await showError('설정값을 불러오는데 실패했습니다.');
                 });
         });
     }
@@ -1701,19 +1703,20 @@ document.addEventListener('DOMContentLoaded', function() {
     // 삭제 버튼 이벤트
     const deleteProjectBtn = document.getElementById('deleteProjectBtn');
     if (deleteProjectBtn) {
-        deleteProjectBtn.addEventListener('click', function() {
+        deleteProjectBtn.addEventListener('click', async function() {
             // 삭제 확인 대화상자
-            if (!confirm('정말로 이 프로젝트를 삭제하시겠습니까?\n삭제된 프로젝트는 복구할 수 없습니다.')) {
+            const confirmed = await showDeleteConfirm('정말로 이 프로젝트를 삭제하시겠습니까?\n삭제된 프로젝트는 복구할 수 없습니다.');
+            if (!confirmed) {
                 return;
             }
 
             // 추가 확인
             const projectName = document.getElementById('projectName').value;
             const confirmMessage = `프로젝트명: ${projectName}\n\n위 프로젝트를 삭제하시려면 "삭제"를 입력하세요.`;
-            const userInput = prompt(confirmMessage);
+            const userInput = await showInput(confirmMessage, '삭제 확인을 위해 "삭제"를 입력하세요');
 
             if (userInput !== '삭제') {
-                alert('삭제가 취소되었습니다.');
+                await showWarning('삭제가 취소되었습니다.');
                 return;
             }
 
@@ -1736,12 +1739,12 @@ document.addEventListener('DOMContentLoaded', function() {
                 return response.text();
             })
             .then(() => {
-                alert('프로젝트가 삭제되었습니다.');
+                await showSuccess('프로젝트가 삭제되었습니다.');
                 window.location.href = '/project';
             })
             .catch(error => {
                 console.error('프로젝트 삭제 실패:', error);
-                alert('프로젝트 삭제에 실패했습니다.\n' + error.message);
+                await showError('프로젝트 삭제에 실패했습니다.\n' + error.message);
                 deleteProjectBtn.disabled = false;
                 deleteProjectBtn.innerHTML = '<i class="fas fa-trash"></i> 삭제';
             });

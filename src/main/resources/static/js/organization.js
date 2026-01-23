@@ -143,7 +143,7 @@
             return data;
         } catch (error) {
             console.error('조직도 데이터 로딩 실패:', error);
-            alert('조직도 데이터를 불러오는데 실패했습니다.\n브라우저 콘솔을 확인해주세요.');
+            showError('조직도 데이터를 불러오는데 실패했습니다.\n브라우저 콘솔을 확인해주세요.');
             return null;
         }
     }

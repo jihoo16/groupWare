@@ -864,7 +864,8 @@ document.addEventListener('DOMContentLoaded', function() {
     document.getElementById('deleteScheduleBtn').addEventListener('click', async function() {
         if (!currentEditingSchedule) return;
 
-        if (confirm('이 일정을 삭제하시겠습니까?')) {
+        const confirmed = await showDeleteConfirm('이 일정을 삭제하시겠습니까?');
+        if (confirmed) {
             try {
                 const response = await fetch(`/api/calendar/events/${currentEditingSchedule.idx}?userId=${currentUserIdx}`, {
                     method: 'DELETE'
@@ -1660,7 +1661,7 @@ document.addEventListener('DOMContentLoaded', function() {
     }
 
     // 연/월 선택 확인 버튼
-    document.getElementById('confirmYearMonthBtn').addEventListener('click', function() {
+    document.getElementById('confirmYearMonthBtn').addEventListener('click', async function() {
         if (selectedYear !== null && selectedMonth !== null) {
             currentDate = new Date(selectedYear, selectedMonth, 1);
             renderCalendar();
@@ -1682,7 +1683,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
     // 알림 메시지 표시 함수
     function showAlert(message, type = 'info') {
-        alert(message);
+        await showInfo(message);
     }
 
     // 페이지 로드 시 달력 렌더링
@@ -2796,7 +2797,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
         } catch (error) {
             console.error('[팀 멤버 로드] 오류 발생:', error);
-            alert('팀 멤버를 불러오는 중 오류가 발생했습니다.\n참석자를 수동으로 추가해주세요.');
+            await showError('팀 멤버를 불러오는 중 오류가 발생했습니다.\n참석자를 수동으로 추가해주세요.');
             // 오류 발생 시 빈 참석자 목록으로 초기화
             selectedParticipants = [];
             renderParticipantsList();

@@ -5,7 +5,7 @@ document.addEventListener('DOMContentLoaded', function() {
     const teamIdx = parseInt(pathParts[pathParts.length - 1]);
 
     if (!teamIdx || isNaN(teamIdx)) {
-        alert('잘못된 팀 ID입니다.');
+        showError('잘못된 팀 ID입니다.');
         window.location.href = '/team';
         return;
     }
@@ -74,8 +74,9 @@ document.addEventListener('DOMContentLoaded', function() {
         window.location.href = '/team';
     });
 
-    cancelBtn.addEventListener('click', () => {
-        if (confirm('수정 중인 내용이 있습니다. 정말 취소하시겠습니까?')) {
+    cancelBtn.addEventListener('click', async () => {
+        const confirmed = await showConfirm('수정 중인 내용이 있습니다. 정말 취소하시겠습니까?');
+        if (confirmed) {
             window.location.href = '/team';
         }
     });
@@ -751,7 +752,7 @@ document.addEventListener('DOMContentLoaded', function() {
         const isActive = isActiveSelect.value;
 
         if (!teamName) {
-            alert('팀 이름을 입력해주세요.');
+            await showWarning('팀 이름을 입력해주세요.');
             return;
         }
 
@@ -793,12 +794,12 @@ document.addEventListener('DOMContentLoaded', function() {
             const result = await response.json();
             console.log('Team updated:', result);
 
-            alert('팀이 성공적으로 수정되었습니다.');
+            await showSuccess('팀이 성공적으로 수정되었습니다.');
             window.location.href = '/team';
 
         } catch (error) {
             console.error('팀 수정 중 오류:', error);
-            alert('팀 수정에 실패했습니다. 다시 시도해주세요.');
+            await showError('팀 수정에 실패했습니다. 다시 시도해주세요.');
 
             submitBtn.disabled = false;
             submitBtn.innerHTML = '<i class="fas fa-save"></i> 저장';
@@ -806,7 +807,7 @@ document.addEventListener('DOMContentLoaded', function() {
     }
 
     // 팀 삭제 처리
-    async function handleDelete() {
+    async async function handleDelete() {
         try {
             confirmDeleteBtn.disabled = true;
             confirmDeleteBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> 삭제 중...';
@@ -819,12 +820,12 @@ document.addEventListener('DOMContentLoaded', function() {
                 throw new Error('팀 삭제 실패');
             }
 
-            alert('팀이 삭제되었습니다.');
+            await showSuccess('팀이 삭제되었습니다.');
             window.location.href = '/team';
 
         } catch (error) {
             console.error('팀 삭제 중 오류:', error);
-            alert('팀 삭제에 실패했습니다. 다시 시도해주세요.');
+            await showError('팀 삭제에 실패했습니다. 다시 시도해주세요.');
 
             confirmDeleteBtn.disabled = false;
             confirmDeleteBtn.innerHTML = '<i class="fas fa-trash"></i> 삭제';

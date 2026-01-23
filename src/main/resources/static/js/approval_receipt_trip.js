@@ -41,11 +41,11 @@ document.addEventListener('DOMContentLoaded', function() {
                 console.log('직원 데이터 로드 완료:', employees.length + '명');
             } else {
                 console.error('직원 데이터 로드 실패:', response.status);
-                alert('직원 데이터를 불러오는데 실패했습니다. 관리자에게 문의하세요.');
+                showError('직원 데이터를 불러오는데 실패했습니다. 관리자에게 문의하세요.');
             }
         } catch (error) {
             console.error('직원 데이터 로드 오류:', error);
-            alert('직원 데이터를 불러오는데 오류가 발생했습니다.');
+            showError('직원 데이터를 불러오는데 오류가 발생했습니다.');
         }
     }
 
@@ -834,12 +834,12 @@ document.addEventListener('DOMContentLoaded', function() {
     // 결재자 추가
     window.addApprover = function() {
         if (!selectedEmployee) {
-            alert('결재자를 선택해주세요.');
+            showWarning('결재자를 선택해주세요.');
             return;
         }
 
         if (selectedApprovers.find(a => a.id === selectedEmployee.id)) {
-            alert('이미 추가된 결재자입니다.');
+            showWarning('이미 추가된 결재자입니다.');
             return;
         }
 
@@ -894,11 +894,11 @@ document.addEventListener('DOMContentLoaded', function() {
         const files = Array.from(e.target.files);
         files.forEach(file => {
             if (selectedFiles.length >= 5) {
-                alert('최대 5개까지만 첨부 가능합니다.');
+                showWarning('최대 5개까지만 첨부 가능합니다.');
                 return;
             }
             if (file.size > 10 * 1024 * 1024) {
-                alert('파일 크기는 10MB를 초과할 수 없습니다.');
+                showWarning('파일 크기는 10MB를 초과할 수 없습니다.');
                 return;
             }
             selectedFiles.push(file);
@@ -927,11 +927,11 @@ document.addEventListener('DOMContentLoaded', function() {
         const files = Array.from(e.dataTransfer.files);
         files.forEach(file => {
             if (selectedFiles.length >= 5) {
-                alert('최대 5개까지만 첨부 가능합니다.');
+                showWarning('최대 5개까지만 첨부 가능합니다.');
                 return;
             }
             if (file.size > 10 * 1024 * 1024) {
-                alert('파일 크기는 10MB를 초과할 수 없습니다.');
+                showWarning('파일 크기는 10MB를 초과할 수 없습니다.');
                 return;
             }
             selectedFiles.push(file);
@@ -985,12 +985,12 @@ document.addEventListener('DOMContentLoaded', function() {
             const locationInput = document.getElementById('trip_location');
 
             if (!projectSelect || !projectSelect.value) {
-                alert('프로젝트를 선택해주세요.');
+                showWarning('프로젝트를 선택해주세요.');
                 return;
             }
 
             if (!dateInput || !dateInput.value) {
-                alert('출장 일자를 입력해주세요.');
+                showWarning('출장 일자를 입력해주세요.');
                 return;
             }
 
@@ -1006,11 +1006,11 @@ document.addEventListener('DOMContentLoaded', function() {
             // }
 
             if (!locationInput || !locationInput.value) {
-                alert('출장지를 입력해주세요.');
+                showWarning('출장지를 입력해주세요.');
                 return;
             }
 
-            if (!confirm('출장 정보를 저장하시겠습니까?')) {
+            if (!(await showConfirm('출장 정보를 저장하시겠습니까?'))) {
                 return;
             }
 
@@ -1074,7 +1074,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
                 if (response.ok) {
                     const result = await response.json();
-                    alert('출장 정보가 저장되었습니다.');
+                    showSuccess('출장 정보가 저장되었습니다.');
                     console.log('저장 결과:', result);
                     // 저장 후 목록 페이지로 이동
                     window.location.href = '/project/documents';
@@ -1097,11 +1097,11 @@ document.addEventListener('DOMContentLoaded', function() {
                         console.error('에러 메시지 파싱 실패:', e);
                     }
                     console.error('저장 실패:', response.status, errorMessage);
-                    alert(errorMessage);
+                    showError(errorMessage);
                 }
             } catch (error) {
                 console.error('저장 오류:', error);
-                alert('출장 저장 중 오류가 발생했습니다.');
+                showError('출장 저장 중 오류가 발생했습니다.');
             }
         });
     }
@@ -1133,7 +1133,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 updateProgress(0, '준비 중...');
 
                 if (typeof window.jspdf === 'undefined' || typeof window.html2canvas === 'undefined') {
-                    alert('PDF 라이브러리를 로드하는 중입니다. 잠시 후 다시 시도해주세요.');
+                    showWarning('PDF 라이브러리를 로드하는 중입니다. 잠시 후 다시 시도해주세요.');
                     if (loadingModal) loadingModal.classList.remove('active');
                     return;
                 }
@@ -1157,7 +1157,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 originalDisplays = Array.from(allDivs).map(div => div.style.display);
 
                 if (allDivs.length < 3) {
-                    alert('문서 구조를 찾을 수 없습니다. 영수증 처리(출장) 템플릿을 선택했는지 확인해주세요.');
+                    showError('문서 구조를 찾을 수 없습니다. 영수증 처리(출장) 템플릿을 선택했는지 확인해주세요.');
                     if (loadingModal) loadingModal.classList.remove('active');
                     return;
                 }
@@ -1297,12 +1297,12 @@ document.addEventListener('DOMContentLoaded', function() {
                 // 잠시 후 모달 닫기
                 setTimeout(() => {
                     if (loadingModal) loadingModal.classList.remove('active');
-                    alert('PDF가 저장되었습니다.');
+                    showSuccess('PDF가 저장되었습니다.');
                 }, 500);
             } catch (error) {
                 console.error('PDF 생성 오류:', error);
                 if (loadingModal) loadingModal.classList.remove('active');
-                alert('PDF 생성 중 오류가 발생했습니다.\n' + error.message + '\n\n브라우저 콘솔(F12)을 확인해주세요.');
+                showError('PDF 생성 중 오류가 발생했습니다.\n' + error.message + '\n\n브라우저 콘솔(F12)을 확인해주세요.');
             } finally {
                 if (allDivs && originalDisplays.length > 0) {
                     allDivs.forEach((div, index) => {
@@ -1426,7 +1426,7 @@ document.addEventListener('DOMContentLoaded', function() {
         const selectedItems = document.querySelectorAll('#tripPersonList2 .employee-item.selected');
 
         if (selectedItems.length === 0) {
-            alert('출장인원을 선택해주세요.');
+            showWarning('출장인원을 선택해주세요.');
             return;
         }
 
@@ -1510,7 +1510,7 @@ document.addEventListener('DOMContentLoaded', function() {
             return data;
         } catch (error) {
             console.error('데이터 로드 오류:', error);
-            alert('데이터를 불러오는데 실패했습니다.');
+            showError('데이터를 불러오는데 실패했습니다.');
         }
     }
 
@@ -1721,7 +1721,7 @@ document.addEventListener('DOMContentLoaded', function() {
         updateBtn.addEventListener('click', async function() {
             const receiptTripId = getUrlParameter('id');
             if (!receiptTripId) {
-                alert('문서 ID를 찾을 수 없습니다.');
+                showError('문서 ID를 찾을 수 없습니다.');
                 return;
             }
 
@@ -1730,19 +1730,19 @@ document.addEventListener('DOMContentLoaded', function() {
             const locationInput = document.getElementById('trip_location');
 
             if (!projectSelect || !projectSelect.value) {
-                alert('프로젝트를 선택해주세요.');
+                showWarning('프로젝트를 선택해주세요.');
                 return;
             }
             if (!dateInput || !dateInput.value) {
-                alert('출장 일자를 입력해주세요.');
+                showWarning('출장 일자를 입력해주세요.');
                 return;
             }
             if (!locationInput || !locationInput.value) {
-                alert('출장지를 입력해주세요.');
+                showWarning('출장지를 입력해주세요.');
                 return;
             }
 
-            if (!confirm('출장 정보를 수정하시겠습니까?')) {
+            if (!(await showConfirm('출장 정보를 수정하시겠습니까?'))) {
                 return;
             }
 
@@ -1798,14 +1798,14 @@ document.addEventListener('DOMContentLoaded', function() {
                 });
 
                 if (response.ok) {
-                    alert('출장 정보가 수정되었습니다.');
+                    showSuccess('출장 정보가 수정되었습니다.');
                     window.location.reload();
                 } else {
-                    alert('출장 수정에 실패했습니다.');
+                    showError('출장 수정에 실패했습니다.');
                 }
             } catch (error) {
                 console.error('수정 오류:', error);
-                alert('출장 수정 중 오류가 발생했습니다.');
+                showError('출장 수정 중 오류가 발생했습니다.');
             }
         });
     }
@@ -1816,11 +1816,11 @@ document.addEventListener('DOMContentLoaded', function() {
         deleteBtn.addEventListener('click', async function() {
             const receiptTripId = getUrlParameter('id');
             if (!receiptTripId) {
-                alert('문서 ID를 찾을 수 없습니다.');
+                showError('문서 ID를 찾을 수 없습니다.');
                 return;
             }
 
-            if (!confirm('정말로 이 출장 정보를 삭제하시겠습니까?\n\n삭제된 데이터는 복구할 수 없습니다.')) {
+            if (!(await showDeleteConfirm('출장 정보'))) {
                 return;
             }
 
@@ -1830,14 +1830,14 @@ document.addEventListener('DOMContentLoaded', function() {
                 });
 
                 if (response.ok) {
-                    alert('출장 정보가 삭제되었습니다.');
+                    showSuccess('출장 정보가 삭제되었습니다.');
                     window.location.href = '/project/documents';
                 } else {
-                    alert('출장 삭제에 실패했습니다.');
+                    showError('출장 삭제에 실패했습니다.');
                 }
             } catch (error) {
                 console.error('삭제 오류:', error);
-                alert('출장 삭제 중 오류가 발생했습니다.');
+                showError('출장 삭제 중 오류가 발생했습니다.');
             }
         });
     }

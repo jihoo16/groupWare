@@ -455,7 +455,7 @@ document.addEventListener('DOMContentLoaded', function() {
             removeAttendeeBtn.addEventListener('click', function() {
                 const checkboxes = document.querySelectorAll('.attendee-checkbox:checked');
                 if (checkboxes.length === 0) {
-                    alert('제거할 참석자를 선택해주세요.');
+                    showWarning('제거할 참석자를 선택해주세요.');
                     return;
                 }
 
@@ -796,7 +796,7 @@ document.addEventListener('DOMContentLoaded', function() {
             removeOvertimePersonBtn.addEventListener('click', function() {
                 const checkboxes = document.querySelectorAll('.overtime-checkbox:checked');
                 if (checkboxes.length === 0) {
-                    alert('제거할 인원을 선택해주세요.');
+                    showWarning('제거할 인원을 선택해주세요.');
                     return;
                 }
 
@@ -1004,12 +1004,12 @@ document.addEventListener('DOMContentLoaded', function() {
     // 결재자 추가
     window.addApprover = function() {
         if (!selectedEmployee) {
-            alert('결재자를 선택해주세요.');
+            showWarning('결재자를 선택해주세요.');
             return;
         }
 
         if (selectedApprovers.find(a => a.id === selectedEmployee.id)) {
-            alert('이미 추가된 결재자입니다.');
+            showWarning('이미 추가된 결재자입니다.');
             return;
         }
 
@@ -1059,11 +1059,11 @@ document.addEventListener('DOMContentLoaded', function() {
         const files = Array.from(e.target.files);
         files.forEach(file => {
             if (selectedFiles.length >= 5) {
-                alert('최대 5개까지만 첨부 가능합니다.');
+                showWarning('최대 5개까지만 첨부 가능합니다.');
                 return;
             }
             if (file.size > 10 * 1024 * 1024) {
-                alert('파일 크기는 10MB를 초과할 수 없습니다.');
+                showWarning('파일 크기는 10MB를 초과할 수 없습니다.');
                 return;
             }
             selectedFiles.push(file);
@@ -1092,11 +1092,11 @@ document.addEventListener('DOMContentLoaded', function() {
         const files = Array.from(e.dataTransfer.files);
         files.forEach(file => {
             if (selectedFiles.length >= 5) {
-                alert('최대 5개까지만 첨부 가능합니다.');
+                showWarning('최대 5개까지만 첨부 가능합니다.');
                 return;
             }
             if (file.size > 10 * 1024 * 1024) {
-                alert('파일 크기는 10MB를 초과할 수 없습니다.');
+                showWarning('파일 크기는 10MB를 초과할 수 없습니다.');
                 return;
             }
             selectedFiles.push(file);
@@ -1141,19 +1141,19 @@ document.addEventListener('DOMContentLoaded', function() {
 
     // 임시저장
     saveDraftBtn.addEventListener('click', function() {
-        alert('문서가 임시저장되었습니다.');
+        showSuccess('문서가 임시저장되었습니다.');
         // 실제로는 API 호출
     });
 
     // 제출
-    submitBtn.addEventListener('click', function() {
+    submitBtn.addEventListener('click', async function() {
         if (selectedApprovers.length === 0) {
-            alert('결재자를 지정해주세요.');
+            showWarning('결재자를 지정해주세요.');
             return;
         }
 
-        if (confirm('결재를 요청하시겠습니까?')) {
-            alert('결재 요청이 완료되었습니다.');
+        if (await showConfirm('결재를 요청하시겠습니까?')) {
+            await showSuccess('결재 요청이 완료되었습니다.');
             // 실제로는 API 호출 후 목록으로 이동
             window.location.href = '/approval';
         }
@@ -1177,13 +1177,13 @@ document.addEventListener('DOMContentLoaded', function() {
                 const templateType = activeTemplate ? activeTemplate.getAttribute('data-template') : null;
 
                 if (!activeTemplate || (templateType !== 'receipt-meeting' && templateType !== 'receipt-overtime')) {
-                    alert('영수증 처리(회의록) 또는 영수증 처리(야근식대) 템플릿을 먼저 선택해주세요.');
+                    showWarning('영수증 처리(회의록) 또는 영수증 처리(야근식대) 템플릿을 먼저 선택해주세요.');
                     return;
                 }
 
                 // jsPDF와 html2canvas 로드 확인
                 if (typeof window.jspdf === 'undefined' || typeof window.html2canvas === 'undefined') {
-                    alert('PDF 라이브러리를 로드하는 중입니다. 잠시 후 다시 시도해주세요.');
+                    showWarning('PDF 라이브러리를 로드하는 중입니다. 잠시 후 다시 시도해주세요.');
                     return;
                 }
 
@@ -1200,7 +1200,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 // 템플릿 타입별로 다른 처리
                 if (templateType === 'receipt-meeting') {
                     if (allDivs.length < 4) {
-                        alert('문서 구조를 찾을 수 없습니다. 영수증 처리(회의록) 템플릿을 선택했는지 확인해주세요.');
+                        showError('문서 구조를 찾을 수 없습니다. 영수증 처리(회의록) 템플릿을 선택했는지 확인해주세요.');
                         return;
                     }
 
@@ -1211,7 +1211,7 @@ document.addEventListener('DOMContentLoaded', function() {
                     allDivs[3].style.display = 'block'; // 참석자 명단
                 } else if (templateType === 'receipt-overtime') {
                     if (allDivs.length < 3) {
-                        alert('문서 구조를 찾을 수 없습니다. 영수증 처리(야근식대) 템플릿을 선택했는지 확인해주세요.');
+                        showError('문서 구조를 찾을 수 없습니다. 영수증 처리(야근식대) 템플릿을 선택했는지 확인해주세요.');
                         return;
                     }
 
@@ -1384,10 +1384,10 @@ document.addEventListener('DOMContentLoaded', function() {
                 console.log('PDF 저장:', fileName);
                 pdf.save(fileName);
 
-                alert('PDF가 저장되었습니다.');
+                await showSuccess('PDF가 저장되었습니다.');
             } catch (error) {
                 console.error('PDF 생성 오류:', error);
-                alert('PDF 생성 중 오류가 발생했습니다.\n' + error.message + '\n\n브라우저 콘솔(F12)을 확인해주세요.');
+                showError('PDF 생성 중 오류가 발생했습니다.\n' + error.message + '\n\n브라우저 콘솔(F12)을 확인해주세요.');
             } finally {
                 // 에러 발생 여부와 관계없이 항상 원래 스타일 복원
                 if (allDivs && originalDisplays.length > 0) {

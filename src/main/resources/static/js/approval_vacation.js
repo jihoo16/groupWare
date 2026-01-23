@@ -132,7 +132,7 @@ document.addEventListener('DOMContentLoaded', function() {
             return data;
         } catch (error) {
             console.error('사용자 연차 정보 조회 실패:', error);
-            alert('사용자 정보를 불러오는데 실패했습니다. 다시 로그인해주세요.');
+            showError('사용자 정보를 불러오는데 실패했습니다. 다시 로그인해주세요.');
             // 로그인 페이지로 리다이렉트
             window.location.href = '/login';
             return null;
@@ -577,7 +577,7 @@ document.addEventListener('DOMContentLoaded', function() {
             removeAttendeeBtn.addEventListener('click', function() {
                 const checkboxes = document.querySelectorAll('.attendee-checkbox:checked');
                 if (checkboxes.length === 0) {
-                    alert('제거할 참석자를 선택해주세요.');
+                    showWarning('제거할 참석자를 선택해주세요.');
                     return;
                 }
 
@@ -918,7 +918,7 @@ document.addEventListener('DOMContentLoaded', function() {
             removeOvertimePersonBtn.addEventListener('click', function() {
                 const checkboxes = document.querySelectorAll('.overtime-checkbox:checked');
                 if (checkboxes.length === 0) {
-                    alert('제거할 인원을 선택해주세요.');
+                    showWarning('제거할 인원을 선택해주세요.');
                     return;
                 }
 
@@ -1132,12 +1132,12 @@ document.addEventListener('DOMContentLoaded', function() {
     // 결재자 추가
     window.addApprover = function() {
         if (!selectedEmployee) {
-            alert('결재자를 선택해주세요.');
+            showWarning('결재자를 선택해주세요.');
             return;
         }
 
         if (selectedApprovers.find(a => a.id === selectedEmployee.id)) {
-            alert('이미 추가된 결재자입니다.');
+            showWarning('이미 추가된 결재자입니다.');
             return;
         }
 
@@ -1194,11 +1194,11 @@ document.addEventListener('DOMContentLoaded', function() {
             const files = Array.from(e.target.files);
             files.forEach(file => {
                 if (selectedFiles.length >= 5) {
-                    alert('최대 5개까지만 첨부 가능합니다.');
+                    showAlert('최대 5개까지만 첨부 가능합니다.');
                     return;
                 }
                 if (file.size > 10 * 1024 * 1024) {
-                    alert('파일 크기는 10MB를 초과할 수 없습니다.');
+                    showWarning('파일 크기는 10MB를 초과할 수 없습니다.');
                     return;
                 }
                 selectedFiles.push(file);
@@ -1229,11 +1229,11 @@ document.addEventListener('DOMContentLoaded', function() {
             const files = Array.from(e.dataTransfer.files);
             files.forEach(file => {
             if (selectedFiles.length >= 5) {
-                alert('최대 5개까지만 첨부 가능합니다.');
+                showAlert('최대 5개까지만 첨부 가능합니다.');
                 return;
             }
                 if (file.size > 10 * 1024 * 1024) {
-                    alert('파일 크기는 10MB를 초과할 수 없습니다.');
+                    showWarning('파일 크기는 10MB를 초과할 수 없습니다.');
                     return;
                 }
                 selectedFiles.push(file);
@@ -1331,7 +1331,7 @@ document.addEventListener('DOMContentLoaded', function() {
         // 휴가기간 표시 영역 확인
         const vacationPeriodDisplay = document.getElementById('vacation_period_display');
         if (!vacationPeriodDisplay || !vacationPeriodDisplay.innerHTML.trim()) {
-            alert('휴가 기간을 추가해주세요.');
+            showWarning('휴가 기간을 추가해주세요.');
             return;
         }
 
@@ -1363,7 +1363,7 @@ document.addEventListener('DOMContentLoaded', function() {
             renderedCss: css
         };
 
-        if (!confirm('연차 신청서를 저장하시겠습니까?')) {
+        if (!(await showConfirm('연차 신청서를 저장하시겠습니까?'))) {
             return;
         }
 
@@ -1379,14 +1379,14 @@ document.addEventListener('DOMContentLoaded', function() {
             const result = await response.json();
 
             if (response.ok && result.success) {
-                alert('연차 신청서가 저장되었습니다.');
+                showSuccess('연차 신청서가 저장되었습니다.');
                 window.location.href = '/approval';
             } else {
-                alert('저장 실패: ' + (result.message || '알 수 없는 오류'));
+                showError('저장 실패: ' + (result.message || '알 수 없는 오류'));
             }
         } catch (error) {
             console.error('연차 신청서 저장 중 오류:', error);
-            alert('저장 중 오류가 발생했습니다.');
+            showError('저장 중 오류가 발생했습니다.');
         }
     });
 
@@ -1396,7 +1396,7 @@ document.addEventListener('DOMContentLoaded', function() {
         printBtn.addEventListener('click', function() {
             // 휴가 기간이 추가되었는지 확인
             if (vacationPeriods.length === 0) {
-                alert('휴가 기간을 먼저 추가해주세요.');
+                showWarning('휴가 기간을 먼저 추가해주세요.');
                 return;
             }
 
@@ -1928,13 +1928,13 @@ document.addEventListener('DOMContentLoaded', function() {
     async function selectDate(dateStr) {
         // 이미 신청된 날짜인지 확인
         if (requestedDates.includes(dateStr)) {
-            alert('이미 연차가 신청된 날짜입니다.\n신청 날짜: ' + dateStr);
+            showWarning('이미 연차가 신청된 날짜입니다.\n신청 날짜: ' + dateStr);
             return;
         }
 
         // 이미 기간 추가한 날짜인지 확인
         if (isDateInAddedPeriods(dateStr)) {
-            alert('이미 추가한 휴가 기간에 포함된 날짜입니다.\n해당 기간을 삭제 후 다시 추가해주세요.');
+            showWarning('이미 추가한 휴가 기간에 포함된 날짜입니다.\n해당 기간을 삭제 후 다시 추가해주세요.');
             return;
         }
 
@@ -1950,7 +1950,7 @@ document.addEventListener('DOMContentLoaded', function() {
         else if (vacationType === '경조사') {
             const selectedGyeongjo = document.querySelector('input[name="gyeongjo_type"]:checked');
             if (!selectedGyeongjo) {
-                alert('경조사 유형을 먼저 선택해주세요.');
+                showWarning('경조사 유형을 먼저 선택해주세요.');
                 return;
             }
 
@@ -2384,7 +2384,7 @@ document.addEventListener('DOMContentLoaded', function() {
         const endDateStr = parseDateFromDisplay(vifEndDate.textContent);
 
         if (!startDateStr || !endDateStr) {
-            alert('유효한 기간을 선택해주세요.');
+            showWarning('유효한 기간을 선택해주세요.');
             return;
         }
 
@@ -2412,15 +2412,15 @@ document.addEventListener('DOMContentLoaded', function() {
 
         // 구체적인 메시지 표시
         if (hasRequestedDate) {
-            alert('선택한 기간에 이미 신청된 날짜가 포함되어 있습니다.\n영업일이 없는 기간은 신청할 수 없습니다.');
+            showWarning('선택한 기간에 이미 신청된 날짜가 포함되어 있습니다.\n영업일이 없는 기간은 신청할 수 없습니다.');
         } else if (hasWeekend && hasHoliday) {
-            alert('선택한 기간이 모두 주말 또는 공휴일입니다.\n연차는 영업일에만 신청 가능합니다.');
+            showAlert('선택한 기간이 모두 주말 또는 공휴일입니다.\n연차는 영업일에만 신청 가능합니다.');
         } else if (hasWeekend) {
-            alert('선택한 기간이 모두 주말입니다.\n연차는 영업일에만 신청 가능합니다.');
+            showAlert('선택한 기간이 모두 주말입니다.\n연차는 영업일에만 신청 가능합니다.');
         } else if (hasHoliday) {
-            alert('선택한 기간이 모두 공휴일입니다.\n연차는 영업일에만 신청 가능합니다.');
+            showAlert('선택한 기간이 모두 공휴일입니다.\n연차는 영업일에만 신청 가능합니다.');
         } else {
-            alert('유효한 기간을 선택해주세요.');
+            showWarning('유효한 기간을 선택해주세요.');
         }
     }
 
@@ -2469,7 +2469,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 );
 
                 if (alreadyAdded) {
-                    alert(`${gyeongjoType} 경조사는 이미 추가되었습니다.\n날짜 변경을 원하시면 기존 기간을 삭제 후 다시 추가해주세요.`);
+                    showWarning(`${gyeongjoType} 경조사는 이미 추가되었습니다.\n날짜 변경을 원하시면 기존 기간을 삭제 후 다시 추가해주세요.`);
                     radio.checked = false;
                     // 안내 메시지 숨김
                     if (gyeongjoDateGuide) {
@@ -2586,7 +2586,7 @@ document.addEventListener('DOMContentLoaded', function() {
             const allowMinusCheckbox = document.getElementById('allow_minus_vacation');
 
             if (!allowMinusCheckbox || !allowMinusCheckbox.checked) {
-                alert('마이너스 연차 사용을 허용하려면 체크박스를 선택해주세요.');
+                showWarning('마이너스 연차 사용을 허용하려면 체크박스를 선택해주세요.');
                 if (allowMinusCheckbox) {
                     allowMinusCheckbox.focus();
                     // 체크박스 부모 요소를 하이라이트
@@ -2633,7 +2633,7 @@ document.addEventListener('DOMContentLoaded', function() {
     if (addPeriodBtn) {
         addPeriodBtn.addEventListener('click', async (e) => {
             if (!vifStartDate.textContent || vifStartDate.textContent === '-' || !vifEndDate.textContent || vifEndDate.textContent === '-') {
-                alert('시작일과 종료일을 선택해주세요.');
+                showWarning('시작일과 종료일을 선택해주세요.');
                 return;
             }
 
@@ -2646,7 +2646,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 if (selectedGyeongjo) {
                     vacationType = `경조사(${selectedGyeongjo.value})`;
                 } else {
-                    alert('경조사 유형을 선택해주세요.');
+                    showWarning('경조사 유형을 선택해주세요.');
                     return;
                 }
             }
@@ -2732,7 +2732,7 @@ document.addEventListener('DOMContentLoaded', function() {
                     confirmMessage = `${overlappingRange}는 이미 ${periodTypesList}로 신청되어 제외되며,\n겹치지 않는 날짜만 ${vacationType}로 신청됩니다.\n\n계속하시겠습니까?`;
                 }
 
-                if (!confirm(confirmMessage)) {
+                if (!(await showConfirm(confirmMessage))) {
                     return;
                 }
 
@@ -2847,7 +2847,7 @@ document.addEventListener('DOMContentLoaded', function() {
             );
 
             if (splitPeriods.length === 0) {
-                alert('선택한 기간에 영업일이 없습니다.');
+                showWarning('선택한 기간에 영업일이 없습니다.');
                 return;
             }
 
@@ -2902,7 +2902,7 @@ document.addEventListener('DOMContentLoaded', function() {
             if (addPeriodBtn.disabled) {
                 // 날짜 선택 여부 확인
                 if (!vifStartDate.textContent || vifStartDate.textContent === '-' || !vifEndDate.textContent || vifEndDate.textContent === '-') {
-                    alert('시작일과 종료일을 선택해주세요.');
+                    showWarning('시작일과 종료일을 선택해주세요.');
                     return;
                 }
 
@@ -2931,7 +2931,7 @@ document.addEventListener('DOMContentLoaded', function() {
             );
 
             if (hasMarriageLeave) {
-                alert('결혼 휴가는 한번만 추가 가능합니다. 날짜변경을 원하실 경우, 기존 추가한 기간을 삭제 후 다시 추가 해 주세요.');
+                showWarning('결혼 휴가는 한번만 추가 가능합니다. 날짜변경을 원하실 경우, 기존 추가한 기간을 삭제 후 다시 추가 해 주세요.');
                 return 'marriage_duplicate';
             }
         }

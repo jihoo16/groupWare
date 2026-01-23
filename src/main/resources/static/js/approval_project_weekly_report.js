@@ -435,7 +435,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
     window.selectProject = async function() {
         if (!selectedProject) {
-            alert('프로젝트를 선택해주세요.');
+            showWarning('프로젝트를 선택해주세요.');
             return;
         }
 
@@ -719,7 +719,18 @@ document.addEventListener('DOMContentLoaded', function() {
         dayEl.textContent = day;
 
         if (dateStr) {
-            dayEl.addEventListener('click', () => selectWeek(dateStr));
+            // 미래 날짜인지 확인
+            const date = new Date(dateStr);
+            const today = new Date();
+            today.setHours(0, 0, 0, 0); // 시간 정보 제거
+
+            if (date > today) {
+                // 미래 날짜는 비활성화
+                dayEl.classList.add('future-disabled');
+            } else {
+                // 현재 또는 과거 날짜만 클릭 가능
+                dayEl.addEventListener('click', () => selectWeek(dateStr));
+            }
         }
 
         return dayEl;
@@ -728,6 +739,15 @@ document.addEventListener('DOMContentLoaded', function() {
     // 주 선택 (클릭한 날짜가 속한 주의 평일들을 자동 선택)
     function selectWeek(dateStr) {
         const clickedDate = new Date(dateStr);
+        const today = new Date();
+        today.setHours(0, 0, 0, 0);
+
+        // 미래 날짜는 선택 불가
+        if (clickedDate > today) {
+            showWarning('미래의 주간보고서는 작성할 수 없습니다.\n현재 또는 과거 날짜를 선택해주세요.');
+            return;
+        }
+
         selectedWeekDates = getWeekdaysInWeek(clickedDate);
 
         // hidden input에 시작일과 종료일 저장
@@ -1312,7 +1332,7 @@ document.addEventListener('DOMContentLoaded', function() {
         openReferenceModalBtn.addEventListener('click', async function() {
             // 프로젝트가 선택되지 않은 경우
             if (!selectedProject || !selectedProject.idx) {
-                alert('프로젝트를 먼저 선택해주세요.');
+                showWarning('프로젝트를 먼저 선택해주세요.');
                 return;
             }
 
@@ -1329,7 +1349,7 @@ document.addEventListener('DOMContentLoaded', function() {
                     renderApproverTree(projectMembers);
                     renderTempReferences();
                 } catch (error) {
-                    alert('프로젝트 참여인원을 불러오는 중 오류가 발생했습니다.');
+                    showError('프로젝트 참여인원을 불러오는 중 오류가 발생했습니다.');
                 }
             }
         });
@@ -1439,11 +1459,11 @@ document.addEventListener('DOMContentLoaded', function() {
             const files = Array.from(e.target.files);
             files.forEach(file => {
                 if (selectedFiles.length >= 5) {
-                    alert('최대 5개까지만 첨부 가능합니다.');
+                    showWarning('최대 5개까지만 첨부 가능합니다.');
                     return;
                 }
                 if (file.size > 50 * 1024 * 1024) {
-                    alert('파일 크기는 50MB를 초과할 수 없습니다.');
+                    showWarning('파일 크기는 50MB를 초과할 수 없습니다.');
                     return;
                 }
                 selectedFiles.push(file);
@@ -1473,11 +1493,11 @@ document.addEventListener('DOMContentLoaded', function() {
             const files = Array.from(e.dataTransfer.files);
             files.forEach(file => {
                 if (selectedFiles.length >= 5) {
-                    alert('최대 5개까지만 첨부 가능합니다.');
+                    showWarning('최대 5개까지만 첨부 가능합니다.');
                     return;
                 }
                 if (file.size > 50 * 1024 * 1024) {
-                    alert('파일 크기는 50MB를 초과할 수 없습니다.');
+                    showWarning('파일 크기는 50MB를 초과할 수 없습니다.');
                     return;
                 }
                 selectedFiles.push(file);
@@ -1589,7 +1609,7 @@ document.addEventListener('DOMContentLoaded', function() {
             return true;
         } catch (error) {
             console.error('파일 업로드 오류:', error);
-            alert('파일 업로드 중 오류가 발생했습니다: ' + error.message);
+            showError('파일 업로드 중 오류가 발생했습니다: ' + error.message);
             return false;
         }
     }
@@ -1636,8 +1656,9 @@ document.addEventListener('DOMContentLoaded', function() {
     // ============================================
     // 기존 파일 삭제 (저장 시에만 실제 삭제)
     // ============================================
-    window.removeExistingFile = function(fileIdx) {
-        if (!confirm('이 파일을 삭제하시겠습니까?')) {
+    window.removeExistingFile = async function(fileIdx) {
+        const confirmed = await showDeleteConfirm('이 파일을 삭제하시겠습니까?');
+        if (!confirmed) {
             return;
         }
 
@@ -1661,7 +1682,7 @@ document.addEventListener('DOMContentLoaded', function() {
             const response = await fetch(`/api/document/weekly-report/${reportId}`);
 
             if (!response.ok) {
-                alert('보고서를 불러올 수 없습니다.');
+                showError('보고서를 불러올 수 없습니다.');
                 window.location.href = '/project/documents';
                 return;
             }
@@ -1779,7 +1800,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
         } catch (error) {
             console.error('보고서 로드 오류:', error);
-            alert('보고서를 불러오는 중 오류가 발생했습니다: ' + error.message);
+            showError('보고서를 불러오는 중 오류가 발생했습니다: ' + error.message);
             window.location.href = '/project/documents';
         }
     }
@@ -1848,7 +1869,7 @@ document.addEventListener('DOMContentLoaded', function() {
             // 필수 항목 유효성 검사
             // 프로젝트 선택 확인
             if (!selectedProject || !selectedProjectIdx.value) {
-                alert('❌ 프로젝트를 선택해주세요.');
+                showError('프로젝트를 선택해주세요.');
                 // 프로젝트 입력 필드 강조
                 if (projectInput) {
                     projectInput.classList.add('required-missing');
@@ -1858,12 +1879,12 @@ document.addEventListener('DOMContentLoaded', function() {
             }
 
             if (!reportPeriod.trim()) {
-                alert('❌ 보고 기간을 선택해주세요.');
+                showError('보고 기간을 선택해주세요.');
                 return;
             }
 
             if (!mainTasks.trim()) {
-                alert('❌ 필수 입력 항목\n\n금주 주요 업무를 입력해주세요.');
+                showError('필수 입력 항목\n\n금주 주요 업무를 입력해주세요.');
                 // 포커스 이동
                 weeklyTasks.focus();
                 // 필드 강조
@@ -1874,9 +1895,8 @@ document.addEventListener('DOMContentLoaded', function() {
                 return;
             }
 
-            // 주간 달성률 확인 (0이면 안됨)
+            // 주간 달성률 확인 (0이면 확인 요청)
             if (achievementRate === null || achievementRate === 0) {
-                alert('❌ 주간 달성률을 입력해주세요.\n\n주간 달성률은 0보다 커야 합니다.');
                 // 주간 달성률 영역으로 스크롤 및 포커스
                 if (weeklyAchievementRateInput) {
                     weeklyAchievementRateInput.scrollIntoView({ behavior: 'smooth', block: 'center' });
@@ -1884,15 +1904,23 @@ document.addEventListener('DOMContentLoaded', function() {
                     // 숫자 입력 필드 강조
                     if (weeklyAchievementValueInput) {
                         weeklyAchievementValueInput.focus();
-                        weeklyAchievementValueInput.style.border = '2px solid #ef5350';
-                        weeklyAchievementValueInput.style.boxShadow = '0 0 0 3px rgba(239, 83, 80, 0.2)';
+                        weeklyAchievementValueInput.style.border = '2px solid #ff9800';
+                        weeklyAchievementValueInput.style.boxShadow = '0 0 0 3px rgba(255, 152, 0, 0.2)';
                         setTimeout(() => {
                             weeklyAchievementValueInput.style.border = '';
                             weeklyAchievementValueInput.style.boxShadow = '';
                         }, 2000);
                     }
                 }
-                return;
+
+                const confirmed = await showConfirm(
+                    '주간 달성률이 0%입니다.\n\n이대로 저장하시겠습니까?',
+                    '확인',
+                    { icon: 'warning', confirmColor: '#ff9800' }
+                );
+                if (!confirmed) {
+                    return;
+                }
             }
 
             // 프로젝트 전체 달성률 변화 확인
@@ -1900,7 +1928,6 @@ document.addEventListener('DOMContentLoaded', function() {
                 parseInt(inputProgressRateSlider.value) : null;
 
             if (inputProgressRateValue !== null && inputProgressRateValue === currentProgressRateValue) {
-                alert('❌ 프로젝트 전체 달성률에 변화가 없습니다.\n\n프로젝트 전체 달성률을 업데이트해주세요.');
                 // 프로젝트 전체 달성률 영역으로 스크롤 및 포커스
                 if (inputProgressRateSlider) {
                     inputProgressRateSlider.scrollIntoView({ behavior: 'smooth', block: 'center' });
@@ -1908,15 +1935,23 @@ document.addEventListener('DOMContentLoaded', function() {
                     // 숫자 입력 필드 강조
                     if (inputProgressValueInput) {
                         inputProgressValueInput.focus();
-                        inputProgressValueInput.style.border = '2px solid #ef5350';
-                        inputProgressValueInput.style.boxShadow = '0 0 0 3px rgba(239, 83, 80, 0.2)';
+                        inputProgressValueInput.style.border = '2px solid #ff9800';
+                        inputProgressValueInput.style.boxShadow = '0 0 0 3px rgba(255, 152, 0, 0.2)';
                         setTimeout(() => {
                             inputProgressValueInput.style.border = '';
                             inputProgressValueInput.style.boxShadow = '';
                         }, 2000);
                     }
                 }
-                return;
+
+                const confirmed = await showConfirm(
+                    '프로젝트 전체 달성률에 변화가 없습니다.\n\n이대로 저장하시겠습니까?',
+                    '확인',
+                    { icon: 'warning', confirmColor: '#ff9800' }
+                );
+                if (!confirmed) {
+                    return;
+                }
             }
 
             // 수정 모드 확인
@@ -1928,7 +1963,8 @@ document.addEventListener('DOMContentLoaded', function() {
                 '프로젝트 주간업무보고를 수정하시겠습니까?' :
                 '프로젝트 주간업무보고를 저장하시겠습니까?';
 
-            if (!confirm(confirmMessage)) {
+            const saveConfirmed = await showSaveConfirm(confirmMessage);
+            if (!saveConfirmed) {
                 return;
             }
 
@@ -1992,7 +2028,7 @@ document.addEventListener('DOMContentLoaded', function() {
                         const uploadSuccess = await uploadFilesToServer(responseData.documentIdx);
 
                         if (!uploadSuccess) {
-                            alert('보고서는 저장되었으나 파일 업로드에 실패했습니다.');
+                            await showWarning('보고서는 저장되었으나 파일 업로드에 실패했습니다.');
                             window.location.href = '/project/documents';
                             return;
                         }
@@ -2019,16 +2055,16 @@ document.addEventListener('DOMContentLoaded', function() {
                     const successMessage = isEditMode ?
                         '프로젝트 주간업무보고가 수정되었습니다.' :
                         '프로젝트 주간업무보고가 저장되었습니다.';
-                    alert(successMessage);
+                    await showSuccess(successMessage);
                     window.location.href = '/project/documents';
                 } else {
                     const error = await response.text();
                     console.error('저장 실패:', error);
-                    alert('저장에 실패했습니다.');
+                    showError('저장에 실패했습니다.');
                 }
             } catch (error) {
                 console.error('API 호출 오류:', error);
-                alert('저장 중 오류가 발생했습니다: ' + error.message);
+                showError('저장 중 오류가 발생했습니다: ' + error.message);
             }
         });
     }
@@ -2038,12 +2074,17 @@ document.addEventListener('DOMContentLoaded', function() {
     // ============================================
     const cancelBtn = document.getElementById('cancelBtn');
     if (cancelBtn) {
-        cancelBtn.addEventListener('click', function() {
+        cancelBtn.addEventListener('click', async function() {
             // 변경사항이 있는지 확인
             const hasChanges = selectedFiles.length > 0 || deletedFileIds.length > 0;
 
             if (hasChanges) {
-                if (!confirm('변경사항이 저장되지 않습니다. 취소하시겠습니까?')) {
+                const confirmed = await showConfirm(
+                    '변경사항이 저장되지 않습니다. 취소하시겠습니까?',
+                    '확인',
+                    { icon: 'warning' }
+                );
+                if (!confirmed) {
                     return;
                 }
             }

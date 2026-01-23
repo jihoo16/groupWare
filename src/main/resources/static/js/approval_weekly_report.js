@@ -159,9 +159,9 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     };
 
-    window.selectProject = function() {
+    window.selectProject = async function() {
         if (!selectedProject) {
-            alert('프로젝트를 선택해주세요.');
+            showWarning('프로젝트를 선택해주세요.');
             return;
         }
 
@@ -305,11 +305,11 @@ document.addEventListener('DOMContentLoaded', function() {
             const files = Array.from(e.target.files);
             files.forEach(file => {
                 if (selectedFiles.length >= 5) {
-                    alert('최대 5개까지만 첨부 가능합니다.');
+                    showWarning('최대 5개까지만 첨부 가능합니다.');
                     return;
                 }
                 if (file.size > 10 * 1024 * 1024) {
-                    alert('파일 크기는 10MB를 초과할 수 없습니다.');
+                    showWarning('파일 크기는 10MB를 초과할 수 없습니다.');
                     return;
                 }
                 selectedFiles.push(file);
@@ -339,11 +339,11 @@ document.addEventListener('DOMContentLoaded', function() {
             const files = Array.from(e.dataTransfer.files);
             files.forEach(file => {
                 if (selectedFiles.length >= 5) {
-                    alert('최대 5개까지만 첨부 가능합니다.');
+                    showWarning('최대 5개까지만 첨부 가능합니다.');
                     return;
                 }
                 if (file.size > 10 * 1024 * 1024) {
-                    alert('파일 크기는 10MB를 초과할 수 없습니다.');
+                    showWarning('파일 크기는 10MB를 초과할 수 없습니다.');
                     return;
                 }
                 selectedFiles.push(file);
@@ -393,7 +393,7 @@ document.addEventListener('DOMContentLoaded', function() {
     const savePdfBtn = document.getElementById('savePdfBtn');
     if (savePdfBtn) {
         savePdfBtn.addEventListener('click', function() {
-            alert('PDF 저장 기능은 준비 중입니다.');
+            showAlert('PDF 저장 기능은 준비 중입니다.');
         });
     }
 
@@ -410,16 +410,16 @@ document.addEventListener('DOMContentLoaded', function() {
             const achievementRate = weeklyAchievementRateInput?.value ? parseInt(weeklyAchievementRateInput.value) : null;
 
             if (!reportPeriod.trim()) {
-                alert('보고 기간을 입력해주세요.');
+                showWarning('보고 기간을 입력해주세요.');
                 return;
             }
 
             if (!mainTasks.trim()) {
-                alert('금주 주요 업무를 입력해주세요.');
+                showWarning('금주 주요 업무를 입력해주세요.');
                 return;
             }
 
-            if (!confirm('주간업무보고를 저장하시겠습니까?')) {
+            if (!await showConfirm('주간업무보고를 저장하시겠습니까?')) {
                 return;
             }
 
@@ -456,16 +456,16 @@ document.addEventListener('DOMContentLoaded', function() {
                 });
 
                 if (response.ok) {
-                    alert('주간업무보고가 저장되었습니다.');
+                    await showSuccess('주간업무보고가 저장되었습니다.');
                     window.location.href = '/approval';
                 } else {
                     const error = await response.text();
                     console.error('저장 실패:', error);
-                    alert('저장에 실패했습니다.');
+                    showError('저장에 실패했습니다.');
                 }
             } catch (error) {
                 console.error('API 호출 오류:', error);
-                alert('저장 중 오류가 발생했습니다: ' + error.message);
+                showError('저장 중 오류가 발생했습니다: ' + error.message);
             }
         });
     }

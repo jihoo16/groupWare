@@ -85,12 +85,12 @@ document.addEventListener('DOMContentLoaded', function() {
 
         // 유효성 검사
         if (!reportMonth) {
-            alert('보고 월을 입력해주세요.');
+            showWarning('보고 월을 입력해주세요.');
             return;
         }
 
         if (!mainTasks) {
-            alert('월간 주요 업무를 입력해주세요.');
+            showWarning('월간 주요 업무를 입력해주세요.');
             return;
         }
 
@@ -120,16 +120,16 @@ document.addEventListener('DOMContentLoaded', function() {
             if (response.ok) {
                 const result = await response.json();
                 console.log('월간업무보고 저장 성공:', result);
-                alert('월간업무보고가 등록되었습니다.');
+                await showSuccess('월간업무보고가 등록되었습니다.');
                 window.location.href = '/approval';
             } else {
                 const errorText = await response.text();
                 console.error('월간업무보고 저장 실패:', errorText);
-                alert('월간업무보고 등록에 실패했습니다.');
+                showError('월간업무보고 등록에 실패했습니다.');
             }
         } catch (error) {
             console.error('월간업무보고 제출 오류:', error);
-            alert('월간업무보고 제출 중 오류가 발생했습니다.');
+            showError('월간업무보고 제출 중 오류가 발생했습니다.');
         }
     }
 });
