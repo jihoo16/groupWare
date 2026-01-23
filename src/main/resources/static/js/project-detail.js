@@ -253,9 +253,20 @@ function goToRelatedProject(projectIdx) {
  */
 function displayTeamMembers(members) {
     const tbody = document.getElementById('teamTableBody');
+    const countBadge = document.getElementById('teamMemberCount');
+    const tableContainer = document.getElementById('teamTableContainer');
+    const toggleContainer = document.getElementById('teamTableToggle');
+    const toggleBtn = document.getElementById('toggleTeamBtn');
+
+    // 총인원 표시
+    const totalCount = members ? members.length : 0;
+    if (countBadge) {
+        countBadge.textContent = `총 ${totalCount}명`;
+    }
 
     if (!members || members.length === 0) {
         tbody.innerHTML = '<tr><td colspan="7" style="text-align: center; padding: 20px; color: #999;">참여연구원이 없습니다.</td></tr>';
+        if (toggleContainer) toggleContainer.style.display = 'none';
         return;
     }
 
@@ -270,6 +281,33 @@ function displayTeamMembers(members) {
             <td>${member.participationEndDate || '-'}</td>
         </tr>
     `).join('');
+
+    // 7명 초과시 펼치기/접기 버튼 표시
+    if (totalCount > 7) {
+        if (toggleContainer) toggleContainer.style.display = 'flex';
+        if (tableContainer) tableContainer.classList.add('collapsed');
+
+        // 토글 버튼 이벤트
+        if (toggleBtn) {
+            toggleBtn.onclick = function() {
+                const isCollapsed = tableContainer.classList.contains('collapsed');
+                if (isCollapsed) {
+                    tableContainer.classList.remove('collapsed');
+                    tableContainer.classList.add('expanded');
+                    toggleBtn.querySelector('.toggle-text').textContent = '접기';
+                } else {
+                    tableContainer.classList.remove('expanded');
+                    tableContainer.classList.add('collapsed');
+                    toggleBtn.querySelector('.toggle-text').textContent = '펼치기';
+                }
+            };
+        }
+    } else {
+        if (toggleContainer) toggleContainer.style.display = 'none';
+        if (tableContainer) {
+            tableContainer.classList.remove('collapsed', 'expanded');
+        }
+    }
 }
 
 /**
@@ -603,7 +641,7 @@ function goToDocument(documentType, sourceDocumentId) {
     let url;
     switch (documentType) {
         case 'WEEKLY_REPORT':
-            url = `/approval/project-weekly-report/detail?id=${sourceDocumentId}`;
+            url = `/approval/project-weekly-report/detail?documentIdx=${sourceDocumentId}`;
             break;
         case 'MEETING_MINUTES':
         case 'BUSINESS_TRIP':
