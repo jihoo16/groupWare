@@ -209,7 +209,7 @@
     }
 
     // 연구책임자 선택 확정
-    window.selectManager = function() {
+    window.selectManager = async function () {
         if (!selectedManager) {
             await showWarning('연구책임자를 선택해주세요.');
             return;
@@ -357,7 +357,7 @@
                 // 모달 표시
                 memberSelectModal.classList.add('active');
             })
-            .catch(error => {
+            .catch(async error => {
                 console.error('Error loading members:', error);
                 await showError('인력 목록을 불러올 수 없습니다.');
             });
@@ -989,16 +989,16 @@
 
     // 파일 선택 이벤트
     if (projectFiles) {
-        projectFiles.addEventListener('change', function(e) {
+        projectFiles.addEventListener('change', async function (e) {
             const files = Array.from(e.target.files);
-            files.forEach(file => {
+            for (const file of files) {
                 // 파일 크기 체크 (50MB)
                 if (file.size > 50 * 1024 * 1024) {
                     await showWarning(`파일 크기가 너무 큽니다: ${file.name} (최대 50MB)`);
-                    return;
+                    continue;
                 }
                 selectedFiles.push(file);
-            });
+            }
             projectFiles.value = ''; // 입력 초기화
             renderFileList();
         });
@@ -1017,19 +1017,19 @@
             this.style.background = '#f8fafc';
         });
 
-        fileUploadArea.addEventListener('drop', function(e) {
+        fileUploadArea.addEventListener('drop', async function (e) {
             e.preventDefault();
             this.style.borderColor = '#cbd5e1';
             this.style.background = '#f8fafc';
 
             const files = Array.from(e.dataTransfer.files);
-            files.forEach(file => {
+            for (const file of files) {
                 if (file.size > 50 * 1024 * 1024) {
                     await showWarning(`파일 크기가 너무 큽니다: ${file.name} (최대 50MB)`);
-                    return;
+                    continue;
                 }
                 selectedFiles.push(file);
-            });
+            }
             renderFileList();
         });
     }
@@ -1253,7 +1253,7 @@
     }
 
     // 폼 유효성 검사
-    function validateForm() {
+    async function validateForm() {
         const projectName = document.getElementById('projectName').value.trim();
         const projectStatus = document.getElementById('projectStatus').value;
         const projectManagerIdx = projectManagerIdxInput.value;
@@ -1336,7 +1336,7 @@
     };
 
     // 카드 저장 (전역 함수)
-    window.saveCard = function() {
+    window.saveCard = async function () {
         const cardCompany = document.getElementById('cardCompany').value;
         const cardNumber = document.getElementById('cardNumber').value;
         const cardName = document.getElementById('cardName').value;
@@ -1448,7 +1448,7 @@
                 // 이미 추가된 프로젝트들의 체크박스 상태 유지
                 updateRelatedProjectCheckboxStates();
             })
-            .catch(error => {
+            .catch(async error => {
                 console.error('Error loading related projects:', error);
                 await showError('프로젝트 목록을 불러올 수 없습니다.');
             });
@@ -1573,7 +1573,7 @@
     });
 
     // 연계 정보 입력 모달 표시 (전역 함수)
-    window.showRelationDetailsModal = function() {
+    window.showRelationDetailsModal = async function () {
         const checkboxes = document.querySelectorAll('.related-project-checkbox:checked');
 
         if (checkboxes.length === 0) {
@@ -1658,7 +1658,7 @@
     };
 
     // 연계 정보 저장 (전역 함수)
-    window.saveRelatedProjects = function() {
+    window.saveRelatedProjects = async function () {
         const formSections = relationDetailsContainer.querySelectorAll('.form-section');
         const newRelations = [];
 
@@ -2114,7 +2114,7 @@
 
     // 기본값으로 초기화
     if (resetExpensesBtn) {
-        resetExpensesBtn.addEventListener('click', function() {
+        resetExpensesBtn.addEventListener('click', async function () {
             const confirmed = await showConfirm('경비 설정을 0원으로 초기화하시겠습니까?');
             if (confirmed) {
                 resetExpensesToDefault();
@@ -2122,7 +2122,7 @@
         });
     }
 
-    function resetExpensesToDefault() {
+    async function resetExpensesToDefault() {
         const expenseRows = document.querySelectorAll('#expenseSettingsBody tr[data-position]');
 
         expenseRows.forEach(row => {
@@ -2140,7 +2140,7 @@
         loadDefaultExpensesBtn.addEventListener('click', function() {
             fetch('/api/fixed-expense-policies')
                 .then(res => res.json())
-                .then(policies => {
+                .then(async policies => {
                     console.log("policies 원본 데이터:");
                     console.log(policies);
 
@@ -2193,7 +2193,7 @@
 
                     await showSuccess('기초정보관리의 설정값을 불러왔습니다.');
                 })
-                .catch(error => {
+                .catch(async error => {
                     console.error('고정경비 정책 조회 실패:', error);
                     await showError('설정값을 불러오는데 실패했습니다.');
                 });
