@@ -1,5 +1,5 @@
 // 프로젝트 상세보기 JavaScript
-document.addEventListener('DOMContentLoaded', function() {
+document.addEventListener('DOMContentLoaded', async function () {
     // 현재 로그인한 사용자 정보
     const currentUserIdx = window.CURRENT_USER?.idx || null;
 
@@ -30,7 +30,7 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     }
     if (createWeeklyReportBtn) {
-        createWeeklyReportBtn.addEventListener('click', function() {
+        createWeeklyReportBtn.addEventListener('click', function () {
             // 프로젝트 주간업무보고 작성 페이지로 이동 (프로젝트 ID 전달)
             if (projectId) {
                 window.location.href = `/approval/project-weekly-report?projectIdx=${projectId}`;
