@@ -880,7 +880,6 @@
     window.removeMember = function(memberId) {
         selectedMemberList = selectedMemberList.filter(m => m.id !== memberId);
         renderTeamTable();
-        updateCheckboxStates();
     };
 
     // 프로젝트 시작일/종료일 변경 시 팀원 참여일 자동 업데이트
