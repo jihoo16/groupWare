@@ -9,6 +9,7 @@ document.addEventListener('DOMContentLoaded', function() {
     let projectMembers = []; // 선택된 프로젝트의 팀원 목록
     let currentAttendees = []; // 현재 추가된 참석자 목록 (전역으로 이동)
     let fixedExpenses = {}; // 기초정보관리의 직급별 고정경비 (회의비)
+    let selectedProject = null; // 선택된 프로젝트
 
     // DOM 요소
     const templateTreeHeaders = document.querySelectorAll('.tree-node-header[data-template]');
@@ -244,54 +245,168 @@ document.addEventListener('DOMContentLoaded', function() {
 
         // 로컬 변수 대신 전역 currentAttendees 사용
 
-        // 프로젝트 선택 드롭다운 설정
-        if (commonProject && projects.length > 0) {
-            // 기존 input을 select로 변경
-            const selectElement = document.createElement('select');
-            selectElement.id = 'common_project';
-            selectElement.style.width = '100%';
-            selectElement.style.padding = '8px';
-            selectElement.style.border = '1px solid #ddd';
-            selectElement.style.borderRadius = '4px';
-
-            // 기본 옵션
-            const defaultOption = document.createElement('option');
-            defaultOption.value = '';
-            defaultOption.textContent = '프로젝트 선택';
-            selectElement.appendChild(defaultOption);
-
-            // 프로젝트 목록 추가
-            projects.forEach(project => {
-                const option = document.createElement('option');
-                option.value = project.idx;
-                option.textContent = project.projectName;
-                option.dataset.projectName = project.projectName;
-                selectElement.appendChild(option);
+        // 프로젝트 선택 (클릭 시 모달 열기)
+        if (commonProject) {
+            commonProject.addEventListener('click', function() {
+                openProjectModal();
             });
+        }
 
-            // 프로젝트 선택 시 팀원 로드
-            selectElement.addEventListener('change', async function() {
-                const projectIdx = this.value;
-                const projectName = this.options[this.selectedIndex].dataset.projectName || '';
+        // ============================================
+        // 프로젝트 선택 모달
+        // ============================================
+        const projectModal = document.getElementById('projectModal');
+        const projectSearch = document.getElementById('projectSearch');
+        const projectList = document.getElementById('projectList');
 
-                // 자동 채우기
-                document.querySelectorAll('.auto-project').forEach(field => {
-                    field.value = projectName;
+        // 초성 검색 유틸리티
+        const CHO_HANGUL = ['ㄱ', 'ㄲ', 'ㄴ', 'ㄷ', 'ㄸ', 'ㄹ', 'ㅁ', 'ㅂ', 'ㅃ', 'ㅅ', 'ㅆ', 'ㅇ', 'ㅈ', 'ㅉ', 'ㅊ', 'ㅋ', 'ㅌ', 'ㅍ', 'ㅎ'];
+
+        function getChosung(str) {
+            let result = '';
+            for (let i = 0; i < str.length; i++) {
+                const code = str.charCodeAt(i) - 44032;
+                if (code > -1 && code < 11172) {
+                    result += CHO_HANGUL[Math.floor(code / 588)];
+                } else {
+                    result += str.charAt(i);
+                }
+            }
+            return result;
+        }
+
+        function matchesSearch(text, keyword) {
+            if (!text || !keyword) return true;
+            const lowerText = text.toLowerCase();
+            const lowerKeyword = keyword.toLowerCase();
+            if (lowerText.includes(lowerKeyword)) return true;
+            const chosung = getChosung(text);
+            return chosung.includes(keyword);
+        }
+
+        function highlightText(text, keyword) {
+            if (!text || !keyword) return text;
+            const lowerText = text.toLowerCase();
+            const lowerKeyword = keyword.toLowerCase();
+            if (lowerText.includes(lowerKeyword)) {
+                const regex = new RegExp(`(${keyword.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')})`, 'gi');
+                return text.replace(regex, '<mark class="search-highlight">$1</mark>');
+            }
+            const chosung = getChosung(text);
+            if (chosung.includes(keyword)) {
+                let result = '';
+                let keywordIndex = 0;
+                for (let i = 0; i < text.length; i++) {
+                    const char = text[i];
+                    const code = text.charCodeAt(i) - 44032;
+                    if (code > -1 && code < 11172) {
+                        const cho = CHO_HANGUL[Math.floor(code / 588)];
+                        if (keywordIndex < keyword.length && cho === keyword[keywordIndex]) {
+                            result += `<mark class="search-highlight">${char}</mark>`;
+                            keywordIndex++;
+                        } else {
+                            result += char;
+                        }
+                    } else {
+                        result += char;
+                    }
+                }
+                return result;
+            }
+            return text;
+        }
+
+        // 프로젝트 목록 렌더링
+        function renderProjectList(list, keyword = '') {
+            if (!projectList) return;
+            projectList.innerHTML = '';
+
+            if (list.length === 0) {
+                const emptyMessage = document.createElement('div');
+                emptyMessage.className = 'modal-empty-state';
+                emptyMessage.innerHTML = `
+                    <i class="fas fa-folder-open"></i>
+                    <p>${keyword ? '검색 결과가 없습니다' : '등록된 프로젝트가 없습니다'}</p>
+                `;
+                projectList.appendChild(emptyMessage);
+                return;
+            }
+
+            list.forEach(proj => {
+                const item = document.createElement('div');
+                item.className = 'modal-item';
+                if (selectedProject && selectedProject.idx === proj.idx) {
+                    item.classList.add('selected');
+                }
+
+                const highlightedName = highlightText(proj.projectName, keyword);
+                const highlightedDesc = highlightText(proj.description || '설명 없음', keyword);
+
+                item.innerHTML = `
+                    <i class="fas fa-folder"></i>
+                    <div class="modal-item-info">
+                        <div class="modal-item-name">${highlightedName}</div>
+                        <div class="modal-item-detail">${highlightedDesc}</div>
+                    </div>
+                `;
+
+                item.addEventListener('click', async function() {
+                    selectedProject = proj;
+
+                    // 프로젝트 입력 필드에 표시
+                    if (commonProject) {
+                        commonProject.value = proj.projectName;
+                    }
+                    const selectedProjectIdx = document.getElementById('selectedProjectIdx');
+                    if (selectedProjectIdx) {
+                        selectedProjectIdx.value = proj.idx;
+                    }
+
+                    // 자동 채우기
+                    document.querySelectorAll('.auto-project').forEach(field => {
+                        field.value = proj.projectName;
+                    });
+
+                    // 프로젝트 팀원 로드
+                    if (proj.idx) {
+                        await loadProjectMembers(proj.idx);
+                    } else {
+                        projectMembers = [];
+                    }
+
+                    closeProjectModal();
                 });
 
-                // 프로젝트 팀원 로드
-                if (projectIdx) {
-                    await loadProjectMembers(projectIdx);
-                } else {
-                    projectMembers = [];
-                }
+                projectList.appendChild(item);
             });
-
-            // input을 select로 교체
-            if (commonProject.parentNode) {
-                commonProject.parentNode.replaceChild(selectElement, commonProject);
-            }
         }
+
+        // 프로젝트 검색
+        if (projectSearch) {
+            projectSearch.addEventListener('input', function() {
+                const keyword = this.value.trim();
+                const filtered = projects.filter(proj =>
+                    matchesSearch(proj.projectName, keyword) ||
+                    matchesSearch(proj.description, keyword)
+                );
+                renderProjectList(filtered, keyword);
+            });
+        }
+
+        window.openProjectModal = function() {
+            if (projectModal) {
+                projectModal.classList.add('show');
+                renderProjectList(projects);
+                if (projectSearch) projectSearch.value = '';
+            }
+        };
+
+        window.closeProjectModal = function() {
+            if (projectModal) {
+                projectModal.classList.remove('show');
+                if (projectSearch) projectSearch.value = '';
+            }
+        };
 
         // 작성자 정보 자동 입력 (수정 가능하도록)
         if (commonAuthor && currentUser) {
@@ -341,29 +456,19 @@ document.addEventListener('DOMContentLoaded', function() {
             const nameFields = document.querySelectorAll('.attendee-sig-name');
             const deptFields = document.querySelectorAll('.attendee-sig-dept');
 
-            const totalFields = nameFields.length;
-            const rowCount = totalFields / 2;
-
             nameFields.forEach(field => field.value = '');
             deptFields.forEach(field => field.value = '');
 
             const allAttendees = [...internalAttendees, ...externalAttendees];
 
             allAttendees.forEach((attendee, idx) => {
-                let fieldIndex;
-                if (idx < rowCount) {
-                    fieldIndex = idx * 2;
-                } else {
-                    fieldIndex = (idx - rowCount) * 2 + 1;
+                if (nameFields[idx]) {
+                    nameFields[idx].value = attendee.name;
                 }
-
-                if (nameFields[fieldIndex]) {
-                    nameFields[fieldIndex].value = attendee.name;
-                }
-                if (deptFields[fieldIndex]) {
+                if (deptFields[idx]) {
                     // 외부인력은 회사명, 내부는 파인씨앤아이
                     const isExternal = String(attendee.id).startsWith('ext_');
-                    deptFields[fieldIndex].value = isExternal ? attendee.dept : '파인씨앤아이';
+                    deptFields[idx].value = isExternal ? attendee.dept : '파인씨앤아이';
                 }
             });
         }
@@ -1044,14 +1149,15 @@ document.addEventListener('DOMContentLoaded', function() {
             }
 
             // 필수 필드 검증
-            const projectSelect = document.getElementById('common_project');
+            const projectInput = document.getElementById('common_project');
+            const projectIdxInput = document.getElementById('selectedProjectIdx');
             const dateInput = document.getElementById('common_date');
             const startTimeInput = document.getElementById('common_start_time');
             const endTimeInput = document.getElementById('common_end_time');
             const locationInput = document.getElementById('common_location');
             const purposeInput = document.getElementById('common_purpose');
 
-            if (!projectSelect || !projectSelect.value) {
+            if (!projectIdxInput || !projectIdxInput.value) {
                 showWarning('프로젝트를 선택해주세요.');
                 return;
             }
@@ -1097,7 +1203,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
             // 저장 데이터 생성
             const saveData = {
-                projectIdx: parseInt(projectSelect.value),
+                projectIdx: parseInt(projectIdxInput.value),
                 meetingDate: dateInput.value,
                 startTime: startTimeInput.value + ':00',  // HH:mm:ss 형식
                 endTime: endTimeInput.value + ':00',
@@ -1800,11 +1906,25 @@ document.addEventListener('DOMContentLoaded', function() {
         console.log('폼 데이터 채우기 시작');
 
         // 프로젝트 선택
-        const projectSelect = document.getElementById('common_project');
-        if (projectSelect && data.projectIdx) {
-            projectSelect.value = data.projectIdx;
-            // 프로젝트 변경 이벤트 트리거 (참여연구원 로드)
-            projectSelect.dispatchEvent(new Event('change'));
+        const projectInput = document.getElementById('common_project');
+        const projectIdxInput = document.getElementById('selectedProjectIdx');
+        if (data.projectIdx) {
+            const project = projects.find(p => p.idx === data.projectIdx);
+            if (project) {
+                selectedProject = project;
+                if (projectInput) {
+                    projectInput.value = project.projectName;
+                }
+                if (projectIdxInput) {
+                    projectIdxInput.value = project.idx;
+                }
+                // 자동 채우기
+                document.querySelectorAll('.auto-project').forEach(field => {
+                    field.value = project.projectName;
+                });
+                // 프로젝트 팀원 로드
+                loadProjectMembers(project.idx);
+            }
         }
 
         // 회의 일자
@@ -2076,30 +2196,16 @@ document.addEventListener('DOMContentLoaded', function() {
                 attendeeSigNames.forEach(el => el.value = '');
                 attendeeSigDepts.forEach(el => el.value = '');
 
-                // 테이블 구조: 각 행에 2명씩 (왼쪽, 오른쪽)
-                // 왼쪽 열부터 채우기 위해 인덱스 재배치
-                const totalRows = attendeeSigNames.length / 2; // 각 행에 2개 필드
-
-                currentAttendees.forEach((attendee, attendeeIndex) => {
-                    let tableIndex;
-
-                    if (attendeeIndex < totalRows) {
-                        // 왼쪽 열: 0, 2, 4, 6, 8...
-                        tableIndex = attendeeIndex * 2;
-                    } else {
-                        // 오른쪽 열: 1, 3, 5, 7, 9...
-                        tableIndex = (attendeeIndex - totalRows) * 2 + 1;
-                    }
-
-                    if (tableIndex < attendeeSigNames.length) {
-                        attendeeSigNames[tableIndex].value = attendee.name || '';
+                currentAttendees.forEach((attendee, idx) => {
+                    if (idx < attendeeSigNames.length) {
+                        attendeeSigNames[idx].value = attendee.name || '';
 
                         // 소속과 직책 함께 표시
                         let deptText = attendee.dept || '';
                         if (attendee.position && attendee.position.trim()) {
                             deptText = deptText ? `${deptText} (${attendee.position})` : attendee.position;
                         }
-                        attendeeSigDepts[tableIndex].value = deptText;
+                        attendeeSigDepts[idx].value = deptText;
                     }
                 });
             }
@@ -2143,13 +2249,13 @@ document.addEventListener('DOMContentLoaded', function() {
                 return;
             }
 
-            const projectSelect = document.getElementById('common_project');
+            const projectIdxInput = document.getElementById('selectedProjectIdx');
             const dateInput = document.getElementById('common_date');
             const startTimeInput = document.getElementById('common_start_time');
             const endTimeInput = document.getElementById('common_end_time');
             const locationInput = document.getElementById('common_location');
 
-            if (!projectSelect || !projectSelect.value) {
+            if (!projectIdxInput || !projectIdxInput.value) {
                 showWarning('프로젝트를 선택해주세요.');
                 return;
             }
@@ -2187,7 +2293,7 @@ document.addEventListener('DOMContentLoaded', function() {
             });
 
             const updateData = {
-                projectIdx: parseInt(projectSelect.value),
+                projectIdx: parseInt(projectIdxInput.value),
                 meetingDate: dateInput.value,
                 startTime: startTimeInput.value + ':00',
                 endTime: endTimeInput.value + ':00',

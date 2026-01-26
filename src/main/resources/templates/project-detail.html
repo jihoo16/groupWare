@@ -224,8 +224,11 @@
                     </div>
 
                     <!-- 참여연구원 구성 -->
-                    <h3 class="section-title">참여연구원 구성</h3>
-                    <div class="team-table-container">
+                    <div class="section-title-with-count">
+                        <h3 class="section-title">참여연구원 구성</h3>
+                    </div>
+                    <div class="member-count-badge" id="teamMemberCount" style="margin-top: 20px">총 0명</div>
+                    <div class="team-table-container" id="teamTableContainer">
                         <table class="team-table" id="teamTable">
                             <thead>
                             <tr>
@@ -242,6 +245,12 @@
                             <!-- JavaScript로 동적 생성 -->
                             </tbody>
                         </table>
+                        <div class="team-table-toggle" id="teamTableToggle" style="display: none;">
+                            <button type="button" class="btn-toggle-team" id="toggleTeamBtn">
+                                <span class="toggle-text">펼치기</span>
+                                <i class="fas fa-chevron-down toggle-icon"></i>
+                            </button>
+                        </div>
                     </div>
 
                     <!-- 직급별 경비 설정 -->
@@ -273,6 +282,7 @@
                     <div id="attachmentsList" class="attachments-list">
                         <!-- JavaScript로 동적 생성 -->
                     </div>
+
                 </div>
             </div>
         </div>

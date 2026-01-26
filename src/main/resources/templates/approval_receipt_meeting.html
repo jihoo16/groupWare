@@ -45,7 +45,10 @@
                                     <table class="form-table common-info-table">
                                         <tr>
                                             <th style="width: 150px;">과제명</th>
-                                            <td colspan="3"><input type="text" id="common_project" placeholder="과제명을 입력하세요"></td>
+                                            <td colspan="3">
+                                                <input type="text" id="common_project" class="form-input clickable-input" placeholder="클릭하여 과제 선택" readonly>
+                                                <input type="hidden" id="selectedProjectIdx">
+                                            </td>
                                         </tr>
                                         <tr>
                                             <th>작성자</th>
@@ -270,10 +273,7 @@
                                     </tr>
                                 </table>
                                 <table class="form-table" id="attendee-signature-table" style="margin-top: 20px;">
-                                    <tr style=" height: 70px">
-                                        <th>성명</th>
-                                        <th>소속</th>
-                                        <th>서명</th>
+                                    <tr style="height: 70px">
                                         <th>성명</th>
                                         <th>소속</th>
                                         <th>서명</th>
@@ -282,6 +282,8 @@
                                         <td><input type="text" class="attendee-sig-name" data-index="0" readonly style="background: #f9f9f9;"></td>
                                         <td><input type="text" class="attendee-sig-dept" data-index="0" readonly style="background: #f9f9f9;"></td>
                                         <td style="padding: 30px;"></td>
+                                    </tr>
+                                    <tr>
                                         <td><input type="text" class="attendee-sig-name" data-index="1" readonly style="background: #f9f9f9;"></td>
                                         <td><input type="text" class="attendee-sig-dept" data-index="1" readonly style="background: #f9f9f9;"></td>
                                         <td style="padding: 30px;"></td>
@@ -290,6 +292,8 @@
                                         <td><input type="text" class="attendee-sig-name" data-index="2" readonly style="background: #f9f9f9;"></td>
                                         <td><input type="text" class="attendee-sig-dept" data-index="2" readonly style="background: #f9f9f9;"></td>
                                         <td style="padding: 30px;"></td>
+                                    </tr>
+                                    <tr>
                                         <td><input type="text" class="attendee-sig-name" data-index="3" readonly style="background: #f9f9f9;"></td>
                                         <td><input type="text" class="attendee-sig-dept" data-index="3" readonly style="background: #f9f9f9;"></td>
                                         <td style="padding: 30px;"></td>
@@ -298,6 +302,8 @@
                                         <td><input type="text" class="attendee-sig-name" data-index="4" readonly style="background: #f9f9f9;"></td>
                                         <td><input type="text" class="attendee-sig-dept" data-index="4" readonly style="background: #f9f9f9;"></td>
                                         <td style="padding: 30px;"></td>
+                                    </tr>
+                                    <tr>
                                         <td><input type="text" class="attendee-sig-name" data-index="5" readonly style="background: #f9f9f9;"></td>
                                         <td><input type="text" class="attendee-sig-dept" data-index="5" readonly style="background: #f9f9f9;"></td>
                                         <td style="padding: 30px;"></td>
@@ -306,6 +312,8 @@
                                         <td><input type="text" class="attendee-sig-name" data-index="6" readonly style="background: #f9f9f9;"></td>
                                         <td><input type="text" class="attendee-sig-dept" data-index="6" readonly style="background: #f9f9f9;"></td>
                                         <td style="padding: 30px;"></td>
+                                    </tr>
+                                    <tr>
                                         <td><input type="text" class="attendee-sig-name" data-index="7" readonly style="background: #f9f9f9;"></td>
                                         <td><input type="text" class="attendee-sig-dept" data-index="7" readonly style="background: #f9f9f9;"></td>
                                         <td style="padding: 30px;"></td>
@@ -314,6 +322,8 @@
                                         <td><input type="text" class="attendee-sig-name" data-index="8" readonly style="background: #f9f9f9;"></td>
                                         <td><input type="text" class="attendee-sig-dept" data-index="8" readonly style="background: #f9f9f9;"></td>
                                         <td style="padding: 30px;"></td>
+                                    </tr>
+                                    <tr>
                                         <td><input type="text" class="attendee-sig-name" data-index="9" readonly style="background: #f9f9f9;"></td>
                                         <td><input type="text" class="attendee-sig-dept" data-index="9" readonly style="background: #f9f9f9;"></td>
                                         <td style="padding: 30px;"></td>
@@ -322,6 +332,8 @@
                                         <td><input type="text" class="attendee-sig-name" data-index="10" readonly style="background: #f9f9f9;"></td>
                                         <td><input type="text" class="attendee-sig-dept" data-index="10" readonly style="background: #f9f9f9;"></td>
                                         <td style="padding: 30px;"></td>
+                                    </tr>
+                                    <tr>
                                         <td><input type="text" class="attendee-sig-name" data-index="11" readonly style="background: #f9f9f9;"></td>
                                         <td><input type="text" class="attendee-sig-dept" data-index="11" readonly style="background: #f9f9f9;"></td>
                                         <td style="padding: 30px;"></td>
@@ -330,6 +342,8 @@
                                         <td><input type="text" class="attendee-sig-name" data-index="12" readonly style="background: #f9f9f9;"></td>
                                         <td><input type="text" class="attendee-sig-dept" data-index="12" readonly style="background: #f9f9f9;"></td>
                                         <td style="padding: 30px;"></td>
+                                    </tr>
+                                    <tr>
                                         <td><input type="text" class="attendee-sig-name" data-index="13" readonly style="background: #f9f9f9;"></td>
                                         <td><input type="text" class="attendee-sig-dept" data-index="13" readonly style="background: #f9f9f9;"></td>
                                         <td style="padding: 30px;"></td>
@@ -338,6 +352,8 @@
                                         <td><input type="text" class="attendee-sig-name" data-index="14" readonly style="background: #f9f9f9;"></td>
                                         <td><input type="text" class="attendee-sig-dept" data-index="14" readonly style="background: #f9f9f9;"></td>
                                         <td style="padding: 30px;"></td>
+                                    </tr>
+                                    <tr>
                                         <td><input type="text" class="attendee-sig-name" data-index="15" readonly style="background: #f9f9f9;"></td>
                                         <td><input type="text" class="attendee-sig-dept" data-index="15" readonly style="background: #f9f9f9;"></td>
                                         <td style="padding: 30px;"></td>
@@ -346,6 +362,8 @@
                                         <td><input type="text" class="attendee-sig-name" data-index="16" readonly style="background: #f9f9f9;"></td>
                                         <td><input type="text" class="attendee-sig-dept" data-index="16" readonly style="background: #f9f9f9;"></td>
                                         <td style="padding: 30px;"></td>
+                                    </tr>
+                                    <tr>
                                         <td><input type="text" class="attendee-sig-name" data-index="17" readonly style="background: #f9f9f9;"></td>
                                         <td><input type="text" class="attendee-sig-dept" data-index="17" readonly style="background: #f9f9f9;"></td>
                                         <td style="padding: 30px;"></td>
@@ -354,32 +372,30 @@
                                         <td><input type="text" class="attendee-sig-name" data-index="18" readonly style="background: #f9f9f9;"></td>
                                         <td><input type="text" class="attendee-sig-dept" data-index="18" readonly style="background: #f9f9f9;"></td>
                                         <td style="padding: 30px;"></td>
+                                    </tr>
+                                    <tr>
                                         <td><input type="text" class="attendee-sig-name" data-index="19" readonly style="background: #f9f9f9;"></td>
                                         <td><input type="text" class="attendee-sig-dept" data-index="19" readonly style="background: #f9f9f9;"></td>
                                         <td style="padding: 30px;"></td>
                                     </tr>
                                     <tr>
-                                        <td><input type="text" class="attendee-sig-name" data-index="18" readonly style="background: #f9f9f9;"></td>
-                                        <td><input type="text" class="attendee-sig-dept" data-index="18" readonly style="background: #f9f9f9;"></td>
-                                        <td style="padding: 30px;"></td>
-                                        <td><input type="text" class="attendee-sig-name" data-index="19" readonly style="background: #f9f9f9;"></td>
-                                        <td><input type="text" class="attendee-sig-dept" data-index="19" readonly style="background: #f9f9f9;"></td>
+                                        <td><input type="text" class="attendee-sig-name" data-index="20" readonly style="background: #f9f9f9;"></td>
+                                        <td><input type="text" class="attendee-sig-dept" data-index="20" readonly style="background: #f9f9f9;"></td>
                                         <td style="padding: 30px;"></td>
                                     </tr>
                                     <tr>
-                                        <td><input type="text" class="attendee-sig-name" data-index="18" readonly style="background: #f9f9f9;"></td>
-                                        <td><input type="text" class="attendee-sig-dept" data-index="18" readonly style="background: #f9f9f9;"></td>
-                                        <td style="padding: 30px;"></td>
-                                        <td><input type="text" class="attendee-sig-name" data-index="19" readonly style="background: #f9f9f9;"></td>
-                                        <td><input type="text" class="attendee-sig-dept" data-index="19" readonly style="background: #f9f9f9;"></td>
+                                        <td><input type="text" class="attendee-sig-name" data-index="21" readonly style="background: #f9f9f9;"></td>
+                                        <td><input type="text" class="attendee-sig-dept" data-index="21" readonly style="background: #f9f9f9;"></td>
                                         <td style="padding: 30px;"></td>
                                     </tr>
                                     <tr>
-                                        <td><input type="text" class="attendee-sig-name" data-index="18" readonly style="background: #f9f9f9;"></td>
-                                        <td><input type="text" class="attendee-sig-dept" data-index="18" readonly style="background: #f9f9f9;"></td>
+                                        <td><input type="text" class="attendee-sig-name" data-index="22" readonly style="background: #f9f9f9;"></td>
+                                        <td><input type="text" class="attendee-sig-dept" data-index="22" readonly style="background: #f9f9f9;"></td>
                                         <td style="padding: 30px;"></td>
-                                        <td><input type="text" class="attendee-sig-name" data-index="19" readonly style="background: #f9f9f9;"></td>
-                                        <td><input type="text" class="attendee-sig-dept" data-index="19" readonly style="background: #f9f9f9;"></td>
+                                    </tr>
+                                    <tr>
+                                        <td><input type="text" class="attendee-sig-name" data-index="23" readonly style="background: #f9f9f9;"></td>
+                                        <td><input type="text" class="attendee-sig-dept" data-index="23" readonly style="background: #f9f9f9;"></td>
                                         <td style="padding: 30px;"></td>
                                     </tr>
                                 </table>
@@ -539,6 +555,28 @@
                         <i class="fas fa-check"></i> 추가
                     </button>
                 </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 프로젝트 선택 모달 -->
+    <div class="modal" id="projectModal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>프로젝트 선택</h3>
+                <button class="modal-close" onclick="closeProjectModal()">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            <div class="modal-body">
+                <div class="search-box">
+                    <i class="fas fa-search"></i>
+                    <input type="text" id="projectSearch" placeholder="프로젝트명으로 검색">
+                </div>
+                <div class="modal-item-list" id="projectList"></div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn-secondary" onclick="closeProjectModal()">취소</button>
             </div>
         </div>
     </div>
