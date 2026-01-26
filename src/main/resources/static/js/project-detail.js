@@ -44,6 +44,22 @@ document.addEventListener('DOMContentLoaded', async function () {
     if (deleteBtn) {
         deleteBtn.addEventListener('click', () => deleteProject(projectId));
     }
+
+    // 상단으로 이동 버튼
+    const scrollToTopBtn = document.getElementById('scrollToTopBtn');
+    const mainContent = document.querySelector('.main-content');
+    if (scrollToTopBtn && mainContent) {
+        mainContent.addEventListener('scroll', function () {
+            if (mainContent.scrollTop > 300) {
+                scrollToTopBtn.classList.add('visible');
+            } else {
+                scrollToTopBtn.classList.remove('visible');
+            }
+        });
+        scrollToTopBtn.addEventListener('click', function () {
+            mainContent.scrollTo({ top: 0, behavior: 'smooth' });
+        });
+    }
 });
 
 /**
