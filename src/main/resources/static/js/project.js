@@ -460,6 +460,8 @@ document.addEventListener('DOMContentLoaded', function() {
                     row.classList.add('my-project');
                 }
 
+                const myProjectIcon = isMyProject ? '<i class="fas fa-user-check my-project-icon" title="내가 참여한 프로젝트"></i>' : '';
+
                 // 하이라이트 적용
                 const projectName = currentSearchKeyword ?
                     searchUtils.highlightText(project.name || '', currentSearchKeyword) :
@@ -471,7 +473,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
                 row.innerHTML = `
                     <td class="text-center">${project.no}</td>
-                    <td><strong>${projectName}</strong></td>
+                    <td><strong>${projectName}</strong> ${myProjectIcon}</td>
                     <td><span class="status-badge ${project.statusClass}">${project.statusLabel}</span></td>
                     <td>${managerName}</td>
                     <td class="text-center">${project.teamSize}</td>
