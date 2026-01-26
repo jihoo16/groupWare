@@ -1385,9 +1385,16 @@ document.addEventListener('DOMContentLoaded', function() {
             renderedCss: css
         };
 
-        if (!(await showConfirm('연차 신청서를 저장하시겠습니까?'))) {
-            return;
-        }
+        // 로딩 표시
+        Swal.fire({
+            title: '저장 중...',
+            html: '연차 신청서를 저장하고 있습니다.',
+            allowOutsideClick: false,
+            allowEscapeKey: false,
+            didOpen: () => {
+                Swal.showLoading();
+            }
+        });
 
         try {
             const response = await fetch('/api/vacation/request', {
@@ -1401,14 +1408,27 @@ document.addEventListener('DOMContentLoaded', function() {
             const result = await response.json();
 
             if (response.ok && result.success) {
-                showSuccess('연차 신청서가 저장되었습니다.');
+                // 성공 메시지 표시
+                await Swal.fire({
+                    icon: 'success',
+                    title: '저장 완료',
+                    text: '연차 신청서가 저장되었습니다.',
+                    timer: 2000,
+                    timerProgressBar: true,
+                    showConfirmButton: true,
+                    confirmButtonText: '확인'
+                });
                 window.location.href = '/approval';
             } else {
-                showError('저장 실패: ' + (result.message || '알 수 없는 오류'));
+                // 서버에서 온 사용자 친화적인 에러 메시지 표시
+                Swal.close();
+                showError(result.message || '연차 신청서 저장에 실패했습니다.\n잠시 후 다시 시도해주세요.');
             }
         } catch (error) {
+            // 네트워크 오류 등 예상치 못한 에러
             console.error('연차 신청서 저장 중 오류:', error);
-            showError('저장 중 오류가 발생했습니다.');
+            Swal.close();
+            showError('네트워크 오류가 발생했습니다.\n인터넷 연결을 확인하고 다시 시도해주세요.');
         }
     });
 

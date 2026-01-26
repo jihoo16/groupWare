@@ -275,13 +275,23 @@ public class VacationController {
 
             return ResponseEntity.ok(response);
         } catch (IllegalArgumentException | IllegalStateException e) {
-            log.error("연차 신청서 저장 실패: {}", e.getMessage(), e);
+            // 비즈니스 검증 실패 (사용자에게 검증 메시지 전달)
+            log.error("연차 신청서 저장 실패 - 검증 오류: {}", e.getMessage(), e);
 
             Map<String, Object> errorResponse = new HashMap<>();
             errorResponse.put("success", false);
             errorResponse.put("message", e.getMessage());
 
             return ResponseEntity.badRequest().body(errorResponse);
+        } catch (Exception e) {
+            // 시스템 에러 (DB 오류, PDF 생성 오류 등 - 기술적인 에러는 로그에만)
+            log.error("연차 신청서 저장 실패 - 시스템 오류: {}", e.getMessage(), e);
+
+            Map<String, Object> errorResponse = new HashMap<>();
+            errorResponse.put("success", false);
+            errorResponse.put("message", "연차 신청서 저장 중 오류가 발생했습니다.\n잠시 후 다시 시도하거나 관리자에게 문의해주세요.");
+
+            return ResponseEntity.status(500).body(errorResponse);
         }
     }
 
