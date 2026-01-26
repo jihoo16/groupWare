@@ -170,6 +170,7 @@ public class CalendarEventService {
         // 기존 참석자 삭제
         List<CalendarParticipant> existingParticipants = calendarParticipantRepository.findByEventIdx(eventIdx);
         calendarParticipantRepository.deleteAll(existingParticipants);
+        calendarParticipantRepository.flush(); // 즉시 DB에 반영하여 unique constraint 충돌 방지
 
         // 새 참석자 추가
         if (eventDto.getParticipants() != null && !eventDto.getParticipants().isEmpty()) {
