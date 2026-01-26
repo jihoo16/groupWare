@@ -487,7 +487,7 @@ document.addEventListener('DOMContentLoaded', function() {
     }
 
     // 상위보고자 변경 모달 열기
-    window.openChangeManagerModal = function(empIdx) {
+    window.openChangeManagerModal = async function(empIdx) {
         currentEditingEmployee = employeesData.find(emp => emp.idx === empIdx);
         if (!currentEditingEmployee) return;
 
@@ -513,7 +513,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 newManagerSelect.innerHTML = `<option value="${ceo.idx}" selected>${ceo.empName} (${ceo.empPositionName || ceo.empPosition} / ${ceo.empDeptName || ceo.empDept})</option>`;
                 newManagerSelect.disabled = true; // 변경 불가
             } else {
-                await showError('대표이사를 찾을 수 없습니다.');
+                showError('대표이사를 찾을 수 없습니다.');
                 return;
             }
         } else {
@@ -589,7 +589,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 }
                 return response.json();
             })
-            .then(data => {
+            .then(async data => {
                 console.log('상위보고자 변경 성공:', data);
                 await showSuccess(`${employee.empName}의 상위보고자가 ${newManager.empName}으로 변경되었습니다.`);
 
@@ -598,7 +598,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 document.getElementById('newManager').disabled = false; // 드롭다운 재활성화
                 closeModal(changeManagerModal);
             })
-            .catch(error => {
+            .catch(async error => {
                 console.error('Error updating hierarchy:', error);
                 await showError('상위보고자 변경에 실패했습니다.');
             });

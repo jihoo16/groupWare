@@ -423,7 +423,7 @@
                 // 이미 추가된 팀원들의 체크박스 상태 유지
                 updateCheckboxStates();
             })
-            .catch(async error => {
+            .catch(async (error) => {
                 console.error('Error loading members:', error);
                 await showError('인력 목록을 불러올 수 없습니다.');
             });
@@ -793,7 +793,7 @@
     };
 
     // 카드 저장 (전역 함수)
-    window.saveCard = async function () {
+    window.saveCard = async function() {
         const cardCompany = document.getElementById('cardCompany').value;
         const cardNumber = document.getElementById('cardNumber').value;
         const cardName = document.getElementById('cardName').value;
@@ -897,7 +897,7 @@
             this.style.background = '#f8fafc';
         });
 
-        fileUploadArea.addEventListener('drop', async function (e) {
+        fileUploadArea.addEventListener('drop', async function(e) {
             e.preventDefault();
             this.style.borderColor = '#cbd5e1';
             this.style.background = '#f8fafc';
@@ -1333,7 +1333,7 @@
                 // 이미 추가된 프로젝트들의 체크박스 상태 유지
                 updateRelatedProjectCheckboxStates();
             })
-            .catch(async error => {
+            .catch(async (error) => {
                 console.error('Error loading related projects:', error);
                 await showError('프로젝트 목록을 불러올 수 없습니다.');
             });
@@ -1461,7 +1461,7 @@
     });
 
     // 연계 정보 입력 모달 표시 (전역 함수)
-    window.showRelationDetailsModal = async function () {
+    window.showRelationDetailsModal = async function() {
         const checkboxes = document.querySelectorAll('.related-project-checkbox:checked');
 
         if (checkboxes.length === 0) {
@@ -1534,7 +1534,7 @@
     };
 
     // 연계 정보 저장 (전역 함수)
-    window.saveRelatedProjects = async function () {
+    window.saveRelatedProjects = async function() {
         const formSections = relationDetailsContainer.querySelectorAll('.form-section');
         const newRelations = [];
 
@@ -1658,7 +1658,7 @@
 
     // 기본값으로 초기화
     if (resetExpensesBtn) {
-        resetExpensesBtn.addEventListener('click', async function () {
+        resetExpensesBtn.addEventListener('click', async function() {
             const confirmed = await showConfirm('경비 설정을 0원으로 초기화하시겠습니까?');
             if (confirmed) {
                 resetExpensesToDefault();
@@ -1742,7 +1742,7 @@
                 await showSuccess('프로젝트가 삭제되었습니다.');
                 window.location.href = '/project';
             })
-            .catch(async error => {
+            .catch(async (error) => {
                 console.error('프로젝트 삭제 실패:', error);
                 await showError('프로젝트 삭제에 실패했습니다.\n' + error.message);
                 deleteProjectBtn.disabled = false;

@@ -181,39 +181,39 @@ document.addEventListener('DOMContentLoaded', function() {
     }
 
     // 이전 버튼
-    prevMonthBtn.addEventListener('click', function() {
+    prevMonthBtn.addEventListener('click', async function() {
         switch(currentView) {
             case 'day':
                 currentDate.setDate(currentDate.getDate() - 1);
-                renderDayView();
+                await renderDayView();
                 break;
             case 'week':
                 currentDate.setDate(currentDate.getDate() - 7);
-                renderWeekView();
+                await renderWeekView();
                 break;
             case 'month':
             default:
                 currentDate.setMonth(currentDate.getMonth() - 1);
-                renderCalendar();
+                await renderCalendar();
                 break;
         }
     });
 
     // 다음 버튼
-    nextMonthBtn.addEventListener('click', function() {
+    nextMonthBtn.addEventListener('click', async function() {
         switch(currentView) {
             case 'day':
                 currentDate.setDate(currentDate.getDate() + 1);
-                renderDayView();
+                await renderDayView();
                 break;
             case 'week':
                 currentDate.setDate(currentDate.getDate() + 7);
-                renderWeekView();
+                await renderWeekView();
                 break;
             case 'month':
             default:
                 currentDate.setMonth(currentDate.getMonth() + 1);
-                renderCalendar();
+                await renderCalendar();
                 break;
         }
     });
@@ -224,20 +224,20 @@ document.addEventListener('DOMContentLoaded', function() {
     });
 
     // 오늘 버튼 클릭 이벤트
-    todayBtn.addEventListener('click', function() {
+    todayBtn.addEventListener('click', async function() {
         currentDate = new Date();
 
         // 현재 뷰에 맞게 렌더링
         switch(currentView) {
             case 'day':
-                renderDayView();
+                await renderDayView();
                 break;
             case 'week':
-                renderWeekView();
+                await renderWeekView();
                 break;
             case 'month':
             default:
-                renderCalendar();
+                await renderCalendar();
                 break;
         }
     });
@@ -1499,7 +1499,7 @@ document.addEventListener('DOMContentLoaded', function() {
     }
 
     // 일정 저장 버튼 (추가 모드 전용)
-    document.getElementById('saveScheduleBtn').addEventListener('click', function() {
+    document.getElementById('saveScheduleBtn').addEventListener('click', async function() {
         const form = document.getElementById('scheduleForm');
 
         if (!form.checkValidity()) {
@@ -1508,7 +1508,7 @@ document.addEventListener('DOMContentLoaded', function() {
         }
 
         // 추가 모드만 처리
-        addNewSchedule();
+        await addNewSchedule();
     });
 
     // 새 일정 추가 함수
@@ -1715,7 +1715,7 @@ document.addEventListener('DOMContentLoaded', function() {
     const viewButtons = document.querySelectorAll('.view-btn');
 
     viewButtons.forEach(btn => {
-        btn.addEventListener('click', function() {
+        btn.addEventListener('click', async function() {
             const view = this.getAttribute('data-view');
 
             // 버튼 활성화 상태 변경
@@ -1732,21 +1732,21 @@ document.addEventListener('DOMContentLoaded', function() {
                     document.getElementById('monthView').style.display = 'none';
                     document.getElementById('weekView').style.display = 'none';
                     document.getElementById('dayView').style.display = 'flex';
-                    renderDayView();
+                    await renderDayView();
                     break;
                 case 'week':
                     console.log('주간 뷰로 전환');
                     document.getElementById('monthView').style.display = 'none';
                     document.getElementById('weekView').style.display = 'flex';
                     document.getElementById('dayView').style.display = 'none';
-                    renderWeekView();
+                    await renderWeekView();
                     break;
                 case 'month':
                     console.log('월간 뷰로 전환');
                     document.getElementById('monthView').style.display = 'flex';
                     document.getElementById('weekView').style.display = 'none';
                     document.getElementById('dayView').style.display = 'none';
-                    renderCalendar();
+                    await renderCalendar();
                     break;
             }
         });
@@ -1760,18 +1760,18 @@ document.addEventListener('DOMContentLoaded', function() {
 
     // 팀별 일정 - 전체 선택/해제
     if (selectAllTeamsCheckbox) {
-        selectAllTeamsCheckbox.addEventListener('change', function() {
+        selectAllTeamsCheckbox.addEventListener('change', async function() {
             const isChecked = this.checked;
             teamCheckboxes.forEach(checkbox => {
                 checkbox.checked = isChecked;
             });
-            filterSchedules();
+            await filterSchedules();
         });
     }
 
     // 개별 팀 체크박스 변경 시
     teamCheckboxes.forEach(checkbox => {
-        checkbox.addEventListener('change', function() {
+        checkbox.addEventListener('change', async function() {
             // 모든 개별 체크박스가 체크되면 전체도 체크
             const allChecked = Array.from(teamCheckboxes).every(cb => cb.checked);
             const noneChecked = Array.from(teamCheckboxes).every(cb => !cb.checked);
@@ -1788,24 +1788,24 @@ document.addEventListener('DOMContentLoaded', function() {
                 }
             }
 
-            filterSchedules();
+            await filterSchedules();
         });
     });
 
     // 일정 유형 - 전체 선택/해제
     if (selectAllTypesCheckbox) {
-        selectAllTypesCheckbox.addEventListener('change', function() {
+        selectAllTypesCheckbox.addEventListener('change', async function() {
             const isChecked = this.checked;
             typeCheckboxes.forEach(checkbox => {
                 checkbox.checked = isChecked;
             });
-            filterSchedules();
+            await filterSchedules();
         });
     }
 
     // 개별 유형 체크박스 변경 시
     typeCheckboxes.forEach(checkbox => {
-        checkbox.addEventListener('change', function() {
+        checkbox.addEventListener('change', async function() {
             // 모든 개별 체크박스가 체크되면 전체도 체크
             const allChecked = Array.from(typeCheckboxes).every(cb => cb.checked);
             const noneChecked = Array.from(typeCheckboxes).every(cb => !cb.checked);
@@ -1822,12 +1822,12 @@ document.addEventListener('DOMContentLoaded', function() {
                 }
             }
 
-            filterSchedules();
+            await filterSchedules();
         });
     });
 
     // 필터링 함수
-    function filterSchedules() {
+    async function filterSchedules() {
         // 선택된 팀 목록
         const selectedTeams = Array.from(teamCheckboxes)
             .filter(cb => cb.checked)
@@ -1845,7 +1845,7 @@ document.addEventListener('DOMContentLoaded', function() {
         console.log('선택된 유형:', selectedTypes);
 
         // 달력 다시 렌더링
-        renderCalendar();
+        await renderCalendar();
     }
 
     // 팀별 일정 개수 업데이트 함수 (TODO: 실제 데이터와 연동)

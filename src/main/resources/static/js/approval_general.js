@@ -1018,14 +1018,14 @@ document.addEventListener('DOMContentLoaded', function() {
     });
 
     // 결재자 추가
-    window.addApprover = function() {
+    window.addApprover = async function() {
         if (!selectedEmployee) {
-            showWarning('결재자를 선택해주세요.');
+            await showWarning('결재자를 선택해주세요.');
             return;
         }
 
         if (selectedApprovers.find(a => a.id === selectedEmployee.id)) {
-            showWarning('이미 추가된 결재자입니다.');
+            await showWarning('이미 추가된 결재자입니다.');
             return;
         }
 
@@ -1071,19 +1071,19 @@ document.addEventListener('DOMContentLoaded', function() {
     };
 
     // 파일 업로드
-    fileInput.addEventListener('change', function(e) {
+    fileInput.addEventListener('change', async function(e) {
         const files = Array.from(e.target.files);
-        files.forEach(file => {
+        for (const file of files) {
             if (selectedFiles.length >= 5) {
-                showWarning('최대 5개까지만 첨부 가능합니다.');
+                await showWarning('최대 5개까지만 첨부 가능합니다.');
                 return;
             }
             if (file.size > 10 * 1024 * 1024) {
-                showError('파일 크기는 10MB를 초과할 수 없습니다.');
+                await showError('파일 크기는 10MB를 초과할 수 없습니다.');
                 return;
             }
             selectedFiles.push(file);
-        });
+        }
         updateFileList();
         fileInput.value = '';
     });
@@ -1100,23 +1100,23 @@ document.addEventListener('DOMContentLoaded', function() {
         this.style.background = 'white';
     });
 
-    fileUploadArea.addEventListener('drop', function(e) {
+    fileUploadArea.addEventListener('drop', async function(e) {
         e.preventDefault();
         this.style.borderColor = '#ddd';
         this.style.background = 'white';
 
         const files = Array.from(e.dataTransfer.files);
-        files.forEach(file => {
+        for (const file of files) {
             if (selectedFiles.length >= 5) {
-                showWarning('최대 5개까지만 첨부 가능합니다.');
+                await showWarning('최대 5개까지만 첨부 가능합니다.');
                 return;
             }
             if (file.size > 10 * 1024 * 1024) {
-                showError('파일 크기는 10MB를 초과할 수 없습니다.');
+                await showError('파일 크기는 10MB를 초과할 수 없습니다.');
                 return;
             }
             selectedFiles.push(file);
-        });
+        }
         updateFileList();
     });
 

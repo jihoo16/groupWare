@@ -1,5 +1,5 @@
 // 문서 작성 페이지 JavaScript
-document.addEventListener('DOMContentLoaded', function() {
+document.addEventListener('DOMContentLoaded', async function() {
     // 전역 변수
     let selectedApprovers = [];
     let selectedFiles = [];

@@ -119,7 +119,7 @@ document.addEventListener('DOMContentLoaded', function() {
     async function editCode(idx) {
         fetch(`/api/codes/${idx}`)
             .then(response => response.json())
-            .then(code => {
+            .then(async code => {
                 codeModalTitle.textContent = `${groupName} 코드 수정`;
                 isEditMode = true;
                 editingCodeIdx = idx;
@@ -127,7 +127,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 document.getElementById('code-suffix').disabled = true; // 수정 시 코드 변경 불가
                 openModal(codeModal);
             })
-            .catch(error => {
+            .catch(async error => {
                 console.error('코드 조회 실패:', error);
                 await showError('코드 정보를 불러오는데 실패했습니다.');
             });
@@ -143,14 +143,14 @@ document.addEventListener('DOMContentLoaded', function() {
         fetch(`/api/codes/${idx}`, {
             method: 'DELETE'
         })
-        .then(response => {
+        .then(async response => {
             if (!response.ok) {
                 throw new Error('코드 삭제 실패');
             }
             await showSuccess('코드가 성공적으로 삭제되었습니다.');
             loadCodes();
         })
-        .catch(error => {
+        .catch(async error => {
             console.error('코드 삭제 실패:', error);
             await showError('코드 삭제에 실패했습니다.');
         });
@@ -200,12 +200,12 @@ document.addEventListener('DOMContentLoaded', function() {
             }
             return response.json();
         })
-        .then(() => {
+        .then(async () => {
             await showSuccess('코드가 성공적으로 등록되었습니다.');
             closeModal(codeModal);
             loadCodes();
         })
-        .catch(error => {
+        .catch(async error => {
             console.error('코드 생성 실패:', error);
             await showError('코드 등록에 실패했습니다. 이미 존재하는 코드일 수 있습니다.');
         });
@@ -226,12 +226,12 @@ document.addEventListener('DOMContentLoaded', function() {
             }
             return response.json();
         })
-        .then(() => {
+        .then(async () => {
             await showSuccess('코드가 성공적으로 수정되었습니다.');
             closeModal(codeModal);
             loadCodes();
         })
-        .catch(error => {
+        .catch(async error => {
             console.error('코드 수정 실패:', error);
             await showError('코드 수정에 실패했습니다.');
         });

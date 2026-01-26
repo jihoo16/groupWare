@@ -1,5 +1,5 @@
 // 월간업무보고 작성 페이지 JavaScript
-document.addEventListener('DOMContentLoaded', function() {
+document.addEventListener('DOMContentLoaded', async function() {
     // 전역 변수 CURRENT_USER 사용 (layout.html에서 주입됨)
     const currentUserIdx = window.CURRENT_USER?.idx || null;
     const currentUserName = window.CURRENT_USER?.empName || '';

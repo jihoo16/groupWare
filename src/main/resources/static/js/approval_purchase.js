@@ -1148,7 +1148,7 @@ document.addEventListener('DOMContentLoaded', function() {
     // 제출
     submitBtn.addEventListener('click', async function() {
         if (selectedApprovers.length === 0) {
-            showWarning('결재자를 지정해주세요.');
+            await showWarning('결재자를 지정해주세요.');
             return;
         }
 

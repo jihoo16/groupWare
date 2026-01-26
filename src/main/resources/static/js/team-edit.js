@@ -1,5 +1,5 @@
 // 팀 수정 페이지 스크립트
-document.addEventListener('DOMContentLoaded', function() {
+document.addEventListener('DOMContentLoaded', async function() {
     // URL에서 팀 ID 추출
     const pathParts = window.location.pathname.split('/');
     const teamIdx = parseInt(pathParts[pathParts.length - 1]);

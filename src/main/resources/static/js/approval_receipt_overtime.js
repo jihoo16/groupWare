@@ -1,5 +1,5 @@
 // 연구비 증빙 - 야근식대 페이지 JavaScript
-document.addEventListener('DOMContentLoaded', function() {
+document.addEventListener('DOMContentLoaded', async function() {
     // 전역 변수
     let selectedApprovers = [];
     let selectedFiles = [];
@@ -660,7 +660,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
     // 제출
     if (submitBtn) {
-        submitBtn.addEventListener(\'click\', async function() {
+        submitBtn.addEventListener('click', async function() {
             if (selectedApprovers.length === 0) {
                 showWarning('결재자를 지정해주세요.');
                 return;
@@ -890,7 +890,7 @@ document.addEventListener('DOMContentLoaded', function() {
     const overtimePersonSearchInput = document.getElementById('overtimePersonSearchInput');
 
     // 초기 데이터 로드
-    loadEmployees();
+    await loadEmployees();
 
     // 야근인원 목록 데이터 (직원 데이터와 동일하게 사용)
     // employees 배열을 직접 사용

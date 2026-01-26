@@ -117,9 +117,9 @@ document.addEventListener('DOMContentLoaded', function() {
     // Contact Admin Link
     // ===========================
     if (contactAdminLink) {
-        contactAdminLink.addEventListener('click', async (e) => {
+        contactAdminLink.addEventListener('click', (e) => {
             e.preventDefault();
-            await showInfo('시스템 관리자 연락처:\n\n이메일: admin@pinecni.com\n전화: 02-1234-5678');
+            showInfo('시스템 관리자 연락처:\n\n이메일: admin@pinecni.com\n전화: 02-1234-5678');
         });
     }
 

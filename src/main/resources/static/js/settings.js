@@ -61,9 +61,9 @@ document.addEventListener('DOMContentLoaded', function() {
     // 프로필 사진 변경
     const changeAvatarBtn = document.querySelector('.btn-change-avatar');
     if (changeAvatarBtn) {
-        changeAvatarBtn.addEventListener('click', function() {
+        changeAvatarBtn.addEventListener('click', async function() {
             console.log('프로필 사진 변경');
-            showAlert('프로필 사진 변경 기능은 추후 구현됩니다.');
+            await showAlert('프로필 사진 변경 기능은 추후 구현됩니다.');
             // TODO: 파일 업로드 모달 표시
         });
     }
@@ -136,22 +136,22 @@ document.addEventListener('DOMContentLoaded', function() {
     // 테마 변경
     const themeSelect = document.querySelector('#system .form-select[value="light"]');
     if (themeSelect) {
-        themeSelect.addEventListener('change', function() {
+        themeSelect.addEventListener('change', async function() {
             const theme = this.value;
             console.log('테마 변경:', theme);
             // TODO: 테마 변경 적용
-            showAlert(`테마가 "${this.options[this.selectedIndex].text}"로 변경됩니다.`);
+            await showAlert(`테마가 "${this.options[this.selectedIndex].text}"로 변경됩니다.`);
         });
     }
 
     // 언어 변경
     const languageSelect = document.querySelector('#system .form-select:nth-of-type(2)');
     if (languageSelect) {
-        languageSelect.addEventListener('change', function() {
+        languageSelect.addEventListener('change', async function() {
             const language = this.value;
             console.log('언어 변경:', language);
             // TODO: 언어 변경 적용
-            showAlert(`언어가 "${this.options[this.selectedIndex].text}"로 변경됩니다.`);
+            await showAlert(`언어가 "${this.options[this.selectedIndex].text}"로 변경됩니다.`);
         });
     }
 
@@ -300,9 +300,9 @@ function initSignatureCanvas() {
 
     // 저장 버튼 - 모달 표시
     if (saveBtn) {
-        saveBtn.addEventListener('click', function() {
+        saveBtn.addEventListener('click', async function() {
             if (!hasDrawn) {
-                showWarning('서명을 작성해주세요.');
+                await showWarning('서명을 작성해주세요.');
                 return;
             }
 
@@ -341,9 +341,9 @@ function initCompetencyManagement() {
     // 추가 버튼 이벤트 리스너
     const addButtons = document.querySelectorAll('.btn-add');
     addButtons.forEach(btn => {
-        btn.addEventListener('click', function() {
+        btn.addEventListener('click', async function() {
             const type = this.getAttribute('data-type');
-            showCompetencyForm(type);
+            await showCompetencyForm(type);
         });
     });
 
@@ -352,12 +352,12 @@ function initCompetencyManagement() {
 }
 
 // 역량 항목 폼 표시
-function showCompetencyForm(type) {
+async function showCompetencyForm(type) {
     const listContainer = document.getElementById(`${type}List`);
 
     // 이미 입력 중인 폼이 있는지 확인
     if (listContainer.querySelector('.competency-form')) {
-        showWarning('현재 입력 중인 항목을 먼저 완료해주세요.');
+        await showWarning('현재 입력 중인 항목을 먼저 완료해주세요.');
         return;
     }
 
@@ -521,8 +521,8 @@ function showCompetencyForm(type) {
         form.remove();
     });
 
-    saveBtn.addEventListener('click', function() {
-        saveCompetencyItem(type, form);
+    saveBtn.addEventListener('click', async function() {
+        await saveCompetencyItem(type, form);
     });
 }
 
@@ -551,7 +551,7 @@ async function saveCompetencyItem(type, form) {
     });
 
     if (!isValid) {
-        showWarning('필수 항목을 입력해주세요.');
+        await showWarning('필수 항목을 입력해주세요.');
         return;
     }
 
@@ -582,12 +582,12 @@ async function deleteCompetencyItem(type, id) {
 }
 
 // 역량 항목 수정
-function editCompetencyItem(type, id) {
+async function editCompetencyItem(type, id) {
     const item = competencyData[type].find(item => item.id === id);
     if (!item) return;
 
     // TODO: 수정 폼 표시 및 처리
-    showAlert('수정 기능은 추후 구현됩니다.');
+    await showAlert('수정 기능은 추후 구현됩니다.');
 }
 
 // 역량 목록 렌더링
@@ -803,12 +803,12 @@ function initSignatureConfirmModal(ctx, canvas, placeholder, hasDrawn) {
                     }, 3000);
                 }
 
-                showWarning('동의 내용을 확인하고 체크박스를 체크해주세요.');
+                await showWarning('동의 내용을 확인하고 체크박스를 체크해주세요.');
                 return;
             }
 
             if (!window.tempSignatureData) {
-                showError('서명 데이터가 없습니다.');
+                await showError('서명 데이터가 없습니다.');
                 return;
             }
 

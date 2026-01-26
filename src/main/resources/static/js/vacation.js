@@ -1,5 +1,5 @@
 // 연차관리 페이지 스크립트
-document.addEventListener('DOMContentLoaded', function() {
+document.addEventListener('DOMContentLoaded', async function() {
     const totalLeaveCard = document.getElementById('totalLeaveCard');
     const usedLeaveCard = document.getElementById('usedLeaveCard');
     const remainingLeaveCard = document.getElementById('remainingLeaveCard');

@@ -214,12 +214,12 @@ document.addEventListener('DOMContentLoaded', function() {
             }
             return response.json();
         })
-        .then(() => {
+        .then(async () => {
             await showSuccess('그룹코드가 성공적으로 등록되었습니다.');
             closeModal(codeGroupModal);
             loadCodeGroups();
         })
-        .catch(error => {
+        .catch(async error => {
             console.error('그룹코드 생성 실패:', error);
             await showError('그룹코드 등록에 실패했습니다. 이미 존재하는 코드일 수 있습니다.');
         });
@@ -240,12 +240,12 @@ document.addEventListener('DOMContentLoaded', function() {
             }
             return response.json();
         })
-        .then(() => {
+        .then(async () => {
             await showSuccess('그룹코드가 성공적으로 수정되었습니다.');
             closeModal(codeGroupModal);
             loadCodeGroups();
         })
-        .catch(error => {
+        .catch(async error => {
             console.error('그룹코드 수정 실패:', error);
             await showError('그룹코드 수정에 실패했습니다.');
         });

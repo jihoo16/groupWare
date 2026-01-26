@@ -1,5 +1,5 @@
 // 연구비 증빙 - 회의록 페이지 JavaScript
-document.addEventListener('DOMContentLoaded', function() {
+document.addEventListener('DOMContentLoaded', async function() {
     // 전역 변수
     let selectedApprovers = [];
     let selectedFiles = [];

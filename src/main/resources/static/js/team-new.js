@@ -1,5 +1,5 @@
 // 신규 팀 생성 페이지 스크립트
-document.addEventListener('DOMContentLoaded', function() {
+document.addEventListener('DOMContentLoaded', async function() {
     // 전역 변수 CURRENT_USER 사용 (layout.html에서 주입됨)
     if (!window.CURRENT_USER || !window.CURRENT_USER.idx) {
         console.warn('세션 정보가 없습니다.');

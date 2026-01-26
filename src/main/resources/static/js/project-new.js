@@ -2137,7 +2137,7 @@
 
     // 기초정보관리 설정값 불러오기
     if (loadDefaultExpensesBtn) {
-        loadDefaultExpensesBtn.addEventListener('click', function() {
+        loadDefaultExpensesBtn.addEventListener('click', async function() {
             fetch('/api/fixed-expense-policies')
                 .then(res => res.json())
                 .then(async policies => {
