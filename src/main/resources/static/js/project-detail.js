@@ -585,7 +585,7 @@ function displayWeeklyReports(reports) {
     }
 
     listContainer.innerHTML = reports.slice(0, 5).map(doc => `
-        <div class="document-item" onclick="goToDocument('${doc.documentType}', ${doc.sourceDocumentId})">
+        <div class="document-item" onclick="goToDocument('${doc.documentType}', ${doc.idx})">
             <div class="document-item-icon">
                 <i class="fas fa-file-alt"></i>
             </div>
