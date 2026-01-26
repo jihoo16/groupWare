@@ -115,6 +115,7 @@
     margin-bottom: 8px;
     background: white;
     transition: background 0.2s;
+    cursor: pointer;
 }
 
 .file-item:hover {

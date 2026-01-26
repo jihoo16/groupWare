@@ -10,6 +10,16 @@ document.addEventListener('DOMContentLoaded', function() {
         return;
     }
 
+    // 전역 변수 CURRENT_USER 사용 (layout.html에서 주입됨)
+    if (!window.CURRENT_USER || !window.CURRENT_USER.idx) {
+        console.warn('세션 정보가 없습니다.');
+        window.location.href = '/login';
+        return;
+    }
+
+    const currentUserIdx = window.CURRENT_USER.idx;
+    console.log('현재 로그인 사용자 idx:', currentUserIdx);
+
     // 보고서 데이터 로드
     loadReportData(documentIdx);
 
@@ -115,6 +125,22 @@ function displayReportData(data) {
         remarksEl.textContent = data.remarks || '-';
     }
 
+    // 작성자와 현재 사용자 비교 - 작성자가 아니면 삭제 버튼 숨김
+    const currentUserIdx = window.CURRENT_USER ? window.CURRENT_USER.idx : null;
+    const deleteReportBtn = document.getElementById('deleteReportBtn');
+
+    if (deleteReportBtn) {
+        if (data.userIdx && currentUserIdx && data.userIdx !== currentUserIdx) {
+            // 작성자가 아니면 삭제 버튼 숨김
+            deleteReportBtn.style.display = 'none';
+            console.log('작성자가 아니므로 삭제 버튼을 숨깁니다.');
+        } else {
+            // 작성자이면 삭제 버튼 표시
+            deleteReportBtn.style.display = 'inline-flex';
+            console.log('작성자이므로 삭제 버튼을 표시합니다.');
+        }
+    }
+
     // 공식 PDF 로드
     if (data.documentIdx) {
         loadOfficialPdfs(data.documentIdx);
@@ -160,10 +186,10 @@ async function loadOfficialPdfs(documentIdx) {
             const createdAt = new Date(pdf.createdAt).toLocaleString('ko-KR');
 
             pdfHTML += `
-                <div class="file-item">
+                <div class="file-item" data-file-idx="${pdf.idx}" data-filename="${pdf.fileName}">
                     <i class="fas fa-file-pdf" style="color: #e74c3c;"></i>
                     <span>${pdf.fileName} (${fileSizeKB} KB) - 생성일시: ${createdAt}</span>
-                    <button class="btn-download-file" onclick="downloadOfficialPdf(${pdf.idx}, '${pdf.fileName}')">
+                    <button class="btn-download-file" onclick="event.stopPropagation(); downloadOfficialPdf(${pdf.idx}, '${pdf.fileName}')">
                         <i class="fas fa-download"></i>
                     </button>
                 </div>
@@ -172,6 +198,15 @@ async function loadOfficialPdfs(documentIdx) {
 
         officialPdfList.innerHTML = pdfHTML;
         console.log(`${pdfFiles.length}개의 공식 PDF를 표시했습니다.`);
+
+        // PDF 항목 클릭 이벤트 추가
+        officialPdfList.querySelectorAll('.file-item').forEach(item => {
+            item.addEventListener('click', function() {
+                const fileIdx = this.getAttribute('data-file-idx');
+                const filename = this.getAttribute('data-filename');
+                downloadOfficialPdf(parseInt(fileIdx), filename);
+            });
+        });
 
     } catch (error) {
         console.error('공식 PDF 로드 오류:', error);
@@ -252,10 +287,10 @@ async function loadAttachedFiles(documentIdx) {
             const fileSizeKB = (file.fileSize / 1024).toFixed(1);
 
             filesHTML += `
-                <div class="file-item">
+                <div class="file-item" data-file-idx="${file.idx}" data-filename="${file.originalFilename}">
                     <i class="fas ${icon}"></i>
                     <span>${file.originalFilename} (${fileSizeKB} KB)</span>
-                    <button class="btn-download-file" onclick="downloadFile(${file.idx}, '${file.originalFilename}')">
+                    <button class="btn-download-file" onclick="event.stopPropagation(); downloadFile(${file.idx}, '${file.originalFilename}')">
                         <i class="fas fa-download"></i>
                     </button>
                 </div>
@@ -264,6 +299,15 @@ async function loadAttachedFiles(documentIdx) {
 
         attachedFileList.innerHTML = filesHTML;
         console.log(`${files.length}개의 파일을 표시했습니다.`);
+
+        // 파일 항목 클릭 이벤트 추가
+        attachedFileList.querySelectorAll('.file-item').forEach(item => {
+            item.addEventListener('click', function() {
+                const fileIdx = this.getAttribute('data-file-idx');
+                const filename = this.getAttribute('data-filename');
+                downloadFile(parseInt(fileIdx), filename);
+            });
+        });
 
     } catch (error) {
         console.error('파일 로드 오류:', error);
