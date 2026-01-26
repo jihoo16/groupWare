@@ -31,12 +31,11 @@ document.addEventListener('DOMContentLoaded', async function () {
     }
     if (createWeeklyReportBtn) {
         createWeeklyReportBtn.addEventListener('click', function () {
-            // 프로젝트 주간업무보고 작성 페이지로 이동 (프로젝트 ID 전달)
-            if (projectId) {
-                window.location.href = `/approval/project-weekly-report?projectIdx=${projectId}`;
-            } else {
-                window.location.href = '/approval/project-weekly-report';
-            }
+            // 프로젝트 주간업무보고 작성 팝업
+            const url = projectId
+                ? `/approval/project-weekly-report?projectIdx=${projectId}`
+                : '/approval/project-weekly-report';
+            openWeeklyReportPopup(url);
         });
     }
 
@@ -634,7 +633,7 @@ function displayExpenseReports(reports) {
 }
 
 /**
- * 문서 상세 페이지로 이동 (새 탭에서 열기)
+ * 문서 상세 페이지로 이동
  */
 async function goToDocument(documentType, sourceDocumentId) {
     if (!sourceDocumentId) return;
@@ -643,7 +642,8 @@ async function goToDocument(documentType, sourceDocumentId) {
     switch (documentType) {
         case 'WEEKLY_REPORT':
             url = `/approval/project-weekly-report/detail?documentIdx=${sourceDocumentId}`;
-            break;
+            openWeeklyReportPopup(url);
+            return;
         case 'MEETING_MINUTES':
         case 'BUSINESS_TRIP':
         case 'RECEIPT_MEETING':
@@ -654,6 +654,17 @@ async function goToDocument(documentType, sourceDocumentId) {
     }
 
     window.open(url, '_blank');
+}
+
+/**
+ * 주간업무보고 팝업 열기
+ */
+function openWeeklyReportPopup(url) {
+    const width = 1200;
+    const height = 800;
+    const left = (screen.width - width) / 2;
+    const top = (screen.height - height) / 2;
+    window.open(url, 'weeklyReportPopup', `width=${width},height=${height},left=${left},top=${top},scrollbars=yes,resizable=yes`);
 }
 
 /**
