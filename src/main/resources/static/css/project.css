@@ -128,7 +128,7 @@
 /* 현재 진행중 프로젝트 리스트 뷰 */
 .current-project-list-container {
     padding: 0 24px 24px;
-    max-height: 750px;
+    max-height: 560px;
     overflow-y: auto;
 }
 

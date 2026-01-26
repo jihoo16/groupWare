@@ -15,7 +15,7 @@ document.addEventListener('DOMContentLoaded', function() {
     // 뷰 토글 버튼
     const cardViewBtn = document.getElementById('cardViewBtn');
     const listViewBtn = document.getElementById('listViewBtn');
-    let currentViewType = 'card'; // 'card' 또는 'list'
+    let currentViewType = 'list'; // 'card' 또는 'list'
 
     // 프로젝트 데이터
     let allCurrentProjects = [];
@@ -94,6 +94,9 @@ document.addEventListener('DOMContentLoaded', function() {
             .then(projects => {
                 allCurrentProjects = projects;
                 renderCurrentProjects(projects);
+                if (currentViewType === 'list') {
+                    renderCurrentProjectsList(projects);
+                }
             })
             .catch(error => {
                 console.error('Error loading current projects:', error);
