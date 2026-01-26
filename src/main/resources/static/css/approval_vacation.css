@@ -682,6 +682,19 @@ div h2{
     text-align: left;
     line-height: 1.6;
     white-space: pre-line;
+    word-wrap: break-word;
+    word-break: break-word;
+    overflow-wrap: break-word;
+    min-height: 20px;
+}
+
+/* 사유 셀 특별 스타일 (긴 내용 대응) */
+.form-table #reason {
+    display: block !important;
+    min-height: 60px !important;
+    max-height: none !important;
+    overflow: visible !important;
+    padding: 12px 16px !important;
 }
 
 /* 휴가기간 표시 영역 */
@@ -1261,7 +1274,7 @@ div h2{
 /* 본문 */
 .vif-body {
     display: grid;
-    grid-template-columns: 1fr 400px;
+    grid-template-columns: 1fr 500px;
     gap: 24px;
     padding: 24px;
 }
@@ -1699,6 +1712,17 @@ div h2{
     border: 1px solid #e9ecef;
 }
 
+/* 툴팁이 있는 카드는 overflow visible */
+.info-card:has(.reason-tooltip),
+.info-card.reason-card {
+    overflow: visible;
+}
+
+.info-card:has(.reason-tooltip) .info-card-body,
+.info-card.reason-card .info-card-body {
+    overflow: visible;
+}
+
 .info-card-header {
     background: white;
     padding: 12px 16px;
@@ -1709,10 +1733,21 @@ div h2{
     font-weight: 600;
     color: #1a237e;
     font-size: 14px;
+    position: relative;
 }
 
 .info-card-header i {
     color: #667eea;
+}
+
+.info-card-header .reason-tooltip-icon {
+    color: #2196F3;
+    cursor: help;
+    margin-left: auto;
+}
+
+.info-card-header .reason-required-badge {
+    margin-left: 8px;
 }
 
 .info-card-body {
@@ -1781,6 +1816,39 @@ div h2{
     display: flex;
     flex-direction: column;
     gap: 10px;
+}
+
+.radio-group-inline {
+    display: flex;
+    gap: 16px;
+    align-items: center;
+}
+
+.radio-label-inline {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    cursor: pointer;
+    padding: 8px 12px;
+    border-radius: 6px;
+    transition: background 0.2s ease;
+}
+
+.radio-label-inline:hover {
+    background: #f0f0f0;
+}
+
+.radio-label-inline input[type="radio"] {
+    width: 16px;
+    height: 16px;
+    cursor: pointer;
+    accent-color: #667eea;
+}
+
+.radio-label-inline span {
+    font-size: 13px;
+    font-weight: 500;
+    color: #333;
 }
 
 .gyeongjo-section {
@@ -2011,6 +2079,12 @@ div h2{
     .vacation-balance {
         flex-wrap: wrap;
         gap: 12px;
+    }
+}
+
+@media (max-width: 1400px) {
+    .vif-body {
+        grid-template-columns: 1fr 450px;
     }
 }
 
@@ -2772,5 +2846,193 @@ div h2{
     /* 문서 제목 스타일 유지 */
     .doc-title {
         page-break-after: avoid;
+    }
+}
+
+/* ========================================
+   기타 휴가 사유 입력 툴팁 스타일
+   ======================================== */
+
+/* 필수 배지 */
+.reason-required-badge {
+    display: inline-block;
+    margin-left: 8px;
+    padding: 2px 8px;
+    background: #ff5252;
+    color: white;
+    font-size: 11px;
+    font-weight: 700;
+    border-radius: 12px;
+    animation: pulse-badge 2s ease-in-out infinite;
+}
+
+@keyframes pulse-badge {
+    0%, 100% {
+        opacity: 1;
+        transform: scale(1);
+    }
+    50% {
+        opacity: 0.8;
+        transform: scale(1.05);
+    }
+}
+
+/* 입력 필드와 툴팁 컨테이너 (사용 안함 - 헤더로 이동) */
+.input-with-tooltip {
+    position: relative;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    width: 100%;
+}
+
+.input-with-tooltip .date-input {
+    flex: 1;
+}
+
+/* 헤더 내 툴팁 아이콘 */
+.info-card-header .reason-tooltip-icon {
+    position: relative;
+}
+
+/* 툴팁 아이콘 */
+.reason-tooltip-icon {
+    color: #2196F3;
+    font-size: 18px;
+    cursor: help;
+    transition: all 0.3s ease;
+    animation: bounce-icon 2s ease-in-out infinite;
+}
+
+.reason-tooltip-icon:hover {
+    color: #1976D2;
+    transform: scale(1.2);
+}
+
+@keyframes bounce-icon {
+    0%, 100% {
+        transform: translateY(0);
+    }
+    50% {
+        transform: translateY(-3px);
+    }
+}
+
+/* 툴팁 박스 */
+.reason-tooltip {
+    position: absolute;
+    top: calc(100% + 8px);
+    right: 0;
+    width: 450px;
+    background: white;
+    border-radius: 12px;
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.15);
+    opacity: 0;
+    visibility: hidden;
+    transform: translateY(-10px);
+    transition: all 0.3s cubic-bezier(0.68, -0.55, 0.265, 1.55);
+    z-index: 9999;
+    border: 2px solid #2196F3;
+    pointer-events: none;
+}
+
+.reason-tooltip:hover {
+    pointer-events: auto;
+}
+
+.reason-tooltip-icon:hover + .reason-tooltip,
+.reason-tooltip:hover {
+    opacity: 1;
+    visibility: visible;
+    transform: translateY(0);
+}
+
+/* 툴팁 헤더 */
+.tooltip-header {
+    padding: 8px 12px;
+    background: linear-gradient(135deg, #2196F3 0%, #1976D2 100%);
+    color: white;
+    border-radius: 10px 10px 0 0;
+    font-weight: 700;
+    font-size: 11px;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.tooltip-header i {
+    font-size: 12px;
+}
+
+/* 툴팁 내용 */
+.tooltip-content {
+    padding: 10px 12px;
+}
+
+.tooltip-content p {
+    margin: 0 0 8px 0;
+    font-size: 10px;
+    color: #333;
+}
+
+.tooltip-content strong {
+    color: #1976D2;
+    font-weight: 700;
+}
+
+.tooltip-content ul {
+    list-style: none;
+    padding: 0;
+    margin: 0 0 8px 0;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+}
+
+.tooltip-content ul li {
+    padding: 0;
+    font-size: 10px;
+    color: #555;
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    white-space: nowrap;
+}
+
+.tooltip-content ul li i {
+    color: #4CAF50;
+    font-size: 9px;
+    flex-shrink: 0;
+}
+
+.tooltip-example {
+    background: #F5F5F5;
+    padding: 6px 8px;
+    border-radius: 6px;
+    border-left: 2px solid #FF9800;
+    font-size: 9px;
+    color: #666;
+    margin: 0 !important;
+    line-height: 1.4;
+}
+
+.tooltip-example::before {
+    content: '💡 ';
+    font-size: 11px;
+}
+
+/* 반응형: 모바일에서 툴팁 위치 조정 */
+@media (max-width: 768px) {
+    .reason-tooltip {
+        width: 90vw;
+        max-width: 400px;
+        right: auto;
+        left: 50%;
+        transform: translateX(-50%) translateY(-10px);
+    }
+
+    .reason-tooltip-icon:hover + .reason-tooltip,
+    .reason-tooltip:hover {
+        transform: translateX(-50%) translateY(0);
     }
 }

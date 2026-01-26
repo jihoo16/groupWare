@@ -1339,6 +1339,27 @@ document.addEventListener('DOMContentLoaded', function() {
         const reasonInput = document.getElementById('vif_reason');
         const minusCheckbox = document.getElementById('allow_minus_vacation');
         const specialReasonTextarea = document.getElementById('special_approval_reason');
+        const etcAddToCalendarCheckbox = document.getElementById('etc_add_to_calendar');
+        const vacationType = vifVacationType ? vifVacationType.value : '';
+
+        // 사유 필수 검증 (모든 연차 유형)
+        const reason = reasonInput ? reasonInput.value.trim() : '';
+        if (!reason) {
+            let errorMessage = '휴가 신청 사유를 입력해주세요.';
+            if (vacationType === '기타') {
+                errorMessage = '기타 휴가는 사유를 반드시 입력해야 합니다.\n\n무급/유급 여부와 휴가 사유를 구체적으로 작성해주세요.\n\n예시: "09~11시 무급휴가 - 통원 치료 등"';
+            }
+            await showError(errorMessage);
+            // 사유 입력 필드로 포커스 이동
+            if (reasonInput) {
+                reasonInput.focus();
+                reasonInput.style.border = '2px solid #ff5252';
+                setTimeout(() => {
+                    reasonInput.style.border = '';
+                }, 2000);
+            }
+            return;
+        }
 
         // 사유 병합 (마이너스 연차일 경우 특별 사유 포함)
         let fullReason = reasonInput ? reasonInput.value : '';
@@ -1353,6 +1374,7 @@ document.addEventListener('DOMContentLoaded', function() {
             reason: fullReason,  // 특별 사유가 병합된 전체 사유
             allowMinusVacation: minusCheckbox ? minusCheckbox.checked : false,
             specialApprovalReason: specialReasonTextarea ? specialReasonTextarea.value : '',
+            etcAddToCalendar: (vacationType === '기타' && etcAddToCalendarCheckbox) ? etcAddToCalendarCheckbox.checked : false,  // 기타 유형일 때만 캘린더 등록 여부
             periods: vacationPeriods.map(period => ({
                 vacationType: period.type,  // type -> vacationType 매핑
                 startDate: period.startDate,
@@ -1475,7 +1497,7 @@ document.addEventListener('DOMContentLoaded', function() {
     let currentSelectionDays = 0; // 현재 선택 중인 기간의 일수
 
     // 영업일 구간으로 분리하는 함수
-    function splitIntoBusinessDayPeriods(startDate, endDate, vacationType) {
+    function splitIntoBusinessDayPeriods(startDate, endDate, vacationType, paidType = null) {
         const periods = [];
         let currentPeriodStart = null;
         let currentPeriodEnd = null;
@@ -1492,7 +1514,31 @@ document.addEventListener('DOMContentLoaded', function() {
                 endDate: endDate,
                 days: 0.5,
                 startDateFormatted: formatDateDisplay(new Date(startDate)),
-                endDateFormatted: formatDateDisplay(new Date(endDate))
+                endDateFormatted: formatDateDisplay(new Date(endDate)),
+                paidType: paidType
+            }];
+        }
+
+        // 기타는 전체 기간을 하나로 반환 (영업일 계산)
+        if (vacationType === '기타') {
+            let businessDays = 0;
+            for (let d = new Date(start); d <= end; d.setDate(d.getDate() + 1)) {
+                const dateStr = formatDate(d);
+                const dayOfWeek = d.getDay();
+                const isWeekend = dayOfWeek === 0 || dayOfWeek === 6;
+                const isHoliday = holidays[dateStr];
+                if (!isWeekend && !isHoliday) {
+                    businessDays++;
+                }
+            }
+            return [{
+                type: vacationType,
+                startDate: startDate,
+                endDate: endDate,
+                days: businessDays,
+                startDateFormatted: formatDateDisplay(new Date(startDate)),
+                endDateFormatted: formatDateDisplay(new Date(endDate)),
+                paidType: paidType
             }];
         }
 
@@ -1505,7 +1551,8 @@ document.addEventListener('DOMContentLoaded', function() {
                 endDate: endDate,
                 days: totalDays,
                 startDateFormatted: formatDateDisplay(new Date(startDate)),
-                endDateFormatted: formatDateDisplay(new Date(endDate))
+                endDateFormatted: formatDateDisplay(new Date(endDate)),
+                paidType: paidType
             }];
         }
 
@@ -1532,7 +1579,8 @@ document.addEventListener('DOMContentLoaded', function() {
                         endDate: formatDate(currentPeriodEnd),
                         days: currentDays,
                         startDateFormatted: formatDateDisplay(currentPeriodStart),
-                        endDateFormatted: formatDateDisplay(currentPeriodEnd)
+                        endDateFormatted: formatDateDisplay(currentPeriodEnd),
+                        paidType: paidType
                     });
                     currentPeriodStart = null;
                     currentPeriodEnd = null;
@@ -1549,7 +1597,8 @@ document.addEventListener('DOMContentLoaded', function() {
                 endDate: formatDate(currentPeriodEnd),
                 days: currentDays,
                 startDateFormatted: formatDateDisplay(currentPeriodStart),
-                endDateFormatted: formatDateDisplay(currentPeriodEnd)
+                endDateFormatted: formatDateDisplay(currentPeriodEnd),
+                paidType: paidType
             });
         }
 
@@ -2132,12 +2181,12 @@ document.addEventListener('DOMContentLoaded', function() {
         // 현재 선택 중인 기간이 경조사가 아닌 경우만 합산
         const currentVacationType = vifVacationType.value;
 
-        // 경조사가 아닌 경우만 연차 초과 검증
-        if (currentVacationType !== '경조사') {
+        // 경조사와 기타가 아닌 경우만 연차 초과 검증
+        if (currentVacationType !== '경조사' && currentVacationType !== '기타') {
             const totalDays = currentSelectionDays + addedDays;
             checkVacationBalance(totalDays);
         }
-        // 경조사는 연차 차감이 없으므로 경고 카드 표시 안 함
+        // 경조사와 기타는 연차 차감이 없으므로 경고 카드 표시 안 함
     }
 
     // 연차 잔여 확인 및 경고 표시
@@ -2329,6 +2378,8 @@ document.addEventListener('DOMContentLoaded', function() {
         vifVacationType.addEventListener('change', async () => {
             const vacationType = vifVacationType.value;
             const gyeongjoTypeRow = document.getElementById('gyeongjo_type_row');
+            const etcPaidRow = document.getElementById('etc_paid_row');
+            const etcCalendarRow = document.getElementById('etc_calendar_row');
             const vacationNotice = document.getElementById('vacation_notice');
             const gyeongjoNotice = document.getElementById('gyeongjo_notice');
 
@@ -2337,11 +2388,51 @@ document.addEventListener('DOMContentLoaded', function() {
                 if (gyeongjoTypeRow) {
                     gyeongjoTypeRow.style.display = 'flex';
                 }
+                if (etcPaidRow) {
+                    etcPaidRow.style.display = 'none';
+                }
+                if (etcCalendarRow) {
+                    etcCalendarRow.style.display = 'none';
+                }
                 if (vacationNotice) {
                     vacationNotice.style.display = 'none';
                 }
                 if (gyeongjoNotice) {
                     gyeongjoNotice.style.display = 'flex';
+                }
+            } else if (vacationType === '기타') {
+                // 기타 선택 시 무급/유급 라디오 버튼 및 캘린더 등록 체크박스 표시 및 사유 필수 표시
+                if (gyeongjoTypeRow) {
+                    gyeongjoTypeRow.style.display = 'none';
+                    const radioButtons = document.querySelectorAll('input[name="gyeongjo_type"]');
+                    radioButtons.forEach(radio => radio.checked = false);
+                }
+                if (etcPaidRow) {
+                    etcPaidRow.style.display = 'flex';
+                }
+                if (etcCalendarRow) {
+                    etcCalendarRow.style.display = 'block';
+                }
+                if (vacationNotice) {
+                    vacationNotice.style.display = 'flex';
+                }
+                if (gyeongjoNotice) {
+                    gyeongjoNotice.style.display = 'none';
+                }
+                // 기타 휴가: 사유 필수 표시
+                const reasonBadge = document.getElementById('reason_required_badge');
+                const reasonTooltipIcon = document.getElementById('reason_tooltip_icon');
+                const reasonInput = document.getElementById('vif_reason');
+                if (reasonBadge) {
+                    reasonBadge.style.display = 'inline-block';
+                }
+                if (reasonTooltipIcon) {
+                    reasonTooltipIcon.style.display = 'block';
+                }
+                // 기타 선택 시 사유 입력 필드 비우기
+                if (reasonInput) {
+                    reasonInput.value = '';
+                    reasonInput.placeholder = '무급/유급 여부와 휴가 사유를 입력하세요 (예: 무급휴가 - 개인 사유)';
                 }
             } else {
                 if (gyeongjoTypeRow) {
@@ -2349,6 +2440,12 @@ document.addEventListener('DOMContentLoaded', function() {
                     // 라디오 버튼 선택 해제
                     const radioButtons = document.querySelectorAll('input[name="gyeongjo_type"]');
                     radioButtons.forEach(radio => radio.checked = false);
+                }
+                if (etcPaidRow) {
+                    etcPaidRow.style.display = 'none';
+                }
+                if (etcCalendarRow) {
+                    etcCalendarRow.style.display = 'none';
                 }
                 if (vacationNotice) {
                     vacationNotice.style.display = 'flex';
@@ -2360,6 +2457,21 @@ document.addEventListener('DOMContentLoaded', function() {
                 const gyeongjoDateGuideEl = document.getElementById('gyeongjo_date_guide');
                 if (gyeongjoDateGuideEl) {
                     gyeongjoDateGuideEl.style.display = 'none';
+                }
+                // 사유 필수 표시 숨김 및 기본값 복원
+                const reasonBadge = document.getElementById('reason_required_badge');
+                const reasonTooltipIcon = document.getElementById('reason_tooltip_icon');
+                const reasonInput = document.getElementById('vif_reason');
+                if (reasonBadge) {
+                    reasonBadge.style.display = 'none';
+                }
+                if (reasonTooltipIcon) {
+                    reasonTooltipIcon.style.display = 'none';
+                }
+                // 다른 유형 선택 시 사유 기본값 복원
+                if (reasonInput && !reasonInput.value.trim()) {
+                    reasonInput.value = '휴가 사용.';
+                    reasonInput.placeholder = '휴가 사용 사유를 입력하세요';
                 }
             }
 
@@ -2651,6 +2763,23 @@ document.addEventListener('DOMContentLoaded', function() {
                 }
             }
 
+            // 기타 유형일 경우 사유 필수 검증
+            if (vacationType === '기타') {
+                const reasonInput = document.getElementById('vif_reason');
+                const reason = reasonInput ? reasonInput.value.trim() : '';
+                if (!reason) {
+                    await showWarning('기타 휴가는 사유를 먼저 입력해주세요.\n\n무급/유급 여부와 휴가 사유를 구체적으로 작성한 후 기간을 추가해주세요.');
+                    if (reasonInput) {
+                        reasonInput.focus();
+                        reasonInput.style.border = '2px solid #ff5252';
+                        setTimeout(() => {
+                            reasonInput.style.border = '';
+                        }, 2000);
+                    }
+                    return;
+                }
+            }
+
             // 마이너스 연차 검증 (경조사는 검증 생략)
             if (!validateMinusVacation(currentSelectionDays, isGyeongjosa)) {
                 return;
@@ -2839,11 +2968,19 @@ document.addEventListener('DOMContentLoaded', function() {
                 }
             }
 
+            // 기타 유형일 경우 무급/유급 정보 가져오기
+            let paidType = null;
+            if (vacationType === '기타') {
+                const paidTypeRadio = document.querySelector('input[name="etc_paid_type"]:checked');
+                paidType = paidTypeRadio ? paidTypeRadio.value : '무급';
+            }
+
             // 영업일 구간으로 자동 분리
             const splitPeriods = splitIntoBusinessDayPeriods(
                 parseDateFromDisplay(vifStartDate.textContent),
                 parseDateFromDisplay(vifEndDate.textContent),
-                vacationType
+                vacationType,
+                paidType
             );
 
             if (splitPeriods.length === 0) {
@@ -3091,9 +3228,9 @@ document.addEventListener('DOMContentLoaded', function() {
         const totalDays = vacationPeriods.reduce((sum, period) => sum + period.days, 0);
         totalDaysBadge.textContent = `총 ${totalDays}일`;
 
-        // 신청 일수 요약 업데이트 (경조사 제외)
+        // 신청 일수 요약 업데이트 (경조사, 기타 제외)
         const annualLeaveDays = vacationPeriods
-            .filter(period => !period.type.includes('경조사'))
+            .filter(period => !period.type.includes('경조사') && period.type !== '기타')
             .reduce((sum, period) => sum + period.days, 0);
 
         const vifCalculatedDaysEl = document.getElementById('vif_calculated_days');
@@ -3240,9 +3377,10 @@ document.addEventListener('DOMContentLoaded', function() {
         allPeriods.forEach((period, index) => {
             const periodDays = period.days;
             const isGyeongjosa = period.type && period.type.includes('경조사');
+            const isEtc = period.type === '기타';
 
-            // 경조사가 아닌 경우만 누적 일수에 포함
-            const newAccumulated = isGyeongjosa ? accumulatedDays : (accumulatedDays + periodDays);
+            // 경조사와 기타가 아닌 경우만 누적 일수에 포함
+            const newAccumulated = (isGyeongjosa || isEtc) ? accumulatedDays : (accumulatedDays + periodDays);
 
             const formatted = formatVacationPeriod(period.startDate, period.endDate, period.days);
             vacationPeriodText += formatted;
@@ -3261,22 +3399,32 @@ document.addEventListener('DOMContentLoaded', function() {
             const isSingleDay = period.startDate === period.endDate;
             const dateDisplay = isSingleDay ? startFormatted : `${startFormatted} ~ ${endFormatted}`;
 
+            // 기타 유형인 경우 무급/유급 표시 추가
+            const paidTypeDisplay = isEtc && period.paidType ? ` (${period.paidType})` : '';
+
             // 경조사인 경우 별도 표시 (파란색)
             if (isGyeongjosa) {
                 // "경조사(본인결혼)" -> "본인결혼" 추출
                 const gyeongjoType = period.type.replace('경조사(', '').replace(')', '');
                 vacationPeriodHtml += `<span class="gyeongjosa-text">${dateDisplay} 경조사 ${periodDays}일 (${gyeongjoType})</span>`;
             }
-            // 반차 및 일반 연차인 경우
+            // 반차 및 일반 연차 및 기타인 경우
             else {
                 // 반차인 경우 표시명 변환
                 let displayType = '연차';
                 if (period.type && period.type.includes('반차')) {
                     // "반차(오전)" -> "오전반차", "반차(오후)" -> "오후반차"
                     displayType = period.type.replace('반차(오전)', '오전반차').replace('반차(오후)', '오후반차');
+                } else if (period.type === '기타') {
+                    displayType = '기타';
+                }
+
+                // 기타 유형이고 연차 차감 안되는 경우
+                if (period.type === '기타') {
+                    vacationPeriodHtml += `${dateDisplay} ${displayType}${paidTypeDisplay} ${periodDays}일`;
                 }
                 // 기존 잔여가 양수인 경우에만 구간별 마이너스 표시
-                if (remainingVacation > 0) {
+                else if (remainingVacation > 0) {
                     // 이 기간이 완전히 잔여 연차 내에 있는 경우
                     if (newAccumulated <= remainingVacation) {
                         vacationPeriodHtml += `${dateDisplay} ${displayType} ${periodDays}일`;
@@ -3302,8 +3450,8 @@ document.addEventListener('DOMContentLoaded', function() {
                 vacationPeriodHtml += '\n';
             }
 
-            // 경조사가 아닌 경우만 총 일수에 포함
-            if (!isGyeongjosa) {
+            // 경조사와 기타가 아닌 경우만 총 일수에 포함
+            if (!isGyeongjosa && !isEtc) {
                 totalDays += periodDays;
             }
             accumulatedDays = newAccumulated;
