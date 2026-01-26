@@ -231,6 +231,29 @@
     background: #f8f9fa;
 }
 
+/* 섹션 타이틀 + 카운트 */
+.section-title-with-count {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-bottom: 0;
+}
+
+.section-title-with-count .section-title {
+    margin-bottom: 0;
+}
+
+.member-count-badge {
+    display: inline-flex;
+    align-items: center;
+    padding: 4px 12px;
+    background: #e7f1ff;
+    color: #4361ee;
+    font-size: 13px;
+    font-weight: 600;
+    border-radius: 16px;
+}
+
 /* 팀원 테이블 */
 .team-table-container {
     margin: 20px 0;
@@ -245,6 +268,64 @@
 
 .team-table thead {
     background: #f8f9fa;
+}
+
+/* 팀원 테이블 접힌 상태 - 스크롤로 7명까지 표시 */
+.team-table-container.collapsed {
+    max-height: 350px;
+    overflow-y: auto;
+}
+
+.team-table-container.collapsed .team-table thead {
+    position: sticky;
+    top: 0;
+    z-index: 1;
+}
+
+/* 팀원 테이블 펼친 상태 - 전체 표시 */
+.team-table-container.expanded {
+    max-height: none;
+    overflow-y: visible;
+}
+
+/* 펼치기/접기 버튼 */
+.team-table-toggle {
+    display: flex;
+    justify-content: center;
+    padding: 12px 0;
+    border-top: 1px solid #e9ecef;
+    background: #f8f9fa;
+    position: sticky;
+    bottom: 0;
+    z-index: 2;
+}
+
+.btn-toggle-team {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 8px 20px;
+    background: white;
+    border: 1px solid #dee2e6;
+    border-radius: 20px;
+    font-size: 13px;
+    font-weight: 500;
+    color: #495057;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.btn-toggle-team:hover {
+    background: #f1f3f5;
+    border-color: #adb5bd;
+}
+
+.btn-toggle-team .toggle-icon {
+    transition: transform 0.2s ease;
+}
+
+.team-table-container.expanded .btn-toggle-team .toggle-icon {
+    transform: rotate(180deg);
 }
 
 .team-table th,
