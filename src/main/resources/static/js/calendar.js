@@ -1682,7 +1682,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
 
     // 알림 메시지 표시 함수
-    function showAlert(message, type = 'info') {
+    async function showAlert(message, type = 'info') {
         await showInfo(message);
     }
 
