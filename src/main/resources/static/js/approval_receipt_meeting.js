@@ -1182,9 +1182,6 @@ document.addEventListener('DOMContentLoaded', async function() {
                 return;
             }
 
-            if (!(await showConfirm('회의록을 저장하시겠습니까?'))) {
-                return;
-            }
 
             // 참석자 목록 변환
             const attendeeDTOs = currentAttendees.map((attendee, index) => {
@@ -1219,6 +1216,9 @@ document.addEventListener('DOMContentLoaded', async function() {
 
             console.log('저장 데이터:', saveData);
 
+            const confirmed = showSaveConfirm('회의록을 저장하시겠습니까?');
+                if(!confirmed)return;
+            showLoading('저장 중...');
             try {
                 const response = await fetch('/api/receipt-meetings', {
                     method: 'POST',
