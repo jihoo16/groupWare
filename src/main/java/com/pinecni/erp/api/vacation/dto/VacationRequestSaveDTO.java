@@ -48,6 +48,13 @@ public class VacationRequestSaveDTO {
      */
     private String renderedCss;
 
+    /**
+     * 기타 휴가 캘린더 등록 여부
+     * - 기타 유형 연차만 해당
+     * - true: 캘린더에 일정 등록, false: 등록하지 않음
+     */
+    private Boolean etcAddToCalendar;
+
     @Data
     @NoArgsConstructor
     @AllArgsConstructor

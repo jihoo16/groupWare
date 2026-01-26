@@ -572,9 +572,9 @@ public class VacationServiceImpl implements VacationService {
                 .map(VacationRequestSaveDTO.VacationPeriod::getDays)
                 .reduce(BigDecimal.ZERO, BigDecimal::add);
 
-        // 7. 잔여 연차 검증 (경조사는 연차 차감 대상이 아니므로 제외)
+        // 7. 잔여 연차 검증 (경조사와 기타는 연차 차감 대상이 아니므로 제외)
         BigDecimal totalRequestedDaysExcludingGyeongjosa = saveDTO.getPeriods().stream()
-                .filter(period -> !period.getVacationType().contains("경조사"))
+                .filter(period -> !period.getVacationType().contains("경조사") && !"기타".equals(period.getVacationType()))
                 .map(VacationRequestSaveDTO.VacationPeriod::getDays)
                 .reduce(BigDecimal.ZERO, BigDecimal::add);
 
@@ -590,7 +590,7 @@ public class VacationServiceImpl implements VacationService {
 
         BigDecimal currentRemainingDays = vacationBalance != null ? vacationBalance.getRemainingDays() : BigDecimal.ZERO;
 
-        // 신청 후 잔여 연차 계산 (경조사는 연차 차감 대상이 아니므로 제외)
+        // 신청 후 잔여 연차 계산 (경조사와 기타는 연차 차감 대상이 아니므로 제외)
         BigDecimal remainingDaysAfterApply = currentRemainingDays.subtract(totalRequestedDaysExcludingGyeongjosa);
 
         // 9. ApprovalDocument 생성 (문서 메타데이터)
@@ -640,7 +640,18 @@ public class VacationServiceImpl implements VacationService {
                     period.getStartDate(), period.getEndDate(), period.getDays(), period.getVacationType());
 
             // 11. 캘린더 일정 자동 생성
-            createCalendarEventForVacation(userIdx, user, savedDocument.getIdx(), period, saveDTO.getReason());
+            // 기타 휴가인 경우 사용자가 체크한 경우에만 캘린더 등록
+            boolean shouldCreateCalendarEvent = true;
+            if ("기타".equals(period.getVacationType())) {
+                shouldCreateCalendarEvent = saveDTO.getEtcAddToCalendar() != null && saveDTO.getEtcAddToCalendar();
+                log.info("[기타 휴가] 캘린더 등록 여부: {}", shouldCreateCalendarEvent);
+            }
+
+            if (shouldCreateCalendarEvent) {
+                createCalendarEventForVacation(userIdx, user, savedDocument.getIdx(), period, saveDTO.getReason());
+            } else {
+                log.info("[캘린더 일정 생성 스킵] 기타 휴가이며 캘린더 등록 체크 안됨");
+            }
         }
 
         // 12. PDF 파일 생성 및 저장
@@ -816,6 +827,9 @@ public class VacationServiceImpl implements VacationService {
                 break;
             case "반차(오후)":
                 typeLabel = "오후 반차";
+                break;
+            case "기타":
+                typeLabel = "연차";  // 기타는 "연차"로 표시
                 break;
             default:
                 // 경조사(본인결혼), 경조사(부모상) 등은 그냥 "경조사"로만 표시
@@ -1195,13 +1209,13 @@ public class VacationServiceImpl implements VacationService {
         // 4. VacationRequest 조회 및 캘린더 일정 삭제
         List<VacationRequest> vacationRequests = vacationRequestRepository.findByDocumentIdx(documentIdx);
 
-        // 5. 삭제할 총 연차 일수 계산 (경조사는 연차 차감 대상이 아니므로 제외)
+        // 5. 삭제할 총 연차 일수 계산 (경조사와 기타는 연차 차감 대상이 아니므로 제외)
         BigDecimal totalDaysToRestore = vacationRequests.stream()
-                .filter(vr -> !vr.getVacationType().contains("경조사"))
+                .filter(vr -> !vr.getVacationType().contains("경조사") && !"기타".equals(vr.getVacationType()))
                 .map(VacationRequest::getDays)
                 .reduce(BigDecimal.ZERO, BigDecimal::add);
 
-        log.info("[연차 일수 복구 계산] 총 복구할 일수: {}일 (경조사 제외)", totalDaysToRestore);
+        log.info("[연차 일수 복구 계산] 총 복구할 일수: {}일 (경조사, 기타 제외)", totalDaysToRestore);
 
         // 6. VacationBalance 업데이트 (연차 잔액 복구)
         if (totalDaysToRestore.compareTo(BigDecimal.ZERO) > 0 && !vacationRequests.isEmpty()) {
