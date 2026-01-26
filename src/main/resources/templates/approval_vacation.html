@@ -138,7 +138,33 @@
                                                 <option value="반차(오전)">반차 - 오전 (0.5일)</option>
                                                 <option value="반차(오후)">반차 - 오후 (0.5일)</option>
                                                 <option value="경조사">경조사</option>
+                                                <option value="기타">기타 (관리부 협의)</option>
                                             </select>
+                                        </div>
+                                        <div class="info-row" id="etc_paid_row" style="display: none;">
+                                            <label>무급/유급 선택 <span class="required">*</span></label>
+                                            <div class="radio-group-inline">
+                                                <label class="radio-label-inline">
+                                                    <input type="radio" name="etc_paid_type" value="무급" checked>
+                                                    <span>무급</span>
+                                                </label>
+                                                <label class="radio-label-inline">
+                                                    <input type="radio" name="etc_paid_type" value="유급">
+                                                    <span>유급</span>
+                                                </label>
+                                            </div>
+                                            <small style="color: #6c757d; font-size: 11px; margin-top: 4px; display: block;">
+                                                관리부와 협의한 내용에 따라 선택하세요.
+                                            </small>
+                                        </div>
+                                        <div class="info-row" id="etc_calendar_row" style="display: none;">
+                                            <label class="checkbox-wrapper" for="etc_add_to_calendar">
+                                                <input type="checkbox" id="etc_add_to_calendar" />
+                                                <span>캘린더에 일정 등록</span>
+                                            </label>
+                                            <small style="color: #6c757d; font-size: 11px; margin-top: 4px; display: block;">
+                                                캘린더 등록 여부를 선택하세요.
+                                            </small>
                                         </div>
                                         <div class="info-row" id="gyeongjo_type_row" style="display: none;">
                                             <label>경조사 유형 <span class="required">*</span></label>
@@ -176,6 +202,10 @@
                                                         <label class="radio-label">
                                                             <input type="radio" name="gyeongjo_type" value="배우자상" data-days="5" data-include-holidays="true">
                                                             <span>배우자상 (5일)</span>
+                                                        </label>
+                                                        <label class="radio-label">
+                                                            <input type="radio" name="gyeongjo_type" value="배우자부모상" data-days="3" data-include-holidays="true">
+                                                            <span>배우자부모상 (3일)</span>
                                                         </label>
                                                         <label class="radio-label">
                                                             <input type="radio" name="gyeongjo_type" value="자녀상" data-days="3" data-include-holidays="true">
@@ -300,10 +330,32 @@
                                     </div>
                                 </div>
 
-                                <div class="info-card">
+                                <div class="info-card reason-card">
                                     <div class="info-card-header">
                                         <i class="fas fa-comment-alt"></i>
                                         <span>신청 사유</span>
+                                        <span class="reason-required-badge" id="reason_required_badge" style="display: none;">
+                                            필수
+                                        </span>
+                                        <i class="fas fa-info-circle reason-tooltip-icon" id="reason_tooltip_icon" style="display: none;"></i>
+                                        <div class="reason-tooltip" id="reason_tooltip">
+                                            <div class="tooltip-header">
+                                                <i class="fas fa-exclamation-circle"></i>
+                                                기타 휴가 사유 작성 안내
+                                            </div>
+                                            <div class="tooltip-content">
+                                                <p><strong>다음 정보를 반드시 포함해주세요:</strong></p>
+                                                <ul>
+                                                    <li><i class="fas fa-check"></i> 무급/유급 여부</li>
+                                                    <li><i class="fas fa-check"></i> 휴가 사유</li>
+                                                    <li><i class="fas fa-check"></i> 휴가 사용 시간</li>
+                                                    <li><i class="fas fa-check"></i> 관리부 협의 내용 (선택)</li>
+                                                </ul>
+                                                <p class="tooltip-example">
+                                                    예시: "무급휴가 - 통원치료를 위한 09시 ~ 11시 휴가"
+                                                </p>
+                                            </div>
+                                        </div>
                                     </div>
                                     <div class="info-card-body">
                                         <div class="info-row">
@@ -415,7 +467,7 @@
                                 </tr>
                                 <tr>
                                     <th style="width: 120px;">사 유</th>
-                                    <td colspan="3"><span id="reason" class="readonly-text"></span></td>
+                                    <td colspan="3" style="vertical-align: top; padding: 16px;"><span id="reason" class="readonly-text"></span></td>
                                 </tr>
                                 <tr>
                                     <th style="width: 120px;">휴가기간</th>
@@ -434,6 +486,7 @@
                                             <option>반차(오전)</option>
                                             <option>반차(오후)</option>
                                             <option>경조사</option>
+                                            <option>기타</option>
                                         </select>
                                     </td>
                                 </tr>
