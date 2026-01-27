@@ -19,13 +19,17 @@ document.addEventListener('DOMContentLoaded', function() {
     const itemsPerPage = 10;
     let filteredRows = []; // 필터링된 행들
 
-    // 프로젝트 관련 문서 타입 정의
+    // 프로젝트 관련 문서 타입 정의 (한글 + 영문 enum)
     const PROJECT_DOCUMENT_TYPES = [
         '프로젝트 주간업무보고',
         '연구비증빙(회의록)',
         '연구비증빙(출장)',
         '연구비증빙(출장+회의)',
-        '연구비증빙(야근식대)'
+        '연구비증빙(야근식대)',
+        'WEEKLY_REPORT',
+        'MEETING_MINUTES',
+        'BUSINESS_TRIP',
+        'RECEIPT_MEETING'
     ];
 
     // 새 문서 작성 드롭다운
@@ -104,7 +108,11 @@ document.addEventListener('DOMContentLoaded', function() {
 
             // 문서함 필터
             if (currentCategory && currentCategory !== 'all') {
-                show = category === currentCategory;
+                if (currentCategory === 'all-expense') {
+                    show = category !== 'project-weekly-report';
+                } else {
+                    show = category === currentCategory;
+                }
             }
 
             // 검색 필터 (초성 검색 지원)
@@ -264,21 +272,31 @@ document.addEventListener('DOMContentLoaded', function() {
 
     // 문서 카테고리 매핑
     function getCategoryFromDocumentType(documentType) {
-        if (documentType === '프로젝트 주간업무보고') return 'project-weekly-report';
-        if (documentType === '연구비증빙(회의록)') return 'receipt-meeting';
-        if (documentType === '연구비증빙(출장)') return 'receipt-trip';
-        if (documentType === '연구비증빙(출장+회의)') return 'receipt-trip-meeting';
-        if (documentType === '연구비증빙(야근식대)') return 'receipt-overtime';
-        return 'unknown';
+        const categoryMap = {
+            '프로젝트 주간업무보고': 'project-weekly-report',
+            'WEEKLY_REPORT': 'project-weekly-report',
+            '연구비증빙(회의록)': 'receipt-meeting',
+            'RECEIPT_MEETING': 'receipt-meeting',
+            '연구비증빙(출장)': 'receipt-trip',
+            'BUSINESS_TRIP': 'receipt-trip',
+            '연구비증빙(출장+회의)': 'receipt-trip-meeting',
+            'MEETING_MINUTES': 'receipt-meeting',
+            '연구비증빙(야근식대)': 'receipt-overtime'
+        };
+        return categoryMap[documentType] || 'unknown';
     }
 
     // 문서 타입별 아이콘 매핑
     function getIconFromDocumentType(documentType) {
         const iconMap = {
             '프로젝트 주간업무보고': 'fa-calendar-week',
+            'WEEKLY_REPORT': 'fa-calendar-week',
             '연구비증빙(회의록)': 'fa-utensils',
+            'RECEIPT_MEETING': 'fa-utensils',
             '연구비증빙(출장)': 'fa-plane',
+            'BUSINESS_TRIP': 'fa-plane',
             '연구비증빙(출장+회의)': 'fa-suitcase',
+            'MEETING_MINUTES': 'fa-utensils',
             '연구비증빙(야근식대)': 'fa-moon'
         };
         return iconMap[documentType] || 'fa-file-alt';
@@ -287,13 +305,25 @@ document.addEventListener('DOMContentLoaded', function() {
     // 문서 로드
     async function loadAllDocuments() {
         try {
-            console.log('프로젝트 문서 API 호출 시작: /api/approval/documents');
-            const response = await fetch('/api/approval/documents');
+            const urlParams = new URLSearchParams(window.location.search);
+            const projectId = urlParams.get('projectId');
+
+            let apiUrl;
+            if (projectId) {
+                // projectId가 있으면 해당 프로젝트 문서만 조회
+                apiUrl = `/api/approval/documents/project/${projectId}`;
+                console.log('프로젝트별 문서 API 호출:', apiUrl);
+            } else {
+                apiUrl = '/api/approval/documents';
+                console.log('전체 문서 API 호출:', apiUrl);
+            }
+
+            const response = await fetch(apiUrl);
             console.log('API 응답 상태:', response.status, response.statusText);
 
             if (response.ok) {
                 const documents = await response.json();
-                console.log('전체 문서 로드 성공:', documents.length + '건');
+                console.log('문서 로드 성공:', documents.length + '건');
 
                 // 프로젝트 관련 문서만 필터링
                 allDocuments = documents.filter(doc =>
@@ -359,12 +389,17 @@ document.addEventListener('DOMContentLoaded', function() {
         tr.setAttribute('data-category', getCategoryFromDocumentType(doc.documentType));
         tr.setAttribute('data-created-at', doc.createdAt);
         tr.setAttribute('data-document-idx', doc.idx);
-
         // 문서종류
         const typeCell = document.createElement('td');
         typeCell.className = 'doc-type-cell';
         const icon = getIconFromDocumentType(doc.documentType);
-        const documentType = doc.documentType || '-';
+        const displayNameMap = {
+            'WEEKLY_REPORT': '프로젝트 주간업무보고',
+            'RECEIPT_MEETING': '연구비증빙(회의록)',
+            'BUSINESS_TRIP': '연구비증빙(출장)',
+            'MEETING_MINUTES': '연구비증빙(회의록)'
+        };
+        const documentType = displayNameMap[doc.documentType] || doc.documentType || '-';
         const highlightedDocType = keyword ? searchUtils.highlightText(documentType, keyword) : documentType;
         typeCell.innerHTML = `
             <span class="doc-type">
@@ -430,18 +465,20 @@ document.addEventListener('DOMContentLoaded', function() {
         // 문서 타입에 따라 다른 상세 페이지로 이동
         const urls = {
             '프로젝트 주간업무보고': '/approval/project-weekly-report/detail',
+            'WEEKLY_REPORT': '/approval/project-weekly-report/detail',
             '연구비증빙(회의록)': '/approval/receipt-meeting',
+            'RECEIPT_MEETING': '/approval/receipt-meeting',
             '연구비증빙(출장)': '/approval/receipt-trip',
+            'BUSINESS_TRIP': '/approval/receipt-trip',
             '연구비증빙(출장+회의)': '/approval/receipt-trip-meeting',
+            'MEETING_MINUTES': '/approval/receipt-meeting',
             '연구비증빙(야근식대)': '/approval/receipt-overtime'
         };
 
         const url = urls[doc.documentType];
         if (url) {
-            window.location.href = `${url}?documentIdx=${doc.idx}`;
-            // sourceDocumentId: 원본 문서 테이블의 idx (project_weekly_report 등)
-            const documentId = doc.sourceDocumentId || doc.idx;
-            window.open(`${url}?id=${documentId}`, '_blank');
+            const documentId = doc.idx;
+            window.open(`${url}?documentIdx=${documentId}`, '_blank');
         } else {
             showWarning('해당 문서 타입의 상세 페이지가 구현되지 않았습니다.');
         }
@@ -480,10 +517,18 @@ document.addEventListener('DOMContentLoaded', function() {
         const tab = urlParams.get('tab');
 
         if (tab) {
+            if (tab === 'expense') {
+                // 연구비증빙: 모든 증빙 카테고리 표시
+                currentCategory = 'all-expense';
+                contentTitle.textContent = '연구비증빙';
+                currentPage = 1;
+                filterDocuments();
+                return;
+            }
+
             // tab 파라미터를 category로 매핑
             const tabToCategoryMap = {
                 'weekly': 'project-weekly-report',
-                'expense': 'receipt-meeting',  // 연구비증빙은 회의록 탭으로
                 'receipt-meeting': 'receipt-meeting',
                 'receipt-trip': 'receipt-trip',
                 'receipt-trip-meeting': 'receipt-trip-meeting',
