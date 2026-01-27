@@ -1,55 +1,22 @@
 // 연구비 증빙 - 회의록 페이지 JavaScript
 document.addEventListener('DOMContentLoaded', async function() {
     // 전역 변수
-    let selectedApprovers = [];
     let selectedFiles = [];
-    let selectedEmployee = null;
     let currentUser = null; // 현재 로그인한 사용자
     let projects = []; // 프로젝트 목록
     let projectMembers = []; // 선택된 프로젝트의 팀원 목록
     let currentAttendees = []; // 현재 추가된 참석자 목록 (전역으로 이동)
     let fixedExpenses = {}; // 기초정보관리의 직급별 고정경비 (회의비)
     let selectedProject = null; // 선택된 프로젝트
+    let shouldOpenCardModalAfterProject = false; // 과제 선택 후 카드 모달 자동 열기 플래그
 
     // DOM 요소
     const templateTreeHeaders = document.querySelectorAll('.tree-node-header[data-template]');
-    const categoryNodes = document.querySelectorAll('.tree-node-header.category-node');
-    const expandAllBtn = document.getElementById('expandAllBtn');
     const documentForm = document.getElementById('documentForm');
-    const approverChips = document.getElementById('approverChips');
     const fileInput = document.getElementById('fileInput');
     const fileList = document.getElementById('fileList');
     const fileUploadArea = document.getElementById('fileUploadArea');
-    const approverModal = document.getElementById('approverModal');
-    const employeeList = document.getElementById('employeeList');
-    const approverSearch = document.getElementById('approverSearch');
     const saveBtn = document.getElementById('saveBtn');
-
-    // 직원 데이터 (API에서 로드)
-    let employees = [];
-
-    // 직원 데이터 로드 함수
-    async function loadEmployees() {
-        try {
-            const response = await fetch('/api/users');
-            if (response.ok) {
-                const users = await response.json();
-                employees = users.map(user => ({
-                    id: user.idx,
-                    name: user.empName,
-                    position: user.empPositionName || user.empPosition || '직급 미지정', // 직급 이름 우선 사용
-                    dept: user.empDept || '부서 미지정'
-                }));
-                console.log('직원 데이터 로드 완료:', employees.length + '명');
-            } else {
-                console.error('직원 데이터 로드 실패:', response.status);
-                showError('직원 데이터를 불러오는데 실패했습니다. 관리자에게 문의하세요.');
-            }
-        } catch (error) {
-            console.error('직원 데이터 로드 오류:', error);
-            showError('직원 데이터를 불러오는데 오류가 발생했습니다.');
-        }
-    }
 
     // 현재 사용자 정보 로드
     async function loadCurrentUser() {
@@ -57,7 +24,6 @@ document.addEventListener('DOMContentLoaded', async function() {
             const response = await fetch('/api/auth/me');
             if (response.ok) {
                 currentUser = await response.json();
-                console.log('현재 사용자 정보:', currentUser);
             } else {
                 console.error('사용자 정보 로드 실패');
             }
@@ -72,7 +38,6 @@ document.addEventListener('DOMContentLoaded', async function() {
             const response = await fetch('/api/projects');
             if (response.ok) {
                 projects = await response.json();
-                console.log('프로젝트 목록 로드 성공:', projects.length + '건');
             } else {
                 console.error('프로젝트 목록 로드 실패');
             }
@@ -95,7 +60,6 @@ document.addEventListener('DOMContentLoaded', async function() {
                         fixedExpenses[item.positionName] = item.amount;
                     }
                 });
-                console.log('직급별 고정경비(회의비) 로드 완료:', fixedExpenses);
             } else {
                 console.error('직급별 고정경비 로드 실패:', response.status);
             }
@@ -120,8 +84,6 @@ document.addEventListener('DOMContentLoaded', async function() {
             if (response.ok && contentType && contentType.includes('application/json')) {
                 const project = await response.json();
                 projectMembers = project.projectMembers || [];
-                console.log('프로젝트 팀원 로드 성공:', projectMembers.length + '명');
-                console.log('팀원 데이터:', projectMembers);
             } else {
                 console.error('프로젝트 팀원 로드 실패 - Status:', response.status, 'Content-Type:', contentType);
                 if (!contentType || !contentType.includes('application/json')) {
@@ -137,8 +99,7 @@ document.addEventListener('DOMContentLoaded', async function() {
     }
 
     // 페이지 로드 시 데이터 로드
-    Promise.all([loadCurrentUser(), loadProjects(), loadEmployees(), loadFixedExpenses()]).then(() => {
-        console.log('초기 데이터 로드 완료');
+    Promise.all([loadCurrentUser(), loadProjects(), loadFixedExpenses()]).then(() => {
         // 데이터 로드 후 회의록 자동 채우기 초기화
         setupReceiptAutoFill();
     });
@@ -203,36 +164,8 @@ document.addEventListener('DOMContentLoaded', async function() {
         }
     }
 
-    // 템플릿 선택 (더 이상 동적 로드 불필요)
-    // templateTreeHeaders.forEach(header => {
-    //     header.addEventListener('click', function() {
-    //         templateTreeHeaders.forEach(h => h.classList.remove('active'));
-    //         this.classList.add('active');
-    //
-    //         const template = this.getAttribute('data-template');
-    //         loadTemplate(template);
-    //     });
-    // });
-
-    // 템플릿 로드 (더 이상 불필요 - 항상 표시됨)
-    // function loadTemplate(templateKey) {
-    //     const templateElement = document.getElementById('template-' + templateKey);
-    //     if (templateElement) {
-    //         documentForm.innerHTML = templateElement.innerHTML;
-    //         if (templateKey === 'receipt-meeting') {
-    //             setupReceiptAutoFill();
-    //         }
-    //     }
-    // }
-
     // 회의록 자동 채우기 기능
     function setupReceiptAutoFill() {
-        // 회의품의서 결재란 - 담당 자동 설정 (로그인한 사용자)
-        const proposalApprovalPerson = document.getElementById('proposal_approval_person');
-        if (proposalApprovalPerson && window.CURRENT_USER && window.CURRENT_USER.empName) {
-            proposalApprovalPerson.textContent = window.CURRENT_USER.empName;
-        }
-
         const commonProject = document.getElementById('common_project');
         const commonAuthor = document.getElementById('common_author'); // 작성자 필드
         const commonDate = document.getElementById('common_date');
@@ -393,6 +326,14 @@ document.addEventListener('DOMContentLoaded', async function() {
                     }
 
                     closeProjectModal();
+
+                    // 카드 모달을 열어야 하는 경우, 프로젝트 모달 닫은 후 카드 모달 열기
+                    if (shouldOpenCardModalAfterProject) {
+                        shouldOpenCardModalAfterProject = false;
+                        setTimeout(() => {
+                            openCardModal();
+                        }, 100); // 모달 전환 애니메이션을 위한 약간의 지연
+                    }
                 });
 
                 projectList.appendChild(item);
@@ -423,6 +364,8 @@ document.addEventListener('DOMContentLoaded', async function() {
             if (projectModal) {
                 projectModal.classList.remove('show');
                 if (projectSearch) projectSearch.value = '';
+                // 카드 모달 자동 열기 플래그 리셋
+                shouldOpenCardModalAfterProject = false;
             }
         };
 
@@ -441,7 +384,6 @@ document.addEventListener('DOMContentLoaded', async function() {
                 const response = await fetch(`/api/projects/${projectIdx}/cards`);
                 if (response.ok) {
                     projectCards = await response.json();
-                    console.log('카드 목록 로드 완료:', projectCards.length + '개');
                 } else {
                     console.error('카드 목록 로드 실패:', response.status);
                     projectCards = [];
@@ -525,7 +467,9 @@ document.addEventListener('DOMContentLoaded', async function() {
             const projectIdxInput = document.getElementById('selectedProjectIdx');
 
             if (!projectIdxInput || !projectIdxInput.value) {
-                showWarning('과제를 먼저 선택해주세요.');
+                // 과제가 선택되지 않았으면, 과제 선택 모달을 먼저 열기
+                shouldOpenCardModalAfterProject = true;
+                openProjectModal();
                 return;
             }
 
@@ -698,10 +642,22 @@ document.addEventListener('DOMContentLoaded', async function() {
         // 참석자 영역 클릭 시 모달 열기
         if (attendeeArea) {
             attendeeArea.addEventListener('click', function(e) {
-                // 제거 버튼 클릭은 무시
+                // 삭제 버튼 클릭은 무시
                 if (e.target.closest('.attendee-remove')) {
                     return;
                 }
+
+                // 참석자 추가 버튼 클릭은 무시 (버튼 자체의 onclick이 실행됨)
+                if (e.target.closest('.add-more-attendees-btn')) {
+                    return;
+                }
+
+                // 참석자가 이미 있을 때는 area 클릭해도 모달 안 열림
+                if (currentAttendees.length > 0) {
+                    return;
+                }
+
+                // 참석자가 없을 때만 area 클릭으로 모달 열기
                 openAttendeeModal();
             });
         }
@@ -725,15 +681,15 @@ document.addEventListener('DOMContentLoaded', async function() {
                         : '-';
 
                     return `
-                        <div class="trip-person-item">
+                        <div class="trip-person-item" onclick="removeAttendeeInTemplate('${attendee.id}')">
                             <div class="trip-person-info">
                                 <span class="name">${attendee.name}</span>
                                 <span>${attendee.dept}</span>
                                 <span>${attendee.position}</span>
                                 <span style="color: #667eea; font-weight: 600;">${formattedExpense}</span>
                             </div>
-                            <button type="button" class="trip-person-remove attendee-remove" onclick="removeAttendeeInTemplate('${attendee.id}')">
-                                <i class="fas fa-times"></i> 제거
+                            <button type="button" class="trip-person-remove attendee-remove">
+                                <i class="fas fa-times"></i> 삭제
                             </button>
                         </div>
                     `;
@@ -1095,107 +1051,6 @@ document.addEventListener('DOMContentLoaded', async function() {
         }
     }
 
-    // 결재자 영역 클릭 시 모달 열기
-    if (approverChips) {
-        approverChips.addEventListener('click', function(e) {
-            // 제거 버튼 클릭은 무시
-            if (e.target.closest('.btn-remove-approver')) {
-                return;
-            }
-            loadEmployeeList();
-            approverModal.classList.add('show');
-        });
-    }
-
-    // 직원 목록 로드
-    function loadEmployeeList() {
-        employeeList.innerHTML = '';
-        employees.forEach(emp => {
-            const item = document.createElement('div');
-            item.className = 'employee-item';
-            item.innerHTML = `
-                <i class="fas fa-user-circle"></i>
-                <div class="employee-info">
-                    <div class="employee-name">${emp.name}</div>
-                    <div class="employee-detail">${emp.dept} ${emp.position}</div>
-                </div>
-            `;
-            item.addEventListener('click', function() {
-                document.querySelectorAll('.employee-item').forEach(i => i.classList.remove('selected'));
-                this.classList.add('selected');
-                selectedEmployee = emp;
-            });
-            employeeList.appendChild(item);
-        });
-    }
-
-    // 직원 검색
-    approverSearch.addEventListener('input', function() {
-        const term = this.value.toLowerCase();
-        document.querySelectorAll('.employee-item').forEach(item => {
-            const text = item.textContent.toLowerCase();
-            item.style.display = text.includes(term) ? '' : 'none';
-        });
-    });
-
-    // 결재자 추가
-    window.addApprover = function() {
-        if (!selectedEmployee) {
-            showWarning('결재자를 선택해주세요.');
-            return;
-        }
-
-        if (selectedApprovers.find(a => a.id === selectedEmployee.id)) {
-            showWarning('이미 추가된 결재자입니다.');
-            return;
-        }
-
-        selectedApprovers.push(selectedEmployee);
-        updateApproverChips();
-        closeModal();
-        selectedEmployee = null;
-    };
-
-    // 결재자 칩 업데이트
-    function updateApproverChips() {
-        if (selectedApprovers.length === 0) {
-            approverChips.innerHTML = `
-                <div style="text-align: center; color: #94a3b8; font-size: 13px; width: 100%;">
-                    <i class="fas fa-user-plus" style="font-size: 20px; margin-bottom: 6px; display: block;"></i>
-                    <div>클릭하여 결재자 추가</div>
-                </div>
-            `;
-            return;
-        }
-
-        approverChips.innerHTML = '';
-        selectedApprovers.forEach((approver, index) => {
-            const chip = document.createElement('div');
-            chip.className = 'approver-chip';
-            chip.innerHTML = `
-                <span class="order">${index + 1}</span>
-                <span>${approver.name} ${approver.position}</span>
-                <button class="btn-remove btn-remove-approver" onclick="removeApprover(${index})">
-                    <i class="fas fa-times"></i>
-                </button>
-            `;
-            approverChips.appendChild(chip);
-        });
-    }
-
-    // 결재자 제거
-    window.removeApprover = function(index) {
-        selectedApprovers.splice(index, 1);
-        updateApproverChips();
-    };
-
-    // 모달 닫기
-    window.closeModal = function() {
-        approverModal.classList.remove('show');
-        approverSearch.value = '';
-        loadEmployeeList();
-    };
-
     // 파일 업로드
     fileInput.addEventListener('change', function(e) {
         const files = Array.from(e.target.files);
@@ -1396,7 +1251,6 @@ document.addEventListener('DOMContentLoaded', async function() {
                 attendees: attendeeDTOs
             };
 
-            console.log('저장 데이터:', saveData);
 
             const confirmed = showSaveConfirm('회의록을 저장하시겠습니까?');
                 if(!confirmed)return;
@@ -1413,7 +1267,6 @@ document.addEventListener('DOMContentLoaded', async function() {
                 if (response.ok) {
                     const result = await response.json();
                     showSuccess('회의록이 저장되었습니다.');
-                    console.log('저장 결과:', result);
                     // 저장 후 목록 페이지로 이동
                     window.location.href = '/project/documents';
                 } else {
@@ -1463,7 +1316,6 @@ document.addEventListener('DOMContentLoaded', async function() {
             }
 
             try {
-                console.log('PDF 저장 시작 - 회의록 페이지');
 
                 // 로딩 모달 표시
                 if (loadingModal) loadingModal.classList.add('active');
@@ -1485,7 +1337,6 @@ document.addEventListener('DOMContentLoaded', async function() {
                 updateProgress(15, '문서 구조 확인 중...');
 
                 allDivs = documentForm.querySelectorAll(':scope > div');
-                console.log('찾은 div 개수:', allDivs.length);
 
                 originalDisplays = Array.from(allDivs).map(div => div.style.display);
 
@@ -1531,7 +1382,6 @@ document.addEventListener('DOMContentLoaded', async function() {
                 updateProgress(30, '회의 품의서 렌더링 중...');
 
                 // 1. 회의 품의서 페이지
-                console.log('회의 품의서 렌더링 중...');
                 const proposalDiv = allDivs[1];
 
                 if (!proposalDiv) {
@@ -1552,12 +1402,10 @@ document.addEventListener('DOMContentLoaded', async function() {
                 const imgHeight = (canvasHeight * contentWidth) / canvasWidth;
 
                 pdf.addImage(proposalImgData, 'JPEG', margin, margin, contentWidth, imgHeight);
-                console.log('회의 품의서 페이지 완료');
 
                 updateProgress(55, '회의록 렌더링 중...');
 
                 // 2. 회의록 페이지
-                console.log('회의록 렌더링 중...');
                 const minutesDiv = allDivs[2];
 
                 if (!minutesDiv) {
@@ -1576,12 +1424,10 @@ document.addEventListener('DOMContentLoaded', async function() {
                 const minutesImgHeight = (minutesCanvasHeight * contentWidth) / minutesCanvasWidth;
 
                 pdf.addImage(minutesImgData, 'JPEG', margin, margin, contentWidth, minutesImgHeight);
-                console.log('회의록 페이지 완료');
 
                 updateProgress(80, '참석자 명단 렌더링 중...');
 
                 // 3. 참석자 명단 페이지
-                console.log('참석자 명단 렌더링 중...');
                 const attendeeDiv = allDivs[3];
 
                 if (!attendeeDiv) {
@@ -1600,7 +1446,6 @@ document.addEventListener('DOMContentLoaded', async function() {
                 const attendeeImgHeight = (attendeeCanvasHeight * contentWidth) / attendeeCanvasWidth;
 
                 pdf.addImage(attendeeImgData, 'JPEG', margin, margin, contentWidth, attendeeImgHeight);
-                console.log('참석자 명단 페이지 완료');
 
                 updateProgress(95, 'PDF 파일 생성 중...');
 
@@ -1615,7 +1460,6 @@ document.addEventListener('DOMContentLoaded', async function() {
                 }
                 const fileName = `${dateStr}_회의록.pdf`;
 
-                console.log('PDF 저장:', fileName);
                 pdf.save(fileName);
 
                 updateProgress(100, '완료!');
@@ -1738,7 +1582,7 @@ document.addEventListener('DOMContentLoaded', async function() {
                 </div>
                 <div class="notice-content">
                     <div class="notice-title">프로젝트를 먼저 선택해주세요</div>
-                    <div class="notice-desc">프로젝트를 선택하면 해당 팀원 목록이 표시됩니다</div>
+                    <div class="notice-desc">프로젝트를 선택하면 참여인력 목록이 표시됩니다</div>
                 </div>
             </div>
         `;
@@ -1809,8 +1653,13 @@ document.addEventListener('DOMContentLoaded', async function() {
                 }
                 selectedCard = null;
 
-                // 팀원 목록 다시 렌더링
-                renderInternalList(internalSearchInput ? internalSearchInput.value : '');
+                // 검색창 비우기
+                if (internalSearchInput) {
+                    internalSearchInput.value = '';
+                }
+
+                // 팀원 목록 다시 렌더링 (검색어 없이)
+                renderInternalList('');
             });
         });
     }
@@ -1837,7 +1686,6 @@ document.addEventListener('DOMContentLoaded', async function() {
         }
 
         internalListEl.innerHTML = filtered.map(person => {
-            const isAlreadyAdded = currentAttendees.some(a => String(a.id) === String(person.id) && !String(a.id).startsWith('ext_'));
             const isSelected = tempSelectedAttendees.some(a => String(a.id) === String(person.id) && a.type === 'internal');
             const formattedExpense = person.meetingExpense ? person.meetingExpense.toLocaleString('ko-KR') + '원' : '-';
 
@@ -1846,7 +1694,7 @@ document.addEventListener('DOMContentLoaded', async function() {
             const highlightedPosition = highlightText(person.position, searchText);
 
             return `
-                <div class="employee-item ${isAlreadyAdded ? 'added' : ''} ${isSelected ? 'selected' : ''}"
+                <div class="employee-item ${isSelected ? 'selected' : ''}"
                      data-id="${person.id}"
                      data-type="internal"
                      onclick="toggleInternalAttendee(${person.id})">
@@ -1879,7 +1727,6 @@ document.addEventListener('DOMContentLoaded', async function() {
         }
 
         externalListEl.innerHTML = filtered.map(person => {
-            const isAlreadyAdded = currentAttendees.some(a => String(a.id) === `ext_${person.idx}`);
             const isSelected = tempSelectedAttendees.some(a => String(a.id) === `ext_${person.idx}` && a.type === 'external');
 
             const highlightedName = highlightText(person.name, searchText);
@@ -1887,7 +1734,7 @@ document.addEventListener('DOMContentLoaded', async function() {
             const highlightedPosition = highlightText(person.position || '-', searchText);
 
             return `
-                <div class="employee-item ${isAlreadyAdded ? 'added' : ''} ${isSelected ? 'selected' : ''}"
+                <div class="employee-item ${isSelected ? 'selected' : ''}"
                      data-id="ext_${person.idx}"
                      data-type="external"
                      onclick="toggleExternalAttendee(${person.idx})">
@@ -2000,14 +1847,18 @@ document.addEventListener('DOMContentLoaded', async function() {
     window.openAttendeeModal = async function() {
         if (attendeeModal) {
             // 기존에 선택된 참석자들을 tempSelectedAttendees에 복사
-            tempSelectedAttendees = currentAttendees.map(attendee => ({
-                id: attendee.id,
-                name: attendee.name,
-                position: attendee.position,
-                dept: attendee.dept,
-                meetingExpense: attendee.meetingExpense,
-                type: attendee.type
-            }));
+            tempSelectedAttendees = currentAttendees.map(attendee => {
+                // id를 기준으로 type 판별
+                const type = String(attendee.id).startsWith('ext_') ? 'external' : 'internal';
+                return {
+                    id: String(attendee.id),
+                    name: attendee.name,
+                    position: attendee.position,
+                    dept: attendee.dept,
+                    meetingExpense: attendee.meetingExpense || 0,
+                    type: type
+                };
+            });
 
             attendeeModal.classList.add('show');
 
@@ -2108,9 +1959,8 @@ document.addEventListener('DOMContentLoaded', async function() {
             }
         }
 
-        console.log('추가할 참석자:', tempSelectedAttendees);
 
-        // currentAttendees에 추가
+        // currentAttendees에 추가 (중복 체크)
         tempSelectedAttendees.forEach(person => {
             if (!currentAttendees.some(a => String(a.id) === String(person.id))) {
                 currentAttendees.push({
@@ -2118,12 +1968,12 @@ document.addEventListener('DOMContentLoaded', async function() {
                     name: person.name,
                     dept: person.dept,
                     position: person.position,
-                    meetingExpense: person.meetingExpense || 0
+                    meetingExpense: person.meetingExpense || 0,
+                    type: person.type
                 });
             }
         });
 
-        console.log('추가 후 currentAttendees:', currentAttendees);
 
         // 참석자 목록 UI 업데이트
         renderAttendeeListInTemplate();
@@ -2196,18 +2046,125 @@ document.addEventListener('DOMContentLoaded', async function() {
         });
     }
 
+    // 작성자 모달 내 프로젝트 목록 렌더링
+    function renderProjectListInAuthorModal(searchText = '') {
+        if (!authorListEl) return;
+
+        // 검색 필터링
+        let filtered = projects;
+        if (searchText) {
+            filtered = projects.filter(proj =>
+                matchesSearch(proj.projectName + (proj.description || ''), searchText)
+            );
+        }
+
+        if (filtered.length === 0) {
+            authorListEl.innerHTML = `
+                <div style="text-align: center; padding: 40px; color: #94a3b8;">
+                    <i class="fas fa-search" style="font-size: 32px; margin-bottom: 12px; display: block;"></i>
+                    ${searchText ? '검색 결과가 없습니다.' : '등록된 프로젝트가 없습니다.'}
+                </div>
+            `;
+            return;
+        }
+
+        // 헤더 메시지
+        const headerMessage = `
+            <div class="convenience-notice">
+                <div class="notice-icon">
+                    <i class="fas fa-lightbulb"></i>
+                </div>
+                <div class="notice-content">
+                    <div class="notice-title">프로젝트를 먼저 선택해주세요</div>
+                    <div class="notice-desc">프로젝트를 선택하면 해당 팀원 목록이 표시됩니다</div>
+                </div>
+            </div>
+        `;
+
+        // 프로젝트 목록
+        const projectItems = filtered.map(proj => {
+            const highlightedName = highlightText(proj.projectName, searchText);
+
+            return `
+                <div class="project-item-in-attendee" data-project-idx="${proj.idx}">
+                    <div class="project-item-icon">
+                        <i class="fas fa-folder"></i>
+                    </div>
+                    <div class="project-item-info">
+                        <div class="project-item-name">${highlightedName}</div>
+                    </div>
+                    <div class="project-item-arrow">
+                        <i class="fas fa-chevron-right"></i>
+                    </div>
+                </div>
+            `;
+        }).join('');
+
+        authorListEl.innerHTML = headerMessage + projectItems;
+
+        // 프로젝트 클릭 이벤트
+        authorListEl.querySelectorAll('.project-item-in-attendee').forEach(item => {
+            item.addEventListener('click', async function() {
+                const projectIdx = this.getAttribute('data-project-idx');
+                const proj = projects.find(p => String(p.idx) === String(projectIdx));
+                if (!proj) return;
+
+                // 프로젝트 선택
+                selectedProject = proj;
+
+                // 프로젝트 입력 필드에 표시
+                const commonProject = document.getElementById('common_project');
+                if (commonProject) {
+                    commonProject.value = proj.projectName;
+                }
+                const selectedProjectIdx = document.getElementById('selectedProjectIdx');
+                if (selectedProjectIdx) {
+                    selectedProjectIdx.value = proj.idx;
+                }
+
+                // 자동 채우기
+                document.querySelectorAll('.auto-project').forEach(field => {
+                    field.value = proj.projectName;
+                });
+
+                // 프로젝트 팀원 로드
+                await loadProjectMembers(proj.idx);
+                // 기본 작성자 설정
+                setDefaultAuthor();
+                // 프로젝트 카드 목록 로드
+                await window.loadProjectCards(proj.idx);
+
+                // 카드 선택 필드 활성화 및 초기화
+                const commonCard = document.getElementById('common_card');
+                const selectedCardIdx = document.getElementById('selectedCardIdx');
+                if (commonCard) {
+                    commonCard.placeholder = '클릭하여 카드 선택';
+                    commonCard.value = '';
+                }
+                if (selectedCardIdx) {
+                    selectedCardIdx.value = '';
+                }
+                selectedCard = null;
+
+                // 검색창 비우기
+                if (authorSearchInput) {
+                    authorSearchInput.value = '';
+                }
+
+                // 작성자 목록 다시 렌더링 (검색어 없이)
+                renderAuthorList('');
+            });
+        });
+    }
+
     // 작성자 목록 렌더링
     function renderAuthorList(searchText = '') {
         if (!authorListEl) return;
 
         const attendeePersons = getAttendeePersons();
         if (attendeePersons.length === 0) {
-            authorListEl.innerHTML = `
-                <div style="text-align: center; padding: 40px; color: #94a3b8;">
-                    <i class="fas fa-inbox" style="font-size: 48px; margin-bottom: 16px;"></i>
-                    <p>프로젝트를 먼저 선택해주세요.</p>
-                </div>
-            `;
+            // 프로젝트가 선택되지 않았을 때 프로젝트 목록 표시
+            renderProjectListInAuthorModal(searchText);
             return;
         }
 
@@ -2292,7 +2249,6 @@ document.addEventListener('DOMContentLoaded', async function() {
             const response = await fetch('/api/external-persons');
             if (response.ok) {
                 allExternalPersons = await response.json();
-                console.log('외부인력 로드 성공:', allExternalPersons.length + '명');
                 // 모달이 열려있으면 목록 새로고침
                 if (attendeeModal && attendeeModal.classList.contains('show')) {
                     renderExternalList(externalSearchInput ? externalSearchInput.value : '');
@@ -2372,10 +2328,20 @@ document.addEventListener('DOMContentLoaded', async function() {
             if (response.ok) {
                 const newPerson = await response.json();
                 showSuccess('외부인력이 등록되었습니다.');
-                console.log('신규 외부인력 등록:', newPerson);
 
                 // 모달 닫기
                 closeExternalPersonModal();
+
+                // 신규 등록된 외부인력을 참석자로 자동 추가
+                tempSelectedAttendees.push({
+                    id: `ext_${newPerson.idx}`,
+                    type: 'external',
+                    name: newPerson.name,
+                    dept: newPerson.companyName,
+                    position: newPerson.position
+                });
+
+                renderSelectedBadges(); // 선택된 참석자 배지 업데이트
 
                 // 목록 새로고침
                 await loadExternalPersons();
@@ -2398,7 +2364,6 @@ document.addEventListener('DOMContentLoaded', async function() {
 
     async function loadReceiptMeetingData(id) {
         try {
-            console.log('연구비증빙 회의록 데이터 로드 시작 - ID:', id);
             const response = await fetch(`/api/receipt-meetings/${id}`);
 
             if (!response.ok) {
@@ -2406,7 +2371,6 @@ document.addEventListener('DOMContentLoaded', async function() {
             }
 
             const data = await response.json();
-            console.log('로드된 데이터:', data);
 
             // 폼에 데이터 채우기
             populateForm(data);
@@ -2432,7 +2396,6 @@ document.addEventListener('DOMContentLoaded', async function() {
     }
 
     function populateForm(data) {
-        console.log('폼 데이터 채우기 시작');
 
         // 프로젝트 선택
         const projectInput = document.getElementById('common_project');
@@ -2573,7 +2536,6 @@ document.addEventListener('DOMContentLoaded', async function() {
                 };
             });
 
-            console.log('로드된 참석자 목록:', currentAttendees);
         }
 
         // 모든 input 이벤트 트리거하여 자동 채우기 활성화
@@ -2643,7 +2605,7 @@ document.addEventListener('DOMContentLoaded', async function() {
                                 <span>${attendee.position || ''}</span>
                             </div>
                             <button type="button" class="trip-person-remove attendee-remove" onclick="removeAttendeeInTemplate('${attendee.id}')">
-                                <i class="fas fa-times"></i> 제거
+                                <i class="fas fa-times"></i> 삭제
                             </button>
                         </div>
                     `).join('');
@@ -2771,14 +2733,12 @@ document.addEventListener('DOMContentLoaded', async function() {
                 });
             }
 
-            console.log('폼 데이터 채우기 완료');
         }, 100);
     }
 
     // URL에 ID 파라미터가 있으면 데이터 로드
     const receiptMeetingId = getUrlParameter('id');
     if (receiptMeetingId) {
-        console.log('상세보기 모드 - ID:', receiptMeetingId);
         // 외부인력 목록을 먼저 로드한 후 데이터 로드
         setTimeout(async () => {
             // 외부인력 목록 로드
