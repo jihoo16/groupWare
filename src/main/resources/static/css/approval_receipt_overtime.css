@@ -1343,92 +1343,66 @@ div h2{
     background: #f8f9ff;
 }
 
-/* 공식 문서 양식 토글 스타일 */
-.document-form-wrapper {
-    background: white;
-    border: 2px solid #e8e8e8;
+/* 문서 미리보기 토글 버튼 */
+.document-preview-toggle {
+    margin-top: 20px;
+}
+
+.toggle-btn {
+    width: 100%;
+    padding: 14px 20px;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+    border: none;
     border-radius: 10px;
-    overflow: hidden;
-    margin-bottom: 20px;
-}
-
-.document-form-header {
-    background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
-    padding: 16px 20px;
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    cursor: pointer;
-    transition: all 0.3s ease;
-    border-bottom: 2px solid #e8e8e8;
-}
-
-.document-form-header:hover {
-    background: linear-gradient(135deg, #e9ecef 0%, #dee2e6 100%);
-}
-
-.document-form-header h3 {
-    margin: 0;
-    font-size: 16px;
-    font-weight: 600;
-    color: #1a237e;
-    display: flex;
-    align-items: center;
-    gap: 10px;
-}
-
-.document-form-header h3 i {
-    color: #667eea;
-}
-
-.btn-toggle-form {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    background: white;
-    border: 2px solid #667eea;
-    color: #667eea;
-    padding: 8px 16px;
-    border-radius: 6px;
-    cursor: pointer;
     font-size: 14px;
     font-weight: 600;
-    transition: all 0.2s ease;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+    transition: all 0.3s;
+    box-shadow: 0 4px 12px rgba(102, 126, 234, 0.3);
 }
 
-.btn-toggle-form:hover {
-    background: #667eea;
-    color: white;
+.toggle-btn:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 16px rgba(102, 126, 234, 0.4);
 }
 
-.btn-toggle-form i {
-    transition: transform 0.3s ease;
+.toggle-icon {
+    transition: transform 0.3s;
 }
 
-.document-form-wrapper.collapsed .btn-toggle-form i {
+.toggle-btn.active .toggle-icon {
     transform: rotate(180deg);
 }
 
-.document-form-wrapper.collapsed .btn-toggle-form span::before {
-    content: '펼치기';
-}
-
-.document-form-wrapper:not(.collapsed) .btn-toggle-form span::before {
-    content: '접기';
-}
-
-/* 문서 양식 내용 */
-.document-form-content {
+/* 문서 미리보기 영역 */
+.document-form-wrapper {
+    margin-top: 16px;
     background: white;
-    padding: 24px;
-    max-height: 10000px;
-    overflow: hidden;
-    transition: max-height 0.3s ease, padding 0.3s ease;
+    border-radius: 12px;
+    padding: 30px;
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.08);
+    max-height: none;
+    overflow: visible;
+    transition: all 0.4s ease-in-out;
 }
 
-.document-form-wrapper.collapsed .document-form-content {
+.document-form-wrapper.collapsed {
     max-height: 0;
-    padding: 0 24px;
+    padding: 0;
+    margin-top: 0;
+    opacity: 0;
+    box-shadow: none;
+    overflow: hidden;
+}
+
+.document-form {
+    background: white;
+    padding: 0;
 }
 
 /* 야근인원 아이템 스타일 */
