@@ -478,7 +478,7 @@ document.addEventListener('DOMContentLoaded', function() {
         const url = urls[doc.documentType];
         if (url) {
             const documentId = doc.idx;
-            window.open(`${url}?documentIdx=${documentId}`, '_blank');
+            window.location.href = `${url}?documentIdx=${documentId}`;
         } else {
             showWarning('해당 문서 타입의 상세 페이지가 구현되지 않았습니다.');
         }
