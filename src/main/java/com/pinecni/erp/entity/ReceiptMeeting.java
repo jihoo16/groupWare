@@ -16,6 +16,7 @@ import java.util.List;
 @Entity
 @Table(name = "receipt_meeting", schema = "erp", indexes = {
         @Index(name = "idx_receipt_meeting_project", columnList = "project_idx"),
+        @Index(name = "idx_receipt_meeting_card", columnList = "card_idx"),
         @Index(name = "idx_receipt_meeting_author", columnList = "author_idx"),
         @Index(name = "idx_receipt_meeting_status", columnList = "status"),
         @Index(name = "idx_receipt_meeting_date", columnList = "meeting_date"),
@@ -36,6 +37,9 @@ public class ReceiptMeeting {
 
     @Column(name = "project_idx", nullable = false)
     private Long projectIdx;
+
+    @Column(name = "card_idx")
+    private Long cardIdx;
 
     @Column(name = "document_number", unique = true, length = 50)
     private String documentNumber;
@@ -92,6 +96,10 @@ public class ReceiptMeeting {
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "project_idx", insertable = false, updatable = false)
     private Project project;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "card_idx", insertable = false, updatable = false)
+    private ProjectCard projectCard;
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "author_idx", insertable = false, updatable = false)

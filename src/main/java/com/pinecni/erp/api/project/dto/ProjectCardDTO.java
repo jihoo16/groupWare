@@ -55,4 +55,23 @@ public class ProjectCardDTO {
      * 등록일
      */
     private LocalDateTime createdAt;
+
+    /**
+     * 카드명 (화면 표시용)
+     * cardNickname이 있으면 cardNickname, 없으면 "cardCompany **** cardLastDigits"
+     */
+    public String getCardName() {
+        if (cardNickname != null && !cardNickname.trim().isEmpty()) {
+            return cardNickname;
+        }
+        return cardCompany + " **** " + cardLastDigits;
+    }
+
+    /**
+     * 카드번호 (화면 표시용)
+     * 마지막 4자리만 표시
+     */
+    public String getCardNumber() {
+        return "**** **** **** " + cardLastDigits;
+    }
 }

@@ -36,6 +36,16 @@ public class ReceiptMeetingDTO {
     private String projectName;
 
     /**
+     * 카드 IDX
+     */
+    private Long cardIdx;
+
+    /**
+     * 카드명 (화면 표시용)
+     */
+    private String cardName;
+
+    /**
      * 문서 번호
      */
     private String documentNumber;
