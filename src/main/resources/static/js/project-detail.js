@@ -588,18 +588,19 @@ async function loadProjectDocuments(projectId) {
 function displayWeeklyReports(reports) {
     const listContainer = document.getElementById('weeklyReportList');
     const countElement = document.getElementById('weeklyReportCount');
-    const footerElement = document.getElementById('weeklyReportFooter');
 
     const totalCount = reports.length || 0;
     countElement.textContent = `${totalCount}건`;
 
     if (!reports || reports.length === 0) {
         listContainer.innerHTML = '<p class="empty-message">문서가 없습니다.</p>';
-        footerElement.style.display = 'none';
         return;
     }
 
-    listContainer.innerHTML = reports.slice(0, 5).map(doc => `
+    // 최신순 정렬
+    const sorted = [...reports].sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+
+    listContainer.innerHTML = sorted.slice(0, 5).map(doc => `
         <div class="document-item" onclick="goToDocument('${doc.documentType}', ${doc.idx})">
             <div class="document-item-icon">
                 <i class="fas fa-file-alt"></i>
@@ -610,9 +611,6 @@ function displayWeeklyReports(reports) {
             </div>
         </div>
     `).join('');
-
-    // 5건 이상이면 더보기 버튼 표시
-    footerElement.style.display = totalCount > 5 ? 'block' : 'none';
 }
 
 /**
@@ -621,14 +619,12 @@ function displayWeeklyReports(reports) {
 function displayExpenseReports(reports) {
     const listContainer = document.getElementById('expenseReportList');
     const countElement = document.getElementById('expenseReportCount');
-    const footerElement = document.getElementById('expenseReportFooter');
 
     const totalCount = reports.length || 0;
     countElement.textContent = `${totalCount}건`;
 
     if (!reports || reports.length === 0) {
         listContainer.innerHTML = '<p class="empty-message">문서가 없습니다.</p>';
-        footerElement.style.display = 'none';
         return;
     }
 
@@ -643,9 +639,6 @@ function displayExpenseReports(reports) {
             </div>
         </div>
     `).join('');
-
-    // 5건 이상이면 더보기 버튼 표시
-    footerElement.style.display = totalCount > 5 ? 'block' : 'none';
 }
 
 /**
@@ -690,10 +683,15 @@ function viewMoreDocuments(type) {
     const urlParams = new URLSearchParams(window.location.search);
     const projectId = urlParams.get('projectId');
 
+    const width = 1200;
+    const height = 800;
+    const left = (screen.width - width) / 2;
+    const top = (screen.height - height) / 2;
+
     if (type === 'weekly') {
-        location.href = `/project/documents?projectId=${projectId}&tab=weekly`;
+        window.open(`/project/documents?projectId=${projectId}&tab=weekly`, 'projectDocumentsPopup', `width=${width},height=${height},left=${left},top=${top},scrollbars=yes,resizable=yes`);
     } else if (type === 'expense') {
-        location.href = `/project/documents?projectId=${projectId}&tab=expense`;
+        window.open(`/project/documents?projectId=${projectId}&tab=expense`, 'projectDocumentsPopup', `width=${width},height=${height},left=${left},top=${top},scrollbars=yes,resizable=yes`);
     }
 }
 

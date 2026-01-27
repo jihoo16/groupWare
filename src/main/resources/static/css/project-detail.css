@@ -583,6 +583,8 @@
     border-radius: 10px;
     overflow: hidden;
     transition: all 0.2s ease;
+    display: flex;
+    flex-direction: column;
 }
 
 .document-card:hover {
@@ -623,9 +625,7 @@
 
 .document-card-body {
     padding: 12px 18px;
-    min-height: 120px;
-    max-height: 200px;
-    overflow-y: auto;
+    flex: 1;
 }
 
 .document-card-body .empty-message {
@@ -711,9 +711,16 @@
 }
 
 .document-card-footer {
-    padding: 12px 18px;
+    padding: 10px 18px;
     border-top: 1px solid #e9ecef;
-    text-align: center;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.document-card-footer .footer-hint {
+    font-size: 11px;
+    color: #aaa;
 }
 
 .btn-more {
