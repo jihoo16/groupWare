@@ -31,95 +31,140 @@
                         <div id="documentForm">
                             <!-- 연구비 증빙 - 회의록 인터랙티브 폼 -->
                             <div class="common-info-section">
-                            <div class="section-header-common">
-                                <h4><i class="fas fa-edit"></i> 연구비 증빙 - 회의록 공통 정보 입력</h4>
+                                <div class="section-header">
+                                    <h3><i class="fas fa-edit"></i> 기본 정보</h3>
+                                </div>
+
+                                <!-- 과제명 -->
+                                <div class="form-group full-width">
+                                    <label for="common_project">
+                                        <i class="fas fa-project-diagram"></i> 과제명
+                                        <span class="required-mark">*</span>
+                                    </label>
+                                    <input type="text" id="common_project" class="form-input clickable-input" placeholder="클릭하여 과제 선택" readonly>
+                                    <input type="hidden" id="selectedProjectIdx">
+                                </div>
+
+                                <!-- 사용 카드 -->
+                                <div class="form-group full-width">
+                                    <label for="common_card">
+                                        <i class="fas fa-credit-card"></i> 사용 카드
+                                        <span class="required-mark">*</span>
+                                    </label>
+                                    <input type="text" id="common_card" class="form-input clickable-input" placeholder="과제를 먼저 선택하세요" readonly onclick="openCardModal()">
+                                    <input type="hidden" id="selectedCardIdx">
+                                </div>
+
+                                <!-- 작성자 & 회의 일자 -->
+                                <div class="form-grid">
+                                    <div class="form-group">
+                                        <label for="common_author">
+                                            <i class="fas fa-user-edit"></i> 작성자
+                                            <span class="required-mark">*</span>
+                                        </label>
+                                        <input type="text" id="common_author" class="form-input clickable-input" placeholder="작성자 선택" readonly onclick="openAuthorModal()">
+                                        <input type="hidden" id="common_author_id">
+                                    </div>
+                                    <div class="form-group">
+                                        <label for="common_date">
+                                            <i class="fas fa-calendar-day"></i> 회의 일자
+                                            <span class="required-mark">*</span>
+                                        </label>
+                                        <input type="date" id="common_date" class="form-input">
+                                    </div>
+                                </div>
+
+                                <!-- 시작 시간 & 종료 시간 -->
+                                <div class="form-grid">
+                                    <div class="form-group">
+                                        <label for="common_start_time">
+                                            <i class="fas fa-clock"></i> 시작 시간
+                                        </label>
+                                        <input type="time" id="common_start_time" class="form-input" value="16:00">
+                                    </div>
+                                    <div class="form-group">
+                                        <label for="common_end_time">
+                                            <i class="fas fa-clock"></i> 종료 시간
+                                        </label>
+                                        <input type="time" id="common_end_time" class="form-input" value="21:00">
+                                    </div>
+                                </div>
+
+                                <!-- 장소 -->
+                                <div class="form-group full-width">
+                                    <label for="common_location">
+                                        <i class="fas fa-map-marker-alt"></i> 회의 장소
+                                    </label>
+                                    <input type="text" id="common_location" class="form-input" placeholder="회의 장소를 입력하세요" value="파인씨앤아이 (송파)">
+                                </div>
+
+                                <!-- 참석자 -->
+                                <div class="form-group full-width">
+                                    <label>
+                                        <i class="fas fa-users"></i> 참석자
+                                        <span class="required-mark">*</span>
+                                    </label>
+                                    <div id="attendeeArea" class="attendee-area">
+                                        <div id="attendeeList" class="attendee-list">
+                                            <div class="empty-attendee-state">
+                                                <i class="fas fa-user-plus"></i>
+                                                <div>클릭하여 참석자 추가</div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <!-- 사용 금액 & 참석자 금액 합계 -->
+                                <div class="form-grid">
+                                    <div class="form-group">
+                                        <label for="common_amount">
+                                            <i class="fas fa-won-sign"></i> 사용 금액 (원)
+                                        </label>
+                                        <input type="text" id="common_amount" class="form-input" placeholder="사용 금액을 입력하세요">
+                                        <div class="amount-buttons">
+                                            <button type="button" class="amount-btn" onclick="addAmount(100000)">
+                                                <i class="fas fa-plus-circle"></i> 10만원
+                                            </button>
+                                            <button type="button" class="amount-btn" onclick="addAmount(10000)">
+                                                <i class="fas fa-plus-circle"></i> 1만원
+                                            </button>
+                                            <button type="button" class="amount-btn" onclick="addAmount(1000)">
+                                                <i class="fas fa-plus-circle"></i> 1천원
+                                            </button>
+                                            <button type="button" class="amount-btn" onclick="addAmount(100)">
+                                                <i class="fas fa-plus-circle"></i> 100원
+                                            </button>
+                                            <button type="button" class="amount-reset-btn" onclick="resetAmount()">
+                                                <i class="fas fa-redo"></i> 초기화
+                                            </button>
+                                        </div>
+                                    </div>
+                                    <div class="form-group">
+                                        <label>
+                                            <i class="fas fa-calculator"></i> 참석자 금액 합계
+                                        </label>
+                                        <div class="total-amount-display">
+                                            <span id="attendeeTotalAmount">0원</span>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <!-- 회의 목적 -->
+                                <div class="form-group full-width">
+                                    <label for="common_purpose">
+                                        <i class="fas fa-bullseye"></i> 회의 목적
+                                    </label>
+                                    <textarea id="common_purpose" class="form-textarea" placeholder="회의 목적을 입력하세요" rows="4"></textarea>
+                                </div>
+
+                                <!-- 주요 내용 -->
+                                <div class="form-group full-width">
+                                    <label for="common_content">
+                                        <i class="fas fa-file-alt"></i> 주요 내용
+                                    </label>
+                                    <textarea id="common_content" class="form-textarea" placeholder="회의 주요 내용을 입력하세요" rows="6"></textarea>
+                                </div>
                             </div>
-                            <table class="form-table common-info-table">
-                                        <tr>
-                                            <th style="width: 150px;">과제명</th>
-                                            <td colspan="3">
-                                                <input type="text" id="common_project" class="form-input clickable-input" placeholder="클릭하여 과제 선택" readonly>
-                                                <input type="hidden" id="selectedProjectIdx">
-                                            </td>
-                                        </tr>
-                                        <tr>
-                                            <th>사용 카드</th>
-                                            <td colspan="3">
-                                                <input type="text" id="common_card" class="form-input clickable-input" placeholder="과제를 먼저 선택하세요" readonly onclick="openCardModal()">
-                                                <input type="hidden" id="selectedCardIdx">
-                                            </td>
-                                        </tr>
-                                        <tr>
-                                            <th>작성자</th>
-                                            <td>
-                                                <input type="text" id="common_author" class="form-input clickable-input" placeholder="작성자 선택" readonly onclick="openAuthorModal()">
-                                                <input type="hidden" id="common_author_id">
-                                            </td>
-                                            <th>회의 일자</th>
-                                            <td><input type="date" id="common_date"></td>
-                                        </tr>
-                                        <tr>
-                                            <th>시작 시간</th>
-                                            <td><input type="time" id="common_start_time" value="16:00"></td>
-                                            <th>종료 시간</th>
-                                            <td><input type="time" id="common_end_time" value="21:00"></td>
-                                        </tr>
-                                        <tr>
-                                            <th>장소</th>
-                                            <td colspan="3"><input type="text" id="common_location" placeholder="회의 장소를 입력하세요" value="파인씨앤아이 (송파)"></td>
-                                        </tr>
-                                        <tr>
-                                            <th style="padding-top: 14px;">참석자</th>
-                                            <td colspan="3">
-                                                <div id="attendeeArea" style="min-height: 50px; padding: 8px; border: 2px dashed #e2e8f0; border-radius: 6px; cursor: pointer; transition: all 0.2s; background: #fafbfc;">
-                                                    <div id="attendeeList" style="display: flex; flex-direction: column; gap: 0;">
-                                                        <div style="text-align: center; color: #94a3b8; font-size: 12px; padding: 8px;">
-                                                            <i class="fas fa-user-plus" style="font-size: 16px; margin-bottom: 4px;"></i>
-                                                            <div>클릭하여 참석자 추가</div>
-                                                        </div>
-                                                    </div>
-                                                </div>
-                                            </td>
-                                        </tr>
-                                        <tr>
-                                            <th>사용 금액 (원)</th>
-                                            <td>
-                                                <input type="text" id="common_amount" placeholder="사용 금액을 입력하세요 (원)" style="width: 100%; padding: 8px; font-size: 14px; margin-bottom: 8px;">
-                                                <div style="display: flex; gap: 5px; flex-wrap: nowrap;">
-                                                    <button type="button" class="amount-btn" onclick="addAmount(100000)">
-                                                        <i class="fas fa-plus-circle"></i> 10만원
-                                                    </button>
-                                                    <button type="button" class="amount-btn" onclick="addAmount(10000)">
-                                                        <i class="fas fa-plus-circle"></i> 1만원
-                                                    </button>
-                                                    <button type="button" class="amount-btn" onclick="addAmount(1000)">
-                                                        <i class="fas fa-plus-circle"></i> 1천원
-                                                    </button>
-                                                    <button type="button" class="amount-btn" onclick="addAmount(100)">
-                                                        <i class="fas fa-plus-circle"></i> 100원
-                                                    </button>
-                                                    <button type="button" class="amount-reset-btn" onclick="resetAmount()">
-                                                        <i class="fas fa-redo"></i> 초기화
-                                                    </button>
-                                                </div>
-                                            </td>
-                                            <th style="background: #f8f9fa;">참석자 금액 합계</th>
-                                            <td style="background: #f8f9fa;">
-                                                <div style="display: flex; align-items: center; gap: 10px;">
-                                                    <span id="attendeeTotalAmount" style="font-size: 16px; font-weight: bold; padding: 8px 16px; border-radius: 6px; min-width: 120px; text-align: center;">0원</span>
-                                                </div>
-                                            </td>
-                                        </tr>
-                                        <tr>
-                                            <th>회의 목적</th>
-                                            <td colspan="3"><textarea id="common_purpose" placeholder="회의 목적을 입력하세요" rows="4" style="width: 100%;"></textarea></td>
-                                        </tr>
-                                        <tr>
-                                            <th>주요 내용</th>
-                                            <td colspan="3"><textarea id="common_content" placeholder="회의 주요 내용을 입력하세요" rows="6" style="width: 100%;"></textarea></td>
-                                        </tr>
-                            </table>
-                        </div>
 
                         <!-- 첨부파일 -->
                         <div class="attachment-section">

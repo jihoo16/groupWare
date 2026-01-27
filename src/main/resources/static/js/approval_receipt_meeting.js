@@ -668,8 +668,8 @@ document.addEventListener('DOMContentLoaded', async function() {
 
             if (currentAttendees.length === 0) {
                 attendeeList.innerHTML = `
-                    <div style="text-align: center; color: #94a3b8; font-size: 12px; padding: 8px;">
-                        <i class="fas fa-user-plus" style="font-size: 16px; margin-bottom: 4px;"></i>
+                    <div class="empty-attendee-state">
+                        <i class="fas fa-user-plus"></i>
                         <div>클릭하여 참석자 추가</div>
                     </div>
                 `;
@@ -2591,8 +2591,8 @@ document.addEventListener('DOMContentLoaded', async function() {
             if (attendeeListElement) {
                 if (currentAttendees.length === 0) {
                     attendeeListElement.innerHTML = `
-                        <div style="text-align: center; color: #94a3b8; font-size: 13px;">
-                            <i class="fas fa-user-plus" style="font-size: 20px; margin-bottom: 6px;"></i>
+                        <div class="empty-attendee-state">
+                            <i class="fas fa-user-plus"></i>
                             <div>클릭하여 참석자 추가</div>
                         </div>
                     `;
