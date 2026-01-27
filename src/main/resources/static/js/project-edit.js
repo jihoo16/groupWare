@@ -1867,4 +1867,16 @@
 
     // 페이지 로드 시 금액 포맷팅 적용
     applyCurrencyFormatting();
+
+    // 상단으로 이동 버튼
+    const scrollToTopBtn = document.getElementById('scrollToTopBtn');
+    const mainContent = document.querySelector('.main-content');
+    if (scrollToTopBtn && mainContent) {
+        mainContent.addEventListener('scroll', function () {
+            scrollToTopBtn.classList.toggle('visible', mainContent.scrollTop > 300);
+        });
+        scrollToTopBtn.addEventListener('click', function () {
+            mainContent.scrollTo({ top: 0, behavior: 'smooth' });
+        });
+    }
 });
