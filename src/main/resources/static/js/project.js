@@ -15,7 +15,7 @@ document.addEventListener('DOMContentLoaded', function() {
     // 뷰 토글 버튼
     const cardViewBtn = document.getElementById('cardViewBtn');
     const listViewBtn = document.getElementById('listViewBtn');
-    let currentViewType = 'card'; // 'card' 또는 'list'
+    let currentViewType = 'list'; // 'card' 또는 'list'
 
     // 프로젝트 데이터
     let allCurrentProjects = [];
@@ -94,6 +94,9 @@ document.addEventListener('DOMContentLoaded', function() {
             .then(projects => {
                 allCurrentProjects = projects;
                 renderCurrentProjects(projects);
+                if (currentViewType === 'list') {
+                    renderCurrentProjectsList(projects);
+                }
             })
             .catch(error => {
                 console.error('Error loading current projects:', error);
@@ -457,6 +460,8 @@ document.addEventListener('DOMContentLoaded', function() {
                     row.classList.add('my-project');
                 }
 
+                const myProjectIcon = isMyProject ? '<i class="fas fa-user-check my-project-icon" title="내가 참여한 프로젝트"></i>' : '';
+
                 // 하이라이트 적용
                 const projectName = currentSearchKeyword ?
                     searchUtils.highlightText(project.name || '', currentSearchKeyword) :
@@ -468,7 +473,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
                 row.innerHTML = `
                     <td class="text-center">${project.no}</td>
-                    <td><strong>${projectName}</strong></td>
+                    <td><strong>${projectName}</strong> ${myProjectIcon}</td>
                     <td><span class="status-badge ${project.statusClass}">${project.statusLabel}</span></td>
                     <td>${managerName}</td>
                     <td class="text-center">${project.teamSize}</td>

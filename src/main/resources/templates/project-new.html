@@ -11,6 +11,9 @@
                 <h1 class="page-title">신규 프로젝트 등록</h1>
             </div>
             <div class="header-right">
+                <button type="submit" class="btn btn-primary" form="projectForm">
+                    <i class="fas fa-save"></i> 프로젝트 등록
+                </button>
                 <button class="btn btn-secondary" onclick="location.href='/project'">
                     <i class="fas fa-arrow-left"></i> 목록으로
                 </button>
@@ -250,14 +253,12 @@
         </form>
     </div>
 
-    <!-- 하단 고정 액션 버튼 -->
-    <div class="project-form-footer">
-        <button type="button" class="btn btn-secondary" onclick="location.href='/project'">취소</button>
-        <button type="submit" class="btn btn-primary" form="projectForm">
-            <i class="fas fa-save"></i> 프로젝트 등록
-        </button>
-    </div>
     </main>
+
+    <!-- 상단으로 이동 버튼 -->
+    <button class="scroll-to-top" id="scrollToTopBtn" title="상단으로 이동">
+        <i class="fas fa-chevron-up"></i>
+    </button>
 </div>
 
 <!-- 연구책임자 선택 모달 -->

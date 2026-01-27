@@ -63,9 +63,7 @@ public class WeeklyReportServiceImpl implements WeeklyReportService {
             // 프로젝트 달성률 업데이트 (inputProgressRate가 있고 projectIdx가 있는 경우)
             if (createDTO.getProjectIdx() != null && createDTO.getInputProgressRate() != null) {
                 projectRepository.findById(createDTO.getProjectIdx()).ifPresent(project -> {
-                    java.math.BigDecimal currentRate = project.getProgressRate() != null ?
-                        project.getProgressRate() : java.math.BigDecimal.ZERO;
-                    java.math.BigDecimal newRate = currentRate.add(createDTO.getInputProgressRate());
+                    java.math.BigDecimal newRate = createDTO.getInputProgressRate();
                     // 100%를 초과하지 않도록 제한
                     if (newRate.compareTo(new java.math.BigDecimal("100")) > 0) {
                         newRate = new java.math.BigDecimal("100");
@@ -214,9 +212,7 @@ public class WeeklyReportServiceImpl implements WeeklyReportService {
         // 프로젝트 달성률 업데이트 (inputProgressRate가 있고 projectIdx가 있는 경우)
         if (updateDTO.getProjectIdx() != null && updateDTO.getInputProgressRate() != null) {
             projectRepository.findById(updateDTO.getProjectIdx()).ifPresent(project -> {
-                java.math.BigDecimal currentRate = project.getProgressRate() != null ?
-                    project.getProgressRate() : java.math.BigDecimal.ZERO;
-                java.math.BigDecimal newRate = currentRate.add(updateDTO.getInputProgressRate());
+                java.math.BigDecimal newRate = updateDTO.getInputProgressRate();
                 // 100%를 초과하지 않도록 제한
                 if (newRate.compareTo(new java.math.BigDecimal("100")) > 0) {
                     newRate = new java.math.BigDecimal("100");

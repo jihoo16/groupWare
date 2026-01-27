@@ -190,7 +190,8 @@
                             <div class="document-card-body" id="weeklyReportList">
                                 <p class="empty-message">문서가 없습니다.</p>
                             </div>
-                            <div class="document-card-footer" id="weeklyReportFooter" style="display: none;">
+                            <div class="document-card-footer" id="weeklyReportFooter">
+                                <span class="footer-hint">최근 5건만 표시</span>
                                 <button type="button" class="btn-more" onclick="viewMoreDocuments('weekly')">
                                     더보기 <i class="fas fa-chevron-right"></i>
                                 </button>
@@ -209,7 +210,8 @@
                             <div class="document-card-body" id="expenseReportList">
                                 <p class="empty-message">문서가 없습니다.</p>
                             </div>
-                            <div class="document-card-footer" id="expenseReportFooter" style="display: none;">
+                            <div class="document-card-footer" id="expenseReportFooter">
+                                <span class="footer-hint">최근 5건만 표시</span>
                                 <button type="button" class="btn-more" onclick="viewMoreDocuments('expense')">
                                     더보기 <i class="fas fa-chevron-right"></i>
                                 </button>
@@ -225,9 +227,8 @@
 
                     <!-- 참여연구원 구성 -->
                     <div class="section-title-with-count">
-                        <h3 class="section-title">참여연구원 구성</h3>
+                        <h3 class="section-title">참여연구원 구성</h3> <div class="member-count-badge" id="teamMemberCount" style="margin-top: 30px">총 0명</div>
                     </div>
-                    <div class="member-count-badge" id="teamMemberCount" style="margin-top: 20px">총 0명</div>
                     <div class="team-table-container" id="teamTableContainer">
                         <table class="team-table" id="teamTable">
                             <thead>
@@ -287,6 +288,11 @@
             </div>
         </div>
     </main>
+
+    <!-- 상단으로 이동 버튼 -->
+    <button class="scroll-to-top" id="scrollToTopBtn" title="상단으로 이동">
+        <i class="fas fa-chevron-up"></i>
+    </button>
 </div>
 
 <script th:src="@{/js/project-detail.js}"></script>

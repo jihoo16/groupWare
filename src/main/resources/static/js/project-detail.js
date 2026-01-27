@@ -31,12 +31,11 @@ document.addEventListener('DOMContentLoaded', async function () {
     }
     if (createWeeklyReportBtn) {
         createWeeklyReportBtn.addEventListener('click', function () {
-            // 프로젝트 주간업무보고 작성 페이지로 이동 (프로젝트 ID 전달)
-            if (projectId) {
-                window.location.href = `/approval/project-weekly-report?projectIdx=${projectId}`;
-            } else {
-                window.location.href = '/approval/project-weekly-report';
-            }
+            // 프로젝트 주간업무보고 작성 팝업
+            const url = projectId
+                ? `/approval/project-weekly-report?projectIdx=${projectId}`
+                : '/approval/project-weekly-report';
+            openWeeklyReportPopup(url);
         });
     }
 
@@ -44,6 +43,22 @@ document.addEventListener('DOMContentLoaded', async function () {
     const deleteBtn = document.getElementById('deleteBtn');
     if (deleteBtn) {
         deleteBtn.addEventListener('click', () => deleteProject(projectId));
+    }
+
+    // 상단으로 이동 버튼
+    const scrollToTopBtn = document.getElementById('scrollToTopBtn');
+    const mainContent = document.querySelector('.main-content');
+    if (scrollToTopBtn && mainContent) {
+        mainContent.addEventListener('scroll', function () {
+            if (mainContent.scrollTop > 300) {
+                scrollToTopBtn.classList.add('visible');
+            } else {
+                scrollToTopBtn.classList.remove('visible');
+            }
+        });
+        scrollToTopBtn.addEventListener('click', function () {
+            mainContent.scrollTo({ top: 0, behavior: 'smooth' });
+        });
     }
 });
 
@@ -573,19 +588,20 @@ async function loadProjectDocuments(projectId) {
 function displayWeeklyReports(reports) {
     const listContainer = document.getElementById('weeklyReportList');
     const countElement = document.getElementById('weeklyReportCount');
-    const footerElement = document.getElementById('weeklyReportFooter');
 
     const totalCount = reports.length || 0;
     countElement.textContent = `${totalCount}건`;
 
     if (!reports || reports.length === 0) {
         listContainer.innerHTML = '<p class="empty-message">문서가 없습니다.</p>';
-        footerElement.style.display = 'none';
         return;
     }
 
-    listContainer.innerHTML = reports.slice(0, 5).map(doc => `
-        <div class="document-item" onclick="goToDocument('${doc.documentType}', ${doc.sourceDocumentId})">
+    // 최신순 정렬
+    const sorted = [...reports].sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+
+    listContainer.innerHTML = sorted.slice(0, 5).map(doc => `
+        <div class="document-item" onclick="goToDocument('${doc.documentType}', ${doc.idx})">
             <div class="document-item-icon">
                 <i class="fas fa-file-alt"></i>
             </div>
@@ -595,9 +611,6 @@ function displayWeeklyReports(reports) {
             </div>
         </div>
     `).join('');
-
-    // 5건 이상이면 더보기 버튼 표시
-    footerElement.style.display = totalCount > 5 ? 'block' : 'none';
 }
 
 /**
@@ -606,14 +619,12 @@ function displayWeeklyReports(reports) {
 function displayExpenseReports(reports) {
     const listContainer = document.getElementById('expenseReportList');
     const countElement = document.getElementById('expenseReportCount');
-    const footerElement = document.getElementById('expenseReportFooter');
 
     const totalCount = reports.length || 0;
     countElement.textContent = `${totalCount}건`;
 
     if (!reports || reports.length === 0) {
         listContainer.innerHTML = '<p class="empty-message">문서가 없습니다.</p>';
-        footerElement.style.display = 'none';
         return;
     }
 
@@ -628,13 +639,10 @@ function displayExpenseReports(reports) {
             </div>
         </div>
     `).join('');
-
-    // 5건 이상이면 더보기 버튼 표시
-    footerElement.style.display = totalCount > 5 ? 'block' : 'none';
 }
 
 /**
- * 문서 상세 페이지로 이동 (새 탭에서 열기)
+ * 문서 상세 페이지로 이동
  */
 async function goToDocument(documentType, sourceDocumentId) {
     if (!sourceDocumentId) return;
@@ -643,7 +651,8 @@ async function goToDocument(documentType, sourceDocumentId) {
     switch (documentType) {
         case 'WEEKLY_REPORT':
             url = `/approval/project-weekly-report/detail?documentIdx=${sourceDocumentId}`;
-            break;
+            openWeeklyReportPopup(url);
+            return;
         case 'MEETING_MINUTES':
         case 'BUSINESS_TRIP':
         case 'RECEIPT_MEETING':
@@ -657,16 +666,32 @@ async function goToDocument(documentType, sourceDocumentId) {
 }
 
 /**
+ * 주간업무보고 팝업 열기
+ */
+function openWeeklyReportPopup(url) {
+    const width = 1200;
+    const height = 800;
+    const left = (screen.width - width) / 2;
+    const top = (screen.height - height) / 2;
+    window.open(url, 'weeklyReportPopup', `width=${width},height=${height},left=${left},top=${top},scrollbars=yes,resizable=yes`);
+}
+
+/**
  * 더보기 클릭 시 문서 목록으로 이동
  */
 function viewMoreDocuments(type) {
     const urlParams = new URLSearchParams(window.location.search);
     const projectId = urlParams.get('projectId');
 
+    const width = 1200;
+    const height = 800;
+    const left = (screen.width - width) / 2;
+    const top = (screen.height - height) / 2;
+
     if (type === 'weekly') {
-        location.href = `/project/documents?projectId=${projectId}&tab=weekly`;
+        window.open(`/project/documents?projectId=${projectId}&tab=weekly`, 'projectDocumentsPopup', `width=${width},height=${height},left=${left},top=${top},scrollbars=yes,resizable=yes`);
     } else if (type === 'expense') {
-        location.href = `/project/documents?projectId=${projectId}&tab=expense`;
+        window.open(`/project/documents?projectId=${projectId}&tab=expense`, 'projectDocumentsPopup', `width=${width},height=${height},left=${left},top=${top},scrollbars=yes,resizable=yes`);
     }
 }
 
