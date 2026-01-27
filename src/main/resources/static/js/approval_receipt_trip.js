@@ -774,16 +774,10 @@ document.addEventListener('DOMContentLoaded', async function() {
         const documentFormToggle = document.getElementById('documentFormToggle');
         const documentFormWrapper = document.querySelector('.document-form-wrapper');
 
-        // 기본적으로 문서 양식을 접어둠
-        if (documentFormWrapper) {
-            documentFormWrapper.classList.add('collapsed');
-        }
-
-        if (documentFormToggle) {
+        if (documentFormToggle && documentFormWrapper) {
             documentFormToggle.addEventListener('click', function() {
-                if (documentFormWrapper) {
-                    documentFormWrapper.classList.toggle('collapsed');
-                }
+                documentFormWrapper.classList.toggle('collapsed');
+                documentFormToggle.classList.toggle('active');
             });
         }
     }
@@ -1703,6 +1697,15 @@ document.addEventListener('DOMContentLoaded', async function() {
                 tripDate.value = `${yyyy}-${mm}-${dd}`;
                 // 날짜 설정 후 자동 채우기 트리거
                 tripDate.dispatchEvent(new Event('change'));
+            }
+
+            // 날짜 입력 필드 전체 영역 클릭 시 날짜 선택기 열기
+            if (tripDate) {
+                tripDate.addEventListener('click', function() {
+                    if (this.showPicker) {
+                        this.showPicker();
+                    }
+                });
             }
         }, 200);
     }
