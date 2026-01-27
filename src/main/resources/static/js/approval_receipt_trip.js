@@ -317,7 +317,60 @@ document.addEventListener('DOMContentLoaded', async function() {
                 if (e.target.closest('.trip-person-remove')) {
                     return;
                 }
+                // 출장인원 항목이나 추가 버튼 클릭은 무시
+                if (e.target.closest('.trip-person-item') || e.target.closest('.add-more-persons-btn')) {
+                    return;
+                }
+                // 출장인원이 있을 경우 영역 클릭으로 모달 열지 않음
+                if (window.currentTripPersons.length > 0) {
+                    return;
+                }
                 openTripPersonModal();
+            });
+        }
+
+        // 직급 순서 정의
+        const positionOrder = {
+            '대표이사': 1,
+            '이사': 2,
+            '수석연구원': 3,
+            '책임연구원': 4,
+            '선임연구원': 5,
+            '연구원': 6,
+            '주임연구원': 7,
+            '사원': 8
+        };
+
+        // 출장인원 정렬 함수
+        function sortTripPersons(persons) {
+            return [...persons].sort((a, b) => {
+                // 1. 내부/외부 구분 (내부 우선)
+                const typeA = a.type || 'internal';
+                const typeB = b.type || 'internal';
+
+                if (typeA === 'internal' && typeB === 'external') return -1;
+                if (typeA === 'external' && typeB === 'internal') return 1;
+
+                // 2. 내부: 직급 순으로 정렬
+                if (typeA === 'internal' && typeB === 'internal') {
+                    const orderA = positionOrder[a.position] || 999;
+                    const orderB = positionOrder[b.position] || 999;
+                    return orderA - orderB;
+                }
+
+                // 3. 외부: 회사명 순, 같은 회사면 직급 순
+                if (typeA === 'external' && typeB === 'external') {
+                    const deptA = a.dept || '';
+                    const deptB = b.dept || '';
+                    if (deptA !== deptB) {
+                        return deptA.localeCompare(deptB, 'ko');
+                    }
+                    const orderA = positionOrder[a.position] || 999;
+                    const orderB = positionOrder[b.position] || 999;
+                    return orderA - orderB;
+                }
+
+                return 0;
             });
         }
 
@@ -325,29 +378,80 @@ document.addEventListener('DOMContentLoaded', async function() {
         function renderTripPersonListInTemplate() {
             if (!tripPersonList) return;
 
+            // tripPersonArea에 has-persons 클래스 추가/제거
+            if (tripPersonArea) {
+                if (window.currentTripPersons.length > 0) {
+                    tripPersonArea.classList.add('has-persons');
+                } else {
+                    tripPersonArea.classList.remove('has-persons');
+                }
+            }
+
             if (window.currentTripPersons.length === 0) {
                 tripPersonList.innerHTML = `
-                    <div style="text-align: center; color: #94a3b8; font-size: 13px;">
-                        <i class="fas fa-user-plus" style="font-size: 20px; margin-bottom: 6px;"></i>
+                    <div class="empty-attendee-state">
+                        <i class="fas fa-user-plus"></i>
                         <div>클릭하여 출장인원 추가</div>
                     </div>
                 `;
+                hideAddPersonButton();
             } else {
-                tripPersonList.innerHTML = window.currentTripPersons.map(person => `
-                    <div class="trip-person-item">
-                        <div class="trip-person-info">
-                            <span class="name">${person.name}</span>
-                            <span>${person.dept}</span>
-                            <span>${person.position}</span>
+                // 출장인원 정렬
+                const sortedPersons = sortTripPersons(window.currentTripPersons);
+
+                tripPersonList.innerHTML = sortedPersons.map(person => {
+                    const externalBadge = person.type === 'external'
+                        ? '<span class="external-badge">외부</span>'
+                        : '';
+
+                    const personClass = person.type === 'external'
+                        ? 'trip-person-item external-person'
+                        : 'trip-person-item';
+
+                    return `
+                        <div class="${personClass}" onclick="event.stopPropagation();">
+                            <div class="trip-person-info">
+                                <span class="name">${person.name}${externalBadge}</span>
+                                <span>${person.dept}</span>
+                                <span>${person.position}</span>
+                            </div>
+                            <button type="button" class="trip-person-remove" onclick="removeTripPersonInTemplate('${person.id}')">
+                                <i class="fas fa-times"></i> 제거
+                            </button>
                         </div>
-                        <button type="button" class="trip-person-remove" onclick="removeTripPersonInTemplate('${person.id}')">
-                            <i class="fas fa-times"></i> 제거
-                        </button>
-                    </div>
-                `).join('');
+                    `;
+                }).join('');
+
+                showAddPersonButton();
             }
 
             updateTripPersonDisplay();
+        }
+
+        // 출장인원 추가 버튼 표시
+        function showAddPersonButton() {
+            if (!tripPersonArea) return;
+
+            let addButton = tripPersonArea.querySelector('.add-more-persons-btn');
+            if (!addButton) {
+                addButton = document.createElement('button');
+                addButton.type = 'button';
+                addButton.className = 'add-more-persons-btn';
+                addButton.onclick = openTripPersonModal;
+                addButton.innerHTML = '<i class="fas fa-user-plus"></i> 출장인원 추가';
+                tripPersonArea.appendChild(addButton);
+            }
+            addButton.style.display = 'flex';
+        }
+
+        // 출장인원 추가 버튼 숨기기
+        function hideAddPersonButton() {
+            if (!tripPersonArea) return;
+
+            const addButton = tripPersonArea.querySelector('.add-more-persons-btn');
+            if (addButton) {
+                addButton.style.display = 'none';
+            }
         }
 
         // 템플릿 내에서 출장인원 제거
