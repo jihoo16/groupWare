@@ -28,21 +28,13 @@
                     <!-- 우측: 문서 편집 영역 -->
                     <div class="editor-area">
 
-
-                        <!-- 문서 양식 (동적 로드) -->
-                        <div class="document-form" id="documentForm">
-                            <!-- 템플릿이 여기에 동적으로 로드됨 -->
-                        </div>
-
-                        <!-- 템플릿 저장소 (숨김) -->
-                        <div style="display: none;">
-                            <!-- 영수증 처리 템플릿 - 회의록 -->
-                            <div id="template-receipt-meeting">
-                                <div class="common-info-section">
-                                    <div class="section-header-common">
-                                        <h4><i class="fas fa-edit"></i> 연구비 증빙 - 회의록 공통 정보 입력</h4>
-                                    </div>
-                                    <table class="form-table common-info-table">
+                        <div id="documentForm">
+                            <!-- 연구비 증빙 - 회의록 인터랙티브 폼 -->
+                            <div class="common-info-section">
+                            <div class="section-header-common">
+                                <h4><i class="fas fa-edit"></i> 연구비 증빙 - 회의록 공통 정보 입력</h4>
+                            </div>
+                            <table class="form-table common-info-table">
                                         <tr>
                                             <th style="width: 150px;">과제명</th>
                                             <td colspan="3">
@@ -51,8 +43,18 @@
                                             </td>
                                         </tr>
                                         <tr>
+                                            <th>사용 카드</th>
+                                            <td colspan="3">
+                                                <input type="text" id="common_card" class="form-input clickable-input" placeholder="과제를 먼저 선택하세요" readonly onclick="openCardModal()">
+                                                <input type="hidden" id="selectedCardIdx">
+                                            </td>
+                                        </tr>
+                                        <tr>
                                             <th>작성자</th>
-                                            <td><input type="text" id="common_author" placeholder="작성자 이름"></td>
+                                            <td>
+                                                <input type="text" id="common_author" class="form-input clickable-input" placeholder="작성자 선택" readonly onclick="openAuthorModal()">
+                                                <input type="hidden" id="common_author_id">
+                                            </td>
                                             <th>회의 일자</th>
                                             <td><input type="date" id="common_date"></td>
                                         </tr>
@@ -69,10 +71,10 @@
                                         <tr>
                                             <th style="padding-top: 14px;">참석자</th>
                                             <td colspan="3">
-                                                <div id="attendeeArea" style="min-height: 60px; padding: 12px; border: 2px dashed #e2e8f0; border-radius: 8px; cursor: pointer; transition: all 0.2s; background: #fafbfc;">
-                                                    <div id="attendeeList" style="display: flex; flex-direction: column; gap: 8px;">
-                                                        <div style="text-align: center; color: #94a3b8; font-size: 13px;">
-                                                            <i class="fas fa-user-plus" style="font-size: 20px; margin-bottom: 6px;"></i>
+                                                <div id="attendeeArea" style="min-height: 50px; padding: 8px; border: 2px dashed #e2e8f0; border-radius: 6px; cursor: pointer; transition: all 0.2s; background: #fafbfc;">
+                                                    <div id="attendeeList" style="display: flex; flex-direction: column; gap: 0;">
+                                                        <div style="text-align: center; color: #94a3b8; font-size: 12px; padding: 8px;">
+                                                            <i class="fas fa-user-plus" style="font-size: 16px; margin-bottom: 4px;"></i>
                                                             <div>클릭하여 참석자 추가</div>
                                                         </div>
                                                     </div>
@@ -82,7 +84,24 @@
                                         <tr>
                                             <th>사용 금액 (원)</th>
                                             <td>
-                                                <input type="text" id="common_amount" placeholder="사용 금액을 입력하세요 (원)" style="width: 100%; padding: 8px; font-size: 14px;">
+                                                <input type="text" id="common_amount" placeholder="사용 금액을 입력하세요 (원)" style="width: 100%; padding: 8px; font-size: 14px; margin-bottom: 8px;">
+                                                <div style="display: flex; gap: 5px; flex-wrap: nowrap;">
+                                                    <button type="button" class="amount-btn" onclick="addAmount(100000)">
+                                                        <i class="fas fa-plus-circle"></i> 10만원
+                                                    </button>
+                                                    <button type="button" class="amount-btn" onclick="addAmount(10000)">
+                                                        <i class="fas fa-plus-circle"></i> 1만원
+                                                    </button>
+                                                    <button type="button" class="amount-btn" onclick="addAmount(1000)">
+                                                        <i class="fas fa-plus-circle"></i> 1천원
+                                                    </button>
+                                                    <button type="button" class="amount-btn" onclick="addAmount(100)">
+                                                        <i class="fas fa-plus-circle"></i> 100원
+                                                    </button>
+                                                    <button type="button" class="amount-reset-btn" onclick="resetAmount()">
+                                                        <i class="fas fa-redo"></i> 초기화
+                                                    </button>
+                                                </div>
                                             </td>
                                             <th style="background: #f8f9fa;">참석자 금액 합계</th>
                                             <td style="background: #f8f9fa;">
@@ -99,19 +118,36 @@
                                             <th>주요 내용</th>
                                             <td colspan="3"><textarea id="common_content" placeholder="회의 주요 내용을 입력하세요" rows="6" style="width: 100%;"></textarea></td>
                                         </tr>
-                                    </table>
-                                </div>
+                            </table>
+                        </div>
 
-                                <!-- 공식 문서 양식 -->
-                                <div class="document-form-wrapper">
-                                    <div class="document-form-header" id="documentFormToggle">
-                                        <h3><i class="fas fa-file-alt"></i> 공식 문서 양식</h3>
-                                        <button class="btn-toggle-form">
-                                            <i class="fas fa-chevron-up"></i>
-                                            <span></span>
-                                        </button>
-                                    </div>
-                                    <div class="document-form-content" id="documentFormContent">
+                        <!-- 첨부파일 -->
+                        <div class="attachment-section">
+                            <div class="section-header">
+                                <h4><i class="fas fa-paperclip"></i> 첨부파일</h4>
+                            </div>
+                            <div class="file-upload-area" id="fileUploadArea">
+                                <input type="file" id="fileInput" multiple hidden>
+                                <label for="fileInput" class="file-upload-label">
+                                    <i class="fas fa-cloud-upload-alt"></i>
+                                    <span>파일을 선택하거나 드래그하세요</span>
+                                    <small>최대 10MB, 최대 5개</small>
+                                </label>
+                            </div>
+                            <div class="file-list" id="fileList"></div>
+                        </div>
+
+                        <!-- 공식 문서 양식 -->
+                        <div class="document-preview-toggle">
+                            <button class="toggle-btn" id="documentFormToggle">
+                                <i class="fas fa-file-alt"></i>
+                                공식 문서 미리보기
+                                <i class="fas fa-chevron-down toggle-icon"></i>
+                            </button>
+                        </div>
+
+                        <div class="document-form-wrapper collapsed">
+                            <div class="document-form" id="documentFormContent">
                                         <div style="background: white; border: 2px solid #e0e0e0; border-radius: 8px; padding: 30px; margin: 0 auto 30px; max-width: 881px">
                                             <h2 class="doc-title">회 의 품 의 서</h2>
                                     <div style="text-align: left; margin-bottom: 10px; font-size: 14px;">
@@ -404,21 +440,6 @@
                                 </div>
                             </div>
                         </div>
-
-                        <!-- 첨부파일 -->
-                        <div class="attachment-section">
-                            <div class="section-header">
-                                <h4><i class="fas fa-paperclip"></i> 첨부파일</h4>
-                            </div>
-                            <div class="file-upload-area" id="fileUploadArea">
-                                <input type="file" id="fileInput" multiple hidden>
-                                <label for="fileInput" class="file-upload-label">
-                                    <i class="fas fa-cloud-upload-alt"></i>
-                                    <span>파일을 선택하거나 드래그하세요</span>
-                                    <small>최대 10MB, 최대 5개</small>
-                                </label>
-                            </div>
-                            <div class="file-list" id="fileList"></div>
                         </div>
 
                         <!-- 제출 버튼 -->
@@ -446,8 +467,6 @@
                         </div>
 
                     </div>
-                </div>
-            </div>
         </main>
     </div>
 
@@ -493,68 +512,93 @@
     <!-- 참석자 선택 모달 -->
     <!-- 내부 참석자 선택 모달 -->
     <div id="attendeeModal" class="modal">
-        <div class="modal-content">
+        <div class="modal-content" style="max-width: 1000px; max-height: 90vh;">
             <div class="modal-header">
-                <h3>내부 참석자 선택</h3>
+                <h3><i class="fas fa-users"></i> 참석자 선택</h3>
                 <button class="modal-close" onclick="closeAttendeeModal()">
                     <i class="fas fa-times"></i>
                 </button>
             </div>
-            <div class="modal-body">
-                <div class="modal-search">
-                    <i class="fas fa-search"></i>
-                    <input type="text" id="attendeeSearchInput" placeholder="이름 또는 부서 검색...">
+            <div class="modal-body" style="padding: 0; display: flex; flex-direction: column; overflow: hidden;">
+                <!-- 좌우 분할 영역 -->
+                <div class="dual-panel-container">
+                    <!-- 좌측: 내부인원 -->
+                    <div class="panel-section">
+                        <div class="panel-header">
+                            <h4><i class="fas fa-building"></i> 내부인원</h4>
+                        </div>
+                        <div class="modal-search">
+                            <i class="fas fa-search"></i>
+                            <input type="text" id="internalSearchInput" placeholder="이름 또는 부서 검색...">
+                        </div>
+                        <div class="employee-list" id="internalList">
+                            <!-- 동적 생성 -->
+                        </div>
+                    </div>
+
+                    <!-- 우측: 외부인원 -->
+                    <div class="panel-section">
+                        <div class="panel-header">
+                            <h4><i class="fas fa-user-tie"></i> 외부인원</h4>
+                            <button class="btn-sm-outline" onclick="createNewExternalPerson()" style="font-size: 12px; padding: 4px 12px;">
+                                <i class="fas fa-plus"></i> 신규 등록
+                            </button>
+                        </div>
+                        <div class="modal-search">
+                            <i class="fas fa-search"></i>
+                            <input type="text" id="externalSearchInput" placeholder="이름 또는 회사명 검색...">
+                        </div>
+                        <div class="employee-list" id="externalList">
+                            <!-- 동적 생성 -->
+                        </div>
+                    </div>
                 </div>
-                <div class="employee-list" id="attendeeList2">
-                    <!-- 동적 생성 -->
+
+                <!-- 선택된 참석자 뱃지 영역 -->
+                <div class="selected-attendees-area">
+                    <div class="selected-header">
+                        <h4><i class="fas fa-check-circle"></i> 선택된 참석자 (<span id="selectedAttendeeCount">0</span>명)</h4>
+                        <button class="btn-sm-text" onclick="clearAllSelectedAttendees()" style="color: #94a3b8; font-size: 12px;">
+                            <i class="fas fa-times"></i> 전체 해제
+                        </button>
+                    </div>
+                    <div class="badge-container" id="selectedAttendeeBadges">
+                        <div class="empty-state">
+                            <i class="fas fa-user-plus"></i>
+                            <span>참석자를 선택해주세요</span>
+                        </div>
+                    </div>
                 </div>
             </div>
             <div class="modal-footer">
-                <div class="modal-footer-left">
-                    <button class="btn-outline" onclick="openExternalPersonModal()">
-                        <i class="fas fa-user-plus"></i> 외부인력 선택
-                    </button>
-                </div>
-                <div class="modal-footer-right">
-                    <button class="btn-secondary" onclick="closeAttendeeModal()">취소</button>
-                    <button class="btn-primary" onclick="addSelectedAttendees()">
-                        <i class="fas fa-check"></i> 참석자 추가
-                    </button>
-                </div>
+                <button class="btn-secondary" onclick="closeAttendeeModal()">취소</button>
+                <button class="btn-primary" onclick="addSelectedAttendees()">
+                    <i class="fas fa-check"></i> 추가
+                </button>
             </div>
         </div>
     </div>
 
-    <!-- 외부인력 선택 모달 -->
-    <div id="externalPersonModal" class="modal">
+    <!-- 작성자 선택 모달 -->
+    <div id="authorModal" class="modal">
         <div class="modal-content">
             <div class="modal-header">
-                <h3>외부인력 선택</h3>
-                <button class="modal-close" onclick="closeExternalPersonModal()">
+                <h3>작성자 선택</h3>
+                <button class="modal-close" onclick="closeAuthorModal()">
                     <i class="fas fa-times"></i>
                 </button>
             </div>
             <div class="modal-body">
                 <div class="modal-search">
                     <i class="fas fa-search"></i>
-                    <input type="text" id="externalPersonSearchInput" placeholder="이름 또는 회사명 검색...">
+                    <input type="text" id="authorSearchInput" placeholder="이름 또는 부서 검색...">
                 </div>
-                <div class="employee-list" id="externalPersonList">
+                <div class="employee-list" id="authorList">
                     <!-- 동적 생성 -->
                 </div>
             </div>
             <div class="modal-footer">
-                <div class="modal-footer-left">
-                    <button class="btn-outline" onclick="createNewExternalPerson()">
-                        <i class="fas fa-plus"></i> 신규 외부인력 등록
-                    </button>
-                </div>
-                <div class="modal-footer-right">
-                    <button class="btn-secondary" onclick="closeExternalPersonModal()">취소</button>
-                    <button class="btn-primary" onclick="addSelectedExternalPersons()">
-                        <i class="fas fa-check"></i> 추가
-                    </button>
-                </div>
+                <button class="btn-secondary" onclick="closeAuthorModal()">취소</button>
             </div>
         </div>
     </div>
@@ -577,6 +621,71 @@
             </div>
             <div class="modal-footer">
                 <button class="btn-secondary" onclick="closeProjectModal()">취소</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 카드 선택 모달 -->
+    <div class="modal" id="cardModal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3><i class="fas fa-credit-card"></i> 사용 카드 선택</h3>
+                <button class="modal-close" onclick="closeCardModal()">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            <div class="modal-body">
+                <div class="search-box">
+                    <i class="fas fa-search"></i>
+                    <input type="text" id="cardSearch" placeholder="카드명 또는 카드번호로 검색">
+                </div>
+                <div class="modal-item-list" id="cardList"></div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn-secondary" onclick="closeCardModal()">취소</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 외부인력 신규 등록 모달 -->
+    <div class="modal" id="externalPersonModal">
+        <div class="modal-content" style="max-width: 500px;">
+            <div class="modal-header">
+                <h3><i class="fas fa-user-plus"></i> 외부인력 신규 등록</h3>
+                <button class="modal-close" onclick="closeExternalPersonModal()">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            <div class="modal-body">
+                <div style="display: flex; flex-direction: column; gap: 16px;">
+                    <div>
+                        <label style="display: block; margin-bottom: 8px; font-size: 13px; font-weight: 600; color: #334155;">
+                            <i class="fas fa-user" style="color: #667eea; margin-right: 6px;"></i>이름 *
+                        </label>
+                        <input type="text" id="externalPersonName" placeholder="이름을 입력하세요"
+                               style="width: 100%; padding: 10px 14px; border: 1.5px solid #cbd5e1; border-radius: 8px; font-size: 13px;">
+                    </div>
+                    <div>
+                        <label style="display: block; margin-bottom: 8px; font-size: 13px; font-weight: 600; color: #334155;">
+                            <i class="fas fa-building" style="color: #667eea; margin-right: 6px;"></i>회사명 *
+                        </label>
+                        <input type="text" id="externalPersonCompany" placeholder="회사명을 입력하세요"
+                               style="width: 100%; padding: 10px 14px; border: 1.5px solid #cbd5e1; border-radius: 8px; font-size: 13px;">
+                    </div>
+                    <div>
+                        <label style="display: block; margin-bottom: 8px; font-size: 13px; font-weight: 600; color: #334155;">
+                            <i class="fas fa-id-badge" style="color: #667eea; margin-right: 6px;"></i>직급 *
+                        </label>
+                        <input type="text" id="externalPersonPosition" placeholder="직급을 입력하세요"
+                               style="width: 100%; padding: 10px 14px; border: 1.5px solid #cbd5e1; border-radius: 8px; font-size: 13px;">
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn-secondary" onclick="closeExternalPersonModal()">취소</button>
+                <button class="btn-primary" onclick="submitExternalPerson()">
+                    <i class="fas fa-check"></i> 등록
+                </button>
             </div>
         </div>
     </div>
