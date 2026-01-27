@@ -28,7 +28,7 @@
                     <!-- 우측: 문서 편집 영역 -->
                     <div class="editor-area">
                         <!-- 문서 양식 (동적 로드) -->
-                        <div class="document-form" id="documentForm">
+                        <div id="documentForm">
                             <!-- 템플릿이 여기에 동적으로 로드됨 -->
                         </div>
 
@@ -38,49 +38,108 @@
                             <!-- 영수증 처리 템플릿 - 야근식대 -->
                             <div id="template-receipt-overtime">
                                 <div class="common-info-section">
-                                    <div class="section-header-common">
-                                        <h4><i class="fas fa-edit"></i> 연구비 증빙 - 야근 식대 공통 정보 입력</h4>
+                                    <div class="section-header">
+                                        <h3><i class="fas fa-edit"></i> 기본 정보</h3>
                                     </div>
-                                    <table class="form-table common-info-table receipt-overtime-table">
-                                        <tr>
-                                            <th style="width: 150px;">과제명</th>
-                                            <td colspan="3"><input type="text" id="ot_project" placeholder="과제명을 입력하세요"></td>
-                                        </tr>
-                                        <tr>
-                                            <th>연구책임자</th>
-                                            <td><input type="text" id="ot_manager" placeholder="연구책임자명"></td>
-                                            <th>신청자</th>
-                                            <td><input type="text" id="ot_applicant" placeholder="신청자명"></td>
-                                        </tr>
-                                        <tr>
-                                            <th>품의일자</th>
-                                            <td colspan="3"><input type="date" id="ot_approval_date"></td>
-                                        </tr>
-                                        <tr>
-                                            <th>품의명</th>
-                                            <td colspan="3"><input type="text" id="ot_title" placeholder="예: 야근 식대"></td>
-                                        </tr>
-                                        <tr>
-                                            <th>총 공급가액</th>
-                                            <td colspan="3">
-                                                <input type="number" id="ot_amount" placeholder="공급가액을 입력하세요 (원)" style="width: 300px; padding: 5px;">
-                                                <small style="color: #666; margin-left: 10px;">* 야근 인원이 자동 계산됩니다</small>
-                                            </td>
-                                        </tr>
-                                        <tr>
-                                            <th>야근 인원</th>
-                                            <td colspan="3">
-                                                <div id="overtimePersonArea" style="min-height: 60px; padding: 12px; border: 2px dashed #e2e8f0; border-radius: 8px; cursor: pointer; transition: all 0.2s; background: #fafbfc;">
-                                                    <div id="overtimePersonList"></div>
+
+                                    <!-- 과제명 -->
+                                    <div class="form-group full-width">
+                                        <label for="ot_project">
+                                            <i class="fas fa-project-diagram"></i> 과제명
+                                            <span class="required-mark">*</span>
+                                        </label>
+                                        <input type="text" id="ot_project" class="form-input" placeholder="과제명을 입력하세요">
+                                    </div>
+
+                                    <!-- 연구책임자 & 신청자 -->
+                                    <div class="form-grid">
+                                        <div class="form-group">
+                                            <label for="ot_manager">
+                                                <i class="fas fa-user-tie"></i> 연구책임자
+                                                <span class="required-mark">*</span>
+                                            </label>
+                                            <input type="text" id="ot_manager" class="form-input" placeholder="연구책임자명">
+                                        </div>
+                                        <div class="form-group">
+                                            <label for="ot_applicant">
+                                                <i class="fas fa-user-edit"></i> 신청자
+                                                <span class="required-mark">*</span>
+                                            </label>
+                                            <input type="text" id="ot_applicant" class="form-input" placeholder="신청자명">
+                                        </div>
+                                    </div>
+
+                                    <!-- 품의일자 -->
+                                    <div class="form-group full-width">
+                                        <label for="ot_approval_date">
+                                            <i class="fas fa-calendar-day"></i> 품의일자
+                                            <span class="required-mark">*</span>
+                                        </label>
+                                        <input type="date" id="ot_approval_date" class="form-input">
+                                    </div>
+
+                                    <!-- 품의명 -->
+                                    <div class="form-group full-width">
+                                        <label for="ot_title">
+                                            <i class="fas fa-heading"></i> 품의명
+                                            <span class="required-mark">*</span>
+                                        </label>
+                                        <input type="text" id="ot_title" class="form-input" placeholder="예: 야근 식대">
+                                    </div>
+
+                                    <!-- 총 공급가액 -->
+                                    <div class="form-group full-width">
+                                        <label for="ot_amount">
+                                            <i class="fas fa-won-sign"></i> 총 공급가액
+                                            <span class="required-mark">*</span>
+                                        </label>
+                                        <div>
+                                            <input type="number" id="ot_amount" class="form-input" placeholder="공급가액을 입력하세요 (원)" style="width: 300px;">
+                                            <small style="color: #666; margin-left: 10px;">* 야근 인원이 자동 계산됩니다</small>
+                                        </div>
+                                    </div>
+
+                                    <!-- 야근 인원 -->
+                                    <div class="form-group full-width">
+                                        <label>
+                                            <i class="fas fa-users"></i> 야근 인원
+                                            <span class="required-mark">*</span>
+                                        </label>
+                                        <div id="overtimePersonArea" class="attendee-area">
+                                            <div id="overtimePersonList" class="attendee-list">
+                                                <div class="empty-attendee-state">
+                                                    <i class="fas fa-user-plus"></i>
+                                                    <div>클릭하여 야근 인원 추가</div>
                                                 </div>
-                                            </td>
-                                        </tr>
-                                        <tr>
-                                            <th >품의 내용</th>
-                                            <td colspan="3"><textarea id="ot_content" placeholder="야근 내용을 입력하세요" rows="6">야근식대
-- 인원 : </textarea></td>
-                                        </tr>
-                                    </table>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <!-- 품의 내용 -->
+                                    <div class="form-group full-width">
+                                        <label for="ot_content">
+                                            <i class="fas fa-file-alt"></i> 품의 내용
+                                            <span class="required-mark">*</span>
+                                        </label>
+                                        <textarea id="ot_content" class="form-textarea" placeholder="야근 내용을 입력하세요" rows="6">야근식대
+- 인원 : </textarea>
+                                    </div>
+                                </div>
+
+                                <!-- 첨부파일 -->
+                                <div class="attachment-section">
+                                    <div class="section-header">
+                                        <h4><i class="fas fa-paperclip"></i> 첨부파일</h4>
+                                    </div>
+                                    <div class="file-upload-area" id="fileUploadArea">
+                                        <input type="file" id="fileInput" multiple hidden>
+                                        <label for="fileInput" class="file-upload-label">
+                                            <i class="fas fa-cloud-upload-alt"></i>
+                                            <span>파일을 선택하거나 드래그하세요</span>
+                                            <small>최대 10MB, 최대 5개</small>
+                                        </label>
+                                    </div>
+                                    <div class="file-list" id="fileList"></div>
                                 </div>
 
                                 <!-- 공식 문서 양식 -->
@@ -320,22 +379,6 @@
                                     </div>
                                 </div>
                             </div>
-                        </div>
-
-                        <!-- 첨부파일 -->
-                        <div class="attachment-section">
-                            <div class="section-header">
-                                <h4><i class="fas fa-paperclip"></i> 첨부파일</h4>
-                            </div>
-                            <div class="file-upload-area" id="fileUploadArea">
-                                <input type="file" id="fileInput" multiple hidden>
-                                <label for="fileInput" class="file-upload-label">
-                                    <i class="fas fa-cloud-upload-alt"></i>
-                                    <span>파일을 선택하거나 드래그하세요</span>
-                                    <small>최대 10MB, 최대 5개</small>
-                                </label>
-                            </div>
-                            <div class="file-list" id="fileList"></div>
                         </div>
 
                         <!-- 제출 버튼 -->
