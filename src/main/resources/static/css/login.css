@@ -592,3 +592,98 @@ body {
         align-items: flex-start;
     }
 }
+
+/* ===========================
+   Health Check Button
+   =========================== */
+.health-check-btn {
+    position: fixed;
+    bottom: 20px;
+    right: 20px;
+    width: 48px;
+    height: 48px;
+    background: #ffffff;
+    border: 2px solid #e2e8f0;
+    border-radius: 50%;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+    transition: all 0.3s ease;
+    z-index: 1000;
+}
+
+.health-check-btn:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 16px rgba(0, 0, 0, 0.15);
+    border-color: #cbd5e1;
+}
+
+.health-check-btn i {
+    font-size: 20px;
+    color: #64748b;
+    transition: all 0.3s ease;
+}
+
+.health-check-btn.checking i {
+    animation: pulse 1s infinite;
+    color: #f59e0b;
+}
+
+.health-check-btn.healthy {
+    border-color: #10b981;
+    background: #f0fdf4;
+}
+
+.health-check-btn.healthy i {
+    color: #10b981;
+}
+
+.health-check-btn.unhealthy {
+    border-color: #ef4444;
+    background: #fef2f2;
+}
+
+.health-check-btn.unhealthy i {
+    color: #ef4444;
+}
+
+.health-status {
+    position: absolute;
+    top: -8px;
+    right: -8px;
+    width: 16px;
+    height: 16px;
+    border-radius: 50%;
+    background: #94a3b8;
+    border: 2px solid #ffffff;
+    transition: all 0.3s ease;
+}
+
+.health-check-btn.healthy .health-status {
+    background: #10b981;
+}
+
+.health-check-btn.unhealthy .health-status {
+    background: #ef4444;
+    animation: blink 1s infinite;
+}
+
+@keyframes pulse {
+    0%, 100% {
+        transform: scale(1);
+    }
+    50% {
+        transform: scale(1.1);
+    }
+}
+
+@keyframes blink {
+    0%, 100% {
+        opacity: 1;
+    }
+    50% {
+        opacity: 0.3;
+    }
+}
