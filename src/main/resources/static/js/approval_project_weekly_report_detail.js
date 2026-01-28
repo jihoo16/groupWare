@@ -125,19 +125,18 @@ function displayReportData(data) {
         remarksEl.textContent = data.remarks || '-';
     }
 
-    // 작성자와 현재 사용자 비교 - 작성자가 아니면 삭제 버튼 숨김
+    // 작성자와 현재 사용자 비교 - 작성자일 때만 삭제 버튼 표시
     const currentUserIdx = window.CURRENT_USER ? window.CURRENT_USER.idx : null;
     const deleteReportBtn = document.getElementById('deleteReportBtn');
 
     if (deleteReportBtn) {
-        if (data.userIdx && currentUserIdx && data.userIdx !== currentUserIdx) {
-            // 작성자가 아니면 삭제 버튼 숨김
-            deleteReportBtn.style.display = 'none';
-            console.log('작성자가 아니므로 삭제 버튼을 숨깁니다.');
-        } else {
+        if (data.userIdx && currentUserIdx && data.userIdx === currentUserIdx) {
             // 작성자이면 삭제 버튼 표시
             deleteReportBtn.style.display = 'inline-flex';
             console.log('작성자이므로 삭제 버튼을 표시합니다.');
+        } else {
+            // 작성자가 아니면 삭제 버튼 숨김 (기본값 유지)
+            console.log('작성자가 아니므로 삭제 버튼을 숨깁니다.');
         }
     }
 
