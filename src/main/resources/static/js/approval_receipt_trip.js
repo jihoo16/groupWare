@@ -218,6 +218,9 @@ document.addEventListener('DOMContentLoaded', async function() {
             field.textContent = proj.projectName || '';
         });
 
+        // 기본 작성자 자동 설정
+        setDefaultReporter();
+
         closeProjectModal();
     };
 
@@ -278,6 +281,67 @@ document.addEventListener('DOMContentLoaded', async function() {
 
     // 직책 목록
     const positions = ['상무', '연구위원', '부장', '수석', '차장', '책임', '과장', '선임', '대리', '사원', '연구원'];
+
+    // 작성자 기본 선택용 직급 순서 (낮은 직급부터)
+    const authorPositionOrder = {
+        '사원': 1,
+        '주임': 2,
+        '대리': 3,
+        '과장': 4,
+        '차장': 5,
+        '부장': 6,
+        '이사': 7,
+        '상무': 8,
+        '전무': 9,
+        '부사장': 10,
+        '사장': 11,
+        '대표': 12,
+        '대표이사': 12,
+        // 연구원 직급
+        '연구원': 1,
+        '주임연구원': 2,
+        '선임연구원': 3,
+        '책임연구원': 4,
+        '수석연구원': 5
+    };
+
+    // 직급으로 정렬 (낮은 직급부터)
+    function sortByPosition(persons) {
+        return persons.sort((a, b) => {
+            const orderA = authorPositionOrder[a.position] || 999;
+            const orderB = authorPositionOrder[b.position] || 999;
+            return orderA - orderB;
+        });
+    }
+
+    // 기본 작성자 설정 (프로젝트 선택 시 자동 호출)
+    function setDefaultReporter() {
+        if (!projectMembers || projectMembers.length === 0) return;
+
+        // 프로젝트 팀원을 직급순으로 정렬 (낮은 직급부터)
+        const sortedMembers = sortByPosition([...projectMembers.map(member => ({
+            id: member.employeeIdx,
+            name: member.employeeName,
+            position: member.employeePositionName || '직급 미지정'
+        }))]);
+
+        // 낮은 직급에서 4번째 (인덱스 3), 4명 미만이면 가장 낮은 직급 (인덱스 0)
+        const defaultReporter = sortedMembers[3] || sortedMembers[0];
+
+        if (defaultReporter) {
+            const tripReporter = document.getElementById('trip_reporter');
+            if (tripReporter) {
+                tripReporter.value = defaultReporter.name;
+            }
+
+            // 출장복명서의 복명자 필드도 업데이트
+            document.querySelectorAll('.trip-auto-reporter').forEach(field => {
+                field.textContent = defaultReporter.name || '';
+            });
+
+            console.log('기본 작성자 설정:', defaultReporter.name, '(직급:', defaultReporter.position + ')');
+        }
+    }
 
     // ============================================
     // 템플릿 사이드바 접기/펼치기 기능
