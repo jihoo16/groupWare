@@ -179,11 +179,11 @@
     background: #f8fafc;
 }
 
-.attendee-area.has-persons {
+.attendee-area.has-attendees {
     cursor: default;
 }
 
-.attendee-area.has-persons:hover {
+.attendee-area.has-attendees:hover {
     border-color: #e2e8f0;
     background: #fafbfc;
 }
@@ -1587,56 +1587,215 @@ div h2{
 /* 야근인원 아이템 스타일 */
 .trip-person-item {
     display: flex;
-    align-items: center;
     justify-content: space-between;
-    padding: 10px;
-    background: white;
+    align-items: center;
+    padding: 8px 12px;
+    background: #ffffff;
     border: 1px solid #e2e8f0;
     border-radius: 6px;
-    margin-bottom: 8px;
+    font-size: 12px;
     transition: all 0.2s ease;
+    cursor: pointer;
 }
 
 .trip-person-item:hover {
-    border-color: #667eea;
-    background: #f8f9ff;
+    border-color: #ef4444;
+    background: #fef2f2;
+    transform: translateX(-2px);
 }
 
 .trip-person-info {
     display: flex;
-    gap: 12px;
+    gap: 8px;
     align-items: center;
     flex: 1;
+    pointer-events: none;
+}
+
+.trip-person-info::before {
+    content: '\f007';
+    font-family: 'Font Awesome 5 Free';
+    font-weight: 400;
+    color: #667eea;
+    font-size: 14px;
+    width: 24px;
+    height: 24px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: #e8f0fe;
+    border-radius: 50%;
+    flex-shrink: 0;
+}
+
+.trip-person-info span {
+    color: #64748b;
+    font-size: 11px;
+    padding: 2px 6px;
+    background: #f1f5f9;
+    border-radius: 4px;
+    white-space: nowrap;
 }
 
 .trip-person-info .name {
     font-weight: 600;
-    color: #333;
-    min-width: 60px;
-}
-
-.trip-person-info span {
-    font-size: 13px;
-    color: #64748b;
+    color: #1e293b;
+    font-size: 12px;
+    background: transparent;
+    padding: 0;
 }
 
 .trip-person-remove {
-    background: none;
-    border: none;
-    color: #94a3b8;
-    cursor: pointer;
-    font-size: 12px;
     padding: 4px 8px;
+    background: #fee2e2;
+    color: #dc2626;
+    border: 1px solid #fca5a5;
     border-radius: 4px;
+    cursor: pointer;
+    font-size: 11px;
+    font-weight: 600;
     transition: all 0.2s ease;
     display: flex;
     align-items: center;
     gap: 4px;
+    pointer-events: none;
 }
 
 .trip-person-remove:hover {
-    background: #fee;
-    color: #ef4444;
+    background: #fecaca;
+    border-color: #f87171;
+}
+
+.trip-person-remove i {
+    font-size: 10px;
+}
+
+.add-more-attendees-btn {
+    width: 100%;
+    padding: 6px 12px;
+    background: #e0e7ff;
+    color: #5b21b6;
+    border: 1px dashed #a78bfa;
+    border-radius: 4px;
+    font-size: 11px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 4px;
+    flex: 0 0 auto;
+}
+
+.add-more-attendees-btn:hover {
+    background: #ddd6fe;
+    border-color: #8b5cf6;
+    border-style: solid;
+}
+
+.add-more-attendees-btn i {
+    font-size: 10px;
+}
+
+/* 합계 금액 표시 */
+.total-amount-display {
+    background: #f0f4ff;
+    border: 2px solid #667eea;
+    border-radius: 8px;
+    padding: 12px 16px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 48px;
+}
+
+.total-amount-display span {
+    font-size: 16px;
+    font-weight: 700;
+    color: #667eea;
+}
+
+.expense-tag {
+    background: #eef2ff;
+    color: #667eea;
+    padding: 2px 8px;
+    border-radius: 4px;
+    font-size: 12px;
+    font-weight: 600;
+}
+
+/* ========================================
+   금액 입력 버튼
+   ======================================== */
+
+.amount-buttons {
+    display: flex;
+    gap: 5px;
+    flex-wrap: nowrap;
+    margin-top: 8px;
+}
+
+.amount-btn {
+    padding: 6px 10px;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+    border: none;
+    border-radius: 6px;
+    font-size: 11.5px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    box-shadow: 0 2px 4px rgba(102, 126, 234, 0.2);
+    white-space: nowrap;
+    flex-shrink: 0;
+}
+
+.amount-btn:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 4px 8px rgba(102, 126, 234, 0.3);
+}
+
+.amount-btn:active {
+    transform: translateY(0);
+}
+
+.amount-btn i {
+    font-size: 10px;
+}
+
+.amount-reset-btn {
+    padding: 6px 10px;
+    background: #f1f5f9;
+    color: #64748b;
+    border: 1px solid #e2e8f0;
+    border-radius: 6px;
+    font-size: 11.5px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    white-space: nowrap;
+    flex-shrink: 0;
+}
+
+.amount-reset-btn:hover {
+    background: #e2e8f0;
+    border-color: #cbd5e1;
+    transform: translateY(-1px);
+}
+
+.amount-reset-btn:active {
+    transform: translateY(0);
+}
+
+.amount-reset-btn i {
+    font-size: 10px;
 }
 
 /* ========================================
