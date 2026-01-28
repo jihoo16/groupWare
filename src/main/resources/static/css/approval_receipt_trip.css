@@ -1717,3 +1717,126 @@ div h2{
 .add-more-persons-btn i {
     font-size: 10px;
 }
+
+/* ========================================
+   출장인원 모달 내 프로젝트 선택 UI
+   ======================================== */
+
+/* 편의 기능 안내 메시지 (warning card) */
+.convenience-notice {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin: 0 16px 16px 16px;
+    padding: 16px;
+    background: linear-gradient(135deg, #fff7ed 0%, #ffedd5 100%);
+    border: 2px dashed #f97316;
+    border-radius: 12px;
+    box-shadow: 0 2px 8px rgba(249, 115, 22, 0.1);
+}
+
+.notice-icon {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 40px;
+    height: 40px;
+    background: linear-gradient(135deg, #fb923c 0%, #f97316 100%);
+    color: white;
+    border-radius: 50%;
+    font-size: 18px;
+    flex-shrink: 0;
+}
+
+.notice-content {
+    flex: 1;
+}
+
+.notice-title {
+    font-size: 14px;
+    font-weight: 700;
+    color: #9a3412;
+    margin-bottom: 4px;
+}
+
+.notice-desc {
+    font-size: 12px;
+    color: #c2410c;
+}
+
+/* 출장인원 모달 내 프로젝트 아이템 */
+.project-item-in-attendee {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 10px 14px;
+    margin: 6px 16px;
+    background: white;
+    border: 2px solid #e2e8f0;
+    border-radius: 8px;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.project-item-in-attendee:hover {
+    border-color: #667eea;
+    background: #f5f7ff;
+    transform: translateX(4px);
+    box-shadow: 0 4px 12px rgba(102, 126, 234, 0.15);
+}
+
+.project-item-icon {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 32px;
+    height: 32px;
+    background: linear-gradient(135deg, #e0e7ff 0%, #ddd6fe 100%);
+    color: #5b21b6;
+    border-radius: 6px;
+    font-size: 14px;
+    flex-shrink: 0;
+}
+
+.project-item-info {
+    flex: 1;
+    min-width: 0;
+}
+
+.project-item-name {
+    font-size: 13px;
+    font-weight: 600;
+    color: #1e293b;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.project-item-details {
+    display: flex;
+    gap: 12px;
+    margin-top: 4px;
+    font-size: 11px;
+    color: #64748b;
+}
+
+.project-item-details span {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+}
+
+.project-item-arrow {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: #cbd5e1;
+    font-size: 12px;
+    flex-shrink: 0;
+    transition: all 0.2s;
+}
+
+.project-item-in-attendee:hover .project-item-arrow {
+    color: #667eea;
+    transform: translateX(2px);
+}

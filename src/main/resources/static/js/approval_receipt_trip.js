@@ -1599,15 +1599,111 @@ document.addEventListener('DOMContentLoaded', async function() {
         }));
     }
 
+    // 프로젝트 목록 렌더링 (출장인원 모달 내)
+    function renderProjectListInTripPersonModal(searchText = '') {
+        const tripPersonList2El = document.getElementById('tripPersonList2');
+        if (!tripPersonList2El) return;
+
+        // 검색 필터링
+        let filtered = projects;
+        if (searchText) {
+            filtered = projects.filter(proj =>
+                matchesSearch(proj.projectName || '', searchText) ||
+                matchesSearch(proj.projectLeader || '', searchText)
+            );
+        }
+
+        if (filtered.length === 0) {
+            tripPersonList2El.innerHTML = `
+                <div style="text-align: center; padding: 40px; color: #94a3b8;">
+                    <i class="fas fa-search" style="font-size: 32px; margin-bottom: 12px; display: block;"></i>
+                    ${searchText ? '검색 결과가 없습니다.' : '등록된 프로젝트가 없습니다.'}
+                </div>
+            `;
+            return;
+        }
+
+        // 헤더 메시지 (warning card)
+        const headerMessage = `
+            <div class="convenience-notice">
+                <div class="notice-icon">
+                    <i class="fas fa-lightbulb"></i>
+                </div>
+                <div class="notice-content">
+                    <div class="notice-title">프로젝트를 먼저 선택해주세요</div>
+                    <div class="notice-desc">프로젝트를 선택하면 해당 팀원 목록이 표시됩니다</div>
+                </div>
+            </div>
+        `;
+
+        // 프로젝트 목록
+        const projectItems = filtered.map(proj => {
+            const projectName = proj.projectName || '이름 없음';
+            const leader = proj.projectLeader || '-';
+            const startDate = proj.projectStartDate ? new Date(proj.projectStartDate).toLocaleDateString() : '-';
+            const endDate = proj.projectEndDate ? new Date(proj.projectEndDate).toLocaleDateString() : '-';
+
+            return `
+                <div class="project-item-in-attendee" data-project-idx="${proj.idx}">
+                    <div class="project-item-icon">
+                        <i class="fas fa-folder"></i>
+                    </div>
+                    <div class="project-item-info">
+                        <div class="project-item-name">${projectName}</div>
+                        <div class="project-item-details">
+                            <span><i class="fas fa-user"></i> ${leader}</span>
+                            <span><i class="fas fa-calendar"></i> ${startDate} ~ ${endDate}</span>
+                        </div>
+                    </div>
+                    <div class="project-item-arrow">
+                        <i class="fas fa-chevron-right"></i>
+                    </div>
+                </div>
+            `;
+        }).join('');
+
+        tripPersonList2El.innerHTML = headerMessage + projectItems;
+
+        // 프로젝트 항목 클릭 이벤트
+        tripPersonList2El.querySelectorAll('.project-item-in-attendee').forEach(item => {
+            item.addEventListener('click', async function() {
+                const projectIdx = this.getAttribute('data-project-idx');
+                await selectProjectInTripPersonModal(projectIdx);
+            });
+        });
+    }
+
+    // 출장인원 모달에서 프로젝트 선택
+    async function selectProjectInTripPersonModal(projectIdx) {
+        const proj = projects.find(p => p.idx == projectIdx);
+        if (!proj) return;
+
+        // 프로젝트 선택
+        await selectProject(projectIdx);
+
+        // 검색 초기화 후 인원 목록 다시 렌더링
+        if (tripPersonSearchInput) {
+            tripPersonSearchInput.value = '';
+        }
+        renderTripPersonList2('');
+    }
+
     // 출장인원 목록 렌더링
     function renderTripPersonList2(searchText = '') {
         const tripPersonList2El = document.getElementById('tripPersonList2');
         if (!tripPersonList2El) return;
 
+        // 프로젝트가 선택되지 않았으면 프로젝트 목록 표시
+        const selectedProjectIdxInput = document.getElementById('selectedProjectIdx');
+        if (!selectedProjectIdxInput || !selectedProjectIdxInput.value) {
+            renderProjectListInTripPersonModal(searchText);
+            return;
+        }
+
         const tripPersons = getTripPersons(); // 프로젝트 팀원에서 가져오기
 
         if (tripPersons.length === 0) {
-            tripPersonList2El.innerHTML = '<div style="text-align: center; padding: 40px; color: #94a3b8;">프로젝트를 선택하면 팀원 목록이 표시됩니다.</div>';
+            tripPersonList2El.innerHTML = '<div style="text-align: center; padding: 40px; color: #94a3b8;">프로젝트 팀원이 없습니다.</div>';
             return;
         }
 
