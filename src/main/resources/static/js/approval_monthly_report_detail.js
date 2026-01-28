@@ -23,7 +23,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
     // DOM 요소
     const editBtn = document.getElementById('editReportBtn');
-    const deleteBtn = document.getElementById('deleteReportBtn');
+    let deleteBtn = null; // 작성자인 경우에만 동적으로 생성됨
     let isEditMode = false;
     let originalData = {}; // 수정 취소를 위한 원본 데이터
 
@@ -121,6 +121,35 @@ document.addEventListener('DOMContentLoaded', function() {
 
         // textarea 자동 높이 조절 적용
         setTimeout(() => applyAutoResize(), 100);
+
+        // 작성자 확인 후 삭제 버튼 생성
+        if (report.userIdx && currentUserIdx && report.userIdx === currentUserIdx) {
+            createDeleteButton();
+        }
+    }
+
+    // 삭제 버튼 동적 생성
+    function createDeleteButton() {
+        const actionButtons = document.getElementById('actionButtons');
+        const editButton = document.getElementById('editReportBtn');
+
+        if (actionButtons && editButton && !deleteBtn) {
+            deleteBtn = document.createElement('button');
+            deleteBtn.type = 'button';
+            deleteBtn.className = 'btn btn-danger';
+            deleteBtn.id = 'deleteReportBtn';
+            deleteBtn.innerHTML = '<i class="fas fa-trash"></i> 삭제';
+            deleteBtn.addEventListener('click', async function() {
+                const confirmed = await showDeleteConfirm('이 월간업무보고를 삭제하시겠습니까?');
+                if (confirmed) {
+                    await deleteMonthlyReport();
+                }
+            });
+
+            // 수정 버튼 앞에 삽입
+            actionButtons.insertBefore(deleteBtn, editButton);
+            console.log('작성자이므로 삭제 버튼을 생성합니다.');
+        }
     }
 
     // 수정 버튼 클릭
@@ -136,13 +165,7 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     });
 
-    // 삭제 버튼 클릭
-    deleteBtn.addEventListener('click', async function() {
-        const confirmed = await showDeleteConfirm('이 월간업무보고를 삭제하시겠습니까?');
-        if (confirmed) {
-            await deleteMonthlyReport();
-        }
-    });
+    // 삭제 버튼은 작성자인 경우에만 동적으로 생성되므로 여기서는 이벤트 리스너를 추가하지 않음
 
     // 수정 모드 활성화
     function enableEditMode() {

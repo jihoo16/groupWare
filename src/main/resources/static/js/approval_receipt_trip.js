@@ -82,15 +82,6 @@ document.addEventListener('DOMContentLoaded', async function() {
             if (response.ok) {
                 projects = await response.json();
                 console.log('프로젝트 목록 로드 성공:', projects.length + '건');
-
-                // 프로젝트 셀렉트박스 채우기
-                const projectSelect = document.getElementById('trip_project');
-                if (projectSelect && projects.length > 0) {
-                    projectSelect.innerHTML = '<option value="">과제를 선택하세요</option>' +
-                        projects.map(project =>
-                            `<option value="${project.idx}">${project.projectName}</option>`
-                        ).join('');
-                }
             } else {
                 console.error('프로젝트 목록 로드 실패');
             }
@@ -136,6 +127,153 @@ document.addEventListener('DOMContentLoaded', async function() {
         }
     }
 
+    // ============================================
+    // 프로젝트 선택 모달
+    // ============================================
+    const projectModal = document.getElementById('projectModal');
+    const projectSearch = document.getElementById('projectSearch');
+    const projectList = document.getElementById('projectList');
+
+    // 초성 검색 유틸리티
+    const CHO_HANGUL = ['ㄱ', 'ㄲ', 'ㄴ', 'ㄷ', 'ㄸ', 'ㄹ', 'ㅁ', 'ㅂ', 'ㅃ', 'ㅅ', 'ㅆ', 'ㅇ', 'ㅈ', 'ㅉ', 'ㅊ', 'ㅋ', 'ㅌ', 'ㅍ', 'ㅎ'];
+
+    function getChosung(str) {
+        let result = '';
+        for (let i = 0; i < str.length; i++) {
+            const code = str.charCodeAt(i) - 44032;
+            if (code > -1 && code < 11172) {
+                result += CHO_HANGUL[Math.floor(code / 588)];
+            }
+        }
+        return result;
+    }
+
+    function matchesSearch(text, keyword) {
+        if (!keyword) return true;
+        const lowerText = text.toLowerCase();
+        const lowerKeyword = keyword.toLowerCase();
+
+        // 일반 검색
+        if (lowerText.includes(lowerKeyword)) return true;
+
+        // 초성 검색
+        const chosung = getChosung(text);
+        return chosung.includes(lowerKeyword);
+    }
+
+    // 프로젝트 목록 렌더링
+    function renderProjectList(projectsToShow, keyword = '') {
+        if (!projectList) return;
+
+        if (!projectsToShow || projectsToShow.length === 0) {
+            projectList.innerHTML = '<div class="empty-state">프로젝트가 없습니다.</div>';
+            return;
+        }
+
+        projectList.innerHTML = projectsToShow.map(proj => {
+            const projectName = proj.projectName || '이름 없음';
+            const leader = proj.projectLeader || '-';
+            const startDate = proj.projectStartDate ? new Date(proj.projectStartDate).toLocaleDateString() : '-';
+            const endDate = proj.projectEndDate ? new Date(proj.projectEndDate).toLocaleDateString() : '-';
+
+            return `
+                <div class="modal-item" onclick="selectProject(${proj.idx})">
+                    <div class="item-main">
+                        <strong>${projectName}</strong>
+                    </div>
+                    <div class="item-details">
+                        <span><i class="fas fa-user"></i> ${leader}</span>
+                        <span><i class="fas fa-calendar"></i> ${startDate} ~ ${endDate}</span>
+                    </div>
+                </div>
+            `;
+        }).join('');
+    }
+
+    // 프로젝트 선택
+    window.selectProject = async function(projectIdx) {
+        const proj = projects.find(p => p.idx === projectIdx);
+        if (!proj) {
+            console.error('프로젝트를 찾을 수 없습니다:', projectIdx);
+            return;
+        }
+
+        console.log('프로젝트 선택:', proj);
+
+        // 프로젝트 팀원 로드
+        await loadProjectMembers(projectIdx);
+
+        // 프로젝트 입력 필드에 표시
+        const tripProject = document.getElementById('trip_project');
+        if (tripProject) {
+            tripProject.value = proj.projectName;
+        }
+        const selectedProjectIdx = document.getElementById('selectedProjectIdx');
+        if (selectedProjectIdx) {
+            selectedProjectIdx.value = proj.idx;
+        }
+
+        // 출장복명서의 과제명 자동 채우기
+        document.querySelectorAll('.trip-auto-project').forEach(field => {
+            field.textContent = proj.projectName || '';
+        });
+
+        // 기본 작성자 자동 설정
+        setDefaultReporter();
+
+        closeProjectModal();
+    };
+
+    // 프로젝트 검색
+    if (projectSearch) {
+        projectSearch.addEventListener('input', function() {
+            const keyword = this.value.trim();
+            if (!keyword) {
+                renderProjectList(projects);
+                return;
+            }
+
+            const filtered = projects.filter(proj =>
+                matchesSearch(proj.projectName || '', keyword) ||
+                matchesSearch(proj.projectLeader || '', keyword)
+            );
+
+            renderProjectList(filtered, keyword);
+        });
+    }
+
+    // 프로젝트 모달 열기
+    window.openProjectModal = function() {
+        if (projectModal) {
+            projectModal.classList.add('show');
+            renderProjectList(projects);
+            if (projectSearch) projectSearch.value = '';
+        }
+    };
+
+    // 프로젝트 모달 닫기
+    window.closeProjectModal = function() {
+        if (projectModal) {
+            projectModal.classList.remove('show');
+            if (projectSearch) projectSearch.value = '';
+        }
+    };
+
+    // 모달 외부 클릭 시 닫기
+    if (projectModal) {
+        projectModal.addEventListener('click', function(e) {
+            if (e.target === projectModal) {
+                closeProjectModal();
+            }
+        });
+    }
+
+    // 프로젝트 input 클릭 시 모달 열기
+    const tripProjectInput = document.getElementById('trip_project');
+    if (tripProjectInput) {
+        tripProjectInput.addEventListener('click', openProjectModal);
+    }
+
     // 페이지 로드 시 데이터 로드
     Promise.all([loadCurrentUser(), loadProjects(), loadEmployees()]).then(() => {
         console.log('초기 데이터 로드 완료');
@@ -143,6 +281,67 @@ document.addEventListener('DOMContentLoaded', async function() {
 
     // 직책 목록
     const positions = ['상무', '연구위원', '부장', '수석', '차장', '책임', '과장', '선임', '대리', '사원', '연구원'];
+
+    // 작성자 기본 선택용 직급 순서 (낮은 직급부터)
+    const authorPositionOrder = {
+        '사원': 1,
+        '주임': 2,
+        '대리': 3,
+        '과장': 4,
+        '차장': 5,
+        '부장': 6,
+        '이사': 7,
+        '상무': 8,
+        '전무': 9,
+        '부사장': 10,
+        '사장': 11,
+        '대표': 12,
+        '대표이사': 12,
+        // 연구원 직급
+        '연구원': 1,
+        '주임연구원': 2,
+        '선임연구원': 3,
+        '책임연구원': 4,
+        '수석연구원': 5
+    };
+
+    // 직급으로 정렬 (낮은 직급부터)
+    function sortByPosition(persons) {
+        return persons.sort((a, b) => {
+            const orderA = authorPositionOrder[a.position] || 999;
+            const orderB = authorPositionOrder[b.position] || 999;
+            return orderA - orderB;
+        });
+    }
+
+    // 기본 작성자 설정 (프로젝트 선택 시 자동 호출)
+    function setDefaultReporter() {
+        if (!projectMembers || projectMembers.length === 0) return;
+
+        // 프로젝트 팀원을 직급순으로 정렬 (낮은 직급부터)
+        const sortedMembers = sortByPosition([...projectMembers.map(member => ({
+            id: member.employeeIdx,
+            name: member.employeeName,
+            position: member.employeePositionName || '직급 미지정'
+        }))]);
+
+        // 낮은 직급에서 4번째 (인덱스 3), 4명 미만이면 가장 낮은 직급 (인덱스 0)
+        const defaultReporter = sortedMembers[3] || sortedMembers[0];
+
+        if (defaultReporter) {
+            const tripReporter = document.getElementById('trip_reporter');
+            if (tripReporter) {
+                tripReporter.value = defaultReporter.name;
+            }
+
+            // 출장복명서의 복명자 필드도 업데이트
+            document.querySelectorAll('.trip-auto-reporter').forEach(field => {
+                field.textContent = defaultReporter.name || '';
+            });
+
+            console.log('기본 작성자 설정:', defaultReporter.name, '(직급:', defaultReporter.position + ')');
+        }
+    }
 
     // ============================================
     // 템플릿 사이드바 접기/펼치기 기능
@@ -1076,13 +1275,13 @@ document.addEventListener('DOMContentLoaded', async function() {
     if (submitBtn) {
         submitBtn.addEventListener('click', async function() {
             // 필수 필드 검증
-            const projectSelect = document.getElementById('trip_project');
+            const selectedProjectIdxInput = document.getElementById('selectedProjectIdx');
             const dateInput = document.getElementById('trip_date');
             const startTimeInput = document.getElementById('trip_start_time');
             const endTimeInput = document.getElementById('trip_end_time');
             const locationInput = document.getElementById('trip_location');
 
-            if (!projectSelect || !projectSelect.value) {
+            if (!selectedProjectIdxInput || !selectedProjectIdxInput.value) {
                 showWarning('프로젝트를 선택해주세요.');
                 return;
             }
@@ -1144,7 +1343,7 @@ document.addEventListener('DOMContentLoaded', async function() {
 
             // 저장 데이터 생성
             const saveData = {
-                projectIdx: parseInt(projectSelect.value),
+                projectIdx: parseInt(selectedProjectIdxInput.value),
                 authorIdx: currentUser ? currentUser.idx : null,
                 authorName: currentUser ? currentUser.empName : null,
                 tripDate: dateInput.value,
@@ -1464,15 +1663,111 @@ document.addEventListener('DOMContentLoaded', async function() {
         }));
     }
 
+    // 프로젝트 목록 렌더링 (출장인원 모달 내)
+    function renderProjectListInTripPersonModal(searchText = '') {
+        const tripPersonList2El = document.getElementById('tripPersonList2');
+        if (!tripPersonList2El) return;
+
+        // 검색 필터링
+        let filtered = projects;
+        if (searchText) {
+            filtered = projects.filter(proj =>
+                matchesSearch(proj.projectName || '', searchText) ||
+                matchesSearch(proj.projectLeader || '', searchText)
+            );
+        }
+
+        if (filtered.length === 0) {
+            tripPersonList2El.innerHTML = `
+                <div style="text-align: center; padding: 40px; color: #94a3b8;">
+                    <i class="fas fa-search" style="font-size: 32px; margin-bottom: 12px; display: block;"></i>
+                    ${searchText ? '검색 결과가 없습니다.' : '등록된 프로젝트가 없습니다.'}
+                </div>
+            `;
+            return;
+        }
+
+        // 헤더 메시지 (warning card)
+        const headerMessage = `
+            <div class="convenience-notice">
+                <div class="notice-icon">
+                    <i class="fas fa-lightbulb"></i>
+                </div>
+                <div class="notice-content">
+                    <div class="notice-title">프로젝트를 먼저 선택해주세요</div>
+                    <div class="notice-desc">프로젝트를 선택하면 해당 팀원 목록이 표시됩니다</div>
+                </div>
+            </div>
+        `;
+
+        // 프로젝트 목록
+        const projectItems = filtered.map(proj => {
+            const projectName = proj.projectName || '이름 없음';
+            const leader = proj.projectLeader || '-';
+            const startDate = proj.projectStartDate ? new Date(proj.projectStartDate).toLocaleDateString() : '-';
+            const endDate = proj.projectEndDate ? new Date(proj.projectEndDate).toLocaleDateString() : '-';
+
+            return `
+                <div class="project-item-in-attendee" data-project-idx="${proj.idx}">
+                    <div class="project-item-icon">
+                        <i class="fas fa-folder"></i>
+                    </div>
+                    <div class="project-item-info">
+                        <div class="project-item-name">${projectName}</div>
+                        <div class="project-item-details">
+                            <span><i class="fas fa-user"></i> ${leader}</span>
+                            <span><i class="fas fa-calendar"></i> ${startDate} ~ ${endDate}</span>
+                        </div>
+                    </div>
+                    <div class="project-item-arrow">
+                        <i class="fas fa-chevron-right"></i>
+                    </div>
+                </div>
+            `;
+        }).join('');
+
+        tripPersonList2El.innerHTML = headerMessage + projectItems;
+
+        // 프로젝트 항목 클릭 이벤트
+        tripPersonList2El.querySelectorAll('.project-item-in-attendee').forEach(item => {
+            item.addEventListener('click', async function() {
+                const projectIdx = this.getAttribute('data-project-idx');
+                await selectProjectInTripPersonModal(projectIdx);
+            });
+        });
+    }
+
+    // 출장인원 모달에서 프로젝트 선택
+    async function selectProjectInTripPersonModal(projectIdx) {
+        const proj = projects.find(p => p.idx == projectIdx);
+        if (!proj) return;
+
+        // 프로젝트 선택
+        await selectProject(projectIdx);
+
+        // 검색 초기화 후 인원 목록 다시 렌더링
+        if (tripPersonSearchInput) {
+            tripPersonSearchInput.value = '';
+        }
+        renderTripPersonList2('');
+    }
+
     // 출장인원 목록 렌더링
     function renderTripPersonList2(searchText = '') {
         const tripPersonList2El = document.getElementById('tripPersonList2');
         if (!tripPersonList2El) return;
 
+        // 프로젝트가 선택되지 않았으면 프로젝트 목록 표시
+        const selectedProjectIdxInput = document.getElementById('selectedProjectIdx');
+        if (!selectedProjectIdxInput || !selectedProjectIdxInput.value) {
+            renderProjectListInTripPersonModal(searchText);
+            return;
+        }
+
         const tripPersons = getTripPersons(); // 프로젝트 팀원에서 가져오기
 
         if (tripPersons.length === 0) {
-            tripPersonList2El.innerHTML = '<div style="text-align: center; padding: 40px; color: #94a3b8;">프로젝트를 선택하면 팀원 목록이 표시됩니다.</div>';
+            tripPersonList2El.innerHTML = '<div style="text-align: center; padding: 40px; color: #94a3b8;">프로젝트 팀원이 없습니다.</div>';
             return;
         }
 
