@@ -15,7 +15,7 @@ import lombok.*;
 @Builder
 public class ChangePasswordRequestDTO {
 
-    @NotBlank(message = "현재 비밀번호는 필수입니다")
+    // 최초 로그인 시에는 null 가능
     private String currentPassword;
 
     @NotBlank(message = "새 비밀번호는 필수입니다")

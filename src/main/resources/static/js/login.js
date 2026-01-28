@@ -82,18 +82,37 @@ document.addEventListener('DOMContentLoaded', function() {
 
             if (!response.ok) {
                 // HTTP 상태 코드별 처리
+                let errorData = {};
+
+                // JSON 파싱 시도
+                try {
+                    const text = await response.text();
+                    if (text && text.trim().startsWith('{')) {
+                        errorData = JSON.parse(text);
+                    }
+                } catch (e) {
+                    console.error('Error response parsing failed:', e);
+                }
+
                 if (response.status === 401) {
-                    const errorData = await response.json().catch(() => ({}));
                     throw new Error(errorData.error || '사번/이메일 또는 비밀번호가 올바르지 않습니다.\n입력 정보를 확인하고 다시 시도해주세요.');
+                } else if (response.status === 404) {
+                    throw new Error('로그인 서비스를 찾을 수 없습니다.\n관리자에게 문의하세요.');
                 } else if (response.status >= 500) {
                     throw new Error('서버에 일시적인 문제가 발생했습니다.\n잠시 후 다시 시도해주세요.');
                 } else {
-                    const errorData = await response.json().catch(() => ({}));
                     throw new Error(errorData.error || '로그인에 실패했습니다.\n잠시 후 다시 시도해주세요.');
                 }
             }
 
-            const userData = await response.json();
+            // 성공 응답 JSON 파싱 시도
+            let userData;
+            try {
+                userData = await response.json();
+            } catch (e) {
+                console.error('Success response parsing failed:', e);
+                throw new Error('서버 응답을 처리할 수 없습니다.\n페이지를 새로고침 후 다시 시도해주세요.');
+            }
 
             // Save username if remember me is checked
             if (rememberMe) {
@@ -128,15 +147,19 @@ document.addEventListener('DOMContentLoaded', function() {
             if (error.name === 'AbortError') {
                 // 타임아웃
                 errorMessage = '서버 응답이 지연되고 있습니다.\n\n• 네트워크 연결을 확인해주세요\n• 잠시 후 다시 시도해주세요\n• 문제가 지속되면 관리자에게 문의하세요';
+            } else if (error.name === 'SyntaxError' || error.message.includes('Unexpected token')) {
+                // JSON 파싱 에러 (서버가 HTML을 반환한 경우)
+                errorMessage = '서버 응답을 처리할 수 없습니다.\n\n• 페이지를 새로고침 후 다시 시도해주세요\n• 문제가 지속되면 관리자에게 문의하세요';
             } else if (error.message.includes('NetworkError') || error.message.includes('Failed to fetch')) {
                 // 네트워크 오류
                 errorMessage = '서버에 연결할 수 없습니다.\n\n• 네트워크 연결을 확인해주세요\n• VPN 연결 상태를 확인해주세요\n• 잠시 후 다시 시도해주세요';
-            } else if (error.message.includes('사번') || error.message.includes('비밀번호')) {
-                // 인증 실패 (서버에서 온 메시지 그대로 표시)
+            } else if (error.message.includes('사번') || error.message.includes('비밀번호') ||
+                       error.message.includes('로그인') || error.message.includes('서버')) {
+                // 사용자 친화적 메시지 (이미 처리된 에러)
                 errorMessage = error.message;
             } else {
-                // 기타 에러
-                errorMessage = error.message || '로그인 중 오류가 발생했습니다.\n\n• 페이지를 새로고침 후 다시 시도해주세요\n• 문제가 지속되면 관리자에게 문의하세요';
+                // 기타 기술적 에러 - 사용자에게 기술적 내용 숨김
+                errorMessage = '로그인 중 오류가 발생했습니다.\n\n• 페이지를 새로고침 후 다시 시도해주세요\n• 문제가 지속되면 관리자에게 문의하세요';
             }
 
             showAlert(errorMessage, 'error');

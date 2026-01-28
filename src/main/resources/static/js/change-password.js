@@ -1,8 +1,9 @@
-document.addEventListener('DOMContentLoaded', function() {
+document.addEventListener('DOMContentLoaded', async function() {
     // ===========================
     // DOM Elements
     // ===========================
     const changePasswordForm = document.getElementById('changePasswordForm');
+    const currentPasswordGroup = document.getElementById('currentPasswordGroup');
     const currentPasswordInput = document.getElementById('currentPassword');
     const newPasswordInput = document.getElementById('newPassword');
     const confirmPasswordInput = document.getElementById('confirmPassword');
@@ -14,10 +15,41 @@ document.addEventListener('DOMContentLoaded', function() {
     // 페이지 이탈 방지 플래그
     let passwordChangeCompleted = false;
 
+    // 최초 로그인 여부
+    let isFirstLogin = false;
+
     // Password toggle buttons
     const toggleCurrentPassword = document.getElementById('toggleCurrentPassword');
     const toggleNewPassword = document.getElementById('toggleNewPassword');
     const toggleConfirmPassword = document.getElementById('toggleConfirmPassword');
+
+    // ===========================
+    // 최초 로그인 체크
+    // ===========================
+    try {
+        const response = await fetch('/api/auth/me');
+        if (response.ok) {
+            const user = await response.json();
+            isFirstLogin = user.isFirstLogin || false;
+
+            // 최초 로그인이 아니면 현재 비밀번호 필드 표시
+            if (!isFirstLogin) {
+                currentPasswordGroup.style.display = 'block';
+                currentPasswordInput.required = true;
+                currentPasswordInput.focus();
+            } else {
+                newPasswordInput.focus();
+                // 최초 로그인 시 로그아웃 버튼 숨기기 (비밀번호 변경 우회 방지)
+                if (cancelBtn) {
+                    cancelBtn.style.display = 'none';
+                }
+            }
+        }
+    } catch (error) {
+        console.error('Failed to check first login status:', error);
+        // 오류 시 기본적으로 새 비밀번호에 포커스
+        newPasswordInput.focus();
+    }
 
     // Requirement elements
     const reqLength = document.getElementById('req-length');
@@ -155,8 +187,13 @@ document.addEventListener('DOMContentLoaded', function() {
         const confirmPassword = confirmPasswordInput.value.trim();
 
         // Validation
-        if (!currentPassword || !newPassword || !confirmPassword) {
-            showAlert('모든 필드를 입력해주세요.', 'error');
+        if (!isFirstLogin && !currentPassword) {
+            showAlert('현재 비밀번호를 입력해주세요.', 'error');
+            return;
+        }
+
+        if (!newPassword || !confirmPassword) {
+            showAlert('새 비밀번호를 입력해주세요.', 'error');
             return;
         }
 
@@ -172,8 +209,8 @@ document.addEventListener('DOMContentLoaded', function() {
             return;
         }
 
-        // Same password check
-        if (currentPassword === newPassword) {
+        // Same password check (최초 로그인이 아닐 때만)
+        if (!isFirstLogin && currentPassword === newPassword) {
             showAlert('현재 비밀번호와 새 비밀번호가 동일합니다.\n다른 비밀번호를 입력해주세요.', 'error');
             return;
         }
@@ -183,16 +220,22 @@ document.addEventListener('DOMContentLoaded', function() {
         changePasswordBtn.disabled = true;
 
         try {
+            // 요청 바디 구성 (최초 로그인 시 currentPassword 제외)
+            const requestBody = {
+                newPassword: newPassword,
+                confirmPassword: confirmPassword
+            };
+
+            if (!isFirstLogin) {
+                requestBody.currentPassword = currentPassword;
+            }
+
             const response = await fetch('/api/auth/change-password', {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json'
                 },
-                body: JSON.stringify({
-                    currentPassword: currentPassword,
-                    newPassword: newPassword,
-                    confirmPassword: confirmPassword
-                })
+                body: JSON.stringify(requestBody)
             });
 
             if (!response.ok) {
@@ -225,7 +268,18 @@ document.addEventListener('DOMContentLoaded', function() {
     // Cancel Button Handler (로그아웃)
     // ===========================
     cancelBtn.addEventListener('click', async () => {
-        if (confirm('비밀번호 변경을 취소하고 로그아웃 하시겠습니까?')) {
+        const result = await Swal.fire({
+            title: '로그아웃 하시겠습니까?',
+            text: '비밀번호 변경을 취소하고 로그아웃합니다.',
+            icon: 'warning',
+            showCancelButton: true,
+            confirmButtonColor: '#667eea',
+            cancelButtonColor: '#6c757d',
+            confirmButtonText: '로그아웃',
+            cancelButtonText: '취소'
+        });
+
+        if (result.isConfirmed) {
             try {
                 // 로그아웃 API 호출
                 await fetch('/api/auth/logout', {
@@ -258,9 +312,4 @@ document.addEventListener('DOMContentLoaded', function() {
             alertMessage.classList.remove('show');
         }, 5000);
     }
-
-    // ===========================
-    // Auto-focus on current password input
-    // ===========================
-    currentPasswordInput.focus();
 });

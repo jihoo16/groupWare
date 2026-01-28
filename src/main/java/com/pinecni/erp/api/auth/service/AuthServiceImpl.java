@@ -71,11 +71,16 @@ public class AuthServiceImpl implements AuthService {
         // 5. 최초 로그인 여부 체크 (last_login_date가 null인 경우)
         boolean isFirstLogin = (user.getLastLoginDate() == null);
 
-        // 6. 최종 로그인 시간 업데이트
-        LocalDateTime loginTime = LocalDateTime.now();
-        user.setLastLoginDate(loginTime);
-        userRepository.save(user);
-        log.info("Updated last login date for user: {} to {}", user.getEmpId(), loginTime);
+        // 6. 최종 로그인 시간 업데이트 (최초 로그인이 아닌 경우에만)
+        // 최초 로그인 시에는 비밀번호 변경 완료 후에 업데이트
+        if (!isFirstLogin) {
+            LocalDateTime loginTime = LocalDateTime.now();
+            user.setLastLoginDate(loginTime);
+            userRepository.save(user);
+            log.info("Updated last login date for user: {} to {}", user.getEmpId(), loginTime);
+        } else {
+            log.info("First login for user: {} - last_login_date will be updated after password change", user.getEmpId());
+        }
 
         // 7. 응답 DTO 생성
         LoginResponseDTO response = LoginResponseDTO.builder()
@@ -118,16 +123,18 @@ public class AuthServiceImpl implements AuthService {
                     return new IllegalArgumentException("사용자를 찾을 수 없습니다.");
                 });
 
-        // 2. 현재 비밀번호 검증
-        boolean isCurrentPasswordValid = userService.verifyPassword(
-                request.getCurrentPassword(),
-                user.getPassword(),
-                user.getPasswordHash()
-        );
+        // 2. 현재 비밀번호 검증 (최초 로그인이 아닌 경우에만)
+        if (request.getCurrentPassword() != null && !request.getCurrentPassword().isEmpty()) {
+            boolean isCurrentPasswordValid = userService.verifyPassword(
+                    request.getCurrentPassword(),
+                    user.getPassword(),
+                    user.getPasswordHash()
+            );
 
-        if (!isCurrentPasswordValid) {
-            log.warn("Current password verification failed for userIdx: {}", userIdx);
-            throw new IllegalArgumentException("현재 비밀번호가 일치하지 않습니다.");
+            if (!isCurrentPasswordValid) {
+                log.warn("Current password verification failed for userIdx: {}", userIdx);
+                throw new IllegalArgumentException("현재 비밀번호가 일치하지 않습니다.");
+            }
         }
 
         // 3. 새 비밀번호와 확인 비밀번호 일치 확인
@@ -139,11 +146,12 @@ public class AuthServiceImpl implements AuthService {
         // 4. 새 비밀번호 해시 생성 (Salt 방식)
         try {
             String salt = user.getPasswordHash(); // 기존 salt 재사용
-            MessageDigest md = MessageDigest.getInstance("SHA-256");
-            md.update(salt.getBytes());
-            md.update(request.getNewPassword().getBytes());
 
-            byte[] hashedBytes = md.digest();
+            // UserServiceImpl과 동일한 방식으로 해싱: password + salt를 문자열로 합침
+            MessageDigest md = MessageDigest.getInstance("SHA-256");
+            String passwordWithSalt = request.getNewPassword() + salt;
+            byte[] hashedBytes = md.digest(passwordWithSalt.getBytes(java.nio.charset.StandardCharsets.UTF_8));
+
             StringBuilder sb = new StringBuilder();
             for (byte b : hashedBytes) {
                 sb.append(String.format("%02x", b));
@@ -152,6 +160,14 @@ public class AuthServiceImpl implements AuthService {
 
             // 5. 비밀번호 업데이트
             user.setPassword(hashedPassword);
+
+            // 6. 최초 로그인 시 last_login_date 업데이트
+            if (user.getLastLoginDate() == null) {
+                LocalDateTime now = LocalDateTime.now();
+                user.setLastLoginDate(now);
+                log.info("First password change completed - updating last_login_date for userIdx: {} to {}", userIdx, now);
+            }
+
             userRepository.save(user);
 
             log.info("Password changed successfully for userIdx: {}", userIdx);
