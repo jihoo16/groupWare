@@ -309,17 +309,34 @@ document.addEventListener('DOMContentLoaded', async function() {
                         // 프로젝트 카드 목록 로드
                         await loadProjectCards(proj.idx);
 
-                        // 카드 선택 필드 활성화 및 초기화
+                        // 카드 자동 선택 (0번째 인덱스)
                         const commonCard = document.getElementById('common_card');
                         const selectedCardIdx = document.getElementById('selectedCardIdx');
-                        if (commonCard) {
-                            commonCard.placeholder = '클릭하여 카드 선택';
-                            commonCard.value = '';
+
+                        if (projectCards && projectCards.length > 0) {
+                            // 카드가 있으면 첫 번째 카드 자동 선택
+                            const firstCard = projectCards[0];
+                            selectedCard = firstCard;
+
+                            if (commonCard) {
+                                commonCard.value = firstCard.cardName;
+                            }
+                            if (selectedCardIdx) {
+                                selectedCardIdx.value = firstCard.idx;
+                            }
+
+                            console.log('첫 번째 카드 자동 선택:', firstCard.cardName);
+                        } else {
+                            // 카드가 없으면 비우기
+                            if (commonCard) {
+                                commonCard.placeholder = '클릭하여 카드 선택';
+                                commonCard.value = '';
+                            }
+                            if (selectedCardIdx) {
+                                selectedCardIdx.value = '';
+                            }
+                            selectedCard = null;
                         }
-                        if (selectedCardIdx) {
-                            selectedCardIdx.value = '';
-                        }
-                        selectedCard = null;
                     } else {
                         projectMembers = [];
                         projectCards = [];
@@ -1991,17 +2008,32 @@ ${documentFormContent.innerHTML}
                 // 프로젝트 카드 목록 로드
                 await window.loadProjectCards(proj.idx);
 
-                // 카드 선택 필드 활성화 및 초기화
+                // 카드 선택 필드 활성화 및 첫 번째 카드 자동 선택
                 const commonCard = document.getElementById('common_card');
                 const selectedCardIdx = document.getElementById('selectedCardIdx');
-                if (commonCard) {
-                    commonCard.placeholder = '클릭하여 카드 선택';
-                    commonCard.value = '';
+
+                if (projectCards && projectCards.length > 0) {
+                    // 첫 번째 카드 자동 선택
+                    const firstCard = projectCards[0];
+                    selectedCard = firstCard;
+                    if (commonCard) {
+                        commonCard.value = firstCard.cardName;
+                    }
+                    if (selectedCardIdx) {
+                        selectedCardIdx.value = firstCard.idx;
+                    }
+                    console.log('첫 번째 카드 자동 선택:', firstCard.cardName);
+                } else {
+                    // 카드가 없는 경우 초기화
+                    if (commonCard) {
+                        commonCard.placeholder = '클릭하여 카드 선택';
+                        commonCard.value = '';
+                    }
+                    if (selectedCardIdx) {
+                        selectedCardIdx.value = '';
+                    }
+                    selectedCard = null;
                 }
-                if (selectedCardIdx) {
-                    selectedCardIdx.value = '';
-                }
-                selectedCard = null;
 
                 // 검색창 비우기
                 if (internalSearchInput) {
@@ -2495,17 +2527,32 @@ ${documentFormContent.innerHTML}
                 // 프로젝트 카드 목록 로드
                 await window.loadProjectCards(proj.idx);
 
-                // 카드 선택 필드 활성화 및 초기화
+                // 카드 선택 필드 활성화 및 첫 번째 카드 자동 선택
                 const commonCard = document.getElementById('common_card');
                 const selectedCardIdx = document.getElementById('selectedCardIdx');
-                if (commonCard) {
-                    commonCard.placeholder = '클릭하여 카드 선택';
-                    commonCard.value = '';
+
+                if (projectCards && projectCards.length > 0) {
+                    // 첫 번째 카드 자동 선택
+                    const firstCard = projectCards[0];
+                    selectedCard = firstCard;
+                    if (commonCard) {
+                        commonCard.value = firstCard.cardName;
+                    }
+                    if (selectedCardIdx) {
+                        selectedCardIdx.value = firstCard.idx;
+                    }
+                    console.log('첫 번째 카드 자동 선택:', firstCard.cardName);
+                } else {
+                    // 카드가 없는 경우 초기화
+                    if (commonCard) {
+                        commonCard.placeholder = '클릭하여 카드 선택';
+                        commonCard.value = '';
+                    }
+                    if (selectedCardIdx) {
+                        selectedCardIdx.value = '';
+                    }
+                    selectedCard = null;
                 }
-                if (selectedCardIdx) {
-                    selectedCardIdx.value = '';
-                }
-                selectedCard = null;
 
                 // 검색창 비우기
                 if (authorSearchInput) {
