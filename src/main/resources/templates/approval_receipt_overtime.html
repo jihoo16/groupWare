@@ -63,14 +63,14 @@
                                                 <i class="fas fa-user-tie"></i> 연구책임자
                                                 <span class="required-mark">*</span>
                                             </label>
-                                            <input type="text" id="ot_manager" class="form-input" placeholder="연구책임자명">
+                                            <input type="text" id="ot_manager" class="form-input" placeholder="과제 선택 시 자동입력" readonly>
                                         </div>
                                         <div class="form-group">
                                             <label for="ot_applicant">
                                                 <i class="fas fa-user-edit"></i> 신청자
                                                 <span class="required-mark">*</span>
                                             </label>
-                                            <input type="text" id="ot_applicant" class="form-input" placeholder="신청자명">
+                                            <input type="text" id="ot_applicant" class="form-input" placeholder="자동입력" readonly>
                                         </div>
                                     </div>
 
@@ -89,7 +89,7 @@
                                             <i class="fas fa-heading"></i> 품의명
                                             <span class="required-mark">*</span>
                                         </label>
-                                        <input type="text" id="ot_title" class="form-input" placeholder="예: 야근 식대">
+                                        <input type="text" id="ot_title" class="form-input" placeholder="예: 야근 식대" value="야근 식대">
                                     </div>
 
                                     <!-- 총 공급가액 -->
@@ -392,6 +392,28 @@
         </main>
     </div>
 
+    <!-- 프로젝트 선택 모달 -->
+    <div class="modal" id="projectModal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>과제 선택</h3>
+                <button class="modal-close" onclick="closeProjectModal()">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            <div class="modal-body">
+                <div class="modal-search">
+                    <i class="fas fa-search"></i>
+                    <input type="text" id="projectSearch" placeholder="과제명으로 검색">
+                </div>
+                <div class="employee-list" id="projectList"></div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn-secondary" onclick="closeProjectModal()">취소</button>
+            </div>
+        </div>
+    </div>
+
     <!-- 결재자 선택 모달 -->
     <div class="modal" id="approverModal">
         <div class="modal-content">
@@ -419,25 +441,44 @@
 
     <!-- 야근 인원 선택 모달 -->
     <div class="modal" id="overtimePersonModal">
-        <div class="modal-content">
+        <div class="modal-content" style="max-width: 560px; max-height: 90vh;">
             <div class="modal-header">
-                <h3>야근 인원 선택</h3>
+                <h3><i class="fas fa-users"></i> 야근 인원 선택</h3>
                 <button class="modal-close" onclick="closeOvertimePersonModal()">
                     <i class="fas fa-times"></i>
                 </button>
             </div>
-            <div class="modal-body">
-                <div class="modal-search">
-                    <i class="fas fa-search"></i>
-                    <input type="text" id="overtimePersonSearchInput" placeholder="이름 또는 부서 검색...">
+            <div class="modal-body" style="padding: 0; display: flex; flex-direction: column; overflow: hidden;">
+                <div style="padding: 16px 20px 0;">
+                    <div class="modal-search">
+                        <i class="fas fa-search"></i>
+                        <input type="text" id="overtimePersonSearchInput" placeholder="이름 또는 부서 검색...">
+                    </div>
                 </div>
-                <div class="employee-list" id="overtimePersonList2">
+                <div class="employee-list" id="overtimePersonList2" style="flex: 1; overflow-y: auto; padding: 0 20px 16px;">
                     <!-- 동적 생성 -->
+                </div>
+                <!-- 선택된 인원 뱃지 영역 -->
+                <div class="selected-attendees-area">
+                    <div class="selected-header">
+                        <h4><i class="fas fa-check-circle"></i> 선택된 인원 (<span id="selectedOvertimeCount">0</span>명)</h4>
+                        <button class="btn-sm-text" onclick="clearAllSelectedOvertimePersons()" style="color: #94a3b8; font-size: 12px;">
+                            <i class="fas fa-times"></i> 전체 해제
+                        </button>
+                    </div>
+                    <div class="badge-container" id="selectedOvertimeBadges">
+                        <div class="empty-state">
+                            <i class="fas fa-user-plus"></i>
+                            <span>프로젝트 참여인원을 선택해주세요</span>
+                        </div>
+                    </div>
                 </div>
             </div>
             <div class="modal-footer">
                 <button class="btn-secondary" onclick="closeOvertimePersonModal()">취소</button>
-                <button class="btn-primary" onclick="addSelectedOvertimePersons()">추가</button>
+                <button class="btn-primary" onclick="addSelectedOvertimePersons()">
+                    <i class="fas fa-check"></i> 추가
+                </button>
             </div>
         </div>
     </div>

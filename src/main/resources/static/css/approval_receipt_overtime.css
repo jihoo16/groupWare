@@ -118,6 +118,20 @@
     color: #94a3b8;
 }
 
+.form-input[readonly] {
+    background: #f8fafc;
+    color: #64748b;
+}
+
+.clickable-input {
+    cursor: pointer;
+}
+
+.clickable-input:hover {
+    background: #f1f5f9;
+    border-color: #667eea;
+}
+
 /* 텍스트 영역 */
 .form-textarea {
     width: 100%;
@@ -1623,4 +1637,164 @@ div h2{
 .trip-person-remove:hover {
     background: #fee;
     color: #ef4444;
+}
+
+/* ========================================
+   야근 인원 선택 모달 - 뱃지 영역
+   ======================================== */
+
+.selected-attendees-area {
+    background: #f8fafc;
+    border-top: 2px solid #e2e8f0;
+    padding: 16px 20px;
+    min-height: 120px;
+    max-height: 180px;
+    display: flex;
+    flex-direction: column;
+}
+
+.selected-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 12px;
+}
+
+.selected-header h4 {
+    margin: 0;
+    font-size: 13px;
+    font-weight: 600;
+    color: #334155;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.selected-header h4 i {
+    color: #10b981;
+    font-size: 14px;
+}
+
+.selected-header h4 span {
+    color: #667eea;
+    font-weight: 700;
+}
+
+.btn-sm-text {
+    background: none;
+    border: none;
+    cursor: pointer;
+    padding: 4px 8px;
+    border-radius: 4px;
+    transition: all 0.2s;
+    display: flex;
+    align-items: center;
+    gap: 4px;
+}
+
+.btn-sm-text:hover {
+    background: rgba(0, 0, 0, 0.05);
+}
+
+.badge-container {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    overflow-y: auto;
+    max-height: 100px;
+    padding: 4px;
+}
+
+.badge-container::-webkit-scrollbar {
+    width: 6px;
+    height: 6px;
+}
+
+.badge-container::-webkit-scrollbar-track {
+    background: #f1f5f9;
+    border-radius: 3px;
+}
+
+.badge-container::-webkit-scrollbar-thumb {
+    background: #cbd5e1;
+    border-radius: 3px;
+}
+
+.badge-container::-webkit-scrollbar-thumb:hover {
+    background: #94a3b8;
+}
+
+.badge-container .empty-state {
+    width: 100%;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    padding: 20px;
+    color: #94a3b8;
+    font-size: 13px;
+}
+
+.badge-container .empty-state i {
+    font-size: 24px;
+    opacity: 0.5;
+}
+
+.attendee-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 6px 12px;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+    border-radius: 20px;
+    font-size: 13px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.2s;
+    user-select: none;
+    box-shadow: 0 2px 4px rgba(102, 126, 234, 0.2);
+}
+
+.attendee-badge:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 4px 8px rgba(102, 126, 234, 0.3);
+}
+
+.attendee-badge i {
+    font-size: 11px;
+    pointer-events: none;
+}
+
+.attendee-badge .badge-name {
+    font-weight: 600;
+    pointer-events: none;
+}
+
+.attendee-badge .badge-info {
+    opacity: 0.9;
+    font-size: 11px;
+    pointer-events: none;
+}
+
+.attendee-badge .badge-remove {
+    margin-left: 4px;
+    padding: 2px 4px;
+    border-radius: 50%;
+    background: rgba(255, 255, 255, 0.2);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.2s;
+    pointer-events: none;
+}
+
+.attendee-badge .badge-remove:hover {
+    background: rgba(255, 255, 255, 0.3);
+    transform: scale(1.1);
+}
+
+.attendee-badge .badge-remove i {
+    pointer-events: none;
 }
