@@ -369,6 +369,15 @@ document.addEventListener('DOMContentLoaded', async function() {
             }
         };
 
+        // 모달 외부 클릭 시 닫기
+        if (projectModal) {
+            projectModal.addEventListener('click', function(e) {
+                if (e.target === projectModal) {
+                    closeProjectModal();
+                }
+            });
+        }
+
         // ============================================
         // 카드 선택 모달
         // ============================================
