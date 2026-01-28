@@ -521,6 +521,28 @@
         </div>
     </div>
 
+    <!-- 프로젝트 선택 모달 -->
+    <div id="projectModal" class="modal">
+        <div class="modal-content" style="max-width: 600px;">
+            <div class="modal-header">
+                <h2><i class="fas fa-project-diagram"></i> 과제 선택</h2>
+                <button class="close-btn" onclick="closeProjectModal()">&times;</button>
+            </div>
+            <div class="modal-body">
+                <div class="search-box">
+                    <i class="fas fa-search"></i>
+                    <input type="text" id="projectSearchInput" placeholder="과제명 검색...">
+                </div>
+                <div class="employee-list" id="projectList">
+                    <!-- 동적 생성 -->
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn-secondary" onclick="closeProjectModal()">취소</button>
+            </div>
+        </div>
+    </div>
+
     <!-- jsPDF 라이브러리 -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>

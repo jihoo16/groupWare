@@ -13,7 +13,7 @@ import lombok.*;
 @Builder
 public class LoginRequestDTO {
 
-    @NotBlank(message = "사번은 필수입니다")
+    @NotBlank(message = "사번 또는 이메일은 필수입니다")
     private String empId;
 
     @NotBlank(message = "비밀번호는 필수입니다")

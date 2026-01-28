@@ -1,5 +1,6 @@
 package com.pinecni.erp.api.auth.controller;
 
+import com.pinecni.erp.api.auth.dto.ChangePasswordRequestDTO;
 import com.pinecni.erp.api.auth.dto.LoginRequestDTO;
 import com.pinecni.erp.api.auth.dto.LoginResponseDTO;
 import com.pinecni.erp.api.auth.service.AuthService;
@@ -44,10 +45,11 @@ public class AuthController {
         session.setAttribute("userIdx", response.getIdx());
         session.setAttribute("empName", response.getEmpName());
         session.setAttribute("isAdmin", response.getIsAdmin());
+        session.setAttribute("isFirstLogin", response.getIsFirstLogin()); // 최초 로그인 플래그
         session.setMaxInactiveInterval(3600 * 8); // 8시간
 
-        log.info("Session created for user: {} (session ID: {})",
-                response.getEmpId(), session.getId());
+        log.info("Session created for user: {} (session ID: {}, isFirstLogin: {})",
+                response.getEmpId(), session.getId(), response.getIsFirstLogin());
 
         return ResponseEntity.ok(response);
     }
@@ -100,6 +102,38 @@ public class AuthController {
             response.put("empId", user.getEmpId());
             response.put("empName", user.getEmpName());
         }
+
+        return ResponseEntity.ok(response);
+    }
+
+    /**
+     * 비밀번호 변경
+     * POST /api/auth/change-password
+     */
+    @PostMapping("/change-password")
+    public ResponseEntity<Map<String, String>> changePassword(
+            @Valid @RequestBody ChangePasswordRequestDTO request,
+            HttpSession session) {
+
+        Long userIdx = (Long) session.getAttribute("userIdx");
+
+        if (userIdx == null) {
+            Map<String, String> error = new HashMap<>();
+            error.put("error", "로그인이 필요합니다.");
+            return ResponseEntity.status(401).body(error);
+        }
+
+        log.debug("POST /api/auth/change-password - userIdx: {}", userIdx);
+
+        // 비밀번호 변경 처리
+        authService.changePassword(userIdx, request);
+
+        // 최초 로그인 플래그 제거 (비밀번호 변경 완료)
+        session.setAttribute("isFirstLogin", false);
+        log.info("First login flag removed for userIdx: {}", userIdx);
+
+        Map<String, String> response = new HashMap<>();
+        response.put("message", "비밀번호가 성공적으로 변경되었습니다.");
 
         return ResponseEntity.ok(response);
     }

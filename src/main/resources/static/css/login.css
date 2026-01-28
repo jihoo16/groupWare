@@ -432,8 +432,10 @@ body {
     border-radius: 8px;
     font-size: 14px;
     display: none;
-    align-items: center;
+    align-items: flex-start;
     gap: 8px;
+    white-space: pre-line;
+    line-height: 1.6;
 }
 
 .alert-message.show {
@@ -450,6 +452,8 @@ body {
     content: '\f06a';
     font-family: 'Font Awesome 6 Free';
     font-weight: 900;
+    flex-shrink: 0;
+    margin-top: 2px;
 }
 
 .alert-message.success {
@@ -462,6 +466,8 @@ body {
     content: '\f058';
     font-family: 'Font Awesome 6 Free';
     font-weight: 900;
+    flex-shrink: 0;
+    margin-top: 2px;
 }
 
 /* ===========================

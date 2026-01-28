@@ -239,33 +239,47 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     }
 
-    // 삭제 버튼
-    const deleteBtn = document.getElementById('deleteMeetingBtn');
-    if (deleteBtn) {
-        deleteBtn.addEventListener('click', async function() {
-            const confirmed = await showDeleteConfirm('이 회의록을 삭제하시겠습니까?');
-            if (!confirmed) {
-                return;
-            }
+    // 삭제 버튼 동적 생성 (작성자만)
+    function createDeleteButton() {
+        const actionButtons = document.getElementById('actionButtons');
+        const editBtn = document.getElementById('editMeetingBtn');
 
-            try {
-                const response = await fetch(`/api/document/meeting-minutes/${meetingId}`, {
-                    method: 'DELETE'
-                });
+        if (actionButtons && editBtn && !document.getElementById('deleteMeetingBtn')) {
+            const deleteBtn = document.createElement('button');
+            deleteBtn.type = 'button';
+            deleteBtn.className = 'btn btn-danger';
+            deleteBtn.id = 'deleteMeetingBtn';
+            deleteBtn.innerHTML = '<i class="fas fa-trash"></i> 삭제';
 
-                if (response.ok) {
-                    await showSuccess('회의록이 삭제되었습니다.');
-                    window.location.href = '/approval';
-                } else {
-                    const errorText = await response.text();
-                    console.error('삭제 실패:', errorText);
-                    showError('삭제에 실패했습니다.');
+            deleteBtn.addEventListener('click', async function() {
+                const confirmed = await showDeleteConfirm('이 회의록을 삭제하시겠습니까?');
+                if (!confirmed) {
+                    return;
                 }
-            } catch (error) {
-                console.error('삭제 오류:', error);
-                showError('삭제 중 오류가 발생했습니다.');
-            }
-        });
+
+                try {
+                    const response = await fetch(`/api/document/meeting-minutes/${meetingId}`, {
+                        method: 'DELETE'
+                    });
+
+                    if (response.ok) {
+                        await showSuccess('회의록이 삭제되었습니다.');
+                        window.location.href = '/approval';
+                    } else {
+                        const errorText = await response.text();
+                        console.error('삭제 실패:', errorText);
+                        showError('삭제에 실패했습니다.');
+                    }
+                } catch (error) {
+                    console.error('삭제 오류:', error);
+                    showError('삭제 중 오류가 발생했습니다.');
+                }
+            });
+
+            // 수정 버튼 앞에 삽입
+            actionButtons.insertBefore(deleteBtn, editBtn);
+            console.log('작성자이므로 삭제 버튼을 생성합니다.');
+        }
     }
 
     // ============================================
@@ -336,5 +350,11 @@ document.addEventListener('DOMContentLoaded', function() {
 
         // textarea 자동 높이 조절 적용
         setTimeout(() => applyAutoResize(), 100);
+
+        // 작성자 확인 후 삭제 버튼 생성
+        const currentUserIdx = window.CURRENT_USER ? window.CURRENT_USER.idx : null;
+        if (meeting.userIdx && currentUserIdx && meeting.userIdx === currentUserIdx) {
+            createDeleteButton();
+        }
     }
 });
