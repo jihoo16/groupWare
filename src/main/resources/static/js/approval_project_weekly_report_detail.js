@@ -125,19 +125,27 @@ function displayReportData(data) {
         remarksEl.textContent = data.remarks || '-';
     }
 
-    // 작성자와 현재 사용자 비교 - 작성자일 때만 삭제 버튼 표시
+    // 작성자와 현재 사용자 비교 - 작성자일 때만 삭제 버튼 생성
     const currentUserIdx = window.CURRENT_USER ? window.CURRENT_USER.idx : null;
-    const deleteReportBtn = document.getElementById('deleteReportBtn');
 
-    if (deleteReportBtn) {
-        if (data.userIdx && currentUserIdx && data.userIdx === currentUserIdx) {
-            // 작성자이면 삭제 버튼 표시
-            deleteReportBtn.style.display = 'inline-flex';
-            console.log('작성자이므로 삭제 버튼을 표시합니다.');
-        } else {
-            // 작성자가 아니면 삭제 버튼 숨김 (기본값 유지)
-            console.log('작성자가 아니므로 삭제 버튼을 숨깁니다.');
+    if (data.userIdx && currentUserIdx && data.userIdx === currentUserIdx) {
+        // 작성자이면 삭제 버튼 동적 생성
+        const headerButtons = document.getElementById('headerButtons');
+        if (headerButtons) {
+            const deleteBtn = document.createElement('button');
+            deleteBtn.className = 'btn-danger';
+            deleteBtn.id = 'deleteReportBtn';
+            deleteBtn.innerHTML = '<i class="fas fa-trash"></i> 삭제';
+            deleteBtn.addEventListener('click', function() {
+                deleteReport(documentIdx);
+            });
+
+            // 돌아가기 버튼 앞에 삽입
+            headerButtons.insertBefore(deleteBtn, headerButtons.firstChild);
+            console.log('작성자이므로 삭제 버튼을 생성합니다.');
         }
+    } else {
+        console.log('작성자가 아니므로 삭제 버튼을 생성하지 않습니다.');
     }
 
     // 공식 PDF 로드

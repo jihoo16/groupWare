@@ -111,11 +111,9 @@
                     </div>
 
                     <!-- 하단 액션 버튼 -->
-                    <div class="project-form-footer" style="margin-top: 30px;">
+                    <div class="project-form-footer" id="actionButtons" style="margin-top: 30px;">
                         <button type="button" class="btn btn-secondary" onclick="history.back()" style="margin-left: auto">취소</button>
-                        <button type="button" class="btn btn-danger" id="deleteReportBtn">
-                            <i class="fas fa-trash"></i> 삭제
-                        </button>
+                        <!-- 삭제 버튼은 작성자인 경우에만 동적으로 생성됨 -->
                         <button type="button" class="btn btn-primary" id="editReportBtn">
                             <i class="fas fa-edit"></i> 수정
                         </button>

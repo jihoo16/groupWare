@@ -12,12 +12,6 @@ document.addEventListener('DOMContentLoaded', function() {
 
     // 문서 상세 정보 로드
     loadDocumentDetail(documentIdx);
-
-    // 삭제 버튼 이벤트 리스너
-    const deleteBtn = document.getElementById('deleteBtn');
-    if (deleteBtn) {
-        deleteBtn.addEventListener('click', () => deleteDocument(documentIdx));
-    }
 });
 
 /**
@@ -55,6 +49,44 @@ function displayDocumentInfo(data) {
     document.getElementById('drafterPosition').value = data.drafterPosition || '-';
     document.getElementById('remainingDays').value = data.remainingDays ? `${data.remainingDays}일` : '-';
     document.getElementById('reason').textContent = data.reason || '사유 없음';
+
+    // 작성자 확인 후 삭제 버튼 생성
+    const currentUserIdx = window.CURRENT_USER ? window.CURRENT_USER.idx : null;
+    if (data.drafterUserIdx && currentUserIdx && data.drafterUserIdx === currentUserIdx) {
+        createDeleteButton(data.documentIdx);
+    }
+}
+
+/**
+ * 삭제 버튼 동적 생성
+ */
+function createDeleteButton(documentIdx) {
+    const headerButtons = document.getElementById('headerButtons');
+    if (headerButtons && !document.getElementById('deleteBtn')) {
+        const deleteWrapper = document.createElement('div');
+        deleteWrapper.className = 'button-with-tooltip';
+
+        const deleteBtn = document.createElement('button');
+        deleteBtn.className = 'btn-danger';
+        deleteBtn.id = 'deleteBtn';
+        deleteBtn.innerHTML = '<i class="fas fa-trash"></i> 삭제';
+        deleteBtn.addEventListener('click', () => deleteDocument(documentIdx));
+
+        const tooltip = document.createElement('div');
+        tooltip.className = 'tooltip-text';
+        tooltip.innerHTML = `
+            <i class="fas fa-info-circle"></i>
+            연차신청서는 PDF로 자동 생성되므로 수정이 불가능합니다.<br>
+            문서를 삭제하고 새로 작성해주세요.
+        `;
+
+        deleteWrapper.appendChild(deleteBtn);
+        deleteWrapper.appendChild(tooltip);
+
+        // 돌아가기 버튼 앞에 삽입
+        headerButtons.insertBefore(deleteWrapper, headerButtons.firstChild);
+        console.log('작성자이므로 삭제 버튼을 생성합니다.');
+    }
 }
 
 /**
