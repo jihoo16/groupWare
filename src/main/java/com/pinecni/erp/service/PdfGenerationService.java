@@ -47,6 +47,9 @@ public class PdfGenerationService {
     @Value("${pdf.storage.project-weekly-report.pattern:project/{year}/{projectIdx}}")
     private String projectWeeklyReportPathPattern;
 
+    @Value("${pdf.storage.receipt-meeting.pattern:receipt-meeting/{year}/{date}}")
+    private String receiptMeetingPathPattern;
+
     /**
      * 연차신청서 Thymeleaf 템플릿을 PDF로 변환 (전체 데이터 Map 사용)
      *
@@ -477,6 +480,52 @@ public class PdfGenerationService {
         try (FileOutputStream fos = new FileOutputStream(file)) {
             fos.write(pdfBytes);
             log.info("프로젝트 주간업무보고 PDF 파일 저장 완료: {}", filePath);
+        } catch (IOException e) {
+            log.error("PDF 파일 저장 실패: {} - {}", filePath, e.getMessage());
+            throw new IOException("PDF 파일 저장 실패: " + e.getMessage(), e);
+        }
+
+        return filePath;
+    }
+
+    /**
+     * 연구비증빙 회의록 PDF를 구조화된 경로에 저장
+     * 경로 패턴: {basePath}/receipt-meeting/{year}/{date}/{fileName}
+     *
+     * @param pdfBytes PDF 바이트 배열
+     * @param fileName 파일명
+     * @param year     연도 (예: 2026)
+     * @param date     회의 날짜 (yyyy-MM-dd)
+     * @return 저장된 파일 경로
+     */
+    public String saveReceiptMeetingPdf(byte[] pdfBytes, String fileName, String year, String date) throws IOException {
+        // 경로 패턴 변환: receipt-meeting/{year}/{date}
+        String relativePath = receiptMeetingPathPattern
+                .replace("{year}", year)
+                .replace("{date}", date);
+
+        String targetDir = pdfStoragePath + File.separator + relativePath.replace("/", File.separator);
+
+        // 디렉토리 생성 (없으면 자동 생성)
+        File directory = new File(targetDir);
+        if (!directory.exists()) {
+            boolean created = directory.mkdirs();
+            if (!created) {
+                throw new IOException("PDF 저장 디렉토리 생성 실패: " + targetDir +
+                                    ". 디렉토리 권한을 확인하세요.");
+            }
+            log.info("PDF 저장 디렉토리 생성 완료: {}", targetDir);
+        } else {
+            log.debug("PDF 저장 디렉토리 이미 존재: {}", targetDir);
+        }
+
+        // 파일 저장
+        String filePath = targetDir + File.separator + fileName;
+        File file = new File(filePath);
+
+        try (FileOutputStream fos = new FileOutputStream(file)) {
+            fos.write(pdfBytes);
+            log.info("연구비증빙 회의록 PDF 파일 저장 완료: {}", filePath);
         } catch (IOException e) {
             log.error("PDF 파일 저장 실패: {} - {}", filePath, e.getMessage());
             throw new IOException("PDF 파일 저장 실패: " + e.getMessage(), e);

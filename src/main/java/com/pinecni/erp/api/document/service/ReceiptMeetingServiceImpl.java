@@ -1,20 +1,33 @@
 package com.pinecni.erp.api.document.service;
 
+import com.pinecni.erp.api.document.dto.ReceiptMeetingAttachmentDTO;
 import com.pinecni.erp.api.document.dto.ReceiptMeetingCreateDTO;
 import com.pinecni.erp.api.document.dto.ReceiptMeetingDTO;
 import com.pinecni.erp.api.document.dto.ReceiptMeetingUpdateDTO;
 import com.pinecni.erp.api.document.mapper.ReceiptMeetingMapper;
+import com.pinecni.erp.api.document.repository.ReceiptMeetingOfficialPdfRepository;
+import com.pinecni.erp.api.project.repository.ReceiptMeetingAttachmentRepository;
 import com.pinecni.erp.api.project.repository.ReceiptMeetingAttendeeRepository;
 import com.pinecni.erp.api.project.repository.ReceiptMeetingRepository;
 import com.pinecni.erp.api.approval.repository.ApprovalDocumentRepository;
 import com.pinecni.erp.entity.ReceiptMeeting;
+import com.pinecni.erp.entity.ReceiptMeetingAttachment;
 import com.pinecni.erp.entity.ReceiptMeetingAttendee;
+import com.pinecni.erp.entity.ReceiptMeetingOfficialPdf;
 import com.pinecni.erp.entity.ApprovalDocument;
+import com.pinecni.erp.service.PdfGenerationService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.multipart.MultipartFile;
 
+import java.io.File;
+import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
@@ -31,8 +44,14 @@ public class ReceiptMeetingServiceImpl implements ReceiptMeetingService {
 
     private final ReceiptMeetingRepository receiptMeetingRepository;
     private final ReceiptMeetingAttendeeRepository attendeeRepository;
+    private final ReceiptMeetingAttachmentRepository attachmentRepository;
+    private final ReceiptMeetingOfficialPdfRepository pdfRepository;
     private final ReceiptMeetingMapper mapper;
     private final ApprovalDocumentRepository approvalDocumentRepository;
+    private final PdfGenerationService pdfGenerationService;
+
+    @Value("${file.upload.path:/uploads/receipt-meetings}")
+    private String uploadPath;
 
     @Override
     @Transactional(readOnly = true)
@@ -281,5 +300,149 @@ public class ReceiptMeetingServiceImpl implements ReceiptMeetingService {
             log.error("중복 참석자 검증 중 오류 발생: {}", e.getMessage(), e);
             return List.of();
         }
+    }
+
+    @Override
+    @Transactional
+    public List<ReceiptMeetingAttachmentDTO> saveAttachments(Long receiptMeetingIdx, MultipartFile[] files, Long uploadUserIdx) {
+        log.debug("첨부파일 저장 - receiptMeetingIdx: {}, 파일 개수: {}", receiptMeetingIdx, files != null ? files.length : 0);
+
+        if (files == null || files.length == 0) {
+            return Collections.emptyList();
+        }
+
+        // 회의록 존재 확인
+        ReceiptMeeting meeting = receiptMeetingRepository.findById(receiptMeetingIdx)
+                .orElseThrow(() -> new IllegalArgumentException("회의록을 찾을 수 없습니다. IDX: " + receiptMeetingIdx));
+
+        // 업로드 디렉토리 생성
+        String datePath = LocalDate.now().format(DateTimeFormatter.ofPattern("yyyy/MM/dd"));
+        String fullUploadPath = uploadPath + "/" + datePath + "/" + receiptMeetingIdx;
+        File uploadDir = new File(fullUploadPath);
+        if (!uploadDir.exists()) {
+            uploadDir.mkdirs();
+        }
+
+        List<ReceiptMeetingAttachmentDTO> savedAttachments = new ArrayList<>();
+
+        for (MultipartFile file : files) {
+            if (file.isEmpty()) {
+                continue;
+            }
+
+            try {
+                // 원본 파일명
+                String originalFilename = file.getOriginalFilename();
+                if (originalFilename == null) {
+                    originalFilename = "unnamed_file";
+                }
+
+                // 고유 파일명 생성 (타임스탬프 + UUID)
+                String timestamp = LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyyMMddHHmmss"));
+                String uuid = UUID.randomUUID().toString().substring(0, 8);
+                String extension = "";
+                int dotIndex = originalFilename.lastIndexOf('.');
+                if (dotIndex > 0) {
+                    extension = originalFilename.substring(dotIndex);
+                }
+                String savedFilename = timestamp + "_" + uuid + extension;
+
+                // 파일 저장
+                Path filePath = Paths.get(fullUploadPath, savedFilename);
+                Files.copy(file.getInputStream(), filePath);
+
+                // DB 저장
+                ReceiptMeetingAttachment attachment = ReceiptMeetingAttachment.builder()
+                        .receiptMeetingIdx(receiptMeetingIdx)
+                        .fileName(originalFilename)
+                        .filePath(filePath.toString())
+                        .fileSize(file.getSize())
+                        .fileType(file.getContentType())
+                        .uploadUserIdx(uploadUserIdx)
+                        .build();
+
+                ReceiptMeetingAttachment saved = attachmentRepository.save(attachment);
+
+                // DTO 변환
+                ReceiptMeetingAttachmentDTO dto = ReceiptMeetingAttachmentDTO.builder()
+                        .idx(saved.getIdx())
+                        .receiptMeetingIdx(saved.getReceiptMeetingIdx())
+                        .fileName(saved.getFileName())
+                        .filePath(saved.getFilePath())
+                        .fileSize(saved.getFileSize())
+                        .fileType(saved.getFileType())
+                        .uploadUserIdx(saved.getUploadUserIdx())
+                        .uploadedAt(saved.getUploadedAt())
+                        .build();
+
+                savedAttachments.add(dto);
+
+                log.debug("첨부파일 저장 완료 - 원본명: {}, 저장명: {}", originalFilename, savedFilename);
+
+            } catch (IOException e) {
+                log.error("파일 저장 실패: {}", file.getOriginalFilename(), e);
+                throw new RuntimeException("파일 저장 중 오류가 발생했습니다: " + file.getOriginalFilename(), e);
+            }
+        }
+
+        return savedAttachments;
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public List<ReceiptMeetingAttachmentDTO> getAttachmentsByReceiptMeetingIdx(Long receiptMeetingIdx) {
+        log.debug("회의록 첨부파일 목록 조회 - receiptMeetingIdx: {}", receiptMeetingIdx);
+
+        return attachmentRepository.findByReceiptMeetingIdx(receiptMeetingIdx)
+                .stream()
+                .map(attachment -> ReceiptMeetingAttachmentDTO.builder()
+                        .idx(attachment.getIdx())
+                        .receiptMeetingIdx(attachment.getReceiptMeetingIdx())
+                        .fileName(attachment.getFileName())
+                        .filePath(attachment.getFilePath())
+                        .fileSize(attachment.getFileSize())
+                        .fileType(attachment.getFileType())
+                        .uploadUserIdx(attachment.getUploadUserIdx())
+                        .uploadedAt(attachment.getUploadedAt())
+                        .build())
+                .collect(Collectors.toList());
+    }
+
+    @Override
+    @Transactional
+    public String generateAndSavePdf(Long receiptMeetingIdx, String htmlContent, Long createdUserIdx) throws Exception {
+        log.debug("연구비증빙 회의록 PDF 생성 시작 - receiptMeetingIdx: {}", receiptMeetingIdx);
+
+        // 1. 회의록 조회
+        ReceiptMeeting meeting = receiptMeetingRepository.findById(receiptMeetingIdx)
+                .orElseThrow(() -> new IllegalArgumentException("회의록을 찾을 수 없습니다. IDX: " + receiptMeetingIdx));
+
+        // 2. HTML을 PDF로 변환
+        byte[] pdfBytes = pdfGenerationService.generatePdfFromRenderedHtml(htmlContent);
+
+        // 3. PDF 파일 정보 생성
+        String year = String.valueOf(LocalDate.now().getYear());
+        String date = meeting.getMeetingDate().format(DateTimeFormatter.ofPattern("yyyy-MM-dd"));
+        String fileName = String.format("회의록_%s_%s.pdf",
+                meeting.getDocumentNumber() != null ? meeting.getDocumentNumber() : receiptMeetingIdx,
+                LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyyMMddHHmmss")));
+
+        // 4. PDF 파일 저장
+        String filePath = pdfGenerationService.saveReceiptMeetingPdf(pdfBytes, fileName, year, date);
+
+        // 5. DB에 PDF 메타데이터 저장
+        ReceiptMeetingOfficialPdf pdfEntity = ReceiptMeetingOfficialPdf.builder()
+                .receiptMeetingIdx(receiptMeetingIdx)
+                .filePath(filePath)
+                .fileName(fileName)
+                .fileSize((long) pdfBytes.length)
+                .createdUserIdx(createdUserIdx)
+                .build();
+
+        pdfRepository.save(pdfEntity);
+
+        log.info("연구비증빙 회의록 PDF 생성 및 저장 완료 - filePath: {}", filePath);
+
+        return filePath;
     }
 }

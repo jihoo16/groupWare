@@ -1355,6 +1355,117 @@ document.addEventListener('DOMContentLoaded', async function() {
         updateFileList();
     };
 
+    // PDF 생성 함수
+    async function generatePdf(receiptMeetingIdx) {
+        // 공식 문서 HTML 가져오기
+        const documentFormContent = document.getElementById('documentFormContent');
+        if (!documentFormContent) {
+            throw new Error('문서 양식을 찾을 수 없습니다.');
+        }
+
+        // HTML 문자열 생성 (완전한 HTML 문서)
+        const htmlContent = `
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>연구비증빙 회의록</title>
+    <style>
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            font-family: 'Malgun Gothic', '맑은 고딕', 'Apple SD Gothic Neo', sans-serif;
+            background: white;
+            margin: 1.5cm;
+        }
+
+        .doc-title {
+            text-align: center;
+            font-size: 26px;
+            font-weight: 700;
+            color: #333;
+            margin: 20px 0;
+            padding-bottom: 10px;
+            letter-spacing: 6px;
+        }
+
+        .form-table {
+            width: 100%;
+            border-collapse: collapse;
+            border: 1px solid #000;
+            margin-bottom: 20px;
+        }
+
+        .form-table th,
+        .form-table td {
+            border: 1px solid #000;
+            padding: 10px;
+            font-size: 13px;
+            vertical-align: middle;
+        }
+
+        .form-table th {
+            background: #f0f0f0;
+            font-weight: 700;
+            color: #333;
+            text-align: center;
+        }
+
+        .form-table td {
+            color: #333;
+            text-align: center;
+        }
+
+        .form-table input,
+        .form-table textarea {
+            border: none;
+            background: transparent;
+            width: 100%;
+            text-align: center;
+            font-size: 13px;
+        }
+
+        @page {
+            margin: 0;
+            size: A4;
+        }
+
+        @media print {
+            body {
+                margin: 1.5cm;
+            }
+        }
+    </style>
+</head>
+<body>
+${documentFormContent.innerHTML}
+</body>
+</html>
+        `;
+
+        // 서버에 PDF 생성 요청
+        const response = await fetch(`/api/receipt-meetings/${receiptMeetingIdx}/generate-pdf`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({ htmlContent })
+        });
+
+        if (!response.ok) {
+            throw new Error('PDF 생성 요청 실패');
+        }
+
+        const result = await response.json();
+        console.log('PDF 생성 완료:', result.filePath);
+        return result;
+    }
+
     // 저장
     if (saveBtn) {
         saveBtn.addEventListener('click', async function() {
@@ -1475,16 +1586,36 @@ document.addEventListener('DOMContentLoaded', async function() {
                 if(!confirmed)return;
             showLoading('저장 중...');
             try {
+                // FormData 생성 (JSON + 파일 함께 전송)
+                const formData = new FormData();
+
+                // JSON 데이터를 문자열로 변환하여 추가
+                formData.append('data', JSON.stringify(saveData));
+
+                // 첨부파일 추가
+                if (selectedFiles && selectedFiles.length > 0) {
+                    selectedFiles.forEach((file) => {
+                        formData.append('files', file);
+                    });
+                }
+
                 const response = await fetch('/api/receipt-meetings', {
                     method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json'
-                    },
-                    body: JSON.stringify(saveData)
+                    body: formData
+                    // Content-Type 헤더는 자동으로 설정됨 (multipart/form-data)
                 });
 
                 if (response.ok) {
                     const result = await response.json();
+
+                    // PDF 생성 시도 (비동기 - 실패해도 저장은 완료됨)
+                    try {
+                        await generatePdf(result.idx);
+                    } catch (pdfError) {
+                        console.error('PDF 생성 실패 (데이터는 저장됨):', pdfError);
+                        // PDF 생성 실패해도 데이터는 저장되었으므로 계속 진행
+                    }
+
                     showSuccess('회의록이 저장되었습니다.');
                     // 저장 후 목록 페이지로 이동
                     window.location.href = '/project/documents';

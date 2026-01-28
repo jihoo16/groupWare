@@ -1,5 +1,7 @@
 package com.pinecni.erp.api.document.controller;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.pinecni.erp.api.document.dto.ReceiptMeetingAttachmentDTO;
 import com.pinecni.erp.api.document.dto.ReceiptMeetingCreateDTO;
 import com.pinecni.erp.api.document.dto.ReceiptMeetingDTO;
 import com.pinecni.erp.api.document.dto.ReceiptMeetingUpdateDTO;
@@ -9,6 +11,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.multipart.MultipartFile;
 
 import java.util.HashMap;
 import java.util.List;
@@ -24,6 +27,7 @@ import java.util.Map;
 public class ReceiptMeetingController {
 
     private final ReceiptMeetingService receiptMeetingService;
+    private final ObjectMapper objectMapper;
 
     /**
      * 전체 회의록 목록 조회
@@ -90,12 +94,13 @@ public class ReceiptMeetingController {
     }
 
     /**
-     * 회의록 생성
+     * 회의록 생성 (파일 첨부 포함)
      * POST /api/receipt-meetings
      */
-    @PostMapping
+    @PostMapping(consumes = {"multipart/form-data"})
     public ResponseEntity<?> createReceiptMeeting(
-            @RequestBody ReceiptMeetingCreateDTO createDTO,
+            @RequestPart("data") String dataJson,
+            @RequestPart(value = "files", required = false) MultipartFile[] files,
             jakarta.servlet.http.HttpSession session) {
 
         // 세션에서 현재 로그인한 사용자 정보 가져오기
@@ -107,15 +112,27 @@ public class ReceiptMeetingController {
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
         }
 
-        // 담당자 정보 자동 설정
-        createDTO.setAuthorIdx(currentUserIdx);
-        createDTO.setAuthorName(currentUserName);
-
-        log.debug("POST /api/receipt-meetings - projectIdx: {}, authorIdx: {}, authorName: {}",
-                createDTO.getProjectIdx(), currentUserIdx, currentUserName);
-
         try {
+            // JSON 문자열을 DTO로 변환
+            ReceiptMeetingCreateDTO createDTO = objectMapper.readValue(dataJson, ReceiptMeetingCreateDTO.class);
+
+            // 담당자 정보 자동 설정
+            createDTO.setAuthorIdx(currentUserIdx);
+            createDTO.setAuthorName(currentUserName);
+
+            log.debug("POST /api/receipt-meetings - projectIdx: {}, authorIdx: {}, authorName: {}, 파일 개수: {}",
+                    createDTO.getProjectIdx(), currentUserIdx, currentUserName, files != null ? files.length : 0);
+
+            // 회의록 생성
             ReceiptMeetingDTO receiptMeeting = receiptMeetingService.createReceiptMeeting(createDTO);
+
+            // 첨부파일 저장
+            if (files != null && files.length > 0) {
+                List<ReceiptMeetingAttachmentDTO> attachments = receiptMeetingService.saveAttachments(
+                        receiptMeeting.getIdx(), files, currentUserIdx);
+                log.debug("첨부파일 {}개 저장 완료", attachments.size());
+            }
+
             return ResponseEntity.status(HttpStatus.CREATED).body(receiptMeeting);
         } catch (Exception e) {
             log.error("회의록 생성 실패: {}", e.getMessage(), e);
@@ -172,6 +189,60 @@ public class ReceiptMeetingController {
 
             Map<String, String> error = new HashMap<>();
             error.put("error", "서버 오류가 발생했습니다.");
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(error);
+        }
+    }
+
+    /**
+     * 회의록 공식 문서 PDF 생성
+     * POST /api/receipt-meetings/{idx}/generate-pdf
+     */
+    @PostMapping("/{idx}/generate-pdf")
+    public ResponseEntity<Map<String, String>> generatePdf(
+            @PathVariable Long idx,
+            @RequestBody Map<String, String> requestBody,
+            jakarta.servlet.http.HttpSession session) {
+
+        // 세션에서 현재 로그인한 사용자 정보 가져오기
+        Long currentUserIdx = (Long) session.getAttribute("userIdx");
+
+        if (currentUserIdx == null) {
+            log.error("로그인 정보가 없습니다.");
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
+        }
+
+        try {
+            String htmlContent = requestBody.get("htmlContent");
+
+            if (htmlContent == null || htmlContent.isEmpty()) {
+                Map<String, String> error = new HashMap<>();
+                error.put("error", "HTML 콘텐츠가 없습니다.");
+                return ResponseEntity.badRequest().body(error);
+            }
+
+            log.debug("POST /api/receipt-meetings/{}/generate-pdf - HTML 길이: {}", idx, htmlContent.length());
+
+            // PDF 생성 및 저장
+            String filePath = receiptMeetingService.generateAndSavePdf(idx, htmlContent, currentUserIdx);
+
+            Map<String, String> response = new HashMap<>();
+            response.put("message", "PDF가 생성되었습니다.");
+            response.put("filePath", filePath);
+
+            return ResponseEntity.ok(response);
+
+        } catch (IllegalArgumentException e) {
+            log.error("회의록 PDF 생성 실패: {}", e.getMessage());
+
+            Map<String, String> error = new HashMap<>();
+            error.put("error", e.getMessage());
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(error);
+
+        } catch (Exception e) {
+            log.error("회의록 PDF 생성 중 오류 발생: {}", e.getMessage(), e);
+
+            Map<String, String> error = new HashMap<>();
+            error.put("error", "PDF 생성 중 오류가 발생했습니다.");
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(error);
         }
     }
