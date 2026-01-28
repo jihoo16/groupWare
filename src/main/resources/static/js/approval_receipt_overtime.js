@@ -8,6 +8,7 @@ document.addEventListener('DOMContentLoaded', async function() {
     let selectedProject = null; // 선택된 프로젝트
     let projectMembers = []; // 선택된 프로젝트의 참여인원
     let tempSelectedOvertimePersons = []; // 모달에서 임시 선택된 인원
+    let projectExpenses = {}; // 선택된 프로젝트의 직급별 야근석식대
 
     // DOM 요소
     const templateTreeHeaders = document.querySelectorAll('.tree-node-header[data-template]');
@@ -70,11 +71,12 @@ document.addEventListener('DOMContentLoaded', async function() {
     }
 
     // ============================================
-    // 프로젝트 참여인원 로드
+    // 프로젝트 참여인원 및 경비 설정 로드
     // ============================================
     async function loadProjectMembers(projectIdx) {
         if (!projectIdx) {
             projectMembers = [];
+            projectExpenses = {};
             return;
         }
         try {
@@ -83,24 +85,45 @@ document.addEventListener('DOMContentLoaded', async function() {
             if (response.ok && contentType && contentType.includes('application/json')) {
                 const project = await response.json();
                 projectMembers = project.projectMembers || [];
+
+                // 프로젝트별 야근석식대 경비 설정 추출
+                projectExpenses = {};
+                if (project.projectExpenseSettings) {
+                    project.projectExpenseSettings.forEach(setting => {
+                        if (setting.positionName && setting.expenseItemName === '야근석식대' && setting.amount) {
+                            projectExpenses[setting.positionName] = setting.amount;
+                        }
+                    });
+                }
                 console.log('프로젝트 참여인원 로드 완료:', projectMembers.length + '명');
+                console.log('프로젝트 야근석식대 경비:', projectExpenses);
             } else {
                 console.error('프로젝트 참여인원 로드 실패');
                 projectMembers = [];
+                projectExpenses = {};
             }
         } catch (error) {
             console.error('프로젝트 참여인원 로드 오류:', error);
             projectMembers = [];
+            projectExpenses = {};
         }
     }
 
     function getOvertimePersons() {
-        return projectMembers.map(member => ({
-            id: member.employeeIdx,
-            name: member.employeeName,
-            position: member.employeePositionName || '-',
-            dept: member.employeeDeptName || '-'
-        }));
+        return projectMembers.map(member => {
+            const positionName = member.employeePositionName || '-';
+            let overtimeExpense = 0;
+            if (projectExpenses[positionName]) {
+                overtimeExpense = projectExpenses[positionName];
+            }
+            return {
+                id: member.employeeIdx,
+                name: member.employeeName,
+                position: positionName,
+                dept: member.employeeDeptName || '-',
+                overtimeExpense: overtimeExpense
+            };
+        });
     }
 
     // ============================================
@@ -337,8 +360,11 @@ document.addEventListener('DOMContentLoaded', async function() {
         // 야근인원 영역 클릭 시 모달 열기
         if (overtimePersonArea) {
             overtimePersonArea.addEventListener('click', function(e) {
-                // 제거 버튼 클릭은 무시
-                if (e.target.closest('.overtime-person-remove')) {
+                // 인원이 있을 때는 추가 버튼만 모달 열기
+                if (overtimePersons.length > 0) {
+                    if (e.target.closest('.add-more-attendees-btn')) {
+                        openOvertimePersonModal();
+                    }
                     return;
                 }
                 openOvertimePersonModal();
@@ -351,29 +377,118 @@ document.addEventListener('DOMContentLoaded', async function() {
 
             if (overtimePersons.length === 0) {
                 overtimePersonList.innerHTML = `
-                    <div style="text-align: center; color: #94a3b8; font-size: 13px;">
-                        <i class="fas fa-user-plus" style="font-size: 20px; margin-bottom: 6px;"></i>
+                    <div class="empty-attendee-state">
+                        <i class="fas fa-user-plus"></i>
                         <div>클릭하여 야근인원 추가</div>
                     </div>
                 `;
+                if (overtimePersonArea) {
+                    overtimePersonArea.classList.remove('has-attendees');
+                }
+                hideAddOvertimeButton();
             } else {
-                overtimePersonList.innerHTML = overtimePersons.map(person => `
-                    <div class="trip-person-item">
+                overtimePersonList.innerHTML = overtimePersons.map(person => {
+                    const expenseText = person.overtimeExpense
+                        ? person.overtimeExpense.toLocaleString('ko-KR') + '원'
+                        : '-';
+                    return `
+                    <div class="trip-person-item" onclick="removeOvertimePersonInTemplate('${person.id}')">
                         <div class="trip-person-info">
                             <span class="name">${person.name}</span>
                             <span>${person.dept}</span>
                             <span>${person.position}</span>
+                            <span style="color: #667eea; font-weight: 600;">${expenseText}</span>
                         </div>
-                        <button type="button" class="trip-person-remove overtime-person-remove" onclick="removeOvertimePersonInTemplate('${person.id}')">
-                            <i class="fas fa-times"></i> 제거
+                        <button type="button" class="trip-person-remove">
+                            <i class="fas fa-times"></i> 삭제
                         </button>
                     </div>
-                `).join('');
+                    `;
+                }).join('');
+
+                if (overtimePersonArea) {
+                    overtimePersonArea.classList.add('has-attendees');
+                }
+                showAddOvertimeButton();
             }
 
             updateOvertimeTable();
             updateContentText();
+            updateOvertimeTotalAmount();
         }
+
+        // 야근인원 추가 버튼 표시
+        function showAddOvertimeButton() {
+            if (!overtimePersonArea) return;
+            let addButton = overtimePersonArea.querySelector('.add-more-attendees-btn');
+            if (!addButton) {
+                addButton = document.createElement('button');
+                addButton.type = 'button';
+                addButton.className = 'add-more-attendees-btn';
+                addButton.innerHTML = '<i class="fas fa-user-plus"></i> 야근인원 추가';
+                overtimePersonArea.appendChild(addButton);
+            }
+            addButton.style.display = 'flex';
+        }
+
+        // 야근인원 추가 버튼 숨기기
+        function hideAddOvertimeButton() {
+            if (!overtimePersonArea) return;
+            const addButton = overtimePersonArea.querySelector('.add-more-attendees-btn');
+            if (addButton) addButton.style.display = 'none';
+        }
+
+        // 야근인원 식대 합계 계산 및 표시
+        function updateOvertimeTotalAmount() {
+            const totalAmountEl = document.getElementById('overtimeTotalAmount');
+            if (!totalAmountEl) return;
+
+            const totalExpense = overtimePersons.reduce((sum, person) => {
+                return sum + (person.overtimeExpense || 0);
+            }, 0);
+
+            const commonAmount = parseInt((otAmount ? otAmount.value : '').replace(/,/g, '')) || 0;
+            const formattedTotal = totalExpense.toLocaleString('ko-KR') + '원';
+            totalAmountEl.textContent = formattedTotal;
+
+            // 경고 메시지 요소
+            let warningEl = document.getElementById('otAmountWarning');
+            if (!warningEl) {
+                warningEl = document.createElement('div');
+                warningEl.id = 'otAmountWarning';
+                warningEl.style.fontSize = '13px';
+                warningEl.style.marginTop = '6px';
+                warningEl.style.display = 'none';
+                const display = totalAmountEl.parentNode;
+                if (display && display.parentNode) {
+                    display.parentNode.insertBefore(warningEl, display.nextSibling);
+                }
+            }
+
+            if (commonAmount > 0 && totalExpense < commonAmount) {
+                totalAmountEl.style.color = '#dc2626';
+                totalAmountEl.style.fontWeight = 'bold';
+                if (otAmount) {
+                    otAmount.style.borderColor = '#dc2626';
+                    otAmount.style.borderWidth = '2px';
+                }
+                warningEl.innerHTML = '<i class="fas fa-exclamation-circle"></i> 야근인원을 추가해야 합니다';
+                warningEl.style.color = '#dc2626';
+                warningEl.style.fontWeight = '600';
+                warningEl.style.display = 'block';
+            } else {
+                totalAmountEl.style.color = '#16a34a';
+                totalAmountEl.style.fontWeight = 'bold';
+                if (otAmount) {
+                    otAmount.style.borderColor = '';
+                    otAmount.style.borderWidth = '';
+                }
+                warningEl.style.display = 'none';
+            }
+        }
+
+        // 전역에서 접근 가능하게 등록
+        window.updateOvertimeTotalAmount = updateOvertimeTotalAmount;
 
         // 템플릿 내에서 야근인원 제거
         window.removeOvertimePersonInTemplate = function(personId) {
@@ -392,6 +507,7 @@ document.addEventListener('DOMContentLoaded', async function() {
                     name: person.name,
                     dept: person.dept,
                     position: person.position,
+                    overtimeExpense: person.overtimeExpense || 0,
                     time: '18:00 ~ 21:00',
                     endTime: '21:00',
                     task: ''
@@ -441,7 +557,7 @@ document.addEventListener('DOMContentLoaded', async function() {
 
             const totalCount = overtimePersons.filter(p => p.name).length;
 
-            const contentText = `야근식대\n- 인원 : 총 ${totalCount}인\n- ${names}`;
+            const contentText = `야근석식대\n- 인원 : 총 ${totalCount}인\n- ${names}`;
             otContent.value = contentText;
 
             // 품의서에도 품의 내용 표시
@@ -451,10 +567,25 @@ document.addEventListener('DOMContentLoaded', async function() {
         }
 
 
-        // 금액 입력 시 문서 미리보기 반영
+        // 천단위 콤마 포맷팅 함수
+        function formatNumberWithComma(value) {
+            const numbers = value.replace(/[^\d]/g, '');
+            if (!numbers) return '';
+            return parseInt(numbers).toLocaleString('ko-KR');
+        }
+
+        // 금액 입력 시 포맷팅 + 문서 미리보기 반영
         if (otAmount) {
             otAmount.addEventListener('input', function() {
+                const cursorPosition = this.selectionStart;
+                const oldLength = this.value.length;
+                const formatted = formatNumberWithComma(this.value);
+                this.value = formatted;
+                const newLength = this.value.length;
+                const diff = newLength - oldLength;
+                this.setSelectionRange(cursorPosition + diff, cursorPosition + diff);
                 updateAmountDisplay();
+                updateOvertimeTotalAmount();
             });
         }
 
@@ -549,18 +680,12 @@ document.addEventListener('DOMContentLoaded', async function() {
 
         // 금액 표시 업데이트
         function updateAmountDisplay() {
-            const actualAmount = parseInt(otAmount.value) || 0;
+            const actualAmount = parseInt(otAmount.value.replace(/,/g, '')) || 0;
             const quantity = overtimePersons.length;
-
-            // 품의 내역에는 1인당 15,000원 기준으로 표시
-            const displayAmount = quantity * 15000;
-            const formattedDisplayAmount = displayAmount.toLocaleString('ko-KR');
-
-            // 실제 입력 금액 (실집행 금액용)
-            const formattedActualAmount = actualAmount.toLocaleString('ko-KR');
+            const formattedAmount = actualAmount.toLocaleString('ko-KR');
 
             document.querySelectorAll('.ot-auto-amount').forEach(field => {
-                field.textContent = formattedDisplayAmount;
+                field.textContent = formattedAmount;
             });
 
             document.querySelectorAll('.ot-auto-quantity').forEach(field => {
@@ -569,7 +694,7 @@ document.addEventListener('DOMContentLoaded', async function() {
 
             // 실집행 금액 업데이트
             document.querySelectorAll('.ot-auto-actual-amount').forEach(field => {
-                field.textContent = formattedActualAmount;
+                field.textContent = formattedAmount;
             });
         }
 
@@ -825,7 +950,7 @@ document.addEventListener('DOMContentLoaded', async function() {
             }
 
             try {
-                console.log('PDF 저장 시작 - 야근식대 페이지');
+                console.log('PDF 저장 시작 - 야근석식대 페이지');
 
                 // 로딩 모달 표시
                 if (loadingModal) loadingModal.classList.add('active');
@@ -858,7 +983,7 @@ document.addEventListener('DOMContentLoaded', async function() {
                 originalDisplays = Array.from(allDivs).map(div => div.style.display);
 
                 if (allDivs.length < 3) {
-                    showError('문서 구조를 찾을 수 없습니다. 영수증 처리(야근식대) 템플릿을 선택했는지 확인해주세요.');
+                    showError('문서 구조를 찾을 수 없습니다. 영수증 처리(야근석식대) 템플릿을 선택했는지 확인해주세요.');
                     if (loadingModal) loadingModal.classList.remove('active');
                     return;
                 }
@@ -992,7 +1117,7 @@ document.addEventListener('DOMContentLoaded', async function() {
                     const today = new Date();
                     dateStr = `${today.getFullYear()}${String(today.getMonth() + 1).padStart(2, '0')}${String(today.getDate()).padStart(2, '0')}`;
                 }
-                const fileName = `${dateStr}_야근식대비.pdf`;
+                const fileName = `${dateStr}_야근석식대비.pdf`;
 
                 console.log('PDF 저장:', fileName);
                 pdf.save(fileName);
@@ -1102,13 +1227,14 @@ document.addEventListener('DOMContentLoaded', async function() {
 
         overtimePersonList2El.innerHTML = filtered.map(person => {
             const isSelected = tempSelectedOvertimePersons.some(a => String(a.id) === String(person.id));
+            const formattedExpense = person.overtimeExpense ? person.overtimeExpense.toLocaleString('ko-KR') + '원' : '-';
             return `
                 <div class="employee-item ${isSelected ? 'selected' : ''}"
                      data-id="${person.id}"
                      onclick="toggleOvertimePerson(${person.id})">
                     <div class="employee-info">
                         <div class="employee-name">${person.name}</div>
-                        <div class="employee-detail">${person.position} · ${person.dept}</div>
+                        <div class="employee-detail">${person.position} · ${person.dept} · ${formattedExpense}</div>
                     </div>
                     ${isSelected ? '<i class="fas fa-check-circle" style="color: #10b981; font-size: 18px; margin-left: auto;"></i>' : ''}
                 </div>
@@ -1130,7 +1256,8 @@ document.addEventListener('DOMContentLoaded', async function() {
                 id: String(personId),
                 name: person.name,
                 dept: person.dept,
-                position: person.position
+                position: person.position,
+                overtimeExpense: person.overtimeExpense || 0
             });
         }
 
@@ -1202,7 +1329,8 @@ document.addEventListener('DOMContentLoaded', async function() {
             id: p.id,
             name: p.name,
             dept: p.dept,
-            position: p.position
+            position: p.position,
+            overtimeExpense: p.overtimeExpense || 0
         }));
 
         // setupOvertimeAutoFill에서 정의된 함수 호출
@@ -1221,6 +1349,26 @@ document.addEventListener('DOMContentLoaded', async function() {
     templateTreeHeaders.forEach(header => {
         header.style.pointerEvents = 'none';
     });
+
+    // ============================================
+    // 금액 증가/초기화 함수
+    // ============================================
+    window.addOtAmount = function(value) {
+        const amountInput = document.getElementById('ot_amount');
+        if (!amountInput) return;
+        let currentAmount = amountInput.value.replace(/,/g, '').trim();
+        currentAmount = currentAmount ? parseInt(currentAmount) : 0;
+        const newAmount = currentAmount + value;
+        amountInput.value = newAmount.toLocaleString('ko-KR');
+        amountInput.dispatchEvent(new Event('input'));
+    };
+
+    window.resetOtAmount = function() {
+        const amountInput = document.getElementById('ot_amount');
+        if (!amountInput) return;
+        amountInput.value = '';
+        amountInput.dispatchEvent(new Event('input'));
+    };
 
     // 초기값 자동 설정
     setTimeout(() => {

@@ -74,33 +74,57 @@
                                         </div>
                                     </div>
 
-                                    <!-- 품의일자 -->
-                                    <div class="form-group full-width">
-                                        <label for="ot_approval_date">
-                                            <i class="fas fa-calendar-day"></i> 품의일자
-                                            <span class="required-mark">*</span>
-                                        </label>
-                                        <input type="date" id="ot_approval_date" class="form-input">
+                                    <!-- 품의일자 & 품의명 -->
+                                    <div class="form-grid">
+                                        <div class="form-group">
+                                            <label for="ot_approval_date">
+                                                <i class="fas fa-calendar-day"></i> 품의일자
+                                                <span class="required-mark">*</span>
+                                            </label>
+                                            <input type="date" id="ot_approval_date" class="form-input">
+                                        </div>
+                                        <div class="form-group">
+                                            <label for="ot_title">
+                                                <i class="fas fa-heading"></i> 품의명
+                                                <span class="required-mark">*</span>
+                                            </label>
+                                            <input type="text" id="ot_title" class="form-input" placeholder="예: 야근 식대" value="야근 식대">
+                                        </div>
                                     </div>
 
-                                    <!-- 품의명 -->
-                                    <div class="form-group full-width">
-                                        <label for="ot_title">
-                                            <i class="fas fa-heading"></i> 품의명
-                                            <span class="required-mark">*</span>
-                                        </label>
-                                        <input type="text" id="ot_title" class="form-input" placeholder="예: 야근 식대" value="야근 식대">
-                                    </div>
-
-                                    <!-- 총 공급가액 -->
-                                    <div class="form-group full-width">
-                                        <label for="ot_amount">
-                                            <i class="fas fa-won-sign"></i> 총 공급가액
-                                            <span class="required-mark">*</span>
-                                        </label>
-                                        <div>
-                                            <input type="number" id="ot_amount" class="form-input" placeholder="공급가액을 입력하세요 (원)" style="width: 300px;">
-                                            <small style="color: #666; margin-left: 10px;">* 야근 인원이 자동 계산됩니다</small>
+                                    <!-- 총 공급가액 & 야근인원 식대 합계 -->
+                                    <div class="form-grid">
+                                        <div class="form-group">
+                                            <label for="ot_amount">
+                                                <i class="fas fa-won-sign"></i> 총 공급가액
+                                                <span class="required-mark">*</span>
+                                            </label>
+                                            <input type="text" id="ot_amount" class="form-input" placeholder="금액을 입력하세요">
+                                            <div class="amount-buttons">
+                                                <button type="button" class="amount-btn" onclick="addOtAmount(100000)">
+                                                    <i class="fas fa-plus-circle"></i> 10만원
+                                                </button>
+                                                <button type="button" class="amount-btn" onclick="addOtAmount(10000)">
+                                                    <i class="fas fa-plus-circle"></i> 1만원
+                                                </button>
+                                                <button type="button" class="amount-btn" onclick="addOtAmount(1000)">
+                                                    <i class="fas fa-plus-circle"></i> 1천원
+                                                </button>
+                                                <button type="button" class="amount-btn" onclick="addOtAmount(100)">
+                                                    <i class="fas fa-plus-circle"></i> 100원
+                                                </button>
+                                                <button type="button" class="amount-reset-btn" onclick="resetOtAmount()">
+                                                    <i class="fas fa-redo"></i> 초기화
+                                                </button>
+                                            </div>
+                                        </div>
+                                        <div class="form-group">
+                                            <label>
+                                                <i class="fas fa-calculator"></i> 야근인원 식대 합계
+                                            </label>
+                                            <div class="total-amount-display">
+                                                <span id="overtimeTotalAmount">0원</span>
+                                            </div>
                                         </div>
                                     </div>
 
