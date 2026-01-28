@@ -52,7 +52,8 @@
                                             <i class="fas fa-project-diagram"></i> 과제명
                                             <span class="required-mark">*</span>
                                         </label>
-                                        <input type="text" id="ot_project" class="form-input" placeholder="과제명을 입력하세요">
+                                        <input type="text" id="ot_project" class="form-input clickable-input" placeholder="클릭하여 과제 선택" readonly>
+                                        <input type="hidden" id="selectedProjectIdx">
                                     </div>
 
                                     <!-- 연구책임자 & 신청자 -->
@@ -451,6 +452,28 @@
                     <div class="progress-fill" id="progressFill"></div>
                 </div>
                 <p class="progress-text" id="progressText">준비 중... (0%)</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- 프로젝트 선택 모달 -->
+    <div id="projectModal" class="modal">
+        <div class="modal-content" style="max-width: 600px;">
+            <div class="modal-header">
+                <h2><i class="fas fa-project-diagram"></i> 과제 선택</h2>
+                <button class="close-btn" onclick="closeProjectModal()">&times;</button>
+            </div>
+            <div class="modal-body">
+                <div class="search-box">
+                    <i class="fas fa-search"></i>
+                    <input type="text" id="projectSearchInput" placeholder="과제명 검색...">
+                </div>
+                <div class="employee-list" id="projectList">
+                    <!-- 동적 생성 -->
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn-secondary" onclick="closeProjectModal()">취소</button>
             </div>
         </div>
     </div>

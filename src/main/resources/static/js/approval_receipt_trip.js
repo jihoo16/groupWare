@@ -207,6 +207,7 @@ document.addEventListener('DOMContentLoaded', async function() {
         const tripProject = document.getElementById('trip_project');
         if (tripProject) {
             tripProject.value = proj.projectName;
+            tripProject.style.borderColor = ''; // 빨간색 제거
         }
         const selectedProjectIdx = document.getElementById('selectedProjectIdx');
         if (selectedProjectIdx) {
@@ -2243,4 +2244,12 @@ document.addEventListener('DOMContentLoaded', async function() {
             }
         });
     }
+
+    // 과제명이 비어있을 때 빨간색 테두리 표시
+    setTimeout(() => {
+        const tripProject = document.getElementById('trip_project');
+        if (tripProject && !tripProject.value) {
+            tripProject.style.borderColor = '#ef5350';
+        }
+    }, 500);
 });

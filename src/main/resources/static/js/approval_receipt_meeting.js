@@ -102,6 +102,14 @@ document.addEventListener('DOMContentLoaded', async function() {
     Promise.all([loadCurrentUser(), loadProjects(), loadFixedExpenses()]).then(() => {
         // 데이터 로드 후 회의록 자동 채우기 초기화
         setupReceiptAutoFill();
+
+        // 초기화 완료 후 과제명이 비어있을 때 빨간색 테두리 표시
+        setTimeout(() => {
+            const commonProject = document.getElementById('common_project');
+            if (commonProject && !commonProject.value) {
+                commonProject.classList.add('error');
+            }
+        }, 100);
     });
 
     // ============================================
@@ -289,6 +297,7 @@ document.addEventListener('DOMContentLoaded', async function() {
                     // 프로젝트 입력 필드에 표시
                     if (commonProject) {
                         commonProject.value = proj.projectName;
+                        commonProject.classList.remove('error'); // 빨간색 제거
                     }
                     const selectedProjectIdx = document.getElementById('selectedProjectIdx');
                     if (selectedProjectIdx) {
@@ -1990,6 +1999,7 @@ ${documentFormContent.innerHTML}
                 const commonProject = document.getElementById('common_project');
                 if (commonProject) {
                     commonProject.value = proj.projectName;
+                    commonProject.classList.remove('error'); // 빨간색 제거
                 }
                 const selectedProjectIdx = document.getElementById('selectedProjectIdx');
                 if (selectedProjectIdx) {
@@ -2509,6 +2519,7 @@ ${documentFormContent.innerHTML}
                 const commonProject = document.getElementById('common_project');
                 if (commonProject) {
                     commonProject.value = proj.projectName;
+                    commonProject.classList.remove('error'); // 빨간색 제거
                 }
                 const selectedProjectIdx = document.getElementById('selectedProjectIdx');
                 if (selectedProjectIdx) {
