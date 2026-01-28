@@ -15,7 +15,9 @@ document.addEventListener('DOMContentLoaded', function() {
     // 뷰 토글 버튼
     const cardViewBtn = document.getElementById('cardViewBtn');
     const listViewBtn = document.getElementById('listViewBtn');
+    const myProjectToggleBtn = document.getElementById('myProjectToggleBtn');
     let currentViewType = 'list'; // 'card' 또는 'list'
+    let showMyProjectsOnly = false;
 
     // 프로젝트 데이터
     let allCurrentProjects = [];
@@ -78,8 +80,34 @@ document.addEventListener('DOMContentLoaded', function() {
             cardViewBtn.classList.remove('active');
             currentProjectGrid.style.display = 'none';
             currentProjectListContainer.style.display = 'block';
-            renderCurrentProjectsList(allCurrentProjects);
+            renderCurrentProjectsList(getDisplayProjects());
         });
+    }
+
+    // 내 프로젝트 필터 토글
+    if (myProjectToggleBtn) {
+        myProjectToggleBtn.addEventListener('click', function() {
+            showMyProjectsOnly = !showMyProjectsOnly;
+            this.classList.toggle('active', showMyProjectsOnly);
+            refreshCurrentProjects();
+        });
+    }
+
+    // 필터 적용된 프로젝트 목록 반환
+    function getDisplayProjects() {
+        if (showMyProjectsOnly) {
+            return allCurrentProjects.filter(p => myProjectIds.includes(p.idx));
+        }
+        return allCurrentProjects;
+    }
+
+    // 현재 뷰에 맞게 프로젝트 다시 렌더링
+    function refreshCurrentProjects() {
+        const projects = getDisplayProjects();
+        renderCurrentProjects(projects);
+        if (currentViewType === 'list') {
+            renderCurrentProjectsList(projects);
+        }
     }
 
     // 현재 진행중인 프로젝트 로드
@@ -93,10 +121,7 @@ document.addEventListener('DOMContentLoaded', function() {
             })
             .then(projects => {
                 allCurrentProjects = projects;
-                renderCurrentProjects(projects);
-                if (currentViewType === 'list') {
-                    renderCurrentProjectsList(projects);
-                }
+                refreshCurrentProjects();
             })
             .catch(error => {
                 console.error('Error loading current projects:', error);

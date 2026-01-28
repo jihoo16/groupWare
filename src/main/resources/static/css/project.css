@@ -81,6 +81,41 @@
     color: #1a1a1a;
 }
 
+/* 헤더 컨트롤 */
+.header-controls {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+/* 내 프로젝트 토글 버튼 */
+.my-project-toggle-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 7px 14px;
+    border: 2px solid #e0e0e0;
+    border-radius: 8px;
+    background: white;
+    color: #868e96;
+    font-size: 13px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.my-project-toggle-btn:hover {
+    border-color: #4361ee;
+    color: #4361ee;
+}
+
+.my-project-toggle-btn.active {
+    background: #4361ee;
+    border-color: #4361ee;
+    color: white;
+    box-shadow: 0 2px 8px rgba(67, 97, 238, 0.3);
+}
+
 /* 뷰 토글 버튼 */
 .view-toggle-buttons {
     display: flex;
