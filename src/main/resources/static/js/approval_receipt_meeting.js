@@ -2714,19 +2714,31 @@ ${documentFormContent.innerHTML}
 
         // 입력 검증
         if (!name) {
-            alert('이름을 입력하세요.');
+            Swal.fire({
+                icon: 'warning',
+                title: '입력 오류',
+                text: '이름을 입력하세요.'
+            });
             document.getElementById('externalPersonName').focus();
             return;
         }
 
         if (!companyName) {
-            alert('회사명을 입력하세요.');
+            Swal.fire({
+                icon: 'warning',
+                title: '입력 오류',
+                text: '회사명을 입력하세요.'
+            });
             document.getElementById('externalPersonCompany').focus();
             return;
         }
 
         if (!position) {
-            alert('직급을 입력하세요.');
+            Swal.fire({
+                icon: 'warning',
+                title: '입력 오류',
+                text: '직급을 입력하세요.'
+            });
             document.getElementById('externalPersonPosition').focus();
             return;
         }
