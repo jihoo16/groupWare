@@ -64,7 +64,6 @@ div:focus {
     border-radius: 12px;
     box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
     padding: 24px;
-    padding-bottom: 0; /* submit-actions가 padding 처리 */
     overflow-y: auto;
     display: flex;
     flex-direction: column;
@@ -75,16 +74,14 @@ div:focus {
     display: flex;
     flex-direction: column;
     gap: 20px;
-    padding-bottom: 100px; /* fixed footer 공간 확보 */
 }
 
-/* 공식 문서가 펼쳐졌을 때는 input-area 하단 여백 제거 */
-.editor-area:has(.document-form-wrapper:not(.collapsed)) .input-area {
-    padding-bottom: 0;
-}
-
-.input-section {
-    /* background와 box-shadow는 editor-area에서 처리 */
+.common-info-section {
+    background: #ffffff;
+    padding: 20px;
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
 }
 
 .section-header {
@@ -1047,7 +1044,6 @@ div:focus {
    ============================================ */
 .document-form-wrapper {
     margin-top: 16px;
-    margin-bottom: 100px; /* submit-actions 버튼 공간 확보 */
     background: white;
     border-radius: 12px;
     padding: 30px;
@@ -1480,24 +1476,6 @@ div:focus {
 /* ============================================
    버튼
 /*   ============================================ *!*/
-.submit-actions {
-    display: flex;
-    justify-content: flex-end;
-    align-items: center;
-    gap: 12px;
-    padding: 16px 24px;
-    background: white;
-    border-top: 2px solid #e8e8e8;
-    position: fixed;
-    bottom: 0;
-    left: 380px; /* 사이드바(60px) + 여백(20px) + 템플릿 사이드바(280px) */
-    right: 25px;
-    z-index: 100;
-    box-shadow: 0 -4px 12px rgba(0, 0, 0, 0.08);
-    border-radius: 12px 12px 0 0;
-    transition: left 0.3s ease;
-}
-
 .btn-primary,
 .btn-secondary,
 .btn-outline {
@@ -1511,11 +1489,6 @@ div:focus {
     align-items: center;
     gap: 8px;
     border: none;
-}
-
-.btn-lg {
-    padding: 14px 28px;
-    font-size: 15px;
 }
 
 .btn-primary {
@@ -1578,7 +1551,7 @@ div:focus {
 }
 
 .sidebar-section {
-    padding: 15px;
+    padding: 20px;
 }
 
 .sidebar-header {

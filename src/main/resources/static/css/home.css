@@ -616,30 +616,47 @@ body {
     flex: 1;
 }
 
-.welcome-section {
-    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-    color: white;
-    padding: 32px;
-    border-radius: 12px;
-    margin-bottom: 30px;
-    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
-}
-
-.welcome-section h2 {
-    font-size: 20.2px;
-    margin-bottom: 10px;
-}
-
-.welcome-section p {
-    font-size: 12px;
-    opacity: 0.9;
-}
-
 /* 퀵 통계 */
 .quick-stats {
     display: grid;
     grid-template-columns: repeat(auto-fit, minmax(170px, 1fr));
     gap: 15px;
+}
+
+/* 바로가기 버튼 */
+.quick-links {
+    display: flex;
+    gap: 15px;
+    margin: 20px 0;
+}
+
+.quick-link-btn {
+    flex: 1;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 16px 20px;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+    text-decoration: none;
+    border-radius: 12px;
+    font-size: 14px;
+    font-weight: 600;
+    transition: all 0.3s ease;
+    box-shadow: 0 4px 12px rgba(102, 126, 234, 0.3);
+}
+
+.quick-link-btn:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 20px rgba(102, 126, 234, 0.4);
+}
+
+.quick-link-btn i {
+    font-size: 20px;
+}
+
+.quick-link-btn span {
+    flex: 1;
 }
 
 .stat-card {
@@ -1104,6 +1121,10 @@ body {
 
     .quick-stats {
         grid-template-columns: 1fr;
+    }
+
+    .quick-links {
+        flex-direction: column;
     }
 
     .content-sections {

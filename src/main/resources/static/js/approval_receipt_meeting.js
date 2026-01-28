@@ -369,6 +369,15 @@ document.addEventListener('DOMContentLoaded', async function() {
             }
         };
 
+        // 모달 외부 클릭 시 닫기
+        if (projectModal) {
+            projectModal.addEventListener('click', function(e) {
+                if (e.target === projectModal) {
+                    closeProjectModal();
+                }
+            });
+        }
+
         // ============================================
         // 카드 선택 모달
         // ============================================
@@ -455,28 +464,131 @@ document.addEventListener('DOMContentLoaded', async function() {
         if (cardSearch) {
             cardSearch.addEventListener('input', function() {
                 const keyword = this.value.trim();
-                const filtered = projectCards.filter(card =>
-                    matchesSearch(card.cardName, keyword) ||
-                    matchesSearch(card.cardNumber || '', keyword)
+                const projectIdxInput = document.getElementById('selectedProjectIdx');
+
+                if (!projectIdxInput || !projectIdxInput.value) {
+                    // 프로젝트가 선택되지 않았을 때는 프로젝트 목록에서 검색
+                    renderProjectListInCardModal(keyword);
+                } else {
+                    // 프로젝트가 선택되었을 때는 카드 목록에서 검색
+                    const filtered = projectCards.filter(card =>
+                        matchesSearch(card.cardName, keyword) ||
+                        matchesSearch(card.cardNumber || '', keyword)
+                    );
+                    renderCardList(filtered, keyword);
+                }
+            });
+        }
+
+        // 카드 모달에서 프로젝트 목록 렌더링
+        function renderProjectListInCardModal(searchText = '') {
+            if (!cardList) return;
+
+            // 검색 필터링
+            let filtered = projects;
+            if (searchText) {
+                filtered = projects.filter(proj =>
+                    matchesSearch(proj.projectName + (proj.description || ''), searchText)
                 );
-                renderCardList(filtered, keyword);
+            }
+
+            if (filtered.length === 0) {
+                cardList.innerHTML = `
+                    <div style="text-align: center; padding: 40px; color: #94a3b8;">
+                        <i class="fas fa-search" style="font-size: 32px; margin-bottom: 12px; display: block;"></i>
+                        ${searchText ? '검색 결과가 없습니다.' : '등록된 프로젝트가 없습니다.'}
+                    </div>
+                `;
+                return;
+            }
+
+            // 헤더 메시지
+            const headerMessage = `
+                <div class="convenience-notice">
+                    <div class="notice-icon">
+                        <i class="fas fa-lightbulb"></i>
+                    </div>
+                    <div class="notice-content">
+                        <div class="notice-title">프로젝트를 먼저 선택해주세요</div>
+                        <div class="notice-desc">프로젝트를 선택하면 카드 목록이 표시됩니다</div>
+                    </div>
+                </div>
+            `;
+
+            // 프로젝트 목록
+            const projectItems = filtered.map(proj => {
+                const highlightedName = highlightText(proj.projectName, searchText);
+
+                return `
+                    <div class="project-item-in-attendee" data-project-idx="${proj.idx}">
+                        <div class="project-item-icon">
+                            <i class="fas fa-folder"></i>
+                        </div>
+                        <div class="project-item-info">
+                            <div class="project-item-name">${highlightedName}</div>
+                        </div>
+                        <div class="project-item-arrow">
+                            <i class="fas fa-chevron-right"></i>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+
+            cardList.innerHTML = headerMessage + projectItems;
+
+            // 프로젝트 클릭 이벤트
+            cardList.querySelectorAll('.project-item-in-attendee').forEach(item => {
+                item.addEventListener('click', async function() {
+                    const projectIdx = this.getAttribute('data-project-idx');
+                    const proj = projects.find(p => String(p.idx) === String(projectIdx));
+                    if (!proj) return;
+
+                    // 프로젝트 선택
+                    selectedProject = proj;
+
+                    // 프로젝트 입력 필드에 표시
+                    const commonProject = document.getElementById('common_project');
+                    if (commonProject) {
+                        commonProject.value = proj.projectName;
+                    }
+                    const selectedProjectIdx = document.getElementById('selectedProjectIdx');
+                    if (selectedProjectIdx) {
+                        selectedProjectIdx.value = proj.idx;
+                    }
+
+                    // 자동 채우기
+                    document.querySelectorAll('.auto-project').forEach(field => {
+                        field.value = proj.projectName;
+                    });
+
+                    // 프로젝트 팀원 로드
+                    await loadProjectMembers(proj.idx);
+                    // 기본 작성자 설정
+                    setDefaultAuthor();
+
+                    // 카드 목록 로드 및 표시
+                    await loadProjectCards(proj.idx);
+                    renderCardList(projectCards);
+                    if (cardSearch) cardSearch.value = '';
+                });
             });
         }
 
         window.openCardModal = function() {
             const projectIdxInput = document.getElementById('selectedProjectIdx');
 
-            if (!projectIdxInput || !projectIdxInput.value) {
-                // 과제가 선택되지 않았으면, 과제 선택 모달을 먼저 열기
-                shouldOpenCardModalAfterProject = true;
-                openProjectModal();
-                return;
-            }
-
             if (cardModal) {
                 cardModal.classList.add('show');
-                renderCardList(projectCards);
-                if (cardSearch) cardSearch.value = '';
+
+                if (!projectIdxInput || !projectIdxInput.value) {
+                    // 프로젝트가 선택되지 않았을 때 프로젝트 목록 표시
+                    renderProjectListInCardModal('');
+                    if (cardSearch) cardSearch.value = '';
+                } else {
+                    // 프로젝트가 선택되었을 때 카드 목록 표시
+                    renderCardList(projectCards);
+                    if (cardSearch) cardSearch.value = '';
+                }
             }
         };
 
@@ -513,9 +625,12 @@ document.addEventListener('DOMContentLoaded', async function() {
 
         // 회의록 참석자 정보 업데이트
         function updateMeetingMinutesAttendees() {
+            // 참석자 정렬 (내부 직급순 -> 외부 회사순/직급순)
+            const sortedAttendees = sortAttendees(currentAttendees.filter(a => a.name && a.name.trim()));
+
             // 내부/외부 참석자 구분
-            const internalAttendees = currentAttendees.filter(a => a.name && a.name.trim() && !String(a.id).startsWith('ext_'));
-            const externalAttendees = currentAttendees.filter(a => a.name && a.name.trim() && String(a.id).startsWith('ext_'));
+            const internalAttendees = sortedAttendees.filter(a => a.type === 'internal');
+            const externalAttendees = sortedAttendees.filter(a => a.type === 'external');
 
             let allAttendeesText = '';
 
@@ -539,23 +654,20 @@ document.addEventListener('DOMContentLoaded', async function() {
                 field.textContent = allAttendeesText;
             });
 
-            // 참석자 명단 테이블 업데이트 (내부 + 외부 모두)
+            // 참석자 명단 테이블 업데이트 (정렬된 순서대로)
             const nameFields = document.querySelectorAll('.attendee-sig-name');
             const deptFields = document.querySelectorAll('.attendee-sig-dept');
 
             nameFields.forEach(field => field.value = '');
             deptFields.forEach(field => field.value = '');
 
-            const allAttendees = [...internalAttendees, ...externalAttendees];
-
-            allAttendees.forEach((attendee, idx) => {
+            sortedAttendees.forEach((attendee, idx) => {
                 if (nameFields[idx]) {
                     nameFields[idx].value = attendee.name;
                 }
                 if (deptFields[idx]) {
                     // 외부인력은 회사명, 내부는 파인씨앤아이
-                    const isExternal = String(attendee.id).startsWith('ext_');
-                    deptFields[idx].value = isExternal ? attendee.dept : '파인씨앤아이';
+                    deptFields[idx].value = attendee.type === 'internal' ? '파인씨앤아이' : attendee.dept;
                 }
             });
         }
@@ -571,12 +683,14 @@ document.addEventListener('DOMContentLoaded', async function() {
             const existingRows = document.querySelectorAll('.attendee-row');
             existingRows.forEach(row => row.remove());
 
+            // 참석자 정렬
+            const sortedAttendees = sortAttendees(currentAttendees);
+
             const grouped = {};
-            currentAttendees.forEach(attendee => {
-                // 외부인력 구분
-                const isExternal = String(attendee.id).startsWith('ext_');
-                const type = isExternal ? '외부' : '내부';
-                const dept = isExternal ? attendee.dept : '파인씨앤아이';
+            sortedAttendees.forEach(attendee => {
+                // 내부/외부 구분
+                const type = attendee.type === 'internal' ? '내부' : '외부';
+                const dept = attendee.type === 'internal' ? '파인씨앤아이' : attendee.dept;
 
                 const key = `${type}_${dept}`;
                 if (!grouped[key]) {
@@ -662,6 +776,40 @@ document.addEventListener('DOMContentLoaded', async function() {
             });
         }
 
+        // 참석자 정렬 함수
+        function sortAttendees(attendees) {
+            return [...attendees].sort((a, b) => {
+                // 1. 내부/외부 구분 (내부가 먼저)
+                if (a.type === 'internal' && b.type === 'external') return -1;
+                if (a.type === 'external' && b.type === 'internal') return 1;
+
+                // 2. 내부 참석자끼리는 직급순 (낮은 직급부터)
+                if (a.type === 'internal' && b.type === 'internal') {
+                    const orderA = positionOrder[a.position] || 999;
+                    const orderB = positionOrder[b.position] || 999;
+                    return orderA - orderB;
+                }
+
+                // 3. 외부 참석자끼리는 회사명 가나다순, 같은 회사면 직급순
+                if (a.type === 'external' && b.type === 'external') {
+                    const deptA = a.dept || '';
+                    const deptB = b.dept || '';
+
+                    // 회사명 비교
+                    if (deptA !== deptB) {
+                        return deptA.localeCompare(deptB, 'ko');
+                    }
+
+                    // 같은 회사면 직급순
+                    const orderA = positionOrder[a.position] || 999;
+                    const orderB = positionOrder[b.position] || 999;
+                    return orderA - orderB;
+                }
+
+                return 0;
+            });
+        }
+
         // 참석자 목록 렌더링 함수 (모달 방식)
         function renderAttendeeListInTemplate() {
             if (!attendeeList) return;
@@ -673,17 +821,31 @@ document.addEventListener('DOMContentLoaded', async function() {
                         <div>클릭하여 참석자 추가</div>
                     </div>
                 `;
+                // 참석자가 없을 때 has-attendees 클래스 제거
+                if (attendeeArea) {
+                    attendeeArea.classList.remove('has-attendees');
+                }
+                // 버튼 숨기기
+                hideAddAttendeeButton();
             } else {
-                attendeeList.innerHTML = currentAttendees.map(attendee => {
+                // 참석자 정렬
+                const sortedAttendees = sortAttendees(currentAttendees);
+
+                attendeeList.innerHTML = sortedAttendees.map(attendee => {
                     // 금액 포맷팅
                     const formattedExpense = attendee.meetingExpense
                         ? attendee.meetingExpense.toLocaleString('ko-KR') + '원'
                         : '-';
 
+                    // 외부 참석자 뱃지
+                    const externalBadge = attendee.type === 'external'
+                        ? '<span class="external-badge">외부</span>'
+                        : '';
+
                     return `
-                        <div class="trip-person-item" onclick="removeAttendeeInTemplate('${attendee.id}')">
+                        <div class="trip-person-item ${attendee.type === 'external' ? 'external-attendee' : ''}" onclick="removeAttendeeInTemplate('${attendee.id}')">
                             <div class="trip-person-info">
-                                <span class="name">${attendee.name}</span>
+                                <span class="name">${attendee.name}${externalBadge}</span>
                                 <span>${attendee.dept}</span>
                                 <span>${attendee.position}</span>
                                 <span style="color: #667eea; font-weight: 600;">${formattedExpense}</span>
@@ -693,16 +855,45 @@ document.addEventListener('DOMContentLoaded', async function() {
                             </button>
                         </div>
                     `;
-                }).join('') + `
-                    <button type="button" class="add-more-attendees-btn" onclick="openAttendeeModal()">
-                        <i class="fas fa-user-plus"></i> 참석자 추가
-                    </button>
-                `;
+                }).join('');
+
+                // 참석자가 있을 때 has-attendees 클래스 추가
+                if (attendeeArea) {
+                    attendeeArea.classList.add('has-attendees');
+                }
+                // 버튼 표시
+                showAddAttendeeButton();
             }
 
             updateProposalAttendees();
             updateMeetingMinutesAttendees();
             updateAttendeeTotalAmount(); // 참석자 금액 합계 업데이트
+        }
+
+        // 참석자 추가 버튼 표시 함수
+        function showAddAttendeeButton() {
+            if (!attendeeArea) return;
+
+            let addButton = attendeeArea.querySelector('.add-more-attendees-btn');
+            if (!addButton) {
+                addButton = document.createElement('button');
+                addButton.type = 'button';
+                addButton.className = 'add-more-attendees-btn';
+                addButton.onclick = openAttendeeModal;
+                addButton.innerHTML = '<i class="fas fa-user-plus"></i> 참석자 추가';
+                attendeeArea.appendChild(addButton);
+            }
+            addButton.style.display = 'flex';
+        }
+
+        // 참석자 추가 버튼 숨기기 함수
+        function hideAddAttendeeButton() {
+            if (!attendeeArea) return;
+
+            const addButton = attendeeArea.querySelector('.add-more-attendees-btn');
+            if (addButton) {
+                addButton.style.display = 'none';
+            }
         }
 
         // 전역으로 등록 (모달에서 접근 가능하도록)
@@ -729,14 +920,20 @@ document.addEventListener('DOMContentLoaded', async function() {
             // 합계 표시 및 색상 설정
             totalAmountEl.textContent = formattedTotal;
 
-            // 안내 메시지 요소 찾기 또는 생성
-            let warningMessageEl = document.getElementById('attendeeWarningMessage');
-            if (!warningMessageEl) {
-                warningMessageEl = document.createElement('span');
-                warningMessageEl.id = 'attendeeWarningMessage';
-                warningMessageEl.style.marginLeft = '10px';
-                warningMessageEl.style.fontSize = '14px';
-                totalAmountEl.parentNode.appendChild(warningMessageEl);
+            // 참석자 금액 합계 아래 경고 메시지 요소 찾기 또는 생성
+            let amountWarningEl = document.getElementById('amountInputWarning');
+            if (!amountWarningEl) {
+                amountWarningEl = document.createElement('div');
+                amountWarningEl.id = 'amountInputWarning';
+                amountWarningEl.style.fontSize = '13px';
+                amountWarningEl.style.marginTop = '6px';
+                amountWarningEl.style.display = 'none';
+
+                // 참석자 금액 합계 아래에 삽입
+                const totalAmountDisplay = totalAmountEl.parentNode;
+                if (totalAmountDisplay && totalAmountDisplay.parentNode) {
+                    totalAmountDisplay.parentNode.insertBefore(amountWarningEl, totalAmountDisplay.nextSibling);
+                }
             }
 
             // 색상 및 스타일 적용
@@ -745,18 +942,34 @@ document.addEventListener('DOMContentLoaded', async function() {
                 totalAmountEl.style.color = '#dc2626';
                 totalAmountEl.style.fontWeight = 'bold';
 
-                // 경고 메시지 표시
-                warningMessageEl.textContent = '참석 인원을 추가하세요';
-                warningMessageEl.style.color = '#dc2626';
-                warningMessageEl.style.fontWeight = 'bold';
-                warningMessageEl.style.display = 'inline';
+                // 사용 금액 입력란에 빨간색 테두리 표시
+                if (commonAmountInput) {
+                    commonAmountInput.style.borderColor = '#dc2626';
+                    commonAmountInput.style.borderWidth = '2px';
+                }
+
+                // 참석자 금액 합계 아래 경고 메시지 표시
+                if (amountWarningEl) {
+                    amountWarningEl.innerHTML = '<i class="fas fa-exclamation-circle"></i> 참석자를 추가해야 합니다';
+                    amountWarningEl.style.color = '#dc2626';
+                    amountWarningEl.style.fontWeight = '600';
+                    amountWarningEl.style.display = 'block';
+                }
             } else {
                 // 합계가 사용 금액과 같거나 크면 초록색
                 totalAmountEl.style.color = '#16a34a';
                 totalAmountEl.style.fontWeight = 'bold';
 
+                // 사용 금액 입력란 스타일 원상복구
+                if (commonAmountInput) {
+                    commonAmountInput.style.borderColor = '';
+                    commonAmountInput.style.borderWidth = '';
+                }
+
                 // 경고 메시지 숨김
-                warningMessageEl.style.display = 'none';
+                if (amountWarningEl) {
+                    amountWarningEl.style.display = 'none';
+                }
             }
 
             // 집행 예정 금액 업데이트 (참석자 금액 합계 그대로)
@@ -765,6 +978,9 @@ document.addEventListener('DOMContentLoaded', async function() {
                 field.textContent = formattedAmount;
             });
         }
+
+        // 전역으로 등록 (금액 버튼에서 접근 가능하도록)
+        window.updateAttendeeTotalAmount = updateAttendeeTotalAmount;
 
         // 템플릿 내에서 참석자 제거
         window.removeAttendeeInTemplate = function(attendeeId) {
@@ -1036,6 +1252,9 @@ document.addEventListener('DOMContentLoaded', async function() {
         // 초기 참석자 설정
         currentAttendees = [];
         renderAttendeeListInTemplate();
+
+        // 초기 참석자 금액 합계 업데이트
+        updateAttendeeTotalAmount();
     }
 
     // 공식 문서 양식 토글 기능
@@ -2013,9 +2232,20 @@ document.addEventListener('DOMContentLoaded', async function() {
     }
 
     // 작성자 모달 열기
-    window.openAuthorModal = function() {
+    window.openAuthorModal = async function() {
         if (authorModal) {
             authorModal.classList.add('show');
+
+            // 프로젝트가 이미 선택되어 있는지 확인
+            const projectIdxInput = document.getElementById('selectedProjectIdx');
+            if (projectIdxInput && projectIdxInput.value) {
+                // 선택된 프로젝트가 변경되었거나 팀원이 로드되지 않았으면 로드
+                const currentProjectIdx = projectIdxInput.value;
+                if (!selectedProject || String(selectedProject.idx) !== String(currentProjectIdx) || projectMembers.length === 0) {
+                    await loadProjectMembers(currentProjectIdx);
+                }
+            }
+
             renderAuthorList('');
         }
     };
@@ -2909,8 +3139,8 @@ document.addEventListener('DOMContentLoaded', async function() {
         // 천단위 쉼표 포맷팅
         amountInput.value = newAmount.toLocaleString('ko-KR');
 
-        // 공식 문서 양식에도 반영
-        updateDocumentAmount();
+        // input 이벤트 트리거 (자동 채우기 및 경고 업데이트)
+        amountInput.dispatchEvent(new Event('input'));
     };
 
     // 금액 초기화 함수
@@ -2920,24 +3150,8 @@ document.addEventListener('DOMContentLoaded', async function() {
 
         amountInput.value = '';
 
-        // 공식 문서 양식에도 반영
-        updateDocumentAmount();
+        // input 이벤트 트리거 (자동 채우기 및 경고 업데이트)
+        amountInput.dispatchEvent(new Event('input'));
     };
 
-    // 금액 입력 시 자동 포맷팅
-    const amountInput = document.getElementById('common_amount');
-    if (amountInput) {
-        amountInput.addEventListener('input', function(e) {
-            // 숫자만 추출
-            let value = e.target.value.replace(/[^\d]/g, '');
-
-            if (value) {
-                // 천단위 쉼표 추가
-                e.target.value = parseInt(value).toLocaleString('ko-KR');
-            }
-
-            // 공식 문서 양식에도 반영
-            updateDocumentAmount();
-        });
-    }
 });

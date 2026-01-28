@@ -3,6 +3,219 @@
     padding: 20px 20px 10px 20px;
 }
 
+/* ========================================
+   공통정보입력 섹션 - 여백 최소화 및 UI 개선
+   ======================================== */
+
+/* 공통 정보 섹션 컨테이너 */
+.common-info-section {
+    background: #ffffff;
+    padding: 20px;
+    margin-bottom: 20px;
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+}
+
+/* 섹션 헤더 */
+.section-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 16px;
+    padding-bottom: 10px;
+    border-bottom: 2px solid #f0f0f0;
+}
+
+.section-header h3 {
+    font-size: 14px;
+    font-weight: 700;
+    color: #1a1a1a;
+    margin: 0;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.section-header h3 i {
+    font-size: 15px;
+    color: #667eea;
+}
+
+.section-header h4 {
+    font-size: 13.5px;
+    font-weight: 700;
+    color: #333;
+    margin: 0;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.section-header h4 i {
+    color: #667eea;
+}
+
+/* 폼 그리드 */
+.form-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 14px;
+}
+
+.form-group {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+}
+
+.form-group.full-width {
+    grid-column: 1 / -1;
+}
+
+.form-group label {
+    font-size: 13px;
+    font-weight: 600;
+    color: #334155;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.form-group label i {
+    color: #667eea;
+    font-size: 13px;
+}
+
+.required-mark {
+    color: #ef5350;
+    font-weight: 700;
+    font-size: 13px;
+}
+
+/* 폼 입력 필드 */
+.form-input {
+    width: 100%;
+    padding: 10px 14px;
+    font-size: 14px;
+    border: 1.5px solid #e2e8f0;
+    border-radius: 8px;
+    transition: all 0.2s ease;
+    background: white;
+}
+
+.form-input:hover {
+    border-color: #cbd5e1;
+}
+
+.form-input:focus {
+    outline: none;
+    border-color: #667eea;
+    box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+}
+
+.form-input::placeholder {
+    color: #94a3b8;
+}
+
+/* 텍스트 영역 */
+.form-textarea {
+    width: 100%;
+    padding: 10px 14px;
+    font-size: 14px;
+    border: 1.5px solid #e2e8f0;
+    border-radius: 8px;
+    transition: all 0.2s ease;
+    resize: vertical;
+    font-family: inherit;
+    line-height: 1.6;
+}
+
+.form-textarea:hover {
+    border-color: #cbd5e1;
+}
+
+.form-textarea:focus {
+    outline: none;
+    border-color: #667eea;
+    box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+}
+
+.form-textarea::placeholder {
+    color: #94a3b8;
+}
+
+/* 야근 인원 영역 */
+.attendee-area {
+    min-height: 50px;
+    max-height: 280px;
+    padding: 12px;
+    border: 2px dashed #e2e8f0;
+    border-radius: 10px;
+    cursor: pointer;
+    transition: all 0.2s;
+    background: #fafbfc;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.attendee-area:hover {
+    border-color: #667eea;
+    background: #f8fafc;
+}
+
+.attendee-area.has-persons {
+    cursor: default;
+}
+
+.attendee-area.has-persons:hover {
+    border-color: #e2e8f0;
+    background: #fafbfc;
+}
+
+.attendee-list {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 8px;
+    overflow-y: auto;
+    flex: 1;
+    padding-right: 4px;
+}
+
+.attendee-list::-webkit-scrollbar {
+    width: 6px;
+}
+
+.attendee-list::-webkit-scrollbar-track {
+    background: transparent;
+    border-radius: 3px;
+}
+
+.attendee-list::-webkit-scrollbar-thumb {
+    background: #cbd5e1;
+    border-radius: 3px;
+}
+
+.attendee-list::-webkit-scrollbar-thumb:hover {
+    background: #94a3b8;
+}
+
+.empty-attendee-state {
+    grid-column: 1 / -1;
+    text-align: center;
+    color: #94a3b8;
+    font-size: 13px;
+    padding: 16px 8px;
+}
+
+.empty-attendee-state i {
+    font-size: 24px;
+    margin-bottom: 8px;
+    display: block;
+    color: #cbd5e1;
+}
+
 /* 기본 스타일 */
 * {
     -webkit-tap-highlight-color: transparent;
@@ -72,7 +285,7 @@ div:focus {
 
 /* 사이드바 섹션 */
 .sidebar-section {
-    padding: 15px;
+    padding: 20px;
 }
 
 /* 사이드바 헤더 */
@@ -351,26 +564,6 @@ div:focus {
     width: 100%;
 }
 
-/* ========================================
-   공통정보입력 섹션 - 여백 최소화 및 UI 개선
-   ======================================== */
-
-/* 공통 정보 섹션 컨테이너 */
-.common-info-section {
-    background: #ffffff;
-    border: 1px solid #e2e8f0;
-    border-radius: 8px;
-    padding: 0;
-    margin-bottom: 20px;
-    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
-    transition: box-shadow 0.3s ease;
-    overflow: hidden;
-    max-width: 1400px; /* 가로 넓이 확장 */
-}
-
-.common-info-section:hover {
-    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
-}
 
 /* 섹션 헤더 */
 .section-header-common {
@@ -830,7 +1023,7 @@ div h2{
     background: #f8f9fa;
     border: 2px solid #e8e8e8;
     border-radius: 10px;
-    padding: 15px;
+    padding: 20px;
 }
 
 .file-upload-area {
@@ -913,26 +1106,6 @@ div h2{
     color: #d32f2f;
 }
 
-/* 제출 버튼 */
-.submit-actions {
-    display: flex;
-    justify-content: flex-end;
-    gap: 12px;
-    padding-top: 10px;
-}
-
-.btn-lg {
-    padding: 14px 28px;
-    font-size: 12.7px;
-    font-weight: 600;
-    border-radius: 8px;
-    cursor: pointer;
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    transition: all 0.3s ease;
-    border: none;
-}
 
 .btn-primary {
     background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
@@ -1192,14 +1365,6 @@ div h2{
         max-height: 200px;
     }
 
-    .submit-actions {
-        flex-direction: column-reverse;
-    }
-
-    .submit-actions button {
-        width: 100%;
-        justify-content: center;
-    }
 
     .form-table th {
         width: 100px;
@@ -1343,92 +1508,66 @@ div h2{
     background: #f8f9ff;
 }
 
-/* 공식 문서 양식 토글 스타일 */
-.document-form-wrapper {
-    background: white;
-    border: 2px solid #e8e8e8;
+/* 문서 미리보기 토글 버튼 */
+.document-preview-toggle {
+    margin-top: 20px;
+}
+
+.toggle-btn {
+    width: 100%;
+    padding: 14px 20px;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+    border: none;
     border-radius: 10px;
-    overflow: hidden;
-    margin-bottom: 20px;
-}
-
-.document-form-header {
-    background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
-    padding: 16px 20px;
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    cursor: pointer;
-    transition: all 0.3s ease;
-    border-bottom: 2px solid #e8e8e8;
-}
-
-.document-form-header:hover {
-    background: linear-gradient(135deg, #e9ecef 0%, #dee2e6 100%);
-}
-
-.document-form-header h3 {
-    margin: 0;
-    font-size: 16px;
-    font-weight: 600;
-    color: #1a237e;
-    display: flex;
-    align-items: center;
-    gap: 10px;
-}
-
-.document-form-header h3 i {
-    color: #667eea;
-}
-
-.btn-toggle-form {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    background: white;
-    border: 2px solid #667eea;
-    color: #667eea;
-    padding: 8px 16px;
-    border-radius: 6px;
-    cursor: pointer;
     font-size: 14px;
     font-weight: 600;
-    transition: all 0.2s ease;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+    transition: all 0.3s;
+    box-shadow: 0 4px 12px rgba(102, 126, 234, 0.3);
 }
 
-.btn-toggle-form:hover {
-    background: #667eea;
-    color: white;
+.toggle-btn:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 16px rgba(102, 126, 234, 0.4);
 }
 
-.btn-toggle-form i {
-    transition: transform 0.3s ease;
+.toggle-icon {
+    transition: transform 0.3s;
 }
 
-.document-form-wrapper.collapsed .btn-toggle-form i {
+.toggle-btn.active .toggle-icon {
     transform: rotate(180deg);
 }
 
-.document-form-wrapper.collapsed .btn-toggle-form span::before {
-    content: '펼치기';
-}
-
-.document-form-wrapper:not(.collapsed) .btn-toggle-form span::before {
-    content: '접기';
-}
-
-/* 문서 양식 내용 */
-.document-form-content {
+/* 문서 미리보기 영역 */
+.document-form-wrapper {
+    margin-top: 16px;
     background: white;
-    padding: 24px;
-    max-height: 10000px;
-    overflow: hidden;
-    transition: max-height 0.3s ease, padding 0.3s ease;
+    border-radius: 12px;
+    padding: 30px;
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.08);
+    max-height: none;
+    overflow: visible;
+    transition: all 0.4s ease-in-out;
 }
 
-.document-form-wrapper.collapsed .document-form-content {
+.document-form-wrapper.collapsed {
     max-height: 0;
-    padding: 0 24px;
+    padding: 0;
+    margin-top: 0;
+    opacity: 0;
+    box-shadow: none;
+    overflow: hidden;
+}
+
+.document-form {
+    background: white;
+    padding: 0;
 }
 
 /* 야근인원 아이템 스타일 */

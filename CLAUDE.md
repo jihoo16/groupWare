@@ -236,3 +236,13 @@ Key libraries (see `build.gradle.kts` for versions):
 ### State Management
 - Client-side: DOM `data-*` attributes for filters and state
 - Future server-side: Session or Spring Security context for user state
+
+## Workflow Preferences
+
+### Git Commit Policy
+**IMPORTANT**: Do NOT automatically create git commits after making changes. Only create commits when explicitly requested by the user with commands like "commit 해줘" or "커밋해줘".
+
+- Wait for explicit user request before committing
+- Never auto-commit after completing a task
+- User will decide when and how to commit changes
+- This rule applies across all sessions

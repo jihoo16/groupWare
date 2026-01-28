@@ -72,7 +72,7 @@ div:focus {
 
 /* 사이드바 섹션 */
 .sidebar-section {
-    padding: 15px;
+    padding: 20px;
 }
 
 /* 사이드바 헤더 */
@@ -235,7 +235,6 @@ div:focus {
     border-radius: 12px;
     box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
     padding: 24px;
-    padding-bottom: 100px; /* 하단 고정 버튼 공간 확보 */
     overflow-y: auto;
     display: flex;
     flex-direction: column;
@@ -499,12 +498,16 @@ div:focus {
 /* 참석자 영역 */
 .attendee-area {
     min-height: 50px;
+    max-height: 280px;
     padding: 12px;
     border: 2px dashed #e2e8f0;
     border-radius: 10px;
     cursor: pointer;
     transition: all 0.2s;
     background: #fafbfc;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
 }
 
 .attendee-area:hover {
@@ -512,13 +515,46 @@ div:focus {
     background: #f8fafc;
 }
 
+/* 참석자가 있을 때는 cursor pointer 제거 */
+.attendee-area.has-attendees {
+    cursor: default;
+}
+
+.attendee-area.has-attendees:hover {
+    border-color: #e2e8f0;
+    background: #fafbfc;
+}
+
 .attendee-list {
-    display: flex;
-    flex-direction: column;
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
     gap: 8px;
+    overflow-y: auto;
+    flex: 1;
+    padding-right: 4px;
+}
+
+/* 스크롤바 스타일 */
+.attendee-list::-webkit-scrollbar {
+    width: 6px;
+}
+
+.attendee-list::-webkit-scrollbar-track {
+    background: transparent;
+    border-radius: 3px;
+}
+
+.attendee-list::-webkit-scrollbar-thumb {
+    background: #cbd5e1;
+    border-radius: 3px;
+}
+
+.attendee-list::-webkit-scrollbar-thumb:hover {
+    background: #94a3b8;
 }
 
 .empty-attendee-state {
+    grid-column: 1 / -1;
     text-align: center;
     color: #94a3b8;
     font-size: 13px;
@@ -1146,7 +1182,7 @@ div h2{
     background: #f8f9fa;
     border: 2px solid #e8e8e8;
     border-radius: 10px;
-    padding: 15px;
+    padding: 20px;
 }
 
 .file-upload-area {
@@ -1229,41 +1265,6 @@ div h2{
     color: #d32f2f;
 }
 
-/* 제출 버튼 - 하단 고정 */
-.submit-actions {
-    display: flex;
-    justify-content: flex-end;
-    gap: 12px;
-    padding: 16px 24px;
-    background: white;
-    border-top: 2px solid #e8e8e8;
-    position: fixed;
-    bottom: 0;
-    left: 380px; /* 사이드바(60px) + 여백(20px) + 템플릿 사이드바(280px) + 여백(20px) */
-    right: 25px;
-    z-index: 100;
-    box-shadow: 0 -4px 12px rgba(0, 0, 0, 0.08);
-    border-radius: 12px 12px 0 0;
-    transition: left 0.3s ease;
-}
-
-/* 사이드바 호버 시 버튼 위치 조정 */
-.sidebar:hover ~ .main-content .submit-actions {
-    left: 500px; /* 사이드바(250px) + 여백(20px) + 템플릿 사이드바(280px) */
-}
-
-.btn-lg {
-    padding: 14px 28px;
-    font-size: 12.7px;
-    font-weight: 600;
-    border-radius: 8px;
-    cursor: pointer;
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    transition: all 0.3s ease;
-    border: none;
-}
 
 .btn-primary {
     background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
@@ -1352,7 +1353,6 @@ div h2{
 .modal-item-list {
     display: flex;
     flex-direction: column;
-    gap: 8px;
     max-height: 500px;
     overflow-y: auto;
 }
@@ -1362,10 +1362,15 @@ div h2{
     align-items: center;
     gap: 12px;
     padding: 12px;
+    margin-bottom: 8px;
     border: 1px solid #e2e8f0;
     border-radius: 8px;
     cursor: pointer;
     transition: all 0.2s;
+}
+
+.modal-item:last-child {
+    margin-bottom: 0;
 }
 
 .modal-item:hover {
@@ -1510,8 +1515,9 @@ div h2{
 
 .modal-body {
     padding: 20px;
-    overflow-y: auto;
     flex: 1;
+    display: flex;
+    flex-direction: column;
 }
 
 .modal-search {
@@ -1588,7 +1594,6 @@ div h2{
     background: #ffffff;
     border: 1px solid #e2e8f0;
     border-radius: 6px;
-    margin-bottom: 6px;
     font-size: 12px;
     transition: all 0.2s ease;
     cursor: pointer;
@@ -1598,6 +1603,32 @@ div h2{
     border-color: #ef4444;
     background: #fef2f2;
     transform: translateX(-2px);
+}
+
+/* 외부 참석자 항목 */
+.trip-person-item.external-attendee {
+    background: #fef9f5;
+    border-color: #fed7aa;
+}
+
+.trip-person-item.external-attendee:hover {
+    border-color: #ef4444;
+    background: #fef2f2;
+}
+
+/* 외부 참석자 뱃지 */
+.external-badge {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    margin-left: 6px;
+    padding: 2px 6px;
+    background: #fb923c;
+    color: white;
+    font-size: 9px;
+    font-weight: 700;
+    border-radius: 3px;
+    vertical-align: middle;
 }
 
 .trip-person-info {
@@ -1669,7 +1700,6 @@ div h2{
 .add-more-attendees-btn {
     width: 100%;
     padding: 6px 12px;
-    margin-top: 6px;
     background: #e0e7ff;
     color: #5b21b6;
     border: 1px dashed #a78bfa;
@@ -1682,6 +1712,7 @@ div h2{
     align-items: center;
     justify-content: center;
     gap: 4px;
+    flex: 0 0 auto;
 }
 
 .add-more-attendees-btn:hover {
@@ -1793,21 +1824,6 @@ div h2{
         max-height: 200px;
     }
 
-    .submit-actions {
-        flex-direction: column-reverse;
-        left: 0;
-        right: 0;
-        border-radius: 0;
-    }
-
-    .sidebar:hover ~ .main-content .submit-actions {
-        left: 0;
-    }
-
-    .submit-actions button {
-        width: 100%;
-        justify-content: center;
-    }
 
     .form-table th {
         width: 100px;

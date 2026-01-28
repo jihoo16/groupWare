@@ -13,6 +13,10 @@
                 <h1 class="page-title"><i class="fas fa-receipt"></i> 문서 작성 > 연구비 증빙 - 출장</h1>
             </div>
             <div class="header-right">
+                <button class="btn-primary" id="submitBtn">
+                    <i class="fas fa-save"></i>
+                    저장하기
+                </button>
                 <button class="btn-secondary" onclick="history.back()">
                     <i class="fas fa-arrow-left"></i>
                     돌아가기
@@ -29,7 +33,7 @@
                 <div class="editor-area">
 
                     <!-- 문서 양식 (동적 로드) -->
-                    <div class="document-form" id="documentForm">
+                    <div id="documentForm">
                         <!-- 템플릿이 여기에 동적으로 로드됨 -->
                     </div>
 
@@ -38,69 +42,88 @@
                         <!-- 영수증 처리 템플릿 - 출장 -->
                         <div id="template-receipt-trip">
                             <div class="common-info-section">
-                                <div class="section-header-common">
-                                    <h4><i class="fas fa-edit"></i> 연구비 증빙 - 출장 공통 정보 입력</h4>
+                                <div class="section-header">
+                                    <h3><i class="fas fa-edit"></i> 기본 정보</h3>
                                 </div>
-                                <table class="form-table common-info-table receipt-trip-table">
-                                    <tr>
-                                        <th style="width: 150px;">과제명</th>
-                                        <td colspan="3">
-                                            <select id="trip_project" style="width: 100%; padding: 8px; border: 1px solid #ddd; border-radius: 4px;">
-                                                <option value="">과제를 선택하세요</option>
+
+                                <!-- 과제명 -->
+                                <div class="form-group full-width">
+                                    <label for="trip_project">
+                                        <i class="fas fa-project-diagram"></i> 과제명
+                                        <span class="required-mark">*</span>
+                                    </label>
+                                    <select id="trip_project" class="form-input">
+                                        <option value="">과제를 선택하세요</option>
+                                    </select>
+                                </div>
+
+                                <!-- 출장인원 -->
+                                <div class="form-group full-width">
+                                    <label>
+                                        <i class="fas fa-users"></i> 출장인원
+                                        <span class="required-mark">*</span>
+                                    </label>
+                                    <div id="tripPersonArea" class="attendee-area">
+                                        <div id="tripPersonList" class="attendee-list">
+                                            <div class="empty-attendee-state">
+                                                <i class="fas fa-user-plus"></i>
+                                                <div>클릭하여 출장인원 추가</div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <!-- 출장지 & 출장기간 -->
+                                <div class="form-grid">
+                                    <div class="form-group">
+                                        <label for="trip_location">
+                                            <i class="fas fa-map-marker-alt"></i> 출장지
+                                            <span class="required-mark">*</span>
+                                        </label>
+                                        <input type="text" id="trip_location" class="form-input" placeholder="출장지를 입력하세요">
+                                    </div>
+                                    <div class="form-group">
+                                        <label for="trip_date">
+                                            <i class="fas fa-calendar-day"></i> 출장기간
+                                            <span class="required-mark">*</span>
+                                        </label>
+                                        <div style="display: flex; gap: 8px; align-items: center;">
+                                            <input type="date" id="trip_date" class="form-input" style="flex: 1; min-width: 0;">
+                                            <select id="trip_duration" class="form-input" style="width: 100px;">
+                                                <option value="0">당일</option>
+                                                <option value="1">1박</option>
+                                                <option value="2">2박</option>
+                                                <option value="3">3박</option>
                                             </select>
-                                        </td>
-                                    </tr>
-                                    <tr>
-                                        <th style="padding-top: 14px;">출장인원</th>
-                                        <td colspan="3">
-                                            <div id="tripPersonArea"
-                                                 style="min-height: 60px; padding: 12px; border: 2px dashed #e2e8f0; border-radius: 8px; cursor: pointer; transition: all 0.2s; background: #fafbfc;">
-                                                <div id="tripPersonList"
-                                                     style="display: flex; flex-direction: column; gap: 8px;">
-                                                    <div style="text-align: center; color: #94a3b8; font-size: 13px;">
-                                                        <i class="fas fa-user-plus"
-                                                           style="font-size: 20px; margin-bottom: 6px;"></i>
-                                                        <div>클릭하여 출장인원 추가</div>
-                                                    </div>
-                                                </div>
-                                            </div>
-                                        </td>
-                                    </tr>
-                                    <tr>
-                                        <th>출장지</th>
-                                        <td><input type="text" id="trip_location" placeholder="출장지를 입력하세요"></td>
-                                        <th>출장기간</th>
-                                        <td>
-                                            <div style="display: flex; gap: 8px; align-items: center;">
-                                                <input type="date" id="trip_date" style="flex: 1; min-width: 0;">
-                                                <select id="trip_duration" style="width: 100px;">
-                                                    <option value="0">당일</option>
-                                                    <option value="1">1박</option>
-                                                    <option value="2">2박</option>
-                                                    <option value="3">3박</option>
-                                                </select>
-                                            </div>
-                                        </td>
-                                    </tr>
-                                    <tr>
-                                        <th>출장목적</th>
-                                        <td colspan="3"><textarea id="trip_purpose" placeholder="출장 목적을 입력하세요"
-                                                                  rows="3"></textarea></td>
-                                    </tr>
-                                    <tr>
-                                        <th>작성자</th>
-                                        <td colspan="3">
-                                            <input type="text" id="trip_reporter" placeholder="" value="">
-                                        </td>
-                                    </tr>
-                                    <tr>
-                                        <th style="white-space: nowrap;">출장 내용<br>및 결과</th>
-                                        <td colspan="3">
-                                            <textarea id="trip_result" placeholder="출장 내용 및 결과를 입력하세요"
-                                                      rows="5"></textarea>
-                                        </td>
-                                    </tr>
-                                </table>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <!-- 출장목적 -->
+                                <div class="form-group full-width">
+                                    <label for="trip_purpose">
+                                        <i class="fas fa-bullseye"></i> 출장목적
+                                        <span class="required-mark">*</span>
+                                    </label>
+                                    <textarea id="trip_purpose" class="form-textarea" placeholder="출장 목적을 입력하세요" rows="3"></textarea>
+                                </div>
+
+                                <!-- 작성자 -->
+                                <div class="form-group full-width">
+                                    <label for="trip_reporter">
+                                        <i class="fas fa-user-edit"></i> 작성자
+                                    </label>
+                                    <input type="text" id="trip_reporter" class="form-input" placeholder="작성자명" readonly>
+                                </div>
+
+                                <!-- 출장 내용 및 결과 -->
+                                <div class="form-group full-width">
+                                    <label for="trip_result">
+                                        <i class="fas fa-file-alt"></i> 출장 내용 및 결과
+                                        <span class="required-mark">*</span>
+                                    </label>
+                                    <textarea id="trip_result" class="form-textarea" placeholder="출장 내용 및 결과를 입력하세요" rows="5"></textarea>
+                                </div>
 
                                 <!-- 날짜별 비용 입력 테이블 -->
                                 <table class="form-table common-info-table daily-expense-table" id="dailyExpenseTable"
@@ -135,16 +158,33 @@
                                 </table>
                             </div>
 
-                            <!-- 공식 문서 양식 -->
-                            <div class="document-form-wrapper">
-                                <div class="document-form-header" id="documentFormToggle">
-                                    <h3><i class="fas fa-file-alt"></i> 공식 문서 양식</h3>
-                                    <button class="btn-toggle-form">
-                                        <i class="fas fa-chevron-up"></i>
-                                        <span></span>
-                                    </button>
+                            <!-- 첨부파일 -->
+                            <div class="attachment-section">
+                                <div class="section-header">
+                                    <h4><i class="fas fa-paperclip"></i> 첨부파일</h4>
                                 </div>
-                                <div class="document-form-content" id="documentFormContent">
+                                <div class="file-upload-area" id="fileUploadArea">
+                                    <input type="file" id="fileInput" multiple hidden>
+                                    <label for="fileInput" class="file-upload-label">
+                                        <i class="fas fa-cloud-upload-alt"></i>
+                                        <span>파일을 선택하거나 드래그하세요</span>
+                                        <small>최대 10MB, 최대 5개</small>
+                                    </label>
+                                </div>
+                                <div class="file-list" id="fileList"></div>
+                            </div>
+
+                            <!-- 공식 문서 양식 -->
+                            <div class="document-preview-toggle">
+                                <button class="toggle-btn" id="documentFormToggle">
+                                    <i class="fas fa-file-alt"></i>
+                                    공식 문서 미리보기
+                                    <i class="fas fa-chevron-down toggle-icon"></i>
+                                </button>
+                            </div>
+
+                            <div class="document-form-wrapper collapsed">
+                                <div class="document-form" id="documentFormContent">
                                     <!-- 출장품의서 -->
                                     <div style="background: white; border: 2px solid #e0e0e0; border-radius: 8px; padding: 30px; margin: 0 auto 30px; max-width: 881px">
                                         <h2 class="doc-title" style="font-size: 30px; font-weight: bold;">출 장 품 의 서</h2>
@@ -363,45 +403,6 @@
                         </div>
                     </div>
 
-                    <!-- 첨부파일 -->
-                    <div class="attachment-section">
-                        <div class="section-header">
-                            <h4><i class="fas fa-paperclip"></i> 첨부파일</h4>
-                        </div>
-                        <div class="file-upload-area" id="fileUploadArea">
-                            <input type="file" id="fileInput" multiple hidden>
-                            <label for="fileInput" class="file-upload-label">
-                                <i class="fas fa-cloud-upload-alt"></i>
-                                <span>파일을 선택하거나 드래그하세요</span>
-                                <small>최대 10MB, 최대 5개</small>
-                            </label>
-                        </div>
-                        <div class="file-list" id="fileList"></div>
-                    </div>
-
-                    <!-- 제출 버튼 -->
-                    <div class="submit-actions">
-                        <button class="btn-danger btn-lg" id="deleteBtn" style="display: none;">
-                            <i class="fas fa-trash-alt"></i>
-                            삭제
-                        </button>
-                        <button class="btn-secondary btn-lg" onclick="history.back()">
-                            <i class="fas fa-times"></i>
-                            취소
-                        </button>
-                        <button class="btn-outline btn-lg" id="savePdfBtn">
-                            <i class="fas fa-file-pdf"></i>
-                            PDF 저장
-                        </button>
-                        <button class="btn-primary btn-lg" id="submitBtn">
-                            <i class="fas fa-paper-plane"></i>
-                            저장
-                        </button>
-                        <button class="btn-primary btn-lg" id="updateBtn" style="display: none;">
-                            <i class="fas fa-edit"></i>
-                            수정
-                        </button>
-                    </div>
                 </div>
             </div>
         </div>
