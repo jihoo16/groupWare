@@ -1,5 +1,6 @@
 package com.pinecni.erp.config;
 
+import com.pinecni.erp.interceptor.FirstLoginInterceptor;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.context.annotation.Bean;
@@ -17,11 +18,13 @@ import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
 public class WebMvcConfig implements WebMvcConfigurer {
 
     private final AuthenticationInterceptor authenticationInterceptor;
+    private final FirstLoginInterceptor firstLoginInterceptor;
 
     @Override
     public void addInterceptors(InterceptorRegistry registry) {
-        log.info("Registering authentication interceptor");
+        log.info("Registering interceptors");
 
+        // 1. 인증 인터셉터 (로그인 체크)
         registry.addInterceptor(authenticationInterceptor)
                 .addPathPatterns("/**")  // 모든 경로에 적용
                 .excludePathPatterns(
@@ -33,9 +36,24 @@ public class WebMvcConfig implements WebMvcConfigurer {
                         "/images/**",       // 이미지 정적 리소스
                         "/favicon.ico",     // 파비콘
                         "/error"            // 에러 페이지
-                );
+                )
+                .order(1);
 
-        log.info("Authentication interceptor registered successfully");
+        // 2. 최초 로그인 인터셉터 (비밀번호 변경 강제)
+        registry.addInterceptor(firstLoginInterceptor)
+                .addPathPatterns("/**")  // 모든 경로에 적용
+                .excludePathPatterns(
+                        "/login",           // 로그인 페이지
+                        "/css/**",          // CSS 정적 리소스
+                        "/js/**",           // JavaScript 정적 리소스
+                        "/images/**",       // 이미지 정적 리소스
+                        "/fonts/**",        // 폰트 정적 리소스
+                        "/favicon.ico",     // 파비콘
+                        "/error"            // 에러 페이지
+                )
+                .order(2);
+
+        log.info("Interceptors registered successfully");
     }
 
     /**
