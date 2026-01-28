@@ -1,5 +1,6 @@
 package com.pinecni.erp.api.auth.service;
 
+import com.pinecni.erp.api.auth.dto.ChangePasswordRequestDTO;
 import com.pinecni.erp.api.auth.dto.LoginRequestDTO;
 import com.pinecni.erp.api.auth.dto.LoginResponseDTO;
 import com.pinecni.erp.api.code.repository.CodeRepository;
@@ -12,6 +13,8 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.security.MessageDigest;
+import java.security.NoSuchAlgorithmException;
 import java.time.LocalDateTime;
 
 /**
@@ -28,15 +31,16 @@ public class AuthServiceImpl implements AuthService {
     private final CodeRepository codeRepository;
 
     @Override
-    @Transactional
+    @Transactional(readOnly = false)
     public LoginResponseDTO login(LoginRequestDTO loginRequest) {
-        log.info("Login attempt - empId: {}", loginRequest.getEmpId());
+        log.info("Login attempt - identifier: {}", loginRequest.getEmpId());
 
-        // 1. 사용자 조회
+        // 1. 사용자 조회 (사번 또는 이메일)
         User user = userRepository.findByEmpId(loginRequest.getEmpId())
+                .or(() -> userRepository.findByEmpEmail(loginRequest.getEmpId()))
                 .orElseThrow(() -> {
                     log.warn("Login failed - User not found: {}", loginRequest.getEmpId());
-                    return new IllegalArgumentException("사번 또는 비밀번호가 올바르지 않습니다.");
+                    return new IllegalArgumentException("사번/이메일 또는 비밀번호가 올바르지 않습니다.");
                 });
 
         // 2. 비밀번호 검증 (Salt 방식)
@@ -48,7 +52,7 @@ public class AuthServiceImpl implements AuthService {
 
         if (!isPasswordValid) {
             log.warn("Login failed - Invalid password for user: {}", loginRequest.getEmpId());
-            throw new IllegalArgumentException("사번 또는 비밀번호가 올바르지 않습니다.");
+            throw new IllegalArgumentException("사번/이메일 또는 비밀번호가 올바르지 않습니다.");
         }
 
         // 3. 재직 상태 확인
@@ -64,11 +68,16 @@ public class AuthServiceImpl implements AuthService {
             throw new IllegalArgumentException("삭제된 사용자입니다. 관리자에게 문의하세요.");
         }
 
-        // 5. 최종 로그인 시간 업데이트
-        user.setLastLoginDate(LocalDateTime.now());
-        userRepository.save(user);
+        // 5. 최초 로그인 여부 체크 (last_login_date가 null인 경우)
+        boolean isFirstLogin = (user.getLastLoginDate() == null);
 
-        // 6. 응답 DTO 생성
+        // 6. 최종 로그인 시간 업데이트
+        LocalDateTime loginTime = LocalDateTime.now();
+        user.setLastLoginDate(loginTime);
+        userRepository.save(user);
+        log.info("Updated last login date for user: {} to {}", user.getEmpId(), loginTime);
+
+        // 7. 응답 DTO 생성
         LoginResponseDTO response = LoginResponseDTO.builder()
                 .idx(user.getIdx())
                 .empId(user.getEmpId())
@@ -77,6 +86,7 @@ public class AuthServiceImpl implements AuthService {
                 .empPosition(user.getEmpPosition())
                 .empEmail(user.getEmpEmail())
                 .isAdmin(user.getIsAdmin())
+                .isFirstLogin(isFirstLogin)
                 .message("로그인 성공")
                 .build();
 
@@ -94,5 +104,61 @@ public class AuthServiceImpl implements AuthService {
 
         log.info("Login successful - userIdx : {}, empId: {}, empName: {}", user.getIdx(), user.getEmpId(), user.getEmpName());
         return response;
+    }
+
+    @Override
+    @Transactional(readOnly = false)
+    public void changePassword(Long userIdx, ChangePasswordRequestDTO request) {
+        log.info("Change password attempt for userIdx: {}", userIdx);
+
+        // 1. 사용자 조회
+        User user = userRepository.findById(userIdx)
+                .orElseThrow(() -> {
+                    log.warn("User not found: {}", userIdx);
+                    return new IllegalArgumentException("사용자를 찾을 수 없습니다.");
+                });
+
+        // 2. 현재 비밀번호 검증
+        boolean isCurrentPasswordValid = userService.verifyPassword(
+                request.getCurrentPassword(),
+                user.getPassword(),
+                user.getPasswordHash()
+        );
+
+        if (!isCurrentPasswordValid) {
+            log.warn("Current password verification failed for userIdx: {}", userIdx);
+            throw new IllegalArgumentException("현재 비밀번호가 일치하지 않습니다.");
+        }
+
+        // 3. 새 비밀번호와 확인 비밀번호 일치 확인
+        if (!request.getNewPassword().equals(request.getConfirmPassword())) {
+            log.warn("New password and confirm password do not match for userIdx: {}", userIdx);
+            throw new IllegalArgumentException("새 비밀번호와 비밀번호 확인이 일치하지 않습니다.");
+        }
+
+        // 4. 새 비밀번호 해시 생성 (Salt 방식)
+        try {
+            String salt = user.getPasswordHash(); // 기존 salt 재사용
+            MessageDigest md = MessageDigest.getInstance("SHA-256");
+            md.update(salt.getBytes());
+            md.update(request.getNewPassword().getBytes());
+
+            byte[] hashedBytes = md.digest();
+            StringBuilder sb = new StringBuilder();
+            for (byte b : hashedBytes) {
+                sb.append(String.format("%02x", b));
+            }
+            String hashedPassword = sb.toString();
+
+            // 5. 비밀번호 업데이트
+            user.setPassword(hashedPassword);
+            userRepository.save(user);
+
+            log.info("Password changed successfully for userIdx: {}", userIdx);
+
+        } catch (NoSuchAlgorithmException e) {
+            log.error("Failed to hash password", e);
+            throw new RuntimeException("비밀번호 암호화 중 오류가 발생했습니다.");
+        }
     }
 }
