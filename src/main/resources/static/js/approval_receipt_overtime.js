@@ -4,6 +4,10 @@ document.addEventListener('DOMContentLoaded', async function() {
     let selectedApprovers = [];
     let selectedFiles = [];
     let selectedEmployee = null;
+    let projects = []; // 내가 참여한 프로젝트 목록
+    let selectedProject = null; // 선택된 프로젝트
+    let projectMembers = []; // 선택된 프로젝트의 참여인원
+    let tempSelectedOvertimePersons = []; // 모달에서 임시 선택된 인원
 
     // DOM 요소
     const templateTreeHeaders = document.querySelectorAll('.tree-node-header[data-template]');
@@ -43,6 +47,170 @@ document.addEventListener('DOMContentLoaded', async function() {
             console.error('직원 데이터 로드 오류:', error);
             showError('직원 데이터를 불러오는데 오류가 발생했습니다.');
         }
+    }
+
+    // ============================================
+    // 내가 참여한 프로젝트 로드
+    // ============================================
+    async function loadMyProjects() {
+        const currentUserIdx = window.CURRENT_USER?.idx;
+        if (!currentUserIdx) return;
+
+        try {
+            const response = await fetch(`/api/projects?memberIdx=${currentUserIdx}`);
+            if (response.ok) {
+                projects = await response.json();
+                console.log('내 프로젝트 로드 완료:', projects.length + '건');
+            } else {
+                console.error('프로젝트 목록 로드 실패');
+            }
+        } catch (error) {
+            console.error('프로젝트 목록 로드 오류:', error);
+        }
+    }
+
+    // ============================================
+    // 프로젝트 참여인원 로드
+    // ============================================
+    async function loadProjectMembers(projectIdx) {
+        if (!projectIdx) {
+            projectMembers = [];
+            return;
+        }
+        try {
+            const response = await fetch(`/api/projects/${projectIdx}`);
+            const contentType = response.headers.get('content-type');
+            if (response.ok && contentType && contentType.includes('application/json')) {
+                const project = await response.json();
+                projectMembers = project.projectMembers || [];
+                console.log('프로젝트 참여인원 로드 완료:', projectMembers.length + '명');
+            } else {
+                console.error('프로젝트 참여인원 로드 실패');
+                projectMembers = [];
+            }
+        } catch (error) {
+            console.error('프로젝트 참여인원 로드 오류:', error);
+            projectMembers = [];
+        }
+    }
+
+    function getOvertimePersons() {
+        return projectMembers.map(member => ({
+            id: member.employeeIdx,
+            name: member.employeeName,
+            position: member.employeePositionName || '-',
+            dept: member.employeeDeptName || '-'
+        }));
+    }
+
+    // ============================================
+    // 프로젝트 선택 모달
+    // ============================================
+    const projectModal = document.getElementById('projectModal');
+    const projectSearch = document.getElementById('projectSearch');
+    const projectListEl = document.getElementById('projectList');
+
+    function renderProjectList(list, keyword = '') {
+        if (!projectListEl) return;
+        projectListEl.innerHTML = '';
+
+        if (list.length === 0) {
+            projectListEl.innerHTML = `
+                <div class="modal-empty-state" style="text-align:center; padding:40px; color:#999;">
+                    <i class="fas fa-folder-open" style="font-size:32px; margin-bottom:10px;"></i>
+                    <p>${keyword ? '검색 결과가 없습니다' : '참여중인 프로젝트가 없습니다'}</p>
+                </div>`;
+            return;
+        }
+
+        list.forEach(proj => {
+            const item = document.createElement('div');
+            item.className = 'employee-item';
+            if (selectedProject && selectedProject.idx === proj.idx) {
+                item.classList.add('selected');
+            }
+
+            const name = keyword ? highlightProjectText(proj.projectName, keyword) : proj.projectName;
+            const desc = proj.description || '설명 없음';
+
+            item.innerHTML = `
+                <div class="employee-info">
+                    <div class="employee-name"><i class="fas fa-folder" style="margin-right:6px; color:#667eea;"></i>${name}</div>
+                    <div class="employee-detail">${desc}</div>
+                </div>
+            `;
+
+            item.addEventListener('click', async function() {
+                selectedProject = proj;
+
+                const otProject = document.getElementById('ot_project');
+                if (otProject) otProject.value = proj.projectName;
+
+                const selectedProjectIdx = document.getElementById('selectedProjectIdx');
+                if (selectedProjectIdx) selectedProjectIdx.value = proj.idx;
+
+                // 자동 채우기
+                document.querySelectorAll('.ot-auto-project').forEach(field => {
+                    field.textContent = proj.projectName;
+                });
+
+                // 연구책임자 자동 채우기
+                const otManager = document.getElementById('ot_manager');
+                if (otManager && proj.projectManagerName) {
+                    otManager.value = proj.projectManagerName;
+                    document.querySelectorAll('.ot-auto-manager').forEach(field => {
+                        field.textContent = proj.projectManagerName;
+                    });
+                }
+
+                // 프로젝트 참여인원 로드
+                await loadProjectMembers(proj.idx);
+
+                closeProjectModal();
+            });
+
+            projectListEl.appendChild(item);
+        });
+    }
+
+    function highlightProjectText(text, keyword) {
+        if (!keyword || !text) return text;
+        const regex = new RegExp(`(${keyword.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')})`, 'gi');
+        return text.replace(regex, '<mark>$1</mark>');
+    }
+
+    if (projectSearch) {
+        projectSearch.addEventListener('input', function() {
+            const keyword = this.value.trim().toLowerCase();
+            const filtered = projects.filter(proj =>
+                (proj.projectName || '').toLowerCase().includes(keyword) ||
+                (proj.description || '').toLowerCase().includes(keyword)
+            );
+            renderProjectList(filtered, this.value.trim());
+        });
+    }
+
+    window.openProjectModal = function() {
+        if (projectModal) {
+            projectModal.classList.add('show');
+            renderProjectList(projects);
+            if (projectSearch) projectSearch.value = '';
+        }
+    };
+
+    window.closeProjectModal = function() {
+        if (projectModal) {
+            projectModal.classList.remove('show');
+            if (projectSearch) projectSearch.value = '';
+        }
+    };
+
+    if (projectModal) {
+        projectModal.addEventListener('click', function(e) {
+            if (e.target === projectModal) {
+                closeProjectModal();
+            }
+        });
     }
 
     // ============================================
@@ -215,20 +383,27 @@ document.addEventListener('DOMContentLoaded', async function() {
 
         // 전역 함수로 등록하여 모달에서 접근 가능하게
         window.addOvertimePersonsToOvertime = function(persons) {
-            persons.forEach(person => {
-                if (!overtimePersons.some(p => p.id === person.id)) {
-                    overtimePersons.push({
-                        id: person.id,
-                        name: person.name,
-                        dept: person.dept,
-                        position: person.position,
-                        time: '18:00 ~ 21:00',
-                        endTime: '21:00',
-                        task: ''
-                    });
-                }
+            // 기존 인원 중 유지되는 사람은 보존, 새로운 사람은 추가
+            const newList = persons.map(person => {
+                const existing = overtimePersons.find(p => String(p.id) === String(person.id));
+                if (existing) return existing;
+                return {
+                    id: person.id,
+                    name: person.name,
+                    dept: person.dept,
+                    position: person.position,
+                    time: '18:00 ~ 21:00',
+                    endTime: '21:00',
+                    task: ''
+                };
             });
+            overtimePersons = newList;
             renderOvertimePersonListInTemplate();
+        };
+
+        // 현재 야근인원 목록 반환 (모달에서 사용)
+        window.getCurrentOvertimePersons = function() {
+            return [...overtimePersons];
         };
 
         // 야근 인원 목록 업데이트 함수 (기존 방식, deprecated)
@@ -276,55 +451,25 @@ document.addEventListener('DOMContentLoaded', async function() {
         }
 
 
-        // 금액 기반 자동 인원 계산 (1인당 15,000원, 최소 1명)
+        // 금액 입력 시 문서 미리보기 반영
         if (otAmount) {
             otAmount.addEventListener('input', function() {
-                const amount = parseInt(this.value) || 0;
-
-                if (amount > 0) {
-                    // 15,000원 미만이어도 최소 1명
-                    const totalPeople = Math.max(1, Math.ceil(amount / 15000));
-
-                    overtimePersons = [];
-
-                    for (let i = 0; i < totalPeople; i++) {
-                        overtimePersons.push({ name: '', time: '18:00 ~ 21:00', endTime: '21:00', task: '' });
-                    }
-
-                    updateOvertimePersonList();
-                }
-
                 updateAmountDisplay();
             });
         }
 
-        // 과제명 자동 채우기
+        // 과제명 클릭 시 프로젝트 선택 모달 열기
         if (otProject) {
-            otProject.addEventListener('input', function() {
-                const value = this.value;
-                document.querySelectorAll('.ot-auto-project').forEach(field => {
-                    field.textContent = value;
-                });
+            otProject.addEventListener('click', function() {
+                openProjectModal();
             });
         }
 
-        // 연구책임자 자동 채우기
-        if (otManager) {
-            otManager.addEventListener('input', function() {
-                const value = this.value;
-                document.querySelectorAll('.ot-auto-manager').forEach(field => {
-                    field.textContent = value;
-                });
-            });
-        }
-
-        // 신청자 자동 채우기
-        if (otApplicant) {
-            otApplicant.addEventListener('input', function() {
-                const value = this.value;
-                document.querySelectorAll('.ot-auto-applicant').forEach(field => {
-                    field.textContent = value;
-                });
+        // 신청자 자동 채우기 (로그인 사용자)
+        if (otApplicant && window.CURRENT_USER?.empName) {
+            otApplicant.value = window.CURRENT_USER.empName;
+            document.querySelectorAll('.ot-auto-applicant').forEach(field => {
+                field.textContent = window.CURRENT_USER.empName;
             });
         }
 
@@ -428,13 +573,7 @@ document.addEventListener('DOMContentLoaded', async function() {
             });
         }
 
-        // 초기값 자동 채우기
-        if (otApplicant && otApplicant.value) {
-            document.querySelectorAll('.ot-auto-applicant').forEach(field => {
-                field.textContent = otApplicant.value;
-            });
-        }
-
+        // 연구책임자 초기값 자동 채우기 (프로젝트 선택 시 설정됨)
         if (otManager && otManager.value) {
             document.querySelectorAll('.ot-auto-manager').forEach(field => {
                 field.textContent = otManager.value;
@@ -885,30 +1024,40 @@ document.addEventListener('DOMContentLoaded', async function() {
 
     // 초기 데이터 로드
     await loadEmployees();
+    await loadMyProjects();
 
-    // 야근인원 목록 데이터 (직원 데이터와 동일하게 사용)
-    // employees 배열을 직접 사용
+    // ============================================
+    // 야근 인원 선택 모달 (프로젝트 참여인원 기반)
+    // ============================================
 
-    // 모달 열기 함수
+    // 모달 열기
     window.openOvertimePersonModal = function() {
+        if (!selectedProject) {
+            showWarning('과제를 먼저 선택해주세요.');
+            return;
+        }
         if (overtimePersonModal) {
+            // 기존 선택된 야근인원을 temp에 복사
+            const currentOvertimePersons = window.getCurrentOvertimePersons ? window.getCurrentOvertimePersons() : [];
+            tempSelectedOvertimePersons = currentOvertimePersons.map(p => ({
+                id: String(p.id),
+                name: p.name,
+                dept: p.dept,
+                position: p.position
+            }));
+
             overtimePersonModal.classList.add('show');
-            renderOvertimePersonList2();
+            renderOvertimePersonList2('');
+            renderSelectedOvertimeBadges();
+            if (overtimePersonSearchInput) overtimePersonSearchInput.value = '';
         }
     };
 
-    // 모달 닫기 함수
+    // 모달 닫기
     window.closeOvertimePersonModal = function() {
         if (overtimePersonModal) {
             overtimePersonModal.classList.remove('show');
-            // 검색 초기화
-            if (overtimePersonSearchInput) {
-                overtimePersonSearchInput.value = '';
-                renderOvertimePersonList2('');
-            }
-            // 선택 초기화
-            const selectedItems = document.querySelectorAll('#overtimePersonList2 .employee-item.selected');
-            selectedItems.forEach(item => item.classList.remove('selected'));
+            tempSelectedOvertimePersons = [];
         }
     };
 
@@ -921,34 +1070,118 @@ document.addEventListener('DOMContentLoaded', async function() {
         });
     }
 
-    // 야근인원 목록 렌더링
+    // 야근인원 목록 렌더링 (프로젝트 참여인원)
     function renderOvertimePersonList2(searchText = '') {
         const overtimePersonList2El = document.getElementById('overtimePersonList2');
         if (!overtimePersonList2El) return;
 
-        const filtered = employees.filter(person => {
+        const persons = getOvertimePersons();
+
+        if (persons.length === 0) {
+            overtimePersonList2El.innerHTML = `
+                <div style="text-align: center; padding: 40px; color: #94a3b8;">
+                    <i class="fas fa-users" style="font-size: 32px; margin-bottom: 12px; display: block;"></i>
+                    프로젝트 참여인원이 없습니다.
+                </div>`;
+            return;
+        }
+
+        const filtered = persons.filter(person => {
             const searchStr = (person.name + person.dept + person.position).toLowerCase();
-            return searchStr.includes(searchText.toLowerCase());
+            return searchStr.includes((searchText || '').toLowerCase());
         });
 
-        overtimePersonList2El.innerHTML = filtered.map(person => `
-            <div class="employee-item" data-id="${person.id}" onclick="selectOvertimePerson(${person.id})">
-                <div class="employee-info">
-                    <div class="employee-name">${person.name}</div>
-                    <div class="employee-detail">${person.position} · ${person.dept}</div>
+        if (filtered.length === 0) {
+            overtimePersonList2El.innerHTML = `
+                <div style="text-align: center; padding: 40px; color: #94a3b8;">
+                    <i class="fas fa-search" style="font-size: 32px; margin-bottom: 12px; display: block;"></i>
+                    검색 결과가 없습니다.
+                </div>`;
+            return;
+        }
+
+        overtimePersonList2El.innerHTML = filtered.map(person => {
+            const isSelected = tempSelectedOvertimePersons.some(a => String(a.id) === String(person.id));
+            return `
+                <div class="employee-item ${isSelected ? 'selected' : ''}"
+                     data-id="${person.id}"
+                     onclick="toggleOvertimePerson(${person.id})">
+                    <div class="employee-info">
+                        <div class="employee-name">${person.name}</div>
+                        <div class="employee-detail">${person.position} · ${person.dept}</div>
+                    </div>
+                    ${isSelected ? '<i class="fas fa-check-circle" style="color: #10b981; font-size: 18px; margin-left: auto;"></i>' : ''}
+                </div>
+            `;
+        }).join('');
+    }
+
+    // 인원 선택 토글
+    window.toggleOvertimePerson = function(personId) {
+        const persons = getOvertimePersons();
+        const person = persons.find(p => p.id === personId);
+        if (!person) return;
+
+        const index = tempSelectedOvertimePersons.findIndex(a => String(a.id) === String(personId));
+        if (index > -1) {
+            tempSelectedOvertimePersons.splice(index, 1);
+        } else {
+            tempSelectedOvertimePersons.push({
+                id: String(personId),
+                name: person.name,
+                dept: person.dept,
+                position: person.position
+            });
+        }
+
+        renderOvertimePersonList2(overtimePersonSearchInput ? overtimePersonSearchInput.value : '');
+        renderSelectedOvertimeBadges();
+    };
+
+    // 선택된 인원 뱃지 렌더링
+    function renderSelectedOvertimeBadges() {
+        const badgesEl = document.getElementById('selectedOvertimeBadges');
+        const countEl = document.getElementById('selectedOvertimeCount');
+        if (!badgesEl || !countEl) return;
+
+        countEl.textContent = tempSelectedOvertimePersons.length;
+
+        if (tempSelectedOvertimePersons.length === 0) {
+            badgesEl.innerHTML = `
+                <div class="empty-state">
+                    <i class="fas fa-user-plus"></i>
+                    <span>프로젝트 참여인원을 선택해주세요</span>
+                </div>`;
+            return;
+        }
+
+        badgesEl.innerHTML = tempSelectedOvertimePersons.map(person => `
+            <div class="attendee-badge" onclick="removeTempOvertimePerson('${person.id}')">
+                <i class="fas fa-user"></i>
+                <span class="badge-name">${person.name}</span>
+                <span class="badge-info">${person.dept}</span>
+                <div class="badge-remove">
+                    <i class="fas fa-times"></i>
                 </div>
             </div>
         `).join('');
     }
 
-    // 야근인원 선택
-    window.selectOvertimePerson = function(personId) {
-        const items = document.querySelectorAll('#overtimePersonList2 .employee-item');
-        items.forEach(item => {
-            if (parseInt(item.getAttribute('data-id')) === personId) {
-                item.classList.toggle('selected');
-            }
-        });
+    // 임시 선택 인원 제거
+    window.removeTempOvertimePerson = function(personId) {
+        const index = tempSelectedOvertimePersons.findIndex(a => String(a.id) === String(personId));
+        if (index > -1) {
+            tempSelectedOvertimePersons.splice(index, 1);
+            renderOvertimePersonList2(overtimePersonSearchInput ? overtimePersonSearchInput.value : '');
+            renderSelectedOvertimeBadges();
+        }
+    };
+
+    // 전체 선택 해제
+    window.clearAllSelectedOvertimePersons = function() {
+        tempSelectedOvertimePersons = [];
+        renderOvertimePersonList2(overtimePersonSearchInput ? overtimePersonSearchInput.value : '');
+        renderSelectedOvertimeBadges();
     };
 
     // 검색 기능
@@ -960,22 +1193,17 @@ document.addEventListener('DOMContentLoaded', async function() {
 
     // 선택된 야근인원 추가
     window.addSelectedOvertimePersons = function() {
-        const selectedItems = document.querySelectorAll('#overtimePersonList2 .employee-item.selected');
-        const personsToAdd = [];
+        if (tempSelectedOvertimePersons.length === 0) {
+            showWarning('야근 인원을 선택해주세요.');
+            return;
+        }
 
-        selectedItems.forEach(item => {
-            const personId = item.getAttribute('data-id');
-            const person = employees.find(p => p.id === parseInt(personId));
-
-            if (person) {
-                personsToAdd.push({
-                    id: personId,
-                    name: person.name,
-                    dept: person.dept,
-                    position: person.position
-                });
-            }
-        });
+        const personsToAdd = tempSelectedOvertimePersons.map(p => ({
+            id: p.id,
+            name: p.name,
+            dept: p.dept,
+            position: p.position
+        }));
 
         // setupOvertimeAutoFill에서 정의된 함수 호출
         if (window.addOvertimePersonsToOvertime) {
@@ -994,8 +1222,9 @@ document.addEventListener('DOMContentLoaded', async function() {
         header.style.pointerEvents = 'none';
     });
 
-    // 오늘 날짜 자동 설정
+    // 초기값 자동 설정
     setTimeout(() => {
+        // 오늘 날짜 자동 설정
         const overtimeDate = document.getElementById('ot_approval_date');
         if (overtimeDate && !overtimeDate.value) {
             const today = new Date();
@@ -1003,6 +1232,7 @@ document.addEventListener('DOMContentLoaded', async function() {
             const mm = String(today.getMonth() + 1).padStart(2, '0');
             const dd = String(today.getDate()).padStart(2, '0');
             overtimeDate.value = `${yyyy}-${mm}-${dd}`;
+            overtimeDate.dispatchEvent(new Event('input'));
         }
 
         // 날짜 입력 필드 전체 영역 클릭 시 날짜 선택기 열기
@@ -1011,6 +1241,17 @@ document.addEventListener('DOMContentLoaded', async function() {
                 if (this.showPicker) {
                     this.showPicker();
                 }
+            });
+        }
+
+        // 품의명 기본값 자동 채우기
+        const otTitle = document.getElementById('ot_title');
+        if (otTitle && otTitle.value) {
+            document.querySelectorAll('.ot-auto-title').forEach(field => {
+                field.textContent = otTitle.value;
+            });
+            document.querySelectorAll('.ot-auto-desc').forEach(field => {
+                field.textContent = otTitle.value;
             });
         }
     }, 200);
