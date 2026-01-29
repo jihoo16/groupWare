@@ -167,7 +167,10 @@ document.addEventListener('DOMContentLoaded', async function() {
                 selectedProject = proj;
 
                 const otProject = document.getElementById('ot_project');
-                if (otProject) otProject.value = proj.projectName;
+                if (otProject) {
+                    otProject.value = proj.projectName;
+                    otProject.style.borderColor = '';
+                }
 
                 const selectedProjectIdx = document.getElementById('selectedProjectIdx');
                 if (selectedProjectIdx) selectedProjectIdx.value = proj.idx;
@@ -234,21 +237,6 @@ document.addEventListener('DOMContentLoaded', async function() {
                 closeProjectModal();
             }
         });
-    }
-
-    // 프로젝트 목록 로드
-    async function loadProjects() {
-        try {
-            const response = await fetch('/api/projects');
-            if (response.ok) {
-                projects = await response.json();
-                console.log('프로젝트 목록 로드 성공:', projects.length + '건');
-            } else {
-                console.error('프로젝트 목록 로드 실패');
-            }
-        } catch (error) {
-            console.error('프로젝트 목록 로드 오류:', error);
-        }
     }
 
     // ============================================
@@ -1417,121 +1405,11 @@ document.addEventListener('DOMContentLoaded', async function() {
                 field.textContent = otTitle.value;
             });
         }
-    }, 200);
 
-    // ============================================
-    // 프로젝트 선택 모달
-    // ============================================
-    const projectModal = document.getElementById('projectModal');
-    const projectSearchInput = document.getElementById('projectSearchInput');
-    const projectList = document.getElementById('projectList');
-    const otProject = document.getElementById('ot_project');
-
-    // 프로젝트 목록 렌더링
-    function renderProjectList(projectsToShow, keyword = '') {
-        if (!projectList) return;
-
-        if (!projectsToShow || projectsToShow.length === 0) {
-            projectList.innerHTML = '<div class="empty-state">프로젝트가 없습니다.</div>';
-            return;
-        }
-
-        projectList.innerHTML = projectsToShow.map(proj => {
-            const projectName = proj.projectName || '이름 없음';
-            const leader = proj.projectLeader || '-';
-            const startDate = proj.projectStartDate ? new Date(proj.projectStartDate).toLocaleDateString() : '-';
-            const endDate = proj.projectEndDate ? new Date(proj.projectEndDate).toLocaleDateString() : '-';
-
-            return `
-                <div class="modal-item" onclick="selectProject(${proj.idx})">
-                    <div class="item-main">
-                        <strong>${projectName}</strong>
-                    </div>
-                    <div class="item-details">
-                        <span><i class="fas fa-user"></i> ${leader}</span>
-                        <span><i class="fas fa-calendar"></i> ${startDate} ~ ${endDate}</span>
-                    </div>
-                </div>
-            `;
-        }).join('');
-    }
-
-    // 프로젝트 선택
-    window.selectProject = function(projectIdx) {
-        const proj = projects.find(p => p.idx === projectIdx);
-        if (!proj) return;
-
-        // 과제명 필드에 표시
-        if (otProject) {
-            otProject.value = proj.projectName;
-            otProject.style.borderColor = ''; // 빨간색 제거
-        }
-
-        const selectedProjectIdx = document.getElementById('selectedProjectIdx');
-        if (selectedProjectIdx) {
-            selectedProjectIdx.value = proj.idx;
-        }
-
-        // 자동 채우기
-        document.querySelectorAll('.auto-project').forEach(field => {
-            field.textContent = proj.projectName || '';
-        });
-
-        closeProjectModal();
-    };
-
-    // 프로젝트 모달 열기
-    window.openProjectModal = function() {
-        if (projectModal) {
-            projectModal.classList.add('show');
-            renderProjectList(projects);
-            if (projectSearchInput) projectSearchInput.value = '';
-        }
-    };
-
-    // 프로젝트 모달 닫기
-    window.closeProjectModal = function() {
-        if (projectModal) {
-            projectModal.classList.remove('show');
-        }
-    };
-
-    // 프로젝트 검색
-    if (projectSearchInput) {
-        projectSearchInput.addEventListener('input', function() {
-            const keyword = this.value.trim().toLowerCase();
-            if (!keyword) {
-                renderProjectList(projects);
-                return;
-            }
-
-            const filtered = projects.filter(proj =>
-                (proj.projectName && proj.projectName.toLowerCase().includes(keyword)) ||
-                (proj.projectLeader && proj.projectLeader.toLowerCase().includes(keyword))
-            );
-
-            renderProjectList(filtered, keyword);
-        });
-    }
-
-    // 과제명 필드 클릭 이벤트
-    if (otProject) {
-        otProject.addEventListener('click', openProjectModal);
-    }
-
-    // 모달 외부 클릭 시 닫기
-    if (projectModal) {
-        projectModal.addEventListener('click', function(e) {
-            if (e.target === projectModal) {
-                closeProjectModal();
-            }
-        });
-    }
-
-    // 과제명이 비어있을 때 빨간색 테두리 표시
-    setTimeout(() => {
+        // 과제명이 비어있을 때 빨간색 테두리 표시
+        const otProject = document.getElementById('ot_project');
         if (otProject && !otProject.value) {
             otProject.style.borderColor = '#ef5350';
         }
-    }, 500);
+    }, 200);
 });
