@@ -22,15 +22,15 @@ public class ApprovalDocumentController {
     private final ApprovalDocumentService approvalDocumentService;
 
     /**
-     * 전체 문서 목록 조회 (모든 문서 타입 통합)
-     * - 주간업무보고, 월간업무보고, 회의록, 연구비증빙, 연차신청서 등
+     * 일반 전자결재 문서 목록 조회 (is_project = false)
+     * - 연차신청서, 지출승인서 등 일반 전자결재 문서만 조회
      * - 연차신청서는 본인이 작성한 것만 조회
      * @param session HTTP 세션
-     * @return 문서 목록
+     * @return 일반 문서 목록
      */
     @GetMapping
     public ResponseEntity<List<ApprovalDocumentDTO>> getAllDocuments(HttpSession session) {
-        log.debug("GET /api/approval/documents - 전체 문서 목록 조회");
+        log.debug("GET /api/approval/documents - 일반 전자결재 문서 목록 조회");
 
         // 세션에서 현재 사용자 IDX 조회
         Long currentUserIdx = (Long) session.getAttribute("userIdx");
@@ -41,7 +41,22 @@ public class ApprovalDocumentController {
 
         List<ApprovalDocumentDTO> documents = approvalDocumentService.getAllDocuments(currentUserIdx);
 
-        log.debug("전체 문서 목록 조회 완료 - 총 {}건", documents.size());
+        log.debug("일반 전자결재 문서 목록 조회 완료 - 총 {}건", documents.size());
+        return ResponseEntity.ok(documents);
+    }
+
+    /**
+     * 프로젝트 문서 전체 목록 조회 (is_project = true)
+     * - 프로젝트 주간보고, 연구비증빙 등 프로젝트 관련 문서만 조회
+     * @return 프로젝트 문서 목록
+     */
+    @GetMapping("/projects")
+    public ResponseEntity<List<ApprovalDocumentDTO>> getAllProjectDocuments() {
+        log.debug("GET /api/approval/documents/projects - 프로젝트 문서 전체 조회");
+
+        List<ApprovalDocumentDTO> documents = approvalDocumentService.getAllProjectDocuments();
+
+        log.debug("프로젝트 문서 전체 조회 완료 - 총 {}건", documents.size());
         return ResponseEntity.ok(documents);
     }
 

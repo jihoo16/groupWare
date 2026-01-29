@@ -63,8 +63,24 @@ public interface ApprovalDocumentRepository extends JpaRepository<ApprovalDocume
     List<ApprovalDocument> findAllActive();
 
     /**
-     * 전체 문서 조회 (삭제되지 않은, 최신순) - Service용 alias
+     * 일반 전자결재 문서 조회 (is_project = false)
      */
+    @Query("SELECT d FROM ApprovalDocument d WHERE d.isProject = false AND d.deletedAt IS NULL " +
+            "ORDER BY d.createdAt DESC")
+    List<ApprovalDocument> findGeneralDocuments();
+
+    /**
+     * 프로젝트 문서 조회 (is_project = true)
+     */
+    @Query("SELECT d FROM ApprovalDocument d WHERE d.isProject = true AND d.deletedAt IS NULL " +
+            "ORDER BY d.createdAt DESC")
+    List<ApprovalDocument> findProjectDocuments();
+
+    /**
+     * 전체 문서 조회 (삭제되지 않은, 최신순) - Service용 alias
+     * @deprecated 일반/프로젝트 구분을 위해 findGeneralDocuments() 또는 findProjectDocuments() 사용 권장
+     */
+    @Deprecated
     default List<ApprovalDocument> findAllByDeletedAtIsNullOrderByCreatedAtDesc() {
         return findAllActive();
     }
