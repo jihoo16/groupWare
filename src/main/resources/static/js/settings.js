@@ -117,6 +117,7 @@ document.addEventListener('DOMContentLoaded', function() {
             const userName = document.getElementById('userName')?.value;
             const userEmail = document.getElementById('userEmail')?.value;
             const userPhone = document.getElementById('userPhone')?.value;
+            const userAddress = document.getElementById('userAddress')?.value;
 
             // 필드 검증
             if (!userName || !userEmail || !userPhone) {
@@ -138,6 +139,21 @@ document.addEventListener('DOMContentLoaded', function() {
                 return;
             }
 
+            // 프로필 수정 확인
+            const confirmed = await showConfirm(
+                '전산상 근로자의 정보가 변경됩니다.<br>정말로 정보를 변경하시겠습니까?',
+                '프로필 수정 확인',
+                {
+                    icon: 'warning',
+                    confirmText: '변경',
+                    confirmColor: '#ff9800'
+                }
+            );
+
+            if (!confirmed) {
+                return;
+            }
+
             try {
                 console.log('프로필 업데이트 API 호출');
 
@@ -149,7 +165,8 @@ document.addEventListener('DOMContentLoaded', function() {
                     body: JSON.stringify({
                         empName: userName,
                         empEmail: userEmail,
-                        empPhone: userPhone
+                        empPhone: userPhone,
+                        empAddress: userAddress
                     })
                 });
 
@@ -965,6 +982,7 @@ async function loadCurrentUserProfile() {
         const userDeptDiv = document.getElementById('userDept');
         const userEmailInput = document.getElementById('userEmail');
         const userPhoneInput = document.getElementById('userPhone');
+        const userAddressInput = document.getElementById('userAddress');
 
         // 이름은 편집 가능한 input
         if (userNameInput) userNameInput.value = user.empName || '';
@@ -973,9 +991,10 @@ async function loadCurrentUserProfile() {
         if (userPositionDiv) userPositionDiv.textContent = user.empPositionName || user.empPosition || '-';
         if (userDeptDiv) userDeptDiv.textContent = user.empDeptName || user.empDept || '-';
 
-        // 이메일과 연락처는 편집 가능한 input
+        // 이메일, 연락처, 주소는 편집 가능한 input
         if (userEmailInput) userEmailInput.value = user.empEmail || '';
         if (userPhoneInput) userPhoneInput.value = user.empPhone || '';
+        if (userAddressInput) userAddressInput.value = user.empAddress || '';
 
     } catch (error) {
         console.error('사용자 정보 로드 오류:', error);

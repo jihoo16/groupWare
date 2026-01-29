@@ -47,7 +47,7 @@ public class UserController {
     }
 
     /**
-     * 현재 로그인한 사용자 프로필 업데이트 (이름, 이메일, 연락처만 수정 가능)
+     * 현재 로그인한 사용자 프로필 업데이트 (이름, 이메일, 연락처, 주소만 수정 가능)
      * PUT /api/users/me
      */
     @PutMapping("/me")
@@ -65,14 +65,15 @@ public class UserController {
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(error);
         }
 
-        // 이름, 이메일, 연락처만 업데이트 허용 (보안을 위해 나머지 필드는 무시)
+        // 이름, 이메일, 연락처, 주소만 업데이트 허용 (보안을 위해 나머지 필드는 무시)
         UserUpdateDTO profileUpdateDTO = new UserUpdateDTO();
         profileUpdateDTO.setEmpName(updateDTO.getEmpName());
         profileUpdateDTO.setEmpEmail(updateDTO.getEmpEmail());
         profileUpdateDTO.setEmpPhone(updateDTO.getEmpPhone());
+        profileUpdateDTO.setEmpAddress(updateDTO.getEmpAddress());
 
-        log.info("프로필 업데이트 요청 - userIdx: {}, empName: {}, empEmail: {}, empPhone: {}",
-                currentUserIdx, updateDTO.getEmpName(), updateDTO.getEmpEmail(), updateDTO.getEmpPhone());
+        log.info("프로필 업데이트 요청 - userIdx: {}, empName: {}, empEmail: {}, empPhone: {}, empAddress: {}",
+                currentUserIdx, updateDTO.getEmpName(), updateDTO.getEmpEmail(), updateDTO.getEmpPhone(), updateDTO.getEmpAddress());
 
         try {
             UserDTO updatedUser = userService.updateUser(currentUserIdx, profileUpdateDTO, currentUserIdx);
