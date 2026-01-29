@@ -92,6 +92,26 @@
                                         </div>
                                     </div>
 
+                                    <!-- 지급종류 -->
+                                    <div class="form-group full-width">
+                                        <label>
+                                            <i class="fas fa-credit-card"></i> 지급종류
+                                            <span class="required-mark">*</span>
+                                        </label>
+                                        <div class="radio-group">
+                                            <label class="radio-label">
+                                                <input type="radio" name="ot_payment_type" value="card" checked>
+                                                <span class="radio-custom"></span>
+                                                연구비카드
+                                            </label>
+                                            <label class="radio-label">
+                                                <input type="radio" name="ot_payment_type" value="transfer">
+                                                <span class="radio-custom"></span>
+                                                연구비이체
+                                            </label>
+                                        </div>
+                                    </div>
+
                                     <!-- 총 공급가액 & 야근인원 식대 합계 -->
                                     <div class="form-grid">
                                         <div class="form-group">
@@ -220,6 +240,12 @@
                                             <td colspan="3" style="text-align: center;"><span class="ot-auto-title"></span></td>
                                         </tr>
                                         <tr>
+                                            <th>지급종류</th>
+                                            <td colspan="3" style="text-align: center;">
+                                                연구비카드(<span class="ot-auto-payment-card"></span>) / 연구비이체(<span class="ot-auto-payment-transfer"></span>)
+                                            </td>
+                                        </tr>
+                                        <tr>
                                             <th style="height: 200px;">품의 내용</th>
                                             <td colspan="3" style="text-align: left; padding: 10px; white-space: pre-wrap; height: 200px;"><span class="ot-auto-content"></span></td>
                                         </tr>
@@ -254,6 +280,7 @@
                                             <td></td>
                                             <td></td>
                                             <td></td>
+                                            <td colspan="2"></td>
                                             <td></td>
                                         </tr>
                                         <tr>

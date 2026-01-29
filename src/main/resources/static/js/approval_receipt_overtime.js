@@ -664,35 +664,36 @@ document.addEventListener('DOMContentLoaded', async function() {
             }
         }
 
-        // 지급종류 자동 채우기
-        const payTypeInput = document.querySelector('input[name="ot_pay_type"]');
-        if (payTypeInput) {
-            payTypeInput.addEventListener('input', function() {
-                document.querySelectorAll('.ot-auto-pay-type').forEach(field => {
-                    field.textContent = this.value;
-                });
-            });
+        // 지급종류 라디오 버튼 자동 채우기
+        const paymentTypeRadios = document.querySelectorAll('input[name="ot_payment_type"]');
 
-            // 초기값 설정
-            if (payTypeInput.value) {
-                document.querySelectorAll('.ot-auto-pay-type').forEach(field => {
-                    field.textContent = payTypeInput.value;
-                });
-            }
+        function updatePaymentTypeDisplay() {
+            const selectedValue = document.querySelector('input[name="ot_payment_type"]:checked')?.value;
+            const cardMark = selectedValue === 'card' ? '○' : '';
+            const transferMark = selectedValue === 'transfer' ? '○' : '';
+
+            document.querySelectorAll('.ot-auto-payment-card').forEach(field => {
+                field.textContent = cardMark;
+            });
+            document.querySelectorAll('.ot-auto-payment-transfer').forEach(field => {
+                field.textContent = transferMark;
+            });
         }
+
+        paymentTypeRadios.forEach(radio => {
+            radio.addEventListener('change', updatePaymentTypeDisplay);
+        });
+
+        // 초기값 설정 (연구비카드가 기본)
+        updatePaymentTypeDisplay();
 
         // 금액 표시 업데이트
         function updateAmountDisplay() {
             const actualAmount = parseInt(otAmount.value.replace(/,/g, '')) || 0;
-            const quantity = overtimePersons.length;
             const formattedAmount = actualAmount.toLocaleString('ko-KR');
 
             document.querySelectorAll('.ot-auto-amount').forEach(field => {
                 field.textContent = formattedAmount;
-            });
-
-            document.querySelectorAll('.ot-auto-quantity').forEach(field => {
-                field.textContent = quantity;
             });
 
             // 실집행 금액 업데이트
