@@ -48,12 +48,21 @@ public class ExternalPersonController {
      * 외부인원 등록
      */
     @PostMapping
-    public ResponseEntity<ExternalPerson> createExternalPerson(@RequestBody ExternalPerson externalPerson) {
+    public ResponseEntity<ExternalPerson> createExternalPerson(
+            @RequestBody ExternalPerson externalPerson,
+            jakarta.servlet.http.HttpSession session) {
         log.info("외부인원 등록 요청: companyName={}, position={}, name={}",
                 externalPerson.getCompanyName(), externalPerson.getPosition(), externalPerson.getName());
 
+        // 세션에서 현재 로그인한 사용자 정보 가져오기
+        Long currentUserIdx = (Long) session.getAttribute("userIdx");
+        if (currentUserIdx == null) {
+            log.error("로그인 정보가 없습니다.");
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
+        }
+
         try {
-            ExternalPerson createdPerson = externalPersonService.createExternalPerson(externalPerson);
+            ExternalPerson createdPerson = externalPersonService.createExternalPerson(externalPerson, currentUserIdx);
             return ResponseEntity.status(HttpStatus.CREATED).body(createdPerson);
         } catch (Exception e) {
             log.error("외부인원 등록 실패: {}", e.getMessage());
@@ -67,11 +76,19 @@ public class ExternalPersonController {
     @PutMapping("/{idx}")
     public ResponseEntity<ExternalPerson> updateExternalPerson(
             @PathVariable Long idx,
-            @RequestBody ExternalPerson externalPerson) {
+            @RequestBody ExternalPerson externalPerson,
+            jakarta.servlet.http.HttpSession session) {
         log.info("외부인원 수정 요청: idx={}", idx);
 
+        // 세션에서 현재 로그인한 사용자 정보 가져오기
+        Long currentUserIdx = (Long) session.getAttribute("userIdx");
+        if (currentUserIdx == null) {
+            log.error("로그인 정보가 없습니다.");
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
+        }
+
         try {
-            ExternalPerson updatedPerson = externalPersonService.updateExternalPerson(idx, externalPerson);
+            ExternalPerson updatedPerson = externalPersonService.updateExternalPerson(idx, externalPerson, currentUserIdx);
             return ResponseEntity.ok(updatedPerson);
         } catch (RuntimeException e) {
             log.error("외부인원 수정 실패: {}", e.getMessage());

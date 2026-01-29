@@ -124,6 +124,7 @@ public class ReceiptMeetingServiceImpl implements ReceiptMeetingService {
                 .documentNo(documentNo)
                 .title(title)
                 .documentType("연구비증빙-회의록")
+                .isProject(true)  // 프로젝트 문서로 표시
                 .drafterUserIdx(createDTO.getAuthorIdx())
                 .content(createDTO.getContent())
                 .createdUserIdx(createDTO.getAuthorIdx())

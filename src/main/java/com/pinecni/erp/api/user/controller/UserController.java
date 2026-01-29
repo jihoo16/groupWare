@@ -29,6 +29,69 @@ public class UserController {
     private final UserService userService;
 
     /**
+     * 현재 로그인한 사용자 정보 조회
+     * GET /api/users/me
+     */
+    @GetMapping("/me")
+    public ResponseEntity<UserDTO> getCurrentUser(HttpSession session) {
+        log.debug("GET /api/users/me - getCurrentUser()");
+
+        Long currentUserIdx = (Long) session.getAttribute("userIdx");
+        if (currentUserIdx == null) {
+            log.error("세션에 userIdx가 없습니다. 로그인이 필요합니다.");
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
+        }
+
+        UserDTO user = userService.getUserById(currentUserIdx);
+        return ResponseEntity.ok(user);
+    }
+
+    /**
+     * 현재 로그인한 사용자 프로필 업데이트 (이름, 이메일, 연락처, 주소만 수정 가능)
+     * PUT /api/users/me
+     */
+    @PutMapping("/me")
+    public ResponseEntity<?> updateCurrentUserProfile(
+            @RequestBody UserUpdateDTO updateDTO,
+            HttpSession session) {
+
+        log.debug("PUT /api/users/me - updateCurrentUserProfile()");
+
+        Long currentUserIdx = (Long) session.getAttribute("userIdx");
+        if (currentUserIdx == null) {
+            log.error("세션에 userIdx가 없습니다. 로그인이 필요합니다.");
+            Map<String, String> error = new HashMap<>();
+            error.put("error", "로그인이 필요합니다.");
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(error);
+        }
+
+        // 이름, 이메일, 연락처, 주소만 업데이트 허용 (보안을 위해 나머지 필드는 무시)
+        UserUpdateDTO profileUpdateDTO = new UserUpdateDTO();
+        profileUpdateDTO.setEmpName(updateDTO.getEmpName());
+        profileUpdateDTO.setEmpEmail(updateDTO.getEmpEmail());
+        profileUpdateDTO.setEmpPhone(updateDTO.getEmpPhone());
+        profileUpdateDTO.setEmpAddress(updateDTO.getEmpAddress());
+
+        log.info("프로필 업데이트 요청 - userIdx: {}, empName: {}, empEmail: {}, empPhone: {}, empAddress: {}",
+                currentUserIdx, updateDTO.getEmpName(), updateDTO.getEmpEmail(), updateDTO.getEmpPhone(), updateDTO.getEmpAddress());
+
+        try {
+            UserDTO updatedUser = userService.updateUser(currentUserIdx, profileUpdateDTO, currentUserIdx);
+            return ResponseEntity.ok(updatedUser);
+        } catch (IllegalArgumentException e) {
+            log.warn("프로필 업데이트 실패: {}", e.getMessage());
+            Map<String, String> error = new HashMap<>();
+            error.put("error", e.getMessage());
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(error);
+        } catch (Exception e) {
+            log.error("프로필 업데이트 중 오류 발생", e);
+            Map<String, String> error = new HashMap<>();
+            error.put("error", "프로필 업데이트 중 오류가 발생했습니다.");
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(error);
+        }
+    }
+
+    /**
      * 전체 활성 사용자 목록 조회
      * GET /api/users
      */

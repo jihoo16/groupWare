@@ -1139,6 +1139,7 @@ public class VacationServiceImpl implements VacationService {
                 .documentIdx(documentIdx)
                 .documentNo(document.getDocumentNo())
                 .applyDate(vacationRequests.getFirst().getApplyDate())
+                .drafterUserIdx(document.getDrafterUserIdx())  // 작성자 사용자 idx 추가
                 .drafterName(drafter.getEmpName())
                 .drafterDept(deptName)
                 .drafterPosition(positionName)

@@ -314,8 +314,9 @@ document.addEventListener('DOMContentLoaded', function() {
                 apiUrl = `/api/approval/documents/project/${projectId}`;
                 console.log('프로젝트별 문서 API 호출:', apiUrl);
             } else {
-                apiUrl = '/api/approval/documents';
-                console.log('전체 문서 API 호출:', apiUrl);
+                // 프로젝트 문서 전체 조회 (is_project = true)
+                apiUrl = '/api/approval/documents/projects';
+                console.log('프로젝트 문서 전체 API 호출:', apiUrl);
             }
 
             const response = await fetch(apiUrl);
@@ -325,7 +326,8 @@ document.addEventListener('DOMContentLoaded', function() {
                 const documents = await response.json();
                 console.log('문서 로드 성공:', documents.length + '건');
 
-                // 프로젝트 관련 문서만 필터링
+                // 서버에서 is_project = true로 필터링하므로 추가 필터링 불필요
+                // 하지만 안전을 위해 클라이언트 측 필터링도 유지
                 allDocuments = documents.filter(doc =>
                     PROJECT_DOCUMENT_TYPES.includes(doc.documentType)
                 );

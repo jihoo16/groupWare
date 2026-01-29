@@ -41,8 +41,13 @@ public class ExternalPersonService {
      * 외부인원 등록
      */
     @Transactional
-    public ExternalPerson createExternalPerson(ExternalPerson externalPerson) {
-        log.debug("createExternalPerson() called with: {}", externalPerson);
+    public ExternalPerson createExternalPerson(ExternalPerson externalPerson, Long currentUserIdx) {
+        log.debug("createExternalPerson() called with: {}, createdUserIdx: {}", externalPerson, currentUserIdx);
+
+        // 생성자 정보 설정
+        externalPerson.setCreatedUserIdx(currentUserIdx);
+        externalPerson.setUpdatedUserIdx(currentUserIdx);
+
         return externalPersonRepository.save(externalPerson);
     }
 
@@ -50,8 +55,8 @@ public class ExternalPersonService {
      * 외부인원 수정
      */
     @Transactional
-    public ExternalPerson updateExternalPerson(Long idx, ExternalPerson updatedPerson) {
-        log.debug("updateExternalPerson() called with idx: {}, data: {}", idx, updatedPerson);
+    public ExternalPerson updateExternalPerson(Long idx, ExternalPerson updatedPerson, Long currentUserIdx) {
+        log.debug("updateExternalPerson() called with idx: {}, data: {}, updatedUserIdx: {}", idx, updatedPerson, currentUserIdx);
 
         ExternalPerson existingPerson = externalPersonRepository.findById(idx)
                 .orElseThrow(() -> new RuntimeException("External person not found with idx: " + idx));
@@ -59,6 +64,9 @@ public class ExternalPersonService {
         existingPerson.setCompanyName(updatedPerson.getCompanyName());
         existingPerson.setPosition(updatedPerson.getPosition());
         existingPerson.setName(updatedPerson.getName());
+
+        // 수정자 정보 설정
+        existingPerson.setUpdatedUserIdx(currentUserIdx);
 
         return externalPersonRepository.save(existingPerson);
     }

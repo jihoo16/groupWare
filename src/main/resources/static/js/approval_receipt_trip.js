@@ -245,11 +245,15 @@ document.addEventListener('DOMContentLoaded', async function() {
 
     // 프로젝트 모달 열기
     window.openProjectModal = function() {
-        if (projectModal) {
-            projectModal.classList.add('show');
-            renderProjectList(projects);
-            if (projectSearch) projectSearch.value = '';
+        if (!projectModal) {
+            console.error('projectModal 요소를 찾을 수 없습니다.');
+            alert('프로젝트 선택 모달을 찾을 수 없습니다. 페이지를 새로고침해주세요.');
+            return;
         }
+
+        projectModal.classList.add('show');
+        renderProjectList(projects);
+        if (projectSearch) projectSearch.value = '';
     };
 
     // 프로젝트 모달 닫기
@@ -267,12 +271,6 @@ document.addEventListener('DOMContentLoaded', async function() {
                 closeProjectModal();
             }
         });
-    }
-
-    // 프로젝트 input 클릭 시 모달 열기
-    const tripProjectInput = document.getElementById('trip_project');
-    if (tripProjectInput) {
-        tripProjectInput.addEventListener('click', openProjectModal);
     }
 
     // 페이지 로드 시 데이터 로드
@@ -452,6 +450,11 @@ document.addEventListener('DOMContentLoaded', async function() {
 
         let tripPersons = [];
         let dailyExpenses = [];
+
+        // 프로젝트 input 클릭 시 모달 열기 이벤트 리스너 추가
+        if (tripProject) {
+            tripProject.addEventListener('click', openProjectModal);
+        }
 
         // 프로젝트 선택 시 팀원 로드 및 과제명 자동 채우기
         if (tripProject) {

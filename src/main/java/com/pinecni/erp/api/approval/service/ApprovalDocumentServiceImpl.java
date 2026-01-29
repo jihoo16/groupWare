@@ -39,9 +39,10 @@ public class ApprovalDocumentServiceImpl implements ApprovalDocumentService {
 
     @Override
     public List<ApprovalDocumentDTO> getAllDocuments(Long currentUserIdx) {
-        log.debug("[전체 문서 조회] 시작 - 현재 사용자: {}", currentUserIdx);
+        log.debug("[일반 전자결재 문서 조회] 시작 - 현재 사용자: {}", currentUserIdx);
 
-        List<ApprovalDocument> documents = approvalDocumentRepository.findAllByDeletedAtIsNullOrderByCreatedAtDesc();
+        // is_project = false인 일반 전자결재 문서만 조회
+        List<ApprovalDocument> documents = approvalDocumentRepository.findGeneralDocuments();
 
         List<ApprovalDocumentDTO> result = documents.stream()
                 .map(this::convertToDTO)
@@ -60,7 +61,32 @@ public class ApprovalDocumentServiceImpl implements ApprovalDocumentService {
                 })
                 .collect(Collectors.toList());
 
-        log.debug("[전체 문서 조회] 완료 - 총 {}건 (현재 사용자: {})", result.size(), currentUserIdx);
+        log.debug("[일반 전자결재 문서 조회] 완료 - 총 {}건 (현재 사용자: {})", result.size(), currentUserIdx);
+        return result;
+    }
+
+    /**
+     * 프로젝트 문서 전체 조회 (is_project = true)
+     * @return 프로젝트 문서 목록
+     */
+    public List<ApprovalDocumentDTO> getAllProjectDocuments() {
+        log.debug("[프로젝트 문서 전체 조회] 시작");
+
+        // is_project = true인 프로젝트 문서만 조회
+        List<ApprovalDocument> documents = approvalDocumentRepository.findProjectDocuments();
+
+        List<ApprovalDocumentDTO> result = documents.stream()
+                .map(this::convertToDTO)
+                .filter(dto -> {
+                    // 원본 문서가 존재하는 것만 포함
+                    if ("주간업무보고".equals(dto.getDocumentType()) || "프로젝트 주간업무보고".equals(dto.getDocumentType())) {
+                        return dto.getSourceDocumentId() != null;
+                    }
+                    return true;
+                })
+                .collect(Collectors.toList());
+
+        log.debug("[프로젝트 문서 전체 조회] 완료 - 총 {}건", result.size());
         return result;
     }
 

@@ -88,6 +88,7 @@ public class WeeklyReportServiceImpl implements WeeklyReportService {
                     .documentNo(documentNo)
                     .title(title)
                     .documentType("프로젝트 주간업무보고")
+                    .isProject(true)  // 프로젝트 문서로 표시
                     .drafterUserIdx(createDTO.getUserIdx())
                     .content(createDTO.getMainTasks())
                     .createdUserIdx(createDTO.getUserIdx())
