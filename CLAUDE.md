@@ -195,6 +195,10 @@ document.addEventListener('DOMContentLoaded', function() {
 - **Status Badges**: Color-coded spans with classes (e.g., `.status-pending`, `.status-approved`)
 - **Filters**: Client-side filtering via `data-*` attributes on table rows
 - **Sidebar**: Auto-collapses to 70px, expands to 250px on hover
+- **Alerts and Confirmations**: **ALWAYS use SweetAlert2** - NEVER use native `alert()` or `confirm()`
+  - CDN: `https://cdn.jsdelivr.net/npm/sweetalert2@11`
+  - Alert example: `Swal.fire({ icon: 'warning', title: '제목', text: '내용' })`
+  - Confirm example: `const result = await Swal.fire({ title: '제목', showCancelButton: true }); if (result.isConfirmed) { ... }`
 
 ## Configuration Details
 

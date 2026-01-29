@@ -44,6 +44,9 @@ public class WebMvcConfig implements WebMvcConfigurer {
                 .addPathPatterns("/**")  // 모든 경로에 적용
                 .excludePathPatterns(
                         "/login",           // 로그인 페이지
+                        "/change-password", // 비밀번호 변경 페이지
+                        "/api/auth/**",     // 인증 API (로그인, 비밀번호 변경 등)
+                        "/api/health",      // Health check API
                         "/css/**",          // CSS 정적 리소스
                         "/js/**",           // JavaScript 정적 리소스
                         "/images/**",       // 이미지 정적 리소스

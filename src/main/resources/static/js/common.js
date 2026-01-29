@@ -115,11 +115,21 @@ document.addEventListener('DOMContentLoaded', function() {
     // ===========================
     const logoutBtn = document.getElementById('logoutBtn');
     if (logoutBtn) {
-        logoutBtn.addEventListener('click', function(e) {
+        logoutBtn.addEventListener('click', async function(e) {
             e.preventDefault();
 
             // Confirm logout
-            if (confirm('로그아웃 하시겠습니까?')) {
+            const result = await Swal.fire({
+                title: '로그아웃 하시겠습니까?',
+                icon: 'question',
+                showCancelButton: true,
+                confirmButtonColor: '#667eea',
+                cancelButtonColor: '#6c757d',
+                confirmButtonText: '로그아웃',
+                cancelButtonText: '취소'
+            });
+
+            if (result.isConfirmed) {
                 // Clear session storage
                 sessionStorage.removeItem('isLoggedIn');
                 sessionStorage.removeItem('username');
@@ -129,7 +139,12 @@ document.addEventListener('DOMContentLoaded', function() {
                 // localStorage.removeItem('rememberedUsername');
 
                 // Show logout message
-                alert('로그아웃 되었습니다.');
+                await Swal.fire({
+                    icon: 'success',
+                    title: '로그아웃 되었습니다',
+                    showConfirmButton: false,
+                    timer: 1500
+                });
 
                 // Redirect to login page
                 window.location.href = '/login';
