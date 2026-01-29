@@ -58,6 +58,14 @@ public class ApprovalDocument extends BaseEntity {
     private String documentType;
 
     /**
+     * 프로젝트 문서 여부
+     * - TRUE: 연구비증빙, 프로젝트 주간보고 등 프로젝트 관련 문서
+     * - FALSE: 일반 전자결재 문서 (연차, 지출 등)
+     */
+    @Column(name = "is_project", nullable = false)
+    private Boolean isProject = false;
+
+    /**
      * 기안자 사용자 IDX
      */
     @Column(name = "drafter_user_idx", nullable = false)
