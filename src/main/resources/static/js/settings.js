@@ -6,8 +6,11 @@ document.addEventListener('DOMContentLoaded', function() {
     const saveSettingsBtn = document.getElementById('saveSettingsBtn');
     const toggleSwitches = document.querySelectorAll('.toggle-switch input');
 
-    // 전자서명 캔버스 초기화
-    initSignatureCanvas();
+    // 현재 로그인한 사용자 정보 불러오기
+    loadCurrentUserProfile();
+
+    // 전자서명 캔버스 초기화 - 보류된 서비스 (주석처리)
+    // initSignatureCanvas();
 
     // 탭 전환
     tabButtons.forEach(btn => {
@@ -24,41 +27,11 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     });
 
-    // 설정 저장
-    if (saveSettingsBtn) {
-        saveSettingsBtn.addEventListener('click', async function() {
-            console.log('설정 저장');
+    // 설정 저장 버튼 제거됨 (프로필 정보는 readonly, 역량관리는 개별 저장)
+    // 토글 스위치 제거됨 (알림 기능 미구현)
 
-            // 모든 설정 값 수집
-            const settings = {
-                profile: {
-                    name: document.querySelector('#profile .form-input[type="text"]')?.value,
-                    email: document.querySelector('#profile .form-input[type="email"]')?.value,
-                    phone: document.querySelector('#profile .form-input[type="tel"]')?.value,
-                    department: document.querySelector('#profile .form-select')?.value,
-                    bio: document.querySelector('#profile .form-textarea')?.value
-                },
-                notifications: {},
-                system: {}
-            };
-
-            console.log('저장될 설정:', settings);
-            await showSuccess('설정이 저장되었습니다.');
-            // TODO: 서버에 설정 저장
-        });
-    }
-
-    // 토글 스위치 변경 감지
-    toggleSwitches.forEach(toggle => {
-        toggle.addEventListener('change', function() {
-            const settingName = this.closest('.setting-item').querySelector('h4').textContent;
-            const isEnabled = this.checked;
-            console.log(`${settingName}: ${isEnabled ? '활성화' : '비활성화'}`);
-            // TODO: 실시간 설정 업데이트
-        });
-    });
-
-    // 프로필 사진 변경
+    // 프로필 사진 변경 - 구현되지 않은 서비스 (주석처리)
+    /*
     const changeAvatarBtn = document.querySelector('.btn-change-avatar');
     if (changeAvatarBtn) {
         changeAvatarBtn.addEventListener('click', async function() {
@@ -67,6 +40,7 @@ document.addEventListener('DOMContentLoaded', function() {
             // TODO: 파일 업로드 모달 표시
         });
     }
+    */
 
     // 비밀번호 변경
     const passwordChangeBtn = document.getElementById('changePasswordBtn');
@@ -76,40 +50,129 @@ document.addEventListener('DOMContentLoaded', function() {
             const newPassword = document.getElementById('newPassword')?.value;
             const confirmPassword = document.getElementById('confirmPassword')?.value;
 
+            // 필드 검증
             if (!currentPassword || !newPassword || !confirmPassword) {
-                showWarning('모든 필드를 입력해주세요.');
+                await showWarning('모든 필드를 입력해주세요.');
                 return;
             }
 
-            if (newPassword.length < 8) {
-                showWarning('새 비밀번호는 8자 이상이어야 합니다.');
+            if (newPassword.length < 8 || newPassword.length > 20) {
+                await showWarning('새 비밀번호는 8~20자 이내여야 합니다.');
                 return;
             }
 
             // 비밀번호 강도 검증 (영문, 숫자, 특수문자 포함)
-            const passwordRegex = /^(?=.*[A-Za-z])(?=.*\d)(?=.*[@$!%*#?&])[A-Za-z\d@$!%*#?&]{8,}$/;
+            const passwordRegex = /^(?=.*[a-zA-Z])(?=.*\d)(?=.*[@$!%*?&#])[A-Za-z\d@$!%*?&#]{8,20}$/;
             if (!passwordRegex.test(newPassword)) {
-                showWarning('비밀번호는 영문, 숫자, 특수문자를 포함해야 합니다.');
+                await showWarning('비밀번호는 영문, 숫자, 특수문자(@$!%*?&#)를 포함해야 합니다.');
                 return;
             }
 
             if (newPassword !== confirmPassword) {
-                showWarning('새 비밀번호가 일치하지 않습니다.');
+                await showWarning('새 비밀번호가 일치하지 않습니다.');
                 return;
             }
 
-            console.log('비밀번호 변경 요청');
-            await showSuccess('비밀번호가 성공적으로 변경되었습니다.');
+            try {
+                console.log('비밀번호 변경 API 호출');
 
-            // 입력 필드 초기화
-            document.getElementById('currentPassword').value = '';
-            document.getElementById('newPassword').value = '';
-            document.getElementById('confirmPassword').value = '';
+                const response = await fetch('/api/auth/change-password', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        currentPassword: currentPassword,
+                        newPassword: newPassword,
+                        confirmPassword: confirmPassword
+                    })
+                });
 
-            // TODO: 서버에 비밀번호 변경 요청
+                const data = await response.json();
+
+                if (!response.ok) {
+                    // 서버에서 반환한 에러 메시지 표시
+                    await showError(data.error || '비밀번호 변경에 실패했습니다.');
+                    return;
+                }
+
+                await showSuccess('비밀번호가 성공적으로 변경되었습니다.');
+
+                // 입력 필드 초기화
+                document.getElementById('currentPassword').value = '';
+                document.getElementById('newPassword').value = '';
+                document.getElementById('confirmPassword').value = '';
+
+            } catch (error) {
+                console.error('비밀번호 변경 오류:', error);
+                await showError('비밀번호 변경 중 오류가 발생했습니다.');
+            }
         });
     }
 
+    // 프로필 정보 업데이트
+    const updateProfileBtn = document.getElementById('updateProfileBtn');
+    if (updateProfileBtn) {
+        updateProfileBtn.addEventListener('click', async function() {
+            const userName = document.getElementById('userName')?.value;
+            const userEmail = document.getElementById('userEmail')?.value;
+            const userPhone = document.getElementById('userPhone')?.value;
+
+            // 필드 검증
+            if (!userName || !userEmail || !userPhone) {
+                await showWarning('이름, 이메일, 연락처는 필수 항목입니다.');
+                return;
+            }
+
+            // 이메일 형식 검증
+            const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+            if (!emailRegex.test(userEmail)) {
+                await showWarning('올바른 이메일 형식을 입력해주세요.');
+                return;
+            }
+
+            // 연락처 형식 검증 (숫자와 하이픈만 허용)
+            const phoneRegex = /^[0-9-]+$/;
+            if (!phoneRegex.test(userPhone)) {
+                await showWarning('연락처는 숫자와 하이픈(-)만 입력 가능합니다.');
+                return;
+            }
+
+            try {
+                console.log('프로필 업데이트 API 호출');
+
+                const response = await fetch('/api/users/me', {
+                    method: 'PUT',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        empName: userName,
+                        empEmail: userEmail,
+                        empPhone: userPhone
+                    })
+                });
+
+                if (!response.ok) {
+                    const data = await response.json();
+                    await showError(data.error || '프로필 업데이트에 실패했습니다.');
+                    return;
+                }
+
+                const updatedUser = await response.json();
+                console.log('프로필 업데이트 성공:', updatedUser);
+
+                await showSuccess('프로필이 성공적으로 업데이트되었습니다.');
+
+            } catch (error) {
+                console.error('프로필 업데이트 오류:', error);
+                await showError('프로필 업데이트 중 오류가 발생했습니다.');
+            }
+        });
+    }
+
+    // 시스템 설정 관련 - 구현되지 않은 서비스 (주석처리)
+    /*
     // 캐시 삭제
     const deleteCacheBtn = document.querySelector('.data-section .btn-danger-outline');
     if (deleteCacheBtn) {
@@ -164,35 +227,12 @@ document.addEventListener('DOMContentLoaded', function() {
             // TODO: 항목 수 설정 저장
         });
     }
+    */
 
-    // 폼 입력 변경 감지
-    const formInputs = document.querySelectorAll('.form-input, .form-select, .form-textarea');
-    let hasChanges = false;
-
-    formInputs.forEach(input => {
-        input.addEventListener('change', function() {
-            hasChanges = true;
-            console.log('설정 변경됨');
-        });
-    });
-
-    // 페이지 이탈 시 경고
-    window.addEventListener('beforeunload', function(e) {
-        if (hasChanges) {
-            e.preventDefault();
-            e.returnValue = '저장하지 않은 변경사항이 있습니다. 페이지를 나가시겠습니까?';
-            return e.returnValue;
-        }
-    });
-
-    // 저장 버튼 클릭 시 변경사항 플래그 초기화
-    if (saveSettingsBtn) {
-        saveSettingsBtn.addEventListener('click', function() {
-            hasChanges = false;
-        });
-    }
+    // 페이지 이탈 경고 제거됨 (프로필 정보 readonly, 역량관리는 개별 저장되므로 불필요)
 });
 
+/* 전자서명 관련 함수들 - 보류된 서비스 (주석처리)
 // 전자서명 캔버스 초기화
 function initSignatureCanvas() {
     const canvas = document.getElementById('signatureCanvas');
@@ -896,5 +936,49 @@ function hideSignatureConfirmModal() {
     }
     if (confirmBtn) {
         confirmBtn.disabled = true;
+    }
+}
+*/
+
+// 현재 로그인한 사용자 정보 불러오기
+async function loadCurrentUserProfile() {
+    try {
+        const response = await fetch('/api/users/me');
+
+        if (response.status === 401) {
+            console.error('로그인이 필요합니다.');
+            await showError('로그인이 필요합니다. 로그인 페이지로 이동합니다.');
+            window.location.href = '/login';
+            return;
+        }
+
+        if (!response.ok) {
+            throw new Error('사용자 정보를 불러오는데 실패했습니다.');
+        }
+
+        const user = await response.json();
+        console.log('현재 사용자 정보:', user);
+
+        // 폼 필드에 데이터 채우기
+        const userNameInput = document.getElementById('userName');
+        const userPositionDiv = document.getElementById('userPosition');
+        const userDeptDiv = document.getElementById('userDept');
+        const userEmailInput = document.getElementById('userEmail');
+        const userPhoneInput = document.getElementById('userPhone');
+
+        // 이름은 편집 가능한 input
+        if (userNameInput) userNameInput.value = user.empName || '';
+
+        // 직급과 부서는 읽기 전용 div
+        if (userPositionDiv) userPositionDiv.textContent = user.empPositionName || user.empPosition || '-';
+        if (userDeptDiv) userDeptDiv.textContent = user.empDeptName || user.empDept || '-';
+
+        // 이메일과 연락처는 편집 가능한 input
+        if (userEmailInput) userEmailInput.value = user.empEmail || '';
+        if (userPhoneInput) userPhoneInput.value = user.empPhone || '';
+
+    } catch (error) {
+        console.error('사용자 정보 로드 오류:', error);
+        await showError('사용자 정보를 불러오는데 오류가 발생했습니다.');
     }
 }

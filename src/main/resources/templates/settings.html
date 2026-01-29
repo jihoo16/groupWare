@@ -11,12 +11,7 @@
             <header class="header">
                 <div class="header-left">
                     <h1 class="page-title">설정</h1>
-                </div>
-                <div class="header-right">
-                    <button class="btn-save" id="saveSettingsBtn">
-                        <i class="fas fa-save"></i>
-                        설정 저장
-                    </button>
+                    <p class="page-subtitle">개인 정보 및 계정 관리</p>
                 </div>
             </header>
 
@@ -31,14 +26,18 @@
                         <i class="fas fa-key"></i>
                         계정
                     </button>
+                    <!-- 알림 탭 - 구현되지 않은 서비스 (주석처리)
                     <button class="tab-btn" data-tab="notification">
                         <i class="fas fa-bell"></i>
                         알림
                     </button>
+                    -->
+                    <!-- 시스템 탭 - 구현되지 않은 서비스 (주석처리)
                     <button class="tab-btn" data-tab="system">
                         <i class="fas fa-cog"></i>
                         시스템
                     </button>
+                    -->
                 </div>
 
                 <!-- 프로필 설정 -->
@@ -46,6 +45,7 @@
                     <div class="settings-card">
                         <h3 class="card-title">프로필 정보</h3>
                         <div class="profile-section">
+                            <!-- 프로필 사진 변경 - 구현되지 않은 서비스 (주석처리)
                             <div class="profile-avatar">
                                 <div class="avatar-display">
                                     <i class="fas fa-user-circle"></i>
@@ -55,10 +55,19 @@
                                     사진 변경
                                 </button>
                             </div>
+                            -->
                             <div class="profile-form">
                                 <div class="form-group">
                                     <label>이름</label>
                                     <input type="text" id="userName" class="form-input" placeholder="이름을 입력하세요">
+                                </div>
+                                <div class="profile-item">
+                                    <label>직급</label>
+                                    <div class="info-value" id="userPosition">-</div>
+                                </div>
+                                <div class="profile-item">
+                                    <label>부서</label>
+                                    <div class="info-value" id="userDept">-</div>
                                 </div>
                                 <div class="form-group">
                                     <label>이메일</label>
@@ -68,24 +77,12 @@
                                     <label>연락처</label>
                                     <input type="tel" id="userPhone" class="form-input" placeholder="연락처를 입력하세요">
                                 </div>
-                                <div class="form-group">
-                                    <label>부서</label>
-                                    <select id="userDept" class="form-select">
-                                        <option value="">부서 선택</option>
-                                        <option value="개발팀">개발팀</option>
-                                        <option value="경영지원팀">경영지원팀</option>
-                                        <option value="영업팀">영업팀</option>
-                                        <option value="디자인팀">디자인팀</option>
-                                    </select>
-                                </div>
-                                <div class="form-group">
-                                    <label>직급</label>
-                                    <input type="text" id="userPosition" class="form-input" readonly>
-                                </div>
-                                <div class="form-group full-width">
-                                    <label>자기소개</label>
-                                    <textarea id="userBio" class="form-textarea" rows="4" placeholder="간단한 자기소개를 입력하세요"></textarea>
-                                </div>
+                            </div>
+                            <div class="profile-actions">
+                                <button class="btn-update-profile" id="updateProfileBtn">
+                                    <i class="fas fa-save"></i>
+                                    프로필 저장
+                                </button>
                             </div>
                         </div>
                     </div>
@@ -151,6 +148,7 @@
                 <!-- 계정 설정 -->
                 <div class="tab-content" id="account">
 
+                    <!-- 전자서명 설정 - 보류된 서비스 (주석처리)
                     <div class="settings-card">
                         <h3 class="card-title">전자서명 설정</h3>
                         <div class="legal-notice">
@@ -197,6 +195,7 @@
                             </div>
                         </div>
                     </div>
+                    -->
 
                     <div class="settings-card">
                         <h3 class="card-title">비밀번호 변경</h3>
@@ -214,12 +213,17 @@
                                 <label>새 비밀번호 확인</label>
                                 <input type="password" id="confirmPassword" class="form-input" placeholder="새 비밀번호를 다시 입력하세요">
                             </div>
-                            <button class="btn-secondary" id="changePasswordBtn">비밀번호 변경</button>
+                        </div>
+                        <div class="password-actions">
+                            <button class="btn-change-password" id="changePasswordBtn">
+                                <i class="fas fa-key"></i>
+                                비밀번호 변경
+                            </button>
                         </div>
                     </div>
                 </div>
 
-                <!-- 알림 설정 -->
+                <!-- 알림 설정 - 구현되지 않은 서비스 (주석처리)
                 <div class="tab-content" id="notification">
                     <div class="settings-card">
                         <h3 class="card-title">알림 설정</h3>
@@ -287,8 +291,9 @@
                         </div>
                     </div>
                 </div>
+                -->
 
-                <!-- 시스템 설정 -->
+                <!-- 시스템 설정 - 구현되지 않은 서비스 (주석처리)
                 <div class="tab-content" id="system">
                     <div class="settings-card">
                         <h3 class="card-title">화면 설정</h3>
@@ -359,11 +364,12 @@
                         </div>
                     </div>
                 </div>
+                -->
             </div>
         </main>
     </div>
 
-    <!-- 전자서명 저장 확인 모달 -->
+    <!-- 전자서명 저장 확인 모달 - 보류된 서비스 (주석처리)
     <div id="signatureConfirmModal" class="modal">
         <div class="modal-content">
             <div class="modal-header">
@@ -402,6 +408,7 @@
             </div>
         </div>
     </div>
+    -->
 
     <script th:src="@{/js/settings.js}" defer></script>
 </body>
