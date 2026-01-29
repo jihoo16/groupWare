@@ -331,6 +331,10 @@ document.addEventListener('DOMContentLoaded', async function() {
         const otTitle = document.getElementById('ot_title');
         const otAmount = document.getElementById('ot_amount');
         const otContent = document.getElementById('ot_content');
+        const otStartTime = document.getElementById('ot_start_time');
+        const otEndTime = document.getElementById('ot_end_time');
+        const otTaskSelect = document.getElementById('ot_task_select');
+        const otTaskCustom = document.getElementById('ot_task_custom');
         const overtimePersonArea = document.getElementById('overtimePersonArea');
         const overtimePersonList = document.getElementById('overtimePersonList');
 
@@ -530,17 +534,39 @@ document.addEventListener('DOMContentLoaded', async function() {
             renderOvertimePersonListInTemplate();
         }
 
+        // 시간 포맷팅 함수 (HH:mm ~ HH:mm)
+        function getFormattedTimeRange() {
+            const startTime = otStartTime?.value || '';
+            const endTime = otEndTime?.value || '';
+            if (startTime && endTime) {
+                return `${startTime} ~ ${endTime}`;
+            }
+            return '';
+        }
+
+        // 현재 선택된 업무 내용 가져오기
+        function getCurrentTask() {
+            if (!otTaskSelect) return '';
+            const selectedValue = otTaskSelect.value;
+            if (selectedValue === 'custom') {
+                return otTaskCustom?.value || '';
+            }
+            return selectedValue || '';
+        }
+
         // 야근 신청서 테이블 업데이트
         function updateOvertimeTable() {
             const personRows = document.querySelectorAll('.ot-person-row');
+            const timeRange = getFormattedTimeRange();
+            const currentTask = getCurrentTask();
 
             personRows.forEach((row, index) => {
                 const cells = row.querySelectorAll('td');
                 if (index < overtimePersons.length) {
                     const person = overtimePersons[index];
                     cells[1].textContent = person.name || '';
-                    cells[2].textContent = person.time || '';
-                    cells[3].textContent = person.task || '';
+                    cells[2].textContent = timeRange;
+                    cells[3].textContent = currentTask;
                 } else {
                     cells[1].innerHTML = '&nbsp;';
                     cells[2].innerHTML = '&nbsp;';
@@ -686,6 +712,33 @@ document.addEventListener('DOMContentLoaded', async function() {
 
         // 초기값 설정 (연구비카드가 기본)
         updatePaymentTypeDisplay();
+
+        // 시작/종료 시간 변경 시 테이블 업데이트
+        if (otStartTime) {
+            otStartTime.addEventListener('change', updateOvertimeTable);
+        }
+        if (otEndTime) {
+            otEndTime.addEventListener('change', updateOvertimeTable);
+        }
+
+        // 업무 내용 선택 변경 시 처리
+        if (otTaskSelect) {
+            otTaskSelect.addEventListener('change', function() {
+                if (this.value === 'custom') {
+                    otTaskCustom.style.display = 'block';
+                    otTaskCustom.focus();
+                } else {
+                    otTaskCustom.style.display = 'none';
+                    otTaskCustom.value = '';
+                }
+                updateOvertimeTable();
+            });
+        }
+
+        // 직접 입력 시 테이블 업데이트
+        if (otTaskCustom) {
+            otTaskCustom.addEventListener('input', updateOvertimeTable);
+        }
 
         // 금액 표시 업데이트
         function updateAmountDisplay() {

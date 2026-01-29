@@ -2017,3 +2017,19 @@ div h2{
 .radio-label input[type="radio"]:checked + .radio-custom::after {
     opacity: 1;
 }
+
+/* ========================================
+   업무 내용 입력 스타일
+   ======================================== */
+.task-input-wrapper {
+    display: flex;
+    flex-direction: column;
+}
+
+.task-input-wrapper select.form-input {
+    cursor: pointer;
+}
+
+.task-input-wrapper #ot_task_custom {
+    margin-top: 8px;
+}
