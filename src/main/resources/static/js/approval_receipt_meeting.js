@@ -1521,6 +1521,7 @@ ${documentFormContent.innerHTML}
                 try {
                     const attendeeIds = internalAttendeesForSave.map(a => parseInt(a.id)).filter(id => !isNaN(id));
                     if (attendeeIds.length > 0) {
+                        console.log('[중복 검증 시작] 검증할 참석자 IDs:', attendeeIds);
                         const duplicates = await checkDuplicateAttendees(attendeeIds);
 
                         if (duplicates.length > 0) {
@@ -1529,14 +1530,33 @@ ${documentFormContent.innerHTML}
                             const createdAt = new Date(meeting.createdAt).toLocaleString('ko-KR');
                             const title = meeting.title || '(제목 없음)';
 
-                            showWarning(`저장 중 중복 발견: ${createdAt}에 "${title}"에 포함된 참가자가 있어 저장할 수 없습니다.`);
+                            await showWarning(`저장 중 중복 발견: ${createdAt}에 "${title}"에 포함된 참가자가 있어 저장할 수 없습니다.`);
                             return;
                         }
+                        console.log('[중복 검증 완료] 중복 없음');
                     }
                 } catch (error) {
-                    console.error('중복 검증 중 오류:', error);
-                    showError('참석자 중복 검증 중 오류가 발생했습니다.\n계속 진행하시겠습니까?');
-                    return;
+                    console.error('[중복 검증 오류]', error);
+
+                    // 사용자에게 계속 진행할지 물어봄
+                    const confirmed = await showConfirm(
+                        `참석자 중복 검증 중 오류가 발생했습니다.<br><br>` +
+                        `오류 내용: ${error.message}<br><br>` +
+                        `중복 검증 없이 계속 진행하시겠습니까?`,
+                        '중복 검증 오류',
+                        {
+                            icon: 'warning',
+                            confirmText: '계속 진행',
+                            cancelText: '취소',
+                            confirmColor: '#ff9800'
+                        }
+                    );
+
+                    if (!confirmed) {
+                        console.log('[저장 취소] 사용자가 취소함');
+                        return;
+                    }
+                    console.log('[저장 계속] 중복 검증 스킵하고 진행');
                 }
             }
 
@@ -2327,23 +2347,30 @@ ${documentFormContent.innerHTML}
         for (const attendeeId of validAttendeeIds) {
             try {
                 const response = await fetch(`/api/receipt-meetings/check-duplicate?date=${date}&attendeeIdx=${attendeeId}`);
-                if (response.ok) {
-                    const data = await response.json();
-                    if (data && data.length > 0) {
-                        // 중복된 회의록이 있음
-                        const meeting = data[0]; // 첫 번째 회의록 정보 사용
-                        duplicates.push({
-                            attendeeId: attendeeId,
-                            meeting: meeting
-                        });
-                    }
-                } else {
-                    console.error(`중복 검증 API 실패 (attendeeId: ${attendeeId}):`, response.status);
+
+                if (!response.ok) {
+                    // 서버 에러 응답 처리
+                    const errorData = await response.json().catch(() => ({}));
+                    const errorMessage = errorData.error || `중복 검증 API 실패 (상태: ${response.status})`;
+                    console.error(`중복 검증 API 실패 (attendeeId: ${attendeeId}):`, errorMessage);
+                    throw new Error(errorMessage);
+                }
+
+                const data = await response.json();
+
+                // 응답이 배열인지 확인
+                if (Array.isArray(data) && data.length > 0) {
+                    // 중복된 회의록이 있음
+                    const meeting = data[0]; // 첫 번째 회의록 정보 사용
+                    duplicates.push({
+                        attendeeId: attendeeId,
+                        meeting: meeting
+                    });
                 }
             } catch (error) {
                 console.error(`중복 검증 중 오류 (attendeeId: ${attendeeId}):`, error);
                 // 검증 실패 시 에러를 throw하여 상위에서 처리
-                throw new Error(`참석자 중복 검증 중 오류가 발생했습니다 (ID: ${attendeeId})`);
+                throw new Error(`참석자 중복 검증 실패 (참석자 ID: ${attendeeId}, 오류: ${error.message})`);
             }
         }
 
@@ -2359,17 +2386,23 @@ ${documentFormContent.innerHTML}
 
         // 내부 참석자만 중복 검증 (외부인력은 제외)
         const internalAttendees = tempSelectedAttendees.filter(a => a.type === 'internal');
-        const attendeeIdsToCheck = internalAttendees.map(a => parseInt(a.id));
+        const attendeeIdsToCheck = internalAttendees.map(a => parseInt(a.id)).filter(id => !isNaN(id));
 
         if (attendeeIdsToCheck.length > 0) {
-            const duplicates = await checkDuplicateAttendees(attendeeIdsToCheck);
-            if (duplicates.length > 0) {
-                const duplicate = duplicates[0];
-                const meeting = duplicate.meeting;
-                const createdAt = new Date(meeting.createdAt).toLocaleString('ko-KR');
-                const title = meeting.title || '(제목 없음)';
+            try {
+                const duplicates = await checkDuplicateAttendees(attendeeIdsToCheck);
+                if (duplicates.length > 0) {
+                    const duplicate = duplicates[0];
+                    const meeting = duplicate.meeting;
+                    const createdAt = new Date(meeting.createdAt).toLocaleString('ko-KR');
+                    const title = meeting.title || '(제목 없음)';
 
-                showWarning(`${createdAt}에 "${title}"에 포함된 참가자라 선택이 불가합니다.`);
+                    await showWarning(`${createdAt}에 "${title}"에 포함된 참가자라 선택이 불가합니다.`);
+                    return;
+                }
+            } catch (error) {
+                console.error('[참석자 선택 중 중복 검증 오류]', error);
+                await showError(`중복 검증 중 오류가 발생했습니다.<br>${error.message}<br><br>다시 시도해주세요.`);
                 return;
             }
         }
