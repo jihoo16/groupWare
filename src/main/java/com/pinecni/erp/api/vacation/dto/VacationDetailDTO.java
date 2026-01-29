@@ -22,6 +22,7 @@ public class VacationDetailDTO {
     private Long documentIdx;
     private String documentNo;
     private LocalDate applyDate;
+    private Long drafterUserIdx;  // 작성자 사용자 idx (삭제 버튼 표시 조건 확인용)
     private String drafterName;
     private String drafterDept;
     private String drafterPosition;

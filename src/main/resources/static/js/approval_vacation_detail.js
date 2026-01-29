@@ -52,8 +52,20 @@ function displayDocumentInfo(data) {
 
     // 작성자 확인 후 삭제 버튼 생성
     const currentUserIdx = window.CURRENT_USER ? window.CURRENT_USER.idx : null;
-    if (data.drafterUserIdx && currentUserIdx && data.drafterUserIdx === currentUserIdx) {
+    console.log('[삭제 버튼 표시 조건 확인]');
+    console.log('- 현재 로그인 사용자 idx:', currentUserIdx);
+    console.log('- 문서 작성자 idx (drafterUserIdx):', data.drafterUserIdx);
+    console.log('- 문서 작성자 idx (userIdx):', data.userIdx);
+    console.log('- window.CURRENT_USER:', window.CURRENT_USER);
+
+    // drafterUserIdx 또는 userIdx 둘 다 확인 (API 응답 구조에 따라 다를 수 있음)
+    const documentUserIdx = data.drafterUserIdx || data.userIdx;
+
+    if (documentUserIdx && currentUserIdx && Number(documentUserIdx) === Number(currentUserIdx)) {
+        console.log('✓ 작성자 본인이므로 삭제 버튼 생성');
         createDeleteButton(data.documentIdx);
+    } else {
+        console.log('✗ 작성자가 아니므로 삭제 버튼 미생성');
     }
 }
 
