@@ -78,18 +78,28 @@ public class ReceiptMeetingController {
      * GET /api/receipt-meetings/check-duplicate?date={date}&attendeeIdx={attendeeIdx}
      */
     @GetMapping("/check-duplicate")
-    public ResponseEntity<List<Map<String, Object>>> checkDuplicateAttendee(
+    public ResponseEntity<?> checkDuplicateAttendee(
             @RequestParam String date,
-            @RequestParam Long attendeeIdx) {
+            @RequestParam(required = false) Long attendeeIdx) {
 
         log.debug("GET /api/receipt-meetings/check-duplicate - date: {}, attendeeIdx: {}", date, attendeeIdx);
+
+        // attendeeIdx 유효성 검증
+        if (attendeeIdx == null || attendeeIdx <= 0) {
+            log.warn("유효하지 않은 attendeeIdx: {}", attendeeIdx);
+            Map<String, String> error = new HashMap<>();
+            error.put("error", "유효하지 않은 참석자 ID입니다.");
+            return ResponseEntity.badRequest().body(error);
+        }
 
         try {
             List<Map<String, Object>> duplicates = receiptMeetingService.findDuplicateAttendee(date, attendeeIdx);
             return ResponseEntity.ok(duplicates);
         } catch (Exception e) {
             log.error("중복 검증 실패: {}", e.getMessage(), e);
-            return ResponseEntity.ok(List.of()); // 오류 시 빈 리스트 반환
+            Map<String, String> error = new HashMap<>();
+            error.put("error", "중복 검증 중 오류가 발생했습니다.");
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(error);
         }
     }
 

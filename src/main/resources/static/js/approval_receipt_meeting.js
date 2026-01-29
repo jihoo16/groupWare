@@ -1515,18 +1515,27 @@ ${documentFormContent.innerHTML}
                 }
             }
 
-            // 저장 직전 중복 참석자 최종 검증
-            if (currentAttendees.length > 0) {
-                const attendeeIds = currentAttendees.map(a => parseInt(a.id));
-                const duplicates = await checkDuplicateAttendees(attendeeIds);
+            // 저장 직전 중복 참석자 최종 검증 (내부 참석자만)
+            const internalAttendeesForSave = currentAttendees.filter(a => a.type === 'internal');
+            if (internalAttendeesForSave.length > 0) {
+                try {
+                    const attendeeIds = internalAttendeesForSave.map(a => parseInt(a.id)).filter(id => !isNaN(id));
+                    if (attendeeIds.length > 0) {
+                        const duplicates = await checkDuplicateAttendees(attendeeIds);
 
-                if (duplicates.length > 0) {
-                    const duplicate = duplicates[0];
-                    const meeting = duplicate.meeting;
-                    const createdAt = new Date(meeting.createdAt).toLocaleString('ko-KR');
-                    const title = meeting.title || '(제목 없음)';
+                        if (duplicates.length > 0) {
+                            const duplicate = duplicates[0];
+                            const meeting = duplicate.meeting;
+                            const createdAt = new Date(meeting.createdAt).toLocaleString('ko-KR');
+                            const title = meeting.title || '(제목 없음)';
 
-                    showWarning(`저장 중 중복 발견: ${createdAt}에 "${title}"에 포함된 참가자가 있어 저장할 수 없습니다.`);
+                            showWarning(`저장 중 중복 발견: ${createdAt}에 "${title}"에 포함된 참가자가 있어 저장할 수 없습니다.`);
+                            return;
+                        }
+                    }
+                } catch (error) {
+                    console.error('중복 검증 중 오류:', error);
+                    showError('참석자 중복 검증 중 오류가 발생했습니다.\n계속 진행하시겠습니까?');
                     return;
                 }
             }
@@ -1568,12 +1577,11 @@ ${documentFormContent.innerHTML}
 
             // 참석자 목록 변환
             const attendeeDTOs = currentAttendees.map((attendee, index) => {
-                const isExternal = String(attendee.id).startsWith('ext_');
                 const dto = {
-                    attendeeType: isExternal ? '외부' : '내부',
+                    attendeeType: attendee.type === 'external' ? '외부' : '내부',
                     department: attendee.dept || null,
                     name: attendee.name,
-                    userIdx: isExternal ? parseInt(String(attendee.id).replace('ext_', '')) : parseInt(attendee.id),
+                    userIdx: parseInt(attendee.id),
                     position: attendee.position || null,
                     displayOrder: index
                 };
@@ -2119,7 +2127,7 @@ ${documentFormContent.innerHTML}
         }
 
         externalListEl.innerHTML = filtered.map(person => {
-            const isSelected = tempSelectedAttendees.some(a => String(a.id) === `ext_${person.idx}` && a.type === 'external');
+            const isSelected = tempSelectedAttendees.some(a => parseInt(a.id) === person.idx && a.type === 'external');
 
             const highlightedName = highlightText(person.name, searchText);
             const highlightedCompany = highlightText(person.companyName || '-', searchText);
@@ -2127,7 +2135,7 @@ ${documentFormContent.innerHTML}
 
             return `
                 <div class="employee-item ${isSelected ? 'selected' : ''}"
-                     data-id="ext_${person.idx}"
+                     data-id="${person.idx}"
                      data-type="external"
                      onclick="toggleExternalAttendee(${person.idx})">
                     <div class="employee-info">
@@ -2169,13 +2177,12 @@ ${documentFormContent.innerHTML}
         const person = allExternalPersons.find(p => p.idx === personIdx);
         if (!person) return;
 
-        const extId = `ext_${personIdx}`;
-        const index = tempSelectedAttendees.findIndex(a => String(a.id) === extId && a.type === 'external');
+        const index = tempSelectedAttendees.findIndex(a => parseInt(a.id) === personIdx && a.type === 'external');
         if (index > -1) {
             tempSelectedAttendees.splice(index, 1);
         } else {
             tempSelectedAttendees.push({
-                id: extId,
+                id: personIdx,
                 name: person.name,
                 dept: person.companyName || '-',
                 position: person.position || '-',
@@ -2240,15 +2247,13 @@ ${documentFormContent.innerHTML}
         if (attendeeModal) {
             // 기존에 선택된 참석자들을 tempSelectedAttendees에 복사
             tempSelectedAttendees = currentAttendees.map(attendee => {
-                // id를 기준으로 type 판별
-                const type = String(attendee.id).startsWith('ext_') ? 'external' : 'internal';
                 return {
-                    id: String(attendee.id),
+                    id: attendee.id,
                     name: attendee.name,
                     position: attendee.position,
                     dept: attendee.dept,
                     meetingExpense: attendee.meetingExpense || 0,
-                    type: type
+                    type: attendee.type
                 };
             });
 
@@ -2305,7 +2310,21 @@ ${documentFormContent.innerHTML}
         const date = dateInput.value; // yyyy-MM-dd 형식
         const duplicates = [];
 
-        for (const attendeeId of attendeeIds) {
+        // NaN 필터링 및 유효성 검증
+        const validAttendeeIds = attendeeIds.filter(id => {
+            const isValid = !isNaN(id) && id !== null && id !== undefined && id > 0;
+            if (!isValid) {
+                console.warn('유효하지 않은 attendeeId 발견:', id);
+            }
+            return isValid;
+        });
+
+        if (validAttendeeIds.length === 0) {
+            console.warn('유효한 attendeeId가 없습니다.');
+            return [];
+        }
+
+        for (const attendeeId of validAttendeeIds) {
             try {
                 const response = await fetch(`/api/receipt-meetings/check-duplicate?date=${date}&attendeeIdx=${attendeeId}`);
                 if (response.ok) {
@@ -2318,9 +2337,13 @@ ${documentFormContent.innerHTML}
                             meeting: meeting
                         });
                     }
+                } else {
+                    console.error(`중복 검증 API 실패 (attendeeId: ${attendeeId}):`, response.status);
                 }
             } catch (error) {
-                console.error('중복 검증 오류:', error);
+                console.error(`중복 검증 중 오류 (attendeeId: ${attendeeId}):`, error);
+                // 검증 실패 시 에러를 throw하여 상위에서 처리
+                throw new Error(`참석자 중복 검증 중 오류가 발생했습니다 (ID: ${attendeeId})`);
             }
         }
 
@@ -2765,11 +2788,12 @@ ${documentFormContent.innerHTML}
 
                 // 신규 등록된 외부인력을 참석자로 자동 추가
                 tempSelectedAttendees.push({
-                    id: `ext_${newPerson.idx}`,
+                    id: newPerson.idx,
                     type: 'external',
                     name: newPerson.name,
                     dept: newPerson.companyName,
-                    position: newPerson.position
+                    position: newPerson.position,
+                    meetingExpense: 0
                 });
 
                 renderSelectedBadges(); // 선택된 참석자 배지 업데이트
@@ -2953,17 +2977,16 @@ ${documentFormContent.innerHTML}
                     dept = '파인씨앤아이'; // 내부 참석자는 소속을 파인씨앤아이로 통일
                 }
 
-                // ID 생성: 외부는 externalPersonIdx 사용, 내부는 userIdx 사용
-                const id = attendee.attendeeType === '외부'
-                    ? `ext_${attendee.userIdx}`
-                    : String(attendee.userIdx);
+                // ID: userIdx 사용 (내부/외부 모두 동일)
+                const id = attendee.userIdx;
+                const type = attendee.attendeeType === '외부' ? 'external' : 'internal';
 
                 return {
                     id: id,
                     name: attendee.name,
                     dept: dept,
                     position: position,
-                    isExternal: attendee.attendeeType === '외부'
+                    type: type
                 };
             });
 
@@ -3053,9 +3076,8 @@ ${documentFormContent.innerHTML}
 
                     const grouped = {};
                     currentAttendees.forEach(attendee => {
-                        const isExternal = String(attendee.id).startsWith('ext_');
-                        const type = isExternal ? '외부' : '내부';
-                        const dept = isExternal ? attendee.dept : '파인씨앤아이';
+                        const type = attendee.type === 'external' ? '외부' : '내부';
+                        const dept = attendee.type === 'external' ? attendee.dept : '파인씨앤아이';
 
                         const key = `${type}_${dept}`;
                         if (!grouped[key]) {
@@ -3119,8 +3141,8 @@ ${documentFormContent.innerHTML}
                 }
 
                 // 회의록 참석자 정보 업데이트
-                const internalAttendees = currentAttendees.filter(a => a.name && a.name.trim() && !String(a.id).startsWith('ext_'));
-                const externalAttendees = currentAttendees.filter(a => a.name && a.name.trim() && String(a.id).startsWith('ext_'));
+                const internalAttendees = currentAttendees.filter(a => a.name && a.name.trim() && a.type === 'internal');
+                const externalAttendees = currentAttendees.filter(a => a.name && a.name.trim() && a.type === 'external');
 
                 let allAttendeesText = '';
 
@@ -3228,12 +3250,11 @@ ${documentFormContent.innerHTML}
             }
 
             const attendeeDTOs = currentAttendees.map((attendee, index) => {
-                const isExternal = String(attendee.id).startsWith('ext_');
                 return {
-                    attendeeType: isExternal ? '외부' : '내부',
+                    attendeeType: attendee.type === 'external' ? '외부' : '내부',
                     department: attendee.dept || null,
                     name: attendee.name,
-                    userIdx: isExternal ? parseInt(String(attendee.id).replace('ext_', '')) : parseInt(attendee.id),
+                    userIdx: parseInt(attendee.id),
                     position: attendee.position || null,
                     displayOrder: index
                 };
