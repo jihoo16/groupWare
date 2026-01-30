@@ -257,26 +257,69 @@ public class ReceiptMeetingServiceImpl implements ReceiptMeetingService {
 
     @Override
     @Transactional
-    public void deleteReceiptMeeting(Long idx) {
-        log.debug("회의록 삭제 - idx: {}", idx);
+    public void deleteReceiptMeeting(Long idx, Long deletedUserIdx) {
+        log.debug("회의록 삭제 - idx: {}, deletedUserIdx: {}", idx, deletedUserIdx);
 
         ReceiptMeeting entity = receiptMeetingRepository.findById(idx)
                 .orElseThrow(() -> new IllegalArgumentException("회의록을 찾을 수 없습니다. idx: " + idx));
 
-        // 연결된 ApprovalDocument 소프트 딜리트
+        LocalDateTime now = LocalDateTime.now();
+
+        // 1. 연결된 자식 엔티티들 soft delete
+        // 1-1. 참석자 soft delete
+        List<ReceiptMeetingAttendee> attendees = attendeeRepository.findByReceiptMeetingIdxOrderByDisplayOrder(idx);
+        attendees.forEach(attendee -> {
+            attendee.setDeleted(true);
+            attendee.setDeletedAt(now);
+            attendee.setDeletedUserIdx(deletedUserIdx);
+        });
+        if (!attendees.isEmpty()) {
+            attendeeRepository.saveAll(attendees);
+            log.debug("참석자 {} 건 soft delete 완료", attendees.size());
+        }
+
+        // 1-2. 첨부파일 soft delete
+        List<ReceiptMeetingAttachment> attachments = attachmentRepository.findByReceiptMeetingIdx(idx);
+        attachments.forEach(attachment -> {
+            attachment.setDeleted(true);
+            attachment.setDeletedAt(now);
+            attachment.setDeletedUserIdx(deletedUserIdx);
+        });
+        if (!attachments.isEmpty()) {
+            attachmentRepository.saveAll(attachments);
+            log.debug("첨부파일 {} 건 soft delete 완료", attachments.size());
+        }
+
+        // 1-3. 공식 PDF soft delete
+        List<ReceiptMeetingOfficialPdf> pdfs = pdfRepository.findAllByReceiptMeetingIdx(idx);
+        pdfs.forEach(pdf -> {
+            pdf.setDeleted(true);
+            pdf.setDeletedAt(now);
+            pdf.setDeletedUserIdx(deletedUserIdx);
+        });
+        if (!pdfs.isEmpty()) {
+            pdfRepository.saveAll(pdfs);
+            log.debug("공식 PDF {} 건 soft delete 완료", pdfs.size());
+        }
+
+        // 2. 연결된 ApprovalDocument soft delete
         if (entity.getDocumentIdx() != null) {
             approvalDocumentRepository.findById(entity.getDocumentIdx()).ifPresent(approvalDocument -> {
-                LocalDateTime now = LocalDateTime.now();
                 approvalDocument.setDeletedAt(now);
-                approvalDocument.setDeletedUserIdx(entity.getAuthorIdx());
+                approvalDocument.setDeletedUserIdx(deletedUserIdx);
                 approvalDocumentRepository.save(approvalDocument);
                 log.debug("ApprovalDocument soft deleted - documentIdx: {}, deletedAt: {}",
                         entity.getDocumentIdx(), now);
             });
         }
 
-        receiptMeetingRepository.delete(entity);
-        log.info("회의록 삭제 완료 - idx: {}", idx);
+        // 3. 회의록 자체 soft delete
+        entity.setDeleted(true);
+        entity.setDeletedAt(now);
+        entity.setDeletedUserIdx(deletedUserIdx);
+        receiptMeetingRepository.save(entity);
+
+        log.info("회의록 삭제 완료 - idx: {}, deletedUserIdx: {}", idx, deletedUserIdx);
     }
 
     @Override

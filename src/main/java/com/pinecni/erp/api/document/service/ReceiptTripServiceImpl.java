@@ -188,6 +188,18 @@ public class ReceiptTripServiceImpl implements ReceiptTripService {
         ReceiptTrip entity = receiptTripRepository.findById(idx)
                 .orElseThrow(() -> new IllegalArgumentException("출장 정보를 찾을 수 없습니다. idx: " + idx));
 
+        // 연결된 ApprovalDocument 소프트 딜리트
+        if (entity.getDocumentIdx() != null) {
+            approvalDocumentRepository.findById(entity.getDocumentIdx()).ifPresent(approvalDocument -> {
+                LocalDateTime now = LocalDateTime.now();
+                approvalDocument.setDeletedAt(now);
+                approvalDocument.setDeletedUserIdx(entity.getAuthorIdx());
+                approvalDocumentRepository.save(approvalDocument);
+                log.debug("ApprovalDocument soft deleted - documentIdx: {}, deletedAt: {}",
+                        entity.getDocumentIdx(), now);
+            });
+        }
+
         receiptTripRepository.delete(entity);
         log.info("출장 삭제 완료 - idx: {}", idx);
     }

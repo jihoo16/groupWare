@@ -177,15 +177,26 @@ public class ReceiptMeetingController {
     }
 
     /**
-     * 회의록 삭제
+     * 회의록 삭제 (Soft Delete)
      * DELETE /api/receipt-meetings/{idx}
+     * @param idx 회의록 IDX
+     * @param requestBody 삭제 요청 정보 (deletedUserIdx 포함)
      */
     @DeleteMapping("/{idx}")
-    public ResponseEntity<Map<String, String>> deleteReceiptMeeting(@PathVariable Long idx) {
+    public ResponseEntity<Map<String, String>> deleteReceiptMeeting(
+            @PathVariable Long idx,
+            @RequestBody Map<String, Long> requestBody) {
         log.debug("DELETE /api/receipt-meetings/{}", idx);
 
         try {
-            receiptMeetingService.deleteReceiptMeeting(idx);
+            Long deletedUserIdx = requestBody.get("deletedUserIdx");
+            if (deletedUserIdx == null) {
+                Map<String, String> error = new HashMap<>();
+                error.put("error", "삭제한 사용자 정보가 필요합니다.");
+                return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(error);
+            }
+
+            receiptMeetingService.deleteReceiptMeeting(idx, deletedUserIdx);
 
             Map<String, String> response = new HashMap<>();
             response.put("message", "회의록이 삭제되었습니다.");

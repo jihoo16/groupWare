@@ -50,9 +50,11 @@ public interface ReceiptMeetingService {
     ReceiptMeetingDTO updateReceiptMeeting(Long idx, ReceiptMeetingUpdateDTO updateDTO);
 
     /**
-     * 회의록 삭제
+     * 회의록 삭제 (Soft Delete)
+     * @param idx 회의록 IDX
+     * @param deletedUserIdx 삭제한 사용자 IDX
      */
-    void deleteReceiptMeeting(Long idx);
+    void deleteReceiptMeeting(Long idx, Long deletedUserIdx);
 
     /**
      * 문서번호 생성
