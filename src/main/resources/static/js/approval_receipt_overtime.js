@@ -171,7 +171,6 @@ document.addEventListener('DOMContentLoaded', async function() {
                     otProject.value = proj.projectName;
                     otProject.style.borderColor = '';
                 }
-
                 const selectedProjectIdx = document.getElementById('selectedProjectIdx');
                 if (selectedProjectIdx) selectedProjectIdx.value = proj.idx;
 
@@ -497,9 +496,15 @@ document.addEventListener('DOMContentLoaded', async function() {
         // 전역에서 접근 가능하게 등록
         window.updateOvertimeTotalAmount = updateOvertimeTotalAmount;
 
+        // 전역 참조 동기화 함수
+        function syncGlobalOvertimePersons() {
+            window.currentOvertimePersons = overtimePersons;
+        }
+
         // 템플릿 내에서 야근인원 제거
         window.removeOvertimePersonInTemplate = function(personId) {
             overtimePersons = overtimePersons.filter(p => p.id !== personId);
+            syncGlobalOvertimePersons();
             renderOvertimePersonListInTemplate();
         };
 
@@ -521,6 +526,7 @@ document.addEventListener('DOMContentLoaded', async function() {
                 };
             });
             overtimePersons = newList;
+            syncGlobalOvertimePersons();
             renderOvertimePersonListInTemplate();
         };
 
@@ -528,6 +534,9 @@ document.addEventListener('DOMContentLoaded', async function() {
         window.getCurrentOvertimePersons = function() {
             return [...overtimePersons];
         };
+
+        // 전역 참조용 (제출 시 사용)
+        window.currentOvertimePersons = overtimePersons;
 
         // 야근 인원 목록 업데이트 함수 (기존 방식, deprecated)
         function updateOvertimePersonList() {
@@ -973,17 +982,125 @@ document.addEventListener('DOMContentLoaded', async function() {
         });
     }
 
-    // 제출
+    // 제출 (저장하기)
     if (submitBtn) {
         submitBtn.addEventListener('click', async function() {
-            if (selectedApprovers.length === 0) {
-                showWarning('결재자를 지정해주세요.');
+            // 필수 입력 검증
+            const projectIdx = document.getElementById('selectedProjectIdx')?.value;
+            const otProject = document.getElementById('ot_project');
+            const otApprovalDate = document.getElementById('ot_approval_date');
+            const otTitle = document.getElementById('ot_title');
+            const otAmount = document.getElementById('ot_amount');
+            const otStartTime = document.getElementById('ot_start_time');
+            const otEndTime = document.getElementById('ot_end_time');
+            const otTaskSelect = document.getElementById('ot_task_select');
+            const otTaskCustom = document.getElementById('ot_task_custom');
+            const otContent = document.getElementById('ot_content');
+            const otManager = document.getElementById('ot_manager');
+
+            if (!projectIdx) {
+                showWarning('과제를 선택해주세요.');
+                if (otProject) otProject.style.borderColor = '#ef5350';
                 return;
             }
 
-            if (await showConfirm('결재를 요청하시겠습니까?')) {
-                showSuccess('결재 요청이 완료되었습니다.');
-                window.location.href = '/project/documents';
+            if (!otApprovalDate?.value) {
+                showWarning('품의일자를 입력해주세요.');
+                return;
+            }
+
+            if (!otTitle?.value) {
+                showWarning('품의명을 입력해주세요.');
+                return;
+            }
+
+            if (!otStartTime?.value || !otEndTime?.value) {
+                showWarning('시작 시간과 종료 시간을 입력해주세요.');
+                return;
+            }
+
+            // 업무 내용 가져오기
+            let taskContent = '';
+            if (otTaskSelect?.value === 'custom') {
+                taskContent = otTaskCustom?.value || '';
+            } else {
+                taskContent = otTaskSelect?.value || '';
+            }
+
+            if (!taskContent) {
+                showWarning('업무 내용을 선택하거나 입력해주세요.');
+                return;
+            }
+
+            // 야근 인원 확인
+            const overtimePersons = window.currentOvertimePersons || [];
+            if (overtimePersons.length === 0) {
+                showWarning('야근 인원을 추가해주세요.');
+                return;
+            }
+
+            // 지급종류
+            const paymentType = document.querySelector('input[name="ot_payment_type"]:checked')?.value || 'card';
+
+            // 금액
+            const amountStr = otAmount?.value?.replace(/,/g, '') || '0';
+            const amount = parseFloat(amountStr) || 0;
+
+            // 확인 다이얼로그
+            if (!await showConfirm('야근식대를 저장하시겠습니까?')) {
+                return;
+            }
+
+            // 시간 범위 문자열 생성
+            const workTimeStr = `${otStartTime.value} ~ ${otEndTime.value}`;
+
+            // 데이터 준비 (새로운 DTO 구조에 맞게)
+            const data = {
+                projectIdx: parseInt(projectIdx),
+                overtimeDate: otApprovalDate.value,
+                approvalDate: otApprovalDate.value,
+                documentTitle: otProject.value,
+                documentContent: otContent?.value || '',
+                totalAmount: amount,
+                paymentType: paymentType,
+                persons: overtimePersons.map(person => ({
+                    name: person.name,
+                    workTime: workTimeStr,
+                    workTask: taskContent
+                }))
+            };
+
+            // FormData 생성
+            const formData = new FormData();
+            formData.append('data', JSON.stringify(data));
+
+            // 첨부파일 추가
+            if (selectedFiles && selectedFiles.length > 0) {
+                selectedFiles.forEach(file => {
+                    formData.append('files', file);
+                });
+            }
+
+            try {
+                // API 호출
+                const response = await fetch('/api/receipt-overtimes', {
+                    method: 'POST',
+                    body: formData
+                });
+
+                if (response.ok) {
+                    const result = await response.json();
+                    showSuccess('야근식대가 저장되었습니다.');
+                    setTimeout(() => {
+                        window.location.href = '/project/documents';
+                    }, 1500);
+                } else {
+                    const error = await response.json();
+                    showError(error.error || '저장 중 오류가 발생했습니다.');
+                }
+            } catch (error) {
+                console.error('야근식대 저장 실패:', error);
+                showError('저장 중 오류가 발생했습니다.\n관리자에게 문의해주세요.');
             }
         });
     }
@@ -1426,6 +1543,12 @@ document.addEventListener('DOMContentLoaded', async function() {
         amountInput.value = '';
         amountInput.dispatchEvent(new Event('input'));
     };
+
+    // ============================================
+    // 페이지 초기화 - 야근식대 폼이 직접 렌더링되므로 바로 초기화
+    // ============================================
+    setupOvertimeAutoFill();
+    setupDocumentFormToggle();
 
     // 초기값 자동 설정
     setTimeout(() => {
