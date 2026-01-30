@@ -20,9 +20,11 @@ public class ReceiptMeetingAttendeeDTO {
     private Long idx;
 
     /**
-     * 참석자 타입 ("내부" 또는 "외부")
+     * 외부 참석자 여부
+     * - true: 외부 인력
+     * - false: 내부 인력
      */
-    private String attendeeType;
+    private Boolean isExternal;
 
     /**
      * 부서/소속
@@ -35,9 +37,9 @@ public class ReceiptMeetingAttendeeDTO {
     private String name;
 
     /**
-     * 사용자 IDX (내부 참석자인 경우)
-     * 또는 외부인력 IDX (외부 참석자인 경우)
-     * attendee_type에 따라 User 또는 ExternalPerson 테이블 참조
+     * 참석자 IDX
+     * - isExternal = false: users.idx
+     * - isExternal = true: external_persons.idx
      */
     private Long userIdx;
 
@@ -50,4 +52,9 @@ public class ReceiptMeetingAttendeeDTO {
      * 표시 순서
      */
     private Integer displayOrder;
+
+    /**
+     * 회의비 (참석자별 회의 비용)
+     */
+    private Long meetingExpense;
 }

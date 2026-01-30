@@ -61,10 +61,23 @@ public class ReceiptMeetingMapper {
             approvalDTOs = null;
         }
 
+        // 카드 정보 조합
+        String cardName = null;
+        if (entity.getProjectCard() != null) {
+            ProjectCard card = entity.getProjectCard();
+            if (card.getCardNickname() != null && !card.getCardNickname().isEmpty()) {
+                cardName = card.getCardNickname();
+            } else if (card.getCardCompany() != null && card.getCardLastDigits() != null) {
+                cardName = card.getCardCompany() + " (****" + card.getCardLastDigits() + ")";
+            }
+        }
+
         return ReceiptMeetingDTO.builder()
                 .idx(entity.getIdx())
                 .projectIdx(entity.getProjectIdx())
                 .projectName(entity.getProject() != null ? entity.getProject().getProjectName() : null)
+                .cardIdx(entity.getCardIdx())
+                .cardName(cardName)
                 .documentNumber(entity.getDocumentNumber())
                 .authorIdx(entity.getAuthorIdx())
                 .authorName(entity.getAuthorName())
@@ -98,6 +111,7 @@ public class ReceiptMeetingMapper {
 
         return ReceiptMeeting.builder()
                 .projectIdx(dto.getProjectIdx())
+                .cardIdx(dto.getCardIdx())
                 .authorIdx(dto.getAuthorIdx())
                 .authorName(dto.getAuthorName())
                 .meetingDate(dto.getMeetingDate())
@@ -124,6 +138,9 @@ public class ReceiptMeetingMapper {
 
         if (dto.getProjectIdx() != null) {
             entity.setProjectIdx(dto.getProjectIdx());
+        }
+        if (dto.getCardIdx() != null) {
+            entity.setCardIdx(dto.getCardIdx());
         }
         if (dto.getMeetingDate() != null) {
             entity.setMeetingDate(dto.getMeetingDate());
@@ -166,8 +183,8 @@ public class ReceiptMeetingMapper {
         }
         String position = null;
 
-        // attendee_type에 따라 직책 조회
-        if ("내부".equals(entity.getAttendeeType()) && entity.getUserIdx() != null) {
+        // isExternal에 따라 직책 조회
+        if (Boolean.FALSE.equals(entity.getIsExternal()) && entity.getUserIdx() != null) {
             // 내부 참석자: User에서 직급명 조회
             position = userRepository.findById(entity.getUserIdx())
                     .map(user -> {
@@ -179,38 +196,22 @@ public class ReceiptMeetingMapper {
                         return null;
                     })
                     .orElse(null);
-        } else if ("외부".equals(entity.getAttendeeType()) && entity.getUserIdx() != null) {
+        } else if (Boolean.TRUE.equals(entity.getIsExternal()) && entity.getUserIdx() != null) {
             // 외부 참석자: ExternalPerson에서 직책 조회
             position = externalPersonRepository.findById(entity.getUserIdx())
                     .map(ExternalPerson::getPosition)
                     .orElse(null);
         }
 
-
-        // 직책 정보가 없으면 원본 데이터에서 조회
-
-            if ("내부".equals(entity.getAttendeeType()) && entity.getUserIdx() != null) {
-                // 내부 참석자: User에서 직급명 조회
-                userRepository.findById(entity.getUserIdx()).ifPresent(user -> {
-                    if (user.getEmpPosition() != null) {
-                        String positionName = codeRepository.findByGroupCodeAndCode("C02", user.getEmpPosition())
-                                .map(Code::getCodeName)
-                                .orElse(null);
-
-                    }
-                });
-
-            }
-
-
         return ReceiptMeetingAttendeeDTO.builder()
                 .idx(entity.getIdx())
-                .attendeeType(entity.getAttendeeType())
+                .isExternal(entity.getIsExternal())
                 .department(entity.getDepartment())
                 .name(entity.getName())
                 .userIdx(entity.getUserIdx())
                 .position(position)
                 .displayOrder(entity.getDisplayOrder())
+                .meetingExpense(entity.getMeetingExpense())
                 .build();
     }
 
@@ -224,11 +225,12 @@ public class ReceiptMeetingMapper {
 
         return ReceiptMeetingAttendee.builder()
                 .receiptMeetingIdx(receiptMeetingIdx)
-                .attendeeType(dto.getAttendeeType())
+                .isExternal(dto.getIsExternal())
                 .department(dto.getDepartment())
                 .name(dto.getName())
                 .userIdx(dto.getUserIdx())
                 .displayOrder(dto.getDisplayOrder())
+                .meetingExpense(dto.getMeetingExpense())
                 .build();
     }
 
