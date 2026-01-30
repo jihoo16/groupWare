@@ -400,7 +400,13 @@ function initCompetencyManagement() {
     addButtons.forEach(btn => {
         btn.addEventListener('click', async function() {
             const type = this.getAttribute('data-type');
-            await showCompetencyForm(type);
+            // 역량관리 기능은 추후 구현 예정
+            Swal.fire({
+                icon: 'info',
+                title: '추후 구현예정',
+                text: '역량관리 기능은 추후 구현될 예정입니다.',
+                confirmButtonText: '확인'
+            });
         });
     });
 

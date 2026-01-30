@@ -61,4 +61,9 @@ public interface ReceiptTripRepository extends JpaRepository<ReceiptTrip, Long> 
      * 전체 출장 목록 조회 (최신순)
      */
     List<ReceiptTrip> findAllByOrderByTripDateDesc();
+
+    /**
+     * ApprovalDocument idx로 출장 조회
+     */
+    Optional<ReceiptTrip> findByDocumentIdx(Long documentIdx);
 }

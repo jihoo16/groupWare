@@ -17,6 +17,14 @@
                         <i class="fas fa-save"></i>
                         저장하기
                     </button>
+                    <button class="btn-primary" id="updateBtn" style="display: none;">
+                        <i class="fas fa-edit"></i>
+                        수정하기
+                    </button>
+                    <button class="btn-danger" id="deleteBtn" style="display: none;">
+                        <i class="fas fa-trash"></i>
+                        삭제하기
+                    </button>
                     <button class="btn-secondary" onclick="history.back()">
                         <i class="fas fa-arrow-left"></i>
                         돌아가기
@@ -82,14 +90,16 @@
                                     <div class="form-group">
                                         <label for="common_start_time">
                                             <i class="fas fa-clock"></i> 시작 시간
+                                            <span class="required-mark">*</span>
                                         </label>
-                                        <input type="time" id="common_start_time" class="form-input" value="10:00">
+                                        <input type="time" id="common_start_time" class="form-input" value="10:00" min="06:00">
                                     </div>
                                     <div class="form-group">
                                         <label for="common_end_time">
                                             <i class="fas fa-clock"></i> 종료 시간
+                                            <span class="required-mark">*</span>
                                         </label>
-                                        <input type="time" id="common_end_time" class="form-input" value="14:00">
+                                        <input type="time" id="common_end_time" class="form-input" value="14:00" min="11:00" max="23:59">
                                     </div>
                                 </div>
 
@@ -97,6 +107,7 @@
                                 <div class="form-group full-width">
                                     <label for="common_location">
                                         <i class="fas fa-map-marker-alt"></i> 회의 장소
+                                        <span class="required-mark">*</span>
                                     </label>
                                     <input type="text" id="common_location" class="form-input" placeholder="회의 장소를 입력하세요" value="파인씨앤아이 (송파)">
                                 </div>
@@ -122,6 +133,7 @@
                                     <div class="form-group">
                                         <label for="common_amount">
                                             <i class="fas fa-won-sign"></i> 사용 금액 (원)
+                                            <span class="required-mark">*</span>
                                         </label>
                                         <input type="text" id="common_amount" class="form-input" placeholder="사용 금액을 입력하세요">
                                         <div class="amount-buttons">
@@ -156,6 +168,7 @@
                                 <div class="form-group full-width">
                                     <label for="common_purpose">
                                         <i class="fas fa-bullseye"></i> 회의 목적
+                                        <span class="required-mark">*</span>
                                     </label>
                                     <textarea id="common_purpose" class="form-textarea" placeholder="회의 목적을 입력하세요" rows="4"></textarea>
                                 </div>
@@ -164,6 +177,7 @@
                                 <div class="form-group full-width">
                                     <label for="common_content">
                                         <i class="fas fa-file-alt"></i> 주요 내용
+                                        <span class="required-mark">*</span>
                                     </label>
                                     <textarea id="common_content" class="form-textarea" placeholder="회의 주요 내용을 입력하세요" rows="6"></textarea>
                                 </div>
@@ -196,7 +210,7 @@
 
                         <div class="document-form-wrapper collapsed">
                             <div class="document-form" id="documentFormContent">
-                                        <div style="background: white; border: 2px solid #e0e0e0; border-radius: 8px; padding: 30px; margin: 0 auto 30px; max-width: 881px">
+                                        <div style="background: white; border: 2px solid #e0e0e0; border-radius: 8px; padding: 30px; margin: 0 auto 30px; max-width: 881px; page-break-after: always; break-after: page;">
                                             <h2 class="doc-title">회 의 품 의 서</h2>
                                     <div style="text-align: left; margin-bottom: 10px; font-size: 14px;">
 
@@ -276,8 +290,8 @@
                                         <td colspan="6" style="text-align: center; height: 80px"><span class="auto-amount-display" style="display: block; padding: 8px;"></span></td>
                                     </tr>
                                     <tr>
-                                        <th style="height: 300px">특이사항</th>
-                                        <td colspan="6"><textarea class="auto-notes" rows="2" readonly style="background: #f9f9f9; height: 300px"></textarea></td>
+                                        <th style="height: 60px">특이사항</th>
+                                        <td colspan="6"><textarea class="auto-notes" rows="2" readonly style="background: #f9f9f9; height: 60px"></textarea></td>
                                     </tr>
                                     <tr>
                                         <th >결제</th>
@@ -286,7 +300,7 @@
                                 </table>
                                         </div>
 
-                                        <div style="background: white; border: 2px solid #e0e0e0; border-radius: 8px; padding: 30px; max-width: 881px; margin: 0 auto 30px">
+                                        <div style="background: white; border: 2px solid #e0e0e0; border-radius: 8px; padding: 30px; max-width: 881px; margin: 0 auto 30px; page-break-after: always; break-after: page;">
                                             <h2 class="doc-title" style="margin: 0">회 의 록</h2>
                                     <span id="doc_number_proposal" style="font-size: 14px; display: block; margin: 20px 0 5px"></span>
                                     <table class="form-table">
@@ -316,8 +330,8 @@
                                         <th colspan="4" style="background: #f0f0f0; padding: 15px;">내용</th>
                                     </tr>
                                     <tr>
-                                        <th style="vertical-align: middle; padding-top: 15px;">주제</th>
-                                        <td colspan="3" class="auto-subject" style="padding: 10px; text-align: left; font-size: 18px; height: 100px"></td>
+                                        <th style="vertical-align: middle;">주제</th>
+                                        <td colspan="3" class="auto-subject" style="padding: 10px; text-align: center; font-size: 18px; vertical-align: middle;"></td>
                                     </tr>
                                     <tr>
                                         <th style="padding-top: 15px;">주요 내용</th>
@@ -330,7 +344,7 @@
                                 </table>
                                         </div>
 
-                                        <div style="background: white; border: 2px solid #e0e0e0; border-radius: 8px; padding: 30px; margin: 0 auto 30px; max-width: 881px">
+                                        <div style="background: white; border: 2px solid #e0e0e0; border-radius: 8px; padding: 30px; margin: 0 auto 30px; max-width: 881px; page-break-inside: avoid;">
                                             <h2 class="doc-title" style="margin: 0">참 석 자 명 단 </h2>
                                     <span id="doc_number_attendee" style="font-size: 14px; display: block; margin: 20px 0 5px"></span>
                                     <div style="text-align: left; margin-bottom: 10px; font-size: 14px;">

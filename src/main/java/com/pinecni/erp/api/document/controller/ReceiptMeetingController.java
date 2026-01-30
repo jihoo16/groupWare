@@ -75,14 +75,16 @@ public class ReceiptMeetingController {
 
     /**
      * 특정 날짜에 특정 참석자가 포함된 회의록 목록 조회 (중복 검증용)
-     * GET /api/receipt-meetings/check-duplicate?date={date}&attendeeIdx={attendeeIdx}
+     * GET /api/receipt-meetings/check-duplicate?date={date}&attendeeIdx={attendeeIdx}&projectIdx={projectIdx}
      */
     @GetMapping("/check-duplicate")
     public ResponseEntity<?> checkDuplicateAttendee(
             @RequestParam String date,
-            @RequestParam(required = false) Long attendeeIdx) {
+            @RequestParam(required = false) Long attendeeIdx,
+            @RequestParam(required = false) Long projectIdx) {
 
-        log.debug("GET /api/receipt-meetings/check-duplicate - date: {}, attendeeIdx: {}", date, attendeeIdx);
+        log.debug("GET /api/receipt-meetings/check-duplicate - date: {}, attendeeIdx: {}, projectIdx: {}",
+                  date, attendeeIdx, projectIdx);
 
         // attendeeIdx 유효성 검증
         if (attendeeIdx == null || attendeeIdx <= 0) {
@@ -93,7 +95,7 @@ public class ReceiptMeetingController {
         }
 
         try {
-            List<Map<String, Object>> duplicates = receiptMeetingService.findDuplicateAttendee(date, attendeeIdx);
+            List<Map<String, Object>> duplicates = receiptMeetingService.findDuplicateAttendee(date, attendeeIdx, projectIdx);
             return ResponseEntity.ok(duplicates);
         } catch (Exception e) {
             log.error("중복 검증 실패: {}", e.getMessage(), e);

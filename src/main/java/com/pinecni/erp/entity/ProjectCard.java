@@ -2,6 +2,7 @@ package com.pinecni.erp.entity;
 
 import jakarta.persistence.*;
 import lombok.*;
+import lombok.experimental.SuperBuilder;
 
 /**
  * 연구비카드 Entity
@@ -16,7 +17,7 @@ import lombok.*;
 @Setter
 @NoArgsConstructor
 @AllArgsConstructor
-@Builder
+@SuperBuilder
 public class ProjectCard extends BaseEntity {
 
     @Id

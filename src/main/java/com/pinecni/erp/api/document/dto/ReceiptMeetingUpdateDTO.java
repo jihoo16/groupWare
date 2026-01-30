@@ -25,6 +25,11 @@ public class ReceiptMeetingUpdateDTO {
     private Long projectIdx;
 
     /**
+     * 카드 IDX
+     */
+    private Long cardIdx;
+
+    /**
      * 회의 일자
      */
     private LocalDate meetingDate;

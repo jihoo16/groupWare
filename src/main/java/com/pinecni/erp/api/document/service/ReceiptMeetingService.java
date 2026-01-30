@@ -63,9 +63,10 @@ public interface ReceiptMeetingService {
      * 특정 날짜에 특정 참석자가 포함된 회의록 목록 조회 (중복 검증용)
      * @param date 회의 일자 (yyyy-MM-dd)
      * @param attendeeIdx 참석자 IDX
+     * @param projectIdx 프로젝트 IDX (같은 프로젝트 내에서만 중복 체크)
      * @return 중복된 회의록 목록 (idx, title, createdAt 포함)
      */
-    List<Map<String, Object>> findDuplicateAttendee(String date, Long attendeeIdx);
+    List<Map<String, Object>> findDuplicateAttendee(String date, Long attendeeIdx, Long projectIdx);
 
     /**
      * 첨부파일 저장

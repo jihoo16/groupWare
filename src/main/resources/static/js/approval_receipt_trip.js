@@ -1319,7 +1319,7 @@ document.addEventListener('DOMContentLoaded', async function() {
             const attendeeDTOs = (window.currentTripPersons || []).map((person, index) => {
                 const isExternal = String(person.id).startsWith('ext_');
                 return {
-                    attendeeType: isExternal ? '외부' : '내부',
+                    isExternal: isExternal,
                     department: person.dept || null,
                     name: person.name,
                     userIdx: isExternal ? parseInt(String(person.id).replace('ext_', '')) : parseInt(person.id),
@@ -1967,12 +1967,12 @@ document.addEventListener('DOMContentLoaded', async function() {
                 let dept = attendee.department || '';
 
                 // 내부 참석자인 경우
-                if (attendee.attendeeType === '내부' && attendee.userIdx) {
+                if (!attendee.isExternal && attendee.userIdx) {
                     dept = attendee.department || '파인씨앤아이';
                 }
 
                 // ID 생성: 외부는 ext_ 접두사, 내부는 userIdx
-                const id = attendee.attendeeType === '외부'
+                const id = attendee.isExternal
                     ? `ext_${attendee.userIdx}`
                     : String(attendee.userIdx);
 
@@ -1981,7 +1981,7 @@ document.addEventListener('DOMContentLoaded', async function() {
                     name: attendee.name,
                     dept: dept,
                     position: position,
-                    isExternal: attendee.attendeeType === '외부'
+                    isExternal: attendee.isExternal
                 };
             });
 
@@ -2156,7 +2156,7 @@ document.addEventListener('DOMContentLoaded', async function() {
             const attendeeDTOs = (window.currentTripPersons || []).map((person, index) => {
                 const isExternal = String(person.id).startsWith('ext_');
                 return {
-                    attendeeType: isExternal ? '외부' : '내부',
+                    isExternal: isExternal,
                     department: person.dept || null,
                     name: person.name,
                     userIdx: isExternal ? parseInt(String(person.id).replace('ext_', '')) : parseInt(person.id),

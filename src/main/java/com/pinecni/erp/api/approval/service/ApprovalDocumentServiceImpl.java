@@ -168,6 +168,18 @@ public class ApprovalDocumentServiceImpl implements ApprovalDocumentService {
             weeklyReportRepository.findByDocumentIdx(document.getIdx()).ifPresent(weeklyReport -> {
                 dto.setSourceDocumentId(weeklyReport.getId());
             });
+        } else if ("연구비증빙-회의록".equals(documentType) || "연구비증빙(회의록)".equals(documentType)) {
+            // 연구비증빙 회의록의 원본 문서 ID 조회 (신형식 하이픈, 구형식 괄호 모두 지원)
+            receiptMeetingRepository.findByDocumentIdx(document.getIdx()).ifPresent(receiptMeeting -> {
+                dto.setSourceDocumentId(receiptMeeting.getIdx());
+                dto.setStatus(receiptMeeting.getStatus());
+            });
+        } else if ("연구비증빙-출장".equals(documentType) || "연구비증빙(출장)".equals(documentType)) {
+            // 연구비증빙 출장의 원본 문서 ID 조회 (신형식 하이픈, 구형식 괄호 모두 지원)
+            receiptTripRepository.findByDocumentIdx(document.getIdx()).ifPresent(receiptTrip -> {
+                dto.setSourceDocumentId(receiptTrip.getIdx());
+                dto.setStatus(receiptTrip.getStatus());
+            });
         }
         // 다른 문서 타입들도 필요시 추가
         // else if ("월간업무보고".equals(documentType)) { ... }

@@ -22,10 +22,10 @@ document.addEventListener('DOMContentLoaded', function() {
     // 프로젝트 관련 문서 타입 정의 (한글 + 영문 enum)
     const PROJECT_DOCUMENT_TYPES = [
         '프로젝트 주간업무보고',
-        '연구비증빙(회의록)',
-        '연구비증빙(출장)',
-        '연구비증빙(출장+회의)',
-        '연구비증빙(야근식대)',
+        '연구비증빙-회의록',
+        '연구비증빙-출장',
+        '연구비증빙-출장+회의',
+        '연구비증빙-야근식대',
         'WEEKLY_REPORT',
         'MEETING_MINUTES',
         'BUSINESS_TRIP',
@@ -275,13 +275,13 @@ document.addEventListener('DOMContentLoaded', function() {
         const categoryMap = {
             '프로젝트 주간업무보고': 'project-weekly-report',
             'WEEKLY_REPORT': 'project-weekly-report',
-            '연구비증빙(회의록)': 'receipt-meeting',
+            '연구비증빙-회의록': 'receipt-meeting',
             'RECEIPT_MEETING': 'receipt-meeting',
-            '연구비증빙(출장)': 'receipt-trip',
+            '연구비증빙-출장': 'receipt-trip',
             'BUSINESS_TRIP': 'receipt-trip',
-            '연구비증빙(출장+회의)': 'receipt-trip-meeting',
+            '연구비증빙-출장+회의': 'receipt-trip-meeting',
             'MEETING_MINUTES': 'receipt-meeting',
-            '연구비증빙(야근식대)': 'receipt-overtime'
+            '연구비증빙-야근식대': 'receipt-overtime'
         };
         return categoryMap[documentType] || 'unknown';
     }
@@ -291,13 +291,13 @@ document.addEventListener('DOMContentLoaded', function() {
         const iconMap = {
             '프로젝트 주간업무보고': 'fa-calendar-week',
             'WEEKLY_REPORT': 'fa-calendar-week',
-            '연구비증빙(회의록)': 'fa-utensils',
+            '연구비증빙-회의록': 'fa-utensils',
             'RECEIPT_MEETING': 'fa-utensils',
-            '연구비증빙(출장)': 'fa-plane',
+            '연구비증빙-출장': 'fa-plane',
             'BUSINESS_TRIP': 'fa-plane',
-            '연구비증빙(출장+회의)': 'fa-suitcase',
+            '연구비증빙-출장+회의': 'fa-suitcase',
             'MEETING_MINUTES': 'fa-utensils',
-            '연구비증빙(야근식대)': 'fa-moon'
+            '연구비증빙-야근식대': 'fa-moon'
         };
         return iconMap[documentType] || 'fa-file-alt';
     }
@@ -397,9 +397,9 @@ document.addEventListener('DOMContentLoaded', function() {
         const icon = getIconFromDocumentType(doc.documentType);
         const displayNameMap = {
             'WEEKLY_REPORT': '프로젝트 주간업무보고',
-            'RECEIPT_MEETING': '연구비증빙(회의록)',
-            'BUSINESS_TRIP': '연구비증빙(출장)',
-            'MEETING_MINUTES': '연구비증빙(회의록)'
+            'RECEIPT_MEETING': '연구비증빙-회의록',
+            'BUSINESS_TRIP': '연구비증빙-출장',
+            'MEETING_MINUTES': '연구비증빙-회의록'
         };
         const documentType = displayNameMap[doc.documentType] || doc.documentType || '-';
         const highlightedDocType = keyword ? searchUtils.highlightText(documentType, keyword) : documentType;
@@ -468,13 +468,13 @@ document.addEventListener('DOMContentLoaded', function() {
         const urls = {
             '프로젝트 주간업무보고': '/approval/project-weekly-report/detail',
             'WEEKLY_REPORT': '/approval/project-weekly-report/detail',
-            '연구비증빙(회의록)': '/approval/receipt-meeting',
+            '연구비증빙-회의록': '/approval/receipt-meeting',
             'RECEIPT_MEETING': '/approval/receipt-meeting',
-            '연구비증빙(출장)': '/approval/receipt-trip',
+            '연구비증빙-출장': '/approval/receipt-trip',
             'BUSINESS_TRIP': '/approval/receipt-trip',
-            '연구비증빙(출장+회의)': '/approval/receipt-trip-meeting',
+            '연구비증빙-출장+회의': '/approval/receipt-trip-meeting',
             'MEETING_MINUTES': '/approval/receipt-meeting',
-            '연구비증빙(야근식대)': '/approval/receipt-overtime'
+            '연구비증빙-야근식대': '/approval/receipt-overtime'
         };
 
         const url = urls[doc.documentType];
