@@ -1957,3 +1957,79 @@ div h2{
 .attendee-badge .badge-remove i {
     pointer-events: none;
 }
+
+/* ========================================
+   지급종류 라디오 버튼 스타일
+   ======================================== */
+.radio-group {
+    display: flex;
+    gap: 24px;
+    padding: 10px 0;
+}
+
+.radio-label {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    cursor: pointer;
+    font-size: 14px;
+    color: #334155;
+    font-weight: 500;
+    transition: color 0.2s;
+}
+
+.radio-label:hover {
+    color: #667eea;
+}
+
+.radio-label input[type="radio"] {
+    display: none;
+}
+
+.radio-custom {
+    width: 20px;
+    height: 20px;
+    border: 2px solid #cbd5e1;
+    border-radius: 50%;
+    position: relative;
+    transition: all 0.2s;
+}
+
+.radio-label input[type="radio"]:checked + .radio-custom {
+    border-color: #667eea;
+    background: #667eea;
+}
+
+.radio-custom::after {
+    content: '';
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: white;
+    opacity: 0;
+    transition: opacity 0.2s;
+}
+
+.radio-label input[type="radio"]:checked + .radio-custom::after {
+    opacity: 1;
+}
+
+/* ========================================
+   업무 내용 입력 스타일
+   ======================================== */
+.task-input-wrapper {
+    display: flex;
+    flex-direction: column;
+}
+
+.task-input-wrapper select.form-input {
+    cursor: pointer;
+}
+
+.task-input-wrapper #ot_task_custom {
+    margin-top: 8px;
+}

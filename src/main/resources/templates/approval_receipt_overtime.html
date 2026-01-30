@@ -31,17 +31,10 @@
 
                     <!-- 우측: 문서 편집 영역 -->
                     <div class="editor-area">
-                        <!-- 문서 양식 (동적 로드) -->
+                        <!-- 문서 양식 -->
                         <div id="documentForm">
-                            <!-- 템플릿이 여기에 동적으로 로드됨 -->
-                        </div>
-
-                        <!-- 템플릿 저장소 (숨김) -->
-                        <div style="display: none;">
-
-                            <!-- 영수증 처리 템플릿 - 야근식대 -->
-                            <div id="template-receipt-overtime">
-                                <div class="common-info-section">
+                            <!-- 연구비 증빙 - 야근식대 인터랙티브 폼 -->
+                            <div class="common-info-section">
                                     <div class="section-header">
                                         <h3><i class="fas fa-edit"></i> 기본 정보</h3>
                                     </div>
@@ -92,6 +85,85 @@
                                         </div>
                                     </div>
 
+                                    <!-- 지급종류 -->
+                                    <div class="form-group full-width">
+                                        <label>
+                                            <i class="fas fa-credit-card"></i> 지급종류
+                                            <span class="required-mark">*</span>
+                                        </label>
+                                        <div class="radio-group">
+                                            <label class="radio-label">
+                                                <input type="radio" name="ot_payment_type" value="card" checked>
+                                                <span class="radio-custom"></span>
+                                                연구비카드
+                                            </label>
+                                            <label class="radio-label">
+                                                <input type="radio" name="ot_payment_type" value="transfer">
+                                                <span class="radio-custom"></span>
+                                                연구비이체
+                                            </label>
+                                        </div>
+                                    </div>
+
+                                    <!-- 시작 시간 & 종료 시간 -->
+                                    <div class="form-grid">
+                                        <div class="form-group">
+                                            <label for="ot_start_time">
+                                                <i class="fas fa-clock"></i> 시작 시간
+                                                <span class="required-mark">*</span>
+                                            </label>
+                                            <input type="time" id="ot_start_time" class="form-input" value="18:00">
+                                        </div>
+                                        <div class="form-group">
+                                            <label for="ot_end_time">
+                                                <i class="fas fa-clock"></i> 종료 시간
+                                                <span class="required-mark">*</span>
+                                            </label>
+                                            <input type="time" id="ot_end_time" class="form-input" value="21:00">
+                                        </div>
+                                    </div>
+
+                                    <!-- 업무 내용 -->
+                                    <div class="form-group full-width">
+                                        <label for="ot_task">
+                                            <i class="fas fa-tasks"></i> 업무 내용
+                                            <span class="required-mark">*</span>
+                                        </label>
+                                        <div class="task-input-wrapper">
+                                            <select id="ot_task_select" class="form-input">
+                                                <option value="">업무 내용을 선택하세요</option>
+                                                <option value="백엔드 API 개발">백엔드 API 개발</option>
+                                                <option value="프론트엔드 UI 개발">프론트엔드 UI 개발</option>
+                                                <option value="데이터베이스 설계">데이터베이스 설계</option>
+                                                <option value="시스템 아키텍처 설계">시스템 아키텍처 설계</option>
+                                                <option value="버그 수정 및 디버깅">버그 수정 및 디버깅</option>
+                                                <option value="코드 리뷰 및 품질 관리">코드 리뷰 및 품질 관리</option>
+                                                <option value="테스트 코드 작성">테스트 코드 작성</option>
+                                                <option value="배포 및 운영 환경 구축">배포 및 운영 환경 구축</option>
+                                                <option value="성능 최적화">성능 최적화</option>
+                                                <option value="기술 문서 작성">기술 문서 작성</option>
+                                                <option value="custom">직접 입력</option>
+                                            </select>
+                                            <input type="text" id="ot_task_custom" class="form-input" placeholder="업무 내용을 직접 입력하세요" style="display: none; margin-top: 8px;">
+                                        </div>
+                                    </div>
+
+                                    <!-- 야근 인원 -->
+                                    <div class="form-group full-width">
+                                        <label>
+                                            <i class="fas fa-users"></i> 야근 인원
+                                            <span class="required-mark">*</span>
+                                        </label>
+                                        <div id="overtimePersonArea" class="attendee-area">
+                                            <div id="overtimePersonList" class="attendee-list">
+                                                <div class="empty-attendee-state">
+                                                    <i class="fas fa-user-plus"></i>
+                                                    <div>클릭하여 야근 인원 추가</div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+
                                     <!-- 총 공급가액 & 야근인원 식대 합계 -->
                                     <div class="form-grid">
                                         <div class="form-group">
@@ -123,23 +195,7 @@
                                                 <i class="fas fa-calculator"></i> 야근인원 식대 합계
                                             </label>
                                             <div class="total-amount-display">
-                                                <span id="overtimeTotalAmount">0원</span>
-                                            </div>
-                                        </div>
-                                    </div>
-
-                                    <!-- 야근 인원 -->
-                                    <div class="form-group full-width">
-                                        <label>
-                                            <i class="fas fa-users"></i> 야근 인원
-                                            <span class="required-mark">*</span>
-                                        </label>
-                                        <div id="overtimePersonArea" class="attendee-area">
-                                            <div id="overtimePersonList" class="attendee-list">
-                                                <div class="empty-attendee-state">
-                                                    <i class="fas fa-user-plus"></i>
-                                                    <div>클릭하여 야근 인원 추가</div>
-                                                </div>
+                                                <span id="overtimeTotalAmount" >0원</span>
                                             </div>
                                         </div>
                                     </div>
@@ -184,13 +240,12 @@
                                     <div class="document-form">
 
                                 <div style="background: white; border: 2px solid #e0e0e0; border-radius: 8px; padding: 30px; margin: 0 auto 30px; max-width: 881px">
-                                    <h2 class="doc-title" style="font-size: 30px; font-weight: bold;">품 의 서</h2>
 
                                     <!-- 결재란 -->
-                                    <div style="float: right; margin-bottom: 20px;">
-                                        <table style="border: 2px solid #000; border-collapse: collapse;">
+                                    <div style="text-align: right; margin-bottom: 20px;">
+                                        <table style="border: 2px solid #000; border-collapse: collapse; display: inline-table;">
                                             <tr>
-                                                <td style="width: 120px;  border: 1px solid #000; padding: 10px 20px; text-align: center; background: #f0f0f0; font-weight: bold;">신청자</td>
+                                                <td style="width: 120px; border: 1px solid #000; padding: 10px 20px; text-align: center; background: #f0f0f0; font-weight: bold;">신청자</td>
                                                 <td style="width: 120px; border: 1px solid #000; padding: 10px 20px; text-align: center; background: #f0f0f0; font-weight: bold;">연구책임자</td>
                                             </tr>
                                             <tr>
@@ -200,7 +255,9 @@
                                         </table>
                                     </div>
 
-                                    <table class="form-table" style="clear: both; margin-top: 20px;">
+                                    <h2 class="doc-title" style="font-size: 30px; font-weight: bold;">품 의 서</h2>
+
+                                    <table class="form-table" style="margin-top: 20px;">
                                         <tr>
                                             <th style="width: 15%;">과제명</th>
                                             <td style="padding: 10px; text-align: center;"><span class="ot-auto-project"></span></td>
@@ -220,6 +277,12 @@
                                             <td colspan="3" style="text-align: center;"><span class="ot-auto-title"></span></td>
                                         </tr>
                                         <tr>
+                                            <th>지급종류</th>
+                                            <td colspan="3" style="text-align: center;">
+                                                연구비카드(<span class="ot-auto-payment-card"></span>) / 연구비이체(<span class="ot-auto-payment-transfer"></span>)
+                                            </td>
+                                        </tr>
+                                        <tr>
                                             <th style="height: 200px;">품의 내용</th>
                                             <td colspan="3" style="text-align: left; padding: 10px; white-space: pre-wrap; height: 200px;"><span class="ot-auto-content"></span></td>
                                         </tr>
@@ -228,32 +291,27 @@
                                         </tr>
                                         <tr>
                                             <th>날짜</th>
-                                            <th>적요</th>
-                                            <th>수량</th>
+                                            <th colspan="2">적요</th>
                                             <th>공급가액</th>
                                         </tr>
                                         <tr>
                                             <td style="text-align: center;"><span class="ot-auto-date-slash"></span></td>
-                                            <td style="text-align: center;"><span class="ot-auto-desc"></span></td>
-                                            <td style="text-align: center;"><span class="ot-auto-quantity"></span></td>
+                                            <td colspan="2" style="text-align: center;"><span class="ot-auto-desc"></span></td>
                                             <td style="text-align: center;"><span class="ot-auto-amount"></span></td>
                                         </tr>
                                         <tr>
                                             <td></td>
-                                            <td></td>
-                                            <td></td>
-                                            <td></td>
-                                        </tr>
-                                        <tr>
-                                            <td></td>
-                                            <td></td>
-                                            <td></td>
+                                            <td colspan="2"></td>
                                             <td></td>
                                         </tr>
                                         <tr>
                                             <td></td>
+                                            <td colspan="2"></td>
                                             <td></td>
+                                        </tr>
+                                        <tr>
                                             <td></td>
+                                            <td colspan="2"></td>
                                             <td></td>
                                         </tr>
                                         <tr>
@@ -409,7 +467,6 @@
                                 </div>
                             </div>
                         </div>
-
                     </div>
                 </div>
             </div>
@@ -521,27 +578,6 @@
         </div>
     </div>
 
-    <!-- 프로젝트 선택 모달 -->
-    <div id="projectModal" class="modal">
-        <div class="modal-content" style="max-width: 600px;">
-            <div class="modal-header">
-                <h2><i class="fas fa-project-diagram"></i> 과제 선택</h2>
-                <button class="close-btn" onclick="closeProjectModal()">&times;</button>
-            </div>
-            <div class="modal-body">
-                <div class="search-box">
-                    <i class="fas fa-search"></i>
-                    <input type="text" id="projectSearchInput" placeholder="과제명 검색...">
-                </div>
-                <div class="employee-list" id="projectList">
-                    <!-- 동적 생성 -->
-                </div>
-            </div>
-            <div class="modal-footer">
-                <button class="btn-secondary" onclick="closeProjectModal()">취소</button>
-            </div>
-        </div>
-    </div>
 
     <!-- jsPDF 라이브러리 -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
