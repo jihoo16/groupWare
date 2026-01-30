@@ -1059,7 +1059,7 @@ document.addEventListener('DOMContentLoaded', async function() {
                 projectIdx: parseInt(projectIdx),
                 overtimeDate: otApprovalDate.value,
                 approvalDate: otApprovalDate.value,
-                documentTitle: otProject.value,
+                documentTitle: otProject.value +" "+otApprovalDate.value,
                 documentContent: otContent?.value || '',
                 totalAmount: amount,
                 paymentType: paymentType,

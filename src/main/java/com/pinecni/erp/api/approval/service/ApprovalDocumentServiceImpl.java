@@ -5,6 +5,7 @@ import com.pinecni.erp.api.approval.repository.ApprovalDocumentRepository;
 import com.pinecni.erp.api.code.repository.CodeRepository;
 import com.pinecni.erp.api.document.repository.MeetingMinutesRepository;
 import com.pinecni.erp.api.document.repository.WeeklyReportRepository;
+import com.pinecni.erp.api.document.repository.ReceiptOvertimeRepository;
 import com.pinecni.erp.api.project.repository.ReceiptMeetingRepository;
 import com.pinecni.erp.api.project.repository.ReceiptTripRepository;
 import com.pinecni.erp.api.user.repository.UserRepository;
@@ -14,6 +15,8 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.LocalDateTime;
+import java.time.ZoneId;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Comparator;
@@ -36,6 +39,7 @@ public class ApprovalDocumentServiceImpl implements ApprovalDocumentService {
     private final MeetingMinutesRepository meetingMinutesRepository;
     private final ReceiptTripRepository receiptTripRepository;
     private final ReceiptMeetingRepository receiptMeetingRepository;
+    private final ReceiptOvertimeRepository receiptOvertimeRepository;
 
     @Override
     public List<ApprovalDocumentDTO> getAllDocuments(Long currentUserIdx) {
@@ -219,6 +223,9 @@ public class ApprovalDocumentServiceImpl implements ApprovalDocumentService {
                 break;
             case "RECEIPT_MEETING":
                 result = getReceiptMeetingsByProject(projectIdx);
+                break;
+            case "RECEIPT_OVERTIME":
+                result = getReceiptOvertimesByProject(projectIdx);
                 break;
             default:
                 result = new ArrayList<>();
@@ -416,6 +423,60 @@ public class ApprovalDocumentServiceImpl implements ApprovalDocumentService {
         // 작성자 정보
         dto.setDrafterName(meeting.getAuthorName());
         userRepository.findById(meeting.getAuthorIdx()).ifPresent(user -> {
+            dto.setDrafterDept(user.getEmpDept());
+            if (user.getEmpDept() != null) {
+                codeRepository.findByCode(user.getEmpDept()).ifPresent(code -> {
+                    dto.setDrafterDeptName(code.getCodeName());
+                });
+            }
+        });
+
+        return dto;
+    }
+
+    /**
+     * 프로젝트별 야근식대 조회
+     */
+    private List<ApprovalDocumentDTO> getReceiptOvertimesByProject(Long projectIdx) {
+        List<ReceiptOvertime> overtimes = receiptOvertimeRepository.findByProjectIdxOrderByOvertimeDateDesc(projectIdx);
+
+        return overtimes.stream()
+                .map(this::convertReceiptOvertimeToDTO)
+                .collect(Collectors.toList());
+    }
+
+    /**
+     * ReceiptOvertime → DTO 변환
+     */
+    private ApprovalDocumentDTO convertReceiptOvertimeToDTO(ReceiptOvertime overtime) {
+        String title = overtime.getDocumentTitle();
+        if (title == null || title.isEmpty()) {
+            title = "야근식대";
+        }
+
+        // Instant -> LocalDateTime 변환
+        LocalDateTime createdAt = overtime.getCreatedAt() != null
+                ? LocalDateTime.ofInstant(overtime.getCreatedAt(), ZoneId.of("Asia/Seoul"))
+                : null;
+        LocalDateTime updatedAt = overtime.getUpdatedAt() != null
+                ? LocalDateTime.ofInstant(overtime.getUpdatedAt(), ZoneId.of("Asia/Seoul"))
+                : null;
+
+        ApprovalDocumentDTO dto = ApprovalDocumentDTO.builder()
+                .idx(overtime.getDocumentIdx())
+                .sourceDocumentId(overtime.getId())
+                .documentNo(overtime.getDocumentNumber())
+                .title(title)
+                .documentType("RECEIPT_OVERTIME")
+                .drafterUserIdx(overtime.getAuthorIdx())
+                .status(overtime.getStatus())
+                .createdAt(createdAt)
+                .updatedAt(updatedAt)
+                .build();
+
+        // 작성자 정보
+        dto.setDrafterName(overtime.getAuthorName());
+        userRepository.findById(overtime.getAuthorIdx()).ifPresent(user -> {
             dto.setDrafterDept(user.getEmpDept());
             if (user.getEmpDept() != null) {
                 codeRepository.findByCode(user.getEmpDept()).ifPresent(code -> {

@@ -566,8 +566,8 @@ async function loadProjectDocuments(projectId) {
             displayWeeklyReports([]);
         }
 
-        // 연구비증빙 로드 (회의록, 출장)
-        const expenseResponse = await fetch(`/api/approval/documents/project/${projectId}?documentTypes=RECEIPT_MEETING,BUSINESS_TRIP`);
+        // 연구비증빙 로드 (회의록, 출장, 야근식대)
+        const expenseResponse = await fetch(`/api/approval/documents/project/${projectId}?documentTypes=RECEIPT_MEETING,BUSINESS_TRIP,RECEIPT_OVERTIME`);
         if (expenseResponse.ok) {
             const expenseData = await expenseResponse.json();
             displayExpenseReports(expenseData || []);
@@ -656,6 +656,7 @@ async function goToDocument(documentType, sourceDocumentId) {
         case 'MEETING_MINUTES':
         case 'BUSINESS_TRIP':
         case 'RECEIPT_MEETING':
+        case 'RECEIPT_OVERTIME':
             await showWarning('상세 페이지 구현 중입니다.');
             return;
         default:
@@ -731,7 +732,8 @@ function getDocumentTypeLabel(type) {
         'WEEKLY_REPORT': '프로젝트 주간업무보고',
         'MEETING_MINUTES': '회의록',
         'BUSINESS_TRIP': '출장',
-        'RECEIPT_MEETING': '회의록'
+        'RECEIPT_MEETING': '회의록',
+        'RECEIPT_OVERTIME': '야근식대'
     };
     return typeMap[type] || type || '-';
 }
