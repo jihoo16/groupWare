@@ -8,6 +8,9 @@ document.addEventListener('DOMContentLoaded', async function() {
     let currentAttendees = []; // 현재 추가된 참석자 목록 (전역으로 이동)
     let fixedExpenses = {}; // 기초정보관리의 직급별 고정경비 (회의비)
     let selectedProject = null; // 선택된 프로젝트
+    let projectCards = []; // 선택된 프로젝트의 카드 목록
+    let selectedCard = null; // 선택된 카드
+    let currentReceiptMeetingIdx = null; // 현재 회의록의 실제 idx (수정/삭제 시 사용)
     let shouldOpenCardModalAfterProject = false; // 과제 선택 후 카드 모달 자동 열기 플래그
 
     // DOM 요소
@@ -98,18 +101,108 @@ document.addEventListener('DOMContentLoaded', async function() {
         }
     }
 
+    // ============================================
+    // SweetAlert2 유틸리티 함수들
+    // ============================================
+
+    function showSuccess(message) {
+        return Swal.fire({
+            icon: 'success',
+            title: '성공',
+            text: message,
+            confirmButtonText: '확인'
+        });
+    }
+
+    function showWarning(message) {
+        return Swal.fire({
+            icon: 'warning',
+            title: '경고',
+            html: message,
+            confirmButtonText: '확인'
+        });
+    }
+
+    function showError(message) {
+        return Swal.fire({
+            icon: 'error',
+            title: '오류',
+            html: message,
+            confirmButtonText: '확인'
+        });
+    }
+
+    function showConfirm(message, title = '확인', options = {}) {
+        return Swal.fire({
+            icon: options.icon || 'question',
+            title: title,
+            html: message,
+            showCancelButton: true,
+            confirmButtonText: options.confirmText || '확인',
+            cancelButtonText: options.cancelText || '취소',
+            confirmButtonColor: options.confirmColor || '#667eea'
+        }).then(result => result.isConfirmed);
+    }
+
+    function showSaveConfirm(message) {
+        return Swal.fire({
+            icon: 'question',
+            title: '저장 확인',
+            text: message,
+            showCancelButton: true,
+            confirmButtonText: '저장',
+            cancelButtonText: '취소'
+        }).then(result => result.isConfirmed);
+    }
+
+    function showDeleteConfirm(itemName) {
+        return Swal.fire({
+            icon: 'warning',
+            title: '삭제 확인',
+            text: `${itemName}을(를) 삭제하시겠습니까?`,
+            showCancelButton: true,
+            confirmButtonText: '삭제',
+            cancelButtonText: '취소',
+            confirmButtonColor: '#dc2626'
+        }).then(result => result.isConfirmed);
+    }
+
+    function showLoading(message = '처리 중...') {
+        Swal.fire({
+            title: message,
+            allowOutsideClick: false,
+            allowEscapeKey: false,
+            didOpen: () => {
+                Swal.showLoading();
+            }
+        });
+    }
+
+    function hideLoading() {
+        Swal.close();
+    }
+
     // 페이지 로드 시 데이터 로드
-    Promise.all([loadCurrentUser(), loadProjects(), loadFixedExpenses()]).then(() => {
+    Promise.all([loadCurrentUser(), loadProjects(), loadFixedExpenses()]).then(async () => {
         // 데이터 로드 후 회의록 자동 채우기 초기화
         setupReceiptAutoFill();
 
-        // 초기화 완료 후 과제명이 비어있을 때 빨간색 테두리 표시
-        setTimeout(() => {
-            const commonProject = document.getElementById('common_project');
-            if (commonProject && !commonProject.value) {
-                commonProject.classList.add('error');
-            }
-        }, 100);
+        // URL 파라미터 확인 및 상세보기 모드 처리
+        // documentIdx 또는 id 파라미터 모두 지원
+        const receiptMeetingId = getUrlParameter('documentIdx') || getUrlParameter('id');
+        if (receiptMeetingId) {
+            console.log('상세보기 모드 - 회의록 ID:', receiptMeetingId);
+            await loadReceiptMeetingData(receiptMeetingId);
+        } else {
+            // 신규 작성 모드
+            // 초기화 완료 후 과제명이 비어있을 때 빨간색 테두리 표시
+            setTimeout(() => {
+                const commonProject = document.getElementById('common_project');
+                if (commonProject && !commonProject.value) {
+                    commonProject.classList.add('error');
+                }
+            }, 100);
+        }
     });
 
     // ============================================
@@ -190,6 +283,97 @@ document.addEventListener('DOMContentLoaded', async function() {
         if (commonProject) {
             commonProject.addEventListener('click', function() {
                 openProjectModal();
+            });
+        }
+
+        // ============================================
+        // 시작 시간 / 종료 시간 자동 조절 및 중복 검증
+        // ============================================
+
+        // 시간 계산 헬퍼 함수
+        function addHours(timeString, hours) {
+            if (!timeString) return '';
+            const [h, m] = timeString.split(':').map(Number);
+            let newHour = h + hours;
+            if (newHour >= 24) newHour = 23;
+            if (newHour < 0) newHour = 0;
+            return `${String(newHour).padStart(2, '0')}:${String(m).padStart(2, '0')}`;
+        }
+
+        function subtractHours(timeString, hours) {
+            return addHours(timeString, -hours);
+        }
+
+        // 참석자 중복 검증 재실행 함수 (시간 변경 시)
+        async function recheckAttendees() {
+            // 참석자가 없으면 스킵
+            if (!currentAttendees || currentAttendees.length === 0) return;
+
+            try {
+                // checkAllAttendeesForDuplicates 함수는 나중에 정의되므로
+                // window 객체를 통해 접근하거나, 타이머로 지연 실행
+                setTimeout(async () => {
+                    if (typeof checkAllAttendeesForDuplicates === 'function') {
+                        await checkAllAttendeesForDuplicates();
+                    }
+                }, 100);
+            } catch (error) {
+                console.error('중복 검증 재실행 오류:', error);
+            }
+        }
+
+        // 시작 시간 변경 시 종료 시간 자동 조절 및 min 값 설정
+        if (commonStartTime) {
+            commonStartTime.addEventListener('change', function() {
+                if (this.value && commonEndTime) {
+                    // 종료 시간의 최소값 = 시작 시간 + 1시간
+                    const minEndTime = addHours(this.value, 1);
+                    commonEndTime.setAttribute('min', minEndTime);
+
+                    // 종료 시간 = 시작 시간 + 1시간
+                    commonEndTime.value = minEndTime;
+
+                    // 종료 시간이 변경되었으므로 자동 채우기 트리거
+                    commonEndTime.dispatchEvent(new Event('input'));
+                }
+
+                // 참석자 중복 검증 재실행
+                recheckAttendees();
+            });
+
+            // 페이지 로드 시 초기 min 값 설정
+            if (commonStartTime.value && commonEndTime) {
+                const minEndTime = addHours(commonStartTime.value, 1);
+                commonEndTime.setAttribute('min', minEndTime);
+            }
+        }
+
+        // 종료 시간 변경 시 시작 시간 자동 조절
+        if (commonEndTime) {
+            commonEndTime.addEventListener('change', function() {
+                if (this.value && commonStartTime) {
+                    // 시작 시간 = 종료 시간 - 1시간
+                    const newStartTime = subtractHours(this.value, 1);
+
+                    // 시작 시간이 최소값(06:00)보다 작으면 조정
+                    if (newStartTime < '06:00') {
+                        commonStartTime.value = '06:00';
+                        // 시작 시간이 조정되었으므로 종료 시간도 재조정
+                        this.value = addHours('06:00', 1);
+                    } else {
+                        commonStartTime.value = newStartTime;
+                    }
+
+                    // 종료 시간의 최소값 업데이트
+                    const minEndTime = addHours(commonStartTime.value, 1);
+                    this.setAttribute('min', minEndTime);
+
+                    // 시작 시간이 변경되었으므로 자동 채우기 트리거
+                    commonStartTime.dispatchEvent(new Event('input'));
+                }
+
+                // 참석자 중복 검증 재실행
+                recheckAttendees();
             });
         }
 
@@ -410,8 +594,6 @@ document.addEventListener('DOMContentLoaded', async function() {
         const cardModal = document.getElementById('cardModal');
         const cardSearch = document.getElementById('cardSearch');
         const cardList = document.getElementById('cardList');
-        let projectCards = []; // 선택된 프로젝트의 카드 목록
-        let selectedCard = null; // 선택된 카드
 
         // 카드 목록 로드 (프로젝트별)
         async function loadProjectCards(projectIdx) {
@@ -1161,6 +1343,43 @@ document.addEventListener('DOMContentLoaded', async function() {
                 const value = this.value;
                 document.querySelectorAll('.auto-content').forEach(field => {
                     field.textContent = value;
+
+                    // 내용 길이에 따라 폰트 크기 및 줄 간격 자동 조절
+                    const length = value.length;
+                    let fontSize = '18px';
+                    let lineHeight = '1.6';
+
+                    if (length > 1500) {
+                        fontSize = '9px';
+                        lineHeight = '1.4';
+                    } else if (length > 1200) {
+                        fontSize = '10px';
+                        lineHeight = '1.4';
+                    } else if (length > 900) {
+                        fontSize = '11px';
+                        lineHeight = '1.5';
+                    } else if (length > 700) {
+                        fontSize = '12px';
+                        lineHeight = '1.5';
+                    } else if (length > 500) {
+                        fontSize = '13px';
+                        lineHeight = '1.5';
+                    } else if (length > 350) {
+                        fontSize = '14px';
+                        lineHeight = '1.6';
+                    } else if (length > 250) {
+                        fontSize = '15px';
+                        lineHeight = '1.6';
+                    } else if (length > 150) {
+                        fontSize = '16px';
+                        lineHeight = '1.6';
+                    } else {
+                        fontSize = '18px';
+                        lineHeight = '1.6';
+                    }
+
+                    field.style.fontSize = fontSize;
+                    field.style.lineHeight = lineHeight;
                 });
             });
         }
@@ -1389,6 +1608,31 @@ document.addEventListener('DOMContentLoaded', async function() {
             throw new Error('문서 양식을 찾을 수 없습니다.');
         }
 
+        // HTML 복사본 생성 (원본 수정 방지)
+        const clonedContent = documentFormContent.cloneNode(true);
+
+        // 모든 input과 textarea의 현재 값을 속성으로 설정
+        clonedContent.querySelectorAll('input, textarea').forEach(field => {
+            const originalField = (field.id ? documentFormContent.querySelector(`#${field.id}`) : null) ||
+                                 Array.from(documentFormContent.querySelectorAll('input, textarea'))
+                                      .find(f => f.className === field.className && f.name === field.name);
+
+            if (originalField) {
+                if (field.type === 'checkbox' || field.type === 'radio') {
+                    if (originalField.checked) {
+                        field.setAttribute('checked', 'checked');
+                    } else {
+                        field.removeAttribute('checked');
+                    }
+                } else {
+                    field.setAttribute('value', originalField.value || '');
+                    if (field.tagName === 'TEXTAREA') {
+                        field.textContent = originalField.value || '';
+                    }
+                }
+            }
+        });
+
         // HTML 문자열 생성 (완전한 HTML 문서)
         const htmlContent = `
 <!DOCTYPE html>
@@ -1447,6 +1691,21 @@ document.addEventListener('DOMContentLoaded', async function() {
             text-align: center;
         }
 
+        /* 주요내용 좌측정렬 및 A4 1페이지 고정 */
+        .form-table td.auto-content,
+        .form-table td[style*="text-align: left"] {
+            text-align: left !important;
+            height: 480px !important;
+            max-height: 480px !important;
+            min-height: 480px !important;
+            overflow: hidden !important;
+            font-size: 12px !important;
+            line-height: 1.6 !important;
+            padding: 8px 10px !important;
+            vertical-align: top !important;
+            box-sizing: border-box !important;
+        }
+
         .form-table input,
         .form-table textarea {
             border: none;
@@ -1454,6 +1713,49 @@ document.addEventListener('DOMContentLoaded', async function() {
             width: 100%;
             text-align: center;
             font-size: 13px;
+        }
+
+        /* 결재란 테이블 스타일 고정 */
+        table[style*="border: 2px solid #000"] {
+            border-collapse: collapse !important;
+        }
+
+        table[style*="border: 2px solid #000"] td {
+            box-sizing: border-box !important;
+            max-width: 120px !important;
+            max-height: 80px !important;
+            overflow: hidden !important;
+        }
+
+        table[style*="border: 2px solid #000"] td[style*="height: 80px"] {
+            height: 80px !important;
+            min-height: 80px !important;
+            max-height: 80px !important;
+        }
+
+        table[style*="border: 2px solid #000"] td[style*="width: 120px"] {
+            width: 120px !important;
+            min-width: 120px !important;
+            max-width: 120px !important;
+        }
+
+        table[style*="border: 2px solid #000"] td[style*="vertical-rl"] {
+            writing-mode: vertical-rl !important;
+            text-orientation: upright !important;
+            padding: 3px 7px !important;
+        }
+
+        /* 특이사항 높이 제한 */
+        .auto-notes,
+        textarea.auto-notes {
+            height: 60px !important;
+            min-height: 60px !important;
+            max-height: 60px !important;
+            overflow: hidden !important;
+        }
+
+        th[style*="특이사항"] {
+            height: 60px !important;
         }
 
         @page {
@@ -1469,7 +1771,7 @@ document.addEventListener('DOMContentLoaded', async function() {
     </style>
 </head>
 <body>
-${documentFormContent.innerHTML}
+${clonedContent.innerHTML}
 </body>
 </html>
         `;
@@ -1527,10 +1829,19 @@ ${documentFormContent.innerHTML}
                         if (duplicates.length > 0) {
                             const duplicate = duplicates[0];
                             const meeting = duplicate.meeting;
-                            const createdAt = new Date(meeting.createdAt).toLocaleString('ko-KR');
-                            const title = meeting.title || '(제목 없음)';
+                            const meetingDate = meeting.meetingDate || '';
+                            const projectName = meeting.projectName || '알 수 없는 프로젝트';
+                            const timeRange = meeting.startTime && meeting.endTime
+                                ? `${meeting.startTime.substring(0, 5)} ~ ${meeting.endTime.substring(0, 5)}`
+                                : '';
 
-                            await showWarning(`저장 중 중복 발견: ${createdAt}에 "${title}"에 포함된 참가자가 있어 저장할 수 없습니다.`);
+                            await showWarning(
+                                `저장할 수 없습니다.<br><br>` +
+                                `동일 날짜 및 시간대에 이미 다른 회의에 참석 중인 인원이 있습니다.<br><br>` +
+                                `회의 날짜: ${meetingDate}<br>` +
+                                `회의 시간: ${timeRange}<br>` +
+                                `프로젝트: <strong>[${projectName}]</strong>`
+                            );
                             return;
                         }
                         console.log('[중복 검증 완료] 중복 없음');
@@ -1560,7 +1871,7 @@ ${documentFormContent.innerHTML}
                 }
             }
 
-            // 필수 필드 검증
+            // 필수 필드 검증 (첨부파일 제외 모든 필드)
             const projectInput = document.getElementById('common_project');
             const projectIdxInput = document.getElementById('selectedProjectIdx');
             const dateInput = document.getElementById('common_date');
@@ -1568,29 +1879,73 @@ ${documentFormContent.innerHTML}
             const endTimeInput = document.getElementById('common_end_time');
             const locationInput = document.getElementById('common_location');
             const purposeInput = document.getElementById('common_purpose');
+            // amountInput already declared at line 1500
+            const contentInput = document.getElementById('common_content');
 
             if (!projectIdxInput || !projectIdxInput.value) {
-                showWarning('프로젝트를 선택해주세요.');
+                await showWarning('프로젝트를 선택해주세요.');
+                if (projectInput) {
+                    projectInput.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                    projectInput.focus();
+                }
                 return;
             }
 
             if (!dateInput || !dateInput.value) {
-                showWarning('회의 일자를 입력해주세요.');
+                await showWarning('회의 일자를 입력해주세요.');
+                dateInput.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                dateInput.focus();
                 return;
             }
 
             if (!startTimeInput || !startTimeInput.value) {
-                showWarning('시작 시간을 입력해주세요.');
+                await showWarning('시작 시간을 입력해주세요.');
+                startTimeInput.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                startTimeInput.focus();
                 return;
             }
 
             if (!endTimeInput || !endTimeInput.value) {
-                showWarning('종료 시간을 입력해주세요.');
+                await showWarning('종료 시간을 입력해주세요.');
+                endTimeInput.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                endTimeInput.focus();
                 return;
             }
 
-            if (!locationInput || !locationInput.value) {
-                showWarning('장소를 입력해주세요.');
+            if (!locationInput || !locationInput.value.trim()) {
+                await showWarning('장소를 입력해주세요.');
+                locationInput.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                locationInput.focus();
+                return;
+            }
+
+            if (!purposeInput || !purposeInput.value.trim()) {
+                await showWarning('회의 목적을 입력해주세요.');
+                purposeInput.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                purposeInput.focus();
+                return;
+            }
+
+            if (!amountInput || !amountInput.value || parseInt(amountInput.value.replace(/,/g, '')) <= 0) {
+                await showWarning('사용 금액을 입력해주세요.');
+                amountInput.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                amountInput.focus();
+                return;
+            }
+
+            if (!contentInput || !contentInput.value.trim()) {
+                await showWarning('주요 내용을 입력해주세요.');
+                contentInput.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                contentInput.focus();
+                return;
+            }
+
+            if (!currentAttendees || currentAttendees.length === 0) {
+                await showWarning('참석자를 1명 이상 추가해주세요.');
+                const attendeeArea = document.getElementById('attendeeArea');
+                if (attendeeArea) {
+                    attendeeArea.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                }
                 return;
             }
 
@@ -1598,12 +1953,13 @@ ${documentFormContent.innerHTML}
             // 참석자 목록 변환
             const attendeeDTOs = currentAttendees.map((attendee, index) => {
                 const dto = {
-                    attendeeType: attendee.type === 'external' ? '외부' : '내부',
+                    isExternal: attendee.type === 'external',
                     department: attendee.dept || null,
                     name: attendee.name,
                     userIdx: parseInt(attendee.id),
                     position: attendee.position || null,
-                    displayOrder: index
+                    displayOrder: index,
+                    meetingExpense: attendee.meetingExpense || 0
                 };
 
                 return dto;
@@ -1670,7 +2026,9 @@ ${documentFormContent.innerHTML}
                         // PDF 생성 실패해도 데이터는 저장되었으므로 계속 진행
                     }
 
-                    showSuccess('회의록이 저장되었습니다.');
+                    hideLoading();
+                    await showSuccess('회의록이 저장되었습니다.');
+
                     // 저장 후 목록 페이지로 이동
                     window.location.href = '/project/documents';
                 } else {
@@ -2108,18 +2466,33 @@ ${documentFormContent.innerHTML}
         internalListEl.innerHTML = filtered.map(person => {
             const isSelected = tempSelectedAttendees.some(a => String(a.id) === String(person.id) && a.type === 'internal');
             const formattedExpense = person.meetingExpense ? person.meetingExpense.toLocaleString('ko-KR') + '원' : '-';
+            const isDuplicate = duplicateAttendeesInfo[person.id];
 
             const highlightedName = highlightText(person.name, searchText);
             const highlightedDept = highlightText(person.dept, searchText);
             const highlightedPosition = highlightText(person.position, searchText);
 
+            // 중복 참석자 뱃지
+            let duplicateBadge = '';
+            if (isDuplicate) {
+                const projectName = isDuplicate.projectName || '알 수 없는 프로젝트';
+                const timeRange = isDuplicate.startTime && isDuplicate.endTime
+                    ? `${isDuplicate.startTime}~${isDuplicate.endTime}`
+                    : '';
+                const tooltipText = `${projectName} 프로젝트 회의 (${timeRange})`;
+                duplicateBadge = `<span style="background: #fee2e2; color: #991b1b; padding: 2px 8px; border-radius: 4px; font-size: 11px; margin-left: 8px; white-space: nowrap;" title="${tooltipText}"><i class="fas fa-ban"></i> 시간 중복</span>`;
+            }
+
+            const disabledStyle = isDuplicate ? 'opacity: 0.5; cursor: not-allowed; pointer-events: none;' : '';
+
             return `
-                <div class="employee-item ${isSelected ? 'selected' : ''}"
+                <div class="employee-item ${isSelected ? 'selected' : ''} ${isDuplicate ? 'duplicate-disabled' : ''}"
                      data-id="${person.id}"
                      data-type="internal"
+                     style="${disabledStyle}"
                      onclick="toggleInternalAttendee(${person.id})">
                     <div class="employee-info">
-                        <div class="employee-name">${highlightedName}</div>
+                        <div class="employee-name">${highlightedName}${duplicateBadge}</div>
                         <div class="employee-details">${highlightedPosition} · ${highlightedDept} · ${formattedExpense}</div>
                     </div>
                     ${isSelected ? '<i class="fas fa-check-circle" style="color: #10b981; font-size: 18px; margin-left: auto;"></i>' : ''}
@@ -2148,18 +2521,33 @@ ${documentFormContent.innerHTML}
 
         externalListEl.innerHTML = filtered.map(person => {
             const isSelected = tempSelectedAttendees.some(a => parseInt(a.id) === person.idx && a.type === 'external');
+            const isDuplicate = duplicateAttendeesInfo[person.idx];
 
             const highlightedName = highlightText(person.name, searchText);
             const highlightedCompany = highlightText(person.companyName || '-', searchText);
             const highlightedPosition = highlightText(person.position || '-', searchText);
 
+            // 중복 참석자 뱃지
+            let duplicateBadge = '';
+            if (isDuplicate) {
+                const projectName = isDuplicate.projectName || '알 수 없는 프로젝트';
+                const timeRange = isDuplicate.startTime && isDuplicate.endTime
+                    ? `${isDuplicate.startTime}~${isDuplicate.endTime}`
+                    : '';
+                const tooltipText = `${projectName} 프로젝트 회의 (${timeRange})`;
+                duplicateBadge = `<span style="background: #fee2e2; color: #991b1b; padding: 2px 8px; border-radius: 4px; font-size: 11px; margin-left: 8px; white-space: nowrap;" title="${tooltipText}"><i class="fas fa-ban"></i> 시간 중복</span>`;
+            }
+
+            const disabledStyle = isDuplicate ? 'opacity: 0.5; cursor: not-allowed; pointer-events: none;' : '';
+
             return `
-                <div class="employee-item ${isSelected ? 'selected' : ''}"
+                <div class="employee-item ${isSelected ? 'selected' : ''} ${isDuplicate ? 'duplicate-disabled' : ''}"
                      data-id="${person.idx}"
                      data-type="external"
+                     style="${disabledStyle}"
                      onclick="toggleExternalAttendee(${person.idx})">
                     <div class="employee-info">
-                        <div class="employee-name">${highlightedName}</div>
+                        <div class="employee-name">${highlightedName}${duplicateBadge}</div>
                         <div class="employee-details">${highlightedPosition} · ${highlightedCompany}</div>
                     </div>
                     ${isSelected ? '<i class="fas fa-check-circle" style="color: #10b981; font-size: 18px; margin-left: auto;"></i>' : ''}
@@ -2169,15 +2557,36 @@ ${documentFormContent.innerHTML}
     }
 
     // 내부인원 선택 토글
-    window.toggleInternalAttendee = function(personId) {
+    window.toggleInternalAttendee = async function(personId) {
         const attendeePersons = getAttendeePersons();
         const person = attendeePersons.find(p => p.id === personId);
         if (!person) return;
 
         const index = tempSelectedAttendees.findIndex(a => String(a.id) === String(personId) && a.type === 'internal');
+
         if (index > -1) {
+            // 선택 해제
             tempSelectedAttendees.splice(index, 1);
         } else {
+            // 선택 시 중복 체크 - 중복이면 선택 불가
+            const isDuplicate = duplicateAttendeesInfo[personId];
+            if (isDuplicate) {
+                const projectName = isDuplicate.projectName || '알 수 없는 프로젝트';
+                const meetingDate = isDuplicate.meetingDate || '';
+                const timeRange = isDuplicate.startTime && isDuplicate.endTime
+                    ? `${isDuplicate.startTime} ~ ${isDuplicate.endTime}`
+                    : '';
+
+                await showWarning(
+                    `<strong>${person.name}</strong> 님은 선택할 수 없습니다.<br><br>` +
+                    `동일 날짜 및 시간대에 이미 다른 회의에 참석 중입니다.<br><br>` +
+                    `회의 날짜: ${meetingDate}<br>` +
+                    `회의 시간: ${timeRange}<br>` +
+                    `프로젝트: <strong>[${projectName}]</strong>`
+                );
+                return; // 선택 불가
+            }
+
             tempSelectedAttendees.push({
                 id: String(personId),
                 name: person.name,
@@ -2193,14 +2602,35 @@ ${documentFormContent.innerHTML}
     };
 
     // 외부인원 선택 토글
-    window.toggleExternalAttendee = function(personIdx) {
+    window.toggleExternalAttendee = async function(personIdx) {
         const person = allExternalPersons.find(p => p.idx === personIdx);
         if (!person) return;
 
         const index = tempSelectedAttendees.findIndex(a => parseInt(a.id) === personIdx && a.type === 'external');
+
         if (index > -1) {
+            // 선택 해제
             tempSelectedAttendees.splice(index, 1);
         } else {
+            // 선택 시 중복 체크 - 중복이면 선택 불가
+            const isDuplicate = duplicateAttendeesInfo[personIdx];
+            if (isDuplicate) {
+                const projectName = isDuplicate.projectName || '알 수 없는 프로젝트';
+                const meetingDate = isDuplicate.meetingDate || '';
+                const timeRange = isDuplicate.startTime && isDuplicate.endTime
+                    ? `${isDuplicate.startTime} ~ ${isDuplicate.endTime}`
+                    : '';
+
+                await showWarning(
+                    `<strong>${person.name}</strong> 님은 선택할 수 없습니다.<br><br>` +
+                    `동일 날짜 및 시간대에 이미 다른 회의에 참석 중입니다.<br><br>` +
+                    `회의 날짜: ${meetingDate}<br>` +
+                    `회의 시간: ${timeRange}<br>` +
+                    `프로젝트: <strong>[${projectName}]</strong>`
+                );
+                return; // 선택 불가
+            }
+
             tempSelectedAttendees.push({
                 id: personIdx,
                 name: person.name,
@@ -2263,6 +2693,9 @@ ${documentFormContent.innerHTML}
     };
 
     // 모달 열기
+    // 중복 참석자 정보 저장
+    let duplicateAttendeesInfo = {};
+
     window.openAttendeeModal = async function() {
         if (attendeeModal) {
             // 기존에 선택된 참석자들을 tempSelectedAttendees에 복사
@@ -2281,6 +2714,9 @@ ${documentFormContent.innerHTML}
 
             // 외부인력 목록 로드
             await loadExternalPersons();
+
+            // 모든 내부 참석자의 중복 여부 확인
+            await checkAllAttendeesForDuplicates();
 
             renderInternalList('');
             renderExternalList('');
@@ -2320,14 +2756,119 @@ ${documentFormContent.innerHTML}
         });
     }
 
+    // 시간 겹침 확인 함수
+    function isTimeOverlap(start1, end1, start2, end2) {
+        // start1-end1: 기존 회의 시간
+        // start2-end2: 새로운 회의 시간
+        // 겹치지 않는 경우: end1 <= start2 OR end2 <= start1
+        // 겹치는 경우: NOT (겹치지 않는 경우)
+        return !(end1 <= start2 || end2 <= start1);
+    }
+
+    // 모든 참석자의 중복 여부 확인 (모달 열 때)
+    async function checkAllAttendeesForDuplicates() {
+        duplicateAttendeesInfo = {}; // 초기화
+
+        const dateInput = document.getElementById('common_date');
+        const startTimeInput = document.getElementById('common_start_time');
+        const endTimeInput = document.getElementById('common_end_time');
+        const projectIdxInput = document.getElementById('selectedProjectIdx');
+
+        if (!dateInput || !dateInput.value) {
+            return; // 날짜가 없으면 검증 스킵
+        }
+
+        if (!startTimeInput || !startTimeInput.value || !endTimeInput || !endTimeInput.value) {
+            return; // 시간이 없으면 검증 스킵
+        }
+
+        if (!projectIdxInput || !projectIdxInput.value) {
+            return; // 프로젝트가 없으면 검증 스킵
+        }
+
+        const attendeePersons = getAttendeePersons();
+        if (!attendeePersons || attendeePersons.length === 0) {
+            return;
+        }
+
+        const date = dateInput.value;
+        const currentStartTime = startTimeInput.value; // HH:mm 형식
+        const currentEndTime = endTimeInput.value; // HH:mm 형식
+        const projectIdx = projectIdxInput.value;
+
+        // 모든 내부 참석자 ID 수집
+        const internalAttendeeIds = attendeePersons
+            .map(p => parseInt(p.id))
+            .filter(id => !isNaN(id) && id > 0);
+
+        // 모든 외부 참석자 ID 수집
+        const externalAttendeeIds = (allExternalPersons || [])
+            .map(p => parseInt(p.idx))
+            .filter(id => !isNaN(id) && id > 0);
+
+        // 모든 참석자 ID 합치기
+        const allAttendeeIds = [...internalAttendeeIds, ...externalAttendeeIds];
+
+        // 각 참석자에 대해 중복 체크 (같은 프로젝트 내에서)
+        for (const attendeeId of allAttendeeIds) {
+            try {
+                const response = await fetch(`/api/receipt-meetings/check-duplicate?date=${date}&attendeeIdx=${attendeeId}&projectIdx=${projectIdx}`);
+                if (response.ok) {
+                    const data = await response.json();
+                    if (Array.isArray(data) && data.length > 0) {
+                        // 중복된 회의가 있는지 확인 - 시간대 겹침 체크
+                        for (const meeting of data) {
+                            const meetingStartTime = meeting.startTime; // HH:mm:ss 형식
+                            const meetingEndTime = meeting.endTime; // HH:mm:ss 형식
+
+                            if (meetingStartTime && meetingEndTime) {
+                                // HH:mm:ss를 HH:mm으로 변환 (초 제거)
+                                const existingStart = meetingStartTime.substring(0, 5);
+                                const existingEnd = meetingEndTime.substring(0, 5);
+
+                                // 시간대가 겹치는지 확인
+                                if (isTimeOverlap(existingStart, existingEnd, currentStartTime, currentEndTime)) {
+                                    duplicateAttendeesInfo[attendeeId] = {
+                                        meetingDate: meeting.meetingDate,
+                                        projectName: meeting.projectName,
+                                        startTime: existingStart,
+                                        endTime: existingEnd
+                                    };
+                                    break; // 하나라도 겹치면 중복으로 표시
+                                }
+                            }
+                        }
+                    }
+                }
+            } catch (error) {
+                console.error(`중복 검증 오류 (attendeeId: ${attendeeId}):`, error);
+            }
+        }
+    }
+
     // 중복 참석자 검증 함수
     async function checkDuplicateAttendees(attendeeIds) {
         const dateInput = document.getElementById('common_date');
+        const startTimeInput = document.getElementById('common_start_time');
+        const endTimeInput = document.getElementById('common_end_time');
+        const projectIdxInput = document.getElementById('selectedProjectIdx');
+
         if (!dateInput || !dateInput.value) {
             return []; // 날짜가 없으면 검증 스킵
         }
 
+        if (!startTimeInput || !startTimeInput.value || !endTimeInput || !endTimeInput.value) {
+            return []; // 시간이 없으면 검증 스킵
+        }
+
+        if (!projectIdxInput || !projectIdxInput.value) {
+            return []; // 프로젝트가 없으면 검증 스킵
+        }
+
         const date = dateInput.value; // yyyy-MM-dd 형식
+        const currentStartTime = startTimeInput.value; // HH:mm 형식
+        const currentEndTime = endTimeInput.value; // HH:mm 형식
+        const projectIdx = projectIdxInput.value;
         const duplicates = [];
 
         // NaN 필터링 및 유효성 검증
@@ -2346,26 +2887,59 @@ ${documentFormContent.innerHTML}
 
         for (const attendeeId of validAttendeeIds) {
             try {
-                const response = await fetch(`/api/receipt-meetings/check-duplicate?date=${date}&attendeeIdx=${attendeeId}`);
+                const response = await fetch(`/api/receipt-meetings/check-duplicate?date=${date}&attendeeIdx=${attendeeId}&projectIdx=${projectIdx}`);
+
+                // Content-Type 확인
+                const contentType = response.headers.get('content-type');
 
                 if (!response.ok) {
                     // 서버 에러 응답 처리
-                    const errorData = await response.json().catch(() => ({}));
-                    const errorMessage = errorData.error || `중복 검증 API 실패 (상태: ${response.status})`;
+                    let errorMessage = `중복 검증 API 실패 (상태: ${response.status})`;
+
+                    if (contentType && contentType.includes('application/json')) {
+                        const errorData = await response.json().catch(() => ({}));
+                        errorMessage = errorData.error || errorMessage;
+                    } else {
+                        const errorText = await response.text();
+                        console.error('서버 응답 (HTML):', errorText.substring(0, 200));
+                        errorMessage = '서버 오류가 발생했습니다. 관리자에게 문의하세요.';
+                    }
+
                     console.error(`중복 검증 API 실패 (attendeeId: ${attendeeId}):`, errorMessage);
                     throw new Error(errorMessage);
                 }
 
+                // JSON 응답인지 확인
+                if (!contentType || !contentType.includes('application/json')) {
+                    const responseText = await response.text();
+                    console.error('예상치 못한 응답 형식:', contentType, responseText.substring(0, 200));
+                    throw new Error('서버에서 잘못된 응답을 반환했습니다.');
+                }
+
                 const data = await response.json();
 
-                // 응답이 배열인지 확인
+                // 응답이 배열인지 확인하고 시간대 겹침 체크
                 if (Array.isArray(data) && data.length > 0) {
-                    // 중복된 회의록이 있음
-                    const meeting = data[0]; // 첫 번째 회의록 정보 사용
-                    duplicates.push({
-                        attendeeId: attendeeId,
-                        meeting: meeting
-                    });
+                    // 시간대가 겹치는 회의가 있는지 확인
+                    for (const meeting of data) {
+                        const meetingStartTime = meeting.startTime;
+                        const meetingEndTime = meeting.endTime;
+
+                        if (meetingStartTime && meetingEndTime) {
+                            // HH:mm:ss를 HH:mm으로 변환 (초 제거)
+                            const existingStart = meetingStartTime.substring(0, 5);
+                            const existingEnd = meetingEndTime.substring(0, 5);
+
+                            // 시간대가 겹치는지 확인
+                            if (isTimeOverlap(existingStart, existingEnd, currentStartTime, currentEndTime)) {
+                                duplicates.push({
+                                    attendeeId: attendeeId,
+                                    meeting: meeting
+                                });
+                                break; // 하나라도 겹치면 중복으로 처리
+                            }
+                        }
+                    }
                 }
             } catch (error) {
                 console.error(`중복 검증 중 오류 (attendeeId: ${attendeeId}):`, error);
@@ -2384,9 +2958,8 @@ ${documentFormContent.innerHTML}
             return;
         }
 
-        // 내부 참석자만 중복 검증 (외부인력은 제외)
-        const internalAttendees = tempSelectedAttendees.filter(a => a.type === 'internal');
-        const attendeeIdsToCheck = internalAttendees.map(a => parseInt(a.id)).filter(id => !isNaN(id));
+        // 내부 + 외부 참석자 모두 중복 검증
+        const attendeeIdsToCheck = tempSelectedAttendees.map(a => parseInt(a.id)).filter(id => !isNaN(id));
 
         if (attendeeIdsToCheck.length > 0) {
             try {
@@ -2394,10 +2967,18 @@ ${documentFormContent.innerHTML}
                 if (duplicates.length > 0) {
                     const duplicate = duplicates[0];
                     const meeting = duplicate.meeting;
-                    const createdAt = new Date(meeting.createdAt).toLocaleString('ko-KR');
-                    const title = meeting.title || '(제목 없음)';
+                    const meetingDate = meeting.meetingDate || '';
+                    const projectName = meeting.projectName || '알 수 없는 프로젝트';
+                    const timeRange = meeting.startTime && meeting.endTime
+                        ? `${meeting.startTime.substring(0, 5)} ~ ${meeting.endTime.substring(0, 5)}`
+                        : '';
 
-                    await showWarning(`${createdAt}에 "${title}"에 포함된 참가자라 선택이 불가합니다.`);
+                    await showWarning(
+                        `동일 날짜 및 시간대에 이미 다른 회의에 참석 중인 인원이 있습니다.<br><br>` +
+                        `회의 날짜: ${meetingDate}<br>` +
+                        `회의 시간: ${timeRange}<br>` +
+                        `프로젝트: <strong>[${projectName}]</strong>`
+                    );
                     return;
                 }
             } catch (error) {
@@ -2408,9 +2989,9 @@ ${documentFormContent.innerHTML}
         }
 
 
-        // currentAttendees에 추가 (중복 체크)
+        // currentAttendees에 추가 (중복 체크 - ID와 type 모두 확인)
         tempSelectedAttendees.forEach(person => {
-            if (!currentAttendees.some(a => String(a.id) === String(person.id))) {
+            if (!currentAttendees.some(a => String(a.id) === String(person.id) && a.type === person.type)) {
                 currentAttendees.push({
                     id: person.id,
                     name: person.name,
@@ -2852,13 +3433,21 @@ ${documentFormContent.innerHTML}
 
     async function loadReceiptMeetingData(id) {
         try {
+            console.log('회의록 데이터 로드 시작 - ID:', id);
             const response = await fetch(`/api/receipt-meetings/${id}`);
 
             if (!response.ok) {
+                const errorText = await response.text();
+                console.error('API 응답 실패:', response.status, errorText);
                 throw new Error(`데이터 로드 실패: ${response.status}`);
             }
 
             const data = await response.json();
+            console.log('회의록 데이터 로드 성공:', data);
+
+            // 실제 receipt_meeting.idx 저장 (수정/삭제 시 사용)
+            currentReceiptMeetingIdx = data.idx;
+            console.log('실제 회의록 idx 저장:', currentReceiptMeetingIdx);
 
             // 폼에 데이터 채우기
             populateForm(data);
@@ -2925,12 +3514,12 @@ ${documentFormContent.innerHTML}
         // 작성자 정보
         const authorInput = document.getElementById('common_author');
         const authorIdInput = document.getElementById('common_author_id');
-        if (data.authorId && data.authorName) {
+        if (data.authorIdx && data.authorName) {
             if (authorInput) {
                 authorInput.value = data.authorName;
             }
             if (authorIdInput) {
-                authorIdInput.value = data.authorId;
+                authorIdInput.value = data.authorIdx;
             }
             // 인쇄용 템플릿도 업데이트
             document.querySelectorAll('.auto-author').forEach(field => {
@@ -3001,27 +3590,32 @@ ${documentFormContent.innerHTML}
 
         // 참석자 목록
         if (data.attendees && data.attendees.length > 0) {
+            console.log('API 응답 참석자 데이터:', data.attendees);
             currentAttendees = data.attendees.map(attendee => {
                 let position = attendee.position || ''; // API에서 받은 직책 정보 사용
                 let dept = attendee.department || '';
 
                 // 내부 참석자인 경우
-                if (attendee.attendeeType === '내부' && attendee.userIdx) {
+                if (!attendee.isExternal && attendee.userIdx) {
                     dept = '파인씨앤아이'; // 내부 참석자는 소속을 파인씨앤아이로 통일
                 }
 
                 // ID: userIdx 사용 (내부/외부 모두 동일)
                 const id = attendee.userIdx;
-                const type = attendee.attendeeType === '외부' ? 'external' : 'internal';
+                const type = attendee.isExternal ? 'external' : 'internal';
+
+                console.log(`참석자 ${attendee.name} - meetingExpense:`, attendee.meetingExpense);
 
                 return {
                     id: id,
                     name: attendee.name,
                     dept: dept,
                     position: position,
+                    meetingExpense: attendee.meetingExpense || 0,
                     type: type
                 };
             });
+            console.log('currentAttendees 설정 완료:', currentAttendees);
 
         }
 
@@ -3073,181 +3667,19 @@ ${documentFormContent.innerHTML}
                 paymentInput.dispatchEvent(new Event('change'));
             }
 
-            // 참석자 목록 렌더링 - 이것이 회의품의서와 회의록의 참석자를 모두 업데이트함
-            const attendeeListElement = document.getElementById('attendeeList');
-            if (attendeeListElement) {
-                if (currentAttendees.length === 0) {
-                    attendeeListElement.innerHTML = `
-                        <div class="empty-attendee-state">
-                            <i class="fas fa-user-plus"></i>
-                            <div>클릭하여 참석자 추가</div>
-                        </div>
-                    `;
-                } else {
-                    attendeeListElement.innerHTML = currentAttendees.map(attendee => `
-                        <div class="trip-person-item">
-                            <div class="trip-person-info">
-                                <span class="name">${attendee.name}</span>
-                                <span>${attendee.dept}</span>
-                                <span>${attendee.position || ''}</span>
-                            </div>
-                            <button type="button" class="trip-person-remove attendee-remove" onclick="removeAttendeeInTemplate('${attendee.id}')">
-                                <i class="fas fa-times"></i> 삭제
-                            </button>
-                        </div>
-                    `).join('');
-                }
-
-                // 회의 품의서의 참석인원 업데이트
-                const meetingPurposeRow = document.getElementById('meeting_purpose_row');
-                if (meetingPurposeRow) {
-                    const meetingPurposeCell = document.querySelector('.meeting-purpose-cell');
-                    const meetingPurposeHeader = document.getElementById('meeting_purpose_header');
-
-                    const existingRows = document.querySelectorAll('.attendee-row');
-                    existingRows.forEach(row => row.remove());
-
-                    const grouped = {};
-                    currentAttendees.forEach(attendee => {
-                        const type = attendee.type === 'external' ? '외부' : '내부';
-                        const dept = attendee.type === 'external' ? attendee.dept : '파인씨앤아이';
-
-                        const key = `${type}_${dept}`;
-                        if (!grouped[key]) {
-                            grouped[key] = {
-                                type: type,
-                                dept: dept,
-                                names: []
-                            };
-                        }
-                        if (attendee.name) {
-                            grouped[key].names.push(attendee.name);
-                        }
-                    });
-
-                    const groupedArray = Object.values(grouped);
-                    const minRows = 2;
-                    const rowsToAdd = Math.max(groupedArray.length, minRows);
-
-                    const totalRowspan = rowsToAdd + 1;
-                    if (meetingPurposeCell) {
-                        meetingPurposeCell.setAttribute('rowspan', totalRowspan);
-                    }
-                    if (meetingPurposeHeader) {
-                        meetingPurposeHeader.setAttribute('rowspan', totalRowspan);
-                    }
-
-                    let insertAfter = meetingPurposeRow;
-                    for (let i = 0; i < rowsToAdd; i++) {
-                        const row = document.createElement('tr');
-                        row.className = 'attendee-row';
-
-                        if (i < groupedArray.length) {
-                            const group = groupedArray[i];
-                            let nameDisplay = '';
-
-                            if (group.names.length > 0) {
-                                nameDisplay = group.names[0];
-                                if (group.names.length > 1) {
-                                    nameDisplay += ` 외${group.names.length - 1}명`;
-                                }
-                            }
-
-                            row.innerHTML = `
-                                <td style="border: 1px solid #ddd; padding: 5px; text-align: center;">
-                                    <span>${group.type}</span>
-                                </td>
-                                <td style="border: 1px solid #ddd; padding: 5px; text-align: center;"><span>${group.dept || ''}</span></td>
-                                <td style="border: 1px solid #ddd; padding: 5px; text-align: center;"><span>${nameDisplay}</span></td>
-                            `;
-                        } else {
-                            row.innerHTML = `
-                                <td style="border: 1px solid #ddd; padding: 5px;">&nbsp;</td>
-                                <td style="border: 1px solid #ddd; padding: 5px;">&nbsp;</td>
-                                <td style="border: 1px solid #ddd; padding: 5px;">&nbsp;</td>
-                            `;
-                        }
-
-                        insertAfter.parentNode.insertBefore(row, insertAfter.nextSibling);
-                        insertAfter = row;
-                    }
-                }
-
-                // 회의록 참석자 정보 업데이트
-                const internalAttendees = currentAttendees.filter(a => a.name && a.name.trim() && a.type === 'internal');
-                const externalAttendees = currentAttendees.filter(a => a.name && a.name.trim() && a.type === 'external');
-
-                let allAttendeesText = '';
-
-                if (internalAttendees.length > 0) {
-                    const names = internalAttendees.map(a => a.name.trim());
-                    allAttendeesText = names.join(', ') + '(파인씨앤아이)';
-                }
-
-                if (externalAttendees.length > 0) {
-                    const externalTexts = externalAttendees.map(a => `${a.name.trim()}(${a.dept || '외부'})`);
-                    if (allAttendeesText) {
-                        allAttendeesText += ', ' + externalTexts.join(', ');
-                    } else {
-                        allAttendeesText = externalTexts.join(', ');
-                    }
-                }
-
-                document.querySelectorAll('.auto-all-attendees').forEach(field => {
-                    field.textContent = allAttendeesText;
-                });
-
-                // 참석자 명단 테이블 채우기 (성명, 소속) - 왼쪽 열부터 채우기
-                const attendeeSigNames = document.querySelectorAll('.attendee-sig-name');
-                const attendeeSigDepts = document.querySelectorAll('.attendee-sig-dept');
-
-                // 모든 필드 초기화
-                attendeeSigNames.forEach(el => el.value = '');
-                attendeeSigDepts.forEach(el => el.value = '');
-
-                currentAttendees.forEach((attendee, idx) => {
-                    if (idx < attendeeSigNames.length) {
-                        attendeeSigNames[idx].value = attendee.name || '';
-
-                        // 소속과 직책 함께 표시
-                        let deptText = attendee.dept || '';
-                        if (attendee.position && attendee.position.trim()) {
-                            deptText = deptText ? `${deptText} (${attendee.position})` : attendee.position;
-                        }
-                        attendeeSigDepts[idx].value = deptText;
-                    }
-                });
-            }
+            // 참석자 목록 렌더링 (renderAttendeeListInTemplate 함수 사용)
+            // 이 함수가 updateProposalAttendees와 updateMeetingMinutesAttendees를 자동으로 호출함
+            renderAttendeeListInTemplate();
 
         }, 100);
     }
-
-    // URL에 ID 파라미터가 있으면 데이터 로드
-    const receiptMeetingId = getUrlParameter('id');
-    if (receiptMeetingId) {
-        // 외부인력 목록을 먼저 로드한 후 데이터 로드
-        setTimeout(async () => {
-            // 외부인력 목록 로드
-            if (typeof loadExternalPersons === 'function') {
-                await loadExternalPersons();
-            }
-
-            // 데이터 로드
-            await loadReceiptMeetingData(receiptMeetingId);
-
-            // 데이터 로드 후 참석자 목록 렌더링 (이미 선택된 참석자 표시)
-            // 통합 모달 사용으로 별도 렌더링 불필요
-        }, 800);
-    }
-
 
     // 수정 버튼 이벤트
     const updateBtn = document.getElementById('updateBtn');
     if (updateBtn) {
         updateBtn.addEventListener('click', async function() {
-            const receiptMeetingId = getUrlParameter('id');
-            if (!receiptMeetingId) {
-                showError('문서 ID를 찾을 수 없습니다.');
+            if (!currentReceiptMeetingIdx) {
+                showError('회의록 정보를 찾을 수 없습니다.');
                 return;
             }
 
@@ -3257,24 +3689,38 @@ ${documentFormContent.innerHTML}
             const endTimeInput = document.getElementById('common_end_time');
             const locationInput = document.getElementById('common_location');
 
+            const projectInput = document.getElementById('common_project');
+
             if (!projectIdxInput || !projectIdxInput.value) {
                 showWarning('프로젝트를 선택해주세요.');
+                if (projectInput) {
+                    projectInput.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                    projectInput.focus();
+                }
                 return;
             }
             if (!dateInput || !dateInput.value) {
                 showWarning('회의 일자를 입력해주세요.');
+                dateInput.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                dateInput.focus();
                 return;
             }
             if (!startTimeInput || !startTimeInput.value) {
                 showWarning('시작 시간을 입력해주세요.');
+                startTimeInput.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                startTimeInput.focus();
                 return;
             }
             if (!endTimeInput || !endTimeInput.value) {
                 showWarning('종료 시간을 입력해주세요.');
+                endTimeInput.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                endTimeInput.focus();
                 return;
             }
             if (!locationInput || !locationInput.value) {
                 showWarning('장소를 입력해주세요.');
+                locationInput.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                locationInput.focus();
                 return;
             }
 
@@ -3284,12 +3730,13 @@ ${documentFormContent.innerHTML}
 
             const attendeeDTOs = currentAttendees.map((attendee, index) => {
                 return {
-                    attendeeType: attendee.type === 'external' ? '외부' : '내부',
+                    isExternal: attendee.type === 'external',
                     department: attendee.dept || null,
                     name: attendee.name,
                     userIdx: parseInt(attendee.id),
                     position: attendee.position || null,
-                    displayOrder: index
+                    displayOrder: index,
+                    meetingExpense: attendee.meetingExpense || 0
                 };
             });
 
@@ -3319,7 +3766,8 @@ ${documentFormContent.innerHTML}
             };
 
             try {
-                const response = await fetch(`/api/receipt-meetings/${receiptMeetingId}`, {
+                console.log('회의록 수정 시도 - idx:', currentReceiptMeetingIdx);
+                const response = await fetch(`/api/receipt-meetings/${currentReceiptMeetingIdx}`, {
                     method: 'PUT',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify(updateData)
@@ -3342,9 +3790,8 @@ ${documentFormContent.innerHTML}
     const deleteBtn = document.getElementById('deleteBtn');
     if (deleteBtn) {
         deleteBtn.addEventListener('click', async function() {
-            const receiptMeetingId = getUrlParameter('id');
-            if (!receiptMeetingId) {
-                showError('문서 ID를 찾을 수 없습니다.');
+            if (!currentReceiptMeetingIdx) {
+                showError('회의록 정보를 찾을 수 없습니다.');
                 return;
             }
 
@@ -3353,7 +3800,8 @@ ${documentFormContent.innerHTML}
             }
 
             try {
-                const response = await fetch(`/api/receipt-meetings/${receiptMeetingId}`, {
+                console.log('회의록 삭제 시도 - idx:', currentReceiptMeetingIdx);
+                const response = await fetch(`/api/receipt-meetings/${currentReceiptMeetingIdx}`, {
                     method: 'DELETE'
                 });
 
