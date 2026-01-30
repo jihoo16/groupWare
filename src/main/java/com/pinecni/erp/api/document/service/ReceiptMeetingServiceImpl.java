@@ -68,6 +68,18 @@ public class ReceiptMeetingServiceImpl implements ReceiptMeetingService {
     public ReceiptMeetingDTO getReceiptMeetingById(Long idx) {
         log.debug("회의록 상세 조회 - idx: {}", idx);
 
+        // 먼저 documentIdx(전자결재 문서 ID)로 조회 시도
+        Optional<ReceiptMeeting> entityByDocumentIdx = receiptMeetingRepository.findByDocumentIdx(idx);
+
+        if (entityByDocumentIdx.isPresent()) {
+            log.debug("documentIdx로 회의록 조회 성공 - documentIdx: {}", idx);
+            // 참석자 정보를 포함하여 다시 조회
+            ReceiptMeeting entity = receiptMeetingRepository.findByIdWithDetails(entityByDocumentIdx.get().getIdx())
+                    .orElseThrow(() -> new IllegalArgumentException("회의록을 찾을 수 없습니다. idx: " + idx));
+            return mapper.toDTO(entity);
+        }
+
+        // documentIdx로 조회 실패 시, receipt_meeting.idx로 직접 조회
         ReceiptMeeting entity = receiptMeetingRepository.findByIdWithDetails(idx)
                 .orElseThrow(() -> new IllegalArgumentException("회의록을 찾을 수 없습니다. idx: " + idx));
 
@@ -110,10 +122,20 @@ public class ReceiptMeetingServiceImpl implements ReceiptMeetingService {
         log.debug("회의록 생성 - projectIdx: {}, authorIdx: {}", createDTO.getProjectIdx(), createDTO.getAuthorIdx());
 
         try {
-            // 1. 문서번호 생성
+            // 1. 참석자 중복 검증 (저장 전 필수)
+            validateAttendeeDuplicates(
+                createDTO.getMeetingDate(),
+                createDTO.getStartTime(),
+                createDTO.getEndTime(),
+                createDTO.getProjectIdx(),
+                createDTO.getAttendees(),
+                null  // 신규 생성이므로 현재 회의록 IDX 없음
+            );
+
+            // 2. 문서번호 생성
             String documentNumber = generateDocumentNumber(createDTO.getProjectIdx());
 
-        // 2. ApprovalDocument 메타데이터 저장
+        // 3. ApprovalDocument 메타데이터 저장
         String documentNo = "RECEIPT-MEETING-" + System.currentTimeMillis() + "-" + createDTO.getAuthorIdx();
         String title = "연구비증빙 회의록";
         if (createDTO.getPurpose() != null && !createDTO.getPurpose().isEmpty()) {
@@ -135,13 +157,13 @@ public class ReceiptMeetingServiceImpl implements ReceiptMeetingService {
         log.debug("ApprovalDocument created - documentIdx: {}, documentNo: {}",
                   savedDocument.getIdx(), savedDocument.getDocumentNo());
 
-        // 3. 회의록 Entity 생성 및 저장
+        // 4. 회의록 Entity 생성 및 저장
         ReceiptMeeting entity = mapper.toEntity(createDTO);
         entity.setDocumentNumber(documentNumber);
         entity.setDocumentIdx(savedDocument.getIdx());
         entity = receiptMeetingRepository.save(entity);
 
-        // 3. 참석자 목록 저장
+        // 5. 참석자 목록 저장
         if (createDTO.getAttendees() != null && !createDTO.getAttendees().isEmpty()) {
             final Long receiptMeetingIdx = entity.getIdx();
             List<ReceiptMeetingAttendee> attendees = createDTO.getAttendees().stream()
@@ -150,7 +172,7 @@ public class ReceiptMeetingServiceImpl implements ReceiptMeetingService {
             attendeeRepository.saveAll(attendees);
         }
 
-            // 4. 저장된 데이터 재조회 (참석자 포함)
+            // 6. 저장된 데이터 재조회 (참석자 포함)
             ReceiptMeeting savedEntity = receiptMeetingRepository.findByIdWithDetails(entity.getIdx())
                     .orElseThrow(() -> new IllegalStateException("저장된 회의록을 조회할 수 없습니다."));
 
@@ -173,11 +195,21 @@ public class ReceiptMeetingServiceImpl implements ReceiptMeetingService {
         ReceiptMeeting entity = receiptMeetingRepository.findById(idx)
                 .orElseThrow(() -> new IllegalArgumentException("회의록을 찾을 수 없습니다. idx: " + idx));
 
-        // 2. 회의록 정보 업데이트
+        // 2. 참석자 중복 검증 (수정 전 필수)
+        validateAttendeeDuplicates(
+            updateDTO.getMeetingDate(),
+            updateDTO.getStartTime(),
+            updateDTO.getEndTime(),
+            updateDTO.getProjectIdx(),
+            updateDTO.getAttendees(),
+            idx  // 현재 회의록 IDX (자기 자신은 제외)
+        );
+
+        // 3. 회의록 정보 업데이트
         mapper.updateEntity(entity, updateDTO);
         entity = receiptMeetingRepository.save(entity);
 
-        // 3. 참석자 목록 업데이트 (기존 삭제 후 재생성)
+        // 4. 참석자 목록 업데이트 (기존 삭제 후 재생성)
         if (updateDTO.getAttendees() != null) {
             attendeeRepository.deleteByReceiptMeetingIdx(idx);
 
@@ -189,7 +221,7 @@ public class ReceiptMeetingServiceImpl implements ReceiptMeetingService {
             }
         }
 
-        // 4. 연결된 ApprovalDocument도 업데이트
+        // 5. 연결된 ApprovalDocument도 업데이트
         final Long documentIdx = entity.getDocumentIdx();
         final Long authorIdx = entity.getAuthorIdx();
         if (documentIdx != null) {
@@ -215,7 +247,7 @@ public class ReceiptMeetingServiceImpl implements ReceiptMeetingService {
             });
         }
 
-        // 5. 수정된 데이터 재조회
+        // 6. 수정된 데이터 재조회
         ReceiptMeeting updatedEntity = receiptMeetingRepository.findByIdWithDetails(idx)
                 .orElseThrow(() -> new IllegalStateException("수정된 회의록을 조회할 수 없습니다."));
 
@@ -265,16 +297,17 @@ public class ReceiptMeetingServiceImpl implements ReceiptMeetingService {
 
     @Override
     @Transactional(readOnly = true)
-    public List<Map<String, Object>> findDuplicateAttendee(String date, Long attendeeIdx) {
-        log.debug("중복 참석자 검증 - date: {}, attendeeIdx: {}", date, attendeeIdx);
+    public List<Map<String, Object>> findDuplicateAttendee(String date, Long attendeeIdx, Long projectIdx) {
+        log.debug("중복 참석자 검증 - date: {}, attendeeIdx: {}, projectIdx: {}", date, attendeeIdx, projectIdx);
 
         try {
             // 날짜 파싱
             LocalDate meetingDate = LocalDate.parse(date);
 
-            // 해당 날짜의 모든 회의록 조회
+            // 해당 날짜 + 같은 프로젝트의 회의록만 조회
             List<ReceiptMeeting> meetings = receiptMeetingRepository.findAll().stream()
                     .filter(rm -> rm.getMeetingDate() != null && rm.getMeetingDate().equals(meetingDate))
+                    .filter(rm -> projectIdx == null || rm.getProjectIdx().equals(projectIdx)) // 같은 프로젝트만
                     .collect(Collectors.toList());
 
             List<Map<String, Object>> duplicates = new ArrayList<>();
@@ -290,8 +323,18 @@ public class ReceiptMeetingServiceImpl implements ReceiptMeetingService {
                 if (hasDuplicate) {
                     Map<String, Object> info = new HashMap<>();
                     info.put("idx", meeting.getIdx());
-                    info.put("title", meeting.getPurpose()); // purpose를 제목으로 사용
-                    info.put("createdAt", meeting.getCreatedAt());
+                    info.put("meetingDate", meeting.getMeetingDate()); // 회의 날짜
+                    info.put("startTime", meeting.getStartTime()); // 시작 시간
+                    info.put("endTime", meeting.getEndTime()); // 종료 시간
+                    info.put("projectIdx", meeting.getProjectIdx()); // 프로젝트 IDX
+
+                    // 프로젝트 이름 조회
+                    if (meeting.getProject() != null) {
+                        info.put("projectName", meeting.getProject().getProjectName());
+                    } else {
+                        info.put("projectName", null);
+                    }
+
                     duplicates.add(info);
                 }
             }
@@ -445,5 +488,120 @@ public class ReceiptMeetingServiceImpl implements ReceiptMeetingService {
         log.info("연구비증빙 회의록 PDF 생성 및 저장 완료 - filePath: {}", filePath);
 
         return filePath;
+    }
+
+    /**
+     * 시간대 겹침 확인 유틸리티 메서드
+     * @param start1 시작 시간 1
+     * @param end1 종료 시간 1
+     * @param start2 시작 시간 2
+     * @param end2 종료 시간 2
+     * @return 겹치면 true, 안 겹치면 false
+     */
+    private boolean isTimeOverlap(java.time.LocalTime start1, java.time.LocalTime end1,
+                                   java.time.LocalTime start2, java.time.LocalTime end2) {
+        // 시간대가 겹치는 경우: start1 < end2 && end1 > start2
+        return start1.isBefore(end2) && end1.isAfter(start2);
+    }
+
+    /**
+     * 참석자 중복 검증 메서드
+     * - 같은 날짜, 같은 프로젝트, 겹치는 시간대에 동일 참석자가 있는지 확인
+     * - 내부/외부 참석자 모두 검증
+     *
+     * @param meetingDate 회의 날짜
+     * @param startTime 시작 시간
+     * @param endTime 종료 시간
+     * @param projectIdx 프로젝트 IDX
+     * @param attendees 참석자 목록 (DTO)
+     * @param currentMeetingIdx 현재 회의록 IDX (수정 시 자기 자신 제외용, 신규 생성 시 null)
+     * @throws IllegalStateException 중복 참석자가 있을 경우
+     */
+    private void validateAttendeeDuplicates(
+            LocalDate meetingDate,
+            java.time.LocalTime startTime,
+            java.time.LocalTime endTime,
+            Long projectIdx,
+            List<com.pinecni.erp.api.document.dto.ReceiptMeetingAttendeeDTO> attendees,
+            Long currentMeetingIdx) {
+
+        if (attendees == null || attendees.isEmpty()) {
+            return; // 참석자가 없으면 검증 스킵
+        }
+
+        if (meetingDate == null || startTime == null || endTime == null) {
+            return; // 필수 정보가 없으면 검증 스킵
+        }
+
+        log.debug("참석자 중복 검증 시작 - 날짜: {}, 시간: {} ~ {}, 프로젝트: {}, 참석자 수: {}",
+                meetingDate, startTime, endTime, projectIdx, attendees.size());
+
+        // 같은 날짜, 같은 프로젝트의 모든 회의록 조회
+        List<ReceiptMeeting> existingMeetings = receiptMeetingRepository.findAll().stream()
+                .filter(rm -> rm.getMeetingDate() != null && rm.getMeetingDate().equals(meetingDate))
+                .filter(rm -> rm.getProjectIdx() != null && rm.getProjectIdx().equals(projectIdx))
+                .filter(rm -> currentMeetingIdx == null || !rm.getIdx().equals(currentMeetingIdx)) // 자기 자신 제외
+                .filter(rm -> rm.getStartTime() != null && rm.getEndTime() != null)
+                .collect(Collectors.toList());
+
+        if (existingMeetings.isEmpty()) {
+            log.debug("같은 날짜/프로젝트의 기존 회의록 없음 - 중복 없음");
+            return;
+        }
+
+        log.debug("같은 날짜/프로젝트의 기존 회의록 {}건 발견", existingMeetings.size());
+
+        // 각 참석자에 대해 중복 확인
+        for (com.pinecni.erp.api.document.dto.ReceiptMeetingAttendeeDTO attendee : attendees) {
+            Long userIdx = attendee.getUserIdx();
+
+            if (userIdx == null) {
+                continue; // userIdx가 없는 참석자는 스킵
+            }
+
+            // 기존 회의록들과 시간대 겹침 확인
+            for (ReceiptMeeting existingMeeting : existingMeetings) {
+                // 시간대 겹침 확인
+                if (!isTimeOverlap(startTime, endTime, existingMeeting.getStartTime(), existingMeeting.getEndTime())) {
+                    continue; // 시간대가 안 겹치면 스킵
+                }
+
+                // 해당 회의록의 참석자 목록 조회
+                List<ReceiptMeetingAttendee> existingAttendees =
+                    attendeeRepository.findByReceiptMeetingIdxOrderByDisplayOrder(existingMeeting.getIdx());
+
+                // 동일 참석자가 있는지 확인 (내부/외부 모두)
+                boolean isDuplicate = existingAttendees.stream()
+                        .anyMatch(ea -> ea.getUserIdx() != null && ea.getUserIdx().equals(userIdx));
+
+                if (isDuplicate) {
+                    // 중복 발견 - 상세 정보 포함하여 예외 발생
+                    String attendeeName = attendee.getName() != null ? attendee.getName() : "알 수 없음";
+                    String projectName = existingMeeting.getProject() != null
+                        ? existingMeeting.getProject().getProjectName()
+                        : "알 수 없음";
+
+                    String errorMessage = String.format(
+                        "참석자 '%s'이(가) 같은 날짜 및 시간대에 이미 다른 회의에 참석 중입니다.\n\n" +
+                        "- 회의 날짜: %s\n" +
+                        "- 회의 시간: %s ~ %s\n" +
+                        "- 프로젝트: [%s]\n\n" +
+                        "시간을 변경하거나 참석자를 제외해주세요.",
+                        attendeeName,
+                        existingMeeting.getMeetingDate(),
+                        existingMeeting.getStartTime(),
+                        existingMeeting.getEndTime(),
+                        projectName
+                    );
+
+                    log.warn("참석자 중복 발견 - userIdx: {}, name: {}, 기존 회의록 IDX: {}",
+                            userIdx, attendeeName, existingMeeting.getIdx());
+
+                    throw new IllegalStateException(errorMessage);
+                }
+            }
+        }
+
+        log.debug("참석자 중복 검증 완료 - 중복 없음");
     }
 }

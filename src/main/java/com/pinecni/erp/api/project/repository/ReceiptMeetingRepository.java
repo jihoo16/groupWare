@@ -58,4 +58,9 @@ public interface ReceiptMeetingRepository extends JpaRepository<ReceiptMeeting, 
      * 전체 회의록 목록 조회 (최신순)
      */
     List<ReceiptMeeting> findAllByOrderByMeetingDateDesc();
+
+    /**
+     * ApprovalDocument idx로 회의록 조회
+     */
+    Optional<ReceiptMeeting> findByDocumentIdx(Long documentIdx);
 }
