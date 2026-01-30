@@ -2,6 +2,7 @@ package com.pinecni.erp.entity;
 
 import jakarta.persistence.*;
 import lombok.*;
+import org.hibernate.annotations.SQLRestriction;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
@@ -22,6 +23,7 @@ import java.util.List;
         @Index(name = "idx_receipt_meeting_date", columnList = "meeting_date"),
         @Index(name = "idx_receipt_meeting_document_number", columnList = "document_number")
 })
+@SQLRestriction("deleted = false")
 @Getter
 @Setter
 @NoArgsConstructor
@@ -92,6 +94,15 @@ public class ReceiptMeeting {
     @Column(name = "updated_at")
     private LocalDateTime updatedAt;
 
+    @Column(name = "deleted", nullable = false)
+    private Boolean deleted = false;
+
+    @Column(name = "deleted_at")
+    private LocalDateTime deletedAt;
+
+    @Column(name = "deleted_user_idx")
+    private Long deletedUserIdx;
+
     // 관계 매핑
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "project_idx", insertable = false, updatable = false)
@@ -113,6 +124,9 @@ public class ReceiptMeeting {
 
     @OneToMany(mappedBy = "receiptMeeting", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<ReceiptMeetingAttachment> attachments = new ArrayList<>();
+
+    @OneToMany(mappedBy = "receiptMeeting", cascade = CascadeType.ALL, orphanRemoval = true)
+    private List<ReceiptMeetingOfficialPdf> officialPdfs = new ArrayList<>();
 
     @PrePersist
     protected void onCreate() {

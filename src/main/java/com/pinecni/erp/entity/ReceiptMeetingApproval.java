@@ -2,6 +2,7 @@ package com.pinecni.erp.entity;
 
 import jakarta.persistence.*;
 import lombok.*;
+import org.hibernate.annotations.SQLRestriction;
 
 import java.time.LocalDateTime;
 
@@ -14,6 +15,7 @@ import java.time.LocalDateTime;
         @Index(name = "idx_approval_approver", columnList = "approver_idx"),
         @Index(name = "idx_receipt_meeting_approval_status", columnList = "status")
 })
+@SQLRestriction("deleted = false")
 @Getter
 @Setter
 @NoArgsConstructor
@@ -41,6 +43,15 @@ public class ReceiptMeetingApproval {
 
     @Column(name = "created_at", updatable = false)
     private LocalDateTime createdAt;
+
+    @Column(name = "deleted", nullable = false)
+    private Boolean deleted = false;
+
+    @Column(name = "deleted_at")
+    private LocalDateTime deletedAt;
+
+    @Column(name = "deleted_user_idx")
+    private Long deletedUserIdx;
 
     // 관계 매핑
     @ManyToOne(fetch = FetchType.LAZY)

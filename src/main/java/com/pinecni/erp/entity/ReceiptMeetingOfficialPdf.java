@@ -4,6 +4,7 @@ import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import jakarta.persistence.*;
 import lombok.*;
+import org.hibernate.annotations.SQLRestriction;
 
 import java.time.LocalDateTime;
 
@@ -15,6 +16,7 @@ import java.time.LocalDateTime;
         @Index(name = "idx_receipt_meeting_official_pdf_meeting_idx", columnList = "receipt_meeting_idx"),
         @Index(name = "idx_receipt_meeting_official_pdf_created_at", columnList = "created_at")
 })
+@SQLRestriction("deleted = false")
 @Getter
 @Setter
 @NoArgsConstructor
@@ -46,6 +48,15 @@ public class ReceiptMeetingOfficialPdf {
 
     @Column(name = "created_user_idx")
     private Long createdUserIdx;
+
+    @Column(name = "deleted", nullable = false)
+    private Boolean deleted = false;
+
+    @Column(name = "deleted_at")
+    private LocalDateTime deletedAt;
+
+    @Column(name = "deleted_user_idx")
+    private Long deletedUserIdx;
 
     // 관계 매핑
     @JsonIgnore
