@@ -326,12 +326,9 @@ document.addEventListener('DOMContentLoaded', function() {
                 const documents = await response.json();
                 console.log('문서 로드 성공:', documents.length + '건');
 
-                // 서버에서 is_project = true로 필터링하므로 추가 필터링 불필요
-                // 하지만 안전을 위해 클라이언트 측 필터링도 유지
-                allDocuments = documents.filter(doc =>
-                    PROJECT_DOCUMENT_TYPES.includes(doc.documentType)
-                );
-                console.log('프로젝트 문서 필터링 완료:', allDocuments.length + '건');
+                // 서버에서 is_project = true로 필터링하므로 클라이언트 측 추가 필터링 불필요
+                allDocuments = documents;
+                console.log('프로젝트 문서 설정 완료:', allDocuments.length + '건');
 
                 renderDocumentTable();
 

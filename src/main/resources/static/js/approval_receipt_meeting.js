@@ -2015,6 +2015,26 @@ ${clonedContent.innerHTML}
                     // Content-Type 헤더는 자동으로 설정됨 (multipart/form-data)
                 });
 
+                // 인증 실패 또는 세션 만료
+                if (response.status === 401 || response.status === 302 || response.redirected) {
+                    hideLoading();
+                    await Swal.fire({
+                        icon: 'warning',
+                        title: '로그인이 필요합니다',
+                        text: '세션이 만료되었습니다. 다시 로그인해주세요.',
+                        confirmButtonText: '로그인 페이지로 이동'
+                    });
+                    window.location.href = '/login';
+                    return;
+                }
+
+                // 권한 없음
+                if (response.status === 403) {
+                    hideLoading();
+                    showError('문서를 생성할 권한이 없습니다.');
+                    return;
+                }
+
                 if (response.ok) {
                     const result = await response.json();
 
@@ -3773,12 +3793,34 @@ ${clonedContent.innerHTML}
                     body: JSON.stringify(updateData)
                 });
 
+                // 인증 실패 또는 세션 만료
+                if (response.status === 401 || response.status === 302 || response.redirected) {
+                    await Swal.fire({
+                        icon: 'warning',
+                        title: '로그인이 필요합니다',
+                        text: '세션이 만료되었습니다. 다시 로그인해주세요.',
+                        confirmButtonText: '로그인 페이지로 이동'
+                    });
+                    window.location.href = '/login';
+                    return;
+                }
+
+                // 권한 없음
+                if (response.status === 403) {
+                    showError('이 문서를 수정할 권한이 없습니다.');
+                    return;
+                }
+
+                // 성공
                 if (response.ok) {
                     showSuccess('회의록이 수정되었습니다.');
                     window.location.reload();
-                } else {
-                    showError('회의록 수정에 실패했습니다.');
+                    return;
                 }
+
+                // 기타 오류
+                const errorData = await response.json().catch(() => ({}));
+                showError(errorData.error || '회의록 수정에 실패했습니다.');
             } catch (error) {
                 console.error('수정 오류:', error);
                 showError('회의록 수정 중 오류가 발생했습니다.');
@@ -3800,17 +3842,61 @@ ${clonedContent.innerHTML}
             }
 
             try {
-                console.log('회의록 삭제 시도 - idx:', currentReceiptMeetingIdx);
+                // 현재 로그인한 사용자 정보 가져오기
+                const authorIdInput = document.getElementById('common_author_id');
+                const deletedUserIdx = authorIdInput ? parseInt(authorIdInput.value) : null;
+
+                if (!deletedUserIdx) {
+                    showError('사용자 정보를 찾을 수 없습니다.');
+                    return;
+                }
+
+                console.log('회의록 삭제 시도 - idx:', currentReceiptMeetingIdx, 'deletedUserIdx:', deletedUserIdx);
                 const response = await fetch(`/api/receipt-meetings/${currentReceiptMeetingIdx}`, {
-                    method: 'DELETE'
+                    method: 'DELETE',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        deletedUserIdx: deletedUserIdx
+                    })
                 });
 
-                if (response.ok) {
-                    showSuccess('회의록이 삭제되었습니다.');
-                    window.location.href = '/project/documents';
-                } else {
-                    showError('회의록 삭제에 실패했습니다.');
+                // 인증 실패 또는 세션 만료
+                if (response.status === 401 || response.status === 302 || response.redirected) {
+                    await Swal.fire({
+                        icon: 'warning',
+                        title: '로그인이 필요합니다',
+                        text: '세션이 만료되었습니다. 다시 로그인해주세요.',
+                        confirmButtonText: '로그인 페이지로 이동'
+                    });
+                    window.location.href = '/login';
+                    return;
                 }
+
+                // 권한 없음
+                if (response.status === 403) {
+                    showError('이 문서를 삭제할 권한이 없습니다.');
+                    return;
+                }
+
+                // 성공
+                if (response.ok) {
+                    await Swal.fire({
+                        icon: 'success',
+                        title: '삭제 완료',
+                        text: '회의록이 삭제되었습니다.',
+                        timer: 1500,
+                        showConfirmButton: false,
+                        timerProgressBar: true
+                    });
+                    window.location.href = '/project/documents';
+                    return;
+                }
+
+                // 기타 오류
+                const errorData = await response.json().catch(() => ({}));
+                showError(errorData.error || '회의록 삭제에 실패했습니다.');
             } catch (error) {
                 console.error('삭제 오류:', error);
                 showError('회의록 삭제 중 오류가 발생했습니다.');

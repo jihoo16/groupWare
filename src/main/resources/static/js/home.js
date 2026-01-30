@@ -185,15 +185,8 @@ function loadPendingApprovals() {
 
 // 프로젝트 문서 건수 로드 함수
 function loadProjectDocuments() {
-    const PROJECT_DOCUMENT_TYPES = [
-        '프로젝트 주간업무보고',
-        '연구비증빙-회의록',
-        '연구비증빙-출장',
-        '연구비증빙-출장+회의',
-        '연구비증빙-야근식대'
-    ];
-
-    fetch('/api/approval/documents')
+    // 프로젝트 문서 전용 API 사용
+    fetch('/api/approval/documents/projects')
         .then(response => {
             if (!response.ok) {
                 throw new Error('프로젝트 문서 로드 실패');
@@ -203,11 +196,7 @@ function loadProjectDocuments() {
         .then(data => {
             const countElement = document.getElementById('projectDocCount');
             if (countElement) {
-                // 프로젝트 관련 문서만 필터링
-                const projectDocs = data.filter(doc =>
-                    PROJECT_DOCUMENT_TYPES.includes(doc.documentType)
-                );
-                const totalCount = projectDocs.length || 0;
+                const totalCount = data.length || 0;
                 countElement.innerHTML = `${totalCount}<span>건</span>`;
             }
         })
