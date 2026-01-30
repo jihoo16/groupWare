@@ -11,22 +11,6 @@
             </button>
         </div>
         <nav class="sidebar-menu">
-            <!-- 프로젝트 -->
-            <div class="menu-category expanded">
-                <div class="category-header">
-                    <i class="fas fa-chevron-right category-toggle"></i>
-                    <i class="fas fa-project-diagram"></i>
-                    <span>프로젝트</span>
-                    <span class="category-badge">1</span>
-                </div>
-                <div class="category-items">
-                    <a href="/approval/project-weekly-report" th:classappend="${activePage == 'project-weekly-report'} ? 'menu-item active' : 'menu-item'">
-                        <i class="fas fa-calendar-week"></i>
-                        <span>프로젝트 주간업무보고</span>
-                    </a>
-                </div>
-            </div>
-
             <!-- 연구비증빙 -->
             <div class="menu-category expanded">
                 <div class="category-header">
@@ -51,6 +35,22 @@
                     <a href="/approval/receipt-overtime" th:classappend="${activePage == 'receipt-overtime'} ? 'menu-item active' : 'menu-item'">
                         <i class="fas fa-receipt"></i>
                         <span>야근식대</span>
+                    </a>
+                </div>
+            </div>
+
+            <!-- 프로젝트 -->
+            <div class="menu-category expanded">
+                <div class="category-header">
+                    <i class="fas fa-chevron-right category-toggle"></i>
+                    <i class="fas fa-project-diagram"></i>
+                    <span>프로젝트</span>
+                    <span class="category-badge">1</span>
+                </div>
+                <div class="category-items">
+                    <a href="/approval/project-weekly-report" th:classappend="${activePage == 'project-weekly-report'} ? 'menu-item active' : 'menu-item'">
+                        <i class="fas fa-calendar-week"></i>
+                        <span>프로젝트 주간업무보고</span>
                     </a>
                 </div>
             </div>
