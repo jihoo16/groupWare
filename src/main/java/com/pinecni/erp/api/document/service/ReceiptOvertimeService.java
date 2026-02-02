@@ -71,4 +71,14 @@ public interface ReceiptOvertimeService {
      * 야근식대별 첨부파일 목록 조회
      */
     List<ReceiptOvertimeAttachmentDTO> getAttachmentsByReceiptOvertimeIdx(Long receiptOvertimeIdx);
+
+    /**
+     * 첨부파일 삭제
+     */
+    void deleteAttachment(Long attachmentIdx);
+
+    /**
+     * 첨부파일 상세 조회
+     */
+    ReceiptOvertimeAttachmentDTO getAttachmentById(Long attachmentIdx);
 }

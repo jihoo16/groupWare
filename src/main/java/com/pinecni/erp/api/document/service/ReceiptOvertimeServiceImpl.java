@@ -11,6 +11,7 @@ import com.pinecni.erp.api.document.repository.ReceiptOvertimePersonRepository;
 import com.pinecni.erp.api.document.repository.ReceiptOvertimeRepository;
 import com.pinecni.erp.api.project.repository.ProjectRepository;
 import com.pinecni.erp.entity.*;
+import com.pinecni.erp.service.PdfGenerationService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
@@ -26,6 +27,7 @@ import java.nio.file.Paths;
 import java.time.Instant;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -155,7 +157,7 @@ public class ReceiptOvertimeServiceImpl implements ReceiptOvertimeService {
                     savedDocument.getIdx(), savedDocument.getDocumentNo());
 
             // 4. 야근식대 Entity 생성 및 저장
-            Instant now = Instant.now();
+            Instant now = LocalDateTime.now().atZone(ZoneId.of("Asia/Seoul")).toInstant();
             ReceiptOvertime entity = new ReceiptOvertime();
             entity.setProjectIdx(project);
             entity.setDocumentNumber(documentNumber);
@@ -223,7 +225,7 @@ public class ReceiptOvertimeServiceImpl implements ReceiptOvertimeService {
             }
 
             // 3. 엔터티 수정
-            Instant now = Instant.now();
+            Instant now = LocalDateTime.now().atZone(ZoneId.of("Asia/Seoul")).toInstant();
             entity.setOvertimeDate(updateDTO.getOvertimeDate());
             entity.setApprovalDate(updateDTO.getApprovalDate());
             entity.setDocumentTitle(updateDTO.getDocumentTitle());
@@ -342,7 +344,7 @@ public class ReceiptOvertimeServiceImpl implements ReceiptOvertimeService {
         }
 
         List<ReceiptOvertimeAttachmentDTO> savedAttachments = new ArrayList<>();
-        Instant now = Instant.now();
+        Instant now = LocalDateTime.now().atZone(ZoneId.of("Asia/Seoul")).toInstant();
 
         for (MultipartFile file : files) {
             if (file.isEmpty()) {
@@ -405,5 +407,39 @@ public class ReceiptOvertimeServiceImpl implements ReceiptOvertimeService {
                 .stream()
                 .map(mapper::toAttachmentDTO)
                 .collect(Collectors.toList());
+    }
+
+    @Override
+    @Transactional
+    public void deleteAttachment(Long attachmentIdx) {
+        log.debug("첨부파일 삭제 - attachmentIdx: {}", attachmentIdx);
+
+        ReceiptOvertimeAttachment attachment = attachmentRepository.findById(attachmentIdx)
+                .orElseThrow(() -> new IllegalArgumentException("첨부파일을 찾을 수 없습니다. idx: " + attachmentIdx));
+
+        // 실제 파일 삭제
+        try {
+            Path filePath = Paths.get(attachment.getFilePath());
+            Files.deleteIfExists(filePath);
+            log.debug("파일 삭제 완료: {}", filePath);
+        } catch (IOException e) {
+            log.error("파일 삭제 실패: {}", attachment.getFilePath(), e);
+            // 파일 삭제 실패해도 DB 레코드는 삭제 진행
+        }
+
+        // DB 레코드 삭제
+        attachmentRepository.delete(attachment);
+        log.info("첨부파일 삭제 완료 - attachmentIdx: {}", attachmentIdx);
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public ReceiptOvertimeAttachmentDTO getAttachmentById(Long attachmentIdx) {
+        log.debug("첨부파일 상세 조회 - attachmentIdx: {}", attachmentIdx);
+
+        ReceiptOvertimeAttachment attachment = attachmentRepository.findById(attachmentIdx)
+                .orElseThrow(() -> new IllegalArgumentException("첨부파일을 찾을 수 없습니다. idx: " + attachmentIdx));
+
+        return mapper.toAttachmentDTO(attachment);
     }
 }
