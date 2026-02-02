@@ -49,6 +49,7 @@ public class ReceiptMeetingAttachment {
     @Column(name = "uploaded_at", updatable = false)
     private LocalDateTime uploadedAt;
 
+    @Builder.Default
     @Column(name = "deleted", nullable = false)
     private Boolean deleted = false;
 

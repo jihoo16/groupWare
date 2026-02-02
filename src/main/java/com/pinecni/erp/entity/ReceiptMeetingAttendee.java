@@ -36,6 +36,7 @@ public class ReceiptMeetingAttendee {
      * - true: 외부 인력 (user_idx는 external_persons.idx 참조)
      * - false: 내부 인력 (user_idx는 users.idx 참조)
      */
+    @Builder.Default
     @Column(name = "is_external", nullable = false)
     private Boolean isExternal = false;
 
@@ -54,18 +55,21 @@ public class ReceiptMeetingAttendee {
     @Column(name = "user_idx")
     private Long userIdx;
 
+    @Builder.Default
     @Column(name = "display_order")
     private Integer displayOrder = 0;
 
     /**
      * 회의비 (참석자별 회의 비용)
      */
+    @Builder.Default
     @Column(name = "meeting_expense")
     private Long meetingExpense = 0L;
 
     @Column(name = "created_at", updatable = false)
     private LocalDateTime createdAt;
 
+    @Builder.Default
     @Column(name = "deleted", nullable = false)
     private Boolean deleted = false;
 

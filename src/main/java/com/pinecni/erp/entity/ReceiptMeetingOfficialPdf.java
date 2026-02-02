@@ -49,6 +49,7 @@ public class ReceiptMeetingOfficialPdf {
     @Column(name = "created_user_idx")
     private Long createdUserIdx;
 
+    @Builder.Default
     @Column(name = "deleted", nullable = false)
     private Boolean deleted = false;
 
