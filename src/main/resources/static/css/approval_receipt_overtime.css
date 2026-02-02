@@ -1120,6 +1120,23 @@ div h2{
     color: #d32f2f;
 }
 
+.file-item .btn-download-file {
+    background: none;
+    border: none;
+    color: #667eea;
+    font-size: 14px;
+    cursor: pointer;
+    transition: color 0.2s ease;
+    padding: 4px 8px;
+    text-decoration: none;
+    display: inline-flex;
+    align-items: center;
+}
+
+.file-item .btn-download-file:hover {
+    color: #5a67d8;
+}
+
 /* 헤더 버튼 기본 스타일 */
 .header-right button {
     padding: 10px 20px;

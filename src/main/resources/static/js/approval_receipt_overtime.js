@@ -14,6 +14,7 @@ document.addEventListener('DOMContentLoaded', async function() {
     let isEditMode = false;
     let editingIdx = null; // 수정 중인 야근식대 idx
     let existingAttachments = []; // 기존 첨부파일 목록
+    let deletedAttachmentIds = []; // 삭제 예정인 첨부파일 ID 목록
 
     // DOM 요소
     const templateTreeHeaders = document.querySelectorAll('.tree-node-header[data-template]');
@@ -299,10 +300,9 @@ document.addEventListener('DOMContentLoaded', async function() {
                 }
             }
 
-            // 첨부파일 표시
-            if (existingAttachments.length > 0) {
-                renderExistingAttachments();
-            }
+            // 첨부파일 목록 업데이트
+            deletedAttachmentIds = []; // 삭제 예정 목록 초기화
+            updateFileList();
 
             // 버튼 텍스트 변경
             const submitBtn = document.getElementById('submitBtn');
@@ -325,28 +325,7 @@ document.addEventListener('DOMContentLoaded', async function() {
         }
     }
 
-    // 기존 첨부파일 렌더링
-    function renderExistingAttachments() {
-        const fileList = document.getElementById('fileList');
-        if (!fileList || existingAttachments.length === 0) return;
-
-        existingAttachments.forEach(att => {
-            const fileItem = document.createElement('div');
-            fileItem.className = 'file-item existing-file';
-            fileItem.innerHTML = `
-                <span class="file-name">
-                    <i class="fas fa-paperclip"></i>
-                    ${att.originalFilename}
-                    <span class="file-size">(${formatFileSize(att.fileSize)})</span>
-                </span>
-                <button type="button" class="file-remove" data-att-idx="${att.idx}">
-                    <i class="fas fa-times"></i>
-                </button>
-            `;
-            fileList.appendChild(fileItem);
-        });
-    }
-
+    // 파일 사이즈 포맷팅
     function formatFileSize(bytes) {
         if (!bytes) return '0 B';
         const k = 1024;
@@ -354,6 +333,31 @@ document.addEventListener('DOMContentLoaded', async function() {
         const i = Math.floor(Math.log(bytes) / Math.log(k));
         return parseFloat((bytes / Math.pow(k, i)).toFixed(1)) + ' ' + sizes[i];
     }
+
+    // 파일 아이콘 결정
+    function getFileIcon(filename) {
+        if (!filename) return 'fa-file';
+        const lowerName = filename.toLowerCase();
+        if (lowerName.match(/\.(jpg|jpeg|png|gif)$/)) return 'fa-file-image';
+        if (lowerName.match(/\.(pdf)$/)) return 'fa-file-pdf';
+        if (lowerName.match(/\.(doc|docx)$/)) return 'fa-file-word';
+        if (lowerName.match(/\.(xls|xlsx)$/)) return 'fa-file-excel';
+        return 'fa-file';
+    }
+
+    // 기존 첨부파일 삭제 (저장 시에만 실제 삭제)
+    window.removeExistingAttachment = async function(attachmentIdx) {
+        const confirmed = await showConfirm('이 파일을 삭제하시겠습니까?');
+        if (!confirmed) return;
+
+        // 삭제 예정 목록에 추가
+        if (!deletedAttachmentIds.includes(attachmentIdx)) {
+            deletedAttachmentIds.push(attachmentIdx);
+        }
+
+        // 화면 업데이트
+        updateFileList();
+    };
 
     // 삭제 버튼 표시
     function showDeleteButton() {
@@ -1205,33 +1209,60 @@ document.addEventListener('DOMContentLoaded', async function() {
         updateFileList();
     });
 
-    // 파일 목록 업데이트
+    // 파일 목록 업데이트 (기존 파일 + 새 파일)
     function updateFileList() {
-        if (selectedFiles.length === 0) {
-            fileList.innerHTML = '';
-            return;
-        }
+        if (!fileList) return;
 
         fileList.innerHTML = '';
-        selectedFiles.forEach((file, index) => {
+
+        // 1. 기존 파일 표시 (삭제 예정인 파일 제외)
+        existingAttachments.forEach(att => {
+            // 삭제 예정 목록에 있는 파일은 표시하지 않음
+            if (deletedAttachmentIds.includes(att.idx)) {
+                return;
+            }
+
             const item = document.createElement('div');
             item.className = 'file-item';
 
-            let icon = 'fa-file';
-            if (file.name.match(/\.(jpg|jpeg|png|gif)$/i)) icon = 'fa-file-image';
-            else if (file.name.match(/\.(pdf)$/i)) icon = 'fa-file-pdf';
-            else if (file.name.match(/\.(doc|docx)$/i)) icon = 'fa-file-word';
-            else if (file.name.match(/\.(xls|xlsx)$/i)) icon = 'fa-file-excel';
+            const icon = getFileIcon(att.originalFilename);
+            const fileSizeKB = (att.fileSize / 1024).toFixed(1);
 
             item.innerHTML = `
                 <i class="fas ${icon}"></i>
-                <span>${file.name} (${(file.size / 1024).toFixed(1)} KB)</span>
-                <button class="btn-remove-file" onclick="removeFile(${index})">
+                <span>${att.originalFilename} (${fileSizeKB} KB)</span>
+                <a href="/api/receipt-overtimes/attachments/${att.idx}/download" class="btn-download-file" download title="다운로드">
+                    <i class="fas fa-download"></i>
+                </a>
+                <button class="btn-remove-file" onclick="removeExistingAttachment(${att.idx})" title="삭제">
                     <i class="fas fa-times"></i>
                 </button>
             `;
             fileList.appendChild(item);
         });
+
+        // 2. 새로 선택한 파일 표시
+        selectedFiles.forEach((file, index) => {
+            const item = document.createElement('div');
+            item.className = 'file-item';
+
+            const icon = getFileIcon(file.name);
+
+            item.innerHTML = `
+                <i class="fas ${icon}"></i>
+                <span>${file.name} (${(file.size / 1024).toFixed(1)} KB) <span style="color: #667eea; font-size: 11px;">[신규]</span></span>
+                <button class="btn-remove-file" onclick="removeFile(${index})" title="삭제">
+                    <i class="fas fa-times"></i>
+                </button>
+            `;
+            fileList.appendChild(item);
+        });
+
+        // 3. 파일이 하나도 없을 때 메시지 표시
+        const visibleExistingFiles = existingAttachments.filter(f => !deletedAttachmentIds.includes(f.idx));
+        if (visibleExistingFiles.length === 0 && selectedFiles.length === 0) {
+            fileList.innerHTML = '<p style="color: #999; font-size: 12px; padding: 10px 0;">첨부된 파일이 없습니다.</p>';
+        }
     }
 
     // 파일 제거
@@ -1369,6 +1400,24 @@ document.addEventListener('DOMContentLoaded', async function() {
 
                 if (response.ok) {
                     const result = await response.json();
+
+                    // 수정 모드일 때 삭제 예정인 첨부파일 실제 삭제
+                    if (isEditMode && deletedAttachmentIds.length > 0) {
+                        console.log(`${deletedAttachmentIds.length}개의 첨부파일 삭제 시작`);
+                        for (const attachmentIdx of deletedAttachmentIds) {
+                            try {
+                                const deleteResponse = await fetch(`/api/receipt-overtimes/attachments/${attachmentIdx}`, {
+                                    method: 'DELETE'
+                                });
+                                if (!deleteResponse.ok) {
+                                    console.error(`첨부파일 삭제 실패 (attachmentIdx: ${attachmentIdx})`);
+                                }
+                            } catch (error) {
+                                console.error(`첨부파일 삭제 오류 (attachmentIdx: ${attachmentIdx}):`, error);
+                            }
+                        }
+                    }
+
                     showSuccess(isEditMode ? '야근식대가 수정되었습니다.' : '야근식대가 저장되었습니다.');
                     setTimeout(() => {
                         window.location.href = '/project/documents';

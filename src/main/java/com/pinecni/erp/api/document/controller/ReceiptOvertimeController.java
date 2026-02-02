@@ -7,11 +7,19 @@ import com.pinecni.erp.api.document.dto.ReceiptOvertimeDTO;
 import com.pinecni.erp.api.document.service.ReceiptOvertimeService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.core.io.Resource;
+import org.springframework.core.io.UrlResource;
+import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
+import java.net.URLEncoder;
+import java.nio.charset.StandardCharsets;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -230,6 +238,69 @@ public class ReceiptOvertimeController {
         } catch (Exception e) {
             log.error("첨부파일 목록 조회 실패: {}", e.getMessage());
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
+        }
+    }
+
+    /**
+     * 야근식대 첨부파일 다운로드
+     * GET /api/receipt-overtimes/attachments/{attachmentIdx}/download
+     */
+    @GetMapping("/attachments/{attachmentIdx}/download")
+    public ResponseEntity<Resource> downloadAttachment(@PathVariable Long attachmentIdx) {
+        log.debug("GET /api/receipt-overtimes/attachments/{}/download", attachmentIdx);
+
+        try {
+            ReceiptOvertimeAttachmentDTO attachment = receiptOvertimeService.getAttachmentById(attachmentIdx);
+
+            Path filePath = Paths.get(attachment.getFilePath());
+            Resource resource = new UrlResource(filePath.toUri());
+
+            if (!resource.exists() || !resource.isReadable()) {
+                log.error("파일을 찾을 수 없거나 읽을 수 없습니다: {}", filePath);
+                return ResponseEntity.notFound().build();
+            }
+
+            String encodedFilename = URLEncoder.encode(attachment.getOriginalFilename(), StandardCharsets.UTF_8)
+                    .replaceAll("\\+", "%20");
+
+            return ResponseEntity.ok()
+                    .contentType(MediaType.APPLICATION_OCTET_STREAM)
+                    .header(HttpHeaders.CONTENT_DISPOSITION,
+                            "attachment; filename*=UTF-8''" + encodedFilename)
+                    .body(resource);
+
+        } catch (Exception e) {
+            log.error("첨부파일 다운로드 실패: {}", e.getMessage(), e);
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
+        }
+    }
+
+    /**
+     * 야근식대 첨부파일 삭제
+     * DELETE /api/receipt-overtimes/attachments/{attachmentIdx}
+     */
+    @DeleteMapping("/attachments/{attachmentIdx}")
+    public ResponseEntity<Map<String, String>> deleteAttachment(@PathVariable Long attachmentIdx) {
+        log.debug("DELETE /api/receipt-overtimes/attachments/{}", attachmentIdx);
+
+        try {
+            receiptOvertimeService.deleteAttachment(attachmentIdx);
+
+            Map<String, String> response = new HashMap<>();
+            response.put("message", "첨부파일이 삭제되었습니다.");
+            return ResponseEntity.ok(response);
+        } catch (IllegalArgumentException e) {
+            log.error("첨부파일 삭제 실패: {}", e.getMessage());
+
+            Map<String, String> error = new HashMap<>();
+            error.put("error", e.getMessage());
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(error);
+        } catch (Exception e) {
+            log.error("첨부파일 삭제 중 오류 발생: {}", e.getMessage(), e);
+
+            Map<String, String> error = new HashMap<>();
+            error.put("error", "서버 오류가 발생했습니다.");
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(error);
         }
     }
 
