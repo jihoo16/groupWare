@@ -306,7 +306,8 @@ document.addEventListener('DOMContentLoaded', function() {
                         </div>
                     </td>
                 </tr>
-            `).join('');
+            `;
+        }).join('');
 
             attachCardEventListeners();
         }
