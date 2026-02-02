@@ -10,6 +10,11 @@ document.addEventListener('DOMContentLoaded', async function() {
     let tempSelectedOvertimePersons = []; // 모달에서 임시 선택된 인원
     let projectExpenses = {}; // 선택된 프로젝트의 직급별 야근석식대
 
+    // 수정 모드 관련 변수
+    let isEditMode = false;
+    let editingIdx = null; // 수정 중인 야근식대 idx
+    let existingAttachments = []; // 기존 첨부파일 목록
+
     // DOM 요소
     const templateTreeHeaders = document.querySelectorAll('.tree-node-header[data-template]');
     const categoryNodes = document.querySelectorAll('.tree-node-header.category-node');
@@ -96,7 +101,7 @@ document.addEventListener('DOMContentLoaded', async function() {
                     });
                 }
                 console.log('프로젝트 참여인원 로드 완료:', projectMembers.length + '명');
-                console.log('프로젝트 야근석식대 경비:', projectExpenses);
+                console.log('프로젝트 야근식대 경비:', projectExpenses);
             } else {
                 console.error('프로젝트 참여인원 로드 실패');
                 projectMembers = [];
@@ -124,6 +129,264 @@ document.addEventListener('DOMContentLoaded', async function() {
                 overtimeExpense: overtimeExpense
             };
         });
+    }
+
+    // ============================================
+    // 수정 모드: 기존 데이터 로드
+    // ============================================
+    async function loadExistingData(documentIdx) {
+        try {
+            const response = await fetch(`/api/receipt-overtimes/by-document/${documentIdx}`);
+            if (!response.ok) {
+                throw new Error('야근식대 데이터를 불러올 수 없습니다.');
+            }
+
+            const data = await response.json();
+            console.log('기존 야근식대 데이터 로드:', data);
+
+            // 수정 모드 설정
+            isEditMode = true;
+            editingIdx = data.idx;
+            existingAttachments = data.attachments || [];
+
+            // 프로젝트 정보 설정
+            if (data.projectIdx) {
+                selectedProject = projects.find(p => p.idx === data.projectIdx);
+                if (selectedProject) {
+                    const otProject = document.getElementById('ot_project');
+                    if (otProject) {
+                        otProject.value = selectedProject.projectName;
+                        otProject.style.borderColor = '';
+                    }
+                    const selectedProjectIdx = document.getElementById('selectedProjectIdx');
+                    if (selectedProjectIdx) selectedProjectIdx.value = selectedProject.idx;
+
+                    document.querySelectorAll('.ot-auto-project').forEach(field => {
+                        field.textContent = selectedProject.projectName;
+                    });
+
+                    if (selectedProject.projectManagerName) {
+                        const otManager = document.getElementById('ot_manager');
+                        if (otManager) otManager.value = selectedProject.projectManagerName;
+                        document.querySelectorAll('.ot-auto-manager').forEach(field => {
+                            field.textContent = selectedProject.projectManagerName;
+                        });
+                    }
+
+                    await loadProjectMembers(selectedProject.idx);
+                }
+            }
+
+            // 날짜 설정
+            if (data.approvalDate) {
+                const otApprovalDate = document.getElementById('ot_approval_date');
+                if (otApprovalDate) {
+                    otApprovalDate.value = data.approvalDate;
+                    otApprovalDate.dispatchEvent(new Event('input'));
+                }
+            }
+
+            // 품의명 설정
+            if (data.documentTitle) {
+                const otTitle = document.getElementById('ot_title');
+                if (otTitle) {
+                    otTitle.value = data.documentTitle;
+                    otTitle.dispatchEvent(new Event('input'));
+                }
+            }
+
+            // 금액 설정
+            if (data.totalAmount) {
+                const otAmount = document.getElementById('ot_amount');
+                if (otAmount) {
+                    otAmount.value = data.totalAmount.toLocaleString();
+                    otAmount.dispatchEvent(new Event('input'));
+                }
+            }
+
+            // 지급종류 설정
+            if (data.paymentType) {
+                const paymentRadio = document.querySelector(`input[name="ot_payment_type"][value="${data.paymentType}"]`);
+                if (paymentRadio) {
+                    paymentRadio.checked = true;
+                    paymentRadio.dispatchEvent(new Event('change'));
+                }
+            }
+
+            // 내용 설정
+            if (data.documentContent) {
+                const otContent = document.getElementById('ot_content');
+                if (otContent) {
+                    otContent.value = data.documentContent;
+                }
+            }
+
+            // 인원 정보 로드
+            if (data.persons && data.persons.length > 0) {
+                // 시간 정보 파싱해서 설정 (예: "18:00 ~ 21:00")
+                if (data.persons[0].workTime) {
+                    const timeParts = data.persons[0].workTime.split(' ~ ');
+                    if (timeParts.length === 2) {
+                        const otStartTime = document.getElementById('ot_start_time');
+                        const otEndTime = document.getElementById('ot_end_time');
+                        if (otStartTime) otStartTime.value = timeParts[0].trim();
+                        if (otEndTime) otEndTime.value = timeParts[1].trim();
+                    }
+                }
+
+                // 업무내용 설정 (HTML select box 옵션과 일치하도록)
+                if (data.persons[0].workTask) {
+                    const otTaskSelect = document.getElementById('ot_task_select');
+                    const otTaskCustom = document.getElementById('ot_task_custom');
+                    // HTML의 실제 select 옵션 값들
+                    const predefinedTasks = [
+                        '백엔드 API 개발',
+                        '프론트엔드 UI 개발',
+                        '데이터베이스 설계',
+                        '시스템 아키텍처 설계',
+                        '버그 수정 및 디버깅',
+                        '코드 리뷰 및 품질 관리',
+                        '테스트 코드 작성',
+                        '배포 및 운영 환경 구축',
+                        '성능 최적화',
+                        '기술 문서 작성'
+                    ];
+
+                    const workTask = data.persons[0].workTask;
+                    if (predefinedTasks.includes(workTask)) {
+                        if (otTaskSelect) otTaskSelect.value = workTask;
+                    } else {
+                        if (otTaskSelect) otTaskSelect.value = 'custom';
+                        if (otTaskCustom) {
+                            otTaskCustom.value = workTask;
+                            otTaskCustom.style.display = 'block';
+                        }
+                    }
+                    if (otTaskSelect) otTaskSelect.dispatchEvent(new Event('change'));
+                }
+
+                // 프로젝트 참여인원 목록 가져오기
+                const projectPersons = typeof getOvertimePersons === 'function' ? getOvertimePersons() : [];
+
+                // 인원 목록을 addOvertimePersonsToOvertime 함수로 추가
+                // DB에 저장된 인원 이름과 프로젝트 참여인원을 매칭하여 부서, 직급, 금액 정보 가져오기
+                const personsToAdd = data.persons.map(person => {
+                    // 프로젝트 참여인원에서 이름으로 매칭
+                    const matchedMember = projectPersons.find(m => m.name === person.name);
+
+                    if (matchedMember) {
+                        return {
+                            id: matchedMember.id,
+                            name: person.name,
+                            dept: matchedMember.dept || '-',
+                            position: matchedMember.position || '-',
+                            overtimeExpense: matchedMember.overtimeExpense || 0
+                        };
+                    } else {
+                        // 매칭되는 참여인원이 없으면 기본값 사용
+                        return {
+                            id: person.name,
+                            name: person.name,
+                            dept: '-',
+                            position: '-',
+                            overtimeExpense: 0
+                        };
+                    }
+                });
+
+                if (typeof window.addOvertimePersonsToOvertime === 'function') {
+                    window.addOvertimePersonsToOvertime(personsToAdd);
+                }
+            }
+
+            // 첨부파일 표시
+            if (existingAttachments.length > 0) {
+                renderExistingAttachments();
+            }
+
+            // 버튼 텍스트 변경
+            const submitBtn = document.getElementById('submitBtn');
+            if (submitBtn) {
+                submitBtn.innerHTML = '<i class="fas fa-save"></i> 수정하기';
+            }
+
+            // 삭제 버튼 표시
+            showDeleteButton();
+
+            // 페이지 제목 변경
+            const pageTitle = document.querySelector('.content-title');
+            if (pageTitle) {
+                pageTitle.textContent = '야근식대 수정';
+            }
+
+        } catch (error) {
+            console.error('기존 데이터 로드 실패:', error);
+            showError('야근식대 데이터를 불러오는데 실패했습니다.');
+        }
+    }
+
+    // 기존 첨부파일 렌더링
+    function renderExistingAttachments() {
+        const fileList = document.getElementById('fileList');
+        if (!fileList || existingAttachments.length === 0) return;
+
+        existingAttachments.forEach(att => {
+            const fileItem = document.createElement('div');
+            fileItem.className = 'file-item existing-file';
+            fileItem.innerHTML = `
+                <span class="file-name">
+                    <i class="fas fa-paperclip"></i>
+                    ${att.originalFilename}
+                    <span class="file-size">(${formatFileSize(att.fileSize)})</span>
+                </span>
+                <button type="button" class="file-remove" data-att-idx="${att.idx}">
+                    <i class="fas fa-times"></i>
+                </button>
+            `;
+            fileList.appendChild(fileItem);
+        });
+    }
+
+    function formatFileSize(bytes) {
+        if (!bytes) return '0 B';
+        const k = 1024;
+        const sizes = ['B', 'KB', 'MB', 'GB'];
+        const i = Math.floor(Math.log(bytes) / Math.log(k));
+        return parseFloat((bytes / Math.pow(k, i)).toFixed(1)) + ' ' + sizes[i];
+    }
+
+    // 삭제 버튼 표시
+    function showDeleteButton() {
+        const deleteBtn = document.querySelector('#deleteBtn');
+        deleteBtn.style.display = 'block';
+        deleteBtn.addEventListener('click', handleDelete)
+    }
+
+    // 삭제 처리
+    async function handleDelete() {
+        if (!editingIdx) return;
+
+        const confirmed = await showConfirm('정말로 이 야근식대를 삭제하시겠습니까?\n삭제된 데이터는 복구할 수 없습니다.');
+        if (!confirmed) return;
+
+        try {
+            const response = await fetch(`/api/receipt-overtimes/${editingIdx}`, {
+                method: 'DELETE'
+            });
+
+            if (response.ok) {
+                showSuccess('야근식대가 삭제되었습니다.');
+                setTimeout(() => {
+                    window.location.href = '/project/documents?tab=receipt-overtime';
+                }, 1500);
+            } else {
+                const error = await response.json();
+                showError(error.error || '삭제 중 오류가 발생했습니다.');
+            }
+        } catch (error) {
+            console.error('야근식대 삭제 실패:', error);
+            showError('삭제 중 오류가 발생했습니다.');
+        }
     }
 
     // ============================================
@@ -495,6 +758,7 @@ document.addEventListener('DOMContentLoaded', async function() {
 
         // 전역에서 접근 가능하게 등록
         window.updateOvertimeTotalAmount = updateOvertimeTotalAmount;
+        window.renderOvertimePersonTable = renderOvertimePersonListInTemplate;
 
         // 전역 참조 동기화 함수
         function syncGlobalOvertimePersons() {
@@ -503,7 +767,8 @@ document.addEventListener('DOMContentLoaded', async function() {
 
         // 템플릿 내에서 야근인원 제거
         window.removeOvertimePersonInTemplate = function(personId) {
-            overtimePersons = overtimePersons.filter(p => p.id !== personId);
+            // String 변환하여 비교 (숫자/문자열 타입 불일치 방지)
+            overtimePersons = overtimePersons.filter(p => String(p.id) !== String(personId));
             syncGlobalOvertimePersons();
             renderOvertimePersonListInTemplate();
         };
@@ -1039,6 +1304,17 @@ document.addEventListener('DOMContentLoaded', async function() {
                 return;
             }
 
+            // 야근인원 금액 합계 검증 (금액 입력 시 야근인원 합계가 입력 금액 이상이어야 함)
+            const enteredAmount = parseInt((otAmount?.value || '').replace(/,/g, '')) || 0;
+            const totalPersonExpense = overtimePersons.reduce((sum, person) => {
+                return sum + (person.overtimeExpense || 0);
+            }, 0);
+
+            if (enteredAmount > 0 && totalPersonExpense < enteredAmount) {
+                showWarning('야근인원을 추가해야 합니다.');
+                return;
+            }
+
             // 지급종류
             const paymentType = document.querySelector('input[name="ot_payment_type"]:checked')?.value || 'card';
 
@@ -1059,7 +1335,7 @@ document.addEventListener('DOMContentLoaded', async function() {
                 projectIdx: parseInt(projectIdx),
                 overtimeDate: otApprovalDate.value,
                 approvalDate: otApprovalDate.value,
-                documentTitle: otProject.value +" "+otApprovalDate.value,
+                documentTitle: otTitle.value,
                 documentContent: otContent?.value || '',
                 totalAmount: amount,
                 paymentType: paymentType,
@@ -1082,15 +1358,18 @@ document.addEventListener('DOMContentLoaded', async function() {
             }
 
             try {
-                // API 호출
-                const response = await fetch('/api/receipt-overtimes', {
-                    method: 'POST',
+                // API 호출 - 수정 모드일 때 PUT, 아닐 때 POST
+                const url = isEditMode ? `/api/receipt-overtimes/${editingIdx}` : '/api/receipt-overtimes';
+                const method = isEditMode ? 'PUT' : 'POST';
+
+                const response = await fetch(url, {
+                    method: method,
                     body: formData
                 });
 
                 if (response.ok) {
                     const result = await response.json();
-                    showSuccess('야근식대가 저장되었습니다.');
+                    showSuccess(isEditMode ? '야근식대가 수정되었습니다.' : '야근식대가 저장되었습니다.');
                     setTimeout(() => {
                         window.location.href = '/project/documents';
                     }, 1500);
@@ -1124,7 +1403,7 @@ document.addEventListener('DOMContentLoaded', async function() {
             }
 
             try {
-                console.log('PDF 저장 시작 - 야근석식대 페이지');
+                console.log('PDF 저장 시작 - 야근식대 페이지');
 
                 // 로딩 모달 표시
                 if (loadingModal) loadingModal.classList.add('active');
@@ -1157,7 +1436,7 @@ document.addEventListener('DOMContentLoaded', async function() {
                 originalDisplays = Array.from(allDivs).map(div => div.style.display);
 
                 if (allDivs.length < 3) {
-                    showError('문서 구조를 찾을 수 없습니다. 영수증 처리(야근석식대) 템플릿을 선택했는지 확인해주세요.');
+                    showError('문서 구조를 찾을 수 없습니다. 영수증 처리(야근식대) 템플릿을 선택했는지 확인해주세요.');
                     if (loadingModal) loadingModal.classList.remove('active');
                     return;
                 }
@@ -1291,7 +1570,7 @@ document.addEventListener('DOMContentLoaded', async function() {
                     const today = new Date();
                     dateStr = `${today.getFullYear()}${String(today.getMonth() + 1).padStart(2, '0')}${String(today.getDate()).padStart(2, '0')}`;
                 }
-                const fileName = `${dateStr}_야근석식대비.pdf`;
+                const fileName = `${dateStr}_야근식대비.pdf`;
 
                 console.log('PDF 저장:', fileName);
                 pdf.save(fileName);
@@ -1551,7 +1830,7 @@ document.addEventListener('DOMContentLoaded', async function() {
     setupDocumentFormToggle();
 
     // 초기값 자동 설정
-    setTimeout(() => {
+    setTimeout(async () => {
         // 오늘 날짜 자동 설정
         const overtimeDate = document.getElementById('ot_approval_date');
         if (overtimeDate && !overtimeDate.value) {
@@ -1587,6 +1866,13 @@ document.addEventListener('DOMContentLoaded', async function() {
         const otProject = document.getElementById('ot_project');
         if (otProject && !otProject.value) {
             otProject.style.borderColor = '#ef5350';
+        }
+
+        // URL 파라미터 확인 - 수정 모드 진입
+        const urlParams = new URLSearchParams(window.location.search);
+        const documentIdx = urlParams.get('documentIdx');
+        if (documentIdx) {
+            await loadExistingData(documentIdx);
         }
     }, 200);
 });

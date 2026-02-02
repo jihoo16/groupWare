@@ -23,6 +23,11 @@ public interface ReceiptOvertimeService {
     ReceiptOvertimeDTO getReceiptOvertimeById(Long idx);
 
     /**
+     * ApprovalDocument IDX로 야근식대 조회
+     */
+    ReceiptOvertimeDTO getReceiptOvertimeByDocumentIdx(Long documentIdx);
+
+    /**
      * 프로젝트별 야근식대 목록 조회
      */
     List<ReceiptOvertimeDTO> getReceiptOvertimesByProjectIdx(Long projectIdx);
@@ -41,6 +46,11 @@ public interface ReceiptOvertimeService {
      * 야근식대 생성
      */
     ReceiptOvertimeDTO createReceiptOvertime(ReceiptOvertimeCreateDTO createDTO);
+
+    /**
+     * 야근식대 수정
+     */
+    ReceiptOvertimeDTO updateReceiptOvertime(Long idx, ReceiptOvertimeCreateDTO updateDTO);
 
     /**
      * 야근식대 삭제

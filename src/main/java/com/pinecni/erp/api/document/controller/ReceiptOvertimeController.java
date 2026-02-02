@@ -73,6 +73,23 @@ public class ReceiptOvertimeController {
     }
 
     /**
+     * ApprovalDocument IDX로 야근식대 조회
+     * GET /api/receipt-overtimes/by-document/{documentIdx}
+     */
+    @GetMapping("/by-document/{documentIdx}")
+    public ResponseEntity<ReceiptOvertimeDTO> getReceiptOvertimeByDocumentIdx(@PathVariable Long documentIdx) {
+        log.debug("GET /api/receipt-overtimes/by-document/{}", documentIdx);
+
+        try {
+            ReceiptOvertimeDTO receiptOvertime = receiptOvertimeService.getReceiptOvertimeByDocumentIdx(documentIdx);
+            return ResponseEntity.ok(receiptOvertime);
+        } catch (IllegalArgumentException e) {
+            log.error("야근식대 조회 실패 (documentIdx): {}", e.getMessage());
+            return ResponseEntity.notFound().build();
+        }
+    }
+
+    /**
      * 야근식대 생성 (파일 첨부 포함)
      * POST /api/receipt-overtimes
      */
@@ -115,6 +132,55 @@ public class ReceiptOvertimeController {
             return ResponseEntity.status(HttpStatus.CREATED).body(receiptOvertime);
         } catch (Exception e) {
             log.error("야근식대 생성 실패: {}", e.getMessage(), e);
+            Map<String, String> error = new HashMap<>();
+            error.put("error", e.getMessage());
+            return ResponseEntity.badRequest().body(error);
+        }
+    }
+
+    /**
+     * 야근식대 수정 (파일 첨부 포함)
+     * PUT /api/receipt-overtimes/{idx}
+     */
+    @PutMapping(value = "/{idx}", consumes = {"multipart/form-data"})
+    public ResponseEntity<?> updateReceiptOvertime(
+            @PathVariable Long idx,
+            @RequestPart("data") String dataJson,
+            @RequestPart(value = "files", required = false) MultipartFile[] files,
+            jakarta.servlet.http.HttpSession session) {
+
+        Long currentUserIdx = (Long) session.getAttribute("userIdx");
+
+        if (currentUserIdx == null) {
+            log.error("로그인 정보가 없습니다.");
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
+        }
+
+        try {
+            ReceiptOvertimeCreateDTO updateDTO = objectMapper.readValue(dataJson, ReceiptOvertimeCreateDTO.class);
+            updateDTO.setAuthorIdx(currentUserIdx);
+
+            log.debug("PUT /api/receipt-overtimes/{} - projectIdx: {}, 파일 개수: {}",
+                    idx, updateDTO.getProjectIdx(), files != null ? files.length : 0);
+
+            // 야근식대 수정
+            ReceiptOvertimeDTO receiptOvertime = receiptOvertimeService.updateReceiptOvertime(idx, updateDTO);
+
+            // 새 첨부파일 저장
+            if (files != null && files.length > 0) {
+                List<ReceiptOvertimeAttachmentDTO> attachments = receiptOvertimeService.saveAttachments(
+                        receiptOvertime.getIdx(), files);
+                log.debug("첨부파일 {}개 저장 완료", attachments.size());
+            }
+
+            return ResponseEntity.ok(receiptOvertime);
+        } catch (IllegalArgumentException e) {
+            log.error("야근식대 수정 실패: {}", e.getMessage());
+            Map<String, String> error = new HashMap<>();
+            error.put("error", e.getMessage());
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(error);
+        } catch (Exception e) {
+            log.error("야근식대 수정 실패: {}", e.getMessage(), e);
             Map<String, String> error = new HashMap<>();
             error.put("error", e.getMessage());
             return ResponseEntity.badRequest().body(error);

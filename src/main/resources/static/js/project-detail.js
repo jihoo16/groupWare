@@ -352,7 +352,7 @@ function displayExpenseSettings(settings) {
         const itemName = setting.expenseItemName || '';
         const amount = setting.amount || 0;
 
-        // 경비 항목명을 기준으로 매핑 (출장비, 중식비, 회의비, 야근석식대)
+        // 경비 항목명을 기준으로 매핑 (출장비, 중식비, 회의비, 야근식대)
         if (itemName.includes('출장')) {
             groupedSettings[setting.positionCode].dailyAllowance = amount;
         } else if (itemName.includes('식비') || itemName.includes('중식')) {
@@ -629,7 +629,7 @@ function displayExpenseReports(reports) {
     }
 
     listContainer.innerHTML = reports.slice(0, 5).map(doc => `
-        <div class="document-item" onclick="goToDocument('${doc.documentType}', ${doc.sourceDocumentId})">
+        <div class="document-item" onclick="goToDocument('${doc.documentType}', ${doc.idx})">
             <div class="document-item-icon">
                 <i class="fas fa-receipt"></i>
             </div>
@@ -656,8 +656,11 @@ async function goToDocument(documentType, sourceDocumentId) {
         case 'MEETING_MINUTES':
         case 'BUSINESS_TRIP':
         case 'RECEIPT_MEETING':
-        case 'RECEIPT_OVERTIME':
             await showWarning('상세 페이지 구현 중입니다.');
+            return;
+        case 'RECEIPT_OVERTIME':
+            url = `/approval/receipt-overtime?documentIdx=${sourceDocumentId}`;
+            openWeeklyReportPopup(url);
             return;
         default:
             url = `/approval/detail?documentId=${sourceDocumentId}`;

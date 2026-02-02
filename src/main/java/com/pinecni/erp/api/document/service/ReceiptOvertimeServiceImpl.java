@@ -77,6 +77,20 @@ public class ReceiptOvertimeServiceImpl implements ReceiptOvertimeService {
 
     @Override
     @Transactional(readOnly = true)
+    public ReceiptOvertimeDTO getReceiptOvertimeByDocumentIdx(Long documentIdx) {
+        log.debug("ApprovalDocument IDX로 야근식대 조회 - documentIdx: {}", documentIdx);
+
+        ReceiptOvertime entity = receiptOvertimeRepository.findByDocumentIdx(documentIdx)
+                .orElseThrow(() -> new IllegalArgumentException("야근식대를 찾을 수 없습니다. documentIdx: " + documentIdx));
+
+        List<ReceiptOvertimePerson> persons = personRepository.findByReceiptOvertimeIdx(entity.getId());
+        List<ReceiptOvertimeAttachment> attachments = attachmentRepository.findByReceiptOvertimeIdx(entity.getId());
+
+        return mapper.toDTOWithDetails(entity, persons, attachments);
+    }
+
+    @Override
+    @Transactional(readOnly = true)
     public List<ReceiptOvertimeDTO> getReceiptOvertimesByProjectIdx(Long projectIdx) {
         log.debug("프로젝트별 야근식대 목록 조회 - projectIdx: {}", projectIdx);
         return receiptOvertimeRepository.findByProjectIdxOrderByOvertimeDateDesc(projectIdx)
@@ -188,6 +202,83 @@ public class ReceiptOvertimeServiceImpl implements ReceiptOvertimeService {
             log.error("연구비증빙 야근식대 생성 실패 - projectIdx: {}, authorIdx: {}, error: {}",
                     createDTO.getProjectIdx(), createDTO.getAuthorIdx(), e.getMessage(), e);
             throw new RuntimeException("연구비증빙 야근식대 저장 중 오류가 발생했습니다.\n잠시 후 다시 시도하거나 관리자에게 문의해주세요.", e);
+        }
+    }
+
+    @Override
+    @Transactional
+    public ReceiptOvertimeDTO updateReceiptOvertime(Long idx, ReceiptOvertimeCreateDTO updateDTO) {
+        log.debug("야근식대 수정 - idx: {}", idx);
+
+        try {
+            // 1. 기존 야근식대 조회
+            ReceiptOvertime entity = receiptOvertimeRepository.findById(idx)
+                    .orElseThrow(() -> new IllegalArgumentException("야근식대를 찾을 수 없습니다. idx: " + idx));
+
+            // 2. 프로젝트 변경 시 프로젝트 조회
+            if (updateDTO.getProjectIdx() != null && !updateDTO.getProjectIdx().equals(entity.getProjectIdx().getIdx())) {
+                Project project = projectRepository.findById(updateDTO.getProjectIdx())
+                        .orElseThrow(() -> new IllegalArgumentException("프로젝트를 찾을 수 없습니다. idx: " + updateDTO.getProjectIdx()));
+                entity.setProjectIdx(project);
+            }
+
+            // 3. 엔터티 수정
+            Instant now = Instant.now();
+            entity.setOvertimeDate(updateDTO.getOvertimeDate());
+            entity.setApprovalDate(updateDTO.getApprovalDate());
+            entity.setDocumentTitle(updateDTO.getDocumentTitle());
+            entity.setDocumentContent(updateDTO.getDocumentContent());
+            entity.setTotalAmount(updateDTO.getTotalAmount());
+            entity.setPaymentType(updateDTO.getPaymentType());
+            entity.setUpdatedAt(now);
+
+            entity = receiptOvertimeRepository.save(entity);
+
+            // 4. 기존 인원 삭제 후 새로 저장
+            List<ReceiptOvertimePerson> existingPersons = personRepository.findByReceiptOvertimeIdx(entity.getId());
+            personRepository.deleteAll(existingPersons);
+
+            if (updateDTO.getPersons() != null && !updateDTO.getPersons().isEmpty()) {
+                final ReceiptOvertime savedOvertime = entity;
+                List<ReceiptOvertimePerson> persons = updateDTO.getPersons().stream()
+                        .map(dto -> {
+                            ReceiptOvertimePerson person = new ReceiptOvertimePerson();
+                            person.setReceiptOvertimeIdx(savedOvertime);
+                            person.setName(dto.getName());
+                            person.setWorkTime(dto.getWorkTime());
+                            person.setWorkTask(dto.getWorkTask());
+                            person.setCreatedAt(now);
+                            person.setUpdatedAt(now);
+                            return person;
+                        })
+                        .collect(Collectors.toList());
+                personRepository.saveAll(persons);
+            }
+
+            // 5. ApprovalDocument 제목 업데이트
+            if (entity.getDocumentIdx() != null) {
+                approvalDocumentRepository.findById(entity.getDocumentIdx()).ifPresent(approvalDocument -> {
+                    String title = "연구비증빙 야근식대";
+                    if (updateDTO.getDocumentTitle() != null && !updateDTO.getDocumentTitle().isEmpty()) {
+                        title = "연구비증빙 야근식대 - " + updateDTO.getDocumentTitle();
+                    }
+                    approvalDocument.setTitle(title);
+                    approvalDocument.setContent(updateDTO.getDocumentContent());
+                    approvalDocument.setUpdatedUserIdx(updateDTO.getAuthorIdx());
+                    approvalDocumentRepository.save(approvalDocument);
+                });
+            }
+
+            // 6. 저장된 데이터 재조회
+            List<ReceiptOvertimePerson> savedPersons = personRepository.findByReceiptOvertimeIdx(entity.getId());
+            List<ReceiptOvertimeAttachment> attachments = attachmentRepository.findByReceiptOvertimeIdx(entity.getId());
+
+            log.info("야근식대 수정 완료 - idx: {}", entity.getId());
+            return mapper.toDTOWithDetails(entity, savedPersons, attachments);
+
+        } catch (Exception e) {
+            log.error("연구비증빙 야근식대 수정 실패 - idx: {}, error: {}", idx, e.getMessage(), e);
+            throw new RuntimeException("연구비증빙 야근식대 수정 중 오류가 발생했습니다.\n잠시 후 다시 시도하거나 관리자에게 문의해주세요.", e);
         }
     }
 
