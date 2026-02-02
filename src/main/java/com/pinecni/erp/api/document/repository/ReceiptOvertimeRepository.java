@@ -49,4 +49,9 @@ public interface ReceiptOvertimeRepository extends JpaRepository<ReceiptOvertime
      * 전체 야근식대 목록 조회 (최신순)
      */
     List<ReceiptOvertime> findAllByOrderByOvertimeDateDesc();
+
+    /**
+     * ApprovalDocument IDX로 야근식대 조회
+     */
+    Optional<ReceiptOvertime> findByDocumentIdx(Long documentIdx);
 }

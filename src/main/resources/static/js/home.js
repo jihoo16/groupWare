@@ -153,7 +153,7 @@ function loadPendingApprovals() {
         '연구비증빙-회의록',
         '연구비증빙-출장',
         '연구비증빙-출장+회의',
-        '연구비증빙-야근식대'
+        '연구비증빙(야근식대)'
     ];
 
     fetch('/api/approval/documents')
