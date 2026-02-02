@@ -609,6 +609,7 @@ public class VacationServiceImpl implements VacationService {
                 .title(title)
                 .documentType("연차신청서")
                 .drafterUserIdx(userIdx)
+                .isProject(false)
                 .content(saveDTO.getReason())
                 .createdUserIdx(userIdx)
                 .updatedUserIdx(userIdx)
