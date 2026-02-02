@@ -25,7 +25,7 @@ document.addEventListener('DOMContentLoaded', function() {
         '연구비증빙-회의록',
         '연구비증빙-출장',
         '연구비증빙-출장+회의',
-        '연구비증빙-야근식대',
+        '연구비증빙(야근식대)',
         'WEEKLY_REPORT',
         'MEETING_MINUTES',
         'BUSINESS_TRIP',
@@ -281,7 +281,7 @@ document.addEventListener('DOMContentLoaded', function() {
             'BUSINESS_TRIP': 'receipt-trip',
             '연구비증빙-출장+회의': 'receipt-trip-meeting',
             'MEETING_MINUTES': 'receipt-meeting',
-            '연구비증빙-야근식대': 'receipt-overtime'
+            '연구비증빙(야근식대)': 'receipt-overtime'
         };
         return categoryMap[documentType] || 'unknown';
     }
@@ -297,7 +297,7 @@ document.addEventListener('DOMContentLoaded', function() {
             'BUSINESS_TRIP': 'fa-plane',
             '연구비증빙-출장+회의': 'fa-suitcase',
             'MEETING_MINUTES': 'fa-utensils',
-            '연구비증빙-야근식대': 'fa-moon'
+            '연구비증빙(야근식대)': 'fa-moon'
         };
         return iconMap[documentType] || 'fa-file-alt';
     }
@@ -471,7 +471,7 @@ document.addEventListener('DOMContentLoaded', function() {
             'BUSINESS_TRIP': '/approval/receipt-trip',
             '연구비증빙-출장+회의': '/approval/receipt-trip-meeting',
             'MEETING_MINUTES': '/approval/receipt-meeting',
-            '연구비증빙-야근식대': '/approval/receipt-overtime'
+            '연구비증빙(야근식대)': '/approval/receipt-overtime'
         };
 
         const url = urls[doc.documentType];
