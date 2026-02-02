@@ -1166,9 +1166,36 @@ div h2{
 
 /* 회의 품의서 장소/일시 셀 */
 .auto-location-cell,
-.auto-datetime-cell {
+.auto-datetime-cell,
+td.auto-location-cell,
+td.auto-datetime-cell {
     vertical-align: middle;
     min-height: 40px;
+    height: auto !important;
+    max-height: none !important;
+    width: auto !important;
+    min-width: 150px !important;
+    overflow: visible !important;
+    white-space: normal !important;
+}
+
+/* 장소/일시 input 필드 - 글씨 잘림 방지 */
+.auto-location,
+.auto-datetime,
+input.auto-location,
+input.auto-datetime {
+    min-height: 35px !important;
+    height: auto !important;
+    max-height: none !important;
+    padding: 8px 10px !important;
+    line-height: 1.6 !important;
+    box-sizing: border-box !important;
+    overflow: visible !important;
+    white-space: normal !important;
+    word-wrap: break-word !important;
+    word-break: keep-all !important;
+    text-align: left !important;
+    display: block !important;
 }
 
 /* 참석자 명단 서명 테이블 가운데 정렬 */

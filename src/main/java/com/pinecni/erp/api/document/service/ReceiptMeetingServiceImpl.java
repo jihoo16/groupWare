@@ -330,10 +330,8 @@ public class ReceiptMeetingServiceImpl implements ReceiptMeetingService {
         String dateStr = LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyyMMdd"));
         String prefix = String.format("RM-%d-%s", projectIdx, dateStr);
 
-        // 같은 날짜의 문서 개수 조회하여 순번 생성
-        long count = receiptMeetingRepository.findAll().stream()
-                .filter(rm -> rm.getDocumentNumber() != null && rm.getDocumentNumber().startsWith(prefix))
-                .count();
+        // 같은 날짜의 문서 개수 조회하여 순번 생성 (삭제된 문서 포함)
+        long count = receiptMeetingRepository.countByDocumentNumberStartingWithIncludingDeleted(prefix);
 
         return String.format("%s-%03d", prefix, count + 1);
     }
