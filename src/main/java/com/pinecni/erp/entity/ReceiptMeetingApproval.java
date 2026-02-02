@@ -35,6 +35,7 @@ public class ReceiptMeetingApproval {
     @Column(name = "approver_idx", nullable = false)
     private Long approverIdx;
 
+    @Builder.Default
     @Column(name = "status", length = 20)
     private String status = "PENDING";
 
@@ -44,6 +45,7 @@ public class ReceiptMeetingApproval {
     @Column(name = "created_at", updatable = false)
     private LocalDateTime createdAt;
 
+    @Builder.Default
     @Column(name = "deleted", nullable = false)
     private Boolean deleted = false;
 

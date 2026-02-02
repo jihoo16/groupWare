@@ -125,6 +125,7 @@ public class ReceiptMeetingMapper {
                 .notes(dto.getNotes())
                 .minutesNotes(dto.getMinutesNotes())
                 .status("PENDING")
+                .deleted(false)
                 .build();
     }
 

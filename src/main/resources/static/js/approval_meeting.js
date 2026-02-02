@@ -138,7 +138,18 @@ document.addEventListener('DOMContentLoaded', function() {
             if (response.ok) {
                 const result = await response.json();
                 console.log('회의록 저장 성공:', result);
-                await showSuccess('회의록이 저장되었습니다.');
+
+                // 3초 후 자동으로 목록으로 이동
+                await Swal.fire({
+                    icon: 'success',
+                    title: '저장 완료',
+                    text: '회의록이 저장되었습니다.',
+                    timer: 3000,
+                    timerProgressBar: true,
+                    showConfirmButton: false,
+                    allowOutsideClick: false
+                });
+
                 window.location.href = '/approval';
             } else {
                 const errorText = await response.text();
