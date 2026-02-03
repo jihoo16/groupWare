@@ -120,14 +120,11 @@ public class ReceiptOvertimeController {
             // JSON 문자열을 DTO로 변환
             ReceiptOvertimeCreateDTO createDTO = objectMapper.readValue(dataJson, ReceiptOvertimeCreateDTO.class);
 
-            // 작성자 정보 자동 설정
-            createDTO.setAuthorIdx(currentUserIdx);
-
             log.debug("POST /api/receipt-overtimes - projectIdx: {}, authorIdx: {}, 파일 개수: {}",
-                    createDTO.getProjectIdx(), currentUserIdx, files != null ? files.length : 0);
+                    createDTO.getProjectIdx(), createDTO.getAuthorIdx(), files != null ? files.length : 0);
 
             // 야근식대 생성
-            ReceiptOvertimeDTO receiptOvertime = receiptOvertimeService.createReceiptOvertime(createDTO);
+            ReceiptOvertimeDTO receiptOvertime = receiptOvertimeService.createReceiptOvertime(createDTO, currentUserIdx);
 
             // 첨부파일 저장
             if (files != null && files.length > 0) {
@@ -165,13 +162,12 @@ public class ReceiptOvertimeController {
 
         try {
             ReceiptOvertimeCreateDTO updateDTO = objectMapper.readValue(dataJson, ReceiptOvertimeCreateDTO.class);
-            updateDTO.setAuthorIdx(currentUserIdx);
 
             log.debug("PUT /api/receipt-overtimes/{} - projectIdx: {}, 파일 개수: {}",
                     idx, updateDTO.getProjectIdx(), files != null ? files.length : 0);
 
             // 야근식대 수정
-            ReceiptOvertimeDTO receiptOvertime = receiptOvertimeService.updateReceiptOvertime(idx, updateDTO);
+            ReceiptOvertimeDTO receiptOvertime = receiptOvertimeService.updateReceiptOvertime(idx, updateDTO, currentUserIdx);
 
             // 새 첨부파일 저장
             if (files != null && files.length > 0) {

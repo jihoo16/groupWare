@@ -147,6 +147,9 @@ public class ReceiptMeetingMapper {
         if (dto.getCardIdx() != null) {
             entity.setCardIdx(dto.getCardIdx());
         }
+        if (dto.getAuthorIdx() != null) {
+            entity.setAuthorIdx(dto.getAuthorIdx());
+        }
         if (dto.getMeetingDate() != null) {
             entity.setMeetingDate(dto.getMeetingDate());
         }
