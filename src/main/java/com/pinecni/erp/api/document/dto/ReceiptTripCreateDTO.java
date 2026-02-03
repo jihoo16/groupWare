@@ -30,11 +30,6 @@ public class ReceiptTripCreateDTO {
     private Long authorIdx;
 
     /**
-     * 작성자 이름
-     */
-    private String authorName;
-
-    /**
      * 출장 일자
      */
     private LocalDate tripDate;

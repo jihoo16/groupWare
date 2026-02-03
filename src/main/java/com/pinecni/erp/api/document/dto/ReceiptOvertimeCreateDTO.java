@@ -34,9 +34,9 @@ public class ReceiptOvertimeCreateDTO {
     private Long authorIdx;
 
     /**
-     * 작성자 이름
+     * 카드 IDX
      */
-    private String authorName;
+    private Long cardIdx;
 
     /**
      * 야근 일자
@@ -69,9 +69,9 @@ public class ReceiptOvertimeCreateDTO {
     private String paymentType;
 
     /**
-     * 야근 인원 목록
+     * 야근 참석자 목록
      */
-    private List<ReceiptOvertimePersonDTO> persons;
+    private List<ReceiptOvertimeAttendeeDTO> attendees;
 
     /**
      * 품의서 렌더링된 HTML (PDF 생성용)

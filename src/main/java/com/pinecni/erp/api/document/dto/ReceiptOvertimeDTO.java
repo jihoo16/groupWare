@@ -26,7 +26,8 @@ public class ReceiptOvertimeDTO {
     private String documentNumber;
     private Long documentIdx;
     private Long authorIdx;
-    private String authorName;
+    private String authorUserName;  // 조회 시 users 테이블에서 가져옴
+    private Long cardIdx;
     private LocalDate overtimeDate;
     private LocalDate approvalDate;
     private String documentTitle;
@@ -38,6 +39,6 @@ public class ReceiptOvertimeDTO {
     private Instant updatedAt;
 
     // 연관 데이터
-    private List<ReceiptOvertimePersonDTO> persons;
+    private List<ReceiptOvertimeAttendeeDTO> attendees;
     private List<ReceiptOvertimeAttachmentDTO> attachments;
 }

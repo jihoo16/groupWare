@@ -32,14 +32,18 @@ public class ReceiptTripMapper {
 
         // 작성자 정보 조회
         User author = userRepository.findById(entity.getAuthorIdx()).orElse(null);
+        String authorUserName = null;
         String authorDept = null;
         String authorDeptName = null;
 
-        if (author != null && author.getEmpDept() != null) {
-            authorDept = author.getEmpDept();
-            authorDeptName = codeRepository.findByGroupCodeAndCode("C01", author.getEmpDept())
-                    .map(Code::getCodeName)
-                    .orElse(null);
+        if (author != null) {
+            authorUserName = author.getEmpName();
+            if (author.getEmpDept() != null) {
+                authorDept = author.getEmpDept();
+                authorDeptName = codeRepository.findByGroupCodeAndCode("C01", author.getEmpDept())
+                        .map(Code::getCodeName)
+                        .orElse(null);
+            }
         }
 
         // 참석자 목록 변환
@@ -54,7 +58,7 @@ public class ReceiptTripMapper {
                 .projectName(entity.getProject() != null ? entity.getProject().getProjectName() : null)
                 .documentNumber(entity.getDocumentNumber())
                 .authorIdx(entity.getAuthorIdx())
-                .authorName(entity.getAuthorName())
+                .authorUserName(authorUserName)
                 .authorDept(authorDept)
                 .authorDeptName(authorDeptName)
                 .tripDate(entity.getTripDate())
@@ -84,7 +88,6 @@ public class ReceiptTripMapper {
         return ReceiptTrip.builder()
                 .projectIdx(dto.getProjectIdx())
                 .authorIdx(dto.getAuthorIdx())
-                .authorName(dto.getAuthorName())
                 .tripDate(dto.getTripDate())
                 .location(dto.getLocation())
                 .transportationFee(dto.getTransportationFee())

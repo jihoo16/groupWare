@@ -122,10 +122,9 @@ public class ReceiptOvertimeController {
 
             // 작성자 정보 자동 설정
             createDTO.setAuthorIdx(currentUserIdx);
-            createDTO.setAuthorName(currentUserName);
 
-            log.debug("POST /api/receipt-overtimes - projectIdx: {}, authorIdx: {}, authorName: {}, 파일 개수: {}",
-                    createDTO.getProjectIdx(), currentUserIdx, currentUserName, files != null ? files.length : 0);
+            log.debug("POST /api/receipt-overtimes - projectIdx: {}, authorIdx: {}, 파일 개수: {}",
+                    createDTO.getProjectIdx(), currentUserIdx, files != null ? files.length : 0);
 
             // 야근식대 생성
             ReceiptOvertimeDTO receiptOvertime = receiptOvertimeService.createReceiptOvertime(createDTO);

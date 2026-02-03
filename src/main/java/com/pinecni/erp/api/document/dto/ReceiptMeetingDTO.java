@@ -51,14 +51,19 @@ public class ReceiptMeetingDTO {
     private String documentNumber;
 
     /**
+     * 전자결재 문서 IDX
+     */
+    private Long documentIdx;
+
+    /**
      * 작성자 IDX
      */
     private Long authorIdx;
 
     /**
-     * 작성자 이름
+     * 작성자 이름 (users 테이블에서 조회)
      */
-    private String authorName;
+    private String authorUserName;
 
     /**
      * 작성자 부서

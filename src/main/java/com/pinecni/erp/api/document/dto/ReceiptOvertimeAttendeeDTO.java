@@ -8,17 +8,18 @@ import lombok.NoArgsConstructor;
 import java.time.Instant;
 
 /**
- * 야근식대 인원 DTO
+ * 야근식대 참석자 DTO
  */
 @Data
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
-public class ReceiptOvertimePersonDTO {
+public class ReceiptOvertimeAttendeeDTO {
 
     private Long idx;
     private Long receiptOvertimeIdx;
-    private String name;
+    private Long userIdx;
+    private String userName;  // 조회 시 users 테이블에서 가져옴
     private String workTime;
     private String workTask;
     private Instant createdAt;

@@ -13,9 +13,14 @@
                     <h1 class="page-title"><i class="fas fa-receipt"></i> 문서 작성 > 연구비 증빙 - 회의록</h1>
                 </div>
                 <div class="header-right">
-                    <button class="btn-primary" id="saveBtn">
+                    <button class="btn-print" id="printDocumentBtn" style="display: none;">
+                        <i class="fas fa-print"></i>
+                        인쇄하기
+                    </button>
+                    <button class="btn-primary btn-with-tooltip" id="saveBtn">
                         <i class="fas fa-save"></i>
                         저장하기
+                        <span class="tooltip-text">💡 모든 필수값을 채우면 좌측에 인쇄하기 버튼이 나타납니다</span>
                     </button>
                     <button class="btn-primary" id="updateBtn" style="display: none;">
                         <i class="fas fa-edit"></i>
@@ -400,20 +405,6 @@
         </main>
     </div>
 
-    <!-- PDF 로딩 모달 -->
-    <div class="pdf-loading-modal" id="pdfLoadingModal">
-        <div class="pdf-loading-content">
-            <div class="spinner"></div>
-            <h3>PDF가 다운로드 중입니다...</h3>
-            <div class="progress-info">
-                <div class="progress-bar">
-                    <div class="progress-fill" id="progressFill"></div>
-                </div>
-                <p class="progress-text" id="progressText">준비 중... (0%)</p>
-            </div>
-        </div>
-    </div>
-
     <!-- 참석자 선택 모달 -->
     <!-- 내부 참석자 선택 모달 -->
     <div id="attendeeModal" class="modal">
@@ -594,10 +585,6 @@
             </div>
         </div>
     </div>
-
-    <!-- jsPDF 라이브러리 -->
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 
     <script th:src="@{/js/approval_receipt_meeting.js}"></script>
 </body>

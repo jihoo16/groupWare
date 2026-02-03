@@ -396,9 +396,9 @@ public class ApprovalDocumentServiceImpl implements ApprovalDocumentService {
                 .updatedAt(trip.getUpdatedAt())
                 .build();
 
-        // 작성자 정보
-        dto.setDrafterName(trip.getAuthorName());
+        // 작성자 정보 (users 테이블에서 조회)
         userRepository.findById(trip.getAuthorIdx()).ifPresent(user -> {
+            dto.setDrafterName(user.getEmpName());
             dto.setDrafterDept(user.getEmpDept());
             if (user.getEmpDept() != null) {
                 codeRepository.findByCode(user.getEmpDept()).ifPresent(code -> {
@@ -432,9 +432,9 @@ public class ApprovalDocumentServiceImpl implements ApprovalDocumentService {
                 .updatedAt(meeting.getUpdatedAt())
                 .build();
 
-        // 작성자 정보
-        dto.setDrafterName(meeting.getAuthorName());
+        // 작성자 정보 (users 테이블에서 조회)
         userRepository.findById(meeting.getAuthorIdx()).ifPresent(user -> {
+            dto.setDrafterName(user.getEmpName());
             dto.setDrafterDept(user.getEmpDept());
             if (user.getEmpDept() != null) {
                 codeRepository.findByCode(user.getEmpDept()).ifPresent(code -> {
@@ -486,9 +486,9 @@ public class ApprovalDocumentServiceImpl implements ApprovalDocumentService {
                 .updatedAt(updatedAt)
                 .build();
 
-        // 작성자 정보
-        dto.setDrafterName(overtime.getAuthorName());
+        // 작성자 정보 (users 테이블에서 조회)
         userRepository.findById(overtime.getAuthorIdx()).ifPresent(user -> {
+            dto.setDrafterName(user.getEmpName());
             dto.setDrafterDept(user.getEmpDept());
             if (user.getEmpDept() != null) {
                 codeRepository.findByCode(user.getEmpDept()).ifPresent(code -> {

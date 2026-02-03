@@ -52,9 +52,6 @@ public class ReceiptMeeting {
     @Column(name = "author_idx", nullable = false)
     private Long authorIdx;
 
-    @Column(name = "author_name", nullable = false, length = 100)
-    private String authorName;
-
     @Column(name = "meeting_date", nullable = false)
     private LocalDate meetingDate;
 

@@ -37,10 +37,8 @@ public class ReceiptOvertime {
     @Column(name = "author_idx", nullable = false)
     private Long authorIdx;
 
-    @Size(max = 100)
-    @NotNull
-    @Column(name = "author_name", nullable = false, length = 100)
-    private String authorName;
+    @Column(name = "card_idx")
+    private Long cardIdx;
 
     @NotNull
     @Column(name = "overtime_date", nullable = false)
