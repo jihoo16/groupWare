@@ -32,14 +32,18 @@ public class ReceiptMeetingMapper {
 
         // 작성자 정보 조회
         User author = userRepository.findById(entity.getAuthorIdx()).orElse(null);
+        String authorUserName = null;
         String authorDept = null;
         String authorDeptName = null;
 
-        if (author != null && author.getEmpDept() != null) {
-            authorDept = author.getEmpDept();
-            authorDeptName = codeRepository.findByGroupCodeAndCode("C01", author.getEmpDept())
-                    .map(Code::getCodeName)
-                    .orElse(null);
+        if (author != null) {
+            authorUserName = author.getEmpName();
+            if (author.getEmpDept() != null) {
+                authorDept = author.getEmpDept();
+                authorDeptName = codeRepository.findByGroupCodeAndCode("C01", author.getEmpDept())
+                        .map(Code::getCodeName)
+                        .orElse(null);
+            }
         }
 
         // 참석자 목록 변환
@@ -79,8 +83,9 @@ public class ReceiptMeetingMapper {
                 .cardIdx(entity.getCardIdx())
                 .cardName(cardName)
                 .documentNumber(entity.getDocumentNumber())
+                .documentIdx(entity.getDocumentIdx())
                 .authorIdx(entity.getAuthorIdx())
-                .authorName(entity.getAuthorName())
+                .authorUserName(authorUserName)
                 .authorDept(authorDept)
                 .authorDeptName(authorDeptName)
                 .meetingDate(entity.getMeetingDate())
@@ -113,7 +118,6 @@ public class ReceiptMeetingMapper {
                 .projectIdx(dto.getProjectIdx())
                 .cardIdx(dto.getCardIdx())
                 .authorIdx(dto.getAuthorIdx())
-                .authorName(dto.getAuthorName())
                 .meetingDate(dto.getMeetingDate())
                 .startTime(dto.getStartTime())
                 .endTime(dto.getEndTime())

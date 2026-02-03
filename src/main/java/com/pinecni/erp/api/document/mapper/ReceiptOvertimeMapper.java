@@ -1,12 +1,12 @@
 package com.pinecni.erp.api.document.mapper;
 
 import com.pinecni.erp.api.document.dto.ReceiptOvertimeAttachmentDTO;
+import com.pinecni.erp.api.document.dto.ReceiptOvertimeAttendeeDTO;
 import com.pinecni.erp.api.document.dto.ReceiptOvertimeCreateDTO;
 import com.pinecni.erp.api.document.dto.ReceiptOvertimeDTO;
-import com.pinecni.erp.api.document.dto.ReceiptOvertimePersonDTO;
 import com.pinecni.erp.entity.ReceiptOvertime;
 import com.pinecni.erp.entity.ReceiptOvertimeAttachment;
-import com.pinecni.erp.entity.ReceiptOvertimePerson;
+import com.pinecni.erp.entity.ReceiptOvertimeAttendee;
 import org.springframework.stereotype.Component;
 
 import java.util.Collections;
@@ -20,6 +20,7 @@ public class ReceiptOvertimeMapper {
 
     /**
      * Entity -> DTO 변환
+     * 주의: authorUserName은 Service 레이어에서 users 테이블 조인으로 설정 필요
      */
     public ReceiptOvertimeDTO toDTO(ReceiptOvertime entity) {
         if (entity == null) {
@@ -33,7 +34,7 @@ public class ReceiptOvertimeMapper {
                 .documentNumber(entity.getDocumentNumber())
                 .documentIdx(entity.getDocumentIdx())
                 .authorIdx(entity.getAuthorIdx())
-                .authorName(entity.getAuthorName())
+                .cardIdx(entity.getCardIdx())
                 .overtimeDate(entity.getOvertimeDate())
                 .approvalDate(entity.getApprovalDate())
                 .documentTitle(entity.getDocumentTitle())
@@ -47,18 +48,18 @@ public class ReceiptOvertimeMapper {
     }
 
     /**
-     * Entity -> DTO 변환 (persons, attachments 포함)
+     * Entity -> DTO 변환 (attendees, attachments 포함)
      */
     public ReceiptOvertimeDTO toDTOWithDetails(ReceiptOvertime entity,
-                                                java.util.List<ReceiptOvertimePerson> persons,
+                                                java.util.List<ReceiptOvertimeAttendee> attendees,
                                                 java.util.List<ReceiptOvertimeAttachment> attachments) {
         if (entity == null) {
             return null;
         }
 
         ReceiptOvertimeDTO dto = toDTO(entity);
-        dto.setPersons(persons != null ?
-                persons.stream().map(this::toPersonDTO).collect(Collectors.toList()) :
+        dto.setAttendees(attendees != null ?
+                attendees.stream().map(this::toAttendeeDTO).collect(Collectors.toList()) :
                 Collections.emptyList());
         dto.setAttachments(attachments != null ?
                 attachments.stream().map(this::toAttachmentDTO).collect(Collectors.toList()) :
@@ -67,17 +68,18 @@ public class ReceiptOvertimeMapper {
     }
 
     /**
-     * Person Entity -> PersonDTO 변환
+     * Attendee Entity -> AttendeeDTO 변환
+     * 주의: userName은 Service 레이어에서 users 테이블 조인으로 설정 필요
      */
-    public ReceiptOvertimePersonDTO toPersonDTO(ReceiptOvertimePerson entity) {
+    public ReceiptOvertimeAttendeeDTO toAttendeeDTO(ReceiptOvertimeAttendee entity) {
         if (entity == null) {
             return null;
         }
 
-        return ReceiptOvertimePersonDTO.builder()
-                .idx(entity.getId())
+        return ReceiptOvertimeAttendeeDTO.builder()
+                .idx(entity.getIdx())
                 .receiptOvertimeIdx(entity.getReceiptOvertimeIdx() != null ? entity.getReceiptOvertimeIdx().getId() : null)
-                .name(entity.getName())
+                .userIdx(entity.getUserIdx())
                 .workTime(entity.getWorkTime())
                 .workTask(entity.getWorkTask())
                 .createdAt(entity.getCreatedAt())
