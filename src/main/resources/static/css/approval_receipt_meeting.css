@@ -630,6 +630,8 @@ div:focus {
     align-items: center;
     justify-content: center;
     min-height: 48px;
+    cursor: default;
+    user-select: none;
 }
 
 .total-amount-display span {
@@ -1687,6 +1689,48 @@ input.auto-datetime {
     vertical-align: middle;
 }
 
+/* 작성자 뱃지 */
+.author-badge {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    margin-left: 6px;
+    padding: 2px 6px;
+    background: #10b981;
+    color: white;
+    font-size: 9px;
+    font-weight: 700;
+    border-radius: 3px;
+}
+
+/* 작성자 참석자 아이템 */
+.trip-person-item.is-author {
+    background: #f0fdf4;
+    border-color: #86efac;
+    cursor: default;
+}
+
+.trip-person-item.is-author:hover {
+    border-color: #86efac;
+    background: #f0fdf4;
+    transform: none;
+}
+
+/* 삭제 불가 텍스트 */
+.cannot-remove-text {
+    padding: 4px 8px;
+    background: #f1f5f9;
+    color: #64748b;
+    border: 1px solid #e2e8f0;
+    border-radius: 4px;
+    font-size: 11px;
+    font-weight: 600;
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    pointer-events: none;
+}
+
 .trip-person-info {
     display: flex;
     gap: 8px;
@@ -1887,109 +1931,6 @@ input.auto-datetime {
     }
 }
 
-/* PDF 로딩 모달 */
-.pdf-loading-modal {
-    display: none;
-    position: fixed;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
-    background: rgba(0, 0, 0, 0.7);
-    z-index: 10000;
-    justify-content: center;
-    align-items: center;
-}
-
-.pdf-loading-modal.active {
-    display: flex;
-}
-
-.pdf-loading-content {
-    background: white;
-    padding: 40px;
-    border-radius: 12px;
-    text-align: center;
-    min-width: 400px;
-    box-shadow: 0 10px 40px rgba(0, 0, 0, 0.3);
-}
-
-.pdf-loading-content h3 {
-    margin: 20px 0 30px;
-    color: #333;
-    font-size: 18px;
-    font-weight: 600;
-}
-
-/* 스피너 애니메이션 */
-.spinner {
-    width: 60px;
-    height: 60px;
-    border: 5px solid #f3f3f3;
-    border-top: 5px solid #667eea;
-    border-radius: 50%;
-    margin: 0 auto;
-    animation: spin 1s linear infinite;
-}
-
-@keyframes spin {
-    0% { transform: rotate(0deg); }
-    100% { transform: rotate(360deg); }
-}
-
-/* 진행도 바 */
-.progress-info {
-    margin-top: 20px;
-}
-
-.progress-bar {
-    width: 100%;
-    height: 30px;
-    background: #f0f0f0;
-    border-radius: 15px;
-    overflow: hidden;
-    position: relative;
-    box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.1);
-}
-
-.progress-fill {
-    height: 100%;
-    background: linear-gradient(90deg, #667eea 0%, #764ba2 100%);
-    width: 0%;
-    transition: width 0.3s ease;
-    border-radius: 15px;
-    position: relative;
-    overflow: hidden;
-}
-
-.progress-fill::after {
-    content: '';
-    position: absolute;
-    top: 0;
-    left: 0;
-    bottom: 0;
-    right: 0;
-    background: linear-gradient(
-        90deg,
-        transparent,
-        rgba(255, 255, 255, 0.3),
-        transparent
-    );
-    animation: shimmer 2s infinite;
-}
-
-@keyframes shimmer {
-    0% { transform: translateX(-100%); }
-    100% { transform: translateX(100%); }
-}
-
-.progress-text {
-    margin-top: 15px;
-    color: #666;
-    font-size: 14px;
-    font-weight: 500;
-}
-
 /* 참석자 영역 hover 효과 */
 #attendeeArea:hover {
     border-color: #667eea;
@@ -2000,27 +1941,6 @@ input.auto-datetime {
 #approverChips:hover {
     border-color: #667eea;
     background: #f8f9ff;
-}
-
-/* 반응형 */
-@media (max-width: 768px) {
-    .pdf-loading-content {
-        min-width: 300px;
-        padding: 30px 20px;
-    }
-
-    .pdf-loading-content h3 {
-        font-size: 16px;
-    }
-
-    .spinner {
-        width: 50px;
-        height: 50px;
-    }
-
-    .progress-bar {
-        height: 25px;
-    }
 }
 
 /* ==========================================
@@ -2398,4 +2318,248 @@ input.auto-datetime {
 .project-item-in-attendee:hover .project-item-arrow {
     color: #667eea;
     transform: translateX(2px);
+}
+
+/* 인쇄 버튼 스타일 */
+.btn-print {
+    padding: 10px 20px;
+    background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+    color: white;
+    border: none;
+    border-radius: 8px;
+    font-size: 14px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.3s;
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.btn-print:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(16, 185, 129, 0.3);
+}
+
+.btn-print i {
+    font-size: 16px;
+}
+
+/* 툴팁 버튼 스타일 */
+.btn-with-tooltip {
+    position: relative;
+}
+
+.tooltip-text {
+    visibility: hidden;
+    opacity: 0;
+    position: absolute;
+    top: 110%;
+    left: 50%;
+    transform: translateX(-50%);
+    background: #333;
+    color: white;
+    padding: 12px 16px;
+    border-radius: 8px;
+    font-size: 13px;
+    line-height: 1.5;
+    white-space: nowrap;
+    z-index: 1000;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+    transition: opacity 0.3s, visibility 0.3s;
+    pointer-events: none;
+}
+
+.tooltip-text::after {
+    content: '';
+    position: absolute;
+    bottom: 100%;
+    left: 50%;
+    transform: translateX(-50%);
+    border: 8px solid transparent;
+    border-bottom-color: #333;
+}
+
+.btn-with-tooltip:hover .tooltip-text {
+    visibility: visible;
+    opacity: 1;
+}
+
+/* 필수 필드 미입력 강조 스타일 */
+.field-empty {
+    border: 2px solid #ef4444 !important;
+    background: #fef2f2 !important;
+    animation: shake 0.5s ease;
+}
+
+.field-empty:focus {
+    border-color: #dc2626 !important;
+    box-shadow: 0 0 0 3px rgba(239, 68, 68, 0.1) !important;
+}
+
+@keyframes shake {
+    0%, 100% { transform: translateX(0); }
+    25% { transform: translateX(-5px); }
+    75% { transform: translateX(5px); }
+}
+
+/* 인쇄용 스타일 */
+@media print {
+    /* A4 페이지 설정 */
+    @page {
+        size: A4 portrait;
+        margin: 0;
+    }
+
+    /* 인쇄 시 사이드바, 헤더, 버튼 등 숨기기 */
+    .sidebar,
+    .header,
+    .template-sidebar,
+    .common-info-section,
+    .attachment-section,
+    .document-preview-toggle {
+        display: none !important;
+    }
+
+    /* body와 html 설정 */
+    body, html {
+        margin: 0 !important;
+        padding: 0 !important;
+        width: 210mm !important;
+        height: auto !important;
+        overflow: visible !important;
+    }
+
+    /* 모든 컨테이너 초기화 */
+    .container,
+    .main-content,
+    .write-container,
+    .write-layout,
+    .editor-area,
+    .document-form-wrapper,
+    .document-form-wrapper.collapsed,
+    .document-form,
+    #documentFormContent {
+        all: unset !important;
+        display: block !important;
+        width: 100% !important;
+        max-width: none !important;
+        overflow: visible !important;
+        position: static !important;
+        float: none !important;
+        clear: both !important;
+    }
+
+    /* 각 페이지를 새로운 페이지로 강제 */
+    #documentFormContent > div:nth-child(1),
+    #documentFormContent > div:nth-child(2),
+    #documentFormContent > div:nth-child(3) {
+        display: block !important;
+        width: 210mm !important;
+        min-height: 297mm !important;
+        max-height: 297mm !important;
+        page-break-after: always !important;
+        page-break-before: auto !important;
+        page-break-inside: avoid !important;
+        break-after: page !important;
+        break-inside: avoid !important;
+        margin: 0 !important;
+        padding: 15mm !important;
+        box-sizing: border-box !important;
+        background: white !important;
+        border: none !important;
+        box-shadow: none !important;
+        position: relative !important;
+        overflow: hidden !important;
+    }
+
+    /* 마지막 페이지 */
+    #documentFormContent > div:nth-child(3) {
+        page-break-after: auto !important;
+        break-after: auto !important;
+    }
+
+    /* 테이블 스타일 */
+    table {
+        width: 100% !important;
+        border-collapse: collapse !important;
+    }
+
+    table td,
+    table th {
+        color: #000 !important;
+        border-color: #000 !important;
+    }
+
+    input, textarea, span {
+        color: #000 !important;
+    }
+
+    .doc-title {
+        color: #000 !important;
+        font-weight: bold !important;
+    }
+
+    /* 주요 내용 폰트 크기 줄이기 (페이지 넘침 방지) */
+    .auto-content {
+        font-size: 13px !important;
+        line-height: 1.6 !important;
+    }
+
+    /* 주제도 약간 줄이기 */
+    .auto-subject {
+        font-size: 16px !important;
+    }
+
+    /* 비고칸 높이 줄이기 (2페이지) */
+    .auto-minutes-notes {
+        height: 50px !important;
+        min-height: 50px !important;
+    }
+
+    /* 특이사항칸 높이 줄이기 (1페이지) */
+    .auto-notes {
+        height: 40px !important;
+        min-height: 40px !important;
+    }
+
+    /* 1페이지 테이블 열 너비 조정 (일시/특이사항/결제 헤더 넓히기) */
+    #documentFormContent > div:nth-child(1) .form-table colgroup col:nth-child(1) {
+        width: 15% !important;
+    }
+    #documentFormContent > div:nth-child(1) .form-table colgroup col:nth-child(2) {
+        width: 16% !important;
+    }
+    #documentFormContent > div:nth-child(1) .form-table colgroup col:nth-child(3) {
+        width: 11% !important;
+    }
+    #documentFormContent > div:nth-child(1) .form-table colgroup col:nth-child(5) {
+        width: 21% !important;
+    }
+
+    /* 1페이지 장소 입력 칸 폰트 크기 줄이기 */
+    #documentFormContent > div:nth-child(1) .auto-location {
+        font-size: 11px !important;
+        line-height: 1.4 !important;
+    }
+
+    /* 참석자명단 테이블만 열 너비 조정 (3페이지만) */
+    #documentFormContent > div:nth-child(3) table:first-of-type colgroup col:nth-child(1) {
+        width: 15% !important;
+    }
+    #documentFormContent > div:nth-child(3) table:first-of-type colgroup col:nth-child(2) {
+        width: 45% !important;
+    }
+    #documentFormContent > div:nth-child(3) table:first-of-type colgroup col:nth-child(3) {
+        width: 15% !important;
+    }
+    #documentFormContent > div:nth-child(3) table:first-of-type colgroup col:nth-child(4) {
+        width: 25% !important;
+    }
+
+    /* 3페이지 장소 입력 칸 폰트 크기 줄이기 */
+    #documentFormContent > div:nth-child(3) .auto-location {
+        font-size: 11px !important;
+        line-height: 1.4 !important;
+    }
 }
