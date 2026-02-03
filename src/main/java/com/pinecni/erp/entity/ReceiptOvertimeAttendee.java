@@ -14,12 +14,12 @@ import java.time.Instant;
 @Getter
 @Setter
 @Entity
-@Table(name = "receipt_overtime_person", schema = "erp")
-public class ReceiptOvertimePerson {
+@Table(name = "receipt_overtime_attendee", schema = "erp")
+public class ReceiptOvertimeAttendee {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     @Column(name = "idx", nullable = false)
-    private Long id;
+    private Long idx;
 
     @NotNull
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
@@ -27,10 +27,9 @@ public class ReceiptOvertimePerson {
     @JoinColumn(name = "receipt_overtime_idx", nullable = false)
     private ReceiptOvertime receiptOvertimeIdx;
 
-    @Size(max = 100)
     @NotNull
-    @Column(name = "name", nullable = false, length = 100)
-    private String name;
+    @Column(name = "user_idx", nullable = false)
+    private Long userIdx;
 
     @Size(max = 50)
     @Column(name = "work_time", length = 50)
