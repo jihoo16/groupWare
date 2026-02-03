@@ -42,12 +42,12 @@ public interface ReceiptMeetingService {
     /**
      * 회의록 생성
      */
-    ReceiptMeetingDTO createReceiptMeeting(ReceiptMeetingCreateDTO createDTO);
+    ReceiptMeetingDTO createReceiptMeeting(ReceiptMeetingCreateDTO createDTO, Long currentUserIdx);
 
     /**
      * 회의록 수정
      */
-    ReceiptMeetingDTO updateReceiptMeeting(Long idx, ReceiptMeetingUpdateDTO updateDTO);
+    ReceiptMeetingDTO updateReceiptMeeting(Long idx, ReceiptMeetingUpdateDTO updateDTO, Long currentUserIdx);
 
     /**
      * 회의록 삭제 (Soft Delete)
