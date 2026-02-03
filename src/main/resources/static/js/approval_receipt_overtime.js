@@ -1375,6 +1375,19 @@ document.addEventListener('DOMContentLoaded', async function() {
                 return;
             }
 
+            // 총 공급가액 검증
+            const amountValidation = parseInt((otAmount?.value || '').replace(/,/g, '')) || 0;
+            if (amountValidation <= 0) {
+                showWarning('총 공급가액을 입력해주세요.');
+                return;
+            }
+
+            // 품의내용 검증
+            if (!otContent?.value || !otContent.value.trim()) {
+                showWarning('품의내용을 입력해주세요.');
+                return;
+            }
+
             if (!otStartTime?.value || !otEndTime?.value) {
                 showWarning('시작 시간과 종료 시간을 입력해주세요.');
                 return;
