@@ -237,12 +237,12 @@
                                     <table class="form-table">
                                     <colgroup>
                                         <col style="width: 12%;">
-                                        <col style="width: 20%;">
+                                        <col style="width: 18%;">
                                         <col style="width: 12%;">
-                                        <col style="width: 12%;">
+                                        <col style="width: 10%;">
+                                        <col style="width: 22%;">
+                                        <col style="width: 10%;">
                                         <col style="width: 16%;">
-                                        <col style="width: 12%;">
-                                        <col style="width: 20%;">
                                     </colgroup>
                                     <tr>
                                         <th colspan="3">사업명</th>
@@ -251,9 +251,9 @@
                                     <tr>
                                         <th colspan="3">참석인원</th>
                                         <th>장소</th>
-                                        <td class="auto-location-cell" style="padding: 10px 8px; "><input type="text" class="auto-location" readonly style="background: #f9f9f9; font-size: 13px; line-height: 1.6; text-align: center"></td>
+                                        <td class="auto-location-cell" style="padding: 10px 8px;"><input type="text" class="auto-location" readonly style="background: #f9f9f9; font-size: 13px; line-height: 1.6;"></td>
                                         <th>회의 일시</th>
-                                        <td class="auto-datetime-cell" style="white-space: pre-line; text-align: center; padding: 10px 8px;"><span class="auto-datetime-proposal"></span></td>
+                                        <td class="auto-datetime-cell" style="padding: 10px 8px;"><span class="auto-datetime-proposal"></span></td>
                                     </tr>
                                     <tr id="meeting_purpose_row">
                                         <th>내외구분</th>
@@ -295,7 +295,7 @@
                                     </tr>
                                     <tr>
                                         <th >결제</th>
-                                        <td colspan="6"><input type="text" class="auto-payment" readonly style="background: #f9f9f9;" /></td>
+                                        <td colspan="6"><input type="text" class="auto-payment" value="연구비카드로 결제" readonly style="background: #f9f9f9;"/></td>
                                     </tr>
                                 </table>
                                         </div>
@@ -306,9 +306,9 @@
                                     <table class="form-table">
                                     <colgroup>
                                         <col style="width: 15%;">
-                                        <col style="width: 55%;">
+                                        <col style="width: 45%;">
                                         <col style="width: 10%;">
-                                        <col style="width: 20%;">
+                                        <col style="width: 30%;">
                                     </colgroup>
                                     <tr>
                                         <th style=" height: 80px">사업명</th>
@@ -318,9 +318,9 @@
                                     </tr>
                                     <tr>
                                         <th style=" height: 80px">일시</th>
-                                        <td><input type="text" class="auto-datetime" readonly style="background: #f9f9f9; text-align: center;"></td>
+                                        <td><input type="text" class="auto-datetime" readonly style="background: #f9f9f9;"></td>
                                         <th>장소</th>
-                                        <td><input type="text" class="auto-location" readonly style="background: #f9f9f9; text-align: center;"></td>
+                                        <td><input type="text" class="auto-location" readonly style="background: #f9f9f9;"></td>
                                     </tr>
                                     <tr>
                                         <th>참여자<br>(참여기관)</th>
@@ -365,137 +365,29 @@
                                     </tr>
                                     <tr>
                                         <th style=" height: 80px">일시</th>
-                                        <td><input type="text" class="auto-datetime" readonly style="background: #f9f9f9; text-align: center;"></td>
+                                        <td><input type="text" class="auto-datetime" readonly style="background: #f9f9f9;"></td>
                                         <th>장소</th>
-                                        <td><input type="text" class="auto-location" readonly style="background: #f9f9f9; text-align: center;"></td>
+                                        <td><input type="text" class="auto-location" readonly style="background: #f9f9f9;"></td>
                                     </tr>
                                 </table>
                                 <table class="form-table" id="attendee-signature-table" style="margin-top: 20px;">
-                                    <tr style="height: 70px">
-                                        <th>성명</th>
-                                        <th>소속</th>
-                                        <th>서명</th>
-                                    </tr>
-                                    <tr>
-                                        <td><input type="text" class="attendee-sig-name" data-index="0" readonly style="background: #f9f9f9;"></td>
-                                        <td><input type="text" class="attendee-sig-dept" data-index="0" readonly style="background: #f9f9f9;"></td>
-                                        <td style="padding: 30px;"></td>
-                                    </tr>
-                                    <tr>
-                                        <td><input type="text" class="attendee-sig-name" data-index="1" readonly style="background: #f9f9f9;"></td>
-                                        <td><input type="text" class="attendee-sig-dept" data-index="1" readonly style="background: #f9f9f9;"></td>
-                                        <td style="padding: 30px;"></td>
-                                    </tr>
-                                    <tr>
-                                        <td><input type="text" class="attendee-sig-name" data-index="2" readonly style="background: #f9f9f9;"></td>
-                                        <td><input type="text" class="attendee-sig-dept" data-index="2" readonly style="background: #f9f9f9;"></td>
-                                        <td style="padding: 30px;"></td>
-                                    </tr>
-                                    <tr>
-                                        <td><input type="text" class="attendee-sig-name" data-index="3" readonly style="background: #f9f9f9;"></td>
-                                        <td><input type="text" class="attendee-sig-dept" data-index="3" readonly style="background: #f9f9f9;"></td>
-                                        <td style="padding: 30px;"></td>
-                                    </tr>
-                                    <tr>
-                                        <td><input type="text" class="attendee-sig-name" data-index="4" readonly style="background: #f9f9f9;"></td>
-                                        <td><input type="text" class="attendee-sig-dept" data-index="4" readonly style="background: #f9f9f9;"></td>
-                                        <td style="padding: 30px;"></td>
-                                    </tr>
-                                    <tr>
-                                        <td><input type="text" class="attendee-sig-name" data-index="5" readonly style="background: #f9f9f9;"></td>
-                                        <td><input type="text" class="attendee-sig-dept" data-index="5" readonly style="background: #f9f9f9;"></td>
-                                        <td style="padding: 30px;"></td>
-                                    </tr>
-                                    <tr>
-                                        <td><input type="text" class="attendee-sig-name" data-index="6" readonly style="background: #f9f9f9;"></td>
-                                        <td><input type="text" class="attendee-sig-dept" data-index="6" readonly style="background: #f9f9f9;"></td>
-                                        <td style="padding: 30px;"></td>
-                                    </tr>
-                                    <tr>
-                                        <td><input type="text" class="attendee-sig-name" data-index="7" readonly style="background: #f9f9f9;"></td>
-                                        <td><input type="text" class="attendee-sig-dept" data-index="7" readonly style="background: #f9f9f9;"></td>
-                                        <td style="padding: 30px;"></td>
-                                    </tr>
-                                    <tr>
-                                        <td><input type="text" class="attendee-sig-name" data-index="8" readonly style="background: #f9f9f9;"></td>
-                                        <td><input type="text" class="attendee-sig-dept" data-index="8" readonly style="background: #f9f9f9;"></td>
-                                        <td style="padding: 30px;"></td>
-                                    </tr>
-                                    <tr>
-                                        <td><input type="text" class="attendee-sig-name" data-index="9" readonly style="background: #f9f9f9;"></td>
-                                        <td><input type="text" class="attendee-sig-dept" data-index="9" readonly style="background: #f9f9f9;"></td>
-                                        <td style="padding: 30px;"></td>
-                                    </tr>
-                                    <tr>
-                                        <td><input type="text" class="attendee-sig-name" data-index="10" readonly style="background: #f9f9f9;"></td>
-                                        <td><input type="text" class="attendee-sig-dept" data-index="10" readonly style="background: #f9f9f9;"></td>
-                                        <td style="padding: 30px;"></td>
-                                    </tr>
-                                    <tr>
-                                        <td><input type="text" class="attendee-sig-name" data-index="11" readonly style="background: #f9f9f9;"></td>
-                                        <td><input type="text" class="attendee-sig-dept" data-index="11" readonly style="background: #f9f9f9;"></td>
-                                        <td style="padding: 30px;"></td>
-                                    </tr>
-                                    <tr>
-                                        <td><input type="text" class="attendee-sig-name" data-index="12" readonly style="background: #f9f9f9;"></td>
-                                        <td><input type="text" class="attendee-sig-dept" data-index="12" readonly style="background: #f9f9f9;"></td>
-                                        <td style="padding: 30px;"></td>
-                                    </tr>
-                                    <tr>
-                                        <td><input type="text" class="attendee-sig-name" data-index="13" readonly style="background: #f9f9f9;"></td>
-                                        <td><input type="text" class="attendee-sig-dept" data-index="13" readonly style="background: #f9f9f9;"></td>
-                                        <td style="padding: 30px;"></td>
-                                    </tr>
-                                    <tr>
-                                        <td><input type="text" class="attendee-sig-name" data-index="14" readonly style="background: #f9f9f9;"></td>
-                                        <td><input type="text" class="attendee-sig-dept" data-index="14" readonly style="background: #f9f9f9;"></td>
-                                        <td style="padding: 30px;"></td>
-                                    </tr>
-                                    <tr>
-                                        <td><input type="text" class="attendee-sig-name" data-index="15" readonly style="background: #f9f9f9;"></td>
-                                        <td><input type="text" class="attendee-sig-dept" data-index="15" readonly style="background: #f9f9f9;"></td>
-                                        <td style="padding: 30px;"></td>
-                                    </tr>
-                                    <tr>
-                                        <td><input type="text" class="attendee-sig-name" data-index="16" readonly style="background: #f9f9f9;"></td>
-                                        <td><input type="text" class="attendee-sig-dept" data-index="16" readonly style="background: #f9f9f9;"></td>
-                                        <td style="padding: 30px;"></td>
-                                    </tr>
-                                    <tr>
-                                        <td><input type="text" class="attendee-sig-name" data-index="17" readonly style="background: #f9f9f9;"></td>
-                                        <td><input type="text" class="attendee-sig-dept" data-index="17" readonly style="background: #f9f9f9;"></td>
-                                        <td style="padding: 30px;"></td>
-                                    </tr>
-                                    <tr>
-                                        <td><input type="text" class="attendee-sig-name" data-index="18" readonly style="background: #f9f9f9;"></td>
-                                        <td><input type="text" class="attendee-sig-dept" data-index="18" readonly style="background: #f9f9f9;"></td>
-                                        <td style="padding: 30px;"></td>
-                                    </tr>
-                                    <tr>
-                                        <td><input type="text" class="attendee-sig-name" data-index="19" readonly style="background: #f9f9f9;"></td>
-                                        <td><input type="text" class="attendee-sig-dept" data-index="19" readonly style="background: #f9f9f9;"></td>
-                                        <td style="padding: 30px;"></td>
-                                    </tr>
-                                    <tr>
-                                        <td><input type="text" class="attendee-sig-name" data-index="20" readonly style="background: #f9f9f9;"></td>
-                                        <td><input type="text" class="attendee-sig-dept" data-index="20" readonly style="background: #f9f9f9;"></td>
-                                        <td style="padding: 30px;"></td>
-                                    </tr>
-                                    <tr>
-                                        <td><input type="text" class="attendee-sig-name" data-index="21" readonly style="background: #f9f9f9;"></td>
-                                        <td><input type="text" class="attendee-sig-dept" data-index="21" readonly style="background: #f9f9f9;"></td>
-                                        <td style="padding: 30px;"></td>
-                                    </tr>
-                                    <tr>
-                                        <td><input type="text" class="attendee-sig-name" data-index="22" readonly style="background: #f9f9f9;"></td>
-                                        <td><input type="text" class="attendee-sig-dept" data-index="22" readonly style="background: #f9f9f9;"></td>
-                                        <td style="padding: 30px;"></td>
-                                    </tr>
-                                    <tr>
-                                        <td><input type="text" class="attendee-sig-name" data-index="23" readonly style="background: #f9f9f9;"></td>
-                                        <td><input type="text" class="attendee-sig-dept" data-index="23" readonly style="background: #f9f9f9;"></td>
-                                        <td style="padding: 30px;"></td>
-                                    </tr>
+                                    <colgroup>
+                                        <col style="width: 10%;">
+                                        <col style="width: 20%;">
+                                        <col style="width: 25%;">
+                                        <col style="width: 45%;">
+                                    </colgroup>
+                                    <thead>
+                                        <tr style="height: 70px">
+                                            <th>구분</th>
+                                            <th>성명</th>
+                                            <th>소속</th>
+                                            <th>서명</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="attendee-signature-tbody">
+                                        <!-- 참석자 행은 JavaScript에서 동적으로 생성됨 -->
+                                    </tbody>
                                 </table>
                                         </div>
                                     </div>

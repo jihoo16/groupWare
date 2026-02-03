@@ -862,22 +862,61 @@ document.addEventListener('DOMContentLoaded', async function() {
                 field.textContent = allAttendeesText;
             });
 
-            // 참석자 명단 테이블 업데이트 (정렬된 순서대로)
-            const nameFields = document.querySelectorAll('.attendee-sig-name');
-            const deptFields = document.querySelectorAll('.attendee-sig-dept');
+            // 참석자 명단 테이블 동적 생성 (정렬된 순서대로)
+            const tbody = document.getElementById('attendee-signature-tbody');
+            if (tbody) {
+                // 기존 행 모두 제거
+                tbody.innerHTML = '';
 
-            nameFields.forEach(field => field.value = '');
-            deptFields.forEach(field => field.value = '');
+                // 참석자 수만큼 행 생성
+                sortedAttendees.forEach((attendee, idx) => {
+                    const row = document.createElement('tr');
 
-            sortedAttendees.forEach((attendee, idx) => {
-                if (nameFields[idx]) {
-                    nameFields[idx].value = attendee.name;
-                }
-                if (deptFields[idx]) {
-                    // 외부인력은 회사명, 내부는 파인씨앤아이
-                    deptFields[idx].value = attendee.type === 'internal' ? '파인씨앤아이' : attendee.dept;
-                }
-            });
+                    // 구분
+                    const typeCell = document.createElement('td');
+                    const typeInput = document.createElement('input');
+                    typeInput.type = 'text';
+                    typeInput.className = 'attendee-sig-type';
+                    typeInput.setAttribute('data-index', idx);
+                    typeInput.readOnly = true;
+                    typeInput.style.background = '#f9f9f9';
+                    typeInput.value = attendee.type === 'internal' ? '내부' : '외부';
+                    typeCell.appendChild(typeInput);
+
+                    // 성명
+                    const nameCell = document.createElement('td');
+                    const nameInput = document.createElement('input');
+                    nameInput.type = 'text';
+                    nameInput.className = 'attendee-sig-name';
+                    nameInput.setAttribute('data-index', idx);
+                    nameInput.readOnly = true;
+                    nameInput.style.background = '#f9f9f9';
+                    nameInput.value = attendee.name;
+                    nameCell.appendChild(nameInput);
+
+                    // 소속
+                    const deptCell = document.createElement('td');
+                    const deptInput = document.createElement('input');
+                    deptInput.type = 'text';
+                    deptInput.className = 'attendee-sig-dept';
+                    deptInput.setAttribute('data-index', idx);
+                    deptInput.readOnly = true;
+                    deptInput.style.background = '#f9f9f9';
+                    deptInput.value = attendee.type === 'internal' ? '파인씨앤아이' : attendee.dept;
+                    deptCell.appendChild(deptInput);
+
+                    // 서명
+                    const signCell = document.createElement('td');
+                    signCell.style.padding = '30px';
+
+                    row.appendChild(typeCell);
+                    row.appendChild(nameCell);
+                    row.appendChild(deptCell);
+                    row.appendChild(signCell);
+
+                    tbody.appendChild(row);
+                });
+            }
         }
 
         // 회의 품의서 참석인원 업데이트
@@ -942,11 +981,11 @@ document.addEventListener('DOMContentLoaded', async function() {
                     }
 
                     row.innerHTML = `
-                        <td style="border: 1px solid #ddd; padding: 5px; text-align: center;">
+                        <td style="padding: 5px; text-align: center;">
                             <span>${group.type}</span>
                         </td>
-                        <td style="border: 1px solid #ddd; padding: 5px; text-align: center;"><span>${group.dept || ''}</span></td>
-                        <td style="border: 1px solid #ddd; padding: 5px; text-align: center;"><span>${nameDisplay}</span></td>
+                        <td style="padding: 5px; text-align: center;"><span>${group.dept || ''}</span></td>
+                        <td style="padding: 5px; text-align: center;"><span>${nameDisplay}</span></td>
                     `;
                 } else {
                     row.innerHTML = `
@@ -1612,10 +1651,11 @@ document.addEventListener('DOMContentLoaded', async function() {
         const clonedContent = documentFormContent.cloneNode(true);
 
         // 모든 input과 textarea의 현재 값을 속성으로 설정
-        clonedContent.querySelectorAll('input, textarea').forEach(field => {
-            const originalField = (field.id ? documentFormContent.querySelector(`#${field.id}`) : null) ||
-                                 Array.from(documentFormContent.querySelectorAll('input, textarea'))
-                                      .find(f => f.className === field.className && f.name === field.name);
+        const originalFields = Array.from(documentFormContent.querySelectorAll('input, textarea'));
+        const clonedFields = Array.from(clonedContent.querySelectorAll('input, textarea'));
+
+        clonedFields.forEach((field, index) => {
+            const originalField = originalFields[index];
 
             if (originalField) {
                 if (field.type === 'checkbox' || field.type === 'radio') {
@@ -1651,7 +1691,12 @@ document.addEventListener('DOMContentLoaded', async function() {
         body {
             font-family: 'Malgun Gothic', '맑은 고딕', 'Apple SD Gothic Neo', sans-serif;
             background: white;
-            margin: 1.5cm;
+            margin: 0;
+        }
+
+        /* 문서 컨테이너 padding - 1페이지는 정상 크기 유지 */
+        body > div[style*="padding"] {
+            padding: 25px 30px !important;
         }
 
         .doc-title {
@@ -1659,8 +1704,8 @@ document.addEventListener('DOMContentLoaded', async function() {
             font-size: 26px;
             font-weight: 700;
             color: #333;
-            margin: 20px 0;
-            padding-bottom: 10px;
+            margin: 15px 0 20px 0;
+            padding-bottom: 8px;
             letter-spacing: 6px;
         }
 
@@ -1668,13 +1713,14 @@ document.addEventListener('DOMContentLoaded', async function() {
             width: 100%;
             border-collapse: collapse;
             border: 1px solid #000;
-            margin-bottom: 20px;
+            margin-bottom: 15px;
+            table-layout: auto !important;
         }
 
         .form-table th,
         .form-table td {
             border: 1px solid #000;
-            padding: 10px;
+            padding: 10px 12px;
             font-size: 13px;
             vertical-align: middle;
         }
@@ -1691,28 +1737,44 @@ document.addEventListener('DOMContentLoaded', async function() {
             text-align: center;
         }
 
+        /* 장소 셀만 강제 확장 (페이지 구분 없이) */
+        td.auto-location-cell,
+        td:has(input.auto-location) {
+            min-width: 180px !important;
+            width: auto !important;
+            max-width: none !important;
+        }
+
         /* 주요내용 좌측정렬 및 A4 1페이지 고정 */
         .form-table td.auto-content,
         .form-table td[style*="text-align: left"] {
             text-align: left !important;
-            height: 480px !important;
-            max-height: 480px !important;
-            min-height: 480px !important;
+            height: 440px !important;
+            max-height: 440px !important;
+            min-height: 440px !important;
             overflow: hidden !important;
-            font-size: 12px !important;
-            line-height: 1.6 !important;
-            padding: 8px 10px !important;
+            font-size: 10px !important;
+            line-height: 1.4 !important;
+            padding: 6px 8px !important;
             vertical-align: top !important;
             box-sizing: border-box !important;
+            word-wrap: break-word !important;
+            white-space: pre-wrap !important;
         }
 
         .form-table input,
         .form-table textarea {
             border: none;
-            background: transparent;
+            background: white !important;
             width: 100%;
             text-align: center;
             font-size: 13px;
+        }
+
+        /* readonly input 배경색 제거 */
+        input[readonly],
+        textarea[readonly] {
+            background: white !important;
         }
 
         /* 결재란 테이블 스타일 고정 */
@@ -1745,27 +1807,113 @@ document.addEventListener('DOMContentLoaded', async function() {
             padding: 3px 7px !important;
         }
 
-        /* 특이사항 높이 제한 */
+        /* 특이사항 높이 - 1페이지용 */
         .auto-notes,
         textarea.auto-notes {
-            height: 60px !important;
-            min-height: 60px !important;
-            max-height: 60px !important;
+            height: 80px !important;
+            min-height: 80px !important;
+            max-height: 80px !important;
             overflow: hidden !important;
+            font-size: 12px !important;
+            line-height: 1.5 !important;
+            padding: 8px 10px !important;
+        }
+
+        /* 비고 높이 - 2페이지용 (축소 유지) */
+        .auto-minutes-notes,
+        textarea.auto-minutes-notes {
+            height: 50px !important;
+            min-height: 50px !important;
+            max-height: 50px !important;
+            overflow: hidden !important;
+            font-size: 11px !important;
+            line-height: 1.4 !important;
+            padding: 5px 8px !important;
         }
 
         th[style*="특이사항"] {
             height: 60px !important;
         }
 
+        /* 장소 및 일시 필드 - 글씨 잘림 방지 (모든 페이지 공통) */
+        .auto-location,
+        .auto-datetime,
+        input.auto-location,
+        input.auto-datetime,
+        span.auto-datetime-proposal {
+            min-height: 30px !important;
+            height: auto !important;
+            max-height: none !important;
+            padding: 8px 10px !important;
+            line-height: 1.6 !important;
+            box-sizing: border-box !important;
+            overflow: visible !important;
+            white-space: normal !important;
+            word-wrap: break-word !important;
+            word-break: keep-all !important;
+            text-align: left !important;
+            font-size: 12px !important;
+            border: none !important;
+            background: white !important;
+            width: 100% !important;
+            display: block !important;
+        }
+
+        /* 장소 셀 높이 자동 조정 */
+        .auto-location-cell,
+        .auto-datetime-cell,
+        td:has(.auto-location),
+        td:has(.auto-datetime),
+        td.auto-location-cell,
+        td.auto-datetime-cell {
+            height: auto !important;
+            max-height: none !important;
+            min-height: 50px !important;
+            padding: 10px 12px !important;
+            vertical-align: middle !important;
+            overflow: visible !important;
+            white-space: normal !important;
+            word-wrap: break-word !important;
+        }
+
+        /* 참석자 서명 테이블 스타일 - 3페이지 */
+        #attendee-signature-table {
+            width: 100% !important;
+            border-collapse: collapse !important;
+        }
+
+        #attendee-signature-table tr {
+            height: 60px !important;
+        }
+
+        #attendee-signature-table td {
+            min-height: 60px !important;
+            height: 60px !important;
+            padding: 10px !important;
+            vertical-align: middle !important;
+        }
+
+        #attendee-signature-table th {
+            height: 70px !important;
+            font-size: 14px !important;
+        }
+
+        .attendee-sig-name,
+        .attendee-sig-dept {
+            min-height: 35px !important;
+            height: 35px !important;
+            line-height: 35px !important;
+            font-size: 13px !important;
+        }
+
         @page {
-            margin: 0;
+            margin: 1.5cm 1.2cm 1cm 1.2cm;
             size: A4;
         }
 
         @media print {
             body {
-                margin: 1.5cm;
+                margin: 0;
             }
         }
     </style>
