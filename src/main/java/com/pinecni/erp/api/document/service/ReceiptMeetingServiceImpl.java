@@ -493,44 +493,6 @@ public class ReceiptMeetingServiceImpl implements ReceiptMeetingService {
                 .collect(Collectors.toList());
     }
 
-    @Override
-    @Transactional
-    public String generateAndSavePdf(Long receiptMeetingIdx, String htmlContent, Long createdUserIdx) throws Exception {
-        log.debug("연구비증빙 회의록 PDF 생성 시작 - receiptMeetingIdx: {}", receiptMeetingIdx);
-
-        // 1. 회의록 조회
-        ReceiptMeeting meeting = receiptMeetingRepository.findById(receiptMeetingIdx)
-                .orElseThrow(() -> new IllegalArgumentException("회의록을 찾을 수 없습니다. IDX: " + receiptMeetingIdx));
-
-        // 2. HTML을 PDF로 변환
-        byte[] pdfBytes = pdfGenerationService.generatePdfFromRenderedHtml(htmlContent);
-
-        // 3. PDF 파일 정보 생성
-        String year = String.valueOf(LocalDate.now().getYear());
-        String date = meeting.getMeetingDate().format(DateTimeFormatter.ofPattern("yyyy-MM-dd"));
-        String fileName = String.format("회의록_%s_%s.pdf",
-                meeting.getDocumentNumber() != null ? meeting.getDocumentNumber() : receiptMeetingIdx,
-                LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyyMMddHHmmss")));
-
-        // 4. PDF 파일 저장
-        String filePath = pdfGenerationService.saveReceiptMeetingPdf(pdfBytes, fileName, year, date);
-
-        // 5. DB에 PDF 메타데이터 저장
-        ReceiptMeetingOfficialPdf pdfEntity = ReceiptMeetingOfficialPdf.builder()
-                .receiptMeetingIdx(receiptMeetingIdx)
-                .filePath(filePath)
-                .fileName(fileName)
-                .fileSize((long) pdfBytes.length)
-                .createdUserIdx(createdUserIdx)
-                .build();
-
-        pdfRepository.save(pdfEntity);
-
-        log.info("연구비증빙 회의록 PDF 생성 및 저장 완료 - filePath: {}", filePath);
-
-        return filePath;
-    }
-
     /**
      * 시간대 겹침 확인 유틸리티 메서드
      * @param start1 시작 시간 1
