@@ -1981,17 +1981,20 @@ document.addEventListener('DOMContentLoaded', async function() {
                             const meeting = duplicate.meeting;
                             const meetingDate = meeting.meetingDate || '';
                             const projectName = meeting.projectName || '알 수 없는 프로젝트';
-                            const timeRange = meeting.startTime && meeting.endTime
-                                ? `${meeting.startTime.substring(0, 5)} ~ ${meeting.endTime.substring(0, 5)}`
-                                : '';
+                            const documentType = meeting.type || '회의록';
 
-                            await showWarning(
-                                `저장할 수 없습니다.<br><br>` +
-                                `동일 날짜 및 시간대에 이미 다른 회의에 참석 중인 인원이 있습니다.<br><br>` +
-                                `회의 날짜: ${meetingDate}<br>` +
-                                `회의 시간: ${timeRange}<br>` +
-                                `프로젝트: <strong>[${projectName}]</strong>`
-                            );
+                            let message = `저장할 수 없습니다.<br><br>`;
+                            message += `동일 날짜에 이미 다른 ${documentType}에 참석 중인 인원이 있습니다.<br><br>`;
+                            message += `${documentType === '회의록' ? '회의' : '야근'} 날짜: ${meetingDate}<br>`;
+
+                            if (meeting.startTime && meeting.endTime) {
+                                const timeRange = `${meeting.startTime.substring(0, 5)} ~ ${meeting.endTime.substring(0, 5)}`;
+                                message += `${documentType === '회의록' ? '회의' : '야근'} 시간: ${timeRange}<br>`;
+                            }
+
+                            message += `프로젝트: <strong>[${projectName}]</strong>`;
+
+                            await showWarning(message);
                             return;
                         }
                         console.log('[중복 검증 완료] 중복 없음');
@@ -2126,7 +2129,7 @@ document.addEventListener('DOMContentLoaded', async function() {
             const saveData = {
                 projectIdx: parseInt(projectIdxInput.value),
                 cardIdx: cardIdxInput && cardIdxInput.value ? parseInt(cardIdxInput.value) : null,
-                authorId: authorIdInput && authorIdInput.value ? parseInt(authorIdInput.value) : null,
+                authorIdx: authorIdInput && authorIdInput.value ? parseInt(authorIdInput.value) : null,
                 meetingDate: dateInput.value,
                 startTime: startTimeInput.value + ':00',  // HH:mm:ss 형식
                 endTime: endTimeInput.value + ':00',
@@ -2188,7 +2191,15 @@ document.addEventListener('DOMContentLoaded', async function() {
                     const result = await response.json();
 
                     hideLoading();
-                    await showSuccess('회의록이 저장되었습니다.');
+                    await Swal.fire({
+                        icon: 'success',
+                        title: '저장 완료',
+                        text: '회의록이 저장되었습니다.',
+                        timer: 3000,
+                        timerProgressBar: true,
+                        showConfirmButton: false,
+                        allowOutsideClick: false
+                    });
 
                     // 저장 후 목록 페이지로 이동
                     window.location.href = '/project/documents';
@@ -2940,16 +2951,19 @@ document.addEventListener('DOMContentLoaded', async function() {
                     const meeting = duplicate.meeting;
                     const meetingDate = meeting.meetingDate || '';
                     const projectName = meeting.projectName || '알 수 없는 프로젝트';
-                    const timeRange = meeting.startTime && meeting.endTime
-                        ? `${meeting.startTime.substring(0, 5)} ~ ${meeting.endTime.substring(0, 5)}`
-                        : '';
+                    const documentType = meeting.type || '회의록';
 
-                    await showWarning(
-                        `동일 날짜 및 시간대에 이미 다른 회의에 참석 중인 인원이 있습니다.<br><br>` +
-                        `회의 날짜: ${meetingDate}<br>` +
-                        `회의 시간: ${timeRange}<br>` +
-                        `프로젝트: <strong>[${projectName}]</strong>`
-                    );
+                    let message = `동일 날짜에 이미 다른 ${documentType}에 참석 중인 인원이 있습니다.<br><br>`;
+                    message += `${documentType === '회의록' ? '회의' : '야근'} 날짜: ${meetingDate}<br>`;
+
+                    if (meeting.startTime && meeting.endTime) {
+                        const timeRange = `${meeting.startTime.substring(0, 5)} ~ ${meeting.endTime.substring(0, 5)}`;
+                        message += `${documentType === '회의록' ? '회의' : '야근'} 시간: ${timeRange}<br>`;
+                    }
+
+                    message += `프로젝트: <strong>[${projectName}]</strong>`;
+
+                    await showWarning(message);
                     return;
                 }
             } catch (error) {
@@ -3859,7 +3873,7 @@ document.addEventListener('DOMContentLoaded', async function() {
             const updateData = {
                 projectIdx: parseInt(projectIdxInput.value),
                 cardIdx: cardIdxInput?.value ? parseInt(cardIdxInput.value) : null,
-                authorId: authorIdInput?.value ? parseInt(authorIdInput.value) : null,
+                authorIdx: authorIdInput?.value ? parseInt(authorIdInput.value) : null,
                 meetingDate: dateInput.value,
                 startTime: startTimeInput.value + ':00',
                 endTime: endTimeInput.value + ':00',
@@ -3901,7 +3915,15 @@ document.addEventListener('DOMContentLoaded', async function() {
 
                 // 성공
                 if (response.ok) {
-                    showSuccess('회의록이 수정되었습니다.');
+                    await Swal.fire({
+                        icon: 'success',
+                        title: '수정 완료',
+                        text: '수정되었습니다!',
+                        timer: 3000,
+                        timerProgressBar: true,
+                        showConfirmButton: false,
+                        allowOutsideClick: false
+                    });
                     window.location.reload();
                     return;
                 }

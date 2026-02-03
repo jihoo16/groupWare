@@ -101,6 +101,12 @@ public class ReceiptMeeting {
     @Column(name = "deleted_user_idx")
     private Long deletedUserIdx;
 
+    @Column(name = "created_user_idx")
+    private Long createdUserIdx;
+
+    @Column(name = "updated_user_idx")
+    private Long updatedUserIdx;
+
     // 관계 매핑
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "project_idx", insertable = false, updatable = false)

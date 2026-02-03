@@ -30,6 +30,11 @@ public class ReceiptMeetingUpdateDTO {
     private Long cardIdx;
 
     /**
+     * 작성자 IDX
+     */
+    private Long authorIdx;
+
+    /**
      * 회의 일자
      */
     private LocalDate meetingDate;

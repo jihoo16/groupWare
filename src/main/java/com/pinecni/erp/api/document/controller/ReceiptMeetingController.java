@@ -6,6 +6,7 @@ import com.pinecni.erp.api.document.dto.ReceiptMeetingCreateDTO;
 import com.pinecni.erp.api.document.dto.ReceiptMeetingDTO;
 import com.pinecni.erp.api.document.dto.ReceiptMeetingUpdateDTO;
 import com.pinecni.erp.api.document.service.ReceiptMeetingService;
+import jakarta.servlet.http.HttpSession;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
@@ -113,11 +114,10 @@ public class ReceiptMeetingController {
     public ResponseEntity<?> createReceiptMeeting(
             @RequestPart("data") String dataJson,
             @RequestPart(value = "files", required = false) MultipartFile[] files,
-            jakarta.servlet.http.HttpSession session) {
+            HttpSession session) {
 
         // 세션에서 현재 로그인한 사용자 정보 가져오기
         Long currentUserIdx = (Long) session.getAttribute("userIdx");
-        String currentUserName = (String) session.getAttribute("empName");
 
         if (currentUserIdx == null) {
             log.error("로그인 정보가 없습니다.");
@@ -128,14 +128,11 @@ public class ReceiptMeetingController {
             // JSON 문자열을 DTO로 변환
             ReceiptMeetingCreateDTO createDTO = objectMapper.readValue(dataJson, ReceiptMeetingCreateDTO.class);
 
-            // 담당자 정보 자동 설정
-            createDTO.setAuthorIdx(currentUserIdx);
-
             log.debug("POST /api/receipt-meetings - projectIdx: {}, authorIdx: {}, 파일 개수: {}",
-                    createDTO.getProjectIdx(), currentUserIdx, files != null ? files.length : 0);
+                    createDTO.getProjectIdx(), createDTO.getAuthorIdx(), files != null ? files.length : 0);
 
             // 회의록 생성
-            ReceiptMeetingDTO receiptMeeting = receiptMeetingService.createReceiptMeeting(createDTO);
+            ReceiptMeetingDTO receiptMeeting = receiptMeetingService.createReceiptMeeting(createDTO, currentUserIdx);
 
             // 첨부파일 저장
             if (files != null && files.length > 0) {
@@ -160,11 +157,13 @@ public class ReceiptMeetingController {
     @PutMapping("/{idx}")
     public ResponseEntity<ReceiptMeetingDTO> updateReceiptMeeting(
             @PathVariable Long idx,
-            @RequestBody ReceiptMeetingUpdateDTO updateDTO) {
+            @RequestBody ReceiptMeetingUpdateDTO updateDTO,
+            HttpSession session) {
         log.debug("PUT /api/receipt-meetings/{}", idx);
 
+        Long currentUserIdx = (Long) session.getAttribute("userIdx");
         try {
-            ReceiptMeetingDTO receiptMeeting = receiptMeetingService.updateReceiptMeeting(idx, updateDTO);
+            ReceiptMeetingDTO receiptMeeting = receiptMeetingService.updateReceiptMeeting(idx, updateDTO,currentUserIdx);
             return ResponseEntity.ok(receiptMeeting);
         } catch (IllegalArgumentException e) {
             log.error("회의록 수정 실패: {}", e.getMessage());
