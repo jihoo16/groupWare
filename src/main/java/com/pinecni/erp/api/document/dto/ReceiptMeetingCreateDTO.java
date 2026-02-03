@@ -35,11 +35,6 @@ public class ReceiptMeetingCreateDTO {
     private Long authorIdx;
 
     /**
-     * 작성자 이름
-     */
-    private String authorName;
-
-    /**
      * 회의 일자
      */
     private LocalDate meetingDate;
