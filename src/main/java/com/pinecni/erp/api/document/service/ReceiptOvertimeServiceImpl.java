@@ -4,10 +4,10 @@ import com.pinecni.erp.api.approval.repository.ApprovalDocumentRepository;
 import com.pinecni.erp.api.document.dto.ReceiptOvertimeAttachmentDTO;
 import com.pinecni.erp.api.document.dto.ReceiptOvertimeCreateDTO;
 import com.pinecni.erp.api.document.dto.ReceiptOvertimeDTO;
-import com.pinecni.erp.api.document.dto.ReceiptOvertimePersonDTO;
+import com.pinecni.erp.api.document.dto.ReceiptOvertimeAttendeeDTO;
 import com.pinecni.erp.api.document.mapper.ReceiptOvertimeMapper;
 import com.pinecni.erp.api.document.repository.ReceiptOvertimeAttachmentRepository;
-import com.pinecni.erp.api.document.repository.ReceiptOvertimePersonRepository;
+import com.pinecni.erp.api.document.repository.ReceiptOvertimeAttendeeRepository;
 import com.pinecni.erp.api.document.repository.ReceiptOvertimeRepository;
 import com.pinecni.erp.api.project.repository.ProjectRepository;
 import com.pinecni.erp.entity.*;
@@ -44,7 +44,7 @@ import java.util.stream.Collectors;
 public class ReceiptOvertimeServiceImpl implements ReceiptOvertimeService {
 
     private final ReceiptOvertimeRepository receiptOvertimeRepository;
-    private final ReceiptOvertimePersonRepository personRepository;
+    private final ReceiptOvertimeAttendeeRepository attendeeRepository;
     private final ReceiptOvertimeAttachmentRepository attachmentRepository;
     private final ReceiptOvertimeMapper mapper;
     private final ApprovalDocumentRepository approvalDocumentRepository;
@@ -72,10 +72,10 @@ public class ReceiptOvertimeServiceImpl implements ReceiptOvertimeService {
         ReceiptOvertime entity = receiptOvertimeRepository.findById(idx)
                 .orElseThrow(() -> new IllegalArgumentException("야근식대를 찾을 수 없습니다. idx: " + idx));
 
-        List<ReceiptOvertimePerson> persons = personRepository.findByReceiptOvertimeIdx(idx);
+        List<ReceiptOvertimeAttendee> attendees = attendeeRepository.findByReceiptOvertimeIdx(idx);
         List<ReceiptOvertimeAttachment> attachments = attachmentRepository.findByReceiptOvertimeIdx(idx);
 
-        return mapper.toDTOWithDetails(entity, persons, attachments);
+        return mapper.toDTOWithDetails(entity, attendees, attachments);
     }
 
     @Override
@@ -86,10 +86,10 @@ public class ReceiptOvertimeServiceImpl implements ReceiptOvertimeService {
         ReceiptOvertime entity = receiptOvertimeRepository.findByDocumentIdx(documentIdx)
                 .orElseThrow(() -> new IllegalArgumentException("야근식대를 찾을 수 없습니다. documentIdx: " + documentIdx));
 
-        List<ReceiptOvertimePerson> persons = personRepository.findByReceiptOvertimeIdx(entity.getId());
+        List<ReceiptOvertimeAttendee> attendees = attendeeRepository.findByReceiptOvertimeIdx(entity.getId());
         List<ReceiptOvertimeAttachment> attachments = attachmentRepository.findByReceiptOvertimeIdx(entity.getId());
 
-        return mapper.toDTOWithDetails(entity, persons, attachments);
+        return mapper.toDTOWithDetails(entity, attendees, attachments);
     }
 
     @Override
@@ -164,7 +164,7 @@ public class ReceiptOvertimeServiceImpl implements ReceiptOvertimeService {
             entity.setDocumentNumber(documentNumber);
             entity.setDocumentIdx(savedDocument.getIdx());
             entity.setAuthorIdx(createDTO.getAuthorIdx());
-            entity.setAuthorName(createDTO.getAuthorName());
+            entity.setCardIdx(createDTO.getCardIdx());
             entity.setOvertimeDate(createDTO.getOvertimeDate());
             entity.setApprovalDate(createDTO.getApprovalDate());
             entity.setDocumentTitle(createDTO.getDocumentTitle());
@@ -177,32 +177,32 @@ public class ReceiptOvertimeServiceImpl implements ReceiptOvertimeService {
 
             entity = receiptOvertimeRepository.save(entity);
 
-            // 5. 인원 목록 저장
-            if (createDTO.getPersons() != null && !createDTO.getPersons().isEmpty()) {
+            // 5. 참석자 목록 저장
+            if (createDTO.getAttendees() != null && !createDTO.getAttendees().isEmpty()) {
                 final ReceiptOvertime savedOvertime = entity;
-                List<ReceiptOvertimePerson> persons = createDTO.getPersons().stream()
+                List<ReceiptOvertimeAttendee> attendees = createDTO.getAttendees().stream()
                         .map(dto -> {
-                            ReceiptOvertimePerson person = new ReceiptOvertimePerson();
-                            person.setReceiptOvertimeIdx(savedOvertime);
-                            person.setName(dto.getName());
-                            person.setWorkTime(dto.getWorkTime());
-                            person.setWorkTask(dto.getWorkTask());
-                            person.setCreatedAt(now);
-                            person.setUpdatedAt(now);
-                            return person;
+                            ReceiptOvertimeAttendee attendee = new ReceiptOvertimeAttendee();
+                            attendee.setReceiptOvertimeIdx(savedOvertime);
+                            attendee.setUserIdx(dto.getUserIdx());
+                            attendee.setWorkTime(dto.getWorkTime());
+                            attendee.setWorkTask(dto.getWorkTask());
+                            attendee.setCreatedAt(now);
+                            attendee.setUpdatedAt(now);
+                            return attendee;
                         })
                         .collect(Collectors.toList());
-                personRepository.saveAll(persons);
+                attendeeRepository.saveAll(attendees);
             }
 
             // 6. 저장된 데이터 재조회
-            List<ReceiptOvertimePerson> savedPersons = personRepository.findByReceiptOvertimeIdx(entity.getId());
+            List<ReceiptOvertimeAttendee> savedAttendees = attendeeRepository.findByReceiptOvertimeIdx(entity.getId());
 
             // 7. PDF 생성 및 저장
             generateAndSaveReceiptOvertimePdf(createDTO, entity, savedDocument);
 
             log.info("야근식대 생성 완료 - idx: {}, documentNumber: {}", entity.getId(), documentNumber);
-            return mapper.toDTOWithDetails(entity, savedPersons, Collections.emptyList());
+            return mapper.toDTOWithDetails(entity, savedAttendees, Collections.emptyList());
 
         } catch (Exception e) {
             log.error("연구비증빙 야근식대 생성 실패 - projectIdx: {}, authorIdx: {}, error: {}",
@@ -240,25 +240,25 @@ public class ReceiptOvertimeServiceImpl implements ReceiptOvertimeService {
 
             entity = receiptOvertimeRepository.save(entity);
 
-            // 4. 기존 인원 삭제 후 새로 저장
-            List<ReceiptOvertimePerson> existingPersons = personRepository.findByReceiptOvertimeIdx(entity.getId());
-            personRepository.deleteAll(existingPersons);
+            // 4. 기존 참석자 삭제 후 새로 저장
+            List<ReceiptOvertimeAttendee> existingAttendees = attendeeRepository.findByReceiptOvertimeIdx(entity.getId());
+            attendeeRepository.deleteAll(existingAttendees);
 
-            if (updateDTO.getPersons() != null && !updateDTO.getPersons().isEmpty()) {
+            if (updateDTO.getAttendees() != null && !updateDTO.getAttendees().isEmpty()) {
                 final ReceiptOvertime savedOvertime = entity;
-                List<ReceiptOvertimePerson> persons = updateDTO.getPersons().stream()
+                List<ReceiptOvertimeAttendee> attendees = updateDTO.getAttendees().stream()
                         .map(dto -> {
-                            ReceiptOvertimePerson person = new ReceiptOvertimePerson();
-                            person.setReceiptOvertimeIdx(savedOvertime);
-                            person.setName(dto.getName());
-                            person.setWorkTime(dto.getWorkTime());
-                            person.setWorkTask(dto.getWorkTask());
-                            person.setCreatedAt(now);
-                            person.setUpdatedAt(now);
-                            return person;
+                            ReceiptOvertimeAttendee attendee = new ReceiptOvertimeAttendee();
+                            attendee.setReceiptOvertimeIdx(savedOvertime);
+                            attendee.setUserIdx(dto.getUserIdx());
+                            attendee.setWorkTime(dto.getWorkTime());
+                            attendee.setWorkTask(dto.getWorkTask());
+                            attendee.setCreatedAt(now);
+                            attendee.setUpdatedAt(now);
+                            return attendee;
                         })
                         .collect(Collectors.toList());
-                personRepository.saveAll(persons);
+                attendeeRepository.saveAll(attendees);
             }
 
             // 5. ApprovalDocument 제목 업데이트
@@ -276,7 +276,7 @@ public class ReceiptOvertimeServiceImpl implements ReceiptOvertimeService {
             }
 
             // 6. 저장된 데이터 재조회
-            List<ReceiptOvertimePerson> savedPersons = personRepository.findByReceiptOvertimeIdx(entity.getId());
+            List<ReceiptOvertimeAttendee> savedAttendees = attendeeRepository.findByReceiptOvertimeIdx(entity.getId());
             List<ReceiptOvertimeAttachment> attachments = attachmentRepository.findByReceiptOvertimeIdx(entity.getId());
 
             // 7. PDF 재생성 및 저장
@@ -288,7 +288,7 @@ public class ReceiptOvertimeServiceImpl implements ReceiptOvertimeService {
             }
 
             log.info("야근식대 수정 완료 - idx: {}", entity.getId());
-            return mapper.toDTOWithDetails(entity, savedPersons, attachments);
+            return mapper.toDTOWithDetails(entity, savedAttendees, attachments);
 
         } catch (Exception e) {
             log.error("연구비증빙 야근식대 수정 실패 - idx: {}, error: {}", idx, e.getMessage(), e);
