@@ -130,10 +130,9 @@ public class ReceiptMeetingController {
 
             // 담당자 정보 자동 설정
             createDTO.setAuthorIdx(currentUserIdx);
-            createDTO.setAuthorName(currentUserName);
 
-            log.debug("POST /api/receipt-meetings - projectIdx: {}, authorIdx: {}, authorName: {}, 파일 개수: {}",
-                    createDTO.getProjectIdx(), currentUserIdx, currentUserName, files != null ? files.length : 0);
+            log.debug("POST /api/receipt-meetings - projectIdx: {}, authorIdx: {}, 파일 개수: {}",
+                    createDTO.getProjectIdx(), currentUserIdx, files != null ? files.length : 0);
 
             // 회의록 생성
             ReceiptMeetingDTO receiptMeeting = receiptMeetingService.createReceiptMeeting(createDTO);

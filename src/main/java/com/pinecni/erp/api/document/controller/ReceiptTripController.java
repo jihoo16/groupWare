@@ -89,7 +89,6 @@ public class ReceiptTripController {
 
         // 작성자 정보 자동 설정
         createDTO.setAuthorIdx(currentUserIdx);
-        createDTO.setAuthorName(currentUserName);
 
         log.debug("POST /api/receipt-trips - projectIdx: {}, authorIdx: {}, authorName: {}",
                 createDTO.getProjectIdx(), currentUserIdx, currentUserName);
