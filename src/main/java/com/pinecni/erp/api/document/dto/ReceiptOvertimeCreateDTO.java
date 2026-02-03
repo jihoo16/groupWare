@@ -67,4 +67,19 @@ public class ReceiptOvertimeCreateDTO {
      * 야근 인원 목록
      */
     private List<ReceiptOvertimePersonDTO> persons;
+
+    /**
+     * 품의서 렌더링된 HTML (PDF 생성용)
+     */
+    private String approvalHtml;
+
+    /**
+     * 야근신청서 렌더링된 HTML (PDF 생성용)
+     */
+    private String overtimeHtml;
+
+    /**
+     * 렌더링된 CSS (PDF 생성용)
+     */
+    private String renderedCss;
 }

@@ -864,7 +864,7 @@ document.addEventListener('DOMContentLoaded', async function() {
 
             const totalCount = overtimePersons.filter(p => p.name).length;
 
-            const contentText = `야근석식대\n- 인원 : 총 ${totalCount}인\n- ${names}`;
+            const contentText = `야근식대\n- 인원 : 총 ${totalCount}인\n- ${names}`;
             otContent.value = contentText;
 
             // 품의서에도 품의 내용 표시
@@ -1278,6 +1278,71 @@ document.addEventListener('DOMContentLoaded', async function() {
         });
     }
 
+    // ============================================
+    // PDF 생성용 렌더링된 문서 캡처 (품의서, 야근신청서 각각)
+    // ============================================
+    function captureRenderedDocument() {
+        const documentForm = document.querySelector('.document-form');
+        if (!documentForm) {
+            console.error('문서 양식을 찾을 수 없습니다.');
+            return { approvalHtml: '', overtimeHtml: '', css: '' };
+        }
+
+        // 문서 영역 가져오기 (첫 번째: 품의서, 두 번째: 야근신청서)
+        const allDivs = documentForm.querySelectorAll(':scope > div');
+        if (allDivs.length < 2) {
+            console.error('문서 구조를 찾을 수 없습니다.');
+            return { approvalHtml: '', overtimeHtml: '', css: '' };
+        }
+
+        // 품의서 HTML 캡처 (첫 번째 div)
+        let approvalHtml = '';
+        if (allDivs[0]) {
+            const clonedApproval = allDivs[0].cloneNode(true);
+            clonedApproval.querySelectorAll('button, input[type="button"]').forEach(el => el.remove());
+            approvalHtml = clonedApproval.outerHTML;
+        }
+
+        // 야근신청서 HTML 캡처 (두 번째 div)
+        let overtimeHtml = '';
+        if (allDivs[1]) {
+            const clonedOvertime = allDivs[1].cloneNode(true);
+            clonedOvertime.querySelectorAll('button, input[type="button"]').forEach(el => el.remove());
+            overtimeHtml = clonedOvertime.outerHTML;
+        }
+
+        // CSS 수집 (approval_receipt_overtime.css만) + 추가 스타일
+        let collectedCss = `
+            body { margin: 0; padding: 20px; font-family: 'Malgun Gothic', sans-serif; }
+            .form-table { width: 100%; border-collapse: collapse; }
+            .form-table th, .form-table td { border: 1px solid #000; padding: 8px; }
+            .form-table th { background: #f5f5f5; font-weight: bold; }
+            .doc-title { text-align: center; margin: 20px 0; }
+        `;
+        try {
+            Array.from(document.styleSheets).forEach(sheet => {
+                try {
+                    if (sheet.href && sheet.href.includes('approval_receipt_overtime.css')) {
+                        const rules = Array.from(sheet.cssRules || sheet.rules);
+                        rules.forEach(rule => {
+                            collectedCss += rule.cssText + '\n';
+                        });
+                    }
+                } catch (e) {
+                    console.warn('스타일시트 접근 불가:', sheet.href, e);
+                }
+            });
+        } catch (error) {
+            console.error('CSS 수집 중 오류:', error);
+        }
+
+        return {
+            approvalHtml: approvalHtml,
+            overtimeHtml: overtimeHtml,
+            css: collectedCss
+        };
+    }
+
     // 제출 (저장하기)
     if (submitBtn) {
         submitBtn.addEventListener('click', async function() {
@@ -1307,6 +1372,19 @@ document.addEventListener('DOMContentLoaded', async function() {
 
             if (!otTitle?.value) {
                 showWarning('품의명을 입력해주세요.');
+                return;
+            }
+
+            // 총 공급가액 검증
+            const amountValidation = parseInt((otAmount?.value || '').replace(/,/g, '')) || 0;
+            if (amountValidation <= 0) {
+                showWarning('총 공급가액을 입력해주세요.');
+                return;
+            }
+
+            // 품의내용 검증
+            if (!otContent?.value || !otContent.value.trim()) {
+                showWarning('품의내용을 입력해주세요.');
                 return;
             }
 
@@ -1361,6 +1439,10 @@ document.addEventListener('DOMContentLoaded', async function() {
             // 시간 범위 문자열 생성
             const workTimeStr = `${otStartTime.value} ~ ${otEndTime.value}`;
 
+            // 렌더링된 문서 HTML/CSS 캡처 (PDF 생성용 - 품의서, 야근신청서 각각)
+            const captured = captureRenderedDocument();
+            console.log('PDF용 HTML 캡처 완료 - 품의서:', captured.approvalHtml.length, 'bytes, 야근신청서:', captured.overtimeHtml.length, 'bytes');
+
             // 데이터 준비 (새로운 DTO 구조에 맞게)
             const data = {
                 projectIdx: parseInt(projectIdx),
@@ -1374,7 +1456,10 @@ document.addEventListener('DOMContentLoaded', async function() {
                     name: person.name,
                     workTime: workTimeStr,
                     workTask: taskContent
-                }))
+                })),
+                approvalHtml: captured.approvalHtml,
+                overtimeHtml: captured.overtimeHtml,
+                renderedCss: captured.css
             };
 
             // FormData 생성
@@ -1418,10 +1503,13 @@ document.addEventListener('DOMContentLoaded', async function() {
                         }
                     }
 
-                    showSuccess(isEditMode ? '야근식대가 수정되었습니다.' : '야근식대가 저장되었습니다.');
+                    const successMessage = isEditMode
+                        ? '야근식대가 수정되었습니다.\nPDF 파일 2개(품의서, 야근신청서)가 저장되었습니다.'
+                        : '야근식대가 저장되었습니다.\nPDF 파일 2개(품의서, 야근신청서)가 저장되었습니다.';
+                    showSuccess(successMessage);
                     setTimeout(() => {
                         window.location.href = '/project/documents';
-                    }, 1500);
+                    }, 2000);
                 } else {
                     const error = await response.json();
                     showError(error.error || '저장 중 오류가 발생했습니다.');

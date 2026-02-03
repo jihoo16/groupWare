@@ -49,6 +49,7 @@ public class ReceiptOvertimeServiceImpl implements ReceiptOvertimeService {
     private final ReceiptOvertimeMapper mapper;
     private final ApprovalDocumentRepository approvalDocumentRepository;
     private final ProjectRepository projectRepository;
+    private final PdfGenerationService pdfGenerationService;
 
     @Value("${file.upload.path:/uploads/receipt-overtimes}")
     private String uploadPath;
@@ -197,6 +198,9 @@ public class ReceiptOvertimeServiceImpl implements ReceiptOvertimeService {
             // 6. 저장된 데이터 재조회
             List<ReceiptOvertimePerson> savedPersons = personRepository.findByReceiptOvertimeIdx(entity.getId());
 
+            // 7. PDF 생성 및 저장
+            generateAndSaveReceiptOvertimePdf(createDTO, entity, savedDocument);
+
             log.info("야근식대 생성 완료 - idx: {}, documentNumber: {}", entity.getId(), documentNumber);
             return mapper.toDTOWithDetails(entity, savedPersons, Collections.emptyList());
 
@@ -274,6 +278,14 @@ public class ReceiptOvertimeServiceImpl implements ReceiptOvertimeService {
             // 6. 저장된 데이터 재조회
             List<ReceiptOvertimePerson> savedPersons = personRepository.findByReceiptOvertimeIdx(entity.getId());
             List<ReceiptOvertimeAttachment> attachments = attachmentRepository.findByReceiptOvertimeIdx(entity.getId());
+
+            // 7. PDF 재생성 및 저장
+            final ReceiptOvertime savedEntity = entity;
+            if (savedEntity.getDocumentIdx() != null) {
+                approvalDocumentRepository.findById(savedEntity.getDocumentIdx()).ifPresent(approvalDocument -> {
+                    generateAndSaveReceiptOvertimePdf(updateDTO, savedEntity, approvalDocument);
+                });
+            }
 
             log.info("야근식대 수정 완료 - idx: {}", entity.getId());
             return mapper.toDTOWithDetails(entity, savedPersons, attachments);
@@ -441,5 +453,83 @@ public class ReceiptOvertimeServiceImpl implements ReceiptOvertimeService {
                 .orElseThrow(() -> new IllegalArgumentException("첨부파일을 찾을 수 없습니다. idx: " + attachmentIdx));
 
         return mapper.toAttachmentDTO(attachment);
+    }
+
+    /**
+     * 연구비증빙 야근식대 PDF 생성 및 저장 (품의서, 야근신청서 각각 저장)
+     *
+     * @param createDTO     생성 요청 DTO (렌더링된 HTML/CSS 포함)
+     * @param saved         저장된 ReceiptOvertime 엔티티
+     * @param savedDocument 저장된 ApprovalDocument 엔티티
+     */
+    private void generateAndSaveReceiptOvertimePdf(ReceiptOvertimeCreateDTO createDTO,
+                                                    ReceiptOvertime saved,
+                                                    ApprovalDocument savedDocument) {
+        String year = String.valueOf(LocalDateTime.now().getYear());
+        String projectIdx = saved.getProjectIdx() != null ? saved.getProjectIdx().getIdx().toString() : "0";
+        String overtimeDate = saved.getOvertimeDate() != null ?
+            saved.getOvertimeDate().format(DateTimeFormatter.ofPattern("yyyyMMdd")) :
+            LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyyMMdd"));
+        String renderedCss = createDTO.getRenderedCss() != null ? createDTO.getRenderedCss() : "";
+
+        // 1. 품의서 PDF 생성
+        try {
+            if (createDTO.getApprovalHtml() != null && !createDTO.getApprovalHtml().isEmpty()) {
+                log.info("[품의서 PDF 생성] documentIdx: {}, receiptOvertimeId: {}",
+                         savedDocument.getIdx(), saved.getId());
+
+                String fullHtml = buildFullHtml("품의서", createDTO.getApprovalHtml(), renderedCss);
+                byte[] pdfBytes = pdfGenerationService.generatePdfFromRenderedHtml(fullHtml);
+
+                String fileName = String.format("품의서_%s_%s.pdf", overtimeDate, projectIdx);
+                String savePath = pdfGenerationService.saveReceiptOvertimePdf(pdfBytes, fileName, year, projectIdx);
+                log.info("[품의서 PDF 저장 완료] path: {}", savePath);
+            } else {
+                log.warn("[품의서 PDF 생성 스킵] approvalHtml이 비어있음 - documentIdx: {}", savedDocument.getIdx());
+            }
+        } catch (Exception e) {
+            log.error("[품의서 PDF 생성 실패] documentIdx: {}, error: {}", savedDocument.getIdx(), e.getMessage(), e);
+        }
+
+        // 2. 야근신청서 PDF 생성
+        try {
+            if (createDTO.getOvertimeHtml() != null && !createDTO.getOvertimeHtml().isEmpty()) {
+                log.info("[야근신청서 PDF 생성] documentIdx: {}, receiptOvertimeId: {}",
+                         savedDocument.getIdx(), saved.getId());
+
+                String fullHtml = buildFullHtml("야근신청서", createDTO.getOvertimeHtml(), renderedCss);
+                byte[] pdfBytes = pdfGenerationService.generatePdfFromRenderedHtml(fullHtml);
+
+                String fileName = String.format("야근신청서_%s_%s.pdf", overtimeDate, projectIdx);
+                String savePath = pdfGenerationService.saveReceiptOvertimePdf(pdfBytes, fileName, year, projectIdx);
+                log.info("[야근신청서 PDF 저장 완료] path: {}", savePath);
+            } else {
+                log.warn("[야근신청서 PDF 생성 스킵] overtimeHtml이 비어있음 - documentIdx: {}", savedDocument.getIdx());
+            }
+        } catch (Exception e) {
+            log.error("[야근신청서 PDF 생성 실패] documentIdx: {}, error: {}", savedDocument.getIdx(), e.getMessage(), e);
+        }
+    }
+
+    /**
+     * 완전한 HTML 문서 빌드 (PDF 변환용)
+     */
+    private String buildFullHtml(String title, String bodyHtml, String css) {
+        return "<!DOCTYPE html>\n" +
+                "<html lang=\"ko\">\n" +
+                "<head>\n" +
+                "    <meta charset=\"UTF-8\">\n" +
+                "    <meta name=\"viewport\" content=\"width=device-width, initial-scale=1.0\">\n" +
+                "    <title>" + title + "</title>\n" +
+                "    <style>\n" +
+                "        @page { margin: 15mm 20mm; }\n" +
+                "        body { margin: 0; padding: 0; font-family: 'Malgun Gothic', sans-serif; }\n" +
+                css + "\n" +
+                "    </style>\n" +
+                "</head>\n" +
+                "<body>\n" +
+                bodyHtml + "\n" +
+                "</body>\n" +
+                "</html>";
     }
 }
