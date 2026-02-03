@@ -22,11 +22,11 @@ public class ReceiptOvertimeDTO {
     private Long idx;
     private Long projectIdx;
     private String projectName;
+    private Long cardIdx;
     private String documentNumber;
     private Long documentIdx;
     private Long authorIdx;
     private String authorUserName;  // 조회 시 users 테이블에서 가져옴
-    private Long cardIdx;
     private LocalDate overtimeDate;
     private LocalDate approvalDate;
     private String documentTitle;

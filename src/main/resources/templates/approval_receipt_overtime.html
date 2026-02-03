@@ -53,6 +53,16 @@
                                         <input type="hidden" id="selectedProjectIdx">
                                     </div>
 
+                                    <!-- 사용 카드 -->
+                                    <div class="form-group full-width">
+                                        <label for="ot_card">
+                                            <i class="fas fa-credit-card"></i> 사용 카드
+                                            <span class="required-mark">*</span>
+                                        </label>
+                                        <input type="text" id="ot_card" class="form-input clickable-input" placeholder="과제를 먼저 선택하세요" readonly onclick="openCardModal()">
+                                        <input type="hidden" id="selectedCardIdx">
+                                    </div>
+
                                     <!-- 연구책임자 & 신청자 -->
                                     <div class="form-grid">
                                         <div class="form-group">
@@ -494,6 +504,28 @@
             </div>
             <div class="modal-footer">
                 <button class="btn-secondary" onclick="closeProjectModal()">취소</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 카드 선택 모달 -->
+    <div class="modal" id="cardModal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3><i class="fas fa-credit-card"></i> 사용 카드 선택</h3>
+                <button class="modal-close" onclick="closeCardModal()">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            <div class="modal-body">
+                <div class="search-box">
+                    <i class="fas fa-search"></i>
+                    <input type="text" id="cardSearch" placeholder="카드명 또는 카드번호로 검색">
+                </div>
+                <div class="modal-item-list" id="cardList"></div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn-secondary" onclick="closeCardModal()">취소</button>
             </div>
         </div>
     </div>

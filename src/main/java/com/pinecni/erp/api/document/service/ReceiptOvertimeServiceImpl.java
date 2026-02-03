@@ -161,10 +161,10 @@ public class ReceiptOvertimeServiceImpl implements ReceiptOvertimeService {
             Instant now = LocalDateTime.now().atZone(ZoneId.of("Asia/Seoul")).toInstant();
             ReceiptOvertime entity = new ReceiptOvertime();
             entity.setProjectIdx(project);
+            entity.setCardIdx(createDTO.getCardIdx());
             entity.setDocumentNumber(documentNumber);
             entity.setDocumentIdx(savedDocument.getIdx());
             entity.setAuthorIdx(createDTO.getAuthorIdx());
-            entity.setCardIdx(createDTO.getCardIdx());
             entity.setOvertimeDate(createDTO.getOvertimeDate());
             entity.setApprovalDate(createDTO.getApprovalDate());
             entity.setDocumentTitle(createDTO.getDocumentTitle());
@@ -232,6 +232,7 @@ public class ReceiptOvertimeServiceImpl implements ReceiptOvertimeService {
 
             // 3. 엔터티 수정
             Instant now = LocalDateTime.now().atZone(ZoneId.of("Asia/Seoul")).toInstant();
+            entity.setCardIdx(updateDTO.getCardIdx());
             entity.setOvertimeDate(updateDTO.getOvertimeDate());
             entity.setApprovalDate(updateDTO.getApprovalDate());
             entity.setDocumentTitle(updateDTO.getDocumentTitle());

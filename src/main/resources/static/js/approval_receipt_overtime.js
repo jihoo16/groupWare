@@ -7,6 +7,8 @@ document.addEventListener('DOMContentLoaded', async function() {
     let projects = []; // 내가 참여한 프로젝트 목록
     let selectedProject = null; // 선택된 프로젝트
     let projectMembers = []; // 선택된 프로젝트의 참여인원
+    let projectCards = []; // 선택된 프로젝트의 카드 목록
+    let selectedCard = null; // 선택된 카드
     let tempSelectedOvertimePersons = []; // 모달에서 임시 선택된 인원
     let projectExpenses = {}; // 선택된 프로젝트의 직급별 야근석식대
 
@@ -175,6 +177,22 @@ document.addEventListener('DOMContentLoaded', async function() {
                     }
 
                     await loadProjectMembers(selectedProject.idx);
+
+                    // 카드 목록 로드
+                    await loadProjectCards(selectedProject.idx);
+
+                    // 카드 정보 설정
+                    if (data.cardIdx) {
+                        selectedCard = projectCards.find(c => c.idx === data.cardIdx);
+                        if (selectedCard) {
+                            const otCard = document.getElementById('ot_card');
+                            if (otCard) {
+                                otCard.value = selectedCard.cardName;
+                            }
+                            const selectedCardIdx = document.getElementById('selectedCardIdx');
+                            if (selectedCardIdx) selectedCardIdx.value = selectedCard.idx;
+                        }
+                    }
                 }
             }
 
@@ -458,6 +476,19 @@ document.addEventListener('DOMContentLoaded', async function() {
                 // 프로젝트 참여인원 로드
                 await loadProjectMembers(proj.idx);
 
+                // 프로젝트 카드 목록 로드
+                await loadProjectCards(proj.idx);
+
+                // 카드 선택 초기화 및 안내 문구 표시
+                selectedCard = null;
+                const otCard = document.getElementById('ot_card');
+                if (otCard) {
+                    otCard.value = '';
+                    otCard.placeholder = '클릭하여 카드 선택';
+                }
+                const selectedCardIdx = document.getElementById('selectedCardIdx');
+                if (selectedCardIdx) selectedCardIdx.value = '';
+
                 closeProjectModal();
             });
 
@@ -501,6 +532,133 @@ document.addEventListener('DOMContentLoaded', async function() {
         projectModal.addEventListener('click', function(e) {
             if (e.target === projectModal) {
                 closeProjectModal();
+            }
+        });
+    }
+
+    // ============================================
+    // 카드 선택 모달 관련
+    // ============================================
+    const cardModal = document.getElementById('cardModal');
+    const cardSearch = document.getElementById('cardSearch');
+    const cardList = document.getElementById('cardList');
+
+    // 카드 목록 로드 (프로젝트별)
+    async function loadProjectCards(projectIdx) {
+        try {
+            const response = await fetch(`/api/projects/${projectIdx}/cards`);
+            if (response.ok) {
+                projectCards = await response.json();
+                console.log('카드 목록 로드 완료:', projectCards.length + '개');
+            } else {
+                console.error('카드 목록 로드 실패:', response.status);
+                projectCards = [];
+            }
+        } catch (error) {
+            console.error('카드 목록 로드 오류:', error);
+            projectCards = [];
+        }
+    }
+
+    // 카드 목록 렌더링
+    function renderCardList(list, keyword = '') {
+        if (!cardList) return;
+        cardList.innerHTML = '';
+
+        if (list.length === 0) {
+            const emptyMessage = document.createElement('div');
+            emptyMessage.className = 'modal-empty-state';
+            emptyMessage.style.cssText = 'text-align: center; padding: 40px; color: #94a3b8;';
+            emptyMessage.innerHTML = `
+                <i class="fas fa-credit-card" style="font-size: 32px; margin-bottom: 12px; display: block;"></i>
+                <p>${keyword ? '검색 결과가 없습니다' : '등록된 카드가 없습니다'}</p>
+            `;
+            cardList.appendChild(emptyMessage);
+            return;
+        }
+
+        list.forEach(card => {
+            const item = document.createElement('div');
+            item.className = 'employee-item';
+            if (selectedCard && selectedCard.idx === card.idx) {
+                item.classList.add('selected');
+            }
+
+            const highlightedName = keyword ? highlightCardText(card.cardName, keyword) : card.cardName;
+            const highlightedNumber = keyword ? highlightCardText(card.cardNumber || '카드번호 없음', keyword) : (card.cardNumber || '카드번호 없음');
+
+            item.innerHTML = `
+                <div class="employee-info">
+                    <div class="employee-name"><i class="fas fa-credit-card" style="margin-right:6px; color:#667eea;"></i>${highlightedName}</div>
+                    <div class="employee-detail">${highlightedNumber}</div>
+                </div>
+            `;
+
+            item.addEventListener('click', function() {
+                selectedCard = card;
+
+                // 카드 입력 필드에 표시
+                const otCard = document.getElementById('ot_card');
+                if (otCard) {
+                    otCard.value = card.cardName;
+                }
+                const selectedCardIdx = document.getElementById('selectedCardIdx');
+                if (selectedCardIdx) {
+                    selectedCardIdx.value = card.idx;
+                }
+
+                closeCardModal();
+            });
+
+            cardList.appendChild(item);
+        });
+    }
+
+    function highlightCardText(text, keyword) {
+        if (!keyword || !text) return text;
+        const regex = new RegExp(`(${keyword.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')})`, 'gi');
+        return text.replace(regex, '<mark>$1</mark>');
+    }
+
+    // 카드 검색
+    if (cardSearch) {
+        cardSearch.addEventListener('input', function() {
+            const keyword = this.value.trim().toLowerCase();
+            const filtered = projectCards.filter(card =>
+                (card.cardName || '').toLowerCase().includes(keyword) ||
+                (card.cardNumber || '').toLowerCase().includes(keyword)
+            );
+            renderCardList(filtered, this.value.trim());
+        });
+    }
+
+    window.openCardModal = function() {
+        const projectIdxInput = document.getElementById('selectedProjectIdx');
+
+        if (!projectIdxInput || !projectIdxInput.value) {
+            showWarning('과제를 먼저 선택해주세요.');
+            return;
+        }
+
+        if (cardModal) {
+            cardModal.classList.add('show');
+            renderCardList(projectCards);
+            if (cardSearch) cardSearch.value = '';
+        }
+    };
+
+    window.closeCardModal = function() {
+        if (cardModal) {
+            cardModal.classList.remove('show');
+            if (cardSearch) cardSearch.value = '';
+        }
+    };
+
+    // 모달 외부 클릭 시 닫기
+    if (cardModal) {
+        cardModal.addEventListener('click', function(e) {
+            if (e.target === cardModal) {
+                closeCardModal();
             }
         });
     }
@@ -1365,6 +1523,13 @@ document.addEventListener('DOMContentLoaded', async function() {
                 return;
             }
 
+            // 카드 선택 검증
+            const cardIdx = document.getElementById('selectedCardIdx')?.value;
+            if (!cardIdx) {
+                showWarning('사용 카드를 선택해주세요.');
+                return;
+            }
+
             if (!otApprovalDate?.value) {
                 showWarning('품의일자를 입력해주세요.');
                 return;
@@ -1446,6 +1611,7 @@ document.addEventListener('DOMContentLoaded', async function() {
             // 데이터 준비 (새로운 DTO 구조에 맞게)
             const data = {
                 projectIdx: parseInt(projectIdx),
+                cardIdx: parseInt(cardIdx),
                 overtimeDate: otApprovalDate.value,
                 approvalDate: otApprovalDate.value,
                 documentTitle: otTitle.value,
