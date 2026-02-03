@@ -124,8 +124,8 @@ public class ReceiptOvertimeServiceImpl implements ReceiptOvertimeService {
 
     @Override
     @Transactional
-    public ReceiptOvertimeDTO createReceiptOvertime(ReceiptOvertimeCreateDTO createDTO) {
-        log.debug("야근식대 생성 - projectIdx: {}, authorIdx: {}", createDTO.getProjectIdx(), createDTO.getAuthorIdx());
+    public ReceiptOvertimeDTO createReceiptOvertime(ReceiptOvertimeCreateDTO createDTO, Long currentUserIdx) {
+        log.debug("야근식대 생성 - projectIdx: {}, authorIdx: {}, currentUserIdx: {}", createDTO.getProjectIdx(), createDTO.getAuthorIdx(), currentUserIdx);
 
         try {
             // 1. 프로젝트 조회
@@ -174,6 +174,8 @@ public class ReceiptOvertimeServiceImpl implements ReceiptOvertimeService {
             entity.setStatus("PENDING");
             entity.setCreatedAt(now);
             entity.setUpdatedAt(now);
+            entity.setCreatedUserIdx(currentUserIdx);
+            entity.setUpdatedUserIdx(currentUserIdx);
 
             entity = receiptOvertimeRepository.save(entity);
 
@@ -213,8 +215,8 @@ public class ReceiptOvertimeServiceImpl implements ReceiptOvertimeService {
 
     @Override
     @Transactional
-    public ReceiptOvertimeDTO updateReceiptOvertime(Long idx, ReceiptOvertimeCreateDTO updateDTO) {
-        log.debug("야근식대 수정 - idx: {}", idx);
+    public ReceiptOvertimeDTO updateReceiptOvertime(Long idx, ReceiptOvertimeCreateDTO updateDTO, Long currentUserIdx) {
+        log.debug("야근식대 수정 - idx: {}, currentUserIdx: {}", idx, currentUserIdx);
 
         try {
             // 1. 기존 야근식대 조회
@@ -237,6 +239,7 @@ public class ReceiptOvertimeServiceImpl implements ReceiptOvertimeService {
             entity.setTotalAmount(updateDTO.getTotalAmount());
             entity.setPaymentType(updateDTO.getPaymentType());
             entity.setUpdatedAt(now);
+            entity.setUpdatedUserIdx(currentUserIdx);
 
             entity = receiptOvertimeRepository.save(entity);
 
@@ -270,7 +273,7 @@ public class ReceiptOvertimeServiceImpl implements ReceiptOvertimeService {
                     }
                     approvalDocument.setTitle(title);
                     approvalDocument.setContent(updateDTO.getDocumentContent());
-                    approvalDocument.setUpdatedUserIdx(updateDTO.getAuthorIdx());
+                    approvalDocument.setUpdatedUserIdx(currentUserIdx);
                     approvalDocumentRepository.save(approvalDocument);
                 });
             }

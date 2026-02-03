@@ -45,12 +45,12 @@ public interface ReceiptOvertimeService {
     /**
      * 야근식대 생성
      */
-    ReceiptOvertimeDTO createReceiptOvertime(ReceiptOvertimeCreateDTO createDTO);
+    ReceiptOvertimeDTO createReceiptOvertime(ReceiptOvertimeCreateDTO createDTO, Long currentUserIdx);
 
     /**
      * 야근식대 수정
      */
-    ReceiptOvertimeDTO updateReceiptOvertime(Long idx, ReceiptOvertimeCreateDTO updateDTO);
+    ReceiptOvertimeDTO updateReceiptOvertime(Long idx, ReceiptOvertimeCreateDTO updateDTO, Long currentUserIdx);
 
     /**
      * 야근식대 삭제

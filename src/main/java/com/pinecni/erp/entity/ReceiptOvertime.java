@@ -74,6 +74,12 @@ public class ReceiptOvertime {
     @Column(name = "updated_at", nullable = false)
     private Instant updatedAt;
 
+    @Column(name = "created_user_idx")
+    private Long createdUserIdx;
+
+    @Column(name = "updated_user_idx")
+    private Long updatedUserIdx;
+
     @Column(name = "document_idx")
     private Long documentIdx;
 
