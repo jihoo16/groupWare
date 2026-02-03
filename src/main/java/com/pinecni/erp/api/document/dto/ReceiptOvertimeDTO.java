@@ -22,6 +22,7 @@ public class ReceiptOvertimeDTO {
     private Long idx;
     private Long projectIdx;
     private String projectName;
+    private Long cardIdx;
     private String documentNumber;
     private Long documentIdx;
     private Long authorIdx;

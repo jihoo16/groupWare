@@ -24,6 +24,11 @@ public class ReceiptOvertimeCreateDTO {
     private Long projectIdx;
 
     /**
+     * 카드 IDX
+     */
+    private Long cardIdx;
+
+    /**
      * 작성자 IDX
      */
     private Long authorIdx;
