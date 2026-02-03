@@ -1349,7 +1349,6 @@ document.addEventListener('DOMContentLoaded', async function() {
             const saveData = {
                 projectIdx: parseInt(selectedProjectIdxInput.value),
                 authorIdx: currentUser ? currentUser.idx : null,
-                authorName: currentUser ? currentUser.empName : null,
                 tripDate: dateInput.value,
                 location: locationInput.value,
                 transportationFee: totalTransportFee || null,
@@ -1949,8 +1948,8 @@ document.addEventListener('DOMContentLoaded', async function() {
 
         // 작성자
         const tripReporter = document.getElementById('trip_reporter');
-        if (tripReporter && data.authorName) {
-            tripReporter.value = data.authorName;
+        if (tripReporter && data.authorUserName) {
+            tripReporter.value = data.authorUserName;
         }
 
         // 출장 내용 및 결과

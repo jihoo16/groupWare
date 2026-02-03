@@ -1248,16 +1248,48 @@ document.addEventListener('DOMContentLoaded', async function() {
 
         // 템플릿 내에서 참석자 제거
         window.removeAttendeeInTemplate = function(attendeeId) {
+            console.log('[참석자 삭제 시도]', {
+                attendeeId: attendeeId,
+                attendeeIdType: typeof attendeeId,
+                currentAttendees: currentAttendees,
+                currentAttendeesCount: currentAttendees.length
+            });
+
             // 작성자 ID 확인
             const currentAuthorId = document.getElementById('common_author_id')?.value;
+            console.log('[작성자 ID]', currentAuthorId);
 
             // 작성자는 삭제 불가
             if (currentAuthorId && String(attendeeId) === String(currentAuthorId)) {
+                console.log('[삭제 불가] 작성자는 삭제할 수 없습니다.');
                 showWarning('작성자는 참석자에서 삭제할 수 없습니다.');
                 return;
             }
 
-            currentAttendees = currentAttendees.filter(a => a.id !== attendeeId);
+            // 삭제 전 참석자 수
+            const beforeCount = currentAttendees.length;
+
+            // String으로 변환하여 비교 (타입 불일치 방지)
+            currentAttendees = currentAttendees.filter(a => {
+                const match = String(a.id) !== String(attendeeId);
+                if (!match) {
+                    console.log('[삭제 대상 발견]', {
+                        attendeeId: a.id,
+                        attendeeName: a.name,
+                        attendeeType: a.type
+                    });
+                }
+                return match;
+            });
+
+            // 삭제 후 참석자 수
+            const afterCount = currentAttendees.length;
+            console.log('[삭제 완료]', {
+                beforeCount: beforeCount,
+                afterCount: afterCount,
+                deleted: beforeCount - afterCount
+            });
+
             renderAttendeeListInTemplate();
 
             // 모달이 열려있으면 모달도 업데이트
@@ -1734,30 +1766,71 @@ document.addEventListener('DOMContentLoaded', async function() {
     // 참석자 테이블 행 높이 자동 조정 (12명 초과 시)
     function adjustAttendeeTableHeight() {
         const attendeeTable = document.getElementById('attendee-signature-table');
-        if (!attendeeTable) return;
+        const documentFormContent = document.getElementById('documentFormContent');
+
+        if (!attendeeTable || !documentFormContent) return;
 
         const attendeeCount = currentAttendees ? currentAttendees.length : 0;
 
+        // 참석자 소속(부서) 개수 카운트
+        const uniqueDepts = new Set();
+        if (currentAttendees && currentAttendees.length > 0) {
+            currentAttendees.forEach(attendee => {
+                if (attendee.dept) {
+                    uniqueDepts.add(attendee.dept);
+                }
+            });
+        }
+        const deptCount = uniqueDepts.size;
+
+        // 소속 5개 초과 시 1페이지 칸 높이 최소화를 위한 class 추가
+        if (deptCount > 5) {
+            documentFormContent.classList.add('many-departments');
+        } else {
+            documentFormContent.classList.remove('many-departments');
+        }
+
+        // 참석자 12명 초과 시 처리
         if (attendeeCount > 12) {
-            // 참석자가 12명 초과 시 행 높이를 60%로 줄임
+            // 참석자가 12명 초과 시 전체 문서에 class 추가 (CSS에서 활용)
+            documentFormContent.classList.add('many-attendees');
+
+            // 참석자가 12명 초과 시 폰트 크기 축소 및 행 높이 최소화 (최대 20명까지)
             const rows = attendeeTable.querySelectorAll('tbody tr');
             const headerRows = attendeeTable.querySelectorAll('thead tr');
+            const headerCells = attendeeTable.querySelectorAll('thead th');
+            const bodyCells = attendeeTable.querySelectorAll('tbody td');
 
+            // 헤더 행 높이 및 스타일
             headerRows.forEach(row => {
-                row.style.height = '42px'; // 70px의 60%
+                row.style.height = '20px';
+                row.style.minHeight = '20px';
             });
 
+            // 헤더 셀 스타일 (구분/성명/소속/서명 - 조금 더 크게)
+            headerCells.forEach(cell => {
+                cell.style.fontSize = '7px';
+                cell.style.padding = '2px 3px';
+                cell.style.lineHeight = '1.1';
+            });
+
+            // 참석자 행 높이 축소 (내역 부분 - 더 작게)
             rows.forEach(row => {
-                row.style.height = '36px'; // 60px의 60%
+                row.style.height = '16px';
+                row.style.minHeight = '16px';
             });
 
-            const cells = attendeeTable.querySelectorAll('tbody td');
-            cells.forEach(cell => {
-                cell.style.minHeight = '36px';
-                cell.style.height = '36px';
-                cell.style.padding = '6px 10px';
-                cell.style.fontSize = '12px';
+            // 참석자 내역 셀 스타일 (tbody - 80% 축소)
+            bodyCells.forEach(cell => {
+                cell.style.fontSize = '5px';
+                cell.style.padding = '1px 2px';
+                cell.style.lineHeight = '1.1';
+                cell.style.minHeight = '16px';
+                cell.style.height = '16px';
             });
+        } else {
+            // 12명 이하일 경우 class 제거
+            documentFormContent.classList.remove('many-attendees');
         }
     }
 
@@ -2054,7 +2127,6 @@ document.addEventListener('DOMContentLoaded', async function() {
                 projectIdx: parseInt(projectIdxInput.value),
                 cardIdx: cardIdxInput && cardIdxInput.value ? parseInt(cardIdxInput.value) : null,
                 authorId: authorIdInput && authorIdInput.value ? parseInt(authorIdInput.value) : null,
-                authorName: authorInput ? authorInput.value : null,
                 meetingDate: dateInput.value,
                 startTime: startTimeInput.value + ':00',  // HH:mm:ss 형식
                 endTime: endTimeInput.value + ':00',
@@ -2888,19 +2960,16 @@ document.addEventListener('DOMContentLoaded', async function() {
         }
 
 
-        // currentAttendees에 추가 (중복 체크 - ID와 type 모두 확인)
-        tempSelectedAttendees.forEach(person => {
-            if (!currentAttendees.some(a => String(a.id) === String(person.id) && a.type === person.type)) {
-                currentAttendees.push({
-                    id: person.id,
-                    name: person.name,
-                    dept: person.dept,
-                    position: person.position,
-                    meetingExpense: person.meetingExpense || 0,
-                    type: person.type
-                });
-            }
-        });
+        // currentAttendees를 tempSelectedAttendees로 완전히 교체
+        // (Modal에서 삭제된 참석자도 반영되도록)
+        currentAttendees = tempSelectedAttendees.map(person => ({
+            id: person.id,
+            name: person.name,
+            dept: person.dept,
+            position: person.position,
+            meetingExpense: person.meetingExpense || 0,
+            type: person.type
+        }));
 
 
         // 참석자 목록 UI 업데이트
@@ -3554,16 +3623,16 @@ document.addEventListener('DOMContentLoaded', async function() {
         // 작성자 정보
         const authorInput = document.getElementById('common_author');
         const authorIdInput = document.getElementById('common_author_id');
-        if (data.authorIdx && data.authorName) {
+        if (data.authorIdx && data.authorUserName) {
             if (authorInput) {
-                authorInput.value = data.authorName;
+                authorInput.value = data.authorUserName;
             }
             if (authorIdInput) {
                 authorIdInput.value = data.authorIdx;
             }
             // 인쇄용 템플릿도 업데이트
             document.querySelectorAll('.auto-author').forEach(field => {
-                field.value = data.authorName;
+                field.value = data.authorUserName;
                 field.style.color = '';
             });
         }
@@ -3791,7 +3860,6 @@ document.addEventListener('DOMContentLoaded', async function() {
                 projectIdx: parseInt(projectIdxInput.value),
                 cardIdx: cardIdxInput?.value ? parseInt(cardIdxInput.value) : null,
                 authorId: authorIdInput?.value ? parseInt(authorIdInput.value) : null,
-                authorName: authorInput?.value || null,
                 meetingDate: dateInput.value,
                 startTime: startTimeInput.value + ':00',
                 endTime: endTimeInput.value + ':00',

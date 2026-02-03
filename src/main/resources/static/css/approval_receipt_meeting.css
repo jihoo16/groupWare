@@ -2562,4 +2562,172 @@ input.auto-datetime {
         font-size: 11px !important;
         line-height: 1.4 !important;
     }
+
+    /* 참석자 12명 초과 시 (최대 20명까지 표시) */
+    /* 헤더 부분 (구분/성명/소속/서명) - 참석자 이름과 동일한 크기 */
+    #documentFormContent.many-attendees > div:nth-child(3) #attendee-signature-table thead th {
+        font-size: 12px !important;
+        padding: 2px 3px !important;
+        line-height: 1.1 !important;
+    }
+
+    #documentFormContent.many-attendees > div:nth-child(3) #attendee-signature-table thead tr {
+        height: 20px !important;
+        min-height: 20px !important;
+    }
+
+    /* 참석자 내역 부분 (tbody) - 폰트 80% 축소 및 높이 축소 */
+    #documentFormContent.many-attendees > div:nth-child(3) #attendee-signature-table tbody td {
+        font-size: 5px !important;
+        padding: 1px 2px !important;
+        line-height: 1.1 !important;
+        height: 16px !important;
+        min-height: 16px !important;
+    }
+
+    #documentFormContent.many-attendees > div:nth-child(3) #attendee-signature-table tbody tr {
+        height: 16px !important;
+        min-height: 16px !important;
+    }
+
+    /* 참석자 12명 초과 시 3페이지 상단 기본정보 칸 50% 축소 */
+    #documentFormContent.many-attendees > div:nth-child(3) .form-table tr:nth-child(1) th {
+        height: 40px !important;
+        min-height: 40px !important;
+        padding: 5px 8px !important;
+    }
+
+    #documentFormContent.many-attendees > div:nth-child(3) .form-table tr:nth-child(1) td {
+        padding: 5px 8px !important;
+    }
+
+    #documentFormContent.many-attendees > div:nth-child(3) .auto-project {
+        font-size: 11px !important;
+    }
+
+    #documentFormContent.many-attendees > div:nth-child(3) .auto-author {
+        font-size: 11px !important;
+    }
+
+    /* 3페이지 일시/장소 행 축소 */
+    #documentFormContent.many-attendees > div:nth-child(3) .form-table tr:nth-child(2) th,
+    #documentFormContent.many-attendees > div:nth-child(3) .form-table tr:nth-child(2) td {
+        height: 30px !important;
+        min-height: 30px !important;
+        padding: 4px 6px !important;
+    }
+
+    #documentFormContent.many-attendees > div:nth-child(3) .auto-location {
+        font-size: 9px !important;
+        padding: 3px !important;
+    }
+
+    #documentFormContent.many-attendees > div:nth-child(3) .auto-datetime-minutes {
+        font-size: 10px !important;
+    }
+
+    /* 참석자 12명 초과 시 1, 2페이지 특이사항/비고 칸 높이 50% 축소 */
+    #documentFormContent.many-attendees > div:nth-child(1) .auto-notes {
+        height: 20px !important;
+        min-height: 20px !important;
+    }
+
+    #documentFormContent.many-attendees > div:nth-child(2) .auto-minutes-notes {
+        height: 25px !important;
+        min-height: 25px !important;
+    }
+
+    /* 참석자 소속 5개 초과 시 1페이지 칸 높이 최소화 */
+    /* 사업명 행 */
+    #documentFormContent.many-departments > div:nth-child(1) .form-table tr:nth-child(1) th,
+    #documentFormContent.many-departments > div:nth-child(1) .form-table tr:nth-child(1) td {
+        height: 30px !important;
+        min-height: 30px !important;
+        padding: 5px 8px !important;
+    }
+
+    #documentFormContent.many-departments > div:nth-child(1) .auto-project {
+        font-size: 12px !important;
+    }
+
+    /* 소요 비용 예상 내역 헤더 행 (8번째 행) */
+    #documentFormContent.many-departments > div:nth-child(1) .form-table tr:nth-child(8) th {
+        padding: 8px !important;
+    }
+
+    /* 일시/집행예정금액 행 (10번째 행) */
+    #documentFormContent.many-departments > div:nth-child(1) .form-table tr:nth-child(10) td {
+        height: 40px !important;
+        min-height: 40px !important;
+        padding: 5px !important;
+    }
+
+    #documentFormContent.many-departments > div:nth-child(1) .auto-datetime-display,
+    #documentFormContent.many-departments > div:nth-child(1) .auto-amount-display {
+        padding: 5px !important;
+        font-size: 12px !important;
+    }
+
+    /* 특이사항 행 (11번째 행) */
+    #documentFormContent.many-departments > div:nth-child(1) .form-table tr:nth-child(11) th {
+        height: 30px !important;
+        min-height: 30px !important;
+    }
+
+    #documentFormContent.many-departments > div:nth-child(1) .auto-notes {
+        height: 30px !important;
+        min-height: 30px !important;
+        font-size: 11px !important;
+        padding: 5px !important;
+    }
+
+    /* 결제 행 (12번째 행) */
+    #documentFormContent.many-departments > div:nth-child(1) .form-table tr:nth-child(12) th,
+    #documentFormContent.many-departments > div:nth-child(1) .form-table tr:nth-child(12) td {
+        height: 35px !important;
+        min-height: 35px !important;
+        padding: 5px 8px !important;
+    }
+
+    #documentFormContent.many-departments > div:nth-child(1) .auto-payment {
+        font-size: 12px !important;
+    }
+
+    /* 참석인원/장소/회의일시 행 (2번째 행) */
+    #documentFormContent.many-departments > div:nth-child(1) .form-table tr:nth-child(2) th,
+    #documentFormContent.many-departments > div:nth-child(1) .form-table tr:nth-child(2) td {
+        padding: 5px 6px !important;
+    }
+
+    #documentFormContent.many-departments > div:nth-child(1) .auto-location,
+    #documentFormContent.many-departments > div:nth-child(1) .auto-datetime-proposal {
+        font-size: 11px !important;
+    }
+
+    /* 참석인원 행들 (3-7번째 행) 높이 최소화 */
+    #documentFormContent.many-departments > div:nth-child(1) .form-table tr.attendee-row td {
+        height: 22px !important;
+        min-height: 22px !important;
+        padding: 3px 6px !important;
+        font-size: 11px !important;
+    }
+
+    /* 내외구분/소속/성명 헤더 행 (3번째 행) */
+    #documentFormContent.many-departments > div:nth-child(1) .form-table tr:nth-child(3) th {
+        height: 25px !important;
+        min-height: 25px !important;
+        padding: 4px 6px !important;
+        font-size: 11px !important;
+    }
+
+    /* 회의 목적 헤더 */
+    #documentFormContent.many-departments > div:nth-child(1) #meeting_purpose_header {
+        padding: 5px 8px !important;
+        font-size: 11px !important;
+    }
+
+    /* 회의 목적 입력 칸 */
+    #documentFormContent.many-departments > div:nth-child(1) .auto-purpose {
+        font-size: 13px !important;
+    }
 }
