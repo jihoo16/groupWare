@@ -495,9 +495,12 @@ document.addEventListener('DOMContentLoaded', async function() {
 
                     // 프로젝트 팀원 로드
                     if (proj.idx) {
+                        // 참석자 목록 초기화 (기본 작성자만 남기기)
+                        currentAttendees = [];
+
                         await loadProjectMembers(proj.idx);
                         // 기본 작성자 설정 (낮은 직급에서 4번째)
-                        setDefaultAuthor();
+                        await setDefaultAuthor();
 
                         // 프로젝트 카드 목록 로드
                         await loadProjectCards(proj.idx);
@@ -769,10 +772,13 @@ document.addEventListener('DOMContentLoaded', async function() {
                         field.value = proj.projectName;
                     });
 
+                    // 참석자 목록 초기화 (기본 작성자만 남기기)
+                    currentAttendees = [];
+
                     // 프로젝트 팀원 로드
                     await loadProjectMembers(proj.idx);
                     // 기본 작성자 설정
-                    setDefaultAuthor();
+                    await setDefaultAuthor();
 
                     // 카드 목록 로드 및 표시
                     await loadProjectCards(proj.idx);
@@ -1030,14 +1036,14 @@ document.addEventListener('DOMContentLoaded', async function() {
                 if (a.type === 'internal' && b.type === 'external') return -1;
                 if (a.type === 'external' && b.type === 'internal') return 1;
 
-                // 2. 내부 참석자끼리는 직급순 (낮은 직급부터)
+                // 2. 내부 참석자끼리는 직급순 (높은 직급부터)
                 if (a.type === 'internal' && b.type === 'internal') {
                     const orderA = positionOrder[a.position] || 999;
                     const orderB = positionOrder[b.position] || 999;
-                    return orderA - orderB;
+                    return orderB - orderA;
                 }
 
-                // 3. 외부 참석자끼리는 회사명 가나다순, 같은 회사면 직급순
+                // 3. 외부 참석자끼리는 회사명 가나다순, 같은 회사면 직급순 (높은 직급부터)
                 if (a.type === 'external' && b.type === 'external') {
                     const deptA = a.dept || '';
                     const deptB = b.dept || '';
@@ -1047,10 +1053,10 @@ document.addEventListener('DOMContentLoaded', async function() {
                         return deptA.localeCompare(deptB, 'ko');
                     }
 
-                    // 같은 회사면 직급순
+                    // 같은 회사면 직급순 (높은 직급부터)
                     const orderA = positionOrder[a.position] || 999;
                     const orderB = positionOrder[b.position] || 999;
-                    return orderA - orderB;
+                    return orderB - orderA;
                 }
 
                 return 0;
@@ -1078,6 +1084,9 @@ document.addEventListener('DOMContentLoaded', async function() {
                 // 참석자 정렬
                 const sortedAttendees = sortAttendees(currentAttendees);
 
+                // 현재 작성자 ID 가져오기
+                const currentAuthorId = document.getElementById('common_author_id')?.value;
+
                 attendeeList.innerHTML = sortedAttendees.map(attendee => {
                     // 금액 포맷팅
                     const formattedExpense = attendee.meetingExpense
@@ -1089,17 +1098,25 @@ document.addEventListener('DOMContentLoaded', async function() {
                         ? '<span class="external-badge">외부</span>'
                         : '';
 
+                    // 작성자인지 확인
+                    const isAuthor = currentAuthorId && String(attendee.id) === String(currentAuthorId) && attendee.type === 'internal';
+                    const authorBadge = isAuthor ? '<span class="author-badge">작성자</span>' : '';
+
+                    // 작성자가 아닌 경우에만 클릭 이벤트와 삭제 버튼 표시
+                    const clickEvent = isAuthor ? '' : `onclick="removeAttendeeInTemplate('${attendee.id}')"`;
+                    const deleteButton = isAuthor
+                        ? '<span class="cannot-remove-text" style="color: #94a3b8; font-size: 11px;">삭제 불가</span>'
+                        : '<button type="button" class="trip-person-remove attendee-remove"><i class="fas fa-times"></i> 삭제</button>';
+
                     return `
-                        <div class="trip-person-item ${attendee.type === 'external' ? 'external-attendee' : ''}" onclick="removeAttendeeInTemplate('${attendee.id}')">
+                        <div class="trip-person-item ${attendee.type === 'external' ? 'external-attendee' : ''} ${isAuthor ? 'is-author' : ''}" ${clickEvent}>
                             <div class="trip-person-info">
-                                <span class="name">${attendee.name}${externalBadge}</span>
+                                <span class="name">${attendee.name}${externalBadge}${authorBadge}</span>
                                 <span>${attendee.dept}</span>
                                 <span>${attendee.position}</span>
                                 <span style="color: #667eea; font-weight: 600;">${formattedExpense}</span>
                             </div>
-                            <button type="button" class="trip-person-remove attendee-remove">
-                                <i class="fas fa-times"></i> 삭제
-                            </button>
+                            ${deleteButton}
                         </div>
                     `;
                 }).join('');
@@ -1231,6 +1248,15 @@ document.addEventListener('DOMContentLoaded', async function() {
 
         // 템플릿 내에서 참석자 제거
         window.removeAttendeeInTemplate = function(attendeeId) {
+            // 작성자 ID 확인
+            const currentAuthorId = document.getElementById('common_author_id')?.value;
+
+            // 작성자는 삭제 불가
+            if (currentAuthorId && String(attendeeId) === String(currentAuthorId)) {
+                showWarning('작성자는 참석자에서 삭제할 수 없습니다.');
+                return;
+            }
+
             currentAttendees = currentAttendees.filter(a => a.id !== attendeeId);
             renderAttendeeListInTemplate();
 
@@ -1240,6 +1266,9 @@ document.addEventListener('DOMContentLoaded', async function() {
                 renderInternalList(internalSearchInput ? internalSearchInput.value : '');
                 renderExternalList(externalSearchInput ? externalSearchInput.value : '');
             }
+
+            // 필수 필드 검증
+            validateRequiredFields();
         };
 
         // 전역 함수로 등록하여 모달에서 접근 가능하게
@@ -1250,6 +1279,9 @@ document.addEventListener('DOMContentLoaded', async function() {
                 }
             });
             renderAttendeeListInTemplate();
+
+            // 필수 필드 검증
+            validateRequiredFields();
         };
 
         // 과제명 자동 채우기는 위 프로젝트 선택 시 처리됨
@@ -1541,10 +1573,93 @@ document.addEventListener('DOMContentLoaded', async function() {
         updateAttendeeTotalAmount();
     }
 
+    // 필수 필드 검증 및 인쇄 버튼 표시/숨김
+    function validateRequiredFields() {
+        const printBtn = document.getElementById('printDocumentBtn');
+        if (!printBtn) return;
+
+        // 필수 필드 체크
+        const projectInput = document.getElementById('common_project');
+        const cardInput = document.getElementById('common_card');
+        const authorInput = document.getElementById('common_author');
+        const dateInput = document.getElementById('common_date');
+        const startTimeInput = document.getElementById('common_start_time');
+        const endTimeInput = document.getElementById('common_end_time');
+        const locationInput = document.getElementById('common_location');
+        const amountInput = document.getElementById('common_amount');
+        const purposeInput = document.getElementById('common_purpose');
+        const contentInput = document.getElementById('common_content');
+
+        // 필수 필드 강조 처리
+        if (projectInput) {
+            if (projectInput.value.trim() === '') {
+                projectInput.classList.add('field-empty');
+            } else {
+                projectInput.classList.remove('field-empty');
+            }
+        }
+
+        if (amountInput) {
+            if (amountInput.value.trim() === '') {
+                amountInput.classList.add('field-empty');
+            } else {
+                amountInput.classList.remove('field-empty');
+            }
+        }
+
+        if (purposeInput) {
+            if (purposeInput.value.trim() === '') {
+                purposeInput.classList.add('field-empty');
+            } else {
+                purposeInput.classList.remove('field-empty');
+            }
+        }
+
+        if (contentInput) {
+            if (contentInput.value.trim() === '') {
+                contentInput.classList.add('field-empty');
+            } else {
+                contentInput.classList.remove('field-empty');
+            }
+        }
+
+        // 참석자 영역 강조 처리
+        const attendeeArea = document.getElementById('attendeeArea');
+        if (attendeeArea) {
+            if (!currentAttendees || currentAttendees.length === 0) {
+                attendeeArea.classList.add('field-empty');
+            } else {
+                attendeeArea.classList.remove('field-empty');
+            }
+        }
+
+        // 모든 필드가 채워졌는지 확인
+        const allFieldsFilled =
+            projectInput && projectInput.value.trim() !== '' &&
+            cardInput && cardInput.value.trim() !== '' &&
+            authorInput && authorInput.value.trim() !== '' &&
+            dateInput && dateInput.value.trim() !== '' &&
+            startTimeInput && startTimeInput.value.trim() !== '' &&
+            endTimeInput && endTimeInput.value.trim() !== '' &&
+            locationInput && locationInput.value.trim() !== '' &&
+            amountInput && amountInput.value.trim() !== '' &&
+            purposeInput && purposeInput.value.trim() !== '' &&
+            contentInput && contentInput.value.trim() !== '' &&
+            currentAttendees && currentAttendees.length > 0;
+
+        // 인쇄 버튼 표시/숨김
+        if (allFieldsFilled) {
+            printBtn.style.display = 'inline-flex';
+        } else {
+            printBtn.style.display = 'none';
+        }
+    }
+
     // 공식 문서 양식 토글 기능
     function setupDocumentFormToggle() {
         const documentFormToggle = document.getElementById('documentFormToggle');
         const documentFormWrapper = document.querySelector('.document-form-wrapper');
+        const printBtn = document.getElementById('printDocumentBtn');
 
         if (documentFormToggle && documentFormWrapper) {
             documentFormToggle.addEventListener('click', function() {
@@ -1552,6 +1667,123 @@ document.addEventListener('DOMContentLoaded', async function() {
                 documentFormToggle.classList.toggle('active');
             });
         }
+
+        // 인쇄 버튼 이벤트
+        if (printBtn) {
+            printBtn.addEventListener('click', function() {
+                printDocument();
+            });
+        }
+
+        // 필수 필드 변경 시 검증
+        const fieldsToWatch = [
+            'common_project',
+            'common_card',
+            'common_author',
+            'common_date',
+            'common_start_time',
+            'common_end_time',
+            'common_location',
+            'common_amount',
+            'common_purpose',
+            'common_content'
+        ];
+
+        fieldsToWatch.forEach(fieldId => {
+            const field = document.getElementById(fieldId);
+            if (field) {
+                field.addEventListener('input', validateRequiredFields);
+                field.addEventListener('change', validateRequiredFields);
+            }
+        });
+
+        // 초기 검증
+        validateRequiredFields();
+    }
+
+    // 주요 내용 폰트 크기 자동 조정
+    function adjustContentFontSize() {
+        const contentElements = document.querySelectorAll('.auto-content');
+
+        contentElements.forEach(element => {
+            const textLength = element.textContent.trim().length;
+            let fontSize = 13; // 기본 크기
+            let lineHeight = 1.6;
+
+            // 텍스트 길이에 따라 폰트 크기 조정
+            if (textLength > 1500) {
+                fontSize = 8;
+                lineHeight = 1.3;
+            } else if (textLength > 1200) {
+                fontSize = 10;
+                lineHeight = 1.4;
+            } else if (textLength > 900) {
+                fontSize = 11;
+                lineHeight = 1.5;
+            } else if (textLength > 600) {
+                fontSize = 12;
+                lineHeight = 1.55;
+            }
+
+            // 스타일 적용
+            element.style.fontSize = fontSize + 'px';
+            element.style.lineHeight = lineHeight;
+        });
+    }
+
+    // 참석자 테이블 행 높이 자동 조정 (12명 초과 시)
+    function adjustAttendeeTableHeight() {
+        const attendeeTable = document.getElementById('attendee-signature-table');
+        if (!attendeeTable) return;
+
+        const attendeeCount = currentAttendees ? currentAttendees.length : 0;
+
+        if (attendeeCount > 12) {
+            // 참석자가 12명 초과 시 행 높이를 60%로 줄임
+            const rows = attendeeTable.querySelectorAll('tbody tr');
+            const headerRows = attendeeTable.querySelectorAll('thead tr');
+
+            headerRows.forEach(row => {
+                row.style.height = '42px'; // 70px의 60%
+            });
+
+            rows.forEach(row => {
+                row.style.height = '36px'; // 60px의 60%
+            });
+
+            const cells = attendeeTable.querySelectorAll('tbody td');
+            cells.forEach(cell => {
+                cell.style.minHeight = '36px';
+                cell.style.height = '36px';
+                cell.style.padding = '6px 10px';
+                cell.style.fontSize = '12px';
+            });
+        }
+    }
+
+    // 인쇄 함수
+    function printDocument() {
+        const documentFormWrapper = document.querySelector('.document-form-wrapper');
+
+        // 문서가 접혀있으면 먼저 펼치기
+        if (documentFormWrapper && documentFormWrapper.classList.contains('collapsed')) {
+            documentFormWrapper.classList.remove('collapsed');
+            const documentFormToggle = document.getElementById('documentFormToggle');
+            if (documentFormToggle) {
+                documentFormToggle.classList.add('active');
+            }
+        }
+
+        // 주요 내용 폰트 크기 자동 조정
+        adjustContentFontSize();
+
+        // 참석자 테이블 행 높이 자동 조정
+        adjustAttendeeTableHeight();
+
+        // 잠시 대기 후 인쇄 (문서가 완전히 렌더링되도록)
+        setTimeout(function() {
+            window.print();
+        }, 300);
     }
 
     // 파일 업로드
@@ -1638,309 +1870,6 @@ document.addEventListener('DOMContentLoaded', async function() {
         selectedFiles.splice(index, 1);
         updateFileList();
     };
-
-    // PDF 생성 함수
-    async function generatePdf(receiptMeetingIdx) {
-        // 공식 문서 HTML 가져오기
-        const documentFormContent = document.getElementById('documentFormContent');
-        if (!documentFormContent) {
-            throw new Error('문서 양식을 찾을 수 없습니다.');
-        }
-
-        // HTML 복사본 생성 (원본 수정 방지)
-        const clonedContent = documentFormContent.cloneNode(true);
-
-        // 모든 input과 textarea의 현재 값을 속성으로 설정
-        const originalFields = Array.from(documentFormContent.querySelectorAll('input, textarea'));
-        const clonedFields = Array.from(clonedContent.querySelectorAll('input, textarea'));
-
-        clonedFields.forEach((field, index) => {
-            const originalField = originalFields[index];
-
-            if (originalField) {
-                if (field.type === 'checkbox' || field.type === 'radio') {
-                    if (originalField.checked) {
-                        field.setAttribute('checked', 'checked');
-                    } else {
-                        field.removeAttribute('checked');
-                    }
-                } else {
-                    field.setAttribute('value', originalField.value || '');
-                    if (field.tagName === 'TEXTAREA') {
-                        field.textContent = originalField.value || '';
-                    }
-                }
-            }
-        });
-
-        // HTML 문자열 생성 (완전한 HTML 문서)
-        const htmlContent = `
-<!DOCTYPE html>
-<html lang="ko">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>연구비증빙 회의록</title>
-    <style>
-        * {
-            box-sizing: border-box;
-            margin: 0;
-            padding: 0;
-        }
-
-        body {
-            font-family: 'Malgun Gothic', '맑은 고딕', 'Apple SD Gothic Neo', sans-serif;
-            background: white;
-            margin: 0;
-        }
-
-        /* 문서 컨테이너 padding - 1페이지는 정상 크기 유지 */
-        body > div[style*="padding"] {
-            padding: 25px 30px !important;
-        }
-
-        .doc-title {
-            text-align: center;
-            font-size: 26px;
-            font-weight: 700;
-            color: #333;
-            margin: 15px 0 20px 0;
-            padding-bottom: 8px;
-            letter-spacing: 6px;
-        }
-
-        .form-table {
-            width: 100%;
-            border-collapse: collapse;
-            border: 1px solid #000;
-            margin-bottom: 15px;
-            table-layout: auto !important;
-        }
-
-        .form-table th,
-        .form-table td {
-            border: 1px solid #000;
-            padding: 10px 12px;
-            font-size: 13px;
-            vertical-align: middle;
-        }
-
-        .form-table th {
-            background: #f0f0f0;
-            font-weight: 700;
-            color: #333;
-            text-align: center;
-        }
-
-        .form-table td {
-            color: #333;
-            text-align: center;
-        }
-
-        /* 장소 셀만 강제 확장 (페이지 구분 없이) */
-        td.auto-location-cell,
-        td:has(input.auto-location) {
-            min-width: 180px !important;
-            width: auto !important;
-            max-width: none !important;
-        }
-
-        /* 주요내용 좌측정렬 및 A4 1페이지 고정 */
-        .form-table td.auto-content,
-        .form-table td[style*="text-align: left"] {
-            text-align: left !important;
-            height: 440px !important;
-            max-height: 440px !important;
-            min-height: 440px !important;
-            overflow: hidden !important;
-            font-size: 10px !important;
-            line-height: 1.4 !important;
-            padding: 6px 8px !important;
-            vertical-align: top !important;
-            box-sizing: border-box !important;
-            word-wrap: break-word !important;
-            white-space: pre-wrap !important;
-        }
-
-        .form-table input,
-        .form-table textarea {
-            border: none;
-            background: white !important;
-            width: 100%;
-            text-align: center;
-            font-size: 13px;
-        }
-
-        /* readonly input 배경색 제거 */
-        input[readonly],
-        textarea[readonly] {
-            background: white !important;
-        }
-
-        /* 결재란 테이블 스타일 고정 */
-        table[style*="border: 2px solid #000"] {
-            border-collapse: collapse !important;
-        }
-
-        table[style*="border: 2px solid #000"] td {
-            box-sizing: border-box !important;
-            max-width: 120px !important;
-            max-height: 80px !important;
-            overflow: hidden !important;
-        }
-
-        table[style*="border: 2px solid #000"] td[style*="height: 80px"] {
-            height: 80px !important;
-            min-height: 80px !important;
-            max-height: 80px !important;
-        }
-
-        table[style*="border: 2px solid #000"] td[style*="width: 120px"] {
-            width: 120px !important;
-            min-width: 120px !important;
-            max-width: 120px !important;
-        }
-
-        table[style*="border: 2px solid #000"] td[style*="vertical-rl"] {
-            writing-mode: vertical-rl !important;
-            text-orientation: upright !important;
-            padding: 3px 7px !important;
-        }
-
-        /* 특이사항 높이 - 1페이지용 */
-        .auto-notes,
-        textarea.auto-notes {
-            height: 80px !important;
-            min-height: 80px !important;
-            max-height: 80px !important;
-            overflow: hidden !important;
-            font-size: 12px !important;
-            line-height: 1.5 !important;
-            padding: 8px 10px !important;
-        }
-
-        /* 비고 높이 - 2페이지용 (축소 유지) */
-        .auto-minutes-notes,
-        textarea.auto-minutes-notes {
-            height: 50px !important;
-            min-height: 50px !important;
-            max-height: 50px !important;
-            overflow: hidden !important;
-            font-size: 11px !important;
-            line-height: 1.4 !important;
-            padding: 5px 8px !important;
-        }
-
-        th[style*="특이사항"] {
-            height: 60px !important;
-        }
-
-        /* 장소 및 일시 필드 - 글씨 잘림 방지 (모든 페이지 공통) */
-        .auto-location,
-        .auto-datetime,
-        input.auto-location,
-        input.auto-datetime,
-        span.auto-datetime-proposal {
-            min-height: 30px !important;
-            height: auto !important;
-            max-height: none !important;
-            padding: 8px 10px !important;
-            line-height: 1.6 !important;
-            box-sizing: border-box !important;
-            overflow: visible !important;
-            white-space: normal !important;
-            word-wrap: break-word !important;
-            word-break: keep-all !important;
-            text-align: left !important;
-            font-size: 12px !important;
-            border: none !important;
-            background: white !important;
-            width: 100% !important;
-            display: block !important;
-        }
-
-        /* 장소 셀 높이 자동 조정 */
-        .auto-location-cell,
-        .auto-datetime-cell,
-        td:has(.auto-location),
-        td:has(.auto-datetime),
-        td.auto-location-cell,
-        td.auto-datetime-cell {
-            height: auto !important;
-            max-height: none !important;
-            min-height: 50px !important;
-            padding: 10px 12px !important;
-            vertical-align: middle !important;
-            overflow: visible !important;
-            white-space: normal !important;
-            word-wrap: break-word !important;
-        }
-
-        /* 참석자 서명 테이블 스타일 - 3페이지 */
-        #attendee-signature-table {
-            width: 100% !important;
-            border-collapse: collapse !important;
-        }
-
-        #attendee-signature-table tr {
-            height: 60px !important;
-        }
-
-        #attendee-signature-table td {
-            min-height: 60px !important;
-            height: 60px !important;
-            padding: 10px !important;
-            vertical-align: middle !important;
-        }
-
-        #attendee-signature-table th {
-            height: 70px !important;
-            font-size: 14px !important;
-        }
-
-        .attendee-sig-name,
-        .attendee-sig-dept {
-            min-height: 35px !important;
-            height: 35px !important;
-            line-height: 35px !important;
-            font-size: 13px !important;
-        }
-
-        @page {
-            margin: 1.5cm 1.2cm 1cm 1.2cm;
-            size: A4;
-        }
-
-        @media print {
-            body {
-                margin: 0;
-            }
-        }
-    </style>
-</head>
-<body>
-${clonedContent.innerHTML}
-</body>
-</html>
-        `;
-
-        // 서버에 PDF 생성 요청
-        const response = await fetch(`/api/receipt-meetings/${receiptMeetingIdx}/generate-pdf`, {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json'
-            },
-            body: JSON.stringify({ htmlContent })
-        });
-
-        if (!response.ok) {
-            throw new Error('PDF 생성 요청 실패');
-        }
-
-        const result = await response.json();
-        console.log('PDF 생성 완료:', result.filePath);
-        return result;
-    }
 
     // 저장
     if (saveBtn) {
@@ -2186,14 +2115,6 @@ ${clonedContent.innerHTML}
                 if (response.ok) {
                     const result = await response.json();
 
-                    // PDF 생성 시도 (비동기 - 실패해도 저장은 완료됨)
-                    try {
-                        await generatePdf(result.idx);
-                    } catch (pdfError) {
-                        console.error('PDF 생성 실패 (데이터는 저장됨):', pdfError);
-                        // PDF 생성 실패해도 데이터는 저장되었으므로 계속 진행
-                    }
-
                     hideLoading();
                     await showSuccess('회의록이 저장되었습니다.');
 
@@ -2223,199 +2144,6 @@ ${clonedContent.innerHTML}
             } catch (error) {
                 console.error('저장 오류:', error);
                 showError('회의록 저장 중 오류가 발생했습니다.');
-            }
-        });
-    }
-
-    // PDF 저장 버튼 이벤트
-    const savePdfBtn = document.getElementById('savePdfBtn');
-    if (savePdfBtn) {
-        savePdfBtn.addEventListener('click', async function(e) {
-            e.preventDefault();
-
-            let allDivs = null;
-            let originalDisplays = [];
-            const loadingModal = document.getElementById('pdfLoadingModal');
-            const progressFill = document.getElementById('progressFill');
-            const progressText = document.getElementById('progressText');
-
-            // 진행도 업데이트 함수
-            function updateProgress(percent, message) {
-                if (progressFill) progressFill.style.width = percent + '%';
-                if (progressText) progressText.textContent = `${message} (${percent}%)`;
-            }
-
-            try {
-
-                // 로딩 모달 표시
-                if (loadingModal) loadingModal.classList.add('active');
-                updateProgress(0, '준비 중...');
-
-                const templateType = 'receipt-meeting';
-
-                if (typeof window.jspdf === 'undefined' || typeof window.html2canvas === 'undefined') {
-                    showWarning('PDF 라이브러리를 로드하는 중입니다. 잠시 후 다시 시도해주세요.');
-                    if (loadingModal) loadingModal.classList.remove('active');
-                    return;
-                }
-
-                updateProgress(10, 'PDF 초기화 중...');
-
-                const { jsPDF } = window.jspdf;
-                const pdf = new jsPDF('p', 'mm', 'a4');
-
-                updateProgress(15, '문서 구조 확인 중...');
-
-                allDivs = documentForm.querySelectorAll(':scope > div');
-
-                originalDisplays = Array.from(allDivs).map(div => div.style.display);
-
-                if (allDivs.length < 4) {
-                    showError('문서 구조를 찾을 수 없습니다. 영수증 처리(회의록) 템플릿을 선택했는지 확인해주세요.');
-                    if (loadingModal) loadingModal.classList.remove('active');
-                    return;
-                }
-
-                updateProgress(20, '페이지 준비 중...');
-
-                // 접힌 문서 양식을 임시로 펼치기
-                const documentFormWrapper = document.querySelector('.document-form-wrapper');
-                let wasCollapsed = false;
-                if (documentFormWrapper && documentFormWrapper.classList.contains('collapsed')) {
-                    wasCollapsed = true;
-                    documentFormWrapper.classList.remove('collapsed');
-                }
-
-                // 공통 정보 입력 영역 숨기고, 나머지는 모두 표시
-                allDivs[0].style.display = 'none';
-                allDivs[1].style.display = 'block';
-                allDivs[2].style.display = 'block';
-                allDivs[3].style.display = 'block';
-
-                await new Promise(resolve => setTimeout(resolve, 100));
-
-                const renderOptions = {
-                    scale: 3,
-                    useCORS: true,
-                    allowTaint: true,
-                    logging: false,
-                    backgroundColor: '#ffffff',
-                    imageTimeout: 0,
-                    removeContainer: true
-                };
-
-                const pdfWidth = 210;
-                const pdfHeight = 297;
-                const margin = 10;
-                const contentWidth = pdfWidth - (margin * 2);
-
-                updateProgress(30, '회의 품의서 렌더링 중...');
-
-                // 1. 회의 품의서 페이지
-                const proposalDiv = allDivs[1];
-
-                if (!proposalDiv) {
-                    throw new Error('회의 품의서를 찾을 수 없습니다.');
-                }
-
-                const proposalCanvas = await window.html2canvas(proposalDiv, renderOptions);
-                const canvasWidth = proposalCanvas.width;
-                const canvasHeight = proposalCanvas.height;
-
-                if (canvasWidth === 0 || canvasHeight === 0) {
-                    throw new Error('Canvas 크기가 0입니다. 문서가 화면에 표시되어 있는지 확인하세요.');
-                }
-
-                updateProgress(45, '회의 품의서 이미지 변환 중...');
-
-                const proposalImgData = proposalCanvas.toDataURL('image/jpeg', 0.95);
-                const imgHeight = (canvasHeight * contentWidth) / canvasWidth;
-
-                pdf.addImage(proposalImgData, 'JPEG', margin, margin, contentWidth, imgHeight);
-
-                updateProgress(55, '회의록 렌더링 중...');
-
-                // 2. 회의록 페이지
-                const minutesDiv = allDivs[2];
-
-                if (!minutesDiv) {
-                    throw new Error('회의록을 찾을 수 없습니다.');
-                }
-
-                pdf.addPage();
-                const minutesCanvas = await window.html2canvas(minutesDiv, renderOptions);
-
-                const minutesCanvasWidth = minutesCanvas.width;
-                const minutesCanvasHeight = minutesCanvas.height;
-
-                updateProgress(70, '회의록 이미지 변환 중...');
-
-                const minutesImgData = minutesCanvas.toDataURL('image/jpeg', 0.95);
-                const minutesImgHeight = (minutesCanvasHeight * contentWidth) / minutesCanvasWidth;
-
-                pdf.addImage(minutesImgData, 'JPEG', margin, margin, contentWidth, minutesImgHeight);
-
-                updateProgress(80, '참석자 명단 렌더링 중...');
-
-                // 3. 참석자 명단 페이지
-                const attendeeDiv = allDivs[3];
-
-                if (!attendeeDiv) {
-                    throw new Error('참석자 명단을 찾을 수 없습니다.');
-                }
-
-                pdf.addPage();
-                const attendeeCanvas = await window.html2canvas(attendeeDiv, renderOptions);
-
-                const attendeeCanvasWidth = attendeeCanvas.width;
-                const attendeeCanvasHeight = attendeeCanvas.height;
-
-                updateProgress(90, '참석자 명단 이미지 변환 중...');
-
-                const attendeeImgData = attendeeCanvas.toDataURL('image/jpeg', 0.95);
-                const attendeeImgHeight = (attendeeCanvasHeight * contentWidth) / attendeeCanvasWidth;
-
-                pdf.addImage(attendeeImgData, 'JPEG', margin, margin, contentWidth, attendeeImgHeight);
-
-                updateProgress(95, 'PDF 파일 생성 중...');
-
-                // 파일명 생성
-                const dateInput = document.getElementById('common_date');
-                let dateStr;
-                if (dateInput && dateInput.value) {
-                    dateStr = dateInput.value.replace(/-/g, '');
-                } else {
-                    const today = new Date();
-                    dateStr = `${today.getFullYear()}${String(today.getMonth() + 1).padStart(2, '0')}${String(today.getDate()).padStart(2, '0')}`;
-                }
-                const fileName = `${dateStr}_회의록.pdf`;
-
-                pdf.save(fileName);
-
-                updateProgress(100, '완료!');
-
-                // 잠시 후 모달 닫기
-                setTimeout(() => {
-                    if (loadingModal) loadingModal.classList.remove('active');
-                    showSuccess('PDF가 저장되었습니다.');
-                }, 500);
-            } catch (error) {
-                console.error('PDF 생성 오류:', error);
-                if (loadingModal) loadingModal.classList.remove('active');
-                showError('PDF 생성 중 오류가 발생했습니다.\n' + error.message + '\n\n브라우저 콘솔(F12)을 확인해주세요.');
-            } finally {
-                // 원래 display 상태 복원
-                if (allDivs && originalDisplays.length > 0) {
-                    allDivs.forEach((div, index) => {
-                        div.style.display = originalDisplays[index];
-                    });
-                }
-
-                // 접혔던 문서 양식을 다시 접기
-                const documentFormWrapper = document.querySelector('.document-form-wrapper');
-                if (documentFormWrapper && wasCollapsed) {
-                    documentFormWrapper.classList.add('collapsed');
-                }
             }
         });
     }
@@ -2565,10 +2293,13 @@ ${clonedContent.innerHTML}
                     field.value = proj.projectName;
                 });
 
+                // 참석자 목록 초기화 (기본 작성자만 남기기)
+                currentAttendees = [];
+
                 // 프로젝트 팀원 로드
                 await loadProjectMembers(proj.idx);
                 // 기본 작성자 설정
-                setDefaultAuthor();
+                await setDefaultAuthor();
                 // 프로젝트 카드 목록 로드
                 await window.loadProjectCards(proj.idx);
 
@@ -3175,6 +2906,9 @@ ${clonedContent.innerHTML}
         // 참석자 목록 UI 업데이트
         renderAttendeeListInTemplate();
 
+        // 필수 필드 검증
+        validateRequiredFields();
+
         // 모달 닫기
         closeAttendeeModal();
     };
@@ -3336,10 +3070,13 @@ ${clonedContent.innerHTML}
                     field.value = proj.projectName;
                 });
 
+                // 참석자 목록 초기화 (기본 작성자만 남기기)
+                currentAttendees = [];
+
                 // 프로젝트 팀원 로드
                 await loadProjectMembers(proj.idx);
                 // 기본 작성자 설정
-                setDefaultAuthor();
+                await setDefaultAuthor();
                 // 프로젝트 카드 목록 로드
                 await window.loadProjectCards(proj.idx);
 
@@ -3414,14 +3151,24 @@ ${clonedContent.innerHTML}
             return;
         }
 
-        authorListEl.innerHTML = filteredPersons.map(person => `
-            <div class="employee-item" data-id="${person.id}" onclick="selectAuthor(${person.id})">
-                <div class="employee-info">
-                    <div class="employee-name">${person.name}</div>
-                    <div class="employee-details">${person.dept} · ${person.position}</div>
+        // 현재 선택된 작성자 ID 가져오기
+        const currentAuthorId = document.getElementById('common_author_id')?.value;
+
+        authorListEl.innerHTML = filteredPersons.map(person => {
+            const isSelected = currentAuthorId && String(person.id) === String(currentAuthorId);
+            const selectedClass = isSelected ? 'selected' : '';
+            const checkIcon = isSelected ? '<i class="fas fa-check-circle" style="color: #10b981; margin-left: auto;"></i>' : '';
+
+            return `
+                <div class="employee-item ${selectedClass}" data-id="${person.id}" onclick="selectAuthor(${person.id})">
+                    <div class="employee-info">
+                        <div class="employee-name">${person.name}</div>
+                        <div class="employee-details">${person.dept} · ${person.position}</div>
+                    </div>
+                    ${checkIcon}
                 </div>
-            </div>
-        `).join('');
+            `;
+        }).join('');
     }
 
     // 작성자 선택
@@ -3430,6 +3177,16 @@ ${clonedContent.innerHTML}
         const person = attendeePersons.find(p => p.id === personId);
 
         if (person) {
+            // 기존 작성자 ID 가져오기
+            const previousAuthorId = document.getElementById('common_author_id').value;
+
+            // 기존 작성자가 있고, 새로운 작성자와 다른 경우 참석자에서 제거
+            if (previousAuthorId && String(previousAuthorId) !== String(person.id)) {
+                currentAttendees = currentAttendees.filter(a =>
+                    !(String(a.id) === String(previousAuthorId) && a.type === 'internal')
+                );
+            }
+
             document.getElementById('common_author').value = person.name;
             document.getElementById('common_author_id').value = person.id;
 
@@ -3439,28 +3196,143 @@ ${clonedContent.innerHTML}
                 field.style.color = '';
             });
 
+            // 새로운 작성자를 참석자 목록에 자동 추가 (중복 체크)
+            if (!currentAttendees.some(a => String(a.id) === String(person.id) && a.type === 'internal')) {
+                currentAttendees.push({
+                    id: person.id,
+                    name: person.name,
+                    dept: person.dept,
+                    position: person.position,
+                    type: 'internal',
+                    meetingExpense: person.meetingExpense || 0
+                });
+            }
+
+            // 참석자 목록 UI 업데이트
+            renderAttendeeListInTemplate();
+
+            // 필수 필드 검증
+            validateRequiredFields();
+
             closeAuthorModal();
         }
     };
 
-    // 기본 작성자 설정 (낮은 직급에서 4번째)
-    function setDefaultAuthor() {
+    // 단일 참석자 시간 중복 체크 헬퍼 함수
+    async function checkSingleAttendeeDuplicate(attendeeId, date, startTime, endTime, projectIdx) {
+        try {
+            const response = await fetch(`/api/receipt-meetings/check-duplicate?date=${date}&attendeeIdx=${attendeeId}&projectIdx=${projectIdx}`);
+            if (response.ok) {
+                const data = await response.json();
+                if (Array.isArray(data) && data.length > 0) {
+                    // 시간대 겹침 체크
+                    for (const meeting of data) {
+                        const meetingStartTime = meeting.startTime?.substring(0, 5); // HH:mm
+                        const meetingEndTime = meeting.endTime?.substring(0, 5); // HH:mm
+
+                        if (meetingStartTime && meetingEndTime) {
+                            if (isTimeOverlap(meetingStartTime, meetingEndTime, startTime, endTime)) {
+                                return true; // 중복
+                            }
+                        }
+                    }
+                }
+            }
+            return false; // 중복 아님
+        } catch (error) {
+            console.error('단일 참석자 중복 체크 오류:', error);
+            return false; // 에러 시 중복 아닌 것으로 처리
+        }
+    }
+
+    // 기본 작성자 설정 (낮은 직급에서 4번째, 시간 중복 시 가장 낮은 직급자)
+    async function setDefaultAuthor() {
         const attendeePersons = getAttendeePersons();
         if (attendeePersons.length === 0) return;
 
         const sortedPersons = sortByPosition([...attendeePersons]);
-        // 낮은 직급에서 4번째 (인덱스 3), 4명 미만이면 가장 낮은 직급 (인덱스 0)
-        const defaultAuthor = sortedPersons[3] || sortedPersons[0];
 
-        if (defaultAuthor) {
-            document.getElementById('common_author').value = defaultAuthor.name;
-            document.getElementById('common_author_id').value = defaultAuthor.id;
+        // 날짜, 시간, 프로젝트 정보 가져오기
+        const dateInput = document.getElementById('common_date');
+        const startTimeInput = document.getElementById('common_start_time');
+        const endTimeInput = document.getElementById('common_end_time');
+        const projectIdxInput = document.getElementById('selectedProjectIdx');
+
+        let selectedAuthor = null;
+
+        // 날짜/시간/프로젝트 정보가 있으면 중복 체크
+        if (dateInput?.value && startTimeInput?.value && endTimeInput?.value && projectIdxInput?.value) {
+            const date = dateInput.value;
+            const currentStartTime = startTimeInput.value;
+            const currentEndTime = endTimeInput.value;
+            const projectIdx = projectIdxInput.value;
+
+            // 기본 작성자 후보 (낮은 직급에서 4번째, 없으면 가장 낮은 직급)
+            const defaultCandidate = sortedPersons[3] || sortedPersons[0];
+
+            // 기본 후보가 중복인지 체크
+            const isDuplicate = await checkSingleAttendeeDuplicate(defaultCandidate.id, date, currentStartTime, currentEndTime, projectIdx);
+
+            if (!isDuplicate) {
+                selectedAuthor = defaultCandidate;
+            } else {
+                // 중복이면 가장 낮은 직급부터 차례로 체크
+                for (const person of sortedPersons) {
+                    const personDuplicate = await checkSingleAttendeeDuplicate(person.id, date, currentStartTime, currentEndTime, projectIdx);
+                    if (!personDuplicate) {
+                        selectedAuthor = person;
+                        break;
+                    }
+                }
+
+                // 선택 가능한 멤버가 없으면 경고
+                if (!selectedAuthor) {
+                    await Swal.fire({
+                        icon: 'warning',
+                        title: '시간 중복',
+                        html: `선택하신 시간대(<strong>${currentStartTime} ~ ${currentEndTime}</strong>)에<br>참석 가능한 프로젝트 멤버가 없습니다.<br><br>회의 시간을 변경해주세요.`,
+                        confirmButtonText: '확인'
+                    });
+
+                    // 시작 시간 필드에 포커스
+                    if (startTimeInput) {
+                        startTimeInput.focus();
+                    }
+                    return; // 작성자 설정하지 않고 종료
+                }
+            }
+        } else {
+            // 날짜/시간 정보가 없으면 기존 로직대로
+            selectedAuthor = sortedPersons[3] || sortedPersons[0];
+        }
+
+        if (selectedAuthor) {
+            document.getElementById('common_author').value = selectedAuthor.name;
+            document.getElementById('common_author_id').value = selectedAuthor.id;
 
             // 인쇄용 템플릿도 업데이트
             document.querySelectorAll('.auto-author').forEach(field => {
-                field.value = defaultAuthor.name;
+                field.value = selectedAuthor.name;
                 field.style.color = '';
             });
+
+            // 기본 작성자를 참석자 목록에 자동 추가 (중복 체크)
+            if (!currentAttendees.some(a => String(a.id) === String(selectedAuthor.id) && a.type === 'internal')) {
+                currentAttendees.push({
+                    id: selectedAuthor.id,
+                    name: selectedAuthor.name,
+                    dept: selectedAuthor.dept,
+                    position: selectedAuthor.position,
+                    type: 'internal',
+                    meetingExpense: selectedAuthor.meetingExpense || 0
+                });
+
+                // 참석자 목록 UI 업데이트
+                renderAttendeeListInTemplate();
+
+                // 필수 필드 검증
+                validateRequiredFields();
+            }
         }
     }
 
