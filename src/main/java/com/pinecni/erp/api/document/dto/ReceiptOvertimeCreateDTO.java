@@ -32,12 +32,6 @@ public class ReceiptOvertimeCreateDTO {
      * 작성자 IDX
      */
     private Long authorIdx;
-
-    /**
-     * 카드 IDX
-     */
-    private Long cardIdx;
-
     /**
      * 야근 일자
      */

@@ -26,9 +26,6 @@ public class ReceiptOvertime {
     @JoinColumn(name = "project_idx", nullable = false)
     private Project projectIdx;
 
-    @Column(name = "card_idx")
-    private Long cardIdx;
-
     @Size(max = 50)
     @Column(name = "document_number", length = 50)
     private String documentNumber;

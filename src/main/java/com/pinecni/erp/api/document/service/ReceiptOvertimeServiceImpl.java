@@ -165,7 +165,6 @@ public class ReceiptOvertimeServiceImpl implements ReceiptOvertimeService {
             entity.setDocumentNumber(documentNumber);
             entity.setDocumentIdx(savedDocument.getIdx());
             entity.setAuthorIdx(createDTO.getAuthorIdx());
-            entity.setCardIdx(createDTO.getCardIdx());
             entity.setOvertimeDate(createDTO.getOvertimeDate());
             entity.setApprovalDate(createDTO.getApprovalDate());
             entity.setDocumentTitle(createDTO.getDocumentTitle());

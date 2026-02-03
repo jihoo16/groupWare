@@ -35,7 +35,6 @@ public class ReceiptOvertimeMapper {
                 .documentNumber(entity.getDocumentNumber())
                 .documentIdx(entity.getDocumentIdx())
                 .authorIdx(entity.getAuthorIdx())
-                .cardIdx(entity.getCardIdx())
                 .overtimeDate(entity.getOvertimeDate())
                 .approvalDate(entity.getApprovalDate())
                 .documentTitle(entity.getDocumentTitle())
