@@ -6,6 +6,8 @@ import com.pinecni.erp.api.document.dto.ReceiptMeetingDTO;
 import com.pinecni.erp.api.document.dto.ReceiptMeetingUpdateDTO;
 import com.pinecni.erp.api.document.mapper.ReceiptMeetingMapper;
 import com.pinecni.erp.api.document.repository.ReceiptMeetingOfficialPdfRepository;
+import com.pinecni.erp.api.document.repository.ReceiptOvertimeRepository;
+import com.pinecni.erp.api.document.repository.ReceiptOvertimeAttendeeRepository;
 import com.pinecni.erp.api.project.repository.ReceiptMeetingAttachmentRepository;
 import com.pinecni.erp.api.project.repository.ReceiptMeetingAttendeeRepository;
 import com.pinecni.erp.api.project.repository.ReceiptMeetingRepository;
@@ -14,6 +16,8 @@ import com.pinecni.erp.entity.ReceiptMeeting;
 import com.pinecni.erp.entity.ReceiptMeetingAttachment;
 import com.pinecni.erp.entity.ReceiptMeetingAttendee;
 import com.pinecni.erp.entity.ReceiptMeetingOfficialPdf;
+import com.pinecni.erp.entity.ReceiptOvertime;
+import com.pinecni.erp.entity.ReceiptOvertimeAttendee;
 import com.pinecni.erp.entity.ApprovalDocument;
 import com.pinecni.erp.service.PdfGenerationService;
 import lombok.RequiredArgsConstructor;
@@ -49,6 +53,8 @@ public class ReceiptMeetingServiceImpl implements ReceiptMeetingService {
     private final ReceiptMeetingMapper mapper;
     private final ApprovalDocumentRepository approvalDocumentRepository;
     private final PdfGenerationService pdfGenerationService;
+    private final ReceiptOvertimeRepository receiptOvertimeRepository;
+    private final ReceiptOvertimeAttendeeRepository receiptOvertimeAttendeeRepository;
 
     @Value("${file.upload.path:/uploads/receipt-meetings}")
     private String uploadPath;
@@ -118,8 +124,8 @@ public class ReceiptMeetingServiceImpl implements ReceiptMeetingService {
 
     @Override
     @Transactional
-    public ReceiptMeetingDTO createReceiptMeeting(ReceiptMeetingCreateDTO createDTO) {
-        log.debug("회의록 생성 - projectIdx: {}, authorIdx: {}", createDTO.getProjectIdx(), createDTO.getAuthorIdx());
+    public ReceiptMeetingDTO createReceiptMeeting(ReceiptMeetingCreateDTO createDTO, Long currentUserIdx) {
+        log.debug("회의록 생성 - projectIdx: {}, authorIdx: {}, currentUserIdx: {}", createDTO.getProjectIdx(), createDTO.getAuthorIdx(), currentUserIdx);
 
         try {
             // 1. 참석자 중복 검증 (저장 전 필수)
@@ -149,8 +155,8 @@ public class ReceiptMeetingServiceImpl implements ReceiptMeetingService {
                 .isProject(true)  // 프로젝트 문서로 표시
                 .drafterUserIdx(createDTO.getAuthorIdx())
                 .content(createDTO.getContent())
-                .createdUserIdx(createDTO.getAuthorIdx())
-                .updatedUserIdx(createDTO.getAuthorIdx())
+                .createdUserIdx(currentUserIdx)
+                .updatedUserIdx(currentUserIdx)
                 .build();
 
         ApprovalDocument savedDocument = approvalDocumentRepository.save(approvalDocument);
@@ -161,6 +167,8 @@ public class ReceiptMeetingServiceImpl implements ReceiptMeetingService {
         ReceiptMeeting entity = mapper.toEntity(createDTO);
         entity.setDocumentNumber(documentNumber);
         entity.setDocumentIdx(savedDocument.getIdx());
+        entity.setCreatedUserIdx(currentUserIdx);
+        entity.setUpdatedUserIdx(currentUserIdx);
         entity = receiptMeetingRepository.save(entity);
 
         // 5. 참석자 목록 저장
@@ -188,8 +196,8 @@ public class ReceiptMeetingServiceImpl implements ReceiptMeetingService {
 
     @Override
     @Transactional
-    public ReceiptMeetingDTO updateReceiptMeeting(Long idx, ReceiptMeetingUpdateDTO updateDTO) {
-        log.debug("회의록 수정 - idx: {}", idx);
+    public ReceiptMeetingDTO updateReceiptMeeting(Long idx, ReceiptMeetingUpdateDTO updateDTO, Long currentUserIdx) {
+        log.debug("회의록 수정 - idx: {}, currentUserIdx: {}", idx, currentUserIdx);
 
         // 1. 기존 회의록 조회
         ReceiptMeeting entity = receiptMeetingRepository.findById(idx)
@@ -207,6 +215,7 @@ public class ReceiptMeetingServiceImpl implements ReceiptMeetingService {
 
         // 3. 회의록 정보 업데이트
         mapper.updateEntity(entity, updateDTO);
+        entity.setUpdatedUserIdx(currentUserIdx);
         entity = receiptMeetingRepository.save(entity);
 
         // 4. 참석자 목록 업데이트 (기존 삭제 후 재생성)
@@ -223,7 +232,6 @@ public class ReceiptMeetingServiceImpl implements ReceiptMeetingService {
 
         // 5. 연결된 ApprovalDocument도 업데이트
         final Long documentIdx = entity.getDocumentIdx();
-        final Long authorIdx = entity.getAuthorIdx();
         if (documentIdx != null) {
             approvalDocumentRepository.findById(documentIdx).ifPresent(approvalDocument -> {
                 // 제목 업데이트
@@ -239,7 +247,7 @@ public class ReceiptMeetingServiceImpl implements ReceiptMeetingService {
                 }
 
                 // 수정 정보 업데이트
-                approvalDocument.setUpdatedUserIdx(authorIdx);
+                approvalDocument.setUpdatedUserIdx(currentUserIdx);
                 approvalDocument.setUpdatedAt(LocalDateTime.now());
 
                 approvalDocumentRepository.save(approvalDocument);
@@ -339,47 +347,69 @@ public class ReceiptMeetingServiceImpl implements ReceiptMeetingService {
     @Override
     @Transactional(readOnly = true)
     public List<Map<String, Object>> findDuplicateAttendee(String date, Long attendeeIdx, Long projectIdx) {
-        log.debug("중복 참석자 검증 - date: {}, attendeeIdx: {}, projectIdx: {}", date, attendeeIdx, projectIdx);
+        log.debug("중복 참석자 검증 (회의록 + 야근식대) - date: {}, attendeeIdx: {}, projectIdx: {}", date, attendeeIdx, projectIdx);
 
         try {
             // 날짜 파싱
-            LocalDate meetingDate = LocalDate.parse(date);
-
-            // 해당 날짜 + 같은 프로젝트의 회의록만 조회
-            List<ReceiptMeeting> meetings = receiptMeetingRepository.findAll().stream()
-                    .filter(rm -> rm.getMeetingDate() != null && rm.getMeetingDate().equals(meetingDate))
-                    .filter(rm -> projectIdx == null || rm.getProjectIdx().equals(projectIdx)) // 같은 프로젝트만
-                    .collect(Collectors.toList());
+            LocalDate targetDate = LocalDate.parse(date);
 
             List<Map<String, Object>> duplicates = new ArrayList<>();
 
-            // 각 회의록의 참석자 확인
+            // 1. 회의록 중복 체크
+            List<ReceiptMeeting> meetings = receiptMeetingRepository.findAll().stream()
+                    .filter(rm -> rm.getMeetingDate() != null && rm.getMeetingDate().equals(targetDate))
+                    .filter(rm -> projectIdx == null || rm.getProjectIdx().equals(projectIdx))
+                    .collect(Collectors.toList());
+
             for (ReceiptMeeting meeting : meetings) {
                 List<ReceiptMeetingAttendee> attendees = attendeeRepository.findByReceiptMeetingIdxOrderByDisplayOrder(meeting.getIdx());
 
-                // 해당 참석자가 포함되어 있는지 확인
                 boolean hasDuplicate = attendees.stream()
-                        .anyMatch(attendee -> attendee.getUserIdx().equals(attendeeIdx));
+                        .anyMatch(attendee -> attendee.getUserIdx() != null && attendee.getUserIdx().equals(attendeeIdx));
 
                 if (hasDuplicate) {
                     Map<String, Object> info = new HashMap<>();
                     info.put("idx", meeting.getIdx());
-                    info.put("meetingDate", meeting.getMeetingDate()); // 회의 날짜
-                    info.put("startTime", meeting.getStartTime()); // 시작 시간
-                    info.put("endTime", meeting.getEndTime()); // 종료 시간
-                    info.put("projectIdx", meeting.getProjectIdx()); // 프로젝트 IDX
-
-                    // 프로젝트 이름 조회
-                    if (meeting.getProject() != null) {
-                        info.put("projectName", meeting.getProject().getProjectName());
-                    } else {
-                        info.put("projectName", null);
-                    }
+                    info.put("type", "회의록");
+                    info.put("meetingDate", meeting.getMeetingDate());
+                    info.put("startTime", meeting.getStartTime());
+                    info.put("endTime", meeting.getEndTime());
+                    info.put("projectIdx", meeting.getProjectIdx());
+                    info.put("projectName", meeting.getProject() != null ? meeting.getProject().getProjectName() : null);
+                    info.put("cardIdx", meeting.getCardIdx());
 
                     duplicates.add(info);
                 }
             }
 
+            // 2. 야근식대 중복 체크
+            List<ReceiptOvertime> overtimes = receiptOvertimeRepository.findAll().stream()
+                    .filter(ro -> ro.getOvertimeDate() != null && ro.getOvertimeDate().equals(targetDate))
+                    .filter(ro -> projectIdx == null || ro.getProjectIdx().getIdx().equals(projectIdx))
+                    .collect(Collectors.toList());
+
+            for (ReceiptOvertime overtime : overtimes) {
+                List<ReceiptOvertimeAttendee> overtimeAttendees = receiptOvertimeAttendeeRepository.findByReceiptOvertimeIdx(overtime.getId());
+
+                boolean hasDuplicate = overtimeAttendees.stream()
+                        .anyMatch(attendee -> attendee.getUserIdx() != null && attendee.getUserIdx().equals(attendeeIdx));
+
+                if (hasDuplicate) {
+                    Map<String, Object> info = new HashMap<>();
+                    info.put("idx", overtime.getId());
+                    info.put("type", "야근식대");
+                    info.put("meetingDate", overtime.getOvertimeDate()); // 야근 날짜
+                    info.put("startTime", null); // 야근식대는 시간 정보 없음
+                    info.put("endTime", null);
+                    info.put("projectIdx", overtime.getProjectIdx().getIdx());
+                    info.put("projectName", overtime.getProjectIdx().getProjectName());
+                    info.put("cardIdx", overtime.getCardIdx());
+
+                    duplicates.add(info);
+                }
+            }
+
+            log.debug("중복 검증 결과 - 총 {}건 (회의록 + 야근식대)", duplicates.size());
             return duplicates;
         } catch (Exception e) {
             log.error("중복 참석자 검증 중 오류 발생: {}", e.getMessage(), e);
