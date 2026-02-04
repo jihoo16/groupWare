@@ -73,8 +73,10 @@ public class ReceiptMeetingServiceImpl implements ReceiptMeetingService {
     @Transactional(readOnly = true)
     public List<ReceiptMeetingDTO> getAllReceiptMeetings() {
         log.debug("전체 회의록 목록 조회");
-        return receiptMeetingRepository.findAllByOrderByMeetingDateDesc()
-                .stream()
+        List<ReceiptMeeting> meetings = receiptMeetingRepository.findAllByOrderByMeetingDateDesc();
+        // 각 회의록에 참석자 로드
+        meetings.forEach(this::loadAttendees);
+        return meetings.stream()
                 .map(mapper::toDTO)
                 .collect(Collectors.toList());
     }
@@ -108,8 +110,10 @@ public class ReceiptMeetingServiceImpl implements ReceiptMeetingService {
     @Transactional(readOnly = true)
     public List<ReceiptMeetingDTO> getReceiptMeetingsByProjectIdx(Long projectIdx) {
         log.debug("프로젝트별 회의록 목록 조회 - projectIdx: {}", projectIdx);
-        return receiptMeetingRepository.findByProjectIdxOrderByMeetingDateDesc(projectIdx)
-                .stream()
+        List<ReceiptMeeting> meetings = receiptMeetingRepository.findByProjectIdxOrderByMeetingDateDesc(projectIdx);
+        // 각 회의록에 참석자 로드
+        meetings.forEach(this::loadAttendees);
+        return meetings.stream()
                 .map(mapper::toDTO)
                 .collect(Collectors.toList());
     }
@@ -118,8 +122,10 @@ public class ReceiptMeetingServiceImpl implements ReceiptMeetingService {
     @Transactional(readOnly = true)
     public List<ReceiptMeetingDTO> getReceiptMeetingsByAuthorIdx(Long authorIdx) {
         log.debug("작성자별 회의록 목록 조회 - authorIdx: {}", authorIdx);
-        return receiptMeetingRepository.findByAuthorIdxOrderByMeetingDateDesc(authorIdx)
-                .stream()
+        List<ReceiptMeeting> meetings = receiptMeetingRepository.findByAuthorIdxOrderByMeetingDateDesc(authorIdx);
+        // 각 회의록에 참석자 로드
+        meetings.forEach(this::loadAttendees);
+        return meetings.stream()
                 .map(mapper::toDTO)
                 .collect(Collectors.toList());
     }
@@ -128,8 +134,10 @@ public class ReceiptMeetingServiceImpl implements ReceiptMeetingService {
     @Transactional(readOnly = true)
     public List<ReceiptMeetingDTO> getReceiptMeetingsByStatus(String status) {
         log.debug("상태별 회의록 목록 조회 - status: {}", status);
-        return receiptMeetingRepository.findByStatusOrderByMeetingDateDesc(status)
-                .stream()
+        List<ReceiptMeeting> meetings = receiptMeetingRepository.findByStatusOrderByMeetingDateDesc(status);
+        // 각 회의록에 참석자 로드
+        meetings.forEach(this::loadAttendees);
+        return meetings.stream()
                 .map(mapper::toDTO)
                 .collect(Collectors.toList());
     }
