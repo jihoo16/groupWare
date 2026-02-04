@@ -168,10 +168,7 @@ public class ReceiptOvertimeServiceImpl implements ReceiptOvertimeService {
     @Transactional(readOnly = true)
     public List<ReceiptOvertimeDTO> getReceiptOvertimesByStatus(String status) {
         log.debug("상태별 야근식대 목록 조회 - status: {}", status);
-        return receiptOvertimeRepository.findByStatusOrderByOvertimeDateDesc(status)
-                .stream()
-                .map(mapper::toDTO)
-                .collect(Collectors.toList());
+        return null;
     }
 
     @Override

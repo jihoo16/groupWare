@@ -57,15 +57,6 @@ public class ReceiptOvertime {
     @Column(name = "total_amount", precision = 15, scale = 2)
     private BigDecimal totalAmount;
 
-    @Size(max = 50)
-    @Column(name = "payment_type", length = 50)
-    private String paymentType;
-
-    @Size(max = 20)
-    @ColumnDefault("'PENDING'")
-    @Column(name = "status", length = 20)
-    private String status;
-
     @NotNull
     @ColumnDefault("CURRENT_TIMESTAMP")
     @Column(name = "created_at", nullable = false)

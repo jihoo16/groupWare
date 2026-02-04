@@ -184,13 +184,11 @@ public class ApprovalDocumentServiceImpl implements ApprovalDocumentService {
             // 연구비증빙 회의록의 원본 문서 ID 조회 (신형식 하이픈, 구형식 괄호 모두 지원)
             receiptMeetingRepository.findByDocumentIdx(document.getIdx()).ifPresent(receiptMeeting -> {
                 dto.setSourceDocumentId(receiptMeeting.getIdx());
-                dto.setStatus(receiptMeeting.getStatus());
             });
         } else if ("연구비증빙-출장".equals(documentType) || "연구비증빙(출장)".equals(documentType)) {
             // 연구비증빙 출장의 원본 문서 ID 조회 (신형식 하이픈, 구형식 괄호 모두 지원)
             receiptTripRepository.findByDocumentIdx(document.getIdx()).ifPresent(receiptTrip -> {
                 dto.setSourceDocumentId(receiptTrip.getIdx());
-                dto.setStatus(receiptTrip.getStatus());
             });
         }
         // 다른 문서 타입들도 필요시 추가
@@ -399,7 +397,6 @@ public class ApprovalDocumentServiceImpl implements ApprovalDocumentService {
                 .title(trip.getLocation() + " 출장")
                 .documentType("BUSINESS_TRIP")
                 .drafterUserIdx(trip.getAuthorIdx())
-                .status(trip.getStatus())
                 .createdAt(trip.getCreatedAt())
                 .updatedAt(trip.getUpdatedAt())
                 .build();
@@ -435,7 +432,6 @@ public class ApprovalDocumentServiceImpl implements ApprovalDocumentService {
                 .title(title)
                 .documentType("RECEIPT_MEETING")
                 .drafterUserIdx(meeting.getAuthorIdx())
-                .status(meeting.getStatus())
                 .createdAt(meeting.getCreatedAt())
                 .updatedAt(meeting.getUpdatedAt())
                 .build();
@@ -489,7 +485,6 @@ public class ApprovalDocumentServiceImpl implements ApprovalDocumentService {
                 .title(title)
                 .documentType("RECEIPT_OVERTIME")
                 .drafterUserIdx(overtime.getAuthorIdx())
-                .status(overtime.getStatus())
                 .createdAt(createdAt)
                 .updatedAt(updatedAt)
                 .build();

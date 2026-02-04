@@ -32,8 +32,6 @@ public class ReceiptOvertimeDTO {
     private String documentTitle;
     private String documentContent;
     private BigDecimal totalAmount;
-    private String paymentType;
-    private String status;
     private Instant createdAt;
     private Instant updatedAt;
 

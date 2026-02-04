@@ -43,10 +43,9 @@ public class ReceiptOvertimeController {
     @GetMapping
     public ResponseEntity<List<ReceiptOvertimeDTO>> getAllReceiptOvertimes(
             @RequestParam(required = false) Long projectIdx,
-            @RequestParam(required = false) Long authorIdx,
-            @RequestParam(required = false) String status) {
+            @RequestParam(required = false) Long authorIdx) {
 
-        log.debug("GET /api/receipt-overtimes - projectIdx: {}, authorIdx: {}, status: {}", projectIdx, authorIdx, status);
+        log.debug("GET /api/receipt-overtimes - projectIdx: {}, authorIdx: {}", projectIdx, authorIdx);
 
         List<ReceiptOvertimeDTO> receiptOvertimes;
 
@@ -54,8 +53,7 @@ public class ReceiptOvertimeController {
             receiptOvertimes = receiptOvertimeService.getReceiptOvertimesByProjectIdx(projectIdx);
         } else if (authorIdx != null) {
             receiptOvertimes = receiptOvertimeService.getReceiptOvertimesByAuthorIdx(authorIdx);
-        } else if (status != null) {
-            receiptOvertimes = receiptOvertimeService.getReceiptOvertimesByStatus(status);
+
         } else {
             receiptOvertimes = receiptOvertimeService.getAllReceiptOvertimes();
         }

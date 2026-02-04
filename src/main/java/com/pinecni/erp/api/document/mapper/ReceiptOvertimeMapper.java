@@ -38,8 +38,6 @@ public class ReceiptOvertimeMapper {
                 .documentTitle(entity.getDocumentTitle())
                 .documentContent(entity.getDocumentContent())
                 .totalAmount(entity.getTotalAmount())
-                .paymentType(entity.getPaymentType())
-                .status(entity.getStatus())
                 .createdAt(entity.getCreatedAt())
                 .updatedAt(entity.getUpdatedAt())
                 .build();
