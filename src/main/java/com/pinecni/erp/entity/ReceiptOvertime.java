@@ -83,4 +83,15 @@ public class ReceiptOvertime {
     @Column(name = "document_idx")
     private Long documentIdx;
 
+    @NotNull
+    @ColumnDefault("false")
+    @Column(name = "is_deleted", nullable = false)
+    private Boolean isDeleted = false;
+
+    @Column(name = "deleted_user_idx")
+    private Long deletedUserIdx;
+
+    @Column(name = "deleted_at")
+    private Instant deletedAt;
+
 }
