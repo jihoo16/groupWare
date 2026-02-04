@@ -337,10 +337,10 @@ document.addEventListener('DOMContentLoaded', async function() {
                     commonEndTime.dispatchEvent(new Event('input'));
                 }
 
-                // 참석자 중복 검증 재실행
-                await recheckAttendees();
+                // 시작 시간 변경 시 참석자 목록 초기화
+                currentAttendees = [];
 
-                // 시작 시간 변경 시 기본 작성자 재설정 (중복 체크 포함)
+                // 중복되지 않은 기본 작성자만 추가
                 await setDefaultAuthor();
             });
 
@@ -375,10 +375,10 @@ document.addEventListener('DOMContentLoaded', async function() {
                     commonStartTime.dispatchEvent(new Event('input'));
                 }
 
-                // 참석자 중복 검증 재실행
-                await recheckAttendees();
+                // 종료 시간 변경 시 참석자 목록 초기화
+                currentAttendees = [];
 
-                // 종료 시간 변경 시 기본 작성자 재설정 (중복 체크 포함)
+                // 중복되지 않은 기본 작성자만 추가
                 await setDefaultAuthor();
             });
         }
@@ -1382,7 +1382,10 @@ document.addEventListener('DOMContentLoaded', async function() {
                 updateDateTime();
                 updateDocNumber();
 
-                // 날짜 변경 시 기본 작성자 재설정 (중복 체크 포함)
+                // 날짜 변경 시 참석자 목록 초기화
+                currentAttendees = [];
+
+                // 중복되지 않은 기본 작성자만 추가
                 await setDefaultAuthor();
             });
         }
@@ -2610,20 +2613,46 @@ document.addEventListener('DOMContentLoaded', async function() {
             return;
         }
 
-        selectedAttendeeBadgesEl.innerHTML = tempSelectedAttendees.map(person => `
-            <div class="attendee-badge ${person.type === 'external' ? 'external' : ''}" onclick="removeTempAttendee('${person.id}', '${person.type}')">
-                <i class="fas fa-${person.type === 'external' ? 'user-tie' : 'user'}"></i>
-                <span class="badge-name">${person.name}</span>
-                <span class="badge-info">${person.dept}</span>
-                <div class="badge-remove">
-                    <i class="fas fa-times"></i>
+        // 현재 작성자 ID 가져오기
+        const currentAuthorId = document.getElementById('common_author_id')?.value;
+
+        selectedAttendeeBadgesEl.innerHTML = tempSelectedAttendees.map(person => {
+            // 작성자인지 확인 (내부 인원만)
+            const isAuthor = currentAuthorId && String(person.id) === String(currentAuthorId) && person.type === 'internal';
+
+            // 작성자인 경우 삭제 불가 처리
+            const clickEvent = isAuthor ? '' : `onclick="removeTempAttendee('${person.id}', '${person.type}')"`;
+            const badgeClass = isAuthor ? 'is-author' : '';
+            const authorBadge = isAuthor ? '<span class="author-tag" style="background: #667eea; color: white; padding: 2px 6px; border-radius: 4px; font-size: 10px; margin-left: 4px;">작성자</span>' : '';
+            const removeButton = isAuthor
+                ? '<div class="badge-locked" style="color: #94a3b8; font-size: 11px;"><i class="fas fa-lock"></i></div>'
+                : '<div class="badge-remove"><i class="fas fa-times"></i></div>';
+
+            return `
+                <div class="attendee-badge ${person.type === 'external' ? 'external' : ''} ${badgeClass}" ${clickEvent}>
+                    <i class="fas fa-${person.type === 'external' ? 'user-tie' : 'user'}"></i>
+                    <span class="badge-name">${person.name}${authorBadge}</span>
+                    <span class="badge-info">${person.dept}</span>
+                    ${removeButton}
                 </div>
-            </div>
-        `).join('');
+            `;
+        }).join('');
     }
 
     // 임시 선택 참석자 제거
     window.removeTempAttendee = function(attendeeId, type) {
+        // 작성자인지 확인 (내부 인원만)
+        const currentAuthorId = document.getElementById('common_author_id')?.value;
+        if (currentAuthorId && String(attendeeId) === String(currentAuthorId) && type === 'internal') {
+            Swal.fire({
+                icon: 'warning',
+                title: '삭제 불가',
+                text: '작성자는 참석자에서 제거할 수 없습니다.',
+                confirmButtonText: '확인'
+            });
+            return;
+        }
+
         const index = tempSelectedAttendees.findIndex(a => String(a.id) === String(attendeeId) && a.type === type);
         if (index > -1) {
             tempSelectedAttendees.splice(index, 1);
@@ -2952,6 +2981,29 @@ document.addEventListener('DOMContentLoaded', async function() {
             type: person.type
         }));
 
+        // 작성자가 참석자 목록에 포함되어 있는지 확인
+        const currentAuthorId = document.getElementById('common_author_id')?.value;
+        if (currentAuthorId) {
+            const hasAuthor = currentAttendees.some(a => String(a.id) === String(currentAuthorId) && a.type === 'internal');
+            if (!hasAuthor) {
+                // 작성자가 빠져있으면 다시 추가
+                const authorName = document.getElementById('common_author')?.value;
+                if (authorName) {
+                    // 전체 프로젝트 멤버에서 작성자 정보 찾기
+                    const authorInfo = allProjectMembers.find(m => String(m.id) === String(currentAuthorId));
+                    if (authorInfo) {
+                        currentAttendees.push({
+                            id: authorInfo.id,
+                            name: authorInfo.name,
+                            dept: authorInfo.dept,
+                            position: authorInfo.position,
+                            meetingExpense: authorInfo.meetingExpense || 0,
+                            type: 'internal'
+                        });
+                    }
+                }
+            }
+        }
 
         // 참석자 목록 UI 업데이트
         renderAttendeeListInTemplate();
