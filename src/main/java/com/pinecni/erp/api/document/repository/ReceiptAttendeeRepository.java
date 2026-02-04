@@ -8,6 +8,7 @@ import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.util.List;
 
 /**
@@ -16,6 +17,46 @@ import java.util.List;
  */
 @Repository
 public interface ReceiptAttendeeRepository extends JpaRepository<ReceiptAttendee, Long> {
+
+    // ==============================================
+    // 야근식대(RCO) 전용 편의 메서드
+    // ==============================================
+
+    /**
+     * 야근식대 참석자 목록 조회
+     */
+    default List<ReceiptAttendee> findByReceiptOvertimeIdx(Long receiptOvertimeIdx) {
+        return findByReceiptIdxAndDocumentTypePrefixOrderByDisplayOrder(receiptOvertimeIdx, "RCO");
+    }
+
+    /**
+     * 야근식대 참석자 소프트 딜리트
+     */
+    default void softDeleteByReceiptOvertimeIdx(Long receiptOvertimeIdx, LocalDateTime deletedAt, Long deletedUserIdx) {
+        softDeleteByReceiptIdxAndDocumentTypePrefix(receiptOvertimeIdx, "RCO", deletedUserIdx);
+    }
+
+    // ==============================================
+    // 회의록(RCM) 전용 편의 메서드
+    // ==============================================
+
+    /**
+     * 회의록 참석자 목록 조회
+     */
+    default List<ReceiptAttendee> findByReceiptMeetingIdx(Long receiptMeetingIdx) {
+        return findByReceiptIdxAndDocumentTypePrefixOrderByDisplayOrder(receiptMeetingIdx, "RCM");
+    }
+
+    /**
+     * 회의록 참석자 소프트 딜리트
+     */
+    default void softDeleteByReceiptMeetingIdx(Long receiptMeetingIdx, LocalDateTime deletedAt, Long deletedUserIdx) {
+        softDeleteByReceiptIdxAndDocumentTypePrefix(receiptMeetingIdx, "RCM", deletedUserIdx);
+    }
+
+    // ==============================================
+    // 공통 메서드
+    // ==============================================
 
     /**
      * 문서별 참석자 목록 조회 (정렬 순서대로)
