@@ -2,11 +2,9 @@ package com.pinecni.erp.api.document.mapper;
 
 import com.pinecni.erp.api.document.dto.ReceiptOvertimeAttachmentDTO;
 import com.pinecni.erp.api.document.dto.ReceiptOvertimeAttendeeDTO;
-import com.pinecni.erp.api.document.dto.ReceiptOvertimeCreateDTO;
 import com.pinecni.erp.api.document.dto.ReceiptOvertimeDTO;
 import com.pinecni.erp.entity.ReceiptOvertime;
 import com.pinecni.erp.entity.ReceiptOvertimeAttachment;
-import com.pinecni.erp.entity.ReceiptOvertimeAttendee;
 import org.springframework.stereotype.Component;
 
 import java.util.Collections;
@@ -48,43 +46,22 @@ public class ReceiptOvertimeMapper {
     }
 
     /**
-     * Entity -> DTO 변환 (attendees, attachments 포함)
+     * Entity -> DTO 변환 (attendees DTO 리스트, attachments 포함)
+     * receipt_attendee 테이블에서 변환된 DTO 사용
      */
     public ReceiptOvertimeDTO toDTOWithDetails(ReceiptOvertime entity,
-                                                java.util.List<ReceiptOvertimeAttendee> attendees,
+                                                java.util.List<ReceiptOvertimeAttendeeDTO> attendeeDTOs,
                                                 java.util.List<ReceiptOvertimeAttachment> attachments) {
         if (entity == null) {
             return null;
         }
 
         ReceiptOvertimeDTO dto = toDTO(entity);
-        dto.setAttendees(attendees != null ?
-                attendees.stream().map(this::toAttendeeDTO).collect(Collectors.toList()) :
-                Collections.emptyList());
+        dto.setAttendees(attendeeDTOs != null ? attendeeDTOs : Collections.emptyList());
         dto.setAttachments(attachments != null ?
                 attachments.stream().map(this::toAttachmentDTO).collect(Collectors.toList()) :
                 Collections.emptyList());
         return dto;
-    }
-
-    /**
-     * Attendee Entity -> AttendeeDTO 변환
-     * 주의: userName은 Service 레이어에서 users 테이블 조인으로 설정 필요
-     */
-    public ReceiptOvertimeAttendeeDTO toAttendeeDTO(ReceiptOvertimeAttendee entity) {
-        if (entity == null) {
-            return null;
-        }
-
-        return ReceiptOvertimeAttendeeDTO.builder()
-                .idx(entity.getIdx())
-                .receiptOvertimeIdx(entity.getReceiptOvertimeIdx() != null ? entity.getReceiptOvertimeIdx().getId() : null)
-                .userIdx(entity.getUserIdx())
-                .workTime(entity.getWorkTime())
-                .workTask(entity.getWorkTask())
-                .createdAt(entity.getCreatedAt())
-                .updatedAt(entity.getUpdatedAt())
-                .build();
     }
 
     /**
