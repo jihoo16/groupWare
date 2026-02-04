@@ -9,6 +9,7 @@ import com.pinecni.erp.api.document.repository.ReceiptOvertimeRepository;
 import com.pinecni.erp.api.project.repository.ReceiptMeetingRepository;
 import com.pinecni.erp.api.project.repository.ReceiptTripRepository;
 import com.pinecni.erp.api.user.repository.UserRepository;
+import com.pinecni.erp.constant.CodeConstants;
 import com.pinecni.erp.entity.*;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -153,18 +154,32 @@ public class ApprovalDocumentServiceImpl implements ApprovalDocumentService {
                 .updatedAt(document.getUpdatedAt())
                 .build();
 
-        // 작성자 정보 조회 및 설정
-        userRepository.findById(document.getDrafterUserIdx()).ifPresent(user -> {
-            dto.setDrafterName(user.getEmpName());
-            dto.setDrafterDept(user.getEmpDept());
+        // 작성자 정보 조회 및 설정 (실제 문서 생성자)
+        log.info("==== 문서 작성자 조회 시작 - 문서 IDX: {}, createdUserIdx: {} ====", document.getIdx(), document.getCreatedUserIdx());
+        if (document.getCreatedUserIdx() != null) {
+            userRepository.findById(document.getCreatedUserIdx()).ifPresent(user -> {
+                log.info(">>> 사용자 찾음 - userIdx: {}, 이름: {}, 부서코드: {}", user.getIdx(), user.getEmpName(), user.getEmpDept());
+                dto.setDrafterName(user.getEmpName());
+                dto.setDrafterDept(user.getEmpDept());
 
-            // 부서명 조회
-            if (user.getEmpDept() != null) {
-                codeRepository.findByCode(user.getEmpDept()).ifPresent(code -> {
-                    dto.setDrafterDeptName(code.getCodeName());
-                });
-            }
-        });
+                // 부서명 조회
+                if (user.getEmpDept() != null) {
+                    log.info(">>> 부서코드로 부서명 조회 시도 - groupCode: {}, deptCode: {}",
+                            CodeConstants.GroupCode.DEPARTMENT.getCode(), user.getEmpDept());
+                    codeRepository.findByGroupCodeAndCode(CodeConstants.GroupCode.DEPARTMENT.getCode(), user.getEmpDept()).ifPresent(code -> {
+                        log.info(">>> 부서명 찾음!!! - code: {}, codeName: {}", code.getCode(), code.getCodeName());
+                        dto.setDrafterDeptName(code.getCodeName());
+                    });
+                    if (dto.getDrafterDeptName() == null) {
+                        log.error("!!! 부서명을 찾지 못함 - deptCode: {}", user.getEmpDept());
+                    }
+                } else {
+                    log.error("!!! 사용자의 부서코드가 null - userIdx: {}", user.getIdx());
+                }
+            });
+        } else {
+            log.error("!!! createdUserIdx가 null - 문서 IDX: {}", document.getIdx());
+        }
 
         // 원본 문서 ID 조회 및 설정
         String documentType = document.getDocumentType();
@@ -329,7 +344,7 @@ public class ApprovalDocumentServiceImpl implements ApprovalDocumentService {
             dto.setDrafterName(user.getEmpName());
             dto.setDrafterDept(user.getEmpDept());
             if (user.getEmpDept() != null) {
-                codeRepository.findByCode(user.getEmpDept()).ifPresent(code -> {
+                codeRepository.findByGroupCodeAndCode(CodeConstants.GroupCode.DEPARTMENT.getCode(), user.getEmpDept()).ifPresent(code -> {
                     dto.setDrafterDeptName(code.getCodeName());
                 });
             }
@@ -364,7 +379,7 @@ public class ApprovalDocumentServiceImpl implements ApprovalDocumentService {
             dto.setDrafterName(user.getEmpName());
             dto.setDrafterDept(user.getEmpDept());
             if (user.getEmpDept() != null) {
-                codeRepository.findByCode(user.getEmpDept()).ifPresent(code -> {
+                codeRepository.findByGroupCodeAndCode(CodeConstants.GroupCode.DEPARTMENT.getCode(), user.getEmpDept()).ifPresent(code -> {
                     dto.setDrafterDeptName(code.getCodeName());
                 });
             }
@@ -401,7 +416,7 @@ public class ApprovalDocumentServiceImpl implements ApprovalDocumentService {
             dto.setDrafterName(user.getEmpName());
             dto.setDrafterDept(user.getEmpDept());
             if (user.getEmpDept() != null) {
-                codeRepository.findByCode(user.getEmpDept()).ifPresent(code -> {
+                codeRepository.findByGroupCodeAndCode(CodeConstants.GroupCode.DEPARTMENT.getCode(), user.getEmpDept()).ifPresent(code -> {
                     dto.setDrafterDeptName(code.getCodeName());
                 });
             }
@@ -437,7 +452,7 @@ public class ApprovalDocumentServiceImpl implements ApprovalDocumentService {
             dto.setDrafterName(user.getEmpName());
             dto.setDrafterDept(user.getEmpDept());
             if (user.getEmpDept() != null) {
-                codeRepository.findByCode(user.getEmpDept()).ifPresent(code -> {
+                codeRepository.findByGroupCodeAndCode(CodeConstants.GroupCode.DEPARTMENT.getCode(), user.getEmpDept()).ifPresent(code -> {
                     dto.setDrafterDeptName(code.getCodeName());
                 });
             }
@@ -491,7 +506,7 @@ public class ApprovalDocumentServiceImpl implements ApprovalDocumentService {
             dto.setDrafterName(user.getEmpName());
             dto.setDrafterDept(user.getEmpDept());
             if (user.getEmpDept() != null) {
-                codeRepository.findByCode(user.getEmpDept()).ifPresent(code -> {
+                codeRepository.findByGroupCodeAndCode(CodeConstants.GroupCode.DEPARTMENT.getCode(), user.getEmpDept()).ifPresent(code -> {
                     dto.setDrafterDeptName(code.getCodeName());
                 });
             }

@@ -11,6 +11,8 @@ import com.pinecni.erp.api.document.repository.ReceiptOvertimeAttendeeRepository
 import com.pinecni.erp.api.project.repository.ReceiptMeetingAttachmentRepository;
 import com.pinecni.erp.api.project.repository.ReceiptMeetingAttendeeRepository;
 import com.pinecni.erp.api.project.repository.ReceiptMeetingRepository;
+import com.pinecni.erp.api.project.repository.ProjectRepository;
+import com.pinecni.erp.api.project.repository.ProjectCardRepository;
 import com.pinecni.erp.api.approval.repository.ApprovalDocumentRepository;
 import com.pinecni.erp.entity.ReceiptMeeting;
 import com.pinecni.erp.entity.ReceiptMeetingAttachment;
@@ -19,6 +21,8 @@ import com.pinecni.erp.entity.ReceiptMeetingOfficialPdf;
 import com.pinecni.erp.entity.ReceiptOvertime;
 import com.pinecni.erp.entity.ReceiptOvertimeAttendee;
 import com.pinecni.erp.entity.ApprovalDocument;
+import com.pinecni.erp.entity.Project;
+import com.pinecni.erp.entity.ProjectCard;
 import com.pinecni.erp.service.PdfGenerationService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -29,9 +33,11 @@ import org.springframework.web.multipart.MultipartFile;
 
 import java.io.File;
 import java.io.IOException;
+import java.math.BigDecimal;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.text.DecimalFormat;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
@@ -55,6 +61,8 @@ public class ReceiptMeetingServiceImpl implements ReceiptMeetingService {
     private final PdfGenerationService pdfGenerationService;
     private final ReceiptOvertimeRepository receiptOvertimeRepository;
     private final ReceiptOvertimeAttendeeRepository receiptOvertimeAttendeeRepository;
+    private final ProjectRepository projectRepository;
+    private final ProjectCardRepository projectCardRepository;
 
     @Value("${file.upload.path:/uploads/receipt-meetings}")
     private String uploadPath;
@@ -143,10 +151,41 @@ public class ReceiptMeetingServiceImpl implements ReceiptMeetingService {
 
         // 3. ApprovalDocument 메타데이터 저장
         String documentNo = "RECEIPT-MEETING-" + System.currentTimeMillis() + "-" + createDTO.getAuthorIdx();
-        String title = "연구비증빙 회의록";
-        if (createDTO.getPurpose() != null && !createDTO.getPurpose().isEmpty()) {
-            title = "연구비증빙 회의록 - " + createDTO.getPurpose();
+
+        // 제목 생성: "프로젝트이름 (카드번호) - 날짜/금액"
+        StringBuilder titleBuilder = new StringBuilder();
+
+        // 프로젝트 이름
+        Project project = projectRepository.findById(createDTO.getProjectIdx())
+                .orElseThrow(() -> new IllegalArgumentException("프로젝트를 찾을 수 없습니다."));
+        titleBuilder.append(project.getProjectName());
+
+        // 카드번호
+        if (createDTO.getCardIdx() != null) {
+            ProjectCard card = projectCardRepository.findById(createDTO.getCardIdx())
+                    .orElse(null);
+            if (card != null && card.getCardLastDigits() != null) {
+                titleBuilder.append(" (").append(card.getCardLastDigits()).append(")");
+            }
         }
+
+        titleBuilder.append(" - ");
+
+        // 날짜
+        DateTimeFormatter dateFormatter = DateTimeFormatter.ofPattern("yyyy-MM-dd");
+        titleBuilder.append(createDTO.getMeetingDate().format(dateFormatter));
+
+        titleBuilder.append("/");
+
+        // 금액
+        if (createDTO.getAmount() != null) {
+            DecimalFormat decimalFormat = new DecimalFormat("#,###");
+            titleBuilder.append(decimalFormat.format(createDTO.getAmount())).append("원");
+        } else {
+            titleBuilder.append("0원");
+        }
+
+        String title = titleBuilder.toString();
 
         ApprovalDocument approvalDocument = ApprovalDocument.builder()
                 .documentNo(documentNo)
@@ -232,14 +271,49 @@ public class ReceiptMeetingServiceImpl implements ReceiptMeetingService {
 
         // 5. 연결된 ApprovalDocument도 업데이트
         final Long documentIdx = entity.getDocumentIdx();
+        final ReceiptMeeting finalEntity = entity; // 람다에서 사용하기 위한 final 변수
         if (documentIdx != null) {
             approvalDocumentRepository.findById(documentIdx).ifPresent(approvalDocument -> {
-                // 제목 업데이트
-                String title = "연구비증빙 회의록";
-                if (updateDTO.getPurpose() != null && !updateDTO.getPurpose().isEmpty()) {
-                    title = "연구비증빙 회의록 - " + updateDTO.getPurpose();
+                // 제목 업데이트: "프로젝트이름 (카드번호) - 날짜/금액"
+                StringBuilder titleBuilder = new StringBuilder();
+
+                // 프로젝트 이름
+                if (finalEntity.getProject() != null) {
+                    titleBuilder.append(finalEntity.getProject().getProjectName());
+                } else {
+                    Project project = projectRepository.findById(finalEntity.getProjectIdx())
+                            .orElse(null);
+                    if (project != null) {
+                        titleBuilder.append(project.getProjectName());
+                    }
                 }
-                approvalDocument.setTitle(title);
+
+                // 카드번호
+                if (finalEntity.getCardIdx() != null) {
+                    ProjectCard card = projectCardRepository.findById(finalEntity.getCardIdx())
+                            .orElse(null);
+                    if (card != null && card.getCardLastDigits() != null) {
+                        titleBuilder.append(" (").append(card.getCardLastDigits()).append(")");
+                    }
+                }
+
+                titleBuilder.append(" - ");
+
+                // 날짜
+                DateTimeFormatter dateFormatter = DateTimeFormatter.ofPattern("yyyy-MM-dd");
+                titleBuilder.append(finalEntity.getMeetingDate().format(dateFormatter));
+
+                titleBuilder.append("/");
+
+                // 금액
+                if (finalEntity.getAmount() != null) {
+                    DecimalFormat decimalFormat = new DecimalFormat("#,###");
+                    titleBuilder.append(decimalFormat.format(finalEntity.getAmount())).append("원");
+                } else {
+                    titleBuilder.append("0원");
+                }
+
+                approvalDocument.setTitle(titleBuilder.toString());
 
                 // 내용 업데이트
                 if (updateDTO.getContent() != null) {
@@ -355,10 +429,11 @@ public class ReceiptMeetingServiceImpl implements ReceiptMeetingService {
 
             List<Map<String, Object>> duplicates = new ArrayList<>();
 
-            // 1. 회의록 중복 체크
+            // 1. 회의록 중복 체크 (삭제된 문서 제외)
             List<ReceiptMeeting> meetings = receiptMeetingRepository.findAll().stream()
                     .filter(rm -> rm.getMeetingDate() != null && rm.getMeetingDate().equals(targetDate))
                     .filter(rm -> projectIdx == null || rm.getProjectIdx().equals(projectIdx))
+                    .filter(rm -> !Boolean.TRUE.equals(rm.getDeleted())) // 삭제된 문서 제외
                     .collect(Collectors.toList());
 
             for (ReceiptMeeting meeting : meetings) {
@@ -382,7 +457,7 @@ public class ReceiptMeetingServiceImpl implements ReceiptMeetingService {
                 }
             }
 
-            // 2. 야근식대 중복 체크
+            // 2. 야근식대 중복 체크 (삭제된 문서 제외)
             List<ReceiptOvertime> overtimes = receiptOvertimeRepository.findAll().stream()
                     .filter(ro -> ro.getOvertimeDate() != null && ro.getOvertimeDate().equals(targetDate))
                     .filter(ro -> projectIdx == null || ro.getProjectIdx().getIdx().equals(projectIdx))

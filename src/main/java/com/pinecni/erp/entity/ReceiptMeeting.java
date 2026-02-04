@@ -73,15 +73,6 @@ public class ReceiptMeeting {
     @Column(name = "content", columnDefinition = "TEXT")
     private String content;
 
-    @Column(name = "payment_method", length = 50)
-    private String paymentMethod;
-
-    @Column(name = "notes", columnDefinition = "TEXT")
-    private String notes;
-
-    @Column(name = "minutes_notes", columnDefinition = "TEXT")
-    private String minutesNotes;
-
     @Column(name = "status", length = 20)
     private String status = "PENDING";
 
