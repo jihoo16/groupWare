@@ -4,6 +4,7 @@ import com.pinecni.erp.api.code.repository.CodeRepository;
 import com.pinecni.erp.api.document.dto.*;
 import com.pinecni.erp.api.externalperson.repository.ExternalPersonRepository;
 import com.pinecni.erp.api.user.repository.UserRepository;
+import com.pinecni.erp.constant.CodeConstants;
 import com.pinecni.erp.entity.*;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
@@ -40,7 +41,7 @@ public class ReceiptMeetingMapper {
             authorUserName = author.getEmpName();
             if (author.getEmpDept() != null) {
                 authorDept = author.getEmpDept();
-                authorDeptName = codeRepository.findByGroupCodeAndCode("C01", author.getEmpDept())
+                authorDeptName = codeRepository.findByGroupCodeAndCode(CodeConstants.GroupCode.DEPARTMENT.getCode(), author.getEmpDept())
                         .map(Code::getCodeName)
                         .orElse(null);
             }
@@ -95,9 +96,6 @@ public class ReceiptMeetingMapper {
                 .amount(entity.getAmount())
                 .purpose(entity.getPurpose())
                 .content(entity.getContent())
-                .paymentMethod(entity.getPaymentMethod())
-                .notes(entity.getNotes())
-                .minutesNotes(entity.getMinutesNotes())
                 .status(entity.getStatus())
                 .attendees(attendeeDTOs)
                 .approvals(approvalDTOs)
@@ -125,9 +123,6 @@ public class ReceiptMeetingMapper {
                 .amount(dto.getAmount())
                 .purpose(dto.getPurpose())
                 .content(dto.getContent())
-                .paymentMethod(dto.getPaymentMethod())
-                .notes(dto.getNotes())
-                .minutesNotes(dto.getMinutesNotes())
                 .status("PENDING")
                 .deleted(false)
                 .build();
@@ -171,15 +166,6 @@ public class ReceiptMeetingMapper {
         if (dto.getContent() != null) {
             entity.setContent(dto.getContent());
         }
-        if (dto.getPaymentMethod() != null) {
-            entity.setPaymentMethod(dto.getPaymentMethod());
-        }
-        if (dto.getNotes() != null) {
-            entity.setNotes(dto.getNotes());
-        }
-        if (dto.getMinutesNotes() != null) {
-            entity.setMinutesNotes(dto.getMinutesNotes());
-        }
     }
 
     /**
@@ -197,7 +183,7 @@ public class ReceiptMeetingMapper {
             position = userRepository.findById(entity.getUserIdx())
                     .map(user -> {
                         if (user.getEmpPosition() != null) {
-                            return codeRepository.findByGroupCodeAndCode("C02", user.getEmpPosition())
+                            return codeRepository.findByGroupCodeAndCode(CodeConstants.GroupCode.POSITION.getCode(), user.getEmpPosition())
                                     .map(Code::getCodeName)
                                     .orElse(null);
                         }
@@ -261,14 +247,14 @@ public class ReceiptMeetingMapper {
 
             // 부서명 조회
             if (approver.getEmpDept() != null) {
-                approverDept = codeRepository.findByGroupCodeAndCode("C01", approver.getEmpDept())
+                approverDept = codeRepository.findByGroupCodeAndCode(CodeConstants.GroupCode.DEPARTMENT.getCode(), approver.getEmpDept())
                         .map(Code::getCodeName)
                         .orElse(null);
             }
 
             // 직급명 조회
             if (approver.getEmpPosition() != null) {
-                approverPosition = codeRepository.findByGroupCodeAndCode("C02", approver.getEmpPosition())
+                approverPosition = codeRepository.findByGroupCodeAndCode(CodeConstants.GroupCode.POSITION.getCode(), approver.getEmpPosition())
                         .map(Code::getCodeName)
                         .orElse(null);
             }

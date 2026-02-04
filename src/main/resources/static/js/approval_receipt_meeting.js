@@ -1428,17 +1428,6 @@ document.addEventListener('DOMContentLoaded', async function() {
             });
         }
 
-        // 특기사항 자동 채우기
-        const commonNotes = document.getElementById('common_notes');
-        if (commonNotes) {
-            commonNotes.addEventListener('input', function() {
-                const value = this.value;
-                document.querySelectorAll('.auto-notes').forEach(field => {
-                    field.value = value;
-                });
-            });
-        }
-
         // 주요 내용 자동 채우기
         const commonContent = document.getElementById('common_content');
         if (commonContent) {
@@ -1487,28 +1476,6 @@ document.addEventListener('DOMContentLoaded', async function() {
             });
         }
 
-        // 결제 방법 자동 채우기
-        const commonPayment = document.getElementById('common_payment');
-        if (commonPayment) {
-            commonPayment.addEventListener('change', function() {
-                const value = this.value;
-                document.querySelectorAll('.auto-payment').forEach(field => {
-                    field.value = value;
-                });
-            });
-        }
-
-        // 회의록 비고 자동 채우기
-        const commonMinutesNotes = document.getElementById('common_minutes_notes');
-        if (commonMinutesNotes) {
-            commonMinutesNotes.addEventListener('input', function() {
-                const value = this.value;
-                document.querySelectorAll('.auto-minutes-notes').forEach(field => {
-                    field.value = value;
-                });
-            });
-        }
-
         // 사용 금액 표시 자동 채우기
         if (commonAmount) {
             // 천단위 콤마 포맷팅 함수
@@ -1544,12 +1511,6 @@ document.addEventListener('DOMContentLoaded', async function() {
             if (commonLocation && commonLocation.value) {
                 document.querySelectorAll('.auto-location').forEach(field => {
                     field.value = commonLocation.value;
-                });
-            }
-
-            if (commonPayment) {
-                document.querySelectorAll('.auto-payment').forEach(field => {
-                    field.value = commonPayment.value;
                 });
             }
         }
@@ -1967,7 +1928,7 @@ document.addEventListener('DOMContentLoaded', async function() {
                 }
             }
 
-            // 저장 직전 중복 참석자 최종 검증 (내부 참석자만)
+            // 저장 직전 중복 참석자 최종 검증
             const internalAttendeesForSave = currentAttendees.filter(a => a.type === 'internal');
             if (internalAttendeesForSave.length > 0) {
                 try {
@@ -2137,9 +2098,6 @@ document.addEventListener('DOMContentLoaded', async function() {
                 amount: amountInput && amountInput.value ? parseInt(amountInput.value.replace(/,/g, '')) : null,
                 purpose: purposeInput ? purposeInput.value : null,
                 content: document.getElementById('common_content') ? document.getElementById('common_content').value : null,
-                paymentMethod: document.getElementById('common_payment') ? document.getElementById('common_payment').value : null,
-                notes: document.getElementById('common_notes') ? document.getElementById('common_notes').value : null,
-                minutesNotes: document.getElementById('common_minutes_notes') ? document.getElementById('common_minutes_notes').value : null,
                 attendees: attendeeDTOs
             };
 
@@ -3041,7 +2999,7 @@ document.addEventListener('DOMContentLoaded', async function() {
                 }
             }
 
-            renderAuthorList('');
+            await renderAuthorList('');
         }
     };
 
@@ -3066,8 +3024,8 @@ document.addEventListener('DOMContentLoaded', async function() {
 
     // 작성자 검색
     if (authorSearchInput) {
-        authorSearchInput.addEventListener('input', function() {
-            renderAuthorList(this.value);
+        authorSearchInput.addEventListener('input', async function() {
+            await renderAuthorList(this.value);
         });
     }
 
@@ -3196,13 +3154,13 @@ document.addEventListener('DOMContentLoaded', async function() {
                 }
 
                 // 작성자 목록 다시 렌더링 (검색어 없이)
-                renderAuthorList('');
+                await renderAuthorList('');
             });
         });
     }
 
     // 작성자 목록 렌더링
-    function renderAuthorList(searchText = '') {
+    async function renderAuthorList(searchText = '') {
         if (!authorListEl) return;
 
         const attendeePersons = getAttendeePersons();
@@ -3237,15 +3195,70 @@ document.addEventListener('DOMContentLoaded', async function() {
         // 현재 선택된 작성자 ID 가져오기
         const currentAuthorId = document.getElementById('common_author_id')?.value;
 
+        // 시간 중복 체크를 위한 정보 수집
+        const dateInput = document.getElementById('common_date');
+        const startTimeInput = document.getElementById('common_start_time');
+        const endTimeInput = document.getElementById('common_end_time');
+        const projectIdxInput = document.getElementById('selectedProjectIdx');
+
+        const hasTimeInfo = dateInput?.value && startTimeInput?.value && endTimeInput?.value && projectIdxInput?.value;
+
+        // 시간 중복 정보 수집
+        const duplicateInfo = {};
+        if (hasTimeInfo) {
+            const date = dateInput.value;
+            const currentStartTime = startTimeInput.value;
+            const currentEndTime = endTimeInput.value;
+            const projectIdx = projectIdxInput.value;
+
+            for (const person of filteredPersons) {
+                try {
+                    const response = await fetch(`/api/receipt-meetings/check-duplicate?date=${date}&attendeeIdx=${person.id}&projectIdx=${projectIdx}`);
+                    if (response.ok) {
+                        const data = await response.json();
+                        if (Array.isArray(data) && data.length > 0) {
+                            for (const meeting of data) {
+                                const meetingStartTime = meeting.startTime?.substring(0, 5);
+                                const meetingEndTime = meeting.endTime?.substring(0, 5);
+
+                                if (meetingStartTime && meetingEndTime) {
+                                    if (isTimeOverlap(meetingStartTime, meetingEndTime, currentStartTime, currentEndTime)) {
+                                        duplicateInfo[person.id] = {
+                                            projectName: meeting.projectName || '알 수 없는 프로젝트',
+                                            startTime: meetingStartTime,
+                                            endTime: meetingEndTime
+                                        };
+                                        break;
+                                    }
+                                }
+                            }
+                        }
+                    }
+                } catch (error) {
+                    console.error(`작성자 중복 체크 오류 (${person.name}):`, error);
+                }
+            }
+        }
+
         authorListEl.innerHTML = filteredPersons.map(person => {
             const isSelected = currentAuthorId && String(person.id) === String(currentAuthorId);
             const selectedClass = isSelected ? 'selected' : '';
             const checkIcon = isSelected ? '<i class="fas fa-check-circle" style="color: #10b981; margin-left: auto;"></i>' : '';
 
+            // 중복 정보 표시
+            const isDuplicate = duplicateInfo[person.id];
+            let duplicateBadge = '';
+            if (isDuplicate) {
+                const projectName = isDuplicate.projectName;
+                const timeRange = `${isDuplicate.startTime}~${isDuplicate.endTime}`;
+                const tooltipText = `${projectName} 프로젝트 회의 (${timeRange})`;
+                duplicateBadge = `<span style="background: #fee2e2; color: #991b1b; padding: 2px 8px; border-radius: 4px; font-size: 11px; margin-left: 8px; white-space: nowrap;" title="${tooltipText}"><i class="fas fa-exclamation-triangle"></i> 시간 중복</span>`;
+            }
+
             return `
-                <div class="employee-item ${selectedClass}" data-id="${person.id}" onclick="selectAuthor(${person.id})">
+                <div class="employee-item ${selectedClass}" data-id="${person.id}" data-has-conflict="${isDuplicate ? 'true' : 'false'}" onclick="selectAuthor(${person.id})">
                     <div class="employee-info">
-                        <div class="employee-name">${person.name}</div>
+                        <div class="employee-name">${person.name}${duplicateBadge}</div>
                         <div class="employee-details">${person.dept} · ${person.position}</div>
                     </div>
                     ${checkIcon}
@@ -3255,11 +3268,65 @@ document.addEventListener('DOMContentLoaded', async function() {
     }
 
     // 작성자 선택
-    window.selectAuthor = function(personId) {
+    window.selectAuthor = async function(personId) {
         const attendeePersons = getAttendeePersons();
         const person = attendeePersons.find(p => p.id === personId);
 
         if (person) {
+            // 시간 중복 체크
+            const dateInput = document.getElementById('common_date');
+            const startTimeInput = document.getElementById('common_start_time');
+            const endTimeInput = document.getElementById('common_end_time');
+            const projectIdxInput = document.getElementById('selectedProjectIdx');
+
+            if (dateInput?.value && startTimeInput?.value && endTimeInput?.value && projectIdxInput?.value) {
+                const date = dateInput.value;
+                const currentStartTime = startTimeInput.value;
+                const currentEndTime = endTimeInput.value;
+                const projectIdx = projectIdxInput.value;
+
+                try {
+                    const response = await fetch(`/api/receipt-meetings/check-duplicate?date=${date}&attendeeIdx=${personId}&projectIdx=${projectIdx}`);
+                    if (response.ok) {
+                        const data = await response.json();
+                        if (Array.isArray(data) && data.length > 0) {
+                            for (const meeting of data) {
+                                const meetingStartTime = meeting.startTime?.substring(0, 5);
+                                const meetingEndTime = meeting.endTime?.substring(0, 5);
+
+                                if (meetingStartTime && meetingEndTime) {
+                                    if (isTimeOverlap(meetingStartTime, meetingEndTime, currentStartTime, currentEndTime)) {
+                                        // 중복이 있으면 경고 표시
+                                        const projectName = meeting.projectName || '알 수 없는 프로젝트';
+                                        const timeRange = `${meetingStartTime} ~ ${meetingEndTime}`;
+
+                                        const result = await Swal.fire({
+                                            icon: 'warning',
+                                            title: '시간 중복 경고',
+                                            html: `<strong>${person.name}</strong>님은 해당 시간대에<br>이미 다른 회의에 참석 중입니다.<br><br>` +
+                                                  `회의 시간: ${timeRange}<br>` +
+                                                  `프로젝트: <strong>[${projectName}]</strong><br><br>` +
+                                                  `그래도 작성자로 선택하시겠습니까?`,
+                                            showCancelButton: true,
+                                            confirmButtonText: '계속 진행',
+                                            cancelButtonText: '취소',
+                                            confirmButtonColor: '#ff9800'
+                                        });
+
+                                        if (!result.isConfirmed) {
+                                            return; // 취소하면 작성자 선택 중단
+                                        }
+                                        break;
+                                    }
+                                }
+                            }
+                        }
+                    }
+                } catch (error) {
+                    console.error('작성자 중복 체크 오류:', error);
+                }
+            }
+
             // 기존 작성자 ID 가져오기
             const previousAuthorId = document.getElementById('common_author_id').value;
 
@@ -3693,24 +3760,6 @@ document.addEventListener('DOMContentLoaded', async function() {
             contentInput.value = data.content;
         }
 
-        // 지불 방법
-        const paymentInput = document.getElementById('common_payment');
-        if (paymentInput && data.paymentMethod) {
-            paymentInput.value = data.paymentMethod;
-        }
-
-        // 비고
-        const notesInput = document.getElementById('common_notes');
-        if (notesInput && data.notes) {
-            notesInput.value = data.notes;
-        }
-
-        // 회의록 특이사항
-        const minutesNotesInput = document.getElementById('common_minutes_notes');
-        if (minutesNotesInput && data.minutesNotes) {
-            minutesNotesInput.value = data.minutesNotes;
-        }
-
         // 참석자 목록
         if (data.attendees && data.attendees.length > 0) {
             console.log('API 응답 참석자 데이터:', data.attendees);
@@ -3773,21 +3822,6 @@ document.addEventListener('DOMContentLoaded', async function() {
             // 금액 자동 채우기
             if (amountInput) {
                 amountInput.dispatchEvent(new Event('input'));
-            }
-
-            // 비고 자동 채우기
-            if (notesInput) {
-                notesInput.dispatchEvent(new Event('input'));
-            }
-
-            // 회의록 특이사항 자동 채우기
-            if (minutesNotesInput) {
-                minutesNotesInput.dispatchEvent(new Event('input'));
-            }
-
-            // 지불 방법 자동 채우기
-            if (paymentInput) {
-                paymentInput.dispatchEvent(new Event('change'));
             }
 
             // 참석자 목록 렌더링 (renderAttendeeListInTemplate 함수 사용)
@@ -3881,9 +3915,6 @@ document.addEventListener('DOMContentLoaded', async function() {
                 amount: document.getElementById('common_amount')?.value ? parseFloat(document.getElementById('common_amount').value) : null,
                 purpose: document.getElementById('common_purpose')?.value || null,
                 content: document.getElementById('common_content')?.value || null,
-                paymentMethod: document.getElementById('common_payment')?.value || null,
-                notes: document.getElementById('common_notes')?.value || null,
-                minutesNotes: document.getElementById('common_minutes_notes')?.value || null,
                 attendees: attendeeDTOs
             };
 
