@@ -111,21 +111,6 @@ public class ReceiptMeetingDTO {
     private String content;
 
     /**
-     * 지불 방법
-     */
-    private String paymentMethod;
-
-    /**
-     * 비고
-     */
-    private String notes;
-
-    /**
-     * 회의록 특이사항
-     */
-    private String minutesNotes;
-
-    /**
      * 상태 (PENDING, APPROVED, REJECTED)
      */
     private String status;
