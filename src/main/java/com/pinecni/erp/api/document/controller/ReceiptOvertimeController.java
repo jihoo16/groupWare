@@ -191,15 +191,19 @@ public class ReceiptOvertimeController {
     }
 
     /**
-     * 야근식대 삭제
+     * 야근식대 삭제 (소프트 딜리트)
      * DELETE /api/receipt-overtimes/{idx}
      */
     @DeleteMapping("/{idx}")
-    public ResponseEntity<Map<String, String>> deleteReceiptOvertime(@PathVariable Long idx) {
+    public ResponseEntity<Map<String, String>> deleteReceiptOvertime(
+            @PathVariable Long idx,
+            jakarta.servlet.http.HttpSession session) {
         log.debug("DELETE /api/receipt-overtimes/{}", idx);
 
+        Long currentUserIdx = (Long) session.getAttribute("userIdx");
+
         try {
-            receiptOvertimeService.deleteReceiptOvertime(idx);
+            receiptOvertimeService.deleteReceiptOvertime(idx, currentUserIdx);
 
             Map<String, String> response = new HashMap<>();
             response.put("message", "야근식대가 삭제되었습니다.");
