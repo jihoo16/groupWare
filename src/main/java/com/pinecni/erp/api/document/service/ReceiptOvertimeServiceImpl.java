@@ -172,8 +172,8 @@ public class ReceiptOvertimeServiceImpl implements ReceiptOvertimeService {
                     .isProject(true)
                     .drafterUserIdx(createDTO.getAuthorIdx())
                     .content(createDTO.getDocumentContent())
-                    .createdUserIdx(createDTO.getAuthorIdx())
-                    .updatedUserIdx(createDTO.getAuthorIdx())
+                    .createdUserIdx(currentUserIdx)
+                    .updatedUserIdx(currentUserIdx)
                     .build();
 
             ApprovalDocument savedDocument = approvalDocumentRepository.save(approvalDocument);

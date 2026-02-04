@@ -9,6 +9,7 @@ document.addEventListener('DOMContentLoaded', async function() {
     let projectMembers = []; // 선택된 프로젝트의 참여인원
     let projectCards = []; // 선택된 프로젝트의 카드 목록
     let selectedCard = null; // 선택된 카드
+    let selectedApplicant = null; // 선택된 신청자
     let tempSelectedOvertimePersons = []; // 모달에서 임시 선택된 인원
     let projectExpenses = {}; // 선택된 프로젝트의 직급별 야근석식대
 
@@ -193,6 +194,25 @@ document.addEventListener('DOMContentLoaded', async function() {
                             if (selectedCardIdx) selectedCardIdx.value = selectedCard.idx;
                         }
                     }
+
+                    // 신청자 정보 설정
+                    if (data.authorIdx) {
+                        const projectPersons = typeof getOvertimePersons === 'function' ? getOvertimePersons() : [];
+                        selectedApplicant = projectPersons.find(p => Number(p.id) === Number(data.authorIdx));
+                        if (selectedApplicant) {
+                            const otApplicant = document.getElementById('ot_applicant');
+                            if (otApplicant) {
+                                otApplicant.value = selectedApplicant.name;
+                            }
+                            const selectedApplicantIdx = document.getElementById('selectedApplicantIdx');
+                            if (selectedApplicantIdx) selectedApplicantIdx.value = selectedApplicant.id;
+
+                            // 인쇄용 템플릿 신청자 업데이트
+                            document.querySelectorAll('.ot-auto-applicant').forEach(field => {
+                                field.textContent = selectedApplicant.name;
+                            });
+                        }
+                    }
                 }
             }
 
@@ -237,6 +257,10 @@ document.addEventListener('DOMContentLoaded', async function() {
                 const otContent = document.getElementById('ot_content');
                 if (otContent) {
                     otContent.value = data.documentContent;
+                    // 품의서에도 품의 내용 반영
+                    document.querySelectorAll('.ot-auto-content').forEach(field => {
+                        field.textContent = data.documentContent;
+                    });
                 }
             }
 
@@ -496,6 +520,16 @@ document.addEventListener('DOMContentLoaded', async function() {
                 const selectedCardIdx = document.getElementById('selectedCardIdx');
                 if (selectedCardIdx) selectedCardIdx.value = '';
 
+                // 신청자 선택 초기화 및 안내 문구 표시
+                selectedApplicant = null;
+                const otApplicant = document.getElementById('ot_applicant');
+                if (otApplicant) {
+                    otApplicant.value = '';
+                    otApplicant.placeholder = '클릭하여 신청자 선택';
+                }
+                const selectedApplicantIdx = document.getElementById('selectedApplicantIdx');
+                if (selectedApplicantIdx) selectedApplicantIdx.value = '';
+
                 closeProjectModal();
             });
 
@@ -666,6 +700,121 @@ document.addEventListener('DOMContentLoaded', async function() {
         cardModal.addEventListener('click', function(e) {
             if (e.target === cardModal) {
                 closeCardModal();
+            }
+        });
+    }
+
+    // ============================================
+    // 신청자 선택 모달 관련
+    // ============================================
+    const applicantModal = document.getElementById('applicantModal');
+    const applicantSearch = document.getElementById('applicantSearch');
+    const applicantList = document.getElementById('applicantList');
+
+    // 신청자 목록 렌더링 (프로젝트 참여인원에서 선택)
+    function renderApplicantList(list, keyword = '') {
+        if (!applicantList) return;
+        applicantList.innerHTML = '';
+
+        if (list.length === 0) {
+            const emptyMessage = document.createElement('div');
+            emptyMessage.className = 'modal-empty-state';
+            emptyMessage.style.cssText = 'text-align: center; padding: 40px; color: #94a3b8;';
+            emptyMessage.innerHTML = `
+                <i class="fas fa-user" style="font-size: 32px; margin-bottom: 12px; display: block;"></i>
+                <p>${keyword ? '검색 결과가 없습니다' : '프로젝트 참여인원이 없습니다'}</p>
+            `;
+            applicantList.appendChild(emptyMessage);
+            return;
+        }
+
+        list.forEach(member => {
+            const item = document.createElement('div');
+            item.className = 'employee-item';
+            if (selectedApplicant && selectedApplicant.id === member.id) {
+                item.classList.add('selected');
+            }
+
+            const highlightedName = keyword ? highlightApplicantText(member.name, keyword) : member.name;
+
+            item.innerHTML = `
+                <div class="employee-info">
+                    <div class="employee-name"><i class="fas fa-user" style="margin-right:6px; color:#667eea;"></i>${highlightedName}</div>
+                    <div class="employee-detail">${member.dept || '-'} / ${member.position || '-'}</div>
+                </div>
+            `;
+
+            item.addEventListener('click', function() {
+                selectedApplicant = member;
+
+                // 신청자 입력 필드에 표시
+                const otApplicant = document.getElementById('ot_applicant');
+                if (otApplicant) {
+                    otApplicant.value = member.name;
+                }
+                const selectedApplicantIdx = document.getElementById('selectedApplicantIdx');
+                if (selectedApplicantIdx) {
+                    selectedApplicantIdx.value = member.id;
+                }
+
+                // 인쇄용 템플릿 신청자 업데이트
+                document.querySelectorAll('.ot-auto-applicant').forEach(field => {
+                    field.textContent = member.name;
+                });
+
+                closeApplicantModal();
+            });
+
+            applicantList.appendChild(item);
+        });
+    }
+
+    function highlightApplicantText(text, keyword) {
+        if (!keyword || !text) return text;
+        const regex = new RegExp(`(${keyword.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')})`, 'gi');
+        return text.replace(regex, '<mark>$1</mark>');
+    }
+
+    // 신청자 검색
+    if (applicantSearch) {
+        applicantSearch.addEventListener('input', function() {
+            const keyword = this.value.trim().toLowerCase();
+            const persons = typeof getOvertimePersons === 'function' ? getOvertimePersons() : [];
+            const filtered = persons.filter(member =>
+                (member.name || '').toLowerCase().includes(keyword)
+            );
+            renderApplicantList(filtered, this.value.trim());
+        });
+    }
+
+    window.openApplicantModal = function() {
+        const projectIdxInput = document.getElementById('selectedProjectIdx');
+
+        if (!projectIdxInput || !projectIdxInput.value) {
+            showWarning('과제를 먼저 선택해주세요.');
+            return;
+        }
+
+        if (applicantModal) {
+            applicantModal.classList.add('show');
+            const persons = typeof getOvertimePersons === 'function' ? getOvertimePersons() : [];
+            renderApplicantList(persons);
+            if (applicantSearch) applicantSearch.value = '';
+        }
+    };
+
+    window.closeApplicantModal = function() {
+        if (applicantModal) {
+            applicantModal.classList.remove('show');
+            if (applicantSearch) applicantSearch.value = '';
+        }
+    };
+
+    // 모달 외부 클릭 시 닫기
+    if (applicantModal) {
+        applicantModal.addEventListener('click', function(e) {
+            if (e.target === applicantModal) {
+                closeApplicantModal();
             }
         });
     }
@@ -1133,6 +1282,23 @@ document.addEventListener('DOMContentLoaded', async function() {
             }
         }
 
+        // 품의내용 자동 채우기
+        if (otContent) {
+            otContent.addEventListener('input', function() {
+                const value = this.value;
+                document.querySelectorAll('.ot-auto-content').forEach(field => {
+                    field.textContent = value;
+                });
+            });
+
+            // 초기값 설정
+            if (otContent.value) {
+                document.querySelectorAll('.ot-auto-content').forEach(field => {
+                    field.textContent = otContent.value;
+                });
+            }
+        }
+
         // 지급종류 라디오 버튼 자동 채우기
         const paymentTypeRadios = document.querySelectorAll('input[name="ot_payment_type"]');
 
@@ -1537,6 +1703,13 @@ document.addEventListener('DOMContentLoaded', async function() {
                 return;
             }
 
+            // 신청자 선택 검증
+            const applicantIdx = document.getElementById('selectedApplicantIdx')?.value;
+            if (!applicantIdx) {
+                showWarning('신청자를 선택해주세요.');
+                return;
+            }
+
             if (!otApprovalDate?.value) {
                 showWarning('품의일자를 입력해주세요.');
                 return;
@@ -1551,7 +1724,7 @@ document.addEventListener('DOMContentLoaded', async function() {
             const amountValidation = parseInt((otAmount?.value || '').replace(/,/g, '')) || 0;
             if (amountValidation <= 0) {
                 showWarning('총 공급가액을 입력해주세요.');
-                return;
+            return;
             }
 
             // 품의내용 검증
@@ -1582,6 +1755,15 @@ document.addEventListener('DOMContentLoaded', async function() {
             const overtimePersons = window.currentOvertimePersons || [];
             if (overtimePersons.length === 0) {
                 showWarning('야근 인원을 추가해주세요.');
+                return;
+            }
+
+            // 신청자가 야근인원에 포함되어 있는지 확인
+            const isApplicantInPersons = overtimePersons.some(person =>
+                Number(person.id) === Number(applicantIdx)
+            );
+            if (!isApplicantInPersons) {
+                showWarning('신청자가 야근인원에 포함되지 않았습니다.');
                 return;
             }
 
@@ -1619,6 +1801,7 @@ document.addEventListener('DOMContentLoaded', async function() {
             const data = {
                 projectIdx: parseInt(projectIdx),
                 cardIdx: parseInt(cardIdx),
+                authorIdx: parseInt(applicantIdx),
                 overtimeDate: otApprovalDate.value,
                 approvalDate: otApprovalDate.value,
                 documentTitle: otTitle.value,
