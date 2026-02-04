@@ -53,9 +53,14 @@ public interface ReceiptOvertimeService {
     ReceiptOvertimeDTO updateReceiptOvertime(Long idx, ReceiptOvertimeCreateDTO updateDTO, Long currentUserIdx);
 
     /**
-     * 야근식대 삭제
+     * 야근식대 삭제 (소프트 딜리트)
      */
     void deleteReceiptOvertime(Long idx);
+
+    /**
+     * 야근식대 삭제 (소프트 딜리트) - 현재 사용자 IDX 포함
+     */
+    void deleteReceiptOvertime(Long idx, Long currentUserIdx);
 
     /**
      * 문서번호 생성

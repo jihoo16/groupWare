@@ -6,6 +6,7 @@ import jakarta.validation.constraints.Size;
 import lombok.Getter;
 import lombok.Setter;
 import org.hibernate.annotations.ColumnDefault;
+import org.hibernate.annotations.SQLRestriction;
 
 import java.math.BigDecimal;
 import java.time.Instant;
@@ -15,6 +16,7 @@ import java.time.LocalDate;
 @Setter
 @Entity
 @Table(name = "receipt_overtime", schema = "erp")
+@SQLRestriction("deleted = false")
 public class ReceiptOvertime {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -83,4 +85,14 @@ public class ReceiptOvertime {
     @Column(name = "document_idx")
     private Long documentIdx;
 
+    // Soft delete 필드
+    @ColumnDefault("false")
+    @Column(name = "deleted", nullable = false)
+    private Boolean deleted = false;
+
+    @Column(name = "deleted_at")
+    private Instant deletedAt;
+
+    @Column(name = "deleted_user_idx")
+    private Long deletedUserIdx;
 }

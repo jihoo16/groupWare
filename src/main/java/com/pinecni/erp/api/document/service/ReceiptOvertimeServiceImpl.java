@@ -1,18 +1,18 @@
 package com.pinecni.erp.api.document.service;
 
 import com.pinecni.erp.api.approval.repository.ApprovalDocumentRepository;
+import com.pinecni.erp.api.approval.repository.DocumentSequenceRepository;
 import com.pinecni.erp.api.document.dto.ReceiptOvertimeAttachmentDTO;
 import com.pinecni.erp.api.document.dto.ReceiptOvertimeCreateDTO;
 import com.pinecni.erp.api.document.dto.ReceiptOvertimeDTO;
 import com.pinecni.erp.api.document.dto.ReceiptOvertimeAttendeeDTO;
 import com.pinecni.erp.api.document.mapper.ReceiptOvertimeMapper;
 import com.pinecni.erp.api.document.repository.ReceiptOvertimeAttachmentRepository;
-import com.pinecni.erp.api.document.repository.ReceiptOvertimeAttendeeRepository;
+import com.pinecni.erp.api.document.repository.ReceiptAttendeeRepository;
 import com.pinecni.erp.api.document.repository.ReceiptOvertimeRepository;
 import com.pinecni.erp.api.project.repository.ProjectRepository;
 import com.pinecni.erp.api.user.repository.UserRepository;
 import com.pinecni.erp.entity.*;
-import com.pinecni.erp.service.PdfGenerationService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
@@ -28,6 +28,7 @@ import java.nio.file.Paths;
 import java.time.Instant;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.time.LocalTime;
 import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
@@ -45,13 +46,15 @@ import java.util.stream.Collectors;
 public class ReceiptOvertimeServiceImpl implements ReceiptOvertimeService {
 
     private final ReceiptOvertimeRepository receiptOvertimeRepository;
-    private final ReceiptOvertimeAttendeeRepository attendeeRepository;
+    private final ReceiptAttendeeRepository attendeeRepository;
     private final ReceiptOvertimeAttachmentRepository attachmentRepository;
     private final ReceiptOvertimeMapper mapper;
     private final ApprovalDocumentRepository approvalDocumentRepository;
+    private final DocumentSequenceRepository documentSequenceRepository;
     private final ProjectRepository projectRepository;
     private final UserRepository userRepository;
-    private final PdfGenerationService pdfGenerationService;
+
+    private static final String DOCUMENT_TYPE_PREFIX = "RCO"; // 야근식대 문서 타입 prefix
 
     @Value("${file.upload.path:/uploads/receipt-overtimes}")
     private String uploadPath;
@@ -74,12 +77,10 @@ public class ReceiptOvertimeServiceImpl implements ReceiptOvertimeService {
         ReceiptOvertime entity = receiptOvertimeRepository.findById(idx)
                 .orElseThrow(() -> new IllegalArgumentException("야근식대를 찾을 수 없습니다. idx: " + idx));
 
-        List<ReceiptOvertimeAttendee> attendees = attendeeRepository.findByReceiptOvertimeIdx(idx);
+        List<ReceiptAttendee> attendees = attendeeRepository.findByReceiptOvertimeIdx(idx);
         List<ReceiptOvertimeAttachment> attachments = attachmentRepository.findByReceiptOvertimeIdx(idx);
 
-        ReceiptOvertimeDTO dto = mapper.toDTOWithDetails(entity, attendees, attachments);
-        // 참석자 이름 설정
-        populateAttendeeUserNames(dto);
+        ReceiptOvertimeDTO dto = mapper.toDTOWithDetails(entity, convertAttendeesToDTO(attendees), attachments);
         return dto;
     }
 
@@ -91,28 +92,56 @@ public class ReceiptOvertimeServiceImpl implements ReceiptOvertimeService {
         ReceiptOvertime entity = receiptOvertimeRepository.findByDocumentIdx(documentIdx)
                 .orElseThrow(() -> new IllegalArgumentException("야근식대를 찾을 수 없습니다. documentIdx: " + documentIdx));
 
-        List<ReceiptOvertimeAttendee> attendees = attendeeRepository.findByReceiptOvertimeIdx(entity.getId());
+        List<ReceiptAttendee> attendees = attendeeRepository.findByReceiptOvertimeIdx(entity.getId());
         List<ReceiptOvertimeAttachment> attachments = attachmentRepository.findByReceiptOvertimeIdx(entity.getId());
 
-        ReceiptOvertimeDTO dto = mapper.toDTOWithDetails(entity, attendees, attachments);
-        // 참석자 이름 설정
-        populateAttendeeUserNames(dto);
+        ReceiptOvertimeDTO dto = mapper.toDTOWithDetails(entity, convertAttendeesToDTO(attendees), attachments);
         return dto;
     }
 
     /**
-     * 참석자 목록의 userName을 users 테이블에서 조회하여 설정
+     * ReceiptAttendee 목록을 ReceiptOvertimeAttendeeDTO 목록으로 변환
      */
-    private void populateAttendeeUserNames(ReceiptOvertimeDTO dto) {
-        if (dto.getAttendees() != null && !dto.getAttendees().isEmpty()) {
-            dto.getAttendees().forEach(attendee -> {
-                if (attendee.getUserIdx() != null) {
-                    userRepository.findById(attendee.getUserIdx()).ifPresent(user -> {
-                        attendee.setUserName(user.getEmpName());
-                    });
-                }
-            });
+    private List<ReceiptOvertimeAttendeeDTO> convertAttendeesToDTO(List<ReceiptAttendee> attendees) {
+        if (attendees == null || attendees.isEmpty()) {
+            return Collections.emptyList();
         }
+
+        return attendees.stream()
+                .map(attendee -> {
+                    ReceiptOvertimeAttendeeDTO dto = ReceiptOvertimeAttendeeDTO.builder()
+                            .idx(attendee.getIdx())
+                            .receiptOvertimeIdx(attendee.getReceiptIdx())
+                            .userIdx(attendee.getUserIdx())
+                            .workTime(formatWorkTime(attendee.getStartTime(), attendee.getEndTime()))
+                            .workTask(attendee.getWorkTask())
+                            .createdAt(attendee.getCreatedAt() != null ?
+                                    attendee.getCreatedAt().atZone(ZoneId.of("Asia/Seoul")).toInstant() : null)
+                            .updatedAt(attendee.getUpdatedAt() != null ?
+                                    attendee.getUpdatedAt().atZone(ZoneId.of("Asia/Seoul")).toInstant() : null)
+                            .build();
+
+                    // 사용자 이름 조회
+                    if (attendee.getUserIdx() != null) {
+                        userRepository.findById(attendee.getUserIdx()).ifPresent(user -> {
+                            dto.setUserName(user.getEmpName());
+                        });
+                    }
+
+                    return dto;
+                })
+                .collect(Collectors.toList());
+    }
+
+    /**
+     * 시작/종료 시간을 "HH:mm ~ HH:mm" 형식으로 변환
+     */
+    private String formatWorkTime(LocalTime startTime, LocalTime endTime) {
+        if (startTime == null || endTime == null) {
+            return "";
+        }
+        return startTime.format(DateTimeFormatter.ofPattern("HH:mm")) + " ~ " +
+               endTime.format(DateTimeFormatter.ofPattern("HH:mm"));
     }
 
     @Override
@@ -155,11 +184,10 @@ public class ReceiptOvertimeServiceImpl implements ReceiptOvertimeService {
             Project project = projectRepository.findById(createDTO.getProjectIdx())
                     .orElseThrow(() -> new IllegalArgumentException("프로젝트를 찾을 수 없습니다. idx: " + createDTO.getProjectIdx()));
 
-            // 2. 문서번호 생성
-            String documentNumber = generateDocumentNumber(createDTO.getProjectIdx());
+            // 2. document_sequences를 이용한 문서번호 생성 (prefix-year-last_number)
+            String documentNo = generateDocumentNo();
 
             // 3. ApprovalDocument 메타데이터 저장
-            String documentNo = "RECEIPT-OVERTIME-" + System.currentTimeMillis() + "-" + createDTO.getApprovalDate();
             String title = "연구비증빙 야근식대";
             if (createDTO.getDocumentTitle() != null && !createDTO.getDocumentTitle().isEmpty()) {
                 title = "연구비증빙 야근식대 - " + createDTO.getDocumentTitle();
@@ -182,10 +210,11 @@ public class ReceiptOvertimeServiceImpl implements ReceiptOvertimeService {
 
             // 4. 야근식대 Entity 생성 및 저장
             Instant now = LocalDateTime.now().atZone(ZoneId.of("Asia/Seoul")).toInstant();
+            LocalDateTime nowDateTime = LocalDateTime.now();
             ReceiptOvertime entity = new ReceiptOvertime();
             entity.setProjectIdx(project);
             entity.setCardIdx(createDTO.getCardIdx());
-            entity.setDocumentNumber(documentNumber);
+            entity.setDocumentNumber(documentNo);
             entity.setDocumentIdx(savedDocument.getIdx());
             entity.setAuthorIdx(createDTO.getAuthorIdx());
             entity.setOvertimeDate(createDTO.getOvertimeDate());
@@ -199,41 +228,113 @@ public class ReceiptOvertimeServiceImpl implements ReceiptOvertimeService {
             entity.setUpdatedAt(now);
             entity.setCreatedUserIdx(currentUserIdx);
             entity.setUpdatedUserIdx(currentUserIdx);
+            entity.setDeleted(false);
 
             entity = receiptOvertimeRepository.save(entity);
 
-            // 5. 참석자 목록 저장
+            // 5. 참석자 목록 저장 (receipt_attendee 테이블)
             if (createDTO.getAttendees() != null && !createDTO.getAttendees().isEmpty()) {
                 final ReceiptOvertime savedOvertime = entity;
-                List<ReceiptOvertimeAttendee> attendees = createDTO.getAttendees().stream()
-                        .map(dto -> {
-                            ReceiptOvertimeAttendee attendee = new ReceiptOvertimeAttendee();
-                            attendee.setReceiptOvertimeIdx(savedOvertime);
-                            attendee.setUserIdx(dto.getUserIdx());
-                            attendee.setWorkTime(dto.getWorkTime());
-                            attendee.setWorkTask(dto.getWorkTask());
-                            attendee.setCreatedAt(now);
-                            attendee.setUpdatedAt(now);
-                            return attendee;
-                        })
-                        .collect(Collectors.toList());
-                attendeeRepository.saveAll(attendees);
+                int displayOrder = 0;
+                for (ReceiptOvertimeAttendeeDTO dto : createDTO.getAttendees()) {
+                    ReceiptAttendee attendee = ReceiptAttendee.builder()
+                            .documentTypePrefix(DOCUMENT_TYPE_PREFIX)
+                            .receiptIdx(savedOvertime.getId())
+                            .projectIdx(createDTO.getProjectIdx())
+                            .cardIdx(createDTO.getCardIdx())
+                            .userIdx(dto.getUserIdx())
+                            .isExternal(false)
+                            .documentDate(createDTO.getOvertimeDate())
+                            .startTime(parseStartTime(dto.getWorkTime()))
+                            .endTime(parseEndTime(dto.getWorkTime()))
+                            .displayOrder(displayOrder++)
+                            .workTask(dto.getWorkTask())
+                            .createdAt(nowDateTime)
+                            .createdUserIdx(currentUserIdx)
+                            .deleted(false)
+                            .build();
+                    attendeeRepository.save(attendee);
+                }
             }
 
             // 6. 저장된 데이터 재조회
-            List<ReceiptOvertimeAttendee> savedAttendees = attendeeRepository.findByReceiptOvertimeIdx(entity.getId());
+            List<ReceiptAttendee> savedAttendees = attendeeRepository.findByReceiptOvertimeIdx(entity.getId());
 
-            // 7. PDF 생성 및 저장
-            generateAndSaveReceiptOvertimePdf(createDTO, entity, savedDocument);
-
-            log.info("야근식대 생성 완료 - idx: {}, documentNumber: {}", entity.getId(), documentNumber);
-            return mapper.toDTOWithDetails(entity, savedAttendees, Collections.emptyList());
+            log.info("야근식대 생성 완료 - idx: {}, documentNo: {}", entity.getId(), documentNo);
+            return mapper.toDTOWithDetails(entity, convertAttendeesToDTO(savedAttendees), Collections.emptyList());
 
         } catch (Exception e) {
             log.error("연구비증빙 야근식대 생성 실패 - projectIdx: {}, authorIdx: {}, error: {}",
                     createDTO.getProjectIdx(), createDTO.getAuthorIdx(), e.getMessage(), e);
             throw new RuntimeException("연구비증빙 야근식대 저장 중 오류가 발생했습니다.\n잠시 후 다시 시도하거나 관리자에게 문의해주세요.", e);
         }
+    }
+
+    /**
+     * document_sequences 테이블을 이용한 문서번호 생성
+     * 형식: prefix-year-last_number (예: RCO-2026-001)
+     */
+    private String generateDocumentNo() {
+        int currentYear = LocalDateTime.now().getYear();
+
+        // 해당 연도의 시퀀스 조회 또는 생성
+        DocumentSequence sequence = documentSequenceRepository
+                .findByDocumentTypeAndYear(DOCUMENT_TYPE_PREFIX, currentYear)
+                .orElseGet(() -> {
+                    DocumentSequence newSequence = DocumentSequence.builder()
+                            .documentType(DOCUMENT_TYPE_PREFIX)
+                            .prefix(DOCUMENT_TYPE_PREFIX)
+                            .year(currentYear)
+                            .lastNumber(0)
+                            .currentSequence(0)
+                            .createdAt(LocalDateTime.now())
+                            .build();
+                    return documentSequenceRepository.save(newSequence);
+                });
+
+        // last_number 증가
+        sequence.setLastNumber(sequence.getLastNumber() + 1);
+        sequence.setUpdatedAt(LocalDateTime.now());
+        documentSequenceRepository.save(sequence);
+
+        // 문서번호 생성 (prefix-year-last_number, 3자리 패딩)
+        return String.format("%s-%d-%03d", sequence.getPrefix(), sequence.getYear(), sequence.getLastNumber());
+    }
+
+    /**
+     * "HH:mm ~ HH:mm" 형식에서 시작 시간 추출
+     */
+    private LocalTime parseStartTime(String workTime) {
+        if (workTime == null || workTime.isEmpty()) {
+            return null;
+        }
+        try {
+            String[] parts = workTime.split("~");
+            if (parts.length > 0) {
+                return LocalTime.parse(parts[0].trim(), DateTimeFormatter.ofPattern("HH:mm"));
+            }
+        } catch (Exception e) {
+            log.warn("시작 시간 파싱 실패: {}", workTime);
+        }
+        return null;
+    }
+
+    /**
+     * "HH:mm ~ HH:mm" 형식에서 종료 시간 추출
+     */
+    private LocalTime parseEndTime(String workTime) {
+        if (workTime == null || workTime.isEmpty()) {
+            return null;
+        }
+        try {
+            String[] parts = workTime.split("~");
+            if (parts.length > 1) {
+                return LocalTime.parse(parts[1].trim(), DateTimeFormatter.ofPattern("HH:mm"));
+            }
+        } catch (Exception e) {
+            log.warn("종료 시간 파싱 실패: {}", workTime);
+        }
+        return null;
     }
 
     @Override
@@ -255,6 +356,7 @@ public class ReceiptOvertimeServiceImpl implements ReceiptOvertimeService {
 
             // 3. 엔터티 수정
             Instant now = LocalDateTime.now().atZone(ZoneId.of("Asia/Seoul")).toInstant();
+            LocalDateTime nowDateTime = LocalDateTime.now();
             entity.setCardIdx(updateDTO.getCardIdx());
             entity.setOvertimeDate(updateDTO.getOvertimeDate());
             entity.setApprovalDate(updateDTO.getApprovalDate());
@@ -267,25 +369,31 @@ public class ReceiptOvertimeServiceImpl implements ReceiptOvertimeService {
 
             entity = receiptOvertimeRepository.save(entity);
 
-            // 4. 기존 참석자 삭제 후 새로 저장
-            List<ReceiptOvertimeAttendee> existingAttendees = attendeeRepository.findByReceiptOvertimeIdx(entity.getId());
-            attendeeRepository.deleteAll(existingAttendees);
+            // 4. 기존 참석자 소프트 딜리트 후 새로 저장 (receipt_attendee 테이블)
+            attendeeRepository.softDeleteByReceiptOvertimeIdx(entity.getId(), nowDateTime, currentUserIdx);
 
             if (updateDTO.getAttendees() != null && !updateDTO.getAttendees().isEmpty()) {
                 final ReceiptOvertime savedOvertime = entity;
-                List<ReceiptOvertimeAttendee> attendees = updateDTO.getAttendees().stream()
-                        .map(dto -> {
-                            ReceiptOvertimeAttendee attendee = new ReceiptOvertimeAttendee();
-                            attendee.setReceiptOvertimeIdx(savedOvertime);
-                            attendee.setUserIdx(dto.getUserIdx());
-                            attendee.setWorkTime(dto.getWorkTime());
-                            attendee.setWorkTask(dto.getWorkTask());
-                            attendee.setCreatedAt(now);
-                            attendee.setUpdatedAt(now);
-                            return attendee;
-                        })
-                        .collect(Collectors.toList());
-                attendeeRepository.saveAll(attendees);
+                int displayOrder = 0;
+                for (ReceiptOvertimeAttendeeDTO dto : updateDTO.getAttendees()) {
+                    ReceiptAttendee attendee = ReceiptAttendee.builder()
+                            .documentTypePrefix(DOCUMENT_TYPE_PREFIX)
+                            .receiptIdx(savedOvertime.getId())
+                            .projectIdx(updateDTO.getProjectIdx())
+                            .cardIdx(updateDTO.getCardIdx())
+                            .userIdx(dto.getUserIdx())
+                            .isExternal(false)
+                            .documentDate(updateDTO.getOvertimeDate())
+                            .startTime(parseStartTime(dto.getWorkTime()))
+                            .endTime(parseEndTime(dto.getWorkTime()))
+                            .displayOrder(displayOrder++)
+                            .workTask(dto.getWorkTask())
+                            .createdAt(nowDateTime)
+                            .createdUserIdx(currentUserIdx)
+                            .deleted(false)
+                            .build();
+                    attendeeRepository.save(attendee);
+                }
             }
 
             // 5. ApprovalDocument 제목 업데이트
@@ -303,19 +411,11 @@ public class ReceiptOvertimeServiceImpl implements ReceiptOvertimeService {
             }
 
             // 6. 저장된 데이터 재조회
-            List<ReceiptOvertimeAttendee> savedAttendees = attendeeRepository.findByReceiptOvertimeIdx(entity.getId());
+            List<ReceiptAttendee> savedAttendees = attendeeRepository.findByReceiptOvertimeIdx(entity.getId());
             List<ReceiptOvertimeAttachment> attachments = attachmentRepository.findByReceiptOvertimeIdx(entity.getId());
 
-            // 7. PDF 재생성 및 저장
-            final ReceiptOvertime savedEntity = entity;
-            if (savedEntity.getDocumentIdx() != null) {
-                approvalDocumentRepository.findById(savedEntity.getDocumentIdx()).ifPresent(approvalDocument -> {
-                    generateAndSaveReceiptOvertimePdf(updateDTO, savedEntity, approvalDocument);
-                });
-            }
-
             log.info("야근식대 수정 완료 - idx: {}", entity.getId());
-            return mapper.toDTOWithDetails(entity, savedAttendees, attachments);
+            return mapper.toDTOWithDetails(entity, convertAttendeesToDTO(savedAttendees), attachments);
 
         } catch (Exception e) {
             log.error("연구비증빙 야근식대 수정 실패 - idx: {}, error: {}", idx, e.getMessage(), e);
@@ -326,25 +426,43 @@ public class ReceiptOvertimeServiceImpl implements ReceiptOvertimeService {
     @Override
     @Transactional
     public void deleteReceiptOvertime(Long idx) {
-        log.debug("야근식대 삭제 - idx: {}", idx);
+        deleteReceiptOvertime(idx, null);
+    }
+
+    @Override
+    @Transactional
+    public void deleteReceiptOvertime(Long idx, Long currentUserIdx) {
+        log.debug("야근식대 소프트 딜리트 - idx: {}, currentUserIdx: {}", idx, currentUserIdx);
 
         ReceiptOvertime entity = receiptOvertimeRepository.findById(idx)
                 .orElseThrow(() -> new IllegalArgumentException("야근식대를 찾을 수 없습니다. idx: " + idx));
 
-        // 연결된 ApprovalDocument 소프트 딜리트
+        Instant now = LocalDateTime.now().atZone(ZoneId.of("Asia/Seoul")).toInstant();
+        LocalDateTime nowDateTime = LocalDateTime.now();
+        Long deletedBy = currentUserIdx != null ? currentUserIdx : entity.getAuthorIdx();
+
+        // 1. 연결된 ApprovalDocument 소프트 딜리트
         if (entity.getDocumentIdx() != null) {
             approvalDocumentRepository.findById(entity.getDocumentIdx()).ifPresent(approvalDocument -> {
-                LocalDateTime now = LocalDateTime.now();
-                approvalDocument.setDeletedAt(now);
-                approvalDocument.setDeletedUserIdx(entity.getAuthorIdx());
+                approvalDocument.setDeletedAt(nowDateTime);
+                approvalDocument.setDeletedUserIdx(deletedBy);
                 approvalDocumentRepository.save(approvalDocument);
                 log.debug("ApprovalDocument soft deleted - documentIdx: {}, deletedAt: {}",
-                        entity.getDocumentIdx(), now);
+                        entity.getDocumentIdx(), nowDateTime);
             });
         }
 
-        receiptOvertimeRepository.delete(entity);
-        log.info("야근식대 삭제 완료 - idx: {}", idx);
+        // 2. 참석자 소프트 딜리트 (receipt_attendee 테이블)
+        attendeeRepository.softDeleteByReceiptOvertimeIdx(entity.getId(), nowDateTime, deletedBy);
+        log.debug("ReceiptAttendee soft deleted - receiptOvertimeIdx: {}", entity.getId());
+
+        // 3. 야근식대 소프트 딜리트
+        entity.setDeleted(true);
+        entity.setDeletedAt(now);
+        entity.setDeletedUserIdx(deletedBy);
+        receiptOvertimeRepository.save(entity);
+
+        log.info("야근식대 소프트 딜리트 완료 - idx: {}", idx);
     }
 
     @Override
@@ -480,83 +598,5 @@ public class ReceiptOvertimeServiceImpl implements ReceiptOvertimeService {
                 .orElseThrow(() -> new IllegalArgumentException("첨부파일을 찾을 수 없습니다. idx: " + attachmentIdx));
 
         return mapper.toAttachmentDTO(attachment);
-    }
-
-    /**
-     * 연구비증빙 야근식대 PDF 생성 및 저장 (품의서, 야근신청서 각각 저장)
-     *
-     * @param createDTO     생성 요청 DTO (렌더링된 HTML/CSS 포함)
-     * @param saved         저장된 ReceiptOvertime 엔티티
-     * @param savedDocument 저장된 ApprovalDocument 엔티티
-     */
-    private void generateAndSaveReceiptOvertimePdf(ReceiptOvertimeCreateDTO createDTO,
-                                                    ReceiptOvertime saved,
-                                                    ApprovalDocument savedDocument) {
-        String year = String.valueOf(LocalDateTime.now().getYear());
-        String projectIdx = saved.getProjectIdx() != null ? saved.getProjectIdx().getIdx().toString() : "0";
-        String overtimeDate = saved.getOvertimeDate() != null ?
-            saved.getOvertimeDate().format(DateTimeFormatter.ofPattern("yyyyMMdd")) :
-            LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyyMMdd"));
-        String renderedCss = createDTO.getRenderedCss() != null ? createDTO.getRenderedCss() : "";
-
-        // 1. 품의서 PDF 생성
-        try {
-            if (createDTO.getApprovalHtml() != null && !createDTO.getApprovalHtml().isEmpty()) {
-                log.info("[품의서 PDF 생성] documentIdx: {}, receiptOvertimeId: {}",
-                         savedDocument.getIdx(), saved.getId());
-
-                String fullHtml = buildFullHtml("품의서", createDTO.getApprovalHtml(), renderedCss);
-                byte[] pdfBytes = pdfGenerationService.generatePdfFromRenderedHtml(fullHtml);
-
-                String fileName = String.format("품의서_%s_%s.pdf", overtimeDate, projectIdx);
-                String savePath = pdfGenerationService.saveReceiptOvertimePdf(pdfBytes, fileName, year, projectIdx);
-                log.info("[품의서 PDF 저장 완료] path: {}", savePath);
-            } else {
-                log.warn("[품의서 PDF 생성 스킵] approvalHtml이 비어있음 - documentIdx: {}", savedDocument.getIdx());
-            }
-        } catch (Exception e) {
-            log.error("[품의서 PDF 생성 실패] documentIdx: {}, error: {}", savedDocument.getIdx(), e.getMessage(), e);
-        }
-
-        // 2. 야근신청서 PDF 생성
-        try {
-            if (createDTO.getOvertimeHtml() != null && !createDTO.getOvertimeHtml().isEmpty()) {
-                log.info("[야근신청서 PDF 생성] documentIdx: {}, receiptOvertimeId: {}",
-                         savedDocument.getIdx(), saved.getId());
-
-                String fullHtml = buildFullHtml("야근신청서", createDTO.getOvertimeHtml(), renderedCss);
-                byte[] pdfBytes = pdfGenerationService.generatePdfFromRenderedHtml(fullHtml);
-
-                String fileName = String.format("야근신청서_%s_%s.pdf", overtimeDate, projectIdx);
-                String savePath = pdfGenerationService.saveReceiptOvertimePdf(pdfBytes, fileName, year, projectIdx);
-                log.info("[야근신청서 PDF 저장 완료] path: {}", savePath);
-            } else {
-                log.warn("[야근신청서 PDF 생성 스킵] overtimeHtml이 비어있음 - documentIdx: {}", savedDocument.getIdx());
-            }
-        } catch (Exception e) {
-            log.error("[야근신청서 PDF 생성 실패] documentIdx: {}, error: {}", savedDocument.getIdx(), e.getMessage(), e);
-        }
-    }
-
-    /**
-     * 완전한 HTML 문서 빌드 (PDF 변환용)
-     */
-    private String buildFullHtml(String title, String bodyHtml, String css) {
-        return "<!DOCTYPE html>\n" +
-                "<html lang=\"ko\">\n" +
-                "<head>\n" +
-                "    <meta charset=\"UTF-8\">\n" +
-                "    <meta name=\"viewport\" content=\"width=device-width, initial-scale=1.0\">\n" +
-                "    <title>" + title + "</title>\n" +
-                "    <style>\n" +
-                "        @page { margin: 15mm 20mm; }\n" +
-                "        body { margin: 0; padding: 0; font-family: 'Malgun Gothic', sans-serif; }\n" +
-                css + "\n" +
-                "    </style>\n" +
-                "</head>\n" +
-                "<body>\n" +
-                bodyHtml + "\n" +
-                "</body>\n" +
-                "</html>";
     }
 }
