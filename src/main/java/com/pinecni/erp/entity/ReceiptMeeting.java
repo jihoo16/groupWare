@@ -111,8 +111,13 @@ public class ReceiptMeeting {
     @JoinColumn(name = "author_idx", insertable = false, updatable = false)
     private User author;
 
-    @OneToMany(mappedBy = "receiptMeeting", cascade = CascadeType.ALL, orphanRemoval = true)
-    private List<ReceiptMeetingAttendee> attendees = new ArrayList<>();
+    /**
+     * 참석자 목록 (통합 테이블 사용)
+     * - JPA 관계 매핑 제거 (통합 테이블로 인해 복잡도 증가)
+     * - Repository를 통해 직접 조회 후 설정 필요
+     */
+    @Transient
+    private List<ReceiptAttendee> attendees = new ArrayList<>();
 
     @OneToMany(mappedBy = "receiptMeeting", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<ReceiptMeetingApproval> approvals = new ArrayList<>();

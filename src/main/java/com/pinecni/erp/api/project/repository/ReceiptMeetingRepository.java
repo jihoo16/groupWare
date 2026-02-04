@@ -46,11 +46,11 @@ public interface ReceiptMeetingRepository extends JpaRepository<ReceiptMeeting, 
     Optional<ReceiptMeeting> findByDocumentNumber(String documentNumber);
 
     /**
-     * 참석자 정보를 포함한 회의록 상세 조회
+     * 회의록 상세 조회
+     * Note: attendees는 통합 테이블로 변경되어 별도 조회 필요 (ReceiptAttendeeRepository 사용)
      * Note: approvals는 lazy loading으로 필요시 별도 조회
      */
-    @Query("SELECT DISTINCT rm FROM ReceiptMeeting rm " +
-            "LEFT JOIN FETCH rm.attendees " +
+    @Query("SELECT rm FROM ReceiptMeeting rm " +
             "WHERE rm.idx = :idx")
     Optional<ReceiptMeeting> findByIdWithDetails(@Param("idx") Long idx);
 

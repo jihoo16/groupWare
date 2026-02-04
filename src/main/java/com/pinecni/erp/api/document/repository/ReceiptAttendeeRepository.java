@@ -1,0 +1,180 @@
+package com.pinecni.erp.api.document.repository;
+
+import com.pinecni.erp.entity.ReceiptAttendee;
+import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Modifying;
+import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
+import org.springframework.stereotype.Repository;
+
+import java.time.LocalDate;
+import java.util.List;
+
+/**
+ * ReceiptAttendee Repository
+ * 통합 참석자 조회 (회의록, 야근식대, 출장 등 모든 문서)
+ */
+@Repository
+public interface ReceiptAttendeeRepository extends JpaRepository<ReceiptAttendee, Long> {
+
+    /**
+     * 문서별 참석자 목록 조회 (정렬 순서대로)
+     * @param receiptIdx 문서 IDX
+     * @param documentTypePrefix 문서 타입 (RCM/RCO/RCT)
+     * @return 참석자 목록
+     */
+    List<ReceiptAttendee> findByReceiptIdxAndDocumentTypePrefixOrderByDisplayOrder(
+            Long receiptIdx,
+            String documentTypePrefix
+    );
+
+    /**
+     * 문서별 참석자 목록 조회 (내부 직원 정보 포함)
+     * @param receiptIdx 문서 IDX
+     * @param documentTypePrefix 문서 타입 (RCM/RCO/RCT)
+     * @return [ReceiptAttendee, User] 배열 리스트
+     */
+    @Query("""
+        SELECT ra, u
+        FROM ReceiptAttendee ra
+        LEFT JOIN User u ON ra.userIdx = u.idx AND ra.isExternal = false
+        WHERE ra.receiptIdx = :receiptIdx
+          AND ra.documentTypePrefix = :documentTypePrefix
+          AND ra.deleted = false
+        ORDER BY ra.displayOrder
+        """)
+    List<Object[]> findAttendeesWithUser(
+            @Param("receiptIdx") Long receiptIdx,
+            @Param("documentTypePrefix") String documentTypePrefix
+    );
+
+    /**
+     * 문서별 참석자 목록 조회 (외부 인력 정보 포함)
+     * @param receiptIdx 문서 IDX
+     * @param documentTypePrefix 문서 타입 (RCM/RCO/RCT)
+     * @return [ReceiptAttendee, ExternalPerson] 배열 리스트
+     */
+    @Query("""
+        SELECT ra, ep
+        FROM ReceiptAttendee ra
+        LEFT JOIN ExternalPerson ep ON ra.userIdx = ep.idx AND ra.isExternal = true
+        WHERE ra.receiptIdx = :receiptIdx
+          AND ra.documentTypePrefix = :documentTypePrefix
+          AND ra.deleted = false
+        ORDER BY ra.displayOrder
+        """)
+    List<Object[]> findAttendeesWithExternalPerson(
+            @Param("receiptIdx") Long receiptIdx,
+            @Param("documentTypePrefix") String documentTypePrefix
+    );
+
+    /**
+     * 문서별 참석자 목록 조회 (내부/외부 모두 조인)
+     * @param receiptIdx 문서 IDX
+     * @param documentTypePrefix 문서 타입 (RCM/RCO/RCT)
+     * @return [ReceiptAttendee, User, ExternalPerson] 배열 리스트
+     */
+    @Query("""
+        SELECT ra, u, ep
+        FROM ReceiptAttendee ra
+        LEFT JOIN User u ON ra.userIdx = u.idx AND ra.isExternal = false
+        LEFT JOIN ExternalPerson ep ON ra.userIdx = ep.idx AND ra.isExternal = true
+        WHERE ra.receiptIdx = :receiptIdx
+          AND ra.documentTypePrefix = :documentTypePrefix
+          AND ra.deleted = false
+        ORDER BY ra.displayOrder
+        """)
+    List<Object[]> findAttendeesWithAllPersonInfo(
+            @Param("receiptIdx") Long receiptIdx,
+            @Param("documentTypePrefix") String documentTypePrefix
+    );
+
+    /**
+     * 특정 사용자의 특정 날짜 참석 내역 조회 (시간 겹침 체크용)
+     * @param userIdx 사용자 IDX
+     * @param projectIdx 프로젝트 IDX
+     * @param documentDate 문서 날짜
+     * @return 참석자 목록
+     */
+    @Query("""
+        SELECT ra
+        FROM ReceiptAttendee ra
+        WHERE ra.userIdx = :userIdx
+          AND ra.projectIdx = :projectIdx
+          AND ra.documentDate = :documentDate
+          AND ra.deleted = false
+        ORDER BY ra.startTime
+        """)
+    List<ReceiptAttendee> findByUserAndProjectAndDate(
+            @Param("userIdx") Long userIdx,
+            @Param("projectIdx") Long projectIdx,
+            @Param("documentDate") LocalDate documentDate
+    );
+
+    /**
+     * 문서의 모든 참석자 Soft Delete
+     * @param receiptIdx 문서 IDX
+     * @param documentTypePrefix 문서 타입 (RCM/RCO/RCT)
+     * @param deletedUserIdx 삭제자 IDX
+     */
+    @Modifying
+    @Query("""
+        UPDATE ReceiptAttendee ra
+        SET ra.deleted = true,
+            ra.deletedAt = CURRENT_TIMESTAMP,
+            ra.deletedUserIdx = :deletedUserIdx
+        WHERE ra.receiptIdx = :receiptIdx
+          AND ra.documentTypePrefix = :documentTypePrefix
+          AND ra.deleted = false
+        """)
+    void softDeleteByReceiptIdxAndDocumentTypePrefix(
+            @Param("receiptIdx") Long receiptIdx,
+            @Param("documentTypePrefix") String documentTypePrefix,
+            @Param("deletedUserIdx") Long deletedUserIdx
+    );
+
+    /**
+     * 문서의 모든 참석자 물리 삭제 (실제 삭제, 주의!)
+     * @param receiptIdx 문서 IDX
+     * @param documentTypePrefix 문서 타입 (RCM/RCO/RCT)
+     */
+    @Modifying
+    @Query("""
+        DELETE FROM ReceiptAttendee ra
+        WHERE ra.receiptIdx = :receiptIdx
+          AND ra.documentTypePrefix = :documentTypePrefix
+        """)
+    void deleteByReceiptIdxAndDocumentTypePrefix(
+            @Param("receiptIdx") Long receiptIdx,
+            @Param("documentTypePrefix") String documentTypePrefix
+    );
+
+    /**
+     * 특정 프로젝트의 참석자 통계 조회
+     * @param projectIdx 프로젝트 IDX
+     * @param documentTypePrefix 문서 타입 (RCM/RCO/RCT)
+     * @return 참석 횟수
+     */
+    @Query("""
+        SELECT COUNT(ra)
+        FROM ReceiptAttendee ra
+        WHERE ra.projectIdx = :projectIdx
+          AND ra.documentTypePrefix = :documentTypePrefix
+          AND ra.deleted = false
+        """)
+    Long countByProjectIdxAndDocumentTypePrefix(
+            @Param("projectIdx") Long projectIdx,
+            @Param("documentTypePrefix") String documentTypePrefix
+    );
+
+    /**
+     * 특정 사용자의 문서 참석 내역 조회
+     * @param userIdx 사용자 IDX
+     * @param documentTypePrefix 문서 타입 (RCM/RCO/RCT)
+     * @return 참석자 목록
+     */
+    List<ReceiptAttendee> findByUserIdxAndDocumentTypePrefixAndDeletedFalseOrderByDocumentDateDesc(
+            Long userIdx,
+            String documentTypePrefix
+    );
+}
