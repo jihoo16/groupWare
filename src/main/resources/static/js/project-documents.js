@@ -432,7 +432,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
         // 부서
         const deptCell = document.createElement('td');
-        const deptName = doc.drafterDepartment || '-';
+        const deptName = doc.drafterDeptName || '-';
         const highlightedDept = keyword ? searchUtils.highlightText(deptName, keyword) : deptName;
         deptCell.innerHTML = highlightedDept;
         tr.appendChild(deptCell);
