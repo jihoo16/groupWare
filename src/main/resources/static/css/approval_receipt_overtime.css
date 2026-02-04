@@ -2110,3 +2110,378 @@ div h2{
     max-height: 500px;
     overflow-y: auto;
 }
+
+/* 인쇄 버튼 스타일 */
+.btn-print {
+    padding: 10px 20px;
+    background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+    color: white;
+    border: none;
+    border-radius: 8px;
+    font-size: 14px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.btn-print:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(16, 185, 129, 0.3);
+}
+
+.btn-print i {
+    font-size: 16px;
+}
+
+/* 툴팁 버튼 스타일 */
+.btn-with-tooltip {
+    position: relative;
+}
+
+.tooltip-text {
+    visibility: hidden;
+    opacity: 0;
+    position: absolute;
+    top: 110%;
+    left: 50%;
+    transform: translateX(-50%);
+    background: #333;
+    color: white;
+    padding: 10px 14px;
+    border-radius: 8px;
+    font-size: 12px;
+    font-weight: 500;
+    white-space: nowrap;
+    z-index: 100;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+    transition: opacity 0.3s, visibility 0.3s;
+    pointer-events: none;
+}
+
+.tooltip-text::after {
+    content: '';
+    position: absolute;
+    bottom: 100%;
+    left: 50%;
+    transform: translateX(-50%);
+    border: 8px solid transparent;
+    border-bottom-color: #333;
+}
+
+.btn-with-tooltip:hover .tooltip-text {
+    visibility: visible;
+    opacity: 1;
+}
+
+/* 필수 필드 에러 스타일 */
+.clickable-input.error,
+.form-input.error,
+.form-textarea.error {
+    border-color: #ef5350 !important;
+    border-width: 2px !important;
+}
+
+/* 인쇄용 스타일 */
+@media print {
+    @page {
+        size: A4;
+        margin: 10mm;
+    }
+
+    * {
+        -webkit-print-color-adjust: exact !important;
+        print-color-adjust: exact !important;
+    }
+
+    body {
+        margin: 0 !important;
+        padding: 0 !important;
+    }
+
+    body * {
+        visibility: hidden;
+    }
+
+    .document-form-wrapper,
+    .document-form-wrapper * {
+        visibility: visible;
+    }
+
+    .document-form-wrapper {
+        position: absolute;
+        left: 0;
+        top: 0;
+        width: 100%;
+        max-height: none !important;
+        overflow: visible !important;
+        padding: 0 !important;
+        margin: 0 !important;
+    }
+
+    .document-form-wrapper.collapsed {
+        max-height: none !important;
+        overflow: visible !important;
+    }
+
+    .document-form {
+        max-height: none !important;
+        overflow: visible !important;
+        padding: 0 !important;
+        margin: 0 !important;
+    }
+
+    .document-preview-toggle {
+        display: none !important;
+    }
+
+    .header,
+    .sidebar,
+    .template-sidebar,
+    .common-info-section,
+    .attachment-section,
+    .btn-print,
+    .btn-primary,
+    .btn-secondary,
+    .btn-danger {
+        display: none !important;
+    }
+
+    /* 각 문서 컨테이너 - 좌우 여백 추가 (75% 너비) */
+    .document-form > div {
+        page-break-after: always;
+        page-break-inside: avoid;
+        margin: 0 auto !important;
+        padding: 15px 0 !important;
+        border: none !important;
+        border-radius: 0 !important;
+        width: 75% !important;
+        max-width: 75% !important;
+        box-sizing: border-box;
+    }
+
+    .document-form > div:last-child {
+        page-break-after: avoid;
+    }
+
+    /* 문서 제목 */
+    .doc-title,
+    h2.doc-title {
+        font-size: 22px !important;
+        margin: 15px 0 20px 0 !important;
+        padding-bottom: 8px !important;
+    }
+
+    /* 섹션 제목 (h3) */
+    .document-form h3 {
+        font-size: 13px !important;
+        margin: 15px 0 8px 0 !important;
+    }
+
+    /* 결재란 테이블 */
+    .document-form > div > div:first-child table {
+        margin-bottom: 15px !important;
+    }
+
+    .document-form > div > div:first-child table td {
+        padding: 5px 10px !important;
+        height: 50px !important;
+        font-size: 11px !important;
+        min-width: 60px !important;
+    }
+
+    /* 테이블 전체 */
+    .form-table {
+        margin-top: 10px !important;
+        margin-bottom: 10px !important;
+    }
+
+    .form-table th,
+    .form-table td {
+        padding: 6px 8px !important;
+        font-size: 11px !important;
+        height: auto !important;
+        min-height: 28px !important;
+        line-height: 1.4 !important;
+    }
+
+    .form-table th {
+        font-size: 10px !important;
+    }
+
+    /* span 요소 폰트 */
+    .form-table span {
+        font-size: 11px !important;
+    }
+
+    /* 테이블 input, textarea */
+    .form-table input,
+    .form-table select,
+    .form-table textarea {
+        font-size: 11px !important;
+        padding: 4px 6px !important;
+        line-height: 1.4 !important;
+    }
+
+    .form-table input[readonly],
+    .form-table textarea[readonly] {
+        padding: 4px 0 !important;
+        font-size: 11px !important;
+        line-height: 1.4 !important;
+    }
+
+    /* 야근인원 테이블 행 */
+    .ot-person-row td {
+        padding: 5px 6px !important;
+        font-size: 10px !important;
+        height: 28px !important;
+    }
+
+    /* 섹션 div 마진 */
+    .document-form > div > div {
+        margin-bottom: 12px !important;
+    }
+
+    /* 빈 행 높이 */
+    .form-table tr td:empty {
+        height: 25px !important;
+    }
+
+    /* 인라인 스타일 오버라이드 - 모든 td, th */
+    td[style],
+    th[style] {
+        padding: 6px 8px !important;
+    }
+
+    /* 결재란 서명 높이 */
+    td[style*="height: 80px"] {
+        height: 50px !important;
+    }
+
+    /* 품의 내용 높이 */
+    td[style*="height: 200px"],
+    th[style*="height: 200px"] {
+        height: 100px !important;
+    }
+
+    /* padding 인라인 스타일 오버라이드 */
+    div[style*="padding: 30px"] {
+        padding: 15px !important;
+    }
+
+    td[style*="padding: 10px"],
+    td[style*="padding: 15px"] {
+        padding: 6px 8px !important;
+    }
+
+    /* margin 인라인 스타일 오버라이드 */
+    div[style*="margin-bottom: 20px"] {
+        margin-bottom: 12px !important;
+    }
+
+    div[style*="margin-bottom: 30px"] {
+        margin-bottom: 5px !important;
+    }
+
+    /* 폰트 사이즈 인라인 스타일 오버라이드 */
+    h2[style*="font-size: 30px"],
+    .doc-title[style*="font-size: 30px"] {
+        font-size: 22px !important;
+    }
+
+    h3[style*="font-size: 16px"] {
+        font-size: 13px !important;
+    }
+
+    /* ========================================
+       품의서 (첫 번째 문서) - 세로 40% 증가
+       ======================================== */
+    .document-form > div:first-child {
+        padding: 20px !important;
+    }
+
+    .document-form > div:first-child .doc-title,
+    .document-form > div:first-child h2.doc-title {
+        font-size: 24px !important;
+        margin: 20px 0 25px 0 !important;
+        padding-bottom: 10px !important;
+    }
+
+    .document-form > div:first-child .form-table th,
+    .document-form > div:first-child .form-table td {
+        padding: 10px 10px !important;
+        min-height: 38px !important;
+        line-height: 1.5 !important;
+    }
+
+    .document-form > div:first-child .form-table span {
+        font-size: 12px !important;
+    }
+
+    /* 품의서 결재란 */
+    .document-form > div:first-child > div:first-child table td {
+        padding: 8px 12px !important;
+        height: 70px !important;
+        font-size: 12px !important;
+    }
+
+    /* 품의서 품의 내용 높이 */
+    .document-form > div:first-child td[style*="height: 200px"],
+    .document-form > div:first-child th[style*="height: 200px"] {
+        height: 140px !important;
+    }
+
+    /* 품의서 빈 행 */
+    .document-form > div:first-child .form-table tr td:empty {
+        height: 35px !important;
+    }
+
+    /* 품의서 섹션 마진 */
+    .document-form > div:first-child > div {
+        margin-bottom: 18px !important;
+    }
+
+    /* ========================================
+       야근 및 특근 신청서 (두 번째 문서) - 세로 20% 증가
+       ======================================== */
+    .document-form > div:last-child {
+        padding: 18px !important;
+    }
+
+    .document-form > div:last-child .doc-title,
+    .document-form > div:last-child h2.doc-title {
+        font-size: 22px !important;
+        margin: 18px 0 22px 0 !important;
+        padding-bottom: 8px !important;
+    }
+
+    .document-form > div:last-child h3 {
+        font-size: 14px !important;
+        margin: 18px 0 10px 0 !important;
+    }
+
+    .document-form > div:last-child .form-table th,
+    .document-form > div:last-child .form-table td {
+        padding: 8px 8px !important;
+        min-height: 34px !important;
+        line-height: 1.5 !important;
+    }
+
+    .document-form > div:last-child .form-table span {
+        font-size: 11px !important;
+    }
+
+    /* 야근신청서 야근인원 행 */
+    .document-form > div:last-child .ot-person-row td {
+        padding: 7px 8px !important;
+        font-size: 11px !important;
+        height: 50px !important;
+    }
+
+    /* 야근신청서 섹션 마진 */
+    .document-form > div:last-child > div {
+        margin-bottom: 30px !important;
+    }
+}

@@ -368,6 +368,11 @@ document.addEventListener('DOMContentLoaded', async function() {
                 pageTitle.textContent = '야근식대 수정';
             }
 
+            // 수정 모드에서 필수 필드 검증 실행 (인쇄 버튼 표시)
+            setTimeout(() => {
+                validateRequiredFields();
+            }, 500);
+
         } catch (error) {
             console.error('기존 데이터 로드 실패:', error);
             showError('야근식대 데이터를 불러오는데 실패했습니다.');
@@ -1609,71 +1614,6 @@ document.addEventListener('DOMContentLoaded', async function() {
         });
     }
 
-    // ============================================
-    // PDF 생성용 렌더링된 문서 캡처 (품의서, 야근신청서 각각)
-    // ============================================
-    function captureRenderedDocument() {
-        const documentForm = document.querySelector('.document-form');
-        if (!documentForm) {
-            console.error('문서 양식을 찾을 수 없습니다.');
-            return { approvalHtml: '', overtimeHtml: '', css: '' };
-        }
-
-        // 문서 영역 가져오기 (첫 번째: 품의서, 두 번째: 야근신청서)
-        const allDivs = documentForm.querySelectorAll(':scope > div');
-        if (allDivs.length < 2) {
-            console.error('문서 구조를 찾을 수 없습니다.');
-            return { approvalHtml: '', overtimeHtml: '', css: '' };
-        }
-
-        // 품의서 HTML 캡처 (첫 번째 div)
-        let approvalHtml = '';
-        if (allDivs[0]) {
-            const clonedApproval = allDivs[0].cloneNode(true);
-            clonedApproval.querySelectorAll('button, input[type="button"]').forEach(el => el.remove());
-            approvalHtml = clonedApproval.outerHTML;
-        }
-
-        // 야근신청서 HTML 캡처 (두 번째 div)
-        let overtimeHtml = '';
-        if (allDivs[1]) {
-            const clonedOvertime = allDivs[1].cloneNode(true);
-            clonedOvertime.querySelectorAll('button, input[type="button"]').forEach(el => el.remove());
-            overtimeHtml = clonedOvertime.outerHTML;
-        }
-
-        // CSS 수집 (approval_receipt_overtime.css만) + 추가 스타일
-        let collectedCss = `
-            body { margin: 0; padding: 20px; font-family: 'Malgun Gothic', sans-serif; }
-            .form-table { width: 100%; border-collapse: collapse; }
-            .form-table th, .form-table td { border: 1px solid #000; padding: 8px; }
-            .form-table th { background: #f5f5f5; font-weight: bold; }
-            .doc-title { text-align: center; margin: 20px 0; }
-        `;
-        try {
-            Array.from(document.styleSheets).forEach(sheet => {
-                try {
-                    if (sheet.href && sheet.href.includes('approval_receipt_overtime.css')) {
-                        const rules = Array.from(sheet.cssRules || sheet.rules);
-                        rules.forEach(rule => {
-                            collectedCss += rule.cssText + '\n';
-                        });
-                    }
-                } catch (e) {
-                    console.warn('스타일시트 접근 불가:', sheet.href, e);
-                }
-            });
-        } catch (error) {
-            console.error('CSS 수집 중 오류:', error);
-        }
-
-        return {
-            approvalHtml: approvalHtml,
-            overtimeHtml: overtimeHtml,
-            css: collectedCss
-        };
-    }
-
     // 제출 (저장하기)
     if (submitBtn) {
         submitBtn.addEventListener('click', async function() {
@@ -1690,52 +1630,81 @@ document.addEventListener('DOMContentLoaded', async function() {
             const otContent = document.getElementById('ot_content');
             const otManager = document.getElementById('ot_manager');
 
+            // 카드 입력 필드 참조
+            const otCard = document.getElementById('ot_card');
+            const otApplicant = document.getElementById('ot_applicant');
+
             if (!projectIdx) {
                 showWarning('과제를 선택해주세요.');
-                if (otProject) otProject.style.borderColor = '#ef5350';
+                if (otProject) otProject.classList.add('error');
                 return;
+            } else {
+                if (otProject) otProject.classList.remove('error');
             }
 
             // 카드 선택 검증
             const cardIdx = document.getElementById('selectedCardIdx')?.value;
             if (!cardIdx) {
                 showWarning('사용 카드를 선택해주세요.');
+                if (otCard) otCard.classList.add('error');
                 return;
+            } else {
+                if (otCard) otCard.classList.remove('error');
             }
 
             // 신청자 선택 검증
             const applicantIdx = document.getElementById('selectedApplicantIdx')?.value;
             if (!applicantIdx) {
                 showWarning('신청자를 선택해주세요.');
+                if (otApplicant) otApplicant.classList.add('error');
                 return;
+            } else {
+                if (otApplicant) otApplicant.classList.remove('error');
             }
 
             if (!otApprovalDate?.value) {
                 showWarning('품의일자를 입력해주세요.');
+                if (otApprovalDate) otApprovalDate.classList.add('error');
                 return;
+            } else {
+                if (otApprovalDate) otApprovalDate.classList.remove('error');
             }
 
             if (!otTitle?.value) {
                 showWarning('품의명을 입력해주세요.');
+                if (otTitle) otTitle.classList.add('error');
                 return;
+            } else {
+                if (otTitle) otTitle.classList.remove('error');
             }
 
             // 총 공급가액 검증
             const amountValidation = parseInt((otAmount?.value || '').replace(/,/g, '')) || 0;
             if (amountValidation <= 0) {
                 showWarning('총 공급가액을 입력해주세요.');
-            return;
+                if (otAmount) otAmount.classList.add('error');
+                return;
+            } else {
+                if (otAmount) otAmount.classList.remove('error');
             }
 
             // 품의내용 검증
             if (!otContent?.value || !otContent.value.trim()) {
                 showWarning('품의내용을 입력해주세요.');
+                if (otContent) otContent.classList.add('error');
                 return;
+            } else {
+                if (otContent) otContent.classList.remove('error');
             }
 
             if (!otStartTime?.value || !otEndTime?.value) {
                 showWarning('시작 시간과 종료 시간을 입력해주세요.');
+                if (otStartTime && !otStartTime.value) otStartTime.classList.add('error');
+                if (otEndTime && !otEndTime.value) otEndTime.classList.add('error');
                 return;
+            } else {
+                if (otStartTime) otStartTime.classList.remove('error');
+                if (otEndTime) otEndTime.classList.remove('error');
             }
 
             // 업무 내용 가져오기
@@ -1748,7 +1717,10 @@ document.addEventListener('DOMContentLoaded', async function() {
 
             if (!taskContent) {
                 showWarning('업무 내용을 선택하거나 입력해주세요.');
+                if (otTaskSelect) otTaskSelect.classList.add('error');
                 return;
+            } else {
+                if (otTaskSelect) otTaskSelect.classList.remove('error');
             }
 
             // 야근 인원 확인
@@ -1793,10 +1765,6 @@ document.addEventListener('DOMContentLoaded', async function() {
             // 시간 범위 문자열 생성
             const workTimeStr = `${otStartTime.value} ~ ${otEndTime.value}`;
 
-            // 렌더링된 문서 HTML/CSS 캡처 (PDF 생성용 - 품의서, 야근신청서 각각)
-            const captured = captureRenderedDocument();
-            console.log('PDF용 HTML 캡처 완료 - 품의서:', captured.approvalHtml.length, 'bytes, 야근신청서:', captured.overtimeHtml.length, 'bytes');
-
             // 데이터 준비 (새로운 DTO 구조에 맞게)
             const data = {
                 projectIdx: parseInt(projectIdx),
@@ -1812,10 +1780,7 @@ document.addEventListener('DOMContentLoaded', async function() {
                     userIdx: person.id,
                     workTime: workTimeStr,
                     workTask: taskContent
-                })),
-                approvalHtml: captured.approvalHtml,
-                overtimeHtml: captured.overtimeHtml,
-                renderedCss: captured.css
+                }))
             };
 
             // FormData 생성
@@ -1860,8 +1825,8 @@ document.addEventListener('DOMContentLoaded', async function() {
                     }
 
                     const successMessage = isEditMode
-                        ? '야근식대가 수정되었습니다.\nPDF 파일 2개(품의서, 야근신청서)가 저장되었습니다.'
-                        : '야근식대가 저장되었습니다.\nPDF 파일 2개(품의서, 야근신청서)가 저장되었습니다.';
+                        ? '야근식대가 수정되었습니다.'
+                        : '야근식대가 저장되었습니다.';
                     showSuccess(successMessage);
                     setTimeout(() => {
                         window.location.href = '/project/documents';
@@ -1877,217 +1842,185 @@ document.addEventListener('DOMContentLoaded', async function() {
         });
     }
 
-    // PDF 저장 버튼 이벤트
-    const savePdfBtn = document.getElementById('savePdfBtn');
-    if (savePdfBtn) {
-        savePdfBtn.addEventListener('click', async function(e) {
-            e.preventDefault();
+    // ============================================
+    // 필수 필드 검증 및 인쇄 버튼 표시/숨김
+    // ============================================
+    function validateRequiredFields() {
+        const printBtn = document.getElementById('printDocumentBtn');
+        if (!printBtn) return;
 
-            let allDivs = null;
-            let originalDisplays = [];
-            const loadingModal = document.getElementById('pdfLoadingModal');
-            const progressFill = document.getElementById('progressFill');
-            const progressText = document.getElementById('progressText');
+        // 필수 필드 체크
+        const projectInput = document.getElementById('ot_project');
+        const cardInput = document.getElementById('ot_card');
+        const applicantInput = document.getElementById('ot_applicant');
+        const dateInput = document.getElementById('ot_approval_date');
+        const titleInput = document.getElementById('ot_title');
+        const amountInput = document.getElementById('ot_amount');
+        const startTimeInput = document.getElementById('ot_start_time');
+        const endTimeInput = document.getElementById('ot_end_time');
+        const taskSelect = document.getElementById('ot_task_select');
+        const taskCustomInput = document.getElementById('ot_task_custom');
+        const contentInput = document.getElementById('ot_content');
 
-            // 진행도 업데이트 함수
-            function updateProgress(percent, message) {
-                if (progressFill) progressFill.style.width = percent + '%';
-                if (progressText) progressText.textContent = `${message} (${percent}%)`;
+        let allFieldsFilled = true;
+
+        // 과제명 검증
+        if (!projectInput?.value) {
+            projectInput?.classList.add('error');
+            allFieldsFilled = false;
+        } else {
+            projectInput?.classList.remove('error');
+        }
+
+        // 사용 카드 검증
+        if (!cardInput?.value) {
+            cardInput?.classList.add('error');
+            allFieldsFilled = false;
+        } else {
+            cardInput?.classList.remove('error');
+        }
+
+        // 신청자 검증
+        if (!applicantInput?.value) {
+            applicantInput?.classList.add('error');
+            allFieldsFilled = false;
+        } else {
+            applicantInput?.classList.remove('error');
+        }
+
+        // 품의일자 검증
+        if (!dateInput?.value) {
+            dateInput?.classList.add('error');
+            allFieldsFilled = false;
+        } else {
+            dateInput?.classList.remove('error');
+        }
+
+        // 품의명 검증
+        if (!titleInput?.value) {
+            titleInput?.classList.add('error');
+            allFieldsFilled = false;
+        } else {
+            titleInput?.classList.remove('error');
+        }
+
+        // 총 공급가액 검증
+        const amountValue = parseInt((amountInput?.value || '').replace(/,/g, '')) || 0;
+        if (amountValue <= 0) {
+            amountInput?.classList.add('error');
+            allFieldsFilled = false;
+        } else {
+            amountInput?.classList.remove('error');
+        }
+
+        // 시작/종료 시간 검증
+        if (!startTimeInput?.value) {
+            startTimeInput?.classList.add('error');
+            allFieldsFilled = false;
+        } else {
+            startTimeInput?.classList.remove('error');
+        }
+
+        if (!endTimeInput?.value) {
+            endTimeInput?.classList.add('error');
+            allFieldsFilled = false;
+        } else {
+            endTimeInput?.classList.remove('error');
+        }
+
+        // 업무 내용 검증
+        const taskValue = taskSelect?.value;
+        if (!taskValue) {
+            taskSelect?.classList.add('error');
+            allFieldsFilled = false;
+        } else {
+            taskSelect?.classList.remove('error');
+            if (taskValue === 'custom' && !taskCustomInput?.value) {
+                taskCustomInput?.classList.add('error');
+                allFieldsFilled = false;
+            } else {
+                taskCustomInput?.classList.remove('error');
             }
+        }
 
-            try {
-                console.log('PDF 저장 시작 - 야근식대 페이지');
+        // 품의 내용 검증
+        if (!contentInput?.value || !contentInput.value.trim()) {
+            contentInput?.classList.add('error');
+            allFieldsFilled = false;
+        } else {
+            contentInput?.classList.remove('error');
+        }
 
-                // 로딩 모달 표시
-                if (loadingModal) loadingModal.classList.add('active');
-                updateProgress(0, '준비 중...');
+        // 야근 인원 검증
+        const overtimePersons = window.currentOvertimePersons || [];
+        if (overtimePersons.length === 0) {
+            allFieldsFilled = false;
+        }
 
-                const templateType = 'receipt-overtime';
+        // 인쇄 버튼 표시/숨김
+        if (allFieldsFilled) {
+            printBtn.style.display = 'inline-flex';
+        } else {
+            printBtn.style.display = 'none';
+        }
+    }
 
-                if (typeof window.jspdf === 'undefined' || typeof window.html2canvas === 'undefined') {
-                    showWarning('PDF 라이브러리를 로드하는 중입니다. 잠시 후 다시 시도해주세요.');
-                    if (loadingModal) loadingModal.classList.remove('active');
-                    return;
-                }
+    // 인쇄 함수
+    function printDocument() {
+        const documentFormWrapper = document.querySelector('.document-form-wrapper');
 
-                updateProgress(10, 'PDF 초기화 중...');
+        // 문서가 접혀있으면 먼저 펼치기
+        if (documentFormWrapper && documentFormWrapper.classList.contains('collapsed')) {
+            documentFormWrapper.classList.remove('collapsed');
+            const toggleBtn = document.getElementById('documentFormToggle');
+            if (toggleBtn) toggleBtn.classList.add('active');
+        }
 
-                const { jsPDF } = window.jspdf;
-                const pdf = new jsPDF({
-                    orientation: 'p',
-                    unit: 'mm',
-                    format: 'a4',
-                    compress: false,  // 압축 비활성화로 최고 품질 유지
-                    precision: 16     // 정밀도 향상
-                });
+        // 잠시 대기 후 인쇄 (문서가 완전히 렌더링되도록)
+        setTimeout(function() {
+            window.print();
+        }, 300);
+    }
 
-                updateProgress(20, '문서 구조 확인 중...');
-
-                allDivs = documentForm.querySelectorAll(':scope > div');
-                console.log('찾은 div 개수:', allDivs.length);
-
-                originalDisplays = Array.from(allDivs).map(div => div.style.display);
-
-                if (allDivs.length < 3) {
-                    showError('문서 구조를 찾을 수 없습니다. 영수증 처리(야근식대) 템플릿을 선택했는지 확인해주세요.');
-                    if (loadingModal) loadingModal.classList.remove('active');
-                    return;
-                }
-
-                updateProgress(30, '페이지 준비 중...');
-
-                // 공통 정보 입력 영역 숨기고, 나머지는 모두 표시
-                allDivs[0].style.display = 'none';
-                allDivs[1].style.display = 'block';
-                allDivs[2].style.display = 'block';
-
-                await new Promise(resolve => setTimeout(resolve, 300));  // 렌더링 대기 시간 증가
-
-                const renderOptions = {
-                    scale: 5,  // 해상도 최대 향상 (4 → 5)
-                    useCORS: true,
-                    allowTaint: true,
-                    logging: false,
-                    backgroundColor: '#ffffff',
-                    imageTimeout: 0,
-                    removeContainer: true,
-                    windowWidth: 2560,  // 더 큰 렌더링 영역
-                    windowHeight: 1440,
-                    letterRendering: true,  // 텍스트 렌더링 개선
-                    foreignObjectRendering: false,  // 호환성 향상
-                    onclone: function(clonedDoc) {
-                        // 복제된 문서의 폰트 렌더링 개선
-                        const style = clonedDoc.createElement('style');
-                        style.textContent = `
-                            * {
-                                -webkit-font-smoothing: antialiased !important;
-                                -moz-osx-font-smoothing: grayscale !important;
-                                text-rendering: optimizeLegibility !important;
-                                font-smoothing: antialiased !important;
-                            }
-                        `;
-                        clonedDoc.head.appendChild(style);
-                    }
-                };
-
-                const pdfWidth = 210;
-                const pdfHeight = 297;
-                const margin = 5;
-                const contentWidth = pdfWidth - (margin * 2);
-                const contentHeight = pdfHeight - (margin * 2);
-
-                updateProgress(40, '품의서 렌더링 중...');
-
-                // 1. 품의서 페이지
-                console.log('품의서 렌더링 중...');
-                const proposalDiv = allDivs[1];
-
-                if (!proposalDiv) {
-                    throw new Error('품의서를 찾을 수 없습니다.');
-                }
-
-                const proposalCanvas = await window.html2canvas(proposalDiv, renderOptions);
-                const canvasWidth = proposalCanvas.width;
-                const canvasHeight = proposalCanvas.height;
-
-                if (canvasWidth === 0 || canvasHeight === 0) {
-                    throw new Error('Canvas 크기가 0입니다. 문서가 화면에 표시되어 있는지 확인하세요.');
-                }
-
-                updateProgress(60, '품의서 이미지 변환 중...');
-
-                const proposalImgData = proposalCanvas.toDataURL('image/png');  // PNG로 변경 (무손실)
-
-                // A4 페이지에 맞춰서 크기 조정 (가로 또는 세로 기준으로 맞춤)
-                let imgWidth = contentWidth;
-                let imgHeight = (canvasHeight * contentWidth) / canvasWidth;
-
-                // 높이가 페이지를 넘으면 높이 기준으로 조정
-                if (imgHeight > contentHeight) {
-                    imgHeight = contentHeight;
-                    imgWidth = (canvasWidth * contentHeight) / canvasHeight;
-                }
-
-                // 중앙 정렬
-                const xOffset = margin + (contentWidth - imgWidth) / 2;
-                const yOffset = margin + (contentHeight - imgHeight) / 2;
-
-                pdf.addImage(proposalImgData, 'PNG', xOffset, yOffset, imgWidth, imgHeight);
-                console.log('품의서 페이지 완료');
-
-                updateProgress(75, '야근 신청서 렌더링 중...');
-
-                // 2. 야근 신청서 페이지
-                console.log('야근 신청서 렌더링 중...');
-                const overtimeDiv = allDivs[2];
-
-                if (!overtimeDiv) {
-                    throw new Error('야근 신청서를 찾을 수 없습니다.');
-                }
-
-                pdf.addPage();
-                const overtimeCanvas = await window.html2canvas(overtimeDiv, renderOptions);
-
-                const overtimeCanvasWidth = overtimeCanvas.width;
-                const overtimeCanvasHeight = overtimeCanvas.height;
-
-                updateProgress(90, '야근 신청서 이미지 변환 중...');
-
-                const overtimeImgData = overtimeCanvas.toDataURL('image/png');  // PNG로 변경 (무손실)
-
-                // A4 페이지에 맞춰서 크기 조정
-                let overtimeImgWidth = contentWidth;
-                let overtimeImgHeight = (overtimeCanvasHeight * contentWidth) / overtimeCanvasWidth;
-
-                // 높이가 페이지를 넘으면 높이 기준으로 조정
-                if (overtimeImgHeight > contentHeight) {
-                    overtimeImgHeight = contentHeight;
-                    overtimeImgWidth = (overtimeCanvasWidth * contentHeight) / overtimeCanvasHeight;
-                }
-
-                // 중앙 정렬
-                const overtimeXOffset = margin + (contentWidth - overtimeImgWidth) / 2;
-                const overtimeYOffset = margin + (contentHeight - overtimeImgHeight) / 2;
-
-                pdf.addImage(overtimeImgData, 'PNG', overtimeXOffset, overtimeYOffset, overtimeImgWidth, overtimeImgHeight);
-                console.log('야근 신청서 페이지 완료');
-
-                updateProgress(95, 'PDF 파일 생성 중...');
-
-                // 파일명 생성
-                const dateInput = document.getElementById('ot_approval_date');
-                let dateStr;
-                if (dateInput && dateInput.value) {
-                    dateStr = dateInput.value.replace(/-/g, '');
-                } else {
-                    const today = new Date();
-                    dateStr = `${today.getFullYear()}${String(today.getMonth() + 1).padStart(2, '0')}${String(today.getDate()).padStart(2, '0')}`;
-                }
-                const fileName = `${dateStr}_야근식대비.pdf`;
-
-                console.log('PDF 저장:', fileName);
-                pdf.save(fileName);
-
-                updateProgress(100, '완료!');
-
-                // 잠시 후 모달 닫기
-                setTimeout(() => {
-                    if (loadingModal) loadingModal.classList.remove('active');
-                    showSuccess('PDF가 저장되었습니다.');
-                }, 500);
-            } catch (error) {
-                console.error('PDF 생성 오류:', error);
-                if (loadingModal) loadingModal.classList.remove('active');
-                showError('PDF 생성 중 오류가 발생했습니다.\n' + error.message + '\n\n브라우저 콘솔(F12)을 확인해주세요.');
-            } finally {
-                if (allDivs && originalDisplays.length > 0) {
-                    allDivs.forEach((div, index) => {
-                        div.style.display = originalDisplays[index];
-                    });
-                }
-            }
+    // 인쇄 버튼 이벤트
+    const printBtn = document.getElementById('printDocumentBtn');
+    if (printBtn) {
+        printBtn.addEventListener('click', function() {
+            printDocument();
         });
     }
+
+    // 필수 필드 변경 시 검증
+    const fieldsToWatch = [
+        'ot_project', 'ot_card', 'ot_applicant', 'ot_approval_date',
+        'ot_title', 'ot_amount', 'ot_start_time', 'ot_end_time',
+        'ot_task_select', 'ot_task_custom', 'ot_content'
+    ];
+
+    fieldsToWatch.forEach(fieldId => {
+        const field = document.getElementById(fieldId);
+        if (field) {
+            field.addEventListener('input', validateRequiredFields);
+            field.addEventListener('change', validateRequiredFields);
+        }
+    });
+
+    // 야근인원 목록 변경 감지를 위한 전역 함수 확장
+    const originalAddOvertimePersonsToOvertime = window.addOvertimePersonsToOvertime;
+    window.addOvertimePersonsToOvertime = function(persons) {
+        if (originalAddOvertimePersonsToOvertime) {
+            originalAddOvertimePersonsToOvertime(persons);
+        }
+        validateRequiredFields();
+    };
+
+    const originalRemoveOvertimePersonInTemplate = window.removeOvertimePersonInTemplate;
+    window.removeOvertimePersonInTemplate = function(personId) {
+        if (originalRemoveOvertimePersonInTemplate) {
+            originalRemoveOvertimePersonInTemplate(personId);
+        }
+        validateRequiredFields();
+    };
 
     // 야근인원 모달 관련
     const overtimePersonModal = document.getElementById('overtimePersonModal');
@@ -2355,17 +2288,14 @@ document.addEventListener('DOMContentLoaded', async function() {
             });
         }
 
-        // 과제명이 비어있을 때 빨간색 테두리 표시
-        const otProject = document.getElementById('ot_project');
-        if (otProject && !otProject.value) {
-            otProject.style.borderColor = '#ef5350';
-        }
-
         // URL 파라미터 확인 - 수정 모드 진입
         const urlParams = new URLSearchParams(window.location.search);
         const documentIdx = urlParams.get('documentIdx');
         if (documentIdx) {
             await loadExistingData(documentIdx);
         }
+
+        // 초기 필수 필드 검증 실행
+        validateRequiredFields();
     }, 200);
 });
