@@ -250,3 +250,5 @@ Key libraries (see `build.gradle.kts` for versions):
 - Never auto-commit after completing a task
 - User will decide when and how to commit changes
 - This rule applies across all sessions
+- **NEVER add `Co-Authored-By: Claude Sonnet 4.5 <noreply@anthropic.com>` to commit messages**
+- Commit messages should be clean with only title and body, no co-author attribution
