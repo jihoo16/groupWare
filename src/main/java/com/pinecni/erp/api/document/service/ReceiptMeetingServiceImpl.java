@@ -8,15 +8,16 @@ import com.pinecni.erp.api.document.mapper.ReceiptMeetingMapper;
 import com.pinecni.erp.api.document.repository.ReceiptMeetingOfficialPdfRepository;
 import com.pinecni.erp.api.document.repository.ReceiptOvertimeRepository;
 import com.pinecni.erp.api.document.repository.ReceiptOvertimeAttendeeRepository;
+import com.pinecni.erp.api.document.repository.ReceiptAttendeeRepository;
 import com.pinecni.erp.api.project.repository.ReceiptMeetingAttachmentRepository;
-import com.pinecni.erp.api.project.repository.ReceiptMeetingAttendeeRepository;
 import com.pinecni.erp.api.project.repository.ReceiptMeetingRepository;
 import com.pinecni.erp.api.project.repository.ProjectRepository;
 import com.pinecni.erp.api.project.repository.ProjectCardRepository;
 import com.pinecni.erp.api.approval.repository.ApprovalDocumentRepository;
+import com.pinecni.erp.api.approval.service.DocumentSequenceService;
 import com.pinecni.erp.entity.ReceiptMeeting;
 import com.pinecni.erp.entity.ReceiptMeetingAttachment;
-import com.pinecni.erp.entity.ReceiptMeetingAttendee;
+import com.pinecni.erp.entity.ReceiptAttendee;
 import com.pinecni.erp.entity.ReceiptMeetingOfficialPdf;
 import com.pinecni.erp.entity.ReceiptOvertime;
 import com.pinecni.erp.entity.ReceiptOvertimeAttendee;
@@ -53,11 +54,12 @@ import java.util.stream.Collectors;
 public class ReceiptMeetingServiceImpl implements ReceiptMeetingService {
 
     private final ReceiptMeetingRepository receiptMeetingRepository;
-    private final ReceiptMeetingAttendeeRepository attendeeRepository;
+    private final ReceiptAttendeeRepository receiptAttendeeRepository;
     private final ReceiptMeetingAttachmentRepository attachmentRepository;
     private final ReceiptMeetingOfficialPdfRepository pdfRepository;
     private final ReceiptMeetingMapper mapper;
     private final ApprovalDocumentRepository approvalDocumentRepository;
+    private final DocumentSequenceService documentSequenceService;
     private final PdfGenerationService pdfGenerationService;
     private final ReceiptOvertimeRepository receiptOvertimeRepository;
     private final ReceiptOvertimeAttendeeRepository receiptOvertimeAttendeeRepository;
@@ -90,12 +92,14 @@ public class ReceiptMeetingServiceImpl implements ReceiptMeetingService {
             // 참석자 정보를 포함하여 다시 조회
             ReceiptMeeting entity = receiptMeetingRepository.findByIdWithDetails(entityByDocumentIdx.get().getIdx())
                     .orElseThrow(() -> new IllegalArgumentException("회의록을 찾을 수 없습니다. idx: " + idx));
+            loadAttendees(entity); // 통합 테이블에서 참석자 로드
             return mapper.toDTO(entity);
         }
 
         // documentIdx로 조회 실패 시, receipt_meeting.idx로 직접 조회
         ReceiptMeeting entity = receiptMeetingRepository.findByIdWithDetails(idx)
                 .orElseThrow(() -> new IllegalArgumentException("회의록을 찾을 수 없습니다. idx: " + idx));
+        loadAttendees(entity); // 통합 테이블에서 참석자 로드
 
         return mapper.toDTO(entity);
     }
@@ -146,11 +150,11 @@ public class ReceiptMeetingServiceImpl implements ReceiptMeetingService {
                 null  // 신규 생성이므로 현재 회의록 IDX 없음
             );
 
-            // 2. 문서번호 생성
+            // 2. 문서번호 생성 (회의록용)
             String documentNumber = generateDocumentNumber(createDTO.getProjectIdx());
 
-        // 3. ApprovalDocument 메타데이터 저장
-        String documentNo = "RECEIPT-MEETING-" + System.currentTimeMillis() + "-" + createDTO.getAuthorIdx();
+        // 3. 전자결재 문서번호 생성 (시퀀스 사용)
+        String documentNo = documentSequenceService.generateDocumentNumber("연구비증빙-회의록", "RCM", currentUserIdx);
 
         // 제목 생성: "프로젝트이름 (카드번호) - 날짜/금액"
         StringBuilder titleBuilder = new StringBuilder();
@@ -210,18 +214,20 @@ public class ReceiptMeetingServiceImpl implements ReceiptMeetingService {
         entity.setUpdatedUserIdx(currentUserIdx);
         entity = receiptMeetingRepository.save(entity);
 
-        // 5. 참석자 목록 저장
+        // 5. 참석자 목록 저장 (통합 테이블 사용)
         if (createDTO.getAttendees() != null && !createDTO.getAttendees().isEmpty()) {
-            final Long receiptMeetingIdx = entity.getIdx();
-            List<ReceiptMeetingAttendee> attendees = createDTO.getAttendees().stream()
-                    .map(dto -> mapper.toAttendeeEntity(dto, receiptMeetingIdx))
+            final ReceiptMeeting finalEntity = entity;
+            List<ReceiptAttendee> attendees = createDTO.getAttendees().stream()
+                    .map(dto -> mapper.toAttendeeEntity(dto, finalEntity, currentUserIdx))
                     .collect(Collectors.toList());
-            attendeeRepository.saveAll(attendees);
+            receiptAttendeeRepository.saveAll(attendees);
+            log.debug("참석자 {}명 저장 완료 (통합 테이블, RCM)", attendees.size());
         }
 
             // 6. 저장된 데이터 재조회 (참석자 포함)
             ReceiptMeeting savedEntity = receiptMeetingRepository.findByIdWithDetails(entity.getIdx())
                     .orElseThrow(() -> new IllegalStateException("저장된 회의록을 조회할 수 없습니다."));
+            loadAttendees(savedEntity); // 통합 테이블에서 참석자 로드
 
             log.info("회의록 생성 완료 - idx: {}, documentNumber: {}", savedEntity.getIdx(), documentNumber);
             return mapper.toDTO(savedEntity);
@@ -257,15 +263,19 @@ public class ReceiptMeetingServiceImpl implements ReceiptMeetingService {
         entity.setUpdatedUserIdx(currentUserIdx);
         entity = receiptMeetingRepository.save(entity);
 
-        // 4. 참석자 목록 업데이트 (기존 삭제 후 재생성)
+        // 4. 참석자 목록 업데이트 (통합 테이블 사용, Soft Delete 후 재생성)
         if (updateDTO.getAttendees() != null) {
-            attendeeRepository.deleteByReceiptMeetingIdx(idx);
+            // 기존 참석자 Soft Delete
+            receiptAttendeeRepository.softDeleteByReceiptIdxAndDocumentTypePrefix(idx, "RCM", currentUserIdx);
+            log.debug("기존 참석자 soft delete 완료 (RCM)");
 
             if (!updateDTO.getAttendees().isEmpty()) {
-                List<ReceiptMeetingAttendee> attendees = updateDTO.getAttendees().stream()
-                        .map(dto -> mapper.toAttendeeEntity(dto, idx))
+                final ReceiptMeeting finalEntity = entity;
+                List<ReceiptAttendee> attendees = updateDTO.getAttendees().stream()
+                        .map(dto -> mapper.toAttendeeEntity(dto, finalEntity, currentUserIdx))
                         .collect(Collectors.toList());
-                attendeeRepository.saveAll(attendees);
+                receiptAttendeeRepository.saveAll(attendees);
+                log.debug("참석자 {}명 재저장 완료 (통합 테이블, RCM)", attendees.size());
             }
         }
 
@@ -332,6 +342,7 @@ public class ReceiptMeetingServiceImpl implements ReceiptMeetingService {
         // 6. 수정된 데이터 재조회
         ReceiptMeeting updatedEntity = receiptMeetingRepository.findByIdWithDetails(idx)
                 .orElseThrow(() -> new IllegalStateException("수정된 회의록을 조회할 수 없습니다."));
+        loadAttendees(updatedEntity); // 통합 테이블에서 참석자 로드
 
         log.info("회의록 수정 완료 - idx: {}", idx);
         return mapper.toDTO(updatedEntity);
@@ -348,17 +359,9 @@ public class ReceiptMeetingServiceImpl implements ReceiptMeetingService {
         LocalDateTime now = LocalDateTime.now();
 
         // 1. 연결된 자식 엔티티들 soft delete
-        // 1-1. 참석자 soft delete
-        List<ReceiptMeetingAttendee> attendees = attendeeRepository.findByReceiptMeetingIdxOrderByDisplayOrder(idx);
-        attendees.forEach(attendee -> {
-            attendee.setDeleted(true);
-            attendee.setDeletedAt(now);
-            attendee.setDeletedUserIdx(deletedUserIdx);
-        });
-        if (!attendees.isEmpty()) {
-            attendeeRepository.saveAll(attendees);
-            log.debug("참석자 {} 건 soft delete 완료", attendees.size());
-        }
+        // 1-1. 참석자 soft delete (통합 테이블 사용)
+        receiptAttendeeRepository.softDeleteByReceiptIdxAndDocumentTypePrefix(idx, "RCM", deletedUserIdx);
+        log.debug("참석자 soft delete 완료 (통합 테이블, RCM)");
 
         // 1-2. 첨부파일 soft delete
         List<ReceiptMeetingAttachment> attachments = attachmentRepository.findByReceiptMeetingIdx(idx);
@@ -437,7 +440,9 @@ public class ReceiptMeetingServiceImpl implements ReceiptMeetingService {
                     .collect(Collectors.toList());
 
             for (ReceiptMeeting meeting : meetings) {
-                List<ReceiptMeetingAttendee> attendees = attendeeRepository.findByReceiptMeetingIdxOrderByDisplayOrder(meeting.getIdx());
+                // 통합 테이블에서 참석자 조회 (RCM)
+                List<ReceiptAttendee> attendees = receiptAttendeeRepository
+                        .findByReceiptIdxAndDocumentTypePrefixOrderByDisplayOrder(meeting.getIdx(), "RCM");
 
                 boolean hasDuplicate = attendees.stream()
                         .anyMatch(attendee -> attendee.getUserIdx() != null && attendee.getUserIdx().equals(attendeeIdx));
@@ -599,6 +604,20 @@ public class ReceiptMeetingServiceImpl implements ReceiptMeetingService {
     }
 
     /**
+     * 회의록 Entity에 참석자 목록 로드 (통합 테이블에서 조회)
+     * @param entity 회의록 Entity
+     */
+    private void loadAttendees(ReceiptMeeting entity) {
+        if (entity == null || entity.getIdx() == null) {
+            return;
+        }
+        List<ReceiptAttendee> attendees = receiptAttendeeRepository
+                .findByReceiptIdxAndDocumentTypePrefixOrderByDisplayOrder(entity.getIdx(), "RCM");
+        entity.setAttendees(attendees);
+        log.debug("참석자 {}명 로드 완료 (통합 테이블, RCM)", attendees.size());
+    }
+
+    /**
      * 시간대 겹침 확인 유틸리티 메서드
      * @param start1 시작 시간 1
      * @param end1 종료 시간 1
@@ -674,9 +693,10 @@ public class ReceiptMeetingServiceImpl implements ReceiptMeetingService {
                     continue; // 시간대가 안 겹치면 스킵
                 }
 
-                // 해당 회의록의 참석자 목록 조회
-                List<ReceiptMeetingAttendee> existingAttendees =
-                    attendeeRepository.findByReceiptMeetingIdxOrderByDisplayOrder(existingMeeting.getIdx());
+                // 해당 회의록의 참석자 목록 조회 (통합 테이블, RCM)
+                List<ReceiptAttendee> existingAttendees =
+                    receiptAttendeeRepository.findByReceiptIdxAndDocumentTypePrefixOrderByDisplayOrder(
+                        existingMeeting.getIdx(), "RCM");
 
                 // 동일 참석자가 있는지 확인 (내부/외부 모두)
                 boolean isDuplicate = existingAttendees.stream()

@@ -1,6 +1,7 @@
 package com.pinecni.erp.api.vacation.service;
 
 import com.pinecni.erp.api.approval.repository.ApprovalDocumentRepository;
+import com.pinecni.erp.api.approval.service.DocumentSequenceService;
 import com.pinecni.erp.api.calendar.repository.CalendarEventRepository;
 import com.pinecni.erp.api.calendar.repository.CalendarParticipantRepository;
 import com.pinecni.erp.api.code.repository.CodeRepository;
@@ -39,6 +40,7 @@ public class VacationServiceImpl implements VacationService {
     private final VacationRequestRepository vacationRequestRepository;
     private final VacationOfficialPdfRepository vacationOfficialPdfRepository;
     private final ApprovalDocumentRepository approvalDocumentRepository;
+    private final DocumentSequenceService documentSequenceService;
     private final CodeRepository codeRepository;
     private final CalendarEventRepository calendarEventRepository;
     private final CalendarParticipantRepository calendarParticipantRepository;
@@ -601,8 +603,8 @@ public class VacationServiceImpl implements VacationService {
             title = "연차 신청서 - " + firstStartDate.format(DateTimeFormatter.ofPattern("yyyy-MM-dd"));
         }
 
-        // 문서번호 생성 (임시: VAC-{timestamp}-{userIdx})
-        String documentNo = "VAC-" + System.currentTimeMillis() + "-" + userIdx;
+        // 문서번호 생성 (시퀀스 사용)
+        String documentNo = documentSequenceService.generateDocumentNumber("연차신청서", "VAC", userIdx);
 
         ApprovalDocument document = ApprovalDocument.builder()
                 .documentNo(documentNo)

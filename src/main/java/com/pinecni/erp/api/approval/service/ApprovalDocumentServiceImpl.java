@@ -158,21 +158,14 @@ public class ApprovalDocumentServiceImpl implements ApprovalDocumentService {
         log.info("==== 문서 작성자 조회 시작 - 문서 IDX: {}, createdUserIdx: {} ====", document.getIdx(), document.getCreatedUserIdx());
         if (document.getCreatedUserIdx() != null) {
             userRepository.findById(document.getCreatedUserIdx()).ifPresent(user -> {
-                log.info(">>> 사용자 찾음 - userIdx: {}, 이름: {}, 부서코드: {}", user.getIdx(), user.getEmpName(), user.getEmpDept());
                 dto.setDrafterName(user.getEmpName());
                 dto.setDrafterDept(user.getEmpDept());
 
                 // 부서명 조회
                 if (user.getEmpDept() != null) {
-                    log.info(">>> 부서코드로 부서명 조회 시도 - groupCode: {}, deptCode: {}",
-                            CodeConstants.GroupCode.DEPARTMENT.getCode(), user.getEmpDept());
                     codeRepository.findByGroupCodeAndCode(CodeConstants.GroupCode.DEPARTMENT.getCode(), user.getEmpDept()).ifPresent(code -> {
-                        log.info(">>> 부서명 찾음!!! - code: {}, codeName: {}", code.getCode(), code.getCodeName());
                         dto.setDrafterDeptName(code.getCodeName());
                     });
-                    if (dto.getDrafterDeptName() == null) {
-                        log.error("!!! 부서명을 찾지 못함 - deptCode: {}", user.getEmpDept());
-                    }
                 } else {
                     log.error("!!! 사용자의 부서코드가 null - userIdx: {}", user.getIdx());
                 }
