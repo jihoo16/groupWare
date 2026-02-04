@@ -2385,6 +2385,43 @@ input.auto-datetime {
     opacity: 1;
 }
 
+/* 라벨 툴팁 스타일 */
+.label-tooltip-wrapper {
+    position: relative;
+    display: inline-flex;
+    align-items: center;
+    margin-left: 4px;
+}
+
+.label-tooltip-wrapper .tooltip-icon {
+    color: #667eea;
+    font-size: 14px;
+    cursor: help;
+    transition: color 0.2s;
+}
+
+.label-tooltip-wrapper .tooltip-icon:hover {
+    color: #5a67d8;
+}
+
+.label-tooltip-wrapper .tooltip-text {
+    position: absolute;
+    top: calc(100% + 8px);
+    left: 50%;
+    transform: translateX(-50%);
+    white-space: normal !important;
+    min-width: 220px;
+    max-width: 280px;
+    width: max-content;
+    text-align: left;
+    z-index: 1000;
+}
+
+.label-tooltip-wrapper:hover .tooltip-text {
+    visibility: visible;
+    opacity: 1;
+}
+
 /* 필수 필드 미입력 강조 스타일 */
 .field-empty {
     border: 2px solid #ef4444 !important;
