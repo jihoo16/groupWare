@@ -324,7 +324,7 @@ document.addEventListener('DOMContentLoaded', async function() {
 
         // 시작 시간 변경 시 종료 시간 자동 조절 및 min 값 설정
         if (commonStartTime) {
-            commonStartTime.addEventListener('change', function() {
+            commonStartTime.addEventListener('change', async function() {
                 if (this.value && commonEndTime) {
                     // 종료 시간의 최소값 = 시작 시간 + 1시간
                     const minEndTime = addHours(this.value, 1);
@@ -338,7 +338,10 @@ document.addEventListener('DOMContentLoaded', async function() {
                 }
 
                 // 참석자 중복 검증 재실행
-                recheckAttendees();
+                await recheckAttendees();
+
+                // 시작 시간 변경 시 기본 작성자 재설정 (중복 체크 포함)
+                await setDefaultAuthor();
             });
 
             // 페이지 로드 시 초기 min 값 설정
@@ -350,7 +353,7 @@ document.addEventListener('DOMContentLoaded', async function() {
 
         // 종료 시간 변경 시 시작 시간 자동 조절
         if (commonEndTime) {
-            commonEndTime.addEventListener('change', function() {
+            commonEndTime.addEventListener('change', async function() {
                 if (this.value && commonStartTime) {
                     // 시작 시간 = 종료 시간 - 1시간
                     const newStartTime = subtractHours(this.value, 1);
@@ -373,7 +376,10 @@ document.addEventListener('DOMContentLoaded', async function() {
                 }
 
                 // 참석자 중복 검증 재실행
-                recheckAttendees();
+                await recheckAttendees();
+
+                // 종료 시간 변경 시 기본 작성자 재설정 (중복 체크 포함)
+                await setDefaultAuthor();
             });
         }
 
@@ -1372,9 +1378,12 @@ document.addEventListener('DOMContentLoaded', async function() {
         }
 
         if (commonDate) {
-            commonDate.addEventListener('input', function() {
+            commonDate.addEventListener('input', async function() {
                 updateDateTime();
                 updateDocNumber();
+
+                // 날짜 변경 시 기본 작성자 재설정 (중복 체크 포함)
+                await setDefaultAuthor();
             });
         }
 
