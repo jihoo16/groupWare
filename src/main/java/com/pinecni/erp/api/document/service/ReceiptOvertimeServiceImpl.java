@@ -10,6 +10,7 @@ import com.pinecni.erp.api.document.repository.ReceiptOvertimeAttachmentReposito
 import com.pinecni.erp.api.document.repository.ReceiptOvertimeAttendeeRepository;
 import com.pinecni.erp.api.document.repository.ReceiptOvertimeRepository;
 import com.pinecni.erp.api.project.repository.ProjectRepository;
+import com.pinecni.erp.api.user.repository.UserRepository;
 import com.pinecni.erp.entity.*;
 import com.pinecni.erp.service.PdfGenerationService;
 import lombok.RequiredArgsConstructor;
@@ -49,6 +50,7 @@ public class ReceiptOvertimeServiceImpl implements ReceiptOvertimeService {
     private final ReceiptOvertimeMapper mapper;
     private final ApprovalDocumentRepository approvalDocumentRepository;
     private final ProjectRepository projectRepository;
+    private final UserRepository userRepository;
     private final PdfGenerationService pdfGenerationService;
 
     @Value("${file.upload.path:/uploads/receipt-overtimes}")
@@ -75,7 +77,10 @@ public class ReceiptOvertimeServiceImpl implements ReceiptOvertimeService {
         List<ReceiptOvertimeAttendee> attendees = attendeeRepository.findByReceiptOvertimeIdx(idx);
         List<ReceiptOvertimeAttachment> attachments = attachmentRepository.findByReceiptOvertimeIdx(idx);
 
-        return mapper.toDTOWithDetails(entity, attendees, attachments);
+        ReceiptOvertimeDTO dto = mapper.toDTOWithDetails(entity, attendees, attachments);
+        // 참석자 이름 설정
+        populateAttendeeUserNames(dto);
+        return dto;
     }
 
     @Override
@@ -89,7 +94,25 @@ public class ReceiptOvertimeServiceImpl implements ReceiptOvertimeService {
         List<ReceiptOvertimeAttendee> attendees = attendeeRepository.findByReceiptOvertimeIdx(entity.getId());
         List<ReceiptOvertimeAttachment> attachments = attachmentRepository.findByReceiptOvertimeIdx(entity.getId());
 
-        return mapper.toDTOWithDetails(entity, attendees, attachments);
+        ReceiptOvertimeDTO dto = mapper.toDTOWithDetails(entity, attendees, attachments);
+        // 참석자 이름 설정
+        populateAttendeeUserNames(dto);
+        return dto;
+    }
+
+    /**
+     * 참석자 목록의 userName을 users 테이블에서 조회하여 설정
+     */
+    private void populateAttendeeUserNames(ReceiptOvertimeDTO dto) {
+        if (dto.getAttendees() != null && !dto.getAttendees().isEmpty()) {
+            dto.getAttendees().forEach(attendee -> {
+                if (attendee.getUserIdx() != null) {
+                    userRepository.findById(attendee.getUserIdx()).ifPresent(user -> {
+                        attendee.setUserName(user.getEmpName());
+                    });
+                }
+            });
+        }
     }
 
     @Override

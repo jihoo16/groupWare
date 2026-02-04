@@ -241,10 +241,10 @@ document.addEventListener('DOMContentLoaded', async function() {
             }
 
             // 인원 정보 로드
-            if (data.persons && data.persons.length > 0) {
+            if (data.attendees && data.attendees.length > 0) {
                 // 시간 정보 파싱해서 설정 (예: "18:00 ~ 21:00")
-                if (data.persons[0].workTime) {
-                    const timeParts = data.persons[0].workTime.split(' ~ ');
+                if (data.attendees[0].workTime) {
+                    const timeParts = data.attendees[0].workTime.split(' ~ ');
                     if (timeParts.length === 2) {
                         const otStartTime = document.getElementById('ot_start_time');
                         const otEndTime = document.getElementById('ot_end_time');
@@ -254,7 +254,7 @@ document.addEventListener('DOMContentLoaded', async function() {
                 }
 
                 // 업무내용 설정 (HTML select box 옵션과 일치하도록)
-                if (data.persons[0].workTask) {
+                if (data.attendees[0].workTask) {
                     const otTaskSelect = document.getElementById('ot_task_select');
                     const otTaskCustom = document.getElementById('ot_task_custom');
                     // HTML의 실제 select 옵션 값들
@@ -271,7 +271,7 @@ document.addEventListener('DOMContentLoaded', async function() {
                         '기술 문서 작성'
                     ];
 
-                    const workTask = data.persons[0].workTask;
+                    const workTask = data.attendees[0].workTask;
                     if (predefinedTasks.includes(workTask)) {
                         if (otTaskSelect) otTaskSelect.value = workTask;
                     } else {
@@ -284,28 +284,32 @@ document.addEventListener('DOMContentLoaded', async function() {
                     if (otTaskSelect) otTaskSelect.dispatchEvent(new Event('change'));
                 }
 
-                // 프로젝트 참여인원 목록 가져오기
+                // 프로젝트 참여인원 목록 가져오기 (부서, 직급, 금액 정보용)
                 const projectPersons = typeof getOvertimePersons === 'function' ? getOvertimePersons() : [];
+                console.log('프로젝트 참여인원:', projectPersons);
+                console.log('서버에서 받은 attendees:', data.attendees);
 
                 // 인원 목록을 addOvertimePersonsToOvertime 함수로 추가
-                // DB에 저장된 인원 이름과 프로젝트 참여인원을 매칭하여 부서, 직급, 금액 정보 가져오기
-                const personsToAdd = data.persons.map(person => {
-                    // 프로젝트 참여인원에서 이름으로 매칭
-                    const matchedMember = projectPersons.find(m => m.name === person.name);
+                // DB에 저장된 userIdx와 프로젝트 참여인원을 매칭하여 부서, 직급, 금액 정보 가져오기
+                const attendeesData = data.attendees || [];
+                const personsToAdd = attendeesData.map(attendee => {
+                    // 프로젝트 참여인원에서 userIdx로 매칭 (타입 변환하여 비교)
+                    const matchedMember = projectPersons.find(m => Number(m.id) === Number(attendee.userIdx));
+                    console.log('매칭 시도 - userIdx:', attendee.userIdx, '매칭 결과:', matchedMember);
 
                     if (matchedMember) {
                         return {
-                            id: matchedMember.id,
-                            name: person.name,
+                            id: attendee.userIdx,
+                            name: attendee.userName || matchedMember.name,
                             dept: matchedMember.dept || '-',
                             position: matchedMember.position || '-',
                             overtimeExpense: matchedMember.overtimeExpense || 0
                         };
                     } else {
-                        // 매칭되는 참여인원이 없으면 기본값 사용
+                        // 매칭되는 참여인원이 없으면 기본값 사용 (서버에서 받은 userName 사용)
                         return {
-                            id: person.name,
-                            name: person.name,
+                            id: attendee.userIdx,
+                            name: attendee.userName || '알 수 없음',
                             dept: '-',
                             position: '-',
                             overtimeExpense: 0
@@ -313,8 +317,11 @@ document.addEventListener('DOMContentLoaded', async function() {
                     }
                 });
 
+                console.log('추가할 인원:', personsToAdd);
                 if (typeof window.addOvertimePersonsToOvertime === 'function') {
                     window.addOvertimePersonsToOvertime(personsToAdd);
+                } else {
+                    console.error('addOvertimePersonsToOvertime 함수가 없습니다.');
                 }
             }
 
@@ -1618,8 +1625,8 @@ document.addEventListener('DOMContentLoaded', async function() {
                 documentContent: otContent?.value || '',
                 totalAmount: amount,
                 paymentType: paymentType,
-                persons: overtimePersons.map(person => ({
-                    name: person.name,
+                attendees: overtimePersons.map(person => ({
+                    userIdx: person.id,
                     workTime: workTimeStr,
                     workTask: taskContent
                 })),
