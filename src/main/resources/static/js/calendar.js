@@ -95,8 +95,6 @@ document.addEventListener('DOMContentLoaded', function() {
                         startTime: event.startTime,
                         endTime: event.endTime,
                         groupId: event.groupId,
-                        notification: event.notificationYn === 'Y',
-                        notificationTime: event.notificationMinutes || 10,
                         isAllDay: event.isAllDay
                     };
                 });
@@ -777,20 +775,6 @@ document.addEventListener('DOMContentLoaded', function() {
         // 설명 표시
         document.getElementById('detailDescription').textContent = schedule.description || '-';
 
-        // 알림 표시
-        let notificationText = '-';
-        if (schedule.notification) {
-            const minutes = schedule.notificationTime || 10;
-            if (minutes >= 60) {
-                notificationText = `${minutes / 60}시간 전`;
-            } else {
-                notificationText = `${minutes}분 전`;
-            }
-        } else {
-            notificationText = '알림 없음';
-        }
-        document.getElementById('detailNotification').textContent = notificationText;
-
         // 수정/삭제 버튼 표시 여부 결정
         const editBtn = document.getElementById('editScheduleBtn');
         const deleteBtn = document.getElementById('deleteScheduleBtn');
@@ -903,8 +887,6 @@ document.addEventListener('DOMContentLoaded', function() {
 
     // 일정 모달 관련 변수
     let selectedParticipants = [];
-    let notificationEnabled = false; // 기본값: 알림 꺼짐
-    let notificationTime = 10; // 기본값: 10분 전
     let currentEditingSchedule = null; // 현재 수정 중인 일정 (null이면 추가 모드)
 
     // 직원 자동완성 관련 변수
@@ -952,37 +934,6 @@ document.addEventListener('DOMContentLoaded', function() {
             addScheduleEndTime.style.cursor = 'not-allowed';
         }
     }
-
-    // 알림 토글 체크박스 이벤트
-    const notificationToggleCheckbox = document.getElementById('notificationToggleCheckbox');
-    const notificationTimeButtons = document.getElementById('notificationTimeButtons');
-
-    if (notificationToggleCheckbox) {
-        notificationToggleCheckbox.addEventListener('change', function() {
-            notificationEnabled = this.checked;
-            if (notificationEnabled) {
-                notificationTimeButtons.style.display = 'flex';
-            } else {
-                notificationTimeButtons.style.display = 'none';
-            }
-        });
-    }
-
-    // 알림 시간 버튼 이벤트
-    const notificationTimeBtns = document.querySelectorAll('.notification-time-btn');
-
-    notificationTimeBtns.forEach(btn => {
-        btn.addEventListener('click', function() {
-            // 모든 버튼에서 active 클래스 제거
-            notificationTimeBtns.forEach(b => b.classList.remove('active'));
-
-            // 클릭된 버튼에 active 클래스 추가
-            this.classList.add('active');
-
-            // 알림 시간 저장
-            notificationTime = parseInt(this.getAttribute('data-time'));
-        });
-    });
 
     // 날짜 셀 클릭 이벤트 연결 (이벤트 위임 방식)
     function attachDateCellClickEvents() {
@@ -1110,18 +1061,6 @@ document.addEventListener('DOMContentLoaded', function() {
             toggleAddTimeInputs(true);
         }
 
-        // 알림 초기화 (기본: 꺼짐)
-        notificationEnabled = false;
-        notificationTime = 10;
-        if (notificationToggleCheckbox) {
-            notificationToggleCheckbox.checked = false;
-            notificationTimeButtons.style.display = 'none';
-        }
-
-        // 알림 시간 버튼 초기화
-        notificationTimeBtns.forEach(b => b.classList.remove('active'));
-        notificationTimeBtns[0].classList.add('active'); // 첫 번째 버튼(10분) 활성화
-
         // 참여자 목록 초기화 (현재 사용자를 기본 참여자로 추가)
         selectedParticipants = [{
             id: currentUserIdx,
@@ -1157,18 +1096,6 @@ document.addEventListener('DOMContentLoaded', function() {
             isAllDayCheckbox.checked = false;
             toggleAddTimeInputs(true);
         }
-
-        // 알림 초기화 (기본: 꺼짐)
-        notificationEnabled = false;
-        notificationTime = 10;
-        if (notificationToggleCheckbox) {
-            notificationToggleCheckbox.checked = false;
-            notificationTimeButtons.style.display = 'none';
-        }
-
-        // 알림 시간 버튼 초기화
-        notificationTimeBtns.forEach(b => b.classList.remove('active'));
-        notificationTimeBtns[0].classList.add('active'); // 첫 번째 버튼(10분) 활성화
 
         // 참여자 목록 초기화 (현재 사용자를 기본 참여자로 추가)
         selectedParticipants = [{
@@ -1554,12 +1481,9 @@ document.addEventListener('DOMContentLoaded', function() {
             creatorIdx: currentUserIdx,
             creatorName: currentUser,
             teamIdx: teamIdx, // 팀 일정인 경우 팀 ID, 개인 일정인 경우 null
-            notificationYn: notificationEnabled ? 'Y' : 'N',
-            notificationMinutes: notificationTime,
             participants: selectedParticipants.map(participant => ({
                 userName: participant.name,
-                userIdx: participant.id,
-                receiveNotification: 'Y'
+                userIdx: participant.id
             }))
         };
 
@@ -1681,9 +1605,71 @@ document.addEventListener('DOMContentLoaded', function() {
     });
 
 
-    // 알림 메시지 표시 함수
+    // ===== SweetAlert2 알림 함수들 =====
+
+    function showInfo(message) {
+        return Swal.fire({
+            icon: 'info',
+            title: '알림',
+            html: message,
+            confirmButtonText: '확인'
+        });
+    }
+
+    function showSuccess(message) {
+        return Swal.fire({
+            icon: 'success',
+            title: '성공',
+            html: message,
+            confirmButtonText: '확인'
+        });
+    }
+
+    function showWarning(message) {
+        return Swal.fire({
+            icon: 'warning',
+            title: '경고',
+            html: message,
+            confirmButtonText: '확인'
+        });
+    }
+
+    function showError(message) {
+        return Swal.fire({
+            icon: 'error',
+            title: '오류',
+            html: message,
+            confirmButtonText: '확인'
+        });
+    }
+
+    function showDeleteConfirm(message) {
+        return Swal.fire({
+            icon: 'warning',
+            title: '삭제 확인',
+            text: message,
+            showCancelButton: true,
+            confirmButtonText: '삭제',
+            cancelButtonText: '취소',
+            confirmButtonColor: '#dc2626'
+        }).then(result => result.isConfirmed);
+    }
+
+    // 알림 메시지 표시 함수 (type에 따라 다른 알림 표시)
     async function showAlert(message, type = 'info') {
-        await showInfo(message);
+        switch(type) {
+            case 'success':
+                await showSuccess(message);
+                break;
+            case 'warning':
+                await showWarning(message);
+                break;
+            case 'error':
+                await showError(message);
+                break;
+            default:
+                await showInfo(message);
+        }
     }
 
     // 페이지 로드 시 달력 렌더링
@@ -1691,12 +1677,6 @@ document.addEventListener('DOMContentLoaded', function() {
 
     // 날짜 셀 클릭 이벤트 연결 (한 번만 실행)
     attachDateCellClickEvents();
-
-    // 알림 초기 상태 설정 (기본: 꺼짐)
-    if (notificationToggleCheckbox) {
-        notificationToggleCheckbox.checked = false;
-        notificationTimeButtons.style.display = 'none';
-    }
 
     // 현재 페이지에 맞는 메뉴 활성화
     const currentPath = window.location.pathname;
