@@ -222,13 +222,11 @@ public class ReceiptOvertimeServiceImpl implements ReceiptOvertimeService {
             entity.setDocumentTitle(createDTO.getDocumentTitle());
             entity.setDocumentContent(createDTO.getDocumentContent());
             entity.setTotalAmount(createDTO.getTotalAmount());
-            entity.setPaymentType(createDTO.getPaymentType());
-            entity.setStatus("PENDING");
             entity.setCreatedAt(now);
             entity.setUpdatedAt(now);
             entity.setCreatedUserIdx(currentUserIdx);
             entity.setUpdatedUserIdx(currentUserIdx);
-            entity.setDeleted(false);
+            entity.setIsDeleted(false);
 
             entity = receiptOvertimeRepository.save(entity);
 
@@ -363,7 +361,6 @@ public class ReceiptOvertimeServiceImpl implements ReceiptOvertimeService {
             entity.setDocumentTitle(updateDTO.getDocumentTitle());
             entity.setDocumentContent(updateDTO.getDocumentContent());
             entity.setTotalAmount(updateDTO.getTotalAmount());
-            entity.setPaymentType(updateDTO.getPaymentType());
             entity.setUpdatedAt(now);
             entity.setUpdatedUserIdx(currentUserIdx);
 
@@ -457,7 +454,7 @@ public class ReceiptOvertimeServiceImpl implements ReceiptOvertimeService {
         log.debug("ReceiptAttendee soft deleted - receiptOvertimeIdx: {}", entity.getId());
 
         // 3. 야근식대 소프트 딜리트
-        entity.setDeleted(true);
+        entity.setIsDeleted(true);
         entity.setDeletedAt(now);
         entity.setDeletedUserIdx(deletedBy);
         receiptOvertimeRepository.save(entity);
