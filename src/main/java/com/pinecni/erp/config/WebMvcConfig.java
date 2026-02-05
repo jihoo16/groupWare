@@ -35,6 +35,7 @@ public class WebMvcConfig implements WebMvcConfigurer {
                         "/js/**",           // JavaScript 정적 리소스
                         "/images/**",       // 이미지 정적 리소스
                         "/favicon.ico",     // 파비콘
+                        "/favicon.svg",     // 파비콘 SVG
                         "/error"            // 에러 페이지
                 )
                 .order(1);
@@ -52,6 +53,7 @@ public class WebMvcConfig implements WebMvcConfigurer {
                         "/images/**",       // 이미지 정적 리소스
                         "/fonts/**",        // 폰트 정적 리소스
                         "/favicon.ico",     // 파비콘
+                        "/favicon.svg",     // 파비콘 SVG
                         "/error"            // 에러 페이지
                 )
                 .order(2);
