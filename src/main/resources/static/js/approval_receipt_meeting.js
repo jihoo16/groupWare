@@ -12,6 +12,7 @@ document.addEventListener('DOMContentLoaded', async function() {
     let selectedCard = null; // 선택된 카드
     let currentReceiptMeetingIdx = null; // 현재 회의록의 실제 idx (수정/삭제 시 사용)
     let shouldOpenCardModalAfterProject = false; // 과제 선택 후 카드 모달 자동 열기 플래그
+    let isLoadingExistingData = false; // 기존 데이터 로딩 중 플래그 (이벤트 핸들러 초기화 방지용)
 
     // DOM 요소
     const templateTreeHeaders = document.querySelectorAll('.tree-node-header[data-template]');
@@ -337,11 +338,16 @@ document.addEventListener('DOMContentLoaded', async function() {
                     commonEndTime.dispatchEvent(new Event('input'));
                 }
 
-                // 시작 시간 변경 시 참석자 목록 초기화
-                currentAttendees = [];
+                // 시작 시간 변경 시 참석자 목록 초기화 (기존 데이터 로딩 중이 아닐 때만)
+                if (!isLoadingExistingData) {
+                    console.log('[시작시간 change] 참석자 목록 초기화');
+                    currentAttendees = [];
 
-                // 중복되지 않은 기본 작성자만 추가
-                await setDefaultAuthor();
+                    // 중복되지 않은 기본 작성자만 추가
+                    await setDefaultAuthor();
+                } else {
+                    console.log('[시작시간 change] 기존 데이터 로딩 중 - 참석자 초기화 건너뜀');
+                }
             });
 
             // 페이지 로드 시 초기 min 값 설정
@@ -375,11 +381,16 @@ document.addEventListener('DOMContentLoaded', async function() {
                     commonStartTime.dispatchEvent(new Event('input'));
                 }
 
-                // 종료 시간 변경 시 참석자 목록 초기화
-                currentAttendees = [];
+                // 종료 시간 변경 시 참석자 목록 초기화 (기존 데이터 로딩 중이 아닐 때만)
+                if (!isLoadingExistingData) {
+                    console.log('[종료시간 change] 참석자 목록 초기화');
+                    currentAttendees = [];
 
-                // 중복되지 않은 기본 작성자만 추가
-                await setDefaultAuthor();
+                    // 중복되지 않은 기본 작성자만 추가
+                    await setDefaultAuthor();
+                } else {
+                    console.log('[종료시간 change] 기존 데이터 로딩 중 - 참석자 초기화 건너뜀');
+                }
             });
         }
 
@@ -845,8 +856,10 @@ document.addEventListener('DOMContentLoaded', async function() {
 
         // 회의록 참석자 정보 업데이트
         function updateMeetingMinutesAttendees() {
+            console.log('[updateMeetingMinutesAttendees] 시작 - currentAttendees:', currentAttendees);
             // 참석자 정렬 (내부 직급순 -> 외부 회사순/직급순)
             const sortedAttendees = sortAttendees(currentAttendees.filter(a => a.name && a.name.trim()));
+            console.log('[updateMeetingMinutesAttendees] 정렬 및 필터링된 참석자:', sortedAttendees);
 
             // 내부/외부 참석자 구분
             const internalAttendees = sortedAttendees.filter(a => a.type === 'internal');
@@ -876,12 +889,19 @@ document.addEventListener('DOMContentLoaded', async function() {
 
             // 참석자 명단 테이블 동적 생성 (정렬된 순서대로)
             const tbody = document.getElementById('attendee-signature-tbody');
+            console.log('[updateMeetingMinutesAttendees] tbody element:', tbody);
             if (tbody) {
                 // 기존 행 모두 제거
                 tbody.innerHTML = '';
+                console.log('[updateMeetingMinutesAttendees] 테이블 행 생성 시작');
 
                 // 참석자 수만큼 행 생성
                 sortedAttendees.forEach((attendee, idx) => {
+                    console.log(`[updateMeetingMinutesAttendees] 행 생성 ${idx + 1}/${sortedAttendees.length}:`, {
+                        name: attendee.name,
+                        dept: attendee.dept,
+                        type: attendee.type
+                    });
                     const row = document.createElement('tr');
 
                     // 구분
@@ -928,6 +948,9 @@ document.addEventListener('DOMContentLoaded', async function() {
 
                     tbody.appendChild(row);
                 });
+                console.log('[updateMeetingMinutesAttendees] 테이블 행 생성 완료 - 총', sortedAttendees.length, '행');
+            } else {
+                console.error('[updateMeetingMinutesAttendees] tbody element를 찾을 수 없음!');
             }
         }
 
@@ -1071,9 +1094,12 @@ document.addEventListener('DOMContentLoaded', async function() {
 
         // 참석자 목록 렌더링 함수 (모달 방식)
         function renderAttendeeListInTemplate() {
+            console.log('[renderAttendeeListInTemplate] 시작 - currentAttendees:', currentAttendees);
+            console.log('[renderAttendeeListInTemplate] attendeeList element:', attendeeList);
             if (!attendeeList) return;
 
             if (currentAttendees.length === 0) {
+                console.log('[renderAttendeeListInTemplate] 참석자 없음 - 빈 상태 표시');
                 attendeeList.innerHTML = `
                     <div class="empty-attendee-state">
                         <i class="fas fa-user-plus"></i>
@@ -1087,13 +1113,23 @@ document.addEventListener('DOMContentLoaded', async function() {
                 // 버튼 숨기기
                 hideAddAttendeeButton();
             } else {
+                console.log('[renderAttendeeListInTemplate] 참석자 있음 - 렌더링 시작');
                 // 참석자 정렬
                 const sortedAttendees = sortAttendees(currentAttendees);
+                console.log('[renderAttendeeListInTemplate] 정렬된 참석자:', sortedAttendees);
 
                 // 현재 작성자 ID 가져오기
                 const currentAuthorId = document.getElementById('common_author_id')?.value;
 
-                attendeeList.innerHTML = sortedAttendees.map(attendee => {
+                attendeeList.innerHTML = sortedAttendees.map((attendee, idx) => {
+                    console.log(`[renderAttendeeListInTemplate] 참석자 ${idx + 1}/${sortedAttendees.length}:`, {
+                        id: attendee.id,
+                        name: attendee.name,
+                        dept: attendee.dept,
+                        position: attendee.position,
+                        meetingExpense: attendee.meetingExpense,
+                        type: attendee.type
+                    });
                     // 금액 포맷팅
                     const formattedExpense = attendee.meetingExpense
                         ? attendee.meetingExpense.toLocaleString('ko-KR') + '원'
@@ -1126,6 +1162,7 @@ document.addEventListener('DOMContentLoaded', async function() {
                         </div>
                     `;
                 }).join('');
+                console.log('[renderAttendeeListInTemplate] HTML 렌더링 완료');
 
                 // 참석자가 있을 때 has-attendees 클래스 추가
                 if (attendeeArea) {
@@ -1135,7 +1172,9 @@ document.addEventListener('DOMContentLoaded', async function() {
                 showAddAttendeeButton();
             }
 
+            console.log('[renderAttendeeListInTemplate] updateProposalAttendees 호출 전');
             updateProposalAttendees();
+            console.log('[renderAttendeeListInTemplate] updateMeetingMinutesAttendees 호출 전');
             updateMeetingMinutesAttendees();
             updateAttendeeTotalAmount(); // 참석자 금액 합계 업데이트
         }
@@ -1382,11 +1421,16 @@ document.addEventListener('DOMContentLoaded', async function() {
                 updateDateTime();
                 updateDocNumber();
 
-                // 날짜 변경 시 참석자 목록 초기화
-                currentAttendees = [];
+                // 날짜 변경 시 참석자 목록 초기화 (기존 데이터 로딩 중이 아닐 때만)
+                if (!isLoadingExistingData) {
+                    console.log('[날짜 change] 참석자 목록 초기화');
+                    currentAttendees = [];
 
-                // 중복되지 않은 기본 작성자만 추가
-                await setDefaultAuthor();
+                    // 중복되지 않은 기본 작성자만 추가
+                    await setDefaultAuthor();
+                } else {
+                    console.log('[날짜 change] 기존 데이터 로딩 중 - 참석자 초기화 건너뜀');
+                }
             });
         }
 
@@ -3724,6 +3768,8 @@ document.addEventListener('DOMContentLoaded', async function() {
     }
 
     function populateForm(data) {
+        console.log('[populateForm] 시작 - 기존 데이터 로딩 플래그 ON');
+        isLoadingExistingData = true; // 플래그 ON
 
         // 프로젝트 선택
         const projectInput = document.getElementById('common_project');
@@ -3823,8 +3869,10 @@ document.addEventListener('DOMContentLoaded', async function() {
 
         // 참석자 목록
         if (data.attendees && data.attendees.length > 0) {
-            console.log('API 응답 참석자 데이터:', data.attendees);
-            currentAttendees = data.attendees.map(attendee => {
+            console.log('[loadExistingData] API 응답 참석자 데이터 수신:', data.attendees.length, '명');
+            console.log('[loadExistingData] API 응답 참석자 원본 데이터:', data.attendees);
+            currentAttendees = data.attendees.map((attendee, idx) => {
+                console.log(`[loadExistingData] 참석자 ${idx + 1} 변환 전:`, attendee);
                 let position = attendee.position || ''; // API에서 받은 직책 정보 사용
                 let dept = attendee.department || '';
 
@@ -3837,9 +3885,7 @@ document.addEventListener('DOMContentLoaded', async function() {
                 const id = attendee.userIdx;
                 const type = attendee.isExternal ? 'external' : 'internal';
 
-                console.log(`참석자 ${attendee.name} - meetingExpense:`, attendee.meetingExpense);
-
-                return {
+                const converted = {
                     id: id,
                     name: attendee.name,
                     dept: dept,
@@ -3847,13 +3893,21 @@ document.addEventListener('DOMContentLoaded', async function() {
                     meetingExpense: attendee.meetingExpense || 0,
                     type: type
                 };
-            });
-            console.log('currentAttendees 설정 완료:', currentAttendees);
 
+                console.log(`[loadExistingData] 참석자 ${idx + 1} 변환 후:`, converted);
+                return converted;
+            });
+            console.log('[loadExistingData] currentAttendees 설정 완료 - 총', currentAttendees.length, '명:', currentAttendees);
+
+            // ★ 참석자 목록 먼저 렌더링 (이벤트 트리거 전에 실행하여 초기화 방지)
+            console.log('[loadExistingData] 참석자 목록 렌더링 시작');
+            renderAttendeeListInTemplate();
         }
 
         // 모든 input 이벤트 트리거하여 자동 채우기 활성화
+        // ★ 참석자 목록 렌더링은 위에서 이미 했으므로 여기서는 제거
         setTimeout(() => {
+            console.log('[loadExistingData] setTimeout 시작 - input 이벤트 트리거');
             // 날짜/시간 자동 채우기 트리거
             if (dateInput) {
                 dateInput.dispatchEvent(new Event('input'));
@@ -3885,10 +3939,13 @@ document.addEventListener('DOMContentLoaded', async function() {
                 amountInput.dispatchEvent(new Event('input'));
             }
 
-            // 참석자 목록 렌더링 (renderAttendeeListInTemplate 함수 사용)
-            // 이 함수가 updateProposalAttendees와 updateMeetingMinutesAttendees를 자동으로 호출함
-            renderAttendeeListInTemplate();
+            console.log('[loadExistingData] setTimeout 완료');
 
+            // 플래그 해제는 모든 이벤트 처리가 끝난 후
+            setTimeout(() => {
+                isLoadingExistingData = false;
+                console.log('[populateForm] 완료 - 기존 데이터 로딩 플래그 OFF');
+            }, 200);
         }, 100);
     }
 
