@@ -341,4 +341,19 @@ public class Controller {
     public String notFound() {
         return "404";
     }
+
+    @GetMapping("/deleted")
+    public String deleted() {
+        return "deleted";
+    }
+
+    @GetMapping("/error/403")
+    public String forbidden() {
+        return "403";
+    }
+
+    @GetMapping("/error/500")
+    public String serverError() {
+        return "500";
+    }
 }
