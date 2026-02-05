@@ -111,11 +111,6 @@ public class ReceiptMeetingDTO {
     private String content;
 
     /**
-     * 상태 (PENDING, APPROVED, REJECTED)
-     */
-    private String status;
-
-    /**
      * 참석자 목록
      */
     private List<ReceiptMeetingAttendeeDTO> attendees;

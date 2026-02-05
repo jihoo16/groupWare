@@ -96,7 +96,6 @@ public class ReceiptMeetingMapper {
                 .amount(entity.getAmount())
                 .purpose(entity.getPurpose())
                 .content(entity.getContent())
-                .status(entity.getStatus())
                 .attendees(attendeeDTOs)
                 .approvals(approvalDTOs)
                 .createdAt(entity.getCreatedAt())
@@ -123,8 +122,7 @@ public class ReceiptMeetingMapper {
                 .amount(dto.getAmount())
                 .purpose(dto.getPurpose())
                 .content(dto.getContent())
-                .status("PENDING")
-                .deleted(false)
+                .isDeleted(false)
                 .build();
     }
 
@@ -249,7 +247,7 @@ public class ReceiptMeetingMapper {
                 .displayOrder(dto.getDisplayOrder() != null ? dto.getDisplayOrder() : 0)
                 .meetingExpense(dto.getMeetingExpense() != null ? dto.getMeetingExpense() : 0L)
                 .createdUserIdx(createdUserIdx)
-                .deleted(false)
+                .isDeleted(false)
                 .build();
     }
 
@@ -291,7 +289,7 @@ public class ReceiptMeetingMapper {
                 .displayOrder(dto.getDisplayOrder() != null ? dto.getDisplayOrder() : 0)
                 .meetingExpense(dto.getMeetingExpense() != null ? dto.getMeetingExpense() : 0L)
                 .createdUserIdx(createdUserIdx)
-                .deleted(false)
+                .isDeleted(false)
                 .build();
     }
 

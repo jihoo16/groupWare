@@ -48,8 +48,6 @@ public class ReceiptMeetingController {
             receiptMeetings = receiptMeetingService.getReceiptMeetingsByProjectIdx(projectIdx);
         } else if (authorIdx != null) {
             receiptMeetings = receiptMeetingService.getReceiptMeetingsByAuthorIdx(authorIdx);
-        } else if (status != null) {
-            receiptMeetings = receiptMeetingService.getReceiptMeetingsByStatus(status);
         } else {
             receiptMeetings = receiptMeetingService.getAllReceiptMeetings();
         }

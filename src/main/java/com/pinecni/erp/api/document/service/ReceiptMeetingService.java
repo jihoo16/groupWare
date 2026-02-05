@@ -35,11 +35,6 @@ public interface ReceiptMeetingService {
     List<ReceiptMeetingDTO> getReceiptMeetingsByAuthorIdx(Long authorIdx);
 
     /**
-     * 상태별 회의록 목록 조회
-     */
-    List<ReceiptMeetingDTO> getReceiptMeetingsByStatus(String status);
-
-    /**
      * 회의록 생성
      */
     ReceiptMeetingDTO createReceiptMeeting(ReceiptMeetingCreateDTO createDTO, Long currentUserIdx);

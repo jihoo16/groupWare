@@ -36,11 +36,6 @@ public interface ReceiptMeetingRepository extends JpaRepository<ReceiptMeeting, 
     List<ReceiptMeeting> findByAuthorIdxOrderByMeetingDateDesc(Long authorIdx);
 
     /**
-     * 상태별 회의록 목록 조회
-     */
-    List<ReceiptMeeting> findByStatusOrderByMeetingDateDesc(String status);
-
-    /**
      * 문서번호로 회의록 조회
      */
     Optional<ReceiptMeeting> findByDocumentNumber(String documentNumber);

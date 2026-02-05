@@ -155,7 +155,6 @@ public class ApprovalDocumentServiceImpl implements ApprovalDocumentService {
                 .build();
 
         // 작성자 정보 조회 및 설정 (실제 문서 생성자)
-        log.info("==== 문서 작성자 조회 시작 - 문서 IDX: {}, createdUserIdx: {} ====", document.getIdx(), document.getCreatedUserIdx());
         if (document.getCreatedUserIdx() != null) {
             userRepository.findById(document.getCreatedUserIdx()).ifPresent(user -> {
                 dto.setDrafterName(user.getEmpName());

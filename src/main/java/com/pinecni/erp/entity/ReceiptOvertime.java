@@ -16,7 +16,7 @@ import java.time.LocalDate;
 @Setter
 @Entity
 @Table(name = "receipt_overtime", schema = "erp")
-@SQLRestriction("deleted = false")
+@SQLRestriction("is_deleted = false")
 public class ReceiptOvertime {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)

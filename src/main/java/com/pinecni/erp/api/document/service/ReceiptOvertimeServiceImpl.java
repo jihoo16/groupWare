@@ -246,7 +246,7 @@ public class ReceiptOvertimeServiceImpl implements ReceiptOvertimeService {
                             .workTask(dto.getWorkTask())
                             .createdAt(nowDateTime)
                             .createdUserIdx(currentUserIdx)
-                            .deleted(false)
+                            .isDeleted(false)
                             .build();
                     attendeeRepository.save(attendee);
                 }
@@ -384,7 +384,7 @@ public class ReceiptOvertimeServiceImpl implements ReceiptOvertimeService {
                             .workTask(dto.getWorkTask())
                             .createdAt(nowDateTime)
                             .createdUserIdx(currentUserIdx)
-                            .deleted(false)
+                            .isDeleted(false)
                             .build();
                     attendeeRepository.save(attendee);
                 }

@@ -131,18 +131,6 @@ public class ReceiptMeetingServiceImpl implements ReceiptMeetingService {
     }
 
     @Override
-    @Transactional(readOnly = true)
-    public List<ReceiptMeetingDTO> getReceiptMeetingsByStatus(String status) {
-        log.debug("상태별 회의록 목록 조회 - status: {}", status);
-        List<ReceiptMeeting> meetings = receiptMeetingRepository.findByStatusOrderByMeetingDateDesc(status);
-        // 각 회의록에 참석자 로드
-        meetings.forEach(this::loadAttendees);
-        return meetings.stream()
-                .map(mapper::toDTO)
-                .collect(Collectors.toList());
-    }
-
-    @Override
     @Transactional
     public ReceiptMeetingDTO createReceiptMeeting(ReceiptMeetingCreateDTO createDTO, Long currentUserIdx) {
         log.debug("회의록 생성 - projectIdx: {}, authorIdx: {}, currentUserIdx: {}", createDTO.getProjectIdx(), createDTO.getAuthorIdx(), currentUserIdx);
@@ -407,7 +395,7 @@ public class ReceiptMeetingServiceImpl implements ReceiptMeetingService {
         }
 
         // 3. 회의록 자체 soft delete
-        entity.setDeleted(true);
+        entity.setIsDeleted(true);
         entity.setDeletedAt(now);
         entity.setDeletedUserIdx(deletedUserIdx);
         receiptMeetingRepository.save(entity);
@@ -444,7 +432,7 @@ public class ReceiptMeetingServiceImpl implements ReceiptMeetingService {
             List<ReceiptMeeting> meetings = receiptMeetingRepository.findAll().stream()
                     .filter(rm -> rm.getMeetingDate() != null && rm.getMeetingDate().equals(targetDate))
                     .filter(rm -> projectIdx == null || rm.getProjectIdx().equals(projectIdx))
-                    .filter(rm -> !Boolean.TRUE.equals(rm.getDeleted())) // 삭제된 문서 제외
+                    .filter(rm -> !Boolean.TRUE.equals(rm.getIsDeleted())) // 삭제된 문서 제외
                     .collect(Collectors.toList());
 
             for (ReceiptMeeting meeting : meetings) {

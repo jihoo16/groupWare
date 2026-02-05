@@ -81,7 +81,7 @@ public interface ReceiptAttendeeRepository extends JpaRepository<ReceiptAttendee
         LEFT JOIN User u ON ra.userIdx = u.idx AND ra.isExternal = false
         WHERE ra.receiptIdx = :receiptIdx
           AND ra.documentTypePrefix = :documentTypePrefix
-          AND ra.deleted = false
+          AND ra.isDeleted = false
         ORDER BY ra.displayOrder
         """)
     List<Object[]> findAttendeesWithUser(
@@ -101,7 +101,7 @@ public interface ReceiptAttendeeRepository extends JpaRepository<ReceiptAttendee
         LEFT JOIN ExternalPerson ep ON ra.userIdx = ep.idx AND ra.isExternal = true
         WHERE ra.receiptIdx = :receiptIdx
           AND ra.documentTypePrefix = :documentTypePrefix
-          AND ra.deleted = false
+          AND ra.isDeleted = false
         ORDER BY ra.displayOrder
         """)
     List<Object[]> findAttendeesWithExternalPerson(
@@ -122,7 +122,7 @@ public interface ReceiptAttendeeRepository extends JpaRepository<ReceiptAttendee
         LEFT JOIN ExternalPerson ep ON ra.userIdx = ep.idx AND ra.isExternal = true
         WHERE ra.receiptIdx = :receiptIdx
           AND ra.documentTypePrefix = :documentTypePrefix
-          AND ra.deleted = false
+          AND ra.isDeleted = false
         ORDER BY ra.displayOrder
         """)
     List<Object[]> findAttendeesWithAllPersonInfo(
@@ -143,7 +143,7 @@ public interface ReceiptAttendeeRepository extends JpaRepository<ReceiptAttendee
         WHERE ra.userIdx = :userIdx
           AND ra.projectIdx = :projectIdx
           AND ra.documentDate = :documentDate
-          AND ra.deleted = false
+          AND ra.isDeleted = false
         ORDER BY ra.startTime
         """)
     List<ReceiptAttendee> findByUserAndProjectAndDate(
@@ -161,12 +161,12 @@ public interface ReceiptAttendeeRepository extends JpaRepository<ReceiptAttendee
     @Modifying
     @Query("""
         UPDATE ReceiptAttendee ra
-        SET ra.deleted = true,
+        SET ra.isDeleted = true,
             ra.deletedAt = CURRENT_TIMESTAMP,
             ra.deletedUserIdx = :deletedUserIdx
         WHERE ra.receiptIdx = :receiptIdx
           AND ra.documentTypePrefix = :documentTypePrefix
-          AND ra.deleted = false
+          AND ra.isDeleted = false
         """)
     void softDeleteByReceiptIdxAndDocumentTypePrefix(
             @Param("receiptIdx") Long receiptIdx,
@@ -201,7 +201,7 @@ public interface ReceiptAttendeeRepository extends JpaRepository<ReceiptAttendee
         FROM ReceiptAttendee ra
         WHERE ra.projectIdx = :projectIdx
           AND ra.documentTypePrefix = :documentTypePrefix
-          AND ra.deleted = false
+          AND ra.isDeleted = false
         """)
     Long countByProjectIdxAndDocumentTypePrefix(
             @Param("projectIdx") Long projectIdx,
@@ -214,7 +214,7 @@ public interface ReceiptAttendeeRepository extends JpaRepository<ReceiptAttendee
      * @param documentTypePrefix 문서 타입 (RCM/RCO/RCT)
      * @return 참석자 목록
      */
-    List<ReceiptAttendee> findByUserIdxAndDocumentTypePrefixAndDeletedFalseOrderByDocumentDateDesc(
+    List<ReceiptAttendee> findByUserIdxAndDocumentTypePrefixAndIsDeletedFalseOrderByDocumentDateDesc(
             Long userIdx,
             String documentTypePrefix
     );
