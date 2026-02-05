@@ -146,7 +146,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 document.getElementById('code-group-code').disabled = true; // 수정 시 코드 변경 불가
                 openModal(codeGroupModal);
             })
-            .catch(error => {
+            .catch(async error => {
                 console.error('그룹코드 조회 실패:', error);
                 await showError('그룹코드 정보를 불러오는데 실패했습니다.');
             });
@@ -154,7 +154,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
     // Delete code group
     async function deleteCodeGroup(idx) {
-        const confirmed = await showDeleteConfirm('정말 삭제하시겠습니까?
+        const confirmed = await showDeleteConfirm('정말 삭제하시겠습니까?')
         if (!confirmed) {
             return;
         }
@@ -162,14 +162,14 @@ document.addEventListener('DOMContentLoaded', function() {
         fetch(`/api/code-groups/${idx}`, {
             method: 'DELETE'
         })
-        .then(response => {
+        .then(async response => {
             if (!response.ok) {
                 throw new Error('그룹코드 삭제 실패');
             }
             await showSuccess('그룹코드가 성공적으로 삭제되었습니다.');
             loadCodeGroups();
         })
-        .catch(error => {
+        .catch(async error => {
             console.error('그룹코드 삭제 실패:', error);
             await showError('그룹코드 삭제에 실패했습니다.');
         });
@@ -461,11 +461,11 @@ document.addEventListener('DOMContentLoaded', function() {
                 }
                 return response.json();
             })
-            .then(result => {
+            .then(async result => {
                 await showSuccess(`직급별 고정경비가 성공적으로 저장되었습니다.\n저장된 항목: ${result.count}개`);
                 loadExpensePolicies(); // Reload to reflect changes
             })
-            .catch(error => {
+            .catch(async error => {
                 console.error('고정경비 저장 실패:', error);
                 await showError('고정경비 저장에 실패했습니다.');
             });
