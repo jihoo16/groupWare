@@ -1953,8 +1953,12 @@ document.addEventListener('DOMContentLoaded', async function() {
 
         // 야근 인원 검증
         const overtimePersons = window.currentOvertimePersons || [];
+        const overtimePersonArea = document.getElementById('overtimePersonArea');
         if (overtimePersons.length === 0) {
+            overtimePersonArea?.classList.add('error');
             allFieldsFilled = false;
+        } else {
+            overtimePersonArea?.classList.remove('error');
         }
 
         // 인쇄 버튼 표시/숨김

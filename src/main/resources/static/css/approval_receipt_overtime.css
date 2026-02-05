@@ -2179,7 +2179,8 @@ div h2{
 /* 필수 필드 에러 스타일 */
 .clickable-input.error,
 .form-input.error,
-.form-textarea.error {
+.form-textarea.error,
+.attendee-area.error {
     border-color: #ef5350 !important;
     border-width: 2px !important;
 }
