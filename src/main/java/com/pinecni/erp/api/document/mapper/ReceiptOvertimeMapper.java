@@ -30,7 +30,6 @@ public class ReceiptOvertimeMapper {
                 .projectIdx(entity.getProjectIdx() != null ? entity.getProjectIdx().getIdx() : null)
                 .projectName(entity.getProjectIdx() != null ? entity.getProjectIdx().getProjectName() : null)
                 .cardIdx(entity.getCardIdx())
-                .documentNumber(entity.getDocumentNumber())
                 .documentIdx(entity.getDocumentIdx())
                 .authorIdx(entity.getAuthorIdx())
                 .overtimeDate(entity.getOvertimeDate())

@@ -63,11 +63,6 @@ public interface ReceiptOvertimeService {
     void deleteReceiptOvertime(Long idx, Long currentUserIdx);
 
     /**
-     * 문서번호 생성
-     */
-    String generateDocumentNumber(Long projectIdx);
-
-    /**
      * 첨부파일 저장
      */
     List<ReceiptOvertimeAttachmentDTO> saveAttachments(Long receiptOvertimeIdx, MultipartFile[] files);
