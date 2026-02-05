@@ -20,6 +20,7 @@ document.addEventListener('DOMContentLoaded', async function () {
     }
 
     // 프로젝트 상세 정보 로드
+    window.showPageLoadingOverlay();
     loadProjectDetail(projectId, currentUserIdx);
 
     // 수정 버튼 이벤트 리스너

@@ -67,6 +67,7 @@ document.addEventListener('DOMContentLoaded', async function() {
     const confirmDeleteBtn = document.getElementById('confirmDeleteBtn');
 
     // 초기화
+    window.showPageLoadingOverlay();
     init();
 
     // 이벤트 리스너

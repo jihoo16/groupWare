@@ -2120,6 +2120,7 @@ document.addEventListener('DOMContentLoaded', async function() {
     } else {
         // URL에 ID 파라미터가 있으면 데이터 로드
         console.log('상세보기 모드 - ID:', receiptTripId);
+        window.showPageLoadingOverlay();
         setTimeout(async () => {
             await loadReceiptTripData(receiptTripId);
         }, 500);

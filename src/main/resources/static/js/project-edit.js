@@ -50,6 +50,7 @@
         projectManagerSelect ? loadProjectManagers() : Promise.resolve()
     ]).then(() => {
         // 모든 기본 데이터 로드 완료 후 프로젝트 데이터 로드
+        window.showPageLoadingOverlay();
         loadProjectData(projectId);
     }).catch(async error => {
         console.error('초기 데이터 로드 실패:', error);

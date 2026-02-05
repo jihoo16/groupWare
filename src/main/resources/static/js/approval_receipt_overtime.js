@@ -2301,6 +2301,7 @@ document.addEventListener('DOMContentLoaded', async function() {
         const urlParams = new URLSearchParams(window.location.search);
         const documentIdx = urlParams.get('documentIdx');
         if (documentIdx) {
+            window.showPageLoadingOverlay();
             await loadExistingData(documentIdx);
         } else {
             // 신규 작성 모드 - 로딩 오버레이 숨김

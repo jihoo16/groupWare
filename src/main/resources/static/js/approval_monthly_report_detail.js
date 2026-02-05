@@ -35,6 +35,7 @@ document.addEventListener('DOMContentLoaded', function() {
     loadProjects();
 
     // 페이지 로드 시 월간업무보고 데이터 가져오기
+    window.showPageLoadingOverlay();
     loadMonthlyReportDetail();
 
     // textarea 자동 높이 조절 함수

@@ -297,6 +297,7 @@ document.addEventListener('DOMContentLoaded', function() {
         await loadUserData();
 
         // 2. 일정 데이터 로드 (완료 후 renderParticipantsList()가 호출되어 로딩 UI 대체)
+        window.showPageLoadingOverlay();
         await loadScheduleData(scheduleId);
     }
 

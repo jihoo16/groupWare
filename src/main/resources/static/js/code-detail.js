@@ -78,6 +78,7 @@ document.addEventListener('DOMContentLoaded', function() {
     }
 
     // Initial load
+    window.showPageLoadingOverlay();
     loadCodes();
 
     // ===========================

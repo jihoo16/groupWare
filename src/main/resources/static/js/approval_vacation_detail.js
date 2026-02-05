@@ -11,6 +11,7 @@ document.addEventListener('DOMContentLoaded', function() {
     }
 
     // 문서 상세 정보 로드
+    window.showPageLoadingOverlay();
     loadDocumentDetail(documentIdx);
 });
 

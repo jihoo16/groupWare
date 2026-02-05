@@ -11,6 +11,7 @@ document.addEventListener('DOMContentLoaded', function() {
     }
 
     // 회의록 데이터 로드
+    window.showPageLoadingOverlay();
     loadMeetingDetail(meetingId);
 
     // 전역 변수

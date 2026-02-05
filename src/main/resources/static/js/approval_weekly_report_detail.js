@@ -11,6 +11,7 @@ document.addEventListener('DOMContentLoaded', function() {
     }
 
     // 주간업무보고 데이터 로드
+    window.showPageLoadingOverlay();
     loadWeeklyReportDetail(reportId);
 
     // 전역 변수

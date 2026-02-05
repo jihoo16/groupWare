@@ -193,6 +193,7 @@ document.addEventListener('DOMContentLoaded', async function() {
         const receiptMeetingId = getUrlParameter('documentIdx') || getUrlParameter('id');
         if (receiptMeetingId) {
             console.log('상세보기 모드 - 회의록 ID:', receiptMeetingId);
+            window.showPageLoadingOverlay();
             await loadReceiptMeetingData(receiptMeetingId);
         } else {
             // 신규 작성 모드

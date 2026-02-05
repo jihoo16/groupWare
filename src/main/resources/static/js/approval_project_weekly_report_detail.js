@@ -21,6 +21,7 @@ document.addEventListener('DOMContentLoaded', function() {
     console.log('현재 로그인 사용자 idx:', currentUserIdx);
 
     // 보고서 데이터 로드
+    window.showPageLoadingOverlay();
     loadReportData(documentIdx);
 
     // 수정 버튼 이벤트
