@@ -302,6 +302,8 @@ public class Controller {
         return "project-detail";
     }
 
+    // 팀 관리 - 추후 구현 예정
+    /*
     @GetMapping("/team")
     public String team() {
         return "team";
@@ -316,6 +318,7 @@ public class Controller {
     public String teamEdit() {
         return "team-edit";
     }
+    */
 
     @GetMapping("/basic-info")
     public String basicInfo() {
