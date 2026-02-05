@@ -37,9 +37,6 @@ public class ReceiptTrip {
     @Column(name = "project_idx", nullable = false)
     private Long projectIdx;
 
-    @Column(name = "document_number", unique = true, length = 50)
-    private String documentNumber;
-
     @Column(name = "document_idx")
     private Long documentIdx;
 
@@ -90,6 +87,10 @@ public class ReceiptTrip {
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "author_idx", insertable = false, updatable = false)
     private User author;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "document_idx", insertable = false, updatable = false)
+    private ApprovalDocument approvalDocument;
 
     @OneToMany(mappedBy = "receiptTrip", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<ReceiptTripAttendee> attendees = new ArrayList<>();

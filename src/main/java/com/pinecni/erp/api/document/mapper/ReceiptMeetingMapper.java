@@ -53,19 +53,6 @@ public class ReceiptMeetingMapper {
                         .map(this::toAttendeeDTO)
                         .collect(Collectors.toList()) : null;
 
-        // 결재선 목록 변환 (lazy loading 고려)
-        List<ReceiptMeetingApprovalDTO> approvalDTOs = null;
-        try {
-            if (entity.getApprovals() != null) {
-                approvalDTOs = entity.getApprovals().stream()
-                        .map(this::toApprovalDTO)
-                        .collect(Collectors.toList());
-            }
-        } catch (Exception e) {
-            // LazyInitializationException 등 무시
-            approvalDTOs = null;
-        }
-
         // 카드 정보 조합
         String cardName = null;
         if (entity.getProjectCard() != null) {
@@ -77,13 +64,19 @@ public class ReceiptMeetingMapper {
             }
         }
 
+        // 문서번호는 approval_documents 테이블에서 조회
+        String documentNumber = null;
+        if (entity.getApprovalDocument() != null) {
+            documentNumber = entity.getApprovalDocument().getDocumentNo();
+        }
+
         return ReceiptMeetingDTO.builder()
                 .idx(entity.getIdx())
                 .projectIdx(entity.getProjectIdx())
                 .projectName(entity.getProject() != null ? entity.getProject().getProjectName() : null)
                 .cardIdx(entity.getCardIdx())
                 .cardName(cardName)
-                .documentNumber(entity.getDocumentNumber())
+                .documentNumber(documentNumber)
                 .documentIdx(entity.getDocumentIdx())
                 .authorIdx(entity.getAuthorIdx())
                 .authorUserName(authorUserName)
@@ -97,7 +90,6 @@ public class ReceiptMeetingMapper {
                 .purpose(entity.getPurpose())
                 .content(entity.getContent())
                 .attendees(attendeeDTOs)
-                .approvals(approvalDTOs)
                 .createdAt(entity.getCreatedAt())
                 .updatedAt(entity.getUpdatedAt())
                 .build();
@@ -293,61 +285,4 @@ public class ReceiptMeetingMapper {
                 .build();
     }
 
-    /**
-     * ReceiptMeetingApproval Entity → DTO 변환
-     */
-    public ReceiptMeetingApprovalDTO toApprovalDTO(ReceiptMeetingApproval entity) {
-        if (entity == null) {
-            return null;
-        }
-
-        // 결재자 정보 조회
-        User approver = userRepository.findById(entity.getApproverIdx()).orElse(null);
-        String approverName = null;
-        String approverDept = null;
-        String approverPosition = null;
-
-        if (approver != null) {
-            approverName = approver.getEmpName();
-
-            // 부서명 조회
-            if (approver.getEmpDept() != null) {
-                approverDept = codeRepository.findByGroupCodeAndCode(CodeConstants.GroupCode.DEPARTMENT.getCode(), approver.getEmpDept())
-                        .map(Code::getCodeName)
-                        .orElse(null);
-            }
-
-            // 직급명 조회
-            if (approver.getEmpPosition() != null) {
-                approverPosition = codeRepository.findByGroupCodeAndCode(CodeConstants.GroupCode.POSITION.getCode(), approver.getEmpPosition())
-                        .map(Code::getCodeName)
-                        .orElse(null);
-            }
-        }
-
-        return ReceiptMeetingApprovalDTO.builder()
-                .idx(entity.getIdx())
-                .approverIdx(entity.getApproverIdx())
-                .approverName(approverName)
-                .approverDept(approverDept)
-                .approverPosition(approverPosition)
-                .status(entity.getStatus())
-                .approvedAt(entity.getApprovedAt())
-                .build();
-    }
-
-    /**
-     * 결재자 IDX → Entity 변환
-     */
-    public ReceiptMeetingApproval toApprovalEntity(Long approverIdx, Long receiptMeetingIdx) {
-        if (approverIdx == null) {
-            return null;
-        }
-
-        return ReceiptMeetingApproval.builder()
-                .receiptMeetingIdx(receiptMeetingIdx)
-                .approverIdx(approverIdx)
-                .status("PENDING")
-                .build();
-    }
 }

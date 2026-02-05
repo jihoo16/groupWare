@@ -179,13 +179,13 @@ public class ApprovalDocumentServiceImpl implements ApprovalDocumentService {
             weeklyReportRepository.findByDocumentIdx(document.getIdx()).ifPresent(weeklyReport -> {
                 dto.setSourceDocumentId(weeklyReport.getId());
             });
-        } else if ("연구비증빙-회의록".equals(documentType) || "연구비증빙(회의록)".equals(documentType)) {
-            // 연구비증빙 회의록의 원본 문서 ID 조회 (신형식 하이픈, 구형식 괄호 모두 지원)
+        } else if ("연구비증빙-회의록".equals(documentType) || "연구비증빙(회의록)".equals(documentType) || "receipt_meeting".equals(documentType)) {
+            // 연구비증빙 회의록의 원본 문서 ID 조회
             receiptMeetingRepository.findByDocumentIdx(document.getIdx()).ifPresent(receiptMeeting -> {
                 dto.setSourceDocumentId(receiptMeeting.getIdx());
             });
-        } else if ("연구비증빙-출장".equals(documentType) || "연구비증빙(출장)".equals(documentType)) {
-            // 연구비증빙 출장의 원본 문서 ID 조회 (신형식 하이픈, 구형식 괄호 모두 지원)
+        } else if ("연구비증빙-출장".equals(documentType) || "연구비증빙(출장)".equals(documentType) || "receipt_trip".equals(documentType)) {
+            // 연구비증빙 출장의 원본 문서 ID 조회
             receiptTripRepository.findByDocumentIdx(document.getIdx()).ifPresent(receiptTrip -> {
                 dto.setSourceDocumentId(receiptTrip.getIdx());
             });
@@ -389,10 +389,16 @@ public class ApprovalDocumentServiceImpl implements ApprovalDocumentService {
      * ReceiptTrip → DTO 변환
      */
     private ApprovalDocumentDTO convertReceiptTripToDTO(ReceiptTrip trip) {
+        // 문서번호는 approval_documents 테이블에서 조회
+        String documentNo = null;
+        if (trip.getApprovalDocument() != null) {
+            documentNo = trip.getApprovalDocument().getDocumentNo();
+        }
+
         ApprovalDocumentDTO dto = ApprovalDocumentDTO.builder()
                 .idx(trip.getDocumentIdx())
                 .sourceDocumentId(trip.getIdx())
-                .documentNo(trip.getDocumentNumber())
+                .documentNo(documentNo)
                 .title(trip.getLocation() + " 출장")
                 .documentType("BUSINESS_TRIP")
                 .drafterUserIdx(trip.getAuthorIdx())
@@ -424,10 +430,16 @@ public class ApprovalDocumentServiceImpl implements ApprovalDocumentService {
             title = meeting.getPurpose();
         }
 
+        // 문서번호는 approval_documents 테이블에서 조회
+        String documentNo = null;
+        if (meeting.getApprovalDocument() != null) {
+            documentNo = meeting.getApprovalDocument().getDocumentNo();
+        }
+
         ApprovalDocumentDTO dto = ApprovalDocumentDTO.builder()
                 .idx(meeting.getDocumentIdx())
                 .sourceDocumentId(meeting.getIdx())
-                .documentNo(meeting.getDocumentNumber())
+                .documentNo(documentNo)
                 .title(title)
                 .documentType("RECEIPT_MEETING")
                 .drafterUserIdx(meeting.getAuthorIdx())

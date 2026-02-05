@@ -36,6 +36,10 @@ public class ReceiptTripServiceImpl implements ReceiptTripService {
     private final ProjectRepository projectRepository;
     private final ReceiptTripMapper mapper;
     private final ApprovalDocumentRepository approvalDocumentRepository;
+    private final com.pinecni.erp.api.approval.repository.DocumentSequenceRepository documentSequenceRepository;
+
+    private static final String DOCUMENT_TYPE = "receipt_trip"; // 문서 타입 (DB 테이블 식별용)
+    private static final String PREFIX = "RCT"; // 문서번호 prefix
 
     @Override
     @Transactional(readOnly = true)
@@ -94,11 +98,8 @@ public class ReceiptTripServiceImpl implements ReceiptTripService {
         log.debug("출장 생성 - projectIdx: {}, authorIdx: {}", createDTO.getProjectIdx(), createDTO.getAuthorIdx());
 
         try {
-            // 1. 문서번호 생성
-            String documentNumber = generateDocumentNumber(createDTO.getProjectIdx());
-
-        // 2. ApprovalDocument 메타데이터 저장
-        String documentNo = "RECEIPT-TRIP-" + System.currentTimeMillis() + "-" + createDTO.getAuthorIdx();
+            // 1. 문서번호 생성 (시퀀스 사용)
+            String documentNo = generateDocumentNo();
         String title = "연구비증빙 출장";
         if (createDTO.getLocation() != null && !createDTO.getLocation().isEmpty()) {
             title = "연구비증빙 출장 - " + createDTO.getLocation();
@@ -107,7 +108,8 @@ public class ReceiptTripServiceImpl implements ReceiptTripService {
         ApprovalDocument approvalDocument = ApprovalDocument.builder()
                 .documentNo(documentNo)
                 .title(title)
-                .documentType("연구비증빙-출장")
+                .documentType("연구비증빙-출장")  // 화면 표시용
+                .isProject(true)  // 프로젝트 문서로 표시
                 .drafterUserIdx(createDTO.getAuthorIdx())
                 .content(createDTO.getContent())
                 .createdUserIdx(createDTO.getAuthorIdx())
@@ -118,9 +120,8 @@ public class ReceiptTripServiceImpl implements ReceiptTripService {
         log.debug("ApprovalDocument created - documentIdx: {}, documentNo: {}",
                   savedDocument.getIdx(), savedDocument.getDocumentNo());
 
-        // 3. 출장 Entity 생성 및 저장
+        // 2. 출장 Entity 생성 및 저장
         ReceiptTrip entity = mapper.toEntity(createDTO);
-        entity.setDocumentNumber(documentNumber);
         entity.setDocumentIdx(savedDocument.getIdx());
         entity = receiptTripRepository.save(entity);
 
@@ -137,7 +138,7 @@ public class ReceiptTripServiceImpl implements ReceiptTripService {
             ReceiptTrip savedEntity = receiptTripRepository.findByIdWithDetails(entity.getIdx())
                     .orElseThrow(() -> new IllegalStateException("저장된 출장 정보를 조회할 수 없습니다."));
 
-            log.info("출장 생성 완료 - idx: {}, documentNumber: {}", savedEntity.getIdx(), documentNumber);
+            log.info("출장 생성 완료 - idx: {}, documentNo: {}", savedEntity.getIdx(), documentNo);
             return mapper.toDTO(savedEntity);
 
         } catch (Exception e) {
@@ -204,20 +205,41 @@ public class ReceiptTripServiceImpl implements ReceiptTripService {
         log.info("출장 삭제 완료 - idx: {}", idx);
     }
 
+    /**
+     * document_sequences 테이블을 이용한 문서번호 생성
+     * 형식: prefix-year-last_number (예: RCT-2026-0001)
+     */
+    private String generateDocumentNo() {
+        int currentYear = LocalDateTime.now().getYear();
+
+        // 해당 연도의 시퀀스 조회 또는 생성
+        com.pinecni.erp.entity.DocumentSequence sequence = documentSequenceRepository
+                .findByDocumentTypeAndYear(DOCUMENT_TYPE, currentYear)
+                .orElseGet(() -> {
+                    com.pinecni.erp.entity.DocumentSequence newSequence = com.pinecni.erp.entity.DocumentSequence.builder()
+                            .documentType(DOCUMENT_TYPE)
+                            .prefix(PREFIX)
+                            .year(currentYear)
+                            .lastNumber(0)
+                            .currentSequence(0)
+                            .createdAt(LocalDateTime.now())
+                            .build();
+                    return documentSequenceRepository.save(newSequence);
+                });
+
+        // last_number 증가
+        sequence.setLastNumber(sequence.getLastNumber() + 1);
+        sequence.setUpdatedAt(LocalDateTime.now());
+        documentSequenceRepository.save(sequence);
+
+        // 문서번호 생성 (prefix-year-last_number, 4자리 패딩)
+        return String.format("%s-%d-%04d", sequence.getPrefix(), sequence.getYear(), sequence.getLastNumber());
+    }
+
     @Override
     public String generateDocumentNumber(Long projectIdx) {
-        // 문서번호 형식: RT-{projectIdx}-{YYYYMMDD}-{순번}
-        // 예: RT-1-20250101-001
-
-        String dateStr = LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyyMMdd"));
-        String prefix = String.format("RT-%d-%s", projectIdx, dateStr);
-
-        // 같은 날짜의 문서 개수 조회하여 순번 생성
-        long count = receiptTripRepository.findAll().stream()
-                .filter(rt -> rt.getDocumentNumber() != null && rt.getDocumentNumber().startsWith(prefix))
-                .count();
-
-        return String.format("%s-%03d", prefix, count + 1);
+        // 구형식 메서드 (하위 호환성 유지)
+        return generateDocumentNo();
     }
 
     /**

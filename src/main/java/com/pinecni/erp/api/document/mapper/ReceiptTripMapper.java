@@ -53,11 +53,17 @@ public class ReceiptTripMapper {
                         .map(this::toAttendeeDTO)
                         .collect(Collectors.toList()) : null;
 
+        // 문서번호는 approval_documents 테이블에서 조회
+        String documentNumber = null;
+        if (entity.getApprovalDocument() != null) {
+            documentNumber = entity.getApprovalDocument().getDocumentNo();
+        }
+
         return ReceiptTripDTO.builder()
                 .idx(entity.getIdx())
                 .projectIdx(entity.getProjectIdx())
                 .projectName(entity.getProject() != null ? entity.getProject().getProjectName() : null)
-                .documentNumber(entity.getDocumentNumber())
+                .documentNumber(documentNumber)
                 .authorIdx(entity.getAuthorIdx())
                 .authorUserName(authorUserName)
                 .authorDept(authorDept)
