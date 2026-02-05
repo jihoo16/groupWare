@@ -6,8 +6,8 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 
 import java.math.BigDecimal;
-import java.time.Instant;
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.util.List;
 
 /**
@@ -32,8 +32,8 @@ public class ReceiptOvertimeDTO {
     private String documentTitle;
     private String documentContent;
     private BigDecimal totalAmount;
-    private Instant createdAt;
-    private Instant updatedAt;
+    private LocalDateTime createdAt;
+    private LocalDateTime updatedAt;
 
     // 연관 데이터
     private List<ReceiptOvertimeAttendeeDTO> attendees;

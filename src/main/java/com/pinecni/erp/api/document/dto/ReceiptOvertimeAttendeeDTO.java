@@ -5,7 +5,7 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
-import java.time.Instant;
+import java.time.LocalDateTime;
 
 /**
  * 야근식대 참석자 DTO
@@ -22,6 +22,6 @@ public class ReceiptOvertimeAttendeeDTO {
     private String userName;  // 조회 시 users 테이블에서 가져옴
     private String workTime;
     private String workTask;
-    private Instant createdAt;
-    private Instant updatedAt;
+    private LocalDateTime createdAt;
+    private LocalDateTime updatedAt;
 }

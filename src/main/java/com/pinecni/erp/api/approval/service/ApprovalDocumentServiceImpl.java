@@ -469,23 +469,14 @@ public class ApprovalDocumentServiceImpl implements ApprovalDocumentService {
             title = "야근식대";
         }
 
-        // Instant -> LocalDateTime 변환
-        LocalDateTime createdAt = overtime.getCreatedAt() != null
-                ? LocalDateTime.ofInstant(overtime.getCreatedAt(), ZoneId.of("Asia/Seoul"))
-                : null;
-        LocalDateTime updatedAt = overtime.getUpdatedAt() != null
-                ? LocalDateTime.ofInstant(overtime.getUpdatedAt(), ZoneId.of("Asia/Seoul"))
-                : null;
-
         ApprovalDocumentDTO dto = ApprovalDocumentDTO.builder()
                 .idx(overtime.getDocumentIdx())
                 .sourceDocumentId(overtime.getId())
-                .documentNo(overtime.getDocumentNumber())
                 .title(title)
                 .documentType("RECEIPT_OVERTIME")
                 .drafterUserIdx(overtime.getAuthorIdx())
-                .createdAt(createdAt)
-                .updatedAt(updatedAt)
+                .createdAt(overtime.getCreatedAt())
+                .updatedAt(overtime.getUpdatedAt())
                 .build();
 
         // 작성자 정보 (users 테이블에서 조회)

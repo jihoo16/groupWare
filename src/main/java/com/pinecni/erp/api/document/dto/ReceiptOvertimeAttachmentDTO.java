@@ -5,7 +5,7 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
-import java.time.Instant;
+import java.time.LocalDateTime;
 
 /**
  * 야근식대 첨부파일 DTO
@@ -23,6 +23,6 @@ public class ReceiptOvertimeAttachmentDTO {
     private String filePath;
     private Long fileSize;
     private String fileType;
-    private Instant createdAt;
-    private Instant updatedAt;
+    private LocalDateTime createdAt;
+    private LocalDateTime updatedAt;
 }

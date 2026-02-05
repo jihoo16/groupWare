@@ -9,8 +9,8 @@ import org.hibernate.annotations.ColumnDefault;
 import org.hibernate.annotations.SQLRestriction;
 
 import java.math.BigDecimal;
-import java.time.Instant;
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 
 @Getter
 @Setter
@@ -27,10 +27,6 @@ public class ReceiptOvertime {
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
     @JoinColumn(name = "project_idx", nullable = false)
     private Project projectIdx;
-
-    @Size(max = 50)
-    @Column(name = "document_number", length = 50)
-    private String documentNumber;
 
     @NotNull
     @Column(name = "author_idx", nullable = false)
@@ -60,12 +56,12 @@ public class ReceiptOvertime {
     @NotNull
     @ColumnDefault("CURRENT_TIMESTAMP")
     @Column(name = "created_at", nullable = false)
-    private Instant createdAt;
+    private LocalDateTime createdAt;
 
     @NotNull
     @ColumnDefault("CURRENT_TIMESTAMP")
     @Column(name = "updated_at", nullable = false)
-    private Instant updatedAt;
+    private LocalDateTime updatedAt;
 
     @Column(name = "created_user_idx")
     private Long createdUserIdx;
@@ -85,6 +81,6 @@ public class ReceiptOvertime {
     private Long deletedUserIdx;
 
     @Column(name = "deleted_at")
-    private Instant deletedAt;
+    private LocalDateTime deletedAt;
 
 }

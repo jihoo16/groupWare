@@ -10,6 +10,7 @@ import com.pinecni.erp.api.document.mapper.ReceiptOvertimeMapper;
 import com.pinecni.erp.api.document.repository.ReceiptOvertimeAttachmentRepository;
 import com.pinecni.erp.api.document.repository.ReceiptAttendeeRepository;
 import com.pinecni.erp.api.document.repository.ReceiptOvertimeRepository;
+import com.pinecni.erp.api.project.repository.ProjectCardRepository;
 import com.pinecni.erp.api.project.repository.ProjectRepository;
 import com.pinecni.erp.api.user.repository.UserRepository;
 import com.pinecni.erp.entity.*;
@@ -115,10 +116,8 @@ public class ReceiptOvertimeServiceImpl implements ReceiptOvertimeService {
                             .userIdx(attendee.getUserIdx())
                             .workTime(formatWorkTime(attendee.getStartTime(), attendee.getEndTime()))
                             .workTask(attendee.getWorkTask())
-                            .createdAt(attendee.getCreatedAt() != null ?
-                                    attendee.getCreatedAt().atZone(ZoneId.of("Asia/Seoul")).toInstant() : null)
-                            .updatedAt(attendee.getUpdatedAt() != null ?
-                                    attendee.getUpdatedAt().atZone(ZoneId.of("Asia/Seoul")).toInstant() : null)
+                            .createdAt(attendee.getCreatedAt())
+                            .updatedAt(attendee.getUpdatedAt())
                             .build();
 
                     // 사용자 이름 조회
@@ -202,16 +201,13 @@ public class ReceiptOvertimeServiceImpl implements ReceiptOvertimeService {
                     .build();
 
             ApprovalDocument savedDocument = approvalDocumentRepository.save(approvalDocument);
-            log.debug("ApprovalDocument created - documentIdx: {}, documentNo: {}",
-                    savedDocument.getIdx(), savedDocument.getDocumentNo());
+            log.debug("ApprovalDocument created - documentIdx: {}, documentNo: {}", savedDocument.getIdx(), documentNo);
 
             // 4. 야근식대 Entity 생성 및 저장
-            Instant now = LocalDateTime.now().atZone(ZoneId.of("Asia/Seoul")).toInstant();
-            LocalDateTime nowDateTime = LocalDateTime.now();
+            LocalDateTime now = LocalDateTime.now(ZoneId.of("Asia/Seoul"));
             ReceiptOvertime entity = new ReceiptOvertime();
             entity.setProjectIdx(project);
             entity.setCardIdx(createDTO.getCardIdx());
-            entity.setDocumentNumber(documentNo);
             entity.setDocumentIdx(savedDocument.getIdx());
             entity.setAuthorIdx(createDTO.getAuthorIdx());
             entity.setOvertimeDate(createDTO.getOvertimeDate());
@@ -244,8 +240,10 @@ public class ReceiptOvertimeServiceImpl implements ReceiptOvertimeService {
                             .endTime(parseEndTime(dto.getWorkTime()))
                             .displayOrder(displayOrder++)
                             .workTask(dto.getWorkTask())
-                            .createdAt(nowDateTime)
+                            .createdAt(now)
                             .createdUserIdx(currentUserIdx)
+                            .updatedAt(now)
+                            .updatedUserIdx(currentUserIdx)
                             .isDeleted(false)
                             .build();
                     attendeeRepository.save(attendee);
@@ -255,7 +253,7 @@ public class ReceiptOvertimeServiceImpl implements ReceiptOvertimeService {
             // 6. 저장된 데이터 재조회
             List<ReceiptAttendee> savedAttendees = attendeeRepository.findByReceiptOvertimeIdx(entity.getId());
 
-            log.info("야근식대 생성 완료 - idx: {}, documentNo: {}", entity.getId(), documentNo);
+            log.info("야근식대 생성 완료 - idx: {}", entity.getId());
             return mapper.toDTOWithDetails(entity, convertAttendeesToDTO(savedAttendees), Collections.emptyList());
 
         } catch (Exception e) {
@@ -282,17 +280,19 @@ public class ReceiptOvertimeServiceImpl implements ReceiptOvertimeService {
                             .year(currentYear)
                             .lastNumber(0)
                             .currentSequence(0)
-                            .createdAt(LocalDateTime.now())
+                            .createdAt(now)
+                            .createdUserIdx(currentUserIdx)
                             .build();
                     return documentSequenceRepository.save(newSequence);
                 });
 
         // last_number 증가
         sequence.setLastNumber(sequence.getLastNumber() + 1);
-        sequence.setUpdatedAt(LocalDateTime.now());
+        sequence.setUpdatedAt(now);
+        sequence.setUpdatedUserIdx(currentUserIdx);
         documentSequenceRepository.save(sequence);
 
-        // 문서번호 생성 (prefix-year-last_number, 3자리 패딩)
+        // 문서번호 생성 (RCO-year-number, 3자리 패딩)
         return String.format("%s-%d-%03d", sequence.getPrefix(), sequence.getYear(), sequence.getLastNumber());
     }
 
@@ -350,8 +350,7 @@ public class ReceiptOvertimeServiceImpl implements ReceiptOvertimeService {
             }
 
             // 3. 엔터티 수정
-            Instant now = LocalDateTime.now().atZone(ZoneId.of("Asia/Seoul")).toInstant();
-            LocalDateTime nowDateTime = LocalDateTime.now();
+            LocalDateTime now = LocalDateTime.now(ZoneId.of("Asia/Seoul"));
             entity.setCardIdx(updateDTO.getCardIdx());
             entity.setOvertimeDate(updateDTO.getOvertimeDate());
             entity.setApprovalDate(updateDTO.getApprovalDate());
@@ -364,7 +363,7 @@ public class ReceiptOvertimeServiceImpl implements ReceiptOvertimeService {
             entity = receiptOvertimeRepository.save(entity);
 
             // 4. 기존 참석자 소프트 딜리트 후 새로 저장 (receipt_attendee 테이블)
-            attendeeRepository.softDeleteByReceiptOvertimeIdx(entity.getId(), nowDateTime, currentUserIdx);
+            attendeeRepository.softDeleteByReceiptOvertimeIdx(entity.getId(), now, currentUserIdx);
 
             if (updateDTO.getAttendees() != null && !updateDTO.getAttendees().isEmpty()) {
                 final ReceiptOvertime savedOvertime = entity;
@@ -382,8 +381,10 @@ public class ReceiptOvertimeServiceImpl implements ReceiptOvertimeService {
                             .endTime(parseEndTime(dto.getWorkTime()))
                             .displayOrder(displayOrder++)
                             .workTask(dto.getWorkTask())
-                            .createdAt(nowDateTime)
+                            .createdAt(now)
                             .createdUserIdx(currentUserIdx)
+                            .updatedAt(now)
+                            .updatedUserIdx(currentUserIdx)
                             .isDeleted(false)
                             .build();
                     attendeeRepository.save(attendee);
@@ -431,23 +432,22 @@ public class ReceiptOvertimeServiceImpl implements ReceiptOvertimeService {
         ReceiptOvertime entity = receiptOvertimeRepository.findById(idx)
                 .orElseThrow(() -> new IllegalArgumentException("야근식대를 찾을 수 없습니다. idx: " + idx));
 
-        Instant now = LocalDateTime.now().atZone(ZoneId.of("Asia/Seoul")).toInstant();
-        LocalDateTime nowDateTime = LocalDateTime.now();
+        LocalDateTime now = LocalDateTime.now(ZoneId.of("Asia/Seoul"));
         Long deletedBy = currentUserIdx != null ? currentUserIdx : entity.getAuthorIdx();
 
         // 1. 연결된 ApprovalDocument 소프트 딜리트
         if (entity.getDocumentIdx() != null) {
             approvalDocumentRepository.findById(entity.getDocumentIdx()).ifPresent(approvalDocument -> {
-                approvalDocument.setDeletedAt(nowDateTime);
+                approvalDocument.setDeletedAt(now);
                 approvalDocument.setDeletedUserIdx(deletedBy);
                 approvalDocumentRepository.save(approvalDocument);
                 log.debug("ApprovalDocument soft deleted - documentIdx: {}, deletedAt: {}",
-                        entity.getDocumentIdx(), nowDateTime);
+                        entity.getDocumentIdx(), now);
             });
         }
 
         // 2. 참석자 소프트 딜리트 (receipt_attendee 테이블)
-        attendeeRepository.softDeleteByReceiptOvertimeIdx(entity.getId(), nowDateTime, deletedBy);
+        attendeeRepository.softDeleteByReceiptOvertimeIdx(entity.getId(), now, deletedBy);
         log.debug("ReceiptAttendee soft deleted - receiptOvertimeIdx: {}", entity.getId());
 
         // 3. 야근식대 소프트 딜리트
@@ -495,7 +495,7 @@ public class ReceiptOvertimeServiceImpl implements ReceiptOvertimeService {
         }
 
         List<ReceiptOvertimeAttachmentDTO> savedAttachments = new ArrayList<>();
-        Instant now = LocalDateTime.now().atZone(ZoneId.of("Asia/Seoul")).toInstant();
+        LocalDateTime now = LocalDateTime.now(ZoneId.of("Asia/Seoul"));
 
         for (MultipartFile file : files) {
             if (file.isEmpty()) {
