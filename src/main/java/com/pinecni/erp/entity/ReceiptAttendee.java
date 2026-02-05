@@ -21,7 +21,7 @@ import java.time.LocalTime;
         @Index(name = "idx_ra_document_date", columnList = "document_date"),
         @Index(name = "idx_ra_card", columnList = "card_idx")
 })
-@SQLRestriction("deleted = false")
+@SQLRestriction("is_deleted = false")
 @Getter
 @Setter
 @NoArgsConstructor
@@ -125,8 +125,8 @@ public class ReceiptAttendee {
     private Long updatedUserIdx;
 
     @Builder.Default
-    @Column(name = "deleted", nullable = false)
-    private Boolean deleted = false;
+    @Column(name = "is_deleted", nullable = false)
+    private Boolean isDeleted = false;
 
     @Column(name = "deleted_at")
     private LocalDateTime deletedAt;

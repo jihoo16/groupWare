@@ -23,7 +23,7 @@ import java.util.List;
         @Index(name = "idx_receipt_meeting_date", columnList = "meeting_date"),
         @Index(name = "idx_receipt_meeting_document_number", columnList = "document_number")
 })
-@SQLRestriction("deleted = false")
+@SQLRestriction("is_deleted = false")
 @Getter
 @Setter
 @NoArgsConstructor
@@ -73,9 +73,6 @@ public class ReceiptMeeting {
     @Column(name = "content", columnDefinition = "TEXT")
     private String content;
 
-    @Column(name = "status", length = 20)
-    private String status = "PENDING";
-
     @Column(name = "created_at", updatable = false)
     private LocalDateTime createdAt;
 
@@ -83,8 +80,8 @@ public class ReceiptMeeting {
     private LocalDateTime updatedAt;
 
     @Builder.Default
-    @Column(name = "deleted", nullable = false)
-    private Boolean deleted = false;
+    @Column(name = "is_deleted", nullable = false)
+    private Boolean isDeleted = false;
 
     @Column(name = "deleted_at")
     private LocalDateTime deletedAt;
