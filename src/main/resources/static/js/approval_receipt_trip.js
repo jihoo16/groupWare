@@ -2093,6 +2093,9 @@ document.addEventListener('DOMContentLoaded', async function() {
     // 오늘 날짜 자동 설정 (상세보기 모드가 아닐 때만)
     const receiptTripId = getUrlParameter('id');
     if (!receiptTripId) {
+        // 신규 작성 모드 - 로딩 오버레이 숨김
+        window.hidePageLoadingOverlay();
+
         setTimeout(() => {
             const tripDate = document.getElementById('trip_date');
             if (tripDate && !tripDate.value) {
@@ -2114,10 +2117,8 @@ document.addEventListener('DOMContentLoaded', async function() {
                 });
             }
         }, 200);
-    }
-
-    // URL에 ID 파라미터가 있으면 데이터 로드
-    if (receiptTripId) {
+    } else {
+        // URL에 ID 파라미터가 있으면 데이터 로드
         console.log('상세보기 모드 - ID:', receiptTripId);
         setTimeout(async () => {
             await loadReceiptTripData(receiptTripId);

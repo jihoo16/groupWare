@@ -2302,6 +2302,9 @@ document.addEventListener('DOMContentLoaded', async function() {
         const documentIdx = urlParams.get('documentIdx');
         if (documentIdx) {
             await loadExistingData(documentIdx);
+        } else {
+            // 신규 작성 모드 - 로딩 오버레이 숨김
+            window.hidePageLoadingOverlay();
         }
 
         // 초기 필수 필드 검증 실행
