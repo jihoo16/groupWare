@@ -1,4 +1,16 @@
 // 연구비 증빙 - 회의록 페이지 JavaScript
+
+// 텍스트를 5단어씩 끊어서 줄바꿈하는 헬퍼 함수 (전역 스코프)
+function formatTextWithLineBreaks(text, wordsPerLine = 5) {
+    if (!text) return '';
+    const words = text.split(/\s+/); // 공백으로 단어 분리
+    const lines = [];
+    for (let i = 0; i < words.length; i += wordsPerLine) {
+        lines.push(words.slice(i, i + wordsPerLine).join(' '));
+    }
+    return lines.join('<br>');
+}
+
 document.addEventListener('DOMContentLoaded', async function() {
     // 전역 변수
     let selectedFiles = [];
@@ -1479,8 +1491,11 @@ document.addEventListener('DOMContentLoaded', async function() {
         if (commonPurpose) {
             commonPurpose.addEventListener('input', function() {
                 const value = this.value;
+                const formattedValue = formatTextWithLineBreaks(value, 5);
+
                 document.querySelectorAll('.auto-purpose').forEach(field => {
-                    field.value = value;
+                    // div로 변경되었으므로 innerHTML 사용
+                    field.innerHTML = formattedValue;
                 });
                 document.querySelectorAll('.auto-subject').forEach(field => {
                     field.textContent = value;
@@ -3867,6 +3882,12 @@ document.addEventListener('DOMContentLoaded', async function() {
         const purposeInput = document.getElementById('common_purpose');
         if (purposeInput && data.purpose) {
             purposeInput.value = data.purpose;
+
+            // .auto-purpose 필드에도 5단어씩 끊어서 표시
+            const formattedPurpose = formatTextWithLineBreaks(data.purpose, 5);
+            document.querySelectorAll('.auto-purpose').forEach(field => {
+                field.innerHTML = formattedPurpose;
+            });
         }
 
         // 내용

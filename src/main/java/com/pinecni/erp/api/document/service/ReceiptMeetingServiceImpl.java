@@ -5,7 +5,6 @@ import com.pinecni.erp.api.document.dto.ReceiptMeetingCreateDTO;
 import com.pinecni.erp.api.document.dto.ReceiptMeetingDTO;
 import com.pinecni.erp.api.document.dto.ReceiptMeetingUpdateDTO;
 import com.pinecni.erp.api.document.mapper.ReceiptMeetingMapper;
-import com.pinecni.erp.api.document.repository.ReceiptMeetingOfficialPdfRepository;
 import com.pinecni.erp.api.document.repository.ReceiptOvertimeRepository;
 import com.pinecni.erp.api.document.repository.ReceiptOvertimeAttendeeRepository;
 import com.pinecni.erp.api.document.repository.ReceiptAttendeeRepository;
@@ -18,7 +17,6 @@ import com.pinecni.erp.api.approval.service.DocumentSequenceService;
 import com.pinecni.erp.entity.ReceiptMeeting;
 import com.pinecni.erp.entity.ReceiptMeetingAttachment;
 import com.pinecni.erp.entity.ReceiptAttendee;
-import com.pinecni.erp.entity.ReceiptMeetingOfficialPdf;
 import com.pinecni.erp.entity.ReceiptOvertime;
 import com.pinecni.erp.entity.ReceiptOvertimeAttendee;
 import com.pinecni.erp.entity.ApprovalDocument;
@@ -56,7 +54,6 @@ public class ReceiptMeetingServiceImpl implements ReceiptMeetingService {
     private final ReceiptMeetingRepository receiptMeetingRepository;
     private final ReceiptAttendeeRepository receiptAttendeeRepository;
     private final ReceiptMeetingAttachmentRepository attachmentRepository;
-    private final ReceiptMeetingOfficialPdfRepository pdfRepository;
     private final ReceiptMeetingMapper mapper;
     private final ApprovalDocumentRepository approvalDocumentRepository;
     private final DocumentSequenceService documentSequenceService;
@@ -146,11 +143,8 @@ public class ReceiptMeetingServiceImpl implements ReceiptMeetingService {
                 null  // 신규 생성이므로 현재 회의록 IDX 없음
             );
 
-            // 2. 문서번호 생성 (회의록용)
-            String documentNumber = generateDocumentNumber(createDTO.getProjectIdx());
-
-        // 3. 전자결재 문서번호 생성 (시퀀스 사용)
-        String documentNo = documentSequenceService.generateDocumentNumber("연구비증빙-회의록", "RCM", currentUserIdx);
+        // 2. 전자결재 문서번호 생성 (시퀀스 사용)
+        String documentNo = documentSequenceService.generateDocumentNumber("receipt_meeting", "RCM", currentUserIdx);
 
         // 제목 생성: "프로젝트이름 (카드번호) - 날짜/금액"
         StringBuilder titleBuilder = new StringBuilder();
@@ -190,7 +184,7 @@ public class ReceiptMeetingServiceImpl implements ReceiptMeetingService {
         ApprovalDocument approvalDocument = ApprovalDocument.builder()
                 .documentNo(documentNo)
                 .title(title)
-                .documentType("연구비증빙-회의록")
+                .documentType("연구비증빙-회의록")  // 화면 표시용
                 .isProject(true)  // 프로젝트 문서로 표시
                 .drafterUserIdx(createDTO.getAuthorIdx())
                 .content(createDTO.getContent())
@@ -204,7 +198,6 @@ public class ReceiptMeetingServiceImpl implements ReceiptMeetingService {
 
         // 4. 회의록 Entity 생성 및 저장
         ReceiptMeeting entity = mapper.toEntity(createDTO);
-        entity.setDocumentNumber(documentNumber);
         entity.setDocumentIdx(savedDocument.getIdx());
         entity.setCreatedUserIdx(currentUserIdx);
         entity.setUpdatedUserIdx(currentUserIdx);
@@ -225,7 +218,7 @@ public class ReceiptMeetingServiceImpl implements ReceiptMeetingService {
                     .orElseThrow(() -> new IllegalStateException("저장된 회의록을 조회할 수 없습니다."));
             loadAttendees(savedEntity); // 통합 테이블에서 참석자 로드
 
-            log.info("회의록 생성 완료 - idx: {}, documentNumber: {}", savedEntity.getIdx(), documentNumber);
+            log.info("회의록 생성 완료 - idx: {}, documentNo: {}", savedEntity.getIdx(), documentNo);
             return mapper.toDTO(savedEntity);
 
         } catch (Exception e) {
@@ -369,18 +362,6 @@ public class ReceiptMeetingServiceImpl implements ReceiptMeetingService {
         if (!attachments.isEmpty()) {
             attachmentRepository.saveAll(attachments);
             log.debug("첨부파일 {} 건 soft delete 완료", attachments.size());
-        }
-
-        // 1-3. 공식 PDF soft delete
-        List<ReceiptMeetingOfficialPdf> pdfs = pdfRepository.findAllByReceiptMeetingIdx(idx);
-        pdfs.forEach(pdf -> {
-            pdf.setDeleted(true);
-            pdf.setDeletedAt(now);
-            pdf.setDeletedUserIdx(deletedUserIdx);
-        });
-        if (!pdfs.isEmpty()) {
-            pdfRepository.saveAll(pdfs);
-            log.debug("공식 PDF {} 건 soft delete 완료", pdfs.size());
         }
 
         // 2. 연결된 ApprovalDocument soft delete

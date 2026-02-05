@@ -26,43 +26,52 @@ public interface ReceiptMeetingRepository extends JpaRepository<ReceiptMeeting, 
     BigDecimal sumAmountByProjectIdx(@Param("projectIdx") Long projectIdx);
 
     /**
-     * 프로젝트별 회의록 목록 조회
-     */
-    List<ReceiptMeeting> findByProjectIdxOrderByMeetingDateDesc(Long projectIdx);
-
-    /**
-     * 작성자별 회의록 목록 조회
-     */
-    List<ReceiptMeeting> findByAuthorIdxOrderByMeetingDateDesc(Long authorIdx);
-
-    /**
-     * 문서번호로 회의록 조회
-     */
-    Optional<ReceiptMeeting> findByDocumentNumber(String documentNumber);
-
-    /**
-     * 회의록 상세 조회
-     * Note: attendees는 통합 테이블로 변경되어 별도 조회 필요 (ReceiptAttendeeRepository 사용)
-     * Note: approvals는 lazy loading으로 필요시 별도 조회
+     * 프로젝트별 회의록 목록 조회 (문서번호 포함 - JOIN FETCH)
      */
     @Query("SELECT rm FROM ReceiptMeeting rm " +
+            "LEFT JOIN FETCH rm.approvalDocument " +
+            "WHERE rm.projectIdx = :projectIdx " +
+            "ORDER BY rm.meetingDate DESC")
+    List<ReceiptMeeting> findByProjectIdxOrderByMeetingDateDesc(@Param("projectIdx") Long projectIdx);
+
+    /**
+     * 작성자별 회의록 목록 조회 (문서번호 포함 - JOIN FETCH)
+     */
+    @Query("SELECT rm FROM ReceiptMeeting rm " +
+            "LEFT JOIN FETCH rm.approvalDocument " +
+            "WHERE rm.authorIdx = :authorIdx " +
+            "ORDER BY rm.meetingDate DESC")
+    List<ReceiptMeeting> findByAuthorIdxOrderByMeetingDateDesc(@Param("authorIdx") Long authorIdx);
+
+    /**
+     * 회의록 상세 조회 (문서번호 포함 - JOIN FETCH)
+     * Note: attendees는 통합 테이블로 변경되어 별도 조회 필요 (ReceiptAttendeeRepository 사용)
+     */
+    @Query("SELECT rm FROM ReceiptMeeting rm " +
+            "LEFT JOIN FETCH rm.approvalDocument " +
             "WHERE rm.idx = :idx")
     Optional<ReceiptMeeting> findByIdWithDetails(@Param("idx") Long idx);
 
     /**
-     * 전체 회의록 목록 조회 (최신순)
+     * 전체 회의록 목록 조회 (최신순, 문서번호 포함 - JOIN FETCH)
      */
+    @Query("SELECT rm FROM ReceiptMeeting rm " +
+            "LEFT JOIN FETCH rm.approvalDocument " +
+            "ORDER BY rm.meetingDate DESC")
     List<ReceiptMeeting> findAllByOrderByMeetingDateDesc();
 
     /**
-     * ApprovalDocument idx로 회의록 조회
+     * ApprovalDocument idx로 회의록 조회 (문서번호 포함 - JOIN FETCH)
      */
-    Optional<ReceiptMeeting> findByDocumentIdx(Long documentIdx);
+    @Query("SELECT rm FROM ReceiptMeeting rm " +
+            "LEFT JOIN FETCH rm.approvalDocument " +
+            "WHERE rm.documentIdx = :documentIdx")
+    Optional<ReceiptMeeting> findByDocumentIdx(@Param("documentIdx") Long documentIdx);
 
     /**
      * 문서번호 prefix로 시작하는 모든 문서 개수 조회 (삭제된 것 포함)
-     * @SQLRestriction 무시하고 deleted=true인 것도 포함
+     * approval_documents 테이블에서 조회
      */
-    @Query(value = "SELECT COUNT(*) FROM erp.receipt_meeting WHERE document_number LIKE :prefix || '%'", nativeQuery = true)
+    @Query(value = "SELECT COUNT(*) FROM erp.approval_documents WHERE document_no LIKE :prefix || '%'", nativeQuery = true)
     long countByDocumentNumberStartingWithIncludingDeleted(@Param("prefix") String prefix);
 }

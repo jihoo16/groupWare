@@ -20,8 +20,7 @@ import java.util.List;
         @Index(name = "idx_receipt_meeting_card", columnList = "card_idx"),
         @Index(name = "idx_receipt_meeting_author", columnList = "author_idx"),
         @Index(name = "idx_receipt_meeting_status", columnList = "status"),
-        @Index(name = "idx_receipt_meeting_date", columnList = "meeting_date"),
-        @Index(name = "idx_receipt_meeting_document_number", columnList = "document_number")
+        @Index(name = "idx_receipt_meeting_date", columnList = "meeting_date")
 })
 @SQLRestriction("is_deleted = false")
 @Getter
@@ -42,9 +41,6 @@ public class ReceiptMeeting {
 
     @Column(name = "card_idx")
     private Long cardIdx;
-
-    @Column(name = "document_number", unique = true, length = 50)
-    private String documentNumber;
 
     @Column(name = "document_idx")
     private Long documentIdx;
@@ -108,6 +104,10 @@ public class ReceiptMeeting {
     @JoinColumn(name = "author_idx", insertable = false, updatable = false)
     private User author;
 
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "document_idx", insertable = false, updatable = false)
+    private ApprovalDocument approvalDocument;
+
     /**
      * 참석자 목록 (통합 테이블 사용)
      * - JPA 관계 매핑 제거 (통합 테이블로 인해 복잡도 증가)
@@ -117,13 +117,7 @@ public class ReceiptMeeting {
     private List<ReceiptAttendee> attendees = new ArrayList<>();
 
     @OneToMany(mappedBy = "receiptMeeting", cascade = CascadeType.ALL, orphanRemoval = true)
-    private List<ReceiptMeetingApproval> approvals = new ArrayList<>();
-
-    @OneToMany(mappedBy = "receiptMeeting", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<ReceiptMeetingAttachment> attachments = new ArrayList<>();
-
-    @OneToMany(mappedBy = "receiptMeeting", cascade = CascadeType.ALL, orphanRemoval = true)
-    private List<ReceiptMeetingOfficialPdf> officialPdfs = new ArrayList<>();
 
     @PrePersist
     protected void onCreate() {

@@ -30,40 +30,54 @@ public interface ReceiptTripRepository extends JpaRepository<ReceiptTrip, Long> 
     BigDecimal sumAmountByProjectIdx(@Param("projectIdx") Long projectIdx);
 
     /**
-     * 프로젝트별 출장 목록 조회
+     * 프로젝트별 출장 목록 조회 (문서번호 포함 - JOIN FETCH)
      */
-    List<ReceiptTrip> findByProjectIdxOrderByTripDateDesc(Long projectIdx);
+    @Query("SELECT rt FROM ReceiptTrip rt " +
+            "LEFT JOIN FETCH rt.approvalDocument " +
+            "WHERE rt.projectIdx = :projectIdx " +
+            "ORDER BY rt.tripDate DESC")
+    List<ReceiptTrip> findByProjectIdxOrderByTripDateDesc(@Param("projectIdx") Long projectIdx);
 
     /**
-     * 작성자별 출장 목록 조회
+     * 작성자별 출장 목록 조회 (문서번호 포함 - JOIN FETCH)
      */
-    List<ReceiptTrip> findByAuthorIdxOrderByTripDateDesc(Long authorIdx);
+    @Query("SELECT rt FROM ReceiptTrip rt " +
+            "LEFT JOIN FETCH rt.approvalDocument " +
+            "WHERE rt.authorIdx = :authorIdx " +
+            "ORDER BY rt.tripDate DESC")
+    List<ReceiptTrip> findByAuthorIdxOrderByTripDateDesc(@Param("authorIdx") Long authorIdx);
 
     /**
-     * 상태별 출장 목록 조회
+     * 상태별 출장 목록 조회 (문서번호 포함 - JOIN FETCH)
      */
-    List<ReceiptTrip> findByStatusOrderByTripDateDesc(String status);
+    @Query("SELECT rt FROM ReceiptTrip rt " +
+            "LEFT JOIN FETCH rt.approvalDocument " +
+            "WHERE rt.status = :status " +
+            "ORDER BY rt.tripDate DESC")
+    List<ReceiptTrip> findByStatusOrderByTripDateDesc(@Param("status") String status);
 
     /**
-     * 문서번호로 출장 조회
-     */
-    Optional<ReceiptTrip> findByDocumentNumber(String documentNumber);
-
-    /**
-     * 참석자 정보를 포함한 출장 상세 조회
+     * 참석자 정보를 포함한 출장 상세 조회 (문서번호 포함 - JOIN FETCH)
      */
     @Query("SELECT DISTINCT rt FROM ReceiptTrip rt " +
             "LEFT JOIN FETCH rt.attendees " +
+            "LEFT JOIN FETCH rt.approvalDocument " +
             "WHERE rt.idx = :idx")
     Optional<ReceiptTrip> findByIdWithDetails(@Param("idx") Long idx);
 
     /**
-     * 전체 출장 목록 조회 (최신순)
+     * 전체 출장 목록 조회 (최신순, 문서번호 포함 - JOIN FETCH)
      */
+    @Query("SELECT rt FROM ReceiptTrip rt " +
+            "LEFT JOIN FETCH rt.approvalDocument " +
+            "ORDER BY rt.tripDate DESC")
     List<ReceiptTrip> findAllByOrderByTripDateDesc();
 
     /**
-     * ApprovalDocument idx로 출장 조회
+     * ApprovalDocument idx로 출장 조회 (문서번호 포함 - JOIN FETCH)
      */
-    Optional<ReceiptTrip> findByDocumentIdx(Long documentIdx);
+    @Query("SELECT rt FROM ReceiptTrip rt " +
+            "LEFT JOIN FETCH rt.approvalDocument " +
+            "WHERE rt.documentIdx = :documentIdx")
+    Optional<ReceiptTrip> findByDocumentIdx(@Param("documentIdx") Long documentIdx);
 }

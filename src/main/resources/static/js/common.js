@@ -348,3 +348,22 @@ window.loadDetailPageData = async function(url, onSuccess, onError) {
         }
     }
 };
+
+// ============================================
+// 구현되지 않은 페이지 링크 클릭 방지
+// ============================================
+document.addEventListener('DOMContentLoaded', function() {
+    // data-disabled="true" 속성을 가진 모든 링크에 클릭 이벤트 추가
+    document.addEventListener('click', function(e) {
+        const link = e.target.closest('a[data-disabled="true"]');
+        if (link) {
+            e.preventDefault();
+            Swal.fire({
+                icon: 'info',
+                title: '준비 중입니다',
+                text: '해당 기능은 추후 구현 예정입니다.',
+                confirmButtonText: '확인'
+            });
+        }
+    });
+});

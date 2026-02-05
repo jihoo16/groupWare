@@ -116,11 +116,6 @@ public class ReceiptMeetingDTO {
     private List<ReceiptMeetingAttendeeDTO> attendees;
 
     /**
-     * 결재선 목록
-     */
-    private List<ReceiptMeetingApprovalDTO> approvals;
-
-    /**
      * 생성 일시
      */
     private LocalDateTime createdAt;

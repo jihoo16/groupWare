@@ -104,10 +104,13 @@ public class Controller {
         return "hr";
     }
 
+    // 근태 관리 - 추후 구현 예정
+    /*
     @GetMapping("/attendance")
     public String attendance() {
         return "attendance";
     }
+    */
 
     @GetMapping("/settings")
     public String settings() {
@@ -177,7 +180,8 @@ public class Controller {
         return "approval_vacation";
     }
 
-    // 지출
+    // 지출 - 추후 구현 예정
+    /*
     @GetMapping("/approval/expense")
     public String approvalExpense() {
         return "approval_expense";
@@ -187,12 +191,15 @@ public class Controller {
     public String approvalPurchase() {
         return "approval_purchase";
     }
+    */
 
-    // 보고
+    // 보고 - 추후 구현 예정 (주간업무보고, 월간업무보고, 회의록 작성)
+    /*
     @GetMapping("/approval/weekly-report")
     public String approvalWeeklyReport() {
         return "approval_weekly_report";
     }
+    */
 
     @GetMapping("/approval/weekly-report/detail")
     public String approvalWeeklyReportDetail() {
@@ -209,16 +216,19 @@ public class Controller {
         return "approval_project_weekly_report_detail";
     }
 
+    /*
     @GetMapping("/approval/monthly-report")
     public String approvalMonthlyReport() {
         return "approval_monthly_report";
     }
+    */
 
     @GetMapping("/approval/monthly-report/detail")
     public String approvalMonthlyReportDetail() {
         return "approval_monthly_report_detail";
     }
 
+    /*
     @GetMapping("/approval/meeting")
     public String approvalMeeting(Model model, HttpSession session) {
         // 세션에서 사용자 이름 가져오기
@@ -230,6 +240,7 @@ public class Controller {
         model.addAttribute("userIdx", userIdx);
         return "approval_meeting";
     }
+    */
 
     @GetMapping("/approval/meeting/detail")
     public String approvalMeetingDetail(Model model, HttpSession session) {
@@ -241,12 +252,15 @@ public class Controller {
         return "approval_meeting_detail";
     }
 
+    /*
     @GetMapping("/approval/general")
     public String approvalGeneral() {
         return "approval_general";
     }
+    */
 
-    // 출장
+    // 출장 - 추후 구현 예정
+    /*
     @GetMapping("/approval/business-trip")
     public String approvalBusinessTrip() {
         return "approval_business_trip";
@@ -256,6 +270,7 @@ public class Controller {
     public String approvalTripReport() {
         return "approval_trip_report";
     }
+    */
 
     @GetMapping("/project")
     public String project() {
@@ -287,6 +302,8 @@ public class Controller {
         return "project-detail";
     }
 
+    // 팀 관리 - 추후 구현 예정
+    /*
     @GetMapping("/team")
     public String team() {
         return "team";
@@ -301,6 +318,7 @@ public class Controller {
     public String teamEdit() {
         return "team-edit";
     }
+    */
 
     @GetMapping("/basic-info")
     public String basicInfo() {
