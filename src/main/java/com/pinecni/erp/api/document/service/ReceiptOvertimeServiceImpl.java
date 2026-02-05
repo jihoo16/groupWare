@@ -53,9 +53,11 @@ public class ReceiptOvertimeServiceImpl implements ReceiptOvertimeService {
     private final ApprovalDocumentRepository approvalDocumentRepository;
     private final DocumentSequenceRepository documentSequenceRepository;
     private final ProjectRepository projectRepository;
+    private final ProjectCardRepository projectCardRepository;
     private final UserRepository userRepository;
 
-    private static final String DOCUMENT_TYPE_PREFIX = "RCO"; // 야근식대 문서 타입 prefix
+    private static final String DOCUMENT_TYPE = "receipt_overtime"; // document_sequences.document_type
+    private static final String DOCUMENT_TYPE_PREFIX = "RCO"; // 문서번호 prefix (RCO-2026-001)
 
     @Value("${file.upload.path:/uploads/receipt-overtimes}")
     private String uploadPath;
@@ -180,14 +182,27 @@ public class ReceiptOvertimeServiceImpl implements ReceiptOvertimeService {
             Project project = projectRepository.findById(createDTO.getProjectIdx())
                     .orElseThrow(() -> new IllegalArgumentException("프로젝트를 찾을 수 없습니다. idx: " + createDTO.getProjectIdx()));
 
-            // 2. document_sequences를 이용한 문서번호 생성 (prefix-year-last_number)
-            String documentNo = generateDocumentNo();
+            // 2. document_sequences를 이용한 문서번호 생성 (RCO-year-number)
+            String documentNo = generateDocumentNo(currentUserIdx);
 
             // 3. ApprovalDocument 메타데이터 저장
-            String title = "연구비증빙 야근식대";
-            if (createDTO.getDocumentTitle() != null && !createDTO.getDocumentTitle().isEmpty()) {
-                title = "연구비증빙 야근식대 - " + createDTO.getDocumentTitle();
+            // 제목 형식: 프로젝트이름 (카드번호) - YYYY-MM-DD/사용금액
+            String projectName = project.getProjectName();
+            String cardNumber = "";
+            if (createDTO.getCardIdx() != null) {
+                ProjectCard card = projectCardRepository.findById(createDTO.getCardIdx()).orElse(null);
+                if (card != null) {
+                    cardNumber = card.getCardLastDigits() != null ? card.getCardLastDigits() : "";
+                }
             }
+            String dateStr = createDTO.getApprovalDate() != null
+                    ? createDTO.getApprovalDate().format(DateTimeFormatter.ofPattern("yyyy-MM-dd"))
+                    : "";
+            String amountStr = createDTO.getTotalAmount() != null
+                    ? String.format("%,d", createDTO.getTotalAmount().longValue())
+                    : "0";
+
+            String title = String.format("%s (%s) - %s/%s원", projectName, cardNumber, dateStr, amountStr);
 
             ApprovalDocument approvalDocument = ApprovalDocument.builder()
                     .documentNo(documentNo)
@@ -265,17 +280,18 @@ public class ReceiptOvertimeServiceImpl implements ReceiptOvertimeService {
 
     /**
      * document_sequences 테이블을 이용한 문서번호 생성
-     * 형식: prefix-year-last_number (예: RCO-2026-001)
+     * 형식: RCO-year-number (예: RCO-2026-001)
      */
-    private String generateDocumentNo() {
-        int currentYear = LocalDateTime.now().getYear();
+    private String generateDocumentNo(Long currentUserIdx) {
+        int currentYear = LocalDateTime.now(ZoneId.of("Asia/Seoul")).getYear();
+        LocalDateTime now = LocalDateTime.now(ZoneId.of("Asia/Seoul"));
 
         // 해당 연도의 시퀀스 조회 또는 생성
         DocumentSequence sequence = documentSequenceRepository
-                .findByDocumentTypeAndYear(DOCUMENT_TYPE_PREFIX, currentYear)
+                .findByDocumentTypeAndYear(DOCUMENT_TYPE, currentYear)
                 .orElseGet(() -> {
                     DocumentSequence newSequence = DocumentSequence.builder()
-                            .documentType(DOCUMENT_TYPE_PREFIX)
+                            .documentType(DOCUMENT_TYPE)
                             .prefix(DOCUMENT_TYPE_PREFIX)
                             .year(currentYear)
                             .lastNumber(0)
@@ -457,20 +473,6 @@ public class ReceiptOvertimeServiceImpl implements ReceiptOvertimeService {
         receiptOvertimeRepository.save(entity);
 
         log.info("야근식대 소프트 딜리트 완료 - idx: {}", idx);
-    }
-
-    @Override
-    public String generateDocumentNumber(Long projectIdx) {
-        // 문서번호 형식: RO-{projectIdx}-{YYYYMMDD}-{순번}
-        String dateStr = LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyyMMdd"));
-        String prefix = String.format("RO-%d-%s", projectIdx, dateStr);
-
-        // 같은 날짜의 문서 개수 조회하여 순번 생성
-        long count = receiptOvertimeRepository.findAll().stream()
-                .filter(ro -> ro.getDocumentNumber() != null && ro.getDocumentNumber().startsWith(prefix))
-                .count();
-
-        return String.format("%s-%03d", prefix, count + 1);
     }
 
     @Override
