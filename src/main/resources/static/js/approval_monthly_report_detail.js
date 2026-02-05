@@ -72,23 +72,24 @@ document.addEventListener('DOMContentLoaded', function() {
     async function loadMonthlyReportDetail() {
         try {
             console.log(`월간업무보고 상세 조회 API 호출: /api/document/monthly-report/${reportId}`);
-            const response = await fetch(`/api/document/monthly-report/${reportId}`);
+            const report = await window.fetchWithErrorHandling(`/api/document/monthly-report/${reportId}`);
 
-            if (response.ok) {
-                const report = await response.json();
-                console.log('월간업무보고 상세 조회 성공:', report);
-                currentReport = report; // 전역 변수에 저장
-                displayReportDetail(report);
-                originalData = { ...report }; // 원본 데이터 저장
-            } else {
-                const errorText = await response.text();
-                console.error('월간업무보고 상세 조회 실패:', errorText);
-                showError('월간업무보고를 불러올 수 없습니다.');
-                window.location.href = '/approval';
+            if (!report) {
+                // Error already handled by fetchWithErrorHandling (404, 403, 500)
+                return;
             }
+
+            console.log('월간업무보고 상세 조회 성공:', report);
+            currentReport = report; // 전역 변수에 저장
+            displayReportDetail(report);
+            originalData = { ...report }; // 원본 데이터 저장
+
+            // 로딩 오버레이 숨김
+            window.hidePageLoadingOverlay();
         } catch (error) {
             console.error('월간업무보고 상세 조회 오류:', error);
             showError('월간업무보고 조회 중 오류가 발생했습니다.');
+            window.hidePageLoadingOverlay();
             window.location.href = '/approval';
         }
     }

@@ -19,21 +19,26 @@ document.addEventListener('DOMContentLoaded', function() {
  */
 async function loadDocumentDetail(documentIdx) {
     try {
-        const response = await fetch(`/api/vacation/detail?documentIdx=${documentIdx}`);
-        if (!response.ok) {
-            throw new Error('문서 조회 실패');
+        const data = await window.fetchWithErrorHandling(`/api/vacation/detail?documentIdx=${documentIdx}`);
+
+        if (!data) {
+            // Error already handled by fetchWithErrorHandling (404, 403, 500)
+            return;
         }
 
-        const data = await response.json();
         console.log('문서 상세 데이터:', data);
 
         // 화면에 데이터 표시
         displayDocumentInfo(data);
         displayPeriods(data.periods || []);
         displayAttachments(data.attachments || []);
+
+        // 로딩 오버레이 숨김
+        window.hidePageLoadingOverlay();
     } catch (error) {
         console.error('문서 조회 오류:', error);
         showError('문서를 불러오는데 실패했습니다.');
+        window.hidePageLoadingOverlay();
         history.back();
     }
 }

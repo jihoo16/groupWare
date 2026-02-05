@@ -140,12 +140,13 @@ document.addEventListener('DOMContentLoaded', async function() {
     // ============================================
     async function loadExistingData(documentIdx) {
         try {
-            const response = await fetch(`/api/receipt-overtimes/by-document/${documentIdx}`);
-            if (!response.ok) {
-                throw new Error('야근식대 데이터를 불러올 수 없습니다.');
+            const data = await window.fetchWithErrorHandling(`/api/receipt-overtimes/by-document/${documentIdx}`);
+
+            if (!data) {
+                // Error already handled by fetchWithErrorHandling (404, 403, 500)
+                return;
             }
 
-            const data = await response.json();
             console.log('기존 야근식대 데이터 로드:', data);
 
             // 수정 모드 설정
@@ -373,9 +374,13 @@ document.addEventListener('DOMContentLoaded', async function() {
                 validateRequiredFields();
             }, 500);
 
+            // 로딩 오버레이 숨김
+            window.hidePageLoadingOverlay();
+
         } catch (error) {
             console.error('기존 데이터 로드 실패:', error);
             showError('야근식대 데이터를 불러오는데 실패했습니다.');
+            window.hidePageLoadingOverlay();
         }
     }
 

@@ -306,8 +306,12 @@ document.addEventListener('DOMContentLoaded', function() {
     // 일정 정보 로드 함수
     async function loadScheduleData(id) {
         try {
-            const response = await fetch(`/api/calendar/events/${id}`);
-            const data = await response.json();
+            const data = await window.fetchWithErrorHandling(`/api/calendar/events/${id}`);
+
+            if (!data) {
+                // Error already handled by fetchWithErrorHandling (404, 403, 500)
+                return;
+            }
 
             if (data.success) {
                 const schedule = data.event;
@@ -384,6 +388,9 @@ document.addEventListener('DOMContentLoaded', function() {
                         btn.classList.add('active');
                     }
                 });
+
+                // 로딩 오버레이 숨김
+                window.hidePageLoadingOverlay();
             } else {
                 await showError('일정 정보를 불러올 수 없습니다: ' + data.message);
                 window.location.href = '/calendar';
@@ -391,6 +398,7 @@ document.addEventListener('DOMContentLoaded', function() {
         } catch (error) {
             console.error('일정 로드 중 오류:', error);
             await showError('일정 정보를 불러오는 중 오류가 발생했습니다.');
+            window.hidePageLoadingOverlay();
             window.location.href = '/calendar';
         }
     }

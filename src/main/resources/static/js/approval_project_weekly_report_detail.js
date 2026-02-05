@@ -44,21 +44,24 @@ document.addEventListener('DOMContentLoaded', function() {
 // 보고서 데이터 로드
 async function loadReportData(documentIdx) {
     try {
-        const response = await fetch(`/api/document/weekly-report/by-document/${documentIdx}`);
+        const data = await window.fetchWithErrorHandling(`/api/document/weekly-report/by-document/${documentIdx}`);
 
-        if (!response.ok) {
-            throw new Error('보고서를 불러올 수 없습니다.');
+        if (!data) {
+            // Error already handled by fetchWithErrorHandling (404, 403, 500)
+            return;
         }
 
-        const data = await response.json();
         console.log('보고서 데이터:', data);
 
         // 데이터 화면에 표시
         displayReportData(data);
 
+        // 로딩 오버레이 숨김
+        window.hidePageLoadingOverlay();
     } catch (error) {
         console.error('보고서 로드 오류:', error);
         showError('보고서를 불러오는 중 오류가 발생했습니다: ' + error.message);
+        window.hidePageLoadingOverlay();
         history.back();
     }
 }

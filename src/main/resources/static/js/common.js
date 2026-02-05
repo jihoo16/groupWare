@@ -222,3 +222,129 @@ function formatDateRange(startDate, endDate) {
 
     return `${start} ~ ${end}`;
 }
+
+// ============================================
+// 공통 API 호출 및 404 처리 유틸리티
+// ============================================
+
+/**
+ * 페이지 로딩 오버레이 표시
+ * @param {string} message - 로딩 메시지 (기본값: "데이터 불러오는 중...")
+ */
+window.showPageLoadingOverlay = function(message = '데이터 불러오는 중...') {
+    // 이미 오버레이가 있으면 재사용
+    let overlay = document.getElementById('pageLoadingOverlay');
+
+    if (!overlay) {
+        overlay = document.createElement('div');
+        overlay.id = 'pageLoadingOverlay';
+        overlay.innerHTML = `
+            <div style="text-align: center;">
+                <div class="spinner"></div>
+                <div class="loading-message">${message}</div>
+            </div>
+        `;
+        document.body.appendChild(overlay);
+    }
+
+    overlay.style.display = 'flex';
+    overlay.style.opacity = '1';
+};
+
+/**
+ * 페이지 로딩 오버레이 숨기기
+ */
+window.hidePageLoadingOverlay = function() {
+    const overlay = document.getElementById('pageLoadingOverlay');
+    if (overlay) {
+        overlay.style.opacity = '0';
+        setTimeout(() => {
+            overlay.style.display = 'none';
+        }, 300);
+    }
+};
+
+/**
+ * 공통 API 호출 래퍼 (404 자동 처리)
+ * @param {string} url - API URL
+ * @param {Object} options - fetch options
+ * @param {boolean} autoHandle404 - 404 자동 처리 여부 (기본값: true)
+ * @returns {Promise<any>} - API 응답 데이터
+ */
+window.fetchWithErrorHandling = async function(url, options = {}, autoHandle404 = true) {
+    try {
+        console.log(`[API 호출] ${url}`);
+        const response = await fetch(url, options);
+
+        if (!response.ok) {
+            console.error(`[API 실패] ${response.status} - ${url}`);
+
+            // 404 자동 처리 - 문서/데이터가 없는 경우
+            if (response.status === 404 && autoHandle404) {
+                console.log('[404 감지] 문서 삭제/미존재 페이지로 리다이렉트');
+                window.location.href = '/deleted';
+                return null; // 리다이렉트 중이므로 null 반환
+            }
+
+            // 403 Forbidden 처리 - 커스텀 403 페이지로 리다이렉트
+            if (response.status === 403) {
+                console.log('[403 감지] 접근 권한 없음 페이지로 리다이렉트');
+                window.location.href = '/error/403';
+                return null;
+            }
+
+            // 500 서버 에러 - 커스텀 500 페이지로 리다이렉트
+            if (response.status === 500) {
+                console.log('[500 감지] 서버 오류 페이지로 리다이렉트');
+                window.location.href = '/error/500';
+                return null;
+            }
+
+            // 기타 에러
+            const errorText = await response.text();
+            throw new Error(`HTTP ${response.status}: ${errorText}`);
+        }
+
+        const data = await response.json();
+        console.log(`[API 성공] ${url}`);
+        return data;
+
+    } catch (error) {
+        console.error(`[API 오류] ${url}:`, error);
+        throw error;
+    }
+};
+
+/**
+ * 상세 페이지 데이터 로드 (로딩 오버레이 + 404 처리 자동)
+ * @param {string} url - API URL
+ * @param {Function} onSuccess - 성공 시 콜백 (data를 인자로 받음)
+ * @param {Function} onError - 에러 시 콜백 (선택사항)
+ */
+window.loadDetailPageData = async function(url, onSuccess, onError) {
+    try {
+        // 로딩 오버레이는 이미 HTML에 있다고 가정
+        const data = await fetchWithErrorHandling(url, {}, true);
+
+        if (data) {
+            await onSuccess(data);
+            hidePageLoadingOverlay();
+        }
+        // data가 null이면 이미 리다이렉트 중
+
+    } catch (error) {
+        console.error('상세 페이지 데이터 로드 실패:', error);
+        hidePageLoadingOverlay();
+
+        if (onError) {
+            onError(error);
+        } else {
+            await Swal.fire({
+                icon: 'error',
+                title: '오류',
+                text: '데이터를 불러오는데 실패했습니다.',
+                confirmButtonText: '확인'
+            });
+        }
+    }
+};

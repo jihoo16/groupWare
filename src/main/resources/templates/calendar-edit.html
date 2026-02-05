@@ -2,6 +2,9 @@
 <html lang="ko" xmlns:th="http://www.thymeleaf.org">
 <head th:replace="~{fragments/layout :: head('ERP 시스템 - 일정 수정', '/css/calendar-edit.css')}"></head>
 <body>
+<!-- 로딩 오버레이 -->
+<div th:replace="~{fragments/loading-overlay :: overlay}"></div>
+
     <div class="container">
         <!-- 좌측 네비게이션 바 -->
         <div th:replace="~{fragments/sidebar :: sidebar('calendar')}"></div>

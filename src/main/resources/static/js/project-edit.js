@@ -192,15 +192,14 @@
     }
 
     // 프로젝트 데이터 로드 함수
-    function loadProjectData(id) {
-        fetch(`/api/projects/${id}`)
-            .then(response => {
-                if (!response.ok) {
-                    throw new Error('프로젝트 정보를 불러오는데 실패했습니다.');
-                }
-                return response.json();
-            })
-            .then(project => {
+    async function loadProjectData(id) {
+        try {
+            const project = await window.fetchWithErrorHandling(`/api/projects/${id}`);
+
+            if (!project) {
+                // Error already handled by fetchWithErrorHandling (404, 403, 500)
+                return;
+            }
                 console.log('프로젝트 데이터:', project);
 
                 // 폼 필드 채우기
@@ -267,12 +266,15 @@
 
                 // 프로젝트 파일 목록 로드
                 loadProjectFiles(project.idx);
-            })
-            .catch(async error => {
-                console.error('Error loading project data:', error);
-                await showError('프로젝트 정보를 불러올 수 없습니다.');
-                location.href = '/project';
-            });
+
+                // 로딩 오버레이 숨김
+                window.hidePageLoadingOverlay();
+        } catch (error) {
+            console.error('Error loading project data:', error);
+            await showError('프로젝트 정보를 불러올 수 없습니다.');
+            window.hidePageLoadingOverlay();
+            location.href = '/project';
+        }
     }
 
     // 직급별 경비 설정 로드 함수 (새 구조: expenseItemName + amount)

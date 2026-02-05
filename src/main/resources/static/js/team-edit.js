@@ -145,9 +145,12 @@ document.addEventListener('DOMContentLoaded', async function() {
             populateForm();
             showForm();
 
+            // 로딩 오버레이 숨김
+            window.hidePageLoadingOverlay();
         } catch (error) {
             console.error('초기화 중 오류:', error);
             showError();
+            window.hidePageLoadingOverlay();
         }
     }
 
@@ -163,11 +166,14 @@ document.addEventListener('DOMContentLoaded', async function() {
 
     // 팀 데이터 로드
     async function loadTeamData() {
-        const response = await fetch(`/api/teams/${teamIdx}`);
-        if (!response.ok) {
+        const currentTeam = await window.fetchWithErrorHandling(`/api/teams/${teamIdx}`);
+
+        if (!currentTeam) {
+            // Error already handled by fetchWithErrorHandling (404, 403, 500)
             throw new Error('팀 정보 로드 실패');
         }
-        currentTeam = await response.json();
+
+        window.currentTeam = currentTeam;
         console.log('Loaded team:', currentTeam);
 
         // 팀원 목록 변환

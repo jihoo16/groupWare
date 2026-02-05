@@ -67,12 +67,13 @@ document.addEventListener('DOMContentLoaded', async function () {
  */
 async function loadProjectDetail(projectId, currentUserIdx) {
     try {
-        const response = await fetch(`/api/projects/${projectId}`);
-        if (!response.ok) {
-            throw new Error('프로젝트 조회 실패');
+        const data = await window.fetchWithErrorHandling(`/api/projects/${projectId}`);
+
+        if (!data) {
+            // Error already handled by fetchWithErrorHandling (404, 403, 500)
+            return;
         }
 
-        const data = await response.json();
         console.log('프로젝트 상세 데이터:', data);
 
         // 화면에 데이터 표시
@@ -95,9 +96,13 @@ async function loadProjectDetail(projectId, currentUserIdx) {
 
         // 관련 문서 로드
         loadProjectDocuments(projectId);
+
+        // 로딩 오버레이 숨김
+        window.hidePageLoadingOverlay();
     } catch (error) {
         console.error('프로젝트 조회 오류:', error);
         await showError('프로젝트를 불러오는데 실패했습니다.');
+        window.hidePageLoadingOverlay();
         history.back();
     }
 }

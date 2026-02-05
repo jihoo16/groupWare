@@ -2,6 +2,9 @@
 <html lang="ko" xmlns:th="http://www.thymeleaf.org">
 <head th:replace="~{fragments/layout :: head('연구비 증빙 - 야근식대', '/css/approval_receipt_overtime.css')}"></head>
 <body>
+<!-- 로딩 오버레이 -->
+<div th:replace="~{fragments/loading-overlay :: overlay}"></div>
+
     <div class="container">
         <!-- 좌측 네비게이션 바 -->
         <div th:replace="~{fragments/sidebar :: sidebar('receipt-overtime')}"></div>

@@ -2,6 +2,9 @@
 <html lang="ko" xmlns:th="http://www.thymeleaf.org">
 <head th:replace="~{fragments/layout :: head('프로젝트 주간업무보고 상세', '/css/approval_project_weekly_report_detail.css')}"></head>
 <body>
+<!-- 로딩 오버레이 -->
+<div th:replace="~{fragments/loading-overlay :: overlay}"></div>
+
     <div class="container">
         <!-- 좌측 네비게이션 바 -->
         <div th:replace="~{fragments/sidebar :: sidebar('project-documents')}"></div>

@@ -1878,13 +1878,13 @@ document.addEventListener('DOMContentLoaded', async function() {
     async function loadReceiptTripData(id) {
         try {
             console.log('연구비증빙 출장 데이터 로드 시작 - ID:', id);
-            const response = await fetch(`/api/receipt-trips/${id}`);
+            const data = await window.fetchWithErrorHandling(`/api/receipt-trips/${id}`);
 
-            if (!response.ok) {
-                throw new Error(`데이터 로드 실패: ${response.status}`);
+            if (!data) {
+                // Error already handled by fetchWithErrorHandling (404, 403, 500)
+                return;
             }
 
-            const data = await response.json();
             console.log('로드된 데이터:', data);
 
             // 폼에 데이터 채우기
@@ -1903,10 +1903,14 @@ document.addEventListener('DOMContentLoaded', async function() {
                 deleteBtn.style.display = 'inline-block';
             }
 
+            // 로딩 오버레이 숨김
+            window.hidePageLoadingOverlay();
+
             return data;
         } catch (error) {
             console.error('데이터 로드 오류:', error);
             showError('데이터를 불러오는데 실패했습니다.');
+            window.hidePageLoadingOverlay();
         }
     }
 

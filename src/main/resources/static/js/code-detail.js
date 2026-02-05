@@ -18,17 +18,25 @@ document.addEventListener('DOMContentLoaded', function() {
     // ===========================
     // Load Codes
     // ===========================
-    function loadCodes() {
-        fetch(`/api/codes?groupCode=${groupCode}`)
-            .then(response => response.json())
-            .then(data => {
-                currentCodes = data;
-                renderCodeTable(data);
-            })
-            .catch(error => {
-                console.error('코드 목록 조회 실패:', error);
-                showError('코드 목록을 불러오는데 실패했습니다.');
-            });
+    async function loadCodes() {
+        try {
+            const data = await window.fetchWithErrorHandling(`/api/codes?groupCode=${groupCode}`);
+
+            if (!data) {
+                // Error already handled by fetchWithErrorHandling (404, 403, 500)
+                return;
+            }
+
+            currentCodes = data;
+            renderCodeTable(data);
+
+            // 로딩 오버레이 숨김
+            window.hidePageLoadingOverlay();
+        } catch (error) {
+            console.error('코드 목록 조회 실패:', error);
+            showError('코드 목록을 불러오는데 실패했습니다.');
+            window.hidePageLoadingOverlay();
+        }
     }
 
     // ===========================

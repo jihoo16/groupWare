@@ -288,22 +288,23 @@ document.addEventListener('DOMContentLoaded', function() {
     async function loadMeetingDetail(id) {
         try {
             console.log('회의록 상세 API 호출:', id);
-            const response = await fetch(`/api/document/meeting-minutes/${id}`);
+            const meeting = await window.fetchWithErrorHandling(`/api/document/meeting-minutes/${id}`);
 
-            if (response.ok) {
-                const meeting = await response.json();
-                console.log('회의록 상세 로드 성공:', meeting);
-                currentMeeting = meeting; // 전역 변수에 저장
-                renderMeetingDetail(meeting);
-            } else {
-                const errorText = await response.text();
-                console.error('회의록 상세 로드 실패:', errorText);
-                showError('회의록을 불러오는데 실패했습니다.');
-                history.back();
+            if (!meeting) {
+                // Error already handled by fetchWithErrorHandling (404, 403, 500)
+                return;
             }
+
+            console.log('회의록 상세 로드 성공:', meeting);
+            currentMeeting = meeting; // 전역 변수에 저장
+            renderMeetingDetail(meeting);
+
+            // 로딩 오버레이 숨김
+            window.hidePageLoadingOverlay();
         } catch (error) {
             console.error('회의록 상세 로드 오류:', error);
             showError('회의록을 불러오는 중 오류가 발생했습니다.');
+            window.hidePageLoadingOverlay();
             history.back();
         }
     }

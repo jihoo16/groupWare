@@ -196,6 +196,9 @@ document.addEventListener('DOMContentLoaded', async function() {
             await loadReceiptMeetingData(receiptMeetingId);
         } else {
             // 신규 작성 모드
+            // 로딩 오버레이 제거
+            window.hidePageLoadingOverlay();
+
             // 초기화 완료 후 과제명이 비어있을 때 빨간색 테두리 표시
             setTimeout(() => {
                 const commonProject = document.getElementById('common_project');
@@ -3727,17 +3730,17 @@ document.addEventListener('DOMContentLoaded', async function() {
     }
 
     async function loadReceiptMeetingData(id) {
+        console.log('회의록 데이터 로드 시작 - ID:', id);
+
+        // 공통 함수 사용 (404 자동 처리)
+        const data = await window.fetchWithErrorHandling(`/api/receipt-meetings/${id}`, {}, true);
+
+        if (!data) {
+            // 404 등으로 리다이렉트된 경우
+            return;
+        }
+
         try {
-            console.log('회의록 데이터 로드 시작 - ID:', id);
-            const response = await fetch(`/api/receipt-meetings/${id}`);
-
-            if (!response.ok) {
-                const errorText = await response.text();
-                console.error('API 응답 실패:', response.status, errorText);
-                throw new Error(`데이터 로드 실패: ${response.status}`);
-            }
-
-            const data = await response.json();
             console.log('회의록 데이터 로드 성공:', data);
 
             // 실제 receipt_meeting.idx 저장 (수정/삭제 시 사용)
@@ -3760,10 +3763,14 @@ document.addEventListener('DOMContentLoaded', async function() {
                 deleteBtn.style.display = 'inline-block';
             }
 
+            // 로딩 오버레이 제거
+            window.hidePageLoadingOverlay();
+
             return data;
         } catch (error) {
             console.error('데이터 로드 오류:', error);
             showError('데이터를 불러오는데 실패했습니다.');
+            window.hidePageLoadingOverlay();
         }
     }
 

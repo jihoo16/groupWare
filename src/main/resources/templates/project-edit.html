@@ -2,6 +2,9 @@
 <html lang="ko" xmlns:th="http://www.thymeleaf.org">
 <head th:replace="~{fragments/layout :: head('프로젝트 수정', '/css/project.css')}"></head>
 <body>
+<!-- 로딩 오버레이 -->
+<div th:replace="~{fragments/loading-overlay :: overlay}"></div>
+
 <div class="container">
     <div th:replace="~{fragments/sidebar :: sidebar('project')}"></div>
 

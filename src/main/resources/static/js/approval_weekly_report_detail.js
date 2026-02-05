@@ -257,22 +257,23 @@ document.addEventListener('DOMContentLoaded', function() {
     async function loadWeeklyReportDetail(id) {
         try {
             console.log('주간업무보고 상세 API 호출:', id);
-            const response = await fetch(`/api/document/weekly-report/${id}`);
+            const report = await window.fetchWithErrorHandling(`/api/document/weekly-report/${id}`);
 
-            if (response.ok) {
-                const report = await response.json();
-                console.log('주간업무보고 상세 로드 성공:', report);
-                currentReport = report; // 전역 변수에 저장
-                renderWeeklyReportDetail(report);
-            } else {
-                const errorText = await response.text();
-                console.error('주간업무보고 상세 로드 실패:', errorText);
-                showError('주간업무보고를 불러오는데 실패했습니다.');
-                history.back();
+            if (!report) {
+                // Error already handled by fetchWithErrorHandling (404, 403, 500)
+                return;
             }
+
+            console.log('주간업무보고 상세 로드 성공:', report);
+            currentReport = report; // 전역 변수에 저장
+            renderWeeklyReportDetail(report);
+
+            // 로딩 오버레이 숨김
+            window.hidePageLoadingOverlay();
         } catch (error) {
             console.error('주간업무보고 상세 로드 오류:', error);
             showError('주간업무보고를 불러오는 중 오류가 발생했습니다.');
+            window.hidePageLoadingOverlay();
             history.back();
         }
     }
