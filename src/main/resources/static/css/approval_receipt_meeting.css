@@ -1196,7 +1196,7 @@ input.auto-datetime {
     white-space: normal !important;
     word-wrap: break-word !important;
     word-break: keep-all !important;
-    text-align: left !important;
+    text-align: center !important;
     display: block !important;
 }
 
