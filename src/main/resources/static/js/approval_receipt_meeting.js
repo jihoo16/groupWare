@@ -2651,7 +2651,7 @@ document.addEventListener('DOMContentLoaded', async function() {
                 name: person.name,
                 dept: person.companyName || '-',
                 position: person.position || '-',
-                meetingExpense: 0,
+                meetingExpense: 30000,
                 type: 'external'
             });
         }
@@ -3721,7 +3721,7 @@ document.addEventListener('DOMContentLoaded', async function() {
                     name: newPerson.name,
                     dept: newPerson.companyName,
                     position: newPerson.position,
-                    meetingExpense: 0
+                    meetingExpense: 30000
                 });
 
                 renderSelectedBadges(); // 선택된 참석자 배지 업데이트

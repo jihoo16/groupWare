@@ -100,7 +100,13 @@ public class Controller {
     }
 
     @GetMapping("/hr")
-    public String hr() {
+    public String hr(HttpSession session) {
+        // 관리자 권한 확인
+        Boolean isAdmin = (Boolean) session.getAttribute("isAdmin");
+        if (isAdmin == null || !isAdmin) {
+            log.warn("관리자가 아닌 사용자의 사용자관리 접근 시도");
+            return "redirect:/error/403";
+        }
         return "hr";
     }
 
@@ -321,7 +327,13 @@ public class Controller {
     */
 
     @GetMapping("/basic-info")
-    public String basicInfo() {
+    public String basicInfo(HttpSession session) {
+        // 관리자 권한 확인
+        Boolean isAdmin = (Boolean) session.getAttribute("isAdmin");
+        if (isAdmin == null || !isAdmin) {
+            log.warn("관리자가 아닌 사용자의 기초정보관리 접근 시도");
+            return "redirect:/error/403";
+        }
         return "basic-info";
     }
 
@@ -331,7 +343,13 @@ public class Controller {
     }
 
     @GetMapping("/manage-hierarchy")
-    public String manageHierarchy() {
+    public String manageHierarchy(HttpSession session) {
+        // 관리자 권한 확인
+        Boolean isAdmin = (Boolean) session.getAttribute("isAdmin");
+        if (isAdmin == null || !isAdmin) {
+            log.warn("관리자가 아닌 사용자의 보고체계 관리 접근 시도");
+            return "redirect:/error/403";
+        }
         return "manage-hierarchy";
     }
 

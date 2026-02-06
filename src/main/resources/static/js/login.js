@@ -152,7 +152,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 errorMessage = '서버 응답을 처리할 수 없습니다.\n\n• 페이지를 새로고침 후 다시 시도해주세요\n• 문제가 지속되면 관리자에게 문의하세요';
             } else if (error.message.includes('NetworkError') || error.message.includes('Failed to fetch')) {
                 // 네트워크 오류
-                errorMessage = '서버에 연결할 수 없습니다.\n\n• 네트워크 연결을 확인해주세요\n• VPN 연결 상태를 확인해주세요\n• 잠시 후 다시 시도해주세요';
+                errorMessage = '서버에 연결할 수 없습니다.\n\n• 네트워크 연결을 확인해주세요\n• 잠시 후 다시 시도해주세요';
             } else if (error.message.includes('사번') || error.message.includes('비밀번호') ||
                        error.message.includes('로그인') || error.message.includes('서버')) {
                 // 사용자 친화적 메시지 (이미 처리된 에러)

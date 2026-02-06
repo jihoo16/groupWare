@@ -5,6 +5,7 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 
 /**
@@ -27,4 +28,5 @@ public class ApprovalDocumentDTO {
     private String content;
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;
+    private LocalDate eventDate;     // 실제 이벤트 날짜 (회의일자, 출장일자, 야근일자 등)
 }
