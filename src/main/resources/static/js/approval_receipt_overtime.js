@@ -532,26 +532,54 @@ document.addEventListener('DOMContentLoaded', async function() {
                 const currentUserIdx = window.CURRENT_USER?.idx;
                 const projectPersons = getOvertimePersons();
                 const currentUserInProject = projectPersons.find(p => Number(p.id) === Number(currentUserIdx));
+                const dateInput = document.getElementById('ot_approval_date');
 
                 if (currentUserInProject) {
-                    // 로그인 사용자가 프로젝트 참여인원에 있는 경우
-                    selectedApplicant = currentUserInProject;
-                    const otApplicant = document.getElementById('ot_applicant');
-                    if (otApplicant) {
-                        otApplicant.value = currentUserInProject.name;
-                        otApplicant.classList.remove('error');
+                    // 날짜가 이미 설정되어 있으면 중복 체크
+                    let hasDuplicate = false;
+                    if (dateInput?.value) {
+                        const duplicates = await checkDuplicateForAttendee(currentUserInProject.id);
+                        if (duplicates && duplicates.length > 0) {
+                            hasDuplicate = true;
+                            const docInfo = duplicates.map(d => `${d.typeName} (${d.startTime}~${d.endTime})`).join('<br>');
+                            showWarning(
+                                `로그인 사용자 <b>${currentUserInProject.name}</b>님은 해당 날짜에 다른 문서가 있습니다.<br><br>` +
+                                `${docInfo}<br><br>` +
+                                `신청자와 야근인원을 직접 선택해주세요.`
+                            );
+                        }
                     }
-                    const selectedApplicantIdx = document.getElementById('selectedApplicantIdx');
-                    if (selectedApplicantIdx) selectedApplicantIdx.value = currentUserInProject.id;
 
-                    // 인쇄용 템플릿 신청자 업데이트
-                    document.querySelectorAll('.ot-auto-applicant').forEach(field => {
-                        field.textContent = currentUserInProject.name;
-                    });
+                    if (!hasDuplicate) {
+                        // 중복이 없으면 자동 설정
+                        selectedApplicant = currentUserInProject;
+                        const otApplicant = document.getElementById('ot_applicant');
+                        if (otApplicant) {
+                            otApplicant.value = currentUserInProject.name;
+                            otApplicant.classList.remove('error');
+                        }
+                        const selectedApplicantIdx = document.getElementById('selectedApplicantIdx');
+                        if (selectedApplicantIdx) selectedApplicantIdx.value = currentUserInProject.id;
 
-                    // 야근인원에도 자동 추가
-                    if (typeof window.addOvertimePersonsToOvertime === 'function') {
-                        window.addOvertimePersonsToOvertime([currentUserInProject]);
+                        // 인쇄용 템플릿 신청자 업데이트
+                        document.querySelectorAll('.ot-auto-applicant').forEach(field => {
+                            field.textContent = currentUserInProject.name;
+                        });
+
+                        // 야근인원에도 자동 추가
+                        if (typeof window.addOvertimePersonsToOvertime === 'function') {
+                            window.addOvertimePersonsToOvertime([currentUserInProject]);
+                        }
+                    } else {
+                        // 중복이 있으면 초기화
+                        selectedApplicant = null;
+                        const otApplicant = document.getElementById('ot_applicant');
+                        if (otApplicant) {
+                            otApplicant.value = '';
+                            otApplicant.placeholder = '클릭하여 신청자 선택';
+                        }
+                        const selectedApplicantIdx = document.getElementById('selectedApplicantIdx');
+                        if (selectedApplicantIdx) selectedApplicantIdx.value = '';
                     }
                 } else {
                     // 로그인 사용자가 프로젝트 참여인원에 없는 경우 초기화
@@ -671,7 +699,7 @@ document.addEventListener('DOMContentLoaded', async function() {
                 </div>
             `;
 
-            item.addEventListener('click', async function() {
+            item.addEventListener('click', function() {
                 selectedCard = card;
 
                 // 카드 입력 필드에 표시
@@ -685,40 +713,8 @@ document.addEventListener('DOMContentLoaded', async function() {
                     selectedCardIdx.value = card.idx;
                 }
 
-                // 카드 변경 시 중복 정보 초기화 (다음 모달 열 때 재검증)
-                duplicateAttendeesInfo = {};
-
                 closeCardModal();
                 validateRequiredFields();
-
-                // 이미 선택된 신청자가 있으면 중복 검증
-                const selectedApplicantIdx = document.getElementById('selectedApplicantIdx');
-                if (selectedApplicant && selectedApplicantIdx?.value) {
-                    const duplicates = await checkDuplicateForAttendee(selectedApplicantIdx.value);
-                    if (duplicates && duplicates.length > 0) {
-                        const docInfo = duplicates.map(d => `${d.typeName} (${d.startTime}~${d.endTime})`).join('<br>');
-                        showWarning(
-                            `현재 신청자 <b>${selectedApplicant.name}</b>님이 선택한 카드/날짜에 다른 문서가 있습니다.<br><br>` +
-                            `${docInfo}<br><br>` +
-                            `신청자를 변경해주세요.`
-                        );
-
-                        // 야근인원에서도 제거
-                        const applicantId = selectedApplicantIdx.value;
-                        if (typeof window.removeOvertimePersonInTemplate === 'function') {
-                            window.removeOvertimePersonInTemplate(applicantId);
-                        }
-
-                        // 신청자 초기화
-                        selectedApplicant = null;
-                        const otApplicant = document.getElementById('ot_applicant');
-                        if (otApplicant) {
-                            otApplicant.value = '';
-                            otApplicant.classList.add('error');
-                        }
-                        if (selectedApplicantIdx) selectedApplicantIdx.value = '';
-                    }
-                }
             });
 
             cardList.appendChild(item);
@@ -898,15 +894,10 @@ document.addEventListener('DOMContentLoaded', async function() {
 
     window.openApplicantModal = async function() {
         const projectIdxInput = document.getElementById('selectedProjectIdx');
-        const cardIdxInput = document.getElementById('selectedCardIdx');
         const dateInput = document.getElementById('ot_approval_date');
 
         if (!projectIdxInput || !projectIdxInput.value) {
             showWarning('과제를 먼저 선택해주세요.');
-            return;
-        }
-        if (!cardIdxInput || !cardIdxInput.value) {
-            showWarning('사용카드를 먼저 선택해주세요.');
             return;
         }
         if (!dateInput || !dateInput.value) {
@@ -2200,10 +2191,6 @@ document.addEventListener('DOMContentLoaded', async function() {
             showWarning('과제를 먼저 선택해주세요.');
             return;
         }
-        if (!selectedCard) {
-            showWarning('사용카드를 먼저 선택해주세요.');
-            return;
-        }
         const dateInput = document.getElementById('ot_approval_date');
         if (!dateInput?.value) {
             showWarning('날짜를 먼저 선택해주세요.');
@@ -2440,22 +2427,20 @@ document.addEventListener('DOMContentLoaded', async function() {
         const startTimeInput = document.getElementById('ot_start_time');
         const endTimeInput = document.getElementById('ot_end_time');
         const projectIdxInput = document.getElementById('selectedProjectIdx');
-        const cardIdxInput = document.getElementById('selectedCardIdx');
 
         const date = dateInput?.value;
         const startTime = startTimeInput?.value;
         const endTime = endTimeInput?.value;
         const projectIdx = projectIdxInput?.value;
-        const cardIdx = cardIdxInput?.value;
 
-        // 필수값 체크
-        if (!date || !projectIdx || !cardIdx) {
-            console.log('[중복 검증] 필수값 누락 - date:', date, 'projectIdx:', projectIdx, 'cardIdx:', cardIdx);
+        // 필수값 체크 (카드는 필수 아님 - 프로젝트와 시간으로만 체크)
+        if (!date || !projectIdx) {
+            console.log('[중복 검증] 필수값 누락 - date:', date, 'projectIdx:', projectIdx);
             return [];
         }
 
         try {
-            let url = `/api/receipt-common/check-duplicate?date=${date}&attendeeIdx=${attendeeId}&projectIdx=${projectIdx}&cardIdx=${cardIdx}`;
+            let url = `/api/receipt-common/check-duplicate?date=${date}&attendeeIdx=${attendeeId}&projectIdx=${projectIdx}`;
             if (startTime) url += `&startTime=${startTime}`;
             if (endTime) url += `&endTime=${endTime}`;
             // 수정 모드일 때 자기 자신 제외
@@ -2484,15 +2469,13 @@ document.addEventListener('DOMContentLoaded', async function() {
 
         const dateInput = document.getElementById('ot_approval_date');
         const projectIdxInput = document.getElementById('selectedProjectIdx');
-        const cardIdxInput = document.getElementById('selectedCardIdx');
 
         const date = dateInput?.value;
         const projectIdx = projectIdxInput?.value;
-        const cardIdx = cardIdxInput?.value;
 
-        // 필수값 체크
-        if (!date || !projectIdx || !cardIdx) {
-            console.log('[중복 검증] 모달 열기 시 필수값 누락');
+        // 필수값 체크 (카드는 필수 아님 - 프로젝트와 시간으로만 체크)
+        if (!date || !projectIdx) {
+            console.log('[중복 검증] 모달 열기 시 필수값 누락 - date:', date, 'projectIdx:', projectIdx);
             return;
         }
 
@@ -2609,8 +2592,8 @@ document.addEventListener('DOMContentLoaded', async function() {
         [dateInput, startTimeInput, endTimeInput].forEach(input => {
             if (input) {
                 input.addEventListener('change', async () => {
-                    // 날짜/시간 변경 시 중복 정보 갱신
-                    if (selectedProject && selectedCard) {
+                    // 날짜/시간 변경 시 중복 정보 갱신 (프로젝트만 있으면 됨, 카드 불필요)
+                    if (selectedProject) {
                         await revalidateDuplicates();
                     }
                 });
