@@ -90,12 +90,52 @@
                     <div class="content-header">
                         <h2 class="content-title">전체 문서</h2>
                         <div class="content-controls">
-                            <select class="sort-select" id="sortSelect">
-                                <option value="date-desc">최신순</option>
-                                <option value="date-asc">오래된순</option>
-                                <option value="title">제목순</option>
-                                <option value="drafter">기안자순</option>
-                            </select>
+                            <div class="period-filter-wrapper">
+                                <select class="sort-select" id="periodFilter">
+                                    <option value="all">전체기간</option>
+                                    <option value="today">오늘</option>
+                                    <option value="week">최근 1주일</option>
+                                    <option value="month">최근 1개월</option>
+                                    <option value="3months">최근 3개월</option>
+                                    <option value="6months">최근 6개월</option>
+                                    <option value="year">최근 1년</option>
+                                    <option value="custom">직접입력</option>
+                                </select>
+                                <div class="filter-tooltip">
+                                    <i class="fas fa-info-circle"></i>
+                                    <div class="tooltip-content">
+                                        <strong>기간 검색 기준</strong>
+                                        <ul>
+                                            <li><strong>주간보고:</strong> 문서 작성일 기준</li>
+                                            <li><strong>연구비증빙:</strong> 실제 지출일 기준
+                                                <span class="tooltip-sub">(회의일자, 출장일자, 야근일자)</span>
+                                            </li>
+                                        </ul>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- 직접입력 날짜 범위 (기본 숨김) -->
+                    <div class="date-range-container" id="dateRangeContainer" style="display: none;">
+                        <div class="date-range-wrapper">
+                            <div class="date-input-group">
+                                <i class="fas fa-calendar-alt"></i>
+                                <input type="date" id="startDate" class="date-input" placeholder="시작일">
+                            </div>
+                            <span class="date-separator">~</span>
+                            <div class="date-input-group">
+                                <i class="fas fa-calendar-alt"></i>
+                                <input type="date" id="endDate" class="date-input" placeholder="종료일">
+                            </div>
+                            <button class="btn-date-search" id="btnDateSearch">
+                                <i class="fas fa-search"></i>
+                                조회
+                            </button>
+                            <button class="btn-date-reset" id="btnDateReset">
+                                <i class="fas fa-redo"></i>
+                            </button>
                         </div>
                     </div>
 
@@ -104,11 +144,21 @@
                             <table class="document-table">
                             <thead>
                                 <tr>
-                                    <th width="150">문서종류</th>
-                                    <th>제목</th>
-                                    <th width="100">문서 생성자</th>
-                                    <th width="120">부서</th>
-                                    <th width="120">작성일시</th>
+                                    <th width="150" class="sortable" data-sort="type">
+                                        문서종류 <i class="fas fa-sort"></i>
+                                    </th>
+                                    <th class="sortable" data-sort="title">
+                                        제목 <i class="fas fa-sort"></i>
+                                    </th>
+                                    <th width="120" class="sortable" data-sort="drafter">
+                                        문서 생성자 <i class="fas fa-sort"></i>
+                                    </th>
+                                    <th width="120" class="sortable" data-sort="department">
+                                        부서 <i class="fas fa-sort"></i>
+                                    </th>
+                                    <th width="120" class="sortable" data-sort="date">
+                                        작성일시 <i class="fas fa-sort"></i>
+                                    </th>
                                     <th width="100">관리</th>
                                 </tr>
                             </thead>

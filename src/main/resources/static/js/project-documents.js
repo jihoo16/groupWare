@@ -9,10 +9,21 @@ document.addEventListener('DOMContentLoaded', function() {
     const emptyState = document.getElementById('emptyState');
     const contentTitle = document.querySelector('.content-title');
     const searchInput = document.getElementById('searchInput');
-    const sortSelect = document.getElementById('sortSelect');
+    const periodFilter = document.getElementById('periodFilter');
+    const dateRangeContainer = document.getElementById('dateRangeContainer');
+    const startDateInput = document.getElementById('startDate');
+    const endDateInput = document.getElementById('endDate');
+    const btnDateSearch = document.getElementById('btnDateSearch');
+    const btnDateReset = document.getElementById('btnDateReset');
+    const sortableHeaders = document.querySelectorAll('.document-table thead th.sortable');
 
     let currentCategory = 'all';
+    let selectedPeriod = 'all';
+    let customStartDate = null;
+    let customEndDate = null;
     let allDocuments = []; // 전체 문서 데이터 (원본)
+    let currentSortColumn = 'date';
+    let currentSortOrder = 'desc'; // 'asc' or 'desc'
 
     // 페이징 관련 변수
     let currentPage = 1;
@@ -103,6 +114,8 @@ document.addEventListener('DOMContentLoaded', function() {
 
         docRows.forEach(row => {
             const category = row.getAttribute('data-category');
+            const createdAt = row.getAttribute('data-created-at');
+            const eventDate = row.getAttribute('data-event-date');
 
             let show = true;
 
@@ -112,6 +125,19 @@ document.addEventListener('DOMContentLoaded', function() {
                     show = category !== 'project-weekly-report';
                 } else {
                     show = category === currentCategory;
+                }
+            }
+
+            // 기간 필터 - eventDate 우선 사용, 없으면 createdAt 사용
+            if (selectedPeriod !== 'all' && (eventDate || createdAt)) {
+                const dateToCompare = eventDate || createdAt;
+                const docDate = new Date(dateToCompare);
+                const dateRange = getDateRangeForPeriod(selectedPeriod);
+
+                if (dateRange) {
+                    // 시간을 00:00:00으로 정규화하여 날짜만 비교
+                    const docDateOnly = new Date(docDate.getFullYear(), docDate.getMonth(), docDate.getDate());
+                    show = show && docDateOnly >= dateRange.start && docDateOnly <= dateRange.end;
                 }
             }
 
@@ -236,38 +262,170 @@ document.addEventListener('DOMContentLoaded', function() {
         filterDocuments();
     });
 
-    // 정렬 변경
-    sortSelect.addEventListener('change', function() {
-        sortDocuments(this.value);
+    // 기간 필터 변경
+    periodFilter.addEventListener('change', function() {
+        selectedPeriod = this.value;
+
+        // 직접입력 선택 시 날짜 범위 컨테이너 표시
+        if (selectedPeriod === 'custom') {
+            dateRangeContainer.style.display = 'block';
+            // 오늘 날짜를 기본값으로 설정
+            const today = new Date().toISOString().split('T')[0];
+            if (!startDateInput.value) startDateInput.value = today;
+            if (!endDateInput.value) endDateInput.value = today;
+        } else {
+            dateRangeContainer.style.display = 'none';
+            customStartDate = null;
+            customEndDate = null;
+            currentPage = 1;
+            filterDocuments();
+        }
     });
 
-    // 문서 정렬
-    function sortDocuments(sortType) {
-        const tbody = documentList.querySelector('tbody');
-        const rows = Array.from(tbody.querySelectorAll('.doc-row'));
+    // 날짜 조회 버튼
+    btnDateSearch.addEventListener('click', function() {
+        if (!startDateInput.value || !endDateInput.value) {
+            Swal.fire({
+                icon: 'warning',
+                title: '날짜를 선택해주세요',
+                text: '시작일과 종료일을 모두 선택해주세요.'
+            });
+            return;
+        }
 
-        rows.sort((a, b) => {
-            if (sortType === 'date-desc') {
-                return new Date(b.getAttribute('data-created-at')) - new Date(a.getAttribute('data-created-at'));
-            } else if (sortType === 'date-asc') {
-                return new Date(a.getAttribute('data-created-at')) - new Date(b.getAttribute('data-created-at'));
-            } else if (sortType === 'title') {
-                const titleA = a.querySelector('.title-wrap').textContent;
-                const titleB = b.querySelector('.title-wrap').textContent;
-                return titleA.localeCompare(titleB, 'ko');
-            } else if (sortType === 'drafter') {
-                const drafterA = a.querySelector('td:nth-child(3)').textContent;
-                const drafterB = b.querySelector('td:nth-child(3)').textContent;
-                return drafterA.localeCompare(drafterB, 'ko');
+        const start = new Date(startDateInput.value);
+        const end = new Date(endDateInput.value);
+
+        if (start > end) {
+            Swal.fire({
+                icon: 'error',
+                title: '잘못된 날짜 범위',
+                text: '시작일은 종료일보다 이전이어야 합니다.'
+            });
+            return;
+        }
+
+        customStartDate = startDateInput.value;
+        customEndDate = endDateInput.value;
+        currentPage = 1;
+        filterDocuments();
+    });
+
+    // 날짜 초기화 버튼
+    btnDateReset.addEventListener('click', function() {
+        startDateInput.value = '';
+        endDateInput.value = '';
+        customStartDate = null;
+        customEndDate = null;
+        selectedPeriod = 'all';
+        periodFilter.value = 'all';
+        dateRangeContainer.style.display = 'none';
+        currentPage = 1;
+        filterDocuments();
+    });
+
+    // 테이블 헤더 클릭 정렬
+    console.log('정렬 가능한 헤더 수:', sortableHeaders.length);
+    sortableHeaders.forEach(header => {
+        // 클릭 가능한 스타일 추가
+        header.style.cursor = 'pointer';
+        header.style.userSelect = 'none';
+
+        header.addEventListener('click', function() {
+            const sortColumn = this.getAttribute('data-sort');
+            console.log('헤더 클릭:', sortColumn);
+
+            // 같은 컬럼을 클릭하면 정렬 순서 변경
+            if (currentSortColumn === sortColumn) {
+                currentSortOrder = currentSortOrder === 'asc' ? 'desc' : 'asc';
+            } else {
+                currentSortColumn = sortColumn;
+                currentSortOrder = sortColumn === 'date' ? 'desc' : 'asc'; // 날짜는 기본 내림차순, 나머지는 오름차순
             }
-            return 0;
+
+            console.log('정렬:', sortColumn, currentSortOrder);
+
+            // 정렬 수행
+            sortDocumentsByColumn(sortColumn, currentSortOrder);
+
+            // 정렬 아이콘 업데이트
+            updateSortIcons();
+        });
+    });
+
+    // 컬럼별 문서 정렬 (테이블 헤더 클릭용)
+    function sortDocumentsByColumn(column, order) {
+        console.log('sortDocumentsByColumn 호출:', column, order);
+
+        // 문서 타입 표시 이름 매핑
+        const displayNameMap = {
+            'WEEKLY_REPORT': '프로젝트 주간업무보고',
+            'RECEIPT_MEETING': '연구비증빙-회의록',
+            'BUSINESS_TRIP': '연구비증빙-출장',
+            'MEETING_MINUTES': '연구비증빙-회의록'
+        };
+
+        // allDocuments 배열을 정렬
+        allDocuments.sort((a, b) => {
+            let valueA, valueB;
+
+            switch (column) {
+                case 'type':
+                    valueA = displayNameMap[a.documentType] || a.documentType || '';
+                    valueB = displayNameMap[b.documentType] || b.documentType || '';
+                    break;
+                case 'title':
+                    valueA = a.title || '';
+                    valueB = b.title || '';
+                    break;
+                case 'drafter':
+                    valueA = a.drafterName || '';
+                    valueB = b.drafterName || '';
+                    break;
+                case 'department':
+                    valueA = a.drafterDeptName || '';
+                    valueB = b.drafterDeptName || '';
+                    break;
+                case 'date':
+                    valueA = new Date(a.createdAt);
+                    valueB = new Date(b.createdAt);
+                    break;
+                default:
+                    return 0;
+            }
+
+            // 날짜는 Date 객체 비교, 나머지는 문자열 비교
+            if (column === 'date') {
+                return order === 'asc' ? valueA - valueB : valueB - valueA;
+            } else {
+                const comparison = valueA.localeCompare(valueB, 'ko');
+                return order === 'asc' ? comparison : -comparison;
+            }
         });
 
-        // 정렬된 순서로 다시 추가
-        rows.forEach(row => tbody.appendChild(row));
+        console.log('정렬 완료, 테이블 재렌더링');
+
+        // 테이블 재렌더링
+        renderDocumentTable();
 
         // 필터링 다시 적용
         filterDocuments();
+    }
+
+    // 정렬 아이콘 업데이트
+    function updateSortIcons() {
+        sortableHeaders.forEach(header => {
+            const icon = header.querySelector('i');
+            const column = header.getAttribute('data-sort');
+
+            if (column === currentSortColumn) {
+                // 현재 정렬 중인 컬럼
+                icon.className = currentSortOrder === 'asc' ? 'fas fa-sort-up' : 'fas fa-sort-down';
+            } else {
+                // 정렬 중이 아닌 컬럼
+                icon.className = 'fas fa-sort';
+            }
+        });
     }
 
     // 문서 카테고리 매핑
@@ -302,6 +460,60 @@ document.addEventListener('DOMContentLoaded', function() {
         return iconMap[documentType] || 'fa-file-alt';
     }
 
+    // 기간별 날짜 범위 계산
+    function getDateRangeForPeriod(period) {
+        const now = new Date();
+        const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+        let start, end;
+
+        switch (period) {
+            case 'today':
+                start = new Date(today);
+                end = new Date(today);
+                break;
+            case 'week':
+                start = new Date(today);
+                start.setDate(start.getDate() - 7);
+                end = new Date(today);
+                break;
+            case 'month':
+                start = new Date(today);
+                start.setMonth(start.getMonth() - 1);
+                end = new Date(today);
+                break;
+            case '3months':
+                start = new Date(today);
+                start.setMonth(start.getMonth() - 3);
+                end = new Date(today);
+                break;
+            case '6months':
+                start = new Date(today);
+                start.setMonth(start.getMonth() - 6);
+                end = new Date(today);
+                break;
+            case 'year':
+                start = new Date(today);
+                start.setFullYear(start.getFullYear() - 1);
+                end = new Date(today);
+                break;
+            case 'custom':
+                if (customStartDate && customEndDate) {
+                    start = new Date(customStartDate);
+                    end = new Date(customEndDate);
+                    // 종료일은 23:59:59까지 포함
+                    end.setHours(23, 59, 59, 999);
+                } else {
+                    return null;
+                }
+                break;
+            case 'all':
+            default:
+                return null;
+        }
+
+        return { start, end };
+    }
+
     // 문서 로드
     async function loadAllDocuments() {
         try {
@@ -334,6 +546,9 @@ document.addEventListener('DOMContentLoaded', function() {
 
                 // 초기 필터링 적용
                 filterDocuments();
+
+                // 정렬 아이콘 초기화
+                updateSortIcons();
             } else {
                 console.error('문서 로드 실패:', response.status, response.statusText);
                 showError('문서 목록을 불러올 수 없습니다.');
@@ -387,6 +602,7 @@ document.addEventListener('DOMContentLoaded', function() {
         tr.className = 'doc-row';
         tr.setAttribute('data-category', getCategoryFromDocumentType(doc.documentType));
         tr.setAttribute('data-created-at', doc.createdAt);
+        tr.setAttribute('data-event-date', doc.eventDate || doc.createdAt);
         tr.setAttribute('data-document-idx', doc.idx);
         // 문서종류
         const typeCell = document.createElement('td');
@@ -445,8 +661,9 @@ document.addEventListener('DOMContentLoaded', function() {
         // 관리
         const actionCell = document.createElement('td');
         actionCell.style.textAlign = 'center';
+        actionCell.style.verticalAlign = 'middle';
         actionCell.innerHTML = `
-            <button class="btn-icon view-btn" title="상세보기">
+            <button class="btn-icon view-btn" title="상세보기" style="margin: 0 auto; display: inline-block;">
                 <i class="fas fa-eye"></i>
             </button>
         `;
