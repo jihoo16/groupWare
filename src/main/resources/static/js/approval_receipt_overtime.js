@@ -19,6 +19,9 @@ document.addEventListener('DOMContentLoaded', async function() {
     let existingAttachments = []; // 기존 첨부파일 목록
     let deletedAttachmentIds = []; // 삭제 예정인 첨부파일 ID 목록
 
+    // 중복 참석자 정보 저장 (통합 중복 검증)
+    let duplicateAttendeesInfo = {};
+
     // DOM 요소
     const templateTreeHeaders = document.querySelectorAll('.tree-node-header[data-template]');
     const categoryNodes = document.querySelectorAll('.tree-node-header.category-node');
@@ -522,30 +525,61 @@ document.addEventListener('DOMContentLoaded', async function() {
                 const selectedCardIdx = document.getElementById('selectedCardIdx');
                 if (selectedCardIdx) selectedCardIdx.value = '';
 
+                // 프로젝트 변경 시 중복 정보 초기화
+                duplicateAttendeesInfo = {};
+
                 // 신청자 선택: 로그인 사용자가 프로젝트 참여인원에 있으면 자동 설정
                 const currentUserIdx = window.CURRENT_USER?.idx;
                 const projectPersons = getOvertimePersons();
                 const currentUserInProject = projectPersons.find(p => Number(p.id) === Number(currentUserIdx));
+                const dateInput = document.getElementById('ot_approval_date');
 
                 if (currentUserInProject) {
-                    // 로그인 사용자가 프로젝트 참여인원에 있는 경우
-                    selectedApplicant = currentUserInProject;
-                    const otApplicant = document.getElementById('ot_applicant');
-                    if (otApplicant) {
-                        otApplicant.value = currentUserInProject.name;
-                        otApplicant.classList.remove('error');
+                    // 날짜가 이미 설정되어 있으면 중복 체크
+                    let hasDuplicate = false;
+                    if (dateInput?.value) {
+                        const duplicates = await checkDuplicateForAttendee(currentUserInProject.id);
+                        if (duplicates && duplicates.length > 0) {
+                            hasDuplicate = true;
+                            const docInfo = duplicates.map(d => `${d.typeName} (${d.startTime}~${d.endTime})`).join('<br>');
+                            showWarning(
+                                `로그인 사용자 <b>${currentUserInProject.name}</b>님은 해당 날짜에 다른 문서가 있습니다.<br><br>` +
+                                `${docInfo}<br><br>` +
+                                `신청자와 야근인원을 직접 선택해주세요.`
+                            );
+                        }
                     }
-                    const selectedApplicantIdx = document.getElementById('selectedApplicantIdx');
-                    if (selectedApplicantIdx) selectedApplicantIdx.value = currentUserInProject.id;
 
-                    // 인쇄용 템플릿 신청자 업데이트
-                    document.querySelectorAll('.ot-auto-applicant').forEach(field => {
-                        field.textContent = currentUserInProject.name;
-                    });
+                    if (!hasDuplicate) {
+                        // 중복이 없으면 자동 설정
+                        selectedApplicant = currentUserInProject;
+                        const otApplicant = document.getElementById('ot_applicant');
+                        if (otApplicant) {
+                            otApplicant.value = currentUserInProject.name;
+                            otApplicant.classList.remove('error');
+                        }
+                        const selectedApplicantIdx = document.getElementById('selectedApplicantIdx');
+                        if (selectedApplicantIdx) selectedApplicantIdx.value = currentUserInProject.id;
 
-                    // 야근인원에도 자동 추가
-                    if (typeof window.addOvertimePersonsToOvertime === 'function') {
-                        window.addOvertimePersonsToOvertime([currentUserInProject]);
+                        // 인쇄용 템플릿 신청자 업데이트
+                        document.querySelectorAll('.ot-auto-applicant').forEach(field => {
+                            field.textContent = currentUserInProject.name;
+                        });
+
+                        // 야근인원에도 자동 추가
+                        if (typeof window.addOvertimePersonsToOvertime === 'function') {
+                            window.addOvertimePersonsToOvertime([currentUserInProject]);
+                        }
+                    } else {
+                        // 중복이 있으면 초기화
+                        selectedApplicant = null;
+                        const otApplicant = document.getElementById('ot_applicant');
+                        if (otApplicant) {
+                            otApplicant.value = '';
+                            otApplicant.placeholder = '클릭하여 신청자 선택';
+                        }
+                        const selectedApplicantIdx = document.getElementById('selectedApplicantIdx');
+                        if (selectedApplicantIdx) selectedApplicantIdx.value = '';
                     }
                 } else {
                     // 로그인 사용자가 프로젝트 참여인원에 없는 경우 초기화
@@ -744,9 +778,21 @@ document.addEventListener('DOMContentLoaded', async function() {
     const applicantList = document.getElementById('applicantList');
 
     // 신청자 목록 렌더링 (프로젝트 참여인원에서 선택)
-    function renderApplicantList(list, keyword = '') {
+    function renderApplicantList(list, keyword = '', isLoading = false) {
         if (!applicantList) return;
         applicantList.innerHTML = '';
+
+        // 로딩 상태 표시
+        if (isLoading) {
+            const loadingMessage = document.createElement('div');
+            loadingMessage.style.cssText = 'text-align: center; padding: 40px; color: #94a3b8;';
+            loadingMessage.innerHTML = `
+                <i class="fas fa-spinner fa-spin" style="font-size: 32px; margin-bottom: 12px; display: block;"></i>
+                <p>중복 검증 중...</p>
+            `;
+            applicantList.appendChild(loadingMessage);
+            return;
+        }
 
         if (list.length === 0) {
             const emptyMessage = document.createElement('div');
@@ -767,16 +813,41 @@ document.addEventListener('DOMContentLoaded', async function() {
                 item.classList.add('selected');
             }
 
+            // 중복 체크
+            const duplicateInfo = duplicateAttendeesInfo[member.id];
+            const isDuplicate = duplicateInfo?.hasDuplicate;
+
+            if (isDuplicate) {
+                item.classList.add('duplicate-disabled');
+                item.style.cssText = 'opacity: 0.6; cursor: not-allowed;';
+            }
+
             const highlightedName = keyword ? highlightApplicantText(member.name, keyword) : member.name;
+
+            // 중복 뱃지
+            let duplicateBadge = '';
+            if (isDuplicate) {
+                const docs = duplicateInfo.documents || [];
+                const docInfo = docs.map(d => `${d.typeName} (${d.startTime}~${d.endTime})`).join(', ');
+                duplicateBadge = `<span style="background: #fee2e2; color: #991b1b; padding: 2px 8px; border-radius: 4px; font-size: 11px; margin-left: 8px; white-space: nowrap;" title="${docInfo}"><i class="fas fa-ban"></i> 시간 중복</span>`;
+            }
 
             item.innerHTML = `
                 <div class="employee-info">
-                    <div class="employee-name"><i class="fas fa-user" style="margin-right:6px; color:#667eea;"></i>${highlightedName}</div>
+                    <div class="employee-name"><i class="fas fa-user" style="margin-right:6px; color:#667eea;"></i>${highlightedName}${duplicateBadge}</div>
                     <div class="employee-detail">${member.dept || '-'} / ${member.position || '-'}</div>
                 </div>
             `;
 
             item.addEventListener('click', function() {
+                // 중복인 경우 선택 불가
+                if (isDuplicate) {
+                    const docs = duplicateInfo.documents || [];
+                    const docInfo = docs.map(d => `${d.typeName} (${d.startTime}~${d.endTime})`).join('<br>');
+                    showWarning(`${member.name}님은 이미 다른 문서에 등록되어 있습니다.<br><br>${docInfo}`);
+                    return;
+                }
+
                 selectedApplicant = member;
 
                 // 신청자 입력 필드에 표시
@@ -821,19 +892,29 @@ document.addEventListener('DOMContentLoaded', async function() {
         });
     }
 
-    window.openApplicantModal = function() {
+    window.openApplicantModal = async function() {
         const projectIdxInput = document.getElementById('selectedProjectIdx');
+        const dateInput = document.getElementById('ot_approval_date');
 
         if (!projectIdxInput || !projectIdxInput.value) {
             showWarning('과제를 먼저 선택해주세요.');
             return;
         }
+        if (!dateInput || !dateInput.value) {
+            showWarning('날짜를 먼저 선택해주세요.');
+            return;
+        }
 
         if (applicantModal) {
             applicantModal.classList.add('show');
-            const persons = typeof getOvertimePersons === 'function' ? getOvertimePersons() : [];
-            renderApplicantList(persons);
             if (applicantSearch) applicantSearch.value = '';
+
+            const persons = typeof getOvertimePersons === 'function' ? getOvertimePersons() : [];
+
+            // 중복 검증 정보 로드 후 렌더링
+            renderApplicantList(persons, '', true); // 로딩 상태로 먼저 렌더링
+            await loadDuplicateInfoForAllPersons();
+            renderApplicantList(persons);
         }
     };
 
@@ -1784,6 +1865,37 @@ document.addEventListener('DOMContentLoaded', async function() {
             const amountStr = otAmount?.value?.replace(/,/g, '') || '0';
             const amount = parseFloat(amountStr) || 0;
 
+            // 저장 직전 중복 참석자 최종 검증
+            try {
+                const attendeeIds = overtimePersons.map(p => p.id);
+                console.log('[중복 검증 시작] 검증할 참석자 IDs:', attendeeIds);
+                const duplicates = await checkDuplicateBeforeSave(attendeeIds);
+
+                if (duplicates.length > 0) {
+                    const duplicate = duplicates[0];
+                    const docs = duplicate.documents || [];
+                    const docInfo = docs.map(d => `${d.typeName} (${d.startTime}~${d.endTime})`).join('<br>');
+                    showError(
+                        `<b>${duplicate.attendeeName}</b>님은 이미 다른 문서에 등록되어 있습니다.<br><br>` +
+                        `${docInfo}<br><br>` +
+                        `야근인원을 확인해주세요.`
+                    );
+                    return;
+                }
+                console.log('[중복 검증 완료] 중복 없음');
+            } catch (error) {
+                console.error('[중복 검증 오류]', error);
+                const continueAnyway = await showConfirm(
+                    `참석자 중복 검증 중 오류가 발생했습니다.<br><br>` +
+                    `${error.message || '알 수 없는 오류'}<br><br>` +
+                    `중복 검증 없이 계속 진행하시겠습니까?`,
+                    '중복 검증 오류'
+                );
+                if (!continueAnyway) {
+                    return;
+                }
+            }
+
             // 확인 다이얼로그
             if (!await showConfirm('야근식대를 저장하시겠습니까?')) {
                 return;
@@ -2074,9 +2186,14 @@ document.addEventListener('DOMContentLoaded', async function() {
     // ============================================
 
     // 모달 열기
-    window.openOvertimePersonModal = function() {
+    window.openOvertimePersonModal = async function() {
         if (!selectedProject) {
             showWarning('과제를 먼저 선택해주세요.');
+            return;
+        }
+        const dateInput = document.getElementById('ot_approval_date');
+        if (!dateInput?.value) {
+            showWarning('날짜를 먼저 선택해주세요.');
             return;
         }
         if (overtimePersonModal) {
@@ -2090,9 +2207,13 @@ document.addEventListener('DOMContentLoaded', async function() {
             }));
 
             overtimePersonModal.classList.add('show');
+            if (overtimePersonSearchInput) overtimePersonSearchInput.value = '';
+
+            // 중복 검증 정보 로드 후 렌더링
+            renderOvertimePersonList2('', true); // 로딩 상태로 먼저 렌더링
+            await loadDuplicateInfoForAllPersons();
             renderOvertimePersonList2('');
             renderSelectedOvertimeBadges();
-            if (overtimePersonSearchInput) overtimePersonSearchInput.value = '';
         }
     };
 
@@ -2114,9 +2235,19 @@ document.addEventListener('DOMContentLoaded', async function() {
     }
 
     // 야근인원 목록 렌더링 (프로젝트 참여인원)
-    function renderOvertimePersonList2(searchText = '') {
+    function renderOvertimePersonList2(searchText = '', isLoading = false) {
         const overtimePersonList2El = document.getElementById('overtimePersonList2');
         if (!overtimePersonList2El) return;
+
+        // 로딩 상태 표시
+        if (isLoading) {
+            overtimePersonList2El.innerHTML = `
+                <div style="text-align: center; padding: 40px; color: #94a3b8;">
+                    <i class="fas fa-spinner fa-spin" style="font-size: 32px; margin-bottom: 12px; display: block;"></i>
+                    중복 검증 중...
+                </div>`;
+            return;
+        }
 
         const persons = getOvertimePersons();
 
@@ -2146,12 +2277,25 @@ document.addEventListener('DOMContentLoaded', async function() {
         overtimePersonList2El.innerHTML = filtered.map(person => {
             const isSelected = tempSelectedOvertimePersons.some(a => String(a.id) === String(person.id));
             const formattedExpense = person.overtimeExpense ? person.overtimeExpense.toLocaleString('ko-KR') + '원' : '-';
+
+            // 중복 체크
+            const duplicateInfo = duplicateAttendeesInfo[person.id];
+            const isDuplicate = duplicateInfo?.hasDuplicate;
+            let duplicateBadge = '';
+            if (isDuplicate) {
+                const docs = duplicateInfo.documents || [];
+                const docInfo = docs.map(d => `${d.typeName} (${d.startTime}~${d.endTime})`).join(', ');
+                const tooltipText = `시간 중복: ${docInfo}`;
+                duplicateBadge = `<span style="background: #fee2e2; color: #991b1b; padding: 2px 8px; border-radius: 4px; font-size: 11px; margin-left: 8px; white-space: nowrap;" title="${tooltipText}"><i class="fas fa-ban"></i> 시간 중복</span>`;
+            }
+
             return `
-                <div class="employee-item ${isSelected ? 'selected' : ''}"
+                <div class="employee-item ${isSelected ? 'selected' : ''} ${isDuplicate ? 'duplicate-disabled' : ''}"
                      data-id="${person.id}"
-                     onclick="toggleOvertimePerson(${person.id})">
+                     onclick="toggleOvertimePerson(${person.id})"
+                     style="${isDuplicate ? 'opacity: 0.6; cursor: not-allowed;' : ''}">
                     <div class="employee-info">
-                        <div class="employee-name">${person.name}</div>
+                        <div class="employee-name">${person.name}${duplicateBadge}</div>
                         <div class="employee-detail">${person.position} · ${person.dept} · ${formattedExpense}</div>
                     </div>
                     ${isSelected ? '<i class="fas fa-check-circle" style="color: #10b981; font-size: 18px; margin-left: auto;"></i>' : ''}
@@ -2165,6 +2309,15 @@ document.addEventListener('DOMContentLoaded', async function() {
         const persons = getOvertimePersons();
         const person = persons.find(p => p.id === personId);
         if (!person) return;
+
+        // 중복 체크 - 중복이면 선택 불가
+        const duplicateInfo = duplicateAttendeesInfo[personId];
+        if (duplicateInfo?.hasDuplicate) {
+            const docs = duplicateInfo.documents || [];
+            const docInfo = docs.map(d => `${d.typeName} (${d.startTime}~${d.endTime})`).join('<br>');
+            showWarning(`${person.name}님은 이미 다른 문서에 등록되어 있습니다.<br><br>${docInfo}`);
+            return;
+        }
 
         const index = tempSelectedOvertimePersons.findIndex(a => String(a.id) === String(personId));
         if (index > -1) {
@@ -2259,6 +2412,194 @@ document.addEventListener('DOMContentLoaded', async function() {
         // 모달 닫기
         closeOvertimePersonModal();
     };
+
+    // ============================================
+    // 통합 중복 검증 함수 (회의록, 야근식대, 출장, 출장+회의)
+    // ============================================
+
+    /**
+     * 단일 참석자 중복 검증 API 호출
+     * @param {Long} attendeeId - 참석자 IDX
+     * @returns {Array} 중복 문서 목록
+     */
+    async function checkDuplicateForAttendee(attendeeId) {
+        const dateInput = document.getElementById('ot_approval_date');
+        const startTimeInput = document.getElementById('ot_start_time');
+        const endTimeInput = document.getElementById('ot_end_time');
+        const projectIdxInput = document.getElementById('selectedProjectIdx');
+
+        const date = dateInput?.value;
+        const startTime = startTimeInput?.value;
+        const endTime = endTimeInput?.value;
+        const projectIdx = projectIdxInput?.value;
+
+        // 필수값 체크 (카드는 필수 아님 - 프로젝트와 시간으로만 체크)
+        if (!date || !projectIdx) {
+            console.log('[중복 검증] 필수값 누락 - date:', date, 'projectIdx:', projectIdx);
+            return [];
+        }
+
+        try {
+            let url = `/api/receipt-common/check-duplicate?date=${date}&attendeeIdx=${attendeeId}&projectIdx=${projectIdx}`;
+            if (startTime) url += `&startTime=${startTime}`;
+            if (endTime) url += `&endTime=${endTime}`;
+            // 수정 모드일 때 자기 자신 제외
+            if (isEditMode && editingIdx) {
+                url += `&excludeReceiptIdx=${editingIdx}&excludeDocumentType=RCO`;
+            }
+
+            const response = await fetch(url);
+            if (response.ok) {
+                return await response.json();
+            } else {
+                console.error('[중복 검증] API 오류:', response.status);
+                return [];
+            }
+        } catch (error) {
+            console.error('[중복 검증] 네트워크 오류:', error);
+            return [];
+        }
+    }
+
+    /**
+     * 모든 참석자의 중복 여부 확인 (모달 열 때)
+     */
+    async function loadDuplicateInfoForAllPersons() {
+        duplicateAttendeesInfo = {}; // 초기화
+
+        const dateInput = document.getElementById('ot_approval_date');
+        const projectIdxInput = document.getElementById('selectedProjectIdx');
+
+        const date = dateInput?.value;
+        const projectIdx = projectIdxInput?.value;
+
+        // 필수값 체크 (카드는 필수 아님 - 프로젝트와 시간으로만 체크)
+        if (!date || !projectIdx) {
+            console.log('[중복 검증] 모달 열기 시 필수값 누락 - date:', date, 'projectIdx:', projectIdx);
+            return;
+        }
+
+        const persons = getOvertimePersons();
+        console.log(`[중복 검증] ${persons.length}명 참석자 검증 시작`);
+
+        // 각 참석자에 대해 중복 체크
+        for (const person of persons) {
+            try {
+                const duplicates = await checkDuplicateForAttendee(person.id);
+                if (duplicates && duplicates.length > 0) {
+                    // 시간대 겹침이 있는 경우
+                    duplicateAttendeesInfo[person.id] = {
+                        hasDuplicate: true,
+                        documents: duplicates
+                    };
+                    console.log(`[중복 발견] ${person.name}: ${duplicates.length}건`);
+                }
+            } catch (error) {
+                console.error(`[중복 검증 오류] ${person.name}:`, error);
+            }
+        }
+
+        console.log('[중복 검증 완료] 중복 정보:', duplicateAttendeesInfo);
+    }
+
+    /**
+     * 선택된 인원들의 최종 중복 검증 (저장 전)
+     * @returns {Array} 중복된 참석자 목록
+     */
+    async function checkDuplicateBeforeSave(attendeeIds) {
+        const duplicates = [];
+
+        for (const attendeeId of attendeeIds) {
+            const results = await checkDuplicateForAttendee(attendeeId);
+            if (results && results.length > 0) {
+                const persons = getOvertimePersons();
+                const person = persons.find(p => String(p.id) === String(attendeeId));
+                duplicates.push({
+                    attendeeId,
+                    attendeeName: person?.name || '알 수 없음',
+                    documents: results
+                });
+            }
+        }
+
+        return duplicates;
+    }
+
+    /**
+     * 시간 변경 시 중복 검증 재실행
+     */
+    async function revalidateDuplicates() {
+        console.log('[시간 변경] 중복 검증 재실행');
+        await loadDuplicateInfoForAllPersons();
+        // 모달이 열려있으면 리렌더링
+        if (overtimePersonModal?.classList.contains('show')) {
+            renderOvertimePersonList2(overtimePersonSearchInput?.value || '');
+        }
+        if (applicantModal?.classList.contains('show')) {
+            const persons = typeof getOvertimePersons === 'function' ? getOvertimePersons() : [];
+            renderApplicantList(persons, applicantSearch?.value || '');
+        }
+
+        // 이미 선택된 신청자가 있으면 중복 검증
+        const selectedApplicantIdxInput = document.getElementById('selectedApplicantIdx');
+        if (selectedApplicant && selectedApplicantIdxInput?.value) {
+            const duplicateInfo = duplicateAttendeesInfo[selectedApplicantIdxInput.value];
+            if (duplicateInfo?.hasDuplicate) {
+                const docs = duplicateInfo.documents || [];
+                const docInfo = docs.map(d => `${d.typeName} (${d.startTime}~${d.endTime})`).join('<br>');
+                showWarning(
+                    `현재 신청자 <b>${selectedApplicant.name}</b>님이 변경된 시간대에 다른 문서가 있습니다.<br><br>` +
+                    `${docInfo}<br><br>` +
+                    `신청자를 변경해주세요.`
+                );
+
+                // 야근인원에서도 제거
+                const applicantId = selectedApplicantIdxInput.value;
+                if (typeof window.removeOvertimePersonInTemplate === 'function') {
+                    window.removeOvertimePersonInTemplate(applicantId);
+                }
+
+                // 신청자 초기화
+                selectedApplicant = null;
+                const otApplicant = document.getElementById('ot_applicant');
+                if (otApplicant) {
+                    otApplicant.value = '';
+                    otApplicant.classList.add('error');
+                }
+                if (selectedApplicantIdxInput) selectedApplicantIdxInput.value = '';
+            }
+        }
+
+        // 이미 선택된 야근인원 중 중복인 사람들도 제거
+        const currentOvertimePersons = window.currentOvertimePersons || [];
+        for (const person of currentOvertimePersons) {
+            const duplicateInfo = duplicateAttendeesInfo[person.id];
+            if (duplicateInfo?.hasDuplicate) {
+                console.log(`[중복 발견] 야근인원에서 제거: ${person.name}`);
+                if (typeof window.removeOvertimePersonInTemplate === 'function') {
+                    window.removeOvertimePersonInTemplate(person.id);
+                }
+            }
+        }
+    }
+
+    // 시간/날짜 변경 시 중복 검증 재실행 이벤트 등록
+    setTimeout(() => {
+        const dateInput = document.getElementById('ot_approval_date');
+        const startTimeInput = document.getElementById('ot_start_time');
+        const endTimeInput = document.getElementById('ot_end_time');
+
+        [dateInput, startTimeInput, endTimeInput].forEach(input => {
+            if (input) {
+                input.addEventListener('change', async () => {
+                    // 날짜/시간 변경 시 중복 정보 갱신 (프로젝트만 있으면 됨, 카드 불필요)
+                    if (selectedProject) {
+                        await revalidateDuplicates();
+                    }
+                });
+            }
+        });
+    }, 500);
 
     // 초기 템플릿 로드 (야근식대)
     loadTemplate('receipt-overtime');
