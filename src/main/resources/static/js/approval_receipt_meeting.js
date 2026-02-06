@@ -2101,6 +2101,28 @@ document.addEventListener('DOMContentLoaded', async function() {
                 return;
             }
 
+            // 회의 시간 범위 검증 (시작: 08:00~21:00, 종료: 10:00~22:00)
+            const startTime = startTimeInput.value;
+            const endTime = endTimeInput.value;
+            let isTimeOutOfRange = false;
+            let timeWarningMessage = '';
+
+            // 시작 시간 범위 체크 (08:00 ~ 21:00)
+            const startHour = parseInt(startTime.split(':')[0]);
+            const startMinute = parseInt(startTime.split(':')[1] || 0);
+            if (startHour < 8 || (startHour === 21 && startMinute > 0) || startHour > 21) {
+                isTimeOutOfRange = true;
+                timeWarningMessage += `시작 시간(${startTime})이 권장 범위(08:00~21:00)를 벗어났습니다.<br>`;
+            }
+
+            // 종료 시간 범위 체크 (10:00 ~ 22:00)
+            const endHour = parseInt(endTime.split(':')[0]);
+            const endMinute = parseInt(endTime.split(':')[1] || 0);
+            if (endHour < 10 || (endHour === 22 && endMinute > 0) || endHour > 22) {
+                isTimeOutOfRange = true;
+                timeWarningMessage += `종료 시간(${endTime})이 권장 범위(10:00~22:00)를 벗어났습니다.<br>`;
+            }
+
             if (!locationInput || !locationInput.value.trim()) {
                 await showWarning('장소를 입력해주세요.');
                 locationInput.scrollIntoView({ behavior: 'smooth', block: 'center' });
@@ -2176,6 +2198,23 @@ document.addEventListener('DOMContentLoaded', async function() {
                 attendees: attendeeDTOs
             };
 
+            // 시간 범위 벗어남 경고
+            if (isTimeOutOfRange) {
+                const timeConfirmed = await showConfirm(
+                    timeWarningMessage + '<br>정말 이 시간으로 저장하시겠습니까?',
+                    '회의 시간 확인',
+                    {
+                        icon: 'warning',
+                        confirmText: '저장',
+                        cancelText: '취소',
+                        confirmColor: '#ff9800'
+                    }
+                );
+
+                if (!timeConfirmed) {
+                    return;
+                }
+            }
 
             const confirmed = showSaveConfirm('회의록을 저장하시겠습니까?');
                 if(!confirmed)return;
