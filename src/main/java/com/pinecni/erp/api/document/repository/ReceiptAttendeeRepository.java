@@ -300,4 +300,31 @@ public interface ReceiptAttendeeRepository extends JpaRepository<ReceiptAttendee
             @Param("excludeReceiptIdx") Long excludeReceiptIdx,
             @Param("excludeDocumentTypePrefix") String excludeDocumentTypePrefix
     );
+
+    /**
+     * 특정 문서 제외하고 중복 검증 (수정 시 사용, 카드 무관)
+     * @param userIdx 사용자 IDX
+     * @param projectIdx 프로젝트 IDX
+     * @param documentDate 문서 날짜
+     * @param excludeReceiptIdx 제외할 문서 IDX
+     * @param excludeDocumentTypePrefix 제외할 문서 타입
+     * @return 참석자 목록
+     */
+    @Query("""
+        SELECT ra
+        FROM ReceiptAttendee ra
+        WHERE ra.userIdx = :userIdx
+          AND ra.projectIdx = :projectIdx
+          AND ra.documentDate = :documentDate
+          AND ra.isDeleted = false
+          AND NOT (ra.receiptIdx = :excludeReceiptIdx AND ra.documentTypePrefix = :excludeDocumentTypePrefix)
+        ORDER BY ra.startTime
+        """)
+    List<ReceiptAttendee> findByUserAndProjectAndDateExcluding(
+            @Param("userIdx") Long userIdx,
+            @Param("projectIdx") Long projectIdx,
+            @Param("documentDate") LocalDate documentDate,
+            @Param("excludeReceiptIdx") Long excludeReceiptIdx,
+            @Param("excludeDocumentTypePrefix") String excludeDocumentTypePrefix
+    );
 }

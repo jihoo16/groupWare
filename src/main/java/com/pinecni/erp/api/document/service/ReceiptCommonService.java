@@ -13,13 +13,12 @@ public interface ReceiptCommonService {
 
     /**
      * 통합 참석자 중복 검증
-     * 같은 프로젝트, 같은 카드, 같은 날짜에서 시간대 겹침 확인
+     * 같은 프로젝트, 같은 날짜에서 시간대 겹침 확인 (카드 무관)
      * 모든 문서 타입(회의록, 야근식대, 출장, 출장+회의) 대상
      *
      * @param date 검증할 날짜 (yyyy-MM-dd)
      * @param attendeeIdx 참석자 IDX (users.idx 또는 external_persons.idx)
      * @param projectIdx 프로젝트 IDX
-     * @param cardIdx 카드 IDX
      * @param startTime 시작 시간 (HH:mm)
      * @param endTime 종료 시간 (HH:mm)
      * @param excludeReceiptIdx 제외할 문서 IDX (수정 시 자기 자신 제외)
@@ -31,7 +30,6 @@ public interface ReceiptCommonService {
             String date,
             Long attendeeIdx,
             Long projectIdx,
-            Long cardIdx,
             String startTime,
             String endTime,
             Long excludeReceiptIdx,

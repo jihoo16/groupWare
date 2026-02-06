@@ -23,13 +23,12 @@ public class ReceiptCommonController {
 
     /**
      * 통합 참석자 중복 검증 API
-     * 같은 프로젝트, 같은 카드, 같은 날짜에서 시간대 겹침 확인
+     * 같은 프로젝트, 같은 날짜에서 시간대 겹침 확인 (카드 무관)
      * 모든 문서 타입(회의록, 야근식대, 출장, 출장+회의) 대상
      *
      * @param date 검증할 날짜 (yyyy-MM-dd)
      * @param attendeeIdx 참석자 IDX
      * @param projectIdx 프로젝트 IDX
-     * @param cardIdx 카드 IDX
      * @param startTime 시작 시간 (HH:mm) - 선택
      * @param endTime 종료 시간 (HH:mm) - 선택
      * @param excludeReceiptIdx 제외할 문서 IDX (수정 시)
@@ -42,18 +41,17 @@ public class ReceiptCommonController {
             @RequestParam String date,
             @RequestParam Long attendeeIdx,
             @RequestParam Long projectIdx,
-            @RequestParam Long cardIdx,
             @RequestParam(required = false) String startTime,
             @RequestParam(required = false) String endTime,
             @RequestParam(required = false) Long excludeReceiptIdx,
             @RequestParam(required = false) String excludeDocumentType,
             @RequestParam(required = false, defaultValue = "false") Boolean isExternal) {
 
-        log.debug("통합 중복 검증 요청 - date: {}, attendeeIdx: {}, projectIdx: {}, cardIdx: {}, time: {} ~ {}",
-                date, attendeeIdx, projectIdx, cardIdx, startTime, endTime);
+        log.debug("통합 중복 검증 요청 - date: {}, attendeeIdx: {}, projectIdx: {}, time: {} ~ {}",
+                date, attendeeIdx, projectIdx, startTime, endTime);
 
         List<Map<String, Object>> duplicates = receiptCommonService.checkDuplicateAttendee(
-                date, attendeeIdx, projectIdx, cardIdx,
+                date, attendeeIdx, projectIdx,
                 startTime, endTime,
                 excludeReceiptIdx, excludeDocumentType,
                 isExternal);

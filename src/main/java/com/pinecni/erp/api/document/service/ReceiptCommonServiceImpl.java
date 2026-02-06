@@ -36,23 +36,22 @@ public class ReceiptCommonServiceImpl implements ReceiptCommonService {
             String date,
             Long attendeeIdx,
             Long projectIdx,
-            Long cardIdx,
             String startTime,
             String endTime,
             Long excludeReceiptIdx,
             String excludeDocumentTypePrefix,
             Boolean isExternal) {
 
-        log.debug("통합 중복 검증 - date: {}, attendeeIdx: {}, projectIdx: {}, cardIdx: {}, time: {} ~ {}, exclude: {}({})",
-                date, attendeeIdx, projectIdx, cardIdx, startTime, endTime, excludeReceiptIdx, excludeDocumentTypePrefix);
+        log.debug("통합 중복 검증 - date: {}, attendeeIdx: {}, projectIdx: {}, time: {} ~ {}, exclude: {}({})",
+                date, attendeeIdx, projectIdx, startTime, endTime, excludeReceiptIdx, excludeDocumentTypePrefix);
 
         List<Map<String, Object>> duplicates = new ArrayList<>();
 
         try {
-            // 필수 파라미터 검증
-            if (date == null || attendeeIdx == null || projectIdx == null || cardIdx == null) {
-                log.warn("필수 파라미터 누락 - date: {}, attendeeIdx: {}, projectIdx: {}, cardIdx: {}",
-                        date, attendeeIdx, projectIdx, cardIdx);
+            // 필수 파라미터 검증 (카드는 필수 아님)
+            if (date == null || attendeeIdx == null || projectIdx == null) {
+                log.warn("필수 파라미터 누락 - date: {}, attendeeIdx: {}, projectIdx: {}",
+                        date, attendeeIdx, projectIdx);
                 return duplicates;
             }
 
@@ -68,17 +67,17 @@ public class ReceiptCommonServiceImpl implements ReceiptCommonService {
                 newEndTime = LocalTime.of(23, 59);
             }
 
-            // 참석 내역 조회 (같은 프로젝트, 같은 카드, 같은 날짜)
+            // 참석 내역 조회 (같은 프로젝트, 같은 날짜 - 카드 무관)
             List<ReceiptAttendee> existingAttendees;
             if (excludeReceiptIdx != null && excludeDocumentTypePrefix != null) {
                 // 수정 모드: 자기 자신 제외
-                existingAttendees = receiptAttendeeRepository.findByUserAndProjectAndCardAndDateExcluding(
-                        attendeeIdx, projectIdx, cardIdx, targetDate,
+                existingAttendees = receiptAttendeeRepository.findByUserAndProjectAndDateExcluding(
+                        attendeeIdx, projectIdx, targetDate,
                         excludeReceiptIdx, excludeDocumentTypePrefix);
             } else {
                 // 생성 모드
-                existingAttendees = receiptAttendeeRepository.findByUserAndProjectAndCardAndDate(
-                        attendeeIdx, projectIdx, cardIdx, targetDate);
+                existingAttendees = receiptAttendeeRepository.findByUserAndProjectAndDateAllCards(
+                        attendeeIdx, projectIdx, targetDate);
             }
 
             log.debug("기존 참석 내역 조회 결과: {}건", existingAttendees.size());
