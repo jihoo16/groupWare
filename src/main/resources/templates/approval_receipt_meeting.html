@@ -273,7 +273,7 @@
                                         <th>장소</th>
                                         <td class="auto-location-cell" style="padding: 10px 8px;"><input type="text" class="auto-location" readonly style="background: #f9f9f9; font-size: 13px; line-height: 1.6;"></td>
                                         <th>회의 일시</th>
-                                        <td class="auto-datetime-cell" style="padding: 10px 8px;"><span class="auto-datetime-proposal"></span></td>
+                                        <td class="auto-datetime-cell" style="padding: 10px 8px;"><span class="auto-datetime-proposal" style="font-size: 12px; line-height: 1.5; white-space: pre-line;"></span></td>
                                     </tr>
                                     <tr id="meeting_purpose_row">
                                         <th>내외구분</th>
@@ -308,7 +308,7 @@
                                         <th colspan="6">집행 예정 금액</th>
                                     </tr>
                                     <tr>
-                                        <td style="text-align: center; height: 80px; padding-left: 5px"><span class="auto-datetime-display" style="display: block; padding: 8px;"></span></td>
+                                        <td style="text-align: center; height: 80px; padding-left: 5px"><span class="auto-datetime-display" style="display: block; padding: 8px; font-size: 12px;"></span></td>
                                         <td colspan="6" style="text-align: center; height: 80px"><span class="auto-amount-display" style="display: block; padding: 8px;"></span></td>
                                     </tr>
                                     <tr>
@@ -340,7 +340,7 @@
                                     </tr>
                                     <tr>
                                         <th style=" height: 80px">일시</th>
-                                        <td><input type="text" class="auto-datetime" readonly style="background: #f9f9f9;"></td>
+                                        <td><input type="text" class="auto-datetime" readonly style="background: #f9f9f9; font-size: 12px; line-height: 1.5; white-space: pre-line;"></td>
                                         <th>장소</th>
                                         <td><input type="text" class="auto-location" readonly style="background: #f9f9f9;"></td>
                                     </tr>
@@ -387,7 +387,7 @@
                                     </tr>
                                     <tr>
                                         <th style=" height: 80px">일시</th>
-                                        <td><input type="text" class="auto-datetime" readonly style="background: #f9f9f9;"></td>
+                                        <td><input type="text" class="auto-datetime" readonly style="background: #f9f9f9; font-size: 12px; line-height: 1.5; white-space: pre-line;"></td>
                                         <th>장소</th>
                                         <td><input type="text" class="auto-location" readonly style="background: #f9f9f9;"></td>
                                     </tr>
@@ -470,7 +470,12 @@
                 <!-- 선택된 참석자 뱃지 영역 -->
                 <div class="selected-attendees-area">
                     <div class="selected-header">
-                        <h4><i class="fas fa-check-circle"></i> 선택된 참석자 (<span id="selectedAttendeeCount">0</span>명)</h4>
+                        <div style="display: flex; align-items: center; gap: 12px;">
+                            <h4><i class="fas fa-check-circle"></i> 선택된 참석자 (<span id="selectedAttendeeCount">0</span>명)</h4>
+                            <span style="color: #667eea; font-weight: 600; font-size: 14px;">
+                                금액 합계: <span id="selectedAttendeeTotalAmount">0</span>원
+                            </span>
+                        </div>
                         <button class="btn-sm-text" onclick="clearAllSelectedAttendees()" style="color: #94a3b8; font-size: 12px;">
                             <i class="fas fa-times"></i> 전체 해제
                         </button>

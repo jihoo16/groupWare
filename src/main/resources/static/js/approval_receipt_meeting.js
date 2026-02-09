@@ -19,6 +19,7 @@ document.addEventListener('DOMContentLoaded', async function() {
     let projectMembers = []; // 선택된 프로젝트의 팀원 목록
     let currentAttendees = []; // 현재 추가된 참석자 목록 (전역으로 이동)
     let fixedExpenses = {}; // 기초정보관리의 직급별 고정경비 (회의비)
+    let projectExpenseSettings = []; // 선택된 프로젝트의 직급별 경비 설정
     let selectedProject = null; // 선택된 프로젝트
     let projectCards = []; // 선택된 프로젝트의 카드 목록
     let selectedCard = null; // 선택된 카드
@@ -88,6 +89,7 @@ document.addEventListener('DOMContentLoaded', async function() {
     async function loadProjectMembers(projectIdx) {
         if (!projectIdx) {
             projectMembers = [];
+            projectExpenseSettings = [];
             return;
         }
 
@@ -100,6 +102,8 @@ document.addEventListener('DOMContentLoaded', async function() {
             if (response.ok && contentType && contentType.includes('application/json')) {
                 const project = await response.json();
                 projectMembers = project.projectMembers || [];
+                projectExpenseSettings = project.projectExpenseSettings || [];
+                console.log('프로젝트 경비 설정 로드:', projectExpenseSettings);
             } else {
                 console.error('프로젝트 팀원 로드 실패 - Status:', response.status, 'Content-Type:', contentType);
                 if (!contentType || !contentType.includes('application/json')) {
@@ -107,10 +111,12 @@ document.addEventListener('DOMContentLoaded', async function() {
                     console.error('응답 내용 (처음 200자):', text.substring(0, 200));
                 }
                 projectMembers = [];
+                projectExpenseSettings = [];
             }
         } catch (error) {
             console.error('프로젝트 팀원 로드 오류:', error);
             projectMembers = [];
+            projectExpenseSettings = [];
         }
     }
 
@@ -873,7 +879,7 @@ document.addEventListener('DOMContentLoaded', async function() {
         // 회의록 참석자 정보 업데이트
         function updateMeetingMinutesAttendees() {
             console.log('[updateMeetingMinutesAttendees] 시작 - currentAttendees:', currentAttendees);
-            // 참석자 정렬 (내부 직급순 -> 외부 회사순/직급순)
+            // 참석자 정렬 (외부 회사순/직급순 -> 내부 직급순)
             const sortedAttendees = sortAttendees(currentAttendees.filter(a => a.name && a.name.trim()));
             console.log('[updateMeetingMinutesAttendees] 정렬 및 필터링된 참석자:', sortedAttendees);
 
@@ -883,19 +889,20 @@ document.addEventListener('DOMContentLoaded', async function() {
 
             let allAttendeesText = '';
 
-            // 내부 참석자
-            if (internalAttendees.length > 0) {
-                const names = internalAttendees.map(a => a.name.trim());
-                allAttendeesText = names.join(', ') + '(파인씨앤아이)';
-            }
-
-            // 외부 참석자
+            // 외부 참석자 (먼저 표시)
             if (externalAttendees.length > 0) {
                 const externalTexts = externalAttendees.map(a => `${a.name.trim()}(${a.dept || '외부'})`);
+                allAttendeesText = externalTexts.join(', ');
+            }
+
+            // 내부 참석자 (나중에 표시)
+            if (internalAttendees.length > 0) {
+                const names = internalAttendees.map(a => a.name.trim());
+                const internalText = names.join(', ') + '(파인씨앤아이)';
                 if (allAttendeesText) {
-                    allAttendeesText += ', ' + externalTexts.join(', ');
+                    allAttendeesText += ', ' + internalText;
                 } else {
-                    allAttendeesText = externalTexts.join(', ');
+                    allAttendeesText = internalText;
                 }
             }
 
@@ -1077,18 +1084,11 @@ document.addEventListener('DOMContentLoaded', async function() {
         // 참석자 정렬 함수
         function sortAttendees(attendees) {
             return [...attendees].sort((a, b) => {
-                // 1. 내부/외부 구분 (내부가 먼저)
-                if (a.type === 'internal' && b.type === 'external') return -1;
-                if (a.type === 'external' && b.type === 'internal') return 1;
+                // 1. 내부/외부 구분 (외부가 먼저)
+                if (a.type === 'external' && b.type === 'internal') return -1;
+                if (a.type === 'internal' && b.type === 'external') return 1;
 
-                // 2. 내부 참석자끼리는 직급순 (높은 직급부터)
-                if (a.type === 'internal' && b.type === 'internal') {
-                    const orderA = positionOrder[a.position] || 999;
-                    const orderB = positionOrder[b.position] || 999;
-                    return orderB - orderA;
-                }
-
-                // 3. 외부 참석자끼리는 회사명 가나다순, 같은 회사면 직급순 (높은 직급부터)
+                // 2. 외부 참석자끼리는 회사명 가나다순, 같은 회사면 직급순 (높은 직급부터)
                 if (a.type === 'external' && b.type === 'external') {
                     const deptA = a.dept || '';
                     const deptB = b.dept || '';
@@ -1099,6 +1099,13 @@ document.addEventListener('DOMContentLoaded', async function() {
                     }
 
                     // 같은 회사면 직급순 (높은 직급부터)
+                    const orderA = positionOrder[a.position] || 999;
+                    const orderB = positionOrder[b.position] || 999;
+                    return orderB - orderA;
+                }
+
+                // 3. 내부 참석자끼리는 직급순 (높은 직급부터)
+                if (a.type === 'internal' && b.type === 'internal') {
                     const orderA = positionOrder[a.position] || 999;
                     const orderB = positionOrder[b.position] || 999;
                     return orderB - orderA;
@@ -1388,19 +1395,21 @@ document.addEventListener('DOMContentLoaded', async function() {
             if (dateValue) {
                 const [year, month, day] = dateValue.split('-');
                 let formattedDate = `${year}.${month}.${day}.`;
+                let formattedDateWithTime = `${year}.${month}.${day}.`;
                 let formattedDateProposal = `${year}.${month}.${day}.`;
 
                 if (startTimeValue && endTimeValue) {
                     const endTimeDisplay = endTimeValue === '00:00' ? '24:00' : endTimeValue;
-                    formattedDate += ` ${startTimeValue}~${endTimeDisplay}`;
-                    formattedDateProposal += `\n${startTimeValue} ~ ${endTimeDisplay}`;
+                    // 날짜 + 줄바꿈 + 시간
+                    formattedDateWithTime = `${year}.${month}.${day}.\n${startTimeValue} ~ ${endTimeDisplay}`;
+                    formattedDateProposal = `${year}.${month}.${day}.\n${startTimeValue} ~ ${endTimeDisplay}`;
                 } else if (startTimeValue) {
-                    formattedDate += ` ${startTimeValue}`;
-                    formattedDateProposal += `\n${startTimeValue}`;
+                    formattedDateWithTime = `${year}.${month}.${day}.\n${startTimeValue}`;
+                    formattedDateProposal = `${year}.${month}.${day}.\n${startTimeValue}`;
                 }
 
                 document.querySelectorAll('.auto-datetime').forEach(field => {
-                    field.value = formattedDate;
+                    field.value = formattedDateWithTime;
                 });
 
                 document.querySelectorAll('.auto-datetime-proposal').forEach(field => {
@@ -1409,7 +1418,7 @@ document.addEventListener('DOMContentLoaded', async function() {
 
                 // 회의 품의서 - 집행 예정 금액 옆 일시 칸
                 document.querySelectorAll('.auto-datetime-display').forEach(field => {
-                    field.textContent = formattedDate;
+                    field.textContent = formattedDate; // 날짜만 표시
                 });
 
                 // 회의 품의서 작성일
@@ -1980,6 +1989,46 @@ document.addEventListener('DOMContentLoaded', async function() {
         updateFileList();
     };
 
+    // 기존 첨부파일 다운로드
+    window.downloadAttachment = function(fileId, fileName) {
+        const link = document.createElement('a');
+        link.href = `/api/attachments/${fileId}/download`;
+        link.download = fileName;
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+    };
+
+    // 기존 첨부파일 표시 (상세보기 모드)
+    function displayExistingAttachments(attachments) {
+        if (!attachments || attachments.length === 0) return;
+
+        // 파일 목록 초기화
+        fileList.innerHTML = '';
+
+        attachments.forEach((attachment) => {
+            const item = document.createElement('div');
+            item.className = 'file-item existing-file';
+
+            let icon = 'fa-file';
+            if (attachment.fileName.match(/\.(jpg|jpeg|png|gif)$/i)) icon = 'fa-file-image';
+            else if (attachment.fileName.match(/\.(pdf)$/i)) icon = 'fa-file-pdf';
+            else if (attachment.fileName.match(/\.(doc|docx)$/i)) icon = 'fa-file-word';
+            else if (attachment.fileName.match(/\.(xls|xlsx)$/i)) icon = 'fa-file-excel';
+
+            const fileSize = attachment.fileSize ? `(${(attachment.fileSize / 1024).toFixed(1)} KB)` : '';
+
+            item.innerHTML = `
+                <i class="fas ${icon}"></i>
+                <span>${attachment.fileName} ${fileSize}</span>
+                <button class="btn-download-file" onclick="downloadAttachment(${attachment.idx}, '${attachment.fileName}')" title="다운로드">
+                    <i class="fas fa-download"></i>
+                </button>
+            `;
+            fileList.appendChild(item);
+        });
+    }
+
     // 저장
     if (saveBtn) {
         saveBtn.addEventListener('click', async function() {
@@ -2068,7 +2117,6 @@ document.addEventListener('DOMContentLoaded', async function() {
             const endTimeInput = document.getElementById('common_end_time');
             const locationInput = document.getElementById('common_location');
             const purposeInput = document.getElementById('common_purpose');
-            // amountInput already declared at line 1500
             const contentInput = document.getElementById('common_content');
 
             if (!projectIdxInput || !projectIdxInput.value) {
@@ -2172,7 +2220,6 @@ document.addEventListener('DOMContentLoaded', async function() {
                     displayOrder: index,
                     meetingExpense: attendee.meetingExpense || 0
                 };
-
                 return dto;
             });
 
@@ -2195,6 +2242,7 @@ document.addEventListener('DOMContentLoaded', async function() {
                 amount: amountInput && amountInput.value ? parseInt(amountInput.value.replace(/,/g, '')) : null,
                 purpose: purposeInput ? purposeInput.value : null,
                 content: document.getElementById('common_content') ? document.getElementById('common_content').value : null,
+                isProject: true,  // 프로젝트 관련 문서임을 명시
                 attendees: attendeeDTOs
             };
 
@@ -2350,10 +2398,33 @@ document.addEventListener('DOMContentLoaded', async function() {
     function getAttendeePersons() {
         return projectMembers.map(member => {
             const positionName = member.employeePositionName || '-';
+            const positionCode = member.employeePositionCode;
             let meetingExpense = 0;
-            if (fixedExpenses[positionName]) {
-                meetingExpense = fixedExpenses[positionName];
+
+            // 1순위: 프로젝트별 경비 설정에서 회의비 찾기
+            if (projectExpenseSettings && projectExpenseSettings.length > 0 && positionCode) {
+                const projectSetting = projectExpenseSettings.find(setting =>
+                    setting.positionCode === positionCode &&
+                    setting.expenseItemName === '회의비'  // 정확히 '회의비'와 매칭
+                );
+                if (projectSetting && projectSetting.amount) {
+                    meetingExpense = projectSetting.amount;
+                    console.log(`[${member.employeeName}] 프로젝트 회의비 적용 (${positionCode}): ${meetingExpense}원`);
+                } else {
+                    // 2순위: 기초정보관리의 직급별 고정경비 사용
+                    if (fixedExpenses[positionName]) {
+                        meetingExpense = fixedExpenses[positionName];
+                        console.log(`[${member.employeeName}] 기본 회의비 적용 (프로젝트 설정 없음): ${meetingExpense}원`);
+                    }
+                }
+            } else {
+                // 프로젝트 경비 설정이 없으면 기본 고정경비 사용
+                if (fixedExpenses[positionName]) {
+                    meetingExpense = fixedExpenses[positionName];
+                    console.log(`[${member.employeeName}] 기본 회의비 적용 (직급명 기준): ${meetingExpense}원`);
+                }
             }
+
             return {
                 id: member.employeeIdx,
                 name: member.employeeName,
@@ -2400,9 +2471,13 @@ document.addEventListener('DOMContentLoaded', async function() {
             </div>
         `;
 
-        // 프로젝트 목록 (간단하게 이름만 표시)
+        // 프로젝트 목록
         const projectItems = filtered.map(proj => {
             const highlightedName = highlightText(proj.projectName, searchText);
+            const leader = proj.projectManagerName || '-';
+            const memberCount = proj.memberCount || 0;
+            const startDate = proj.startDate ? new Date(proj.startDate).toLocaleDateString('ko-KR') : '-';
+            const endDate = proj.endDate ? new Date(proj.endDate).toLocaleDateString('ko-KR') : '-';
 
             return `
                 <div class="project-item-in-attendee" data-project-idx="${proj.idx}">
@@ -2411,6 +2486,10 @@ document.addEventListener('DOMContentLoaded', async function() {
                     </div>
                     <div class="project-item-info">
                         <div class="project-item-name">${highlightedName}</div>
+                        <div class="project-item-details">
+                            <div><i class="fas fa-user"></i> ${leader} (${memberCount}명)</div>
+                            <div><i class="fas fa-calendar"></i> ${startDate} ~ ${endDate}</div>
+                        </div>
                     </div>
                     <div class="project-item-arrow">
                         <i class="fas fa-chevron-right"></i>
@@ -2581,6 +2660,9 @@ document.addEventListener('DOMContentLoaded', async function() {
             const highlightedCompany = highlightText(person.companyName || '-', searchText);
             const highlightedPosition = highlightText(person.position || '-', searchText);
 
+            // 외부인원 회의비: 무조건 3만원
+            const formattedExpense = '30,000원';
+
             // 중복 참석자 뱃지
             let duplicateBadge = '';
             if (isDuplicate) {
@@ -2602,7 +2684,7 @@ document.addEventListener('DOMContentLoaded', async function() {
                      onclick="toggleExternalAttendee(${person.idx})">
                     <div class="employee-info">
                         <div class="employee-name">${highlightedName}${duplicateBadge}</div>
-                        <div class="employee-details">${highlightedPosition} · ${highlightedCompany}</div>
+                        <div class="employee-details">${highlightedPosition} · ${highlightedCompany} · ${formattedExpense}</div>
                     </div>
                     ${isSelected ? '<i class="fas fa-check-circle" style="color: #10b981; font-size: 18px; margin-left: auto;"></i>' : ''}
                 </div>
@@ -2704,6 +2786,15 @@ document.addEventListener('DOMContentLoaded', async function() {
         if (!selectedAttendeeBadgesEl || !selectedAttendeeCountEl) return;
 
         selectedAttendeeCountEl.textContent = tempSelectedAttendees.length;
+
+        // 금액 합계 계산 및 표시
+        const totalAmount = tempSelectedAttendees.reduce((sum, person) => {
+            return sum + (person.meetingExpense || 0);
+        }, 0);
+        const totalAmountEl = document.getElementById('selectedAttendeeTotalAmount');
+        if (totalAmountEl) {
+            totalAmountEl.textContent = totalAmount.toLocaleString('ko-KR');
+        }
 
         if (tempSelectedAttendees.length === 0) {
             selectedAttendeeBadgesEl.innerHTML = `
@@ -4015,6 +4106,12 @@ document.addEventListener('DOMContentLoaded', async function() {
                 console.log('[populateForm] 완료 - 기존 데이터 로딩 플래그 OFF');
             }, 200);
         }, 100);
+
+        // 첨부파일 로드 및 표시
+        if (data.attachments && data.attachments.length > 0) {
+            console.log('[populateForm] 첨부파일 로드:', data.attachments.length, '개');
+            displayExistingAttachments(data.attachments);
+        }
     }
 
     // 수정 버튼 이벤트
