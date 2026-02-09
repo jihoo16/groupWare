@@ -106,14 +106,12 @@ public class ProjectServiceImpl implements ProjectService {
                 ProjectRelation relation = ProjectRelation.builder()
                         .sourceProjectIdx(savedProject.getIdx())
                         .targetProjectIdx(relationsDTO.getTargetProjectIdx())
-                        .relationType(relationsDTO.getRelationType())
-                        .description(relationsDTO.getDescription())
                         .createdUserIdx(createdUserIdx)
                         .build();
 
                 projectRelationRepository.save(relation);
-                log.debug("Project relation saved: source={}, target={}, type={}",
-                         savedProject.getIdx(), relationsDTO.getTargetProjectIdx(), relationsDTO.getRelationType());
+                log.debug("Project relation saved: source={}, target={}",
+                         savedProject.getIdx(), relationsDTO.getTargetProjectIdx());
             }
         }
         // 연구비 카드 저장
@@ -318,15 +316,12 @@ public class ProjectServiceImpl implements ProjectService {
                     ProjectRelation newRelation = ProjectRelation.builder()
                             .sourceProjectIdx(idx)
                             .targetProjectIdx(relationDTO.getTargetProjectIdx())
-                            .relationType(relationDTO.getRelationType() != null ?
-                                    relationDTO.getRelationType() : "RELATED")
-                            .description(relationDTO.getDescription())
                             .createdUserIdx(updatedUserIdx)
                             .build();
 
                     projectRelationRepository.save(newRelation);
-                    log.debug("Project relation created: source={}, target={}, type={}",
-                             idx, relationDTO.getTargetProjectIdx(), newRelation.getRelationType());
+                    log.debug("Project relation created: source={}, target={}",
+                             idx, relationDTO.getTargetProjectIdx());
                 }
 
                 updatedRelationTargetIds.add(relationDTO.getTargetProjectIdx());

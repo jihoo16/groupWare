@@ -279,8 +279,8 @@ public class ProjectMapper {
                 .targetProjectStatus(getTargetProjectStaus(relation.getTargetProjectIdx()))
                 .targetProjectManager(getTargetProjectManager(relation.getTargetProjectIdx()))
                 .targetPeriod(getTargetProjectPeriod(relation.getTargetProjectIdx()))
-                .relationType(relation.getRelationType())
-                .description(relation.getDescription())
+                .relationType(null)  // DB 컬럼 없음 - 프론트 입력값 저장 안 됨
+                .description(null)   // DB 컬럼 없음 - 프론트 입력값 저장 안 됨
                 .createdAt(relation.getCreatedAt())
                 .createdUserIdx(relation.getCreatedUserIdx())
                 .build();
@@ -369,8 +369,9 @@ public class ProjectMapper {
                     .ifPresent(code -> dto.setEmployeeDeptName(code.getCodeName()));
         }
 
-        // 직급명 및 정렬 순서 조회 (코드 → 명칭, sortOrder)
+        // 직급 코드, 직급명 및 정렬 순서 조회 (코드 → 명칭, sortOrder)
         if (employee != null && employee.getEmpPosition() != null) {
+            dto.setEmployeePositionCode(employee.getEmpPosition()); // 직급 코드 설정
             codeRepository.findByGroupCodeAndCode("C02", employee.getEmpPosition())
                     .ifPresent(code -> {
                         dto.setEmployeePositionName(code.getCodeName());

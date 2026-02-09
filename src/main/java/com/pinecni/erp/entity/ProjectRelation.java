@@ -35,10 +35,10 @@ public class ProjectRelation {
     @Column(name = "target_project_idx", nullable = false)
     private Long targetProjectIdx;
 
-    @Column(name = "relation_type", length = 50)
+    @Transient
     private String relationType = "RELATED";
 
-    @Column(name = "description", length = 500)
+    @Transient
     private String description;
 
     @CreationTimestamp
