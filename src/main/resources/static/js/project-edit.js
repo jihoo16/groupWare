@@ -628,23 +628,14 @@
         closeMemberModal();
     };
 
-    // 프로젝트 역할 옵션
+    // 프로젝트 역할 옵션 (PI 제외 - 연구책임자는 별도 선택)
     const PROJECT_ROLES = [
-        { value: '', label: '선택하세요' },
-        { value: 'PI', label: '연구책임자' },
         { value: 'PRACTITIONER', label: '실무자' },
         { value: 'RESEARCHER', label: '연구원' }
     ];
 
-    // 직급명을 기준으로 역할 자동 할당 함수
+    // 역할 자동 할당 함수 - 기본 연구원
     function getAutoRole(positionName) {
-        // 부장 이상은 실무자
-        const seniorPositions = ['부장', '이사', '상무', '전무', '부사장', '사장', '대표이사'];
-        if (seniorPositions.some(pos => positionName && positionName.includes(pos))) {
-            return 'PRACTITIONER';
-        }
-
-        // 차장 이하는 연구원
         return 'RESEARCHER';
     }
 
@@ -681,21 +672,28 @@
         sortedMembers.forEach((member, index) => {
             const row = document.createElement('tr');
 
-            // 역할 select 옵션 생성
-            const roleOptions = PROJECT_ROLES.map(role =>
-                `<option value="${role.value}" ${(member.role || '') === role.value ? 'selected' : ''}>${role.label}</option>`
-            ).join('');
+            // PI(연구책임자)는 역할 변경 불가
+            let roleCell;
+            if (member.role === 'PI') {
+                roleCell = `<span style="font-weight: 600; color: #4361ee;">연구책임자</span>`;
+            } else {
+                const roleOptions = PROJECT_ROLES.map(role =>
+                    `<option value="${role.value}" ${(member.role || '') === role.value ? 'selected' : ''}>${role.label}</option>`
+                ).join('');
+                roleCell = `<select class="form-control" onchange="updateMemberRole('${member.id}', this.value)" style="width: 100%; padding: 4px;">${roleOptions}</select>`;
+            }
+
+            // PI는 삭제 불가
+            const deleteCell = member.role === 'PI'
+                ? ''
+                : `<button type="button" class="btn-delete" onclick="removeMember('${member.id}')"><i class="fas fa-trash"></i></button>`;
 
             row.innerHTML = `
                 <td class="text-center">${index + 1}</td>
                 <td>${member.name}</td>
                 <td>${member.dept}</td>
                 <td>${member.position}</td>
-                <td>
-                    <select class="form-control" onchange="updateMemberRole('${member.id}', this.value)" style="width: 100%; padding: 4px;">
-                        ${roleOptions}
-                    </select>
-                </td>
+                <td>${roleCell}</td>
                 <td>
                     <input type="date" value="${member.startDate}"
                            onchange="updateMemberDate('${member.id}', 'startDate', this.value)">
@@ -704,11 +702,7 @@
                     <input type="date" value="${member.endDate}"
                            onchange="updateMemberDate('${member.id}', 'endDate', this.value)">
                 </td>
-                <td class="text-center">
-                    <button type="button" class="btn-delete" onclick="removeMember('${member.id}')">
-                        <i class="fas fa-trash"></i>
-                    </button>
-                </td>
+                <td class="text-center">${deleteCell}</td>
             `;
             teamTableBody.appendChild(row);
         });
@@ -730,9 +724,19 @@
     // 팀원 역할 업데이트 (전역 함수)
     window.updateMemberRole = function(memberId, value) {
         const member = selectedMemberList.find(m => m.id === memberId);
-        if (member) {
-            member.role = value;
+        if (!member) return;
+
+        // 실무자는 1명만 허용 - 기존 실무자를 연구원으로 변경
+        if (value === 'PRACTITIONER') {
+            selectedMemberList.forEach(m => {
+                if (m.id !== memberId && m.role === 'PRACTITIONER') {
+                    m.role = 'RESEARCHER';
+                }
+            });
         }
+
+        member.role = value;
+        renderTeamTable();
     };
 
     // 팀원 제거 (전역 함수)
