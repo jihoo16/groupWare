@@ -726,7 +726,8 @@ async function goToDocument(documentType, sourceDocumentId) {
         case 'MEETING_MINUTES':
         case 'BUSINESS_TRIP':
         case 'RECEIPT_MEETING':
-            await showWarning('상세 페이지 구현 중입니다.');
+            url = `/approval/receipt-meeting?documentIdx=${sourceDocumentId}`;
+            openWeeklyReportPopup(url);
             return;
         case 'RECEIPT_OVERTIME':
             url = `/approval/receipt-overtime?documentIdx=${sourceDocumentId}`;
