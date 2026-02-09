@@ -293,8 +293,6 @@ public class ProjectMapper {
                 .targetProjectStatus(getTargetProjectStaus(relation.getTargetProjectIdx()))
                 .targetProjectManager(getTargetProjectManager(relation.getTargetProjectIdx()))
                 .targetPeriod(getTargetProjectPeriod(relation.getTargetProjectIdx()))
-                .relationType(relation.getRelationType())
-                .description(relation.getDescription())
                 .createdAt(relation.getCreatedAt())
                 .createdUserIdx(relation.getCreatedUserIdx())
                 .build();

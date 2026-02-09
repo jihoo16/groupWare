@@ -30,9 +30,4 @@ public interface ProjectRelationRepository extends JpaRepository<ProjectRelation
             "OR r.targetProjectIdx = :projectIdx")
     List<ProjectRelation> findAllRelationsByProjectIdx(Long projectIdx);
 
-    /**
-     * 관계 유형별 조회
-     */
-    @Query("SELECT r FROM ProjectRelation r WHERE r.relationType = :relationType")
-    List<ProjectRelation> findByRelationType(String relationType);
 }
