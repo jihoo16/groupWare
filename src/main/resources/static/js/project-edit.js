@@ -19,8 +19,6 @@
     const relatedProjectModal = document.getElementById('relatedProjectModal');
     const relatedProjectSearchInput = document.getElementById('relatedProjectSearchInput');
     const relatedProjectListElement = document.getElementById('relatedProjectList');
-    const relationDetailsModal = document.getElementById('relationDetailsModal');
-    const relationDetailsContainer = document.getElementById('relationDetailsContainer');
 
     // 선택된 팀원 목록
     let selectedMemberList = [];
@@ -250,9 +248,7 @@
                         name: relation.targetProjectName,
                         status: relation.targetProjectStatus,
                         pm: relation.targetProjectManager,
-                        period: relation.targetPeriod,
-                        relationType: relation.relationType,
-                        description: relation.description
+                        period: relation.targetPeriod
                     }));
                     console.log('연계 프로젝트 목록 로드:', relatedProjectList);
                 } else {
@@ -751,8 +747,27 @@
     const projectEndDateInput = document.getElementById('endDate');
 
     if (projectStartDateInput) {
-        projectStartDateInput.addEventListener('change', function() {
+        projectStartDateInput.addEventListener('change', async function() {
             const newStartDate = this.value;
+            if (!newStartDate) return;
+
+            const totalPeriodEnd = document.getElementById('totalPeriodEnd').value;
+            const endDate = projectEndDateInput ? projectEndDateInput.value : '';
+
+            // 총 프로젝트 종료일보다 뒤에 설정 불가
+            if (totalPeriodEnd && new Date(newStartDate) > new Date(totalPeriodEnd)) {
+                await showWarning('현재 차수 시작일은 총 프로젝트 종료일보다 뒤에 설정할 수 없습니다.');
+                this.value = '';
+                return;
+            }
+
+            // 현재 차수 종료일보다 뒤에 설정 불가
+            if (endDate && new Date(newStartDate) > new Date(endDate)) {
+                await showWarning('현재 차수 시작일은 차수 종료일보다 뒤에 설정할 수 없습니다.');
+                this.value = '';
+                return;
+            }
+
             // 모든 팀원의 참여 시작일을 프로젝트 시작일로 업데이트
             selectedMemberList.forEach(member => {
                 member.startDate = newStartDate;
@@ -762,8 +777,27 @@
     }
 
     if (projectEndDateInput) {
-        projectEndDateInput.addEventListener('change', function() {
+        projectEndDateInput.addEventListener('change', async function() {
             const newEndDate = this.value;
+            if (!newEndDate) return;
+
+            const totalPeriodEnd = document.getElementById('totalPeriodEnd').value;
+            const startDate = projectStartDateInput ? projectStartDateInput.value : '';
+
+            // 총 프로젝트 종료일보다 뒤에 설정 불가
+            if (totalPeriodEnd && new Date(newEndDate) > new Date(totalPeriodEnd)) {
+                await showWarning('현재 차수 종료일은 총 프로젝트 종료일보다 뒤에 설정할 수 없습니다.');
+                this.value = '';
+                return;
+            }
+
+            // 현재 차수 시작일보다 앞에 설정 불가
+            if (startDate && new Date(newEndDate) < new Date(startDate)) {
+                await showWarning('현재 차수 종료일은 차수 시작일보다 앞에 설정할 수 없습니다.');
+                this.value = '';
+                return;
+            }
+
             // 모든 팀원의 참여 종료일을 프로젝트 종료일로 업데이트
             selectedMemberList.forEach(member => {
                 member.endDate = newEndDate;
@@ -1118,9 +1152,7 @@
 
             // 연계 프로젝트 데이터 변환
             const projectRelations = relatedProjectList.map(project => ({
-                targetProjectIdx: project.id,
-                relationType: project.relationType || 'RELATED',
-                description: project.description || null
+                targetProjectIdx: project.id
             }));
             console.log("변환된 projectRelations:", projectRelations);
 
@@ -1467,8 +1499,8 @@
         }
     });
 
-    // 연계 정보 입력 모달 표시 (전역 함수)
-    window.showRelationDetailsModal = async function() {
+    // 연계 프로젝트 저장 (전역 함수)
+    window.saveSelectedRelatedProjects = async function() {
         const checkboxes = document.querySelectorAll('.related-project-checkbox:checked');
 
         if (checkboxes.length === 0) {
@@ -1476,12 +1508,15 @@
             return;
         }
 
-        // 선택된 프로젝트 정보 수집
-        const selectedProjects = [];
+        // 선택된 프로젝트 정보 수집 (이미 등록된 프로젝트는 제외)
+        const newRelations = [];
         checkboxes.forEach(checkbox => {
+            const projectId = checkbox.value;
+            if (relatedProjectList.some(p => p.id === projectId)) return;
+
             const row = checkbox.closest('tr');
-            selectedProjects.push({
-                id: checkbox.value,
+            newRelations.push({
+                id: projectId,
                 name: row.getAttribute('data-name'),
                 status: row.getAttribute('data-status'),
                 pm: row.getAttribute('data-pm'),
@@ -1489,110 +1524,16 @@
             });
         });
 
-        // 상세 정보 입력 폼 생성
-        relationDetailsContainer.innerHTML = '';
-        selectedProjects.forEach((project, index) => {
-            const formSection = document.createElement('div');
-            formSection.className = 'form-section';
-            formSection.style.marginBottom = '20px';
-            formSection.style.padding = '15px';
-            formSection.style.border = '1px solid #dee2e6';
-            formSection.style.borderRadius = '4px';
-
-            formSection.innerHTML = `
-                <h3 style="font-size: 14px; margin-bottom: 15px; color: #495057;">
-                    <i class="fas fa-link"></i> ${project.name}
-                </h3>
-                <input type="hidden" id="relationProjectId_${index}" value="${project.id}">
-                <input type="hidden" id="relationProjectName_${index}" value="${project.name}">
-                <input type="hidden" id="relationProjectStatus_${index}" value="${project.status}">
-                <input type="hidden" id="relationProjectPM_${index}" value="${project.pm}">
-                <input type="hidden" id="relationProjectPeriod_${index}" value="${project.period}">
-
-                <div class="form-group" style="margin-bottom: 15px;">
-                    <label for="relationType_${index}" style="display: block; margin-bottom: 5px; font-weight: 500;">
-                        연계 유형 <span class="required">*</span>
-                    </label>
-                    <select id="relationType_${index}" class="form-control" required>
-                        <option value="">선택하세요</option>
-                        <option value="RELATED">RELATED</option>
-                        <option value="DEPENDENT">DEPENDENT</option>
-                        <option value="PREREQUISITE">PREREQUISITE</option>
-                        <option value="SUCCESSOR">SUCCESSOR</option>
-                        <option value="COLLABORATION">COLLABORATION</option>
-                    </select>
-                </div>
-
-                <div class="form-group">
-                    <label for="relationDescription_${index}" style="display: block; margin-bottom: 5px; font-weight: 500;">
-                        설명
-                    </label>
-                    <textarea id="relationDescription_${index}" class="form-control" rows="2"
-                              placeholder="연계 프로젝트와의 관계를 간단히 설명해주세요"></textarea>
-                </div>
-            `;
-
-            relationDetailsContainer.appendChild(formSection);
-        });
-
-        // 모달 전환
-        relatedProjectModal.classList.remove('active');
-        relationDetailsModal.classList.add('active');
-    };
-
-    // 연계 정보 저장 (전역 함수)
-    window.saveRelatedProjects = async function() {
-        const formSections = relationDetailsContainer.querySelectorAll('.form-section');
-        const newRelations = [];
-
-        // 각 폼에서 데이터 수집 및 유효성 검사
-        for (let i = 0; i < formSections.length; i++) {
-            const relationType = document.getElementById(`relationType_${i}`).value;
-            const description = document.getElementById(`relationDescription_${i}`).value;
-            const projectId = document.getElementById(`relationProjectId_${i}`).value;
-            const projectName = document.getElementById(`relationProjectName_${i}`).value;
-            const projectStatus = document.getElementById(`relationProjectStatus_${i}`).value;
-            const projectPM = document.getElementById(`relationProjectPM_${i}`).value;
-            const projectPeriod = document.getElementById(`relationProjectPeriod_${i}`).value;
-
-            if (!relationType) {
-                await showWarning(`"${projectName}" 프로젝트의 연계 유형을 선택해주세요.`);
-                return;
-            }
-
-            // 중복 체크
-            if (!relatedProjectList.some(p => p.id === projectId)) {
-                newRelations.push({
-                    id: projectId,
-                    name: projectName,
-                    status: projectStatus,
-                    pm: projectPM,
-                    period: projectPeriod,
-                    relationType: relationType,
-                    description: description
-                });
-            }
+        if (newRelations.length === 0) {
+            await showWarning('새로 추가할 프로젝트가 없습니다. 선택한 프로젝트는 이미 등록되어 있습니다.');
+            return;
         }
 
         // 연계 프로젝트 목록에 추가
         relatedProjectList.push(...newRelations);
         renderRelatedProjectList();
 
-        // 모달 닫기
-        closeRelationDetailsModal();
         closeRelatedProjectModal();
-    };
-
-    // 연계 정보 입력 모달 닫기 (전역 함수)
-    window.closeRelationDetailsModal = function() {
-        if (!relationDetailsModal) return;
-        relationDetailsModal.classList.remove('active');
-    };
-
-    // 프로젝트 선택으로 돌아가기 (전역 함수)
-    window.backToProjectSelection = function() {
-        closeRelationDetailsModal();
-        relatedProjectModal.classList.add('active');
     };
 
     // 연계 프로젝트 목록 렌더링
@@ -1621,8 +1562,6 @@
                         <span><span class="status-badge ${statusClass}">${statusLabel}</span></span>
                         <span><i class="fas fa-user"></i> 연구 책임자: ${project.pm || '-'}</span>
                         <span><i class="fas fa-calendar"></i> ${project.period || '-'}</span>
-                        <span><i class="fas fa-link"></i>연계 타입: ${project.relationType || '-'}</span>
-                        <span><i class="fas fa-comment-alt"></i>설명: ${project.description || '-'}</span>
                     </div>
                 </div>
                 <button type="button" onclick="removeRelatedProject('${project.id}')">
@@ -1650,14 +1589,6 @@
         });
     }
 
-    // 연계 정보 입력 모달 배경 클릭 시 닫기
-    if (relationDetailsModal) {
-        relationDetailsModal.addEventListener('click', function(e) {
-            if (e.target === relationDetailsModal) {
-                closeRelationDetailsModal();
-            }
-        });
-    }
 
     // 직급별 경비 설정 기능
     const resetExpensesBtn = document.getElementById('resetExpensesBtn');
