@@ -1914,6 +1914,7 @@ document.addEventListener('DOMContentLoaded', async function() {
                 documentTitle: otTitle.value,
                 documentContent: otContent?.value || '',
                 totalAmount: amount,
+                isProject: true,  // 프로젝트 관련 문서임을 명시
                 attendees: overtimePersons.map(person => ({
                     userIdx: person.id,
                     workTime: workTimeStr,
