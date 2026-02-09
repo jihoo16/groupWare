@@ -6,6 +6,7 @@ import com.pinecni.erp.api.code.repository.CodeRepository;
 import com.pinecni.erp.api.document.repository.MeetingMinutesRepository;
 import com.pinecni.erp.api.document.repository.WeeklyReportRepository;
 import com.pinecni.erp.api.document.repository.ReceiptOvertimeRepository;
+import com.pinecni.erp.api.project.repository.ProjectCardRepository;
 import com.pinecni.erp.api.project.repository.ReceiptMeetingRepository;
 import com.pinecni.erp.api.project.repository.ReceiptTripRepository;
 import com.pinecni.erp.api.user.repository.UserRepository;
@@ -17,6 +18,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
 import java.util.ArrayList;
@@ -42,6 +44,7 @@ public class ApprovalDocumentServiceImpl implements ApprovalDocumentService {
     private final ReceiptTripRepository receiptTripRepository;
     private final ReceiptMeetingRepository receiptMeetingRepository;
     private final ReceiptOvertimeRepository receiptOvertimeRepository;
+    private final ProjectCardRepository projectCardRepository;
 
     @Override
     public List<ApprovalDocumentDTO> getAllDocuments(Long currentUserIdx) {
@@ -216,6 +219,9 @@ public class ApprovalDocumentServiceImpl implements ApprovalDocumentService {
         // 출장+회의 조회
         result.addAll(getReceiptMeetingsByProject(projectIdx));
 
+        // 야근식대 조회
+        result.addAll(getReceiptOvertimesByProject(projectIdx));
+
         // 최신순 정렬
         result.sort(Comparator.comparing(ApprovalDocumentDTO::getCreatedAt, Comparator.nullsLast(Comparator.reverseOrder())));
 
@@ -387,6 +393,30 @@ public class ApprovalDocumentServiceImpl implements ApprovalDocumentService {
     }
 
     /**
+     * 연구비증빙 제목 생성: 프로젝트명 (카드번호) - YYYY-MM-DD/금액원
+     */
+    private String buildReceiptTitle(String projectName, String cardLastDigits, LocalDate date, BigDecimal amount) {
+        StringBuilder title = new StringBuilder();
+        title.append(projectName != null ? projectName : "프로젝트");
+
+        if (cardLastDigits != null && !cardLastDigits.isEmpty()) {
+            title.append(" (").append(cardLastDigits).append(")");
+        }
+
+        title.append(" - ");
+        title.append(date != null ? date.toString() : "-");
+        title.append("/");
+
+        if (amount != null && amount.compareTo(BigDecimal.ZERO) != 0) {
+            title.append(String.format("%,d", amount.longValue())).append("원");
+        } else {
+            title.append("0원");
+        }
+
+        return title.toString();
+    }
+
+    /**
      * ReceiptTrip → DTO 변환
      */
     private ApprovalDocumentDTO convertReceiptTripToDTO(ReceiptTrip trip) {
@@ -403,11 +433,15 @@ public class ApprovalDocumentServiceImpl implements ApprovalDocumentService {
         if (trip.getMealFee() != null) tripTotal = tripTotal.add(trip.getMealFee());
         if (trip.getOtherFee() != null) tripTotal = tripTotal.add(trip.getOtherFee());
 
+        // 제목 생성: 프로젝트명 (카드번호) - 날짜/금액원
+        String projectName = trip.getProject() != null ? trip.getProject().getProjectName() : "프로젝트";
+        String title = buildReceiptTitle(projectName, null, trip.getTripDate(), tripTotal);
+
         ApprovalDocumentDTO dto = ApprovalDocumentDTO.builder()
                 .idx(trip.getDocumentIdx())
                 .sourceDocumentId(trip.getIdx())
                 .documentNo(documentNo)
-                .title(trip.getLocation() + " 출장")
+                .title(title)
                 .documentType("BUSINESS_TRIP")
                 .drafterUserIdx(trip.getAuthorIdx())
                 .createdAt(trip.getCreatedAt())
@@ -433,17 +467,16 @@ public class ApprovalDocumentServiceImpl implements ApprovalDocumentService {
      * ReceiptMeeting → DTO 변환
      */
     private ApprovalDocumentDTO convertReceiptMeetingToDTO(ReceiptMeeting meeting) {
-        // 제목 생성: 장소 + 회의 또는 목적
-        String title = meeting.getLocation() + " 회의";
-        if (meeting.getPurpose() != null && !meeting.getPurpose().isEmpty()) {
-            title = meeting.getPurpose();
-        }
-
         // 문서번호는 approval_documents 테이블에서 조회
         String documentNo = null;
         if (meeting.getApprovalDocument() != null) {
             documentNo = meeting.getApprovalDocument().getDocumentNo();
         }
+
+        // 제목 생성: 프로젝트명 (카드번호) - 날짜/금액원
+        String projectName = meeting.getProject() != null ? meeting.getProject().getProjectName() : "프로젝트";
+        String cardDigits = meeting.getProjectCard() != null ? meeting.getProjectCard().getCardLastDigits() : null;
+        String title = buildReceiptTitle(projectName, cardDigits, meeting.getMeetingDate(), meeting.getAmount());
 
         ApprovalDocumentDTO dto = ApprovalDocumentDTO.builder()
                 .idx(meeting.getDocumentIdx())
@@ -486,10 +519,16 @@ public class ApprovalDocumentServiceImpl implements ApprovalDocumentService {
      * ReceiptOvertime → DTO 변환
      */
     private ApprovalDocumentDTO convertReceiptOvertimeToDTO(ReceiptOvertime overtime) {
-        String title = overtime.getDocumentTitle();
-        if (title == null || title.isEmpty()) {
-            title = "야근식대";
+        // 제목 생성: 프로젝트명 (카드번호) - 날짜/금액원
+        String projectName = overtime.getProjectIdx() != null ? overtime.getProjectIdx().getProjectName() : "프로젝트";
+        String cardDigits = null;
+        if (overtime.getCardIdx() != null) {
+            ProjectCard card = projectCardRepository.findById(overtime.getCardIdx()).orElse(null);
+            if (card != null) {
+                cardDigits = card.getCardLastDigits();
+            }
         }
+        String title = buildReceiptTitle(projectName, cardDigits, overtime.getOvertimeDate(), overtime.getTotalAmount());
 
         ApprovalDocumentDTO dto = ApprovalDocumentDTO.builder()
                 .idx(overtime.getDocumentIdx())
