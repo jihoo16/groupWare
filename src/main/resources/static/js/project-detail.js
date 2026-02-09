@@ -643,6 +643,7 @@ function displayExpenseReports(reports) {
                 <div class="document-item-title">${doc.title || '제목 없음'}</div>
                 <div class="document-item-meta">${getDocumentTypeLabel(doc.documentType)} · ${doc.drafterName || '-'} · ${formatDocumentDate(doc.createdAt)}</div>
             </div>
+            ${doc.amount != null ? `<div class="document-item-amount">${Number(doc.amount).toLocaleString()}원</div>` : ''}
         </div>
     `).join('');
 }

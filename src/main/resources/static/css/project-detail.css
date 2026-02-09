@@ -688,6 +688,14 @@
     margin-top: 2px;
 }
 
+.document-item-amount {
+    font-size: 13px;
+    font-weight: 600;
+    color: #4361ee;
+    white-space: nowrap;
+    margin-left: auto;
+}
+
 .document-item-status {
     padding: 3px 8px;
     border-radius: 4px;
