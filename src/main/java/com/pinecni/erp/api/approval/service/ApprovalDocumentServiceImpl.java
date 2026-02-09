@@ -405,7 +405,7 @@ public class ApprovalDocumentServiceImpl implements ApprovalDocumentService {
 
         title.append(" - ");
         title.append(date != null ? date.toString() : "-");
-        title.append("/");
+        title.append(" / ");
 
         if (amount != null && amount.compareTo(BigDecimal.ZERO) != 0) {
             title.append(String.format("%,d", amount.longValue())).append("원");
