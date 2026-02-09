@@ -80,6 +80,11 @@ public class ProjectMemberDTO {
     private String employeeDeptName;
 
     /**
+     * 직원 직급 코드 (User 테이블에서 JOIN해서 가져옴)
+     */
+    private String employeePositionCode;
+
+    /**
      * 직원 직급명 (User 테이블에서 JOIN해서 가져옴)
      */
     private String employeePositionName;
