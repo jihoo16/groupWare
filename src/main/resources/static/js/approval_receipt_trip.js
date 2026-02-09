@@ -1,5 +1,8 @@
 // 연구비 증빙 - 출장 페이지 JavaScript
+console.log('🎯 approval_receipt_trip.js 파일 로드 시작');
+
 document.addEventListener('DOMContentLoaded', async function() {
+    console.log('🎯 DOMContentLoaded 이벤트 발생');
     // 전역 변수
     let selectedApprovers = [];
     let selectedFiles = [];
@@ -7,8 +10,15 @@ document.addEventListener('DOMContentLoaded', async function() {
     let currentUser = null; // 현재 로그인한 사용자
     let projects = []; // 프로젝트 목록
     let projectMembers = []; // 선택된 프로젝트의 팀원 목록
+    let projectExpenseSettings = []; // 선택된 프로젝트의 직급별 경비 설정 (출장비)
+    let fixedExpenses = {}; // 기초정보관리의 직급별 고정경비 (출장비)
+    let fixedMealExpenses = {}; // 기초정보관리의 직급별 고정경비 (중식비)
     let currentProject = null; // 현재 선택된 프로젝트 전체 정보
     window.currentTripPersons = []; // 현재 추가된 출장 인원 목록 (전역)
+    let duplicateTripPersonsInfo = {}; // 중복된 출장인원 정보 {personId: {tripDate, projectName}}
+    let tripReporter = null; // 작성자 필드 (템플릿 로드 후 설정)
+    let guideMealTotal = 0; // 선택 인원 기준 식비 합계
+    let guideDailyTotal = 0; // 선택 인원 기준 일비 합계
 
     // DOM 요소
     const templateTreeHeaders = document.querySelectorAll('.tree-node-header[data-template]');
@@ -94,6 +104,7 @@ document.addEventListener('DOMContentLoaded', async function() {
     async function loadProjectMembers(projectIdx) {
         if (!projectIdx) {
             projectMembers = [];
+            projectExpenseSettings = [];
             currentProject = null;
             return;
         }
@@ -107,9 +118,11 @@ document.addEventListener('DOMContentLoaded', async function() {
             if (response.ok && contentType && contentType.includes('application/json')) {
                 const project = await response.json();
                 projectMembers = project.projectMembers || [];
+                projectExpenseSettings = project.projectExpenseSettings || [];
                 currentProject = project; // 전체 프로젝트 정보 저장
                 console.log('프로젝트 팀원 로드 성공:', projectMembers.length + '명');
                 console.log('팀원 데이터:', projectMembers);
+                console.log('프로젝트 경비 설정 로드:', projectExpenseSettings);
                 console.log('프로젝트 정보:', currentProject);
             } else {
                 console.error('프로젝트 팀원 로드 실패 - Status:', response.status, 'Content-Type:', contentType);
@@ -118,13 +131,103 @@ document.addEventListener('DOMContentLoaded', async function() {
                     console.error('응답 내용 (처음 200자):', text.substring(0, 200));
                 }
                 projectMembers = [];
+                projectExpenseSettings = [];
                 currentProject = null;
             }
         } catch (error) {
             console.error('프로젝트 팀원 로드 오류:', error);
             projectMembers = [];
+            projectExpenseSettings = [];
             currentProject = null;
         }
+    }
+
+    // 기초정보관리에서 직급별 고정경비 로드 (출장비, 중식비)
+    async function loadFixedExpenses() {
+        try {
+            const response = await fetch('/api/fixed-expense-policies');
+            if (response.ok) {
+                const data = await response.json();
+                // 직급별로 출장비와 중식비 매핑
+                fixedExpenses = {};
+                fixedMealExpenses = {};
+                data.forEach(item => {
+                    if (item.positionName && item.amount) {
+                        // 출장비
+                        if (item.expenseItemName === '출장비') {
+                            fixedExpenses[item.positionName] = item.amount;
+                        }
+                        // 중식비 (식비로 사용)
+                        else if (item.expenseItemName === '중식비') {
+                            fixedMealExpenses[item.positionName] = item.amount;
+                        }
+                    }
+                });
+                console.log('직급별 고정 출장비 로드:', fixedExpenses);
+                console.log('직급별 고정 중식비 로드:', fixedMealExpenses);
+            } else {
+                console.error('직급별 고정경비 로드 실패:', response.status);
+            }
+        } catch (error) {
+            console.error('직급별 고정경비 로드 오류:', error);
+        }
+    }
+
+    // ============================================
+    // SweetAlert2 유틸리티 함수들
+    // ============================================
+
+    function showSuccess(message) {
+        return Swal.fire({
+            icon: 'success',
+            title: '성공',
+            text: message,
+            confirmButtonText: '확인'
+        });
+    }
+
+    function showWarning(message) {
+        return Swal.fire({
+            icon: 'warning',
+            title: '경고',
+            html: message,
+            confirmButtonText: '확인'
+        });
+    }
+
+    function showError(message) {
+        return Swal.fire({
+            icon: 'error',
+            title: '오류',
+            html: message,
+            confirmButtonText: '확인'
+        });
+    }
+
+    function showConfirm(message, title = '확인', options = {}) {
+        return Swal.fire({
+            icon: options.icon || 'question',
+            title: title,
+            html: message,
+            showCancelButton: true,
+            confirmButtonText: options.confirmText || '확인',
+            cancelButtonText: options.cancelText || '취소',
+            confirmButtonColor: options.confirmColor || '#667eea',
+            cancelButtonColor: options.cancelColor || '#94a3b8'
+        });
+    }
+
+    function showDeleteConfirm(message = '정말 삭제하시겠습니까?') {
+        return Swal.fire({
+            icon: 'warning',
+            title: '삭제 확인',
+            html: message,
+            showCancelButton: true,
+            confirmButtonText: '삭제',
+            cancelButtonText: '취소',
+            confirmButtonColor: '#ef4444',
+            cancelButtonColor: '#94a3b8'
+        }).then(result => result.isConfirmed);
     }
 
     // ============================================
@@ -161,6 +264,44 @@ document.addEventListener('DOMContentLoaded', async function() {
         return chosung.includes(lowerKeyword);
     }
 
+    // 하이라이트 처리 함수
+    function highlightText(text, keyword) {
+        if (!text || !keyword) return text;
+        const lowerText = text.toLowerCase();
+        const lowerKeyword = keyword.toLowerCase();
+
+        // 일반 문자열 매칭
+        if (lowerText.includes(lowerKeyword)) {
+            const regex = new RegExp(`(${keyword.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')})`, 'gi');
+            return text.replace(regex, '<mark class="search-highlight">$1</mark>');
+        }
+
+        // 초성 매칭
+        const chosung = getChosung(text);
+        if (chosung.includes(keyword)) {
+            let result = '';
+            let keywordIndex = 0;
+            for (let i = 0; i < text.length; i++) {
+                const char = text[i];
+                const code = text.charCodeAt(i) - 44032;
+                if (code > -1 && code < 11172) {
+                    const cho = CHO_HANGUL[Math.floor(code / 588)];
+                    if (keywordIndex < keyword.length && cho === keyword[keywordIndex]) {
+                        result += `<mark class="search-highlight">${char}</mark>`;
+                        keywordIndex++;
+                    } else {
+                        result += char;
+                    }
+                } else {
+                    result += char;
+                }
+            }
+            return result;
+        }
+
+        return text;
+    }
+
     // 프로젝트 목록 렌더링
     function renderProjectList(projectsToShow, keyword = '') {
         if (!projectList) return;
@@ -170,35 +311,52 @@ document.addEventListener('DOMContentLoaded', async function() {
             return;
         }
 
-        projectList.innerHTML = projectsToShow.map(proj => {
-            const projectName = proj.projectName || '이름 없음';
-            const leader = proj.projectLeader || '-';
-            const startDate = proj.projectStartDate ? new Date(proj.projectStartDate).toLocaleDateString() : '-';
-            const endDate = proj.projectEndDate ? new Date(proj.projectEndDate).toLocaleDateString() : '-';
+        projectList.innerHTML = '';
 
-            return `
-                <div class="modal-item" onclick="selectProject(${proj.idx})">
-                    <div class="item-main">
-                        <strong>${projectName}</strong>
-                    </div>
-                    <div class="item-details">
-                        <span><i class="fas fa-user"></i> ${leader}</span>
-                        <span><i class="fas fa-calendar"></i> ${startDate} ~ ${endDate}</span>
+        projectsToShow.forEach(proj => {
+            const projectName = proj.projectName || '이름 없음';
+            const leader = proj.projectManagerName || '-';
+            const memberCount = proj.memberCount || 0;
+            const startDate = proj.startDate ? new Date(proj.startDate).toLocaleDateString('ko-KR') : '-';
+            const endDate = proj.endDate ? new Date(proj.endDate).toLocaleDateString('ko-KR') : '-';
+
+            const item = document.createElement('div');
+            item.className = 'modal-item';
+            item.innerHTML = `
+                <div class="modal-item-info">
+                    <div class="modal-item-name">${projectName}</div>
+                    <div class="modal-item-detail">
+                        <div><i class="fas fa-user"></i> ${leader} (${memberCount}명)</div>
+                        <div><i class="fas fa-calendar"></i> ${startDate} ~ ${endDate}</div>
                     </div>
                 </div>
             `;
-        }).join('');
+
+            // 클릭 이벤트 리스너 추가
+            item.addEventListener('click', async function() {
+                await selectProject(proj.idx);
+            });
+
+            projectList.appendChild(item);
+        });
     }
 
     // 프로젝트 선택
     window.selectProject = async function(projectIdx) {
-        const proj = projects.find(p => p.idx === projectIdx);
+        const proj = projects.find(p => p.idx == projectIdx);
         if (!proj) {
             console.error('프로젝트를 찾을 수 없습니다:', projectIdx);
+            console.log('전체 프로젝트 목록:', projects);
+            console.log('전체 프로젝트 수:', projects.length);
+            showError(`프로젝트를 찾을 수 없습니다. (ID: ${projectIdx})<br>페이지를 새로고침해주세요.`);
             return;
         }
 
         console.log('프로젝트 선택:', proj);
+
+        // 프로젝트 변경 시 출장인원 초기화
+        window.currentTripPersons = [];
+        console.log('프로젝트 변경으로 출장인원 초기화');
 
         // 프로젝트 팀원 로드
         await loadProjectMembers(projectIdx);
@@ -222,6 +380,59 @@ document.addEventListener('DOMContentLoaded', async function() {
         // 기본 작성자 자동 설정
         setDefaultReporter();
 
+        // 프로젝트 변경 시 중복 검증 재실행
+        await window.checkAllTripPersonsForDuplicates();
+
+        // 날짜가 선택된 경우, 선택 가능한 인원이 있는지 확인
+        const dateInput = document.getElementById('trip_date');
+        if (dateInput && dateInput.value && projectMembers && projectMembers.length > 0) {
+            // 프로젝트 팀원 전체 ID 목록
+            const allMemberIds = projectMembers.map(m => m.employeeIdx);
+
+            // 중복된 인원 ID 목록
+            const duplicateIds = Object.keys(duplicateTripPersonsInfo).map(id => parseInt(id));
+
+            // 선택 가능한 인원 수 = 전체 인원 - 중복 인원
+            const availableCount = allMemberIds.filter(id => !duplicateIds.includes(id)).length;
+
+            if (availableCount === 0) {
+                await Swal.fire({
+                    icon: 'warning',
+                    title: '선택 가능한 인원이 없습니다',
+                    html: `
+                        <div style="text-align: left; line-height: 1.8;">
+                            <p style="margin-bottom: 12px;">
+                                <strong>${dateInput.value}</strong> 날짜에는<br>
+                                모든 프로젝트 팀원이 이미 다른 일정에 참여 중입니다.
+                            </p>
+                            <p style="color: #64748b; font-size: 14px; margin-bottom: 8px;">
+                                ▪ 회의, 야근, 출장 중 하나 이상에 참석
+                            </p>
+                            <p style="margin-top: 16px; padding: 12px; background: #fef3c7; border-radius: 6px; font-size: 14px;">
+                                💡 <strong>해결 방법:</strong><br>
+                                출장 날짜를 다른 날짜로 변경해주세요.
+                            </p>
+                        </div>
+                    `,
+                    confirmButtonText: '확인',
+                    confirmButtonColor: '#667eea'
+                });
+
+                // 출장인원 초기화
+                window.currentTripPersons = [];
+                if (typeof window.renderTripPersonListInTemplate === 'function') {
+                    window.renderTripPersonListInTemplate();
+                }
+
+                // 작성자 필드 초기화
+                const tripReporter = document.getElementById('trip_reporter');
+                if (tripReporter) {
+                    tripReporter.value = '';
+                    tripReporter.setAttribute('data-reporter-id', '');
+                }
+            }
+        }
+
         closeProjectModal();
     };
 
@@ -236,7 +447,7 @@ document.addEventListener('DOMContentLoaded', async function() {
 
             const filtered = projects.filter(proj =>
                 matchesSearch(proj.projectName || '', keyword) ||
-                matchesSearch(proj.projectLeader || '', keyword)
+                matchesSearch(proj.projectManagerName || '', keyword)
             );
 
             renderProjectList(filtered, keyword);
@@ -244,11 +455,17 @@ document.addEventListener('DOMContentLoaded', async function() {
     }
 
     // 프로젝트 모달 열기
-    window.openProjectModal = function() {
+    window.openProjectModal = async function() {
         if (!projectModal) {
             console.error('projectModal 요소를 찾을 수 없습니다.');
-            alert('프로젝트 선택 모달을 찾을 수 없습니다. 페이지를 새로고침해주세요.');
+            showError('프로젝트 선택 모달을 찾을 수 없습니다. 페이지를 새로고침해주세요.');
             return;
+        }
+
+        // 프로젝트 목록이 비어있으면 다시 로드
+        if (!projects || projects.length === 0) {
+            console.log('프로젝트 목록이 비어있어서 재로드합니다.');
+            await loadProjects();
         }
 
         projectModal.classList.add('show');
@@ -273,8 +490,139 @@ document.addEventListener('DOMContentLoaded', async function() {
         });
     }
 
+    // ============================================
+    // 작성자 선택 모달
+    // ============================================
+    const reporterModal = document.getElementById('reporterModal');
+    const reporterList = document.getElementById('reporterList');
+
+    // 작성자 선택 모달 열기
+    window.openReporterModal = function() {
+        console.log('🚀 openReporterModal 호출됨');
+        console.log('reporterModal:', reporterModal);
+        console.log('projectMembers:', projectMembers);
+
+        if (!reporterModal) {
+            console.error('❌ reporterModal 요소를 찾을 수 없습니다.');
+            return;
+        }
+
+        // 프로젝트가 선택되지 않았으면 경고
+        if (!projectMembers || projectMembers.length === 0) {
+            console.warn('⚠️ 프로젝트가 선택되지 않음');
+            showWarning('프로젝트를 먼저 선택해주세요.');
+            return;
+        }
+
+        console.log('✅ 모달 열기 성공');
+        reporterModal.classList.add('show');
+        renderReporterList();
+    };
+
+    // 작성자 선택 모달 닫기
+    window.closeReporterModal = function() {
+        if (reporterModal) {
+            reporterModal.classList.remove('show');
+        }
+    };
+
+    // 작성자 목록 렌더링
+    function renderReporterList() {
+        if (!reporterList) return;
+
+        // 출장인원이 있으면 출장인원 목록, 없으면 프로젝트 팀원 목록 표시
+        let personsToShow = [];
+        if (window.currentTripPersons && window.currentTripPersons.length > 0) {
+            personsToShow = [...window.currentTripPersons];
+        } else if (projectMembers && projectMembers.length > 0) {
+            // 프로젝트 팀원 목록
+            personsToShow = projectMembers.map(member => ({
+                id: member.employeeIdx,
+                name: member.employeeName,
+                position: member.employeePositionName || '직급 미지정',
+                dept: member.employeeDeptName || '부서 미지정'
+            }));
+        }
+
+        if (personsToShow.length === 0) {
+            reporterList.innerHTML = '<div style="text-align: center; padding: 40px; color: #94a3b8;">선택 가능한 인원이 없습니다.</div>';
+            return;
+        }
+
+        // 직급순으로 정렬 (낮은 직급부터)
+        const sortedPersons = sortByPosition([...personsToShow]);
+
+        // 현재 선택된 작성자 ID
+        const currentReporterId = tripReporter ? tripReporter.getAttribute('data-reporter-id') : null;
+
+        reporterList.innerHTML = '';
+        sortedPersons.forEach(person => {
+            const isSelected = String(person.id) === String(currentReporterId);
+            const selectedClass = isSelected ? ' selected' : '';
+            const checkIcon = isSelected ? '<i class="fas fa-check-circle" style="color: #667eea; margin-left: auto;"></i>' : '';
+
+            const item = document.createElement('div');
+            item.className = `employee-item${selectedClass}`;
+            item.innerHTML = `
+                <div class="employee-info">
+                    <div class="employee-name">${person.name}</div>
+                    <div class="employee-detail">${person.position} · ${person.dept}</div>
+                </div>
+                ${checkIcon}
+            `;
+
+            // 클릭 이벤트 리스너 추가
+            item.addEventListener('click', function() {
+                selectReporter(person.id, person.name, person.position, person.dept);
+            });
+
+            reporterList.appendChild(item);
+        });
+    }
+
+    // 작성자 선택
+    window.selectReporter = function(reporterId, reporterName, position, dept) {
+        if (tripReporter) {
+            tripReporter.value = reporterName;
+            tripReporter.setAttribute('data-reporter-id', reporterId);
+        }
+
+        // 출장복명서의 복명자 필드도 업데이트
+        document.querySelectorAll('.trip-auto-reporter').forEach(field => {
+            field.textContent = reporterName || '';
+        });
+
+        // 작성자를 출장인원에 자동 추가 (중복 체크)
+        if (!window.currentTripPersons.some(p => String(p.id) === String(reporterId))) {
+            window.currentTripPersons.push({
+                id: String(reporterId),
+                name: reporterName,
+                position: position || '직급 미지정',
+                dept: dept || '부서 미지정'
+            });
+            console.log('작성자 출장인원에 자동 추가:', reporterName);
+
+            // 출장인원 목록 UI 업데이트
+            if (typeof renderTripPersonListInTemplate === 'function') {
+                renderTripPersonListInTemplate();
+            }
+        }
+
+        console.log('작성자 변경:', reporterName);
+        closeReporterModal();
+    };
+
+    // 모달 외부 클릭 시 닫기
+    if (reporterModal) {
+        reporterModal.addEventListener('click', function(e) {
+            if (e.target === reporterModal) {
+                closeReporterModal();
+            }
+        });
+    }
+
     // 페이지 로드 시 데이터 로드
-    Promise.all([loadCurrentUser(), loadProjects(), loadEmployees()]).then(() => {
+    Promise.all([loadCurrentUser(), loadProjects(), loadEmployees(), loadFixedExpenses()]).then(() => {
         console.log('초기 데이터 로드 완료');
     });
 
@@ -313,30 +661,67 @@ document.addEventListener('DOMContentLoaded', async function() {
         });
     }
 
-    // 기본 작성자 설정 (프로젝트 선택 시 자동 호출)
+    // 기본 작성자 설정 (출장인원 중 가장 낮은 직급)
     function setDefaultReporter() {
-        if (!projectMembers || projectMembers.length === 0) return;
+        // 프로젝트 팀원이 없으면 현재 사용자로 설정
+        if (!projectMembers || projectMembers.length === 0) {
+            const tripReporter = document.getElementById('trip_reporter');
+            if (tripReporter && currentUser) {
+                tripReporter.value = currentUser.empName || '';
+                tripReporter.setAttribute('data-reporter-id', currentUser.idx || '');
 
-        // 프로젝트 팀원을 직급순으로 정렬 (낮은 직급부터)
-        const sortedMembers = sortByPosition([...projectMembers.map(member => ({
+                // 출장복명서의 복명자 필드도 업데이트
+                document.querySelectorAll('.trip-auto-reporter').forEach(field => {
+                    field.textContent = currentUser.empName || '';
+                });
+            }
+            return;
+        }
+
+        // 프로젝트 팀원을 직급순으로 정렬 (높은 직급부터)
+        const allMembers = projectMembers.map(member => ({
             id: member.employeeIdx,
             name: member.employeeName,
-            position: member.employeePositionName || '직급 미지정'
-        }))]);
+            position: member.employeePositionName || '직급 미지정',
+            dept: member.employeeDeptName || '부서 미지정'
+        }));
 
-        // 낮은 직급에서 4번째 (인덱스 3), 4명 미만이면 가장 낮은 직급 (인덱스 0)
-        const defaultReporter = sortedMembers[3] || sortedMembers[0];
+        const sortedPersons = sortByPosition([...allMembers]);
+        sortedPersons.reverse(); // 높은 직급부터 정렬
+
+        let defaultReporter;
+        if (sortedPersons.length >= 3) {
+            // 3명 이상이면 높은 직급순 3번째 (인덱스 2)
+            defaultReporter = sortedPersons[2];
+        } else {
+            // 3명 미만이면 가장 낮은 직급 (마지막 사람)
+            defaultReporter = sortedPersons[sortedPersons.length - 1];
+        }
 
         if (defaultReporter) {
             const tripReporter = document.getElementById('trip_reporter');
             if (tripReporter) {
                 tripReporter.value = defaultReporter.name;
+                tripReporter.setAttribute('data-reporter-id', defaultReporter.id);
             }
 
             // 출장복명서의 복명자 필드도 업데이트
             document.querySelectorAll('.trip-auto-reporter').forEach(field => {
                 field.textContent = defaultReporter.name || '';
             });
+
+            // 작성자를 출장인원에 자동 추가 (중복 체크)
+            if (!window.currentTripPersons.some(p => String(p.id) === String(defaultReporter.id))) {
+                window.currentTripPersons.push(defaultReporter);
+                console.log('작성자 출장인원에 자동 추가:', defaultReporter.name);
+
+                // 출장인원 목록 UI 업데이트
+                setTimeout(() => {
+                    if (typeof window.renderTripPersonListInTemplate === 'function') {
+                        window.renderTripPersonListInTemplate();
+                    }
+                }, 100);
+            }
 
             console.log('기본 작성자 설정:', defaultReporter.name, '(직급:', defaultReporter.position + ')');
         }
@@ -437,7 +822,7 @@ document.addEventListener('DOMContentLoaded', async function() {
         const tripDate = document.getElementById('trip_date');
         const tripDuration = document.getElementById('trip_duration');
         const tripPurpose = document.getElementById('trip_purpose');
-        const tripReporter = document.getElementById('trip_reporter');
+        tripReporter = document.getElementById('trip_reporter'); // 전역 변수에 할당
         const tripResult = document.getElementById('trip_result');
         const tripPersonArea = document.getElementById('tripPersonArea');
         const tripPersonList = document.getElementById('tripPersonList');
@@ -454,6 +839,32 @@ document.addEventListener('DOMContentLoaded', async function() {
         // 프로젝트 input 클릭 시 모달 열기 이벤트 리스너 추가
         if (tripProject) {
             tripProject.addEventListener('click', openProjectModal);
+        }
+
+        // 작성자 필드 클릭 시 모달 열기 이벤트 리스너 추가
+        if (tripReporter) {
+            console.log('✅ trip_reporter 이벤트 리스너 등록');
+            tripReporter.style.cursor = 'pointer';
+
+            // 클릭 시 모달 열기
+            tripReporter.addEventListener('click', function(e) {
+                console.log('🔥 trip_reporter 클릭됨!');
+                e.stopPropagation();
+                openReporterModal();
+            });
+
+            // 직접 입력 방지 (복사/붙여넣기 포함)
+            tripReporter.addEventListener('keydown', function(e) {
+                e.preventDefault();
+            });
+            tripReporter.addEventListener('paste', function(e) {
+                e.preventDefault();
+            });
+            tripReporter.addEventListener('cut', function(e) {
+                e.preventDefault();
+            });
+        } else {
+            console.error('❌ tripReporter 요소를 찾을 수 없습니다!');
         }
 
         // 프로젝트 선택 시 팀원 로드 및 과제명 자동 채우기
@@ -578,7 +989,7 @@ document.addEventListener('DOMContentLoaded', async function() {
         }
 
         // 출장인원 목록 렌더링 함수 (모달 방식)
-        function renderTripPersonListInTemplate() {
+        window.renderTripPersonListInTemplate = function() {
             if (!tripPersonList) return;
 
             // tripPersonArea에 has-persons 클래스 추가/제거
@@ -602,25 +1013,64 @@ document.addEventListener('DOMContentLoaded', async function() {
                 // 출장인원 정렬
                 const sortedPersons = sortTripPersons(window.currentTripPersons);
 
+                // 현재 작성자 ID 가져오기
+                const currentReporterId = tripReporter ? tripReporter.getAttribute('data-reporter-id') : null;
+
                 tripPersonList.innerHTML = sortedPersons.map(person => {
                     const externalBadge = person.type === 'external'
                         ? '<span class="external-badge">외부</span>'
                         : '';
 
+                    // 작성자인지 확인
+                    const isReporter = currentReporterId && String(person.id) === String(currentReporterId) && person.type !== 'external';
+                    const reporterBadge = isReporter ? '<span class="author-badge">작성자</span>' : '';
+
+                    // 경비 정보 계산 (내부 인원만)
+                    let expenseDisplay = '';
+                    if (person.type !== 'external') {
+                        const positionName = person.position;
+                        const mealExpense = fixedMealExpenses[positionName] || 0;
+                        const dailyExpense = fixedExpenses[positionName] || 0;
+                        expenseDisplay = `<span class="expense-info" style="color: #64748b; font-size: 0.85em;">
+                            식비: ${mealExpense.toLocaleString()}원 | 일비: ${dailyExpense.toLocaleString()}원
+                        </span>`;
+                    }
+
                     const personClass = person.type === 'external'
                         ? 'trip-person-item external-person'
                         : 'trip-person-item';
 
+                    // 중복 검증 결과 확인
+                    const isDuplicate = duplicateTripPersonsInfo[person.id];
+                    let duplicateWarning = '';
+                    if (isDuplicate) {
+                        let tooltipText = `이미 ${isDuplicate.date}에 ${isDuplicate.projectName} 프로젝트 ${isDuplicate.type}`;
+                        if (isDuplicate.startTime && isDuplicate.endTime) {
+                            tooltipText += ` (${isDuplicate.startTime} ~ ${isDuplicate.endTime})`;
+                        }
+                        tooltipText += '이 있습니다.';
+
+                        duplicateWarning = `<i class="fas fa-exclamation-triangle duplicate-warning"
+                                              title="${tooltipText}"
+                                              style="color: #f59e0b; margin-left: 8px; cursor: help;"></i>`;
+                    }
+
+                    // 작성자가 아닌 경우에만 제거 버튼 표시
+                    const removeButton = isReporter ? '' : `
+                        <button type="button" class="trip-person-remove" onclick="removeTripPersonInTemplate('${person.id}')">
+                            <i class="fas fa-times"></i> 제거
+                        </button>
+                    `;
+
                     return `
                         <div class="${personClass}" onclick="event.stopPropagation();">
                             <div class="trip-person-info">
-                                <span class="name">${person.name}${externalBadge}</span>
+                                <span class="name">${person.name}${reporterBadge}${externalBadge}${duplicateWarning}</span>
                                 <span>${person.dept}</span>
                                 <span>${person.position}</span>
+                                ${expenseDisplay}
                             </div>
-                            <button type="button" class="trip-person-remove" onclick="removeTripPersonInTemplate('${person.id}')">
-                                <i class="fas fa-times"></i> 제거
-                            </button>
+                            ${removeButton}
                         </div>
                     `;
                 }).join('');
@@ -629,6 +1079,11 @@ document.addEventListener('DOMContentLoaded', async function() {
             }
 
             updateTripPersonDisplay();
+
+            // 가이드 행 업데이트 (경비 테이블이 있을 때만)
+            if (dailyExpenseBody) {
+                addExpenseGuideRow();
+            }
         }
 
         // 출장인원 추가 버튼 표시
@@ -658,9 +1113,15 @@ document.addEventListener('DOMContentLoaded', async function() {
         }
 
         // 템플릿 내에서 출장인원 제거
-        window.removeTripPersonInTemplate = function(personId) {
+        window.removeTripPersonInTemplate = async function(personId) {
             window.currentTripPersons = window.currentTripPersons.filter(p => p.id !== personId);
             renderTripPersonListInTemplate();
+
+            // 작성자 자동 재설정
+            setDefaultReporter();
+
+            // 중복 검증 재실행
+            await window.checkAllTripPersonsForDuplicates();
 
             // 모달이 열려있으면 모달도 업데이트
             const tripPersonModal = document.getElementById('tripPersonModal');
@@ -670,13 +1131,96 @@ document.addEventListener('DOMContentLoaded', async function() {
         };
 
         // 전역 함수로 등록하여 모달에서 접근 가능하게
-        window.addTripPersonsToTrip = function(persons) {
+        window.addTripPersonsToTrip = async function(persons) {
             persons.forEach(person => {
                 if (!window.currentTripPersons.some(p => p.id === person.id)) {
                     window.currentTripPersons.push(person);
                 }
             });
             renderTripPersonListInTemplate();
+            // 작성자 자동 설정 (출장인원 중 가장 낮은 직급)
+            setDefaultReporter();
+            // 중복 검증 실행
+            await window.checkAllTripPersonsForDuplicates();
+        };
+
+        // 출장인원 중복 검증 함수 (전체 - 회의/야근/출장 모두 체크)
+        window.checkAllTripPersonsForDuplicates = async function() {
+            duplicateTripPersonsInfo = {}; // 초기화
+
+            const dateInput = document.getElementById('trip_date');
+            const projectIdxInput = document.getElementById('selectedProjectIdx');
+
+            if (!dateInput || !dateInput.value) {
+                return; // 날짜가 없으면 검증 스킵
+            }
+
+            if (!projectIdxInput || !projectIdxInput.value) {
+                return; // 프로젝트가 없으면 검증 스킵
+            }
+
+            const date = dateInput.value;
+            const projectIdx = projectIdxInput.value;
+
+            // 현재 추가된 출장인원 + 프로젝트 팀원 모두 체크 (모달용)
+            const tripPersons = getTripPersons();
+            const allPersonIds = tripPersons
+                .map(p => parseInt(p.id))
+                .filter(id => !isNaN(id) && id > 0);
+
+            // 각 출장인원에 대해 중복 체크 (회의, 야근, 출장)
+            for (const personId of allPersonIds) {
+                try {
+                    let duplicateFound = false;
+                    let duplicateInfo = null;
+
+                    // 통합 중복 체크 (회의, 야근, 출장 모두 한 번에)
+                    try {
+                        const response = await fetch(`/api/receipt-common/check-duplicate?date=${date}&attendeeIdx=${personId}&projectIdx=${projectIdx}`);
+                        if (response.ok) {
+                            const contentType = response.headers.get('content-type');
+                            if (contentType && contentType.includes('application/json')) {
+                                const duplicates = await response.json();
+                                if (Array.isArray(duplicates) && duplicates.length > 0) {
+                                    const duplicate = duplicates[0];
+                                    duplicateInfo = {
+                                        date: duplicate.documentDate,
+                                        projectName: duplicate.projectName,
+                                        type: duplicate.typeName || duplicate.type,
+                                        startTime: duplicate.startTime ? duplicate.startTime.substring(0, 5) : '',
+                                        endTime: duplicate.endTime ? duplicate.endTime.substring(0, 5) : ''
+                                    };
+                                    duplicateFound = true;
+                                }
+                            }
+                        }
+                    } catch (e) {
+                        console.warn(`중복 체크 실패 (personId: ${personId}):`, e.message);
+                    }
+
+                    // 중복 정보 저장
+                    if (duplicateFound && duplicateInfo) {
+                        duplicateTripPersonsInfo[personId] = duplicateInfo;
+                    }
+                } catch (error) {
+                    console.error(`중복 검증 오류 (personId: ${personId}):`, error);
+                }
+            }
+
+            // UI 업데이트
+            renderTripPersonListInTemplate();
+        }
+
+        // 출장인원 중복 검증 재실행 함수 (날짜 변경 시)
+        window.recheckTripPersons = async function() {
+            // 출장인원이 없으면 스킵
+            if (!window.currentTripPersons || window.currentTripPersons.length === 0) return;
+
+            try {
+                await window.checkAllTripPersonsForDuplicates();
+            } catch (error) {
+                console.error('중복 검증 재실행 오류:', error);
+            }
         };
 
         // 과제명 자동 채우기
@@ -762,6 +1306,9 @@ document.addEventListener('DOMContentLoaded', async function() {
                 dailyExpenseBody.appendChild(row);
             }
 
+            // 가이드 행 추가 (선택된 출장인원 합계)
+            addExpenseGuideRow();
+
             // 입력 이벤트 리스너 추가
             document.querySelectorAll('.expense-input').forEach(input => {
                 input.addEventListener('input', function() {
@@ -775,6 +1322,76 @@ document.addEventListener('DOMContentLoaded', async function() {
             });
 
             updateTotalExpenses();
+        }
+
+        // 출장인원 합계 가이드 행 추가
+        function addExpenseGuideRow() {
+            if (!dailyExpenseBody) return;
+
+            // 기존 가이드 행 제거
+            const existingGuide = dailyExpenseBody.querySelector('.expense-guide-row');
+            if (existingGuide) {
+                existingGuide.remove();
+            }
+
+            // 선택된 출장인원이 없으면 가이드 행 추가하지 않음
+            if (!window.currentTripPersons || window.currentTripPersons.length === 0) {
+                return;
+            }
+
+            // 출장인원별 식비(중식비)와 일비(출장비) 합계 계산
+            let totalMealGuide = 0;
+            let totalDailyGuide = 0;
+
+            window.currentTripPersons.forEach(person => {
+                if (person.type !== 'external') { // 내부 인원만 계산
+                    const positionName = person.position;
+
+                    // 중식비 (식비)
+                    if (fixedMealExpenses[positionName]) {
+                        totalMealGuide += fixedMealExpenses[positionName];
+                    }
+
+                    // 출장비 (일비)
+                    if (fixedExpenses[positionName]) {
+                        totalDailyGuide += fixedExpenses[positionName];
+                    }
+                }
+            });
+
+            // 전역 변수에 저장 (검증용)
+            guideMealTotal = totalMealGuide;
+            guideDailyTotal = totalDailyGuide;
+
+            // 가이드 행 생성
+            const guideRow = document.createElement('tr');
+            guideRow.className = 'expense-guide-row';
+            guideRow.style.backgroundColor = '#f0f9ff';
+            guideRow.style.borderTop = '2px solid #3b82f6';
+            guideRow.innerHTML = `
+                <td style="text-align: center; font-weight: 600; color: #1e40af; padding: 10px;">
+                    선택 인원 기준 금액
+                    <span class="info-tooltip info-tooltip-top" style="margin-left: 8px;">
+                        <i class="fas fa-info-circle" style="color: #64748b; cursor: help; font-size: 0.9em;"></i>
+                        <span class="tooltip-text">선택한 참석자 기준으로 산정된 기본 비용입니다</span>
+                    </span>
+                </td>
+                <td style="text-align: center; color: #64748b; font-weight: 500;">
+                    실비
+                </td>
+                <td style="text-align: center; color: #64748b; font-weight: 500;">
+                    실비
+                </td>
+                <td style="text-align: center; color: #1e40af; font-weight: 600;">
+                    ${totalMealGuide.toLocaleString()}원
+                </td>
+                <td style="text-align: center; color: #1e40af; font-weight: 600;">
+                    ${totalDailyGuide.toLocaleString()}원
+                </td>
+            `;
+
+            // 테이블 맨 위에 삽입
+            dailyExpenseBody.insertBefore(guideRow, dailyExpenseBody.firstChild);
         }
 
         // 합계 업데이트 함수
@@ -799,23 +1416,86 @@ document.addEventListener('DOMContentLoaded', async function() {
             document.getElementById('totalMeal').textContent = totalMeal.toLocaleString();
             document.getElementById('totalOther').textContent = totalOther.toLocaleString();
 
-            // 품의서 소요경비 내역에 날짜별 행 생성
-            const proposalExpenseBody = document.getElementById('proposalExpenseBody');
-            if (proposalExpenseBody) {
-                proposalExpenseBody.innerHTML = '';
-                dailyExpenses.forEach((expense, index) => {
-                    const dayTotal = expense.transport + expense.lodging + expense.meal + expense.other;
-                    const row = document.createElement('tr');
-                    row.innerHTML = `
-                        <td style="text-align: center; padding: 10px;">${expense.date}</td>
-                        <td style="text-align: center; padding: 10px;">${expense.transport.toLocaleString()}</td>
-                        <td style="text-align: center; padding: 10px;">${expense.lodging.toLocaleString()}</td>
-                        <td style="text-align: center; padding: 10px;">${expense.meal.toLocaleString()}</td>
-                        <td style="text-align: center; padding: 10px;">${expense.other.toLocaleString()}</td>
-                        <td style="text-align: center; padding: 10px;">${dayTotal.toLocaleString()}</td>
-                    `;
-                    proposalExpenseBody.appendChild(row);
+            // 기준 금액 초과 검증 및 경고 표시
+            const mealInputs = document.querySelectorAll('.expense-input[data-type="meal"]');
+            const otherInputs = document.querySelectorAll('.expense-input[data-type="other"]');
+
+            // 식비 검증
+            if (guideMealTotal > 0 && totalMeal > guideMealTotal) {
+                mealInputs.forEach(input => {
+                    input.style.border = '2px solid #ef4444';
+                    input.style.backgroundColor = '#fee2e2';
                 });
+            } else {
+                mealInputs.forEach(input => {
+                    input.style.border = '';
+                    input.style.backgroundColor = '';
+                });
+            }
+
+            // 일비 검증
+            if (guideDailyTotal > 0 && totalOther > guideDailyTotal) {
+                otherInputs.forEach(input => {
+                    input.style.border = '2px solid #ef4444';
+                    input.style.backgroundColor = '#fee2e2';
+                });
+            } else {
+                otherInputs.forEach(input => {
+                    input.style.border = '';
+                    input.style.backgroundColor = '';
+                });
+            }
+
+            // 품의서 소요경비 내역 (선택 인원 기준 금액)
+            const proposalExpenseBody = document.getElementById('proposalExpenseBody');
+            if (proposalExpenseBody && tripDate && tripDate.value) {
+                proposalExpenseBody.innerHTML = '';
+
+                // 일시 계산
+                const startDate = new Date(tripDate.value);
+                const duration = parseInt(tripDuration ? tripDuration.value : '0');
+                let dateDisplay = '';
+
+                if (duration === 0) {
+                    // 당일치기: 날짜만 표시
+                    const year = startDate.getFullYear();
+                    const month = String(startDate.getMonth() + 1).padStart(2, '0');
+                    const day = String(startDate.getDate()).padStart(2, '0');
+                    dateDisplay = `${year}.${month}.${day}`;
+                } else {
+                    // 숙박: 시작일~종료일
+                    const endDate = new Date(startDate);
+                    endDate.setDate(endDate.getDate() + duration);
+
+                    const startYear = startDate.getFullYear();
+                    const startMonth = String(startDate.getMonth() + 1).padStart(2, '0');
+                    const startDay = String(startDate.getDate()).padStart(2, '0');
+                    const endYear = endDate.getFullYear();
+                    const endMonth = String(endDate.getMonth() + 1).padStart(2, '0');
+                    const endDay = String(endDate.getDate()).padStart(2, '0');
+
+                    dateDisplay = `${startYear}.${startMonth}.${startDay} ~ ${endYear}.${endMonth}.${endDay}`;
+                }
+
+                // 선택 인원 기준 금액 합계
+                const total = guideMealTotal + guideDailyTotal;
+
+                const row = document.createElement('tr');
+                row.innerHTML = `
+                    <td style="text-align: center; padding: 10px;">${dateDisplay}</td>
+                    <td style="text-align: center; padding: 10px;">실비</td>
+                    <td style="text-align: center; padding: 10px;">실비</td>
+                    <td style="text-align: center; padding: 10px;">${guideMealTotal.toLocaleString()}</td>
+                    <td style="text-align: center; padding: 10px;">${guideDailyTotal.toLocaleString()}</td>
+                    <td style="text-align: center; padding: 10px;">${total.toLocaleString()}</td>
+                `;
+                proposalExpenseBody.appendChild(row);
+
+                // 합계 칸 업데이트
+                const grandTotalEl = document.querySelector('.trip-auto-grand-total');
+                if (grandTotalEl) {
+                    grandTotalEl.textContent = `실비 + ${total.toLocaleString()}원`;
+                }
             }
 
             // 복명서 정산 세부내역에 날짜별 행 생성
@@ -978,9 +1658,61 @@ document.addEventListener('DOMContentLoaded', async function() {
         // 출장기간 자동 채우기 및 작성일/복명일자 계산
         if (tripDate) {
             console.log('tripDate 이벤트 리스너 추가');
-            tripDate.addEventListener('change', function() {
+            tripDate.addEventListener('change', async function() {
                 console.log('tripDate change 이벤트 발생');
                 updateTripDateRange();
+                // 날짜 변경 시 출장인원 중복 재검증
+                await window.recheckTripPersons();
+
+                // 프로젝트가 선택된 경우, 선택 가능한 인원이 있는지 확인
+                const selectedProjectIdx = document.getElementById('selectedProjectIdx');
+                if (selectedProjectIdx && selectedProjectIdx.value && projectMembers && projectMembers.length > 0) {
+                    // 프로젝트 팀원 전체 ID 목록
+                    const allMemberIds = projectMembers.map(m => m.employeeIdx);
+
+                    // 중복된 인원 ID 목록
+                    const duplicateIds = Object.keys(duplicateTripPersonsInfo).map(id => parseInt(id));
+
+                    // 선택 가능한 인원 수
+                    const availableCount = allMemberIds.filter(id => !duplicateIds.includes(id)).length;
+
+                    if (availableCount === 0) {
+                        await Swal.fire({
+                            icon: 'warning',
+                            title: '선택 가능한 인원이 없습니다',
+                            html: `
+                                <div style="text-align: left; line-height: 1.8;">
+                                    <p style="margin-bottom: 12px;">
+                                        <strong>${this.value}</strong> 날짜에는<br>
+                                        모든 프로젝트 팀원이 이미 다른 일정에 참여 중입니다.
+                                    </p>
+                                    <p style="color: #64748b; font-size: 14px; margin-bottom: 8px;">
+                                        ▪ 회의, 야근, 출장 중 하나 이상에 참석
+                                    </p>
+                                    <p style="margin-top: 16px; padding: 12px; background: #fef3c7; border-radius: 6px; font-size: 14px;">
+                                        💡 <strong>해결 방법:</strong><br>
+                                        출장 날짜를 다른 날짜로 변경해주세요.
+                                    </p>
+                                </div>
+                            `,
+                            confirmButtonText: '확인',
+                            confirmButtonColor: '#667eea'
+                        });
+
+                        // 출장인원 초기화
+                        window.currentTripPersons = [];
+                        if (typeof window.renderTripPersonListInTemplate === 'function') {
+                            window.renderTripPersonListInTemplate();
+                        }
+
+                        // 작성자 필드 초기화
+                        const tripReporter = document.getElementById('trip_reporter');
+                        if (tripReporter) {
+                            tripReporter.value = '';
+                            tripReporter.setAttribute('data-reporter-id', '');
+                        }
+                    }
+                }
             });
         } else {
             console.log('tripDate 엘리먼트를 찾을 수 없음!');
@@ -1275,14 +2007,52 @@ document.addEventListener('DOMContentLoaded', async function() {
         updateFileList();
     };
 
+    // 기존 첨부파일 다운로드
+    window.downloadAttachment = function(fileId, fileName) {
+        const link = document.createElement('a');
+        link.href = `/api/attachments/${fileId}/download`;
+        link.download = fileName;
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+    };
+
+    // 기존 첨부파일 표시 (상세보기 모드)
+    function displayExistingAttachments(attachments) {
+        if (!attachments || attachments.length === 0) return;
+
+        // 파일 목록 초기화
+        fileList.innerHTML = '';
+
+        attachments.forEach((attachment) => {
+            const item = document.createElement('div');
+            item.className = 'file-item existing-file';
+
+            let icon = 'fa-file';
+            if (attachment.fileName.match(/\.(jpg|jpeg|png|gif)$/i)) icon = 'fa-file-image';
+            else if (attachment.fileName.match(/\.(pdf)$/i)) icon = 'fa-file-pdf';
+            else if (attachment.fileName.match(/\.(doc|docx)$/i)) icon = 'fa-file-word';
+            else if (attachment.fileName.match(/\.(xls|xlsx)$/i)) icon = 'fa-file-excel';
+
+            const fileSize = attachment.fileSize ? `(${(attachment.fileSize / 1024).toFixed(1)} KB)` : '';
+
+            item.innerHTML = `
+                <i class="fas ${icon}"></i>
+                <span>${attachment.fileName} ${fileSize}</span>
+                <button class="btn-download-file" onclick="downloadAttachment(${attachment.idx}, '${attachment.fileName}')" title="다운로드">
+                    <i class="fas fa-download"></i>
+                </button>
+            `;
+            fileList.appendChild(item);
+        });
+    }
+
     // 저장
     if (submitBtn) {
         submitBtn.addEventListener('click', async function() {
             // 필수 필드 검증
             const selectedProjectIdxInput = document.getElementById('selectedProjectIdx');
             const dateInput = document.getElementById('trip_date');
-            const startTimeInput = document.getElementById('trip_start_time');
-            const endTimeInput = document.getElementById('trip_end_time');
             const locationInput = document.getElementById('trip_location');
 
             if (!selectedProjectIdxInput || !selectedProjectIdxInput.value) {
@@ -1295,23 +2065,8 @@ document.addEventListener('DOMContentLoaded', async function() {
                 return;
             }
 
-            // 시작/종료 시간은 선택사항 (HTML에 필드가 없을 수 있음)
-            // if (!startTimeInput || !startTimeInput.value) {
-            //     alert('시작 시간을 입력해주세요.');
-            //     return;
-            // }
-
-            // if (!endTimeInput || !endTimeInput.value) {
-            //     alert('종료 시간을 입력해주세요.');
-            //     return;
-            // }
-
             if (!locationInput || !locationInput.value) {
                 showWarning('출장지를 입력해주세요.');
-                return;
-            }
-
-            if (!(await showConfirm('출장 정보를 저장하시겠습니까?'))) {
                 return;
             }
 
@@ -1345,11 +2100,36 @@ document.addEventListener('DOMContentLoaded', async function() {
                 else if (type === 'other') totalOtherFee += value;
             });
 
+            // 비용 기준 금액 초과 검증
+            const warnings = [];
+            if (guideMealTotal > 0 && totalMealFee > guideMealTotal) {
+                warnings.push(`식비: ${totalMealFee.toLocaleString()}원 (기준: ${guideMealTotal.toLocaleString()}원)`);
+            }
+            if (guideDailyTotal > 0 && totalOtherFee > guideDailyTotal) {
+                warnings.push(`일비: ${totalOtherFee.toLocaleString()}원 (기준: ${guideDailyTotal.toLocaleString()}원)`);
+            }
+
+            if (warnings.length > 0) {
+                await Swal.fire({
+                    icon: 'warning',
+                    title: '비용 기준 초과',
+                    html: `선택한 참석자 기준 금액을 초과했습니다.<br><br>${warnings.join('<br>')}<br><br>참석인원을 추가하거나 비용을 조정해주세요.`,
+                    confirmButtonText: '확인'
+                });
+                return;
+            }
+
+            if (!(await showConfirm('출장 정보를 저장하시겠습니까?'))) {
+                return;
+            }
+
             // 저장 데이터 생성
             const saveData = {
                 projectIdx: parseInt(selectedProjectIdxInput.value),
                 authorIdx: currentUser ? currentUser.idx : null,
                 tripDate: dateInput.value,
+                startTime: '00:00:00',  // 출장은 하루 전체 사용 (중복 체크용)
+                endTime: '23:59:59',    // 출장은 하루 전체 사용 (중복 체크용)
                 location: locationInput.value,
                 transportationFee: totalTransportFee || null,
                 accommodationFee: totalAccommodationFee || null,
@@ -1358,18 +2138,28 @@ document.addEventListener('DOMContentLoaded', async function() {
                 purpose: document.getElementById('trip_purpose') ? document.getElementById('trip_purpose').value : null,
                 content: document.getElementById('trip_result') ? document.getElementById('trip_result').value : null,
                 paymentMethod: '카드로 결제',
+                isProject: true,  // 프로젝트 관련 문서임을 명시
                 attendees: attendeeDTOs
             };
 
             console.log('저장 데이터:', saveData);
 
             try {
+                // FormData 생성 (첨부파일 지원)
+                const formData = new FormData();
+                formData.append('data', JSON.stringify(saveData));
+
+                // 첨부파일 추가
+                if (selectedFiles && selectedFiles.length > 0) {
+                    selectedFiles.forEach((file) => {
+                        formData.append('files', file);
+                    });
+                }
+
                 const response = await fetch('/api/receipt-trips', {
                     method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json'
-                    },
-                    body: JSON.stringify(saveData)
+                    body: formData
+                    // Content-Type 헤더는 자동으로 설정됨 (multipart/form-data)
                 });
 
                 if (response.ok) {
@@ -1621,8 +2411,17 @@ document.addEventListener('DOMContentLoaded', async function() {
     // employees 배열을 직접 사용
 
     // 모달 열기 함수
-    window.openTripPersonModal = function() {
+    window.openTripPersonModal = async function() {
         if (tripPersonModal) {
+            // 프로젝트 목록이 비어있으면 다시 로드
+            if (!projects || projects.length === 0) {
+                console.log('프로젝트 목록이 비어있어서 재로드합니다.');
+                await loadProjects();
+            }
+
+            // 모달 열 때 중복 검증 실행 (날짜와 출장인원이 있는 경우)
+            await window.checkAllTripPersonsForDuplicates();
+
             tripPersonModal.classList.add('show');
             renderTripPersonList2();
         }
@@ -1658,12 +2457,56 @@ document.addEventListener('DOMContentLoaded', async function() {
             return [];
         }
 
-        return projectMembers.map(member => ({
-            id: member.employeeIdx,
-            name: member.employeeName,
-            position: member.employeePositionName || '직급 미지정',
-            dept: member.employeeDeptName || '부서 미지정'
-        }));
+        return projectMembers.map(member => {
+            const positionName = member.employeePositionName || '직급 미지정';
+            const positionCode = member.employeePositionCode; // 직급 코드
+            let tripExpense = 0;
+            let mealExpense = 0;
+            let isDefault = false; // 기본 경비 사용 여부
+
+            // 출장비(일비) 계산
+            // 1순위: 프로젝트별 경비 설정에서 출장비 찾기
+            if (projectExpenseSettings && projectExpenseSettings.length > 0 && positionCode) {
+                const projectSetting = projectExpenseSettings.find(setting =>
+                    setting.positionCode === positionCode &&
+                    setting.expenseItemName === '출장비'  // 정확히 '출장비'와 매칭
+                );
+                if (projectSetting && projectSetting.amount) {
+                    tripExpense = projectSetting.amount;
+                    console.log(`[${member.employeeName}] 프로젝트 출장비 적용 (${positionCode}): ${tripExpense}원`);
+                } else {
+                    // 2순위: 기초정보관리의 직급별 고정경비 사용
+                    if (fixedExpenses[positionName]) {
+                        tripExpense = fixedExpenses[positionName];
+                        isDefault = true;
+                        console.log(`[${member.employeeName}] 기본 출장비 적용 (${positionName}): ${tripExpense}원`);
+                    }
+                }
+            } else {
+                // 프로젝트 경비 설정이 없는 경우 바로 기본 경비 사용
+                if (fixedExpenses[positionName]) {
+                    tripExpense = fixedExpenses[positionName];
+                    isDefault = true;
+                    console.log(`[${member.employeeName}] 기본 출장비 적용 (${positionName}): ${tripExpense}원`);
+                }
+            }
+
+            // 중식비(식비) 계산 - 기초정보관리에서만 가져옴
+            if (fixedMealExpenses[positionName]) {
+                mealExpense = fixedMealExpenses[positionName];
+                console.log(`[${member.employeeName}] 중식비 적용 (${positionName}): ${mealExpense}원`);
+            }
+
+            return {
+                id: member.employeeIdx,
+                name: member.employeeName,
+                position: positionName,
+                dept: member.employeeDeptName || '부서 미지정',
+                tripExpense: tripExpense,
+                mealExpense: mealExpense,
+                isDefaultExpense: isDefault
+            };
+        });
     }
 
     // 프로젝트 목록 렌더링 (출장인원 모달 내)
@@ -1676,7 +2519,7 @@ document.addEventListener('DOMContentLoaded', async function() {
         if (searchText) {
             filtered = projects.filter(proj =>
                 matchesSearch(proj.projectName || '', searchText) ||
-                matchesSearch(proj.projectLeader || '', searchText)
+                matchesSearch(proj.projectManagerName || '', searchText)
             );
         }
 
@@ -1706,9 +2549,10 @@ document.addEventListener('DOMContentLoaded', async function() {
         // 프로젝트 목록
         const projectItems = filtered.map(proj => {
             const projectName = proj.projectName || '이름 없음';
-            const leader = proj.projectLeader || '-';
-            const startDate = proj.projectStartDate ? new Date(proj.projectStartDate).toLocaleDateString() : '-';
-            const endDate = proj.projectEndDate ? new Date(proj.projectEndDate).toLocaleDateString() : '-';
+            const leader = proj.projectManagerName || '-';
+            const memberCount = proj.memberCount || 0;
+            const startDate = proj.startDate ? new Date(proj.startDate).toLocaleDateString('ko-KR') : '-';
+            const endDate = proj.endDate ? new Date(proj.endDate).toLocaleDateString('ko-KR') : '-';
 
             return `
                 <div class="project-item-in-attendee" data-project-idx="${proj.idx}">
@@ -1718,8 +2562,8 @@ document.addEventListener('DOMContentLoaded', async function() {
                     <div class="project-item-info">
                         <div class="project-item-name">${projectName}</div>
                         <div class="project-item-details">
-                            <span><i class="fas fa-user"></i> ${leader}</span>
-                            <span><i class="fas fa-calendar"></i> ${startDate} ~ ${endDate}</span>
+                            <div><i class="fas fa-user"></i> ${leader} (${memberCount}명)</div>
+                            <div><i class="fas fa-calendar"></i> ${startDate} ~ ${endDate}</div>
                         </div>
                     </div>
                     <div class="project-item-arrow">
@@ -1774,26 +2618,120 @@ document.addEventListener('DOMContentLoaded', async function() {
             return;
         }
 
-        const filtered = tripPersons.filter(person => {
-            const searchStr = (person.name + person.dept + person.position).toLowerCase();
-            return searchStr.includes(searchText.toLowerCase());
-        });
+        const filtered = tripPersons.filter(person =>
+            matchesSearch(person.name + person.dept + person.position, searchText)
+        );
+
+        if (filtered.length === 0) {
+            tripPersonList2El.innerHTML = '<div style="text-align: center; padding: 40px; color: #94a3b8;"><i class="fas fa-search" style="font-size: 32px; margin-bottom: 12px; display: block;"></i>검색 결과가 없습니다.</div>';
+            return;
+        }
 
         tripPersonList2El.innerHTML = filtered.map(person => {
             // 이미 추가된 출장인원인지 확인
             const isAdded = window.currentTripPersons.some(p => String(p.id) === String(person.id));
+
+            // 중복 검증 결과 확인 (회의/야근/출장)
+            const isDuplicate = duplicateTripPersonsInfo[person.id];
+
+            // 중복된 사람이거나 이미 추가된 사람은 선택 불가
+            const isDisabled = isDuplicate || isAdded;
+            const disabledClass = isDisabled ? ' disabled' : '';
             const addedClass = isAdded ? ' added' : '';
-            const onclickAttr = isAdded ? '' : `onclick="selectTripPerson(${person.id})"`;
+            const onclickAttr = isDisabled ? '' : `onclick="selectTripPerson(${person.id})"`;
+
+            // 하이라이트 적용
+            const highlightedName = highlightText(person.name, searchText);
+            const highlightedDept = highlightText(person.dept, searchText);
+            const highlightedPosition = highlightText(person.position, searchText);
+
+            // 식비와 일비 표시
+            const mealExpenseText = person.mealExpense ? person.mealExpense.toLocaleString('ko-KR') : '0';
+            const tripExpenseText = person.tripExpense ? person.tripExpense.toLocaleString('ko-KR') : '0';
+            let formattedExpense = `<div style="text-align: right; font-size: 0.9em;">
+                <div style="color: #64748b;">식비: ${mealExpenseText}원</div>
+                <div style="color: #64748b; margin-top: 2px;">일비: ${tripExpenseText}원</div>
+            </div>`;
+            if (person.isDefaultExpense && person.tripExpense > 0) {
+                formattedExpense += ' <span class="default-expense-badge">(기본)</span>';
+            }
+
+            // 중복 경고 메시지
+            let duplicateWarning = '';
+            if (isDuplicate) {
+                let tooltipText = `이미 ${isDuplicate.date}에 ${isDuplicate.projectName} 프로젝트 ${isDuplicate.type}`;
+                if (isDuplicate.startTime && isDuplicate.endTime) {
+                    tooltipText += ` (${isDuplicate.startTime} ~ ${isDuplicate.endTime})`;
+                }
+                tooltipText += '이 있어 선택할 수 없습니다.';
+
+                duplicateWarning = `<i class="fas fa-exclamation-triangle"
+                                      title="${tooltipText}"
+                                      style="color: #f59e0b; margin-left: 6px; cursor: help;"></i>`;
+            }
+
+            // 이미 추가된 사람은 체크 아이콘, 그렇지 않으면 경비 표시
+            let rightContent = '';
+            if (isAdded) {
+                rightContent = `<div class="employee-check"><i class="fas fa-check-circle" style="color: #10b981; font-size: 20px;"></i></div>`;
+            } else if (isDuplicate) {
+                rightContent = `<div class="employee-expense" style="color: #9ca3af;">${formattedExpense}</div>`;
+            } else {
+                rightContent = `<div class="employee-expense">${formattedExpense}</div>`;
+            }
 
             return `
-            <div class="employee-item${addedClass}" data-id="${person.id}" ${onclickAttr}>
+            <div class="employee-item${addedClass}${disabledClass}" data-id="${person.id}" ${onclickAttr}>
                 <div class="employee-info">
-                    <div class="employee-name">${person.name}</div>
-                    <div class="employee-detail">${person.position} · ${person.dept}</div>
+                    <div class="employee-name">${highlightedName}${duplicateWarning}</div>
+                    <div class="employee-detail">${highlightedPosition} · ${highlightedDept}</div>
                 </div>
+                ${rightContent}
             </div>
         `;
         }).join('');
+
+        // 렌더링 후 선택된 인원 합계 업데이트
+        updateTripPersonSelectionSummary();
+    }
+
+    // 선택된 출장인원 합계 업데이트
+    function updateTripPersonSelectionSummary() {
+        // 선택된 인원 + 이미 추가된 인원 모두 포함
+        const selectedItems = document.querySelectorAll('#tripPersonList2 .employee-item.selected');
+        const addedItems = document.querySelectorAll('#tripPersonList2 .employee-item.added');
+        const summaryEl = document.getElementById('tripPersonSummary');
+        const countEl = document.getElementById('selectedPersonCount');
+        const mealTotalEl = document.getElementById('selectedMealTotal');
+        const dailyTotalEl = document.getElementById('selectedDailyTotal');
+
+        if (!summaryEl || !countEl || !mealTotalEl || !dailyTotalEl) return;
+
+        // 선택된 인원과 이미 추가된 인원을 합침 (중복 제거)
+        const allItems = new Set([...selectedItems, ...addedItems]);
+
+        if (allItems.size === 0) {
+            summaryEl.style.display = 'none';
+            return;
+        }
+
+        const tripPersons = getTripPersons();
+        let totalMeal = 0;
+        let totalDaily = 0;
+
+        allItems.forEach(item => {
+            const personId = item.getAttribute('data-id');
+            const person = tripPersons.find(p => String(p.id) === String(personId));
+            if (person) {
+                totalMeal += person.mealExpense || 0;
+                totalDaily += person.tripExpense || 0;
+            }
+        });
+
+        countEl.textContent = allItems.size;
+        mealTotalEl.textContent = totalMeal.toLocaleString();
+        dailyTotalEl.textContent = totalDaily.toLocaleString();
+        summaryEl.style.display = 'block';
     }
 
     // 출장인원 선택
@@ -1801,13 +2739,16 @@ document.addEventListener('DOMContentLoaded', async function() {
         const items = document.querySelectorAll('#tripPersonList2 .employee-item');
         items.forEach(item => {
             if (parseInt(item.getAttribute('data-id')) === personId) {
-                // 이미 추가된 인원은 선택 불가
-                if (item.classList.contains('added')) {
+                // 이미 추가된 인원이거나 중복(회의/야근/출장)으로 비활성화된 인원은 선택 불가
+                if (item.classList.contains('added') || item.classList.contains('disabled')) {
                     return;
                 }
                 item.classList.toggle('selected');
             }
         });
+
+        // 선택 후 합계 업데이트
+        updateTripPersonSelectionSummary();
     };
 
     // 검색 기능
@@ -1818,7 +2759,7 @@ document.addEventListener('DOMContentLoaded', async function() {
     }
 
     // 선택된 출장인원 추가
-    window.addSelectedTripPersons = function() {
+    window.addSelectedTripPersons = async function() {
         const selectedItems = document.querySelectorAll('#tripPersonList2 .employee-item.selected');
 
         if (selectedItems.length === 0) {
@@ -1845,14 +2786,14 @@ document.addEventListener('DOMContentLoaded', async function() {
 
         console.log('추가할 출장인원:', personsToAdd);
 
-        // setupTripAutoFill에서 정의된 함수 호출
+        // setupTripAutoFill에서 정의된 함수 호출 (중복 검증 포함)
         if (window.addTripPersonsToTrip) {
-            window.addTripPersonsToTrip(personsToAdd);
+            await window.addTripPersonsToTrip(personsToAdd);
         }
 
         console.log('추가 후 currentTripPersons:', window.currentTripPersons);
 
-        // 모달 목록 새로고침 (추가된 출장인원에 체크마크 표시)
+        // 모달 목록 새로고침 (추가된 출장인원에 체크마크 표시 + 중복 경고)
         renderTripPersonList2();
 
         // 모달 닫기
@@ -2088,6 +3029,12 @@ document.addEventListener('DOMContentLoaded', async function() {
 
             console.log('폼 데이터 채우기 완료');
         }, 200);
+
+        // 첨부파일 로드 및 표시
+        if (data.attachments && data.attachments.length > 0) {
+            console.log('[populateForm] 첨부파일 로드:', data.attachments.length, '개');
+            displayExistingAttachments(data.attachments);
+        }
     }
 
     // 오늘 날짜 자동 설정 (상세보기 모드가 아닐 때만)

@@ -3,163 +3,6 @@
     padding: 20px 20px 10px 20px;
 }
 
-/* ========================================
-   공통정보입력 섹션 - 여백 최소화 및 UI 개선
-   ======================================== */
-
-/* 공통 정보 섹션 컨테이너 */
-.common-info-section {
-    background: #ffffff;
-    padding: 20px;
-    margin-bottom: 20px;
-    display: flex;
-    flex-direction: column;
-    gap: 16px;
-}
-
-/* 섹션 헤더 */
-.section-header {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    margin-bottom: 16px;
-    padding-bottom: 10px;
-    border-bottom: 2px solid #f0f0f0;
-}
-
-.section-header h3 {
-    font-size: 14px;
-    font-weight: 700;
-    color: #1a1a1a;
-    margin: 0;
-    display: flex;
-    align-items: center;
-    gap: 8px;
-}
-
-.section-header h3 i {
-    font-size: 15px;
-    color: #667eea;
-}
-
-.section-header h4 {
-    font-size: 13.5px;
-    font-weight: 700;
-    color: #333;
-    margin: 0;
-    display: flex;
-    align-items: center;
-    gap: 8px;
-}
-
-.section-header h4 i {
-    color: #667eea;
-}
-
-/* 폼 그리드 */
-.form-grid {
-    display: grid;
-    grid-template-columns: repeat(2, 1fr);
-    gap: 14px;
-}
-
-.form-group {
-    display: flex;
-    flex-direction: column;
-    gap: 6px;
-}
-
-.form-group.full-width {
-    grid-column: 1 / -1;
-}
-
-.form-group label {
-    font-size: 13px;
-    font-weight: 600;
-    color: #334155;
-    display: flex;
-    align-items: center;
-    gap: 6px;
-}
-
-.form-group label i {
-    color: #667eea;
-    font-size: 13px;
-}
-
-.required-mark {
-    color: #ef5350;
-    font-weight: 700;
-    font-size: 13px;
-}
-
-/* 폼 입력 필드 */
-.form-input {
-    width: 100%;
-    padding: 10px 14px;
-    font-size: 14px;
-    border: 1.5px solid #e2e8f0;
-    border-radius: 8px;
-    transition: all 0.2s ease;
-    background: white;
-}
-
-.form-input:hover {
-    border-color: #cbd5e1;
-}
-
-.form-input:focus {
-    outline: none;
-    border-color: #667eea;
-    box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
-}
-
-.form-input::placeholder {
-    color: #94a3b8;
-}
-
-/* 클릭 가능한 입력 필드 */
-.clickable-input {
-    cursor: pointer;
-    background: #f8fafc;
-}
-
-.clickable-input:hover {
-    background: #f1f5f9;
-    border-color: #667eea;
-}
-
-.clickable-input:focus {
-    background: white;
-}
-
-/* 텍스트 영역 */
-.form-textarea {
-    width: 100%;
-    padding: 10px 14px;
-    font-size: 14px;
-    border: 1.5px solid #e2e8f0;
-    border-radius: 8px;
-    transition: all 0.2s ease;
-    resize: vertical;
-    font-family: inherit;
-    line-height: 1.6;
-}
-
-.form-textarea:hover {
-    border-color: #cbd5e1;
-}
-
-.form-textarea:focus {
-    outline: none;
-    border-color: #667eea;
-    box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
-}
-
-.form-textarea::placeholder {
-    color: #94a3b8;
-}
-
 /* 기본 스타일 */
 * {
     -webkit-tap-highlight-color: transparent;
@@ -396,6 +239,46 @@ div:focus {
     display: flex;
     flex-direction: column;
     gap: 21px;
+    height: 100%;
+}
+
+/* 섹션 공통 스타일 */
+.section-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 16px;
+    padding-bottom: 10px;
+    border-bottom: 2px solid #f0f0f0;
+}
+
+.section-header h3 {
+    font-size: 14px;
+    font-weight: 700;
+    color: #1a1a1a;
+    margin: 0;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.section-header h3 i {
+    font-size: 15px;
+    color: #667eea;
+}
+
+.section-header h4 {
+    font-size: 13.5px;
+    font-weight: 700;
+    color: #333;
+    margin: 0;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.section-header h4 i {
+    color: #667eea;
 }
 
 .btn-add {
@@ -486,12 +369,309 @@ div:focus {
     width: 100%;
 }
 
+/* 문서 양식 */
+.document-form {
+    background: white;
+    border: 2px solid #e8e8e8;
+    border-radius: 10px;
+    padding: 24px;
+}
+
+/* ========================================
+   공통정보입력 섹션 - 여백 최소화 및 UI 개선
+   ======================================== */
+
+/* 공통 정보 섹션 컨테이너 */
+.common-info-section {
+    background: #ffffff;
+    padding: 20px;
+    margin-bottom: 20px;
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+}
+
+/* 폼 그리드 */
+.form-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 14px;
+}
+
+.form-group {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+}
+
+.form-group.full-width {
+    grid-column: 1 / -1;
+}
+
+.form-group label {
+    font-size: 13px;
+    font-weight: 600;
+    color: #334155;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.form-group label i {
+    color: #667eea;
+    font-size: 13px;
+}
+
+.required-mark {
+    color: #ef5350;
+    font-weight: 700;
+    font-size: 13px;
+}
+
+/* 폼 입력 필드 */
+.form-input {
+    width: 100%;
+    padding: 10px 14px;
+    font-size: 14px;
+    border: 1.5px solid #e2e8f0;
+    border-radius: 8px;
+    transition: all 0.2s ease;
+    background: white;
+}
+
+.form-input:hover {
+    border-color: #cbd5e1;
+}
+
+.form-input:focus {
+    outline: none;
+    border-color: #667eea;
+    box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+}
+
+.form-input::placeholder {
+    color: #94a3b8;
+}
+
+/* 클릭 가능한 입력 필드 */
+.clickable-input {
+    cursor: pointer;
+    background: #f8fafc;
+}
+
+.clickable-input:hover {
+    background: #f1f5f9;
+    border-color: #667eea;
+}
+
+.clickable-input:focus {
+    background: white;
+}
+
+/* 텍스트 영역 */
+.form-textarea {
+    width: 100%;
+    padding: 10px 14px;
+    font-size: 14px;
+    border: 1.5px solid #e2e8f0;
+    border-radius: 8px;
+    transition: all 0.2s ease;
+    resize: vertical;
+    font-family: inherit;
+    line-height: 1.6;
+}
+
+.form-textarea:hover {
+    border-color: #cbd5e1;
+}
+
+.form-textarea:focus {
+    outline: none;
+    border-color: #667eea;
+    box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+}
+
+.form-textarea::placeholder {
+    color: #94a3b8;
+}
+
+/* 참석자 영역 */
+.attendee-area {
+    min-height: 50px;
+    max-height: 280px;
+    padding: 12px;
+    border: 2px dashed #e2e8f0;
+    border-radius: 10px;
+    cursor: pointer;
+    transition: all 0.2s;
+    background: #fafbfc;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.attendee-area:hover {
+    border-color: #667eea;
+    background: #f8fafc;
+}
+
+/* 참석자가 있을 때는 cursor pointer 제거 */
+.attendee-area.has-attendees {
+    cursor: default;
+}
+
+.attendee-area.has-attendees:hover {
+    border-color: #e2e8f0;
+    background: #fafbfc;
+}
+
+.attendee-list {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 8px;
+    overflow-y: auto;
+    flex: 1;
+    padding-right: 4px;
+}
+
+/* 스크롤바 스타일 */
+.attendee-list::-webkit-scrollbar {
+    width: 6px;
+}
+
+.attendee-list::-webkit-scrollbar-track {
+    background: transparent;
+    border-radius: 3px;
+}
+
+.attendee-list::-webkit-scrollbar-thumb {
+    background: #cbd5e1;
+    border-radius: 3px;
+}
+
+.attendee-list::-webkit-scrollbar-thumb:hover {
+    background: #94a3b8;
+}
+
+.empty-attendee-state {
+    grid-column: 1 / -1;
+    text-align: center;
+    color: #94a3b8;
+    font-size: 13px;
+    padding: 16px 8px;
+}
+
+.empty-attendee-state i {
+    font-size: 24px;
+    margin-bottom: 8px;
+    display: block;
+    color: #cbd5e1;
+}
+
+/* 금액 버튼 */
+.amount-buttons {
+    display: flex;
+    gap: 5px;
+    flex-wrap: nowrap;
+    margin-top: 8px;
+}
+
+.amount-btn {
+    padding: 6px 10px;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+    border: none;
+    border-radius: 6px;
+    font-size: 11.5px;
+    font-weight: 600;
+    cursor: pointer;
+    white-space: nowrap;
+    flex-shrink: 0;
+    transition: all 0.2s ease;
+    display: flex;
+    align-items: center;
+    gap: 4px;
+}
+
+.amount-btn:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 4px 8px rgba(102, 126, 234, 0.3);
+}
+
+.amount-reset-btn {
+    padding: 6px 10px;
+    background: #64748b;
+    color: white;
+    border: none;
+    border-radius: 6px;
+    font-size: 11.5px;
+    font-weight: 600;
+    cursor: pointer;
+    white-space: nowrap;
+    flex-shrink: 0;
+    transition: all 0.2s ease;
+    display: flex;
+    align-items: center;
+    gap: 4px;
+}
+
+.amount-reset-btn:hover {
+    background: #475569;
+    transform: translateY(-1px);
+}
+
+/* 합계 금액 표시 */
+.total-amount-display {
+    background: #f0f4ff;
+    border: 2px solid #667eea;
+    border-radius: 8px;
+    padding: 12px 16px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 48px;
+    cursor: default;
+    user-select: none;
+}
+
+.total-amount-display span {
+    font-size: 16px;
+    font-weight: 700;
+    color: #667eea;
+}
+
+/* 섹션 헤더 */
+.section-header-common {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    padding: 14px 20px;
+    margin: 0;
+    border-top-left-radius: 8px;
+    border-top-right-radius: 8px;
+}
+
+.section-header-common h4 {
+    color: white;
+    font-size: 16px;
+    font-weight: 600;
+    margin: 0;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.section-header-common h4 i {
+    font-size: 16px;
+}
+
 /* 공통 정보 테이블 스타일 */
 .common-info-table {
     width: 100%;
     margin: 0;
     border-collapse: separate;
     border-spacing: 0;
+    border-bottom-left-radius: 8px;
+    border-bottom-right-radius: 8px;
+    overflow: hidden;
 }
 
 .common-info-table th {
@@ -531,6 +711,17 @@ div:focus {
     border-bottom: none;
 }
 
+/* 마지막 행 모서리 둥글게 */
+.common-info-table tr:last-child td:first-child,
+.common-info-table tr:last-child th:first-child {
+    border-bottom-left-radius: 8px;
+}
+
+.common-info-table tr:last-child td:last-child,
+.common-info-table tr:last-child th:last-child {
+    border-bottom-right-radius: 8px;
+}
+
 /* 공통 정보 테이블 입력 필드 */
 .common-info-table input[type="text"],
 .common-info-table input[type="date"],
@@ -538,7 +729,7 @@ div:focus {
 .common-info-table input[type="number"],
 .common-info-table select,
 .common-info-table textarea {
-    border: 1px solid #f1f5f9;
+    border: 1.5px solid #cbd5e1;
     border-radius: 6px;
     padding: 8px 12px;
     font-size: 13px;
@@ -555,7 +746,7 @@ div:focus {
 .common-info-table input[type="number"]:hover,
 .common-info-table select:hover,
 .common-info-table textarea:hover {
-    border-color: #e2e8f0;
+    border-color: #94a3b8;
     background: #ffffff;
 }
 
@@ -590,13 +781,72 @@ div:focus {
     margin-top: 4px;
 }
 
-/* 참석자/출장인원/야근인원 버튼 영역 */
+/* 금액 추가 버튼 */
+.amount-btn {
+    padding: 6px 10px;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+    border: none;
+    border-radius: 6px;
+    font-size: 11.5px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    box-shadow: 0 2px 4px rgba(102, 126, 234, 0.2);
+    white-space: nowrap;
+    flex-shrink: 0;
+}
+
+.amount-btn:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 4px 8px rgba(102, 126, 234, 0.3);
+}
+
+.amount-btn:active {
+    transform: translateY(0);
+}
+
+.amount-btn i {
+    font-size: 10px;
+}
+
+.amount-reset-btn {
+    padding: 6px 10px;
+    background: #f1f5f9;
+    color: #64748b;
+    border: 1px solid #e2e8f0;
+    border-radius: 6px;
+    font-size: 11.5px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    white-space: nowrap;
+    flex-shrink: 0;
+}
+
+.amount-reset-btn:hover {
+    background: #e2e8f0;
+    border-color: #cbd5e1;
+    transform: translateY(-1px);
+}
+
+.amount-reset-btn:active {
+    transform: translateY(0);
+}
+
+.amount-reset-btn i {
+    font-size: 10px;
+}
+
+/* 참석자 버튼 영역 */
 .common-info-table #addAttendeeBtn,
-.common-info-table #removeAttendeeBtn,
-.common-info-table #addTripPersonBtn,
-.common-info-table #removeTripPersonBtn,
-.common-info-table #addOvertimePersonBtn,
-.common-info-table #removeOvertimePersonBtn {
+.common-info-table #removeAttendeeBtn {
     width: 32px;
     height: 32px;
     border-radius: 4px;
@@ -609,49 +859,35 @@ div:focus {
     transition: all 0.2s ease;
 }
 
-.common-info-table #addAttendeeBtn,
-.common-info-table #addTripPersonBtn,
-.common-info-table #addOvertimePersonBtn {
+.common-info-table #addAttendeeBtn {
     background: #667eea;
     color: white;
 }
 
-.common-info-table #addAttendeeBtn:hover,
-.common-info-table #addTripPersonBtn:hover,
-.common-info-table #addOvertimePersonBtn:hover {
+.common-info-table #addAttendeeBtn:hover {
     background: #5a67d8;
     transform: translateY(-1px);
     box-shadow: 0 2px 6px rgba(102, 126, 234, 0.3);
 }
 
-.common-info-table #removeAttendeeBtn,
-.common-info-table #removeTripPersonBtn,
-.common-info-table #removeOvertimePersonBtn {
+.common-info-table #removeAttendeeBtn {
     background: #ef4444;
     color: white;
 }
 
-.common-info-table #removeAttendeeBtn:hover,
-.common-info-table #removeTripPersonBtn:hover,
-.common-info-table #removeOvertimePersonBtn:hover {
+.common-info-table #removeAttendeeBtn:hover {
     background: #dc2626;
     transform: translateY(-1px);
     box-shadow: 0 2px 6px rgba(239, 68, 68, 0.3);
 }
 
 .common-info-table #addAttendeeBtn:active,
-.common-info-table #removeAttendeeBtn:active,
-.common-info-table #addTripPersonBtn:active,
-.common-info-table #removeTripPersonBtn:active,
-.common-info-table #addOvertimePersonBtn:active,
-.common-info-table #removeOvertimePersonBtn:active {
+.common-info-table #removeAttendeeBtn:active {
     transform: translateY(0);
 }
 
-/* 리스트 영역 */
-.common-info-table #attendeeList,
-.common-info-table #tripPersonList,
-.common-info-table #overtimePersonList {
+/* 참석자 리스트 영역 */
+.common-info-table #attendeeList {
     background: #f8fafc;
     border: 1px dashed #e2e8f0;
     border-radius: 6px;
@@ -660,9 +896,7 @@ div:focus {
     margin-top: 8px;
 }
 
-.common-info-table #attendeeList:empty,
-.common-info-table #tripPersonList:empty,
-.common-info-table #overtimePersonList:empty {
+.common-info-table #attendeeList:empty {
     display: flex;
     align-items: center;
     justify-content: center;
@@ -670,18 +904,6 @@ div:focus {
 
 .common-info-table #attendeeList:empty::before {
     content: "참석자를 추가하려면 + 버튼을 클릭하세요";
-    color: #94a3b8;
-    font-size: 12px;
-}
-
-.common-info-table #tripPersonList:empty::before {
-    content: "출장 인원을 추가하려면 + 버튼을 클릭하세요";
-    color: #94a3b8;
-    font-size: 12px;
-}
-
-.common-info-table #overtimePersonList:empty::before {
-    content: "야근 인원을 추가하려면 + 버튼을 클릭하세요";
     color: #94a3b8;
     font-size: 12px;
 }
@@ -721,57 +943,141 @@ div:focus {
 
 /* 반응형 */
 @media (max-width: 768px) {
+    .common-info-section {
+        border-radius: 6px;
+    }
+
+    .section-header-common {
+        padding: 12px 16px;
+    }
+
+    .section-header-common h4 {
+        font-size: 14px;
+    }
+
     .common-info-table th {
         font-size: 12px;
-        padding: 10px 12px;
+        padding: 8px 10px;
+        width: 100px;
     }
 
     .common-info-table td {
-        padding: 8px 12px;
+        padding: 6px 10px;
     }
 
     .common-info-table input,
     .common-info-table select,
     .common-info-table textarea {
         font-size: 12px;
-        padding: 6px 10px;
+        padding: 6px 8px;
     }
 }
 
 /* ========================================
-   날짜별 비용 입력 테이블 (출장 전용)
+   공식 문서 양식 접기/펼치기 기능
    ======================================== */
 
-/* 날짜별 비용 입력 테이블 - common-info-table 상속 받음 */
-.daily-expense-table th,
-.daily-expense-table td {
+/* 문서 미리보기 토글 버튼 */
+.document-preview-toggle {
+    margin-top: 20px;
+}
+
+.toggle-btn {
+    width: 100%;
+    padding: 14px 20px;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+    border: none;
+    border-radius: 10px;
+    font-size: 14px;
+    font-weight: 600;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+    transition: all 0.3s;
+    box-shadow: 0 4px 12px rgba(102, 126, 234, 0.3);
+}
+
+.toggle-btn:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 16px rgba(102, 126, 234, 0.4);
+}
+
+.toggle-icon {
+    transition: transform 0.3s;
+}
+
+.toggle-btn.active .toggle-icon {
+    transform: rotate(180deg);
+}
+
+/* 문서 미리보기 영역 */
+.document-form-wrapper {
+    margin-top: 16px;
+    background: white;
+    border-radius: 12px;
+    padding: 30px;
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.08);
+    max-height: none;
+    overflow: visible;
+    transition: all 0.4s ease-in-out;
+}
+
+.document-form-wrapper.collapsed {
+    max-height: 0;
+    padding: 0;
+    margin-top: 0;
+    opacity: 0;
+    box-shadow: none;
+    overflow: hidden;
+}
+
+.document-form {
+    background: white;
+    padding: 0;
+}
+
+.doc-title {
     text-align: center;
+    font-size: 20.5px;
+    font-weight: 700;
+    color: #333;
+    margin: 0 0 25px 0;
+    padding-bottom: 20px;
+    border-bottom: 3px double #333;
 }
 
-.daily-expense-table tfoot tr {
-    background: linear-gradient(135deg, #667eea10 0%, #764ba210 100%);
-    font-weight: 600;
+/* 공식 문서 양식 테이블 - 진한 테두리 유지 */
+.form-table {
+    width: 100%;
+    border-collapse: collapse;
+    border: 2px solid #333;
+    margin-bottom: 20px;
+    table-layout: fixed;
 }
 
-.daily-expense-table tfoot td {
-    color: #667eea;
-    font-weight: 600;
+.form-table th,
+.form-table td {
+    border: 1px solid #333;
+    padding: 12px 16px;
+    font-size: 14px;
 }
 
-.daily-expense-table input[type="number"] {
-    text-align: right;
+.form-table td {
+    font-weight: 500;
 }
 
-/* 출장 테이블 전용 - th 텍스트 줄바꿈 허용 */
-.receipt-trip-table th {
-    white-space: normal;
-    word-wrap: break-word;
+.form-table th {
+    background: #f5f5f5;
+    font-weight: 700;
+    color: #333;
+    text-align: center;
+    width: 102px;
 }
 
-/* ========================================
-   공통 정보 입력 테이블만 연한 테두리
-   ======================================== */
-
+/* 공통 정보 입력 테이블만 연한 테두리 */
 .common-info-table.form-table {
     border: 1px solid #becdea;
 }
@@ -787,57 +1093,18 @@ div:focus {
     color: #64748b;
 }
 
-td, td span, td input {
-    font-size: 14px;
+/* 날짜별 비용 입력 테이블 - 진한 테두리 */
+.daily-expense-table.form-table {
+    border: 2px solid #333 !important;
 }
 
-div h2{
-    font-weight: bold;
-    font-size: 30px;
+.daily-expense-table.form-table th,
+.daily-expense-table.form-table td {
+    border: 1px solid #333 !important;
 }
 
-/* 문서 양식 */
-.document-form {
-    background: white;
-    border: 2px solid #e8e8e8;
-    border-radius: 10px;
-    padding: 24px;
-}
-
-.doc-title {
-    text-align: center;
-    font-size: 20.5px;
-    font-weight: 700;
-    color: #333;
-    margin: 0 0 25px 0;
-    padding-bottom: 20px;
-    border-bottom: 3px double #333;
-}
-
-.form-table {
-    width: 100%;
-    border-collapse: collapse;
-    border: 1px solid #333;
-    margin-bottom: 20px;
-    table-layout: fixed;
-}
-
-.form-table th,
-.form-table td {
-    border: 1px solid #333;
-    padding: 12px 16px;
-    font-size: 14px;
-}
-.form-table td{
-    font-weight: 500;
-}
-.form-table th {
-    background: #f5f5f5;
-    font-weight: 700;
-    color: #333;
-    text-align: center;
-    width: 102px;
-    height: 60px;
+.daily-expense-table.form-table thead tr:first-child th {
+    border: none !important;
 }
 
 td, td span, td input {
@@ -897,8 +1164,8 @@ div h2{
 }
 
 /* readonly 필드 스타일 - 테두리와 배경 제거 */
-.form-table input[readonly],
-.form-table textarea[readonly] {
+.form-table input[readonly]:not(.clickable-input),
+.form-table textarea[readonly]:not(.clickable-input) {
     border: none !important;
     background: transparent !important;
     padding: 8px 0;
@@ -907,17 +1174,44 @@ div h2{
     line-height: 1.6;
 }
 
-.form-table input[readonly]:focus,
-.form-table textarea[readonly]:focus {
+.form-table input[readonly]:not(.clickable-input):focus,
+.form-table textarea[readonly]:not(.clickable-input):focus {
     border: none !important;
     outline: none !important;
 }
 
 /* 회의 품의서 장소/일시 셀 */
 .auto-location-cell,
-.auto-datetime-cell {
+.auto-datetime-cell,
+td.auto-location-cell,
+td.auto-datetime-cell {
     vertical-align: middle;
     min-height: 40px;
+    height: auto !important;
+    max-height: none !important;
+    width: auto !important;
+    min-width: 150px !important;
+    overflow: visible !important;
+    white-space: normal !important;
+}
+
+/* 장소/일시 input 필드 - 글씨 잘림 방지 */
+.auto-location,
+.auto-datetime,
+input.auto-location,
+input.auto-datetime {
+    min-height: 35px !important;
+    height: auto !important;
+    max-height: none !important;
+    padding: 8px 10px !important;
+    line-height: 1.6 !important;
+    box-sizing: border-box !important;
+    overflow: visible !important;
+    white-space: normal !important;
+    word-wrap: break-word !important;
+    word-break: keep-all !important;
+    text-align: center !important;
+    display: block !important;
 }
 
 /* 참석자 명단 서명 테이블 가운데 정렬 */
@@ -1014,6 +1308,38 @@ div h2{
     color: #d32f2f;
 }
 
+.file-item .btn-download-file {
+    background: none;
+    border: none;
+    color: #667eea;
+    font-size: 15.2px;
+    cursor: pointer;
+    transition: color 0.2s ease;
+    padding: 4px;
+}
+
+.file-item .btn-download-file:hover {
+    color: #5b21b6;
+}
+
+.file-item.existing-file {
+    background: #f8fafc;
+    border-color: #cbd5e1;
+}
+
+/* 헤더 버튼 기본 스타일 */
+.header-right button {
+    padding: 10px 20px;
+    border: none;
+    border-radius: 8px;
+    font-size: 14px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+}
 
 .btn-primary {
     background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
@@ -1035,6 +1361,18 @@ div h2{
     background: #e2e8f0;
 }
 
+.btn-danger {
+    background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);
+    color: white;
+    border: none;
+}
+
+.btn-danger:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 20px rgba(239, 68, 68, 0.4);
+    background: linear-gradient(135deg, #dc2626 0%, #b91c1c 100%);
+}
+
 .btn-outline {
     background: white;
     color: #667eea;
@@ -1044,6 +1382,161 @@ div h2{
 .btn-outline:hover {
     background: #667eea;
     color: white;
+}
+
+/* 클릭 가능한 readonly input (프로젝트 선택) */
+.clickable-input {
+    cursor: pointer !important;
+    background: #fafbfc !important;
+    color: #334155 !important;
+    border: 1.5px solid #cbd5e1 !important;
+    border-radius: 6px !important;
+    padding: 8px 12px !important;
+    text-align: left !important;
+    transition: all 0.2s ease !important;
+}
+
+.clickable-input:hover {
+    border-color: #667eea !important;
+    background: #f0f4ff !important;
+    box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.08) !important;
+}
+
+.clickable-input.error {
+    border-color: #ef5350 !important;
+}
+
+.clickable-input::placeholder {
+    color: #94a3b8;
+}
+
+/* 프로젝트 선택 모달 - 검색박스 */
+.search-box {
+    position: relative;
+    margin-bottom: 16px;
+}
+
+.search-box i {
+    position: absolute;
+    left: 14px;
+    top: 50%;
+    transform: translateY(-50%);
+    color: #94a3b8;
+    font-size: 14px;
+}
+
+.search-box input {
+    width: 100%;
+    padding: 10px 14px 10px 38px;
+    border: 1px solid #e2e8f0;
+    border-radius: 8px;
+    font-size: 13.5px;
+    transition: all 0.2s;
+}
+
+.search-box input:focus {
+    border-color: #667eea;
+    box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+    outline: none;
+}
+
+/* 프로젝트 선택 모달 - 항목 목록 */
+.modal-item-list {
+    display: flex;
+    flex-direction: column;
+    max-height: 500px;
+    overflow-y: auto;
+}
+
+.modal-item {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 12px;
+    margin-bottom: 8px;
+    border: 1px solid #e2e8f0;
+    border-radius: 8px;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.modal-item:last-child {
+    margin-bottom: 0;
+}
+
+.modal-item:hover {
+    border-color: #667eea;
+    background: #f5f7ff;
+}
+
+.modal-item.selected {
+    border-color: #667eea;
+    background: #e8f0fe;
+}
+
+.modal-item i {
+    font-size: 24px;
+    color: #667eea;
+}
+
+.modal-item-info {
+    flex: 1;
+}
+
+.modal-item-name {
+    font-size: 14px;
+    font-weight: 600;
+    color: #1e293b;
+    margin-bottom: 2px;
+}
+
+.modal-item-detail {
+    font-size: 12px;
+    color: #64748b;
+}
+
+.modal-item-detail > div {
+    margin-top: 4px;
+    font-size: 11px;
+    color: #64748b;
+}
+
+.modal-item-detail > div i {
+    font-size: 10px;
+    margin-right: 4px;
+    color: #94a3b8;
+}
+
+/* 검색 하이라이트 */
+.search-highlight {
+    background: #ffeb3b;
+    color: #333;
+    font-weight: 600;
+    padding: 2px 0;
+    border-radius: 2px;
+}
+
+/* 빈 상태 메시지 */
+.modal-empty-state {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 60px 20px;
+    text-align: center;
+    color: #94a3b8;
+}
+
+.modal-empty-state i {
+    font-size: 48px;
+    margin-bottom: 16px;
+    color: #cbd5e1;
+}
+
+.modal-empty-state p {
+    font-size: 14px;
+    margin: 0;
+    color: #64748b;
 }
 
 /* 모달 */
@@ -1056,7 +1549,7 @@ div h2{
     height: 100%;
     background: rgba(0, 0, 0, 0.5);
     backdrop-filter: blur(4px);
-    z-index: 9999;
+    z-index: 1000;
     align-items: center;
     justify-content: center;
 }
@@ -1125,8 +1618,9 @@ div h2{
 
 .modal-body {
     padding: 20px;
-    overflow-y: auto;
     flex: 1;
+    display: flex;
+    flex-direction: column;
 }
 
 .modal-search {
@@ -1166,60 +1660,259 @@ div h2{
     align-items: center;
     gap: 12px;
     padding: 12px;
-    border: 1px solid #e8e8e8;
-    border-radius: 8px;
-    margin-bottom: 8px;
+    border: 2px solid #e8e8e8;
+    border-radius: 10px;
+    margin-bottom: 10px;
     cursor: pointer;
-    transition: all 0.2s ease;
+    transition: all 0.3s ease;
     position: relative;
 }
 
 .employee-item:hover {
     border-color: #667eea;
     background: #f5f7ff;
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(102, 126, 234, 0.15);
 }
 
 .employee-item.selected {
     border-color: #667eea;
-    background: #e8f0fe;
+    background: linear-gradient(135deg, #e8f0fe 0%, #f5f7ff 100%);
+    box-shadow: 0 4px 12px rgba(102, 126, 234, 0.2);
 }
 
-.employee-item.added {
-    border-color: #10b981;
-    background: #f0fdf4;
-    cursor: default;
+/* 중복으로 선택 불가능한 항목 */
+.employee-item.disabled {
+    opacity: 0.5;
+    cursor: not-allowed !important;
+    background: #f9fafb;
+    border-color: #e5e7eb;
+    pointer-events: none;
 }
 
-.employee-item.added:hover {
-    border-color: #10b981;
-    background: #f0fdf4;
+.employee-item.disabled:hover {
+    border-color: #e5e7eb;
+    background: #f9fafb;
     transform: none;
-    box-shadow: 0 2px 8px rgba(16, 185, 129, 0.15);
+    box-shadow: none;
 }
 
-.employee-item.added::after {
-    content: '\f00c';
-    font-family: 'Font Awesome 5 Free';
-    font-weight: 900;
-    position: absolute;
-    right: 12px;
-    top: 50%;
-    transform: translateY(-50%);
-    color: #10b981;
-    font-size: 18px;
-    background: white;
-    width: 32px;
-    height: 32px;
-    border-radius: 50%;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    border: 2px solid #10b981;
+.employee-item.disabled .employee-name {
+    color: #9ca3af;
 }
+
+.employee-item.disabled .employee-detail {
+    color: #d1d5db;
+}
+
+.employee-item.disabled .employee-expense {
+    color: #d1d5db;
+}
+
+/* .added 클래스 제거 - 모든 참석자를 동일하게 처리 */
 
 .employee-item i {
     font-size: 23.8px;
     color: #667eea;
+}
+
+/* 추가된 참석자 목록 스타일 - 컴팩트 버전 */
+.trip-person-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 8px 12px;
+    background: #ffffff;
+    border: 1px solid #e2e8f0;
+    border-radius: 6px;
+    font-size: 12px;
+    transition: all 0.2s ease;
+    cursor: pointer;
+}
+
+.trip-person-item:hover {
+    border-color: #ef4444;
+    background: #fef2f2;
+    transform: translateX(-2px);
+}
+
+/* 외부 참석자 항목 */
+.trip-person-item.external-attendee {
+    background: #fef9f5;
+    border-color: #fed7aa;
+}
+
+.trip-person-item.external-attendee:hover {
+    border-color: #ef4444;
+    background: #fef2f2;
+}
+
+/* 외부 참석자 뱃지 */
+.external-badge {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    margin-left: 6px;
+    padding: 2px 6px;
+    background: #fb923c;
+    color: white;
+    font-size: 9px;
+    font-weight: 700;
+    border-radius: 3px;
+    vertical-align: middle;
+}
+
+/* 작성자 뱃지 */
+.author-badge {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    margin-left: 6px;
+    padding: 2px 6px;
+    background: #10b981;
+    color: white;
+    font-size: 9px;
+    font-weight: 700;
+    border-radius: 3px;
+}
+
+/* 작성자 참석자 아이템 */
+.trip-person-item.is-author {
+    background: #f0fdf4;
+    border-color: #86efac;
+    cursor: default;
+}
+
+.trip-person-item.is-author:hover {
+    border-color: #86efac;
+    background: #f0fdf4;
+    transform: none;
+}
+
+/* 삭제 불가 텍스트 */
+.cannot-remove-text {
+    padding: 4px 8px;
+    background: #f1f5f9;
+    color: #64748b;
+    border: 1px solid #e2e8f0;
+    border-radius: 4px;
+    font-size: 11px;
+    font-weight: 600;
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    pointer-events: none;
+}
+
+.trip-person-info {
+    display: flex;
+    gap: 8px;
+    align-items: center;
+    flex: 1;
+    pointer-events: none;
+}
+
+.trip-person-info::before {
+    content: '\f007';
+    font-family: 'Font Awesome 5 Free';
+    font-weight: 400;
+    color: #667eea;
+    font-size: 14px;
+    width: 24px;
+    height: 24px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: #e8f0fe;
+    border-radius: 50%;
+    flex-shrink: 0;
+}
+
+.trip-person-info span {
+    color: #64748b;
+    font-size: 11px;
+    padding: 2px 6px;
+    background: #f1f5f9;
+    border-radius: 4px;
+    white-space: nowrap;
+}
+
+.trip-person-info .name {
+    font-weight: 600;
+    color: #1e293b;
+    font-size: 12px;
+    background: transparent;
+    padding: 0;
+}
+
+/* 중복 출장 경고 아이콘 */
+.duplicate-warning {
+    color: #f59e0b !important;
+    font-size: 13px;
+    animation: pulse-warning 2s ease-in-out infinite;
+    cursor: help;
+}
+
+@keyframes pulse-warning {
+    0%, 100% {
+        opacity: 1;
+    }
+    50% {
+        opacity: 0.6;
+    }
+}
+
+.trip-person-remove {
+    padding: 4px 8px;
+    background: #fee2e2;
+    color: #dc2626;
+    border: 1px solid #fca5a5;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 11px;
+    font-weight: 600;
+    transition: all 0.2s ease;
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    pointer-events: none;
+}
+
+.trip-person-remove:hover {
+    background: #fecaca;
+    border-color: #f87171;
+}
+
+.trip-person-remove i {
+    font-size: 10px;
+}
+
+.add-more-attendees-btn {
+    width: 100%;
+    padding: 6px 12px;
+    background: #e0e7ff;
+    color: #5b21b6;
+    border: 1px dashed #a78bfa;
+    border-radius: 4px;
+    font-size: 11px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 4px;
+    flex: 0 0 auto;
+}
+
+.add-more-attendees-btn:hover {
+    background: #ddd6fe;
+    border-color: #8b5cf6;
+    border-style: solid;
+}
+
+.add-more-attendees-btn i {
+    font-size: 10px;
 }
 
 .employee-info {
@@ -1238,11 +1931,42 @@ div h2{
     color: #777;
 }
 
+.employee-expense {
+    font-size: 12px;
+    font-weight: 600;
+    color: #667eea;
+    white-space: nowrap;
+}
+
+.employee-check {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.default-expense-badge {
+    font-size: 10px;
+    font-weight: 500;
+    color: #94a3b8;
+    margin-left: 4px;
+}
+
 .modal-footer {
     padding: 15px 25px;
     border-top: 1px solid #f0f0f0;
     display: flex;
     justify-content: flex-end;
+    align-items: center;
+    gap: 10px;
+}
+
+.modal-footer-left {
+    display: flex;
+    gap: 10px;
+}
+
+.modal-footer-right {
+    display: flex;
     gap: 10px;
 }
 
@@ -1253,6 +1977,9 @@ div h2{
     font-weight: 600;
     cursor: pointer;
     transition: all 0.2s ease;
+    display: flex;
+    align-items: center;
+    gap: 6px;
 }
 
 /* 스크롤바 - 호버 시에만 표시 */
@@ -1314,415 +2041,291 @@ div h2{
     }
 }
 
-/* PDF 로딩 모달 */
-.pdf-loading-modal {
-    display: none;
-    position: fixed;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
-    background: rgba(0, 0, 0, 0.7);
-    z-index: 10000;
-    justify-content: center;
-    align-items: center;
-}
-
-.pdf-loading-modal.active {
-    display: flex;
-}
-
-.pdf-loading-content {
-    background: white;
-    padding: 40px;
-    border-radius: 12px;
-    text-align: center;
-    min-width: 400px;
-    box-shadow: 0 10px 40px rgba(0, 0, 0, 0.3);
-}
-
-.pdf-loading-content h3 {
-    margin: 20px 0 30px;
-    color: #333;
-    font-size: 18px;
-    font-weight: 600;
-}
-
-/* 스피너 애니메이션 */
-.spinner {
-    width: 60px;
-    height: 60px;
-    border: 5px solid #f3f3f3;
-    border-top: 5px solid #667eea;
-    border-radius: 50%;
-    margin: 0 auto;
-    animation: spin 1s linear infinite;
-}
-
-@keyframes spin {
-    0% { transform: rotate(0deg); }
-    100% { transform: rotate(360deg); }
-}
-
-/* 진행도 바 */
-.progress-info {
-    margin-top: 20px;
-}
-
-.progress-bar {
-    width: 100%;
-    height: 30px;
-    background: #f0f0f0;
-    border-radius: 15px;
-    overflow: hidden;
-    position: relative;
-    box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.1);
-}
-
-.progress-fill {
-    height: 100%;
-    background: linear-gradient(90deg, #667eea 0%, #764ba2 100%);
-    width: 0%;
-    transition: width 0.3s ease;
-    border-radius: 15px;
-    position: relative;
-    overflow: hidden;
-}
-
-.progress-fill::after {
-    content: '';
-    position: absolute;
-    top: 0;
-    left: 0;
-    bottom: 0;
-    right: 0;
-    background: linear-gradient(
-        90deg,
-        transparent,
-        rgba(255, 255, 255, 0.3),
-        transparent
-    );
-    animation: shimmer 2s infinite;
-}
-
-@keyframes shimmer {
-    0% { transform: translateX(-100%); }
-    100% { transform: translateX(100%); }
-}
-
-.progress-text {
-    margin-top: 15px;
-    color: #666;
-    font-size: 14px;
-    font-weight: 500;
-}
-
-/* 반응형 */
-@media (max-width: 768px) {
-    .pdf-loading-content {
-        min-width: 300px;
-        padding: 30px 20px;
-    }
-
-    .pdf-loading-content h3 {
-        font-size: 16px;
-    }
-
-    .spinner {
-        width: 50px;
-        height: 50px;
-    }
-
-    .progress-bar {
-        height: 25px;
-    }
-}
-
-/* 출장인원 영역 (참석자와 동일한 스타일) */
-.attendee-area {
-    min-height: 50px;
-    max-height: 280px;
-    padding: 12px;
-    border: 2px dashed #e2e8f0;
-    border-radius: 10px;
-    cursor: pointer;
-    transition: all 0.2s;
-    background: #fafbfc;
-    display: flex;
-    flex-direction: column;
-    gap: 8px;
-}
-
-.attendee-area:hover {
+/* 참석자 영역 hover 효과 */
+#attendeeArea:hover {
     border-color: #667eea;
-    background: #f8fafc;
+    background: #f8f9ff;
 }
 
-/* 출장인원이 있을 때는 cursor pointer 제거 */
-.attendee-area.has-persons {
-    cursor: default;
-}
-
-.attendee-area.has-persons:hover {
-    border-color: #e2e8f0;
-    background: #fafbfc;
-}
-
-/* 출장인원 목록 */
-.attendee-list {
-    display: grid;
-    grid-template-columns: repeat(2, 1fr);
-    gap: 8px;
-    overflow-y: auto;
-    flex: 1;
-    padding-right: 4px;
-}
-
-/* 스크롤바 스타일 */
-.attendee-list::-webkit-scrollbar {
-    width: 6px;
-}
-
-.attendee-list::-webkit-scrollbar-track {
-    background: transparent;
-    border-radius: 3px;
-}
-
-.attendee-list::-webkit-scrollbar-thumb {
-    background: #cbd5e1;
-    border-radius: 3px;
-}
-
-.attendee-list::-webkit-scrollbar-thumb:hover {
-    background: #94a3b8;
-}
-
-/* 빈 상태 메시지 */
-.empty-attendee-state {
-    grid-column: 1 / -1;
-    text-align: center;
-    color: #94a3b8;
-    font-size: 13px;
-    padding: 16px 8px;
-}
-
-.empty-attendee-state i {
-    font-size: 24px;
-    margin-bottom: 8px;
-    display: block;
-    color: #cbd5e1;
-}
-
-/* 결재자 영역 hover 효과 */
+/* 결재선 영역 hover 효과 */
 #approverChips:hover {
     border-color: #667eea;
     background: #f8f9ff;
 }
 
-/* 문서 미리보기 토글 버튼 */
-.document-preview-toggle {
-    margin-top: 20px;
+/* ==========================================
+   참석자 모달 - 2분할 레이아웃
+   ========================================== */
+
+.dual-panel-container {
+    display: flex;
+    gap: 0;
+    height: 400px;
+    border-bottom: 1px solid #e2e8f0;
 }
 
-.toggle-btn {
-    width: 100%;
-    padding: 14px 20px;
-    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-    color: white;
-    border: none;
-    border-radius: 10px;
-    font-size: 14px;
-    font-weight: 600;
-    cursor: pointer;
+.panel-section {
+    flex: 1 1 50%;
+    width: 50%;
+    max-width: 50%;
+    min-width: 50%;
+    display: flex;
+    flex-direction: column;
+    border-right: 1px solid #e2e8f0;
+}
+
+.panel-section:last-child {
+    border-right: none;
+}
+
+.panel-header {
     display: flex;
     align-items: center;
-    justify-content: center;
-    gap: 10px;
-    transition: all 0.3s;
-    box-shadow: 0 4px 12px rgba(102, 126, 234, 0.3);
-}
-
-.toggle-btn:hover {
-    transform: translateY(-2px);
-    box-shadow: 0 6px 16px rgba(102, 126, 234, 0.4);
-}
-
-.toggle-icon {
-    transition: transform 0.3s;
-}
-
-.toggle-btn.active .toggle-icon {
-    transform: rotate(180deg);
-}
-
-/* 문서 미리보기 영역 */
-.document-form-wrapper {
-    margin-top: 16px;
-    background: white;
-    border-radius: 12px;
-    padding: 30px;
-    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.08);
-    max-height: none;
-    overflow: visible;
-    transition: all 0.4s ease-in-out;
-}
-
-.document-form-wrapper.collapsed {
-    max-height: 0;
-    padding: 0;
-    margin-top: 0;
-    opacity: 0;
-    box-shadow: none;
-    overflow: hidden;
-}
-
-.document-form {
-    background: white;
-    padding: 0;
-}
-
-/* 추가된 출장인원 표시 스타일 */
-.trip-person-item {
-    display: flex;
     justify-content: space-between;
-    align-items: center;
-    padding: 14px 16px;
-    background: linear-gradient(135deg, #ffffff 0%, #f8f9fa 100%);
-    border: 2px solid #e2e8f0;
-    border-radius: 10px;
-    font-size: 13px;
-    transition: all 0.3s ease;
-    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.04);
+    padding: 16px 20px;
+    background: #f8fafc;
+    border-bottom: 1px solid #e2e8f0;
+    min-height: 60px;
+    height: 60px;
 }
 
-.trip-person-item:hover {
-    border-color: #667eea;
-    box-shadow: 0 4px 12px rgba(102, 126, 234, 0.12);
-    transform: translateY(-2px);
-}
-
-/* 외부 출장인원 항목 */
-.trip-person-item.external-person {
-    background: #fef9f5;
-    border-color: #fed7aa;
-}
-
-.trip-person-item.external-person:hover {
-    border-color: #fb923c;
-    background: #fef2f2;
-}
-
-.trip-person-info {
-    display: flex;
-    gap: 14px;
-    align-items: center;
-    flex: 1;
-}
-
-.trip-person-info::before {
-    content: '\f007';
-    font-family: 'Font Awesome 5 Free';
-    font-weight: 400;
-    color: #667eea;
-    font-size: 20px;
-    width: 36px;
-    height: 36px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    background: linear-gradient(135deg, #e8f0fe 0%, #f5f7ff 100%);
-    border-radius: 50%;
-    flex-shrink: 0;
-}
-
-.trip-person-info span {
-    color: #64748b;
-    font-size: 13px;
-    padding: 4px 10px;
-    background: #f1f5f9;
-    border-radius: 6px;
-    white-space: nowrap;
-}
-
-.trip-person-info .name {
-    font-weight: 700;
-    color: #1e293b;
+.panel-header h4 {
+    margin: 0;
     font-size: 14px;
-    background: transparent;
+    font-weight: 600;
+    color: #334155;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.panel-header h4 i {
+    color: #667eea;
+    font-size: 16px;
+}
+
+.panel-section .modal-search {
+    margin: 12px 16px;
     padding: 0;
 }
 
-.trip-person-remove {
-    padding: 8px 14px;
-    background: linear-gradient(135deg, #fee2e2 0%, #fecaca 100%);
-    color: #dc2626;
-    border: 1px solid #fca5a5;
-    border-radius: 8px;
-    cursor: pointer;
-    font-size: 12px;
-    font-weight: 600;
-    transition: all 0.2s ease;
+.panel-section .employee-list {
+    flex: 1;
+    overflow-y: auto;
+    padding: 8px 16px 16px 16px;
+}
+
+/* 선택된 참석자 영역 */
+.selected-attendees-area {
+    background: #f8fafc;
+    border-top: 2px solid #e2e8f0;
+    padding: 16px 20px;
+    min-height: 120px;
+    max-height: 180px;
+    display: flex;
+    flex-direction: column;
+}
+
+.selected-header {
     display: flex;
     align-items: center;
-    gap: 6px;
+    justify-content: space-between;
+    margin-bottom: 12px;
 }
 
-.trip-person-remove:hover {
-    background: linear-gradient(135deg, #fecaca 0%, #fca5a5 100%);
-    border-color: #f87171;
-    transform: translateY(-1px);
-    box-shadow: 0 2px 8px rgba(220, 38, 38, 0.2);
-}
-
-/* 외부 출장인원 뱃지 */
-.external-badge {
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    margin-left: 6px;
-    padding: 2px 6px;
-    background: #fb923c;
-    color: white;
-    font-size: 9px;
-    font-weight: 700;
-    border-radius: 3px;
-    vertical-align: middle;
-}
-
-/* 출장인원 추가 버튼 */
-.add-more-persons-btn {
-    width: 100%;
-    padding: 6px 12px;
-    background: #e0e7ff;
-    color: #5b21b6;
-    border: 1px dashed #a78bfa;
-    border-radius: 4px;
-    font-size: 11px;
+.selected-header h4 {
+    margin: 0;
+    font-size: 13px;
     font-weight: 600;
+    color: #334155;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.selected-header h4 i {
+    color: #10b981;
+    font-size: 14px;
+}
+
+.selected-header h4 span {
+    color: #667eea;
+    font-weight: 700;
+}
+
+.btn-sm-text {
+    background: none;
+    border: none;
     cursor: pointer;
+    padding: 4px 8px;
+    border-radius: 4px;
     transition: all 0.2s;
     display: flex;
     align-items: center;
-    justify-content: center;
     gap: 4px;
-    flex: 0 0 auto;
 }
 
-.add-more-persons-btn:hover {
-    background: #ddd6fe;
-    border-color: #8b5cf6;
-    border-style: solid;
+.btn-sm-text:hover {
+    background: rgba(0, 0, 0, 0.05);
 }
 
-.add-more-persons-btn i {
-    font-size: 10px;
+.btn-sm-outline {
+    background: white;
+    border: 1px solid #e2e8f0;
+    color: #64748b;
+    padding: 4px 10px;
+    border-radius: 6px;
+    cursor: pointer;
+    font-size: 12px;
+    transition: all 0.2s;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    height: 28px;
 }
 
-/* ========================================
-   출장인원 모달 내 프로젝트 선택 UI
-   ======================================== */
+.btn-sm-outline:hover {
+    background: #f8fafc;
+    border-color: #667eea;
+    color: #667eea;
+}
 
-/* 편의 기능 안내 메시지 (warning card) */
+/* 뱃지 컨테이너 */
+.badge-container {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    overflow-y: auto;
+    max-height: 100px;
+    padding: 4px;
+}
+
+.badge-container::-webkit-scrollbar {
+    width: 6px;
+    height: 6px;
+}
+
+.badge-container::-webkit-scrollbar-track {
+    background: #f1f5f9;
+    border-radius: 3px;
+}
+
+.badge-container::-webkit-scrollbar-thumb {
+    background: #cbd5e1;
+    border-radius: 3px;
+}
+
+.badge-container::-webkit-scrollbar-thumb:hover {
+    background: #94a3b8;
+}
+
+/* Empty state */
+.badge-container .empty-state {
+    width: 100%;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    padding: 20px;
+    color: #94a3b8;
+    font-size: 13px;
+}
+
+.badge-container .empty-state i {
+    font-size: 24px;
+    opacity: 0.5;
+}
+
+/* 참석자 뱃지 */
+.attendee-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 6px 12px;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+    border-radius: 20px;
+    font-size: 13px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.2s;
+    user-select: none;
+    box-shadow: 0 2px 4px rgba(102, 126, 234, 0.2);
+}
+
+.attendee-badge:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 4px 8px rgba(102, 126, 234, 0.3);
+}
+
+.attendee-badge.external {
+    background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);
+    box-shadow: 0 2px 4px rgba(245, 158, 11, 0.2);
+}
+
+.attendee-badge.external:hover {
+    box-shadow: 0 4px 8px rgba(245, 158, 11, 0.3);
+}
+
+.attendee-badge i {
+    font-size: 11px;
+    pointer-events: none;
+}
+
+.attendee-badge .badge-name {
+    font-weight: 600;
+    pointer-events: none;
+}
+
+.attendee-badge .badge-info {
+    opacity: 0.9;
+    font-size: 11px;
+    pointer-events: none;
+}
+
+.attendee-badge .badge-remove {
+    margin-left: 4px;
+    padding: 2px 4px;
+    border-radius: 50%;
+    background: rgba(255, 255, 255, 0.2);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.2s;
+    pointer-events: none;
+}
+
+.attendee-badge .badge-remove:hover {
+    background: rgba(255, 255, 255, 0.3);
+    transform: scale(1.1);
+}
+
+.attendee-badge .badge-remove i {
+    pointer-events: none;
+}
+
+/* 검색 하이라이트 */
+.highlight {
+    background: #fef08a;
+    color: #854d0e;
+    font-weight: 600;
+    padding: 0 2px;
+    border-radius: 2px;
+}
+
+.badge-added {
+    display: inline-block;
+    padding: 2px 8px;
+    background: #94a3b8;
+    color: white;
+    border-radius: 12px;
+    font-size: 11px;
+    font-weight: 600;
+    margin-left: auto;
+}
+
+/* 편의 기능 안내 메시지 */
 .convenience-notice {
     display: flex;
     align-items: center;
@@ -1764,7 +2367,7 @@ div h2{
     color: #c2410c;
 }
 
-/* 출장인원 모달 내 프로젝트 아이템 */
+/* 참석자 모달 내 프로젝트 아이템 (간단 버전) */
 .project-item-in-attendee {
     display: flex;
     align-items: center;
@@ -1813,17 +2416,19 @@ div h2{
 }
 
 .project-item-details {
-    display: flex;
-    gap: 12px;
     margin-top: 4px;
+}
+
+.project-item-details > div {
+    margin-top: 2px;
     font-size: 11px;
     color: #64748b;
 }
 
-.project-item-details span {
-    display: flex;
-    align-items: center;
-    gap: 4px;
+.project-item-details > div i {
+    font-size: 10px;
+    margin-right: 4px;
+    color: #94a3b8;
 }
 
 .project-item-arrow {
@@ -1839,4 +2444,498 @@ div h2{
 .project-item-in-attendee:hover .project-item-arrow {
     color: #667eea;
     transform: translateX(2px);
+}
+
+/* 인쇄 버튼 스타일 */
+.btn-print {
+    padding: 10px 20px;
+    background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+    color: white;
+    border: none;
+    border-radius: 8px;
+    font-size: 14px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.3s;
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.btn-print:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(16, 185, 129, 0.3);
+}
+
+.btn-print i {
+    font-size: 16px;
+}
+
+/* 툴팁 버튼 스타일 */
+.btn-with-tooltip {
+    position: relative;
+}
+
+.tooltip-text {
+    visibility: hidden;
+    opacity: 0;
+    position: absolute;
+    top: 110%;
+    left: 50%;
+    transform: translateX(-50%);
+    background: #333;
+    color: white;
+    padding: 12px 16px;
+    border-radius: 8px;
+    font-size: 13px;
+    line-height: 1.5;
+    white-space: nowrap;
+    z-index: 1000;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+    transition: opacity 0.3s, visibility 0.3s;
+    pointer-events: none;
+}
+
+.tooltip-text::after {
+    content: '';
+    position: absolute;
+    bottom: 100%;
+    left: 50%;
+    transform: translateX(-50%);
+    border: 8px solid transparent;
+    border-bottom-color: #333;
+}
+
+.btn-with-tooltip:hover .tooltip-text {
+    visibility: visible;
+    opacity: 1;
+}
+
+/* 라벨 툴팁 스타일 */
+.label-tooltip-wrapper {
+    position: relative;
+    display: inline-flex;
+    align-items: center;
+    margin-left: 4px;
+}
+
+.label-tooltip-wrapper .tooltip-icon {
+    color: #667eea;
+    font-size: 14px;
+    cursor: help;
+    transition: color 0.2s;
+}
+
+.label-tooltip-wrapper .tooltip-icon:hover {
+    color: #5a67d8;
+}
+
+.label-tooltip-wrapper .tooltip-text {
+    position: absolute;
+    top: calc(100% + 8px);
+    left: 50%;
+    transform: translateX(-50%);
+    white-space: normal !important;
+    min-width: 220px;
+    max-width: 280px;
+    width: max-content;
+    text-align: left;
+    z-index: 1000;
+}
+
+.label-tooltip-wrapper:hover .tooltip-text {
+    visibility: visible;
+    opacity: 1;
+}
+
+/* 필수 필드 미입력 강조 스타일 */
+.field-empty {
+    border: 2px solid #ef4444 !important;
+    background: #fef2f2 !important;
+    animation: shake 0.5s ease;
+}
+
+.field-empty:focus {
+    border-color: #dc2626 !important;
+    box-shadow: 0 0 0 3px rgba(239, 68, 68, 0.1) !important;
+}
+
+@keyframes shake {
+    0%, 100% { transform: translateX(0); }
+    25% { transform: translateX(-5px); }
+    75% { transform: translateX(5px); }
+}
+
+/* 인쇄용 스타일 */
+@media print {
+    /* A4 페이지 설정 */
+    @page {
+        size: A4 portrait;
+        margin: 0;
+    }
+
+    /* 인쇄 시 사이드바, 헤더, 버튼 등 숨기기 */
+    .sidebar,
+    .header,
+    .template-sidebar,
+    .common-info-section,
+    .attachment-section,
+    .document-preview-toggle {
+        display: none !important;
+    }
+
+    /* body와 html 설정 */
+    body, html {
+        margin: 0 !important;
+        padding: 0 !important;
+        width: 210mm !important;
+        height: auto !important;
+        overflow: visible !important;
+    }
+
+    /* 모든 컨테이너 초기화 */
+    .container,
+    .main-content,
+    .write-container,
+    .write-layout,
+    .editor-area,
+    .document-form-wrapper,
+    .document-form-wrapper.collapsed,
+    .document-form,
+    #documentFormContent {
+        all: unset !important;
+        display: block !important;
+        width: 100% !important;
+        max-width: none !important;
+        overflow: visible !important;
+        position: static !important;
+        float: none !important;
+        clear: both !important;
+    }
+
+    /* 각 페이지를 새로운 페이지로 강제 */
+    #documentFormContent > div:nth-child(1),
+    #documentFormContent > div:nth-child(2),
+    #documentFormContent > div:nth-child(3) {
+        display: block !important;
+        width: 210mm !important;
+        min-height: 297mm !important;
+        max-height: 297mm !important;
+        page-break-after: always !important;
+        page-break-before: auto !important;
+        page-break-inside: avoid !important;
+        break-after: page !important;
+        break-inside: avoid !important;
+        margin: 0 !important;
+        padding: 15mm !important;
+        box-sizing: border-box !important;
+        background: white !important;
+        border: none !important;
+        box-shadow: none !important;
+        position: relative !important;
+        overflow: hidden !important;
+    }
+
+    /* 마지막 페이지 */
+    #documentFormContent > div:nth-child(3) {
+        page-break-after: auto !important;
+        break-after: auto !important;
+    }
+
+    /* 테이블 스타일 */
+    table {
+        width: 100% !important;
+        border-collapse: collapse !important;
+    }
+
+    table td,
+    table th {
+        color: #000 !important;
+        border-color: #000 !important;
+    }
+
+    input, textarea, span {
+        color: #000 !important;
+    }
+
+    .doc-title {
+        color: #000 !important;
+        font-weight: bold !important;
+    }
+
+    /* 주요 내용 폰트 크기 줄이기 (페이지 넘침 방지) */
+    .auto-content {
+        font-size: 13px !important;
+        line-height: 1.6 !important;
+    }
+
+    /* 주제도 약간 줄이기 */
+    .auto-subject {
+        font-size: 16px !important;
+    }
+
+    /* 비고칸 높이 줄이기 (2페이지) */
+    .auto-minutes-notes {
+        height: 50px !important;
+        min-height: 50px !important;
+    }
+
+    /* 특이사항칸 높이 줄이기 (1페이지) */
+    .auto-notes {
+        height: 40px !important;
+        min-height: 40px !important;
+    }
+
+    /* 1페이지 테이블 열 너비 조정 (일시/특이사항/결제 헤더 넓히기) */
+    #documentFormContent > div:nth-child(1) .form-table colgroup col:nth-child(1) {
+        width: 15% !important;
+    }
+    #documentFormContent > div:nth-child(1) .form-table colgroup col:nth-child(2) {
+        width: 16% !important;
+    }
+    #documentFormContent > div:nth-child(1) .form-table colgroup col:nth-child(3) {
+        width: 11% !important;
+    }
+    #documentFormContent > div:nth-child(1) .form-table colgroup col:nth-child(5) {
+        width: 21% !important;
+    }
+
+    /* 1페이지 장소 입력 칸 폰트 크기 줄이기 */
+    #documentFormContent > div:nth-child(1) .auto-location {
+        font-size: 11px !important;
+        line-height: 1.4 !important;
+    }
+
+    /* 참석자명단 테이블만 열 너비 조정 (3페이지만) */
+    #documentFormContent > div:nth-child(3) table:first-of-type colgroup col:nth-child(1) {
+        width: 15% !important;
+    }
+    #documentFormContent > div:nth-child(3) table:first-of-type colgroup col:nth-child(2) {
+        width: 45% !important;
+    }
+    #documentFormContent > div:nth-child(3) table:first-of-type colgroup col:nth-child(3) {
+        width: 15% !important;
+    }
+    #documentFormContent > div:nth-child(3) table:first-of-type colgroup col:nth-child(4) {
+        width: 25% !important;
+    }
+
+    /* 3페이지 장소 입력 칸 폰트 크기 줄이기 */
+    #documentFormContent > div:nth-child(3) .auto-location {
+        font-size: 11px !important;
+        line-height: 1.4 !important;
+    }
+
+    /* 참석자 12명 초과 시 (최대 20명까지 표시) */
+    /* 헤더 부분 (구분/성명/소속/서명) - 참석자 이름과 동일한 크기 */
+    #documentFormContent.many-attendees > div:nth-child(3) #attendee-signature-table thead th {
+        font-size: 12px !important;
+        padding: 2px 3px !important;
+        line-height: 1.1 !important;
+    }
+
+    #documentFormContent.many-attendees > div:nth-child(3) #attendee-signature-table thead tr {
+        height: 20px !important;
+        min-height: 20px !important;
+    }
+
+    /* 참석자 내역 부분 (tbody) - 폰트 80% 축소 및 높이 축소 */
+    #documentFormContent.many-attendees > div:nth-child(3) #attendee-signature-table tbody td {
+        font-size: 5px !important;
+        padding: 1px 2px !important;
+        line-height: 1.1 !important;
+        height: 16px !important;
+        min-height: 16px !important;
+    }
+
+    #documentFormContent.many-attendees > div:nth-child(3) #attendee-signature-table tbody tr {
+        height: 16px !important;
+        min-height: 16px !important;
+    }
+
+    /* 참석자 12명 초과 시 3페이지 상단 기본정보 칸 50% 축소 */
+    #documentFormContent.many-attendees > div:nth-child(3) .form-table tr:nth-child(1) th {
+        height: 40px !important;
+        min-height: 40px !important;
+        padding: 5px 8px !important;
+    }
+
+    #documentFormContent.many-attendees > div:nth-child(3) .form-table tr:nth-child(1) td {
+        padding: 5px 8px !important;
+    }
+
+    #documentFormContent.many-attendees > div:nth-child(3) .auto-project {
+        font-size: 11px !important;
+    }
+
+    #documentFormContent.many-attendees > div:nth-child(3) .auto-author {
+        font-size: 11px !important;
+    }
+
+    /* 3페이지 일시/장소 행 축소 */
+    #documentFormContent.many-attendees > div:nth-child(3) .form-table tr:nth-child(2) th,
+    #documentFormContent.many-attendees > div:nth-child(3) .form-table tr:nth-child(2) td {
+        height: 30px !important;
+        min-height: 30px !important;
+        padding: 4px 6px !important;
+    }
+
+    #documentFormContent.many-attendees > div:nth-child(3) .auto-location {
+        font-size: 9px !important;
+        padding: 3px !important;
+    }
+
+    #documentFormContent.many-attendees > div:nth-child(3) .auto-datetime-minutes {
+        font-size: 10px !important;
+    }
+
+    /* 참석자 12명 초과 시 1, 2페이지 특이사항/비고 칸 높이 50% 축소 */
+    #documentFormContent.many-attendees > div:nth-child(1) .auto-notes {
+        height: 20px !important;
+        min-height: 20px !important;
+    }
+
+    #documentFormContent.many-attendees > div:nth-child(2) .auto-minutes-notes {
+        height: 25px !important;
+        min-height: 25px !important;
+    }
+
+    /* 참석자 소속 5개 초과 시 1페이지 칸 높이 최소화 */
+    /* 사업명 행 */
+    #documentFormContent.many-departments > div:nth-child(1) .form-table tr:nth-child(1) th,
+    #documentFormContent.many-departments > div:nth-child(1) .form-table tr:nth-child(1) td {
+        height: 30px !important;
+        min-height: 30px !important;
+        padding: 5px 8px !important;
+    }
+
+    #documentFormContent.many-departments > div:nth-child(1) .auto-project {
+        font-size: 12px !important;
+    }
+
+    /* 소요 비용 예상 내역 헤더 행 (8번째 행) */
+    #documentFormContent.many-departments > div:nth-child(1) .form-table tr:nth-child(8) th {
+        padding: 8px !important;
+    }
+
+    /* 일시/집행예정금액 행 (10번째 행) */
+    #documentFormContent.many-departments > div:nth-child(1) .form-table tr:nth-child(10) td {
+        height: 40px !important;
+        min-height: 40px !important;
+        padding: 5px !important;
+    }
+
+    #documentFormContent.many-departments > div:nth-child(1) .auto-datetime-display,
+    #documentFormContent.many-departments > div:nth-child(1) .auto-amount-display {
+        padding: 5px !important;
+        font-size: 12px !important;
+    }
+
+    /* 특이사항 행 (11번째 행) */
+    #documentFormContent.many-departments > div:nth-child(1) .form-table tr:nth-child(11) th {
+        height: 30px !important;
+        min-height: 30px !important;
+    }
+
+    #documentFormContent.many-departments > div:nth-child(1) .auto-notes {
+        height: 30px !important;
+        min-height: 30px !important;
+        font-size: 11px !important;
+        padding: 5px !important;
+    }
+
+    /* 결제 행 (12번째 행) */
+    #documentFormContent.many-departments > div:nth-child(1) .form-table tr:nth-child(12) th,
+    #documentFormContent.many-departments > div:nth-child(1) .form-table tr:nth-child(12) td {
+        height: 35px !important;
+        min-height: 35px !important;
+        padding: 5px 8px !important;
+    }
+
+    #documentFormContent.many-departments > div:nth-child(1) .auto-payment {
+        font-size: 12px !important;
+    }
+
+    /* 참석인원/장소/회의일시 행 (2번째 행) */
+    #documentFormContent.many-departments > div:nth-child(1) .form-table tr:nth-child(2) th,
+    #documentFormContent.many-departments > div:nth-child(1) .form-table tr:nth-child(2) td {
+        padding: 5px 6px !important;
+    }
+
+    #documentFormContent.many-departments > div:nth-child(1) .auto-location,
+    #documentFormContent.many-departments > div:nth-child(1) .auto-datetime-proposal {
+        font-size: 11px !important;
+    }
+
+    /* 참석인원 행들 (3-7번째 행) 높이 최소화 */
+    #documentFormContent.many-departments > div:nth-child(1) .form-table tr.attendee-row td {
+        height: 22px !important;
+        min-height: 22px !important;
+        padding: 3px 6px !important;
+        font-size: 11px !important;
+    }
+
+    /* 내외구분/소속/성명 헤더 행 (3번째 행) */
+    #documentFormContent.many-departments > div:nth-child(1) .form-table tr:nth-child(3) th {
+        height: 25px !important;
+        min-height: 25px !important;
+        padding: 4px 6px !important;
+        font-size: 11px !important;
+    }
+
+    /* 회의 목적 헤더 */
+    #documentFormContent.many-departments > div:nth-child(1) #meeting_purpose_header {
+        padding: 5px 8px !important;
+        font-size: 11px !important;
+    }
+
+    /* 회의 목적 입력 칸 */
+    #documentFormContent.many-departments > div:nth-child(1) .auto-purpose {
+        font-size: 13px !important;
+    }
+}
+
+/* 출장인원 추가 버튼 */
+.add-more-persons-btn {
+    width: 100%;
+    padding: 6px 12px;
+    background: #e0e7ff;
+    color: #5b21b6;
+    border: 1px dashed #a78bfa;
+    border-radius: 4px;
+    font-size: 11px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 4px;
+    flex: 0 0 auto;
+}
+
+.add-more-persons-btn:hover {
+    background: #ddd6fe;
+    border-color: #8b5cf6;
+    border-style: solid;
+}
+
+.add-more-persons-btn i {
+    font-size: 10px;
+}
+
+/* 작성자 필드 (클릭 가능) */
+#trip_reporter {
+    cursor: pointer;
+    background: #f8fafc;
+    transition: all 0.2s;
+}
+
+#trip_reporter:hover {
+    background: #f1f5f9;
+    border-color: #94a3b8;
+}
+
+#trip_reporter::placeholder {
+    color: #94a3b8;
 }
