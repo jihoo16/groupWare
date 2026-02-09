@@ -1294,6 +1294,25 @@ input.auto-datetime {
     color: #d32f2f;
 }
 
+.file-item .btn-download-file {
+    background: none;
+    border: none;
+    color: #667eea;
+    font-size: 15.2px;
+    cursor: pointer;
+    transition: color 0.2s ease;
+    padding: 4px;
+}
+
+.file-item .btn-download-file:hover {
+    color: #5b21b6;
+}
+
+.file-item.existing-file {
+    background: #f8fafc;
+    border-color: #cbd5e1;
+}
+
 /* 헤더 버튼 기본 스타일 */
 .header-right button {
     padding: 10px 20px;
@@ -2303,6 +2322,22 @@ input.auto-datetime {
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
+}
+
+.project-item-details {
+    margin-top: 4px;
+}
+
+.project-item-details > div {
+    margin-top: 2px;
+    font-size: 11px;
+    color: #64748b;
+}
+
+.project-item-details > div i {
+    font-size: 10px;
+    margin-right: 4px;
+    color: #94a3b8;
 }
 
 .project-item-arrow {

@@ -6,6 +6,7 @@ import com.pinecni.erp.api.document.dto.ReceiptOvertimeDTO;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.util.List;
+import java.util.Map;
 
 /**
  * 연구비증빙 야근식대 Service Interface
@@ -81,4 +82,5 @@ public interface ReceiptOvertimeService {
      * 첨부파일 상세 조회
      */
     ReceiptOvertimeAttachmentDTO getAttachmentById(Long attachmentIdx);
+
 }
