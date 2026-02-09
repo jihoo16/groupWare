@@ -50,16 +50,6 @@ public class ProjectRelationDTO {
     private String targetPeriod;
 
     /**
-     * 연계 유형 (RELATED, DEPENDENT 등)
-     */
-    private String relationType;
-
-    /**
-     * 설명
-     */
-    private String description;
-
-    /**
      * 생성일시
      */
     private LocalDateTime createdAt;

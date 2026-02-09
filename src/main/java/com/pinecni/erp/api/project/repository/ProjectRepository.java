@@ -24,13 +24,13 @@ public interface ProjectRepository extends JpaRepository<Project, Long> {
      * 상태별 프로젝트 조회
      */
     @Query("SELECT p FROM Project p WHERE p.projectStatus = :status AND p.isDeleted = false " +
-            "ORDER BY p.createdAt DESC")
+            "ORDER BY p.startDate DESC")
     List<Project> findByProjectStatus(String status);
 
     /**
      * 활성 프로젝트 조회 (삭제되지 않은)
      */
-    @Query("SELECT p FROM Project p WHERE p.isDeleted = false ORDER BY p.createdAt DESC")
+    @Query("SELECT p FROM Project p WHERE p.isDeleted = false ORDER BY p.startDate DESC")
     List<Project> findAllActive();
 
     /**
@@ -55,13 +55,13 @@ public interface ProjectRepository extends JpaRepository<Project, Long> {
     /**
      * 과거 프로젝트 조회 (진행중이 아닌 프로젝트)
      */
-    @Query("SELECT p FROM Project p WHERE p.projectStatus != 'IN_PROGRESS' AND p.isDeleted = false ORDER BY p.createdAt DESC")
+    @Query("SELECT p FROM Project p WHERE p.projectStatus != 'IN_PROGRESS' AND p.isDeleted = false ORDER BY p.startDate DESC")
     List<Project> findPastProjects();
 
     /**
      * 과거 프로젝트 중 특정 상태만 조회
      */
-    @Query("SELECT p FROM Project p WHERE p.projectStatus = :status AND p.projectStatus != 'IN_PROGRESS' AND p.isDeleted = false ORDER BY p.createdAt DESC")
+    @Query("SELECT p FROM Project p WHERE p.projectStatus = :status AND p.projectStatus != 'IN_PROGRESS' AND p.isDeleted = false ORDER BY p.startDate DESC")
     List<Project> findPastProjectsByStatus(String status);
 
     /**
@@ -73,7 +73,8 @@ public interface ProjectRepository extends JpaRepository<Project, Long> {
             "p.receiptUrl, p.activityBudget, p.equipmentBudget, p.materialBudget, p.progressRate, " +
             "COUNT(DISTINCT m.idx), " +
             "((SELECT COALESCE(SUM(rm.amount), 0) FROM ReceiptMeeting rm WHERE rm.projectIdx = p.idx) + " +
-            "(SELECT COALESCE(SUM(COALESCE(rt.transportationFee, 0) + COALESCE(rt.accommodationFee, 0) + COALESCE(rt.mealFee, 0) + COALESCE(rt.otherFee, 0)), 0) FROM ReceiptTrip rt WHERE rt.projectIdx = p.idx)), " +
+            "(SELECT COALESCE(SUM(COALESCE(rt.transportationFee, 0) + COALESCE(rt.accommodationFee, 0) + COALESCE(rt.mealFee, 0) + COALESCE(rt.otherFee, 0)), 0) FROM ReceiptTrip rt WHERE rt.projectIdx = p.idx) + " +
+            "(SELECT COALESCE(SUM(ro.totalAmount), 0) FROM ReceiptOvertime ro WHERE ro.projectIdx = p)), " +
             "p.totalPeriodStart, p.totalPeriodEnd, " +
             "p.createdAt, p.updatedAt, p.createdUserIdx, p.updatedUserIdx " +
             "FROM Project p " +
@@ -81,7 +82,7 @@ public interface ProjectRepository extends JpaRepository<Project, Long> {
             "LEFT JOIN ProjectMember m ON m.projectIdx = p.idx AND m.isActive = true " +
             "WHERE p.isDeleted = false " +
             "GROUP BY p.idx, pm.empName " +
-            "ORDER BY p.createdAt DESC")
+            "ORDER BY p.startDate DESC")
     List<Object[]> findAllActiveOptimized();
 
     /**
@@ -92,7 +93,8 @@ public interface ProjectRepository extends JpaRepository<Project, Long> {
             "p.receiptUrl, p.activityBudget, p.equipmentBudget, p.materialBudget, p.progressRate, " +
             "COUNT(DISTINCT m.idx), " +
             "((SELECT COALESCE(SUM(rm.amount), 0) FROM ReceiptMeeting rm WHERE rm.projectIdx = p.idx) + " +
-            "(SELECT COALESCE(SUM(COALESCE(rt.transportationFee, 0) + COALESCE(rt.accommodationFee, 0) + COALESCE(rt.mealFee, 0) + COALESCE(rt.otherFee, 0)), 0) FROM ReceiptTrip rt WHERE rt.projectIdx = p.idx)), " +
+            "(SELECT COALESCE(SUM(COALESCE(rt.transportationFee, 0) + COALESCE(rt.accommodationFee, 0) + COALESCE(rt.mealFee, 0) + COALESCE(rt.otherFee, 0)), 0) FROM ReceiptTrip rt WHERE rt.projectIdx = p.idx) + " +
+            "(SELECT COALESCE(SUM(ro.totalAmount), 0) FROM ReceiptOvertime ro WHERE ro.projectIdx = p)), " +
             "p.totalPeriodStart, p.totalPeriodEnd, " +
             "p.createdAt, p.updatedAt, p.createdUserIdx, p.updatedUserIdx " +
             "FROM Project p " +
@@ -100,7 +102,7 @@ public interface ProjectRepository extends JpaRepository<Project, Long> {
             "LEFT JOIN ProjectMember m ON m.projectIdx = p.idx AND m.isActive = true " +
             "WHERE p.projectStatus = :status AND p.isDeleted = false " +
             "GROUP BY p.idx, pm.empName " +
-            "ORDER BY p.createdAt DESC")
+            "ORDER BY p.startDate DESC")
     List<Object[]> findByProjectStatusOptimized(@Param("status") String status);
 
     /**
@@ -111,7 +113,8 @@ public interface ProjectRepository extends JpaRepository<Project, Long> {
             "p.receiptUrl, p.activityBudget, p.equipmentBudget, p.materialBudget, p.progressRate, " +
             "COUNT(DISTINCT m.idx), " +
             "((SELECT COALESCE(SUM(rm.amount), 0) FROM ReceiptMeeting rm WHERE rm.projectIdx = p.idx) + " +
-            "(SELECT COALESCE(SUM(COALESCE(rt.transportationFee, 0) + COALESCE(rt.accommodationFee, 0) + COALESCE(rt.mealFee, 0) + COALESCE(rt.otherFee, 0)), 0) FROM ReceiptTrip rt WHERE rt.projectIdx = p.idx)), " +
+            "(SELECT COALESCE(SUM(COALESCE(rt.transportationFee, 0) + COALESCE(rt.accommodationFee, 0) + COALESCE(rt.mealFee, 0) + COALESCE(rt.otherFee, 0)), 0) FROM ReceiptTrip rt WHERE rt.projectIdx = p.idx) + " +
+            "(SELECT COALESCE(SUM(ro.totalAmount), 0) FROM ReceiptOvertime ro WHERE ro.projectIdx = p)), " +
             "p.totalPeriodStart, p.totalPeriodEnd, " +
             "p.createdAt, p.updatedAt, p.createdUserIdx, p.updatedUserIdx " +
             "FROM Project p " +
@@ -119,7 +122,7 @@ public interface ProjectRepository extends JpaRepository<Project, Long> {
             "LEFT JOIN ProjectMember m ON m.projectIdx = p.idx AND m.isActive = true " +
             "WHERE p.projectStatus != 'IN_PROGRESS' AND p.isDeleted = false " +
             "GROUP BY p.idx, pm.empName " +
-            "ORDER BY p.createdAt DESC")
+            "ORDER BY p.startDate DESC")
     List<Object[]> findPastProjectsOptimized();
 
     /**
@@ -131,7 +134,8 @@ public interface ProjectRepository extends JpaRepository<Project, Long> {
             "p.receiptUrl, p.activityBudget, p.equipmentBudget, p.materialBudget, p.progressRate, " +
             "COUNT(DISTINCT m2.idx), " +
             "((SELECT COALESCE(SUM(rm.amount), 0) FROM ReceiptMeeting rm WHERE rm.projectIdx = p.idx) + " +
-            "(SELECT COALESCE(SUM(COALESCE(rt.transportationFee, 0) + COALESCE(rt.accommodationFee, 0) + COALESCE(rt.mealFee, 0) + COALESCE(rt.otherFee, 0)), 0) FROM ReceiptTrip rt WHERE rt.projectIdx = p.idx)), " +
+            "(SELECT COALESCE(SUM(COALESCE(rt.transportationFee, 0) + COALESCE(rt.accommodationFee, 0) + COALESCE(rt.mealFee, 0) + COALESCE(rt.otherFee, 0)), 0) FROM ReceiptTrip rt WHERE rt.projectIdx = p.idx) + " +
+            "(SELECT COALESCE(SUM(ro.totalAmount), 0) FROM ReceiptOvertime ro WHERE ro.projectIdx = p)), " +
             "p.totalPeriodStart, p.totalPeriodEnd, " +
             "p.createdAt, p.updatedAt, p.createdUserIdx, p.updatedUserIdx " +
             "FROM Project p " +
@@ -140,6 +144,6 @@ public interface ProjectRepository extends JpaRepository<Project, Long> {
             "LEFT JOIN ProjectMember m2 ON m2.projectIdx = p.idx AND m2.isActive = true " +
             "WHERE p.isDeleted = false " +
             "GROUP BY p.idx, pm.empName " +
-            "ORDER BY p.createdAt DESC")
+            "ORDER BY p.startDate DESC")
     List<Object[]> findByMemberIdxOptimized(@Param("memberIdx") Long memberIdx);
 }

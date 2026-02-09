@@ -19,8 +19,4 @@ public class ProjectRelationsCreateDTO {
     private Long sourceProjectIdx;
 
     private Long targetProjectIdx;
-
-    private String relationType;
-
-    private String description;
 }

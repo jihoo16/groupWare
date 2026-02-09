@@ -16,6 +16,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
 import java.util.ArrayList;
@@ -395,6 +396,13 @@ public class ApprovalDocumentServiceImpl implements ApprovalDocumentService {
             documentNo = trip.getApprovalDocument().getDocumentNo();
         }
 
+        // 출장 총액 계산 (교통비 + 숙박비 + 식비 + 기타)
+        BigDecimal tripTotal = BigDecimal.ZERO;
+        if (trip.getTransportationFee() != null) tripTotal = tripTotal.add(trip.getTransportationFee());
+        if (trip.getAccommodationFee() != null) tripTotal = tripTotal.add(trip.getAccommodationFee());
+        if (trip.getMealFee() != null) tripTotal = tripTotal.add(trip.getMealFee());
+        if (trip.getOtherFee() != null) tripTotal = tripTotal.add(trip.getOtherFee());
+
         ApprovalDocumentDTO dto = ApprovalDocumentDTO.builder()
                 .idx(trip.getDocumentIdx())
                 .sourceDocumentId(trip.getIdx())
@@ -404,6 +412,7 @@ public class ApprovalDocumentServiceImpl implements ApprovalDocumentService {
                 .drafterUserIdx(trip.getAuthorIdx())
                 .createdAt(trip.getCreatedAt())
                 .updatedAt(trip.getUpdatedAt())
+                .amount(tripTotal)
                 .build();
 
         // 작성자 정보 (users 테이블에서 조회)
@@ -445,6 +454,7 @@ public class ApprovalDocumentServiceImpl implements ApprovalDocumentService {
                 .drafterUserIdx(meeting.getAuthorIdx())
                 .createdAt(meeting.getCreatedAt())
                 .updatedAt(meeting.getUpdatedAt())
+                .amount(meeting.getAmount())
                 .build();
 
         // 작성자 정보 (users 테이블에서 조회)
@@ -489,6 +499,7 @@ public class ApprovalDocumentServiceImpl implements ApprovalDocumentService {
                 .drafterUserIdx(overtime.getAuthorIdx())
                 .createdAt(overtime.getCreatedAt())
                 .updatedAt(overtime.getUpdatedAt())
+                .amount(overtime.getTotalAmount())
                 .build();
 
         // 작성자 정보 (users 테이블에서 조회)

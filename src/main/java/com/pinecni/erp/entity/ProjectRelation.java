@@ -35,12 +35,6 @@ public class ProjectRelation {
     @Column(name = "target_project_idx", nullable = false)
     private Long targetProjectIdx;
 
-    @Transient
-    private String relationType = "RELATED";
-
-    @Transient
-    private String description;
-
     @CreationTimestamp
     @Column(name = "created_at", updatable = false)
     private LocalDateTime createdAt;

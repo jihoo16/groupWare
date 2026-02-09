@@ -29,4 +29,5 @@ public interface ProjectRelationRepository extends JpaRepository<ProjectRelation
     @Query("SELECT r FROM ProjectRelation r WHERE r.sourceProjectIdx = :projectIdx " +
             "OR r.targetProjectIdx = :projectIdx")
     List<ProjectRelation> findAllRelationsByProjectIdx(Long projectIdx);
+
 }

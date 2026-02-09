@@ -413,32 +413,7 @@
         </div>
         <div class="modal-footer">
             <button class="btn btn-secondary" onclick="closeRelatedProjectModal()">취소</button>
-            <button class="btn btn-primary" onclick="showRelationDetailsModal()">
-                <i class="fas fa-arrow-right"></i> 다음
-            </button>
-        </div>
-    </div>
-</div>
-
-<!-- 연계 프로젝트 상세 정보 입력 모달 -->
-<div id="relationDetailsModal" class="modal">
-    <div class="modal-content" style="max-width: 600px;">
-        <div class="modal-header">
-            <h2>연계 정보 입력</h2>
-            <button class="modal-close" onclick="closeRelationDetailsModal()">
-                <i class="fas fa-times"></i>
-            </button>
-        </div>
-        <div class="modal-body">
-            <div id="relationDetailsContainer">
-                <!-- 선택된 프로젝트별 입력 폼이 동적으로 추가됨 -->
-            </div>
-        </div>
-        <div class="modal-footer">
-            <button class="btn btn-secondary" onclick="backToProjectSelection()">
-                <i class="fas fa-arrow-left"></i> 이전
-            </button>
-            <button class="btn btn-primary" onclick="saveRelatedProjects()">
+            <button class="btn btn-primary" onclick="saveSelectedRelatedProjects()">
                 <i class="fas fa-check"></i> 저장
             </button>
         </div>

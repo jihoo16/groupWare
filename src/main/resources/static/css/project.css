@@ -678,7 +678,6 @@ select.form-control {
 
 .team-table tbody tr:hover {
     background: #f0f4ff;
-    transform: scale(1.01);
 }
 
 .team-table .empty-row {
@@ -688,7 +687,6 @@ select.form-control {
 
 .team-table .empty-row:hover {
     background: #e7f1ff !important;
-    transform: scale(1) !important;
 }
 
 .team-table .empty-row td {

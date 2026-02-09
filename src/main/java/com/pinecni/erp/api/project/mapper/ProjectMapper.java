@@ -8,6 +8,7 @@ import com.pinecni.erp.api.project.repository.ProjectRelationRepository;
 import com.pinecni.erp.api.project.repository.ProjectRepository;
 import com.pinecni.erp.api.project.repository.ReceiptMeetingRepository;
 import com.pinecni.erp.api.project.repository.ReceiptTripRepository;
+import com.pinecni.erp.api.document.repository.ReceiptOvertimeRepository;
 import com.pinecni.erp.api.user.repository.UserRepository;
 import com.pinecni.erp.entity.Project;
 import com.pinecni.erp.entity.ProjectExpenseSetting;
@@ -37,6 +38,7 @@ public class ProjectMapper {
     private final ProjectExpenseSettingRepository projectExpenseSettingRepository;
     private final ReceiptMeetingRepository receiptMeetingRepository;
     private final ReceiptTripRepository receiptTripRepository;
+    private final ReceiptOvertimeRepository receiptOvertimeRepository;
     private final UserRepository userRepository;
     private final CodeRepository codeRepository;
 
@@ -114,10 +116,18 @@ public class ProjectMapper {
                 .map(this::toExpenseSettingDTO)
                 .collect(Collectors.toList());
 
-        // 활동비 사용액 조회 (회의비, 출장비 등 집행 금액 합계)
+        // 활동비 사용액 조회 (회의비, 출장비, 야근식대 집행 금액 합계)
         BigDecimal meetingUsed = receiptMeetingRepository.sumAmountByProjectIdx(entity.getIdx());
         BigDecimal tripUsed = receiptTripRepository.sumAmountByProjectIdx(entity.getIdx());
-        BigDecimal activityUsed = meetingUsed.add(tripUsed);
+        BigDecimal overtimeUsed = receiptOvertimeRepository.sumAmountByProjectIdx(entity.getIdx());
+        BigDecimal activityUsed = meetingUsed.add(tripUsed).add(overtimeUsed);
+
+        // 활동비 세부 내역 (문서번호 prefix 기준)
+        BigDecimal meetingOnly = receiptMeetingRepository.sumAmountByProjectIdxAndDocPrefix(entity.getIdx(), "RCM-");
+        BigDecimal tripOnly = receiptTripRepository.sumAmountByProjectIdxAndDocPrefix(entity.getIdx(), "RCT-");
+        BigDecimal tripMeetingMeeting = receiptMeetingRepository.sumAmountByProjectIdxAndDocPrefix(entity.getIdx(), "RCTM-");
+        BigDecimal tripMeetingTrip = receiptTripRepository.sumAmountByProjectIdxAndDocPrefix(entity.getIdx(), "RCTM-");
+        BigDecimal tripMeetingUsed = tripMeetingMeeting.add(tripMeetingTrip);
 
         // 장비비 사용액 (추후 구현 예정, 현재는 0)
         BigDecimal equipmentUsed = BigDecimal.ZERO;
@@ -151,6 +161,10 @@ public class ProjectMapper {
                 .materialBudget(entity.getMaterialBudget())
                 .progressRate(entity.getProgressRate())
                 .activityUsed(activityUsed)
+                .meetingUsed(meetingOnly)
+                .tripUsed(tripOnly)
+                .tripMeetingUsed(tripMeetingUsed)
+                .overtimeUsed(overtimeUsed)
                 .equipmentUsed(equipmentUsed)
                 .materialUsed(materialUsed)
                 .memberCount(members.size())
@@ -279,8 +293,6 @@ public class ProjectMapper {
                 .targetProjectStatus(getTargetProjectStaus(relation.getTargetProjectIdx()))
                 .targetProjectManager(getTargetProjectManager(relation.getTargetProjectIdx()))
                 .targetPeriod(getTargetProjectPeriod(relation.getTargetProjectIdx()))
-                .relationType(null)  // DB 컬럼 없음 - 프론트 입력값 저장 안 됨
-                .description(null)   // DB 컬럼 없음 - 프론트 입력값 저장 안 됨
                 .createdAt(relation.getCreatedAt())
                 .createdUserIdx(relation.getCreatedUserIdx())
                 .build();
@@ -369,9 +381,8 @@ public class ProjectMapper {
                     .ifPresent(code -> dto.setEmployeeDeptName(code.getCodeName()));
         }
 
-        // 직급 코드, 직급명 및 정렬 순서 조회 (코드 → 명칭, sortOrder)
+        // 직급명 및 정렬 순서 조회 (코드 → 명칭, sortOrder)
         if (employee != null && employee.getEmpPosition() != null) {
-            dto.setEmployeePositionCode(employee.getEmpPosition()); // 직급 코드 설정
             codeRepository.findByGroupCodeAndCode("C02", employee.getEmpPosition())
                     .ifPresent(code -> {
                         dto.setEmployeePositionName(code.getCodeName());
