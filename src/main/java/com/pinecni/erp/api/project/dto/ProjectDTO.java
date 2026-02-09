@@ -102,6 +102,26 @@ public class ProjectDTO {
     private BigDecimal activityUsed;
 
     /**
+     * 활동비 세부 내역 - 회의록
+     */
+    private BigDecimal meetingUsed;
+
+    /**
+     * 활동비 세부 내역 - 출장
+     */
+    private BigDecimal tripUsed;
+
+    /**
+     * 활동비 세부 내역 - 출장+회의
+     */
+    private BigDecimal tripMeetingUsed;
+
+    /**
+     * 활동비 세부 내역 - 야근식대
+     */
+    private BigDecimal overtimeUsed;
+
+    /**
      * 장비비 사용액 (집행된 금액)
      */
     private BigDecimal equipmentUsed;

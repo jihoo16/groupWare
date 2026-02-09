@@ -26,6 +26,14 @@ public interface ReceiptMeetingRepository extends JpaRepository<ReceiptMeeting, 
     BigDecimal sumAmountByProjectIdx(@Param("projectIdx") Long projectIdx);
 
     /**
+     * 프로젝트별 문서번호 prefix 기준 집행액 조회
+     */
+    @Query("SELECT COALESCE(SUM(rm.amount), 0) FROM ReceiptMeeting rm " +
+            "JOIN rm.approvalDocument ad " +
+            "WHERE rm.projectIdx = :projectIdx AND ad.documentNo LIKE CONCAT(:prefix, '%')")
+    BigDecimal sumAmountByProjectIdxAndDocPrefix(@Param("projectIdx") Long projectIdx, @Param("prefix") String prefix);
+
+    /**
      * 프로젝트별 회의록 목록 조회 (문서번호 포함 - JOIN FETCH)
      */
     @Query("SELECT rm FROM ReceiptMeeting rm " +

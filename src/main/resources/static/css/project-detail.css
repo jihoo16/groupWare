@@ -70,6 +70,16 @@
     line-height: 1.6;
 }
 
+/* 클릭 가능한 금액 */
+.clickable-amount {
+    cursor: pointer;
+    transition: color 0.2s ease;
+}
+
+.clickable-amount:hover {
+    color: #4361ee;
+}
+
 /* 섹션 타이틀 */
 .section-title {
     font-size: 16px;

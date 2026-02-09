@@ -30,6 +30,19 @@ public interface ReceiptTripRepository extends JpaRepository<ReceiptTrip, Long> 
     BigDecimal sumAmountByProjectIdx(@Param("projectIdx") Long projectIdx);
 
     /**
+     * 프로젝트별 문서번호 prefix 기준 출장비 조회
+     */
+    @Query("SELECT COALESCE(SUM(" +
+            "COALESCE(rt.transportationFee, 0) + " +
+            "COALESCE(rt.accommodationFee, 0) + " +
+            "COALESCE(rt.mealFee, 0) + " +
+            "COALESCE(rt.otherFee, 0)), 0) " +
+            "FROM ReceiptTrip rt " +
+            "JOIN rt.approvalDocument ad " +
+            "WHERE rt.projectIdx = :projectIdx AND ad.documentNo LIKE CONCAT(:prefix, '%')")
+    BigDecimal sumAmountByProjectIdxAndDocPrefix(@Param("projectIdx") Long projectIdx, @Param("prefix") String prefix);
+
+    /**
      * 프로젝트별 출장 목록 조회 (문서번호 포함 - JOIN FETCH)
      */
     @Query("SELECT rt FROM ReceiptTrip rt " +

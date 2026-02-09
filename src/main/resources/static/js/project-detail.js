@@ -175,6 +175,69 @@ function displayBudgetInfo(data) {
     document.getElementById('materialBudget').textContent = formatCurrency(data.materialBudget || 0);
     document.getElementById('materialUsed').textContent = formatCurrency(data.materialUsed || 0);
     document.getElementById('materialRemaining').textContent = formatCurrency((data.materialBudget-data.materialUsed) || 0);
+
+    // 활동비 세부 내역 클릭 이벤트
+    const activityUsedLabel = document.getElementById('activityUsedLabel');
+    if (activityUsedLabel) {
+        activityUsedLabel.addEventListener('click', function () {
+            showActivityBreakdownPopup(data);
+        });
+    }
+}
+
+/**
+ * 활동비 세부 내역 팝업 표시
+ */
+function showActivityBreakdownPopup(data) {
+    const meetingUsed = data.meetingUsed || 0;
+    const tripUsed = data.tripUsed || 0;
+    const tripMeetingUsed = data.tripMeetingUsed || 0;
+    const overtimeUsed = data.overtimeUsed || 0;
+    const total = data.activityUsed || 0;
+
+    Swal.fire({
+        title: '활동비 사용액 세부 내역',
+        html: `
+            <table style="width: 100%; border-collapse: collapse; font-size: 14px;">
+                <thead>
+                    <tr style="background: #f8f9fa; border-bottom: 2px solid #4361ee;">
+                        <th style="padding: 12px 16px; text-align: left; font-weight: 600; color: #1a237e;">구분</th>
+                        <th style="padding: 12px 16px; text-align: right; font-weight: 600; color: #1a237e;">금액</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr style="border-bottom: 1px solid #e9ecef;">
+                        <td style="padding: 11px 16px; color: #333;">회의록</td>
+                        <td style="padding: 11px 16px; text-align: right; font-weight: 500;">${formatCurrency(meetingUsed)}</td>
+                    </tr>
+                    <tr style="border-bottom: 1px solid #e9ecef;">
+                        <td style="padding: 11px 16px; color: #333;">야근식대</td>
+                        <td style="padding: 11px 16px; text-align: right; font-weight: 500;">${formatCurrency(overtimeUsed)}</td>
+                    </tr>
+                    <tr style="border-bottom: 1px solid #e9ecef;">
+                        <td style="padding: 11px 16px; color: #333;">출장</td>
+                        <td style="padding: 11px 16px; text-align: right; font-weight: 500;">${formatCurrency(tripUsed)}</td>
+                    </tr>
+                    <tr style="border-bottom: 1px solid #e9ecef;">
+                        <td style="padding: 11px 16px; color: #333;">출장 + 회의</td>
+                        <td style="padding: 11px 16px; text-align: right; font-weight: 500;">${formatCurrency(tripMeetingUsed)}</td>
+                    </tr>
+                </tbody>
+                <tfoot>
+                    <tr style="background: #f0f4ff; border-top: 2px solid #4361ee;">
+                        <td style="padding: 12px 16px; font-weight: 700; color: #1a237e;">합계</td>
+                        <td style="padding: 12px 16px; text-align: right; font-weight: 700; color: #4361ee; font-size: 15px;">${formatCurrency(total)}</td>
+                    </tr>
+                </tfoot>
+            </table>
+        `,
+        width: 420,
+        showCloseButton: true,
+        showConfirmButton: false,
+        customClass: {
+            popup: 'activity-breakdown-popup'
+        }
+    });
 }
 
 /**

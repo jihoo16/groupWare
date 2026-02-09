@@ -122,6 +122,13 @@ public class ProjectMapper {
         BigDecimal overtimeUsed = receiptOvertimeRepository.sumAmountByProjectIdx(entity.getIdx());
         BigDecimal activityUsed = meetingUsed.add(tripUsed).add(overtimeUsed);
 
+        // 활동비 세부 내역 (문서번호 prefix 기준)
+        BigDecimal meetingOnly = receiptMeetingRepository.sumAmountByProjectIdxAndDocPrefix(entity.getIdx(), "RCM-");
+        BigDecimal tripOnly = receiptTripRepository.sumAmountByProjectIdxAndDocPrefix(entity.getIdx(), "RCT-");
+        BigDecimal tripMeetingMeeting = receiptMeetingRepository.sumAmountByProjectIdxAndDocPrefix(entity.getIdx(), "RCTM-");
+        BigDecimal tripMeetingTrip = receiptTripRepository.sumAmountByProjectIdxAndDocPrefix(entity.getIdx(), "RCTM-");
+        BigDecimal tripMeetingUsed = tripMeetingMeeting.add(tripMeetingTrip);
+
         // 장비비 사용액 (추후 구현 예정, 현재는 0)
         BigDecimal equipmentUsed = BigDecimal.ZERO;
 
@@ -154,6 +161,10 @@ public class ProjectMapper {
                 .materialBudget(entity.getMaterialBudget())
                 .progressRate(entity.getProgressRate())
                 .activityUsed(activityUsed)
+                .meetingUsed(meetingOnly)
+                .tripUsed(tripOnly)
+                .tripMeetingUsed(tripMeetingUsed)
+                .overtimeUsed(overtimeUsed)
                 .equipmentUsed(equipmentUsed)
                 .materialUsed(materialUsed)
                 .memberCount(members.size())
