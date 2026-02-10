@@ -10,7 +10,6 @@ import com.pinecni.erp.api.vacation.dto.VacationUserInfoDTO;
 import com.pinecni.erp.api.vacation.dto.VacationCalculationDetailDTO;
 import com.pinecni.erp.api.vacation.dto.VacationRequestSaveDTO;
 import com.pinecni.erp.api.vacation.repository.VacationAccrualScheduleRepository;
-import com.pinecni.erp.api.vacation.repository.VacationBalanceRepository;
 import com.pinecni.erp.api.vacation.repository.VacationRequestRepository;
 import com.pinecni.erp.api.vacation.repository.VacationOfficialPdfRepository;
 import com.pinecni.erp.constant.CodeConstants;
@@ -36,7 +35,6 @@ public class VacationServiceImpl implements VacationService {
 
     private final UserRepository userRepository;
     private final VacationAccrualScheduleRepository accrualScheduleRepository;
-    private final VacationBalanceRepository vacationBalanceRepository;
     private final VacationRequestRepository vacationRequestRepository;
     private final VacationOfficialPdfRepository vacationOfficialPdfRepository;
     private final ApprovalDocumentRepository approvalDocumentRepository;
@@ -56,9 +54,14 @@ public class VacationServiceImpl implements VacationService {
         User user = userRepository.findById(userIdx)
                 .orElseThrow(() -> new IllegalArgumentException("사용자를 찾을 수 없습니다: " + userIdx));
 
-        // 2. 연차 잔액 조회
-        VacationBalance vacationBalance = vacationBalanceRepository.findByUserIdxAndYear(userIdx, year)
-                .orElse(null);
+        // 2. 총 연차 = 기본연차 + 근속가산 직접 계산
+        BigDecimal calculatedTotalDays = calculateTotalDaysForYear(user, year);
+
+        // 3. 사용 연차 = vacation_request에서 직접 집계 (경조사 제외)
+        BigDecimal usedDays = calculateUsedDays(userIdx, year);
+
+        // 4. 잔여 연차 = 총 연차 - 사용 연차
+        BigDecimal remainingDays = calculatedTotalDays.subtract(usedDays);
 
         // 3. 부서명 조회 (C01 그룹)
         String empDeptName = codeRepository.findByGroupCodeAndCode(CodeConstants.GroupCode.DEPARTMENT.getCode(), user.getEmpDept())
@@ -82,9 +85,9 @@ public class VacationServiceImpl implements VacationService {
                 .empBirth(user.getEmpBirth() != null ? user.getEmpBirth().format(DateTimeFormatter.ISO_DATE) : null)
                 .empPhone(user.getEmpPhone())
                 .year(year)
-                .totalDays(vacationBalance != null ? vacationBalance.getTotalDays() : BigDecimal.ZERO)
-                .usedDays(vacationBalance != null ? vacationBalance.getUsedDays() : BigDecimal.ZERO)
-                .remainingDays(vacationBalance != null ? vacationBalance.getRemainingDays() : BigDecimal.ZERO)
+                .totalDays(calculatedTotalDays)
+                .usedDays(usedDays)
+                .remainingDays(remainingDays)
                 .build();
 
         log.info("[사용자 연차 정보 조회 완료] empName: {}, totalDays: {}, usedDays: {}, remainingDays: {}",
@@ -542,6 +545,126 @@ public class VacationServiceImpl implements VacationService {
         return result;
     }
 
+    /**
+     * 해당 연도 사용 연차 계산 (vacation_request에서 직접 집계, 경조사 제외)
+     */
+    private BigDecimal calculateUsedDays(Long userIdx, int year) {
+        LocalDate yearStart = LocalDate.of(year, 1, 1);
+        LocalDate yearEnd = LocalDate.of(year, 12, 31);
+
+        // vacation_request에서 해당 연도의 승인된 연차만 집계
+        BigDecimal usedDays = vacationRequestRepository.findAll().stream()
+                .filter(vr -> vr.getUserIdx().equals(userIdx))
+                .filter(vr -> vr.getStartDate() != null && vr.getEndDate() != null)
+                .filter(vr -> !vr.getStartDate().isAfter(yearEnd) && !vr.getEndDate().isBefore(yearStart))
+                .filter(vr -> !vr.getVacationType().contains("경조사") && !"기타".equals(vr.getVacationType()))
+                .map(VacationRequest::getDays)
+                .reduce(BigDecimal.ZERO, BigDecimal::add);
+
+        log.debug("[사용 연차 계산] userIdx={}, year={}, usedDays={}", userIdx, year, usedDays);
+        return usedDays;
+    }
+
+    /**
+     * 해당 연도 총 연차일수 계산 (기본연차 + 근속가산)
+     */
+    private BigDecimal calculateTotalDaysForYear(User user, int year) {
+        LocalDate joinDate = user.getEmpJoinDate();
+        if (joinDate == null) {
+            return BigDecimal.ZERO;
+        }
+
+        LocalDate yearStart = LocalDate.of(year, 1, 1);
+        LocalDate oneYearAnniversary = joinDate.plusYears(1);
+        long yearsOfServiceAtYearStart = ChronoUnit.YEARS.between(joinDate, yearStart);
+
+        // Case 1: 1년 이상 근속자 - 기본연차 15일 + 근속가산
+        if (yearsOfServiceAtYearStart >= 1) {
+            BigDecimal total = new BigDecimal("15.0");
+
+            // 연초 기준 누적 근속가산
+            int accumulatedBonusDays = 0;
+            for (int seniorityYear = 2; seniorityYear <= 20; seniorityYear += 2) {
+                LocalDate seniorityDate = joinDate.plusYears(seniorityYear);
+                if (seniorityDate.isBefore(yearStart) || seniorityDate.equals(yearStart)) {
+                    accumulatedBonusDays++;
+                    if (accumulatedBonusDays >= 10) {
+                        accumulatedBonusDays = 10;
+                        break;
+                    }
+                }
+            }
+
+            // 해당 연도 신규 발생 근속가산
+            int newBonusDays = 0;
+            for (int seniorityYear = 2; seniorityYear <= 20; seniorityYear += 2) {
+                LocalDate seniorityDate = joinDate.plusYears(seniorityYear);
+                if (seniorityDate.getYear() == year && accumulatedBonusDays < 10) {
+                    newBonusDays = 1;
+                    break;
+                }
+            }
+
+            int totalServiceBonusDays = Math.min(accumulatedBonusDays + newBonusDays, 10);
+            total = total.add(new BigDecimal(totalServiceBonusDays));
+
+            log.info("[총 연차 계산] userIdx={}, year={}, base=15, servicebonus={}, total={}",
+                    user.getIdx(), year, totalServiceBonusDays, total);
+            return total;
+        }
+
+        // Case 2: 1년일이 해당 연도에 도래 - 월차 + 비례연차
+        if (oneYearAnniversary.getYear() == year) {
+            int monthlyEndMonth = oneYearAnniversary.getMonthValue() - 1;
+            BigDecimal monthlyDays = new BigDecimal(monthlyEndMonth > 0 ? monthlyEndMonth : 0);
+
+            int previousYear = joinDate.getYear();
+            LocalDate previousYearEnd = LocalDate.of(previousYear, 12, 31);
+            long daysInPreviousYear = previousYearEnd.isLeapYear() ? 366 : 365;
+            long workedDaysInPreviousYear = ChronoUnit.DAYS.between(joinDate, previousYearEnd) + 1;
+
+            BigDecimal proportionalDays = new BigDecimal(workedDaysInPreviousYear)
+                    .divide(new BigDecimal(daysInPreviousYear), 2, RoundingMode.HALF_UP)
+                    .multiply(new BigDecimal("15"))
+                    .setScale(0, RoundingMode.HALF_UP);
+
+            return monthlyDays.add(proportionalDays);
+        }
+
+        // Case 3: 1년 미만 - 월차만 (현재 시점까지 완료된 달만 계산)
+        int joinMonth = joinDate.getMonthValue();
+        int monthlyCount = 0;
+
+        LocalDate now = LocalDate.now();
+        LocalDate currentDate = now.getYear() == year ? now : LocalDate.of(year, 12, 31);
+
+        if (joinDate.getYear() == year) {
+            // 입사 연도: 입사월 다음 달부터 현재 월 이전까지
+            int currentMonth = currentDate.getMonthValue();
+            // 입사월 다음 달부터 현재 월 이전까지 (예: 2월 입사, 현재 4월 → 3월만 카운트 = 1일)
+            monthlyCount = Math.max(0, currentMonth - joinMonth - 1);
+
+            // 현재 달이 완료되었으면 (다음 달로 넘어갔으면) 카운트 추가
+            if (currentDate.getDayOfMonth() >= joinDate.getDayOfMonth() + 1 || currentMonth > joinMonth + 1) {
+                // 이미 위에서 계산했으므로 추가 필요 없음
+            }
+
+            // 간단히: 입사월+1 ~ 현재월-1 (현재 진행 중인 달 제외)
+            // 예: 2월 입사, 현재 2월 → 0일
+            // 예: 2월 입사, 현재 3월 → 0일 (2월 완료, 하지만 3월은 진행중이므로 아직 발생 안함)
+            // 예: 2월 입사, 현재 4월 → 1일 (3월 완료로 1일 발생)
+            monthlyCount = Math.max(0, currentMonth - joinMonth - 1);
+        } else if (oneYearAnniversary.getYear() > year && joinDate.getYear() < year) {
+            // 입사 다음 해 (1년 도래 전): 1월 ~ 현재 월 이전까지
+            int currentMonth = currentDate.getMonthValue();
+            monthlyCount = Math.max(0, currentMonth - 1); // 1월~(현재월-1)
+        }
+
+        log.info("[총 연차 계산 - Case3] userIdx={}, year={}, joinDate={}, monthlyCount={}",
+                user.getIdx(), year, joinDate, monthlyCount);
+        return new BigDecimal(monthlyCount);
+    }
+
     @Override
     @Transactional
     public Long saveVacationRequest(Long userIdx, VacationRequestSaveDTO saveDTO) {
@@ -585,12 +708,11 @@ public class VacationServiceImpl implements VacationService {
         log.info("[보안 검증 완료] ✓ 중복 날짜 없음, ✓ 본인결혼 중복 없음, ✓ 일수 정확, ✓ 잔여 연차 충분 (총 신청: {}일)", totalRequestedDays);
         // ===== 🔒 보안 검증 완료 =====
 
-        // 8. 현재 연차 잔액 조회
+        // 8. 현재 연차 잔액 계산
         int currentYear = LocalDate.now().getYear();
-        VacationBalance vacationBalance = vacationBalanceRepository.findByUserIdxAndYear(userIdx, currentYear)
-                .orElse(null);
-
-        BigDecimal currentRemainingDays = vacationBalance != null ? vacationBalance.getRemainingDays() : BigDecimal.ZERO;
+        BigDecimal totalDays = calculateTotalDaysForYear(user, currentYear);
+        BigDecimal usedDays = calculateUsedDays(userIdx, currentYear);
+        BigDecimal currentRemainingDays = totalDays.subtract(usedDays);
 
         // 신청 후 잔여 연차 계산 (경조사와 기타는 연차 차감 대상이 아니므로 제외)
         BigDecimal remainingDaysAfterApply = currentRemainingDays.subtract(totalRequestedDaysExcludingGyeongjosa);
@@ -999,11 +1121,15 @@ public class VacationServiceImpl implements VacationService {
     private void validateRemainingVacation(Long userIdx, BigDecimal totalRequestedDays,
                                            Boolean allowMinusVacation) {
         int currentYear = LocalDate.now().getYear();
-        VacationBalance vacationBalance = vacationBalanceRepository.findByUserIdxAndYear(userIdx, currentYear)
-            .orElse(null);
 
-        BigDecimal remainingDays = vacationBalance != null ?
-            vacationBalance.getRemainingDays() : BigDecimal.ZERO;
+        // 사용자 조회
+        User user = userRepository.findById(userIdx)
+                .orElseThrow(() -> new IllegalArgumentException("사용자를 찾을 수 없습니다: " + userIdx));
+
+        // 현재 잔여 연차 계산
+        BigDecimal totalDays = calculateTotalDaysForYear(user, currentYear);
+        BigDecimal usedDays = calculateUsedDays(userIdx, currentYear);
+        BigDecimal remainingDays = totalDays.subtract(usedDays);
 
         // 잔여 연차 부족 시
         if (totalRequestedDays.compareTo(remainingDays) > 0) {
@@ -1170,7 +1296,7 @@ public class VacationServiceImpl implements VacationService {
         // 2. 결재 상태를 APPROVED로 변경
         // 3. 다음 결재자가 있으면 다음 결재자에게 알림
         // 4. 마지막 결재자라면 ApprovalDocument의 status를 APPROVED로 변경
-        // 5. 연차 잔액 차감 (VacationBalance 업데이트)
+        // 5. 연차 사용 일수는 vacation_request 테이블에 이미 저장되어 있음
         // 6. 캘린더에 연차 일정 등록 (CalendarEvent 생성)
 
         throw new UnsupportedOperationException("결재 워크플로우가 아직 구현되지 않았습니다.");
@@ -1220,32 +1346,9 @@ public class VacationServiceImpl implements VacationService {
                 .reduce(BigDecimal.ZERO, BigDecimal::add);
 
         log.info("[연차 일수 복구 계산] 총 복구할 일수: {}일 (경조사, 기타 제외)", totalDaysToRestore);
+        log.info("[연차 잔액 복구] VacationRequest 삭제로 자동 반영됨 (calculateUsedDays에서 집계 시 제외됨)");
 
-        // 6. VacationBalance 업데이트 (연차 잔액 복구)
-        if (totalDaysToRestore.compareTo(BigDecimal.ZERO) > 0 && !vacationRequests.isEmpty()) {
-            Long userIdx = vacationRequests.getFirst().getUserIdx();
-            int currentYear = LocalDate.now().getYear();
-
-            VacationBalance vacationBalance = vacationBalanceRepository.findByUserIdxAndYear(userIdx, currentYear)
-                    .orElseThrow(() -> new IllegalStateException("연차 잔액 정보를 찾을 수 없습니다. userIdx: " + userIdx));
-
-            // 사용 연차 감소, 잔여 연차 증가
-            BigDecimal currentUsedDays = vacationBalance.getUsedDays();
-            BigDecimal currentRemainingDays = vacationBalance.getRemainingDays();
-
-            vacationBalance.setUsedDays(currentUsedDays.subtract(totalDaysToRestore));
-            vacationBalance.setRemainingDays(currentRemainingDays.add(totalDaysToRestore));
-            vacationBalance.setUpdatedUserIdx(currentUserIdx);
-
-            vacationBalanceRepository.save(vacationBalance);
-
-            log.info("[연차 잔액 복구] userIdx: {}, 복구 일수: {}일, 사용: {} → {}일, 잔여: {} → {}일",
-                    userIdx, totalDaysToRestore,
-                    currentUsedDays, vacationBalance.getUsedDays(),
-                    currentRemainingDays, vacationBalance.getRemainingDays());
-        }
-
-        // 7. 캘린더 일정 삭제
+        // 6. 캘린더 일정 삭제
         for (VacationRequest vr : vacationRequests) {
             // 기간에 해당하는 캘린더 일정 조회 및 완전 삭제
             List<CalendarEvent> events = calendarEventRepository.findByUserIdxAndDateRange(

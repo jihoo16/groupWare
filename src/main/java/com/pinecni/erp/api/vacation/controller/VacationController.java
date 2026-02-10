@@ -5,7 +5,6 @@ import com.pinecni.erp.api.vacation.dto.VacationCalculationDetailDTO;
 import com.pinecni.erp.api.vacation.dto.VacationRequestSaveDTO;
 import com.pinecni.erp.api.vacation.dto.VacationDetailDTO;
 import com.pinecni.erp.api.vacation.service.VacationService;
-import com.pinecni.erp.entity.VacationBalance;
 import com.pinecni.erp.entity.VacationRequest;
 import com.pinecni.erp.entity.VacationAccrualSchedule;
 import com.pinecni.erp.api.vacation.repository.VacationRequestRepository;
