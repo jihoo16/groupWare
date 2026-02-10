@@ -79,7 +79,7 @@ public class Controller {
             if (event.getCreatorIdx() != null && !event.getCreatorIdx().equals(currentUserIdx)) {
                 log.warn("다른 사용자의 일정 수정 시도: eventId={}, creatorIdx={}, currentUserIdx={}",
                     id, event.getCreatorIdx(), currentUserIdx);
-                return "redirect:/oops";
+                return "redirect:/nope";
             }
         } catch (Exception e) {
             log.error("일정 조회 중 오류 발생: id={}, error={}", id, e.getMessage());
@@ -105,7 +105,7 @@ public class Controller {
         Boolean isAdmin = (Boolean) session.getAttribute("isAdmin");
         if (isAdmin == null || !isAdmin) {
             log.warn("관리자가 아닌 사용자의 사용자관리 접근 시도");
-            return "redirect:/error/403";
+            return "redirect:/nope";
         }
         return "hr";
     }
@@ -332,7 +332,7 @@ public class Controller {
         Boolean isAdmin = (Boolean) session.getAttribute("isAdmin");
         if (isAdmin == null || !isAdmin) {
             log.warn("관리자가 아닌 사용자의 기초정보관리 접근 시도");
-            return "redirect:/error/403";
+            return "redirect:/nope";
         }
         return "basic-info";
     }
@@ -348,7 +348,7 @@ public class Controller {
         Boolean isAdmin = (Boolean) session.getAttribute("isAdmin");
         if (isAdmin == null || !isAdmin) {
             log.warn("관리자가 아닌 사용자의 보고체계 관리 접근 시도");
-            return "redirect:/error/403";
+            return "redirect:/nope";
         }
         return "manage-hierarchy";
     }
@@ -378,17 +378,17 @@ public class Controller {
         return "404";
     }
 
-    @GetMapping("/deleted")
+    @GetMapping("/nothing")
     public String deleted() {
         return "deleted";
     }
 
-    @GetMapping("/error/403")
+    @GetMapping("/nope")
     public String forbidden() {
         return "403";
     }
 
-    @GetMapping("/error/500")
+    @GetMapping("/boom")
     public String serverError() {
         return "500";
     }

@@ -34,7 +34,7 @@ public class CustomErrorController implements ErrorController {
             else if (statusCode == HttpStatus.FORBIDDEN.value()) {
                 String requestUri = (String) request.getAttribute(RequestDispatcher.ERROR_REQUEST_URI);
                 log.warn("403 Forbidden: {}", requestUri);
-                return "redirect:/error/403";
+                return "redirect:/nope";
             }
             // 500 Internal Server Error - 커스텀 500 페이지로 리다이렉트
             else if (statusCode == HttpStatus.INTERNAL_SERVER_ERROR.value()) {
@@ -42,7 +42,7 @@ public class CustomErrorController implements ErrorController {
                 Throwable exception = (Throwable) request.getAttribute(RequestDispatcher.ERROR_EXCEPTION);
                 log.error("500 Internal Server Error: {} - {}", requestUri,
                     exception != null ? exception.getMessage() : "Unknown error");
-                return "redirect:/error/500";
+                return "redirect:/boom";
             }
         }
 
