@@ -38,8 +38,8 @@ public class FirstLoginInterceptor implements HandlerInterceptor {
         }
 
         // 그 외 모든 경로는 차단하고 비밀번호 변경 페이지로 리다이렉트
-        log.warn("First login user attempted to access restricted page: {} - Redirecting to /change-password", requestURI);
-        response.sendRedirect("/change-password");
+        log.warn("First login user attempted to access restricted page: {} - Redirecting to /first-setting", requestURI);
+        response.sendRedirect("/first-setting");
         return false;
     }
 
@@ -47,8 +47,13 @@ public class FirstLoginInterceptor implements HandlerInterceptor {
      * 최초 로그인 상태에서 허용되는 경로 체크
      */
     private boolean isAllowedPath(String requestURI) {
-        // 비밀번호 변경 관련 경로는 허용
-        if (requestURI.equals("/change-password")) {
+        // 최초 설정 페이지는 허용
+        if (requestURI.equals("/first-setting")) {
+            return true;
+        }
+
+        // 사용자 정보 조회/수정 API는 허용 (페이지에서 직접 호출)
+        if (requestURI.equals("/api/users/me")) {
             return true;
         }
 

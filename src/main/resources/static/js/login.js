@@ -121,11 +121,11 @@ document.addEventListener('DOMContentLoaded', function() {
                 localStorage.removeItem('rememberedUsername');
             }
 
-            // 최초 로그인 시 비밀번호 변경 페이지로 리다이렉트
+            // 최초 로그인 시 기초정보 확인 페이지로 리다이렉트
             if (userData.isFirstLogin) {
-                showAlert('최초 로그인입니다. 비밀번호를 변경해주세요.', 'success');
+                showAlert('최초 로그인입니다. 기초정보를 확인해주세요.', 'success');
                 setTimeout(() => {
-                    window.location.href = '/change-password';
+                    window.location.href = '/first-setting';
                 }, 1000);
                 return;
             }

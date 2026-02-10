@@ -363,8 +363,8 @@ public class Controller {
         return "login";
     }
 
-    @GetMapping("/change-password")
-    public String changePassword(HttpSession session) {
+    @GetMapping("/first-setting")
+    public String firstSetting(HttpSession session) {
         // 로그인 확인
         Long userIdx = (Long) session.getAttribute("userIdx");
         if (userIdx == null) {
