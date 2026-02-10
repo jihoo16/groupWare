@@ -2983,7 +2983,7 @@ document.addEventListener('DOMContentLoaded', async function() {
         // 각 참석자에 대해 중복 체크 (같은 프로젝트 내에서)
         for (const attendeeId of allAttendeeIds) {
             try {
-                const response = await fetch(`/api/receipt-meetings/check-duplicate?date=${date}&attendeeIdx=${attendeeId}&projectIdx=${projectIdx}`);
+                const response = await fetch(`/api/receipt-common/check-duplicate?date=${date}&attendeeIdx=${attendeeId}&projectIdx=${projectIdx}&startTime=${currentStartTime}&endTime=${currentEndTime}`);
                 if (response.ok) {
                     const data = await response.json();
                     if (Array.isArray(data) && data.length > 0) {
@@ -3058,7 +3058,7 @@ document.addEventListener('DOMContentLoaded', async function() {
 
         for (const attendeeId of validAttendeeIds) {
             try {
-                const response = await fetch(`/api/receipt-meetings/check-duplicate?date=${date}&attendeeIdx=${attendeeId}&projectIdx=${projectIdx}`);
+                const response = await fetch(`/api/receipt-common/check-duplicate?date=${date}&attendeeIdx=${attendeeId}&projectIdx=${projectIdx}&startTime=${currentStartTime}&endTime=${currentEndTime}`);
 
                 // Content-Type 확인
                 const contentType = response.headers.get('content-type');
@@ -3467,7 +3467,7 @@ document.addEventListener('DOMContentLoaded', async function() {
 
             for (const person of filteredPersons) {
                 try {
-                    const response = await fetch(`/api/receipt-meetings/check-duplicate?date=${date}&attendeeIdx=${person.id}&projectIdx=${projectIdx}`);
+                    const response = await fetch(`/api/receipt-common/check-duplicate?date=${date}&attendeeIdx=${person.id}&projectIdx=${projectIdx}&startTime=${currentStartTime}&endTime=${currentEndTime}`);
                     if (response.ok) {
                         const data = await response.json();
                         if (Array.isArray(data) && data.length > 0) {
@@ -3540,7 +3540,7 @@ document.addEventListener('DOMContentLoaded', async function() {
                 const projectIdx = projectIdxInput.value;
 
                 try {
-                    const response = await fetch(`/api/receipt-meetings/check-duplicate?date=${date}&attendeeIdx=${personId}&projectIdx=${projectIdx}`);
+                    const response = await fetch(`/api/receipt-common/check-duplicate?date=${date}&attendeeIdx=${personId}&projectIdx=${projectIdx}&startTime=${currentStartTime}&endTime=${currentEndTime}`);
                     if (response.ok) {
                         const data = await response.json();
                         if (Array.isArray(data) && data.length > 0) {
@@ -3625,7 +3625,7 @@ document.addEventListener('DOMContentLoaded', async function() {
     // 단일 참석자 시간 중복 체크 헬퍼 함수
     async function checkSingleAttendeeDuplicate(attendeeId, date, startTime, endTime, projectIdx) {
         try {
-            const response = await fetch(`/api/receipt-meetings/check-duplicate?date=${date}&attendeeIdx=${attendeeId}&projectIdx=${projectIdx}`);
+            const response = await fetch(`/api/receipt-common/check-duplicate?date=${date}&attendeeIdx=${attendeeId}&projectIdx=${projectIdx}&startTime=${startTime}&endTime=${endTime}`);
             if (response.ok) {
                 const data = await response.json();
                 if (Array.isArray(data) && data.length > 0) {

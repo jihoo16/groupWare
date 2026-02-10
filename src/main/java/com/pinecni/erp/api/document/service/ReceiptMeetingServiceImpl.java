@@ -5,8 +5,6 @@ import com.pinecni.erp.api.document.dto.ReceiptMeetingCreateDTO;
 import com.pinecni.erp.api.document.dto.ReceiptMeetingDTO;
 import com.pinecni.erp.api.document.dto.ReceiptMeetingUpdateDTO;
 import com.pinecni.erp.api.document.mapper.ReceiptMeetingMapper;
-import com.pinecni.erp.api.document.repository.ReceiptOvertimeRepository;
-import com.pinecni.erp.api.document.repository.ReceiptOvertimeAttendeeRepository;
 import com.pinecni.erp.api.document.repository.ReceiptAttendeeRepository;
 import com.pinecni.erp.api.project.repository.ReceiptMeetingAttachmentRepository;
 import com.pinecni.erp.api.project.repository.ReceiptMeetingRepository;
@@ -17,8 +15,6 @@ import com.pinecni.erp.api.approval.service.DocumentSequenceService;
 import com.pinecni.erp.entity.ReceiptMeeting;
 import com.pinecni.erp.entity.ReceiptMeetingAttachment;
 import com.pinecni.erp.entity.ReceiptAttendee;
-import com.pinecni.erp.entity.ReceiptOvertime;
-import com.pinecni.erp.entity.ReceiptOvertimeAttendee;
 import com.pinecni.erp.entity.ApprovalDocument;
 import com.pinecni.erp.entity.Project;
 import com.pinecni.erp.entity.ProjectCard;
@@ -58,8 +54,6 @@ public class ReceiptMeetingServiceImpl implements ReceiptMeetingService {
     private final ApprovalDocumentRepository approvalDocumentRepository;
     private final DocumentSequenceService documentSequenceService;
     private final PdfGenerationService pdfGenerationService;
-    private final ReceiptOvertimeRepository receiptOvertimeRepository;
-    private final ReceiptOvertimeAttendeeRepository receiptOvertimeAttendeeRepository;
     private final ProjectRepository projectRepository;
     private final ProjectCardRepository projectCardRepository;
 
@@ -396,63 +390,6 @@ public class ReceiptMeetingServiceImpl implements ReceiptMeetingService {
         long count = receiptMeetingRepository.countByDocumentNumberStartingWithIncludingDeleted(prefix);
 
         return String.format("%s-%03d", prefix, count + 1);
-    }
-
-    @Override
-    @Transactional(readOnly = true)
-    public List<Map<String, Object>> findDuplicateAttendee(String date, Long attendeeIdx, Long projectIdx) {
-        log.debug("중복 참석자 검증 (통합 테이블) - date: {}, attendeeIdx: {}, projectIdx: {}", date, attendeeIdx, projectIdx);
-
-        try {
-            // 날짜 파싱
-            LocalDate targetDate = LocalDate.parse(date);
-
-            List<Map<String, Object>> duplicates = new ArrayList<>();
-
-            // 통합 테이블(receipt_attendee)에서 직접 조회 - 모든 문서 타입 포함
-            // is_deleted = false는 @SQLRestriction으로 자동 필터링됨
-            List<ReceiptAttendee> attendees = receiptAttendeeRepository.findAll().stream()
-                    .filter(a -> a.getUserIdx() != null && a.getUserIdx().equals(attendeeIdx))
-                    .filter(a -> a.getDocumentDate() != null && a.getDocumentDate().equals(targetDate))
-                    .filter(a -> projectIdx == null || (a.getProjectIdx() != null && a.getProjectIdx().equals(projectIdx)))
-                    .collect(Collectors.toList());
-
-            log.debug("통합 테이블에서 조회된 참석자 레코드: {}건", attendees.size());
-
-            for (ReceiptAttendee attendee : attendees) {
-                Map<String, Object> info = new HashMap<>();
-                info.put("idx", attendee.getReceiptIdx());
-
-                // 문서 타입별 이름 매핑
-                String documentType = getDocumentTypeName(attendee.getDocumentTypePrefix());
-                info.put("type", documentType);
-
-                info.put("meetingDate", attendee.getDocumentDate());
-                info.put("startTime", attendee.getStartTime());
-                info.put("endTime", attendee.getEndTime());
-                info.put("projectIdx", attendee.getProjectIdx());
-
-                // 프로젝트 이름 조회
-                String projectName = null;
-                if (attendee.getProject() != null) {
-                    projectName = attendee.getProject().getProjectName();
-                } else if (attendee.getProjectIdx() != null) {
-                    projectName = projectRepository.findById(attendee.getProjectIdx())
-                            .map(Project::getProjectName)
-                            .orElse("알 수 없음");
-                }
-                info.put("projectName", projectName);
-                info.put("cardIdx", attendee.getCardIdx());
-
-                duplicates.add(info);
-            }
-
-            log.debug("중복 검증 결과 - 총 {}건 (모든 문서 타입)", duplicates.size());
-            return duplicates;
-        } catch (Exception e) {
-            log.error("중복 참석자 검증 중 오류 발생: {}", e.getMessage(), e);
-            return List.of();
-        }
     }
 
     /**
