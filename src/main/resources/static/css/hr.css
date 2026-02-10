@@ -252,6 +252,11 @@
     color: #1a237e;
 }
 
+.btn-icon.btn-delete:hover {
+    background: #ffebee;
+    color: #d32f2f;
+}
+
 .btn-primary {
     padding: 10px 24px;
     background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);

@@ -143,7 +143,7 @@ function loadEmployees() {
         },
         error: function(xhr, status, error) {
             console.error('사용자 목록 조회 실패:', error);
-            showAlert('직원 목록을 불러오는데 실패했습니다.', 'error');
+            showError('직원 목록을 불러오는데 실패했습니다.', '조회 실패');
 
             // 에러 발생 시 빈 테이블 표시
             $('#employeeTableBody').html(`
@@ -269,6 +269,9 @@ function createEmployeeRow(user) {
                 <button class="btn-icon btn-edit" data-idx="${user.idx}" title="수정">
                     <i class="fas fa-edit"></i>
                 </button>
+                <button class="btn-icon btn-delete" data-idx="${user.idx}" title="삭제">
+                    <i class="fas fa-trash"></i>
+                </button>
             </td>
         </tr>
     `;
@@ -301,6 +304,12 @@ function bindEmployeeButtons() {
     $('.btn-edit').on('click', function() {
         const idx = $(this).data('idx');
         editEmployee(idx);
+    });
+
+    // 삭제 버튼
+    $('.btn-delete').on('click', function() {
+        const idx = $(this).data('idx');
+        deleteEmployee(idx);
     });
 }
 
@@ -337,7 +346,7 @@ function viewEmployeeDetail(idx) {
         },
         error: function(xhr, status, error) {
             console.error('직원 상세 조회 실패:', error);
-            showAlert('직원 정보를 불러오는데 실패했습니다.', 'error');
+            showError('직원 정보를 불러오는데 실패했습니다.', '조회 실패');
         }
     });
 }
@@ -395,7 +404,7 @@ function editEmployee(idx) {
         },
         error: function(xhr, status, error) {
             console.error('직원 정보 조회 실패:', error);
-            showAlert('직원 정보를 불러오는데 실패했습니다.', 'error');
+            showError('직원 정보를 불러오는데 실패했습니다.', '조회 실패');
         }
     });
 }
@@ -515,8 +524,8 @@ function searchEmployees(searchTerm) {
         }
     });
 
-    // 검색 후 보이는 행이 없으면 빈 메시지 표시
-    const visibleRows = $rows.filter(':visible').length;
+    // 검색 후 보이는 행이 없으면 빈 메시지 표시 (replaceWith 후 재조회)
+    const visibleRows = $tbody.find('tr').not('.empty-message').filter(':visible').length;
     if (visibleRows === 0) {
         const deptText = currentFilter === 'all' ? '전체' : currentFilter;
         $tbody.append(`
@@ -669,7 +678,7 @@ function openEmployeeModal() {
             // 실패 시 기본값 설정 (날짜 + 01)
             const fallbackEmpId = `${year}${month}${day}01`;
             $('#empId').val(fallbackEmpId);
-            showAlert('사번 생성 중 오류가 발생했습니다. 기본값이 설정되었습니다.', 'warning');
+            showWarning('사번 생성 중 오류가 발생했습니다. 기본값이 설정되었습니다.', '사번 생성 오류');
         }
     });
 }
@@ -714,7 +723,7 @@ function saveEmployee() {
 
     // 필수 필드 검증
     if (!employeeData.empName || !employeeData.empId || !employeeData.empEmail) {
-        showAlert('필수 항목을 모두 입력해주세요.', 'warning');
+        showWarning('필수 항목을 모두 입력해주세요.', '입력 오류');
         return;
     }
 
@@ -728,14 +737,14 @@ function saveEmployee() {
             data: JSON.stringify(employeeData),
             success: function(response) {
                 console.log('직원 수정 성공:', response);
-                showAlert('직원 정보가 성공적으로 수정되었습니다.', 'success');
+                showSuccess('직원 정보가 성공적으로 수정되었습니다.', '수정 완료');
                 closeEmployeeModal();
                 loadEmployees(); // 목록 새로고침
             },
             error: function(xhr, status, error) {
                 console.error('직원 수정 실패:', xhr.responseJSON);
                 const errorMsg = xhr.responseJSON?.error || '직원 정보 수정에 실패했습니다.';
-                showAlert(errorMsg, 'error');
+                showError(errorMsg, '수정 실패');
             }
         });
     } else {
@@ -747,14 +756,14 @@ function saveEmployee() {
             data: JSON.stringify(employeeData),
             success: function(response) {
                 console.log('직원 등록 성공:', response);
-                showAlert('직원이 성공적으로 등록되었습니다.', 'success');
+                showSuccess('직원이 성공적으로 등록되었습니다.', '등록 완료');
                 closeEmployeeModal();
                 loadEmployees(); // 목록 새로고침
             },
             error: function(xhr, status, error) {
                 console.error('직원 등록 실패:', xhr.responseJSON);
                 const errorMsg = xhr.responseJSON?.error || '직원 등록에 실패했습니다.';
-                showAlert(errorMsg, 'error');
+                showError(errorMsg, '등록 실패');
             }
         });
     }
@@ -802,6 +811,58 @@ function loadPositionOptions() {
         },
         error: function(xhr, status, error) {
             console.error('직급 옵션 로드 실패:', error);
+        }
+    });
+}
+
+/**
+ * 직원 삭제 (Soft Delete)
+ */
+function deleteEmployee(idx) {
+    // 삭제할 직원 정보 조회
+    const user = allUsers.find(u => u.idx === idx);
+    if (!user) {
+        showError('직원 정보를 찾을 수 없습니다.', '오류');
+        return;
+    }
+
+    // SweetAlert2로 삭제 확인
+    Swal.fire({
+        title: '직원 삭제',
+        html: `<strong>${user.empName}</strong> (${user.empId}) 직원을 삭제하시겠습니까?<br><br>` ,
+        icon: 'warning',
+        showCancelButton: true,
+        confirmButtonColor: '#d33',
+        cancelButtonColor: '#999',
+        confirmButtonText: '삭제',
+        cancelButtonText: '취소'
+    }).then((result) => {
+        if (result.isConfirmed) {
+            // 삭제 API 호출
+            $.ajax({
+                url: `/api/users/${idx}`,
+                method: 'DELETE',
+                success: function(response) {
+                    console.log('직원 삭제 성공:', response);
+                    Swal.fire({
+                        icon: 'success',
+                        title: '삭제 완료',
+                        text: '직원이 성공적으로 삭제되었습니다.',
+                        confirmButtonText: '확인'
+                    });
+                    loadEmployees(); // 목록 새로고침
+                },
+                error: function(xhr, status, error) {
+                    console.error('직원 삭제 실패:', xhr.responseJSON);
+                    const errorMsg = xhr.responseJSON?.error || '직원 삭제에 실패했습니다.';
+                    Swal.fire({
+                        icon: 'error',
+                        title: '삭제 실패',
+                        text: errorMsg,
+                        confirmButtonText: '확인'
+                    });
+                }
+            });
         }
     });
 }
