@@ -1683,7 +1683,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
             if (!response.ok) {
                 showError('보고서를 불러올 수 없습니다.');
-                window.location.href = '/project/documents';
+                popupAwareRedirect('/project/documents');
                 return;
             }
 
@@ -1801,7 +1801,7 @@ document.addEventListener('DOMContentLoaded', function() {
         } catch (error) {
             console.error('보고서 로드 오류:', error);
             showError('보고서를 불러오는 중 오류가 발생했습니다: ' + error.message);
-            window.location.href = '/project/documents';
+            popupAwareRedirect('/project/documents');
         }
     }
 
@@ -2029,7 +2029,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
                         if (!uploadSuccess) {
                             await showWarning('보고서는 저장되었으나 파일 업로드에 실패했습니다.');
-                            window.location.href = '/project/documents';
+                            popupAwareRedirect('/project/documents');
                             return;
                         }
                     }
@@ -2056,7 +2056,7 @@ document.addEventListener('DOMContentLoaded', function() {
                         '프로젝트 주간업무보고가 수정되었습니다.' :
                         '프로젝트 주간업무보고가 저장되었습니다.';
                     await showSuccess(successMessage);
-                    window.location.href = '/project/documents';
+                    popupAwareRedirect('/project/documents');
                 } else {
                     const error = await response.text();
                     console.error('저장 실패:', error);
@@ -2090,7 +2090,7 @@ document.addEventListener('DOMContentLoaded', function() {
             }
 
             // 프로젝트 문서함으로 이동
-            window.location.href = '/project/documents';
+            popupAwareRedirect('/project/documents');
         });
     }
 });

@@ -372,7 +372,7 @@ async function deleteReport(documentIdx) {
 
         if (response.ok) {
             await showSuccess('보고서가 삭제되었습니다.');
-            window.location.href = '/project/documents';
+            popupAwareRedirect('/project/documents');
         } else {
             throw new Error('삭제 실패');
         }

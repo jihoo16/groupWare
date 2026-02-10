@@ -1124,7 +1124,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
             if (await showConfirm('결재를 요청하시겠습니까?')) {
                 showSuccess('결재 요청이 완료되었습니다.');
-                window.location.href = '/project/documents';
+                popupAwareRedirect('/project/documents');
             }
         });
     }

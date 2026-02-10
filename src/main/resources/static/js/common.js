@@ -5,6 +5,19 @@ if (window.opener) {
     document.documentElement.classList.add('popup-mode');
 }
 
+/**
+ * 팝업 모드 대응 리다이렉트
+ * 팝업이면 부모 창 새로고침 후 팝업 닫기, 일반이면 해당 URL로 이동
+ */
+window.popupAwareRedirect = function(fallbackUrl) {
+    if (window.opener && !window.opener.closed) {
+        window.opener.location.reload();
+        window.close();
+    } else {
+        window.location.href = fallbackUrl;
+    }
+};
+
 document.addEventListener('DOMContentLoaded', function() {
     const sidebar = document.querySelector('.sidebar');
     const menuParents = document.querySelectorAll('.menu-parent');
