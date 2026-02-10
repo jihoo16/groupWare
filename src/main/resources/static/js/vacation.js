@@ -827,7 +827,15 @@ document.addEventListener('DOMContentLoaded', async function() {
     function openRemainingLeaveModal() {
         // 현재 잔여 연차 요약
         if (vacationInfo && vacationInfo.remainingDays !== undefined) {
-            remainingLeaveSummary.textContent = `${vacationInfo.remainingDays}일`;
+            const remaining = parseFloat(vacationInfo.remainingDays);
+            console.log('[잔여연차 모달] remainingDays:', remaining, 'type:', typeof vacationInfo.remainingDays);
+
+            // 음수일 경우 빨간색으로 표시
+            if (remaining < 0) {
+                remainingLeaveSummary.innerHTML = `<span style="color: #dc3545; font-weight: bold;">${remaining}일</span>`;
+            } else {
+                remainingLeaveSummary.textContent = `${remaining}일`;
+            }
         } else {
             remainingLeaveSummary.textContent = '-';
         }
