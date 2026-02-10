@@ -159,6 +159,7 @@ public class ProjectCardServiceImpl implements ProjectCardService {
         if (card.getProjectIdx() != null) {
             projectRepository.findById(card.getProjectIdx()).ifPresent(project -> {
                 dto.setProjectName(project.getProjectName());
+                dto.setProjectDeleted(Boolean.TRUE.equals(project.getIsDeleted()));
             });
         }
 

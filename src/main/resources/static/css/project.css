@@ -2014,6 +2014,32 @@ body:has(.project-form-footer) .main-content {
     background: linear-gradient(135deg, #c82333, #bd2130);
 }
 
+/* 삭제된 프로젝트 카드 */
+.research-card-item.project-deleted {
+    opacity: 0.65;
+}
+
+.research-card-item.project-deleted .research-card-visual {
+    background: linear-gradient(135deg, #868e96, #adb5bd);
+}
+
+.badge-deleted {
+    display: inline-block;
+    background: #dc3545;
+    color: #fff;
+    font-size: 10px;
+    font-weight: 600;
+    padding: 1px 6px;
+    border-radius: 4px;
+    margin-left: 4px;
+    vertical-align: middle;
+}
+
+.research-card-actions .btn:disabled {
+    opacity: 0.4;
+    cursor: not-allowed;
+}
+
 /* 프로젝트 정보 모달 */
 .project-info-section {
     margin-bottom: 28px;

@@ -118,8 +118,12 @@ document.addEventListener('DOMContentLoaded', function() {
                 searchUtils.highlightText(card.projectName || '-', currentSearchKeyword) :
                 (card.projectName || '-');
 
+            const isProjectDeleted = card.projectDeleted === true;
+            const deletedClass = isProjectDeleted ? ' project-deleted' : '';
+            const deletedBadge = isProjectDeleted ? ' <span class="badge-deleted">삭제됨</span>' : '';
+
             return `
-                <div class="research-card-item"
+                <div class="research-card-item${deletedClass}"
                      data-idx="${card.idx}"
                      data-company="${card.cardCompany || ''}"
                      data-number="${card.cardLastDigits || ''}"
@@ -136,7 +140,7 @@ document.addEventListener('DOMContentLoaded', function() {
                     <div class="research-card-info" onclick="showProjectInfo(${card.projectIdx})">
                         <div class="info-row">
                             <span class="info-label">연결 프로젝트</span>
-                            <span class="info-value">${projectName}</span>
+                            <span class="info-value">${projectName}${deletedBadge}</span>
                         </div>
                         <div class="info-row">
                             <span class="info-label">등록일</span>
@@ -144,7 +148,7 @@ document.addEventListener('DOMContentLoaded', function() {
                         </div>
                     </div>
                     <div class="research-card-actions">
-                        <button class="btn btn-sm btn-secondary" onclick="editCard(${card.idx})">
+                        <button class="btn btn-sm btn-secondary" onclick="editCard(${card.idx})" ${isProjectDeleted ? 'disabled title="삭제된 프로젝트의 카드는 수정할 수 없습니다"' : ''}>
                             <i class="fas fa-edit"></i> 수정
                         </button>
                         <button class="btn btn-sm btn-delete" onclick="deleteCard(${card.idx})">
@@ -329,13 +333,30 @@ document.addEventListener('DOMContentLoaded', function() {
             return;
         }
 
+        // 삭제된 프로젝트인지 카드 데이터에서 먼저 확인
+        const card = allCards.find(c => c.projectIdx === projectIdx);
+        if (card && card.projectDeleted) {
+            showWarning('삭제된 프로젝트입니다.');
+            return;
+        }
+
         try {
             const response = await fetch(`/api/projects/${projectIdx}`);
             if (!response.ok) {
+                if (response.status === 404) {
+                    showWarning('삭제된 프로젝트입니다.');
+                    return;
+                }
                 throw new Error('프로젝트 조회 실패');
             }
 
             const project = await response.json();
+
+            // 삭제된 프로젝트 체크 (API 응답에서도 확인)
+            if (project.isDeleted) {
+                showWarning('삭제된 프로젝트입니다.');
+                return;
+            }
 
             // 기본 정보 표시
             document.getElementById('infoProjectName').textContent = project.projectName || '-';
