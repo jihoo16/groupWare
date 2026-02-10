@@ -319,6 +319,87 @@ document.addEventListener('DOMContentLoaded', function() {
         return typeMatch && teamMatch;
     }
 
+    // 전체 일정에 track 할당 (multi-day 일정이 같은 줄에 연속되도록)
+    function assignTracksToSchedules() {
+        // multi-day 일정만 필터링
+        const multiDaySchedules = schedules.filter(s => {
+            const dayDiff = Math.ceil((new Date(s.endDate) - new Date(s.startDate)) / (1000 * 60 * 60 * 24));
+            return dayDiff >= 1;
+        });
+
+        // groupId로 그룹화 (같은 일정은 하나로 취급)
+        const scheduleGroups = new Map();
+        multiDaySchedules.forEach(schedule => {
+            const groupId = schedule.groupId || schedule.id;
+            if (!scheduleGroups.has(groupId)) {
+                scheduleGroups.set(groupId, schedule);
+            }
+        });
+
+        // 고유한 multi-day 일정들만 추출하고 시작일 순으로 정렬
+        const uniqueSchedules = Array.from(scheduleGroups.values());
+        uniqueSchedules.sort((a, b) => {
+            const aStart = new Date(a.startDate).getTime();
+            const bStart = new Date(b.startDate).getTime();
+            if (aStart !== bStart) return aStart - bStart;
+            const aEnd = new Date(a.endDate).getTime();
+            const bEnd = new Date(b.endDate).getTime();
+            return bEnd - aEnd; // 종료일이 늦은 것이 먼저
+        });
+
+        // track 할당 (겹치는 일정들을 다른 track에 배치)
+        const tracks = []; // 각 track에 배치된 일정들
+
+        uniqueSchedules.forEach(schedule => {
+            const scheduleStart = new Date(schedule.startDate);
+            const scheduleEnd = new Date(schedule.endDate);
+
+            // 배치 가능한 track 찾기
+            let assignedTrack = -1;
+            for (let i = 0; i < tracks.length; i++) {
+                const trackSchedules = tracks[i];
+                let canPlace = true;
+
+                // 이 track의 모든 일정과 겹치지 않는지 확인
+                for (const trackSchedule of trackSchedules) {
+                    const trackStart = new Date(trackSchedule.startDate);
+                    const trackEnd = new Date(trackSchedule.endDate);
+
+                    // 겹치는지 확인
+                    if (!(scheduleEnd < trackStart || scheduleStart > trackEnd)) {
+                        canPlace = false;
+                        break;
+                    }
+                }
+
+                if (canPlace) {
+                    assignedTrack = i;
+                    break;
+                }
+            }
+
+            if (assignedTrack === -1) {
+                // 새 track 생성
+                assignedTrack = tracks.length;
+                tracks.push([]);
+            }
+
+            // track에 추가
+            tracks[assignedTrack].push(schedule);
+
+            // 같은 groupId의 모든 일정에 track 할당
+            const groupId = schedule.groupId || schedule.id;
+            schedules.forEach(s => {
+                const sGroupId = s.groupId || s.id;
+                if (sGroupId === groupId) {
+                    s.track = assignedTrack;
+                }
+            });
+        });
+
+        console.log('Track 할당 완료:', tracks.length, '개 track 사용');
+    }
+
     // 달력 렌더링
     async function renderCalendar() {
         const year = currentDate.getFullYear();
@@ -358,6 +439,9 @@ document.addEventListener('DOMContentLoaded', function() {
         const startDate = formatDate(calendarStartDate);
         const endDate = formatDate(calendarEndDate);
         await loadSchedules(startDate, endDate);
+
+        // 전체 일정에 track 할당 (multi-day 일정이 날짜마다 같은 줄에 위치하도록)
+        assignTracksToSchedules();
 
         const lastDate = lastDay.getDate();
         const prevLastDate = prevLastDay.getDate();
@@ -496,7 +580,14 @@ document.addEventListener('DOMContentLoaded', function() {
 
         // 일정 HTML 생성
         let schedulesHTML = '';
-        const maxDisplay = 3; // 최대 표시 개수
+        const maxDisplay = 5; // 최대 표시 개수 (multi-day 겹침 고려하여 증가)
+
+        // track 순서대로 정렬 (같은 track끼리 묶이도록)
+        daySchedules.sort((a, b) => {
+            const aTrack = a.track !== undefined ? a.track : 999;
+            const bTrack = b.track !== undefined ? b.track : 999;
+            return aTrack - bTrack;
+        });
 
         daySchedules.slice(0, maxDisplay).forEach(schedule => {
             const isMySchedule = schedule.participants.includes(currentUser);
@@ -512,6 +603,7 @@ document.addEventListener('DOMContentLoaded', function() {
             const isMultiDay = dayDiff >= 1; // 2일 이상인 일정
             const isAllDay = schedule.time === '종일';
 
+            let trackStyle = '';
             if (isMultiDay) {
                 // 시작일, 중간일, 종료일 구분
                 if (dateStr === schedule.startDate) {
@@ -521,6 +613,10 @@ document.addEventListener('DOMContentLoaded', function() {
                 } else {
                     scheduleClasses.push('multi-day-middle');
                 }
+
+                // 전역적으로 할당된 track 번호 사용
+                const trackIndex = schedule.track !== undefined ? schedule.track : 0;
+                trackStyle = ` style="--track: ${trackIndex};"`;
             } else {
                 // 단일 일정
                 if (!isAllDay) {
@@ -539,7 +635,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 }
             }
 
-            schedulesHTML += `<div class="schedule-item ${scheduleClasses.join(' ')}" data-schedule-id="${schedule.id}" data-group-id="${schedule.groupId}">${schedule.title}</div>`;
+            schedulesHTML += `<div class="schedule-item ${scheduleClasses.join(' ')}"${trackStyle} data-schedule-id="${schedule.id}" data-group-id="${schedule.groupId}">${schedule.title}</div>`;
         });
 
         if (daySchedules.length > maxDisplay) {
@@ -1296,8 +1392,8 @@ document.addEventListener('DOMContentLoaded', function() {
             rank: '외부인원'
         };
 
-        // 중복 체크 (이름 기준)
-        if (!selectedParticipants.find(p => p.name === name)) {
+        // 중복 체크 (외부 참석자끼리만 이름 중복 방지)
+        if (!selectedParticipants.find(p => p.id === null && p.name === name)) {
             selectedParticipants.push(participant);
             renderParticipantsList();
         }

@@ -539,6 +539,7 @@
     flex: 1;
     overflow-y: auto;
     overflow-x: hidden;
+    min-height: 80px; /* multi-day 일정 겹침을 위한 최소 높이 */
 }
 
 .schedule-item {
@@ -590,6 +591,8 @@
 /* 단일 일정 */
 .schedule-item.single-day {
     border-radius: 4px;
+    position: relative; /* multi-day와 구분하기 위해 명시 */
+    z-index: 1;
 }
 
 /* 단일 일정 hover */
