@@ -404,14 +404,9 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     }
 
-    // 알림 토글 버튼 이벤트
-    notificationToggleBtn.addEventListener('click', function() {
-        notificationEnabled = !notificationEnabled;
-        updateNotificationButton();
-    });
-
-    // 알림 버튼 상태 업데이트
+    // 알림 버튼 상태 업데이트 (알림 UI가 활성화된 경우에만 동작)
     function updateNotificationButton() {
+        if (!notificationToggleBtn) return;
         const icon = notificationToggleBtn.querySelector('i');
         const statusText = notificationToggleBtn.querySelector('.notification-status');
 
@@ -419,25 +414,26 @@ document.addEventListener('DOMContentLoaded', function() {
             notificationToggleBtn.classList.add('active');
             icon.className = 'fas fa-bell';
             statusText.textContent = '알림 켜짐';
-            notificationTimeButtons.style.display = 'flex';
+            if (notificationTimeButtons) notificationTimeButtons.style.display = 'flex';
         } else {
             notificationToggleBtn.classList.remove('active');
             icon.className = 'far fa-bell-slash';
             statusText.textContent = '알림 꺼짐';
-            notificationTimeButtons.style.display = 'none';
+            if (notificationTimeButtons) notificationTimeButtons.style.display = 'none';
         }
     }
 
-    // 알림 시간 버튼 이벤트
+    if (notificationToggleBtn) {
+        notificationToggleBtn.addEventListener('click', function() {
+            notificationEnabled = !notificationEnabled;
+            updateNotificationButton();
+        });
+    }
+
     notificationTimeBtns.forEach(btn => {
         btn.addEventListener('click', function() {
-            // 모든 버튼에서 active 클래스 제거
             notificationTimeBtns.forEach(b => b.classList.remove('active'));
-
-            // 클릭된 버튼에 active 클래스 추가
             this.classList.add('active');
-
-            // 알림 시간 저장
             notificationTime = parseInt(this.getAttribute('data-time'));
         });
     });
