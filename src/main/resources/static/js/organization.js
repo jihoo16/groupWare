@@ -30,7 +30,7 @@
         DETAIL_EXTENSION: 'detailExtension',
         DETAIL_PHONE: 'detailPhone',
         DETAIL_MANAGER: 'detailManager',
-        DETAIL_TEAM_COUNT: 'detailTeamCount',
+        DETAIL_TEAM_MEMBERS: 'detailTeamMembers',
         DETAIL_YEARS: 'detailYears'
     };
 
@@ -356,7 +356,18 @@
         setTextContent(DOM_SELECTORS.DETAIL_EXTENSION, member.extension);
         setTextContent(DOM_SELECTORS.DETAIL_PHONE, member.phone);
         setTextContent(DOM_SELECTORS.DETAIL_MANAGER, member.manager);
-        setTextContent(DOM_SELECTORS.DETAIL_TEAM_COUNT, member.teamCount > 0 ? `${member.teamCount}명` : '-');
+
+        // 하위 팀원 목록 렌더링
+        const teamMembersContainer = getElement(DOM_SELECTORS.DETAIL_TEAM_MEMBERS);
+        if (teamMembersContainer) {
+            if (member.teamMembers && member.teamMembers.length > 0) {
+                teamMembersContainer.innerHTML = member.teamMembers
+                    .map(m => `<span class="team-member-tag">${m}</span>`)
+                    .join('');
+            } else {
+                teamMembersContainer.innerHTML = '<span style="color:#bbb;font-size:13.8px;">-</span>';
+            }
+        }
 
         // 근속연수 계산 및 표시
         if (member.joinDate) {

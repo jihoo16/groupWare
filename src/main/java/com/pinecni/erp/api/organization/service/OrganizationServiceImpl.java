@@ -90,6 +90,10 @@ public class OrganizationServiceImpl implements OrganizationService {
             Map<String, List<User>> usersByDept = users.stream()
                     .collect(Collectors.groupingBy(User::getEmpDept));
 
+            // 보고 체계 조회용: idx -> User 맵
+            Map<Long, User> userByIdx = users.stream()
+                    .collect(Collectors.toMap(User::getIdx, u -> u));
+
             log.info("Users grouped by {} departments", usersByDept.size());
 
             // 5. 조직도 트리 구조 생성 (Repository에서 이미 sort_order로 정렬됨)
@@ -98,7 +102,7 @@ public class OrganizationServiceImpl implements OrganizationService {
                         List<User> deptUsers = usersByDept.getOrDefault(deptCode.getCode(), Collections.emptyList());
                         log.debug("Creating node for dept code {} ({}) with {} users",
                             deptCode.getCode(), deptCode.getCodeName(), deptUsers.size());
-                        return createDepartmentNode(deptCode, deptUsers, positionCodeMap);
+                        return createDepartmentNode(deptCode, deptUsers, positionCodeMap, userByIdx);
                     })
                     .filter(node -> !node.getPositions().isEmpty()) // 직원이 있는 부서만 포함
                     .collect(Collectors.toList());
@@ -123,7 +127,8 @@ public class OrganizationServiceImpl implements OrganizationService {
     /**
      * 부서 노드 생성
      */
-    private DepartmentNodeDTO createDepartmentNode(Code deptCode, List<User> deptUsers, Map<String, String> positionCodeMap) {
+    private DepartmentNodeDTO createDepartmentNode(Code deptCode, List<User> deptUsers, Map<String, String> positionCodeMap,
+                                                    Map<Long, User> userByIdx) {
         // 직급별로 직원 그룹화 (코드명 기준)
         Map<String, List<User>> usersByPosition = deptUsers.stream()
                 .sorted(Comparator.comparing(u -> getPositionOrder(getPositionName(u.getEmpPosition(), positionCodeMap))))
@@ -144,7 +149,7 @@ public class OrganizationServiceImpl implements OrganizationService {
             if (!groupUsers.isEmpty()) {
                 String rankRange = getRankRange(groupUsers, positionCodeMap);
                 List<EmployeeNodeDTO> members = groupUsers.stream()
-                        .map(user -> createEmployeeNode(user, deptCode.getCodeName(), positionCodeMap))
+                        .map(user -> createEmployeeNode(user, deptCode.getCodeName(), deptUsers, positionCodeMap, userByIdx))
                         .collect(Collectors.toList());
 
                 positionGroups.add(PositionGroupDTO.builder()
@@ -167,9 +172,29 @@ public class OrganizationServiceImpl implements OrganizationService {
     /**
      * 직원 노드 생성
      */
-    private EmployeeNodeDTO createEmployeeNode(User user, String deptName, Map<String, String> positionCodeMap) {
+    private EmployeeNodeDTO createEmployeeNode(User user, String deptName, List<User> deptUsers,
+                                                Map<String, String> positionCodeMap, Map<Long, User> userByIdx) {
         DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd");
         String positionName = getPositionName(user.getEmpPosition(), positionCodeMap);
+        int myOrder = getPositionOrder(positionName);
+
+        // 상위 보고자 이름 조회
+        String managerName = "-";
+        if (user.getManagerIdx() != null) {
+            User manager = userByIdx.get(user.getManagerIdx());
+            if (manager != null) {
+                String managerPositionName = getPositionName(manager.getEmpPosition(), positionCodeMap);
+                managerName = manager.getEmpName() + " " + managerPositionName;
+            }
+        }
+
+        // 하위 팀원 목록: 같은 부서 내 자신 제외, 나보다 낮은 직급(POSITION_ORDER 높은 숫자)인 사람
+        List<String> teamMembers = deptUsers.stream()
+                .filter(u -> !u.getIdx().equals(user.getIdx()))
+                .filter(u -> getPositionOrder(getPositionName(u.getEmpPosition(), positionCodeMap)) > myOrder)
+                .sorted(Comparator.comparing(u -> getPositionOrder(getPositionName(u.getEmpPosition(), positionCodeMap))))
+                .map(u -> u.getEmpName() + " " + getPositionName(u.getEmpPosition(), positionCodeMap))
+                .collect(Collectors.toList());
 
         return EmployeeNodeDTO.builder()
                 .id(user.getIdx())
@@ -179,11 +204,11 @@ public class OrganizationServiceImpl implements OrganizationService {
                 .department(deptName)
                 .email(user.getEmpEmail())
                 .phone(user.getEmpPhone())
-                .extension(user.getEmpId()) // 사번을 내선번호로 사용 (추후 수정 가능)
+                .extension(user.getEmpId())
                 .joinDate(user.getEmpJoinDate() != null ? user.getEmpJoinDate().format(formatter) : null)
                 .status(user.getEmpStatus())
-                .manager("-") // 상위 보고자 정보는 추후 확장 가능
-                .teamCount(0) // 하위 팀원 수는 추후 확장 가능
+                .manager(managerName)
+                .teamMembers(teamMembers)
                 .build();
     }
 

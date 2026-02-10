@@ -417,6 +417,27 @@ button:focus,
     font-weight: 500;
 }
 
+.info-item.info-item-full {
+    grid-column: 1 / -1;
+}
+
+.team-members-list {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    min-height: 22px;
+}
+
+.team-member-tag {
+    background: #e3f2fd;
+    color: #1565c0;
+    padding: 3px 10px;
+    border-radius: 12px;
+    font-size: 12px;
+    font-weight: 500;
+    white-space: nowrap;
+}
+
 /* 액션 버튼 */
 .detail-actions {
     padding: 15px 35px;

@@ -5,6 +5,8 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
+import java.util.List;
+
 /**
  * 직원 노드 DTO
  */
@@ -70,7 +72,7 @@ public class EmployeeNodeDTO {
     private String manager;
 
     /**
-     * 하위 팀원 수
+     * 하위 팀원 목록 (같은 부서 내 낮은 직급, "이름 직급" 형태)
      */
-    private Integer teamCount;
+    private List<String> teamMembers;
 }
