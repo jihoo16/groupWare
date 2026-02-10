@@ -91,6 +91,12 @@ document.addEventListener('DOMContentLoaded', async function() {
             const response = await fetch('/api/projects');
             if (response.ok) {
                 projects = await response.json();
+                // 최근 등록된 순서로 정렬 (createdAt 기준 내림차순)
+                projects.sort((a, b) => {
+                    const dateA = new Date(a.createdAt);
+                    const dateB = new Date(b.createdAt);
+                    return dateB - dateA; // 최신순
+                });
                 console.log('프로젝트 목록 로드 성공:', projects.length + '건');
             } else {
                 console.error('프로젝트 목록 로드 실패');
