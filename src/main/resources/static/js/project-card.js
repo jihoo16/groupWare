@@ -104,6 +104,7 @@ document.addEventListener('DOMContentLoaded', function() {
         }
 
         cardGrid.innerHTML = cards.map(card => {
+            console.log(card)
             // 하이라이트 적용
             const cardCompany = currentSearchKeyword ?
                 searchUtils.highlightText(card.cardCompany || '-', currentSearchKeyword) :
@@ -129,6 +130,7 @@ document.addEventListener('DOMContentLoaded', function() {
                             <i class="fas fa-microchip"></i>
                         </div>
                         <div class="research-card-company">${cardCompany}</div>
+                        <div class="research-card-company">${card.cardName}</div>
                         <div class="research-card-number">**** **** **** ${cardLastDigits}</div>
                     </div>
                     <div class="research-card-info" onclick="showProjectInfo(${card.projectIdx})">
@@ -193,6 +195,7 @@ document.addEventListener('DOMContentLoaded', function() {
         // 폼 초기화
         document.getElementById('cardCompany').value = '';
         document.getElementById('cardNumber').value = '';
+        document.getElementById('cardNickname').value = '';
         document.getElementById('projectSelect').value = '';
 
         if (cardIdx) {
@@ -202,6 +205,7 @@ document.addEventListener('DOMContentLoaded', function() {
             if (card) {
                 document.getElementById('cardCompany').value = card.cardCompany || '';
                 document.getElementById('cardNumber').value = card.cardLastDigits || '';
+                document.getElementById('cardNickname').value = card.cardNickname || '';
                 document.getElementById('projectSelect').value = card.projectIdx || '';
             }
         } else {
@@ -242,9 +246,12 @@ document.addEventListener('DOMContentLoaded', function() {
             return;
         }
 
+        const cardNickname = document.getElementById('cardNickname').value.trim();
+
         const cardData = {
             cardCompany: cardCompany,
             cardLastDigits: cardNumber,
+            cardNickname: cardNickname || null,
             projectIdx: parseInt(projectIdx)
         };
 
