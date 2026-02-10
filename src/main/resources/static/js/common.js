@@ -1,5 +1,10 @@
 // 공통 JavaScript - 모든 페이지에서 사용
 
+// 팝업 감지 - 사이드바 숨김 (window.opener가 있으면 팝업으로 열린 것)
+if (window.opener) {
+    document.documentElement.classList.add('popup-mode');
+}
+
 document.addEventListener('DOMContentLoaded', function() {
     const sidebar = document.querySelector('.sidebar');
     const menuParents = document.querySelectorAll('.menu-parent');
