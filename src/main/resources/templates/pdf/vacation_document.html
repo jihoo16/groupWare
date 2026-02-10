@@ -4,6 +4,9 @@
     <meta charset="UTF-8"/>
     <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
     <title>휴가계</title>
+    <!-- Google Fonts - Noto Sans KR (서버에 인터넷 접근 가능한 경우 사용) -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;700&display=swap" rel="stylesheet">
     <style>
         * {
             box-sizing: border-box;
@@ -12,7 +15,8 @@
         }
 
         body {
-            font-family: 'Malgun Gothic', '맑은 고딕', 'Apple SD Gothic Neo', sans-serif;
+            /* 우선순위: Noto Sans KR(Google Fonts) > 나눔고딕(Linux 시스템) > 맑은고딕(Windows) > Apple SD Gothic Neo(Mac) */
+            font-family: 'Noto Sans KR', 'NanumGothic', 'Nanum Gothic', 'Malgun Gothic', '맑은 고딕', 'Apple SD Gothic Neo', sans-serif;
             background: white;
             margin: 1.5cm;
         }

@@ -272,9 +272,10 @@ public class PlaywrightPdfService {
                     .setMedia(Media.PRINT)
             );
 
-            // HTML 콘텐츠 설정 (baseURL 지정으로 상대 경로 리소스 로드 가능)
+            // HTML 콘텐츠 설정 (baseURL 지정으로 정적 리소스 및 폰트 로드 가능)
             page.setContent(htmlContent, new Page.SetContentOptions()
                     .setWaitUntil(WaitUntilState.NETWORKIDLE)
+                    .setTimeout(15000)
             );
 
             // CSS 파일 로드 대기 (네트워크 안정화)

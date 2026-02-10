@@ -185,8 +185,11 @@ public class PdfGenerationService {
         log.info("[PDF 변환] Playwright를 사용하여 PDF 생성 시작");
 
         try {
+            // 한글 폰트를 base64로 인코딩하여 HTML에 직접 주입
+            String htmlWithFont = injectKoreanFontAsBase64(htmlContent);
+
             // Playwright로 HTML을 렌더링하고 PDF 생성
-            byte[] pdfBytes = playwrightPdfService.convertHtmlToPdf(htmlContent);
+            byte[] pdfBytes = playwrightPdfService.convertHtmlToPdf(htmlWithFont);
 
             log.info("[PDF 변환] Playwright PDF 생성 완료 - 크기: {} bytes", pdfBytes.length);
             return pdfBytes;
@@ -230,6 +233,51 @@ public class PdfGenerationService {
         }
 
         return outputStream.toByteArray();
+    }
+
+    /**
+     * classpath:fonts/NanumGothic.ttf 를 base64로 인코딩하여
+     * <head> 안에 @font-face style 태그로 주입 (Playwright는 setContent 시 외부 경로 접근 불가)
+     */
+    private String injectKoreanFontAsBase64(String htmlContent) {
+        String[] fontCandidates = {"fonts/NanumGothic.ttf", "fonts/malgun.ttf"};
+
+        for (String fontPath : fontCandidates) {
+            try {
+                ClassPathResource fontResource = new ClassPathResource(fontPath);
+                if (!fontResource.exists()) continue;
+
+                byte[] fontBytes = fontResource.getInputStream().readAllBytes();
+                String base64Font = java.util.Base64.getEncoder().encodeToString(fontBytes);
+                String fontName = fontPath.contains("Nanum") ? "NanumGothic" : "MalgunGothic";
+
+                String fontStyle = "<style>\n" +
+                        "@font-face {\n" +
+                        "  font-family: '" + fontName + "';\n" +
+                        "  src: url('data:font/truetype;base64," + base64Font + "') format('truetype');\n" +
+                        "  font-weight: normal;\n" +
+                        "  font-style: normal;\n" +
+                        "}\n" +
+                        "body, * { font-family: '" + fontName + "', sans-serif !important; }\n" +
+                        "</style>\n";
+
+                // <head> 태그 안에 주입, 없으면 맨 앞에 추가
+                if (htmlContent.contains("</head>")) {
+                    htmlContent = htmlContent.replace("</head>", fontStyle + "</head>");
+                } else {
+                    htmlContent = fontStyle + htmlContent;
+                }
+
+                log.info("[PDF 폰트 주입] 한글 폰트 base64 주입 완료: {}", fontPath);
+                return htmlContent;
+
+            } catch (Exception e) {
+                log.debug("[PDF 폰트 주입] 폰트 로드 실패: {} - {}", fontPath, e.getMessage());
+            }
+        }
+
+        log.warn("[PDF 폰트 주입] 한글 폰트를 찾지 못했습니다. src/main/resources/fonts/ 에 NanumGothic.ttf 를 추가하세요.");
+        return htmlContent;
     }
 
     /**
