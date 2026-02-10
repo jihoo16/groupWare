@@ -55,7 +55,7 @@ async function loadReportData(documentIdx) {
         console.log('보고서 데이터:', data);
 
         // 데이터 화면에 표시
-        displayReportData(data);
+        displayReportData(data, documentIdx);
 
         // 로딩 오버레이 숨김
         window.hidePageLoadingOverlay();
@@ -68,7 +68,7 @@ async function loadReportData(documentIdx) {
 }
 
 // 보고서 데이터 화면에 표시
-function displayReportData(data) {
+function displayReportData(data, documentIdx) {
     // 프로젝트명
     const projectNameEl = document.getElementById('projectName');
     if (projectNameEl) {
