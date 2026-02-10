@@ -663,8 +663,8 @@ document.addEventListener('DOMContentLoaded', function() {
             rank: '외부인원'
         };
 
-        // 중복 체크 (이름 기준)
-        if (!selectedParticipants.find(p => p.name === name)) {
+        // 중복 체크 (외부 참석자끼리만 이름 중복 방지)
+        if (!selectedParticipants.find(p => p.id === null && p.name === name)) {
             selectedParticipants.push(participant);
             renderParticipantsList();
         }
@@ -728,6 +728,30 @@ document.addEventListener('DOMContentLoaded', function() {
             }
         });
     }
+
+    // 추가 버튼 클릭 - 입력값 있으면 외부인원으로 추가, 없으면 모달 열기
+    const addParticipantBtn = document.getElementById('addParticipantBtn');
+    if (addParticipantBtn) {
+        addParticipantBtn.addEventListener('click', function() {
+            const name = participantInput ? participantInput.value.trim() : '';
+            if (name) {
+                addExternalParticipant(name);
+                participantInput.value = '';
+                if (employeeDropdown) employeeDropdown.style.display = 'none';
+            } else {
+                openParticipantSelectionModal();
+            }
+        });
+    }
+
+    // 드롭다운 외부 클릭 시 닫기
+    document.addEventListener('click', function(e) {
+        if (employeeDropdown && participantInput) {
+            if (!participantInput.contains(e.target) && !employeeDropdown.contains(e.target)) {
+                employeeDropdown.style.display = 'none';
+            }
+        }
+    });
 
     // 참석자 추가 공통 함수 (직원 선택 모달 열기)
     function openParticipantSelectionModal() {
@@ -1186,7 +1210,7 @@ document.addEventListener('DOMContentLoaded', function() {
                     <td>${nameWithBadge}</td>
                     <td>${participant.department || 'undefined'}</td>
                     <td>
-                        <button type="button" class="btn-delete" data-id="${participant.id}">
+                        <button type="button" class="btn-delete" data-index="${index}">
                             <i class="fas fa-trash"></i> 삭제
                         </button>
                     </td>
@@ -1196,8 +1220,8 @@ document.addEventListener('DOMContentLoaded', function() {
 
             tbody.querySelectorAll('.btn-delete').forEach(btn => {
                 btn.addEventListener('click', function() {
-                    const id = parseInt(this.getAttribute('data-id'));
-                    selectedParticipants = selectedParticipants.filter(p => p.id !== id);
+                    const idx = parseInt(this.getAttribute('data-index'));
+                    selectedParticipants.splice(idx, 1);
                     renderParticipantsList();
                 });
             });

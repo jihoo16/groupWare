@@ -32,7 +32,7 @@ public class CalendarParticipant {
     @Column(name = "event_idx", nullable = false)
     private Long eventIdx;
 
-    @Column(name = "user_idx", nullable = false)
+    @Column(name = "user_idx", nullable = true)
     private Long userIdx;
 
     @Column(name = "user_name", nullable = false, length = 50)

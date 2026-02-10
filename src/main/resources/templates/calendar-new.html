@@ -34,14 +34,16 @@
                                 <button type="button" class="event-type-tab active" data-tab="personal">
                                     <i class="fas fa-user"></i> 개인 일정
                                 </button>
+                                <!-- 팀 일정 탭 - 보류
                                 <button type="button" class="event-type-tab" data-tab="team">
                                     <i class="fas fa-users"></i> 팀 일정
                                 </button>
+                                -->
                             </div>
 
                             <!-- 탭 컨텐츠 영역 -->
                             <div class="tab-content-area">
-                            <!-- 팀 일정 전용 필드 -->
+                            <!-- 팀 일정 전용 필드 - 보류
                             <div class="form-group team-only" style="display: none;">
                                 <label class="form-label">팀 선택 <span class="required">*</span></label>
                                 <button type="button" id="openTeamSelectModalBtn" class="btn-add" style="width: 100%; justify-content: center;">
@@ -50,6 +52,7 @@
                                 </button>
                                 <div id="selectedTeamTagContainer" class="participants-list" style="margin-top: 12px;"></div>
                             </div>
+                            -->
 
                             <div class="form-group">
                                 <label class="form-label">일정 제목 <span class="required">*</span></label>
@@ -123,6 +126,15 @@
                             <h2 class="section-title">참석자</h2>
 
                             <div class="form-group">
+                                <div class="participants-input-wrapper">
+                                    <div class="participants-input">
+                                        <input type="text" id="participantInput" class="form-input" placeholder="직원 이름 검색 또는 외부인원 입력 후 Enter" autocomplete="off">
+                                        <button type="button" id="addParticipantBtn" class="btn-add">
+                                            <i class="fas fa-user-plus"></i> 추가
+                                        </button>
+                                    </div>
+                                    <div id="employeeDropdown" class="employee-dropdown" style="display: none;"></div>
+                                </div>
                                 <div id="participantsList" class="participants-list">
                                     <!-- JavaScript에서 동적으로 렌더링됨 -->
                                 </div>
@@ -181,7 +193,7 @@
         </main>
     </div>
 
-    <!-- 팀 선택 모달 -->
+    <!-- 팀 선택 모달 - 보류
     <div id="teamSelectModal" class="modal">
         <div class="modal-content">
             <div class="modal-header">
@@ -192,7 +204,6 @@
             </div>
             <div class="modal-body">
                 <div class="team-select-list" id="teamSelectList">
-                    <!-- JavaScript로 동적 생성 -->
                 </div>
             </div>
             <div class="modal-footer">
@@ -200,6 +211,7 @@
             </div>
         </div>
     </div>
+    -->
 
     <!-- 직원 선택 모달 -->
     <div id="employeeSelectionModal" class="modal">

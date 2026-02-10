@@ -351,25 +351,34 @@ document.addEventListener('DOMContentLoaded', function() {
                 if (schedule.participants && Array.isArray(schedule.participants)) {
                     selectedParticipants = schedule.participants.map(p => {
                         const participantName = typeof p === 'string' ? p : (p.userName || p.name || '');
+                        const userIdx = typeof p === 'object' ? p.userIdx : null;
 
-                        // allUsers 배열에서 참석자 정보 찾기
-                        const user = allUsers.find(u => u.empName === participantName);
-
-                        if (user) {
+                        // userIdx가 있으면 내부 직원 → ID로 정확히 매칭
+                        if (userIdx !== null && userIdx !== undefined) {
+                            const user = allUsers.find(u => u.idx === userIdx);
+                            if (user) {
+                                return {
+                                    id: user.idx,
+                                    name: user.empName,
+                                    department: user.empDeptName || '미지정',
+                                    rank: user.empPositionName || '미지정'
+                                };
+                            }
+                            // allUsers에 없더라도 내부 직원으로 처리
                             return {
-                                id: user.idx,
-                                name: user.empName,
-                                department: user.empDeptName || '미지정',
-                                rank: user.empPositionName || '미지정'
+                                id: userIdx,
+                                name: participantName,
+                                department: '미지정',
+                                rank: '미지정'
                             };
                         }
 
-                        // 찾지 못한 경우 기본값
+                        // userIdx === null → 외부 참석자
                         return {
-                            id: Date.now() + Math.random(), // 임시 ID
+                            id: null,
                             name: participantName,
-                            department: '미지정',
-                            rank: '미지정'
+                            department: '외부',
+                            rank: '외부인원'
                         };
                     }).filter(p => p.name !== '');
                 } else {
@@ -438,11 +447,111 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     });
 
-    // Open employee selection modal
+    // 참석자 입력 필드 및 드롭다운 초기화
+    const participantInput = document.getElementById('participantInput');
+    const employeeDropdown = document.getElementById('employeeDropdown');
+    let filteredEmployees = [];
+    let selectedDropdownIndex = -1;
+
+    // 외부인원 추가 함수
+    function addExternalParticipant(name) {
+        if (!name || !name.trim()) return;
+        // 외부 참석자끼리만 이름 중복 방지
+        if (selectedParticipants.find(p => p.id === null && p.name === name.trim())) return;
+        selectedParticipants.push({ id: null, name: name.trim(), department: '외부', rank: '외부인원' });
+        renderParticipantsList();
+    }
+
+    // 직원으로 참석자 추가
+    function addParticipantByEmployee(emp) {
+        if (selectedParticipants.find(p => p.id === emp.idx)) return;
+        selectedParticipants.push({
+            id: emp.idx, name: emp.empName,
+            department: emp.empDeptName || '미지정', rank: emp.empPositionName || '미지정'
+        });
+        renderParticipantsList();
+    }
+
+    // 드롭다운 표시
+    function showEmployeeDropdown(searchText) {
+        if (!employeeDropdown || !searchText) {
+            if (employeeDropdown) employeeDropdown.style.display = 'none';
+            return;
+        }
+        filteredEmployees = allUsers.filter(u => {
+            if (selectedParticipants.some(p => p.id === u.idx)) return false;
+            const q = searchText.toLowerCase();
+            return (u.empName || '').toLowerCase().includes(q) ||
+                   (u.empDeptName || '').toLowerCase().includes(q) ||
+                   (u.empPositionName || '').toLowerCase().includes(q);
+        }).slice(0, 10);
+
+        if (filteredEmployees.length === 0) {
+            employeeDropdown.style.display = 'none';
+            return;
+        }
+        selectedDropdownIndex = -1;
+        employeeDropdown.innerHTML = '';
+        filteredEmployees.forEach((emp, i) => {
+            const item = document.createElement('div');
+            item.className = 'employee-dropdown-item';
+            item.innerHTML = `
+                <div class="employee-avatar">${(emp.empName || '?')[0]}</div>
+                <div class="employee-info">
+                    <div class="employee-name">${emp.empName || ''}</div>
+                    <div class="employee-detail">${emp.empDeptName || ''} · ${emp.empPositionName || ''}</div>
+                </div>`;
+            item.addEventListener('click', () => {
+                addParticipantByEmployee(emp);
+                participantInput.value = '';
+                employeeDropdown.style.display = 'none';
+            });
+            item.addEventListener('mouseenter', () => { selectedDropdownIndex = i; });
+            employeeDropdown.appendChild(item);
+        });
+        employeeDropdown.style.display = 'block';
+    }
+
+    // 입력 이벤트
+    if (participantInput) {
+        participantInput.addEventListener('input', e => showEmployeeDropdown(e.target.value.trim()));
+        participantInput.addEventListener('keydown', e => {
+            const open = employeeDropdown && employeeDropdown.style.display === 'block' && filteredEmployees.length > 0;
+            if (e.key === 'Enter') {
+                e.preventDefault();
+                if (open && selectedDropdownIndex >= 0) {
+                    addParticipantByEmployee(filteredEmployees[selectedDropdownIndex]);
+                } else {
+                    addExternalParticipant(participantInput.value.trim());
+                }
+                participantInput.value = '';
+                if (employeeDropdown) employeeDropdown.style.display = 'none';
+            } else if (e.key === 'Escape') {
+                if (employeeDropdown) employeeDropdown.style.display = 'none';
+            }
+        });
+    }
+
+    // 추가 버튼: 입력값 있으면 외부인원, 없으면 직원 선택 모달
     addParticipantBtn.addEventListener('click', function() {
-        console.log('Opening employee selection modal');
-        tempSelectedEmployees = [...selectedParticipants];
-        openEmployeeSelectionModal();
+        const name = participantInput ? participantInput.value.trim() : '';
+        if (name) {
+            addExternalParticipant(name);
+            participantInput.value = '';
+            if (employeeDropdown) employeeDropdown.style.display = 'none';
+        } else {
+            tempSelectedEmployees = [...selectedParticipants];
+            openEmployeeSelectionModal();
+        }
+    });
+
+    // 드롭다운 외부 클릭 시 닫기
+    document.addEventListener('click', e => {
+        if (employeeDropdown && participantInput) {
+            if (!participantInput.contains(e.target) && !employeeDropdown.contains(e.target)) {
+                employeeDropdown.style.display = 'none';
+            }
+        }
     });
 
     // Employee selection modal functions
@@ -870,14 +979,19 @@ document.addEventListener('DOMContentLoaded', function() {
         } else {
             // 참석자 목록 표시
             selectedParticipants.forEach((participant, index) => {
-                console.log(`Participant ${index}:`, participant);
+                const isExternal = participant.id === null;
+                const nameCell = isExternal
+                    ? `${participant.name || ''} <span class="external-badge">외부</span>`
+                    : `${participant.name || ''}`;
+                const deptCell = isExternal ? '' : (participant.department || '미지정');
+
                 const row = document.createElement('tr');
                 row.innerHTML = `
                     <td>${index + 1}</td>
-                    <td>${participant.name || 'undefined'}</td>
-                    <td>${participant.department || 'undefined'}</td>
+                    <td>${nameCell}</td>
+                    <td>${deptCell}</td>
                     <td>
-                        <button type="button" class="btn-delete" data-id="${participant.id}">
+                        <button type="button" class="btn-delete" data-index="${index}">
                             <i class="fas fa-trash"></i> 삭제
                         </button>
                     </td>
@@ -885,11 +999,11 @@ document.addEventListener('DOMContentLoaded', function() {
                 tbody.appendChild(row);
             });
 
-            // 삭제 버튼 이벤트
+            // 삭제 버튼 이벤트 (index 기반 - 외부 참석자 id=null도 삭제 가능)
             tbody.querySelectorAll('.btn-delete').forEach(btn => {
                 btn.addEventListener('click', function() {
-                    const id = parseInt(this.getAttribute('data-id'));
-                    selectedParticipants = selectedParticipants.filter(p => p.id !== id);
+                    const idx = parseInt(this.getAttribute('data-index'));
+                    selectedParticipants.splice(idx, 1);
                     renderParticipantsList();
                 });
             });

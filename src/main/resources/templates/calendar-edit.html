@@ -85,11 +85,15 @@
                             <h2 class="section-title">참석자</h2>
 
                             <div class="form-group">
-                                <!-- 테이블에 참석자 추가 버튼이 있으므로 이 버튼은 숨김 (JavaScript에서 참조용으로만 사용) -->
-                                <button type="button" id="addParticipantBtn" class="btn-add" style="display: none;">
-                                    <i class="fas fa-users"></i>
-                                    직원 선택
-                                </button>
+                                <div class="participants-input-wrapper">
+                                    <div class="participants-input">
+                                        <input type="text" id="participantInput" class="form-input" placeholder="직원 이름 검색 또는 외부인원 입력 후 Enter" autocomplete="off">
+                                        <button type="button" id="addParticipantBtn" class="btn-add">
+                                            <i class="fas fa-user-plus"></i> 추가
+                                        </button>
+                                    </div>
+                                    <div id="employeeDropdown" class="employee-dropdown" style="display: none;"></div>
+                                </div>
                                 <div id="participantsList" class="participants-list">
                                     <!-- 초기 로딩 UI -->
                                     <div class="participants-loading">

@@ -101,22 +101,15 @@ public class CalendarEventService {
                 Long userIdx = participantDto.getUserIdx();
                 String userName = participantDto.getUserName();
 
-                // userIdx가 없으면 userName으로 조회
-                if (userIdx == null && userName != null && !userName.trim().isEmpty()) {
-                    List<User> users = userRepository.findByEmpNameAndDeletedAtIsNull(userName.trim());
-                    if (!users.isEmpty()) {
-                        userIdx = users.get(0).getIdx();
-                        log.debug("참석자 '{}' -> userIdx: {}", userName, userIdx);
-                    } else {
-                        log.warn("참석자 '{}'에 해당하는 사용자를 찾을 수 없습니다. 참석자 추가를 건너뜁니다.", userName);
-                        continue; // 사용자를 찾을 수 없으면 건너뛰기
-                    }
+                // userName이 없으면 건너뛰기
+                if (userName == null || userName.trim().isEmpty()) {
+                    log.warn("참석자 이름이 없습니다. 건너뜁니다.");
+                    continue;
                 }
 
-                // userIdx가 여전히 null이면 건너뛰기
+                // userIdx가 null이면 외부 참석자 - 이름 조회 없이 null 그대로 저장
                 if (userIdx == null) {
-                    log.warn("참석자 userIdx가 null입니다. 참석자 추가를 건너뜁니다.");
-                    continue;
+                    log.debug("외부 참석자 '{}' 저장 (userIdx=null)", userName);
                 }
 
                 CalendarParticipant participant = CalendarParticipant.builder()
@@ -178,22 +171,15 @@ public class CalendarEventService {
                 Long userIdx = participantDto.getUserIdx();
                 String userName = participantDto.getUserName();
 
-                // userIdx가 없으면 userName으로 조회
-                if (userIdx == null && userName != null && !userName.trim().isEmpty()) {
-                    List<User> users = userRepository.findByEmpNameAndDeletedAtIsNull(userName.trim());
-                    if (!users.isEmpty()) {
-                        userIdx = users.get(0).getIdx();
-                        log.debug("참석자 '{}' -> userIdx: {}", userName, userIdx);
-                    } else {
-                        log.warn("참석자 '{}'에 해당하는 사용자를 찾을 수 없습니다. 참석자 추가를 건너뜁니다.", userName);
-                        continue; // 사용자를 찾을 수 없으면 건너뛰기
-                    }
+                // userName이 없으면 건너뛰기
+                if (userName == null || userName.trim().isEmpty()) {
+                    log.warn("참석자 이름이 없습니다. 건너뜁니다.");
+                    continue;
                 }
 
-                // userIdx가 여전히 null이면 건너뛰기
+                // userIdx가 null이면 외부 참석자 - 이름 조회 없이 null 그대로 저장
                 if (userIdx == null) {
-                    log.warn("참석자 userIdx가 null입니다. 참석자 추가를 건너뜁니다.");
-                    continue;
+                    log.debug("외부 참석자 '{}' 저장 (userIdx=null)", userName);
                 }
 
                 CalendarParticipant participant = CalendarParticipant.builder()
