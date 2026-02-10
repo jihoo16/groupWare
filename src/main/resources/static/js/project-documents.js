@@ -409,7 +409,8 @@ document.addEventListener('DOMContentLoaded', function() {
             'WEEKLY_REPORT': '프로젝트 주간업무보고',
             'RECEIPT_MEETING': '연구비증빙-회의록',
             'BUSINESS_TRIP': '연구비증빙-출장',
-            'MEETING_MINUTES': '연구비증빙-회의록'
+            'MEETING_MINUTES': '연구비증빙-회의록',
+            'RECEIPT_OVERTIME': '연구비증빙(야근식대)'
         };
 
         // allDocuments 배열을 정렬
@@ -486,7 +487,8 @@ document.addEventListener('DOMContentLoaded', function() {
             'BUSINESS_TRIP': 'receipt-trip',
             '연구비증빙-출장+회의': 'receipt-trip-meeting',
             'MEETING_MINUTES': 'receipt-meeting',
-            '연구비증빙(야근식대)': 'receipt-overtime'
+            '연구비증빙(야근식대)': 'receipt-overtime',
+            'RECEIPT_OVERTIME': 'receipt-overtime'
         };
         return categoryMap[documentType] || 'unknown';
     }
@@ -502,7 +504,8 @@ document.addEventListener('DOMContentLoaded', function() {
             'BUSINESS_TRIP': 'fa-plane',
             '연구비증빙-출장+회의': 'fa-suitcase',
             'MEETING_MINUTES': 'fa-utensils',
-            '연구비증빙(야근식대)': 'fa-moon'
+            '연구비증빙(야근식대)': 'fa-moon',
+            'RECEIPT_OVERTIME': 'fa-moon'
         };
         return iconMap[documentType] || 'fa-file-alt';
     }
@@ -659,7 +662,8 @@ document.addEventListener('DOMContentLoaded', function() {
             'WEEKLY_REPORT': '프로젝트 주간업무보고',
             'RECEIPT_MEETING': '연구비증빙-회의록',
             'BUSINESS_TRIP': '연구비증빙-출장',
-            'MEETING_MINUTES': '연구비증빙-회의록'
+            'MEETING_MINUTES': '연구비증빙-회의록',
+            'RECEIPT_OVERTIME': '연구비증빙(야근식대)'
         };
         const documentType = displayNameMap[doc.documentType] || doc.documentType || '-';
         const highlightedDocType = keyword ? searchUtils.highlightText(documentType, keyword) : documentType;
@@ -735,6 +739,7 @@ document.addEventListener('DOMContentLoaded', function() {
             'BUSINESS_TRIP': '/approval/receipt-trip',
             '연구비증빙-출장+회의': '/approval/receipt-trip-meeting',
             'MEETING_MINUTES': '/approval/receipt-meeting',
+            'RECEIPT_OVERTIME': '/approval/receipt-overtime',
             '연구비증빙(야근식대)': '/approval/receipt-overtime'
         };
 

@@ -700,15 +700,26 @@ function displayExpenseReports(reports) {
     listContainer.innerHTML = reports.slice(0, 5).map(doc => `
         <div class="document-item" onclick="goToDocument('${doc.documentType}', ${doc.idx})">
             <div class="document-item-icon">
-                <i class="fas fa-receipt"></i>
+                <i class="fas ${getExpenseDocIcon(doc.documentType)}"></i>
             </div>
             <div class="document-item-info">
                 <div class="document-item-title">${doc.title || '제목 없음'}</div>
                 <div class="document-item-meta">${getDocumentTypeLabel(doc.documentType)} · ${doc.drafterName || '-'} · ${formatDocumentDate(doc.createdAt)}</div>
             </div>
-            ${doc.amount != null ? `<div class="document-item-amount">${Number(doc.amount).toLocaleString()}원</div>` : ''}
         </div>
     `).join('');
+}
+
+/**
+ * 연구비증빙 문서 유형별 아이콘
+ */
+function getExpenseDocIcon(documentType) {
+    const iconMap = {
+        'RECEIPT_MEETING': 'fa-utensils',
+        'BUSINESS_TRIP': 'fa-plane',
+        'RECEIPT_OVERTIME': 'fa-moon'
+    };
+    return iconMap[documentType] || 'fa-receipt';
 }
 
 /**
@@ -726,7 +737,8 @@ async function goToDocument(documentType, sourceDocumentId) {
         case 'MEETING_MINUTES':
         case 'BUSINESS_TRIP':
         case 'RECEIPT_MEETING':
-            await showWarning('상세 페이지 구현 중입니다.');
+            url = `/approval/receipt-meeting?documentIdx=${sourceDocumentId}`;
+            openWeeklyReportPopup(url);
             return;
         case 'RECEIPT_OVERTIME':
             url = `/approval/receipt-overtime?documentIdx=${sourceDocumentId}`;

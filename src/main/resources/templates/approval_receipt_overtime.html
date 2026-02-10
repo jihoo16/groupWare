@@ -5,6 +5,29 @@
 <!-- 로딩 오버레이 -->
 <div th:replace="~{fragments/loading-overlay :: overlay}"></div>
 
+<!-- 수정 모드 진입 시 즉시 로딩 오버레이 표시 & 콘텐츠 숨김 -->
+<script>
+    (function() {
+        var params = new URLSearchParams(window.location.search);
+        if (params.get('documentIdx')) {
+            var overlay = document.getElementById('pageLoadingOverlay');
+            if (overlay) {
+                overlay.style.display = 'flex';
+                overlay.style.opacity = '1';
+            }
+            document.documentElement.classList.add('edit-mode-loading');
+        }
+    })();
+</script>
+<style>
+    html.edit-mode-loading .container {
+        visibility: hidden;
+    }
+    html.edit-mode-loading .container.data-loaded {
+        visibility: visible;
+    }
+</style>
+
     <div class="container">
         <!-- 좌측 네비게이션 바 -->
         <div th:replace="~{fragments/sidebar :: sidebar('receipt-overtime')}"></div>

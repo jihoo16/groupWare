@@ -147,6 +147,10 @@ document.addEventListener('DOMContentLoaded', async function() {
 
             if (!data) {
                 // Error already handled by fetchWithErrorHandling (404, 403, 500)
+                const container = document.querySelector('.container');
+                if (container) container.classList.add('data-loaded');
+                document.documentElement.classList.remove('edit-mode-loading');
+                window.hidePageLoadingOverlay();
                 return;
             }
 
@@ -374,6 +378,10 @@ document.addEventListener('DOMContentLoaded', async function() {
         } catch (error) {
             console.error('기존 데이터 로드 실패:', error);
             showError('야근식대 데이터를 불러오는데 실패했습니다.');
+            // 에러 시에도 콘텐츠 표시
+            const container = document.querySelector('.container');
+            if (container) container.classList.add('data-loaded');
+            document.documentElement.classList.remove('edit-mode-loading');
             window.hidePageLoadingOverlay();
         }
     }
@@ -2673,8 +2681,11 @@ document.addEventListener('DOMContentLoaded', async function() {
         const urlParams = new URLSearchParams(window.location.search);
         const documentIdx = urlParams.get('documentIdx');
         if (documentIdx) {
-            window.showPageLoadingOverlay();
             await loadExistingData(documentIdx);
+            // 데이터 로드 완료 후 콘텐츠 표시
+            const container = document.querySelector('.container');
+            if (container) container.classList.add('data-loaded');
+            document.documentElement.classList.remove('edit-mode-loading');
         } else {
             // 신규 작성 모드 - 로딩 오버레이 숨김
             window.hidePageLoadingOverlay();

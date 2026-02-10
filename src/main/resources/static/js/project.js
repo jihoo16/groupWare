@@ -511,11 +511,7 @@ document.addEventListener('DOMContentLoaded', function() {
                             <span class="progress-text-small">${project.progress}%</span>
                         </div>
                     </td>
-                    <td class="text-center action-cell">
-                        <button class="btn btn-sm btn-primary" onclick="event.stopPropagation(); editProject(${project.projectId})" title="수정">
-                            <i class="fas fa-edit"></i>
-                        </button>
-                    </td>
+
                 `;
 
                 // 행 클릭 이벤트 추가 (상세보기)
@@ -706,11 +702,6 @@ document.addEventListener('DOMContentLoaded', function() {
         if (rate >= 50) return 'achievement-medium';
         return 'achievement-low';
     }
-
-    // 프로젝트 수정 (전역 함수)
-    window.editProject = function(projectId) {
-        window.location.href = `/project/edit/${projectId}`;
-    };
 
     // 현재 상세보기 중인 프로젝트 수정 (전역 함수)
     window.editCurrentProject = function() {
