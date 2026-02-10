@@ -32,6 +32,7 @@ public class WebMvcConfig implements WebMvcConfigurer {
                         "/api/auth/**",     // 인증 API
                         "/api/health",      // Health check API
                         "/api/users",       // 사용자 목록 API (개발용)
+                        "/api/vacation/generate-all-schedules", // 연차 초기 데이터 생성 (일회성)
                         "/css/**",          // CSS 정적 리소스
                         "/js/**",           // JavaScript 정적 리소스
                         "/images/**",       // 이미지 정적 리소스
