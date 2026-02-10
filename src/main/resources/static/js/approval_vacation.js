@@ -2659,6 +2659,9 @@ document.addEventListener('DOMContentLoaded', function() {
             vacationPeriods = [];
             currentSelectionDays = 0;
 
+            // vacationPeriods 초기화 후 requestedDates 재계산 → 캘린더 신청됨 표시 제거
+            recalculateRequestedDates();
+
             // 경조사 라디오 버튼 초기화
             const gyeongjoRadios = document.querySelectorAll('input[name="gyeongjo_type"]');
             gyeongjoRadios.forEach(radio => radio.checked = false);
@@ -3124,6 +3127,17 @@ document.addEventListener('DOMContentLoaded', function() {
                     const mergedStartStr = mergedStart.toISOString().split('T')[0];
                     const mergedEndStr = mergedEnd.toISOString().split('T')[0];
 
+                    // 기존 기간의 날짜들을 requestedDates에서 임시 제거 (정확한 일수 계산을 위해)
+                    const tempRemovedDates = [];
+                    for (let d = new Date(existingStart); d <= existingEnd; d.setDate(d.getDate() + 1)) {
+                        const dateStr = formatDate(d);
+                        const index = requestedDates.indexOf(dateStr);
+                        if (index > -1) {
+                            requestedDates.splice(index, 1);
+                            tempRemovedDates.push(dateStr);
+                        }
+                    }
+
                     // splitIntoBusinessDayPeriods로 영업일 계산
                     const tempPeriods = splitIntoBusinessDayPeriods(
                         mergedStartStr,
@@ -3133,6 +3147,9 @@ document.addEventListener('DOMContentLoaded', function() {
 
                     // 분리된 기간들의 총 일수 합계
                     const mergedDays = tempPeriods.reduce((sum, p) => sum + p.days, 0);
+
+                    // 제거했던 날짜들 복원 (다음 연산을 위해)
+                    requestedDates.push(...tempRemovedDates);
 
                     // 기존 기간을 병합된 기간으로 교체
                     vacationPeriods[i] = {
