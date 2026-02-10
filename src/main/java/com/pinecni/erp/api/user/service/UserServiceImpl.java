@@ -120,13 +120,13 @@ public class UserServiceImpl implements UserService {
     public UserDTO createUser(UserCreateDTO createDTO, Long createdUserIdx) {
         log.debug("createUser() called with empId: {}", createDTO.getEmpId());
 
-        // 사번 중복 확인
-        if (userRepository.findByEmpId(createDTO.getEmpId()).isPresent()) {
+        // 사번 중복 확인 (삭제된 사용자 제외)
+        if (userRepository.findActiveByEmpId(createDTO.getEmpId()).isPresent()) {
             throw new IllegalArgumentException("이미 존재하는 사번입니다: " + createDTO.getEmpId());
         }
 
-        // 이메일 중복 확인
-        if (userRepository.findByEmpEmail(createDTO.getEmpEmail()).isPresent()) {
+        // 이메일 중복 확인 (삭제된 사용자 제외)
+        if (userRepository.findActiveByEmpEmail(createDTO.getEmpEmail()).isPresent()) {
             throw new IllegalArgumentException("이미 존재하는 이메일입니다: " + createDTO.getEmpEmail());
         }
 
@@ -172,9 +172,9 @@ public class UserServiceImpl implements UserService {
         User user = userRepository.findById(idx)
                 .orElseThrow(() -> new IllegalArgumentException("사용자를 찾을 수 없습니다. idx: " + idx));
 
-        // 이메일 변경 시 중복 확인
+        // 이메일 변경 시 중복 확인 (삭제된 사용자 제외)
         if (updateDTO.getEmpEmail() != null && !updateDTO.getEmpEmail().equals(user.getEmpEmail())) {
-            if (userRepository.findByEmpEmail(updateDTO.getEmpEmail()).isPresent()) {
+            if (userRepository.findActiveByEmpEmail(updateDTO.getEmpEmail()).isPresent()) {
                 throw new IllegalArgumentException("이미 존재하는 이메일입니다: " + updateDTO.getEmpEmail());
             }
         }
@@ -249,12 +249,12 @@ public class UserServiceImpl implements UserService {
 
     @Override
     public boolean isEmpIdDuplicate(String empId) {
-        return userRepository.findByEmpId(empId).isPresent();
+        return userRepository.findActiveByEmpId(empId).isPresent();
     }
 
     @Override
     public boolean isEmailDuplicate(String empEmail) {
-        return userRepository.findByEmpEmail(empEmail).isPresent();
+        return userRepository.findActiveByEmpEmail(empEmail).isPresent();
     }
 
     @Override

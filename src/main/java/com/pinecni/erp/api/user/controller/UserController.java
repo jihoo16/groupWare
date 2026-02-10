@@ -47,8 +47,11 @@ public class UserController {
     }
 
     /**
-     * 현재 로그인한 사용자 프로필 업데이트 (이름, 이메일, 연락처, 주소만 수정 가능)
+     * 현재 로그인한 사용자 프로필 업데이트
      * PUT /api/users/me
+     *
+     * 최초 로그인 시: 모든 기본 정보 업데이트 가능 (생년월일, 성별, 주소, 비상연락처 등)
+     * 일반 프로필 수정 시: 이름, 이메일, 연락처, 주소만 수정 가능
      */
     @PutMapping("/me")
     public ResponseEntity<?> updateCurrentUserProfile(
@@ -65,15 +68,36 @@ public class UserController {
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(error);
         }
 
-        // 이름, 이메일, 연락처, 주소만 업데이트 허용 (보안을 위해 나머지 필드는 무시)
-        UserUpdateDTO profileUpdateDTO = new UserUpdateDTO();
-        profileUpdateDTO.setEmpName(updateDTO.getEmpName());
-        profileUpdateDTO.setEmpEmail(updateDTO.getEmpEmail());
-        profileUpdateDTO.setEmpPhone(updateDTO.getEmpPhone());
-        profileUpdateDTO.setEmpAddress(updateDTO.getEmpAddress());
+        // 사용자 정보 조회 (최초 로그인 여부 확인용)
+        UserDTO currentUser = userService.getUserById(currentUserIdx);
+        boolean isFirstLogin = currentUser.getLastLoginDate() == null;
 
-        log.info("프로필 업데이트 요청 - userIdx: {}, empName: {}, empEmail: {}, empPhone: {}, empAddress: {}",
-                currentUserIdx, updateDTO.getEmpName(), updateDTO.getEmpEmail(), updateDTO.getEmpPhone(), updateDTO.getEmpAddress());
+        UserUpdateDTO profileUpdateDTO = new UserUpdateDTO();
+
+        if (isFirstLogin) {
+            // 최초 로그인 시: 모든 기본 정보 업데이트 허용
+            log.info("최초 로그인 프로필 설정 - userIdx: {}", currentUserIdx);
+            profileUpdateDTO.setEmpName(updateDTO.getEmpName());
+            profileUpdateDTO.setEmpEmail(updateDTO.getEmpEmail());
+            profileUpdateDTO.setEmpPhone(updateDTO.getEmpPhone());
+            profileUpdateDTO.setEmpBirth(updateDTO.getEmpBirth());
+            profileUpdateDTO.setEmpGender(updateDTO.getEmpGender());
+            profileUpdateDTO.setEmpAddress(updateDTO.getEmpAddress());
+            profileUpdateDTO.setExternalEmail(updateDTO.getExternalEmail());
+            profileUpdateDTO.setEmergencyContact(updateDTO.getEmergencyContact());
+            profileUpdateDTO.setEmpDept(updateDTO.getEmpDept());
+            profileUpdateDTO.setEmpPosition(updateDTO.getEmpPosition());
+            profileUpdateDTO.setEmpJoinDate(updateDTO.getEmpJoinDate());
+            profileUpdateDTO.setEmpStatus(updateDTO.getEmpStatus());
+            profileUpdateDTO.setEmpWorkType(updateDTO.getEmpWorkType());
+        } else {
+            // 일반 프로필 수정: 제한된 필드만 업데이트 허용
+            log.info("프로필 업데이트 요청 - userIdx: {}", currentUserIdx);
+            profileUpdateDTO.setEmpName(updateDTO.getEmpName());
+            profileUpdateDTO.setEmpEmail(updateDTO.getEmpEmail());
+            profileUpdateDTO.setEmpPhone(updateDTO.getEmpPhone());
+            profileUpdateDTO.setEmpAddress(updateDTO.getEmpAddress());
+        }
 
         try {
             UserDTO updatedUser = userService.updateUser(currentUserIdx, profileUpdateDTO, currentUserIdx);

@@ -15,14 +15,26 @@ import java.util.Optional;
 public interface UserRepository extends JpaRepository<User, Long> {
 
     /**
-     * 사번으로 사용자 조회
+     * 사번으로 사용자 조회 (삭제된 사용자 포함)
      */
     Optional<User> findByEmpId(String empId);
 
     /**
-     * 이메일로 사용자 조회
+     * 이메일로 사용자 조회 (삭제된 사용자 포함)
      */
     Optional<User> findByEmpEmail(String empEmail);
+
+    /**
+     * 사번으로 활성 사용자 조회 (삭제된 사용자 제외)
+     */
+    @Query("SELECT u FROM User u WHERE u.empId = :empId AND u.deletedAt IS NULL")
+    Optional<User> findActiveByEmpId(String empId);
+
+    /**
+     * 이메일로 활성 사용자 조회 (삭제된 사용자 제외)
+     */
+    @Query("SELECT u FROM User u WHERE u.empEmail = :empEmail AND u.deletedAt IS NULL")
+    Optional<User> findActiveByEmpEmail(String empEmail);
 
     /**
      * 삭제되지 않은 사용자 조회 (사번 오름차순)

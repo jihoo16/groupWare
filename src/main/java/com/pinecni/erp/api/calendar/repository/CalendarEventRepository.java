@@ -15,9 +15,10 @@ import java.util.List;
 public interface CalendarEventRepository extends JpaRepository<CalendarEvent, Long> {
 
     /**
-     * 기간별 일정 조회
+     * 기간별 일정 조회 (삭제된 사용자가 생성한 일정 제외)
      */
     @Query("SELECT e FROM CalendarEvent e WHERE e.deletedAt IS NULL " +
+            "AND e.createdUserIdx IN (SELECT u.idx FROM User u WHERE u.deletedAt IS NULL) " +
             "AND ((e.startDate <= :endDate AND e.endDate >= :startDate) " +
             "OR (e.isRecurring = true AND e.recurringEndDate >= :startDate))")
     List<CalendarEvent> findEventsBetween(LocalDate startDate, LocalDate endDate);
@@ -54,12 +55,12 @@ public interface CalendarEventRepository extends JpaRepository<CalendarEvent, Lo
     List<CalendarEvent> findByStatus(String status);
 
     /**
-     * 필터링된 일정 조회 (기간 + 팀 + 일정 유형)
-     * 팀 필터 및 일정 유형 필터 포함
+     * 필터링된 일정 조회 (기간 + 팀 + 일정 유형, 삭제된 사용자가 생성한 일정 제외)
      */
     @Query("SELECT e FROM CalendarEvent e " +
             "WHERE e.deletedAt IS NULL " +
             "AND e.status = 'ACTIVE' " +
+            "AND e.createdUserIdx IN (SELECT u.idx FROM User u WHERE u.deletedAt IS NULL) " +
             "AND ((e.startDate <= :endDate AND e.endDate >= :startDate) " +
             "     OR (e.isRecurring = true AND e.recurringEndDate >= :startDate)) " +
             "AND (e.teamIdx IN :teamIds OR e.teamIdx IS NULL) " +
@@ -79,6 +80,7 @@ public interface CalendarEventRepository extends JpaRepository<CalendarEvent, Lo
             "WHERE e.deletedAt IS NULL " +
             "AND e.status = 'ACTIVE' " +
             "AND e.teamIdx IS NOT NULL " +
+            "AND e.createdUserIdx IN (SELECT u.idx FROM User u WHERE u.deletedAt IS NULL) " +
             "AND ((e.startDate <= :endDate AND e.endDate >= :startDate) " +
             "     OR (e.isRecurring = true AND e.recurringEndDate >= :startDate)) " +
             "GROUP BY e.teamIdx")
@@ -90,6 +92,7 @@ public interface CalendarEventRepository extends JpaRepository<CalendarEvent, Lo
     @Query("SELECT e.eventType, COUNT(e) FROM CalendarEvent e " +
             "WHERE e.deletedAt IS NULL " +
             "AND e.status = 'ACTIVE' " +
+            "AND e.createdUserIdx IN (SELECT u.idx FROM User u WHERE u.deletedAt IS NULL) " +
             "AND ((e.startDate <= :endDate AND e.endDate >= :startDate) " +
             "     OR (e.isRecurring = true AND e.recurringEndDate >= :startDate)) " +
             "GROUP BY e.eventType")
