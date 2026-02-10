@@ -52,6 +52,11 @@ public class ProjectCardDTO {
     private Boolean isActive;
 
     /**
+     * 연결된 프로젝트 삭제 여부
+     */
+    private Boolean projectDeleted;
+
+    /**
      * 등록일
      */
     private LocalDateTime createdAt;

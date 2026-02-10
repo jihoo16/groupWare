@@ -18,6 +18,27 @@ body {
     height: 100vh;
 }
 
+/* 팝업 모드 - 사이드바, 문서양식 사이드바, 돌아가기 버튼 숨김 */
+html.popup-mode .sidebar {
+    display: none !important;
+}
+
+html.popup-mode .template-sidebar {
+    display: none !important;
+}
+
+html.popup-mode .write-layout {
+    grid-template-columns: 1fr !important;
+}
+
+html.popup-mode .main-content {
+    margin-left: 0;
+}
+
+html.popup-mode .btn-secondary[onclick="history.back()"] {
+    display: none !important;
+}
+
 /* 사이드바 스타일 */
 .sidebar {
     width: 60px;

@@ -2322,7 +2322,7 @@ document.addEventListener('DOMContentLoaded', async function() {
                     });
 
                     // 저장 후 목록 페이지로 이동
-                    window.location.href = '/project/documents';
+                    popupAwareRedirect('/project/documents');
                 } else {
                     let errorMessage = '회의록 저장에 실패했습니다.';
                     try {
@@ -4314,7 +4314,7 @@ document.addEventListener('DOMContentLoaded', async function() {
                         showConfirmButton: false,
                         timerProgressBar: true
                     });
-                    window.location.href = '/project/documents';
+                    popupAwareRedirect('/project/documents');
                     return;
                 }
 

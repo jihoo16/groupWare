@@ -409,13 +409,26 @@ public class ReceiptOvertimeServiceImpl implements ReceiptOvertimeService {
                 }
             }
 
-            // 5. ApprovalDocument 제목 업데이트
-            if (entity.getDocumentIdx() != null) {
-                approvalDocumentRepository.findById(entity.getDocumentIdx()).ifPresent(approvalDocument -> {
-                    String title = "연구비증빙 야근식대";
-                    if (updateDTO.getDocumentTitle() != null && !updateDTO.getDocumentTitle().isEmpty()) {
-                        title = "연구비증빙 야근식대 - " + updateDTO.getDocumentTitle();
+            // 5. ApprovalDocument 제목 업데이트 (생성 시와 동일한 형식: "프로젝트명 (카드번호) - 날짜/금액원")
+            final ReceiptOvertime savedEntity = entity;
+            if (savedEntity.getDocumentIdx() != null) {
+                approvalDocumentRepository.findById(savedEntity.getDocumentIdx()).ifPresent(approvalDocument -> {
+                    String projectName = savedEntity.getProjectIdx() != null ? savedEntity.getProjectIdx().getProjectName() : "";
+                    String cardNumber = "";
+                    if (savedEntity.getCardIdx() != null) {
+                        ProjectCard card = projectCardRepository.findById(savedEntity.getCardIdx()).orElse(null);
+                        if (card != null) {
+                            cardNumber = card.getCardLastDigits() != null ? card.getCardLastDigits() : "";
+                        }
                     }
+                    String dateStr = updateDTO.getApprovalDate() != null
+                            ? updateDTO.getApprovalDate().format(DateTimeFormatter.ofPattern("yyyy-MM-dd"))
+                            : "";
+                    String amountStr = updateDTO.getTotalAmount() != null
+                            ? String.format("%,d", updateDTO.getTotalAmount().longValue())
+                            : "0";
+                    String title = String.format("%s (%s) - %s/%s원", projectName, cardNumber, dateStr, amountStr);
+
                     approvalDocument.setTitle(title);
                     approvalDocument.setContent(updateDTO.getDocumentContent());
                     approvalDocument.setUpdatedUserIdx(currentUserIdx);

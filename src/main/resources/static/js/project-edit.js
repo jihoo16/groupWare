@@ -881,12 +881,11 @@
         cardListData.forEach(card => {
             const item = document.createElement('div');
             item.className = 'card-item';
-            const displayName = card.name ? `${card.name} (${card.company})` : card.company;
             item.innerHTML = `
                 <div class="card-item-info">
                     <i class="fas fa-credit-card"></i>
                     <div class="card-item-details">
-                        <div class="card-company">${displayName}</div>
+                        <div class="card-company">${card.company} / ${card.name}</div>
                         <div class="card-number">**** **** **** ${card.number}</div>
                     </div>
                 </div>

@@ -2173,7 +2173,7 @@ document.addEventListener('DOMContentLoaded', async function() {
                     showSuccess('출장 정보가 저장되었습니다.');
                     console.log('저장 결과:', result);
                     // 저장 후 목록 페이지로 이동
-                    window.location.href = '/project/documents';
+                    popupAwareRedirect('/project/documents');
                 } else {
                     let errorMessage = '출장 저장에 실패했습니다.';
                     try {
@@ -3195,7 +3195,7 @@ document.addEventListener('DOMContentLoaded', async function() {
 
                 if (response.ok) {
                     showSuccess('출장 정보가 삭제되었습니다.');
-                    window.location.href = '/project/documents';
+                    popupAwareRedirect('/project/documents');
                 } else {
                     showError('출장 삭제에 실패했습니다.');
                 }

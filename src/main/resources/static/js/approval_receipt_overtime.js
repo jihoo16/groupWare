@@ -442,7 +442,7 @@ document.addEventListener('DOMContentLoaded', async function() {
             if (response.ok) {
                 showSuccess('야근식대가 삭제되었습니다.');
                 setTimeout(() => {
-                    window.location.href = '/project/documents?tab=receipt-overtime';
+                    popupAwareRedirect('/project/documents?tab=receipt-overtime');
                 }, 1500);
             } else {
                 const error = await response.json();
@@ -1976,7 +1976,7 @@ document.addEventListener('DOMContentLoaded', async function() {
                         : '야근식대가 저장되었습니다.';
                     showSuccess(successMessage);
                     setTimeout(() => {
-                        window.location.href = '/project/documents';
+                        popupAwareRedirect('/project/documents');
                     }, 2000);
                 } else {
                     const error = await response.json();

@@ -1,5 +1,23 @@
 // 공통 JavaScript - 모든 페이지에서 사용
 
+// 팝업 감지 - 사이드바 숨김 (window.opener가 있으면 팝업으로 열린 것)
+if (window.opener) {
+    document.documentElement.classList.add('popup-mode');
+}
+
+/**
+ * 팝업 모드 대응 리다이렉트
+ * 팝업이면 부모 창 새로고침 후 팝업 닫기, 일반이면 해당 URL로 이동
+ */
+window.popupAwareRedirect = function(fallbackUrl) {
+    if (window.opener && !window.opener.closed) {
+        window.opener.location.reload();
+        window.close();
+    } else {
+        window.location.href = fallbackUrl;
+    }
+};
+
 document.addEventListener('DOMContentLoaded', function() {
     const sidebar = document.querySelector('.sidebar');
     const menuParents = document.querySelectorAll('.menu-parent');
