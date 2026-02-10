@@ -442,7 +442,7 @@ document.addEventListener('DOMContentLoaded', async function() {
             if (response.ok) {
                 showSuccess('야근식대가 삭제되었습니다.');
                 setTimeout(() => {
-                    popupAwareRedirect('/project/documents?tab=receipt-overtime');
+                    popupAwareRedirect('/project/documents');
                 }, 1500);
             } else {
                 const error = await response.json();
