@@ -464,19 +464,22 @@ function openScheduleModal(scheduleIdx) {
     // 설명 표시
     document.getElementById('detailDescription').textContent = schedule.eventDescription || '-';
 
-    // 알림 표시
-    let notificationText = '-';
-    if (schedule.notification) {
-        const minutes = schedule.notificationTime || 10;
-        if (minutes >= 60) {
-            notificationText = `${minutes / 60}시간 전`;
+    // 알림 표시 (요소가 존재하는 경우만)
+    const detailNotificationElement = document.getElementById('detailNotification');
+    if (detailNotificationElement) {
+        let notificationText = '-';
+        if (schedule.notification) {
+            const minutes = schedule.notificationTime || 10;
+            if (minutes >= 60) {
+                notificationText = `${minutes / 60}시간 전`;
+            } else {
+                notificationText = `${minutes}분 전`;
+            }
         } else {
-            notificationText = `${minutes}분 전`;
+            notificationText = '알림 없음';
         }
-    } else {
-        notificationText = '알림 없음';
+        detailNotificationElement.textContent = notificationText;
     }
-    document.getElementById('detailNotification').textContent = notificationText;
 
     // 모달 표시
     document.getElementById('scheduleDetailModal').classList.add('show');
