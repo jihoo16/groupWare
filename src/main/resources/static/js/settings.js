@@ -114,14 +114,13 @@ document.addEventListener('DOMContentLoaded', function() {
     const updateProfileBtn = document.getElementById('updateProfileBtn');
     if (updateProfileBtn) {
         updateProfileBtn.addEventListener('click', async function() {
-            const userName = document.getElementById('userName')?.value;
             const userEmail = document.getElementById('userEmail')?.value;
             const userPhone = document.getElementById('userPhone')?.value;
             const userAddress = document.getElementById('userAddress')?.value;
 
             // 필드 검증
-            if (!userName || !userEmail || !userPhone) {
-                await showWarning('이름, 이메일, 연락처는 필수 항목입니다.');
+            if (!userEmail || !userPhone) {
+                await showWarning('이메일, 연락처는 필수 항목입니다.');
                 return;
             }
 
@@ -163,7 +162,6 @@ document.addEventListener('DOMContentLoaded', function() {
                         'Content-Type': 'application/json'
                     },
                     body: JSON.stringify({
-                        empName: userName,
                         empEmail: userEmail,
                         empPhone: userPhone,
                         empAddress: userAddress
@@ -377,6 +375,7 @@ function initSignatureCanvas() {
     // 저장된 서명 불러오기
     loadSavedSignature();
 }
+*/
 
 // 역량관리 데이터 구조
 const competencyData = {
@@ -395,18 +394,18 @@ function initCompetencyManagement() {
     // 저장된 데이터 불러오기
     loadCompetencyData();
 
-    // 추가 버튼 이벤트 리스너
-    const addButtons = document.querySelectorAll('.btn-add');
-    addButtons.forEach(btn => {
-        btn.addEventListener('click', async function() {
-            const type = this.getAttribute('data-type');
-            // 역량관리 기능은 추후 구현 예정
-            Swal.fire({
-                icon: 'info',
-                title: '추후 구현예정',
-                text: '역량관리 기능은 추후 구현될 예정입니다.',
-                confirmButtonText: '확인'
-            });
+    // 추가 버튼 이벤트 리스너 - 이벤트 위임 방식으로 안정적으로 처리
+    document.addEventListener('click', function(e) {
+        const btn = e.target.closest('.btn-add');
+        if (!btn) return;
+        e.preventDefault();
+        e.stopPropagation();
+        Swal.fire({
+            icon: 'info',
+            title: '준비중',
+            text: '해당 기능은 현재 준비중입니다.',
+            confirmButtonText: '확인',
+            confirmButtonColor: '#667eea'
         });
     });
 
@@ -961,7 +960,6 @@ function hideSignatureConfirmModal() {
         confirmBtn.disabled = true;
     }
 }
-*/
 
 // 현재 로그인한 사용자 정보 불러오기
 async function loadCurrentUserProfile() {
@@ -983,19 +981,19 @@ async function loadCurrentUserProfile() {
         console.log('현재 사용자 정보:', user);
 
         // 폼 필드에 데이터 채우기
-        const userNameInput = document.getElementById('userName');
+        const userNameDiv = document.getElementById('userName');
         const userPositionDiv = document.getElementById('userPosition');
         const userDeptDiv = document.getElementById('userDept');
+        const userBirthDiv = document.getElementById('userBirth');
         const userEmailInput = document.getElementById('userEmail');
         const userPhoneInput = document.getElementById('userPhone');
         const userAddressInput = document.getElementById('userAddress');
 
-        // 이름은 편집 가능한 input
-        if (userNameInput) userNameInput.value = user.empName || '';
-
-        // 직급과 부서는 읽기 전용 div
+        // 이름, 직급, 부서, 생년월일은 읽기 전용 div
+        if (userNameDiv) userNameDiv.textContent = user.empName || '-';
         if (userPositionDiv) userPositionDiv.textContent = user.empPositionName || user.empPosition || '-';
         if (userDeptDiv) userDeptDiv.textContent = user.empDeptName || user.empDept || '-';
+        if (userBirthDiv) userBirthDiv.textContent = user.empBirth || '-';
 
         // 이메일, 연락처, 주소는 편집 가능한 input
         if (userEmailInput) userEmailInput.value = user.empEmail || '';

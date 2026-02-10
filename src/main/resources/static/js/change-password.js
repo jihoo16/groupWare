@@ -29,8 +29,13 @@ document.addEventListener('DOMContentLoaded', async function() {
 
     // 추가 정보 입력 필드
     const empBirthInput = document.getElementById('empBirth');
-    const empGenderInput = document.getElementById('empGender');
     const empAddressInput = document.getElementById('empAddress');
+
+    // 생년월일: 수동 입력 차단, 클릭 시 달력 오픈
+    empBirthInput.addEventListener('keydown', (e) => e.preventDefault());
+    empBirthInput.addEventListener('click', () => {
+        try { empBirthInput.showPicker(); } catch (e) { /* 구형 브라우저 무시 */ }
+    });
     const externalEmailInput = document.getElementById('externalEmail');
     const emergencyContactInput = document.getElementById('emergencyContact');
 
@@ -73,7 +78,6 @@ document.addEventListener('DOMContentLoaded', async function() {
 
                 // 이미 입력된 값이 있으면 채우기
                 if (currentUser.empBirth) empBirthInput.value = currentUser.empBirth;
-                if (currentUser.empGender) empGenderInput.value = currentUser.empGender;
                 if (currentUser.empAddress) empAddressInput.value = currentUser.empAddress;
                 if (currentUser.externalEmail) externalEmailInput.value = currentUser.externalEmail;
                 if (currentUser.emergencyContact) emergencyContactInput.value = currentUser.emergencyContact;
