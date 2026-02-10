@@ -1621,7 +1621,10 @@ document.addEventListener('DOMContentLoaded', function() {
             icon: 'success',
             title: '성공',
             html: message,
-            confirmButtonText: '확인'
+            confirmButtonText: '확인',
+            confirmButtonColor: '#28a745',
+            timer: 2000,
+            timerProgressBar: true
         });
     }
 
