@@ -817,52 +817,36 @@ div h2{
 }
 
 /* 제출 버튼 */
-.submit-actions {
+/* 헤더 우측 영역 스타일 */
+.header-right {
     display: flex;
-    justify-content: flex-end;
     align-items: center;
     gap: 12px;
-    padding: 16px 24px;
-    background: white;
-    border-top: 2px solid #e8e8e8;
-    position: fixed;
-    bottom: 0;
-    left: 380px; /* 사이드바(60px) + 여백(20px) + 템플릿 사이드바(280px) */
-    right: 25px;
-    z-index: 100;
-    box-shadow: 0 -4px 12px rgba(0, 0, 0, 0.08);
-    border-radius: 12px 12px 0 0;
-    transition: left 0.3s ease;
 }
 
 .submit-guide {
     display: flex;
     align-items: center;
-    gap: 10px;
-    padding: 14px 24px;
+    gap: 8px;
+    padding: 10px 18px;
     background: linear-gradient(135deg, #fff3e0 0%, #ffe0b2 100%);
     border: 2px solid #ffb74d;
     border-radius: 8px;
     color: #e65100;
-    font-size: 14px;
+    font-size: 13px;
     font-weight: 500;
     animation: pulse-border 2s ease-in-out infinite;
-    cursor: pointer;
     user-select: none;
     transition: all 0.2s ease;
+    white-space: nowrap;
 }
 
 .submit-guide:hover {
     background: linear-gradient(135deg, #ffe0b2 0%, #ffcc80 100%);
-    transform: scale(1.02);
-}
-
-.submit-guide:active {
-    transform: scale(0.98);
 }
 
 .submit-guide i {
-    font-size: 18px;
+    font-size: 16px;
     color: #ff9800;
 }
 
@@ -882,14 +866,9 @@ div h2{
     }
 }
 
-/* 사이드바 호버 시 버튼 위치 조정 */
-.sidebar:hover ~ .main-content .submit-actions {
-    left: 500px; /* 사이드바(200px) + 여백(20px) + 템플릿 사이드바(280px) */
-}
-
 .btn-lg {
-    padding: 14px 28px;
-    font-size: 12.7px;
+    padding: 10px 20px;
+    font-size: 13px;
     font-weight: 600;
     border-radius: 8px;
     cursor: pointer;
@@ -1159,32 +1138,31 @@ div h2{
         top: 0;
     }
 
-    .submit-actions {
-        flex-direction: column-reverse;
-        left: 0;
-        right: 0;
-        border-radius: 0;
-    }
-
-    .sidebar:hover ~ .main-content .submit-actions {
-        left: 0;
-    }
-
-    .submit-actions button {
+    .header-right {
+        flex-direction: column;
         width: 100%;
-        justify-content: center;
+        gap: 8px;
     }
 
     .submit-guide {
         width: 100%;
         justify-content: center;
         text-align: center;
-        font-size: 13px;
-        padding: 12px 16px;
+        font-size: 12px;
+        padding: 10px 14px;
     }
 
     .submit-guide i {
-        font-size: 16px;
+        font-size: 14px;
+    }
+
+    .action-buttons {
+        width: 100%;
+        justify-content: center;
+    }
+
+    .action-buttons button {
+        flex: 1;
     }
 
     .form-table th {
