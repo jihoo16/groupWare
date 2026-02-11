@@ -1,7 +1,7 @@
 // 공통 JavaScript - 모든 페이지에서 사용
 
-// 팝업 감지 - 사이드바 숨김 (window.opener가 있으면 팝업으로 열린 것)
-if (window.opener) {
+// 팝업 감지 - 사이드바 숨김 (window.opener가 있으면 팝업, iframe 안이면 레이어 팝업)
+if (window.opener || window.parent !== window) {
     document.documentElement.classList.add('popup-mode');
 }
 
@@ -13,6 +13,20 @@ window.popupAwareRedirect = function(fallbackUrl) {
     if (window.opener && !window.opener.closed) {
         window.opener.location.reload();
         window.close();
+    } else if (window.parent !== window) {
+        // iframe 레이어 팝업인 경우 부모의 모달 닫기 및 문서 목록 새로고침
+        try {
+            if (typeof window.parent.closeIframeModal === 'function') {
+                window.parent.closeIframeModal();
+            }
+            if (typeof window.parent.loadProjectDocuments === 'function') {
+                const urlParams = new URLSearchParams(window.parent.location.search);
+                const projectId = urlParams.get('projectId');
+                if (projectId) window.parent.loadProjectDocuments(projectId);
+            }
+        } catch (e) {
+            window.parent.location.reload();
+        }
     } else {
         window.location.href = fallbackUrl;
     }

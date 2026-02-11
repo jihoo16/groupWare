@@ -32,11 +32,11 @@ document.addEventListener('DOMContentLoaded', async function () {
     }
     if (createWeeklyReportBtn) {
         createWeeklyReportBtn.addEventListener('click', function () {
-            // 프로젝트 주간업무보고 작성 팝업
+            // 프로젝트 주간업무보고 작성 레이어 팝업
             const url = projectId
                 ? `/approval/project-weekly-report?projectIdx=${projectId}`
                 : '/approval/project-weekly-report';
-            openWeeklyReportPopup(url);
+            openIframeModal(url, '프로젝트 주간업무보고 작성');
         });
     }
 
@@ -44,6 +44,24 @@ document.addEventListener('DOMContentLoaded', async function () {
     const deleteBtn = document.getElementById('deleteBtn');
     if (deleteBtn) {
         deleteBtn.addEventListener('click', () => deleteProject(projectId));
+    }
+
+    // 직급별 경비 설정 보기/접기
+    const toggleExpenseBtn = document.getElementById('toggleExpenseBtn');
+    const expenseContainer = document.getElementById('expenseSettingsContainer');
+    if (toggleExpenseBtn && expenseContainer) {
+        toggleExpenseBtn.addEventListener('click', function () {
+            const isCollapsed = expenseContainer.classList.contains('collapsed');
+            if (isCollapsed) {
+                expenseContainer.classList.remove('collapsed');
+                toggleExpenseBtn.classList.add('open');
+                toggleExpenseBtn.querySelector('.toggle-text').textContent = '접기';
+            } else {
+                expenseContainer.classList.add('collapsed');
+                toggleExpenseBtn.classList.remove('open');
+                toggleExpenseBtn.querySelector('.toggle-text').textContent = '보기';
+            }
+        });
     }
 
     // 상단으로 이동 버튼
@@ -729,55 +747,100 @@ async function goToDocument(documentType, sourceDocumentId) {
     if (!sourceDocumentId) return;
 
     let url;
+    let title;
     switch (documentType) {
         case 'WEEKLY_REPORT':
             url = `/approval/project-weekly-report/detail?documentIdx=${sourceDocumentId}`;
-            openWeeklyReportPopup(url);
-            return;
+            title = '프로젝트 주간업무보고';
+            break;
         case 'MEETING_MINUTES':
         case 'BUSINESS_TRIP':
         case 'RECEIPT_MEETING':
             url = `/approval/receipt-meeting?documentIdx=${sourceDocumentId}`;
-            openWeeklyReportPopup(url);
-            return;
+            title = '연구비 증빙';
+            break;
         case 'RECEIPT_OVERTIME':
             url = `/approval/receipt-overtime?documentIdx=${sourceDocumentId}`;
-            openWeeklyReportPopup(url);
-            return;
+            title = '야근식대 증빙';
+            break;
         default:
             url = `/approval/detail?documentId=${sourceDocumentId}`;
+            title = '문서 보기';
     }
 
-    window.open(url, '_blank');
+    openIframeModal(url, title);
 }
 
 /**
- * 주간업무보고 팝업 열기
+ * iframe 레이어 팝업 열기
  */
-function openWeeklyReportPopup(url) {
-    const width = 1200;
-    const height = 800;
-    const left = (screen.width - width) / 2;
-    const top = (screen.height - height) / 2;
-    window.open(url, 'weeklyReportPopup', `width=${width},height=${height},left=${left},top=${top},scrollbars=yes,resizable=yes`);
+function openIframeModal(url, title) {
+    const overlay = document.getElementById('iframeModalOverlay');
+    const iframe = document.getElementById('iframeModalContent');
+    const titleEl = document.getElementById('iframeModalTitle');
+    const loading = document.getElementById('iframeLoading');
+
+    titleEl.textContent = title || '문서 보기';
+    loading.classList.remove('hidden');
+    iframe.src = url;
+
+    iframe.onload = function () {
+        loading.classList.add('hidden');
+    };
+
+    overlay.classList.add('show');
+    document.body.style.overflow = 'hidden';
 }
 
 /**
- * 더보기 클릭 시 문서 목록으로 이동
+ * iframe 레이어 팝업 닫기
+ */
+function closeIframeModal() {
+    const overlay = document.getElementById('iframeModalOverlay');
+    const iframe = document.getElementById('iframeModalContent');
+
+    overlay.classList.remove('show');
+    iframe.src = '';
+    document.body.style.overflow = '';
+}
+
+// iframe 모달 닫기 이벤트 바인딩
+document.addEventListener('DOMContentLoaded', function () {
+    const closeBtn = document.getElementById('iframeModalClose');
+    const overlay = document.getElementById('iframeModalOverlay');
+
+    if (closeBtn) {
+        closeBtn.addEventListener('click', closeIframeModal);
+    }
+
+    // 오버레이 클릭 시 닫기
+    if (overlay) {
+        overlay.addEventListener('click', function (e) {
+            if (e.target === overlay) {
+                closeIframeModal();
+            }
+        });
+    }
+
+    // ESC 키로 닫기
+    document.addEventListener('keydown', function (e) {
+        if (e.key === 'Escape' && overlay.classList.contains('show')) {
+            closeIframeModal();
+        }
+    });
+});
+
+/**
+ * 더보기 클릭 시 문서 목록 레이어 팝업
  */
 function viewMoreDocuments(type) {
     const urlParams = new URLSearchParams(window.location.search);
     const projectId = urlParams.get('projectId');
 
-    const width = 1200;
-    const height = 800;
-    const left = (screen.width - width) / 2;
-    const top = (screen.height - height) / 2;
-
     if (type === 'weekly') {
-        window.open(`/project/documents?projectId=${projectId}&tab=weekly`, 'projectDocumentsPopup', `width=${width},height=${height},left=${left},top=${top},scrollbars=yes,resizable=yes`);
+        openIframeModal(`/project/documents?projectId=${projectId}&tab=weekly`, '프로젝트 주간업무보고 목록');
     } else if (type === 'expense') {
-        window.open(`/project/documents?projectId=${projectId}&tab=expense`, 'projectDocumentsPopup', `width=${width},height=${height},left=${left},top=${top},scrollbars=yes,resizable=yes`);
+        openIframeModal(`/project/documents?projectId=${projectId}&tab=expense`, '연구비증빙 목록');
     }
 }
 
