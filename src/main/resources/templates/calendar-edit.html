@@ -19,10 +19,20 @@
                             <i class="fas fa-calendar-edit"></i>
                             일정 수정
                         </h1>
-                        <button class="btn-back" id="backBtn">
-                            <i class="fas fa-arrow-left"></i>
-                            목록으로
-                        </button>
+                        <div class="header-actions">
+                            <button class="btn-back" id="backBtn">
+                                <i class="fas fa-arrow-left"></i>
+                                목록으로
+                            </button>
+                            <button type="button" class="btn-danger" id="deleteScheduleBtn">
+                                <i class="fas fa-trash"></i>
+                                삭제
+                            </button>
+                            <button type="button" class="btn-primary" id="saveScheduleBtn">
+                                <i class="fas fa-check"></i>
+                                수정
+                            </button>
+                        </div>
                     </div>
                 </div>
 
@@ -132,23 +142,6 @@
                             -->
                         </div>
                     </form>
-                </div>
-            </div>
-
-            <!-- 하단 버튼 -->
-            <div class="form-actions">
-                <button type="button" class="btn-danger" id="deleteScheduleBtn">
-                    <i class="fas fa-trash"></i>
-                    삭제
-                </button>
-                <div class="action-buttons-right">
-                    <button type="button" class="btn-secondary" id="cancelBtn">
-                        취소
-                    </button>
-                    <button type="button" class="btn-primary" id="saveScheduleBtn">
-                        <i class="fas fa-check"></i>
-                        수정
-                    </button>
                 </div>
             </div>
         </main>

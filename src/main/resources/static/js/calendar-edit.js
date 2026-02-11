@@ -31,7 +31,6 @@ document.addEventListener('DOMContentLoaded', function() {
     // DOM 요소
     const scheduleForm = document.getElementById('editScheduleForm');
     const backBtn = document.getElementById('backBtn');
-    const cancelBtn = document.getElementById('cancelBtn');
     const deleteBtn = document.getElementById('deleteScheduleBtn');
     const saveBtn = document.getElementById('saveScheduleBtn');
 
@@ -1033,13 +1032,6 @@ document.addEventListener('DOMContentLoaded', function() {
 
     // 뒤로가기/취소 버튼 이벤트
     backBtn.addEventListener('click', async function() {
-        const confirmed = await showConfirm('일정 목록으로 돌아가시겠습니까? 저장하지 않은 변경사항은 사라집니다.');
-        if (confirmed) {
-            window.location.href = '/calendar';
-        }
-    });
-
-    cancelBtn.addEventListener('click', async function() {
         const confirmed = await showConfirm('일정 목록으로 돌아가시겠습니까? 저장하지 않은 변경사항은 사라집니다.');
         if (confirmed) {
             window.location.href = '/calendar';

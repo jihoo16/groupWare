@@ -37,6 +37,13 @@
     font-size: 22px;
 }
 
+/* 헤더 액션 버튼 그룹 */
+.header-actions {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
 .btn-back {
     background: white;
     color: #667eea;
@@ -758,20 +765,6 @@
     box-shadow: 0 4px 12px rgba(108, 117, 125, 0.3);
 }
 
-.btn-danger {
-    background: #dc3545;
-    color: white;
-    border: none;
-    padding: 14px 32px;
-    border-radius: 8px;
-    font-size: 15px;
-    font-weight: 600;
-    cursor: pointer;
-    display: flex;
-    align-items: center;
-    gap: 10px;
-    transition: all 0.3s ease;
-}
 
 .btn-danger:hover {
     background: #c82333;
