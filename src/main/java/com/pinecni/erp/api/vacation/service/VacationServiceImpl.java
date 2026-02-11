@@ -546,22 +546,21 @@ public class VacationServiceImpl implements VacationService {
     }
 
     /**
-     * 해당 연도 사용 연차 계산 (vacation_request에서 직접 집계, 경조사 제외)
+     * 해당 연도 사용 연차 계산 (vacation_request에서 직접 집계, 경조사와 기타 제외, 삭제되지 않은 문서만)
      */
     private BigDecimal calculateUsedDays(Long userIdx, int year) {
-        LocalDate yearStart = LocalDate.of(year, 1, 1);
-        LocalDate yearEnd = LocalDate.of(year, 12, 31);
+        // vacation_request에서 해당 연도의 연차만 집계 (삭제되지 않은 문서만, Repository 쿼리에서 이미 필터링됨)
+        List<VacationRequest> vacationRequests = vacationRequestRepository.findByUserIdxAndYear(userIdx, year);
 
-        // vacation_request에서 해당 연도의 승인된 연차만 집계
-        BigDecimal usedDays = vacationRequestRepository.findAll().stream()
-                .filter(vr -> vr.getUserIdx().equals(userIdx))
-                .filter(vr -> vr.getStartDate() != null && vr.getEndDate() != null)
-                .filter(vr -> !vr.getStartDate().isAfter(yearEnd) && !vr.getEndDate().isBefore(yearStart))
+        // 경조사와 기타는 연차 차감 대상이 아니므로 제외
+        BigDecimal usedDays = vacationRequests.stream()
+                .filter(vr -> vr.getVacationType() != null)
                 .filter(vr -> !vr.getVacationType().contains("경조사") && !"기타".equals(vr.getVacationType()))
                 .map(VacationRequest::getDays)
                 .reduce(BigDecimal.ZERO, BigDecimal::add);
 
-        log.debug("[사용 연차 계산] userIdx={}, year={}, usedDays={}", userIdx, year, usedDays);
+        log.debug("[사용 연차 계산] userIdx={}, year={}, 총 연차 건수={}, 사용 연차={}일",
+                  userIdx, year, vacationRequests.size(), usedDays);
         return usedDays;
     }
 
