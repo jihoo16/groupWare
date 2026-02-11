@@ -375,7 +375,7 @@ public class Controller {
 
     @GetMapping("/oops")
     public String notFound() {
-        return "404";
+        return "error/404";
     }
 
     @GetMapping("/nothing")
@@ -385,11 +385,11 @@ public class Controller {
 
     @GetMapping("/nope")
     public String forbidden() {
-        return "403";
+        return "error/403";
     }
 
     @GetMapping("/boom")
     public String serverError() {
-        return "500";
+        return "error/500";
     }
 }
