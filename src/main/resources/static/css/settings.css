@@ -647,6 +647,132 @@
     background: #fff5f5;
 }
 
+.form-input.success {
+    border-color: #10b981;
+    background: #f0fdf4;
+}
+
+/* 비밀번호 입력 래퍼 */
+.password-input-wrapper {
+    position: relative;
+}
+
+.password-input-wrapper input {
+    padding-right: 55px;
+}
+
+.toggle-password {
+    position: absolute;
+    right: 14px;
+    top: 50%;
+    transform: translateY(-50%);
+    background: none;
+    border: none;
+    color: #868e96;
+    cursor: pointer;
+    padding: 10px;
+    border-radius: 4px;
+    transition: all 0.2s ease;
+    font-size: 16px;
+}
+
+.toggle-password:hover {
+    color: #1a237e;
+    background: #f0f3ff;
+}
+
+/* 비밀번호 요구사항 */
+.password-requirements {
+    margin-top: 16px;
+    padding: 16px 20px;
+    background: #f8f9fa;
+    border-radius: 4px;
+    border-left: 4px solid #1a237e;
+}
+
+.requirement-title {
+    font-size: 14px;
+    font-weight: 600;
+    color: #495057;
+    margin-bottom: 10px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.requirement-title i {
+    color: #1a237e;
+    font-size: 15px;
+}
+
+.requirement-list {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+}
+
+.requirement-item {
+    font-size: 14px;
+    color: #6c757d;
+    padding: 6px 0;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    transition: all 0.2s ease;
+}
+
+.requirement-item i {
+    font-size: 6px;
+    color: #ced4da;
+    transition: all 0.2s ease;
+}
+
+.requirement-item.valid {
+    color: #10b981;
+}
+
+.requirement-item.valid i {
+    color: #10b981;
+}
+
+/* 비밀번호 일치 메시지 */
+.password-match-message {
+    margin-top: 10px;
+    font-size: 14px;
+    padding: 10px 14px;
+    border-radius: 4px;
+    display: none;
+    align-items: center;
+    gap: 8px;
+}
+
+.password-match-message.show {
+    display: flex;
+}
+
+.password-match-message.match {
+    background: #d1fae5;
+    color: #065f46;
+}
+
+.password-match-message.mismatch {
+    background: #fee2e2;
+    color: #991b1b;
+}
+
+.password-match-message::before {
+    font-family: 'Font Awesome 6 Free';
+    font-weight: 900;
+}
+
+.password-match-message.match::before {
+    content: '\f058';
+}
+
+.password-match-message.mismatch::before {
+    content: '\f06a';
+}
+
 /* 토글 스위치 */
 .toggle-switch {
     position: relative;

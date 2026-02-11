@@ -42,13 +42,123 @@ document.addEventListener('DOMContentLoaded', function() {
     }
     */
 
+    // ===========================
+    // 비밀번호 변경 - 실시간 검증
+    // ===========================
+    const currentPasswordInput = document.getElementById('currentPassword');
+    const newPasswordInput = document.getElementById('newPassword');
+    const confirmPasswordInput = document.getElementById('confirmPassword');
+    const passwordMatchMessage = document.getElementById('passwordMatchMessage');
+
+    // Password toggle buttons
+    const toggleCurrentPassword = document.getElementById('toggleCurrentPassword');
+    const toggleNewPassword = document.getElementById('toggleNewPassword');
+    const toggleConfirmPassword = document.getElementById('toggleConfirmPassword');
+
+    // Requirement elements
+    const reqLength = document.getElementById('req-length');
+    const reqLetter = document.getElementById('req-letter');
+    const reqNumber = document.getElementById('req-number');
+    const reqSpecial = document.getElementById('req-special');
+
+    // Password Toggle
+    function setupPasswordToggle(toggleBtn, inputField) {
+        if (toggleBtn && inputField) {
+            toggleBtn.addEventListener('click', () => {
+                const type = inputField.getAttribute('type') === 'password' ? 'text' : 'password';
+                inputField.setAttribute('type', type);
+                const icon = toggleBtn.querySelector('i');
+                icon.classList.toggle('fa-eye', type === 'password');
+                icon.classList.toggle('fa-eye-slash', type === 'text');
+            });
+        }
+    }
+
+    setupPasswordToggle(toggleCurrentPassword, currentPasswordInput);
+    setupPasswordToggle(toggleNewPassword, newPasswordInput);
+    setupPasswordToggle(toggleConfirmPassword, confirmPasswordInput);
+
+    // Password Validation
+    function validatePassword(password) {
+        return {
+            length: password.length >= 8 && password.length <= 20,
+            letter: /[a-zA-Z]/.test(password),
+            number: /\d/.test(password),
+            special: /[@$!%*?&#]/.test(password)
+        };
+    }
+
+    function updatePasswordRequirements(password) {
+        if (!reqLength || !reqLetter || !reqNumber || !reqSpecial) return false;
+
+        const req = validatePassword(password);
+
+        reqLength.classList.toggle('valid', req.length);
+        reqLetter.classList.toggle('valid', req.letter);
+        reqNumber.classList.toggle('valid', req.number);
+        reqSpecial.classList.toggle('valid', req.special);
+
+        if (password.length === 0) {
+            newPasswordInput.classList.remove('error', 'success');
+        } else if (Object.values(req).every(r => r)) {
+            newPasswordInput.classList.remove('error');
+            newPasswordInput.classList.add('success');
+        } else {
+            newPasswordInput.classList.remove('success');
+            newPasswordInput.classList.add('error');
+        }
+
+        return Object.values(req).every(r => r);
+    }
+
+    if (newPasswordInput) {
+        newPasswordInput.addEventListener('input', (e) => {
+            updatePasswordRequirements(e.target.value);
+            checkPasswordMatch();
+        });
+    }
+
+    // Password Match Check
+    function checkPasswordMatch() {
+        if (!passwordMatchMessage || !confirmPasswordInput || !newPasswordInput) return false;
+
+        const newPassword = newPasswordInput.value;
+        const confirmPassword = confirmPasswordInput.value;
+
+        if (confirmPassword.length === 0) {
+            passwordMatchMessage.classList.remove('show');
+            confirmPasswordInput.classList.remove('error', 'success');
+            return false;
+        }
+
+        if (newPassword === confirmPassword) {
+            passwordMatchMessage.textContent = '비밀번호가 일치합니다.';
+            passwordMatchMessage.classList.remove('mismatch');
+            passwordMatchMessage.classList.add('match', 'show');
+            confirmPasswordInput.classList.remove('error');
+            confirmPasswordInput.classList.add('success');
+            return true;
+        } else {
+            passwordMatchMessage.textContent = '비밀번호가 일치하지 않습니다.';
+            passwordMatchMessage.classList.remove('match');
+            passwordMatchMessage.classList.add('mismatch', 'show');
+            confirmPasswordInput.classList.remove('success');
+            confirmPasswordInput.classList.add('error');
+            return false;
+        }
+    }
+
+    if (confirmPasswordInput) {
+        confirmPasswordInput.addEventListener('input', checkPasswordMatch);
+    }
+
     // 비밀번호 변경
     const passwordChangeBtn = document.getElementById('changePasswordBtn');
     if (passwordChangeBtn) {
         passwordChangeBtn.addEventListener('click', async function() {
-            const currentPassword = document.getElementById('currentPassword')?.value;
-            const newPassword = document.getElementById('newPassword')?.value;
-            const confirmPassword = document.getElementById('confirmPassword')?.value;
+            const currentPassword = currentPasswordInput?.value;
+            const newPassword = newPasswordInput?.value;
+            const confirmPassword = confirmPasswordInput?.value;
 
             // 필드 검증
             if (!currentPassword || !newPassword || !confirmPassword) {
@@ -56,20 +166,21 @@ document.addEventListener('DOMContentLoaded', function() {
                 return;
             }
 
-            if (newPassword.length < 8 || newPassword.length > 20) {
-                await showWarning('새 비밀번호는 8~20자 이내여야 합니다.');
+            // 비밀번호 요구사항 검증
+            if (!updatePasswordRequirements(newPassword)) {
+                await showWarning('비밀번호가 요구사항을 충족하지 않습니다.\n(8~20자, 영문, 숫자, 특수문자 포함)');
                 return;
             }
 
-            // 비밀번호 강도 검증 (영문, 숫자, 특수문자 포함)
-            const passwordRegex = /^(?=.*[a-zA-Z])(?=.*\d)(?=.*[@$!%*?&#])[A-Za-z\d@$!%*?&#]{8,20}$/;
-            if (!passwordRegex.test(newPassword)) {
-                await showWarning('비밀번호는 영문, 숫자, 특수문자(@$!%*?&#)를 포함해야 합니다.');
-                return;
-            }
-
-            if (newPassword !== confirmPassword) {
+            // 비밀번호 일치 확인
+            if (!checkPasswordMatch()) {
                 await showWarning('새 비밀번호가 일치하지 않습니다.');
+                return;
+            }
+
+            // 현재 비밀번호와 새 비밀번호가 같은지 확인
+            if (currentPassword === newPassword) {
+                await showWarning('현재 비밀번호와 새 비밀번호가 동일합니다.\n다른 비밀번호를 입력해주세요.');
                 return;
             }
 
@@ -99,9 +210,18 @@ document.addEventListener('DOMContentLoaded', function() {
                 await showSuccess('비밀번호가 성공적으로 변경되었습니다.');
 
                 // 입력 필드 초기화
-                document.getElementById('currentPassword').value = '';
-                document.getElementById('newPassword').value = '';
-                document.getElementById('confirmPassword').value = '';
+                currentPasswordInput.value = '';
+                newPasswordInput.value = '';
+                confirmPasswordInput.value = '';
+
+                // UI 상태 초기화
+                newPasswordInput.classList.remove('error', 'success');
+                confirmPasswordInput.classList.remove('error', 'success');
+                passwordMatchMessage.classList.remove('show');
+                if (reqLength) reqLength.classList.remove('valid');
+                if (reqLetter) reqLetter.classList.remove('valid');
+                if (reqNumber) reqNumber.classList.remove('valid');
+                if (reqSpecial) reqSpecial.classList.remove('valid');
 
             } catch (error) {
                 console.error('비밀번호 변경 오류:', error);
