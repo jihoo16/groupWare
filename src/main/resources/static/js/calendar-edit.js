@@ -830,14 +830,14 @@ document.addEventListener('DOMContentLoaded', function() {
         if (tempSelectedEmployees.length === 0) {
             selectedEmployeesList.innerHTML = '<p class="empty-message">선택된 직원이 없습니다.</p>';
         } else {
-            selectedEmployeesList.innerHTML = tempSelectedEmployees.map(emp => `
+            selectedEmployeesList.innerHTML = tempSelectedEmployees.map((emp, index) => `
                 <div class="selected-employee-item">
                     <div class="selected-employee-avatar">${getInitial(emp.name)}</div>
                     <div class="selected-employee-info">
                         <div class="selected-employee-name">${emp.name}</div>
                         <div class="selected-employee-dept">${emp.department || '부서 미지정'} · ${emp.rank || '직급 미지정'}</div>
                     </div>
-                    <button type="button" class="remove-employee-btn" data-id="${emp.id}">
+                    <button type="button" class="remove-employee-btn" data-index="${index}">
                         <i class="fas fa-times"></i>
                     </button>
                 </div>
@@ -846,9 +846,9 @@ document.addEventListener('DOMContentLoaded', function() {
             // Attach remove button events
             selectedEmployeesList.querySelectorAll('.remove-employee-btn').forEach(btn => {
                 btn.addEventListener('click', function() {
-                    const id = parseInt(this.getAttribute('data-id'));
-                    console.log('Remove button clicked for id:', id);
-                    tempSelectedEmployees = tempSelectedEmployees.filter(emp => emp.id !== id);
+                    const index = parseInt(this.getAttribute('data-index'));
+                    console.log('Remove button clicked for index:', index);
+                    tempSelectedEmployees.splice(index, 1);
                     updateSelectedEmployeesList();
                     updateOrgTreeCheckboxes();
                     updateSelectAllButtonState();
