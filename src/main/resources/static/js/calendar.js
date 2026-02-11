@@ -635,7 +635,19 @@ document.addEventListener('DOMContentLoaded', function() {
                 }
             }
 
-            schedulesHTML += `<div class="schedule-item ${scheduleClasses.join(' ')}"${trackStyle} data-schedule-id="${schedule.id}" data-group-id="${schedule.groupId}">${schedule.title}</div>`;
+            // 일정 제목에 시간/종일 표시 추가
+            let displayTitle = schedule.title;
+            if (isAllDay) {
+                displayTitle = `[종일] ${schedule.title}`;
+            } else if (schedule.time) {
+                const timeMatch = schedule.time.match(/(\d{2}:\d{2})/);
+                const startTime = timeMatch ? timeMatch[1] : '';
+                if (startTime) {
+                    displayTitle = `[${startTime}] ${schedule.title}`;
+                }
+            }
+
+            schedulesHTML += `<div class="schedule-item ${scheduleClasses.join(' ')}"${trackStyle} data-schedule-id="${schedule.id}" data-group-id="${schedule.groupId}">${displayTitle}</div>`;
         });
 
         if (daySchedules.length > maxDisplay) {
@@ -2146,7 +2158,7 @@ document.addEventListener('DOMContentLoaded', function() {
                              style="position: absolute; left: ${left}%; width: calc(${width}% - 8px); top: ${top}px;"
                              data-schedule-id="${schedule.id}"
                              data-group-id="${schedule.groupId}">
-                            ${schedule.title}
+                            [종일] ${schedule.title}
                         </div>
                     `;
                 });
@@ -2305,7 +2317,7 @@ document.addEventListener('DOMContentLoaded', function() {
                     <div class="day-allday-event ${typeClass}"
                          data-schedule-id="${schedule.id}"
                          data-group-id="${schedule.groupId}">
-                        ${schedule.title}
+                        [종일] ${schedule.title}
                     </div>
                 `;
             });
