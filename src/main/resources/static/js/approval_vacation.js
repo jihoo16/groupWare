@@ -3199,17 +3199,19 @@ document.addEventListener('DOMContentLoaded', function() {
         if (vacationPeriods.length === 0) {
             periodsListCard.style.display = 'none';
             if (vacationSummaryCard) vacationSummaryCard.style.display = 'none';
-            // 기간이 없으면 안내 메시지 표시, 액션 버튼 숨김
+            // 기간이 없으면 안내 메시지 표시, 액션 버튼과 선택 초기화 버튼 숨김
             if (submitGuide) submitGuide.style.display = 'flex';
             if (actionButtons) actionButtons.style.display = 'none';
+            if (resetSelectionBtn) resetSelectionBtn.style.display = 'none';
             return;
         }
 
         periodsListCard.style.display = 'block';
         if (vacationSummaryCard) vacationSummaryCard.style.display = 'block';
-        // 기간이 추가되면 안내 메시지 숨김, 액션 버튼 표시
+        // 기간이 추가되면 안내 메시지 숨김, 액션 버튼과 선택 초기화 버튼 표시
         if (submitGuide) submitGuide.style.display = 'none';
         if (actionButtons) actionButtons.style.display = 'flex';
+        if (resetSelectionBtn) resetSelectionBtn.style.display = 'inline-flex';
         vacationPeriodsList.innerHTML = '';
 
         const dayNames = ['일', '월', '화', '수', '목', '금', '토'];
