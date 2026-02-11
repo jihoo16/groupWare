@@ -42,11 +42,9 @@ document.addEventListener('DOMContentLoaded', async function() {
     const teamTableBody = document.getElementById('teamTableBody');
 
     const backBtn = document.getElementById('backBtn');
-    const cancelBtn = document.getElementById('cancelBtn');
     const submitBtn = document.getElementById('submitBtn');
     const deleteBtn = document.getElementById('deleteBtn');
     const addMemberBtn = document.getElementById('addMemberBtn');
-    const formActions = document.getElementById('formActions');
 
     // 모달 요소
     const employeeSelectionModal = document.getElementById('employeeSelectionModal');
@@ -75,12 +73,6 @@ document.addEventListener('DOMContentLoaded', async function() {
         window.location.href = '/team';
     });
 
-    cancelBtn.addEventListener('click', async () => {
-        const confirmed = await showConfirm('수정 중인 내용이 있습니다. 정말 취소하시겠습니까?');
-        if (confirmed) {
-            window.location.href = '/team';
-        }
-    });
 
     deleteBtn.addEventListener('click', () => {
         deleteConfirmModal.classList.add('active');
