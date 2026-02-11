@@ -254,7 +254,7 @@ public class PdfGenerationService {
                 String fontStyle = "<style>\n" +
                         "@font-face {\n" +
                         "  font-family: '" + fontName + "';\n" +
-                        "  src: url('data:font/truetype;base64," + base64Font + "') format('truetype');\n" +
+                        "  src: local('NanumGothic'), src: url('data:font/ttf;base64," + base64Font + "') format('truetype');\n" +
                         "  font-weight: normal;\n" +
                         "  font-style: normal;\n" +
                         "}\n" +
@@ -299,6 +299,8 @@ public class PdfGenerationService {
     private void loadKoreanFont(ITextRenderer renderer) {
         String[] fontPaths = {
                 // 1. 클래스패스의 fonts 디렉토리 (VM 환경, 권장)
+                "/usr/local/share/fonts/korean/NanumGothic.ttf",
+                "fonts/NanumGothic.ttf",
                 "fonts/NotoSansKR-Regular.ttf",
                 "fonts/NanumGothic.ttf",
                 "fonts/malgun.ttf",

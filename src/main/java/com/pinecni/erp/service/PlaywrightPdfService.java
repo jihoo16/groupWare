@@ -218,6 +218,12 @@ public class PlaywrightPdfService {
 
             log.info("[Playwright PDF] JavaScript 실행 완료");
 
+//            page.waitForFunction("() => document.fonts && document.fonts.status === 'loaded'");
+//            log.info("[Playwright PDF] 웹폰트 로딩 완료");
+
+            page.waitForFunction("() => document.fonts && document.fonts.check('16px NanumGothic', '한글')");
+            log.info("[Playwright PDF] NanumGothic 체크 통과");
+
             // PDF 생성 옵션 설정
             Page.PdfOptions options = new Page.PdfOptions()
                     .setFormat(pdfOptions.getFormat())
@@ -286,6 +292,12 @@ public class PlaywrightPdfService {
             }
 
             log.info("[Playwright PDF] HTML 렌더링 완료");
+
+//            page.waitForFunction("() => document.fonts && document.fonts.status === 'loaded'");
+//            log.info("[Playwright PDF] 웹폰트 로딩 완료");
+
+            page.waitForFunction("() => document.fonts && document.fonts.check('16px NanumGothic', '한글')");
+            log.info("[Playwright PDF] NanumGothic 체크 통과");
 
             // PDF 생성 옵션 설정
             Page.PdfOptions options = new Page.PdfOptions()
