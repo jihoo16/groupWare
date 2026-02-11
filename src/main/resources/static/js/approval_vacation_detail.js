@@ -40,7 +40,10 @@ async function loadDocumentDetail(documentIdx) {
         console.error('문서 조회 오류:', error);
         showError('문서를 불러오는데 실패했습니다.');
         window.hidePageLoadingOverlay();
-        history.back();
+        // history.back() 대신 목록 페이지로 이동하여 무한 루프 방지
+        setTimeout(() => {
+            window.location.href = '/approval';
+        }, 1500);
     }
 }
 
