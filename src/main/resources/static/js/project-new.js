@@ -251,6 +251,9 @@
         // 기존 PI 역할 제거
         selectedMemberList = selectedMemberList.filter(m => m.role !== 'PI');
 
+        const projectStartDate = document.getElementById('startDate')?.value || '';
+        const projectEndDate = document.getElementById('endDate')?.value || '';
+
         // 이미 팀원으로 추가되어 있는지 확인 (idx 또는 id로 체크)
         const existingMember = selectedMemberList.find(m => {
             const memberId = parseInt(m.idx || m.id);
@@ -265,11 +268,15 @@
                 name: manager.empName,
                 dept: manager.empDeptName || '-',
                 position: manager.empPositionName || '-',
-                role: 'PI'
+                role: 'PI',
+                startDate: projectStartDate,
+                endDate: projectEndDate
             });
         } else {
             // 기존 멤버의 역할을 PI로 변경
             existingMember.role = 'PI';
+            existingMember.startDate = existingMember.startDate || projectStartDate;
+            existingMember.endDate = existingMember.endDate || projectEndDate;
             // idx가 없는 경우 추가 (일반 팀원에서 PI로 변경된 경우)
             if (!existingMember.idx) {
                 existingMember.idx = parseInt(existingMember.id);

@@ -1342,25 +1342,38 @@ document.addEventListener('DOMContentLoaded', async function() {
             return selectedValue || '';
         }
 
-        // 야근 신청서 테이블 업데이트
+        // 야근 신청서 테이블 업데이트 (동적 행 생성)
         function updateOvertimeTable() {
-            const personRows = document.querySelectorAll('.ot-person-row');
+            const tableBody = document.getElementById('otPersonTableBody');
+            if (!tableBody) return;
+
             const timeRange = getFormattedTimeRange();
             const currentTask = getCurrentTask();
+            const minRows = 11;
+            const rowCount = Math.max(overtimePersons.length, minRows);
 
-            personRows.forEach((row, index) => {
-                const cells = row.querySelectorAll('td');
-                if (index < overtimePersons.length) {
-                    const person = overtimePersons[index];
-                    cells[1].textContent = person.name || '';
-                    cells[2].textContent = timeRange;
-                    cells[3].textContent = currentTask;
-                } else {
-                    cells[1].innerHTML = '&nbsp;';
-                    cells[2].innerHTML = '&nbsp;';
-                    cells[3].innerHTML = '&nbsp;';
-                }
-            });
+            let html = '';
+            for (let i = 0; i < rowCount; i++) {
+                const person = i < overtimePersons.length ? overtimePersons[i] : null;
+                html += `<tr class="ot-person-row">
+                    <td style="text-align: center;">${i + 1}</td>
+                    <td style="text-align: center;">${person ? (person.name || '') : '&nbsp;'}</td>
+                    <td style="text-align: center;">${person ? timeRange : '&nbsp;'}</td>
+                    <td style="text-align: center;">${person ? currentTask : '&nbsp;'}</td>
+                    <td style="text-align: center;">&nbsp;</td>
+                    <td style="text-align: center;">&nbsp;</td>
+                </tr>`;
+            }
+            tableBody.innerHTML = html;
+
+            // 인원이 11명 초과 시 행 높이 축소
+            if (rowCount > minRows) {
+                tableBody.querySelectorAll('.ot-person-row td').forEach(td => {
+                    td.style.padding = '6px 8px';
+                    td.style.fontSize = '12px';
+                    td.style.height = '32px';
+                });
+            }
         }
 
         // 품의 내용 텍스트 자동 업데이트

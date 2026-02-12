@@ -2430,11 +2430,18 @@ div h2{
         line-height: 1.4 !important;
     }
 
-    /* 야근인원 테이블 행 */
+    /* 야근인원 테이블 행 (기본 11명 이하) */
     .ot-person-row td {
         padding: 5px 6px !important;
         font-size: 10px !important;
         height: 28px !important;
+    }
+
+    /* 야근인원 11명 초과 시 행 축소 (인라인 스타일 오버라이드) */
+    .ot-person-row td[style*="height: 32px"] {
+        padding: 3px 4px !important;
+        font-size: 9px !important;
+        height: 22px !important;
     }
 
     /* 섹션 div 마진 */
@@ -2542,44 +2549,61 @@ div h2{
     }
 
     /* ========================================
-       야근 및 특근 신청서 (두 번째 문서) - 세로 20% 증가
+       야근 및 특근 신청서 (두 번째 문서)
        ======================================== */
     .document-form > div:last-child {
-        padding: 18px !important;
+        padding: 15px !important;
+        page-break-inside: auto !important;
     }
 
     .document-form > div:last-child .doc-title,
     .document-form > div:last-child h2.doc-title {
-        font-size: 22px !important;
-        margin: 18px 0 22px 0 !important;
-        padding-bottom: 8px !important;
+        font-size: 20px !important;
+        margin: 10px 0 12px 0 !important;
+        padding-bottom: 6px !important;
     }
 
     .document-form > div:last-child h3 {
-        font-size: 14px !important;
-        margin: 18px 0 10px 0 !important;
+        font-size: 13px !important;
+        margin: 8px 0 5px 0 !important;
     }
 
     .document-form > div:last-child .form-table th,
     .document-form > div:last-child .form-table td {
-        padding: 8px 8px !important;
-        min-height: 34px !important;
-        line-height: 1.5 !important;
+        padding: 5px 6px !important;
+        min-height: 28px !important;
+        line-height: 1.4 !important;
     }
 
     .document-form > div:last-child .form-table span {
         font-size: 11px !important;
     }
 
-    /* 야근신청서 야근인원 행 */
+    /* 야근신청서 야근인원 행 (기본 11명 이하) */
     .document-form > div:last-child .ot-person-row td {
-        padding: 7px 8px !important;
+        padding: 4px 6px !important;
         font-size: 11px !important;
-        height: 50px !important;
+        height: 30px !important;
+    }
+
+    /* 야근신청서 야근인원 11명 초과 시 행 축소 */
+    .document-form > div:last-child .ot-person-row td[style*="height: 32px"] {
+        padding: 3px 4px !important;
+        font-size: 9px !important;
+        height: 22px !important;
     }
 
     /* 야근신청서 섹션 마진 */
     .document-form > div:last-child > div {
-        margin-bottom: 30px !important;
+        margin-bottom: 10px !important;
+    }
+
+    /* 야근신청서 날짜/서명 하단 여백 축소 */
+    .document-form > div:last-child > div[style*="margin: 30px"] {
+        margin: 10px 0 !important;
+    }
+
+    .document-form > div:last-child > div[style*="text-align: right"] {
+        margin-bottom: 0 !important;
     }
 }
