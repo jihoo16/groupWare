@@ -30,8 +30,8 @@ document.addEventListener('DOMContentLoaded', function() {
     const pastProjectTableBody = document.getElementById('pastProjectTableBody');
     const pastProjectRows = document.querySelectorAll('#pastProjectTable tbody tr');
 
-    // 현재 선택된 필터 상태
-    let currentStatusFilter = '';
+    // 현재 선택된 필터 상태 (다중 선택)
+    let currentStatusFilters = []; // 빈 배열 = 전체
     let currentSearchKeyword = ''; // 현재 검색어
 
     // 페이지네이션 요소
@@ -351,17 +351,37 @@ document.addEventListener('DOMContentLoaded', function() {
         return `사용 금액 : ${formatCurrency(usedAmount)} / 총 금액 : ${formatCurrency(budgetAmount)} / 잔여 금액 : <span style="font-weight: bold">${formatCurrency(remaining)}</span> 원`;
     }
 
-    // 필터 버튼 클릭 이벤트
+    // 필터 버튼 클릭 이벤트 (다중 선택)
     filterButtons.forEach(button => {
         button.addEventListener('click', function() {
-            // 모든 버튼에서 active 클래스 제거
-            filterButtons.forEach(btn => btn.classList.remove('active'));
+            const status = this.getAttribute('data-status');
 
-            // 클릭한 버튼에 active 클래스 추가
-            this.classList.add('active');
+            if (!status) {
+                // "전체" 버튼 클릭: 모든 개별 필터 해제
+                filterButtons.forEach(btn => btn.classList.remove('active'));
+                this.classList.add('active');
+                currentStatusFilters = [];
+            } else {
+                // 개별 상태 버튼 토글
+                const allBtn = document.querySelector('.filter-btn[data-status=""]');
 
-            // 현재 필터 상태 업데이트
-            currentStatusFilter = this.getAttribute('data-status');
+                this.classList.toggle('active');
+
+                // 선택된 상태 목록 갱신
+                currentStatusFilters = [];
+                filterButtons.forEach(btn => {
+                    if (btn.getAttribute('data-status') && btn.classList.contains('active')) {
+                        currentStatusFilters.push(btn.getAttribute('data-status'));
+                    }
+                });
+
+                // 선택된 필터가 없으면 "전체" 활성화
+                if (currentStatusFilters.length === 0) {
+                    allBtn.classList.add('active');
+                } else {
+                    allBtn.classList.remove('active');
+                }
+            }
 
             // 필터 적용
             filterPastProjects();
@@ -432,18 +452,17 @@ document.addEventListener('DOMContentLoaded', function() {
 
     // 과거 프로젝트 필터링 (SearchUtils 사용 - 초성 검색 지원)
     function filterPastProjects() {
-        const statusValue = currentStatusFilter;
         const searchValue = searchPastInput ? searchPastInput.value.trim() : '';
         currentSearchKeyword = searchValue;
 
         filteredPastProjects = allPastProjects.filter(project => {
-            const statusMatch = !statusValue || project.status === statusValue;
+            const statusMatch = currentStatusFilters.length === 0 || currentStatusFilters.includes(project.status);
 
             // SearchUtils를 사용한 초성 검색
             const searchMatch = !searchValue || searchUtils.matchesObject(
                 project,
                 searchValue,
-                ['name', 'managerName']
+                ['name', 'pm']
             );
 
             return statusMatch && searchMatch;
