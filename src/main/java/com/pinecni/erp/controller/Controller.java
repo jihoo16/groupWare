@@ -358,6 +358,22 @@ public class Controller {
         return "external-person";
     }
 
+    /**
+     * 관리자 전용 - 전체 연차관리 페이지
+     * - 관리자만 접근 가능
+     * - 모든 직원의 연차 현황 조회
+     */
+    @GetMapping("/admin/vacation-management")
+    public String adminVacationManagement(HttpSession session) {
+        // 관리자 권한 확인
+        Boolean isAdmin = (Boolean) session.getAttribute("isAdmin");
+        if (isAdmin == null || !isAdmin) {
+            log.warn("관리자가 아닌 사용자의 전체 연차관리 접근 시도");
+            return "redirect:/nope";
+        }
+        return "admin-vacation-management";
+    }
+
     @GetMapping("/login")
     public String login() {
         return "login";

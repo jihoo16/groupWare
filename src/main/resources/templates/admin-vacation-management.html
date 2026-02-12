@@ -1,0 +1,225 @@
+<!DOCTYPE html>
+<html lang="ko" xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{fragments/layout :: head('ERP 시스템 - 전체 연차관리', '/css/admin-vacation-management.css')}"></head>
+<body>
+    <div class="container">
+        <!-- 좌측 네비게이션 바 -->
+        <div th:replace="~{fragments/sidebar :: sidebar('admin-vacation')}"></div>
+
+        <!-- 메인 콘텐츠 영역 -->
+        <main class="main-content">
+            <header class="header">
+                <div class="header-left">
+                    <h1 class="page-title">
+                        <i class="fas fa-user-shield"></i>
+                        전체 연차관리
+                    </h1>
+                    <p class="page-subtitle">모든 직원의 연차 현황을 조회하고 관리합니다</p>
+                </div>
+                <div class="header-right">
+                    <button class="btn-export" id="exportExcelBtn">
+                        <i class="fas fa-file-excel"></i>
+                        Excel 다운로드
+                    </button>
+                </div>
+            </header>
+
+            <div class="admin-vacation-content">
+                <!-- 통계 카드 -->
+                <div class="stats-cards">
+                    <div class="stat-card">
+                        <div class="stat-icon blue">
+                            <i class="fas fa-users"></i>
+                        </div>
+                        <div class="stat-content">
+                            <h3>전체 직원</h3>
+                            <p class="stat-number" id="totalEmployees">-</p>
+                        </div>
+                    </div>
+
+                    <div class="stat-card">
+                        <div class="stat-icon green">
+                            <i class="fas fa-calendar-check"></i>
+                        </div>
+                        <div class="stat-content">
+                            <h3>평균 총 연차</h3>
+                            <p class="stat-number" id="avgTotalLeave">-</p>
+                        </div>
+                    </div>
+
+                    <div class="stat-card">
+                        <div class="stat-icon orange">
+                            <i class="fas fa-calendar-times"></i>
+                        </div>
+                        <div class="stat-content">
+                            <h3>평균 사용 연차</h3>
+                            <p class="stat-number" id="avgUsedLeave">-</p>
+                        </div>
+                    </div>
+
+                    <div class="stat-card">
+                        <div class="stat-icon purple">
+                            <i class="fas fa-umbrella-beach"></i>
+                        </div>
+                        <div class="stat-content">
+                            <h3>평균 잔여 연차</h3>
+                            <p class="stat-number" id="avgRemainingLeave">-</p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 필터 및 검색 -->
+                <div class="filter-section">
+                    <div class="filter-left">
+                        <div class="search-box">
+                            <i class="fas fa-search"></i>
+                            <input type="text" id="searchInput" placeholder="이름, 부서, 직급으로 검색...">
+                        </div>
+                        <select id="departmentFilter" class="filter-select">
+                            <option value="">전체 부서</option>
+                            <option value="개발팀">개발팀</option>
+                            <option value="디자인팀">디자인팀</option>
+                            <option value="마케팅팀">마케팅팀</option>
+                            <option value="영업팀">영업팀</option>
+                            <option value="인사팀">인사팀</option>
+                        </select>
+                        <select id="sortFilter" class="filter-select">
+                            <option value="name">이름순</option>
+                            <option value="total">총 연차순</option>
+                            <option value="used">사용 연차순</option>
+                            <option value="remaining">잔여 연차순</option>
+                        </select>
+                    </div>
+                    <div class="filter-right">
+                        <button class="btn-refresh" id="refreshBtn">
+                            <i class="fas fa-sync-alt"></i>
+                            새로고침
+                        </button>
+                    </div>
+                </div>
+
+                <!-- 연차 현황 테이블 -->
+                <div class="table-container">
+                    <table class="vacation-table">
+                        <thead>
+                            <tr>
+                                <th>번호</th>
+                                <th class="sortable" data-sort="name">
+                                    이름
+                                    <i class="fas fa-sort sort-icon"></i>
+                                </th>
+                                <th class="sortable" data-sort="department">
+                                    부서
+                                    <i class="fas fa-sort sort-icon"></i>
+                                </th>
+                                <th class="sortable" data-sort="position">
+                                    직급
+                                    <i class="fas fa-sort sort-icon"></i>
+                                </th>
+                                <th class="sortable" data-sort="totalLeave">
+                                    총 연차
+                                    <i class="fas fa-sort sort-icon"></i>
+                                </th>
+                                <th class="sortable" data-sort="usedLeave">
+                                    사용 연차
+                                    <i class="fas fa-sort sort-icon"></i>
+                                </th>
+                                <th class="sortable" data-sort="remainingLeave">
+                                    잔여 연차
+                                    <i class="fas fa-sort sort-icon"></i>
+                                </th>
+                                <th class="sortable" data-sort="usageRate">
+                                    사용률
+                                    <i class="fas fa-sort sort-icon"></i>
+                                </th>
+                                <th class="sortable" data-sort="hireDate">
+                                    입사일
+                                    <i class="fas fa-sort sort-icon"></i>
+                                </th>
+                                <th>상세</th>
+                            </tr>
+                        </thead>
+                        <tbody id="vacationTableBody">
+                            <!-- JavaScript로 동적 생성 -->
+                        </tbody>
+                    </table>
+                </div>
+
+                <!-- 로딩 스피너 -->
+                <div class="loading-spinner" id="loadingSpinner" style="display: none;">
+                    <i class="fas fa-spinner fa-spin"></i>
+                    <p>데이터를 불러오는 중...</p>
+                </div>
+
+                <!-- 데이터 없음 -->
+                <div class="no-data" id="noData" style="display: none;">
+                    <i class="fas fa-inbox"></i>
+                    <p>표시할 데이터가 없습니다</p>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <!-- 상세보기 모달 -->
+    <div class="modal" id="detailModal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2 class="modal-title">연차 상세 내역</h2>
+                <button class="modal-close" id="closeDetailModal">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            <div class="modal-body">
+                <div class="employee-info">
+                    <div class="info-row">
+                        <span class="info-label">이름</span>
+                        <span class="info-value" id="detailName">-</span>
+                    </div>
+                    <div class="info-row">
+                        <span class="info-label">부서</span>
+                        <span class="info-value" id="detailDepartment">-</span>
+                    </div>
+                    <div class="info-row">
+                        <span class="info-label">직급</span>
+                        <span class="info-value" id="detailPosition">-</span>
+                    </div>
+                    <div class="info-row">
+                        <span class="info-label">입사일</span>
+                        <span class="info-value" id="detailHireDate">-</span>
+                    </div>
+                </div>
+
+                <div class="leave-details">
+                    <h3>연차 현황</h3>
+                    <div class="detail-cards">
+                        <div class="detail-card">
+                            <div class="detail-label">총 연차</div>
+                            <div class="detail-value" id="detailTotalLeave">-</div>
+                        </div>
+                        <div class="detail-card">
+                            <div class="detail-label">사용 연차</div>
+                            <div class="detail-value" id="detailUsedLeave">-</div>
+                        </div>
+                        <div class="detail-card">
+                            <div class="detail-label">잔여 연차</div>
+                            <div class="detail-value" id="detailRemainingLeave">-</div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="leave-history">
+                    <h3>연차 사용 이력</h3>
+                    <div class="history-list" id="leaveHistoryList">
+                        <!-- JavaScript로 동적 생성 -->
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn-secondary" id="closeDetailModalBtn">닫기</button>
+            </div>
+        </div>
+    </div>
+
+    <script th:src="@{/js/admin-vacation-management.js}"></script>
+</body>
+</html>
