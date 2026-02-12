@@ -690,6 +690,8 @@
             if (teamAddButtonWrapper) {
                 teamAddButtonWrapper.style.display = 'none';
             }
+            const countEl = document.getElementById('teamMemberCount');
+            if (countEl) countEl.textContent = '';
             return;
         }
 
@@ -754,6 +756,10 @@
         if (teamAddButtonWrapper) {
             teamAddButtonWrapper.style.display = '';
         }
+
+        // 총인원 표시
+        const countEl = document.getElementById('teamMemberCount');
+        if (countEl) countEl.textContent = selectedMemberList.length + '명';
     }
 
     // 팀원 참여기간 업데이트 (전역 함수)
@@ -1174,11 +1180,12 @@
 
     // 폼 제출
     if (projectEditForm) {
-        projectEditForm.addEventListener('submit', function(e) {
+        projectEditForm.addEventListener('submit', async function(e) {
             e.preventDefault();
 
             // 유효성 검사
-            if (!validateForm()) {
+            const isValid = await validateForm();
+            if (!isValid) {
                 return;
             }
 
@@ -1321,53 +1328,79 @@
         }
     }
 
+    // SweetAlert2 경고 + 모달이 완전히 닫힌 후 포커스 이동
+    function warnAndFocus(message, element) {
+        return Swal.fire({
+            title: '경고',
+            html: message.replace(/\n/g, '<br>'),
+            icon: 'warning',
+            confirmButtonText: '확인',
+            confirmButtonColor: '#ff9800',
+            didClose: () => {
+                if (element) element.focus();
+            }
+        });
+    }
+
     // 폼 유효성 검사
     async function validateForm() {
-        const projectName = document.getElementById('projectName').value.trim();
-        const clientName = document.getElementById('clientName').value.trim();
-        const projectStatus = document.getElementById('projectStatus').value;
-        const projectManager = document.getElementById('projectManager').value;
-        const startDate = document.getElementById('startDate').value;
-        const endDate = document.getElementById('endDate').value;
-        const projectDescription = document.getElementById('projectDescription').value.trim();
+        const projectNameInput = document.getElementById('projectName');
+        const clientNameInput = document.getElementById('clientName');
+        const projectStatusInput = document.getElementById('projectStatus');
+        const projectManagerInput = document.getElementById('projectManager');
+        const startDateInput = document.getElementById('startDate');
+        const endDateInput = document.getElementById('endDate');
+        const projectDescriptionInput = document.getElementById('projectDescription');
 
-        if (!projectName) {
-            await showWarning('프로젝트명을 입력해주세요.');
+        if (!projectNameInput.value.trim()) {
+            await warnAndFocus('프로젝트명을 입력해주세요.', projectNameInput);
             return false;
         }
 
-        if (!clientName) {
-            await showWarning('발주사를 입력해주세요.');
+        if (!clientNameInput.value.trim()) {
+            await warnAndFocus('발주사를 입력해주세요.', clientNameInput);
             return false;
         }
 
-        if (!projectStatus) {
-            await showWarning('프로젝트 상태를 선택해주세요.');
+        if (!projectStatusInput.value) {
+            await warnAndFocus('프로젝트 상태를 선택해주세요.', projectStatusInput);
             return false;
         }
 
-        if (!projectManager) {
-            await showWarning('연구 책임자를 선택해주세요.');
+        if (!projectManagerInput.value) {
+            await warnAndFocus('연구 책임자를 선택해주세요.', projectManagerInput);
             return false;
         }
 
-        if (!startDate) {
-            await showWarning('시작일을 선택해주세요.');
+        if (!startDateInput.value) {
+            await warnAndFocus('현재 차수 시작일을 선택해주세요.', startDateInput);
             return false;
         }
 
-        if (!endDate) {
-            await showWarning('종료일을 선택해주세요.');
+        if (!endDateInput.value) {
+            await warnAndFocus('현재 차수 종료일을 선택해주세요.', endDateInput);
             return false;
         }
 
-        if (new Date(startDate) > new Date(endDate)) {
-            await showWarning('종료일은 시작일 이후여야 합니다.');
+        if (new Date(startDateInput.value) > new Date(endDateInput.value)) {
+            await warnAndFocus('종료일은 시작일 이후여야 합니다.', endDateInput);
             return false;
         }
 
-        if (!projectDescription) {
-            await showWarning('프로젝트 설명을 입력해주세요.');
+        if (!projectDescriptionInput.value.trim()) {
+            await warnAndFocus('프로젝트 설명을 입력해주세요.', projectDescriptionInput);
+            return false;
+        }
+
+        if (selectedMemberList.length === 0) {
+            await showWarning('참여 연구원을 1명 이상 추가해주세요.');
+            return false;
+        }
+
+        // 실무자 역할 검사
+        const hasPractitioner = selectedMemberList.some(m => m.role === 'PRACTITIONER');
+        if (!hasPractitioner) {
+            await showWarning('실무자를 선택해주세요.\n참여연구원 중 1명 이상을 실무자로 지정해야 합니다.');
             return false;
         }
 
