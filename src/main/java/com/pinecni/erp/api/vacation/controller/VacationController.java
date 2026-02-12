@@ -11,6 +11,8 @@ import com.pinecni.erp.api.vacation.repository.VacationRequestRepository;
 import com.pinecni.erp.api.vacation.repository.VacationAccrualScheduleRepository;
 import com.pinecni.erp.api.vacation.repository.VacationOfficialPdfRepository;
 import com.pinecni.erp.service.PdfGenerationService;
+import com.pinecni.erp.api.user.service.UserService;
+import com.pinecni.erp.api.user.dto.UserSimpleDTO;
 import jakarta.servlet.http.HttpSession;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -21,6 +23,7 @@ import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
 import java.util.*;
@@ -40,6 +43,7 @@ public class VacationController {
     private final VacationAccrualScheduleRepository vacationAccrualScheduleRepository;
     private final VacationOfficialPdfRepository vacationOfficialPdfRepository;
     private final PdfGenerationService pdfGenerationService;
+    private final UserService userService;
 
     /**
      * 연차 신청서용 사용자 정보 조회 API
@@ -564,6 +568,80 @@ public class VacationController {
         } catch (Exception e) {
             log.error("[연차신청서 삭제 실패] documentIdx: {}, error: {}", documentIdx, e.getMessage(), e);
             return ResponseEntity.internalServerError().body(Map.of("error", "삭제 처리 중 오류가 발생했습니다."));
+        }
+    }
+
+    /**
+     * 관리자 전용 - 전체 직원 연차 현황 조회 API
+     * @param year 조회할 연도 (선택, 기본값: 현재 연도)
+     * @param session HTTP 세션
+     * @return 전체 직원의 연차 정보 리스트
+     */
+    @GetMapping("/admin/all")
+    public ResponseEntity<?> getAllUsersVacationInfo(
+            @RequestParam(required = false) Integer year,
+            HttpSession session) {
+
+        // 관리자 권한 확인
+        Boolean isAdmin = (Boolean) session.getAttribute("isAdmin");
+        if (isAdmin == null || !isAdmin) {
+            log.warn("관리자가 아닌 사용자의 전체 연차 현황 조회 시도");
+            return ResponseEntity.status(403).body(Map.of("error", "관리자 권한이 필요합니다."));
+        }
+
+        if (year == null) {
+            year = LocalDate.now().getYear();
+        }
+
+        log.info("getAllUsersVacationInfo - year: {}", year);
+
+        try {
+            // 전체 활성 사용자 조회
+            List<UserSimpleDTO> allUsers = userService.getAllActiveUsers();
+
+            // 각 사용자의 연차 정보 조회
+            Integer finalYear = year;
+            List<VacationUserInfoDTO> vacationInfoList = allUsers.stream()
+                    .map(user -> {
+                        try {
+                            VacationUserInfoDTO dto = vacationService.getUserVacationInfo(user.getIdx(), finalYear);
+                            // 한글명과 입사일 추가
+                            dto.setEmpDeptName(user.getEmpDeptName());
+                            dto.setEmpPositionName(user.getEmpPositionName());
+                            dto.setEmpJoinDate(user.getEmpJoinDate() != null ? user.getEmpJoinDate().toString() : null);
+                            dto.setEmpPositionSortOrder(user.getEmpPositionSortOrder());
+                            return dto;
+                        } catch (Exception e) {
+                            log.warn("사용자 {}의 연차 정보 조회 실패: {}", user.getIdx(), e.getMessage());
+                            // 연차 정보 조회 실패 시 기본값 반환
+                            return VacationUserInfoDTO.builder()
+                                    .userIdx(user.getIdx())
+                                    .empName(user.getEmpName())
+                                    .empDept(user.getEmpDept())
+                                    .empDeptName(user.getEmpDeptName())
+                                    .empPosition(user.getEmpPosition())
+                                    .empPositionName(user.getEmpPositionName())
+                                    .empJoinDate(user.getEmpJoinDate() != null ? user.getEmpJoinDate().toString() : null)
+                                    .empPositionSortOrder(user.getEmpPositionSortOrder())
+                                    .totalDays(BigDecimal.ZERO)
+                                    .usedDays(BigDecimal.ZERO)
+                                    .remainingDays(BigDecimal.ZERO)
+                                    .year(finalYear)
+                                    .build();
+                        }
+                    })
+                    .sorted(Comparator.comparing(
+                            dto -> dto.getEmpPositionSortOrder() != null ? dto.getEmpPositionSortOrder() : 999
+                    ))
+                    .collect(Collectors.toList());
+
+            log.info("전체 연차 현황 조회 완료 - 총 {}명", vacationInfoList.size());
+            return ResponseEntity.ok(vacationInfoList);
+
+        } catch (Exception e) {
+            log.error("전체 연차 현황 조회 중 오류 발생: {}", e.getMessage(), e);
+            return ResponseEntity.internalServerError()
+                    .body(Map.of("error", "연차 현황 조회 중 오류가 발생했습니다."));
         }
     }
 }

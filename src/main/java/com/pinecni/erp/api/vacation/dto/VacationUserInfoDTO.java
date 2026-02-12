@@ -24,6 +24,8 @@ public class VacationUserInfoDTO {
     private String empAddress;
     private String empBirth;
     private String empPhone;
+    private String empJoinDate;      // 입사일
+    private Integer empPositionSortOrder; // 직급 정렬 순서
 
     // 연차 정보
     private BigDecimal totalDays;

@@ -1534,7 +1534,7 @@ document.addEventListener('DOMContentLoaded', function() {
     let currentSelectionDays = 0; // 현재 선택 중인 기간의 일수
 
     // 영업일 구간으로 분리하는 함수
-    function splitIntoBusinessDayPeriods(startDate, endDate, vacationType, paidType = null) {
+    function splitIntoBusinessDayPeriods(startDate, endDate, vacationType, paidType = null, reason = null) {
         const periods = [];
         let currentPeriodStart = null;
         let currentPeriodEnd = null;
@@ -1552,7 +1552,8 @@ document.addEventListener('DOMContentLoaded', function() {
                 days: 0.5,
                 startDateFormatted: formatDateDisplay(new Date(startDate)),
                 endDateFormatted: formatDateDisplay(new Date(endDate)),
-                paidType: paidType
+                paidType: paidType,
+                reason: reason
             }];
         }
 
@@ -1575,7 +1576,8 @@ document.addEventListener('DOMContentLoaded', function() {
                 days: businessDays,
                 startDateFormatted: formatDateDisplay(new Date(startDate)),
                 endDateFormatted: formatDateDisplay(new Date(endDate)),
-                paidType: paidType
+                paidType: paidType,
+                reason: reason
             }];
         }
 
@@ -1589,7 +1591,8 @@ document.addEventListener('DOMContentLoaded', function() {
                 days: totalDays,
                 startDateFormatted: formatDateDisplay(new Date(startDate)),
                 endDateFormatted: formatDateDisplay(new Date(endDate)),
-                paidType: paidType
+                paidType: paidType,
+                reason: reason
             }];
         }
 
@@ -1617,7 +1620,8 @@ document.addEventListener('DOMContentLoaded', function() {
                         days: currentDays,
                         startDateFormatted: formatDateDisplay(currentPeriodStart),
                         endDateFormatted: formatDateDisplay(currentPeriodEnd),
-                        paidType: paidType
+                        paidType: paidType,
+                        reason: reason
                     });
                     currentPeriodStart = null;
                     currentPeriodEnd = null;
@@ -1635,7 +1639,8 @@ document.addEventListener('DOMContentLoaded', function() {
                 days: currentDays,
                 startDateFormatted: formatDateDisplay(currentPeriodStart),
                 endDateFormatted: formatDateDisplay(currentPeriodEnd),
-                paidType: paidType
+                paidType: paidType,
+                reason: reason
             });
         }
 
@@ -2507,8 +2512,8 @@ document.addEventListener('DOMContentLoaded', function() {
                 if (reasonTooltipIcon) {
                     reasonTooltipIcon.style.display = 'none';
                 }
-                // 다른 유형 선택 시 사유 기본값 복원
-                if (reasonInput && !reasonInput.value.trim()) {
+                // 연차/반차 선택 시 사유 기본값으로 변경
+                if (reasonInput) {
                     reasonInput.value = '개인 연차 사용';
                     reasonInput.placeholder = '휴가 사용 사유를 입력하세요';
                 }
@@ -2613,6 +2618,12 @@ document.addEventListener('DOMContentLoaded', function() {
     gyeongjoRadios.forEach(radio => {
         radio.addEventListener('change', async () => {
             if (radio.checked) {
+                // 신청사유 자동 설정
+                const vifReasonElement = document.getElementById('vif_reason');
+                if (vifReasonElement) {
+                    vifReasonElement.value = '경조 휴가 사용';
+                }
+
                 // 이미 추가된 경조사 유형인지 체크
                 const gyeongjoType = radio.value;
                 const alreadyAdded = vacationPeriods.some(period =>
@@ -3017,12 +3028,16 @@ document.addEventListener('DOMContentLoaded', function() {
                 paidType = paidTypeRadio ? paidTypeRadio.value : '무급';
             }
 
+            // 현재 신청사유 가져오기
+            const currentReason = document.getElementById('vif_reason').value.trim();
+
             // 영업일 구간으로 자동 분리
             const splitPeriods = splitIntoBusinessDayPeriods(
                 parseDateFromDisplay(vifStartDate.textContent),
                 parseDateFromDisplay(vifEndDate.textContent),
                 vacationType,
-                paidType
+                paidType,
+                currentReason
             );
 
             if (splitPeriods.length === 0) {
@@ -3356,15 +3371,32 @@ document.addEventListener('DOMContentLoaded', function() {
         document.getElementById('department').textContent = document.getElementById('vif_department').textContent;
         document.getElementById('position').textContent = document.getElementById('vif_position').textContent;
 
-        // 사유 복사 (마이너스 연차일 경우 특별 사유 추가)
+        // 사유 복사 - 모든 기간의 사유를 통합
         const allowMinusCheckbox = document.getElementById('allow_minus_vacation');
         const specialReasonTextarea = document.getElementById('special_approval_reason');
-        const vifReason = document.getElementById('vif_reason').value;
 
-        let reasonText = vifReason;
+        let reasonText = '';
+
+        // 추가된 기간이 있으면 각 기간의 사유를 합침
+        if (vacationPeriods.length > 0) {
+            // 중복 사유 제거를 위해 Set 사용
+            const uniqueReasons = new Set();
+            vacationPeriods.forEach(period => {
+                if (period.reason && period.reason.trim()) {
+                    uniqueReasons.add(period.reason.trim());
+                }
+            });
+
+            // 사유를 줄바꿈으로 구분해서 표시
+            reasonText = Array.from(uniqueReasons).join('\n');
+        } else {
+            // 기간이 추가되지 않았으면 현재 입력된 사유 사용
+            reasonText = document.getElementById('vif_reason').value;
+        }
+
         // 체크박스가 체크되어 있고 특별 사유가 입력되어 있으면 문서에 포함
         if (allowMinusCheckbox && allowMinusCheckbox.checked && specialReasonTextarea && specialReasonTextarea.value.trim()) {
-            reasonText = `${vifReason}\n\n[마이너스연차 특별 요청 사유]\n${specialReasonTextarea.value.trim()}`;
+            reasonText = `${reasonText}\n\n[마이너스연차 특별 요청 사유]\n${specialReasonTextarea.value.trim()}`;
         }
         document.getElementById('reason').textContent = reasonText;
 
