@@ -79,6 +79,21 @@
     font-size: 18px;
     font-weight: 600;
     color: #1a1a1a;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.project-count,
+.member-count {
+    font-size: 13px;
+    font-weight: 600;
+    color: #667eea;
+    background: #eef2ff;
+    padding: 2px 10px;
+    border-radius: 12px;
+    min-width: 24px;
+    text-align: center;
 }
 
 /* 헤더 컨트롤 */

@@ -822,6 +822,8 @@
             if (teamAddButtonWrapper) {
                 teamAddButtonWrapper.style.display = 'none';
             }
+            const countEl = document.getElementById('teamMemberCount');
+            if (countEl) countEl.textContent = '';
             return;
         }
 
@@ -886,6 +888,10 @@
         if (teamAddButtonWrapper) {
             teamAddButtonWrapper.style.display = '';
         }
+
+        // 총인원 표시
+        const countEl = document.getElementById('teamMemberCount');
+        if (countEl) countEl.textContent = selectedMemberList.length + '명';
     }
 
     // 팀원 참여기간 업데이트 (전역 함수)
@@ -1397,6 +1403,13 @@
 
         if (selectedMemberList.length === 0) {
             await showWarning('참여 연구원을 1명 이상 추가해주세요.');
+            return false;
+        }
+
+        // 실무자 역할 검사
+        const hasPractitioner = selectedMemberList.some(m => m.role === 'PRACTITIONER');
+        if (!hasPractitioner) {
+            await showWarning('실무자를 선택해주세요.\n참여연구원 중 1명 이상을 실무자로 지정해야 합니다.');
             return false;
         }
 
