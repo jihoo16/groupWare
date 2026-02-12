@@ -182,13 +182,22 @@
             `;
 
             item.addEventListener('click', function() {
-                // 기존 선택 해제
-                managerListElement.querySelectorAll('.manager-employee-item').forEach(el => {
-                    el.classList.remove('selected');
-                });
-                // 새로운 선택
-                item.classList.add('selected');
+                // 연구책임자 선택
                 selectedManager = manager;
+
+                // 선택 즉시 적용
+                if (projectManagerInput) {
+                    projectManagerInput.value = `${selectedManager.empName} (${selectedManager.empDeptName || '-'} / ${selectedManager.empPositionName || '-'})`;
+                }
+                if (projectManagerIdxInput) {
+                    projectManagerIdxInput.value = selectedManager.idx;
+                }
+
+                // 팀원에 자동 추가
+                addManagerToTeam(selectedManager);
+
+                // 모달 닫기
+                closeManagerModal();
             });
 
             managerListElement.appendChild(item);
@@ -762,12 +771,26 @@
         const projectStartDate = document.getElementById('startDate').value;
         const projectEndDate = document.getElementById('endDate').value;
 
-        // 기존 선택 목록 초기화 (PI 제외)
-        selectedMemberList = selectedMemberList.filter(m => m.role === 'PI');
+        // 선택된 팀원 ID 목록 생성
+        const selectedMemberIds = new Set(tempSelectedMembers.map(m => m.id.toString()));
 
+        // 1. 선택 해제된 팀원 제거 (PI는 제외)
+        selectedMemberList = selectedMemberList.filter(member => {
+            // PI는 항상 유지
+            if (member.role === 'PI') return true;
+            // 선택된 팀원만 유지
+            return selectedMemberIds.has(member.id) || selectedMemberIds.has(String(member.idx));
+        });
+
+        // 2. 새로운 팀원만 추가
         tempSelectedMembers.forEach(member => {
-            // 중복 체크 (PI 제외)
-            if (!selectedMemberList.some(m => m.id === member.id.toString())) {
+            // 중복 체크 - 이미 존재하는 팀원은 건너뛰기
+            const existingMember = selectedMemberList.find(m =>
+                m.id === member.id.toString() ||
+                (m.idx && m.idx === member.id)
+            );
+
+            if (!existingMember) {
                 // 직급에 따라 자동으로 역할 할당
                 const autoRole = getAutoRole(member.rank);
 
@@ -841,12 +864,18 @@
                 <td>${member.position}</td>
                 <td>${roleCell}</td>
                 <td>
-                    <input type="date" value="${member.startDate}"
-                           onchange="updateMemberDate('${member.id}', 'startDate', this.value)">
+                    <div class="date-input-wrapper" onclick="document.getElementById('startDate_${member.id}').showPicker()">
+                        <input type="date" id="startDate_${member.id}" value="${member.startDate}"
+                               onchange="updateMemberDate('${member.id}', 'startDate', this.value)">
+                        <i class="fas fa-calendar-alt date-icon"></i>
+                    </div>
                 </td>
                 <td>
-                    <input type="date" value="${member.endDate}"
-                           onchange="updateMemberDate('${member.id}', 'endDate', this.value)">
+                    <div class="date-input-wrapper" onclick="document.getElementById('endDate_${member.id}').showPicker()">
+                        <input type="date" id="endDate_${member.id}" value="${member.endDate}"
+                               onchange="updateMemberDate('${member.id}', 'endDate', this.value)">
+                        <i class="fas fa-calendar-alt date-icon"></i>
+                    </div>
                 </td>
                 <td class="text-center">${deleteCell}</td>
             `;

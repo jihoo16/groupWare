@@ -2756,6 +2756,17 @@ div h2{
         size: A4;
     }
 
+    /* 첫 페이지 설정 */
+    @page :first {
+        margin: 0;
+    }
+
+    /* 빈 페이지 방지 */
+    html, body {
+        height: auto !important;
+        overflow: visible !important;
+    }
+
     /* 인쇄 시 숨길 요소들 */
     .sidebar,
     .template-sidebar,
@@ -2822,7 +2833,7 @@ div h2{
     /* 배경색 제거 및 여백 설정 */
     body {
         background: white !important;
-        margin: 1.5cm !important;
+        margin: 1cm !important;
     }
 
     /* 페이지 나누기 방지 */
@@ -2830,11 +2841,23 @@ div h2{
     .form-table,
     .document-footer {
         page-break-inside: avoid;
+        page-break-after: avoid;
     }
 
     /* 문서 제목 스타일 유지 */
     .doc-title {
         page-break-after: avoid;
+    }
+
+    /* 불필요한 페이지 나누기 방지 */
+    * {
+        page-break-after: avoid !important;
+        page-break-before: avoid !important;
+    }
+
+    /* 마지막 요소 이후 페이지 나누기 방지 */
+    .document-form > *:last-child {
+        page-break-after: avoid !important;
     }
 }
 

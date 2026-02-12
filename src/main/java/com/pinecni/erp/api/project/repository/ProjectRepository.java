@@ -149,13 +149,21 @@ public interface ProjectRepository extends JpaRepository<Project, Long> {
 
     /**
      * 프로젝트 필터용 목록 조회 (문서 개수 포함)
-     * 프로젝트별로 주간보고 + 연구비증빙 문서 개수를 카운트
+     * 개별 문서 테이블을 카운트하되, approval_document가 삭제되지 않은 것만 포함
      */
     @Query(value = "SELECT p.idx, p.project_name, p.project_status, " +
-            "(COALESCE((SELECT COUNT(*) FROM erp.project_weekly_report wr WHERE wr.project_idx = p.idx), 0) + " +
-            "COALESCE((SELECT COUNT(*) FROM erp.receipt_meeting rm WHERE rm.project_idx = p.idx), 0) + " +
-            "COALESCE((SELECT COUNT(*) FROM erp.receipt_trip rt WHERE rt.project_idx = p.idx), 0) + " +
-            "COALESCE((SELECT COUNT(*) FROM erp.receipt_overtime ro WHERE ro.project_idx = p.idx), 0)) as document_count " +
+            "(COALESCE((SELECT COUNT(*) FROM erp.project_weekly_report wr " +
+            "INNER JOIN erp.approval_documents ad ON ad.idx = wr.document_idx " +
+            "WHERE wr.project_idx = p.idx AND ad.deleted_at IS NULL), 0) + " +
+            "COALESCE((SELECT COUNT(*) FROM erp.receipt_meeting rm " +
+            "INNER JOIN erp.approval_documents ad ON ad.idx = rm.document_idx " +
+            "WHERE rm.project_idx = p.idx AND ad.deleted_at IS NULL), 0) + " +
+            "COALESCE((SELECT COUNT(*) FROM erp.receipt_trip rt " +
+            "INNER JOIN erp.approval_documents ad ON ad.idx = rt.document_idx " +
+            "WHERE rt.project_idx = p.idx AND ad.deleted_at IS NULL), 0) + " +
+            "COALESCE((SELECT COUNT(*) FROM erp.receipt_overtime ro " +
+            "INNER JOIN erp.approval_documents ad ON ad.idx = ro.document_idx " +
+            "WHERE ro.project_idx = p.idx AND ad.deleted_at IS NULL), 0)) as document_count " +
             "FROM erp.projects p " +
             "WHERE p.is_deleted = false " +
             "ORDER BY p.start_date DESC", nativeQuery = true)

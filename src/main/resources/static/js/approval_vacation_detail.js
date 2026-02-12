@@ -94,8 +94,11 @@ function createDeleteButton(documentIdx, periods) {
         // 휴가 종료일이 지났는지 확인
         const isVacationExpired = checkIfVacationExpired(periods);
 
-        if (isVacationExpired) {
-            // 휴가일이 지난 경우 - 비활성화
+        // 관리자 여부 확인
+        const isAdmin = window.CURRENT_USER && window.CURRENT_USER.isAdmin === true;
+
+        if (isVacationExpired && !isAdmin) {
+            // 휴가일이 지났지만 관리자가 아닌 경우 - 비활성화
             deleteBtn.className = 'btn-danger disabled';
             deleteBtn.disabled = true;
             deleteBtn.style.cursor = 'not-allowed';
@@ -114,17 +117,27 @@ function createDeleteButton(documentIdx, periods) {
             deleteWrapper.appendChild(deleteBtn);
             deleteWrapper.appendChild(tooltip);
         } else {
-            // 휴가일이 지나지 않은 경우 - 정상 삭제 가능
+            // 휴가일이 지나지 않았거나 관리자인 경우 - 정상 삭제 가능
             deleteBtn.className = 'btn-danger';
             deleteBtn.addEventListener('click', () => deleteDocument(documentIdx));
 
             const tooltip = document.createElement('div');
             tooltip.className = 'tooltip-text';
-            tooltip.innerHTML = `
-                <i class="fas fa-info-circle"></i>
-                연차신청서는 PDF로 자동 생성되므로 수정이 불가능합니다.<br>
-                문서를 삭제하고 새로 작성해주세요.
-            `;
+
+            if (isAdmin && isVacationExpired) {
+                // 관리자가 만료된 휴가를 삭제하는 경우
+                tooltip.innerHTML = `
+                    <i class="fas fa-shield-alt"></i>
+                    관리자 권한으로 삭제가 가능합니다.
+                `;
+            } else {
+                // 일반적인 경우
+                tooltip.innerHTML = `
+                    <i class="fas fa-info-circle"></i>
+                    연차신청서는 PDF로 자동 생성되므로 수정이 불가능합니다.<br>
+                    문서를 삭제하고 새로 작성해주세요.
+                `;
+            }
 
             deleteWrapper.appendChild(deleteBtn);
             deleteWrapper.appendChild(tooltip);

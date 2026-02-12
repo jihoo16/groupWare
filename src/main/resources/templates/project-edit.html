@@ -65,22 +65,34 @@
 
                     <div class="form-group">
                         <label for="startDate">현재 차수 시작일 <span class="required">*</span></label>
-                        <input type="date" id="startDate" name="startDate" class="form-control" required>
+                        <div class="date-input-wrapper" onclick="document.getElementById('startDate').showPicker()">
+                            <input type="date" id="startDate" name="startDate" class="form-control" required>
+                            <i class="fas fa-calendar-alt date-icon"></i>
+                        </div>
                     </div>
 
                     <div class="form-group">
                         <label for="endDate">현재 차수 종료일 <span class="required">*</span></label>
-                        <input type="date" id="endDate" name="endDate" class="form-control" required>
+                        <div class="date-input-wrapper" onclick="document.getElementById('endDate').showPicker()">
+                            <input type="date" id="endDate" name="endDate" class="form-control" required>
+                            <i class="fas fa-calendar-alt date-icon"></i>
+                        </div>
                     </div>
 
                     <div class="form-group">
                         <label for="totalPeriodStart">총 프로젝트 시작일</label>
-                        <input type="date" id="totalPeriodStart" name="totalPeriodStart" class="form-control">
+                        <div class="date-input-wrapper" onclick="document.getElementById('totalPeriodStart').showPicker()">
+                            <input type="date" id="totalPeriodStart" name="totalPeriodStart" class="form-control">
+                            <i class="fas fa-calendar-alt date-icon"></i>
+                        </div>
                     </div>
 
                     <div class="form-group">
                         <label for="totalPeriodEnd">총 프로젝트 종료일</label>
-                        <input type="date" id="totalPeriodEnd" name="totalPeriodEnd" class="form-control">
+                        <div class="date-input-wrapper" onclick="document.getElementById('totalPeriodEnd').showPicker()">
+                            <input type="date" id="totalPeriodEnd" name="totalPeriodEnd" class="form-control">
+                            <i class="fas fa-calendar-alt date-icon"></i>
+                        </div>
                     </div>
 
                     <div class="form-group">

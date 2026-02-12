@@ -732,12 +732,18 @@
                 <td>${member.position}</td>
                 <td>${roleCell}</td>
                 <td>
-                    <input type="date" value="${member.startDate}"
-                           onchange="updateMemberDate('${member.id}', 'startDate', this.value)">
+                    <div class="date-input-wrapper" onclick="document.getElementById('startDate_${member.id}').showPicker()">
+                        <input type="date" id="startDate_${member.id}" value="${member.startDate}"
+                               onchange="updateMemberDate('${member.id}', 'startDate', this.value)">
+                        <i class="fas fa-calendar-alt date-icon"></i>
+                    </div>
                 </td>
                 <td>
-                    <input type="date" value="${member.endDate}"
-                           onchange="updateMemberDate('${member.id}', 'endDate', this.value)">
+                    <div class="date-input-wrapper" onclick="document.getElementById('endDate_${member.id}').showPicker()">
+                        <input type="date" id="endDate_${member.id}" value="${member.endDate}"
+                               onchange="updateMemberDate('${member.id}', 'endDate', this.value)">
+                        <i class="fas fa-calendar-alt date-icon"></i>
+                    </div>
                 </td>
                 <td class="text-center">${deleteCell}</td>
             `;
