@@ -16,8 +16,8 @@ document.addEventListener('DOMContentLoaded', function() {
     const cardViewBtn = document.getElementById('cardViewBtn');
     const listViewBtn = document.getElementById('listViewBtn');
     const myProjectToggleBtn = document.getElementById('myProjectToggleBtn');
-    let currentViewType = 'list'; // 'card' 또는 'list'
-    let showMyProjectsOnly = false;
+    let currentViewType = 'card'; // 'card' 또는 'list'
+    let showMyProjectsOnly = true;
 
     // 프로젝트 데이터
     let allCurrentProjects = [];

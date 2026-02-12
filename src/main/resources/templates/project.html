@@ -22,15 +22,15 @@
         <div class="card-header card-header-sticky">
             <h2>현재 진행중인 프로젝트</h2>
             <div class="header-controls">
-                <button class="my-project-toggle-btn" id="myProjectToggleBtn" title="내 프로젝트만 보기">
+                <button class="my-project-toggle-btn active" id="myProjectToggleBtn" title="내 프로젝트만 보기">
                     <i class="fas fa-user"></i>
                     <span>내 프로젝트</span>
                 </button>
                 <div class="view-toggle-buttons">
-                    <button class="view-toggle-btn" id="cardViewBtn" title="카드형">
+                    <button class="view-toggle-btn active" id="cardViewBtn" title="카드형">
                         <i class="fas fa-th-large"></i>
                     </button>
-                    <button class="view-toggle-btn active" id="listViewBtn" title="리스트형">
+                    <button class="view-toggle-btn" id="listViewBtn" title="리스트형">
                         <i class="fas fa-list"></i>
                     </button>
                 </div>
@@ -38,12 +38,12 @@
         </div>
 
         <!-- 카드형 뷰 -->
-        <div class="project-grid" id="currentProjectGrid" style="display: none;">
+        <div class="project-grid" id="currentProjectGrid">
             <!-- JavaScript에서 동적으로 렌더링됩니다 -->
         </div>
 
         <!-- 리스트형 뷰 -->
-        <div class="current-project-list-container" id="currentProjectListContainer">
+        <div class="current-project-list-container" id="currentProjectListContainer" style="display: none;">
             <table class="project-table current-project-table" id="currentProjectTable">
                 <thead>
                     <tr>
