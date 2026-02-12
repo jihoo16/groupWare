@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Configuration status="WARN">
+    <Properties>
+        <Property name="SERVICE_NAME">${spring:spring.application.name:-app}</Property>
+    </Properties>
+
+    <Appenders>
+        <Console name="Console" target="SYSTEM_OUT">
+            <JsonTemplateLayout eventTemplateUri="classpath:Log4j2-JsonLayout.json"/>
+        </Console>
+    </Appenders>
+
+    <Loggers>
+        <Root level="${sys:logging.level.root:-INFO}">
+            <AppenderRef ref="Console"/>
+        </Root>
+    </Loggers>
+</Configuration>
