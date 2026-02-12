@@ -11,13 +11,15 @@ document.addEventListener('DOMContentLoaded', function() {
     const currentProjectGrid = document.getElementById('currentProjectGrid');
     const currentProjectListContainer = document.getElementById('currentProjectListContainer');
     const currentProjectListBody = document.getElementById('currentProjectListBody');
+    const currentProjectCount = document.getElementById('currentProjectCount');
+    const pastProjectCount = document.getElementById('pastProjectCount');
 
     // 뷰 토글 버튼
     const cardViewBtn = document.getElementById('cardViewBtn');
     const listViewBtn = document.getElementById('listViewBtn');
     const myProjectToggleBtn = document.getElementById('myProjectToggleBtn');
-    let currentViewType = 'list'; // 'card' 또는 'list'
-    let showMyProjectsOnly = false;
+    let currentViewType = 'card'; // 'card' 또는 'list'
+    let showMyProjectsOnly = true;
 
     // 프로젝트 데이터
     let allCurrentProjects = [];
@@ -108,6 +110,9 @@ document.addEventListener('DOMContentLoaded', function() {
         renderCurrentProjects(projects);
         if (currentViewType === 'list') {
             renderCurrentProjectsList(projects);
+        }
+        if (currentProjectCount) {
+            currentProjectCount.textContent = projects.length ;
         }
     }
 
@@ -442,6 +447,9 @@ document.addEventListener('DOMContentLoaded', function() {
                 filteredPastProjects = [...allPastProjects];
                 currentPage = 1;
                 renderPastProjects();
+                if (pastProjectCount) {
+                    pastProjectCount.textContent = filteredPastProjects.length ;
+                }
             })
             .catch(error => {
                 console.error('Error loading past projects:', error);
@@ -471,6 +479,9 @@ document.addEventListener('DOMContentLoaded', function() {
 
         currentPage = 1;
         renderPastProjects();
+        if (pastProjectCount) {
+            pastProjectCount.textContent = filteredPastProjects.length ;
+        }
     }
 
     // 과거 프로젝트 렌더링 (SearchUtils 하이라이트 적용)

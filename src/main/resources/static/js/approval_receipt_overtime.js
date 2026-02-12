@@ -148,43 +148,42 @@ document.addEventListener('DOMContentLoaded', async function() {
     }
 
     /**
-     * 직급별 경비 설정 도움말 테이블 렌더링
+     * 직급별 경비 설정 툴팁 렌더링
      */
     function renderExpenseHelpTable(settings) {
-        const tbody = document.getElementById('expenseHelpBody');
-        if (!tbody) return;
+        const tooltipContent = document.getElementById('expenseTooltipContent');
+        if (!tooltipContent) return;
 
         if (!settings || settings.length === 0) {
-            tbody.innerHTML = '<tr><td colspan="5" class="empty-row">과제를 먼저 선택하세요</td></tr>';
+            tooltipContent.innerHTML = '<div class="expense-tooltip-loading" style="line-height: 1.4;">과제 선택 시<br>직급별 야근식대 정보를<br>확인하실 수 있습니다</div>';
             return;
         }
 
-        const grouped = {};
-        settings.forEach(s => {
-            if (!s.positionName) return;
-            if (!grouped[s.positionName]) {
-                grouped[s.positionName] = { daily: 0, meal: 0, meeting: 0, overtime: 0, sort: s.positionSortOrder || 99 };
-            }
-            const name = s.expenseItemName || '';
-            const amt = s.amount || 0;
-            if (name.includes('식비') || name.includes('중식')) grouped[s.positionName].meal = amt;
-            else if (name.includes('출장')) grouped[s.positionName].daily = amt;
-            else if (name.includes('회의')) grouped[s.positionName].meeting = amt;
-            else if (name.includes('야근')) grouped[s.positionName].overtime = amt;
+        // 야근식대 항목만 필터링
+        const overtimeExpenses = settings.filter(s => {
+            const name = (s.expenseItemName || '').toLowerCase();
+            return name.includes('야근');
         });
 
-        const sorted = Object.entries(grouped).sort((a, b) => a[1].sort - b[1].sort);
-        const fmt = v => v ? v.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ',') : '0';
+        if (overtimeExpenses.length === 0) {
+            tooltipContent.innerHTML = '<div class="expense-tooltip-empty">야근식대 설정이 없습니다</div>';
+            return;
+        }
 
-        tbody.innerHTML = sorted.map(([pos, v]) => `
-            <tr>
-                <td>${pos}</td>
-                <td>${fmt(v.daily)}</td>
-                <td>${fmt(v.meal)}</td>
-                <td>${fmt(v.meeting)}</td>
-                <td>${fmt(v.overtime)}</td>
-            </tr>
-        `).join('');
+        const sorted = overtimeExpenses.sort((a, b) => (a.positionSortOrder || 99) - (b.positionSortOrder || 99));
+
+        let html = '<div class="expense-tooltip-header">직급별 야근식대</div>';
+        sorted.forEach(setting => {
+            const formattedAmount = setting.amount ? setting.amount.toLocaleString('ko-KR') : '0';
+            html += `
+                <div class="expense-tooltip-item">
+                    <span class="expense-tooltip-position">${setting.positionName || setting.positionCode}</span>
+                    <span class="expense-tooltip-amount">${formattedAmount}원</span>
+                </div>
+            `;
+        });
+
+        tooltipContent.innerHTML = html;
     }
 
     // ============================================
@@ -1174,6 +1173,17 @@ document.addEventListener('DOMContentLoaded', async function() {
             updateOvertimeTable();
             updateContentText();
             updateOvertimeTotalAmount();
+
+            // 인원 수 뱃지 업데이트
+            const countBadge = document.getElementById('overtimeCountBadge');
+            if (countBadge) {
+                if (overtimePersons.length > 0) {
+                    countBadge.textContent = overtimePersons.length + '명';
+                    countBadge.style.display = 'inline-flex';
+                } else {
+                    countBadge.style.display = 'none';
+                }
+            }
         }
 
         // 야근인원 추가 버튼 표시
@@ -2719,14 +2729,21 @@ document.addEventListener('DOMContentLoaded', async function() {
             overtimeDate.dispatchEvent(new Event('input'));
         }
 
-        // 날짜 입력 필드 전체 영역 클릭 시 날짜 선택기 열기
-        if (overtimeDate) {
-            overtimeDate.addEventListener('click', function() {
-                if (this.showPicker) {
-                    this.showPicker();
-                }
-            });
-        }
+        // 날짜/시간 입력 필드 전체 영역 클릭 시 선택기 열기
+        const dateTimeInputs = [
+            document.getElementById('ot_approval_date'),
+            document.getElementById('ot_start_time'),
+            document.getElementById('ot_end_time')
+        ];
+        dateTimeInputs.forEach(input => {
+            if (input) {
+                input.addEventListener('click', function() {
+                    if (this.showPicker) {
+                        this.showPicker();
+                    }
+                });
+            }
+        });
 
         // 품의명 기본값 자동 채우기
         const otTitle = document.getElementById('ot_title');
