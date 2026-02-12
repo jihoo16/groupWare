@@ -261,8 +261,14 @@
                     </div>
 
                     <!-- 직급별 경비 설정 -->
-                    <h3 class="section-title">직급별 경비 설정</h3>
-                    <div class="expense-settings-container">
+                    <div class="section-title-toggle">
+                        <h3 class="section-title">직급별 경비 설정</h3>
+                        <button type="button" class="btn-section-toggle" id="toggleExpenseBtn">
+                            <span class="toggle-text">보기</span>
+                            <i class="fas fa-chevron-down toggle-icon"></i>
+                        </button>
+                    </div>
+                    <div class="expense-settings-container collapsed" id="expenseSettingsContainer">
                         <table class="expense-settings-table">
                             <thead>
                             <tr>
@@ -299,6 +305,25 @@
     <button class="scroll-to-top" id="scrollToTopBtn" title="상단으로 이동">
         <i class="fas fa-chevron-up"></i>
     </button>
+</div>
+
+<!-- 문서 레이어 팝업 (iframe 모달) -->
+<div class="iframe-modal-overlay" id="iframeModalOverlay">
+    <div class="iframe-modal">
+        <div class="iframe-modal-header">
+            <span class="iframe-modal-title" id="iframeModalTitle">문서 보기</span>
+            <button type="button" class="iframe-modal-close" id="iframeModalClose" title="닫기">
+                <i class="fas fa-times"></i>
+            </button>
+        </div>
+        <div class="iframe-modal-body">
+            <div class="iframe-loading" id="iframeLoading">
+                <div class="iframe-loading-spinner"></div>
+                <span>로딩 중...</span>
+            </div>
+            <iframe id="iframeModalContent" frameborder="0"></iframe>
+        </div>
+    </div>
 </div>
 
 <script th:src="@{/js/project-detail.js}"></script>

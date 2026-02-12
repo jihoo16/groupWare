@@ -179,6 +179,26 @@
                                         <label>
                                             <i class="fas fa-users"></i> 야근 인원
                                             <span class="required-mark">*</span>
+                                            <span class="expense-help-wrapper">
+                                                <i class="fas fa-question-circle expense-help-icon" id="expenseHelpIcon"></i>
+                                                <div class="expense-help-tooltip" id="expenseHelpTooltip">
+                                                    <div class="expense-help-title">직급별 경비</div>
+                                                    <table class="expense-help-table" id="expenseHelpTable">
+                                                        <thead>
+                                                            <tr>
+                                                                <th>직급</th>
+                                                                <th>출장 일비</th>
+                                                                <th>출장 식비</th>
+                                                                <th>회의비</th>
+                                                                <th>야근식대</th>
+                                                            </tr>
+                                                        </thead>
+                                                        <tbody id="expenseHelpBody">
+                                                            <tr><td colspan="5" class="empty-row">과제를 먼저 선택하세요</td></tr>
+                                                        </tbody>
+                                                    </table>
+                                                </div>
+                                            </span>
                                         </label>
                                         <div id="overtimePersonArea" class="attendee-area">
                                             <div id="overtimePersonList" class="attendee-list">

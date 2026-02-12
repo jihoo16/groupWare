@@ -12,6 +12,7 @@ document.addEventListener('DOMContentLoaded', async function() {
     let selectedApplicant = null; // 선택된 신청자
     let tempSelectedOvertimePersons = []; // 모달에서 임시 선택된 인원
     let projectExpenses = {}; // 선택된 프로젝트의 직급별 야근석식대
+    let allProjectExpenseSettings = []; // 전체 경비 설정 (툴팁 테이블 표시용)
 
     // 수정 모드 관련 변수
     let isEditMode = false;
@@ -89,6 +90,8 @@ document.addEventListener('DOMContentLoaded', async function() {
         if (!projectIdx) {
             projectMembers = [];
             projectExpenses = {};
+            allProjectExpenseSettings = [];
+            renderExpenseHelpTable([]);
             return;
         }
         try {
@@ -100,6 +103,7 @@ document.addEventListener('DOMContentLoaded', async function() {
 
                 // 프로젝트별 야근석식대 경비 설정 추출
                 projectExpenses = {};
+                allProjectExpenseSettings = project.projectExpenseSettings || [];
                 if (project.projectExpenseSettings) {
                     project.projectExpenseSettings.forEach(setting => {
                         if (setting.positionName && setting.expenseItemName === '야근석식대' && setting.amount) {
@@ -107,17 +111,22 @@ document.addEventListener('DOMContentLoaded', async function() {
                         }
                     });
                 }
+                renderExpenseHelpTable(allProjectExpenseSettings);
                 console.log('프로젝트 참여인원 로드 완료:', projectMembers.length + '명');
                 console.log('프로젝트 야근식대 경비:', projectExpenses);
             } else {
                 console.error('프로젝트 참여인원 로드 실패');
                 projectMembers = [];
                 projectExpenses = {};
+                allProjectExpenseSettings = [];
+                renderExpenseHelpTable([]);
             }
         } catch (error) {
             console.error('프로젝트 참여인원 로드 오류:', error);
             projectMembers = [];
             projectExpenses = {};
+            allProjectExpenseSettings = [];
+            renderExpenseHelpTable([]);
         }
     }
 
@@ -136,6 +145,46 @@ document.addEventListener('DOMContentLoaded', async function() {
                 overtimeExpense: overtimeExpense
             };
         });
+    }
+
+    /**
+     * 직급별 경비 설정 도움말 테이블 렌더링
+     */
+    function renderExpenseHelpTable(settings) {
+        const tbody = document.getElementById('expenseHelpBody');
+        if (!tbody) return;
+
+        if (!settings || settings.length === 0) {
+            tbody.innerHTML = '<tr><td colspan="5" class="empty-row">과제를 먼저 선택하세요</td></tr>';
+            return;
+        }
+
+        const grouped = {};
+        settings.forEach(s => {
+            if (!s.positionName) return;
+            if (!grouped[s.positionName]) {
+                grouped[s.positionName] = { daily: 0, meal: 0, meeting: 0, overtime: 0, sort: s.positionSortOrder || 99 };
+            }
+            const name = s.expenseItemName || '';
+            const amt = s.amount || 0;
+            if (name.includes('식비') || name.includes('중식')) grouped[s.positionName].meal = amt;
+            else if (name.includes('출장')) grouped[s.positionName].daily = amt;
+            else if (name.includes('회의')) grouped[s.positionName].meeting = amt;
+            else if (name.includes('야근')) grouped[s.positionName].overtime = amt;
+        });
+
+        const sorted = Object.entries(grouped).sort((a, b) => a[1].sort - b[1].sort);
+        const fmt = v => v ? v.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ',') : '0';
+
+        tbody.innerHTML = sorted.map(([pos, v]) => `
+            <tr>
+                <td>${pos}</td>
+                <td>${fmt(v.daily)}</td>
+                <td>${fmt(v.meal)}</td>
+                <td>${fmt(v.meeting)}</td>
+                <td>${fmt(v.overtime)}</td>
+            </tr>
+        `).join('');
     }
 
     // ============================================

@@ -1,0 +1,23 @@
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,prometheus # 프로덕션에서는 필수 정보만 노출
+
+
+logging:
+  config: classpath:log4j2-prod.xml
+  level:
+    root: info
+
+    "[org.apache.kafka]": WARN
+    "[org.springframework.kafka]": WARN
+    "[io.lettuce.core]": WARN
+    "[org.springframework.data.redis]": WARN
+    "[com.zaxxer.hikari]": WARN
+    "[org.springframework.data]": WARN
+    "[io.micrometer.registry.otlp]": WARN
+    "[io.opentelemetry.exporter]": WARN
+
+    # 애플리케이션 로깅
+    "[com.pinecni.erp]": info

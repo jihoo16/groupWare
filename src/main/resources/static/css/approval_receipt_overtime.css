@@ -93,6 +93,103 @@
     font-size: 13px;
 }
 
+/* 직급별 경비 도움말 툴팁 */
+.expense-help-wrapper {
+    position: relative;
+    display: inline-flex;
+    align-items: center;
+    margin-left: 2px;
+}
+
+.expense-help-icon {
+    color: #94a3b8 !important;
+    font-size: 13px !important;
+    cursor: help;
+    transition: color 0.2s;
+}
+
+.expense-help-icon:hover {
+    color: #667eea !important;
+}
+
+.expense-help-tooltip {
+    display: none;
+    position: absolute;
+    top: calc(100% + 8px);
+    left: 0;
+    z-index: 1000;
+    background: white;
+    border: 1px solid #e0e0e0;
+    border-radius: 10px;
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.15);
+    padding: 14px 16px;
+    min-width: 420px;
+    white-space: nowrap;
+}
+
+.expense-help-tooltip::before {
+    content: '';
+    position: absolute;
+    top: -7px;
+    left: 16px;
+    width: 12px;
+    height: 12px;
+    background: white;
+    border-left: 1px solid #e0e0e0;
+    border-top: 1px solid #e0e0e0;
+    transform: rotate(45deg);
+}
+
+.expense-help-wrapper:hover .expense-help-tooltip {
+    display: block;
+}
+
+.expense-help-title {
+    font-size: 13px;
+    font-weight: 700;
+    color: #1a237e;
+    margin-bottom: 10px;
+    padding-bottom: 8px;
+    border-bottom: 2px solid #4361ee;
+}
+
+.expense-help-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 12px;
+}
+
+.expense-help-table thead th {
+    background: #f8f9fa;
+    font-weight: 600;
+    font-size: 11px;
+    color: #495057;
+    padding: 8px 10px;
+    border: 1px solid #e9ecef;
+    text-align: center;
+}
+
+.expense-help-table tbody td {
+    padding: 7px 10px;
+    border: 1px solid #e9ecef;
+    text-align: center;
+    color: #333;
+    font-weight: 500;
+}
+
+.expense-help-table tbody td:first-child {
+    font-weight: 600;
+    background: #f8f9fa;
+    color: #1a237e;
+}
+
+.expense-help-table tbody td.empty-row {
+    padding: 16px;
+    color: #999;
+    font-weight: 400;
+    text-align: center;
+}
+
 /* 폼 입력 필드 */
 .form-input {
     width: 100%;

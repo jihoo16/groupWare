@@ -15,7 +15,19 @@ repositories {
     }
 }
 
+configurations {
+  compileOnly {
+    extendsFrom(configurations.annotationProcessor.get())
+  }
+  all {
+    exclude(group = "junit", module = "junit") // Exclude JUnit 4
+    exclude(group = "org.springframework.boot", module = "spring-boot-starter-logging")
+  }
+}
+
 dependencies {
+    implementation(platform(libs.io.opentelemetry.bom))
+    implementation(platform(libs.io.opentelemetry.instrumentation.bom))
     implementation(libs.org.springframework.boot.spring.boot.starter.web)
     implementation(libs.org.springframework.boot.spring.boot.starter.thymeleaf)
     implementation(libs.org.springframework.boot.spring.boot.starter.data.jpa)
@@ -28,6 +40,20 @@ dependencies {
     implementation(libs.com.lowagie.itext)
     implementation(libs.org.jsoup.jsoup)
     implementation(libs.com.microsoft.playwright)
+    implementation(libs.org.springframework.boot.spring.boot.starter.log4j2)
+    implementation(libs.org.apache.logging.log4j.log4j.api)
+    implementation(libs.org.apache.logging.log4j.log4j.core)
+    implementation(libs.org.apache.logging.log4j.log4j.slf4j2.impl)
+    implementation(libs.org.apache.logging.log4j.log4j.layout.template.json)
+    implementation(libs.com.lmax.disruptor)
+    implementation(libs.io.opentelemetry.instrumentation.opentelemetry.spring.boot.starter)
+    implementation(libs.io.micrometer.context.propagation)
+    implementation(libs.io.opentelemetry.opentelemetry.exporter.otlp)
+    implementation(libs.io.micrometer.micrometer.registry.prometheus)
+    implementation(libs.io.micrometer.micrometer.registry.otlp)
+
+
+
     testRuntimeOnly(libs.com.h2database.h2)
     runtimeOnly(libs.org.springframework.boot.spring.boot.devtools)
     runtimeOnly(libs.org.postgresql.postgresql)
