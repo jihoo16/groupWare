@@ -144,7 +144,17 @@ document.addEventListener('DOMContentLoaded', function() {
             'receipt-overtime': '야근식대 증빙'
         };
 
-        contentTitle.textContent = titles[category] || '문서 목록';
+        const titleText = titles[category] || '문서 목록';
+
+        // 뱃지를 유지하면서 제목만 변경
+        if (contentTitle.firstChild && contentTitle.firstChild.nodeType === Node.TEXT_NODE) {
+            // 첫 번째 텍스트 노드만 변경
+            contentTitle.firstChild.nodeValue = titleText + ' ';
+        } else {
+            // 텍스트 노드가 없으면 생성해서 맨 앞에 추가
+            const textNode = document.createTextNode(titleText + ' ');
+            contentTitle.insertBefore(textNode, contentTitle.firstChild);
+        }
     }
 
     // 문서 필터링

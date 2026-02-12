@@ -8,6 +8,7 @@ document.addEventListener('DOMContentLoaded', function() {
     const documentList = document.getElementById('documentList');
     const emptyState = document.getElementById('emptyState');
     const contentTitle = document.querySelector('.content-title');
+    const documentCountBadge = document.getElementById('documentCountBadge');
     const searchInput = document.getElementById('searchInput');
     const sortSelect = document.getElementById('sortSelect');
     const viewBtns = document.querySelectorAll('.view-btn');
@@ -71,7 +72,17 @@ document.addEventListener('DOMContentLoaded', function() {
             'general': '일반 기안'
         };
 
-        contentTitle.textContent = titles[category] || '문서 목록';
+        const titleText = titles[category] || '문서 목록';
+
+        // 뱃지를 유지하면서 제목만 변경
+        if (contentTitle.firstChild && contentTitle.firstChild.nodeType === Node.TEXT_NODE) {
+            // 첫 번째 텍스트 노드만 변경
+            contentTitle.firstChild.nodeValue = titleText + ' ';
+        } else {
+            // 텍스트 노드가 없으면 생성해서 맨 앞에 추가
+            const textNode = document.createTextNode(titleText + ' ');
+            contentTitle.insertBefore(textNode, contentTitle.firstChild);
+        }
     }
 
     // 새 문서 작성 드롭다운
@@ -165,6 +176,13 @@ document.addEventListener('DOMContentLoaded', function() {
         applyPagination();
     }
 
+    // 문서 총 건수 업데이트
+    function updateDocumentCount() {
+        if (documentCountBadge) {
+            documentCountBadge.textContent = filteredRows.length;
+        }
+    }
+
     // 페이징 적용
     function applyPagination() {
         const table = documentList.querySelector('.document-table');
@@ -191,6 +209,9 @@ document.addEventListener('DOMContentLoaded', function() {
             if (table) table.style.display = 'table';
             emptyState.style.display = 'none';
         }
+
+        // 문서 총 건수 업데이트
+        updateDocumentCount();
 
         // 페이지네이션 UI 업데이트
         updatePagination();

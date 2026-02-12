@@ -4344,7 +4344,7 @@ document.addEventListener('DOMContentLoaded', async function() {
                 startTime: startTimeInput.value + ':00',
                 endTime: endTimeInput.value + ':00',
                 location: locationInput.value,
-                amount: document.getElementById('common_amount')?.value ? parseFloat(document.getElementById('common_amount').value) : null,
+                amount: document.getElementById('common_amount')?.value ? parseInt(document.getElementById('common_amount').value.replace(/,/g, '')) : null,
                 purpose: document.getElementById('common_purpose')?.value || null,
                 content: document.getElementById('common_content')?.value || null,
                 attendees: attendeeDTOs
