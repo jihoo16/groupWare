@@ -8,6 +8,7 @@ document.addEventListener('DOMContentLoaded', function() {
     const documentList = document.getElementById('documentList');
     const emptyState = document.getElementById('emptyState');
     const contentTitle = document.querySelector('.content-title');
+    const documentCountBadge = document.getElementById('documentCountBadge');
     const searchInput = document.getElementById('searchInput');
     const periodFilter = document.getElementById('periodFilter');
     const dateRangeContainer = document.getElementById('dateRangeContainer');
@@ -19,9 +20,11 @@ document.addEventListener('DOMContentLoaded', function() {
 
     let currentCategory = 'all';
     let selectedPeriod = 'all';
+    let selectedProjectIdx = null; // 선택된 프로젝트 IDX
     let customStartDate = null;
     let customEndDate = null;
     let allDocuments = []; // 전체 문서 데이터 (원본)
+    let allProjects = []; // 전체 프로젝트 목록
     let currentSortColumn = 'date';
     let currentSortOrder = 'desc'; // 'asc' or 'desc'
 
@@ -163,6 +166,7 @@ document.addEventListener('DOMContentLoaded', function() {
             const category = row.getAttribute('data-category');
             const createdAt = row.getAttribute('data-created-at');
             const eventDate = row.getAttribute('data-event-date');
+            const projectIdx = row.getAttribute('data-project-idx');
 
             let show = true;
 
@@ -173,6 +177,11 @@ document.addEventListener('DOMContentLoaded', function() {
                 } else {
                     show = category === currentCategory;
                 }
+            }
+
+            // 프로젝트 필터 (선택된 프로젝트가 있을 경우)
+            if (selectedProjectIdx !== null) {
+                show = show && projectIdx === String(selectedProjectIdx);
             }
 
             // 기간 필터 - eventDate 우선 사용, 없으면 createdAt 사용
@@ -193,12 +202,14 @@ document.addEventListener('DOMContentLoaded', function() {
                 const titleCell = row.querySelector('.doc-title-cell');
                 const title = titleCell ? titleCell.querySelector('.title-wrap').textContent : '';
                 const desc = titleCell ? titleCell.querySelector('.desc-wrap').textContent : '';
-                const drafterName = row.querySelector('td:nth-child(3)').textContent;
-                const deptName = row.querySelector('td:nth-child(4)').textContent;
+                const projectName = row.querySelector('td:nth-child(2)').textContent;
+                const drafterName = row.querySelector('td:nth-child(4)').textContent;
+                const deptName = row.querySelector('td:nth-child(5)').textContent;
 
                 show = show && (
                     searchUtils.matchesSearch(title, searchKeyword) ||
                     searchUtils.matchesSearch(desc, searchKeyword) ||
+                    searchUtils.matchesSearch(projectName, searchKeyword) ||
                     searchUtils.matchesSearch(drafterName, searchKeyword) ||
                     searchUtils.matchesSearch(deptName, searchKeyword)
                 );
@@ -211,6 +222,13 @@ document.addEventListener('DOMContentLoaded', function() {
 
         // 페이징 적용
         applyPagination();
+    }
+
+    // 문서 총 건수 업데이트
+    function updateDocumentCount() {
+        if (documentCountBadge) {
+            documentCountBadge.textContent = filteredRows.length;
+        }
     }
 
     // 페이징 적용
@@ -239,6 +257,9 @@ document.addEventListener('DOMContentLoaded', function() {
             if (table) table.style.display = 'table';
             emptyState.style.display = 'none';
         }
+
+        // 문서 총 건수 업데이트
+        updateDocumentCount();
 
         // 페이지네이션 UI 업데이트
         updatePagination();
@@ -654,6 +675,7 @@ document.addEventListener('DOMContentLoaded', function() {
         tr.setAttribute('data-created-at', doc.createdAt);
         tr.setAttribute('data-event-date', doc.eventDate || doc.createdAt);
         tr.setAttribute('data-document-idx', doc.idx);
+        tr.setAttribute('data-project-idx', doc.projectIdx || '');
         // 문서종류
         const typeCell = document.createElement('td');
         typeCell.className = 'doc-type-cell';
@@ -674,6 +696,13 @@ document.addEventListener('DOMContentLoaded', function() {
             </span>
         `;
         tr.appendChild(typeCell);
+
+        // 프로젝트
+        const projectCell = document.createElement('td');
+        const projectName = doc.projectName || '-';
+        const highlightedProject = keyword ? searchUtils.highlightText(projectName, keyword) : projectName;
+        projectCell.innerHTML = highlightedProject;
+        tr.appendChild(projectCell);
 
         // 제목
         const titleCell = document.createElement('td');
@@ -813,9 +842,189 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     }
 
+    // ================================================
+    // 프로젝트 필터 기능
+    // ================================================
+    const projectFilterInput = document.getElementById('projectFilterInput');
+    const projectSearchInput = document.getElementById('projectSearchInput');
+    const projectDropdown = document.getElementById('projectDropdown');
+    const projectSearchBox = document.getElementById('projectSearchBox');
+    const activeProjectsContainer = document.getElementById('activeProjects');
+    const completedProjectsContainer = document.getElementById('completedProjects');
+    const pausedProjectsContainer = document.getElementById('pausedProjects');
+
+    // 프로젝트 목록 로드
+    async function loadProjects() {
+        try {
+            const response = await fetch('/api/projects/filter');
+            if (response.ok) {
+                allProjects = await response.json();
+                console.log('프로젝트 목록 로드 성공:', allProjects);
+                renderProjectDropdown();
+            } else {
+                console.error('프로젝트 목록 로드 실패:', response.status);
+                allProjects = [];
+            }
+        } catch (error) {
+            console.error('프로젝트 목록 로드 중 오류:', error);
+            allProjects = [];
+        }
+    }
+
+    // 프로젝트 드롭다운 렌더링
+    function renderProjectDropdown(searchKeyword = '') {
+        const activeProjects = allProjects.filter(p => p.status === 'ACTIVE');
+        const completedProjects = allProjects.filter(p => p.status === 'COMPLETED');
+        const pausedProjects = allProjects.filter(p => p.status === 'PAUSED');
+
+        function filterProjects(projects) {
+            if (!searchKeyword) return projects;
+            return projects.filter(p =>
+                p.projectName.toLowerCase().includes(searchKeyword.toLowerCase())
+            );
+        }
+
+        // 전체 프로젝트 옵션 업데이트
+        const projectAllOption = document.getElementById('projectAllOption');
+        const allProjectCount = document.getElementById('allProjectCount');
+        const allProjectItem = projectAllOption ? projectAllOption.querySelector('.project-item') : null;
+
+        if (projectAllOption) {
+            // 검색어가 있으면 전체 프로젝트 옵션 숨김
+            if (searchKeyword) {
+                projectAllOption.style.display = 'none';
+            } else {
+                projectAllOption.style.display = 'block';
+
+                // 총 문서 개수 업데이트
+                if (allProjectCount) {
+                    const totalDocCount = allProjects.reduce((sum, p) => sum + p.documentCount, 0);
+                    allProjectCount.textContent = totalDocCount;
+                }
+
+                // 선택 상태 업데이트
+                if (allProjectItem) {
+                    if (selectedProjectIdx === null) {
+                        allProjectItem.classList.add('selected');
+                    } else {
+                        allProjectItem.classList.remove('selected');
+                    }
+
+                    // 클릭 이벤트 (중복 방지를 위해 기존 리스너 제거 후 추가)
+                    allProjectItem.replaceWith(allProjectItem.cloneNode(true));
+                    const newAllProjectItem = projectAllOption.querySelector('.project-item');
+                    if (newAllProjectItem) {
+                        newAllProjectItem.addEventListener('click', selectAllProjects);
+                    }
+                }
+            }
+        }
+
+        renderProjectGroup(activeProjectsContainer, filterProjects(activeProjects), '진행중인 프로젝트가 없습니다.');
+        renderProjectGroup(completedProjectsContainer, filterProjects(completedProjects), '완료된 프로젝트가 없습니다.');
+        renderProjectGroup(pausedProjectsContainer, filterProjects(pausedProjects), '보류된 프로젝트가 없습니다.');
+    }
+
+    function renderProjectGroup(container, projects, emptyMessage) {
+        if (projects.length === 0) {
+            container.innerHTML = `<div class="project-empty">${emptyMessage}</div>`;
+            return;
+        }
+
+        let html = '';
+        projects.forEach(project => {
+            const isSelected = selectedProjectIdx === project.idx;
+            html += `
+                <div class="project-item ${isSelected ? 'selected' : ''}" data-project-idx="${project.idx}">
+                    <span class="project-item-name">${project.projectName}</span>
+                    <span class="project-item-count">${project.documentCount}</span>
+                </div>
+            `;
+        });
+
+        container.innerHTML = html;
+
+        container.querySelectorAll('.project-item').forEach(item => {
+            item.addEventListener('click', function() {
+                const projectIdx = parseInt(this.dataset.projectIdx);
+                selectProject(projectIdx);
+            });
+        });
+    }
+
+    function selectProject(projectIdx) {
+        const project = allProjects.find(p => p.idx === projectIdx);
+        if (!project) return;
+
+        selectedProjectIdx = projectIdx;
+        projectSearchInput.value = project.projectName;
+        closeProjectDropdown();
+        currentPage = 1;
+        filterDocuments();
+    }
+
+    function selectAllProjects() {
+        selectedProjectIdx = null;
+        projectSearchInput.value = '전체 프로젝트';
+        closeProjectDropdown();
+        currentPage = 1;
+        filterDocuments();
+    }
+
+    function toggleProjectDropdown() {
+        const isOpen = projectDropdown.style.display === 'block';
+        if (isOpen) {
+            closeProjectDropdown();
+        } else {
+            openProjectDropdown();
+        }
+    }
+
+    function openProjectDropdown() {
+        projectDropdown.style.display = 'block';
+        projectFilterInput.classList.add('active');
+        projectSearchBox.value = '';
+        projectSearchBox.focus();
+        renderProjectDropdown();
+    }
+
+    function closeProjectDropdown() {
+        projectDropdown.style.display = 'none';
+        projectFilterInput.classList.remove('active');
+    }
+
+    if (projectFilterInput) {
+        projectFilterInput.addEventListener('click', toggleProjectDropdown);
+    }
+
+    if (projectSearchBox) {
+        projectSearchBox.addEventListener('input', function() {
+            renderProjectDropdown(this.value.trim());
+        });
+    }
+
+    document.addEventListener('click', function(e) {
+        if (!projectFilterInput?.contains(e.target) && !projectDropdown?.contains(e.target)) {
+            closeProjectDropdown();
+        }
+    });
+
+    document.addEventListener('keydown', function(e) {
+        if (e.key === 'Escape' && projectDropdown?.style.display === 'block') {
+            closeProjectDropdown();
+        }
+    });
+
     // 초기 로드
     loadAllDocuments().then(() => {
-        // 문서 로드 후 URL 파라미터에 따라 탭 선택
         setTimeout(() => selectTabFromUrl(), 100);
     });
+
+    loadProjects();
+
+    // 프로젝트 필터 초기값 설정
+    if (projectSearchInput) {
+        projectSearchInput.value = '전체 프로젝트';
+    }
 });
+

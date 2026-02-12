@@ -88,7 +88,7 @@
                 <!-- 우측: 문서 목록 -->
                 <div class="approval-content">
                     <div class="content-header">
-                        <h2 class="content-title">전체 문서</h2>
+                        <h2 class="content-title">전체 문서 <span class="document-count-badge" id="documentCountBadge">0</span></h2>
                         <div class="content-controls">
                             <div class="period-filter-wrapper">
                                 <select class="sort-select" id="periodFilter">
@@ -111,6 +111,67 @@
                                                 <span class="tooltip-sub">(회의일자, 출장일자, 야근일자)</span>
                                             </li>
                                         </ul>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- 프로젝트 필터 -->
+                            <div class="project-filter-wrapper">
+                                <div class="project-filter-input" id="projectFilterInput">
+                                    <i class="fas fa-project-diagram"></i>
+                                    <input type="text"
+                                           id="projectSearchInput"
+                                           placeholder="프로젝트 검색 또는 선택..."
+                                           autocomplete="off"
+                                           readonly>
+                                    <i class="fas fa-chevron-down arrow-icon"></i>
+                                </div>
+
+                                <!-- 프로젝트 드롭다운 -->
+                                <div class="project-dropdown" id="projectDropdown" style="display: none;">
+                                    <div class="project-search-wrapper">
+                                        <i class="fas fa-search"></i>
+                                        <input type="text"
+                                               id="projectSearchBox"
+                                               placeholder="프로젝트명 입력..."
+                                               autocomplete="off">
+                                    </div>
+                                    <div class="project-list-wrapper">
+                                        <!-- 전체 프로젝트 옵션 -->
+                                        <div class="project-all-option" id="projectAllOption">
+                                            <div class="project-item" data-project-idx="all">
+                                                <span class="project-item-name"><strong>전체 프로젝트</strong></span>
+                                                <span class="project-item-count" id="allProjectCount">0</span>
+                                            </div>
+                                        </div>
+
+                                        <div class="project-group">
+                                            <div class="project-group-header">
+                                                <i class="fas fa-circle" style="color: #4ade80;"></i>
+                                                진행중
+                                            </div>
+                                            <div class="project-items" id="activeProjects">
+                                                <!-- JavaScript로 동적 생성 -->
+                                            </div>
+                                        </div>
+                                        <div class="project-group">
+                                            <div class="project-group-header">
+                                                <i class="fas fa-check-circle" style="color: #94a3b8;"></i>
+                                                완료
+                                            </div>
+                                            <div class="project-items" id="completedProjects">
+                                                <!-- JavaScript로 동적 생성 -->
+                                            </div>
+                                        </div>
+                                        <div class="project-group">
+                                            <div class="project-group-header">
+                                                <i class="fas fa-pause-circle" style="color: #fbbf24;"></i>
+                                                보류
+                                            </div>
+                                            <div class="project-items" id="pausedProjects">
+                                                <!-- JavaScript로 동적 생성 -->
+                                            </div>
+                                        </div>
                                     </div>
                                 </div>
                             </div>
@@ -146,6 +207,9 @@
                                 <tr>
                                     <th width="150" class="sortable" data-sort="type">
                                         문서종류 <i class="fas fa-sort"></i>
+                                    </th>
+                                    <th width="180" class="sortable" data-sort="project">
+                                        프로젝트 <i class="fas fa-sort"></i>
                                     </th>
                                     <th class="sortable" data-sort="title">
                                         제목 <i class="fas fa-sort"></i>

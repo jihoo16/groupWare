@@ -219,6 +219,24 @@ div[title]:hover::after {
     font-weight: 700;
     color: #333;
     margin: 0;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.document-count-badge {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 32px;
+    height: 24px;
+    padding: 0 8px;
+    background: #4f46e5;
+    color: white;
+    border-radius: 12px;
+    font-size: 13px;
+    font-weight: 600;
+    letter-spacing: 0.3px;
 }
 
 .content-controls {
@@ -330,7 +348,7 @@ div[title]:hover::after {
 }
 
 .doc-title-cell {
-    text-align: left;
+    text-align: left !important;
 }
 
 .doc-title-cell .title-wrap {
@@ -339,6 +357,7 @@ div[title]:hover::after {
     color: #333;
     margin-bottom: 4px;
     cursor: pointer;
+    text-align: left;
 }
 
 .doc-title-cell .title-wrap:hover {
@@ -349,6 +368,7 @@ div[title]:hover::after {
 .doc-title-cell .desc-wrap {
     font-size: 11px;
     color: #777;
+    text-align: left;
 }
 
 .approver-line {
@@ -403,12 +423,14 @@ div[title]:hover::after {
     color: white;
 }
 
-.btn-icon.btn-view {
+.btn-icon.btn-view,
+.btn-icon.view-btn {
     background: #e3f2fd;
     color: #1976d2;
 }
 
-.btn-icon.btn-view:hover {
+.btn-icon.btn-view:hover,
+.btn-icon.view-btn:hover {
     background: #1976d2;
     color: white;
 }
@@ -930,4 +952,216 @@ div[title]:hover::after {
 
 .btn-date-reset i {
     font-size: 14px;
+}
+
+/* ================================================
+   프로젝트 필터
+   ================================================ */
+.project-filter-wrapper {
+    position: relative;
+    min-width: 280px;
+}
+
+.project-filter-input {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 11px 16px;
+    background: white;
+    border: 1px solid #e5e7eb;
+    border-radius: 8px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.project-filter-input:hover {
+    border-color: #667eea;
+    background: #fafbff;
+}
+
+.project-filter-input.active {
+    border-color: #667eea;
+    box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.08);
+}
+
+.project-filter-input i.fa-project-diagram {
+    color: #667eea;
+    font-size: 15px;
+}
+
+.project-filter-input input {
+    flex: 1;
+    border: none;
+    outline: none;
+    font-size: 14px;
+    color: #333;
+    cursor: pointer;
+    background: transparent;
+}
+
+.project-filter-input input::placeholder {
+    color: #9ca3af;
+}
+
+.project-filter-input .arrow-icon {
+    color: #9ca3af;
+    font-size: 12px;
+    transition: transform 0.2s ease;
+}
+
+.project-filter-input.active .arrow-icon {
+    transform: rotate(180deg);
+}
+
+/* 프로젝트 드롭다운 */
+.project-dropdown {
+    position: absolute;
+    top: calc(100% + 8px);
+    left: 0;
+    right: 0;
+    background: white;
+    border: 1px solid #e5e7eb;
+    border-radius: 10px;
+    box-shadow: 0 10px 25px rgba(0, 0, 0, 0.08);
+    z-index: 1000;
+    max-height: 420px;
+    display: flex;
+    flex-direction: column;
+}
+
+.project-search-wrapper {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 14px 16px;
+    border-bottom: 1px solid #f3f4f6;
+}
+
+.project-search-wrapper i {
+    color: #9ca3af;
+    font-size: 14px;
+}
+
+.project-search-wrapper input {
+    flex: 1;
+    border: none;
+    outline: none;
+    font-size: 14px;
+    color: #333;
+}
+
+.project-search-wrapper input::placeholder {
+    color: #9ca3af;
+}
+
+.project-list-wrapper {
+    overflow-y: auto;
+    max-height: 350px;
+    padding: 4px 0;
+}
+
+.project-group {
+    margin-bottom: 4px;
+}
+
+.project-group:last-child {
+    margin-bottom: 0;
+}
+
+.project-all-option {
+    padding: 8px 0;
+    border-bottom: 1px solid #f3f4f6;
+}
+
+.project-all-option .project-item {
+    padding: 12px 12px;
+    font-weight: 500;
+}
+
+.project-group-header {
+    padding: 10px 16px;
+    background: transparent;
+    font-size: 11px;
+    font-weight: 600;
+    color: #9ca3af;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.project-group-header i {
+    font-size: 9px;
+}
+
+.project-items {
+    max-height: 220px;
+    overflow-y: auto;
+}
+
+.project-item {
+    margin: 0 8px;
+    padding: 11px 12px;
+    font-size: 14px;
+    color: #374151;
+    cursor: pointer;
+    transition: all 0.15s ease;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    border-radius: 6px;
+}
+
+.project-item:hover {
+    background: #f9fafb;
+    color: #667eea;
+}
+
+.project-item.selected {
+    background: #eef2ff;
+    color: #667eea;
+    font-weight: 500;
+}
+
+.project-item-name {
+    flex: 1;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.project-item-count {
+    font-size: 11px;
+    font-weight: 500;
+    color: #6b7280;
+    background: #f3f4f6;
+    padding: 3px 9px;
+    border-radius: 12px;
+    flex-shrink: 0;
+}
+
+.project-item.selected .project-item-count {
+    background: #ddd6fe;
+    color: #667eea;
+}
+
+.project-item.hidden {
+    display: none;
+}
+
+/* 빈 상태 */
+.project-empty {
+    padding: 32px 20px;
+    text-align: center;
+    color: #9ca3af;
+    font-size: 13px;
+}
+
+/* content-controls 간격 조정 */
+.content-controls {
+    display: flex;
+    gap: 12px;
+    flex-wrap: wrap;
 }
