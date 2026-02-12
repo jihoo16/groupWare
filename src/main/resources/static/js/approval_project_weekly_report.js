@@ -1959,13 +1959,28 @@ document.addEventListener('DOMContentLoaded', function() {
             const editingReportId = urlParams.get('id');
             const isEditMode = !!editingReportId;
 
-            const confirmMessage = isEditMode ?
-                '프로젝트 주간업무보고를 수정하시겠습니까?' :
-                '프로젝트 주간업무보고를 저장하시겠습니까?';
+            // 신규 작성 모드일 경우 PDF 저장 경고 표시
+            if (!isEditMode) {
+                const confirmResult = await Swal.fire({
+                    icon: 'warning',
+                    title: '프로젝트 주간업무보고 저장',
+                    html: '보고서는 <strong>PDF 파일로 저장</strong>되며,<br>저장 후에는 <strong>문서 내용을 수정할 수 없습니다.</strong><br><br>수정을 원하실 경우 삭제 후 재생성해야 합니다.<br><br>저장하시겠습니까?',
+                    showCancelButton: true,
+                    confirmButtonText: '저장',
+                    cancelButtonText: '취소',
+                    confirmButtonColor: '#3085d6',
+                    cancelButtonColor: '#d33'
+                });
 
-            const saveConfirmed = await showSaveConfirm(confirmMessage);
-            if (!saveConfirmed) {
-                return;
+                if (!confirmResult.isConfirmed) {
+                    return;
+                }
+            } else {
+                // 수정 모드일 경우 기존 확인 메시지
+                const saveConfirmed = await showSaveConfirm('프로젝트 주간업무보고를 수정하시겠습니까?');
+                if (!saveConfirmed) {
+                    return;
+                }
             }
 
             try {

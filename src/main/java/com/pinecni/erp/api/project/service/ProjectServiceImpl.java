@@ -555,12 +555,20 @@ public class ProjectServiceImpl implements ProjectService {
         log.debug("getProjectExpenseSettings() called with projectIdx: {}", projectIdx);
 
         return projectExpenseSettingRepository.findByProjectIdx(projectIdx).stream()
-                .map(setting -> ProjectExpenseSettingDTO.builder()
-                        .positionCode(setting.getPositionCode())
-                        .expenseItemName(setting.getExpenseItemName())
-                        .expenseItemNameEn(setting.getExpenseItemNameEn())
-                        .amount(setting.getAmount())
-                        .build())
+                .map(setting -> {
+                    // 직급 코드로 직급명 조회
+                    String positionName = codeRepository.findByGroupCodeAndCode("C02", setting.getPositionCode())
+                            .map(code -> code.getCodeName())
+                            .orElse(setting.getPositionCode());
+
+                    return ProjectExpenseSettingDTO.builder()
+                            .positionCode(setting.getPositionCode())
+                            .positionName(positionName)
+                            .expenseItemName(setting.getExpenseItemName())
+                            .expenseItemNameEn(setting.getExpenseItemNameEn())
+                            .amount(setting.getAmount())
+                            .build();
+                })
                 .collect(Collectors.toList());
     }
 
@@ -572,5 +580,55 @@ public class ProjectServiceImpl implements ProjectService {
         return projectRepository.findByMemberIdxOptimized(memberIdx).stream()
                 .map(mapper::toDTOFromArray)
                 .collect(Collectors.toList());
+    }
+
+    @Override
+    public List<ProjectFilterDTO> getProjectsForFilter() {
+        log.debug("getProjectsForFilter() called - querying projects with document count");
+
+        List<Object[]> results = projectRepository.findAllProjectsWithDocumentCount();
+
+        return results.stream()
+                .map(row -> {
+                    Long idx = ((Number) row[0]).longValue();
+                    String projectName = (String) row[1];
+                    String projectStatus = (String) row[2];
+                    Long documentCount = ((Number) row[3]).longValue();
+
+                    // projectStatus를 프론트엔드 형식으로 변환
+                    String status = convertProjectStatusToFilterStatus(projectStatus);
+
+                    return ProjectFilterDTO.builder()
+                            .idx(idx)
+                            .projectName(projectName)
+                            .status(status)
+                            .documentCount(documentCount.intValue())
+                            .build();
+                })
+                .collect(Collectors.toList());
+    }
+
+    /**
+     * DB의 projectStatus를 프론트엔드 필터 형식으로 변환
+     * DB 상태: PLANNING(기획), IN_PROGRESS(진행중), COMPLETED(완료), PENDING(대기), CANCELLED(취소)
+     * 필터 상태: ACTIVE(진행중), COMPLETED(완료), PAUSED(보류)
+     */
+    private String convertProjectStatusToFilterStatus(String projectStatus) {
+        if (projectStatus == null) {
+            return "ACTIVE";
+        }
+
+        switch (projectStatus) {
+            case "PLANNING":        // 기획 -> 진행중 그룹
+            case "IN_PROGRESS":     // 진행중 -> 진행중 그룹
+                return "ACTIVE";
+            case "COMPLETED":       // 완료 -> 완료 그룹
+                return "COMPLETED";
+            case "PENDING":         // 대기 -> 보류 그룹
+            case "CANCELLED":       // 취소 -> 보류 그룹
+                return "PAUSED";
+            default:
+                return "ACTIVE";
+        }
     }
 }
