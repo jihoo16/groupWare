@@ -700,8 +700,24 @@ document.addEventListener('DOMContentLoaded', function() {
         // 프로젝트
         const projectCell = document.createElement('td');
         const projectName = doc.projectName || '-';
-        const highlightedProject = keyword ? searchUtils.highlightText(projectName, keyword) : projectName;
-        projectCell.innerHTML = highlightedProject;
+        const maxLength = 12;
+
+        // 12글자 초과 시 말줄임표 처리 및 툴팁 추가
+        if (projectName !== '-' && projectName.length > maxLength) {
+            const displayName = projectName.substring(0, maxLength) + '...';
+            const highlightedProject = keyword ? searchUtils.highlightText(displayName, keyword) : displayName;
+
+            projectCell.innerHTML = `
+                <span class="project-name-wrapper">
+                    ${highlightedProject}
+                    <span class="project-name-tooltip">${projectName}</span>
+                </span>
+            `;
+        } else {
+            const highlightedProject = keyword ? searchUtils.highlightText(projectName, keyword) : projectName;
+            projectCell.innerHTML = highlightedProject;
+        }
+
         tr.appendChild(projectCell);
 
         // 제목

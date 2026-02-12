@@ -29,12 +29,24 @@ document.addEventListener('DOMContentLoaded', function() {
         item.addEventListener('click', function(e) {
             e.preventDefault();
 
+            // 문서함 선택
+            const category = this.getAttribute('data-category');
+
+            // 휴가 신청서 외 미구현 기능 알림
+            const notImplementedCategories = ['weekly-report', 'monthly-report', 'expense', 'purchase', 'meeting', 'general'];
+            if (notImplementedCategories.includes(category)) {
+                Swal.fire({
+                    icon: 'info',
+                    title: '추후 구현 예정',
+                    text: '해당 기능은 현재 개발 중입니다.',
+                    confirmButtonText: '확인'
+                });
+                return;
+            }
+
             // 활성화 상태 변경
             sidebarMenuItems.forEach(i => i.classList.remove('active'));
             this.classList.add('active');
-
-            // 문서함 선택
-            const category = this.getAttribute('data-category');
 
             if (category) {
                 currentCategory = category;

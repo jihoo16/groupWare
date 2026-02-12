@@ -35,6 +35,7 @@ document.addEventListener('DOMContentLoaded', function() {
     let currentSearchKeyword = ''; // 현재 검색어
 
     // 페이지네이션 요소
+    const paginationContainer = document.querySelector('.pagination-container');
     const firstPageBtn = document.getElementById('firstPageBtn');
     const prevPageBtn = document.getElementById('prevPageBtn');
     const nextPageBtn = document.getElementById('nextPageBtn');
@@ -550,19 +551,30 @@ document.addEventListener('DOMContentLoaded', function() {
     function renderPagination(totalPages) {
         if (!paginationNumbers) return;
 
+        // 페이지네이션이 필요 없는 경우 (페이지가 1개 이하) 컨테이너 숨김
+        if (totalPages <= 1) {
+            if (paginationContainer) {
+                paginationContainer.style.display = 'none';
+            }
+            if (totalPages === 0 && pageInfo) {
+                pageInfo.textContent = '0 / 0';
+            }
+            return;
+        }
+
+        // 페이지네이션이 필요한 경우 컨테이너 표시
+        if (paginationContainer) {
+            paginationContainer.style.display = 'flex';
+        }
+
         // 버튼 상태 업데이트
         if (firstPageBtn) firstPageBtn.disabled = currentPage === 1;
         if (prevPageBtn) prevPageBtn.disabled = currentPage === 1;
-        if (nextPageBtn) nextPageBtn.disabled = currentPage === totalPages || totalPages === 0;
-        if (lastPageBtn) lastPageBtn.disabled = currentPage === totalPages || totalPages === 0;
+        if (nextPageBtn) nextPageBtn.disabled = currentPage === totalPages;
+        if (lastPageBtn) lastPageBtn.disabled = currentPage === totalPages;
 
         // 페이지 번호 렌더링
         paginationNumbers.innerHTML = '';
-
-        if (totalPages === 0) {
-            if (pageInfo) pageInfo.textContent = '0 / 0';
-            return;
-        }
 
         // 페이지 범위 계산 (최대 5개 페이지 번호 표시)
         const maxPageNumbers = 5;

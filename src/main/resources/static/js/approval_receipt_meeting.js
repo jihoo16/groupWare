@@ -973,8 +973,8 @@ document.addEventListener('DOMContentLoaded', async function() {
 
                     row.appendChild(typeCell);
                     row.appendChild(deptCell);
-                    row.appendChild(signCell);
                     row.appendChild(nameCell);
+                    row.appendChild(signCell);
 
                     tbody.appendChild(row);
                 });

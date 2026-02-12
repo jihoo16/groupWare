@@ -577,6 +577,32 @@ textarea.form-control {
     line-height: 1.6;
 }
 
+/* 날짜 입력 래퍼 - 전체 영역 클릭 가능 */
+.date-input-wrapper {
+    position: relative;
+    cursor: pointer;
+    width: 100%;
+}
+
+.date-input-wrapper input[type="date"] {
+    width: 100%;
+    cursor: pointer;
+}
+
+.date-input-wrapper .date-icon {
+    position: absolute;
+    right: 16px;
+    top: 50%;
+    transform: translateY(-50%);
+    color: #6c757d;
+    pointer-events: none;
+    font-size: 14px;
+}
+
+.date-input-wrapper:hover .date-icon {
+    color: #4361ee;
+}
+
 select.form-control {
     cursor: pointer;
     appearance: none;
@@ -836,6 +862,7 @@ select.form-control {
 .member-select-table td {
     padding: 12px;
     border-bottom: 1px solid #e9ecef;
+    text-align: center;
 }
 
 .member-select-table tbody tr {
