@@ -8,6 +8,8 @@ plugins {
     id("io.spring.dependency-management") version "1.1.7"
 }
 
+extra["opentelemetry.version"] = libs.versions.io.opentelemetry.bom.get()
+
 repositories {
     mavenLocal()
     maven {
@@ -26,8 +28,8 @@ configurations {
 }
 
 dependencies {
-    implementation(platform(libs.io.opentelemetry.bom))
-    implementation(platform(libs.io.opentelemetry.instrumentation.bom))
+    implementation(enforcedPlatform(libs.io.opentelemetry.bom))
+    implementation(enforcedPlatform(libs.io.opentelemetry.instrumentation.bom))
     implementation(libs.org.springframework.boot.spring.boot.starter.web)
     implementation(libs.org.springframework.boot.spring.boot.starter.thymeleaf)
     implementation(libs.org.springframework.boot.spring.boot.starter.data.jpa)
@@ -51,6 +53,7 @@ dependencies {
     implementation(libs.io.opentelemetry.opentelemetry.exporter.otlp)
     implementation(libs.io.micrometer.micrometer.registry.prometheus)
     implementation(libs.io.micrometer.micrometer.registry.otlp)
+    implementation(libs.otel.log4j.context.data)
 
 
 
