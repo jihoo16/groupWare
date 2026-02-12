@@ -355,10 +355,13 @@ public class ApprovalDocumentServiceImpl implements ApprovalDocumentService {
      * WeeklyReport → DTO 변환
      */
     private ApprovalDocumentDTO convertWeeklyReportToDTO(WeeklyReport report) {
+        // Project 엔티티에서 프로젝트명 가져오기
+        String projectName = report.getProject() != null ? report.getProject().getProjectName() : "프로젝트 미지정";
+
         ApprovalDocumentDTO dto = ApprovalDocumentDTO.builder()
                 .idx(report.getDocumentIdx())
                 .sourceDocumentId(report.getId())
-                .title(report.getProjectName() + " - " + report.getReportPeriod())
+                .title(projectName + " - " + report.getReportPeriod())
                 .documentType("WEEKLY_REPORT")
                 .drafterUserIdx(report.getUserIdx())
                 .createdAt(report.getCreatedAt())

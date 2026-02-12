@@ -25,13 +25,19 @@ public class WeeklyReportMapper {
             return null;
         }
 
+        // Project 엔티티에서 프로젝트명 가져오기
+        String projectName = null;
+        if (entity.getProject() != null) {
+            projectName = entity.getProject().getProjectName();
+        }
+
         return WeeklyReportDTO.builder()
                 .id(entity.getId())
                 .userIdx(entity.getUserIdx())
                 .userName(null)  // TODO: User 테이블 JOIN하여 이름 조회
                 .userDept(null)  // TODO: User 테이블 JOIN하여 부서 조회
                 .projectIdx(entity.getProjectIdx())
-                .projectName(entity.getProjectName())
+                .projectName(projectName)
                 .documentIdx(entity.getDocumentIdx())
                 .reportPeriod(entity.getReportPeriod())
                 .mainTasks(entity.getMainTasks())
@@ -60,7 +66,7 @@ public class WeeklyReportMapper {
         WeeklyReport report = WeeklyReport.builder()
                 .userIdx(dto.getUserIdx())
                 .projectIdx(dto.getProjectIdx())
-                .projectName(dto.getProjectName())
+                // projectName은 저장하지 않음 - Project 테이블에서 참조
                 .reportPeriod(dto.getReportPeriod())
                 .mainTasks(dto.getMainTasks())
                 .achievements(dto.getAchievements())
@@ -93,9 +99,7 @@ public class WeeklyReportMapper {
         if (dto.getProjectIdx() != null) {
             entity.setProjectIdx(dto.getProjectIdx());
         }
-        if (dto.getProjectName() != null) {
-            entity.setProjectName(dto.getProjectName());
-        }
+        // projectName은 업데이트하지 않음 - Project 테이블에서 참조
         if (dto.getReportPeriod() != null) {
             entity.setReportPeriod(dto.getReportPeriod());
         }

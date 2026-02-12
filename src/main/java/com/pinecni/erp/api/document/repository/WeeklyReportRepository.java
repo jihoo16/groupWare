@@ -35,13 +35,32 @@ public interface WeeklyReportRepository extends JpaRepository<WeeklyReport, Long
     Optional<WeeklyReport> findByUserIdxAndReportPeriod(Long userIdx, String reportPeriod);
 
     /**
-     * 전체 주간업무보고 조회 (최신순)
+     * 전체 주간업무보고 조회 (최신순, Project fetch join)
      */
-    @Query("SELECT w FROM WeeklyReport w ORDER BY w.createdAt DESC")
+    @Query("SELECT w FROM WeeklyReport w LEFT JOIN FETCH w.project ORDER BY w.createdAt DESC")
     List<WeeklyReport> findAllOrderByCreatedAtDesc();
 
     /**
-     * documentIdx로 조회
+     * documentIdx로 조회 (Project fetch join)
      */
+    @Query("SELECT w FROM WeeklyReport w LEFT JOIN FETCH w.project WHERE w.documentIdx = :documentIdx")
     Optional<WeeklyReport> findByDocumentIdx(Long documentIdx);
+
+    /**
+     * ID로 조회 (Project fetch join)
+     */
+    @Query("SELECT w FROM WeeklyReport w LEFT JOIN FETCH w.project WHERE w.id = :id")
+    Optional<WeeklyReport> findByIdWithProject(Long id);
+
+    /**
+     * 특정 사용자의 보고서 목록 조회 (최신순, Project fetch join)
+     */
+    @Query("SELECT w FROM WeeklyReport w LEFT JOIN FETCH w.project WHERE w.userIdx = :userIdx ORDER BY w.createdAt DESC")
+    List<WeeklyReport> findByUserIdxWithProject(Long userIdx);
+
+    /**
+     * 특정 프로젝트의 보고서 목록 조회 (Project fetch join)
+     */
+    @Query("SELECT w FROM WeeklyReport w LEFT JOIN FETCH w.project WHERE w.projectIdx = :projectIdx")
+    List<WeeklyReport> findByProjectIdxWithProject(Long projectIdx);
 }
