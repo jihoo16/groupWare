@@ -26,6 +26,8 @@ configurations {
 }
 
 dependencies {
+    implementation(platform(libs.io.opentelemetry.bom))
+    implementation(platform(libs.io.opentelemetry.instrumentation.bom))
     implementation(libs.org.springframework.boot.spring.boot.starter.web)
     implementation(libs.org.springframework.boot.spring.boot.starter.thymeleaf)
     implementation(libs.org.springframework.boot.spring.boot.starter.data.jpa)
@@ -44,6 +46,11 @@ dependencies {
     implementation(libs.org.apache.logging.log4j.log4j.slf4j2.impl)
     implementation(libs.org.apache.logging.log4j.log4j.layout.template.json)
     implementation(libs.com.lmax.disruptor)
+    implementation(libs.io.opentelemetry.instrumentation.opentelemetry.spring.boot.starter)
+    implementation(libs.io.micrometer.context.propagation)
+    implementation(libs.io.opentelemetry.opentelemetry.exporter.otlp)
+    implementation(libs.io.micrometer.micrometer.registry.prometheus)
+    implementation(libs.io.micrometer.micrometer.registry.otlp)
 
 
 
