@@ -165,6 +165,16 @@ document.addEventListener('DOMContentLoaded', function() {
             showAlert(errorMessage, 'error');
             btnLogin.classList.remove('loading');
             btnLogin.disabled = false;
+
+            // 비밀번호 오류 시 비밀번호 필드 전체 선택
+            if (error.message.includes('비밀번호') || error.message.includes('올바르지 않습니다')) {
+                setTimeout(() => {
+                    if (passwordInput) {
+                        passwordInput.focus();
+                        passwordInput.select();
+                    }
+                }, 100);
+            }
         }
     });
 

@@ -2,8 +2,8 @@
   "timestamp": {
     "$resolver": "timestamp",
     "pattern": {
-      "format": "yyyy-MM-dd'T'HH:mm:ss.SSS'Z'",
-      "timeZone": "UTC"
+      "format": "yyyy-MM-dd'T'HH:mm:ss.SSSXXX",
+      "timeZone": "Asia/Seoul"
     }
   },
   "level": {

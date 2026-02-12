@@ -37,6 +37,13 @@
     font-size: 22px;
 }
 
+/* 헤더 액션 버튼 그룹 */
+.header-actions {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
 .btn-back {
     background: white;
     color: #667eea;
@@ -234,6 +241,10 @@
 }
 
 /* 참여자 입력 */
+.participants-input-wrapper {
+    position: relative;
+}
+
 .participants-input {
     display: flex;
     gap: 12px;
@@ -242,6 +253,103 @@
 
 .participants-input .form-input {
     flex: 1;
+}
+
+/* 직원 검색 드롭다운 */
+.employee-dropdown {
+    position: absolute;
+    top: 100%;
+    left: 0;
+    right: 0;
+    background: white;
+    border: 2px solid #667eea;
+    border-top: none;
+    border-radius: 0 0 8px 8px;
+    max-height: 300px;
+    overflow-y: auto;
+    z-index: 1000;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+    margin-top: 2px;
+}
+
+.employee-dropdown-item {
+    padding: 12px 16px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    transition: all 0.2s ease;
+    border-bottom: 1px solid #f0f0f0;
+}
+
+.employee-dropdown-item:last-child {
+    border-bottom: none;
+}
+
+.employee-dropdown-item:hover,
+.employee-dropdown-item.active {
+    background: linear-gradient(135deg, #e8eaf6 0%, #f3e5f5 100%);
+}
+
+.employee-avatar {
+    width: 36px;
+    height: 36px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, #667eea, #764ba2);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: white;
+    font-weight: 600;
+    font-size: 14px;
+    flex-shrink: 0;
+}
+
+.employee-info {
+    flex: 1;
+}
+
+.employee-name {
+    font-size: 14px;
+    font-weight: 600;
+    color: #333;
+    margin-bottom: 2px;
+}
+
+.employee-detail {
+    font-size: 12px;
+    color: #666;
+}
+
+.employee-dropdown::-webkit-scrollbar {
+    width: 6px;
+}
+
+.employee-dropdown::-webkit-scrollbar-track {
+    background: #f0f0f0;
+    border-radius: 3px;
+}
+
+.employee-dropdown::-webkit-scrollbar-thumb {
+    background: #ccc;
+    border-radius: 3px;
+}
+
+.employee-dropdown::-webkit-scrollbar-thumb:hover {
+    background: #999;
+}
+
+/* 외부인원 뱃지 */
+.external-badge {
+    display: inline-block;
+    padding: 2px 8px;
+    margin-left: 6px;
+    background: #ff9800;
+    color: white;
+    border-radius: 4px;
+    font-size: 11px;
+    font-weight: 600;
+    vertical-align: middle;
 }
 
 .btn-add {
@@ -551,9 +659,9 @@
     background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
     color: white;
     border: none;
-    padding: 14px 32px;
+    padding: 10px 20px;
     border-radius: 8px;
-    font-size: 15px;
+    font-size: 13px;
     font-weight: 600;
     cursor: pointer;
     display: flex;
@@ -594,9 +702,9 @@
     background: #dc3545;
     color: white;
     border: none;
-    padding: 14px 32px;
+    padding: 10px 20px;
     border-radius: 8px;
-    font-size: 15px;
+    font-size: 13px;
     font-weight: 600;
     cursor: pointer;
     display: flex;

@@ -7,6 +7,7 @@ import com.pinecni.erp.api.document.repository.MeetingMinutesRepository;
 import com.pinecni.erp.api.document.repository.WeeklyReportRepository;
 import com.pinecni.erp.api.document.repository.ReceiptOvertimeRepository;
 import com.pinecni.erp.api.project.repository.ProjectCardRepository;
+import com.pinecni.erp.api.project.repository.ProjectRepository;
 import com.pinecni.erp.api.project.repository.ReceiptMeetingRepository;
 import com.pinecni.erp.api.project.repository.ReceiptTripRepository;
 import com.pinecni.erp.api.user.repository.UserRepository;
@@ -45,6 +46,7 @@ public class ApprovalDocumentServiceImpl implements ApprovalDocumentService {
     private final ReceiptMeetingRepository receiptMeetingRepository;
     private final ReceiptOvertimeRepository receiptOvertimeRepository;
     private final ProjectCardRepository projectCardRepository;
+    private final ProjectRepository projectRepository;
 
     @Override
     public List<ApprovalDocumentDTO> getAllDocuments(Long currentUserIdx) {
@@ -182,16 +184,43 @@ public class ApprovalDocumentServiceImpl implements ApprovalDocumentService {
         if ("주간업무보고".equals(documentType) || "프로젝트 주간업무보고".equals(documentType)) {
             weeklyReportRepository.findByDocumentIdx(document.getIdx()).ifPresent(weeklyReport -> {
                 dto.setSourceDocumentId(weeklyReport.getId());
+                if (weeklyReport.getProjectIdx() != null) {
+                    dto.setProjectIdx(weeklyReport.getProjectIdx());
+                    projectRepository.findById(weeklyReport.getProjectIdx()).ifPresent(project -> {
+                        dto.setProjectName(project.getProjectName());
+                    });
+                }
             });
         } else if ("연구비증빙-회의록".equals(documentType) || "연구비증빙(회의록)".equals(documentType) || "receipt_meeting".equals(documentType)) {
-            // 연구비증빙 회의록의 원본 문서 ID 조회
+            // 연구비증빙 회의록의 원본 문서 ID 및 프로젝트 정보 조회
             receiptMeetingRepository.findByDocumentIdx(document.getIdx()).ifPresent(receiptMeeting -> {
                 dto.setSourceDocumentId(receiptMeeting.getIdx());
+                if (receiptMeeting.getProjectIdx() != null) {
+                    dto.setProjectIdx(receiptMeeting.getProjectIdx());
+                    projectRepository.findById(receiptMeeting.getProjectIdx()).ifPresent(project -> {
+                        dto.setProjectName(project.getProjectName());
+                    });
+                }
             });
         } else if ("연구비증빙-출장".equals(documentType) || "연구비증빙(출장)".equals(documentType) || "receipt_trip".equals(documentType)) {
-            // 연구비증빙 출장의 원본 문서 ID 조회
+            // 연구비증빙 출장의 원본 문서 ID 및 프로젝트 정보 조회
             receiptTripRepository.findByDocumentIdx(document.getIdx()).ifPresent(receiptTrip -> {
                 dto.setSourceDocumentId(receiptTrip.getIdx());
+                if (receiptTrip.getProjectIdx() != null) {
+                    dto.setProjectIdx(receiptTrip.getProjectIdx());
+                    projectRepository.findById(receiptTrip.getProjectIdx()).ifPresent(project -> {
+                        dto.setProjectName(project.getProjectName());
+                    });
+                }
+            });
+        } else if ("연구비증빙-야근식대".equals(documentType) || "연구비증빙(야근식대)".equals(documentType) || "receipt_overtime".equals(documentType)) {
+            // 연구비증빙 야근식대의 원본 문서 ID 및 프로젝트 정보 조회
+            receiptOvertimeRepository.findByDocumentIdx(document.getIdx()).ifPresent(receiptOvertime -> {
+                dto.setSourceDocumentId(receiptOvertime.getId());
+                if (receiptOvertime.getProjectIdx() != null && receiptOvertime.getProjectIdx().getIdx() != null) {
+                    dto.setProjectIdx(receiptOvertime.getProjectIdx().getIdx());
+                    dto.setProjectName(receiptOvertime.getProjectIdx().getProjectName());
+                }
             });
         }
         // 다른 문서 타입들도 필요시 추가

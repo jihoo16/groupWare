@@ -1385,6 +1385,23 @@ document.addEventListener('DOMContentLoaded', function() {
             renderedCss: css
         };
 
+        // 저장 확인 메시지
+        const confirmResult = await Swal.fire({
+            icon: 'warning',
+            title: '연차신청서 저장',
+            html: '신청서는 <strong>PDF 파일로 저장</strong>되며,<br>저장 후에는 <strong>문서 내용을 수정할 수 없습니다.</strong><br><br>수정을 원하실 경우 삭제 후 재생성해야 합니다.<br><br>저장하시겠습니까?',
+            showCancelButton: true,
+            confirmButtonText: '저장',
+            cancelButtonText: '취소',
+            confirmButtonColor: '#3085d6',
+            cancelButtonColor: '#d33'
+        });
+
+        // 취소를 누른 경우 종료
+        if (!confirmResult.isConfirmed) {
+            return;
+        }
+
         // 로딩 표시
         Swal.fire({
             title: '저장 중...',
@@ -2205,8 +2222,10 @@ document.addEventListener('DOMContentLoaded', function() {
         if (currentVacationType !== '경조사' && currentVacationType !== '기타') {
             const totalDays = currentSelectionDays + addedDays;
             checkVacationBalance(totalDays);
+        } else {
+            // 경조사와 기타는 연차 차감이 없으므로 경고 카드 숨김
+            hideVacationWarning();
         }
-        // 경조사와 기타는 연차 차감이 없으므로 경고 카드 표시 안 함
     }
 
     // 연차 잔여 확인 및 경고 표시
@@ -2490,7 +2509,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 }
                 // 다른 유형 선택 시 사유 기본값 복원
                 if (reasonInput && !reasonInput.value.trim()) {
-                    reasonInput.value = '휴가 사용.';
+                    reasonInput.value = '개인 연차 사용';
                     reasonInput.placeholder = '휴가 사용 사유를 입력하세요';
                 }
             }
@@ -2655,7 +2674,7 @@ document.addEventListener('DOMContentLoaded', function() {
             selectedDates = [];
             vifStartDate.textContent = '-';
             vifEndDate.textContent = '-';
-            document.getElementById('vif_reason').value = '휴가 사용.';
+            document.getElementById('vif_reason').value = '개인 연차 사용';
             vacationPeriods = [];
             currentSelectionDays = 0;
 
@@ -3199,17 +3218,19 @@ document.addEventListener('DOMContentLoaded', function() {
         if (vacationPeriods.length === 0) {
             periodsListCard.style.display = 'none';
             if (vacationSummaryCard) vacationSummaryCard.style.display = 'none';
-            // 기간이 없으면 안내 메시지 표시, 액션 버튼 숨김
+            // 기간이 없으면 안내 메시지 표시, 액션 버튼과 선택 초기화 버튼 숨김
             if (submitGuide) submitGuide.style.display = 'flex';
             if (actionButtons) actionButtons.style.display = 'none';
+            if (resetSelectionBtn) resetSelectionBtn.style.display = 'none';
             return;
         }
 
         periodsListCard.style.display = 'block';
         if (vacationSummaryCard) vacationSummaryCard.style.display = 'block';
-        // 기간이 추가되면 안내 메시지 숨김, 액션 버튼 표시
+        // 기간이 추가되면 안내 메시지 숨김, 액션 버튼과 선택 초기화 버튼 표시
         if (submitGuide) submitGuide.style.display = 'none';
         if (actionButtons) actionButtons.style.display = 'flex';
+        if (resetSelectionBtn) resetSelectionBtn.style.display = 'inline-flex';
         vacationPeriodsList.innerHTML = '';
 
         const dayNames = ['일', '월', '화', '수', '목', '금', '토'];

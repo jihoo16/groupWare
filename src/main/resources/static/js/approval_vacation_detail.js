@@ -40,7 +40,10 @@ async function loadDocumentDetail(documentIdx) {
         console.error('문서 조회 오류:', error);
         showError('문서를 불러오는데 실패했습니다.');
         window.hidePageLoadingOverlay();
-        history.back();
+        // history.back() 대신 목록 페이지로 이동하여 무한 루프 방지
+        setTimeout(() => {
+            window.location.href = '/approval';
+        }, 1500);
     }
 }
 
@@ -69,7 +72,7 @@ function displayDocumentInfo(data) {
 
     if (documentUserIdx && currentUserIdx && Number(documentUserIdx) === Number(currentUserIdx)) {
         console.log('✓ 작성자 본인이므로 삭제 버튼 생성');
-        createDeleteButton(data.documentIdx);
+        createDeleteButton(data.documentIdx, data.periods || []);
     } else {
         console.log('✗ 작성자가 아니므로 삭제 버튼 미생성');
     }
@@ -78,33 +81,93 @@ function displayDocumentInfo(data) {
 /**
  * 삭제 버튼 동적 생성
  */
-function createDeleteButton(documentIdx) {
+function createDeleteButton(documentIdx, periods) {
     const headerButtons = document.getElementById('headerButtons');
     if (headerButtons && !document.getElementById('deleteBtn')) {
         const deleteWrapper = document.createElement('div');
         deleteWrapper.className = 'button-with-tooltip';
 
         const deleteBtn = document.createElement('button');
-        deleteBtn.className = 'btn-danger';
         deleteBtn.id = 'deleteBtn';
         deleteBtn.innerHTML = '<i class="fas fa-trash"></i> 삭제';
-        deleteBtn.addEventListener('click', () => deleteDocument(documentIdx));
 
-        const tooltip = document.createElement('div');
-        tooltip.className = 'tooltip-text';
-        tooltip.innerHTML = `
-            <i class="fas fa-info-circle"></i>
-            연차신청서는 PDF로 자동 생성되므로 수정이 불가능합니다.<br>
-            문서를 삭제하고 새로 작성해주세요.
-        `;
+        // 휴가 종료일이 지났는지 확인
+        const isVacationExpired = checkIfVacationExpired(periods);
 
-        deleteWrapper.appendChild(deleteBtn);
-        deleteWrapper.appendChild(tooltip);
+        if (isVacationExpired) {
+            // 휴가일이 지난 경우 - 비활성화
+            deleteBtn.className = 'btn-danger disabled';
+            deleteBtn.disabled = true;
+            deleteBtn.style.cursor = 'not-allowed';
+            deleteBtn.style.opacity = '0.5';
+            deleteBtn.style.backgroundColor = '#999';
+            deleteBtn.style.borderColor = '#999';
+
+            const tooltip = document.createElement('div');
+            tooltip.className = 'tooltip-text';
+            tooltip.innerHTML = `
+                <i class="fas fa-exclamation-triangle"></i>
+                휴가 날짜가 지난 경우 삭제가 불가능합니다.<br>
+                관리부에 문의해주세요.
+            `;
+
+            deleteWrapper.appendChild(deleteBtn);
+            deleteWrapper.appendChild(tooltip);
+        } else {
+            // 휴가일이 지나지 않은 경우 - 정상 삭제 가능
+            deleteBtn.className = 'btn-danger';
+            deleteBtn.addEventListener('click', () => deleteDocument(documentIdx));
+
+            const tooltip = document.createElement('div');
+            tooltip.className = 'tooltip-text';
+            tooltip.innerHTML = `
+                <i class="fas fa-info-circle"></i>
+                연차신청서는 PDF로 자동 생성되므로 수정이 불가능합니다.<br>
+                문서를 삭제하고 새로 작성해주세요.
+            `;
+
+            deleteWrapper.appendChild(deleteBtn);
+            deleteWrapper.appendChild(tooltip);
+        }
 
         // 돌아가기 버튼 앞에 삽입
         headerButtons.insertBefore(deleteWrapper, headerButtons.firstChild);
         console.log('작성자이므로 삭제 버튼을 생성합니다.');
     }
+}
+
+/**
+ * 휴가 시작일이 지났는지 확인 (하나라도 지난 날짜가 있으면 삭제 불가)
+ */
+function checkIfVacationExpired(periods) {
+    if (!periods || periods.length === 0) {
+        return false;
+    }
+
+    // 오늘 날짜 (시간 제외, 날짜만)
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+
+    // 모든 기간 중 가장 빠른 시작일 찾기
+    let earliestStartDate = null;
+    periods.forEach(period => {
+        if (period.startDate) {
+            const startDate = new Date(period.startDate);
+            startDate.setHours(0, 0, 0, 0);
+
+            if (!earliestStartDate || startDate < earliestStartDate) {
+                earliestStartDate = startDate;
+            }
+        }
+    });
+
+    // 가장 빠른 시작일이 오늘보다 이전이면 true (삭제 불가)
+    if (earliestStartDate && earliestStartDate < today) {
+        console.log('휴가 시작일이 지났습니다. 삭제 불가능.');
+        return true;
+    }
+
+    return false;
 }
 
 /**

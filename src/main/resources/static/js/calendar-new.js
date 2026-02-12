@@ -40,7 +40,6 @@ document.addEventListener('DOMContentLoaded', function() {
     // DOM 요소
     const scheduleForm = document.getElementById('newScheduleForm');
     const backBtn = document.getElementById('backBtn');
-    const cancelBtn = document.getElementById('cancelBtn');
     const saveBtn = document.getElementById('saveScheduleBtn');
 
     // 탭 관련 요소
@@ -1255,12 +1254,6 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     });
 
-    cancelBtn.addEventListener('click', async function() {
-        const confirmed = await showConfirm('일정 목록으로 돌아가시겠습니까? 작성 중인 내용은 사라집니다.');
-        if (confirmed) {
-            window.location.href = '/calendar';
-        }
-    });
 
     // 저장 버튼 클릭 시 폼 제출
     saveBtn.addEventListener('click', async function() {

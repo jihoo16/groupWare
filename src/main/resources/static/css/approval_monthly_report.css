@@ -553,21 +553,6 @@ div h2{
     font-size: 13px;
 }
 
-.btn-danger {
-    background: #dc3545;
-    color: white;
-    border: none;
-    padding: 14px 32px;
-    border-radius: 8px;
-    font-size: 15px;
-    font-weight: 600;
-    cursor: pointer;
-    display: flex;
-    align-items: center;
-    gap: 10px;
-    transition: all 0.3s ease;
-}
-
 .btn-danger:hover {
     background: #c82333;
     transform: translateY(-2px);

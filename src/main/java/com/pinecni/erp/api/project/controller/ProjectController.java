@@ -2,9 +2,11 @@ package com.pinecni.erp.api.project.controller;
 
 import com.pinecni.erp.api.project.dto.ProjectCreateDTO;
 import com.pinecni.erp.api.project.dto.ProjectDTO;
+import com.pinecni.erp.api.project.dto.ProjectFilterDTO;
 import com.pinecni.erp.api.project.dto.ProjectUpdateDTO;
 import com.pinecni.erp.api.project.dto.ProjectCardDTO;
 import com.pinecni.erp.api.project.repository.ProjectMemberRepository;
+import com.pinecni.erp.api.project.dto.ProjectExpenseSettingDTO;
 import com.pinecni.erp.api.project.service.ProjectService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -259,6 +261,43 @@ public class ProjectController {
             Map<String, String> error = new HashMap<>();
             error.put("error", "프로젝트 참여인원을 조회할 수 없습니다.");
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(error);
+        }
+    }
+
+    /**
+     * 프로젝트 직급별 경비 설정 조회
+     * GET /api/projects/{idx}/expense-settings
+     */
+    @GetMapping("/{idx}/expense-settings")
+    public ResponseEntity<?> getProjectExpenseSettings(@PathVariable Long idx) {
+        log.debug("GET /api/projects/{}/expense-settings", idx);
+
+        try {
+            List<ProjectExpenseSettingDTO> settings = projectService.getProjectExpenseSettings(idx);
+            return ResponseEntity.ok(settings);
+        } catch (Exception e) {
+            log.error("프로젝트 직급별 경비 설정 조회 실패: {}", e.getMessage());
+            Map<String, String> error = new HashMap<>();
+            error.put("error", "프로젝트 직급별 경비 설정을 조회할 수 없습니다.");
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(error);
+        }
+    }
+
+    /**
+     * 프로젝트 필터용 목록 조회 (문서 개수 포함)
+     * GET /api/projects/filter
+     */
+    @GetMapping("/filter")
+    public ResponseEntity<List<ProjectFilterDTO>> getProjectsForFilter() {
+        log.debug("GET /api/projects/filter - 프로젝트 필터용 목록 조회");
+
+        try {
+            List<ProjectFilterDTO> projects = projectService.getProjectsForFilter();
+            log.debug("프로젝트 필터 목록 조회 성공: {}개", projects.size());
+            return ResponseEntity.ok(projects);
+        } catch (Exception e) {
+            log.error("프로젝트 필터 목록 조회 실패: {}", e.getMessage(), e);
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
         }
     }
 

@@ -306,7 +306,10 @@ document.addEventListener('DOMContentLoaded', function() {
             console.error('회의록 상세 로드 오류:', error);
             showError('회의록을 불러오는 중 오류가 발생했습니다.');
             window.hidePageLoadingOverlay();
-            history.back();
+            // history.back() 대신 목록 페이지로 이동하여 무한 루프 방지
+            setTimeout(() => {
+                window.location.href = '/approval';
+            }, 1500);
         }
     }
 

@@ -314,6 +314,10 @@ window.fetchWithErrorHandling = async function(url, options = {}, autoHandle404 
             // 404 자동 처리 - 문서/데이터가 없는 경우
             if (response.status === 404 && autoHandle404) {
                 console.log('[404 감지] 문서 삭제/미존재 페이지로 리다이렉트');
+                // 로딩 오버레이 해제
+                if (window.hidePageLoadingOverlay) {
+                    window.hidePageLoadingOverlay();
+                }
                 window.location.href = '/nothing';
                 return null; // 리다이렉트 중이므로 null 반환
             }
@@ -321,6 +325,10 @@ window.fetchWithErrorHandling = async function(url, options = {}, autoHandle404 
             // 403 Forbidden 처리 - 커스텀 403 페이지로 리다이렉트
             if (response.status === 403) {
                 console.log('[403 감지] 접근 권한 없음 페이지로 리다이렉트');
+                // 로딩 오버레이 해제
+                if (window.hidePageLoadingOverlay) {
+                    window.hidePageLoadingOverlay();
+                }
                 window.location.href = '/nope';
                 return null;
             }
@@ -328,6 +336,10 @@ window.fetchWithErrorHandling = async function(url, options = {}, autoHandle404 
             // 500 서버 에러 - 커스텀 500 페이지로 리다이렉트
             if (response.status === 500) {
                 console.log('[500 감지] 서버 오류 페이지로 리다이렉트');
+                // 로딩 오버레이 해제
+                if (window.hidePageLoadingOverlay) {
+                    window.hidePageLoadingOverlay();
+                }
                 window.location.href = '/boom';
                 return null;
             }

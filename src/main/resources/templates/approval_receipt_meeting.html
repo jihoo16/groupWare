@@ -137,6 +137,13 @@
                                     <label>
                                         <i class="fas fa-users"></i> 참석자
                                         <span class="required-mark">*</span>
+                                        <span class="attendee-count-badge" id="attendeeCountBadge" style="display: none;">0명</span>
+                                        <span class="expense-tooltip-wrapper">
+                                            <i class="fas fa-info-circle expense-tooltip-icon"></i>
+                                            <div class="expense-tooltip-content" id="expenseTooltipContent">
+                                                <div class="expense-tooltip-loading" style="line-height: 1.4;">프로젝트 선택 시<br>직급별 회의비 정보를<br>확인하실 수 있습니다</div>
+                                            </div>
+                                        </span>
                                     </label>
                                     <div id="attendeeArea" class="attendee-area">
                                         <div id="attendeeList" class="attendee-list">
@@ -395,16 +402,16 @@
                                 <table class="form-table" id="attendee-signature-table" style="margin-top: 20px;">
                                     <colgroup>
                                         <col style="width: 10%;">
-                                        <col style="width: 20%;">
+                                        <col style="width: 30%;">
+                                        <col style="width: 35%;">
                                         <col style="width: 25%;">
-                                        <col style="width: 45%;">
                                     </colgroup>
                                     <thead>
                                         <tr style="height: 70px">
                                             <th>구분</th>
-                                            <th>성명</th>
                                             <th>소속</th>
                                             <th>서명</th>
+                                            <th>성명</th>
                                         </tr>
                                     </thead>
                                     <tbody id="attendee-signature-tbody">

@@ -146,4 +146,18 @@ public interface ProjectRepository extends JpaRepository<Project, Long> {
             "GROUP BY p.idx, pm.empName " +
             "ORDER BY p.startDate DESC")
     List<Object[]> findByMemberIdxOptimized(@Param("memberIdx") Long memberIdx);
+
+    /**
+     * 프로젝트 필터용 목록 조회 (문서 개수 포함)
+     * 프로젝트별로 주간보고 + 연구비증빙 문서 개수를 카운트
+     */
+    @Query(value = "SELECT p.idx, p.project_name, p.project_status, " +
+            "(COALESCE((SELECT COUNT(*) FROM erp.project_weekly_report wr WHERE wr.project_idx = p.idx), 0) + " +
+            "COALESCE((SELECT COUNT(*) FROM erp.receipt_meeting rm WHERE rm.project_idx = p.idx), 0) + " +
+            "COALESCE((SELECT COUNT(*) FROM erp.receipt_trip rt WHERE rt.project_idx = p.idx), 0) + " +
+            "COALESCE((SELECT COUNT(*) FROM erp.receipt_overtime ro WHERE ro.project_idx = p.idx), 0)) as document_count " +
+            "FROM erp.projects p " +
+            "WHERE p.is_deleted = false " +
+            "ORDER BY p.start_date DESC", nativeQuery = true)
+    List<Object[]> findAllProjectsWithDocumentCount();
 }

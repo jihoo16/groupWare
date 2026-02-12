@@ -53,3 +53,7 @@ sql/
 ### PDF Storage ###
 pdf_storage/
 *.pdf
+
+*.class
+bin/
+docs/

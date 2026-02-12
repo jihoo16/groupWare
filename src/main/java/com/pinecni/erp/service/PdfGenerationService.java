@@ -71,7 +71,7 @@ public class PdfGenerationService {
         context.setVariable("address", pdfData.getOrDefault("address", ""));
         context.setVariable("birthDate", pdfData.getOrDefault("birthDate", ""));
         context.setVariable("contact", pdfData.getOrDefault("contact", ""));
-        context.setVariable("reason", pdfData.getOrDefault("reason", "연차 휴가 사용."));
+        context.setVariable("reason", pdfData.getOrDefault("reason", "개인 연차 사용"));
         context.setVariable("applyDate", pdfData.getOrDefault("applyDate", LocalDate.now().format(DateTimeFormatter.ofPattern("yyyy년 MM월 dd일"))));
         context.setVariable("deptManagerName", pdfData.getOrDefault("deptManagerName", "-"));
         context.setVariable("ceoName", pdfData.getOrDefault("ceoName", "-"));

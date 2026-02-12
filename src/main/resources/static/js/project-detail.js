@@ -122,7 +122,10 @@ async function loadProjectDetail(projectId, currentUserIdx) {
         console.error('프로젝트 조회 오류:', error);
         await showError('프로젝트를 불러오는데 실패했습니다.');
         window.hidePageLoadingOverlay();
-        history.back();
+        // history.back() 대신 목록 페이지로 이동하여 무한 루프 방지
+        setTimeout(() => {
+            window.location.href = '/project';
+        }, 1500);
     }
 }
 

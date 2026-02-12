@@ -531,8 +531,8 @@ div:focus {
 .form-table th,
 .form-table td {
     border: 1px solid #333;
-    padding: 12px 16px;
-    font-size: 14px;
+    padding: 4px 12px;
+    font-size: 11px;
     vertical-align: middle;
     height: auto;
 }
@@ -676,16 +676,16 @@ div h2{
 /* 읽기 전용 텍스트 스타일 */
 .form-table .readonly-text {
     display: block;
-    padding: 12px 16px;
-    font-size: 14px;
+    padding: 4px 12px;
+    font-size: 11px;
     color: #555;
-    text-align: left;
-    line-height: 1.6;
+    text-align: center;
+    line-height: 1.4;
     white-space: pre-line;
     word-wrap: break-word;
     word-break: break-word;
     overflow-wrap: break-word;
-    min-height: 20px;
+    min-height: 16px;
 }
 
 /* 사유 셀 특별 스타일 (긴 내용 대응) */
@@ -867,7 +867,7 @@ div h2{
 }
 
 .btn-lg {
-    padding: 10px 20px;
+    padding: 12px 20px;
     font-size: 13px;
     font-weight: 600;
     border-radius: 8px;
@@ -881,6 +881,7 @@ div h2{
 
 .btn-primary {
     background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    padding: 12px 24px;
     color: white;
 }
 
@@ -2008,6 +2009,14 @@ div h2{
     box-shadow: 0 2px 6px rgba(0, 0, 0, 0.1);
 }
 
+/* 헤더 내부의 선택 초기화 버튼 */
+.vif-header .btn-reset {
+    flex: none;
+    padding: 8px 16px;
+    font-size: 13px;
+    margin-left: 16px;
+}
+
 .btn-apply {
     background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
     border: none;
@@ -2702,7 +2711,7 @@ div h2{
     border: none;
     padding: 12px 24px;
     border-radius: 8px;
-    font-size: 15px;
+    font-size: 13px;
     font-weight: 600;
     cursor: pointer;
     transition: all 0.3s ease;
@@ -2806,6 +2815,8 @@ div h2{
         box-shadow: none !important;
         border: 1px solid #333 !important;
         padding: 20px !important;
+        max-width: 800px !important;
+        margin: 0 auto !important;
     }
 
     /* 배경색 제거 및 여백 설정 */
@@ -3013,4 +3024,28 @@ div h2{
     .reason-tooltip:hover {
         transform: translateX(-50%) translateY(0);
     }
+}
+
+/* 신청 사유 textarea 스타일 */
+#vif_reason {
+    width: 100%;
+    padding: 10px 12px;
+    border: 1px solid #ddd;
+    border-radius: 6px;
+    font-size: 14px;
+    font-family: inherit;
+    line-height: 1.5;
+    resize: vertical;
+    min-height: 80px;
+    transition: border-color 0.2s ease;
+}
+
+#vif_reason:focus {
+    outline: none;
+    border-color: #667eea;
+    box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+}
+
+#vif_reason::placeholder {
+    color: #999;
 }

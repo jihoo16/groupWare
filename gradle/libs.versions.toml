@@ -20,8 +20,9 @@ com-microsoft-playwright = "1.49.0"
 org-apache-logging-log4j = "2.25.3"
 com-lmax-disruptor = "4.0.0"
 io-micrometer-context-propagation = "1.2.0"
-io-opentelemetry-bom = "1.46.0"
-io-opentelemetry-instrumentation-bom = "2.12.0"
+io-opentelemetry-bom = "1.58.0"
+io-opentelemetry-instrumentation = "2.24.0"
+io-opentelemetry-instrumentation-alpha = "2.24.0-alpha"
 
 [libraries]
 com-fasterxml-jackson-datatype-jackson-datatype-jsr310 = { module = "com.fasterxml.jackson.datatype:jackson-datatype-jsr310", version.ref = "com-fasterxml-jackson-datatype-jackson-datatype-jsr310" }
@@ -48,9 +49,10 @@ org-apache-logging-log4j-log4j-layout-template-json = { module = "org.apache.log
 com-lmax-disruptor = { module = "com.lmax:disruptor", version.ref = "com-lmax-disruptor" }
 
 io-opentelemetry-bom = { module = "io.opentelemetry:opentelemetry-bom", version.ref = "io-opentelemetry-bom" }
-io-opentelemetry-instrumentation-bom = { module = "io.opentelemetry.instrumentation:opentelemetry-instrumentation-bom", version.ref = "io-opentelemetry-instrumentation-bom" }
-io-opentelemetry-instrumentation-opentelemetry-spring-boot-starter = { module = "io.opentelemetry.instrumentation:opentelemetry-spring-boot-starter" }
+io-opentelemetry-instrumentation-bom = { module = "io.opentelemetry.instrumentation:opentelemetry-instrumentation-bom", version.ref = "io-opentelemetry-instrumentation" }
+io-opentelemetry-instrumentation-opentelemetry-spring-boot-starter = { module = "io.opentelemetry.instrumentation:opentelemetry-spring-boot-starter", version.ref = "io-opentelemetry-instrumentation" }
 io-micrometer-context-propagation = { module = "io.micrometer:context-propagation", version.ref = "io-micrometer-context-propagation" }
 io-opentelemetry-opentelemetry-exporter-otlp = { module = "io.opentelemetry:opentelemetry-exporter-otlp" }
 io-micrometer-micrometer-registry-prometheus = { module = "io.micrometer:micrometer-registry-prometheus" }
 io-micrometer-micrometer-registry-otlp = { module = "io.micrometer:micrometer-registry-otlp" }
+otel-log4j-context-data = { module = "io.opentelemetry.instrumentation:opentelemetry-log4j-context-data-2.17-autoconfigure", version.ref = "io-opentelemetry-instrumentation-alpha" }
