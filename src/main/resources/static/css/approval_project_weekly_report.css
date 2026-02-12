@@ -1050,10 +1050,9 @@ div:focus {
     border-radius: 12px;
     padding: 30px;
     box-shadow: 0 4px 16px rgba(0, 0, 0, 0.08);
-    max-height: 2000px;
-    overflow: hidden;
+    max-height: none;
+    overflow: visible;
     transition: all 0.4s ease-in-out;
-    opacity: 1;
 }
 
 .document-form-wrapper.collapsed {
@@ -1063,6 +1062,7 @@ div:focus {
     margin-bottom: 0;
     opacity: 0;
     box-shadow: none;
+    overflow: hidden;
 }
 
 .document-form {
