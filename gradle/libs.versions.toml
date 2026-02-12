@@ -17,6 +17,8 @@ org-xhtmlrenderer-flying-saucer-pdf = "9.11.1"
 com-lowagie-itext = "2.1.7"
 org-jsoup-jsoup = "1.18.3"
 com-microsoft-playwright = "1.49.0"
+org-apache-logging-log4j = "2.25.3"
+com-lmax-disruptor = "4.0.0"
 
 [libraries]
 com-fasterxml-jackson-datatype-jackson-datatype-jsr310 = { module = "com.fasterxml.jackson.datatype:jackson-datatype-jsr310", version.ref = "com-fasterxml-jackson-datatype-jackson-datatype-jsr310" }
@@ -34,3 +36,10 @@ org-springframework-boot-spring-boot-starter-validation = { module = "org.spring
 org-springframework-boot-spring-boot-starter-web = { module = "org.springframework.boot:spring-boot-starter-web", version.ref = "org-springframework-boot-spring-boot-starter-web" }
 org-xhtmlrenderer-flying-saucer-pdf = { module = "org.xhtmlrenderer:flying-saucer-pdf", version.ref = "org-xhtmlrenderer-flying-saucer-pdf" }
 com-microsoft-playwright = { module = "com.microsoft.playwright:playwright", version.ref = "com-microsoft-playwright" }
+
+org-springframework-boot-spring-boot-starter-log4j2 = { module = "org.springframework.boot:spring-boot-starter-log4j2", version.ref = "org-springframework-boot-spring-boot-starter-web" }
+org-apache-logging-log4j-log4j-api = { module = "org.apache.logging.log4j:log4j-api", version.ref = "org-apache-logging-log4j" }
+org-apache-logging-log4j-log4j-core = { module = "org.apache.logging.log4j:log4j-core", version.ref = "org-apache-logging-log4j" }
+org-apache-logging-log4j-log4j-slf4j2-impl = { module = "org.apache.logging.log4j:log4j-slf4j2-impl", version.ref = "org-apache-logging-log4j" }
+org-apache-logging-log4j-log4j-layout-template-json = { module = "org.apache.logging.log4j:log4j-layout-template-json", version.ref = "org-apache-logging-log4j" }
+com-lmax-disruptor = { module = "com.lmax:disruptor", version.ref = "com-lmax-disruptor" }
