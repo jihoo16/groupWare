@@ -441,6 +441,46 @@ html.popup-mode .btn-secondary[onclick="history.back()"] {
     color: rgba(255, 255, 255, 0.7);
 }
 
+/* 관리자 전용 메뉴 */
+.admin-menu {
+    padding: 12px 15px;
+    display: none; /* 기본적으로 숨김 */
+    align-items: center;
+    gap: 12px;
+    text-decoration: none;
+    color: white;
+    cursor: pointer;
+    transition: background 0.3s ease;
+    border-top: 1px solid rgba(255, 255, 255, 0.1);
+    background: rgba(255, 193, 7, 0.1);
+}
+
+/* 사이드바 hover 시에만 관리자 메뉴 표시 */
+.sidebar:hover .admin-menu {
+    display: flex;
+}
+
+.admin-menu:hover {
+    background: rgba(255, 193, 7, 0.2);
+}
+
+.admin-menu.active {
+    background: rgba(255, 193, 7, 0.3);
+    border-left: 4px solid #ffc107;
+}
+
+.admin-menu i {
+    font-size: 16px;
+    color: #ffc107;
+    min-width: 20px;
+}
+
+.admin-menu-text {
+    font-size: 12px;
+    font-weight: 600;
+    white-space: nowrap;
+}
+
 /* 로그아웃 버튼 */
 .logout-btn {
     width: 100%;

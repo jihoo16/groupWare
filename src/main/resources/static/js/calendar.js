@@ -350,9 +350,13 @@ document.addEventListener('DOMContentLoaded', function() {
         // track 할당 (겹치는 일정들을 다른 track에 배치)
         const tracks = []; // 각 track에 배치된 일정들
 
+        console.log('=== Track 할당 시작 ===');
+        console.log('할당할 multi-day 일정 수:', uniqueSchedules.length);
         uniqueSchedules.forEach(schedule => {
             const scheduleStart = new Date(schedule.startDate);
             const scheduleEnd = new Date(schedule.endDate);
+
+            console.log(`\n일정: "${schedule.title}" (${schedule.startDate} ~ ${schedule.endDate})`);
 
             // 배치 가능한 track 찾기
             let assignedTrack = -1;
@@ -360,13 +364,18 @@ document.addEventListener('DOMContentLoaded', function() {
                 const trackSchedules = tracks[i];
                 let canPlace = true;
 
+                console.log(`  Track ${i} 확인 중... (일정 수: ${trackSchedules.length})`);
+
                 // 이 track의 모든 일정과 겹치지 않는지 확인
                 for (const trackSchedule of trackSchedules) {
                     const trackStart = new Date(trackSchedule.startDate);
                     const trackEnd = new Date(trackSchedule.endDate);
 
                     // 겹치는지 확인
-                    if (!(scheduleEnd < trackStart || scheduleStart > trackEnd)) {
+                    const overlaps = !(scheduleEnd < trackStart || scheduleStart > trackEnd);
+                    console.log(`    vs "${trackSchedule.title}" (${trackSchedule.startDate} ~ ${trackSchedule.endDate}): ${overlaps ? '겹침!' : '안겹침'}`);
+
+                    if (overlaps) {
                         canPlace = false;
                         break;
                     }
@@ -374,6 +383,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
                 if (canPlace) {
                     assignedTrack = i;
+                    console.log(`  → Track ${i}에 배치 가능!`);
                     break;
                 }
             }
@@ -382,6 +392,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 // 새 track 생성
                 assignedTrack = tracks.length;
                 tracks.push([]);
+                console.log(`  → 새로운 Track ${assignedTrack} 생성`);
             }
 
             // track에 추가
@@ -395,9 +406,15 @@ document.addEventListener('DOMContentLoaded', function() {
                     s.track = assignedTrack;
                 }
             });
+
+            console.log(`  최종 할당: Track ${assignedTrack}`);
         });
 
-        console.log('Track 할당 완료:', tracks.length, '개 track 사용');
+        console.log('\n=== Track 할당 완료 ===');
+        console.log('총', tracks.length, '개 track 사용');
+        tracks.forEach((track, index) => {
+            console.log(`Track ${index}:`, track.map(s => s.title).join(', '));
+        });
     }
 
     // 달력 렌더링
@@ -578,8 +595,9 @@ document.addEventListener('DOMContentLoaded', function() {
             if (hasSingleDay) classes.push('has-my-schedule');
         }
 
-        // 일정 HTML 생성
-        let schedulesHTML = '';
+        // 일정 HTML 생성 - multi-day와 시간 일정을 분리
+        let multiDayHTML = '';
+        let timeSchedulesHTML = '';
         const maxDisplay = 5; // 최대 표시 개수 (multi-day 겹침 고려하여 증가)
 
         // track 순서대로 정렬 (같은 track끼리 묶이도록)
@@ -617,6 +635,10 @@ document.addEventListener('DOMContentLoaded', function() {
                 // 전역적으로 할당된 track 번호 사용
                 const trackIndex = schedule.track !== undefined ? schedule.track : 0;
                 trackStyle = ` style="--track: ${trackIndex};"`;
+
+                // 일정 제목에 종일 표시 추가
+                let displayTitle = `[종일] ${schedule.title}`;
+                multiDayHTML += `<div class="schedule-item ${scheduleClasses.join(' ')}"${trackStyle} data-schedule-id="${schedule.id}" data-group-id="${schedule.groupId}">${displayTitle}</div>`;
             } else {
                 // 단일 일정
                 if (!isAllDay) {
@@ -624,35 +646,40 @@ document.addEventListener('DOMContentLoaded', function() {
                     scheduleClasses.push('time-dot');
                     const timeMatch = schedule.time.match(/(\d{2}:\d{2})/);
                     const startTime = timeMatch ? timeMatch[1] : '';
-                    schedulesHTML += `<div class="schedule-item ${scheduleClasses.join(' ')}" data-schedule-id="${schedule.id}" data-group-id="${schedule.groupId}" title="${startTime} ${schedule.title}">
+                    timeSchedulesHTML += `<div class="schedule-item ${scheduleClasses.join(' ')}" data-schedule-id="${schedule.id}" data-group-id="${schedule.groupId}" title="${startTime} ${schedule.title}">
                         <span class="dot-time">${startTime}</span>
                         <span class="dot-title">${schedule.title}</span>
                     </div>`;
-                    return;
                 } else {
-                    // 종일 일정
+                    // 단일 종일 일정
                     scheduleClasses.push('single-day');
+                    let displayTitle = `[종일] ${schedule.title}`;
+                    timeSchedulesHTML += `<div class="schedule-item ${scheduleClasses.join(' ')}" data-schedule-id="${schedule.id}" data-group-id="${schedule.groupId}">${displayTitle}</div>`;
                 }
             }
-
-            // 일정 제목에 시간/종일 표시 추가
-            let displayTitle = schedule.title;
-            if (isAllDay) {
-                displayTitle = `[종일] ${schedule.title}`;
-            } else if (schedule.time) {
-                const timeMatch = schedule.time.match(/(\d{2}:\d{2})/);
-                const startTime = timeMatch ? timeMatch[1] : '';
-                if (startTime) {
-                    displayTitle = `[${startTime}] ${schedule.title}`;
-                }
-            }
-
-            schedulesHTML += `<div class="schedule-item ${scheduleClasses.join(' ')}"${trackStyle} data-schedule-id="${schedule.id}" data-group-id="${schedule.groupId}">${displayTitle}</div>`;
         });
+
+        // multi-day와 시간 일정 합치기
+        let schedulesHTML = multiDayHTML;
+        if (timeSchedulesHTML) {
+            schedulesHTML += `<div class="time-schedules-wrapper">${timeSchedulesHTML}</div>`;
+        }
 
         if (daySchedules.length > maxDisplay) {
             schedulesHTML += `<div class="more-schedules" data-date="${dateStr}" data-total="${daySchedules.length}">+${daySchedules.length - maxDisplay}개 더보기</div>`;
         }
+
+        // multi-day 일정들의 최대 track 번호 계산 (시간 일정을 위한 offset 확보)
+        let maxTrack = -1;
+        daySchedules.forEach(schedule => {
+            const startDateObj = new Date(schedule.startDate);
+            const endDateObj = new Date(schedule.endDate);
+            const dayDiff = Math.ceil((endDateObj - startDateObj) / (1000 * 60 * 60 * 24));
+            if (dayDiff >= 1 && schedule.track !== undefined) {
+                maxTrack = Math.max(maxTrack, schedule.track);
+            }
+        });
+        const multidayOffset = maxTrack >= 0 ? `--multiday-offset: ${(maxTrack + 1) * 24}px;` : '';
 
         // 공휴일 표시 (이전달/다음달도 포함)
         let holidayHTML = '';
@@ -665,7 +692,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 <div class="cell-header">
                     <div class="cell-date">${day}${holidayHTML}</div>
                 </div>
-                <div class="schedule-list">
+                <div class="schedule-list" style="${multidayOffset}">
                     ${schedulesHTML}
                 </div>
             </div>

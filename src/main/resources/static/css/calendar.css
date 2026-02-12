@@ -555,6 +555,27 @@
     z-index: 1;
 }
 
+/* multi-day 일정은 track 번호에 따라 고정 위치 */
+.schedule-item.multi-day-start,
+.schedule-item.multi-day-middle,
+.schedule-item.multi-day-end {
+    position: absolute !important;
+    top: calc(var(--track, 0) * 24px); /* track 간격 24px = 일정 18px + 간격 6px */
+    left: 0;
+    right: 0;
+    width: auto;
+    margin: 0;
+    height: 18px; /* 일정 높이 고정 */
+}
+
+/* 시간 일정 wrapper - multi-day 일정들 아래에 배치 */
+.time-schedules-wrapper {
+    display: flex;
+    flex-direction: column;
+    gap: 6px; /* multi-day와 동일한 간격 */
+    margin-top: var(--multiday-offset, 0px);
+}
+
 /* 연속 일정 - 시작일 */
 .schedule-item.multi-day-start {
     border-radius: 4px 0 0 4px;
