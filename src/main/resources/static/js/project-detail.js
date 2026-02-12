@@ -130,12 +130,16 @@ async function loadProjectDetail(projectId, currentUserIdx) {
 }
 
 /**
- * 현재 사용자가 프로젝트 참여자인지 확인하고 주간업무보고 작성 버튼 표시
+ * 현재 사용자가 프로젝트 참여자인지 확인하고 역할에 따라 버튼 표시
+ * - 주간업무보고 작성: 모든 참여자
+ * - 수정: 연구책임자(PI), 실무자(PRACTITIONER), 관리자(Admin)만
+ * - 삭제: 연구책임자(PI), 관리자(Admin)만
  */
 function checkAndShowParticipantButtons(projectMembers, currentUserIdx) {
     const createWeeklyReportBtn = document.getElementById('createWeeklyReportBtn');
     const editBtn = document.getElementById('editBtn');
     const deleteBtn = document.getElementById('deleteBtn');
+    const isAdmin = window.CURRENT_USER?.isAdmin || false;
 
     // 로그인하지 않은 경우 모든 버튼 숨김
     if (!currentUserIdx) {
@@ -145,22 +149,29 @@ function checkAndShowParticipantButtons(projectMembers, currentUserIdx) {
         return;
     }
 
-    // projectMembers에서 현재 사용자가 포함되어 있는지 확인
-    const isParticipant = projectMembers.some(member =>
+    // 현재 사용자의 멤버 정보 찾기
+    const currentMember = projectMembers.find(member =>
         member.employeeIdx === currentUserIdx || member.empIdx === currentUserIdx
     );
+    const isParticipant = !!currentMember;
+    const memberRole = currentMember?.role || '';
 
-    if (isParticipant) {
-        if (createWeeklyReportBtn) createWeeklyReportBtn.style.display = 'inline-flex';
-        if (editBtn) editBtn.style.display = 'inline-flex';
-        if (deleteBtn) deleteBtn.style.display = 'inline-flex';
-        console.log('현재 사용자가 프로젝트 참여자입니다. 버튼 표시.');
-    } else {
-        if (createWeeklyReportBtn) createWeeklyReportBtn.style.display = 'none';
-        if (editBtn) editBtn.style.display = 'none';
-        if (deleteBtn) deleteBtn.style.display = 'none';
-        console.log('현재 사용자가 프로젝트 참여자가 아닙니다. 버튼 숨김.');
-    }
+    // 수정 권한: PI(연구책임자) 또는 PRACTITIONER(실무자) 또는 Admin
+    const canEdit = isAdmin || (isParticipant && (memberRole === 'PI' || memberRole === 'PRACTITIONER'));
+
+    // 삭제 권한: PI(연구책임자) 또는 PRACTITIONER(실무자) 또는 Admin
+    const canDelete = isAdmin || (isParticipant && (memberRole === 'PI' || memberRole === 'PRACTITIONER'));
+
+    // 주간업무보고 작성: 모든 참여자
+    if (createWeeklyReportBtn) createWeeklyReportBtn.style.display = isParticipant ? 'inline-flex' : 'none';
+
+    // 수정 버튼
+    if (editBtn) editBtn.style.display = canEdit ? 'inline-flex' : 'none';
+
+    // 삭제 버튼
+    if (deleteBtn) deleteBtn.style.display = canDelete ? 'inline-flex' : 'none';
+
+    console.log(`권한 확인 - 참여자: ${isParticipant}, 역할: ${memberRole}, 수정: ${canEdit}, 삭제: ${canDelete}, Admin: ${isAdmin}`);
 }
 
 /**

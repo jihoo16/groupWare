@@ -5,6 +5,7 @@ import com.pinecni.erp.api.project.dto.ProjectDTO;
 import com.pinecni.erp.api.project.dto.ProjectFilterDTO;
 import com.pinecni.erp.api.project.dto.ProjectUpdateDTO;
 import com.pinecni.erp.api.project.dto.ProjectCardDTO;
+import com.pinecni.erp.api.project.repository.ProjectMemberRepository;
 import com.pinecni.erp.api.project.dto.ProjectExpenseSettingDTO;
 import com.pinecni.erp.api.project.service.ProjectService;
 import lombok.RequiredArgsConstructor;
@@ -27,6 +28,7 @@ import java.util.Map;
 public class ProjectController {
 
     private final ProjectService projectService;
+    private final ProjectMemberRepository projectMemberRepository;
 
     /**
      * 전체 프로젝트 목록 조회
@@ -134,18 +136,36 @@ public class ProjectController {
     /**
      * 프로젝트 수정
      * PUT /api/projects/{idx}
+     * 권한: 연구책임자(PI), 실무자(PRACTITIONER), 관리자(Admin)만 수정 가능
      */
     @PutMapping("/{idx}")
-    public ResponseEntity<ProjectDTO> updateProject(
+    public ResponseEntity<?> updateProject(
             @PathVariable Long idx,
             @RequestBody ProjectUpdateDTO updateDTO,
             jakarta.servlet.http.HttpSession session) {
         log.debug("PUT /api/projects/{}", idx);
 
-        // 세션에서 로그인한 사용자 IDX 가져오기
+        // 세션에서 로그인한 사용자 정보 가져오기
         Long currentUserIdx = (Long) session.getAttribute("userIdx");
+        Boolean isAdmin = (Boolean) session.getAttribute("isAdmin");
+
         if (currentUserIdx == null) {
-            currentUserIdx = 1L; // 기본값 (로그인 안된 경우)
+            Map<String, String> error = new HashMap<>();
+            error.put("error", "로그인이 필요합니다.");
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(error);
+        }
+
+        // 관리자가 아닌 경우 역할 기반 권한 검증
+        if (!Boolean.TRUE.equals(isAdmin)) {
+            boolean hasEditPermission = projectMemberRepository
+                    .existsByProjectIdxAndEmployeeIdxAndRoleIn(idx, currentUserIdx, List.of("PI", "PRACTITIONER"));
+
+            if (!hasEditPermission) {
+                log.warn("프로젝트 수정 권한 없음 - projectIdx: {}, userIdx: {}", idx, currentUserIdx);
+                Map<String, String> error = new HashMap<>();
+                error.put("error", "프로젝트 수정 권한이 없습니다. 연구책임자 또는 실무자만 수정할 수 있습니다.");
+                return ResponseEntity.status(HttpStatus.FORBIDDEN).body(error);
+            }
         }
 
         log.debug("Updated by userIdx: {}", currentUserIdx);
@@ -162,10 +182,36 @@ public class ProjectController {
     /**
      * 프로젝트 삭제
      * DELETE /api/projects/{idx}
+     * 권한: 연구책임자(PI), 관리자(Admin)만 삭제 가능
      */
     @DeleteMapping("/{idx}")
-    public ResponseEntity<Map<String, String>> deleteProject(@PathVariable Long idx) {
+    public ResponseEntity<Map<String, String>> deleteProject(
+            @PathVariable Long idx,
+            jakarta.servlet.http.HttpSession session) {
         log.debug("DELETE /api/projects/{}", idx);
+
+        // 세션에서 로그인한 사용자 정보 가져오기
+        Long currentUserIdx = (Long) session.getAttribute("userIdx");
+        Boolean isAdmin = (Boolean) session.getAttribute("isAdmin");
+
+        if (currentUserIdx == null) {
+            Map<String, String> error = new HashMap<>();
+            error.put("error", "로그인이 필요합니다.");
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(error);
+        }
+
+        // 관리자가 아닌 경우 PI 또는 PRACTITIONER 역할만 삭제 허용
+        if (!Boolean.TRUE.equals(isAdmin)) {
+            boolean hasDeletePermission = projectMemberRepository
+                    .existsByProjectIdxAndEmployeeIdxAndRoleIn(idx, currentUserIdx, List.of("PI", "PRACTITIONER"));
+
+            if (!hasDeletePermission) {
+                log.warn("프로젝트 삭제 권한 없음 - projectIdx: {}, userIdx: {}", idx, currentUserIdx);
+                Map<String, String> error = new HashMap<>();
+                error.put("error", "프로젝트 삭제 권한이 없습니다. 연구책임자 또는 실무자만 삭제할 수 있습니다.");
+                return ResponseEntity.status(HttpStatus.FORBIDDEN).body(error);
+            }
+        }
 
         try {
             projectService.deleteProject(idx);

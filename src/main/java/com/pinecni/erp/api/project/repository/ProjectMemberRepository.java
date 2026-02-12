@@ -46,4 +46,11 @@ public interface ProjectMemberRepository extends JpaRepository<ProjectMember, Lo
      */
     @Query("SELECT m FROM ProjectMember m WHERE m.projectIdx = :projectIdx AND m.isActive = true")
     List<ProjectMember> findActiveMembers(Long projectIdx);
+
+    /**
+     * 특정 프로젝트에서 해당 사용자가 지정된 역할 중 하나를 가지고 있는지 확인
+     */
+    @Query("SELECT COUNT(m) > 0 FROM ProjectMember m " +
+            "WHERE m.projectIdx = :projectIdx AND m.employeeIdx = :employeeIdx AND m.role IN :roles")
+    boolean existsByProjectIdxAndEmployeeIdxAndRoleIn(Long projectIdx, Long employeeIdx, List<String> roles);
 }

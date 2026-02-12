@@ -42,18 +42,59 @@
     // 직급 목록 저장 변수
     let positionList = [];
 
-    // 페이지 로드 시 직급 목록과 연구 책임자 목록을 먼저 로드
-    Promise.all([
-        loadPositions(),
-        projectManagerSelect ? loadProjectManagers() : Promise.resolve()
-    ]).then(() => {
-        // 모든 기본 데이터 로드 완료 후 프로젝트 데이터 로드
-        window.showPageLoadingOverlay();
-        loadProjectData(projectId);
-    }).catch(async error => {
-        console.error('초기 데이터 로드 실패:', error);
-        await showError('페이지 로드 중 오류가 발생했습니다.');
+    // 페이지 로드 시 수정 권한 확인 후 데이터 로드
+    checkEditPermission(projectId).then(hasPermission => {
+        if (!hasPermission) return;
+
+        Promise.all([
+            loadPositions(),
+            projectManagerSelect ? loadProjectManagers() : Promise.resolve()
+        ]).then(() => {
+            // 모든 기본 데이터 로드 완료 후 프로젝트 데이터 로드
+            window.showPageLoadingOverlay();
+            loadProjectData(projectId);
+        }).catch(async error => {
+            console.error('초기 데이터 로드 실패:', error);
+            await showError('페이지 로드 중 오류가 발생했습니다.');
+        });
     });
+
+    // 수정 권한 확인 함수
+    async function checkEditPermission(projectId) {
+        const currentUserIdx = window.CURRENT_USER?.idx || null;
+        const isAdmin = window.CURRENT_USER?.isAdmin || false;
+
+        if (isAdmin) return true;
+
+        if (!currentUserIdx) {
+            await showError('로그인이 필요합니다.');
+            location.href = '/login';
+            return false;
+        }
+
+        try {
+            const response = await fetch(`/api/projects/${projectId}/members`);
+            if (!response.ok) throw new Error('멤버 조회 실패');
+
+            const members = await response.json();
+            const currentMember = members.find(m =>
+                m.employeeIdx === currentUserIdx || m.empIdx === currentUserIdx
+            );
+
+            if (!currentMember || (currentMember.role !== 'PI' && currentMember.role !== 'PRACTITIONER')) {
+                await showError('프로젝트 수정 권한이 없습니다.\n연구책임자 또는 실무자만 수정할 수 있습니다.');
+                location.href = `/project/detail?projectId=${projectId}`;
+                return false;
+            }
+
+            return true;
+        } catch (error) {
+            console.error('권한 확인 오류:', error);
+            await showError('권한 확인 중 오류가 발생했습니다.');
+            location.href = '/project';
+            return false;
+        }
+    }
 
     // 직급 목록 로드 함수
     function loadPositions() {
@@ -1009,7 +1050,7 @@
                 <a href="/api/project-files/download/${file.idx}" class="btn-download-file" download>
                     <i class="fas fa-download"></i>
                 </a>
-                <button class="btn-remove-file" onclick="removeExistingFile(${file.idx})">
+                <button type="button" class="btn-remove-file" onclick="removeExistingFile(${file.idx})">
                     <i class="fas fa-times"></i>
                 </button>
             `;
@@ -1030,7 +1071,7 @@
             item.innerHTML = `
                 <i class="fas ${icon}"></i>
                 <span>${file.name} (${(file.size / 1024).toFixed(1)} KB) <span style="color: #667eea; font-size: 11px;">[신규]</span></span>
-                <button class="btn-remove-file" onclick="removeFile(${index})">
+                <button type="button" class="btn-remove-file" onclick="removeFile(${index})">
                     <i class="fas fa-times"></i>
                 </button>
             `;
@@ -1245,6 +1286,12 @@
                 },
                 body: JSON.stringify(updateData)
             });
+
+            if (response.status === 403) {
+                const errorData = await response.json();
+                await showError(errorData.error || '프로젝트 수정 권한이 없습니다.');
+                return;
+            }
 
             if (!response.ok) {
                 throw new Error('프로젝트 수정에 실패했습니다.');
