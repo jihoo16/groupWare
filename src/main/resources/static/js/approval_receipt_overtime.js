@@ -1349,7 +1349,7 @@ document.addEventListener('DOMContentLoaded', async function() {
 
             const timeRange = getFormattedTimeRange();
             const currentTask = getCurrentTask();
-            const minRows = 11;
+            const minRows = 20;
             const rowCount = Math.max(overtimePersons.length, minRows);
 
             let html = '';
@@ -1366,7 +1366,7 @@ document.addEventListener('DOMContentLoaded', async function() {
             }
             tableBody.innerHTML = html;
 
-            // 인원이 11명 초과 시 행 높이 축소
+            // 인원이 20명 초과 시 행 높이 축소
             if (rowCount > minRows) {
                 tableBody.querySelectorAll('.ot-person-row td').forEach(td => {
                     td.style.padding = '6px 8px';
@@ -1933,7 +1933,7 @@ document.addEventListener('DOMContentLoaded', async function() {
 
             // 금액
             const amountStr = otAmount?.value?.replace(/,/g, '') || '0';
-            const amount = parseFloat(amountStr) || 0;
+            const amount = parseInt(amountStr) || 0;
 
             // 저장 직전 중복 참석자 최종 검증
             try {
