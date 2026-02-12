@@ -11,6 +11,22 @@ function formatTextWithLineBreaks(text, wordsPerLine = 5) {
     return lines.join('<br>');
 }
 
+// 문서 타입 코드를 읽기 쉬운 이름으로 변환하는 함수
+function getDocumentTypeName(typeCode) {
+    const typeMap = {
+        'RCM': '연구비증빙-회의록',
+        'RCO': '연구비증빙-야근식대',
+        'RCT': '연구비증빙-출장',
+        'RECEIPT_MEETING': '연구비증빙-회의록',
+        'RECEIPT_OVERTIME': '연구비증빙-야근식대',
+        'RECEIPT_TRIP': '연구비증빙-출장',
+        '회의록': '연구비증빙-회의록',
+        '야근식대': '연구비증빙-야근식대',
+        '출장': '연구비증빙-출장'
+    };
+    return typeMap[typeCode] || typeCode;
+}
+
 document.addEventListener('DOMContentLoaded', async function() {
     // 전역 변수
     let selectedFiles = [];
@@ -3085,7 +3101,7 @@ document.addEventListener('DOMContentLoaded', async function() {
         // 각 참석자에 대해 중복 체크 (같은 프로젝트 내에서)
         for (const attendeeId of allAttendeeIds) {
             try {
-                // 수정 모드일 때 현재 문서 제외 (회의록 타입: RCM)
+                // 수정 모드일 때 현재 문서 제외 (회의록 타입)
                 let url = `/api/receipt-common/check-duplicate?date=${date}&attendeeIdx=${attendeeId}&projectIdx=${projectIdx}&startTime=${currentStartTime}&endTime=${currentEndTime}`;
                 if (receiptMeetingId) {
                     url += `&excludeReceiptIdx=${receiptMeetingId}&excludeDocumentType=RCM`;
@@ -3222,8 +3238,12 @@ document.addEventListener('DOMContentLoaded', async function() {
                 }
             } catch (error) {
                 console.error(`중복 검증 중 오류 (attendeeId: ${attendeeId}):`, error);
+                // 참석자 이름 찾기
+                const attendee = currentAttendees.find(a => a.id === attendeeId) ||
+                                tempSelectedAttendees.find(a => parseInt(a.id) === attendeeId);
+                const attendeeName = attendee ? attendee.name : `ID ${attendeeId}`;
                 // 검증 실패 시 에러를 throw하여 상위에서 처리
-                throw new Error(`참석자 중복 검증 실패 (참석자 ID: ${attendeeId}, 오류: ${error.message})`);
+                throw new Error(`참석자 중복 검증 실패 (참석자: ${attendeeName}, 오류: ${error.message})`);
             }
         }
 
@@ -3248,14 +3268,21 @@ document.addEventListener('DOMContentLoaded', async function() {
                     const meeting = duplicate.meeting;
                     const meetingDate = meeting.meetingDate || '';
                     const projectName = meeting.projectName || '알 수 없는 프로젝트';
-                    const documentType = meeting.type || '회의록';
+                    const documentTypeCode = meeting.type || 'RCM';
+                    const documentTypeName = getDocumentTypeName(documentTypeCode);
 
-                    let message = `동일 날짜에 이미 다른 ${documentType}에 참석 중인 인원이 있습니다.<br><br>`;
-                    message += `${documentType === '회의록' ? '회의' : '야근'} 날짜: ${meetingDate}<br>`;
+                    // 중복된 참석자 이름 찾기
+                    const duplicateAttendee = tempSelectedAttendees.find(a => parseInt(a.id) === duplicate.attendeeId);
+                    const attendeeName = duplicateAttendee ? duplicateAttendee.name : `ID ${duplicate.attendeeId}`;
+
+                    let message = `<strong>참석자: ${attendeeName}</strong><br>`;
+                    message += `동일 날짜/시간에 이미 다른 문서에 참석 중입니다.<br><br>`;
+                    message += `문서 타입: <strong>${documentTypeName}</strong><br>`;
+                    message += `날짜: ${meetingDate}<br>`;
 
                     if (meeting.startTime && meeting.endTime) {
                         const timeRange = `${meeting.startTime.substring(0, 5)} ~ ${meeting.endTime.substring(0, 5)}`;
-                        message += `${documentType === '회의록' ? '회의' : '야근'} 시간: ${timeRange}<br>`;
+                        message += `시간: ${timeRange}<br>`;
                     }
 
                     message += `프로젝트: <strong>[${projectName}]</strong>`;
