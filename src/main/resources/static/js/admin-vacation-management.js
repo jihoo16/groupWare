@@ -86,6 +86,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 name: item.empName,
                 department: item.empDeptName || item.empDept || '-',
                 position: item.empPositionName || item.empPosition || '-',
+                positionCode: item.empPosition || '-',
                 totalLeave: item.totalDays || 0,
                 usedLeave: item.usedDays || 0,
                 remainingLeave: item.remainingDays || 0,
@@ -200,6 +201,15 @@ document.addEventListener('DOMContentLoaded', function() {
             else if (field === 'hireDate') {
                 aVal = aVal === '-' ? '' : aVal;
                 bVal = bVal === '-' ? '' : bVal;
+            }
+            // 직급 필드 처리 - 코드값 기준 역순 정렬
+            else if (field === 'position') {
+                aVal = a.positionCode === '-' ? 'Z999' : a.positionCode;
+                bVal = b.positionCode === '-' ? 'Z999' : b.positionCode;
+                // 코드값 기준 역순 (C0201이 위로)
+                if (aVal < bVal) return order === 'asc' ? 1 : -1;
+                if (aVal > bVal) return order === 'asc' ? -1 : 1;
+                return 0;
             }
             // 문자열 필드 처리
             else {
