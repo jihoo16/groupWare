@@ -61,8 +61,10 @@ function displayDocumentInfo(data) {
 
     // 작성자 확인 후 삭제 버튼 생성
     const currentUserIdx = window.CURRENT_USER ? window.CURRENT_USER.idx : null;
+    const isAdmin = window.CURRENT_USER && window.CURRENT_USER.isAdmin === true;
     console.log('[삭제 버튼 표시 조건 확인]');
     console.log('- 현재 로그인 사용자 idx:', currentUserIdx);
+    console.log('- 관리자 여부:', isAdmin);
     console.log('- 문서 작성자 idx (drafterUserIdx):', data.drafterUserIdx);
     console.log('- 문서 작성자 idx (userIdx):', data.userIdx);
     console.log('- window.CURRENT_USER:', window.CURRENT_USER);
@@ -70,11 +72,17 @@ function displayDocumentInfo(data) {
     // drafterUserIdx 또는 userIdx 둘 다 확인 (API 응답 구조에 따라 다를 수 있음)
     const documentUserIdx = data.drafterUserIdx || data.userIdx;
 
-    if (documentUserIdx && currentUserIdx && Number(documentUserIdx) === Number(currentUserIdx)) {
-        console.log('✓ 작성자 본인이므로 삭제 버튼 생성');
+    // 작성자 본인이거나 관리자인 경우 삭제 버튼 생성 (단, 이미 삭제된 문서는 제외)
+    const isOwner = documentUserIdx && currentUserIdx && Number(documentUserIdx) === Number(currentUserIdx);
+    const isDeleted = data.deletedAt != null;
+
+    if ((isOwner || isAdmin) && !isDeleted) {
+        console.log('✓ 작성자 본인이거나 관리자이므로 삭제 버튼 생성');
         createDeleteButton(data.documentIdx, data.periods || []);
+    } else if (isDeleted) {
+        console.log('✗ 이미 삭제된 문서이므로 삭제 버튼 미생성');
     } else {
-        console.log('✗ 작성자가 아니므로 삭제 버튼 미생성');
+        console.log('✗ 작성자가 아니고 관리자도 아니므로 삭제 버튼 미생성');
     }
 }
 

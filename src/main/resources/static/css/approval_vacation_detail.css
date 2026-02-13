@@ -498,3 +498,63 @@
         text-align: left;
     }
 }
+
+/* 삭제된 문서 스타일 */
+.deleted-document-banner {
+    background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);
+    color: white;
+    padding: 16px 24px;
+    border-radius: 12px;
+    margin: 0 auto 20px;
+    max-width: 1000px;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    font-size: 14px;
+    font-weight: 600;
+    box-shadow: 0 4px 12px rgba(239, 68, 68, 0.3);
+    animation: slideDown 0.3s ease;
+}
+
+.deleted-document-banner i {
+    font-size: 20px;
+}
+
+.deleted-document-banner span {
+    flex: 1;
+}
+
+.editor-area.deleted-document {
+    border: 3px solid #ef4444;
+    position: relative;
+    background: #fff5f5;
+}
+
+.editor-area.deleted-document::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: repeating-linear-gradient(
+        45deg,
+        transparent,
+        transparent 10px,
+        rgba(239, 68, 68, 0.03) 10px,
+        rgba(239, 68, 68, 0.03) 20px
+    );
+    pointer-events: none;
+    border-radius: 12px;
+}
+
+@keyframes slideDown {
+    from {
+        opacity: 0;
+        transform: translateY(-20px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
