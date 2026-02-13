@@ -2,7 +2,7 @@
 <Configuration status="WARN">
     <Properties>
         <Property name="CONSOLE_PATTERN">%d{yyyy-MM-dd HH:mm:ss.SSS} [%X{trace_id},%X{span_id}] [%-5level] [%t] %logger{36} - %msg%n</Property>
-        <Property name="FILE_PATTERN">%d{yyyy-MM-dd HH:mm:ss.SSS} [%-5level] [%t] %logger{36} - %msg%n</Property>
+        <Property name="FILE_PATTERN">%d{yyyy-MM-dd HH:mm:ss.SSS} [%X{trace_id},%X{span_id}] [%-5level] [%t] %logger{36} - %msg%n</Property>
         <Property name="LOG_PATH">${sys:logging.path:-logs}</Property>
         <Property name="SERVICE_NAME">${spring:spring.application.name:-app}</Property>
     </Properties>
