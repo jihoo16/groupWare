@@ -1,18 +1,39 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <Configuration status="WARN">
+
     <Properties>
+        <Property name="LOG_PATH">${sys:logging.path:-logs}</Property>
         <Property name="SERVICE_NAME">${spring:spring.application.name:-app}</Property>
     </Properties>
+
 
     <Appenders>
         <Console name="Console" target="SYSTEM_OUT">
             <JsonTemplateLayout eventTemplateUri="classpath:Log4j2-JsonLayout.json"/>
         </Console>
+
+        <RollingFile name="File" fileName="${LOG_PATH}/${SERVICE_NAME}.log"
+                     filePattern="${LOG_PATH}/archive/${SERVICE_NAME}-%d{yyyy-MM-dd}-%i.log.gz">
+            <JsonTemplateLayout eventTemplateUri="classpath:Log4j2-JsonLayout.json"/>
+            <Policies>
+                <TimeBasedTriggeringPolicy interval="1" modulate="true"/>
+                <SizeBasedTriggeringPolicy size="100MB"/>
+            </Policies>
+            <!-- max 값을 20으로 상향 조정 (하루 최대 2GB) -->
+            <DefaultRolloverStrategy max="20">
+                <!-- 30일이 지난 로그 파일 자동 삭제 -->
+                <Delete basePath="${LOG_PATH}/archive" maxDepth="1">
+                    <IfFileName glob="${SERVICE_NAME}-*.log.gz" />
+                    <IfLastModified age="30d" />
+                </Delete>
+            </DefaultRolloverStrategy>
+        </RollingFile>
     </Appenders>
 
     <Loggers>
         <Root level="${sys:logging.level.root:-INFO}">
             <AppenderRef ref="Console"/>
+            <AppenderRef ref="File"/>
         </Root>
     </Loggers>
 </Configuration>
