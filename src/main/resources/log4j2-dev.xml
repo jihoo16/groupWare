@@ -12,8 +12,8 @@
             <PatternLayout pattern="${CONSOLE_PATTERN}" disableAnsi="false"/>
         </Console>
 
-        <RollingFile name="File" fileName="${LOG_PATH}/${SERVICE_NAME}-dev.log"
-                     filePattern="${LOG_PATH}/${SERVICE_NAME}-dev-%d{yyyy-MM-dd}-%i.log.gz">
+        <RollingFile name="File" fileName="${LOG_PATH}/${SERVICE_NAME}.log"
+                     filePattern="${LOG_PATH}/archive/${SERVICE_NAME}-%d{yyyy-MM-dd}-%i.log.gz">
             <PatternLayout pattern="${FILE_PATTERN}"/>
             <Policies>
                 <TimeBasedTriggeringPolicy interval="1" modulate="true"/>

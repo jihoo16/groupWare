@@ -1,2 +1,8 @@
 logging:
   config: classpath:log4j2-dev.xml
+
+pdf:
+  playwright:
+    node-path: /usr/sbin/node
+    # 브라우저 전용 서버(Remote) 사용 시 아래 주소 설정
+    ws-endpoint: ws://192.168.1.172:39222/chromium/playwright
