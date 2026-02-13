@@ -1359,7 +1359,7 @@ document.addEventListener('DOMContentLoaded', async function() {
 
             const timeRange = getFormattedTimeRange();
             const currentTask = getCurrentTask();
-            const minRows = 20;
+            const minRows = 10;
             const rowCount = Math.max(overtimePersons.length, minRows);
 
             let html = '';
@@ -1376,7 +1376,7 @@ document.addEventListener('DOMContentLoaded', async function() {
             }
             tableBody.innerHTML = html;
 
-            // 인원이 20명 초과 시 행 높이 축소
+            // 인원이 10명 초과 시 행 높이 축소
             if (rowCount > minRows) {
                 tableBody.querySelectorAll('.ot-person-row td').forEach(td => {
                     td.style.padding = '6px 8px';
