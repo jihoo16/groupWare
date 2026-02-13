@@ -49,9 +49,23 @@ document.addEventListener('DOMContentLoaded', function() {
         const password = passwordInput.value.trim();
         const rememberMe = rememberMeCheckbox.checked;
 
+        // Clear previous errors
+        clearErrors();
+
         // Validation
-        if (!username || !password) {
-            showAlert('사번/이메일과 비밀번호를 모두 입력해주세요.', 'error');
+        let hasError = false;
+
+        if (!username) {
+            showFieldError('username', '사번 또는 이메일을 입력해주세요.');
+            hasError = true;
+        }
+
+        if (!password) {
+            showFieldError('password', '비밀번호를 입력해주세요.');
+            hasError = true;
+        }
+
+        if (hasError) {
             return;
         }
 
@@ -208,6 +222,32 @@ document.addEventListener('DOMContentLoaded', function() {
         setTimeout(() => {
             alertMessage.classList.remove('show');
         }, 5000);
+    }
+
+    function showFieldError(fieldName, message) {
+        const input = document.getElementById(fieldName);
+        const errorElement = document.getElementById(fieldName + 'Error');
+
+        if (input) {
+            input.classList.add('error');
+            input.addEventListener('input', function() {
+                input.classList.remove('error');
+                if (errorElement) {
+                    errorElement.textContent = '';
+                }
+            }, { once: true });
+        }
+
+        if (errorElement) {
+            errorElement.textContent = message;
+        }
+    }
+
+    function clearErrors() {
+        usernameInput.classList.remove('error');
+        passwordInput.classList.remove('error');
+        document.getElementById('usernameError').textContent = '';
+        document.getElementById('passwordError').textContent = '';
     }
 
 
