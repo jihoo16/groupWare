@@ -571,15 +571,29 @@ document.addEventListener('DOMContentLoaded', async function() {
                 // 프로젝트 카드 목록 로드
                 await loadProjectCards(proj.idx);
 
-                // 카드 선택 초기화 및 안내 문구 표시
-                selectedCard = null;
-                const otCard = document.getElementById('ot_card');
-                if (otCard) {
-                    otCard.value = '';
-                    otCard.placeholder = '클릭하여 카드 선택';
+                // 카드가 1개 이상 있으면 첫 번째 카드 자동 선택
+                if (projectCards && projectCards.length > 0) {
+                    selectedCard = projectCards[0];
+                    const otCard = document.getElementById('ot_card');
+                    if (otCard) {
+                        otCard.value = projectCards[0].cardName;
+                        otCard.classList.remove('error');
+                    }
+                    const selectedCardIdx = document.getElementById('selectedCardIdx');
+                    if (selectedCardIdx) {
+                        selectedCardIdx.value = projectCards[0].idx;
+                    }
+                } else {
+                    // 카드가 없으면 초기화
+                    selectedCard = null;
+                    const otCard = document.getElementById('ot_card');
+                    if (otCard) {
+                        otCard.value = '';
+                        otCard.placeholder = '클릭하여 카드 선택';
+                    }
+                    const selectedCardIdx = document.getElementById('selectedCardIdx');
+                    if (selectedCardIdx) selectedCardIdx.value = '';
                 }
-                const selectedCardIdx = document.getElementById('selectedCardIdx');
-                if (selectedCardIdx) selectedCardIdx.value = '';
 
                 // 프로젝트 변경 시 중복 정보 초기화
                 duplicateAttendeesInfo = {};
