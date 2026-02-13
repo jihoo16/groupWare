@@ -51,10 +51,15 @@ public class PlaywrightPdfService {
             pdfGenerationSemaphore = new Semaphore(maxConcurrentGenerations, true);
             log.info("[Playwright PDF Service] Semaphore 초기화 완료 - 최대 동시 생성 수: {}", maxConcurrentGenerations);
 
-            // 1. 성능 최격화: 시스템 Node 사용 설정
+            // 1. 성능 최적화: 시스템 Node 사용 설정 (유효한 경로인 경우에만)
             if (nodePath != null && !nodePath.isEmpty()) {
-                System.setProperty("playwright.nodejs.path", nodePath);
-                log.info("[Playwright PDF Service] 시스템 Node 사용 설정: {}", nodePath);
+                File nodeFile = new File(nodePath);
+                if (nodeFile.exists() && nodeFile.canExecute()) {
+                    System.setProperty("playwright.nodejs.path", nodePath);
+                    log.info("[Playwright PDF Service] 시스템 Node 사용 설정: {}", nodePath);
+                } else {
+                    log.warn("[Playwright PDF Service] 설정된 Node 경로가 유효하지 않아 내장 Node를 사용합니다. (설정된 경로: {})", nodePath);
+                }
             }
 
             playwright = Playwright.create();
