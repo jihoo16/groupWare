@@ -1823,6 +1823,7 @@ div h2{
     align-items: center;
     gap: 6px;
     margin-left: 8px;
+    margin-right: 10px;
     flex-shrink: 0;
     max-width: 180px;
     min-width: 0;
