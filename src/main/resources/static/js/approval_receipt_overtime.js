@@ -324,31 +324,27 @@ document.addEventListener('DOMContentLoaded', async function() {
                     }
                 }
 
-                // 업무내용 설정 (HTML select box 옵션과 일치하도록)
+                // 업무내용 설정 (HTML select box 옵션에서 직접 매칭)
                 if (data.attendees[0].workTask) {
                     const otTaskSelect = document.getElementById('ot_task_select');
                     const otTaskCustom = document.getElementById('ot_task_custom');
-                    // HTML의 실제 select 옵션 값들
-                    const predefinedTasks = [
-                        '백엔드 API 개발',
-                        '프론트엔드 UI 개발',
-                        '데이터베이스 설계',
-                        '시스템 아키텍처 설계',
-                        '버그 수정 및 디버깅',
-                        '코드 리뷰 및 품질 관리',
-                        '테스트 코드 작성',
-                        '배포 및 운영 환경 구축',
-                        '성능 최적화',
-                        '기술 문서 작성'
-                    ];
+                    const workTask = (data.attendees[0].workTask || '').trim();
 
-                    const workTask = data.attendees[0].workTask;
-                    if (predefinedTasks.includes(workTask)) {
-                        if (otTaskSelect) otTaskSelect.value = workTask;
-                    } else {
+                    // select box의 옵션 값을 DOM에서 직접 읽어서 매칭
+                    let matched = false;
+                    if (otTaskSelect) {
+                        for (const opt of otTaskSelect.options) {
+                            if (opt.value && opt.value !== '' && opt.value !== 'custom' && opt.value === workTask) {
+                                otTaskSelect.value = opt.value;
+                                matched = true;
+                                break;
+                            }
+                        }
+                    }
+                    if (!matched) {
                         if (otTaskSelect) otTaskSelect.value = 'custom';
                         if (otTaskCustom) {
-                            otTaskCustom.value = workTask;
+                            otTaskCustom.value = data.attendees[0].workTask;
                             otTaskCustom.style.display = 'block';
                         }
                     }
@@ -393,16 +389,40 @@ document.addEventListener('DOMContentLoaded', async function() {
                     window.addOvertimePersonsToOvertime(personsToAdd);
 
                     // 인원별 개별 업무내용 복원
-                    const globalTask = data.attendees[0]?.workTask || '';
+                    // 셀렉트박스에 설정된 기본 업무내용 가져오기
+                    const otTaskSelectEl = document.getElementById('ot_task_select');
+                    const otTaskCustomEl = document.getElementById('ot_task_custom');
+                    let globalTask = '';
+                    if (otTaskSelectEl) {
+                        globalTask = otTaskSelectEl.value === 'custom'
+                            ? (otTaskCustomEl?.value || '').trim()
+                            : (otTaskSelectEl.value || '').trim();
+                    }
+
+                    // 모든 attendee의 workTask가 동일한지 확인
+                    const allTasks = data.attendees.map(a => (a.workTask || '').trim());
+                    const allSame = allTasks.every(t => t === allTasks[0]);
+
                     const currentPersons = window.getCurrentOvertimePersons ? window.getCurrentOvertimePersons() : [];
-                    data.attendees.forEach(attendee => {
-                        if (attendee.workTask && attendee.workTask !== globalTask) {
-                            const person = currentPersons.find(p => Number(p.id) === Number(attendee.userIdx));
-                            if (person) {
-                                person.task = attendee.workTask;
+
+                    if (allSame) {
+                        // 모든 인원이 같은 업무내용 → 전부 "기본"으로 (task = null 유지)
+                        console.log('[업무내용 복원] 모든 인원 동일 → 기본 처리:', allTasks[0]);
+                    } else {
+                        // 서로 다른 업무내용이 있는 경우
+                        // 셀렉트박스 값(기본)과 같으면 → 기본, 다르면 → 개별
+                        data.attendees.forEach(attendee => {
+                            const taskValue = (attendee.workTask || '').trim();
+                            if (taskValue && taskValue !== globalTask) {
+                                const person = currentPersons.find(p => Number(p.id) === Number(attendee.userIdx));
+                                if (person) {
+                                    person.task = attendee.workTask;
+                                }
                             }
-                        }
-                    });
+                        });
+                        console.log('[업무내용 복원] 개별 업무내용 존재 → 개별 처리 완료');
+                    }
+
                     // 변경사항 반영을 위해 다시 렌더링
                     if (typeof window.renderOvertimePersonTable === 'function') {
                         window.renderOvertimePersonTable();
@@ -1435,7 +1455,6 @@ document.addEventListener('DOMContentLoaded', async function() {
             const currentTask = getCurrentTask();
             const minRows = 10;
             const globalTask = getCurrentTask();
-            const minRows = 11;
             const rowCount = Math.max(overtimePersons.length, minRows);
 
             let html = '';
@@ -1614,12 +1633,16 @@ document.addEventListener('DOMContentLoaded', async function() {
                     otTaskCustom.value = '';
                 }
                 updateOvertimeTable();
+                renderOvertimePersonListInTemplate();
             });
         }
 
-        // 직접 입력 시 테이블 업데이트
+        // 직접 입력 시 테이블 및 인원 목록 업데이트
         if (otTaskCustom) {
-            otTaskCustom.addEventListener('input', updateOvertimeTable);
+            otTaskCustom.addEventListener('input', function() {
+                updateOvertimeTable();
+                renderOvertimePersonListInTemplate();
+            });
         }
 
         // 금액 표시 업데이트
@@ -1946,10 +1969,10 @@ document.addEventListener('DOMContentLoaded', async function() {
                 if (otTitle) otTitle.classList.remove('error');
             }
 
-            // 총 공급가액 검증
+            // 총 공급대가 검증
             const amountValidation = parseInt((otAmount?.value || '').replace(/,/g, '')) || 0;
             if (amountValidation <= 0) {
-                showWarning('총 공급가액을 입력해주세요.');
+                showWarning('총 공급대가을 입력해주세요.');
                 if (otAmount) otAmount.classList.add('error');
                 return;
             } else {
@@ -2209,7 +2232,7 @@ document.addEventListener('DOMContentLoaded', async function() {
             titleInput?.classList.remove('error');
         }
 
-        // 총 공급가액 검증
+        // 총 공급대가 검증
         const amountValue = parseInt((amountInput?.value || '').replace(/,/g, '')) || 0;
         if (amountValue <= 0) {
             amountInput?.classList.add('error');
