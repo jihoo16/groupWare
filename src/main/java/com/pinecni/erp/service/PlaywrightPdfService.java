@@ -10,6 +10,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
+import java.io.File;
 import java.util.concurrent.Semaphore;
 import java.util.concurrent.TimeUnit;
 
@@ -33,6 +34,12 @@ public class PlaywrightPdfService {
 
     private Semaphore pdfGenerationSemaphore;
 
+    @Value("${pdf.playwright.ws-endpoint:}")
+    private String wsEndpoint;
+
+    @Value("${pdf.playwright.node-path:/usr/sbin/node}")
+    private String nodePath;
+
     /**
      * Playwright 초기화 (서비스 시작 시 한번만 실행)
      */
@@ -45,24 +52,55 @@ public class PlaywrightPdfService {
             pdfGenerationSemaphore = new Semaphore(maxConcurrentGenerations, true);
             log.info("[Playwright PDF Service] Semaphore 초기화 완료 - 최대 동시 생성 수: {}", maxConcurrentGenerations);
 
+            // 1. 성능 최적화: 시스템 Node 사용 설정 (유효한 경로인 경우에만)
+            if (nodePath != null && !nodePath.isEmpty()) {
+                File nodeFile = new File(nodePath);
+                if (nodeFile.exists() && nodeFile.canExecute()) {
+                    System.setProperty("playwright.nodejs.path", nodePath);
+                    log.info("[Playwright PDF Service] 시스템 Node 사용 설정: {}", nodePath);
+                } else {
+                    log.warn("[Playwright PDF Service] 설정된 Node 경로가 유효하지 않아 내장 Node를 사용합니다. (설정된 경로: {})", nodePath);
+                }
+            }
+
             playwright = Playwright.create();
 
-            // Chromium 브라우저 시작 (headless 모드)
-            browser = playwright.chromium().launch(new BrowserType.LaunchOptions()
-                    .setHeadless(true)
-                    .setArgs(java.util.Arrays.asList(
-                            "--disable-gpu",
-                            "--no-sandbox",
-                            "--disable-dev-shm-usage",
-                            "--disable-setuid-sandbox"
-                    ))
-            );
+            // 2. 브라우저 시작 방식 결정 (Remote vs Local)
+            if (wsEndpoint != null && !wsEndpoint.isEmpty()) {
+                log.info("[Playwright PDF Service] 원격 브라우저 연결 시도: {}", wsEndpoint);
+                try {
+                    browser = playwright.chromium().connect(wsEndpoint);
+                    log.info("[Playwright PDF Service] 원격 브라우저 연결 성공");
+                } catch (Exception e) {
+                    log.error("[Playwright PDF Service] 원격 연결 실패, 로컬 모드로 전환합니다.", e);
+                    launchLocalBrowser();
+                }
+            } else {
+                launchLocalBrowser();
+            }
 
             log.info("[Playwright PDF Service] 초기화 완료 - Chromium 브라우저 준비됨");
         } catch (Exception e) {
             log.error("[Playwright PDF Service] 초기화 실패", e);
             throw new RuntimeException("Playwright 초기화 실패. 브라우저를 설치해주세요: mvn exec:java -e -D exec.mainClass=com.microsoft.playwright.CLI -D exec.args=\"install chromium\"", e);
         }
+    }
+
+    /**
+     * 로컬 브라우저 실행 (Fallback 용)
+     */
+    private void launchLocalBrowser() {
+        log.info("[Playwright PDF Service] 로컬 Chromium 브라우저 시작 중...");
+        browser = playwright.chromium().launch(new BrowserType.LaunchOptions()
+                .setHeadless(true)
+                .setArgs(java.util.Arrays.asList(
+                        "--disable-gpu",
+                        "--no-sandbox",
+                        "--disable-dev-shm-usage",
+                        "--disable-setuid-sandbox"
+                ))
+        );
+        log.info("[Playwright PDF Service] 로컬 브라우저 준비됨");
     }
 
     /**
@@ -280,15 +318,15 @@ public class PlaywrightPdfService {
 
             // HTML 콘텐츠 설정 (baseURL 지정으로 정적 리소스 및 폰트 로드 가능)
             page.setContent(htmlContent, new Page.SetContentOptions()
-                    .setWaitUntil(WaitUntilState.NETWORKIDLE)
-                    .setTimeout(15000)
+                    .setWaitUntil(WaitUntilState.LOAD) // NETWORKIDLE -> LOAD 로 완화
+                    .setTimeout(30000) // 15s -> 30s 로 증가
             );
 
-            // CSS 파일 로드 대기 (네트워크 안정화)
+            // CSS 파일 로드 대기 (기본 리소스 로딩 완료 대기)
             try {
-                page.waitForLoadState(com.microsoft.playwright.options.LoadState.NETWORKIDLE);
+                page.waitForLoadState(com.microsoft.playwright.options.LoadState.LOAD);
             } catch (Exception e) {
-                log.warn("[Playwright PDF] 네트워크 안정화 대기 타임아웃 (무시하고 계속): {}", e.getMessage());
+                log.warn("[Playwright PDF] 페이지 로드 대기 타임아웃 (무시하고 계속): {}", e.getMessage());
             }
 
             log.info("[Playwright PDF] HTML 렌더링 완료");
@@ -296,8 +334,15 @@ public class PlaywrightPdfService {
 //            page.waitForFunction("() => document.fonts && document.fonts.status === 'loaded'");
 //            log.info("[Playwright PDF] 웹폰트 로딩 완료");
 
-            page.waitForFunction("() => document.fonts && document.fonts.check('16px NanumGothic', '한글')");
-            log.info("[Playwright PDF] NanumGothic 체크 통과");
+            // 폰트 로딩 확인 (최대 3초 대기)
+            try {
+                page.waitForFunction("() => document.fonts && document.fonts.check('16px NanumGothic', '한글')",
+                        null,
+                        new Page.WaitForFunctionOptions().setTimeout(3000));
+                log.info("[Playwright PDF] NanumGothic 로딩 확인됨");
+            } catch (Exception e) {
+                log.warn("[Playwright PDF] NanumGothic 로딩 시간 초과 또는 실패 (기본 폰트 사용): {}", e.getMessage());
+            }
 
             // PDF 생성 옵션 설정
             Page.PdfOptions options = new Page.PdfOptions()

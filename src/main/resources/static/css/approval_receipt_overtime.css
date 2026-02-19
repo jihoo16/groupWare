@@ -2371,8 +2371,8 @@ div h2{
 /* 인쇄용 스타일 */
 @media print {
     @page {
-        size: A4;
-        margin: 10mm;
+        size: A4 portrait;
+        margin: 0;
     }
 
     * {
@@ -2380,316 +2380,209 @@ div h2{
         print-color-adjust: exact !important;
     }
 
-    body {
-        margin: 0 !important;
-        padding: 0 !important;
-    }
-
-    body * {
-        visibility: hidden;
-    }
-
-    .document-form-wrapper,
-    .document-form-wrapper * {
-        visibility: visible;
-    }
-
-    .document-form-wrapper {
-        position: absolute;
-        left: 0;
-        top: 0;
-        width: 100%;
-        max-height: none !important;
-        overflow: visible !important;
-        padding: 0 !important;
-        margin: 0 !important;
-    }
-
-    .document-form-wrapper.collapsed {
-        max-height: none !important;
-        overflow: visible !important;
-    }
-
-    .document-form {
-        max-height: none !important;
-        overflow: visible !important;
-        padding: 0 !important;
-        margin: 0 !important;
-    }
-
-    .document-preview-toggle {
-        display: none !important;
-    }
-
-    .header,
+    /* 인쇄 시 숨기기 */
     .sidebar,
+    .header,
     .template-sidebar,
     .common-info-section,
     .attachment-section,
+    .document-preview-toggle,
     .btn-print,
     .btn-primary,
     .btn-secondary,
     .btn-danger {
-        display: none !important;
+        display: none;
     }
 
-    /* 각 문서 컨테이너 - 좌우 여백 추가 (75% 너비) */
+    /* body와 html 설정 */
+    body, html {
+        margin: 0;
+        padding: 0;
+        width: 210mm;
+        height: auto;
+        overflow: visible;
+    }
+
+    /* 모든 컨테이너 초기화 */
+    .container,
+    .main-content,
+    .write-container,
+    .write-layout,
+    .editor-area,
+    .document-form-wrapper,
+    .document-form-wrapper.collapsed,
+    .document-form {
+        all: unset;
+        display: block;
+        width: 100%;
+        max-width: none;
+        overflow: visible;
+    }
+
+    /* 각 페이지 설정 - 상하좌우 15mm 여백 */
     .document-form > div {
+        display: block !important;
+        width: 210mm !important;
+        min-height: 297mm !important;
         page-break-after: always;
         page-break-inside: avoid;
-        margin: 0 auto !important;
-        padding: 15px 0 !important;
+        margin: 0 !important;
+        padding: 15mm !important;
+        box-sizing: border-box !important;
+        background: white !important;
         border: none !important;
         border-radius: 0 !important;
-        width: 75% !important;
-        max-width: 75% !important;
-        box-sizing: border-box;
+        box-shadow: none !important;
+        max-width: none !important;
+        position: relative;
     }
 
     .document-form > div:last-child {
-        page-break-after: avoid;
+        page-break-after: auto;
     }
 
-    /* 문서 제목 */
-    .doc-title,
-    h2.doc-title {
-        font-size: 22px !important;
-        margin: 15px 0 20px 0 !important;
-        padding-bottom: 8px !important;
+    /* 1페이지 결재란 - 우측 상단, 크기 70% 축소 */
+    .document-form > div:first-child > div[style*="text-align: right"] {
+        text-align: right !important;
+        margin-bottom: 0 !important;
+        margin-top: 0 !important;
+        position: absolute !important;
+        top: 15mm !important;
+        right: 15mm !important;
+        width: auto !important;
     }
 
-    /* 섹션 제목 (h3) */
-    .document-form h3 {
+    .document-form > div:first-child > div[style*="text-align: right"] table {
+        border: 2px solid #000 !important;
+        border-collapse: collapse !important;
+        display: inline-table !important;
+        width: auto !important;
+        margin: 0 !important;
+    }
+
+    .document-form > div:first-child > div[style*="text-align: right"] table td {
+        width: 108px !important;
+        min-width: 108px !important;
+        max-width: 108px !important;
+        padding: 3px 12px !important;
+        border: 1px solid #000 !important;
+    }
+
+    .document-form > div:first-child > div[style*="text-align: right"] table tr:first-child td {
+        height: 18px !important;
         font-size: 13px !important;
-        margin: 15px 0 8px 0 !important;
+        background: #f0f0f0 !important;
+        padding: 2px 12px !important;
     }
 
-    /* 결재란 테이블 */
-    .document-form > div > div:first-child table {
-        margin-bottom: 15px !important;
+    .document-form > div:first-child > div[style*="text-align: right"] table tr:last-child td {
+        height: 68px !important;
+        padding: 8px 12px !important;
     }
 
-    .document-form > div > div:first-child table td {
-        padding: 5px 10px !important;
-        height: 50px !important;
-        font-size: 11px !important;
-        min-width: 60px !important;
-    }
-
-    /* 테이블 전체 */
+    /* 테이블 */
+    table,
     .form-table {
-        margin-top: 10px !important;
-        margin-bottom: 10px !important;
+        width: 100%;
+        border-collapse: collapse;
+        margin: 8px 0;
     }
 
-    .form-table th,
-    .form-table td {
-        padding: 6px 8px !important;
-        font-size: 11px !important;
-        height: auto !important;
-        min-height: 28px !important;
-        line-height: 1.4 !important;
+    table td,
+    table th {
+        color: #000;
+        border-color: #000;
+        padding: 8px 10px;
+        font-size: 12px;
+        line-height: 1.5;
     }
 
     .form-table th {
-        font-size: 10px !important;
+        font-size: 11px;
+        font-weight: 600;
     }
 
-    /* span 요소 폰트 */
-    .form-table span {
-        font-size: 11px !important;
+    /* 텍스트 */
+    input, textarea, span {
+        color: #000;
+        font-size: 12px;
     }
 
-    /* 테이블 input, textarea */
-    .form-table input,
-    .form-table select,
-    .form-table textarea {
-        font-size: 11px !important;
-        padding: 4px 6px !important;
-        line-height: 1.4 !important;
+    .doc-title,
+    h2.doc-title {
+        color: #000;
+        font-weight: bold;
+        font-size: 24px;
+        text-align: center;
+        margin: 10px 0 15px 0;
     }
 
-    .form-table input[readonly],
-    .form-table textarea[readonly] {
-        padding: 4px 0 !important;
-        font-size: 11px !important;
-        line-height: 1.4 !important;
+    h3 {
+        font-size: 13px;
+        margin: 10px 0 5px 0;
+        font-weight: 600;
     }
 
-    /* 야근인원 테이블 행 (기본 11명 이하) */
-    .ot-person-row td {
-        padding: 5px 6px !important;
-        font-size: 10px !important;
-        height: 28px !important;
-    }
-
-    /* 야근인원 11명 초과 시 행 축소 (인라인 스타일 오버라이드) */
-    .ot-person-row td[style*="height: 32px"] {
-        padding: 3px 4px !important;
-        font-size: 9px !important;
-        height: 22px !important;
-    }
-
-    /* 섹션 div 마진 */
-    .document-form > div > div {
-        margin-bottom: 12px !important;
-    }
-
-    /* 빈 행 높이 */
-    .form-table tr td:empty {
-        height: 25px !important;
-    }
-
-    /* 인라인 스타일 오버라이드 - 모든 td, th */
-    td[style],
-    th[style] {
-        padding: 6px 8px !important;
-    }
-
-    /* 결재란 서명 높이 */
+    /* 인라인 스타일 오버라이드 - 높이만 */
     td[style*="height: 80px"] {
         height: 50px !important;
     }
 
-    /* 품의 내용 높이 */
     td[style*="height: 200px"],
     th[style*="height: 200px"] {
         height: 100px !important;
     }
 
-    /* padding 인라인 스타일 오버라이드 */
-    div[style*="padding: 30px"] {
-        padding: 15px !important;
-    }
-
-    td[style*="padding: 10px"],
-    td[style*="padding: 15px"] {
-        padding: 6px 8px !important;
-    }
-
-    /* margin 인라인 스타일 오버라이드 */
-    div[style*="margin-bottom: 20px"] {
-        margin-bottom: 12px !important;
-    }
-
-    div[style*="margin-bottom: 30px"] {
-        margin-bottom: 5px !important;
-    }
-
-    /* 폰트 사이즈 인라인 스타일 오버라이드 */
-    h2[style*="font-size: 30px"],
-    .doc-title[style*="font-size: 30px"] {
-        font-size: 22px !important;
-    }
-
-    h3[style*="font-size: 16px"] {
-        font-size: 13px !important;
-    }
-
-    /* ========================================
-       품의서 (첫 번째 문서) - 세로 40% 증가
-       ======================================== */
-    .document-form > div:first-child {
-        padding: 20px !important;
-    }
-
-    .document-form > div:first-child .doc-title,
-    .document-form > div:first-child h2.doc-title {
-        font-size: 24px !important;
-        margin: 20px 0 25px 0 !important;
-        padding-bottom: 10px !important;
-    }
-
-    .document-form > div:first-child .form-table th,
-    .document-form > div:first-child .form-table td {
-        padding: 10px 10px !important;
-        min-height: 38px !important;
-        line-height: 1.5 !important;
-    }
-
-    .document-form > div:first-child .form-table span {
-        font-size: 12px !important;
-    }
-
-    /* 품의서 결재란 */
-    .document-form > div:first-child > div:first-child table td {
-        padding: 8px 12px !important;
-        height: 70px !important;
-        font-size: 12px !important;
-    }
-
-    /* 품의서 품의 내용 높이 */
-    .document-form > div:first-child td[style*="height: 200px"],
-    .document-form > div:first-child th[style*="height: 200px"] {
-        height: 140px !important;
-    }
-
-    /* 품의서 빈 행 */
-    .document-form > div:first-child .form-table tr td:empty {
-        height: 35px !important;
-    }
-
-    /* 품의서 섹션 마진 */
-    .document-form > div:first-child > div {
-        margin-bottom: 18px !important;
-    }
-
-    /* ========================================
-       야근 및 특근 신청서 (두 번째 문서)
-       ======================================== */
-    .document-form > div:last-child {
-        padding: 15px !important;
-        page-break-inside: auto !important;
-    }
-
-    .document-form > div:last-child .doc-title,
-    .document-form > div:last-child h2.doc-title {
-        font-size: 20px !important;
-        margin: 10px 0 12px 0 !important;
-        padding-bottom: 6px !important;
-    }
-
-    .document-form > div:last-child h3 {
-        font-size: 13px !important;
-        margin: 8px 0 5px 0 !important;
-    }
-
-    .document-form > div:last-child .form-table th,
-    .document-form > div:last-child .form-table td {
-        padding: 5px 6px !important;
-        min-height: 28px !important;
-        line-height: 1.4 !important;
-    }
-
-    .document-form > div:last-child .form-table span {
-        font-size: 11px !important;
-    }
-
-    /* 야근신청서 야근인원 행 (기본 11명 이하) */
-    .document-form > div:last-child .ot-person-row td {
-        padding: 4px 6px !important;
+    /* 야근인원 행 */
+    .ot-person-row td {
+        padding: 5px 8px !important;
         font-size: 11px !important;
         height: 30px !important;
     }
 
-    /* 야근신청서 야근인원 11명 초과 시 행 축소 */
-    .document-form > div:last-child .ot-person-row td[style*="height: 32px"] {
-        padding: 3px 4px !important;
-        font-size: 9px !important;
-        height: 22px !important;
+    .ot-person-row td[style*="height: 32px"] {
+        padding: 4px 6px !important;
+        font-size: 10px !important;
+        height: 26px !important;
     }
 
-    /* 야근신청서 섹션 마진 */
-    .document-form > div:last-child > div {
-        margin-bottom: 10px !important;
+    /* 1페이지 세부 조정 */
+    .document-form > div:first-child .doc-title {
+        font-size: 24px;
+        margin: 80px 0 20px 0;
     }
 
-    /* 야근신청서 날짜/서명 하단 여백 축소 */
-    .document-form > div:last-child > div[style*="margin: 30px"] {
-        margin: 10px 0 !important;
+    .document-form > div:first-child .form-table th,
+    .document-form > div:first-child .form-table td {
+        padding: 10px;
     }
 
-    .document-form > div:last-child > div[style*="text-align: right"] {
-        margin-bottom: 0 !important;
+    .document-form > div:first-child td[style*="height: 200px"],
+    .document-form > div:first-child th[style*="height: 200px"] {
+        height: 120px !important;
+    }
+
+    /* 2페이지 세부 조정 */
+    .document-form > div:last-child .doc-title {
+        font-size: 20px;
+        margin: 5px 0 10px 0;
+    }
+
+    .document-form > div:last-child h3 {
+        font-size: 12px;
+        margin: 8px 0 5px 0;
+    }
+
+    .document-form > div:last-child .form-table th,
+    .document-form > div:last-child .form-table td {
+        padding: 5px 6px;
+        font-size: 11px;
+        line-height: 1.4;
+    }
+
+    .document-form > div:last-child .ot-person-row td {
+        padding: 4px 5px !important;
+        font-size: 10px !important;
+        height: 26px !important;
     }
 }

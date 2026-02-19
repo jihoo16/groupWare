@@ -176,7 +176,8 @@
 /* 버튼 공통 스타일 */
 .btn-primary,
 .btn-secondary,
-.btn-danger {
+.btn-danger,
+.btn-download-official {
     padding: 12px 30px;
     border: none;
     border-radius: 8px;
@@ -221,6 +222,23 @@
     box-shadow: 0 4px 12px rgba(239, 83, 80, 0.4);
 }
 
+.btn-download-official {
+    background: linear-gradient(135deg, #11998e 0%, #38ef7d 100%);
+    color: white;
+}
+
+.btn-download-official:hover:not(:disabled) {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(17, 153, 142, 0.4);
+}
+
+.btn-download-official:disabled {
+    background: #cbd5e1;
+    color: #94a3b8;
+    cursor: not-allowed;
+    opacity: 0.6;
+}
+
 /* 반응형 */
 @media (max-width: 768px) {
     .editor-area {
@@ -242,7 +260,8 @@
 
     .btn-primary,
     .btn-secondary,
-    .btn-danger {
+    .btn-danger,
+    .btn-download-official {
         padding: 10px 20px;
         font-size: 13px;
     }

@@ -55,9 +55,11 @@ public class HierarchyController {
             HttpSession session) {
         log.debug("직원 보고체계 업데이트 요청 - empIdx: {}", empIdx);
 
-        // 세션에서 현재 사용자 IDX 가져오기 (임시로 1L 사용)
-        // TODO: 실제 세션에서 사용자 정보 가져오기
-        Long currentUserIdx = 1L;
+        Long currentUserIdx = (Long) session.getAttribute("userIdx");
+        if (currentUserIdx == null) {
+            log.warn("로그인하지 않은 사용자의 보고체계 업데이트 시도");
+            return ResponseEntity.status(401).build();
+        }
 
         HierarchyEmployeeDTO result = hierarchyService.updateEmployeeHierarchy(empIdx, updateDTO, currentUserIdx);
         return ResponseEntity.ok(result);
@@ -82,9 +84,11 @@ public class HierarchyController {
             HttpSession session) {
         log.debug("일괄 보고체계 업데이트 요청 - 대상: {}명", updateDTOs.size());
 
-        // 세션에서 현재 사용자 IDX 가져오기 (임시로 1L 사용)
-        // TODO: 실제 세션에서 사용자 정보 가져오기
-        Long currentUserIdx = 1L;
+        Long currentUserIdx = (Long) session.getAttribute("userIdx");
+        if (currentUserIdx == null) {
+            log.warn("로그인하지 않은 사용자의 일괄 보고체계 업데이트 시도");
+            return ResponseEntity.status(401).build();
+        }
 
         hierarchyService.bulkUpdateHierarchy(updateDTOs, currentUserIdx);
         return ResponseEntity.ok().build();

@@ -28,9 +28,9 @@ public class WeeklyReport {
     @Column(name = "project_idx")
     private Long projectIdx;
 
-    @Size(max = 200)
-    @Column(name = "project_name", length = 200)
-    private String projectName;
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "project_idx", insertable = false, updatable = false)
+    private Project project;
 
     @Column(name = "document_idx")
     private Long documentIdx;

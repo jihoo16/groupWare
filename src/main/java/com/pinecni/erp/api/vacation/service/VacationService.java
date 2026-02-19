@@ -72,21 +72,6 @@ public interface VacationService {
     VacationDetailDTO getVacationDetail(Long documentIdx);
 
     /**
-     * 연차신청서 승인
-     * @param documentIdx 문서 IDX (approval_documents의 idx)
-     * @param approverUserIdx 승인자 사용자 IDX
-     */
-    void approveVacation(Long documentIdx, Long approverUserIdx);
-
-    /**
-     * 연차신청서 반려
-     * @param documentIdx 문서 IDX (approval_documents의 idx)
-     * @param approverUserIdx 반려자 사용자 IDX
-     * @param reason 반려 사유
-     */
-    void rejectVacation(Long documentIdx, Long approverUserIdx, String reason);
-
-    /**
      * 연차신청서 삭제 (soft delete + 캘린더 일정 삭제)
      * @param documentIdx 문서 IDX (approval_documents의 idx)
      * @param currentUserIdx 삭제 요청자 사용자 IDX

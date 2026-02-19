@@ -1,8 +1,8 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <Configuration status="WARN">
     <Properties>
-        <Property name="CONSOLE_PATTERN">%d{HH:mm:ss.SSS} %highlight{[%-5level]}{FATAL=red bold, ERROR=red, WARN=yellow, INFO=green, DEBUG=cyan, TRACE=blue} %style{[%t]}{magenta} %style{%logger{36}}{cyan} - %msg%n</Property>
-        <Property name="FILE_PATTERN">%d{yyyy-MM-dd HH:mm:ss.SSS} [%-5level] [%t] %logger{36} - %msg%n</Property>
+        <Property name="CONSOLE_PATTERN">%d{yyyy-MM-dd HH:mm:ss.SSS} [%X{trace_id},%X{span_id}] [%-5level] [%t] %logger{36} - %msg%n</Property>
+        <Property name="FILE_PATTERN">%d{yyyy-MM-dd HH:mm:ss.SSS} [%X{trace_id},%X{span_id}] [%-5level] [%t] %logger{36} - %msg%n</Property>
         <Property name="LOG_PATH">${sys:logging.path:-logs}</Property>
         <Property name="SERVICE_NAME">${spring:spring.application.name:-app}</Property>
     </Properties>
@@ -12,8 +12,8 @@
             <PatternLayout pattern="${CONSOLE_PATTERN}" disableAnsi="false"/>
         </Console>
 
-        <RollingFile name="File" fileName="${LOG_PATH}/${SERVICE_NAME}-dev.log"
-                     filePattern="${LOG_PATH}/${SERVICE_NAME}-dev-%d{yyyy-MM-dd}-%i.log.gz">
+        <RollingFile name="File" fileName="${LOG_PATH}/${SERVICE_NAME}.log"
+                     filePattern="${LOG_PATH}/archive/${SERVICE_NAME}-%d{yyyy-MM-dd}-%i.log.gz">
             <PatternLayout pattern="${FILE_PATTERN}"/>
             <Policies>
                 <TimeBasedTriggeringPolicy interval="1" modulate="true"/>

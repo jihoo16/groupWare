@@ -160,16 +160,27 @@ public class Controller {
      * - 작성자만 접근 가능
      */
     @GetMapping("/approval/vacation/detail")
-    public String approvalVacationDetail(@RequestParam Long documentIdx, HttpSession session) {
+    public String approvalVacationDetail(@RequestParam Long documentIdx, HttpSession session, Model model) {
         // 세션에서 현재 로그인한 사용자 IDX 조회
         Long currentUserIdx = (Long) session.getAttribute("userIdx");
+        Boolean isAdmin = (Boolean) session.getAttribute("isAdmin");
 
         // 문서 조회
         ApprovalDocument document = approvalDocumentRepository.findById(documentIdx)
                 .orElse(null);
 
-        // 권한 체크: 작성자가 아니면 UnauthorizedException 발생 -> 404 페이지로 리다이렉트
-        AuthorizationUtil.validateDocumentOwner(currentUserIdx, document);
+        // 권한 체크: 관리자이거나 작성자가 아니면 UnauthorizedException 발생 -> 404 페이지로 리다이렉트
+        AuthorizationUtil.validateDocumentOwner(currentUserIdx, document, isAdmin);
+
+        // 삭제된 문서 체크: 관리자가 아니면 삭제된 문서는 볼 수 없음
+        if (document != null && document.getDeletedAt() != null) {
+            if (isAdmin == null || !isAdmin) {
+                throw new com.pinecni.erp.exception.UnauthorizedException("삭제된 문서는 관리자만 조회할 수 있습니다.");
+            }
+            // 관리자가 삭제된 문서를 조회하는 경우 - 삭제 정보 전달
+            model.addAttribute("isDeleted", true);
+            model.addAttribute("deletedAt", document.getDeletedAt());
+        }
 
         return "approval_vacation_detail";
     }
@@ -356,6 +367,38 @@ public class Controller {
     @GetMapping("/external-person")
     public String externalPerson() {
         return "external-person";
+    }
+
+    /**
+     * 관리자 전용 - 전체 연차관리 페이지
+     * - 관리자만 접근 가능
+     * - 모든 직원의 연차 현황 조회
+     */
+    @GetMapping("/admin/vacation-management")
+    public String adminVacationManagement(HttpSession session) {
+        // 관리자 권한 확인
+        Boolean isAdmin = (Boolean) session.getAttribute("isAdmin");
+        if (isAdmin == null || !isAdmin) {
+            log.warn("관리자가 아닌 사용자의 전체 연차관리 접근 시도");
+            return "redirect:/nope";
+        }
+        return "admin-vacation-management";
+    }
+
+    /**
+     * 관리자 전용 - 연차신청서 관리 페이지
+     * - 관리자만 접근 가능
+     * - 전체 직원의 연차신청서 목록 조회 및 관리
+     */
+    @GetMapping("/admin/vacation-documents")
+    public String adminVacationDocuments(HttpSession session) {
+        // 관리자 권한 확인
+        Boolean isAdmin = (Boolean) session.getAttribute("isAdmin");
+        if (isAdmin == null || !isAdmin) {
+            log.warn("관리자가 아닌 사용자의 연차신청서 관리 접근 시도");
+            return "redirect:/nope";
+        }
+        return "admin-vacation-documents";
     }
 
     @GetMapping("/login")

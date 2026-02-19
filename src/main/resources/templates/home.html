@@ -10,7 +10,10 @@
         <main class="main-content">
             <header class="header">
                 <div class="header-left">
-                    <h1 class="page-title">파인씨앤아이</h1>
+                    <h1 class="page-title">
+                        <img th:src="@{/images/logo.png}" alt="Logo" class="title-logo">
+                        파인씨앤아이
+                    </h1>
                 </div>
                 <div class="header-right">
                     <div class="search-box">
@@ -78,6 +81,16 @@
                     <a href="/approval/receipt-meeting" class="quick-link-btn">
                         <i class="fas fa-file-invoice"></i>
                         <span>연구비증빙 - 회의록</span>
+                    </a>
+
+                    <!-- 관리자 전용 바로가기 -->
+                    <a href="/admin/vacation-management" class="quick-link-btn admin-only" th:if="${session.isAdmin}">
+                        <i class="fas fa-users-cog"></i>
+                        <span>전체 연차관리</span>
+                    </a>
+                    <a href="/admin/vacation-documents" class="quick-link-btn admin-only" th:if="${session.isAdmin}">
+                        <i class="fas fa-file-alt"></i>
+                        <span>연차신청서 관리</span>
                     </a>
                 </div>
 

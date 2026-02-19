@@ -25,7 +25,13 @@
             </header>
 
             <div class="write-container">
-                <div class="editor-area" style="max-width: 1000px; margin: 0 auto;">
+                <!-- 삭제된 문서 알림 배너 -->
+                <div class="deleted-document-banner" th:if="${isDeleted}">
+                    <i class="fas fa-exclamation-triangle"></i>
+                    <span>이 문서는 <span th:text="${#temporals.format(deletedAt, 'yyyy-MM-dd HH:mm')}"></span>에 삭제된 문서입니다. (관리자 전용 조회)</span>
+                </div>
+
+                <div class="editor-area" th:classappend="${isDeleted} ? 'deleted-document' : ''" style="max-width: 1000px; margin: 0 auto;">
                     <!-- 문서 양식 -->
                     <div class="document-form">
                         <h2 class="doc-title">연 차 신 청 서</h2>

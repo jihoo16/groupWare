@@ -53,7 +53,6 @@ public class ReceiptMeetingServiceImpl implements ReceiptMeetingService {
     private final ReceiptMeetingMapper mapper;
     private final ApprovalDocumentRepository approvalDocumentRepository;
     private final DocumentSequenceService documentSequenceService;
-    private final PdfGenerationService pdfGenerationService;
     private final ProjectRepository projectRepository;
     private final ProjectCardRepository projectCardRepository;
 
@@ -129,83 +128,83 @@ public class ReceiptMeetingServiceImpl implements ReceiptMeetingService {
         try {
             // 1. 참석자 중복 검증 (저장 전 필수)
             validateAttendeeDuplicates(
-                createDTO.getMeetingDate(),
-                createDTO.getStartTime(),
-                createDTO.getEndTime(),
-                createDTO.getProjectIdx(),
-                createDTO.getAttendees(),
-                null  // 신규 생성이므로 현재 회의록 IDX 없음
+                    createDTO.getMeetingDate(),
+                    createDTO.getStartTime(),
+                    createDTO.getEndTime(),
+                    createDTO.getProjectIdx(),
+                    createDTO.getAttendees(),
+                    null  // 신규 생성이므로 현재 회의록 IDX 없음
             );
 
-        // 2. 전자결재 문서번호 생성 (시퀀스 사용)
-        String documentNo = documentSequenceService.generateDocumentNumber("receipt_meeting", "RCM", currentUserIdx);
+            // 2. 전자결재 문서번호 생성 (시퀀스 사용)
+            String documentNo = documentSequenceService.generateDocumentNumber("receipt_meeting", "RCM", currentUserIdx);
 
-        // 제목 생성: "프로젝트이름 (카드번호) - 날짜/금액"
-        StringBuilder titleBuilder = new StringBuilder();
+            // 제목 생성: "프로젝트이름 (카드번호) - 날짜/금액"
+            StringBuilder titleBuilder = new StringBuilder();
 
-        // 프로젝트 이름
-        Project project = projectRepository.findById(createDTO.getProjectIdx())
-                .orElseThrow(() -> new IllegalArgumentException("프로젝트를 찾을 수 없습니다."));
-        titleBuilder.append(project.getProjectName());
+            // 프로젝트 이름
+            Project project = projectRepository.findById(createDTO.getProjectIdx())
+                    .orElseThrow(() -> new IllegalArgumentException("프로젝트를 찾을 수 없습니다."));
+            titleBuilder.append(project.getProjectName());
 
-        // 카드번호
-        if (createDTO.getCardIdx() != null) {
-            ProjectCard card = projectCardRepository.findById(createDTO.getCardIdx())
-                    .orElse(null);
-            if (card != null && card.getCardLastDigits() != null) {
-                titleBuilder.append(" (").append(card.getCardLastDigits()).append(")");
+            // 카드번호
+            if (createDTO.getCardIdx() != null) {
+                ProjectCard card = projectCardRepository.findById(createDTO.getCardIdx())
+                        .orElse(null);
+                if (card != null && card.getCardLastDigits() != null) {
+                    titleBuilder.append(" (").append(card.getCardLastDigits()).append(")");
+                }
             }
-        }
 
-        titleBuilder.append(" - ");
+            titleBuilder.append(" - ");
 
-        // 날짜
-        DateTimeFormatter dateFormatter = DateTimeFormatter.ofPattern("yyyy-MM-dd");
-        titleBuilder.append(createDTO.getMeetingDate().format(dateFormatter));
+            // 날짜
+            DateTimeFormatter dateFormatter = DateTimeFormatter.ofPattern("yyyy-MM-dd");
+            titleBuilder.append(createDTO.getMeetingDate().format(dateFormatter));
 
-        titleBuilder.append("/");
+            titleBuilder.append("/");
 
-        // 금액
-        if (createDTO.getAmount() != null) {
-            DecimalFormat decimalFormat = new DecimalFormat("#,###");
-            titleBuilder.append(decimalFormat.format(createDTO.getAmount())).append("원");
-        } else {
-            titleBuilder.append("0원");
-        }
+            // 금액
+            if (createDTO.getAmount() != null) {
+                DecimalFormat decimalFormat = new DecimalFormat("#,###");
+                titleBuilder.append(decimalFormat.format(createDTO.getAmount())).append("원");
+            } else {
+                titleBuilder.append("0원");
+            }
 
-        String title = titleBuilder.toString();
+            String title = titleBuilder.toString();
 
-        ApprovalDocument approvalDocument = ApprovalDocument.builder()
-                .documentNo(documentNo)
-                .title(title)
-                .documentType("연구비증빙-회의록")  // 화면 표시용
-                .isProject(true)  // 프로젝트 문서로 표시
-                .drafterUserIdx(createDTO.getAuthorIdx())
-                .content(createDTO.getContent())
-                .createdUserIdx(currentUserIdx)
-                .updatedUserIdx(currentUserIdx)
-                .build();
+            ApprovalDocument approvalDocument = ApprovalDocument.builder()
+                    .documentNo(documentNo)
+                    .title(title)
+                    .documentType("연구비증빙-회의록")  // 화면 표시용
+                    .isProject(true)  // 프로젝트 문서로 표시
+                    .drafterUserIdx(createDTO.getAuthorIdx())
+                    .content(createDTO.getContent())
+                    .createdUserIdx(currentUserIdx)
+                    .updatedUserIdx(currentUserIdx)
+                    .build();
 
-        ApprovalDocument savedDocument = approvalDocumentRepository.save(approvalDocument);
-        log.debug("ApprovalDocument created - documentIdx: {}, documentNo: {}",
-                  savedDocument.getIdx(), savedDocument.getDocumentNo());
+            ApprovalDocument savedDocument = approvalDocumentRepository.save(approvalDocument);
+            log.debug("ApprovalDocument created - documentIdx: {}, documentNo: {}",
+                    savedDocument.getIdx(), savedDocument.getDocumentNo());
 
-        // 4. 회의록 Entity 생성 및 저장
-        ReceiptMeeting entity = mapper.toEntity(createDTO);
-        entity.setDocumentIdx(savedDocument.getIdx());
-        entity.setCreatedUserIdx(currentUserIdx);
-        entity.setUpdatedUserIdx(currentUserIdx);
-        entity = receiptMeetingRepository.save(entity);
+            // 4. 회의록 Entity 생성 및 저장
+            ReceiptMeeting entity = mapper.toEntity(createDTO);
+            entity.setDocumentIdx(savedDocument.getIdx());
+            entity.setCreatedUserIdx(currentUserIdx);
+            entity.setUpdatedUserIdx(currentUserIdx);
+            entity = receiptMeetingRepository.save(entity);
 
-        // 5. 참석자 목록 저장 (통합 테이블 사용)
-        if (createDTO.getAttendees() != null && !createDTO.getAttendees().isEmpty()) {
-            final ReceiptMeeting finalEntity = entity;
-            List<ReceiptAttendee> attendees = createDTO.getAttendees().stream()
-                    .map(dto -> mapper.toAttendeeEntity(dto, finalEntity, currentUserIdx))
-                    .collect(Collectors.toList());
-            receiptAttendeeRepository.saveAll(attendees);
-            log.debug("참석자 {}명 저장 완료 (통합 테이블, RCM)", attendees.size());
-        }
+            // 5. 참석자 목록 저장 (통합 테이블 사용)
+            if (createDTO.getAttendees() != null && !createDTO.getAttendees().isEmpty()) {
+                final ReceiptMeeting finalEntity = entity;
+                List<ReceiptAttendee> attendees = createDTO.getAttendees().stream()
+                        .map(dto -> mapper.toAttendeeEntity(dto, finalEntity, currentUserIdx))
+                        .collect(Collectors.toList());
+                receiptAttendeeRepository.saveAll(attendees);
+                log.debug("참석자 {}명 저장 완료 (통합 테이블, RCM)", attendees.size());
+            }
 
             // 6. 저장된 데이터 재조회 (참석자 포함)
             ReceiptMeeting savedEntity = receiptMeetingRepository.findByIdWithDetails(entity.getIdx())
@@ -217,7 +216,7 @@ public class ReceiptMeetingServiceImpl implements ReceiptMeetingService {
 
         } catch (Exception e) {
             log.error("연구비증빙 회의록 생성 실패 - projectIdx: {}, authorIdx: {}, error: {}",
-                      createDTO.getProjectIdx(), createDTO.getAuthorIdx(), e.getMessage(), e);
+                    createDTO.getProjectIdx(), createDTO.getAuthorIdx(), e.getMessage(), e);
             throw new RuntimeException("연구비증빙 회의록 저장 중 오류가 발생했습니다.\n잠시 후 다시 시도하거나 관리자에게 문의해주세요.", e);
         }
     }
@@ -233,12 +232,12 @@ public class ReceiptMeetingServiceImpl implements ReceiptMeetingService {
 
         // 2. 참석자 중복 검증 (수정 전 필수)
         validateAttendeeDuplicates(
-            updateDTO.getMeetingDate(),
-            updateDTO.getStartTime(),
-            updateDTO.getEndTime(),
-            updateDTO.getProjectIdx(),
-            updateDTO.getAttendees(),
-            idx  // 현재 회의록 IDX (자기 자신은 제외)
+                updateDTO.getMeetingDate(),
+                updateDTO.getStartTime(),
+                updateDTO.getEndTime(),
+                updateDTO.getProjectIdx(),
+                updateDTO.getAttendees(),
+                idx  // 현재 회의록 IDX (자기 자신은 제외)
         );
 
         // 3. 회의록 정보 업데이트
@@ -398,10 +397,14 @@ public class ReceiptMeetingServiceImpl implements ReceiptMeetingService {
     private String getDocumentTypeName(String prefix) {
         if (prefix == null) return "알 수 없음";
         switch (prefix) {
-            case "RCM": return "회의록";
-            case "RCO": return "야근식대";
-            case "RCT": return "출장";
-            default: return prefix;
+            case "RCM":
+                return "회의록";
+            case "RCO":
+                return "야근식대";
+            case "RCT":
+                return "출장";
+            default:
+                return prefix;
         }
     }
 
@@ -513,6 +516,7 @@ public class ReceiptMeetingServiceImpl implements ReceiptMeetingService {
 
     /**
      * 회의록 Entity에 참석자 목록 로드 (통합 테이블에서 조회)
+     *
      * @param entity 회의록 Entity
      */
     private void loadAttendees(ReceiptMeeting entity) {
@@ -527,14 +531,15 @@ public class ReceiptMeetingServiceImpl implements ReceiptMeetingService {
 
     /**
      * 시간대 겹침 확인 유틸리티 메서드
+     *
      * @param start1 시작 시간 1
-     * @param end1 종료 시간 1
+     * @param end1   종료 시간 1
      * @param start2 시작 시간 2
-     * @param end2 종료 시간 2
+     * @param end2   종료 시간 2
      * @return 겹치면 true, 안 겹치면 false
      */
     private boolean isTimeOverlap(java.time.LocalTime start1, java.time.LocalTime end1,
-                                   java.time.LocalTime start2, java.time.LocalTime end2) {
+                                  java.time.LocalTime start2, java.time.LocalTime end2) {
         // 시간대가 겹치는 경우: start1 < end2 && end1 > start2
         return start1.isBefore(end2) && end1.isAfter(start2);
     }
@@ -544,11 +549,11 @@ public class ReceiptMeetingServiceImpl implements ReceiptMeetingService {
      * - 같은 날짜, 같은 프로젝트, 겹치는 시간대에 동일 참석자가 있는지 확인
      * - 내부/외부 참석자 모두 검증
      *
-     * @param meetingDate 회의 날짜
-     * @param startTime 시작 시간
-     * @param endTime 종료 시간
-     * @param projectIdx 프로젝트 IDX
-     * @param attendees 참석자 목록 (DTO)
+     * @param meetingDate       회의 날짜
+     * @param startTime         시작 시간
+     * @param endTime           종료 시간
+     * @param projectIdx        프로젝트 IDX
+     * @param attendees         참석자 목록 (DTO)
      * @param currentMeetingIdx 현재 회의록 IDX (수정 시 자기 자신 제외용, 신규 생성 시 null)
      * @throws IllegalStateException 중복 참석자가 있을 경우
      */
@@ -618,18 +623,18 @@ public class ReceiptMeetingServiceImpl implements ReceiptMeetingService {
                     String documentType = getDocumentTypeName(existing.getDocumentTypePrefix());
 
                     String errorMessage = String.format(
-                        "참석자 '%s'이(가) 같은 날짜 및 시간대에 이미 다른 문서에 참석 중입니다.\n\n" +
-                        "- 문서 유형: %s\n" +
-                        "- 날짜: %s\n" +
-                        "- 시간: %s ~ %s\n" +
-                        "- 프로젝트: [%s]\n\n" +
-                        "시간을 변경하거나 참석자를 제외해주세요.",
-                        attendeeName,
-                        documentType,
-                        existing.getDocumentDate(),
-                        existing.getStartTime(),
-                        existing.getEndTime(),
-                        projectName
+                            "참석자 '%s'이(가) 같은 날짜 및 시간대에 이미 다른 문서에 참석 중입니다.\n\n" +
+                                    "- 문서 유형: %s\n" +
+                                    "- 날짜: %s\n" +
+                                    "- 시간: %s ~ %s\n" +
+                                    "- 프로젝트: [%s]\n\n" +
+                                    "시간을 변경하거나 참석자를 제외해주세요.",
+                            attendeeName,
+                            documentType,
+                            existing.getDocumentDate(),
+                            existing.getStartTime(),
+                            existing.getEndTime(),
+                            projectName
                     );
 
                     log.warn("참석자 중복 발견 - userIdx: {}, name: {}, 기존 문서 타입: {}, receipt_idx: {}",

@@ -87,11 +87,15 @@ public class FixedExpensePolicyController {
      */
     @PostMapping
     public ResponseEntity<FixedExpensePolicyDTO> upsertPolicy(
-            @RequestBody FixedExpensePolicyUpdateDTO updateDTO) {
+            @RequestBody FixedExpensePolicyUpdateDTO updateDTO,
+            jakarta.servlet.http.HttpSession session) {
         log.debug("POST /api/fixed-expense-policies - upsertPolicy() with positionCode: {}", updateDTO.getPositionCode());
 
-        // TODO: 실제 사용자 IDX를 세션이나 인증 정보에서 가져와야 함
-        Long currentUserIdx = 1L;
+        Long currentUserIdx = (Long) session.getAttribute("userIdx");
+        if (currentUserIdx == null) {
+            log.warn("로그인하지 않은 사용자의 고정경비 정책 저장 시도");
+            return ResponseEntity.status(401).build();
+        }
 
         try {
             FixedExpensePolicyDTO policy = fixedExpensePolicyService.upsertPolicy(updateDTO, currentUserIdx);
@@ -108,11 +112,17 @@ public class FixedExpensePolicyController {
      */
     @PostMapping("/batch")
     public ResponseEntity<Map<String, Object>> upsertPoliciesBatch(
-            @RequestBody List<FixedExpensePolicyUpdateDTO> updateDTOs) {
+            @RequestBody List<FixedExpensePolicyUpdateDTO> updateDTOs,
+            jakarta.servlet.http.HttpSession session) {
         log.debug("POST /api/fixed-expense-policies/batch - upsertPoliciesBatch() with {} policies", updateDTOs.size());
 
-        // TODO: 실제 사용자 IDX를 세션이나 인증 정보에서 가져와야 함
-        Long currentUserIdx = 1L;
+        Long currentUserIdx = (Long) session.getAttribute("userIdx");
+        if (currentUserIdx == null) {
+            log.warn("로그인하지 않은 사용자의 고정경비 정책 일괄 저장 시도");
+            Map<String, Object> error = new HashMap<>();
+            error.put("error", "로그인이 필요합니다.");
+            return ResponseEntity.status(401).body(error);
+        }
 
         try {
             List<FixedExpensePolicyDTO> policies = fixedExpensePolicyService.upsertPolicies(updateDTOs, currentUserIdx);

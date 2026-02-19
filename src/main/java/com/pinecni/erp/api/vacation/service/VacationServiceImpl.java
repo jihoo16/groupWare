@@ -1287,37 +1287,6 @@ public class VacationServiceImpl implements VacationService {
 
     @Override
     @Transactional
-    public void approveVacation(Long documentIdx, Long approverUserIdx) {
-        log.info("[연차신청서 승인 시작] documentIdx: {}, approverUserIdx: {}", documentIdx, approverUserIdx);
-
-        // TODO: 결재 워크플로우 구현 필요
-        // 1. ApprovalLine에서 현재 결재자가 대기 중인 결재건인지 확인
-        // 2. 결재 상태를 APPROVED로 변경
-        // 3. 다음 결재자가 있으면 다음 결재자에게 알림
-        // 4. 마지막 결재자라면 ApprovalDocument의 status를 APPROVED로 변경
-        // 5. 연차 사용 일수는 vacation_request 테이블에 이미 저장되어 있음
-        // 6. 캘린더에 연차 일정 등록 (CalendarEvent 생성)
-
-        throw new UnsupportedOperationException("결재 워크플로우가 아직 구현되지 않았습니다.");
-    }
-
-    @Override
-    @Transactional
-    public void rejectVacation(Long documentIdx, Long approverUserIdx, String reason) {
-        log.info("[연차신청서 반려 시작] documentIdx: {}, approverUserIdx: {}, reason: {}",
-                documentIdx, approverUserIdx, reason);
-
-        // TODO: 결재 워크플로우 구현 필요
-        // 1. ApprovalLine에서 현재 결재자가 대기 중인 결재건인지 확인
-        // 2. 결재 상태를 REJECTED로 변경, 반려 사유 저장
-        // 3. ApprovalDocument의 status를 REJECTED로 변경
-        // 4. 기안자에게 반려 알림
-
-        throw new UnsupportedOperationException("결재 워크플로우가 아직 구현되지 않았습니다.");
-    }
-
-    @Override
-    @Transactional
     public void deleteVacation(Long documentIdx, Long currentUserIdx) {
         log.info("[연차신청서 삭제 시작] documentIdx: {}, currentUserIdx: {}", documentIdx, currentUserIdx);
 
@@ -1347,21 +1316,69 @@ public class VacationServiceImpl implements VacationService {
         log.info("[연차 일수 복구 계산] 총 복구할 일수: {}일 (경조사, 기타 제외)", totalDaysToRestore);
         log.info("[연차 잔액 복구] VacationRequest 삭제로 자동 반영됨 (calculateUsedDays에서 집계 시 제외됨)");
 
-        // 6. 캘린더 일정 삭제
-        for (VacationRequest vr : vacationRequests) {
-            // 기간에 해당하는 캘린더 일정 조회 및 완전 삭제
-            List<CalendarEvent> events = calendarEventRepository.findByUserIdxAndDateRange(
-                    vr.getUserIdx(), vr.getStartDate(), vr.getEndDate()
-            );
+        // 6. 캘린더 일정 삭제 (event_type = "leave"이고 날짜 범위가 겹치는 일정)
+        // vacation_request의 모든 기간을 포함하는 전체 날짜 범위 계산
+        if (!vacationRequests.isEmpty()) {
+            LocalDate minStartDate = vacationRequests.stream()
+                    .map(VacationRequest::getStartDate)
+                    .min(LocalDate::compareTo)
+                    .orElse(null);
 
-            for (CalendarEvent event : events) {
-                // 연차 관련 일정인지 확인 (eventTitle에 "연차" 또는 특정 키워드 포함)
-                if (event.getEventTitle() != null &&
-                    (event.getEventTitle().contains("연차") || event.getEventTitle().contains("휴가"))) {
-                    // 완전 삭제 (hard delete)
-                    calendarEventRepository.delete(event);
-                    log.info("[캘린더 일정 삭제] eventIdx: {}, eventTitle: {}", event.getIdx(), event.getEventTitle());
+            LocalDate maxEndDate = vacationRequests.stream()
+                    .map(VacationRequest::getEndDate)
+                    .max(LocalDate::compareTo)
+                    .orElse(null);
+
+            if (minStartDate != null && maxEndDate != null) {
+                // 사용자의 해당 기간 내 모든 캘린더 일정 조회
+                Long vacationUserIdx = vacationRequests.get(0).getUserIdx();
+                List<CalendarEvent> allEvents = calendarEventRepository.findByUserIdxAndDateRange(
+                        vacationUserIdx, minStartDate, maxEndDate
+                );
+
+                log.info("[캘린더 일정 조회] userIdx: {}, 날짜범위: {} ~ {}, 조회된 일정 수: {}",
+                        vacationUserIdx, minStartDate, maxEndDate, allEvents.size());
+
+                // event_type이 "leave"이고 vacation_request 기간과 겹치는 일정 필터링 및 soft delete
+                int deletedCount = 0;
+                for (CalendarEvent event : allEvents) {
+                    // event_type이 "leave"인지 확인
+                    if (!"leave".equals(event.getEventType())) {
+                        continue;
+                    }
+
+                    // 이미 삭제된 일정은 건너뛰기
+                    if (event.getDeletedAt() != null) {
+                        continue;
+                    }
+
+                    // 캘린더 일정의 created_user_idx가 vacation_request의 user_idx와 일치하는지 확인
+                    if (!event.getCreatedUserIdx().equals(vacationUserIdx)) {
+                        continue;
+                    }
+
+                    // 캘린더 일정의 날짜 범위가 vacation_request의 어떤 기간과라도 겹치는지 확인
+                    boolean overlaps = vacationRequests.stream()
+                            .anyMatch(vr -> {
+                                // 두 기간이 겹치는 조건: event.start <= vr.end AND event.end >= vr.start
+                                return !event.getStartDate().isAfter(vr.getEndDate()) &&
+                                       !event.getEndDate().isBefore(vr.getStartDate());
+                            });
+
+                    if (overlaps) {
+                        // Soft delete
+                        event.setDeletedAt(LocalDateTime.now());
+                        event.setDeletedUserIdx(currentUserIdx);
+                        calendarEventRepository.save(event);
+                        deletedCount++;
+
+                        log.info("[캘린더 일정 삭제] eventIdx: {}, eventType: {}, eventTitle: {}, startDate: {}, endDate: {}",
+                                event.getIdx(), event.getEventType(), event.getEventTitle(),
+                                event.getStartDate(), event.getEndDate());
+                    }
                 }
+
+                log.info("[캘린더 일정 삭제 완료] 삭제된 일정 수: {}", deletedCount);
             }
         }
 

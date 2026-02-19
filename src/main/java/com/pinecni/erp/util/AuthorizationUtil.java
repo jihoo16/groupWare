@@ -14,13 +14,14 @@ public class AuthorizationUtil {
 
     /**
      * 현재 사용자가 문서의 작성자인지 확인
-     * - 작성자가 아니면 UnauthorizedException 발생
+     * - 관리자이거나 작성자가 아니면 UnauthorizedException 발생
      *
      * @param currentUserIdx 현재 로그인한 사용자 IDX (세션에서 가져옴)
      * @param document 문서 객체
+     * @param isAdmin 관리자 여부
      * @throws UnauthorizedException 작성자가 아닌 경우
      */
-    public static void validateDocumentOwner(Long currentUserIdx, ApprovalDocument document) {
+    public static void validateDocumentOwner(Long currentUserIdx, ApprovalDocument document, Boolean isAdmin) {
         if (currentUserIdx == null) {
             log.warn("로그인하지 않은 사용자의 문서 접근 시도");
             throw new UnauthorizedException("로그인이 필요합니다.");
@@ -29,6 +30,12 @@ public class AuthorizationUtil {
         if (document == null) {
             log.warn("존재하지 않는 문서 접근 시도");
             throw new UnauthorizedException("문서를 찾을 수 없습니다.");
+        }
+
+        // 관리자는 모든 문서에 접근 가능
+        if (isAdmin != null && isAdmin) {
+            log.debug("관리자 권한으로 문서 접근 - 문서IDX: {}, 사용자: {}", document.getIdx(), currentUserIdx);
+            return;
         }
 
         Long drafterUserIdx = document.getDrafterUserIdx();

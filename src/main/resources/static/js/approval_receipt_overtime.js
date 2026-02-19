@@ -587,15 +587,29 @@ document.addEventListener('DOMContentLoaded', async function() {
                 // 프로젝트 카드 목록 로드
                 await loadProjectCards(proj.idx);
 
-                // 카드 선택 초기화 및 안내 문구 표시
-                selectedCard = null;
-                const otCard = document.getElementById('ot_card');
-                if (otCard) {
-                    otCard.value = '';
-                    otCard.placeholder = '클릭하여 카드 선택';
+                // 카드가 1개 이상 있으면 첫 번째 카드 자동 선택
+                if (projectCards && projectCards.length > 0) {
+                    selectedCard = projectCards[0];
+                    const otCard = document.getElementById('ot_card');
+                    if (otCard) {
+                        otCard.value = projectCards[0].cardName;
+                        otCard.classList.remove('error');
+                    }
+                    const selectedCardIdx = document.getElementById('selectedCardIdx');
+                    if (selectedCardIdx) {
+                        selectedCardIdx.value = projectCards[0].idx;
+                    }
+                } else {
+                    // 카드가 없으면 초기화
+                    selectedCard = null;
+                    const otCard = document.getElementById('ot_card');
+                    if (otCard) {
+                        otCard.value = '';
+                        otCard.placeholder = '클릭하여 카드 선택';
+                    }
+                    const selectedCardIdx = document.getElementById('selectedCardIdx');
+                    if (selectedCardIdx) selectedCardIdx.value = '';
                 }
-                const selectedCardIdx = document.getElementById('selectedCardIdx');
-                if (selectedCardIdx) selectedCardIdx.value = '';
 
                 // 프로젝트 변경 시 중복 정보 초기화
                 duplicateAttendeesInfo = {};
@@ -1418,6 +1432,8 @@ document.addEventListener('DOMContentLoaded', async function() {
             if (!tableBody) return;
 
             const timeRange = getFormattedTimeRange();
+            const currentTask = getCurrentTask();
+            const minRows = 10;
             const globalTask = getCurrentTask();
             const minRows = 11;
             const rowCount = Math.max(overtimePersons.length, minRows);
@@ -1437,7 +1453,7 @@ document.addEventListener('DOMContentLoaded', async function() {
             }
             tableBody.innerHTML = html;
 
-            // 인원이 11명 초과 시 행 높이 축소
+            // 인원이 10명 초과 시 행 높이 축소
             if (rowCount > minRows) {
                 tableBody.querySelectorAll('.ot-person-row td').forEach(td => {
                     td.style.padding = '6px 8px';
@@ -2004,7 +2020,7 @@ document.addEventListener('DOMContentLoaded', async function() {
 
             // 금액
             const amountStr = otAmount?.value?.replace(/,/g, '') || '0';
-            const amount = parseFloat(amountStr) || 0;
+            const amount = parseInt(amountStr) || 0;
 
             // 저장 직전 중복 참석자 최종 검증
             try {

@@ -4,6 +4,7 @@ import com.pinecni.erp.api.vacation.dto.VacationUserInfoDTO;
 import com.pinecni.erp.api.vacation.dto.VacationCalculationDetailDTO;
 import com.pinecni.erp.api.vacation.dto.VacationRequestSaveDTO;
 import com.pinecni.erp.api.vacation.dto.VacationDetailDTO;
+import com.pinecni.erp.api.vacation.dto.AdminVacationDocumentDTO;
 import com.pinecni.erp.api.vacation.service.VacationService;
 import com.pinecni.erp.entity.VacationRequest;
 import com.pinecni.erp.entity.VacationAccrualSchedule;
@@ -11,6 +12,14 @@ import com.pinecni.erp.api.vacation.repository.VacationRequestRepository;
 import com.pinecni.erp.api.vacation.repository.VacationAccrualScheduleRepository;
 import com.pinecni.erp.api.vacation.repository.VacationOfficialPdfRepository;
 import com.pinecni.erp.service.PdfGenerationService;
+import com.pinecni.erp.api.user.service.UserService;
+import com.pinecni.erp.api.user.dto.UserSimpleDTO;
+import com.pinecni.erp.entity.ApprovalDocument;
+import com.pinecni.erp.entity.User;
+import com.pinecni.erp.api.approval.repository.ApprovalDocumentRepository;
+import com.pinecni.erp.api.user.repository.UserRepository;
+import com.pinecni.erp.api.code.repository.CodeRepository;
+import com.pinecni.erp.constant.CodeConstants;
 import jakarta.servlet.http.HttpSession;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -21,6 +30,7 @@ import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
 import java.util.*;
@@ -40,6 +50,10 @@ public class VacationController {
     private final VacationAccrualScheduleRepository vacationAccrualScheduleRepository;
     private final VacationOfficialPdfRepository vacationOfficialPdfRepository;
     private final PdfGenerationService pdfGenerationService;
+    private final UserService userService;
+    private final ApprovalDocumentRepository approvalDocumentRepository;
+    private final UserRepository userRepository;
+    private final CodeRepository codeRepository;
 
     /**
      * 연차 신청서용 사용자 정보 조회 API
@@ -486,60 +500,6 @@ public class VacationController {
     }
 
     /**
-     * 연차신청서 승인 API
-     * @param documentIdx ApprovalDocument의 idx
-     * @return 승인 결과
-     */
-    @PostMapping("/approve")
-    public ResponseEntity<?> approveVacation(@RequestParam Long documentIdx, HttpSession session) {
-        try {
-            log.info("[연차신청서 승인] documentIdx: {}", documentIdx);
-
-            // TODO: 세션에서 현재 사용자 정보 가져오기
-            Long currentUserIdx = 1L; // 임시값
-
-            vacationService.approveVacation(documentIdx, currentUserIdx);
-
-            return ResponseEntity.ok(Map.of("message", "승인되었습니다."));
-        } catch (UnsupportedOperationException e) {
-            log.warn("[연차신청서 승인 미구현] documentIdx: {}, error: {}", documentIdx, e.getMessage());
-            return ResponseEntity.status(501).body(Map.of("error", e.getMessage()));
-        } catch (Exception e) {
-            log.error("[연차신청서 승인 실패] documentIdx: {}, error: {}", documentIdx, e.getMessage(), e);
-            return ResponseEntity.internalServerError().body(Map.of("error", "승인 처리 중 오류가 발생했습니다."));
-        }
-    }
-
-    /**
-     * 연차신청서 반려 API
-     * @param documentIdx ApprovalDocument의 idx
-     * @param request 반려 사유
-     * @return 반려 결과
-     */
-    @PostMapping("/reject")
-    public ResponseEntity<?> rejectVacation(@RequestParam Long documentIdx,
-                                           @RequestBody Map<String, String> request,
-                                           HttpSession session) {
-        try {
-            String reason = request.get("reason");
-            log.info("[연차신청서 반려] documentIdx: {}, reason: {}", documentIdx, reason);
-
-            // TODO: 세션에서 현재 사용자 정보 가져오기
-            Long currentUserIdx = 1L; // 임시값
-
-            vacationService.rejectVacation(documentIdx, currentUserIdx, reason);
-
-            return ResponseEntity.ok(Map.of("message", "반려되었습니다."));
-        } catch (UnsupportedOperationException e) {
-            log.warn("[연차신청서 반려 미구현] documentIdx: {}, error: {}", documentIdx, e.getMessage());
-            return ResponseEntity.status(501).body(Map.of("error", e.getMessage()));
-        } catch (Exception e) {
-            log.error("[연차신청서 반려 실패] documentIdx: {}, error: {}", documentIdx, e.getMessage(), e);
-            return ResponseEntity.internalServerError().body(Map.of("error", "반려 처리 중 오류가 발생했습니다."));
-        }
-    }
-
-    /**
      * 연차신청서 삭제 API (soft delete + 캘린더 일정 삭제)
      * @param documentIdx ApprovalDocument의 idx
      * @return 삭제 결과
@@ -549,8 +509,10 @@ public class VacationController {
         try {
             log.info("[연차신청서 삭제] documentIdx: {}", documentIdx);
 
-            // TODO: 세션에서 현재 사용자 정보 가져오기
-            Long currentUserIdx = 1L; // 임시값
+            Long currentUserIdx = (Long) session.getAttribute("userIdx");
+            if (currentUserIdx == null) {
+                return ResponseEntity.status(401).body(Map.of("error", "로그인이 필요합니다."));
+            }
 
             vacationService.deleteVacation(documentIdx, currentUserIdx);
 
@@ -563,6 +525,198 @@ public class VacationController {
             return ResponseEntity.badRequest().body(Map.of("error", e.getMessage()));
         } catch (Exception e) {
             log.error("[연차신청서 삭제 실패] documentIdx: {}, error: {}", documentIdx, e.getMessage(), e);
+            return ResponseEntity.internalServerError().body(Map.of("error", "삭제 처리 중 오류가 발생했습니다."));
+        }
+    }
+
+    /**
+     * 관리자 전용 - 전체 직원 연차 현황 조회 API
+     * @param year 조회할 연도 (선택, 기본값: 현재 연도)
+     * @param session HTTP 세션
+     * @return 전체 직원의 연차 정보 리스트
+     */
+    @GetMapping("/admin/all")
+    public ResponseEntity<?> getAllUsersVacationInfo(
+            @RequestParam(required = false) Integer year,
+            HttpSession session) {
+
+        // 관리자 권한 확인
+        Boolean isAdmin = (Boolean) session.getAttribute("isAdmin");
+        if (isAdmin == null || !isAdmin) {
+            log.warn("관리자가 아닌 사용자의 전체 연차 현황 조회 시도");
+            return ResponseEntity.status(403).body(Map.of("error", "관리자 권한이 필요합니다."));
+        }
+
+        if (year == null) {
+            year = LocalDate.now().getYear();
+        }
+
+        log.info("getAllUsersVacationInfo - year: {}", year);
+
+        try {
+            // 전체 활성 사용자 조회
+            List<UserSimpleDTO> allUsers = userService.getAllActiveUsers();
+
+            // 각 사용자의 연차 정보 조회
+            Integer finalYear = year;
+            List<VacationUserInfoDTO> vacationInfoList = allUsers.stream()
+                    .map(user -> {
+                        try {
+                            VacationUserInfoDTO dto = vacationService.getUserVacationInfo(user.getIdx(), finalYear);
+                            // 한글명과 입사일 추가
+                            dto.setEmpDeptName(user.getEmpDeptName());
+                            dto.setEmpPositionName(user.getEmpPositionName());
+                            dto.setEmpJoinDate(user.getEmpJoinDate() != null ? user.getEmpJoinDate().toString() : null);
+                            dto.setEmpPositionSortOrder(user.getEmpPositionSortOrder());
+                            return dto;
+                        } catch (Exception e) {
+                            log.warn("사용자 {}의 연차 정보 조회 실패: {}", user.getIdx(), e.getMessage());
+                            // 연차 정보 조회 실패 시 기본값 반환
+                            return VacationUserInfoDTO.builder()
+                                    .userIdx(user.getIdx())
+                                    .empName(user.getEmpName())
+                                    .empDept(user.getEmpDept())
+                                    .empDeptName(user.getEmpDeptName())
+                                    .empPosition(user.getEmpPosition())
+                                    .empPositionName(user.getEmpPositionName())
+                                    .empJoinDate(user.getEmpJoinDate() != null ? user.getEmpJoinDate().toString() : null)
+                                    .empPositionSortOrder(user.getEmpPositionSortOrder())
+                                    .totalDays(BigDecimal.ZERO)
+                                    .usedDays(BigDecimal.ZERO)
+                                    .remainingDays(BigDecimal.ZERO)
+                                    .year(finalYear)
+                                    .build();
+                        }
+                    })
+                    .sorted(Comparator.comparing(
+                            dto -> dto.getEmpPositionSortOrder() != null ? dto.getEmpPositionSortOrder() : 999
+                    ))
+                    .collect(Collectors.toList());
+
+            log.info("전체 연차 현황 조회 완료 - 총 {}명", vacationInfoList.size());
+            return ResponseEntity.ok(vacationInfoList);
+
+        } catch (Exception e) {
+            log.error("전체 연차 현황 조회 중 오류 발생: {}", e.getMessage(), e);
+            return ResponseEntity.internalServerError()
+                    .body(Map.of("error", "연차 현황 조회 중 오류가 발생했습니다."));
+        }
+    }
+
+    /**
+     * 관리자 전용 - 전체 연차신청서 목록 조회 API
+     * @param userIdx 사용자 필터 (선택)
+     * @param session HTTP 세션
+     * @return 전체 연차신청서 목록
+     */
+    @GetMapping("/admin/documents")
+    public ResponseEntity<?> getAllVacationDocuments(
+            @RequestParam(required = false) Long userIdx,
+            HttpSession session) {
+
+        // 관리자 권한 확인
+        Boolean isAdmin = (Boolean) session.getAttribute("isAdmin");
+        if (isAdmin == null || !isAdmin) {
+            log.warn("관리자가 아닌 사용자의 전체 연차신청서 조회 시도");
+            return ResponseEntity.status(403).body(Map.of("error", "관리자 권한이 필요합니다."));
+        }
+
+        try {
+            log.info("전체 연차신청서 조회 시작 - userIdx 필터: {}", userIdx);
+
+            // 삭제되지 않은 모든 연차신청서 조회
+            List<VacationRequest> vacationRequests;
+            if (userIdx != null) {
+                vacationRequests = vacationRequestRepository.findByUserIdx(userIdx);
+            } else {
+                vacationRequests = vacationRequestRepository.findAll().stream()
+                        .sorted(Comparator.comparing(VacationRequest::getCreatedAt).reversed())
+                        .collect(Collectors.toList());
+            }
+
+            // DTO로 변환
+            List<AdminVacationDocumentDTO> documentList = vacationRequests.stream()
+                    .map(vr -> {
+                        ApprovalDocument doc = approvalDocumentRepository.findById(vr.getDocumentIdx()).orElse(null);
+                        if (doc == null) return null;
+
+                        User user = userRepository.findById(vr.getUserIdx()).orElse(null);
+                        if (user == null) return null;
+
+                        String deptName = null;
+                        if (user.getEmpDept() != null) {
+                            deptName = codeRepository.findByGroupCodeAndCode(CodeConstants.GroupCode.DEPARTMENT.getCode(), user.getEmpDept())
+                                    .map(code -> code.getCodeName())
+                                    .orElse(user.getEmpDept());
+                        }
+
+                        return AdminVacationDocumentDTO.builder()
+                                .vacationIdx(vr.getIdx())
+                                .vacationType(vr.getVacationType())
+                                .startDate(vr.getStartDate())
+                                .endDate(vr.getEndDate())
+                                .days(vr.getDays())
+                                .reason(vr.getReason())
+                                .documentIdx(doc.getIdx())
+                                .createdAt(doc.getCreatedAt())
+                                .deletedAt(doc.getDeletedAt())
+                                .userIdx(user.getIdx())
+                                .userName(user.getEmpName())
+                                .userDept(user.getEmpDept())
+                                .userDeptName(deptName)
+                                .userPosition(user.getEmpPosition())
+                                .build();
+                    })
+                    .filter(Objects::nonNull)
+                    .collect(Collectors.toList());
+
+            log.info("전체 연차신청서 조회 완료 - 총 {}건", documentList.size());
+            return ResponseEntity.ok(documentList);
+
+        } catch (Exception e) {
+            log.error("전체 연차신청서 조회 중 오류 발생: {}", e.getMessage(), e);
+            return ResponseEntity.internalServerError()
+                    .body(Map.of("error", "연차신청서 조회 중 오류가 발생했습니다."));
+        }
+    }
+
+    /**
+     * 관리자 전용 - 연차신청서 삭제 API
+     * @param documentIdx 문서 IDX
+     * @param session HTTP 세션
+     * @return 삭제 결과
+     */
+    @DeleteMapping("/admin/documents/{documentIdx}")
+    public ResponseEntity<?> deleteVacationByAdmin(
+            @PathVariable Long documentIdx,
+            HttpSession session) {
+
+        // 관리자 권한 확인
+        Boolean isAdmin = (Boolean) session.getAttribute("isAdmin");
+        if (isAdmin == null || !isAdmin) {
+            log.warn("관리자가 아닌 사용자의 연차신청서 삭제 시도");
+            return ResponseEntity.status(403).body(Map.of("error", "관리자 권한이 필요합니다."));
+        }
+
+        try {
+            log.info("[관리자 연차신청서 삭제] documentIdx: {}", documentIdx);
+
+            Long currentUserIdx = (Long) session.getAttribute("userIdx");
+            if (currentUserIdx == null) {
+                return ResponseEntity.status(401).body(Map.of("error", "로그인이 필요합니다."));
+            }
+
+            vacationService.deleteVacation(documentIdx, currentUserIdx);
+
+            return ResponseEntity.ok(Map.of("message", "삭제되었습니다."));
+        } catch (IllegalArgumentException e) {
+            log.error("[관리자 연차신청서 삭제 실패] documentIdx: {}, error: {}", documentIdx, e.getMessage());
+            return ResponseEntity.badRequest().body(Map.of("error", e.getMessage()));
+        } catch (IllegalStateException e) {
+            log.error("[관리자 연차신청서 삭제 실패] documentIdx: {}, error: {}", documentIdx, e.getMessage());
+            return ResponseEntity.badRequest().body(Map.of("error", e.getMessage()));
+        } catch (Exception e) {
+            log.error("[관리자 연차신청서 삭제 실패] documentIdx: {}, error: {}", documentIdx, e.getMessage(), e);
             return ResponseEntity.internalServerError().body(Map.of("error", "삭제 처리 중 오류가 발생했습니다."));
         }
     }

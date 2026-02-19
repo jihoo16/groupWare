@@ -66,8 +66,8 @@ body {
 }
 
 .logo-circle {
-    width: 100px;
-    height: 100px;
+    width: 150px;
+    height: 150px;
     margin: 0 auto 24px;
     background: rgba(255, 255, 255, 0.2);
     border-radius: 50%;
@@ -91,8 +91,14 @@ body {
 }
 
 .logo-circle i {
-    font-size: 48px;
+    font-size: 72px;
     color: white;
+}
+
+.logo-circle .logo-image {
+    width: 120px;
+    height: 120px;
+    object-fit: contain;
 }
 
 .brand-title {
@@ -273,6 +279,38 @@ body {
 
 .form-group input::placeholder {
     color: #adb5bd;
+}
+
+.form-group input.error {
+    border-color: #ef4444;
+    background: #fef2f2;
+    animation: shake 0.3s ease;
+}
+
+.form-group input.error:focus {
+    border-color: #ef4444;
+    box-shadow: 0 0 0 4px rgba(239, 68, 68, 0.1);
+}
+
+@keyframes shake {
+    0%, 100% {
+        transform: translateX(0);
+    }
+    25% {
+        transform: translateX(-8px);
+    }
+    75% {
+        transform: translateX(8px);
+    }
+}
+
+.error-message {
+    display: block;
+    color: #ef4444;
+    font-size: 13px;
+    margin-top: 6px;
+    font-weight: 500;
+    min-height: 18px;
 }
 
 .password-input-wrapper {

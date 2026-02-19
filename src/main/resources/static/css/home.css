@@ -441,6 +441,46 @@ html.popup-mode .btn-secondary[onclick="history.back()"] {
     color: rgba(255, 255, 255, 0.7);
 }
 
+/* 관리자 전용 메뉴 */
+.admin-menu {
+    padding: 12px 15px;
+    display: none; /* 기본적으로 숨김 */
+    align-items: center;
+    gap: 12px;
+    text-decoration: none;
+    color: white;
+    cursor: pointer;
+    transition: background 0.3s ease;
+    border-top: 1px solid rgba(255, 255, 255, 0.1);
+    background: rgba(255, 193, 7, 0.1);
+}
+
+/* 사이드바 hover 시에만 관리자 메뉴 표시 */
+.sidebar:hover .admin-menu {
+    display: flex;
+}
+
+.admin-menu:hover {
+    background: rgba(255, 193, 7, 0.2);
+}
+
+.admin-menu.active {
+    background: rgba(255, 193, 7, 0.3);
+    border-left: 4px solid #ffc107;
+}
+
+.admin-menu i {
+    font-size: 16px;
+    color: #ffc107;
+    min-width: 20px;
+}
+
+.admin-menu-text {
+    font-size: 12px;
+    font-weight: 600;
+    white-space: nowrap;
+}
+
 /* 로그아웃 버튼 */
 .logout-btn {
     width: 100%;
@@ -522,6 +562,15 @@ html.popup-mode .btn-secondary[onclick="history.back()"] {
     font-size: 17.5px;
     font-weight: 600;
     color: #1a237e;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+.page-title .title-logo {
+    width: 40px;
+    height: 40px;
+    object-fit: contain;
 }
 
 .header-right {
@@ -657,27 +706,49 @@ html.popup-mode .btn-secondary[onclick="history.back()"] {
     align-items: center;
     gap: 12px;
     padding: 16px 20px;
-    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-    color: white;
+    background: white;
+    color: #667eea;
     text-decoration: none;
     border-radius: 12px;
+    border: 2px solid #667eea;
     font-size: 14px;
     font-weight: 600;
     transition: all 0.3s ease;
-    box-shadow: 0 4px 12px rgba(102, 126, 234, 0.3);
+    box-shadow: 0 2px 8px rgba(102, 126, 234, 0.1);
 }
 
 .quick-link-btn:hover {
     transform: translateY(-2px);
-    box-shadow: 0 6px 20px rgba(102, 126, 234, 0.4);
+    background: #667eea;
+    color: white;
+    box-shadow: 0 4px 16px rgba(102, 126, 234, 0.3);
 }
 
 .quick-link-btn i {
     font-size: 20px;
+    transition: transform 0.3s ease;
+}
+
+.quick-link-btn:hover i {
+    transform: scale(1.1);
 }
 
 .quick-link-btn span {
     flex: 1;
+}
+
+/* 관리자 전용 바로가기 버튼 */
+.quick-link-btn.admin-only {
+    background: white;
+    color: #a78bfa;
+    border: 2px solid #a78bfa;
+    box-shadow: 0 2px 8px rgba(167, 139, 250, 0.1);
+}
+
+.quick-link-btn.admin-only:hover {
+    background: #a78bfa;
+    color: white;
+    box-shadow: 0 4px 16px rgba(167, 139, 250, 0.3);
 }
 
 .stat-card {

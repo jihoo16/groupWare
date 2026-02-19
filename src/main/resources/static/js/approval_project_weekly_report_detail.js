@@ -167,6 +167,9 @@ function displayReportData(data, documentIdx) {
 }
 
 // 공식 PDF 목록 로드
+// 최신 공식 PDF 정보 저장
+let latestOfficialPdf = null;
+
 async function loadOfficialPdfs(documentIdx) {
     if (!documentIdx) {
         console.log('documentIdx가 없어 공식 PDF를 로드하지 않습니다.');
@@ -190,8 +193,18 @@ async function loadOfficialPdfs(documentIdx) {
 
         if (!pdfFiles || pdfFiles.length === 0) {
             officialPdfList.innerHTML = '<p style="color: #999; font-size: 13px;">생성된 공식 PDF가 없습니다.</p>';
+            // 헤더 다운로드 버튼 비활성화
+            updateHeaderDownloadButton(null);
             return;
         }
+
+        // 최신 PDF 찾기 (createdAt이 가장 최근인 것)
+        latestOfficialPdf = pdfFiles.reduce((latest, current) => {
+            return new Date(current.createdAt) > new Date(latest.createdAt) ? current : latest;
+        });
+
+        // 헤더 다운로드 버튼 활성화
+        updateHeaderDownloadButton(latestOfficialPdf);
 
         // PDF 파일 목록 HTML 생성
         let pdfHTML = '';
@@ -258,6 +271,20 @@ async function downloadOfficialPdf(fileIdx, fileName) {
     } catch (error) {
         console.error('공식 PDF 다운로드 오류:', error);
         showError(`❌ PDF 다운로드 중 오류가 발생했습니다.\n\n파일: ${fileName}\n\n네트워크 연결을 확인하거나 관리자에게 문의해주세요.`);
+    }
+}
+
+// 헤더 다운로드 버튼 업데이트
+function updateHeaderDownloadButton(pdfInfo) {
+    const headerDownloadBtn = document.getElementById('headerDownloadBtn');
+    if (!headerDownloadBtn) return;
+
+    if (pdfInfo) {
+        headerDownloadBtn.disabled = false;
+        headerDownloadBtn.onclick = () => downloadOfficialPdf(pdfInfo.idx, pdfInfo.fileName);
+    } else {
+        headerDownloadBtn.disabled = true;
+        headerDownloadBtn.onclick = null;
     }
 }
 
