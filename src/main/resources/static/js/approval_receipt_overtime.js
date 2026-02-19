@@ -391,6 +391,22 @@ document.addEventListener('DOMContentLoaded', async function() {
                 console.log('추가할 인원:', personsToAdd);
                 if (typeof window.addOvertimePersonsToOvertime === 'function') {
                     window.addOvertimePersonsToOvertime(personsToAdd);
+
+                    // 인원별 개별 업무내용 복원
+                    const globalTask = data.attendees[0]?.workTask || '';
+                    const currentPersons = window.getCurrentOvertimePersons ? window.getCurrentOvertimePersons() : [];
+                    data.attendees.forEach(attendee => {
+                        if (attendee.workTask && attendee.workTask !== globalTask) {
+                            const person = currentPersons.find(p => Number(p.id) === Number(attendee.userIdx));
+                            if (person) {
+                                person.task = attendee.workTask;
+                            }
+                        }
+                    });
+                    // 변경사항 반영을 위해 다시 렌더링
+                    if (typeof window.renderOvertimePersonTable === 'function') {
+                        window.renderOvertimePersonTable();
+                    }
                 } else {
                     console.error('addOvertimePersonsToOvertime 함수가 없습니다.');
                 }
@@ -1149,15 +1165,27 @@ document.addEventListener('DOMContentLoaded', async function() {
                     const expenseText = person.overtimeExpense
                         ? person.overtimeExpense.toLocaleString('ko-KR') + '원'
                         : '-';
+                    const globalTask = getCurrentTask();
+                    const hasCustomTask = person.task !== null && person.task !== undefined && person.task !== '';
+                    const displayTask = hasCustomTask ? person.task : (globalTask || '기본 업무내용 미설정');
+                    const taskBadgeClass = hasCustomTask ? 'person-task-badge' : 'person-task-default';
+                    const taskLabel = hasCustomTask ? '개별' : '기본';
                     return `
-                    <div class="trip-person-item" onclick="removeOvertimePersonInTemplate('${person.id}')">
-                        <div class="trip-person-info">
+                    <div class="trip-person-item" style="cursor: default;">
+                        <div class="trip-person-info" style="pointer-events: auto;">
                             <span class="name">${person.name}</span>
                             <span>${person.dept}</span>
                             <span>${person.position}</span>
                             <span style="color: #667eea; font-weight: 600;">${expenseText}</span>
                         </div>
-                        <button type="button" class="trip-person-remove">
+                        <div class="person-task-row">
+                            <span class="${taskBadgeClass}">${taskLabel}</span>
+                            <span class="person-task-text" title="${displayTask}">${displayTask}</span>
+                            <button type="button" class="btn-edit-task" onclick="event.stopPropagation(); window.editPersonTask('${person.id}')">
+                                <i class="fas fa-pen"></i>
+                            </button>
+                        </div>
+                        <button type="button" class="trip-person-remove" onclick="event.stopPropagation(); removeOvertimePersonInTemplate('${person.id}')">
                             <i class="fas fa-times"></i> 삭제
                         </button>
                     </div>
@@ -1296,6 +1324,38 @@ document.addEventListener('DOMContentLoaded', async function() {
             renderOvertimePersonListInTemplate();
         };
 
+        // 인원별 업무내용 개별 설정 함수
+        window.editPersonTask = async function(personId) {
+            const person = overtimePersons.find(p => String(p.id) === String(personId));
+            if (!person) return;
+
+            const globalTask = getCurrentTask();
+            const currentValue = (person.task !== null && person.task !== undefined && person.task !== '') ? person.task : '';
+
+            const { value: newTask, isConfirmed } = await Swal.fire({
+                title: `${person.name} 업무내용`,
+                input: 'text',
+                inputValue: currentValue,
+                inputPlaceholder: globalTask || '업무 내용을 입력하세요',
+                showCancelButton: true,
+                confirmButtonText: '설정',
+                cancelButtonText: '취소',
+                confirmButtonColor: '#667eea',
+                inputAttributes: {
+                    style: 'font-size: 14px;'
+                },
+                html: `<div style="font-size: 12px; color: #64748b; margin-bottom: 8px;">
+                    비워두면 기본 업무내용(${globalTask || '미설정'})이 적용됩니다.
+                </div>`,
+            });
+
+            if (!isConfirmed) return;
+
+            person.task = (newTask && newTask.trim()) ? newTask.trim() : null;
+            syncGlobalOvertimePersons();
+            renderOvertimePersonListInTemplate();
+        };
+
         // 전역 함수로 등록하여 모달에서 접근 가능하게
         window.addOvertimePersonsToOvertime = function(persons) {
             // 기존 인원 중 유지되는 사람은 보존, 새로운 사람은 추가
@@ -1310,7 +1370,7 @@ document.addEventListener('DOMContentLoaded', async function() {
                     overtimeExpense: person.overtimeExpense || 0,
                     time: '18:00 ~ 21:00',
                     endTime: '21:00',
-                    task: ''
+                    task: null
                 };
             });
             // 직급순 정렬 적용
@@ -1358,18 +1418,19 @@ document.addEventListener('DOMContentLoaded', async function() {
             if (!tableBody) return;
 
             const timeRange = getFormattedTimeRange();
-            const currentTask = getCurrentTask();
+            const globalTask = getCurrentTask();
             const minRows = 11;
             const rowCount = Math.max(overtimePersons.length, minRows);
 
             let html = '';
             for (let i = 0; i < rowCount; i++) {
                 const person = i < overtimePersons.length ? overtimePersons[i] : null;
+                const personTask = person ? ((person.task !== null && person.task !== undefined && person.task !== '') ? person.task : globalTask) : '';
                 html += `<tr class="ot-person-row">
                     <td style="text-align: center;">${i + 1}</td>
                     <td style="text-align: center;">${person ? (person.name || '') : '&nbsp;'}</td>
                     <td style="text-align: center;">${person ? timeRange : '&nbsp;'}</td>
-                    <td style="text-align: center;">${person ? currentTask : '&nbsp;'}</td>
+                    <td style="text-align: center;">${person ? personTask : '&nbsp;'}</td>
                     <td style="text-align: center;">&nbsp;</td>
                     <td style="text-align: center;">&nbsp;</td>
                 </tr>`;
@@ -1998,7 +2059,7 @@ document.addEventListener('DOMContentLoaded', async function() {
                 attendees: overtimePersons.map(person => ({
                     userIdx: person.id,
                     workTime: workTimeStr,
-                    workTask: taskContent
+                    workTask: (person.task !== null && person.task !== undefined && person.task !== '') ? person.task : taskContent
                 }))
             };
 

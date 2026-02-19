@@ -1743,13 +1743,12 @@ div h2{
     border-radius: 6px;
     font-size: 12px;
     transition: all 0.2s ease;
-    cursor: pointer;
+    cursor: default;
 }
 
 .trip-person-item:hover {
-    border-color: #ef4444;
-    background: #fef2f2;
-    transform: translateX(-2px);
+    border-color: #cbd5e1;
+    background: #fafbfc;
 }
 
 .trip-person-info {
@@ -1806,7 +1805,7 @@ div h2{
     display: flex;
     align-items: center;
     gap: 4px;
-    pointer-events: none;
+    flex-shrink: 0;
 }
 
 .trip-person-remove:hover {
@@ -1816,6 +1815,82 @@ div h2{
 
 .trip-person-remove i {
     font-size: 10px;
+}
+
+/* 인원별 업무내용 표시 영역 */
+.person-task-row {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    margin-left: 8px;
+    flex-shrink: 0;
+    max-width: 180px;
+    min-width: 0;
+}
+
+.person-task-badge {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    padding: 1px 6px;
+    background: #667eea;
+    color: white;
+    border-radius: 4px;
+    font-size: 10px;
+    font-weight: 600;
+    white-space: nowrap;
+    flex-shrink: 0;
+}
+
+.person-task-default {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    padding: 1px 6px;
+    background: #e2e8f0;
+    color: #64748b;
+    border-radius: 4px;
+    font-size: 10px;
+    font-weight: 600;
+    white-space: nowrap;
+    flex-shrink: 0;
+}
+
+.person-task-text {
+    font-size: 11px;
+    color: #475569;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    max-width: 100px;
+}
+
+.btn-edit-task {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 22px;
+    height: 22px;
+    padding: 0;
+    background: #f1f5f9;
+    border: 1px solid #e2e8f0;
+    border-radius: 4px;
+    color: #667eea;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    flex-shrink: 0;
+}
+
+.btn-edit-task:hover {
+    background: #667eea;
+    color: white;
+    border-color: #667eea;
+    transform: scale(1.1);
+}
+
+.btn-edit-task i {
+    font-size: 9px;
+    pointer-events: none;
 }
 
 .add-more-attendees-btn {
