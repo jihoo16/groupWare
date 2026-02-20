@@ -299,18 +299,6 @@ document.addEventListener('DOMContentLoaded', async function() {
                 }
             }
 
-            // 내용 설정
-            if (data.documentContent) {
-                const otContent = document.getElementById('ot_content');
-                if (otContent) {
-                    otContent.value = data.documentContent;
-                    // 품의서에도 품의 내용 반영
-                    document.querySelectorAll('.ot-auto-content').forEach(field => {
-                        field.textContent = data.documentContent;
-                    });
-                }
-            }
-
             // 인원 정보 로드
             if (data.attendees && data.attendees.length > 0) {
                 // 시간 정보 파싱해서 설정 (예: "18:00 ~ 21:00")
@@ -429,6 +417,18 @@ document.addEventListener('DOMContentLoaded', async function() {
                     }
                 } else {
                     console.error('addOvertimePersonsToOvertime 함수가 없습니다.');
+                }
+            }
+
+            // 내용 설정 (인원 로드 후에 적용해야 updateContentText()에 덮어씌워지지 않음)
+            if (data.documentContent) {
+                const otContent = document.getElementById('ot_content');
+                if (otContent) {
+                    otContent.value = data.documentContent;
+                    // 품의서에도 품의 내용 반영
+                    document.querySelectorAll('.ot-auto-content').forEach(field => {
+                        field.textContent = data.documentContent;
+                    });
                 }
             }
 
