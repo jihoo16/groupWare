@@ -463,8 +463,10 @@ public class VacationController {
                     .replaceAll("\\+", "%20");
 
             return ResponseEntity.ok()
-                    .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename*=UTF-8''" + encodedFileName)
                     .contentType(MediaType.APPLICATION_PDF)
+                    .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename*=UTF-8''" + encodedFileName)
+                    // 브라우저에게 이 파일이 안전함을 알리는 힌트
+                    .header("X-Content-Type-Options", "nosniff")
                     .contentLength(fileBytes.length)
                     .body(resource);
 
