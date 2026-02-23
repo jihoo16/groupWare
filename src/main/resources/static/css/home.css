@@ -568,6 +568,7 @@ html.popup-mode .btn-secondary[onclick="history.back()"] {
 }
 
 .page-title .title-logo {
+    padding-top: 7px;
     width: 40px;
     height: 40px;
     object-fit: contain;
