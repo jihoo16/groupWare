@@ -2384,7 +2384,8 @@ document.addEventListener('DOMContentLoaded', async function() {
                 id: String(p.id),
                 name: p.name,
                 dept: p.dept,
-                position: p.position
+                position: p.position,
+                overtimeExpense: p.overtimeExpense || 0
             }));
 
             overtimePersonModal.classList.add('show');
@@ -2521,9 +2522,13 @@ document.addEventListener('DOMContentLoaded', async function() {
     function renderSelectedOvertimeBadges() {
         const badgesEl = document.getElementById('selectedOvertimeBadges');
         const countEl = document.getElementById('selectedOvertimeCount');
+        const totalAmountEl = document.getElementById('selectedOvertimeTotalAmount');
         if (!badgesEl || !countEl) return;
 
         countEl.textContent = tempSelectedOvertimePersons.length;
+
+        const totalAmount = tempSelectedOvertimePersons.reduce((sum, p) => sum + (p.overtimeExpense || 0), 0);
+        if (totalAmountEl) totalAmountEl.textContent = totalAmount.toLocaleString('ko-KR');
 
         if (tempSelectedOvertimePersons.length === 0) {
             badgesEl.innerHTML = `
