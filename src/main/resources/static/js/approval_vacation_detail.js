@@ -338,6 +338,69 @@ function displayAttachments(attachments) {
     html += '</ul>';
 
     attachmentsList.innerHTML = html;
+
+    // 헤더에 인쇄 버튼 추가 (첫 번째 PDF 사용)
+    try {
+        addVacationPrintButton(attachments[0].idx);
+    } catch (e) {
+        console.error('인쇄 버튼 생성 실패:', e);
+    }
+}
+
+/**
+ * 연차신청서 PDF 인쇄 버튼 생성
+ */
+function addVacationPrintButton(fileIdx) {
+    const headerButtons = document.getElementById('headerButtons');
+    if (!headerButtons || document.getElementById('printVacationBtn')) return;
+
+    const printBtn = document.createElement('button');
+    printBtn.id = 'printVacationBtn';
+    printBtn.className = 'btn-secondary';
+    printBtn.innerHTML = '<i class="fas fa-print"></i> 인쇄';
+    printBtn.addEventListener('click', () => printPdf(`/api/vacation/download/${fileIdx}`, printBtn));
+
+    // lastElementChild = 돌아가기 버튼 (항상 마지막 직계 자식)
+    // querySelector('button')은 wrapper div 안의 자식 버튼을 반환할 수 있어 insertBefore 실패
+    headerButtons.insertBefore(printBtn, headerButtons.lastElementChild);
+}
+
+/**
+ * PDF 인쇄 함수
+ */
+function printPdf(downloadUrl, btn) {
+    if (btn) {
+        btn.disabled = true;
+        btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> 준비 중...';
+    }
+    fetch(downloadUrl)
+        .then(res => {
+            if (!res.ok) throw new Error('파일 조회 실패');
+            return res.blob();
+        })
+        .then(blob => {
+            const blobUrl = URL.createObjectURL(blob);
+            const printWindow = window.open(blobUrl, '_blank');
+            if (printWindow) {
+                setTimeout(() => {
+                    try { printWindow.print(); } catch (e) {}
+                    setTimeout(() => URL.revokeObjectURL(blobUrl), 60000);
+                }, 1000);
+            } else {
+                showError('팝업이 차단되어 있습니다. 팝업 허용 후 다시 시도해주세요.');
+                URL.revokeObjectURL(blobUrl);
+            }
+        })
+        .catch(e => {
+            console.error('인쇄 중 오류:', e);
+            showError('인쇄 중 오류가 발생했습니다.');
+        })
+        .finally(() => {
+            if (btn) {
+                btn.disabled = false;
+                btn.innerHTML = '<i class="fas fa-print"></i> 인쇄';
+            }
+        });
 }
 
 /**

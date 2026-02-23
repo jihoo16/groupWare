@@ -274,18 +274,65 @@ async function downloadOfficialPdf(fileIdx, fileName) {
     }
 }
 
-// 헤더 다운로드 버튼 업데이트
+// 헤더 다운로드/인쇄 버튼 업데이트
 function updateHeaderDownloadButton(pdfInfo) {
     const headerDownloadBtn = document.getElementById('headerDownloadBtn');
-    if (!headerDownloadBtn) return;
-
-    if (pdfInfo) {
-        headerDownloadBtn.disabled = false;
-        headerDownloadBtn.onclick = () => downloadOfficialPdf(pdfInfo.idx, pdfInfo.fileName);
-    } else {
-        headerDownloadBtn.disabled = true;
-        headerDownloadBtn.onclick = null;
+    if (headerDownloadBtn) {
+        if (pdfInfo) {
+            headerDownloadBtn.disabled = false;
+            headerDownloadBtn.onclick = () => downloadOfficialPdf(pdfInfo.idx, pdfInfo.fileName);
+        } else {
+            headerDownloadBtn.disabled = true;
+            headerDownloadBtn.onclick = null;
+        }
     }
+
+    const headerPrintBtn = document.getElementById('headerPrintBtn');
+    if (headerPrintBtn) {
+        if (pdfInfo) {
+            headerPrintBtn.disabled = false;
+            headerPrintBtn.onclick = () => printPdf(`/api/document/weekly-report/download/${pdfInfo.idx}`, headerPrintBtn);
+        } else {
+            headerPrintBtn.disabled = true;
+            headerPrintBtn.onclick = null;
+        }
+    }
+}
+
+// PDF 인쇄 함수
+function printPdf(downloadUrl, btn) {
+    if (btn) {
+        btn.disabled = true;
+        btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> 준비 중...';
+    }
+    fetch(downloadUrl)
+        .then(res => {
+            if (!res.ok) throw new Error('파일 조회 실패');
+            return res.blob();
+        })
+        .then(blob => {
+            const blobUrl = URL.createObjectURL(blob);
+            const printWindow = window.open(blobUrl, '_blank');
+            if (printWindow) {
+                setTimeout(() => {
+                    try { printWindow.print(); } catch (e) {}
+                    setTimeout(() => URL.revokeObjectURL(blobUrl), 60000);
+                }, 1000);
+            } else {
+                showError('팝업이 차단되어 있습니다. 팝업 허용 후 다시 시도해주세요.');
+                URL.revokeObjectURL(blobUrl);
+            }
+        })
+        .catch(e => {
+            console.error('인쇄 중 오류:', e);
+            showError('인쇄 중 오류가 발생했습니다.');
+        })
+        .finally(() => {
+            if (btn) {
+                btn.disabled = false;
+                btn.innerHTML = '<i class="fas fa-print"></i> 인쇄';
+            }
+        });
 }
 
 // 첨부파일 목록 로드

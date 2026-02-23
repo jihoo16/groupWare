@@ -321,5 +321,6 @@ document.addEventListener('DOMContentLoaded', function() {
         if (report.userIdx && currentUserIdx && report.userIdx === currentUserIdx) {
             createDeleteButton();
         }
+
     }
 });
