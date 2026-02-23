@@ -499,6 +499,46 @@
     }
 }
 
+/* 승인 상태 배너 */
+.approval-status-banner {
+    padding: 14px 24px;
+    border-radius: 12px;
+    margin: 0 auto 20px;
+    max-width: 1000px;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    font-size: 14px;
+    font-weight: 600;
+    animation: slideDown 0.3s ease;
+}
+
+.approval-status-banner.approved {
+    background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+    color: white;
+    box-shadow: 0 4px 12px rgba(16, 185, 129, 0.3);
+}
+
+.approval-status-banner.pending {
+    background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);
+    color: white;
+    box-shadow: 0 4px 12px rgba(245, 158, 11, 0.25);
+}
+
+.approval-status-banner i {
+    font-size: 20px;
+    flex-shrink: 0;
+}
+
+.approval-status-banner span {
+    flex: 1;
+}
+
+/* 승인된 문서 - 에디터 영역 테두리 */
+.editor-area.approved-document {
+    border: 2px solid #10b981;
+}
+
 /* 삭제된 문서 스타일 */
 .deleted-document-banner {
     background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);
