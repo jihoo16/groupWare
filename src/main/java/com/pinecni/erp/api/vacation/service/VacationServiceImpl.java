@@ -743,6 +743,11 @@ public class VacationServiceImpl implements VacationService {
 
         // 10. VacationRequest 생성 (각 기간별로 개별 저장)
         for (VacationRequestSaveDTO.VacationPeriod period : saveDTO.getPeriods()) {
+            // 기타 유형은 사용자 선택값을, 그 외 유형은 항상 true(캘린더 등록)
+            boolean etcCal = "기타".equals(period.getVacationType())
+                    ? (saveDTO.getEtcAddToCalendar() != null && saveDTO.getEtcAddToCalendar())
+                    : true;
+
             VacationRequest vacationRequest = VacationRequest.builder()
                     .userIdx(userIdx)
                     .documentIdx(savedDocument.getIdx())
@@ -754,6 +759,8 @@ public class VacationServiceImpl implements VacationService {
                     .reason(saveDTO.getReason())
                     .allowMinusVacation(saveDTO.getAllowMinusVacation() != null ? saveDTO.getAllowMinusVacation() : false)
                     .specialApprovalReason(saveDTO.getSpecialApprovalReason())
+                    .etcCal(etcCal)
+                    .isApproved(false)   // 신청 시점엔 항상 미승인 상태
                     .applyDate(LocalDate.now())
                     .createdUserIdx(userIdx)
                     .updatedUserIdx(userIdx)
@@ -762,20 +769,7 @@ public class VacationServiceImpl implements VacationService {
             vacationRequestRepository.save(vacationRequest);
             log.info("[연차 기간 저장] startDate: {}, endDate: {}, days: {}, type: {}",
                     period.getStartDate(), period.getEndDate(), period.getDays(), period.getVacationType());
-
-            // 11. 캘린더 일정 자동 생성
-            // 기타 휴가인 경우 사용자가 체크한 경우에만 캘린더 등록
-            boolean shouldCreateCalendarEvent = true;
-            if ("기타".equals(period.getVacationType())) {
-                shouldCreateCalendarEvent = saveDTO.getEtcAddToCalendar() != null && saveDTO.getEtcAddToCalendar();
-                log.info("[기타 휴가] 캘린더 등록 여부: {}", shouldCreateCalendarEvent);
-            }
-
-            if (shouldCreateCalendarEvent) {
-                createCalendarEventForVacation(userIdx, user, savedDocument.getIdx(), period, saveDTO.getReason());
-            } else {
-                log.info("[캘린더 일정 생성 스킵] 기타 휴가이며 캘린더 등록 체크 안됨");
-            }
+            // 캘린더 일정은 관리자 승인 시 생성됩니다.
         }
 
         // 12. PDF 파일 생성 및 저장
@@ -860,34 +854,32 @@ public class VacationServiceImpl implements VacationService {
     }
 
     /**
-     * 연차 신청 시 캘린더 일정 자동 생성
+     * 관리자 승인 시 VacationRequest 엔티티로 캘린더 일정 생성
+     * - 승인 실패해도 승인 처리 자체는 롤백되지 않도록 예외를 삼킴
      */
-    private void createCalendarEventForVacation(Long userIdx, User user, Long documentIdx,
-                                                VacationRequestSaveDTO.VacationPeriod period, String reason) {
+    private void createCalendarEventForVacationRequest(VacationRequest vr, User user) {
         try {
             log.info("[캘린더 일정 생성 시작] userIdx: {}, documentIdx: {}, vacationType: {}, startDate: {}, endDate: {}",
-                    userIdx, documentIdx, period.getVacationType(), period.getStartDate(), period.getEndDate());
+                    vr.getUserIdx(), vr.getDocumentIdx(), vr.getVacationType(), vr.getStartDate(), vr.getEndDate());
 
-            // 연차 유형에 따른 이벤트 제목 생성
-            String eventTitle = getVacationTypeTitle(period.getVacationType(), user.getEmpName());
+            String eventTitle = getVacationTypeTitle(vr.getVacationType(), user.getEmpName());
             log.info("[이벤트 제목 생성] eventTitle: {}", eventTitle);
 
             String groupId = UUID.randomUUID().toString();
 
-            // CalendarEvent 생성
             CalendarEvent calendarEvent = CalendarEvent.builder()
                     .eventTitle(eventTitle)
-                    .eventType("leave") // 연차 일정 타입
-                    .eventDescription(reason)
-                    .startDate(period.getStartDate())
-                    .endDate(period.getEndDate())
-                    .startTime(null) // 종일 일정
-                    .endTime(null) // 종일 일정
-                    .isAllDay(true) // 종일 일정
+                    .eventType("leave")
+                    .eventDescription(vr.getReason())
+                    .startDate(vr.getStartDate())
+                    .endDate(vr.getEndDate())
+                    .startTime(null)
+                    .endTime(null)
+                    .isAllDay(true)
                     .location(null)
-                    .approvalIdx(documentIdx) // 결재 문서와 연결
+                    .approvalIdx(vr.getDocumentIdx())
                     .groupId(groupId)
-                    .teamIdx(null) // 개인 일정
+                    .teamIdx(null)
                     .notificationYn("N")
                     .notificationMinutes(null)
                     .isRecurring(false)
@@ -895,46 +887,94 @@ public class VacationServiceImpl implements VacationService {
                     .recurringEndDate(null)
                     .status("ACTIVE")
                     .createdAt(LocalDateTime.now())
-                    .createdUserIdx(userIdx) // 생성자 설정 (중요!)
+                    .createdUserIdx(vr.getUserIdx())
                     .updatedAt(LocalDateTime.now())
-                    .updatedUserIdx(userIdx)
+                    .updatedUserIdx(vr.getUserIdx())
                     .build();
 
-            log.info("[CalendarEvent 객체 생성 완료] 저장 시작...");
             CalendarEvent savedEvent = calendarEventRepository.save(calendarEvent);
             log.info("[캘린더 일정 저장 성공] eventIdx: {}, eventTitle: {}, startDate: {}, endDate: {}",
-                    savedEvent.getIdx(), eventTitle, period.getStartDate(), period.getEndDate());
+                    savedEvent.getIdx(), eventTitle, vr.getStartDate(), vr.getEndDate());
 
-            // CalendarParticipant 생성 (신청자를 참석자로 추가)
             CalendarParticipant participant = CalendarParticipant.builder()
                     .eventIdx(savedEvent.getIdx())
-                    .userIdx(userIdx)
+                    .userIdx(vr.getUserIdx())
                     .userName(user.getEmpName())
-                    .participationStatus("PENDING") // 기본값 사용
+                    .participationStatus("PENDING")
                     .receiveNotification("Y")
                     .createdAt(LocalDateTime.now())
                     .build();
 
-            log.info("[CalendarParticipant 객체 생성 완료] 저장 시작...");
             calendarParticipantRepository.save(participant);
-            log.info("[캘린더 참석자 추가 성공] participantIdx: {}, userIdx: {}, userName: {}",
-                    participant.getIdx(), userIdx, user.getEmpName());
-
             log.info("[캘린더 일정 생성 완료] ✓ eventIdx: {}, title: {}", savedEvent.getIdx(), eventTitle);
 
         } catch (Exception e) {
             log.error("========================================");
             log.error("[캘린더 일정 생성 실패] ❌❌❌");
-            log.error("userIdx: {}", userIdx);
-            log.error("documentIdx: {}", documentIdx);
-            log.error("vacationType: {}", period.getVacationType());
-            log.error("startDate: {}, endDate: {}", period.getStartDate(), period.getEndDate());
+            log.error("userIdx: {}", vr.getUserIdx());
+            log.error("documentIdx: {}", vr.getDocumentIdx());
+            log.error("vacationType: {}", vr.getVacationType());
+            log.error("startDate: {}, endDate: {}", vr.getStartDate(), vr.getEndDate());
             log.error("Exception Type: {}", e.getClass().getName());
             log.error("Error Message: {}", e.getMessage());
             log.error("Stack Trace:", e);
             log.error("========================================");
-            // 캘린더 일정 생성 실패해도 연차 신청은 진행되도록 예외를 삼킴
         }
+    }
+
+    /**
+     * vacation_request 목록에 연결된 "leave" 타입 캘린더 일정 soft delete
+     * - deleteVacation, approveVacation(취소) 양쪽에서 재사용
+     */
+    private void deleteCalendarEventsForRequests(List<VacationRequest> vacationRequests, Long operatorUserIdx) {
+        if (vacationRequests.isEmpty()) {
+            return;
+        }
+
+        Long vacationUserIdx = vacationRequests.get(0).getUserIdx();
+
+        LocalDate minStartDate = vacationRequests.stream()
+                .map(VacationRequest::getStartDate)
+                .min(LocalDate::compareTo)
+                .orElse(null);
+
+        LocalDate maxEndDate = vacationRequests.stream()
+                .map(VacationRequest::getEndDate)
+                .max(LocalDate::compareTo)
+                .orElse(null);
+
+        if (minStartDate == null || maxEndDate == null) {
+            return;
+        }
+
+        List<CalendarEvent> allEvents = calendarEventRepository.findByUserIdxAndDateRange(
+                vacationUserIdx, minStartDate, maxEndDate);
+
+        log.info("[캘린더 일정 조회] userIdx: {}, 날짜범위: {} ~ {}, 조회된 일정 수: {}",
+                vacationUserIdx, minStartDate, maxEndDate, allEvents.size());
+
+        int deletedCount = 0;
+        for (CalendarEvent event : allEvents) {
+            if (!"leave".equals(event.getEventType())) continue;
+            if (event.getDeletedAt() != null) continue;
+            if (!event.getCreatedUserIdx().equals(vacationUserIdx)) continue;
+
+            boolean overlaps = vacationRequests.stream()
+                    .anyMatch(vr -> !event.getStartDate().isAfter(vr.getEndDate()) &&
+                                   !event.getEndDate().isBefore(vr.getStartDate()));
+
+            if (overlaps) {
+                event.setDeletedAt(LocalDateTime.now());
+                event.setDeletedUserIdx(operatorUserIdx);
+                calendarEventRepository.save(event);
+                deletedCount++;
+                log.info("[캘린더 일정 삭제] eventIdx: {}, eventType: {}, eventTitle: {}, startDate: {}, endDate: {}",
+                        event.getIdx(), event.getEventType(), event.getEventTitle(),
+                        event.getStartDate(), event.getEndDate());
+            }
+        }
+
+        log.info("[캘린더 일정 삭제 완료] 삭제된 일정 수: {}", deletedCount);
     }
 
     /**
@@ -1262,7 +1302,10 @@ public class VacationServiceImpl implements VacationService {
         // 9. 사유 (첫 번째 요청의 reason 사용)
         String reason = vacationRequests.getFirst().getReason();
 
-        // 10. DTO 생성
+        // 10. 승인 상태 조회 (같은 documentIdx의 첫 번째 행 기준)
+        Boolean isApproved = vacationRequests.getFirst().getIsApproved();
+
+        // 11. DTO 생성
         com.pinecni.erp.api.vacation.dto.VacationDetailDTO detailDTO = com.pinecni.erp.api.vacation.dto.VacationDetailDTO.builder()
                 .documentIdx(documentIdx)
                 .documentNo(document.getDocumentNo())
@@ -1274,6 +1317,7 @@ public class VacationServiceImpl implements VacationService {
                 .remainingDays(remainingDays)
                 .reason(reason)
                 .status("PENDING")  // TODO: ApprovalDocument에 status 필드 추가 후 실제 상태 반환
+                .isApproved(isApproved != null ? isApproved : false)
                 .periods(periods)
                 .approvers(approvers)
                 .attachments(attachments)
@@ -1316,73 +1360,64 @@ public class VacationServiceImpl implements VacationService {
         log.info("[연차 일수 복구 계산] 총 복구할 일수: {}일 (경조사, 기타 제외)", totalDaysToRestore);
         log.info("[연차 잔액 복구] VacationRequest 삭제로 자동 반영됨 (calculateUsedDays에서 집계 시 제외됨)");
 
-        // 6. 캘린더 일정 삭제 (event_type = "leave"이고 날짜 범위가 겹치는 일정)
-        // vacation_request의 모든 기간을 포함하는 전체 날짜 범위 계산
-        if (!vacationRequests.isEmpty()) {
-            LocalDate minStartDate = vacationRequests.stream()
-                    .map(VacationRequest::getStartDate)
-                    .min(LocalDate::compareTo)
-                    .orElse(null);
-
-            LocalDate maxEndDate = vacationRequests.stream()
-                    .map(VacationRequest::getEndDate)
-                    .max(LocalDate::compareTo)
-                    .orElse(null);
-
-            if (minStartDate != null && maxEndDate != null) {
-                // 사용자의 해당 기간 내 모든 캘린더 일정 조회
-                Long vacationUserIdx = vacationRequests.get(0).getUserIdx();
-                List<CalendarEvent> allEvents = calendarEventRepository.findByUserIdxAndDateRange(
-                        vacationUserIdx, minStartDate, maxEndDate
-                );
-
-                log.info("[캘린더 일정 조회] userIdx: {}, 날짜범위: {} ~ {}, 조회된 일정 수: {}",
-                        vacationUserIdx, minStartDate, maxEndDate, allEvents.size());
-
-                // event_type이 "leave"이고 vacation_request 기간과 겹치는 일정 필터링 및 soft delete
-                int deletedCount = 0;
-                for (CalendarEvent event : allEvents) {
-                    // event_type이 "leave"인지 확인
-                    if (!"leave".equals(event.getEventType())) {
-                        continue;
-                    }
-
-                    // 이미 삭제된 일정은 건너뛰기
-                    if (event.getDeletedAt() != null) {
-                        continue;
-                    }
-
-                    // 캘린더 일정의 created_user_idx가 vacation_request의 user_idx와 일치하는지 확인
-                    if (!event.getCreatedUserIdx().equals(vacationUserIdx)) {
-                        continue;
-                    }
-
-                    // 캘린더 일정의 날짜 범위가 vacation_request의 어떤 기간과라도 겹치는지 확인
-                    boolean overlaps = vacationRequests.stream()
-                            .anyMatch(vr -> {
-                                // 두 기간이 겹치는 조건: event.start <= vr.end AND event.end >= vr.start
-                                return !event.getStartDate().isAfter(vr.getEndDate()) &&
-                                       !event.getEndDate().isBefore(vr.getStartDate());
-                            });
-
-                    if (overlaps) {
-                        // Soft delete
-                        event.setDeletedAt(LocalDateTime.now());
-                        event.setDeletedUserIdx(currentUserIdx);
-                        calendarEventRepository.save(event);
-                        deletedCount++;
-
-                        log.info("[캘린더 일정 삭제] eventIdx: {}, eventType: {}, eventTitle: {}, startDate: {}, endDate: {}",
-                                event.getIdx(), event.getEventType(), event.getEventTitle(),
-                                event.getStartDate(), event.getEndDate());
-                    }
-                }
-
-                log.info("[캘린더 일정 삭제 완료] 삭제된 일정 수: {}", deletedCount);
-            }
-        }
+        // 6. 캘린더 일정 삭제 (승인 여부와 무관하게 문서 삭제 시 정리)
+        deleteCalendarEventsForRequests(vacationRequests, currentUserIdx);
 
         log.info("[연차신청서 삭제 완료] documentIdx: {}, 연차 기간 수: {}, 복구 일수: {}일",
                 documentIdx, vacationRequests.size(), totalDaysToRestore);
+    }
+
+    @Override
+    @Transactional
+    public void approveVacation(Long documentIdx, Long approverUserIdx, boolean approve) {
+        log.info("[연차 승인 처리 시작] documentIdx: {}, approverUserIdx: {}, approve: {}",
+                documentIdx, approverUserIdx, approve);
+
+        // 1. 해당 문서의 연차 신청 행 존재 여부 확인
+        List<VacationRequest> vacationRequests = vacationRequestRepository.findByDocumentIdx(documentIdx);
+        if (vacationRequests.isEmpty()) {
+            throw new IllegalArgumentException("연차 신청서를 찾을 수 없습니다. documentIdx: " + documentIdx);
+        }
+
+        // 2. 삭제된 문서인지 확인
+        ApprovalDocument document = approvalDocumentRepository.findById(documentIdx)
+                .orElseThrow(() -> new IllegalArgumentException("문서를 찾을 수 없습니다. documentIdx: " + documentIdx));
+        if (document.getDeletedAt() != null) {
+            throw new IllegalStateException("삭제된 문서는 승인할 수 없습니다.");
+        }
+
+        // 3. 승인 상태 일괄 업데이트 (같은 documentIdx의 모든 기간 행)
+        LocalDateTime approvedAt = approve ? LocalDateTime.now() : null;
+        Long resolvedApproverIdx = approve ? approverUserIdx : null;
+        int updatedCount = vacationRequestRepository.updateApprovalByDocumentIdx(
+                documentIdx, approve, approvedAt, resolvedApproverIdx);
+
+        log.info("[연차 DB 상태 업데이트 완료] documentIdx: {}, approve: {}, 업데이트된 행 수: {}",
+                documentIdx, approve, updatedCount);
+
+        // 4. 캘린더 일정 처리
+        Long vacationUserIdx = vacationRequests.get(0).getUserIdx();
+        User user = userRepository.findById(vacationUserIdx)
+                .orElseThrow(() -> new IllegalArgumentException("사용자를 찾을 수 없습니다. userIdx: " + vacationUserIdx));
+
+        if (approve) {
+            // 4-1. 승인 → 각 기간별로 캘린더 일정 생성 (etcCal=false인 기타 휴가는 제외)
+            log.info("[캘린더 일정 생성 시작] documentIdx: {}, 기간 수: {}", documentIdx, vacationRequests.size());
+            for (VacationRequest vr : vacationRequests) {
+                boolean shouldCreate = vr.getEtcCal() == null || vr.getEtcCal();
+                if (shouldCreate) {
+                    createCalendarEventForVacationRequest(vr, user);
+                } else {
+                    log.info("[캘린더 등록 스킵] 기타 휴가 - 사용자가 캘린더 등록 미선택. vacationIdx: {}", vr.getIdx());
+                }
+            }
+            log.info("[캘린더 일정 생성 완료] documentIdx: {}", documentIdx);
+        } else {
+            // 4-2. 승인 취소 → 연결된 캘린더 일정 삭제
+            log.info("[캘린더 일정 삭제 시작 - 승인 취소] documentIdx: {}", documentIdx);
+            deleteCalendarEventsForRequests(vacationRequests, approverUserIdx);
+        }
+
+        log.info("[연차 승인 처리 완료] documentIdx: {}, approve: {}", documentIdx, approve);
     }
 }

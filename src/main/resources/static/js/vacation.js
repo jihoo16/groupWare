@@ -213,7 +213,7 @@ document.addEventListener('DOMContentLoaded', async function() {
         if (!tbody) return;
 
         if (!history || history.length === 0) {
-            tbody.innerHTML = '<tr><td colspan="6" style="text-align: center; padding: 40px;">연차 사용 내역이 없습니다.</td></tr>';
+            tbody.innerHTML = '<tr><td colspan="7" style="text-align: center; padding: 40px;">연차 사용 내역이 없습니다.</td></tr>';
             return;
         }
 
@@ -221,7 +221,7 @@ document.addEventListener('DOMContentLoaded', async function() {
         const filteredHistory = history.filter(item => item.days && parseFloat(item.days) > 0);
 
         if (filteredHistory.length === 0) {
-            tbody.innerHTML = '<tr><td colspan="6" style="text-align: center; padding: 40px;">연차 사용 내역이 없습니다.</td></tr>';
+            tbody.innerHTML = '<tr><td colspan="7" style="text-align: center; padding: 40px;">연차 사용 내역이 없습니다.</td></tr>';
             return;
         }
 
@@ -258,6 +258,9 @@ document.addEventListener('DOMContentLoaded', async function() {
             const days = item.days || 0;
             const reason = item.reason || item.content || '개인 사유';
             const documentIdx = item.documentIdx || '';
+            const approvalBadge = item.isApproved
+                ? `<span class="status-badge approved"><i class="fas fa-check"></i> 승인</span>`
+                : `<span class="status-badge pending"><i class="fas fa-clock"></i> 대기</span>`;
 
             return `
                 <tr data-document-idx="${documentIdx}" onclick="location.href='/approval/vacation/detail?documentIdx=${documentIdx}'">
@@ -266,6 +269,7 @@ document.addEventListener('DOMContentLoaded', async function() {
                     <td>${startDateWithDay}</td>
                     <td>${endDateWithDay}</td>
                     <td>${days}일</td>
+                    <td>${approvalBadge}</td>
                     <td>${reason}</td>
                 </tr>
             `;

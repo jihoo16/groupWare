@@ -214,8 +214,12 @@ public class PdfGenerationService {
             // 한글 폰트 설정 (여러 경로 시도)
             loadKoreanFont(renderer);
 
+            // Flying Saucer는 strict XHTML 파서를 사용하므로,
+            // HTML void 엘리먼트(<meta>, <br>, <img> 등)를 self-close 형태로 변환
+            String xhtmlContent = sanitizeForXhtml(htmlContent);
+
             // HTML 설정 및 렌더링
-            renderer.setDocumentFromString(htmlContent);
+            renderer.setDocumentFromString(xhtmlContent);
             renderer.layout();
             renderer.createPDF(outputStream);
 
@@ -291,6 +295,33 @@ public class PdfGenerationService {
             log.warn("날짜 포맷 변환 실패: {}", dateStr);
             return dateStr;
         }
+    }
+
+    /**
+     * Flying Saucer용 XHTML 정규화
+     * - HTML5 void 엘리먼트(<meta>, <br>, <hr>, <img>, <input>, <link> 등)를
+     *   XHTML self-close 형태(<meta ... />)로 변환
+     * - 이미 self-close된 태그(/>로 끝나는)는 건드리지 않음
+     */
+    private String sanitizeForXhtml(String html) {
+        // HTML5 void 엘리먼트 목록 (닫는 태그 없이 단독 사용되는 태그들)
+        String[] voidElements = {
+            "area", "base", "br", "col", "embed",
+            "hr", "img", "input", "link", "meta",
+            "param", "source", "track", "wbr"
+        };
+
+        for (String tag : voidElements) {
+            // 패턴: <tag> 또는 <tag attrs> 중 이미 /로 끝나지 않는 경우만 치환
+            // negative lookbehind (?<!/) 로 <br /> 같은 이미 self-close된 태그는 건너뜀
+            html = html.replaceAll(
+                "(?i)<(" + tag + ")(\\s[^>]*)?(?<!/)>",
+                "<$1$2 />"
+            );
+        }
+
+        log.debug("[XHTML 정규화] void 엘리먼트 self-close 처리 완료");
+        return html;
     }
 
     /**

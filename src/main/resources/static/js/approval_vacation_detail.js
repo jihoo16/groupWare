@@ -59,6 +59,9 @@ function displayDocumentInfo(data) {
     document.getElementById('remainingDays').value = data.remainingDays ? `${data.remainingDays}일` : '-';
     document.getElementById('reason').textContent = data.reason || '사유 없음';
 
+    // 승인 상태 배너 표시
+    showApprovalStatusBanner(data.isApproved === true);
+
     // 작성자 확인 후 삭제 버튼 생성
     const currentUserIdx = window.CURRENT_USER ? window.CURRENT_USER.idx : null;
     const isAdmin = window.CURRENT_USER && window.CURRENT_USER.isAdmin === true;
@@ -78,7 +81,7 @@ function displayDocumentInfo(data) {
 
     if ((isOwner || isAdmin) && !isDeleted) {
         console.log('✓ 작성자 본인이거나 관리자이므로 삭제 버튼 생성');
-        createDeleteButton(data.documentIdx, data.periods || []);
+        createDeleteButton(data.documentIdx, data.periods || [], data.isApproved === true);
     } else if (isDeleted) {
         console.log('✗ 이미 삭제된 문서이므로 삭제 버튼 미생성');
     } else {
@@ -87,9 +90,36 @@ function displayDocumentInfo(data) {
 }
 
 /**
+ * 승인 상태 배너 표시
+ */
+function showApprovalStatusBanner(isApproved) {
+    const writeContainer = document.querySelector('.write-container');
+    const editorArea = document.querySelector('.editor-area');
+    if (!writeContainer || !editorArea) return;
+
+    const banner = document.createElement('div');
+    banner.className = `approval-status-banner ${isApproved ? 'approved' : 'pending'}`;
+
+    if (isApproved) {
+        banner.innerHTML = `
+            <i class="fas fa-check-circle"></i>
+            <span>승인 완료 · 관리자에 의해 승인된 문서입니다.</span>
+        `;
+        editorArea.classList.add('approved-document');
+    } else {
+        banner.innerHTML = `
+            <i class="fas fa-clock"></i>
+            <span>승인 대기 중 · 아직 관리자 승인이 완료되지 않았습니다.</span>
+        `;
+    }
+
+    writeContainer.insertBefore(banner, editorArea);
+}
+
+/**
  * 삭제 버튼 동적 생성
  */
-function createDeleteButton(documentIdx, periods) {
+function createDeleteButton(documentIdx, periods, isApproved) {
     const headerButtons = document.getElementById('headerButtons');
     if (headerButtons && !document.getElementById('deleteBtn')) {
         const deleteWrapper = document.createElement('div');
@@ -105,7 +135,26 @@ function createDeleteButton(documentIdx, periods) {
         // 관리자 여부 확인
         const isAdmin = window.CURRENT_USER && window.CURRENT_USER.isAdmin === true;
 
-        if (isVacationExpired && !isAdmin) {
+        if (isApproved) {
+            // 승인된 문서 - 비활성화 (관리자 포함 모두)
+            deleteBtn.className = 'btn-danger disabled';
+            deleteBtn.disabled = true;
+            deleteBtn.style.cursor = 'not-allowed';
+            deleteBtn.style.opacity = '0.5';
+            deleteBtn.style.backgroundColor = '#999';
+            deleteBtn.style.borderColor = '#999';
+
+            const tooltip = document.createElement('div');
+            tooltip.className = 'tooltip-text';
+            tooltip.innerHTML = `
+                <i class="fas fa-exclamation-triangle"></i>
+                승인된 문서는 삭제 불가합니다.<br>
+                관리부에 문의해주세요.
+            `;
+
+            deleteWrapper.appendChild(deleteBtn);
+            deleteWrapper.appendChild(tooltip);
+        } else if (isVacationExpired && !isAdmin) {
             // 휴가일이 지났지만 관리자가 아닌 경우 - 비활성화
             deleteBtn.className = 'btn-danger disabled';
             deleteBtn.disabled = true;

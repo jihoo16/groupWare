@@ -258,9 +258,12 @@
 .action-buttons {
     display: flex;
     gap: 8px;
+    justify-content: center;
 }
 
 .btn-view,
+.btn-approve,
+.btn-revoke,
 .btn-delete {
     padding: 6px 12px;
     border-radius: 6px;
@@ -272,6 +275,7 @@
     display: inline-flex;
     align-items: center;
     gap: 4px;
+    white-space: nowrap;
 }
 
 .btn-view {
@@ -282,6 +286,50 @@
 .btn-view:hover {
     background: #5568d3;
     transform: translateY(-1px);
+}
+
+/* 승인 버튼 */
+.btn-approve {
+    background: #10b981;
+    color: white;
+}
+
+.btn-approve:hover {
+    background: #059669;
+    transform: translateY(-1px);
+}
+
+.btn-approve.disabled {
+    background: #9ca3af;
+    cursor: not-allowed;
+    opacity: 0.6;
+}
+
+.btn-approve.disabled:hover {
+    background: #9ca3af;
+    transform: none;
+}
+
+/* 승인 철회 버튼 */
+.btn-revoke {
+    background: #f59e0b;
+    color: white;
+}
+
+.btn-revoke:hover {
+    background: #d97706;
+    transform: translateY(-1px);
+}
+
+.btn-revoke.disabled {
+    background: #9ca3af;
+    cursor: not-allowed;
+    opacity: 0.6;
+}
+
+.btn-revoke.disabled:hover {
+    background: #9ca3af;
+    transform: none;
 }
 
 .btn-delete {

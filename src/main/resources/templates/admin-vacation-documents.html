@@ -44,6 +44,15 @@
                 </div>
 
                 <div class="filter-group">
+                    <label><i class="fas fa-check-circle"></i> 승인 상태</label>
+                    <select id="approvalFilter" class="filter-select">
+                        <option value="all">전체</option>
+                        <option value="approved">승인됨</option>
+                        <option value="pending">미승인</option>
+                    </select>
+                </div>
+
+                <div class="filter-group">
                     <label><i class="fas fa-search"></i> 기타 검색</label>
                     <input type="text" id="searchInput" class="search-input" placeholder="부서, 사유 검색...">
                 </div>

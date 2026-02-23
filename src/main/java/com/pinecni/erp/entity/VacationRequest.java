@@ -79,6 +79,22 @@ public class VacationRequest {
     @Column(name = "document_idx")
     private Long documentIdx;
 
+    // 기타 휴가 캘린더 등록 여부
+    // - 기타 유형: 사용자 신청 시 선택값 저장 (true = 승인 시 캘린더 등록)
+    // - 그 외 유형: 항상 true
+    @Column(name = "etc_cal", nullable = false)
+    private Boolean etcCal = true;
+
+    // 관리자 승인 필드
+    @Column(name = "is_approved", nullable = false)
+    private Boolean isApproved = false;
+
+    @Column(name = "approved_at")
+    private LocalDateTime approvedAt;
+
+    @Column(name = "approved_user_idx")
+    private Long approvedUserIdx;
+
     // 관계 매핑
     @JsonIgnore
     @ManyToOne(fetch = FetchType.LAZY)
