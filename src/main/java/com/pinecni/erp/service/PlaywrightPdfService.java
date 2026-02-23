@@ -11,17 +11,22 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
 import java.io.File;
+import java.util.Arrays;
 import java.util.concurrent.Semaphore;
 import java.util.concurrent.TimeUnit;
 
-/**
- * Playwright를 사용한 PDF 생성 서비스
- * Chrome headless 브라우저로 HTML을 렌더링하여 화면과 동일한 PDF 생성
- * 동시성 제어: Semaphore를 통해 동시 PDF 생성 수 제한
- */
 @Service
 @Slf4j
 public class PlaywrightPdfService {
+
+    private final Object pwLock = new Object();
+    /**
+     * 브라우저가 정상 기동된 상태인지 추적.
+     * true  = init() 성공 후 정상 동작 중
+     * false = 초기화 전이거나 onDisconnected / 헬스체크 실패로 종료된 상태
+     * synchronized(pwLock) 이 동시 재기동을 막으므로 쿨다운 타이머 불필요.
+     */
+    private volatile boolean browserReady = false;
 
     private Playwright playwright;
     private Browser browser;
@@ -37,388 +42,276 @@ public class PlaywrightPdfService {
     @Value("${pdf.playwright.ws-endpoint:}")
     private String wsEndpoint;
 
-    @Value("${pdf.playwright.node-path:/usr/sbin/node}")
+    // Rocky에서 node는 보통 /usr/bin/node
+    @Value("${pdf.playwright.node-path:}")
     private String nodePath;
 
-    /**
-     * Playwright 초기화 (서비스 시작 시 한번만 실행)
-     */
     @PostConstruct
     public void init() {
-        try {
-            log.info("[Playwright PDF Service] 초기화 시작...");
+        synchronized (pwLock) {
+            browserReady = false; // 재기동 시작 전 플래그 리셋
+            try {
+                log.info("[Playwright PDF Service] 초기화 시작...");
 
-            // Semaphore 초기화 (동시 PDF 생성 수 제한)
-            pdfGenerationSemaphore = new Semaphore(maxConcurrentGenerations, true);
-            log.info("[Playwright PDF Service] Semaphore 초기화 완료 - 최대 동시 생성 수: {}", maxConcurrentGenerations);
-
-            // 1. 성능 최적화: 시스템 Node 사용 설정 (유효한 경로인 경우에만)
-            if (nodePath != null && !nodePath.isEmpty()) {
-                File nodeFile = new File(nodePath);
-                if (nodeFile.exists() && nodeFile.canExecute()) {
-                    System.setProperty("playwright.nodejs.path", nodePath);
-                    log.info("[Playwright PDF Service] 시스템 Node 사용 설정: {}", nodePath);
-                } else {
-                    log.warn("[Playwright PDF Service] 설정된 Node 경로가 유효하지 않아 내장 Node를 사용합니다. (설정된 경로: {})", nodePath);
+                // Semaphore는 1번만 만들기 (재기동 시에도 유지)
+                if (pdfGenerationSemaphore == null) {
+                    pdfGenerationSemaphore = new Semaphore(maxConcurrentGenerations, true);
+                    log.info("[Playwright PDF Service] Semaphore 초기화 완료 - 최대 동시 생성 수: {}", maxConcurrentGenerations);
                 }
-            }
 
-            playwright = Playwright.create();
+                // 시스템 Node 사용 (선택)
+                if (nodePath != null && !nodePath.isBlank()) {
+                    File nodeFile = new File(nodePath);
+                    if (nodeFile.exists() && nodeFile.canExecute()) {
+                        System.setProperty("playwright.nodejs.path", nodePath);
+                        log.info("[Playwright PDF Service] 시스템 Node 사용 설정: {}", nodePath);
+                    } else {
+                        log.warn("[Playwright PDF Service] Node 경로가 유효하지 않아 내장 Node 사용. path={}", nodePath);
+                    }
+                }
 
-            // 2. 브라우저 시작 방식 결정 (Remote vs Local)
-            if (wsEndpoint != null && !wsEndpoint.isEmpty()) {
-                log.info("[Playwright PDF Service] 원격 브라우저 연결 시도: {}", wsEndpoint);
-                try {
-                    browser = playwright.chromium().connect(wsEndpoint);
-                    log.info("[Playwright PDF Service] 원격 브라우저 연결 성공");
-                } catch (Exception e) {
-                    log.error("[Playwright PDF Service] 원격 연결 실패, 로컬 모드로 전환합니다.", e);
+                // 기존 리소스 정리
+                try { if (browser != null) browser.close(); } catch (Exception ignore) {}
+                try { if (playwright != null) playwright.close(); } catch (Exception ignore) {}
+
+                playwright = Playwright.create();
+
+                if (wsEndpoint != null && !wsEndpoint.isBlank()) {
+                    log.info("[Playwright PDF Service] 원격 브라우저 연결 시도: {}", wsEndpoint);
+                    try {
+                        browser = playwright.chromium().connect(wsEndpoint);
+                        log.info("[Playwright PDF Service] 원격 브라우저 연결 성공");
+                    } catch (Exception e) {
+                        log.error("[Playwright PDF Service] 원격 연결 실패 -> 로컬 모드로 전환", e);
+                        launchLocalBrowser();
+                    }
+                } else {
                     launchLocalBrowser();
                 }
-            } else {
-                launchLocalBrowser();
-            }
 
-            log.info("[Playwright PDF Service] 초기화 완료 - Chromium 브라우저 준비됨");
-        } catch (Exception e) {
-            log.error("[Playwright PDF Service] 초기화 실패", e);
-            throw new RuntimeException("Playwright 초기화 실패. 브라우저를 설치해주세요: mvn exec:java -e -D exec.mainClass=com.microsoft.playwright.CLI -D exec.args=\"install chromium\"", e);
+                browser.onDisconnected(b -> {
+                    log.error("[Playwright PDF] 브라우저 disconnected - Chromium/driver가 종료됨");
+                    browserReady = false; // 즉시 죽음 표시 → 다음 요청에서 재기동
+                });
+
+                browserReady = true; // 모든 초기화 성공
+                log.info("[Playwright PDF Service] 초기화 완료 - Chromium 브라우저 준비됨");
+            } catch (Exception e) {
+                browserReady = false;
+                log.error("[Playwright PDF Service] 초기화 실패", e);
+                throw new RuntimeException("Playwright 초기화 실패: " + e.getMessage(), e);
+            }
         }
     }
 
-    /**
-     * 로컬 브라우저 실행 (Fallback 용)
-     */
     private void launchLocalBrowser() {
         log.info("[Playwright PDF Service] 로컬 Chromium 브라우저 시작 중...");
         browser = playwright.chromium().launch(new BrowserType.LaunchOptions()
                 .setHeadless(true)
-                .setArgs(java.util.Arrays.asList(
+                .setArgs(Arrays.asList(
                         "--disable-gpu",
                         "--no-sandbox",
                         "--disable-dev-shm-usage",
-                        "--disable-setuid-sandbox"
-                ))
-        );
+                        "--disable-setuid-sandbox",
+                        // 서버에서 크래시 줄이는 옵션(성능 약간 손해)
+                        "--no-zygote",
+                        "--single-process"
+                )));
         log.info("[Playwright PDF Service] 로컬 브라우저 준비됨");
     }
 
-    /**
-     * Playwright 종료 (서비스 종료 시)
-     */
     @PreDestroy
     public void destroy() {
-        if (browser != null) {
-            browser.close();
-            log.info("[Playwright PDF Service] 브라우저 종료");
-        }
-        if (playwright != null) {
-            playwright.close();
-            log.info("[Playwright PDF Service] Playwright 종료");
+        synchronized (pwLock) {
+            browserReady = false;
+            try {
+                if (browser != null) {
+                    browser.close();
+                    log.info("[Playwright PDF Service] 브라우저 종료");
+                }
+            } catch (Exception ignore) {}
+            try {
+                if (playwright != null) {
+                    playwright.close();
+                    log.info("[Playwright PDF Service] Playwright 종료");
+                }
+            } catch (Exception ignore) {}
         }
     }
 
     /**
-     * HTML 문자열을 PDF로 변환
+     * 브라우저 생존 체크 + 필요 시 재기동.
      *
-     * @param htmlContent HTML 문자열
-     * @return PDF 바이트 배열
+     * 쿨다운 타이머 방식 제거 → browserReady 플래그로 상태 추적.
+     * synchronized(pwLock) 이 동시 재기동을 막아주므로 별도 쿨다운 불필요.
+     * - browserReady == false : 무조건 init() 호출
+     * - browserReady == true  : version() 헬스체크 후 실패 시 재기동
      */
+    private void ensureBrowserAlive(String reason) {
+        synchronized (pwLock) {
+            if (browserReady) {
+                try {
+                    if (browser != null) {
+                        browser.version(); // 빠른 생존 체크
+                        return; // 정상
+                    }
+                } catch (Exception ignore) {
+                    // 헬스체크 실패 → 재기동으로 진행
+                }
+                browserReady = false;
+            }
+
+            log.warn("[Playwright PDF] 브라우저 죽음 감지 -> 재초기화. reason={}", reason);
+            init(); // 실패 시 RuntimeException throw
+        }
+    }
+
     public byte[] convertHtmlToPdf(String htmlContent) throws Exception {
         return convertHtmlToPdf(htmlContent, new PdfOptions());
     }
 
-    /**
-     * URL을 직접 접속하여 PDF로 변환 (JavaScript 실행 포함)
-     *
-     * @param url 접속할 URL
-     * @return PDF 바이트 배열
-     */
     public byte[] convertUrlToPdf(String url) throws Exception {
         return convertUrlToPdf(url, new PdfOptions());
     }
 
-    /**
-     * URL을 직접 접속하여 PDF로 변환 (옵션 지정 가능)
-     *
-     * @param url 접속할 URL
-     * @param pdfOptions PDF 생성 옵션
-     * @return PDF 바이트 배열
-     */
     public byte[] convertUrlToPdf(String url, PdfOptions pdfOptions) throws Exception {
-        if (browser == null) {
-            throw new IllegalStateException("Playwright 브라우저가 초기화되지 않았습니다.");
-        }
-
-        // Semaphore를 통한 동시성 제어
         boolean acquired = false;
         try {
-            log.info("[Playwright PDF] PDF 생성 대기 중... (사용 가능한 슬롯 대기)");
             acquired = pdfGenerationSemaphore.tryAcquire(timeoutSeconds, TimeUnit.SECONDS);
+            if (!acquired) throw new Exception("PDF 생성 요청이 너무 많습니다. " + timeoutSeconds + "초 후 다시 시도해주세요.");
 
-            if (!acquired) {
-                throw new Exception("PDF 생성 요청이 너무 많습니다. " + timeoutSeconds + "초 후 다시 시도해주세요.");
+            // 1차 시도
+            try {
+                return generatePdfFromUrl(url, pdfOptions);
+            } catch (PlaywrightException e) {
+                String msg = String.valueOf(e.getMessage());
+                if (msg.contains("Browser has been closed") || msg.contains("Target page, context or browser has been closed")) {
+                    log.warn("[Playwright PDF] 브라우저 종료 감지 -> 재기동 후 1회 재시도: {}", msg);
+                    ensureBrowserAlive(msg);
+                    return generatePdfFromUrl(url, pdfOptions); // 1회 재시도
+                }
+                throw e;
             }
-
-            log.info("[Playwright PDF] PDF 생성 시작 (현재 사용 중: {}/{})",
-                    maxConcurrentGenerations - pdfGenerationSemaphore.availablePermits(),
-                    maxConcurrentGenerations);
-
-            return generatePdfFromUrl(url, pdfOptions);
-
-        } catch (InterruptedException e) {
-            Thread.currentThread().interrupt();
-            throw new Exception("PDF 생성 요청이 중단되었습니다.", e);
         } finally {
-            if (acquired) {
-                pdfGenerationSemaphore.release();
-                log.info("[Playwright PDF] PDF 생성 완료, 슬롯 반환 (사용 가능: {}/{})",
-                        pdfGenerationSemaphore.availablePermits(),
-                        maxConcurrentGenerations);
-            }
+            if (acquired) pdfGenerationSemaphore.release();
         }
     }
 
-    /**
-     * HTML 문자열을 PDF로 변환 (옵션 지정 가능)
-     *
-     * @param htmlContent HTML 문자열
-     * @param pdfOptions  PDF 생성 옵션
-     * @return PDF 바이트 배열
-     */
     public byte[] convertHtmlToPdf(String htmlContent, PdfOptions pdfOptions) throws Exception {
-        if (browser == null) {
-            throw new IllegalStateException("Playwright 브라우저가 초기화되지 않았습니다.");
-        }
-
-        // Semaphore를 통한 동시성 제어
         boolean acquired = false;
         try {
-            log.info("[Playwright PDF] PDF 생성 대기 중... (사용 가능한 슬롯 대기)");
             acquired = pdfGenerationSemaphore.tryAcquire(timeoutSeconds, TimeUnit.SECONDS);
+            if (!acquired) throw new Exception("PDF 생성 요청이 너무 많습니다. " + timeoutSeconds + "초 후 다시 시도해주세요.");
 
-            if (!acquired) {
-                throw new Exception("PDF 생성 요청이 너무 많습니다. " + timeoutSeconds + "초 후 다시 시도해주세요.");
+            // 1차 시도
+            try {
+                return generatePdfInternal(htmlContent, pdfOptions);
+            } catch (PlaywrightException e) {
+                String msg = String.valueOf(e.getMessage());
+                if (msg.contains("Browser has been closed") || msg.contains("Target page, context or browser has been closed")) {
+                    log.warn("[Playwright PDF] 브라우저 종료 감지 -> 재기동 후 1회 재시도: {}", msg);
+                    ensureBrowserAlive(msg);
+                    return generatePdfInternal(htmlContent, pdfOptions); // 1회 재시도
+                }
+                throw e;
             }
-
-            log.info("[Playwright PDF] PDF 생성 시작 (현재 사용 중: {}/{})",
-                    maxConcurrentGenerations - pdfGenerationSemaphore.availablePermits(),
-                    maxConcurrentGenerations);
-
-            return generatePdfInternal(htmlContent, pdfOptions);
-
-        } catch (InterruptedException e) {
-            Thread.currentThread().interrupt();
-            throw new Exception("PDF 생성 요청이 중단되었습니다.", e);
         } finally {
-            if (acquired) {
-                pdfGenerationSemaphore.release();
-                log.info("[Playwright PDF] PDF 생성 완료, 슬롯 반환 (사용 가능: {}/{})",
-                        pdfGenerationSemaphore.availablePermits(),
-                        maxConcurrentGenerations);
-            }
+            if (acquired) pdfGenerationSemaphore.release();
         }
     }
 
-    /**
-     * URL 접속 후 PDF 생성 (내부 메서드)
-     */
     private byte[] generatePdfFromUrl(String url, PdfOptions pdfOptions) throws Exception {
+        ensureBrowserAlive("before newContext(url)");
+
         BrowserContext context = null;
         Page page = null;
-
         try {
-            // 새 브라우저 컨텍스트 생성
-            context = browser.newContext(new Browser.NewContextOptions()
-                    .setViewportSize(1920, 1080)
-            );
-
-            // 새 페이지 생성
+            context = browser.newContext(new Browser.NewContextOptions().setViewportSize(1920, 1080));
             page = context.newPage();
+            page.emulateMedia(new Page.EmulateMediaOptions().setMedia(Media.PRINT));
 
-            // 인쇄 미디어 타입 설정 (CSS @media print 적용)
-            page.emulateMedia(new Page.EmulateMediaOptions()
-                    .setMedia(Media.PRINT)
-            );
-
-            log.info("[Playwright PDF] URL 접속 시작: {}", url);
-
-            // URL 직접 접속 (JavaScript 실행됨)
             page.navigate(url, new Page.NavigateOptions()
                     .setWaitUntil(WaitUntilState.NETWORKIDLE)
-                    .setTimeout(30000)
-            );
+                    .setTimeout(30000));
 
-            log.info("[Playwright PDF] 페이지 로딩 완료");
+            page.waitForTimeout(500);
 
-            // 추가 대기 (JavaScript 실행 완료 대기)
-            page.waitForTimeout(1000);
+            // 한글 문서라면 폰트 체크 실패 시 예외로 처리(원하면 try-catch로 완화 가능)
+            page.waitForFunction("() => document.fonts && document.fonts.check('16px NanumGothic', '한글')",
+                    null, new Page.WaitForFunctionOptions().setTimeout(5000));
 
-            log.info("[Playwright PDF] JavaScript 실행 완료");
-
-//            page.waitForFunction("() => document.fonts && document.fonts.status === 'loaded'");
-//            log.info("[Playwright PDF] 웹폰트 로딩 완료");
-
-            page.waitForFunction("() => document.fonts && document.fonts.check('16px NanumGothic', '한글')");
-            log.info("[Playwright PDF] NanumGothic 체크 통과");
-
-            // PDF 생성 옵션 설정
             Page.PdfOptions options = new Page.PdfOptions()
                     .setFormat(pdfOptions.getFormat())
                     .setPrintBackground(pdfOptions.isPrintBackground())
                     .setDisplayHeaderFooter(false)
                     .setPreferCSSPageSize(false);
 
-            // 여백 설정
-            if (pdfOptions.getMargin() != null) {
-                options.setMargin(pdfOptions.getMargin());
-            }
-
-            // PDF 생성
-            byte[] pdfBytes = page.pdf(options);
-
-            log.info("[Playwright PDF] PDF 생성 완료 - 크기: {} bytes", pdfBytes.length);
-
-            return pdfBytes;
-
-        } catch (Exception e) {
-            log.error("[Playwright PDF] PDF 생성 중 오류 발생", e);
-            throw new Exception("PDF 생성 실패: " + e.getMessage(), e);
+            if (pdfOptions.getMargin() != null) options.setMargin(pdfOptions.getMargin());
+            return page.pdf(options);
         } finally {
-            // 리소스 정리
-            if (page != null) {
-                page.close();
-            }
-            if (context != null) {
-                context.close();
-            }
+            if (page != null) page.close();
+            if (context != null) context.close();
         }
     }
 
-    /**
-     * 실제 PDF 생성 로직 (내부 메서드)
-     */
     private byte[] generatePdfInternal(String htmlContent, PdfOptions pdfOptions) throws Exception {
+
+        ensureBrowserAlive("before newContext(html)");
+
         BrowserContext context = null;
         Page page = null;
-
         try {
-            // 새 브라우저 컨텍스트 생성
-            context = browser.newContext(new Browser.NewContextOptions()
-                    .setViewportSize(1920, 1080)
-            );
-
-            // 새 페이지 생성
+            context = browser.newContext(new Browser.NewContextOptions().setViewportSize(1920, 1080));
             page = context.newPage();
+            page.emulateMedia(new Page.EmulateMediaOptions().setMedia(Media.PRINT));
 
-            // 인쇄 미디어 타입 설정 (CSS @media print 적용)
-            page.emulateMedia(new Page.EmulateMediaOptions()
-                    .setMedia(Media.PRINT)
-            );
-
-            // HTML 콘텐츠 설정 (baseURL 지정으로 정적 리소스 및 폰트 로드 가능)
             page.setContent(htmlContent, new Page.SetContentOptions()
-                    .setWaitUntil(WaitUntilState.LOAD) // NETWORKIDLE -> LOAD 로 완화
-                    .setTimeout(30000) // 15s -> 30s 로 증가
-            );
+                    .setWaitUntil(WaitUntilState.LOAD)
+                    .setTimeout(30000));
 
-            // CSS 파일 로드 대기 (기본 리소스 로딩 완료 대기)
             try {
-                page.waitForLoadState(com.microsoft.playwright.options.LoadState.LOAD);
-            } catch (Exception e) {
-                log.warn("[Playwright PDF] 페이지 로드 대기 타임아웃 (무시하고 계속): {}", e.getMessage());
-            }
-
-            log.info("[Playwright PDF] HTML 렌더링 완료");
-
-//            page.waitForFunction("() => document.fonts && document.fonts.status === 'loaded'");
-//            log.info("[Playwright PDF] 웹폰트 로딩 완료");
-
-            // 폰트 로딩 확인 (최대 3초 대기)
-            try {
-                page.waitForFunction("() => document.fonts && document.fonts.check('16px NanumGothic', '한글')",
+                page.waitForFunction("() => document.fonts && document.fonts.status === 'loaded'",
                         null,
-                        new Page.WaitForFunctionOptions().setTimeout(3000));
-                log.info("[Playwright PDF] NanumGothic 로딩 확인됨");
+                        new Page.WaitForFunctionOptions().setTimeout(15000));
+                log.info("[Playwright PDF] document.fonts loaded");
             } catch (Exception e) {
-                log.warn("[Playwright PDF] NanumGothic 로딩 시간 초과 또는 실패 (기본 폰트 사용): {}", e.getMessage());
+                log.warn("[Playwright PDF] document.fonts 로딩 대기 타임아웃 (계속 진행): {}", e.getMessage());
             }
 
-            // PDF 생성 옵션 설정
+            String computed = page.evaluate("() => getComputedStyle(document.body).fontFamily").toString();
+            log.info("[Playwright PDF] computed body font-family={}", computed);
+
+            Integer imgCount = ((Number) page.evaluate("() => document.images ? document.images.length : 0")).intValue();
+            log.info("[Playwright PDF] image count={}", imgCount);
+
             Page.PdfOptions options = new Page.PdfOptions()
                     .setFormat(pdfOptions.getFormat())
                     .setPrintBackground(pdfOptions.isPrintBackground())
                     .setDisplayHeaderFooter(false)
                     .setPreferCSSPageSize(false);
 
-            // 여백 설정
-            if (pdfOptions.getMargin() != null) {
-                options.setMargin(pdfOptions.getMargin());
-            }
-
-            // PDF 생성
-            byte[] pdfBytes = page.pdf(options);
-
-            log.info("[Playwright PDF] PDF 생성 완료 - 크기: {} bytes", pdfBytes.length);
-
-            return pdfBytes;
-
-        } catch (Exception e) {
-            log.error("[Playwright PDF] PDF 생성 중 오류 발생", e);
-            throw new Exception("PDF 생성 실패: " + e.getMessage(), e);
+            if (pdfOptions.getMargin() != null) options.setMargin(pdfOptions.getMargin());
+            return page.pdf(options);
         } finally {
-            // 리소스 정리
-            if (page != null) {
-                page.close();
-            }
-            if (context != null) {
-                context.close();
-            }
+            if (page != null) page.close();
+            if (context != null) context.close();
         }
     }
 
-    /**
-     * PDF 생성 옵션 클래스
-     */
     public static class PdfOptions {
         private String format = "A4";
         private boolean printBackground = true;
-        private Margin margin;
+        private Margin margin = new Margin()
+                .setTop("1.5cm")
+                .setRight("1.5cm")
+                .setBottom("1.5cm")
+                .setLeft("1.5cm");
 
-        public PdfOptions() {
-            // 기본 여백: 1.5cm
-            this.margin = new Margin()
-                    .setTop("1.5cm")
-                    .setRight("1.5cm")
-                    .setBottom("1.5cm")
-                    .setLeft("1.5cm");
-        }
-
-        public String getFormat() {
-            return format;
-        }
-
-        public PdfOptions setFormat(String format) {
-            this.format = format;
-            return this;
-        }
-
-        public boolean isPrintBackground() {
-            return printBackground;
-        }
-
-        public PdfOptions setPrintBackground(boolean printBackground) {
-            this.printBackground = printBackground;
-            return this;
-        }
-
-        public Margin getMargin() {
-            return margin;
-        }
-
-        public PdfOptions setMargin(Margin margin) {
-            this.margin = margin;
-            return this;
-        }
+        public String getFormat() { return format; }
+        public PdfOptions setFormat(String format) { this.format = format; return this; }
+        public boolean isPrintBackground() { return printBackground; }
+        public PdfOptions setPrintBackground(boolean printBackground) { this.printBackground = printBackground; return this; }
+        public Margin getMargin() { return margin; }
+        public PdfOptions setMargin(Margin margin) { this.margin = margin; return this; }
     }
 }
