@@ -63,9 +63,35 @@ public class PlaywrightPdfService {
                 }
             }
 
+            connectBrowser();
+
+            log.info("[Playwright PDF Service] 초기화 완료 - Chromium 브라우저 준비됨");
+        } catch (Exception e) {
+            log.error("[Playwright PDF Service] 초기화 실패", e);
+            throw new RuntimeException("Playwright 초기화 실패. 브라우저를 설치해주세요: mvn exec:java -e -D exec.mainClass=com.microsoft.playwright.CLI -D exec.args=\"install chromium\"", e);
+        }
+    }
+
+    /**
+     * 브라우저 연결(또는 재연결)을 수행합니다.
+     */
+    private synchronized void connectBrowser() {
+        if (browser != null && browser.isConnected()) {
+            return;
+        }
+
+        log.info("[Playwright PDF Service] 브라우저 연결을 시도합니다...");
+
+        try {
+            if (browser != null) {
+                try { browser.close(); } catch (Exception ignored) {}
+            }
+            if (playwright != null) {
+                try { playwright.close(); } catch (Exception ignored) {}
+            }
+
             playwright = Playwright.create();
 
-            // 2. 브라우저 시작 방식 결정 (Remote vs Local)
             if (wsEndpoint != null && !wsEndpoint.isEmpty()) {
                 log.info("[Playwright PDF Service] 원격 브라우저 연결 시도: {}", wsEndpoint);
                 try {
@@ -78,12 +104,26 @@ public class PlaywrightPdfService {
             } else {
                 launchLocalBrowser();
             }
-
-            log.info("[Playwright PDF Service] 초기화 완료 - Chromium 브라우저 준비됨");
         } catch (Exception e) {
-            log.error("[Playwright PDF Service] 초기화 실패", e);
-            throw new RuntimeException("Playwright 초기화 실패. 브라우저를 설치해주세요: mvn exec:java -e -D exec.mainClass=com.microsoft.playwright.CLI -D exec.args=\"install chromium\"", e);
+            log.error("[Playwright PDF Service] 브라우저 연결 실패", e);
+            throw new RuntimeException("브라우저 연결 실패", e);
         }
+    }
+
+    /**
+     * 강제로 브라우저 연결을 끊고 재연결합니다.
+     */
+    private synchronized void forceReconnectBrowser() {
+        log.warn("[Playwright PDF Service] 브라우저를 강제로 재연결합니다...");
+        if (browser != null) {
+            try { browser.close(); } catch (Exception ignored) {}
+        }
+        if (playwright != null) {
+            try { playwright.close(); } catch (Exception ignored) {}
+        }
+        browser = null;
+        playwright = null;
+        connectBrowser();
     }
 
     /**
@@ -146,9 +186,7 @@ public class PlaywrightPdfService {
      * @return PDF 바이트 배열
      */
     public byte[] convertUrlToPdf(String url, PdfOptions pdfOptions) throws Exception {
-        if (browser == null) {
-            throw new IllegalStateException("Playwright 브라우저가 초기화되지 않았습니다.");
-        }
+
 
         // Semaphore를 통한 동시성 제어
         boolean acquired = false;
@@ -164,7 +202,31 @@ public class PlaywrightPdfService {
                     maxConcurrentGenerations - pdfGenerationSemaphore.availablePermits(),
                     maxConcurrentGenerations);
 
-            return generatePdfFromUrl(url, pdfOptions);
+            connectBrowser(); // 브라우저 연결 상태를 확인하고 필요 시 재연결
+
+            int maxRetries = 2; // 필요 시 최대 1회 재시도 (총 2회 시도)
+            Exception lastException = null;
+
+            for (int attempt = 1; attempt <= maxRetries; attempt++) {
+                try {
+                    if (attempt > 1) {
+                        log.warn("[Playwright PDF] PDF 생성 재시도 ({} / {}) - 브라우저 강제 재연결 중...", attempt, maxRetries);
+                        forceReconnectBrowser();
+                    }
+                    return generatePdfFromUrl(url, pdfOptions);
+                } catch (Exception e) {
+                    lastException = e;
+                    String msg = e.getMessage() != null ? e.getMessage() : "";
+                    String causeMsg = e.getCause() != null && e.getCause().getMessage() != null ? e.getCause().getMessage() : "";
+
+                    if (msg.contains("TargetClosedError") || causeMsg.contains("TargetClosedError")) {
+                        log.warn("[Playwright PDF] 브라우저 에러(TargetClosedError) 감지. 재시도합니다.", e);
+                        continue;
+                    }
+                    throw e; // 다른 예외는 즉시 발생
+                }
+            }
+            throw new Exception("PDF 생성 최대 재시도 횟수를 초과했습니다: " + (lastException != null ? lastException.getMessage() : ""), lastException);
 
         } catch (InterruptedException e) {
             Thread.currentThread().interrupt();
@@ -187,9 +249,7 @@ public class PlaywrightPdfService {
      * @return PDF 바이트 배열
      */
     public byte[] convertHtmlToPdf(String htmlContent, PdfOptions pdfOptions) throws Exception {
-        if (browser == null) {
-            throw new IllegalStateException("Playwright 브라우저가 초기화되지 않았습니다.");
-        }
+
 
         // Semaphore를 통한 동시성 제어
         boolean acquired = false;
@@ -205,7 +265,31 @@ public class PlaywrightPdfService {
                     maxConcurrentGenerations - pdfGenerationSemaphore.availablePermits(),
                     maxConcurrentGenerations);
 
-            return generatePdfInternal(htmlContent, pdfOptions);
+            connectBrowser(); // 브라우저 연결 상태를 확인하고 필요 시 재연결
+
+            int maxRetries = 2; // 필요 시 최대 1회 재시도 (총 2회 시도)
+            Exception lastException = null;
+
+            for (int attempt = 1; attempt <= maxRetries; attempt++) {
+                try {
+                    if (attempt > 1) {
+                        log.warn("[Playwright PDF] PDF 생성 재시도 ({} / {}) - 브라우저 강제 재연결 중...", attempt, maxRetries);
+                        forceReconnectBrowser();
+                    }
+                    return generatePdfInternal(htmlContent, pdfOptions);
+                } catch (Exception e) {
+                    lastException = e;
+                    String msg = e.getMessage() != null ? e.getMessage() : "";
+                    String causeMsg = e.getCause() != null && e.getCause().getMessage() != null ? e.getCause().getMessage() : "";
+
+                    if (msg.contains("TargetClosedError") || causeMsg.contains("TargetClosedError")) {
+                        log.warn("[Playwright PDF] 브라우저 에러(TargetClosedError) 감지. 재시도합니다.", e);
+                        continue;
+                    }
+                    throw e; // 다른 예외는 즉시 발생
+                }
+            }
+            throw new Exception("PDF 생성 최대 재시도 횟수를 초과했습니다: " + (lastException != null ? lastException.getMessage() : ""), lastException);
 
         } catch (InterruptedException e) {
             Thread.currentThread().interrupt();
