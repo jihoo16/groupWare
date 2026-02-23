@@ -77,4 +77,13 @@ public interface VacationService {
      * @param currentUserIdx 삭제 요청자 사용자 IDX
      */
     void deleteVacation(Long documentIdx, Long currentUserIdx);
+
+    /**
+     * 관리자 연차 신청서 승인 / 승인 취소
+     * - 한 문서에 여러 기간이 있는 경우 모두 동일한 상태로 일괄 업데이트
+     * @param documentIdx 문서 IDX (approval_documents의 idx)
+     * @param approverUserIdx 승인 처리한 관리자 IDX
+     * @param approve true = 승인, false = 승인 취소
+     */
+    void approveVacation(Long documentIdx, Long approverUserIdx, boolean approve);
 }

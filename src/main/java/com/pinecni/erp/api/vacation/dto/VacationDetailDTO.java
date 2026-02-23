@@ -29,6 +29,7 @@ public class VacationDetailDTO {
     private BigDecimal remainingDays;
     private String reason;
     private String status;
+    private Boolean isApproved;
 
     // 연차 기간 목록
     private List<PeriodDTO> periods;

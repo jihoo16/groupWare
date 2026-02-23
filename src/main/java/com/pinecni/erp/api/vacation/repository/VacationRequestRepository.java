@@ -2,11 +2,14 @@ package com.pinecni.erp.api.vacation.repository;
 
 import com.pinecni.erp.entity.VacationRequest;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.util.List;
 
 /**
@@ -100,4 +103,19 @@ public interface VacationRequestRepository extends JpaRepository<VacationRequest
     @Query("SELECT v FROM VacationRequest v WHERE v.documentIdx = :documentIdx " +
             "ORDER BY v.startDate")
     List<VacationRequest> findByDocumentIdx(Long documentIdx);
+
+    /**
+     * 문서 IDX에 해당하는 모든 연차 신청 행의 승인 상태를 일괄 업데이트
+     * - 한 문서에 여러 기간이 있을 수 있으므로 documentIdx 기준으로 일괄 처리
+     */
+    @Modifying
+    @Query("UPDATE VacationRequest v SET " +
+            "v.isApproved = :isApproved, " +
+            "v.approvedAt = :approvedAt, " +
+            "v.approvedUserIdx = :approvedUserIdx " +
+            "WHERE v.documentIdx = :documentIdx")
+    int updateApprovalByDocumentIdx(@Param("documentIdx") Long documentIdx,
+                                    @Param("isApproved") Boolean isApproved,
+                                    @Param("approvedAt") LocalDateTime approvedAt,
+                                    @Param("approvedUserIdx") Long approvedUserIdx);
 }

@@ -37,4 +37,9 @@ public class AdminVacationDocumentDTO {
     private String userDept;
     private String userDeptName;
     private String userPosition;
+
+    // 관리자 승인 정보
+    private Boolean isApproved;
+    private LocalDateTime approvedAt;
+    private Long approvedUserIdx;
 }

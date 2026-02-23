@@ -665,6 +665,9 @@ public class VacationController {
                                 .userDept(user.getEmpDept())
                                 .userDeptName(deptName)
                                 .userPosition(user.getEmpPosition())
+                                .isApproved(vr.getIsApproved() != null ? vr.getIsApproved() : false)
+                                .approvedAt(vr.getApprovedAt())
+                                .approvedUserIdx(vr.getApprovedUserIdx())
                                 .build();
                     })
                     .filter(Objects::nonNull)
@@ -677,6 +680,50 @@ public class VacationController {
             log.error("전체 연차신청서 조회 중 오류 발생: {}", e.getMessage(), e);
             return ResponseEntity.internalServerError()
                     .body(Map.of("error", "연차신청서 조회 중 오류가 발생했습니다."));
+        }
+    }
+
+    /**
+     * 관리자 전용 - 연차신청서 승인 / 승인 취소 API
+     * @param documentIdx 문서 IDX
+     * @param approve true = 승인, false = 승인 취소 (기본값: true)
+     * @param session HTTP 세션
+     * @return 처리 결과
+     */
+    @PatchMapping("/admin/documents/{documentIdx}/approve")
+    public ResponseEntity<?> approveVacation(
+            @PathVariable Long documentIdx,
+            @RequestParam(defaultValue = "true") boolean approve,
+            HttpSession session) {
+
+        Boolean isAdmin = (Boolean) session.getAttribute("isAdmin");
+        if (isAdmin == null || !isAdmin) {
+            log.warn("관리자가 아닌 사용자의 연차 승인 시도");
+            return ResponseEntity.status(403).body(Map.of("error", "관리자 권한이 필요합니다."));
+        }
+
+        Long currentUserIdx = (Long) session.getAttribute("userIdx");
+        if (currentUserIdx == null) {
+            return ResponseEntity.status(401).body(Map.of("error", "로그인이 필요합니다."));
+        }
+
+        try {
+            log.info("[연차 승인 처리] documentIdx: {}, approve: {}, approverIdx: {}",
+                    documentIdx, approve, currentUserIdx);
+
+            vacationService.approveVacation(documentIdx, currentUserIdx, approve);
+
+            String message = approve ? "승인되었습니다." : "승인이 취소되었습니다.";
+            return ResponseEntity.ok(Map.of("message", message, "isApproved", approve));
+        } catch (IllegalArgumentException e) {
+            log.error("[연차 승인 처리 실패] documentIdx: {}, error: {}", documentIdx, e.getMessage());
+            return ResponseEntity.badRequest().body(Map.of("error", e.getMessage()));
+        } catch (IllegalStateException e) {
+            log.error("[연차 승인 처리 실패] documentIdx: {}, error: {}", documentIdx, e.getMessage());
+            return ResponseEntity.badRequest().body(Map.of("error", e.getMessage()));
+        } catch (Exception e) {
+            log.error("[연차 승인 처리 실패] documentIdx: {}, error: {}", documentIdx, e.getMessage(), e);
+            return ResponseEntity.internalServerError().body(Map.of("error", "승인 처리 중 오류가 발생했습니다."));
         }
     }
 
