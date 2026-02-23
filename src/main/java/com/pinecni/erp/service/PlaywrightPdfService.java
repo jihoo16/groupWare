@@ -97,6 +97,9 @@ public class PlaywrightPdfService {
                 try {
                     browser = playwright.chromium().connect(wsEndpoint);
                     log.info("[Playwright PDF Service] 원격 브라우저 연결 성공");
+                    browser.onDisconnected(b -> {
+                        log.error("[Playwright PDF] 브라우저 disconnected - Chromium/driver가 종료됨");
+                    });
                 } catch (Exception e) {
                     log.error("[Playwright PDF Service] 원격 연결 실패, 로컬 모드로 전환합니다.", e);
                     launchLocalBrowser();
@@ -219,8 +222,11 @@ public class PlaywrightPdfService {
                     String msg = e.getMessage() != null ? e.getMessage() : "";
                     String causeMsg = e.getCause() != null && e.getCause().getMessage() != null ? e.getCause().getMessage() : "";
 
-                    if (msg.contains("TargetClosedError") || causeMsg.contains("TargetClosedError")) {
-                        log.warn("[Playwright PDF] 브라우저 에러(TargetClosedError) 감지. 재시도합니다.", e);
+                    if (msg.contains("TargetClosedError") || causeMsg.contains("TargetClosedError") ||
+                        msg.contains("Browser has been closed") || causeMsg.contains("Browser has been closed") ||
+                        msg.contains("Browser closed") || causeMsg.contains("Browser closed") ||
+                        msg.contains("Target page, context or browser has been closed") || causeMsg.contains("Target page, context or browser has been closed")) {
+                        log.warn("[Playwright PDF] 브라우저 종료/끊김 감지 -> 재기동 후 1회 재시도 (에러: {})", msg);
                         continue;
                     }
                     throw e; // 다른 예외는 즉시 발생
@@ -282,8 +288,11 @@ public class PlaywrightPdfService {
                     String msg = e.getMessage() != null ? e.getMessage() : "";
                     String causeMsg = e.getCause() != null && e.getCause().getMessage() != null ? e.getCause().getMessage() : "";
 
-                    if (msg.contains("TargetClosedError") || causeMsg.contains("TargetClosedError")) {
-                        log.warn("[Playwright PDF] 브라우저 에러(TargetClosedError) 감지. 재시도합니다.", e);
+                    if (msg.contains("TargetClosedError") || causeMsg.contains("TargetClosedError") ||
+                        msg.contains("Browser has been closed") || causeMsg.contains("Browser has been closed") ||
+                        msg.contains("Browser closed") || causeMsg.contains("Browser closed") ||
+                        msg.contains("Target page, context or browser has been closed") || causeMsg.contains("Target page, context or browser has been closed")) {
+                        log.warn("[Playwright PDF] 브라우저 종료/끊김 감지 -> 재기동 후 1회 재시도 (에러: {})", msg);
                         continue;
                     }
                     throw e; // 다른 예외는 즉시 발생
