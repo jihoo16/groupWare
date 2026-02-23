@@ -10,6 +10,7 @@ document.addEventListener('DOMContentLoaded', function() {
     const userSearchInput = document.getElementById('userSearchInput');
     const statusFilter = document.getElementById('statusFilter');
     const yearFilter = document.getElementById('yearFilter');
+    const approvalFilter = document.getElementById('approvalFilter');
     const searchInput = document.getElementById('searchInput');
     const refreshBtn = document.getElementById('refreshBtn');
     const documentsList = document.getElementById('documentsList');
@@ -22,6 +23,7 @@ document.addEventListener('DOMContentLoaded', function() {
     userSearchInput.addEventListener('input', applyFilters);
     statusFilter.addEventListener('change', applyFilters);
     yearFilter.addEventListener('change', applyFilters);
+    approvalFilter.addEventListener('change', applyFilters);
     searchInput.addEventListener('input', applyFilters);
 
     /**
@@ -169,6 +171,7 @@ document.addEventListener('DOMContentLoaded', function() {
         const userSearch = userSearchInput.value.trim();
         const selectedStatus = statusFilter.value;
         const selectedYear = yearFilter.value;
+        const selectedApproval = approvalFilter.value;
         const searchTerm = searchInput.value.trim();
 
         filteredDocuments = allDocuments.filter(doc => {
@@ -191,6 +194,14 @@ document.addEventListener('DOMContentLoaded', function() {
                 if (docYear !== parseInt(selectedYear)) {
                     return false;
                 }
+            }
+
+            // 승인 상태 필터
+            if (selectedApproval === 'approved' && !doc.isApproved) {
+                return false;
+            }
+            if (selectedApproval === 'pending' && doc.isApproved) {
+                return false;
             }
 
             // 기타 검색 (부서, 사유)
@@ -358,6 +369,20 @@ document.addEventListener('DOMContentLoaded', function() {
                                         <i class="fas fa-eye"></i>
                                         보기
                                     </button>
+                                    ${doc.isApproved
+                                        ? `<button class="btn-revoke ${isDeleted ? 'disabled' : ''}"
+                                                onclick="${isDeleted ? 'return false;' : `approveDocument(${doc.documentIdx}, '${doc.userName}', false)`}"
+                                                ${isDeleted ? 'disabled' : ''}>
+                                                <i class="fas fa-undo"></i>
+                                                승인철회
+                                           </button>`
+                                        : `<button class="btn-approve ${isDeleted ? 'disabled' : ''}"
+                                                onclick="${isDeleted ? 'return false;' : `approveDocument(${doc.documentIdx}, '${doc.userName}', true)`}"
+                                                ${isDeleted ? 'disabled' : ''}>
+                                                <i class="fas fa-check"></i>
+                                                승인
+                                           </button>`
+                                    }
                                     <button class="btn-delete ${isDeleted ? 'disabled' : ''}"
                                             onclick="${isDeleted ? 'return false;' : `deleteDocument(${doc.documentIdx}, '${doc.userName}')`}"
                                             ${isDeleted ? 'disabled data-tooltip="이미 삭제된 문서입니다."' : ''}>
@@ -436,6 +461,60 @@ document.addEventListener('DOMContentLoaded', function() {
      */
     window.viewDocument = function(documentIdx) {
         window.location.href = `/approval/vacation/detail?documentIdx=${documentIdx}`;
+    };
+
+    /**
+     * 연차신청서 승인 / 승인철회
+     * @param {number} documentIdx - 문서 IDX
+     * @param {string} userName    - 사용자 이름 (확인창용)
+     * @param {boolean} approve    - true: 승인, false: 승인철회
+     */
+    window.approveDocument = async function(documentIdx, userName, approve) {
+        const action = approve ? '승인' : '승인 철회';
+        const confirmed = await Swal.fire({
+            title: `연차신청서 ${action}`,
+            text: `${userName}님의 연차신청서를 ${action}하시겠습니까?`,
+            icon: 'question',
+            showCancelButton: true,
+            confirmButtonColor: approve ? '#10b981' : '#f59e0b',
+            cancelButtonColor: '#6c757d',
+            confirmButtonText: action,
+            cancelButtonText: '취소'
+        });
+
+        if (!confirmed.isConfirmed) return;
+
+        try {
+            const response = await fetch(
+                `/api/vacation/admin/documents/${documentIdx}/approve?approve=${approve}`,
+                { method: 'PATCH' }
+            );
+
+            if (!response.ok) {
+                const error = await response.json();
+                throw new Error(error.error || `${action} 실패`);
+            }
+
+            await Swal.fire({
+                icon: 'success',
+                title: `${action} 완료`,
+                text: approve
+                    ? '승인되었습니다. 캘린더 일정이 등록되었습니다.'
+                    : '승인이 철회되었습니다. 캘린더 일정이 삭제되었습니다.',
+                timer: 2000,
+                showConfirmButton: false
+            });
+
+            loadDocuments();
+
+        } catch (error) {
+            console.error(`${action} 오류:`, error);
+            Swal.fire({
+                icon: 'error',
+                title: `${action} 실패`,
+                text: error.message
+            });
+        }
     };
 
     /**
