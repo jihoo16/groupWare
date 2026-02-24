@@ -1439,6 +1439,18 @@
                 <td>${project.startDate} ~ ${project.endDate}</td>
             `;
 
+            row.style.cursor = 'pointer';
+            row.addEventListener('click', function(e) {
+                if (e.target.type === 'checkbox') return;
+                const checkbox = this.querySelector('.related-project-checkbox');
+                checkbox.checked = !checkbox.checked;
+                if (checkbox.checked) {
+                    this.classList.add('selected');
+                } else {
+                    this.classList.remove('selected');
+                }
+            });
+
             relatedProjectTableBody.appendChild(row);
         });
     }
