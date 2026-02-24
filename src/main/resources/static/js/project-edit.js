@@ -9,8 +9,6 @@
     const memberSelectModal = document.getElementById('memberSelectModal');
     const memberSearchInput = document.getElementById('memberSearchInput');
     const teamTableBody = document.getElementById('teamTableBody');
-    const addCardBtn = document.getElementById('addCardBtn');
-    const cardModal = document.getElementById('cardModal');
     const cardList = document.getElementById('cardList');
     const projectFiles = document.getElementById('projectFiles');
     const fileList = document.getElementById('fileList');
@@ -859,75 +857,14 @@
         });
     }
 
-    // 카드 추가 버튼 클릭
-    if (addCardBtn) {
-        addCardBtn.addEventListener('click', function() {
-            openCardModal();
-        });
-    }
-
-    // 카드 모달 열기
-    function openCardModal() {
-        if (!cardModal) return;
-        cardModal.classList.add('active');
-
-        // 입력 필드 초기화
-        document.getElementById('cardCompany').value = '';
-        document.getElementById('cardNumber').value = '';
-        const cardNameInput = document.getElementById('cardName');
-        if (cardNameInput) {
-            cardNameInput.value = '';
-        }
-    }
-
-    // 카드 모달 닫기 (전역 함수)
-    window.closeCardModal = function() {
-        if (!cardModal) return;
-        cardModal.classList.remove('active');
-    };
-
-    // 카드 저장 (전역 함수)
-    window.saveCard = async function() {
-        const cardCompany = document.getElementById('cardCompany').value;
-        const cardNumber = document.getElementById('cardNumber').value;
-        const cardName = document.getElementById('cardName').value;
-
-        // 유효성 검사
-        if (!cardCompany) {
-            await showWarning('카드사를 선택해주세요.');
-            return;
-        }
-
-        if (!cardNumber || cardNumber.length !== 4 || !/^\d{4}$/.test(cardNumber)) {
-            await showWarning('카드 뒷 4자리를 정확히 입력해주세요.');
-            return;
-        }
-
-        if (!cardName) {
-            await showWarning('카드 닉네임을 입력해주세요.');
-            return;
-        }
-        console.log("cardIdCounter : " + cardIdCounter)
-        // 카드 추가 (신규 카드는 음수 ID 사용)
-        cardIdCounter--;
-        cardListData.push({
-            company: cardCompany,
-            number: cardNumber,
-            name: cardName
-        });
-
-        renderCardList();
-        closeCardModal();
-    };
-
-    // 카드 목록 렌더링
+    // 카드 목록 렌더링 (읽기 전용)
     function renderCardList() {
         if (!cardList) return;
 
         cardList.innerHTML = '';
 
         if (cardListData.length === 0) {
-            cardList.innerHTML = '<p style="color: #868e96; font-size: 13px; margin-top: 8px;">등록된 카드가 없습니다.</p>';
+            cardList.innerHTML = '<p style="color: #868e96; font-size: 13px; margin-top: 8px;">현재 등록된 카드가 없습니다.</p>';
             return;
         }
 
@@ -942,19 +879,10 @@
                         <div class="card-number">**** **** **** ${card.number}</div>
                     </div>
                 </div>
-                <button type="button" onclick="removeCard(${card.id})">
-                    <i class="fas fa-times"></i>
-                </button>
             `;
             cardList.appendChild(item);
         });
     }
-
-    // 카드 제거 (전역 함수)
-    window.removeCard = function(cardId) {
-        cardListData = cardListData.filter(card => card.id !== cardId);
-        renderCardList();
-    };
 
     // ============================================
     // 파일 관련 로직
@@ -1412,14 +1340,6 @@
         memberSelectModal.addEventListener('click', function(e) {
             if (e.target === memberSelectModal) {
                 closeMemberModal();
-            }
-        });
-    }
-
-    if (cardModal) {
-        cardModal.addEventListener('click', function(e) {
-            if (e.target === cardModal) {
-                closeCardModal();
             }
         });
     }

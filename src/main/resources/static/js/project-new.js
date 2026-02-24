@@ -12,8 +12,6 @@
     const selectAllMembersBtn = document.getElementById('selectAllMembersBtn');
     const expandAllMembersBtn = document.getElementById('expandAllMembersBtn');
     const clearSelectedMembersBtn = document.getElementById('clearSelectedMembersBtn');
-    const addCardBtn = document.getElementById('addCardBtn');
-    const cardModal = document.getElementById('cardModal');
     const cardList = document.getElementById('cardList');
     const projectFiles = document.getElementById('projectFiles');
     const fileList = document.getElementById('fileList');
@@ -1437,113 +1435,6 @@
         });
     }
 
-    // 카드 추가 버튼 클릭
-    if (addCardBtn) {
-        addCardBtn.addEventListener('click', function() {
-            openCardModal();
-        });
-    }
-
-    // 카드 모달 열기
-    function openCardModal() {
-        if (!cardModal) return;
-        cardModal.classList.add('active');
-
-        // 입력 필드 초기화
-        document.getElementById('cardCompany').value = '';
-        document.getElementById('cardNumber').value = '';
-        const cardNameInput = document.getElementById('cardName');
-        if (cardNameInput) {
-            cardNameInput.value = '';
-        }
-    }
-
-    // 카드 모달 닫기 (전역 함수)
-    window.closeCardModal = function() {
-        if (!cardModal) return;
-        cardModal.classList.remove('active');
-    };
-
-    // 카드 저장 (전역 함수)
-    window.saveCard = async function () {
-        const cardCompany = document.getElementById('cardCompany').value;
-        const cardNumber = document.getElementById('cardNumber').value;
-        const cardName = document.getElementById('cardName').value;
-
-        // 유효성 검사
-        if (!cardCompany) {
-            await showWarning('카드사를 선택해주세요.');
-            return;
-        }
-
-        if (!cardNumber || cardNumber.length !== 4 || !/^\d{4}$/.test(cardNumber)) {
-            await showWarning('카드 뒷 4자리를 정확히 입력해주세요.');
-            return;
-        }
-
-        if (!cardName) {
-            await showWarning('카드 닉네임을 입력해주세요.');
-            return;
-        }
-
-        // 카드 추가
-        cardIdCounter++;
-        cardListData.push({
-            id: cardIdCounter,
-            company: cardCompany,
-            number: cardNumber,
-            name: cardName
-        });
-
-        renderCardList();
-        closeCardModal();
-    };
-
-    // 카드 목록 렌더링
-    function renderCardList() {
-        if (!cardList) return;
-
-        cardList.innerHTML = '';
-
-        if (cardListData.length === 0) {
-            cardList.innerHTML = '<p style="color: #868e96; font-size: 13px; margin-top: 8px;">등록된 카드가 없습니다.</p>';
-            return;
-        }
-
-        cardListData.forEach(card => {
-            const item = document.createElement('div');
-            item.className = 'card-item';
-            item.innerHTML = `
-                <div class="card-item-info">
-                    <i class="fas fa-credit-card"></i>
-                    <div class="card-item-details">
-                        <div class="card-company">${card.company} / ${card.name}</div>
-                        <div class="card-number">**** **** **** ${card.number}</div>
-                    </div>
-                </div>
-                <button type="button" onclick="removeCard(${card.id})">
-                    <i class="fas fa-times"></i>
-                </button>
-            `;
-            cardList.appendChild(item);
-        });
-    }
-
-    // 카드 제거 (전역 함수)
-    window.removeCard = function(cardId) {
-        cardListData = cardListData.filter(card => card.id !== cardId);
-        renderCardList();
-    };
-
-    // 카드 모달 배경 클릭 시 닫기
-    if (cardModal) {
-        cardModal.addEventListener('click', function(e) {
-            if (e.target === cardModal) {
-                closeCardModal();
-            }
-        });
-    }
-
     // 연계 프로젝트 추가 버튼 클릭
     if (addRelatedProjectBtn) {
         addRelatedProjectBtn.addEventListener('click', function() {
@@ -1846,20 +1737,6 @@
                 }
             }
 
-            // 11. 연구비 카드 설정 (별도 API에서 조회)
-            if (cards && cards.length > 0 && cardListData.length === 0) {
-                cards.forEach(card => {
-                    cardIdCounter++;
-                    cardListData.push({
-                        id: cardIdCounter,
-                        company: card.cardCompany,
-                        number: card.cardLastDigits,
-                        name: card.cardNickname || ''
-                    });
-                });
-                renderCardList();
-            }
-
             // 12. 참여연구원 설정 (PI 제외, 기존 팀원이 없을 때만)
             if (project.projectMembers && project.projectMembers.length > 0 && selectedMemberList.filter(m => m.role !== 'PI').length === 0) {
                 loadTeamMembersFromProject(project.projectMembers);
@@ -2082,7 +1959,6 @@
         // 12. 연구비 카드 초기화
         cardListData = [];
         cardIdCounter = 0;
-        renderCardList();
 
         // 13. 직급별 경비 설정 초기화
         resetExpenseSettingsToZero();
