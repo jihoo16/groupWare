@@ -196,14 +196,15 @@ document.addEventListener('DOMContentLoaded', function() {
                             <div class="budget-box">
                                 <div class="budget-box-header">활동비</div>
                                 <div class="budget-box-body">
+                                <div class="budget-row">
+                                        <span class="budget-label">총 금액</span>
+                                        <span class="budget-value">${activity.total}</span>
+                                    </div>
                                     <div class="budget-row">
                                         <span class="budget-label">사용금액</span>
                                         <span class="budget-value">${activity.used}</span>
                                     </div>
-                                    <div class="budget-row">
-                                        <span class="budget-label">총 금액</span>
-                                        <span class="budget-value">${activity.total}</span>
-                                    </div>
+                                    
                                     <div class="budget-row">
                                         <span class="budget-label">잔여금액</span>
                                         <span class="budget-value budget-remaining">${activity.remaining}</span>
@@ -213,14 +214,15 @@ document.addEventListener('DOMContentLoaded', function() {
                             <div class="budget-box">
                                 <div class="budget-box-header">장비비</div>
                                 <div class="budget-box-body">
+                                 <div class="budget-row">
+                                        <span class="budget-label">총 금액</span>
+                                        <span class="budget-value">${equipment.total}</span>
+                                    </div>
                                     <div class="budget-row">
                                         <span class="budget-label">사용금액</span>
                                         <span class="budget-value">${equipment.used}</span>
                                     </div>
-                                    <div class="budget-row">
-                                        <span class="budget-label">총 금액</span>
-                                        <span class="budget-value">${equipment.total}</span>
-                                    </div>
+                                   
                                     <div class="budget-row">
                                         <span class="budget-label">잔여금액</span>
                                         <span class="budget-value budget-remaining">${equipment.remaining}</span>
@@ -230,14 +232,15 @@ document.addEventListener('DOMContentLoaded', function() {
                             <div class="budget-box">
                                 <div class="budget-box-header">재료비</div>
                                 <div class="budget-box-body">
+                                <div class="budget-row">
+                                        <span class="budget-label">총 금액</span>
+                                        <span class="budget-value">${material.total}</span>
+                                    </div>
                                     <div class="budget-row">
                                         <span class="budget-label">사용금액</span>
                                         <span class="budget-value">${material.used}</span>
                                     </div>
-                                    <div class="budget-row">
-                                        <span class="budget-label">총 금액</span>
-                                        <span class="budget-value">${material.total}</span>
-                                    </div>
+                                    
                                     <div class="budget-row">
                                         <span class="budget-label">잔여금액</span>
                                         <span class="budget-value budget-remaining">${material.remaining}</span>
