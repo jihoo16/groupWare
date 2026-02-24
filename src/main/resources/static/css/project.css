@@ -872,7 +872,7 @@ select.form-control {
 
 .member-select-table th {
     padding: 12px;
-    text-align: left;
+    text-align: center;
     font-weight: 600;
     color: #495057;
     border-bottom: 2px solid #dee2e6;
@@ -1333,6 +1333,11 @@ body:has(.project-form-footer) .main-content {
 .modal-large {
     max-width: 800px;
     overflow-x: hidden;
+}
+
+#relatedProjectModal .modal-content {
+    max-width: 800px;
+    width: 800px;
 }
 
 .modal-lg {

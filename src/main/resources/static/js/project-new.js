@@ -1524,7 +1524,7 @@
                 <td>${project.projectName}</td>
                 <td><span class="status-badge ${getStatusClass(project.projectStatus)}">${getStatusLabel(project.projectStatus)}</span></td>
                 <td>${project.projectManagerName || '-'}</td>
-                <td>${project.startDate} ~ ${project.endDate}</td>
+                <td>${project.startDate}<br>~ ${project.endDate}</td>
             `;
 
             row.style.cursor = 'pointer';
