@@ -242,10 +242,10 @@ public class ApprovalDocumentServiceImpl implements ApprovalDocumentService {
         // 회의록 조회
         result.addAll(getMeetingMinutesByProject(projectIdx));
 
-        // 출장 조회
+        // 단독 출장 조회
         result.addAll(getReceiptTripsByProject(projectIdx));
 
-        // 출장+회의 조회
+        // 회의+출장 조회
         result.addAll(getReceiptMeetingsByProject(projectIdx));
 
         // 야근식대 조회
@@ -330,7 +330,7 @@ public class ApprovalDocumentServiceImpl implements ApprovalDocumentService {
     }
 
     /**
-     * 프로젝트별 출장 조회
+     * 프로젝트별 단독 출장 조회
      */
     private List<ApprovalDocumentDTO> getReceiptTripsByProject(Long projectIdx) {
         List<ReceiptTrip> trips = receiptTripRepository.findByProjectIdxOrderByTripDateDesc(projectIdx);
@@ -341,7 +341,7 @@ public class ApprovalDocumentServiceImpl implements ApprovalDocumentService {
     }
 
     /**
-     * 프로젝트별 출장+회의 조회
+     * 프로젝트별 회의+출장 조회
      */
     private List<ApprovalDocumentDTO> getReceiptMeetingsByProject(Long projectIdx) {
         List<ReceiptMeeting> meetings = receiptMeetingRepository.findByProjectIdxOrderByMeetingDateDesc(projectIdx);

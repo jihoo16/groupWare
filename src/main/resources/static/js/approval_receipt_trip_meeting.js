@@ -1,4 +1,4 @@
-// 연구비 증빙 - 출장+회의 통합 페이지 JavaScript
+// 연구비 증빙 - 회의+출장 통합 페이지 JavaScript
 document.addEventListener('DOMContentLoaded', function() {
     // 전역 변수
     let selectedApprovers = [];
@@ -148,7 +148,7 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     }
 
-    // 출장+회의 자동 채우기 기능
+    // 회의+출장 자동 채우기 기능
     function setupTripAutoFill() {
         const commonProject = document.getElementById('common_project');
         const commonAuthor = document.getElementById('common_author');
@@ -1149,7 +1149,7 @@ document.addEventListener('DOMContentLoaded', function() {
             }
 
             try {
-                console.log('PDF 저장 시작 - 출장+회의 통합 페이지');
+                console.log('PDF 저장 시작 - 회의+출장 통합 페이지');
 
                 // 로딩 모달 표시
                 if (loadingModal) loadingModal.classList.add('active');
@@ -1187,7 +1187,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 originalDisplays = Array.from(allDivs).map(div => div.style.display);
 
                 if (allDivs.length < 5) {
-                    showError('문서 구조를 찾을 수 없습니다. 영수증 처리(출장+회의) 템플릿을 선택했는지 확인해주세요.');
+                    showError('문서 구조를 찾을 수 없습니다. 영수증 처리(회의+출장) 템플릿을 선택했는지 확인해주세요.');
                     if (loadingModal) loadingModal.classList.remove('active');
                     // 접혔던 문서 양식을 다시 접기
                     if (documentFormWrapper && wasCollapsed) {
@@ -1391,7 +1391,7 @@ document.addEventListener('DOMContentLoaded', function() {
                     const dd = String(today.getDate()).padStart(2, '0');
                     dateStr = `${yy}${mm}${dd}`;
                 }
-                const fileName = `${dateStr}_출장+회의.pdf`;
+                const fileName = `${dateStr}_회의+출장.pdf`;
 
                 console.log('PDF 저장:', fileName);
                 pdf.save(fileName);
@@ -1669,7 +1669,7 @@ document.addEventListener('DOMContentLoaded', function() {
     loadEmployees();
     loadProjects();
 
-    // 초기 템플릿 로드 (출장+회의)
+    // 초기 템플릿 로드 (회의+출장)
     loadTemplate('receipt-trip');
 
     // 오늘 날짜 자동 설정

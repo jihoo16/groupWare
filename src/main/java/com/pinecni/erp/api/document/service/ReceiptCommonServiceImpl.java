@@ -166,8 +166,8 @@ public class ReceiptCommonServiceImpl implements ReceiptCommonService {
         return switch (prefix) {
             case "RCM" -> "회의록";
             case "RCO" -> "야근식대";
-            case "RCT" -> "출장";
-            case "RCTM" -> "출장+회의";
+            case "RCT" -> "단독 출장";
+            case "RCTM" -> "회의+출장";
             default -> prefix;
         };
     }
