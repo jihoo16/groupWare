@@ -25,7 +25,23 @@ document.addEventListener('DOMContentLoaded', function() {
 
     function init() {
         loadVacationData();
+        loadDepartmentFilter();
         attachEventListeners();
+    }
+
+    // 부서 목록 동적 로드
+    function loadDepartmentFilter() {
+        fetch('/api/codes/departments?activeOnly=true')
+            .then(res => res.json())
+            .then(departments => {
+                departments.forEach(dept => {
+                    const option = document.createElement('option');
+                    option.value = dept.codeName;
+                    option.textContent = dept.codeName;
+                    departmentFilter.appendChild(option);
+                });
+            })
+            .catch(() => {});
     }
 
     // 이벤트 리스너 연결
