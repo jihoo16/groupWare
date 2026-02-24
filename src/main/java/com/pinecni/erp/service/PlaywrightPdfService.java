@@ -12,6 +12,8 @@ import org.springframework.stereotype.Service;
 
 import java.io.File;
 import java.util.Arrays;
+import java.util.HashMap;
+import java.util.Map;
 import java.util.concurrent.Semaphore;
 import java.util.concurrent.TimeUnit;
 
@@ -74,7 +76,12 @@ public class PlaywrightPdfService {
                 try { if (browser != null) browser.close(); } catch (Exception ignore) {}
                 try { if (playwright != null) playwright.close(); } catch (Exception ignore) {}
 
-                playwright = Playwright.create();
+                // 개선 후 (기존 시스템 환경 변수는 그대로 유지하되, 검증 스킵 변수만 주입)
+                Map<String, String> env = new HashMap<>();
+                // System.getenv() 를 그대로 넣으면 불변 객체 에러가 날 수 있으므로 새 HashMap 세팅 (선택)
+                env.putAll(System.getenv());
+                env.put("PLAYWRIGHT_SKIP_VALIDATE_HOST_REQUIREMENTS", "true");
+                playwright = Playwright.create(new Playwright.CreateOptions().setEnv(env));
 
                 if (wsEndpoint != null && !wsEndpoint.isBlank()) {
                     log.info("[Playwright PDF Service] 원격 브라우저 연결 시도: {}", wsEndpoint);
