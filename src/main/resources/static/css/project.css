@@ -604,6 +604,10 @@ textarea.form-control {
     cursor: pointer;
 }
 
+.date-input-wrapper input[type="date"]::-webkit-calendar-picker-indicator {
+    display: none;
+}
+
 .date-input-wrapper .date-icon {
     position: absolute;
     right: 16px;
