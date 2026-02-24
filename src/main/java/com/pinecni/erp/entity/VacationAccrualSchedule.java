@@ -34,7 +34,8 @@ import java.time.LocalDateTime;
 public class VacationAccrualSchedule {
 
     @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @GeneratedValue(strategy = GenerationType.SEQUENCE, generator = "vacation_accrual_schedule_sequence")
+    @SequenceGenerator(name = "vacation_accrual_schedule_sequence", sequenceName = "erp.vacation_accrual_schedule_sequence", allocationSize = 1)
     @Column(name = "idx")
     private Long idx;
 

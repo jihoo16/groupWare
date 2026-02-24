@@ -27,7 +27,8 @@ import java.time.LocalDateTime;
 public class VacationRequest {
 
     @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @GeneratedValue(strategy = GenerationType.SEQUENCE, generator = "vacation_request_sequence")
+    @SequenceGenerator(name = "vacation_request_sequence", sequenceName = "erp.vacation_request_sequence", allocationSize = 1)
     @Column(name = "idx")
     private Long idx;
 

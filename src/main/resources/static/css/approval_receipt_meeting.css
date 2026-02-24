@@ -2910,3 +2910,64 @@ input.auto-datetime {
         font-size: 13px !important;
     }
 }
+
+/* 참석자 영역 - 외부인원 없음 경고 */
+.attendee-area.no-external {
+    border: 2px solid #667eea !important;
+    border-radius: 8px;
+    animation: pulse-border 2s infinite;
+}
+
+@keyframes pulse-border {
+    0%, 100% { border-color: #667eea; }
+    50%       { border-color: #a5b4fc; }
+}
+
+.external-attendee-warning {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    background: #eef0ff;
+    border-top: 1px solid #c7cdf8;
+    padding: 8px 14px;
+    font-size: 12px;
+    color: #4c5fd5;
+    font-weight: 500;
+    border-radius: 0 0 6px 6px;
+}
+
+.external-attendee-warning i {
+    flex-shrink: 0;
+}
+
+/* 참석자 모달 - 외부인원 패널 강조 */
+.external-panel-required {
+    border-left: 3px solid #667eea !important;
+}
+
+
+/* 주요 내용 바이트 카운터 */
+.content-byte-counter {
+    margin-top: 5px;
+    font-size: 12px;
+    color: #888;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.content-byte-counter #contentByteCount {
+    font-weight: 600;
+    color: #e53e3e;
+    transition: color 0.2s;
+}
+
+.content-byte-counter #contentByteCount.sufficient {
+    color: #38a169;
+}
+
+.byte-hint {
+    font-size: 11px;
+    color: #e53e3e;
+    font-weight: 500;
+}

@@ -17,7 +17,8 @@ import java.time.LocalDateTime;
 @Table(name = "monthly_report", schema = "erp")
 public class MonthlyReport {
     @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @GeneratedValue(strategy = GenerationType.SEQUENCE, generator = "monthly_report_sequence")
+    @SequenceGenerator(name = "monthly_report_sequence", sequenceName = "erp.monthly_report_sequence", allocationSize = 1)
     @Column(name = "idx", nullable = false)
     private Long id;
 

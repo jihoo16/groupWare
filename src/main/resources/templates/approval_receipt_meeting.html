@@ -152,6 +152,10 @@
                                                 <div>클릭하여 참석자 추가</div>
                                             </div>
                                         </div>
+                                        <div id="externalAttendeeWarning" class="external-attendee-warning" style="display:none;">
+                                            <i class="fas fa-exclamation-triangle"></i>
+                                            외부인원이 없습니다. 연구비증빙 회의록은 외부인원이 1명 이상 필요합니다.
+                                        </div>
                                     </div>
                                 </div>
 
@@ -206,7 +210,11 @@
                                         <i class="fas fa-file-alt"></i> 주요 내용
                                         <span class="required-mark">*</span>
                                     </label>
-                                    <textarea id="common_content" class="form-textarea" placeholder="회의 주요 내용을 입력하세요" rows="6"></textarea>
+                                    <textarea id="common_content" class="form-textarea" placeholder="회의록은 단순 형식 요건이 아닌, 업무 관련 비용임을 입증하는 필수 증빙자료입니다. &#10;업무 목적이 명확히 드러나도록 상세히 작성해 주시기 바랍니다.&#10;&#10;⚠  구체적인 논의 내용 없이 형식적으로 작성된 경우, 추후 비용 적정성 검토 과정에서 추가 소명이 요청될 수 있습니다.&#10;" rows="6"></textarea>
+                                    <div class="content-byte-counter">
+                                        <span id="contentByteCount">최소 글자 수 제한 0</span> / 400 bytes
+                                        <span id="contentByteHint" class="byte-hint"></span>
+                                    </div>
                                 </div>
                             </div>
 
@@ -434,7 +442,7 @@
     <div id="attendeeModal" class="modal">
         <div class="modal-content" style="max-width: 1000px; max-height: 90vh;">
             <div class="modal-header">
-                <h3><i class="fas fa-users"></i> 참석자 선택</h3>
+                <h3><i class="fas fa-users"></i> 참석자 선택 <span style="font-size:12px; font-weight:400; color:#ffffff; margin-left:10px; opacity:0.85;"><i class="fas fa-info-circle"></i> 연구비증빙 회의록은 외부인원 1명 이상 필수입니다.</span></h3>
                 <button class="modal-close" onclick="closeAttendeeModal()">
                     <i class="fas fa-times"></i>
                 </button>
@@ -456,10 +464,10 @@
                         </div>
                     </div>
 
-                    <!-- 우측: 외부인원 -->
-                    <div class="panel-section">
+                    <!-- 우측: 외부인원 (필수) -->
+                    <div class="panel-section external-panel-required">
                         <div class="panel-header">
-                            <h4><i class="fas fa-user-tie"></i> 외부인원</h4>
+                            <h4><i class="fas fa-user-tie"></i> 외부인원 <span class="required-mark">*</span></h4>
                             <button class="btn-sm-outline" onclick="createNewExternalPerson()" style="font-size: 12px; padding: 4px 12px;">
                                 <i class="fas fa-plus"></i> 신규 등록
                             </button>

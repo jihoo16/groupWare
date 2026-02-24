@@ -381,8 +381,9 @@ public class ProjectMapper {
                     .ifPresent(code -> dto.setEmployeeDeptName(code.getCodeName()));
         }
 
-        // 직급명 및 정렬 순서 조회 (코드 → 명칭, sortOrder)
+        // 직급 코드 및 직급명, 정렬 순서 조회
         if (employee != null && employee.getEmpPosition() != null) {
+            dto.setEmployeePositionCode(employee.getEmpPosition());
             codeRepository.findByGroupCodeAndCode("C02", employee.getEmpPosition())
                     .ifPresent(code -> {
                         dto.setEmployeePositionName(code.getCodeName());

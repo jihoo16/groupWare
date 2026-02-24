@@ -43,6 +43,28 @@ document.addEventListener('DOMContentLoaded', async function() {
     let shouldOpenCardModalAfterProject = false; // 과제 선택 후 카드 모달 자동 열기 플래그
     let isLoadingExistingData = false; // 기존 데이터 로딩 중 플래그 (이벤트 핸들러 초기화 방지용)
 
+    // 주요 내용 바이트 검증
+    const MIN_CONTENT_BYTES = 400;
+    function getByteLength(str) {
+        return new TextEncoder().encode(str).length;
+    }
+    function updateContentByteCounter(value) {
+        const contentByteCountEl = document.getElementById('contentByteCount');
+        const contentByteHintEl = document.getElementById('contentByteHint');
+        if (!contentByteCountEl) return;
+        const bytes = getByteLength(value || '');
+        contentByteCountEl.textContent = bytes;
+        if (bytes >= MIN_CONTENT_BYTES) {
+            contentByteCountEl.classList.add('sufficient');
+            if (contentByteHintEl) contentByteHintEl.textContent = '';
+        } else {
+            contentByteCountEl.classList.remove('sufficient');
+            if (contentByteHintEl) {
+                contentByteHintEl.textContent = `회의비 증빙은 업무 관련성이 명확히 입증되어야 하므로, 내용을 구체적으로 작성해 주시기 바랍니다. (${MIN_CONTENT_BYTES - bytes}bytes 더 필요)`;
+            }
+        }
+    }
+
     // DOM 요소
     const templateTreeHeaders = document.querySelectorAll('.tree-node-header[data-template]');
     const documentForm = document.getElementById('documentForm');
@@ -88,8 +110,8 @@ document.addEventListener('DOMContentLoaded', async function() {
                 // 직급별로 회의비 매핑
                 fixedExpenses = {};
                 data.forEach(item => {
-                    // expenseItemName이 '회의비'인 항목만 필터링
-                    if (item.positionName && item.expenseItemName === '회의비' && item.amount) {
+                    // expenseItemName이 '회의비'인 항목만 필터링 (amount가 0이어도 포함)
+                    if (item.positionName && item.expenseItemName === '회의비' && item.amount != null) {
                         fixedExpenses[item.positionName] = item.amount;
                     }
                 });
@@ -119,7 +141,6 @@ document.addEventListener('DOMContentLoaded', async function() {
                 const project = await response.json();
                 projectMembers = project.projectMembers || [];
                 projectExpenseSettings = project.projectExpenseSettings || [];
-                console.log('프로젝트 경비 설정 로드:', projectExpenseSettings);
             } else {
                 console.error('프로젝트 팀원 로드 실패 - Status:', response.status, 'Content-Type:', contentType);
                 if (!contentType || !contentType.includes('application/json')) {
@@ -226,7 +247,6 @@ document.addEventListener('DOMContentLoaded', async function() {
         // documentIdx 또는 id 파라미터 모두 지원
         const receiptMeetingId = getUrlParameter('documentIdx') || getUrlParameter('id');
         if (receiptMeetingId) {
-            console.log('상세보기 모드 - 회의록 ID:', receiptMeetingId);
             window.showPageLoadingOverlay();
             await loadReceiptMeetingData(receiptMeetingId);
         } else {
@@ -378,7 +398,6 @@ document.addEventListener('DOMContentLoaded', async function() {
 
                 // 시작 시간 변경 시 참석자 목록 초기화 (기존 데이터 로딩 중이 아닐 때만)
                 if (!isLoadingExistingData) {
-                    console.log('[시작시간 change] 참석자 목록 초기화');
                     currentAttendees = [];
 
                     // 중복되지 않은 기본 작성자만 추가
@@ -421,7 +440,6 @@ document.addEventListener('DOMContentLoaded', async function() {
 
                 // 종료 시간 변경 시 참석자 목록 초기화 (기존 데이터 로딩 중이 아닐 때만)
                 if (!isLoadingExistingData) {
-                    console.log('[종료시간 change] 참석자 목록 초기화');
                     currentAttendees = [];
 
                     // 중복되지 않은 기본 작성자만 추가
@@ -579,7 +597,6 @@ document.addEventListener('DOMContentLoaded', async function() {
                                 selectedCardIdx.value = firstCard.idx;
                             }
 
-                            console.log('첫 번째 카드 자동 선택:', firstCard.cardName);
                         } else {
                             // 카드가 없으면 비우기
                             if (commonCard) {
@@ -901,10 +918,8 @@ document.addEventListener('DOMContentLoaded', async function() {
 
         // 회의록 참석자 정보 업데이트
         function updateMeetingMinutesAttendees() {
-            console.log('[updateMeetingMinutesAttendees] 시작 - currentAttendees:', currentAttendees);
             // 참석자 정렬 (외부 회사순/직급순 -> 내부 직급순)
             const sortedAttendees = sortAttendees(currentAttendees.filter(a => a.name && a.name.trim()));
-            console.log('[updateMeetingMinutesAttendees] 정렬 및 필터링된 참석자:', sortedAttendees);
 
             // 내부/외부 참석자 구분
             const internalAttendees = sortedAttendees.filter(a => a.type === 'internal');
@@ -935,11 +950,9 @@ document.addEventListener('DOMContentLoaded', async function() {
 
             // 참석자 명단 테이블 동적 생성 (정렬된 순서대로)
             const tbody = document.getElementById('attendee-signature-tbody');
-            console.log('[updateMeetingMinutesAttendees] tbody element:', tbody);
             if (tbody) {
                 // 기존 행 모두 제거
                 tbody.innerHTML = '';
-                console.log('[updateMeetingMinutesAttendees] 테이블 행 생성 시작');
 
                 // 참석자 수만큼 행 생성
                 sortedAttendees.forEach((attendee, idx) => {
@@ -994,7 +1007,6 @@ document.addEventListener('DOMContentLoaded', async function() {
 
                     tbody.appendChild(row);
                 });
-                console.log('[updateMeetingMinutesAttendees] 테이블 행 생성 완료 - 총', sortedAttendees.length, '행');
             } else {
                 console.error('[updateMeetingMinutesAttendees] tbody element를 찾을 수 없음!');
             }
@@ -1140,12 +1152,9 @@ document.addEventListener('DOMContentLoaded', async function() {
 
         // 참석자 목록 렌더링 함수 (모달 방식)
         function renderAttendeeListInTemplate() {
-            console.log('[renderAttendeeListInTemplate] 시작 - currentAttendees:', currentAttendees);
-            console.log('[renderAttendeeListInTemplate] attendeeList element:', attendeeList);
             if (!attendeeList) return;
 
             if (currentAttendees.length === 0) {
-                console.log('[renderAttendeeListInTemplate] 참석자 없음 - 빈 상태 표시');
                 attendeeList.innerHTML = `
                     <div class="empty-attendee-state">
                         <i class="fas fa-user-plus"></i>
@@ -1159,10 +1168,8 @@ document.addEventListener('DOMContentLoaded', async function() {
                 // 버튼 숨기기
                 hideAddAttendeeButton();
             } else {
-                console.log('[renderAttendeeListInTemplate] 참석자 있음 - 렌더링 시작');
                 // 참석자 정렬
                 const sortedAttendees = sortAttendees(currentAttendees);
-                console.log('[renderAttendeeListInTemplate] 정렬된 참석자:', sortedAttendees);
 
                 // 현재 작성자 ID 가져오기
                 const currentAuthorId = document.getElementById('common_author_id')?.value;
@@ -1208,7 +1215,6 @@ document.addEventListener('DOMContentLoaded', async function() {
                         </div>
                     `;
                 }).join('');
-                console.log('[renderAttendeeListInTemplate] HTML 렌더링 완료');
 
                 // 참석자가 있을 때 has-attendees 클래스 추가
                 if (attendeeArea) {
@@ -1218,12 +1224,24 @@ document.addEventListener('DOMContentLoaded', async function() {
                 showAddAttendeeButton();
             }
 
-            console.log('[renderAttendeeListInTemplate] updateProposalAttendees 호출 전');
             updateProposalAttendees();
-            console.log('[renderAttendeeListInTemplate] updateMeetingMinutesAttendees 호출 전');
             updateMeetingMinutesAttendees();
             updateAttendeeTotalAmount(); // 참석자 금액 합계 업데이트
             updateAttendeeCount(); // 참석자 총 인원 수 업데이트
+
+            // 외부인원 경고 표시
+            const externalWarning = document.getElementById('externalAttendeeWarning');
+            const hasExternal = currentAttendees.some(a => a.type === 'external');
+            if (externalWarning) {
+                externalWarning.style.display = (currentAttendees.length > 0 && !hasExternal) ? 'flex' : 'none';
+            }
+            if (attendeeArea) {
+                if (currentAttendees.length > 0 && !hasExternal) {
+                    attendeeArea.classList.add('no-external');
+                } else {
+                    attendeeArea.classList.remove('no-external');
+                }
+            }
         }
 
         // 참석자 추가 버튼 표시 함수
@@ -1352,28 +1370,20 @@ document.addEventListener('DOMContentLoaded', async function() {
 
         // 프로젝트 직급별 경비 설정 불러오기
         async function loadProjectExpenseSettings(projectIdx) {
-            console.log('[loadProjectExpenseSettings] 호출됨 - projectIdx:', projectIdx);
             const tooltipContent = document.getElementById('expenseTooltipContent');
-            if (!tooltipContent) {
-                console.error('[loadProjectExpenseSettings] tooltipContent 요소를 찾을 수 없음');
-                return;
-            }
+            if (!tooltipContent) return;
 
             try {
                 tooltipContent.innerHTML = '<div class="expense-tooltip-loading">불러오는 중...</div>';
 
                 const response = await fetch(`/api/projects/${projectIdx}/expense-settings`);
-                console.log('[loadProjectExpenseSettings] API 응답:', response.status);
                 if (!response.ok) {
                     throw new Error('경비 설정 조회 실패');
                 }
 
                 const settings = await response.json();
-                console.log('[loadProjectExpenseSettings] 경비 설정 데이터:', settings);
-                console.log('[loadProjectExpenseSettings] 데이터 개수:', settings ? settings.length : 0);
 
                 if (!settings || settings.length === 0) {
-                    console.log('[loadProjectExpenseSettings] 경비 설정이 비어있음');
                     tooltipContent.innerHTML = '<div class="expense-tooltip-empty">경비 설정이 없습니다</div>';
                     return;
                 }
@@ -1382,21 +1392,10 @@ document.addEventListener('DOMContentLoaded', async function() {
                 const meetingExpenses = settings.filter(s => {
                     const itemName = (s.expenseItemName || '').toLowerCase();
                     const itemNameEn = (s.expenseItemNameEn || '').toLowerCase();
-                    const isMeeting = itemName.includes('회의') || itemNameEn.includes('meeting');
-                    console.log('[필터링]', {
-                        positionName: s.positionName,
-                        expenseItemName: s.expenseItemName,
-                        expenseItemNameEn: s.expenseItemNameEn,
-                        amount: s.amount,
-                        isMeeting: isMeeting
-                    });
-                    return isMeeting;
+                    return itemName.includes('회의') || itemNameEn.includes('meeting');
                 });
 
-                console.log('[loadProjectExpenseSettings] 회의비 항목 개수:', meetingExpenses.length);
-
                 if (meetingExpenses.length === 0) {
-                    console.log('[loadProjectExpenseSettings] 회의비 설정이 없음, 전체 경비 설정 표시');
                     tooltipContent.innerHTML = '<div class="expense-tooltip-empty">회의비 설정이 없습니다</div>';
                     return;
                 }
@@ -1436,11 +1435,9 @@ document.addEventListener('DOMContentLoaded', async function() {
 
             // 작성자 ID 확인
             const currentAuthorId = document.getElementById('common_author_id')?.value;
-            console.log('[작성자 ID]', currentAuthorId);
 
             // 작성자는 삭제 불가
             if (currentAuthorId && String(attendeeId) === String(currentAuthorId)) {
-                console.log('[삭제 불가] 작성자는 삭제할 수 없습니다.');
                 showWarning('작성자는 참석자에서 삭제할 수 없습니다.');
                 return;
             }
@@ -1559,7 +1556,6 @@ document.addEventListener('DOMContentLoaded', async function() {
 
                 // 날짜 변경 시 참석자 목록 초기화 (기존 데이터 로딩 중이 아닐 때만)
                 if (!isLoadingExistingData) {
-                    console.log('[날짜 change] 참석자 목록 초기화');
                     currentAttendees = [];
 
                     // 중복되지 않은 기본 작성자만 추가
@@ -1627,6 +1623,7 @@ document.addEventListener('DOMContentLoaded', async function() {
         const commonContent = document.getElementById('common_content');
         if (commonContent) {
             commonContent.addEventListener('input', function() {
+                updateContentByteCounter(this.value);
                 const value = this.value;
                 document.querySelectorAll('.auto-content').forEach(field => {
                     field.textContent = value;
@@ -2169,7 +2166,6 @@ document.addEventListener('DOMContentLoaded', async function() {
                 try {
                     const attendeeIds = internalAttendeesForSave.map(a => parseInt(a.id)).filter(id => !isNaN(id));
                     if (attendeeIds.length > 0) {
-                        console.log('[중복 검증 시작] 검증할 참석자 IDs:', attendeeIds);
                         const duplicates = await checkDuplicateAttendees(attendeeIds);
 
                         if (duplicates.length > 0) {
@@ -2193,7 +2189,6 @@ document.addEventListener('DOMContentLoaded', async function() {
                             await showWarning(message);
                             return;
                         }
-                        console.log('[중복 검증 완료] 중복 없음');
                     }
                 } catch (error) {
                     console.error('[중복 검증 오류]', error);
@@ -2213,7 +2208,6 @@ document.addEventListener('DOMContentLoaded', async function() {
                     );
 
                     if (!confirmed) {
-                        console.log('[저장 취소] 사용자가 취소함');
                         return;
                     }
                     console.log('[저장 계속] 중복 검증 스킵하고 진행');
@@ -2310,6 +2304,22 @@ document.addEventListener('DOMContentLoaded', async function() {
                 return;
             }
 
+            const contentBytes = getByteLength(contentInput.value.trim());
+            if (contentBytes < MIN_CONTENT_BYTES) {
+                await Swal.fire({
+                    icon: 'warning',
+                    title: '주요 내용을 더 상세히 작성해주세요',
+                    html: `현재 <b>${contentBytes}bytes</b> 입력되었습니다.<br><br>
+                           회의 내용이 부실하게 작성된 경우 <b>정산 시 반려</b>될 수 있습니다.<br>
+                           논의된 내용, 결정 사항, 참석자별 발언 등을 구체적으로 작성해주세요.<br><br>
+                           <span style="color:#888;font-size:13px;">최소 ${MIN_CONTENT_BYTES}bytes 이상 입력 필요 (${MIN_CONTENT_BYTES - contentBytes}bytes 더 필요)</span>`,
+                    confirmButtonText: '다시 작성하기'
+                });
+                contentInput.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                contentInput.focus();
+                return;
+            }
+
             if (!currentAttendees || currentAttendees.length === 0) {
                 await showWarning('참석자를 1명 이상 추가해주세요.');
                 const attendeeArea = document.getElementById('attendeeArea');
@@ -2319,6 +2329,22 @@ document.addEventListener('DOMContentLoaded', async function() {
                 return;
             }
 
+            const hasExternalAttendee = currentAttendees.some(a => a.type === 'external');
+            if (!hasExternalAttendee) {
+                await Swal.fire({
+                    icon: 'error',
+                    title: '외부인원 필수',
+                    html: `연구비증빙 회의록은 <b>외부인원이 1명 이상</b> 참석해야 합니다.<br><br>
+                           참석자 추가에서 <b>외부인원</b> 패널을 통해 추가해주세요.<br>
+                           <span style="color:#888;font-size:13px;">외부인원이 없는 회의는 연구비증빙 대상이 아닙니다.</span>`,
+                    confirmButtonText: '참석자 추가하기'
+                });
+                const attendeeArea = document.getElementById('attendeeArea');
+                if (attendeeArea) {
+                    attendeeArea.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                }
+                return;
+            }
 
             // 참석자 목록 변환
             const attendeeDTOs = currentAttendees.map((attendee, index) => {
@@ -2516,23 +2542,20 @@ document.addEventListener('DOMContentLoaded', async function() {
             if (projectExpenseSettings && projectExpenseSettings.length > 0 && positionCode) {
                 const projectSetting = projectExpenseSettings.find(setting =>
                     setting.positionCode === positionCode &&
-                    setting.expenseItemName === '회의비'  // 정확히 '회의비'와 매칭
+                    setting.expenseItemName === '회의비'
                 );
                 if (projectSetting && projectSetting.amount) {
                     meetingExpense = projectSetting.amount;
-                    console.log(`[${member.employeeName}] 프로젝트 회의비 적용 (${positionCode}): ${meetingExpense}원`);
                 } else {
                     // 2순위: 기초정보관리의 직급별 고정경비 사용
                     if (fixedExpenses[positionName]) {
                         meetingExpense = fixedExpenses[positionName];
-                        console.log(`[${member.employeeName}] 기본 회의비 적용 (프로젝트 설정 없음): ${meetingExpense}원`);
                     }
                 }
             } else {
                 // 프로젝트 경비 설정이 없으면 기본 고정경비 사용
                 if (fixedExpenses[positionName]) {
                     meetingExpense = fixedExpenses[positionName];
-                    console.log(`[${member.employeeName}] 기본 회의비 적용 (직급명 기준): ${meetingExpense}원`);
                 }
             }
 
@@ -3208,7 +3231,7 @@ document.addEventListener('DOMContentLoaded', async function() {
                 if (!contentType || !contentType.includes('application/json')) {
                     const responseText = await response.text();
                     console.error('예상치 못한 응답 형식:', contentType, responseText.substring(0, 200));
-                    throw new Error('서버에서 잘못된 응답을 반환했습니다.');
+                    throw new Error('서버에서 잘못된 응답을 반환했습니다. 잠시 후 다시 시도해 주세요.');
                 }
 
                 const data = await response.json();
@@ -3528,7 +3551,6 @@ document.addEventListener('DOMContentLoaded', async function() {
                     if (selectedCardIdx) {
                         selectedCardIdx.value = firstCard.idx;
                     }
-                    console.log('첫 번째 카드 자동 선택:', firstCard.cardName);
                 } else {
                     // 카드가 없는 경우 초기화
                     if (commonCard) {
@@ -4015,8 +4037,6 @@ document.addEventListener('DOMContentLoaded', async function() {
     }
 
     async function loadReceiptMeetingData(id) {
-        console.log('회의록 데이터 로드 시작 - ID:', id);
-
         // 공통 함수 사용 (404 자동 처리)
         const data = await window.fetchWithErrorHandling(`/api/receipt-meetings/${id}`, {}, true);
 
@@ -4026,11 +4046,8 @@ document.addEventListener('DOMContentLoaded', async function() {
         }
 
         try {
-            console.log('회의록 데이터 로드 성공:', data);
-
             // 실제 receipt_meeting.idx 저장 (수정/삭제 시 사용)
             currentReceiptMeetingIdx = data.idx;
-            console.log('실제 회의록 idx 저장:', currentReceiptMeetingIdx);
 
             // 폼에 데이터 채우기
             populateForm(data);
@@ -4060,7 +4077,6 @@ document.addEventListener('DOMContentLoaded', async function() {
     }
 
     function populateForm(data) {
-        console.log('[populateForm] 시작 - 기존 데이터 로딩 플래그 ON');
         isLoadingExistingData = true; // 플래그 ON
 
         // 프로젝트 선택
@@ -4083,6 +4099,7 @@ document.addEventListener('DOMContentLoaded', async function() {
                 // 프로젝트 팀원 로드 및 카드 목록 로드
                 loadProjectMembers(project.idx);
                 loadProjectCards(project.idx);
+                window.loadProjectExpenseSettings(project.idx);
             }
         }
 
@@ -4163,14 +4180,12 @@ document.addEventListener('DOMContentLoaded', async function() {
         const contentInput = document.getElementById('common_content');
         if (contentInput && data.content) {
             contentInput.value = data.content;
+            updateContentByteCounter(data.content);
         }
 
         // 참석자 목록
         if (data.attendees && data.attendees.length > 0) {
-            console.log('[loadExistingData] API 응답 참석자 데이터 수신:', data.attendees.length, '명');
-            console.log('[loadExistingData] API 응답 참석자 원본 데이터:', data.attendees);
             currentAttendees = data.attendees.map((attendee, idx) => {
-                console.log(`[loadExistingData] 참석자 ${idx + 1} 변환 전:`, attendee);
                 let position = attendee.position || ''; // API에서 받은 직책 정보 사용
                 let dept = attendee.department || '';
 
@@ -4201,21 +4216,15 @@ document.addEventListener('DOMContentLoaded', async function() {
                     meetingExpense: meetingExpense,
                     type: type
                 };
-
-                console.log(`[loadExistingData] 참석자 ${idx + 1} 변환 후:`, converted);
-                return converted;
             });
-            console.log('[loadExistingData] currentAttendees 설정 완료 - 총', currentAttendees.length, '명:', currentAttendees);
 
             // ★ 참석자 목록 먼저 렌더링 (이벤트 트리거 전에 실행하여 초기화 방지)
-            console.log('[loadExistingData] 참석자 목록 렌더링 시작');
             renderAttendeeListInTemplate();
         }
 
         // 모든 input 이벤트 트리거하여 자동 채우기 활성화
         // ★ 참석자 목록 렌더링은 위에서 이미 했으므로 여기서는 제거
         setTimeout(() => {
-            console.log('[loadExistingData] setTimeout 시작 - input 이벤트 트리거');
             // 날짜/시간 자동 채우기 트리거
             if (dateInput) {
                 dateInput.dispatchEvent(new Event('input'));
@@ -4424,7 +4433,6 @@ document.addEventListener('DOMContentLoaded', async function() {
                     return;
                 }
 
-                console.log('회의록 삭제 시도 - idx:', currentReceiptMeetingIdx, 'deletedUserIdx:', deletedUserIdx);
                 const response = await fetch(`/api/receipt-meetings/${currentReceiptMeetingIdx}`, {
                     method: 'DELETE',
                     headers: {

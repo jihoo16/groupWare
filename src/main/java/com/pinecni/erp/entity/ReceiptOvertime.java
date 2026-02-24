@@ -19,7 +19,8 @@ import java.time.LocalDateTime;
 @SQLRestriction("is_deleted = false")
 public class ReceiptOvertime {
     @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @GeneratedValue(strategy = GenerationType.SEQUENCE, generator = "receipt_overtime_sequence")
+    @SequenceGenerator(name = "receipt_overtime_sequence", sequenceName = "erp.receipt_overtime_sequence", allocationSize = 1)
     @Column(name = "idx", nullable = false)
     private Long id;
 

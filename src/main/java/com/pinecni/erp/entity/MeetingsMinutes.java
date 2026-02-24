@@ -18,7 +18,8 @@ import java.time.LocalDateTime;
 @Table(name = "meeting_minutes", schema = "erp")
 public class MeetingsMinutes {
     @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @GeneratedValue(strategy = GenerationType.SEQUENCE, generator = "meeting_minutes_sequence")
+    @SequenceGenerator(name = "meeting_minutes_sequence", sequenceName = "erp.meeting_minutes_sequence", allocationSize = 1)
     @Column(name = "idx", nullable = false)
     private Long id;
 
