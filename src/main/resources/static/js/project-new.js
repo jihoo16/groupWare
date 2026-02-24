@@ -933,6 +933,23 @@
             const newStartDate = this.value;
             if (!newStartDate) return;
 
+            // 연계 프로젝트가 없을 때만 총 프로젝트 기간 자동 설정
+            if (relatedProjectList.length === 0) {
+                // 총 프로젝트 시작일 자동 설정 (현재 차수 시작일과 동일)
+                const totalPeriodStartInput = document.getElementById('totalPeriodStart');
+                if (totalPeriodStartInput) {
+                    totalPeriodStartInput.value = newStartDate;
+                }
+
+                // 총 프로젝트 종료일 자동 설정 (시작연도 +3년 12월 마지막 영업일)
+                const startYear = new Date(newStartDate).getFullYear();
+                const autoTotalEnd = getLastBusinessDayOfYear(startYear + 3);
+                const totalPeriodEndInput = document.getElementById('totalPeriodEnd');
+                if (totalPeriodEndInput) {
+                    totalPeriodEndInput.value = autoTotalEnd;
+                }
+            }
+
             const totalPeriodEnd = document.getElementById('totalPeriodEnd').value;
             const endDate = projectEndDateInput ? projectEndDateInput.value : '';
 
