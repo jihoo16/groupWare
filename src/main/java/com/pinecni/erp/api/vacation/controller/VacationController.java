@@ -151,6 +151,40 @@ public class VacationController {
     }
 
     /**
+     * 전체 사용자의 vacation_balance 재계산 API (스케줄 생성 → 잔액 계산 순서로 실행)
+     * @param authKey  요청 헤더 AUTH-KEY (값: 0000)
+     * @param year     대상 연도 (선택, 기본값: 현재 연도)
+     * @return 처리 결과
+     */
+    @PostMapping("/refresh-all-balances")
+    public ResponseEntity<Map<String, Object>> refreshAllVacationBalances(
+            @RequestHeader(value = "AUTH-KEY", required = false) String authKey,
+            @RequestParam(required = false) Integer year) {
+
+        if (!"0000".equals(authKey)) {
+            log.warn("POST /api/vacation/refresh-all-balances - AUTH-KEY 불일치, 접근 거부");
+            return ResponseEntity.status(403).build();
+        }
+
+        if (year == null) {
+            year = LocalDate.now().getYear();
+        }
+
+        log.info("POST /api/vacation/refresh-all-balances - year: {}", year);
+
+        int scheduleCount = vacationService.generateAllVacationAccrualSchedules(year);
+        int balanceCount  = vacationService.computeAndSaveAllVacationBalances(year);
+
+        Map<String, Object> response = new HashMap<>();
+        response.put("year", year);
+        response.put("scheduleCount", scheduleCount);
+        response.put("balanceCount", balanceCount);
+        response.put("message", "스케줄 생성: " + scheduleCount + "명, 잔액 갱신: " + balanceCount + "명 완료.");
+
+        return ResponseEntity.ok(response);
+    }
+
+    /**
      * 사용자의 연차 사용 내역 조회 API
      * @param userIdx 사용자 IDX (선택, 기본값: 세션의 로그인 사용자)
      * @param year 조회할 연도 (선택, 기본값: 현재 연도)

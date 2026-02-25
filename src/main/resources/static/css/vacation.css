@@ -1097,6 +1097,173 @@
     opacity: 0.9;
 }
 
+/* ── 연차 현황 모달 (totalLeaveModal) 신규 스타일 ───────────────── */
+.leave-breakdown {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+.lb-year-title {
+    font-size: 15px;
+    font-weight: 700;
+    color: #333;
+    margin-bottom: 4px;
+}
+
+.lb-section {
+    background: #f9fafb;
+    border-radius: 10px;
+    padding: 16px 18px;
+    border: 1px solid #e8e8e8;
+}
+
+.lb-section-title {
+    font-size: 11px;
+    font-weight: 700;
+    color: #999;
+    text-transform: uppercase;
+    letter-spacing: 0.6px;
+    margin-bottom: 10px;
+}
+
+.lb-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 6px 0;
+    font-size: 13.5px;
+    color: #444;
+}
+
+.lb-row span:last-child {
+    font-weight: 500;
+    color: #333;
+}
+
+.lb-row.negative span:last-child {
+    color: #d32f2f;
+    font-weight: 600;
+}
+
+.lb-divider {
+    border-top: 1px dashed #ddd;
+    margin: 8px 0;
+}
+
+.lb-row.total-row {
+    padding-top: 4px;
+}
+
+.lb-row.total-row span:first-child {
+    font-weight: 700;
+    color: #333;
+}
+
+.lb-row.total-row strong {
+    font-size: 15px;
+    color: #1976d2;
+}
+
+.lb-row.remaining-row strong {
+    font-size: 15px;
+    color: #388e3c;
+}
+
+.lb-row.remaining-row.negative strong {
+    color: #d32f2f;
+}
+
+.lb-row.next-accrual {
+    color: #555;
+    font-size: 13px;
+}
+
+.lb-no-data {
+    text-align: center;
+    padding: 30px;
+    color: #999;
+    font-size: 13px;
+}
+
+/* 근속가산 아이콘 색상 */
+.lb-icon-green {
+    color: #4caf50;
+    margin-right: 6px;
+}
+
+.lb-icon-blue {
+    color: #1976d2;
+    margin-right: 6px;
+}
+
+/* 연초 기준 누적 근속가산 그룹 */
+.lb-seniority-group {
+    background: #f0f7ff;
+    border-radius: 6px;
+    padding: 8px 12px;
+    margin: 4px 0;
+    border-left: 3px solid #90caf9;
+}
+
+.lb-seniority-header {
+    font-size: 12px;
+    font-weight: 700;
+    color: #1565c0;
+    margin-bottom: 6px;
+    padding-bottom: 4px;
+    border-bottom: 1px solid #bbdefb;
+}
+
+.lb-seniority-item {
+    padding: 3px 0 3px 6px !important;
+    font-size: 12.5px !important;
+}
+
+.lb-seniority-item span:first-child {
+    color: #555;
+}
+
+/* 올해 이미 획득한 근속가산 */
+.lb-seniority-new {
+    background: #f1f8e9;
+    border-radius: 6px;
+    padding: 6px 12px !important;
+    margin: 4px 0;
+    border-left: 3px solid #a5d6a7;
+}
+
+/* 올해 예정 근속가산 */
+.lb-seniority-upcoming {
+    background: #fff8e1;
+    border-radius: 6px;
+    padding: 6px 12px !important;
+    margin: 4px 0;
+    border-left: 3px solid #ffe082;
+}
+
+/* 뱃지 태그 */
+.lb-tag {
+    display: inline-block;
+    padding: 2px 7px;
+    border-radius: 10px;
+    font-size: 10px;
+    font-weight: 700;
+    margin-left: 6px;
+    vertical-align: middle;
+}
+
+.lb-tag-new {
+    background: #c8e6c9;
+    color: #2e7d32;
+}
+
+.lb-tag-upcoming {
+    background: #fff9c4;
+    color: #f57f17;
+    border: 1px solid #ffe082;
+}
+
 /* 스크롤바 커스터마이징 - 호버 시에만 표시 */
 .history-table::-webkit-scrollbar,
 .modal-body::-webkit-scrollbar,

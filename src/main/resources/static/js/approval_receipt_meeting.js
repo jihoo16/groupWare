@@ -49,19 +49,15 @@ document.addEventListener('DOMContentLoaded', async function() {
         return new TextEncoder().encode(str).length;
     }
     function updateContentByteCounter(value) {
-        const contentByteCountEl = document.getElementById('contentByteCount');
-        const contentByteHintEl = document.getElementById('contentByteHint');
-        if (!contentByteCountEl) return;
+        const statusEl = document.getElementById('contentByteStatus');
+        if (!statusEl) return;
         const bytes = getByteLength(value || '');
-        contentByteCountEl.textContent = bytes;
         if (bytes >= MIN_CONTENT_BYTES) {
-            contentByteCountEl.classList.add('sufficient');
-            if (contentByteHintEl) contentByteHintEl.textContent = '';
+            statusEl.className = 'byte-status-sufficient';
+            statusEl.textContent = `✓ 조건 충족 · ${bytes} bytes 입력됨`;
         } else {
-            contentByteCountEl.classList.remove('sufficient');
-            if (contentByteHintEl) {
-                contentByteHintEl.textContent = `회의비 증빙은 업무 관련성이 명확히 입증되어야 하므로, 내용을 구체적으로 작성해 주시기 바랍니다. (${MIN_CONTENT_BYTES - bytes}bytes 더 필요)`;
-            }
+            statusEl.className = 'byte-status-insufficient';
+            statusEl.textContent = `최소 ${MIN_CONTENT_BYTES} bytes 필요 · 현재 ${bytes} bytes (${MIN_CONTENT_BYTES - bytes} bytes 부족)`;
         }
     }
 
@@ -3105,8 +3101,8 @@ document.addEventListener('DOMContentLoaded', async function() {
         const currentEndTime = endTimeInput.value; // HH:mm 형식
         const projectIdx = projectIdxInput.value;
 
-        // 수정 모드일 때 현재 문서 idx 가져오기
-        const receiptMeetingId = getUrlParameter('documentIdx') || getUrlParameter('id');
+        // 수정 모드일 때 현재 회의록 idx (결재문서 idx와 다름 - data.idx)
+        const receiptMeetingId = currentReceiptMeetingIdx;
 
         // 모든 내부 참석자 ID 수집
         const internalAttendeeIds = attendeePersons
@@ -3205,7 +3201,11 @@ document.addEventListener('DOMContentLoaded', async function() {
 
         for (const attendeeId of validAttendeeIds) {
             try {
-                const response = await fetch(`/api/receipt-common/check-duplicate?date=${date}&attendeeIdx=${attendeeId}&projectIdx=${projectIdx}&startTime=${currentStartTime}&endTime=${currentEndTime}`);
+                let url = `/api/receipt-common/check-duplicate?date=${date}&attendeeIdx=${attendeeId}&projectIdx=${projectIdx}&startTime=${currentStartTime}&endTime=${currentEndTime}`;
+                if (currentReceiptMeetingIdx) {
+                    url += `&excludeReceiptIdx=${currentReceiptMeetingIdx}&excludeDocumentType=RCM`;
+                }
+                const response = await fetch(url);
 
                 // Content-Type 확인
                 const contentType = response.headers.get('content-type');
@@ -3628,7 +3628,11 @@ document.addEventListener('DOMContentLoaded', async function() {
 
             for (const person of filteredPersons) {
                 try {
-                    const response = await fetch(`/api/receipt-common/check-duplicate?date=${date}&attendeeIdx=${person.id}&projectIdx=${projectIdx}&startTime=${currentStartTime}&endTime=${currentEndTime}`);
+                    let url = `/api/receipt-common/check-duplicate?date=${date}&attendeeIdx=${person.id}&projectIdx=${projectIdx}&startTime=${currentStartTime}&endTime=${currentEndTime}`;
+                    if (currentReceiptMeetingIdx) {
+                        url += `&excludeReceiptIdx=${currentReceiptMeetingIdx}&excludeDocumentType=RCM`;
+                    }
+                    const response = await fetch(url);
                     if (response.ok) {
                         const data = await response.json();
                         if (Array.isArray(data) && data.length > 0) {
@@ -3660,7 +3664,13 @@ document.addEventListener('DOMContentLoaded', async function() {
             const selectedClass = isSelected ? 'selected' : '';
             const checkIcon = isSelected ? '<i class="fas fa-check-circle" style="color: #10b981; margin-left: auto;"></i>' : '';
 
-            // 중복 정보 표시
+            // 이미 참석자 목록에 있는지 표시
+            const isAttendee = currentAttendees.some(a => String(a.id) === String(person.id) && a.type === 'internal');
+            const attendeeBadge = isAttendee
+                ? `<span style="background: #dbeafe; color: #1e40af; padding: 2px 8px; border-radius: 4px; font-size: 11px; margin-left: 8px; white-space: nowrap;"><i class="fas fa-user-check"></i> 참석중</span>`
+                : '';
+
+            // 시간 중복 정보 표시
             const isDuplicate = duplicateInfo[person.id];
             let duplicateBadge = '';
             if (isDuplicate) {
@@ -3673,7 +3683,7 @@ document.addEventListener('DOMContentLoaded', async function() {
             return `
                 <div class="employee-item ${selectedClass}" data-id="${person.id}" data-has-conflict="${isDuplicate ? 'true' : 'false'}" onclick="selectAuthor(${person.id})">
                     <div class="employee-info">
-                        <div class="employee-name">${person.name}${duplicateBadge}</div>
+                        <div class="employee-name">${person.name}${attendeeBadge}${duplicateBadge}</div>
                         <div class="employee-details">${person.dept} · ${person.position}</div>
                     </div>
                     ${checkIcon}
@@ -3701,7 +3711,11 @@ document.addEventListener('DOMContentLoaded', async function() {
                 const projectIdx = projectIdxInput.value;
 
                 try {
-                    const response = await fetch(`/api/receipt-common/check-duplicate?date=${date}&attendeeIdx=${personId}&projectIdx=${projectIdx}&startTime=${currentStartTime}&endTime=${currentEndTime}`);
+                    let url = `/api/receipt-common/check-duplicate?date=${date}&attendeeIdx=${personId}&projectIdx=${projectIdx}&startTime=${currentStartTime}&endTime=${currentEndTime}`;
+                    if (currentReceiptMeetingIdx) {
+                        url += `&excludeReceiptIdx=${currentReceiptMeetingIdx}&excludeDocumentType=RCM`;
+                    }
+                    const response = await fetch(url);
                     if (response.ok) {
                         const data = await response.json();
                         if (Array.isArray(data) && data.length > 0) {
@@ -3786,7 +3800,11 @@ document.addEventListener('DOMContentLoaded', async function() {
     // 단일 참석자 시간 중복 체크 헬퍼 함수
     async function checkSingleAttendeeDuplicate(attendeeId, date, startTime, endTime, projectIdx) {
         try {
-            const response = await fetch(`/api/receipt-common/check-duplicate?date=${date}&attendeeIdx=${attendeeId}&projectIdx=${projectIdx}&startTime=${startTime}&endTime=${endTime}`);
+            let url = `/api/receipt-common/check-duplicate?date=${date}&attendeeIdx=${attendeeId}&projectIdx=${projectIdx}&startTime=${startTime}&endTime=${endTime}`;
+            if (currentReceiptMeetingIdx) {
+                url += `&excludeReceiptIdx=${currentReceiptMeetingIdx}&excludeDocumentType=RCM`;
+            }
+            const response = await fetch(url);
             if (response.ok) {
                 const data = await response.json();
                 if (Array.isArray(data) && data.length > 0) {
@@ -4208,7 +4226,7 @@ document.addEventListener('DOMContentLoaded', async function() {
                     }
                 }
 
-                const converted = {
+                return {
                     id: id,
                     name: attendee.name,
                     dept: dept,

@@ -72,6 +72,29 @@ public interface VacationService {
     VacationDetailDTO getVacationDetail(Long documentIdx);
 
     /**
+     * 단일 사용자 당일 연차 발생 처리 (processDailyAccruals 내부에서 사용자별 독립 트랜잭션으로 호출)
+     * @param userIdx 사용자 IDX
+     * @param targetDate 처리할 날짜
+     * @return 발생 건수
+     */
+    int processDailyAccrualsForUser(Long userIdx, LocalDate targetDate);
+
+    /**
+     * vacation_balance 계산 및 UPSERT (단일 사용자)
+     * - vacation_accrual_schedule 집계 + vacation_request 사용량으로 vacation_balance 갱신
+     * @param userIdx 사용자 IDX
+     * @param year 대상 연도
+     */
+    void computeAndSaveVacationBalance(Long userIdx, Integer year);
+
+    /**
+     * vacation_balance 전체 재계산 (전체 재직자)
+     * @param year 대상 연도
+     * @return 처리된 사용자 수
+     */
+    int computeAndSaveAllVacationBalances(Integer year);
+
+    /**
      * 연차신청서 삭제 (soft delete + 캘린더 일정 삭제)
      * @param documentIdx 문서 IDX (approval_documents의 idx)
      * @param currentUserIdx 삭제 요청자 사용자 IDX

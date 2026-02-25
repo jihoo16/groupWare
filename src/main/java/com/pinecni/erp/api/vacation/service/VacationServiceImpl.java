@@ -10,6 +10,7 @@ import com.pinecni.erp.api.vacation.dto.VacationUserInfoDTO;
 import com.pinecni.erp.api.vacation.dto.VacationCalculationDetailDTO;
 import com.pinecni.erp.api.vacation.dto.VacationRequestSaveDTO;
 import com.pinecni.erp.api.vacation.repository.VacationAccrualScheduleRepository;
+import com.pinecni.erp.api.vacation.repository.VacationBalanceRepository;
 import com.pinecni.erp.api.vacation.repository.VacationRequestRepository;
 import com.pinecni.erp.api.vacation.repository.VacationOfficialPdfRepository;
 import com.pinecni.erp.constant.CodeConstants;
@@ -17,6 +18,9 @@ import com.pinecni.erp.entity.*;
 import com.pinecni.erp.service.PdfGenerationService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.context.annotation.Lazy;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -24,6 +28,7 @@ import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.time.YearMonth;
 import java.time.format.DateTimeFormatter;
 import java.time.temporal.ChronoUnit;
 import java.util.*;
@@ -35,6 +40,7 @@ public class VacationServiceImpl implements VacationService {
 
     private final UserRepository userRepository;
     private final VacationAccrualScheduleRepository accrualScheduleRepository;
+    private final VacationBalanceRepository balanceRepository;
     private final VacationRequestRepository vacationRequestRepository;
     private final VacationOfficialPdfRepository vacationOfficialPdfRepository;
     private final ApprovalDocumentRepository approvalDocumentRepository;
@@ -45,8 +51,16 @@ public class VacationServiceImpl implements VacationService {
     private final com.pinecni.erp.api.calendar.service.HolidayService holidayService;
     private final PdfGenerationService pdfGenerationService;
 
+    /**
+     * self-proxy: 배치 메서드에서 각 사용자를 독립 트랜잭션으로 실행하기 위해 사용.
+     * @Lazy 로 순환 의존성 방지.
+     */
+    @Autowired
+    @Lazy
+    private VacationService self;
+
     @Override
-    @Transactional(readOnly = true)
+    @Transactional
     public VacationUserInfoDTO getUserVacationInfo(Long userIdx, Integer year) {
         log.info("[사용자 연차 정보 조회] userIdx: {}, year: {}", userIdx, year);
 
@@ -54,26 +68,60 @@ public class VacationServiceImpl implements VacationService {
         User user = userRepository.findById(userIdx)
                 .orElseThrow(() -> new IllegalArgumentException("사용자를 찾을 수 없습니다: " + userIdx));
 
-        // 2. 총 연차 = 기본연차 + 근속가산 직접 계산
-        BigDecimal calculatedTotalDays = calculateTotalDaysForYear(user, year);
+        // 2. 입사 전 연도 조회 차단 — 입사일이 있고 조회 연도 < 입사 연도이면 연차 없음 DTO 조기 반환
+        LocalDate joinDate = user.getEmpJoinDate();
+        if (joinDate != null && year < joinDate.getYear()) {
+            log.info("[입사 전 연도 조회] userIdx={}, empName={}, joinYear={}, requestedYear={}",
+                    userIdx, user.getEmpName(), joinDate.getYear(), year);
+            String preDeptName = codeRepository.findByGroupCodeAndCode(
+                            CodeConstants.GroupCode.DEPARTMENT.getCode(), user.getEmpDept())
+                    .map(Code::getCodeName).orElse(user.getEmpDept());
+            String prePosName = codeRepository.findByGroupCodeAndCode(
+                            CodeConstants.GroupCode.POSITION.getCode(), user.getEmpPosition())
+                    .map(Code::getCodeName).orElse(user.getEmpPosition());
+            return VacationUserInfoDTO.builder()
+                    .userIdx(user.getIdx())
+                    .empName(user.getEmpName())
+                    .empDept(user.getEmpDept())
+                    .empDeptName(preDeptName)
+                    .empPosition(user.getEmpPosition())
+                    .empPositionName(prePosName)
+                    .empJoinDate(joinDate.format(DateTimeFormatter.ISO_DATE))
+                    .year(year)
+                    .preEmployment(true)
+                    .totalDays(BigDecimal.ZERO)
+                    .usedDays(BigDecimal.ZERO)
+                    .remainingDays(BigDecimal.ZERO)
+                    .build();
+        }
 
-        // 3. 사용 연차 = vacation_request에서 직접 집계 (경조사 제외)
-        BigDecimal usedDays = calculateUsedDays(userIdx, year);
+        // 3. vacation_balance 조회
+        // balance가 없거나, accrual_schedule 자체가 없으면(=0값으로 저장된 stale 데이터 포함) 재계산
+        Optional<VacationBalance> balanceOpt = balanceRepository.findByUserIdxAndYear(userIdx, year);
+        boolean needsCompute = balanceOpt.isEmpty()
+                || !accrualScheduleRepository.existsByUserIdxAndYear(userIdx, year);
+        if (needsCompute) {
+            log.info("[vacation_balance 재계산] userIdx={}, year={}, reason={}", userIdx, year,
+                    balanceOpt.isEmpty() ? "balance 없음" : "accrual_schedule 없음(stale 0값 의심)");
+            computeAndSaveVacationBalance(userIdx, year);
+            balanceOpt = balanceRepository.findByUserIdxAndYear(userIdx, year);
+        }
+        VacationBalance balance = balanceOpt
+                .orElseThrow(() -> new IllegalStateException(
+                        "vacation_balance 생성 후 조회 실패: userIdx=" + userIdx + ", year=" + year));
 
-        // 4. 잔여 연차 = 총 연차 - 사용 연차
-        BigDecimal remainingDays = calculatedTotalDays.subtract(usedDays);
-
-        // 3. 부서명 조회 (C01 그룹)
-        String empDeptName = codeRepository.findByGroupCodeAndCode(CodeConstants.GroupCode.DEPARTMENT.getCode(), user.getEmpDept())
+        // 3. 부서명 / 직급명 조회
+        String empDeptName = codeRepository.findByGroupCodeAndCode(
+                        CodeConstants.GroupCode.DEPARTMENT.getCode(), user.getEmpDept())
                 .map(Code::getCodeName)
-                .orElse(user.getEmpDept()); // 코드명을 찾지 못하면 코드 자체 반환
+                .orElse(user.getEmpDept());
 
-        // 4. 직급명 조회 (C02 그룹)
-        String empPositionName = codeRepository.findByGroupCodeAndCode(CodeConstants.GroupCode.POSITION.getCode(), user.getEmpPosition())
+        String empPositionName = codeRepository.findByGroupCodeAndCode(
+                        CodeConstants.GroupCode.POSITION.getCode(), user.getEmpPosition())
                 .map(Code::getCodeName)
-                .orElse(user.getEmpPosition()); // 코드명을 찾지 못하면 코드 자체 반환
+                .orElse(user.getEmpPosition());
 
-        // 5. DTO 생성
+        // 4. DTO 생성 (vacation_balance 기반)
         VacationUserInfoDTO dto = VacationUserInfoDTO.builder()
                 .userIdx(user.getIdx())
                 .empName(user.getEmpName())
@@ -84,13 +132,28 @@ public class VacationServiceImpl implements VacationService {
                 .empAddress(user.getEmpAddress())
                 .empBirth(user.getEmpBirth() != null ? user.getEmpBirth().format(DateTimeFormatter.ISO_DATE) : null)
                 .empPhone(user.getEmpPhone())
+                .empJoinDate(user.getEmpJoinDate() != null ? user.getEmpJoinDate().format(DateTimeFormatter.ISO_DATE) : null)
                 .year(year)
-                .totalDays(calculatedTotalDays)
-                .usedDays(usedDays)
-                .remainingDays(remainingDays)
+                // 집계값 (vacation_balance)
+                .totalDays(balance.getGrantedDays())
+                .usedDays(balance.getUsedDays())
+                .remainingDays(balance.getRemainingDays())
+                // 상세 breakdown
+                .annualLeaveDays(balance.getAnnualLeaveDays())
+                .monthlyLeaveDays(balance.getMonthlyLeaveDays())
+                .proportionalDays(balance.getProportionalDays())
+                .compensatoryDays(balance.getCompensatoryDays())
+                .expiredMonthlyDays(balance.getExpiredMonthlyDays())
+                .earlyUseDays(balance.getEarlyUseDays())
+                // 다음 발생 예정
+                .nextAccrualDate(balance.getNextAccrualDate() != null
+                        ? balance.getNextAccrualDate().format(DateTimeFormatter.ISO_DATE) : null)
+                .nextAccrualDays(balance.getNextAccrualDays())
+                .nextAccrualType(balance.getNextAccrualType())
+                .nextAccrualDesc(balance.getNextAccrualDesc())
                 .build();
 
-        log.info("[사용자 연차 정보 조회 완료] empName: {}, totalDays: {}, usedDays: {}, remainingDays: {}",
+        log.info("[사용자 연차 정보 조회 완료] empName={}, granted={}, used={}, remaining={}",
                 dto.getEmpName(), dto.getTotalDays(), dto.getUsedDays(), dto.getRemainingDays());
 
         return dto;
@@ -123,29 +186,57 @@ public class VacationServiceImpl implements VacationService {
 
         List<VacationAccrualSchedule> schedules = new ArrayList<>();
 
+        // 공통 만료일: 기본연차/근속가산/비례연차/보상휴가 = 해당 연도 12/31
+        LocalDate yearEndExpiry = yearEnd;
+        // 월차 만료일: 1주년 전날 (마지막 월차 제외)
+        LocalDate monthlyExpiry = oneYearAnniversary.minusDays(1);
+        // 마지막 월차 만료일: 1주년 월 말일
+        LocalDate lastMonthlyExpiry = YearMonth.from(oneYearAnniversary).atEndOfMonth();
+
         // === Case 1: 1년 이상 근속자 ===
         if (yearsOfServiceAtYearStart >= 1) {
             // 1월 1일: 기본 15일 발생
             schedules.add(createAccrual(userIdx, year, yearStart,
                     VacationAccrualSchedule.TYPE_BASE, new BigDecimal("15.0"),
-                    "기본 연차 15일", operatorUserIdx));
+                    "기본 연차 15일", yearEndExpiry, operatorUserIdx));
 
-            // 입사일 기준 만 2년, 4년, 6년... 근속가산 발생
-            for (int seniorityYear = 2; seniorityYear <= 20; seniorityYear += 2) {
+            // ── 누적 근속가산: 연초(1/1) 기준으로 이미 발생한 가산일 합산 → 1/1에 1개 항목으로 추가
+            // (연초 당일 기념일 포함: isBefore || equals yearStart)
+            int accumulated = 0;
+            for (int seniorityYear = 3; seniorityYear <= 21; seniorityYear += 2) {
                 LocalDate seniorityDate = joinDate.plusYears(seniorityYear);
-                if (seniorityDate.getYear() == year) {
-                    int bonusDays = seniorityYear / 2;
-                    if (bonusDays > 10) bonusDays = 10; // 최대 10일
-
-                    schedules.add(createAccrual(userIdx, year, seniorityDate,
-                            VacationAccrualSchedule.TYPE_SENIORITY, new BigDecimal(bonusDays),
-                            "만 " + seniorityYear + "년 근속 가산", operatorUserIdx));
+                if (!seniorityDate.isAfter(yearStart)) {
+                    accumulated++;
+                    if (accumulated >= 10) { accumulated = 10; break; }
                 }
+            }
+            if (accumulated > 0) {
+                schedules.add(createAccrual(userIdx, year, yearStart,
+                        VacationAccrualSchedule.TYPE_SENIORITY, new BigDecimal(accumulated),
+                        "누적 근속가산 +" + accumulated + "일", yearEndExpiry, operatorUserIdx));
+            }
+
+            // ── 이번 연도 신규 근속가산: 연초 이후 기념일이 올해인 경우 해당 날짜에 +1일
+            for (int seniorityYear = 3; seniorityYear <= 21; seniorityYear += 2) {
+                LocalDate seniorityDate = joinDate.plusYears(seniorityYear);
+                if (seniorityDate.isAfter(yearStart) && seniorityDate.getYear() == year) {
+                    schedules.add(createAccrual(userIdx, year, seniorityDate,
+                            VacationAccrualSchedule.TYPE_SENIORITY, new BigDecimal("1.0"),
+                            "만 " + seniorityYear + "년 근속 가산 (+1일)", yearEndExpiry, operatorUserIdx));
+                }
+            }
+
+            // 만 10년 보상휴가: 5일 (1회한)
+            LocalDate tenYearDate = joinDate.plusYears(10);
+            if (tenYearDate.getYear() == year) {
+                schedules.add(createAccrual(userIdx, year, tenYearDate,
+                        VacationAccrualSchedule.TYPE_COMPENSATORY, new BigDecimal("5.0"),
+                        "만 10년 근속 보상 휴가 (+5일)", yearEndExpiry, operatorUserIdx));
             }
         }
         // === Case 2: 1년 초과하는 해 ===
         else if (oneYearAnniversary.getYear() == year) {
-            // 월차: 매월 입사일+1에 1일 발생 (1월 ~ 1년 전월까지)
+            // 월차: 1월 ~ 1주년 전월까지 (마지막 월차는 다른 expiry_date 적용)
             int monthlyEndMonth = oneYearAnniversary.getMonthValue() - 1;
             for (int month = 1; month <= monthlyEndMonth; month++) {
                 LocalDate monthlyDate = LocalDate.of(year, month, joinDate.getDayOfMonth() + 1);
@@ -154,29 +245,32 @@ public class VacationServiceImpl implements VacationService {
                     monthlyDate = LocalDate.of(year, month, 1).plusMonths(1).minusDays(1);
                 }
 
+                boolean isLast = (month == monthlyEndMonth);
+                LocalDate expiryDate = isLast ? lastMonthlyExpiry : monthlyExpiry;
+
                 schedules.add(createAccrual(userIdx, year, monthlyDate,
                         VacationAccrualSchedule.TYPE_MONTHLY, new BigDecimal("1.0"),
-                        month + "월 만근 월차", operatorUserIdx));
+                        month + "월 만근 월차", expiryDate, operatorUserIdx));
             }
 
-            // 비례 연차: 1년일에 발생
+            // 비례 연차: 1주년일에 발생
             long daysInYear = yearEnd.isLeapYear() ? 366 : 365;
             long remainingDays = ChronoUnit.DAYS.between(oneYearAnniversary, yearEnd) + 1;
             BigDecimal proportionalDays = new BigDecimal(remainingDays)
                     .divide(new BigDecimal(daysInYear), 4, RoundingMode.HALF_UP)
                     .multiply(new BigDecimal("15"))
-                    .setScale(1, RoundingMode.HALF_UP);
+                    .setScale(0, RoundingMode.HALF_UP);
 
             schedules.add(createAccrual(userIdx, year, oneYearAnniversary,
                     VacationAccrualSchedule.TYPE_PROPORTIONAL, proportionalDays,
-                    "비례 연차 (1년일~12/31)", operatorUserIdx));
+                    "비례 연차 (1년일~12/31)", yearEndExpiry, operatorUserIdx));
         }
         // === Case 3: 1년 미만 ===
         else {
             int joinMonth = joinDate.getMonthValue();
             int joinDay = joinDate.getDayOfMonth();
 
-            // 입사 연도인 경우: 입사월+1 ~ 12월
+            // 입사 연도인 경우: 입사월+1 ~ 12월 (모두 마지막 아님)
             if (joinDate.getYear() == year) {
                 for (int month = joinMonth + 1; month <= 12; month++) {
                     LocalDate monthlyDate = LocalDate.of(year, month, joinDay + 1);
@@ -187,10 +281,10 @@ public class VacationServiceImpl implements VacationService {
 
                     schedules.add(createAccrual(userIdx, year, monthlyDate,
                             VacationAccrualSchedule.TYPE_MONTHLY, new BigDecimal("1.0"),
-                            month + "월 만근 월차", operatorUserIdx));
+                            month + "월 만근 월차", monthlyExpiry, operatorUserIdx));
                 }
             }
-            // 입사 다음 해이지만 1년 미만: 1월 ~ 12월
+            // 입사 다음 해이지만 1년 미만: 1월 ~ 12월 (모두 마지막 아님)
             else if (oneYearAnniversary.getYear() > year) {
                 for (int month = 1; month <= 12; month++) {
                     LocalDate monthlyDate = LocalDate.of(year, month, joinDay + 1);
@@ -201,7 +295,7 @@ public class VacationServiceImpl implements VacationService {
 
                     schedules.add(createAccrual(userIdx, year, monthlyDate,
                             VacationAccrualSchedule.TYPE_MONTHLY, new BigDecimal("1.0"),
-                            month + "월 만근 월차", operatorUserIdx));
+                            month + "월 만근 월차", monthlyExpiry, operatorUserIdx));
                 }
             }
         }
@@ -215,17 +309,17 @@ public class VacationServiceImpl implements VacationService {
     }
 
     @Override
-    @Transactional
+    // @Transactional 없음 — self 프록시를 통해 사용자별 독립 트랜잭션으로 실행
     public int generateAllVacationAccrualSchedules(Integer year) {
         log.info("[전체 연차 발생 일정 생성] year: {}", year);
 
-        // 재직 중인 모든 사용자 조회
         List<User> activeUsers = userRepository.findAllActive();
-
         int count = 0;
+
         for (User user : activeUsers) {
             try {
-                generateVacationAccrualSchedule(user.getIdx(), year, 1L); // operatorUserIdx = 1 (시스템)
+                // self 프록시 호출 → 사용자마다 독립 트랜잭션 (한 명 실패해도 다음 사람에 영향 없음)
+                self.generateVacationAccrualSchedule(user.getIdx(), year, 1L);
                 count++;
             } catch (Exception e) {
                 log.error("[연차 발생 일정 생성 실패] userIdx: {}, error: {}", user.getIdx(), e.getMessage());
@@ -237,7 +331,7 @@ public class VacationServiceImpl implements VacationService {
     }
 
     @Override
-    @Transactional
+    // @Transactional 없음 — self 프록시를 통해 사용자별 독립 트랜잭션으로 실행
     public int processDailyAccruals(LocalDate targetDate) {
         log.info("[일일 연차 발생 처리] date: {}", targetDate);
 
@@ -245,99 +339,233 @@ public class VacationServiceImpl implements VacationService {
         List<User> activeUsers = userRepository.findAllActive();
 
         for (User user : activeUsers) {
-            LocalDate joinDate = user.getEmpJoinDate();
-            if (joinDate == null) continue;
-
-            int year = targetDate.getYear();
-            int joinDay = joinDate.getDayOfMonth();
-            LocalDate oneYearAnniversary = joinDate.plusYears(1);
-            long yearsOfServiceAtYearStart = ChronoUnit.YEARS.between(joinDate, LocalDate.of(year, 1, 1));
-
-            List<VacationAccrualSchedule> todayAccruals = new ArrayList<>();
-
-            // 1. 기본 연차 발생 (1월 1일, 1년 이상 근속자)
-            if (targetDate.getMonthValue() == 1 && targetDate.getDayOfMonth() == 1 && yearsOfServiceAtYearStart >= 1) {
-                if (!accrualScheduleRepository.existsByUserIdxAndYearAndAccrualDateAndAccrualType(
-                        user.getIdx(), year, targetDate, VacationAccrualSchedule.TYPE_BASE)) {
-                    todayAccruals.add(createAccrual(user.getIdx(), year, targetDate,
-                            VacationAccrualSchedule.TYPE_BASE, new BigDecimal("15.0"),
-                            "기본 연차 15일", 1L));
-                }
-            }
-
-            // 2. 근속가산 발생 (입사일 기준 만 2년, 4년, 6년...)
-            for (int seniorityYear = 2; seniorityYear <= 20; seniorityYear += 2) {
-                LocalDate seniorityDate = joinDate.plusYears(seniorityYear);
-                if (seniorityDate.equals(targetDate)) {
-                    int bonusDays = seniorityYear / 2;
-                    if (bonusDays > 10) bonusDays = 10;
-
-                    if (!accrualScheduleRepository.existsByUserIdxAndYearAndAccrualDateAndAccrualType(
-                            user.getIdx(), year, targetDate, VacationAccrualSchedule.TYPE_SENIORITY)) {
-                        todayAccruals.add(createAccrual(user.getIdx(), year, targetDate,
-                                VacationAccrualSchedule.TYPE_SENIORITY, new BigDecimal(bonusDays),
-                                "만 " + seniorityYear + "년 근속 가산", 1L));
-                    }
-                }
-            }
-
-            // 3. 월차 발생 (매월 입사일+1, 간소화: 만근 가정)
-            if (targetDate.getDayOfMonth() == joinDay + 1) {
-                boolean shouldAccrue = false;
-
-                // Case 2: 1년 초과하는 해
-                if (oneYearAnniversary.getYear() == year) {
-                    int monthlyEndMonth = oneYearAnniversary.getMonthValue() - 1;
-                    if (targetDate.getMonthValue() <= monthlyEndMonth) {
-                        shouldAccrue = true;
-                    }
-                }
-                // Case 3: 1년 미만
-                else if (yearsOfServiceAtYearStart < 1) {
-                    // 입사 연도: 입사월+1 ~ 12월
-                    if (joinDate.getYear() == year && targetDate.getMonthValue() > joinDate.getMonthValue()) {
-                        shouldAccrue = true;
-                    }
-                    // 입사 다음 해: 1월 ~ 12월
-                    else if (oneYearAnniversary.getYear() > year && joinDate.getYear() < year) {
-                        shouldAccrue = true;
-                    }
-                }
-
-                if (shouldAccrue && !accrualScheduleRepository.existsByUserIdxAndYearAndAccrualDateAndAccrualType(
-                        user.getIdx(), year, targetDate, VacationAccrualSchedule.TYPE_MONTHLY)) {
-                    todayAccruals.add(createAccrual(user.getIdx(), year, targetDate,
-                            VacationAccrualSchedule.TYPE_MONTHLY, new BigDecimal("1.0"),
-                            targetDate.getMonthValue() + "월 만근 월차", 1L));
-                }
-            }
-
-            // 4. 비례 연차 발생 (1년일)
-            if (oneYearAnniversary.equals(targetDate)) {
-                LocalDate yearEnd = LocalDate.of(year, 12, 31);
-                long daysInYear = yearEnd.isLeapYear() ? 366 : 365;
-                long remainingDays = ChronoUnit.DAYS.between(oneYearAnniversary, yearEnd) + 1;
-                BigDecimal proportionalDays = new BigDecimal(remainingDays)
-                        .divide(new BigDecimal(daysInYear), 4, RoundingMode.HALF_UP)
-                        .multiply(new BigDecimal("15"))
-                        .setScale(1, RoundingMode.HALF_UP);
-
-                if (!accrualScheduleRepository.existsByUserIdxAndYearAndAccrualDateAndAccrualType(
-                        user.getIdx(), year, targetDate, VacationAccrualSchedule.TYPE_PROPORTIONAL)) {
-                    todayAccruals.add(createAccrual(user.getIdx(), year, targetDate,
-                            VacationAccrualSchedule.TYPE_PROPORTIONAL, proportionalDays,
-                            "비례 연차 (1년일~12/31)", 1L));
-                }
-            }
-
-            // 저장
-            if (!todayAccruals.isEmpty()) {
-                accrualScheduleRepository.saveAll(todayAccruals);
-                count += todayAccruals.size();
+            if (user.getEmpJoinDate() == null) continue;
+            try {
+                count += self.processDailyAccrualsForUser(user.getIdx(), targetDate);
+            } catch (Exception e) {
+                log.error("[일일 연차 발생 처리 실패] userIdx: {}, error: {}", user.getIdx(), e.getMessage());
             }
         }
 
         log.info("[일일 연차 발생 처리 완료] date: {}, 발생 건수: {}", targetDate, count);
+        return count;
+    }
+
+    @Override
+    @Transactional
+    public int processDailyAccrualsForUser(Long userIdx, LocalDate targetDate) {
+        User user = userRepository.findById(userIdx)
+                .orElseThrow(() -> new IllegalArgumentException("사용자를 찾을 수 없습니다: " + userIdx));
+
+        LocalDate joinDate = user.getEmpJoinDate();
+        if (joinDate == null) return 0;
+
+        int year = targetDate.getYear();
+        int joinDay = joinDate.getDayOfMonth();
+        LocalDate oneYearAnniversary = joinDate.plusYears(1);
+        long yearsOfServiceAtYearStart = ChronoUnit.YEARS.between(joinDate, LocalDate.of(year, 1, 1));
+
+        List<VacationAccrualSchedule> todayAccruals = new ArrayList<>();
+
+        LocalDate yearEnd = LocalDate.of(year, 12, 31);
+        LocalDate monthlyExpiry     = oneYearAnniversary.minusDays(1);
+        LocalDate lastMonthlyExpiry = YearMonth.from(oneYearAnniversary).atEndOfMonth();
+
+        // 1. 기본 연차 발생 (1월 1일, 1년 이상 근속자)
+        if (targetDate.getMonthValue() == 1 && targetDate.getDayOfMonth() == 1 && yearsOfServiceAtYearStart >= 1) {
+            if (!accrualScheduleRepository.existsByUserIdxAndYearAndAccrualDateAndAccrualType(
+                    userIdx, year, targetDate, VacationAccrualSchedule.TYPE_BASE)) {
+                todayAccruals.add(createAccrual(userIdx, year, targetDate,
+                        VacationAccrualSchedule.TYPE_BASE, new BigDecimal("15.0"),
+                        "기본 연차 15일", yearEnd, 1L));
+            }
+        }
+
+        // 2. 근속가산 발생 (만 3년부터 매 2년마다 +1일)
+        for (int seniorityYear = 3; seniorityYear <= 21; seniorityYear += 2) {
+            LocalDate seniorityDate = joinDate.plusYears(seniorityYear);
+            if (seniorityDate.equals(targetDate)) {
+                if (!accrualScheduleRepository.existsByUserIdxAndYearAndAccrualDateAndAccrualType(
+                        userIdx, year, targetDate, VacationAccrualSchedule.TYPE_SENIORITY)) {
+                    todayAccruals.add(createAccrual(userIdx, year, targetDate,
+                            VacationAccrualSchedule.TYPE_SENIORITY, new BigDecimal("1.0"),
+                            "만 " + seniorityYear + "년 근속 가산 (+1일)", yearEnd, 1L));
+                }
+            }
+        }
+
+        // 2-1. 보상휴가 발생 (만 10년 주년일, 5일, 1회한)
+        LocalDate tenYearDate = joinDate.plusYears(10);
+        if (tenYearDate.equals(targetDate)) {
+            if (!accrualScheduleRepository.existsByUserIdxAndYearAndAccrualDateAndAccrualType(
+                    userIdx, year, targetDate, VacationAccrualSchedule.TYPE_COMPENSATORY)) {
+                todayAccruals.add(createAccrual(userIdx, year, targetDate,
+                        VacationAccrualSchedule.TYPE_COMPENSATORY, new BigDecimal("5.0"),
+                        "만 10년 근속 보상 휴가 (+5일)", yearEnd, 1L));
+            }
+        }
+
+        // 3. 월차 발생 (매월 입사일+1, 간소화: 만근 가정)
+        if (targetDate.getDayOfMonth() == joinDay + 1) {
+            boolean shouldAccrue = false;
+            boolean isLastMonthly = false;
+
+            // Case 2: 1년 초과하는 해
+            if (oneYearAnniversary.getYear() == year) {
+                int monthlyEndMonth = oneYearAnniversary.getMonthValue() - 1;
+                if (targetDate.getMonthValue() <= monthlyEndMonth) {
+                    shouldAccrue = true;
+                    isLastMonthly = (targetDate.getMonthValue() == monthlyEndMonth);
+                }
+            }
+            // Case 3: 1년 미만
+            else if (yearsOfServiceAtYearStart < 1) {
+                if (joinDate.getYear() == year && targetDate.getMonthValue() > joinDate.getMonthValue()) {
+                    shouldAccrue = true;
+                } else if (oneYearAnniversary.getYear() > year && joinDate.getYear() < year) {
+                    shouldAccrue = true;
+                }
+            }
+
+            if (shouldAccrue && !accrualScheduleRepository.existsByUserIdxAndYearAndAccrualDateAndAccrualType(
+                    userIdx, year, targetDate, VacationAccrualSchedule.TYPE_MONTHLY)) {
+                LocalDate expiryDate = isLastMonthly ? lastMonthlyExpiry : monthlyExpiry;
+                todayAccruals.add(createAccrual(userIdx, year, targetDate,
+                        VacationAccrualSchedule.TYPE_MONTHLY, new BigDecimal("1.0"),
+                        targetDate.getMonthValue() + "월 만근 월차", expiryDate, 1L));
+            }
+        }
+
+        // 4. 비례 연차 발생 (1년일)
+        if (oneYearAnniversary.equals(targetDate)) {
+            long daysInYear = yearEnd.isLeapYear() ? 366 : 365;
+            long remainingDays = ChronoUnit.DAYS.between(oneYearAnniversary, yearEnd) + 1;
+            BigDecimal proportionalDays = new BigDecimal(remainingDays)
+                    .divide(new BigDecimal(daysInYear), 4, RoundingMode.HALF_UP)
+                    .multiply(new BigDecimal("15"))
+                    .setScale(0, RoundingMode.HALF_UP);
+
+            if (!accrualScheduleRepository.existsByUserIdxAndYearAndAccrualDateAndAccrualType(
+                    userIdx, year, targetDate, VacationAccrualSchedule.TYPE_PROPORTIONAL)) {
+                todayAccruals.add(createAccrual(userIdx, year, targetDate,
+                        VacationAccrualSchedule.TYPE_PROPORTIONAL, proportionalDays,
+                        "비례 연차 (1년일~12/31)", yearEnd, 1L));
+            }
+        }
+
+        if (!todayAccruals.isEmpty()) {
+            accrualScheduleRepository.saveAll(todayAccruals);
+        }
+        return todayAccruals.size();
+    }
+
+    @Override
+    @Transactional
+    public void computeAndSaveVacationBalance(Long userIdx, Integer year) {
+        log.info("[vacation_balance 계산/저장] userIdx: {}, year: {}", userIdx, year);
+
+        // ── 과거 연도 포함, accrual_schedule 없으면 먼저 생성 ───────────────────
+        if (!accrualScheduleRepository.existsByUserIdxAndYear(userIdx, year)) {
+            log.info("[vacation_accrual_schedule 없음 → 즉시 생성] userIdx={}, year={}", userIdx, year);
+            generateVacationAccrualSchedule(userIdx, year, null);
+        }
+
+        // ── 기준일: 현재 연도만 오늘, 과거·미래 연도는 연말(12/31) ─────────────────
+        // 과거: 해당 연도 전체 실적 집계
+        // 현재: 오늘까지 발생분만 집계
+        // 미래: 해당 연도 예상 전체 집계 (사용자가 미래 연차 계획 확인 등)
+        int nowYear = LocalDate.now().getYear();
+        LocalDate effectiveDate = (year == nowYear)
+                ? LocalDate.now()
+                : LocalDate.of(year, 12, 31);
+
+        // ── 과거 연도: 스케줄러가 미실행된 상태이므로 만료 월차를 즉시 처리 ────────
+        if (year < nowYear) {
+            accrualScheduleRepository.markExpiredMonthlyForUser(userIdx, year, effectiveDate);
+        }
+
+        // 1. 각 타입별 발생 일수 집계 (effectiveDate까지 발생분)
+        BigDecimal annualLeaveDays    = accrualScheduleRepository.sumAnnualLeaveDays(userIdx, year, effectiveDate);
+        BigDecimal proportionalDays   = accrualScheduleRepository.sumProportionalDays(userIdx, year, effectiveDate);
+        BigDecimal compensatoryDays   = accrualScheduleRepository.sumCompensatoryDays(userIdx, year, effectiveDate);
+        BigDecimal monthlyLeaveDays   = accrualScheduleRepository.sumValidMonthlyDays(userIdx, year, effectiveDate);
+        BigDecimal expiredMonthlyDays = accrualScheduleRepository.sumExpiredMonthlyDays(userIdx, year);
+
+        // 2. 부여일수 합계 (유효한 것만)
+        BigDecimal grantedDays = annualLeaveDays.add(monthlyLeaveDays)
+                                                .add(proportionalDays)
+                                                .add(compensatoryDays);
+
+        // 3. 사용 연차 (경조사, 기타 제외)
+        BigDecimal usedDays = calculateUsedDays(userIdx, year);
+
+        // 4. 유효 부여 = 부여 - 소멸월차, 잔여 = 유효부여 - 사용
+        BigDecimal effectiveGranted = grantedDays.subtract(expiredMonthlyDays);
+        BigDecimal remainingDays    = effectiveGranted.subtract(usedDays);
+
+        // 5. 조기사용연차 = MAX(0, 사용 - 유효부여)
+        BigDecimal earlyUseDays = usedDays.subtract(effectiveGranted).max(BigDecimal.ZERO);
+
+        // 6. 다음 발생 예정 조회 (현재·미래 연도만 의미 있음; 과거 연도는 null 처리)
+        LocalDate  nextAccrualDate = null;
+        BigDecimal nextAccrualDays = null;
+        String     nextAccrualType = null;
+        String     nextAccrualDesc = null;
+
+        if (year >= nowYear) {
+            List<VacationAccrualSchedule> upcoming = accrualScheduleRepository.findUpcomingAccruals(
+                    userIdx, LocalDate.now(), PageRequest.of(0, 1));
+            if (!upcoming.isEmpty()) {
+                VacationAccrualSchedule next = upcoming.get(0);
+                nextAccrualDate = next.getAccrualDate();
+                nextAccrualDays = next.getDays();
+                nextAccrualType = next.getAccrualType();
+                nextAccrualDesc = next.getDescription();
+            }
+        }
+
+        // 7. UPSERT: 기존 행이 있으면 갱신, 없으면 신규 생성
+        VacationBalance balance = balanceRepository.findByUserIdxAndYear(userIdx, year)
+                .orElse(VacationBalance.builder().userIdx(userIdx).year(year).build());
+
+        balance.setGrantedDays(grantedDays);
+        balance.setAnnualLeaveDays(annualLeaveDays);
+        balance.setMonthlyLeaveDays(monthlyLeaveDays);
+        balance.setProportionalDays(proportionalDays);
+        balance.setCompensatoryDays(compensatoryDays);
+        balance.setExpiredMonthlyDays(expiredMonthlyDays);
+        balance.setUsedDays(usedDays);
+        balance.setEarlyUseDays(earlyUseDays);
+        balance.setRemainingDays(remainingDays);
+        balance.setNextAccrualDate(nextAccrualDate);
+        balance.setNextAccrualDays(nextAccrualDays);
+        balance.setNextAccrualType(nextAccrualType);
+        balance.setNextAccrualDesc(nextAccrualDesc);
+
+        balanceRepository.save(balance);
+
+        log.info("[vacation_balance 갱신 완료] userIdx={}, year={}, granted={}, used={}, remaining={}",
+                userIdx, year, grantedDays, usedDays, remainingDays);
+    }
+
+    @Override
+    // @Transactional 없음 — self 프록시를 통해 사용자별 독립 트랜잭션으로 실행
+    public int computeAndSaveAllVacationBalances(Integer year) {
+        log.info("[전체 vacation_balance 갱신] year: {}", year);
+
+        List<User> activeUsers = userRepository.findAllActive();
+        int count = 0;
+
+        for (User user : activeUsers) {
+            try {
+                self.computeAndSaveVacationBalance(user.getIdx(), year);
+                count++;
+            } catch (Exception e) {
+                log.error("[vacation_balance 갱신 실패] userIdx={}, error={}", user.getIdx(), e.getMessage());
+            }
+        }
+
+        log.info("[전체 vacation_balance 갱신 완료] year={}, 처리: {}명", year, count);
         return count;
     }
 
@@ -346,7 +574,8 @@ public class VacationServiceImpl implements VacationService {
      */
     private VacationAccrualSchedule createAccrual(Long userIdx, Integer year, LocalDate accrualDate,
                                                    String accrualType, BigDecimal days,
-                                                   String description, Long operatorUserIdx) {
+                                                   String description, LocalDate expiryDate,
+                                                   Long operatorUserIdx) {
         return VacationAccrualSchedule.builder()
                 .userIdx(userIdx)
                 .year(year)
@@ -354,6 +583,8 @@ public class VacationServiceImpl implements VacationService {
                 .accrualType(accrualType)
                 .days(days)
                 .description(description)
+                .expiryDate(expiryDate)
+                .isExpired(false)
                 .createdUserIdx(operatorUserIdx)
                 .build();
     }
@@ -419,10 +650,10 @@ public class VacationServiceImpl implements VacationService {
             builder.baseVacationDays(new BigDecimal("15.0"));
             totalDays = totalDays.add(new BigDecimal("15.0"));
 
-            // 근속가산 연차 계산 (만 2년, 4년, 6년... 누적)
+            // 근속가산 연차 계산 (만 3년, 5년, 7년... 누적 — 근로기준법 기준)
             // 1. 연초(1월 1일) 기준으로 이미 누적된 근속가산 계산
             int accumulatedBonusDays = 0;
-            for (int seniorityYear = 2; seniorityYear <= 20; seniorityYear += 2) {
+            for (int seniorityYear = 3; seniorityYear <= 21; seniorityYear += 2) {
                 LocalDate seniorityDate = joinDate.plusYears(seniorityYear);
                 if (seniorityDate.isBefore(yearStart) || seniorityDate.equals(yearStart)) {
                     accumulatedBonusDays++;
@@ -438,9 +669,9 @@ public class VacationServiceImpl implements VacationService {
             String newServiceBonusDesc = null;
             int newBonusDays = 0;
 
-            for (int seniorityYear = 2; seniorityYear <= 20; seniorityYear += 2) {
+            for (int seniorityYear = 3; seniorityYear <= 21; seniorityYear += 2) {
                 LocalDate seniorityDate = joinDate.plusYears(seniorityYear);
-                if (seniorityDate.getYear() == year && accumulatedBonusDays < 10) {
+                if (seniorityDate.getYear() == year && seniorityDate.isAfter(yearStart) && accumulatedBonusDays < 10) {
                     newBonusDays = 1; // 해당 연도에 추가되는 일수
                     newServiceBonusDate = seniorityDate;
                     newServiceBonusDesc = "만 " + seniorityYear + "년 근속 가산";
@@ -581,9 +812,9 @@ public class VacationServiceImpl implements VacationService {
         if (yearsOfServiceAtYearStart >= 1) {
             BigDecimal total = new BigDecimal("15.0");
 
-            // 연초 기준 누적 근속가산
+            // 연초 기준 누적 근속가산 (만 3년, 5년, 7년... — 근로기준법 기준)
             int accumulatedBonusDays = 0;
-            for (int seniorityYear = 2; seniorityYear <= 20; seniorityYear += 2) {
+            for (int seniorityYear = 3; seniorityYear <= 21; seniorityYear += 2) {
                 LocalDate seniorityDate = joinDate.plusYears(seniorityYear);
                 if (seniorityDate.isBefore(yearStart) || seniorityDate.equals(yearStart)) {
                     accumulatedBonusDays++;
@@ -596,9 +827,9 @@ public class VacationServiceImpl implements VacationService {
 
             // 해당 연도 신규 발생 근속가산
             int newBonusDays = 0;
-            for (int seniorityYear = 2; seniorityYear <= 20; seniorityYear += 2) {
+            for (int seniorityYear = 3; seniorityYear <= 21; seniorityYear += 2) {
                 LocalDate seniorityDate = joinDate.plusYears(seniorityYear);
-                if (seniorityDate.getYear() == year && accumulatedBonusDays < 10) {
+                if (seniorityDate.getYear() == year && seniorityDate.isAfter(yearStart) && accumulatedBonusDays < 10) {
                     newBonusDays = 1;
                     break;
                 }
@@ -707,13 +938,12 @@ public class VacationServiceImpl implements VacationService {
         log.info("[보안 검증 완료] ✓ 중복 날짜 없음, ✓ 본인결혼 중복 없음, ✓ 일수 정확, ✓ 잔여 연차 충분 (총 신청: {}일)", totalRequestedDays);
         // ===== 🔒 보안 검증 완료 =====
 
-        // 8. 현재 연차 잔액 계산
+        // 8. 신청 후 잔여 연차 계산 (vacation_balance 기반, 없으면 실시간 폴백)
         int currentYear = LocalDate.now().getYear();
-        BigDecimal totalDays = calculateTotalDaysForYear(user, currentYear);
-        BigDecimal usedDays = calculateUsedDays(userIdx, currentYear);
-        BigDecimal currentRemainingDays = totalDays.subtract(usedDays);
-
-        // 신청 후 잔여 연차 계산 (경조사와 기타는 연차 차감 대상이 아니므로 제외)
+        BigDecimal currentRemainingDays = balanceRepository.findByUserIdxAndYear(userIdx, currentYear)
+                .map(VacationBalance::getRemainingDays)
+                .orElseGet(() -> calculateTotalDaysForYear(user, currentYear)
+                        .subtract(calculateUsedDays(userIdx, currentYear)));
         BigDecimal remainingDaysAfterApply = currentRemainingDays.subtract(totalRequestedDaysExcludingGyeongjosa);
 
         // 9. ApprovalDocument 생성 (문서 메타데이터)
@@ -770,6 +1000,21 @@ public class VacationServiceImpl implements VacationService {
             log.info("[연차 기간 저장] startDate: {}, endDate: {}, days: {}, type: {}",
                     period.getStartDate(), period.getEndDate(), period.getDays(), period.getVacationType());
             // 캘린더 일정은 관리자 승인 시 생성됩니다.
+        }
+
+        // 11. vacation_balance 즉시 갱신 (신청된 연도별 UPSERT)
+        try {
+            Set<Integer> affectedYears = new HashSet<>();
+            for (VacationRequestSaveDTO.VacationPeriod p : saveDTO.getPeriods()) {
+                affectedYears.add(p.getStartDate().getYear());
+            }
+            for (Integer affectedYear : affectedYears) {
+                computeAndSaveVacationBalance(userIdx, affectedYear);
+            }
+            log.info("[vacation_balance 갱신 완료 - 신청] userIdx={}, years={}", userIdx, affectedYears);
+        } catch (Exception e) {
+            log.error("[vacation_balance 갱신 실패 - 신청] userIdx={}, error={}", userIdx, e.getMessage());
+            // balance 갱신 실패는 연차 신청 롤백 없음 (스케줄러 00:10에 자동 보정)
         }
 
         // 12. PDF 파일 생성 및 저장
@@ -923,58 +1168,28 @@ public class VacationServiceImpl implements VacationService {
     }
 
     /**
-     * vacation_request 목록에 연결된 "leave" 타입 캘린더 일정 soft delete
-     * - deleteVacation, approveVacation(취소) 양쪽에서 재사용
+     * 연차신청서 documentIdx(= calendar_events.approval_idx)에 연결된 캘린더 일정 soft delete.
+     * - deleteVacation, approveVacation(취소/재승인 전 정리) 양쪽에서 재사용.
+     * - 날짜 범위 기반 조회 대신 approval_idx 기반으로 정확히 해당 문서의 이벤트만 삭제.
      */
-    private void deleteCalendarEventsForRequests(List<VacationRequest> vacationRequests, Long operatorUserIdx) {
-        if (vacationRequests.isEmpty()) {
+    private void deleteCalendarEventsForRequests(Long documentIdx, Long operatorUserIdx) {
+        List<CalendarEvent> events = calendarEventRepository.findByApprovalIdx(documentIdx);
+        if (events.isEmpty()) {
+            log.info("[캘린더 일정 삭제 스킵] 연결된 활성 이벤트 없음. documentIdx: {}", documentIdx);
             return;
         }
-
-        Long vacationUserIdx = vacationRequests.get(0).getUserIdx();
-
-        LocalDate minStartDate = vacationRequests.stream()
-                .map(VacationRequest::getStartDate)
-                .min(LocalDate::compareTo)
-                .orElse(null);
-
-        LocalDate maxEndDate = vacationRequests.stream()
-                .map(VacationRequest::getEndDate)
-                .max(LocalDate::compareTo)
-                .orElse(null);
-
-        if (minStartDate == null || maxEndDate == null) {
-            return;
-        }
-
-        List<CalendarEvent> allEvents = calendarEventRepository.findByUserIdxAndDateRange(
-                vacationUserIdx, minStartDate, maxEndDate);
-
-        log.info("[캘린더 일정 조회] userIdx: {}, 날짜범위: {} ~ {}, 조회된 일정 수: {}",
-                vacationUserIdx, minStartDate, maxEndDate, allEvents.size());
 
         int deletedCount = 0;
-        for (CalendarEvent event : allEvents) {
-            if (!"leave".equals(event.getEventType())) continue;
-            if (event.getDeletedAt() != null) continue;
-            if (!event.getCreatedUserIdx().equals(vacationUserIdx)) continue;
-
-            boolean overlaps = vacationRequests.stream()
-                    .anyMatch(vr -> !event.getStartDate().isAfter(vr.getEndDate()) &&
-                                   !event.getEndDate().isBefore(vr.getStartDate()));
-
-            if (overlaps) {
-                event.setDeletedAt(LocalDateTime.now());
-                event.setDeletedUserIdx(operatorUserIdx);
-                calendarEventRepository.save(event);
-                deletedCount++;
-                log.info("[캘린더 일정 삭제] eventIdx: {}, eventType: {}, eventTitle: {}, startDate: {}, endDate: {}",
-                        event.getIdx(), event.getEventType(), event.getEventTitle(),
-                        event.getStartDate(), event.getEndDate());
-            }
+        for (CalendarEvent event : events) {
+            event.setDeletedAt(LocalDateTime.now());
+            event.setDeletedUserIdx(operatorUserIdx);
+            calendarEventRepository.save(event);
+            deletedCount++;
+            log.info("[캘린더 일정 삭제] eventIdx: {}, title: {}, startDate: {}, endDate: {}",
+                    event.getIdx(), event.getEventTitle(), event.getStartDate(), event.getEndDate());
         }
 
-        log.info("[캘린더 일정 삭제 완료] 삭제된 일정 수: {}", deletedCount);
+        log.info("[캘린더 일정 삭제 완료] documentIdx: {}, 삭제된 일정 수: {}", documentIdx, deletedCount);
     }
 
     /**
@@ -1156,19 +1371,21 @@ public class VacationServiceImpl implements VacationService {
 
     /**
      * 잔여 연차 검증 (마이너스 연차 허용 여부 확인)
+     * vacation_balance에서 잔여 연차 조회. 행 없으면 실시간 계산으로 폴백.
      */
     private void validateRemainingVacation(Long userIdx, BigDecimal totalRequestedDays,
                                            Boolean allowMinusVacation) {
         int currentYear = LocalDate.now().getYear();
 
-        // 사용자 조회
-        User user = userRepository.findById(userIdx)
-                .orElseThrow(() -> new IllegalArgumentException("사용자를 찾을 수 없습니다: " + userIdx));
-
-        // 현재 잔여 연차 계산
-        BigDecimal totalDays = calculateTotalDaysForYear(user, currentYear);
-        BigDecimal usedDays = calculateUsedDays(userIdx, currentYear);
-        BigDecimal remainingDays = totalDays.subtract(usedDays);
+        // vacation_balance에서 잔여 연차 조회
+        BigDecimal remainingDays = balanceRepository.findByUserIdxAndYear(userIdx, currentYear)
+                .map(VacationBalance::getRemainingDays)
+                .orElseGet(() -> {
+                    User u = userRepository.findById(userIdx)
+                            .orElseThrow(() -> new IllegalArgumentException("사용자를 찾을 수 없습니다: " + userIdx));
+                    return calculateTotalDaysForYear(u, currentYear)
+                            .subtract(calculateUsedDays(userIdx, currentYear));
+                });
 
         // 잔여 연차 부족 시
         if (totalRequestedDays.compareTo(remainingDays) > 0) {
@@ -1361,7 +1578,24 @@ public class VacationServiceImpl implements VacationService {
         log.info("[연차 잔액 복구] VacationRequest 삭제로 자동 반영됨 (calculateUsedDays에서 집계 시 제외됨)");
 
         // 6. 캘린더 일정 삭제 (승인 여부와 무관하게 문서 삭제 시 정리)
-        deleteCalendarEventsForRequests(vacationRequests, currentUserIdx);
+        deleteCalendarEventsForRequests(documentIdx, currentUserIdx);
+
+        // 7. vacation_balance 즉시 갱신 (소프트 삭제 반영)
+        if (!vacationRequests.isEmpty()) {
+            Long vacationUserIdx = vacationRequests.get(0).getUserIdx();
+            try {
+                Set<Integer> affectedYears = new HashSet<>();
+                for (VacationRequest vr : vacationRequests) {
+                    affectedYears.add(vr.getStartDate().getYear());
+                }
+                for (Integer affectedYear : affectedYears) {
+                    computeAndSaveVacationBalance(vacationUserIdx, affectedYear);
+                }
+                log.info("[vacation_balance 갱신 완료 - 삭제] userIdx={}, years={}", vacationUserIdx, affectedYears);
+            } catch (Exception e) {
+                log.error("[vacation_balance 갱신 실패 - 삭제] documentIdx={}, error={}", documentIdx, e.getMessage());
+            }
+        }
 
         log.info("[연차신청서 삭제 완료] documentIdx: {}, 연차 기간 수: {}, 복구 일수: {}일",
                 documentIdx, vacationRequests.size(), totalDaysToRestore);
@@ -1401,7 +1635,10 @@ public class VacationServiceImpl implements VacationService {
                 .orElseThrow(() -> new IllegalArgumentException("사용자를 찾을 수 없습니다. userIdx: " + vacationUserIdx));
 
         if (approve) {
-            // 4-1. 승인 → 각 기간별로 캘린더 일정 생성 (etcCal=false인 기타 휴가는 제외)
+            // 4-1. 승인 → 기존 이벤트 먼저 정리 (재승인 시 중복 방지) 후 새로 생성
+            log.info("[캘린더 일정 기존 정리] documentIdx: {}", documentIdx);
+            deleteCalendarEventsForRequests(documentIdx, approverUserIdx);
+
             log.info("[캘린더 일정 생성 시작] documentIdx: {}, 기간 수: {}", documentIdx, vacationRequests.size());
             for (VacationRequest vr : vacationRequests) {
                 boolean shouldCreate = vr.getEtcCal() == null || vr.getEtcCal();
@@ -1415,7 +1652,22 @@ public class VacationServiceImpl implements VacationService {
         } else {
             // 4-2. 승인 취소 → 연결된 캘린더 일정 삭제
             log.info("[캘린더 일정 삭제 시작 - 승인 취소] documentIdx: {}", documentIdx);
-            deleteCalendarEventsForRequests(vacationRequests, approverUserIdx);
+            deleteCalendarEventsForRequests(documentIdx, approverUserIdx);
+        }
+
+        // 5. vacation_balance 즉시 갱신
+        try {
+            Set<Integer> affectedYears = new HashSet<>();
+            for (VacationRequest vr : vacationRequests) {
+                affectedYears.add(vr.getStartDate().getYear());
+            }
+            for (Integer affectedYear : affectedYears) {
+                computeAndSaveVacationBalance(vacationUserIdx, affectedYear);
+            }
+            log.info("[vacation_balance 갱신 완료 - 승인] documentIdx={}, approve={}, years={}",
+                    documentIdx, approve, affectedYears);
+        } catch (Exception e) {
+            log.error("[vacation_balance 갱신 실패 - 승인] documentIdx={}, error={}", documentIdx, e.getMessage());
         }
 
         log.info("[연차 승인 처리 완료] documentIdx: {}, approve: {}", documentIdx, approve);
