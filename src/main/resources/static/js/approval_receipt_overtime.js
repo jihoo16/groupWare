@@ -211,7 +211,7 @@ document.addEventListener('DOMContentLoaded', async function() {
 
             // 프로젝트 정보 설정
             if (data.projectIdx) {
-                selectedProject = projects.find(p => p.idx === data.projectIdx);
+                selectedProject = projects.find(p => Number(p.idx) === Number(data.projectIdx));
                 if (selectedProject) {
                     const otProject = document.getElementById('ot_project');
                     if (otProject) {
@@ -232,9 +232,12 @@ document.addEventListener('DOMContentLoaded', async function() {
                             field.textContent = selectedProject.projectManagerName;
                         });
                     }
+                }
 
-                    await loadProjectMembers(selectedProject.idx);
+                // selectedProject 유무와 무관하게 참여인원 로드 (attendees 매칭을 위해 반드시 필요)
+                await loadProjectMembers(data.projectIdx);
 
+                if (selectedProject) {
                     // 카드 목록 로드
                     await loadProjectCards(selectedProject.idx);
 
