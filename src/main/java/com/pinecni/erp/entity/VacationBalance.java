@@ -87,6 +87,11 @@ public class VacationBalance {
     @Builder.Default
     private BigDecimal earlyUseDays = BigDecimal.ZERO;
 
+    /** 이월 처리된 월차: 다음 연도로 이월된 일수 (다음 연도 이월월차 레코드 생성 시 반영) */
+    @Column(name = "carried_over_days", nullable = false, precision = 5, scale = 1)
+    @Builder.Default
+    private BigDecimal carriedOverDays = BigDecimal.ZERO;
+
     /** 사용 연차: vacation_request 기준 해당 연도 사용분 */
     @Column(name = "used_days", nullable = false, precision = 5, scale = 1)
     @Builder.Default

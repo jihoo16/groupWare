@@ -95,6 +95,25 @@ public interface VacationService {
     int computeAndSaveAllVacationBalances(Integer year);
 
     /**
+     * 전년도 미사용 월차 이월 처리 (전체 재직자)
+     * - 전년도 유효 월차 중 잔여분을 신년도 이월월차(TYPE_CARRY_OVER) 레코드로 생성
+     * - 이미 처리된 사용자는 스킵 (멱등성 보장)
+     * - annualVacationScheduleGeneration 및 initialVacationScheduleGeneration에서 호출
+     * @param fromYear 이월 출처 연도 (예: 2025 → 2026으로 이월 시 2025)
+     * @return 처리된 사용자 수
+     */
+    int performAllCarryOvers(int fromYear);
+
+    /**
+     * 단일 사용자 월차 이월 처리 (performAllCarryOvers 내부에서 사용자별 독립 트랜잭션으로 호출)
+     * - fromYear 의 유효 월차 잔여분을 toYear 이월월차 레코드로 생성
+     * - 이미 처리된 경우 스킵 (멱등성)
+     * @param userIdx  사용자 IDX
+     * @param fromYear 이월 출처 연도
+     */
+    void performCarryOverForUser(Long userIdx, int fromYear);
+
+    /**
      * 연차신청서 삭제 (soft delete + 캘린더 일정 삭제)
      * @param documentIdx 문서 IDX (approval_documents의 idx)
      * @param currentUserIdx 삭제 요청자 사용자 IDX

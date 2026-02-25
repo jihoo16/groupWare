@@ -153,8 +153,8 @@ public class VacationServiceImpl implements VacationService {
                 .nextAccrualDesc(balance.getNextAccrualDesc())
                 .build();
 
-        log.info("[사용자 연차 정보 조회 완료] empName={}, granted={}, used={}, remaining={}",
-                dto.getEmpName(), dto.getTotalDays(), dto.getUsedDays(), dto.getRemainingDays());
+        log.info("[사용자 연차 정보 조회 완료] empName={}, granted={}, expiredMonthly={}, used={}, remaining={}",
+                dto.getEmpName(), dto.getTotalDays(), dto.getExpiredMonthlyDays(), dto.getUsedDays(), dto.getRemainingDays());
 
         return dto;
     }
@@ -270,7 +270,9 @@ public class VacationServiceImpl implements VacationService {
             int joinMonth = joinDate.getMonthValue();
             int joinDay = joinDate.getDayOfMonth();
 
-            // 입사 연도인 경우: 입사월+1 ~ 12월 (모두 마지막 아님)
+            // 입사 연도인 경우: 입사월+1 ~ 12월
+            // 1월 입사자는 Case 2 루프(monthlyEndMonth=0)가 실행되지 않으므로
+            // 12월 만근 월차가 전체 마지막 월차 → lastMonthlyExpiry 적용
             if (joinDate.getYear() == year) {
                 for (int month = joinMonth + 1; month <= 12; month++) {
                     LocalDate monthlyDate = LocalDate.of(year, month, joinDay + 1);
@@ -279,9 +281,10 @@ public class VacationServiceImpl implements VacationService {
                         monthlyDate = LocalDate.of(year, month, 1).plusMonths(1).minusDays(1);
                     }
 
+                    boolean isLast = (month == 12) && (oneYearAnniversary.getMonthValue() == 1);
                     schedules.add(createAccrual(userIdx, year, monthlyDate,
                             VacationAccrualSchedule.TYPE_MONTHLY, new BigDecimal("1.0"),
-                            month + "월 만근 월차", monthlyExpiry, operatorUserIdx));
+                            month + "월 만근 월차", isLast ? lastMonthlyExpiry : monthlyExpiry, operatorUserIdx));
                 }
             }
             // 입사 다음 해이지만 1년 미만: 1월 ~ 12월 (모두 마지막 아님)
@@ -422,6 +425,9 @@ public class VacationServiceImpl implements VacationService {
             else if (yearsOfServiceAtYearStart < 1) {
                 if (joinDate.getYear() == year && targetDate.getMonthValue() > joinDate.getMonthValue()) {
                     shouldAccrue = true;
+                    // 1월 입사자는 Case 2 루프가 실행되지 않으므로
+                    // 12월 만근 월차가 전체 마지막 월차 → lastMonthlyExpiry 적용
+                    isLastMonthly = (targetDate.getMonthValue() == 12) && (oneYearAnniversary.getMonthValue() == 1);
                 } else if (oneYearAnniversary.getYear() > year && joinDate.getYear() < year) {
                     shouldAccrue = true;
                 }
@@ -488,6 +494,7 @@ public class VacationServiceImpl implements VacationService {
         BigDecimal annualLeaveDays    = accrualScheduleRepository.sumAnnualLeaveDays(userIdx, year, effectiveDate);
         BigDecimal proportionalDays   = accrualScheduleRepository.sumProportionalDays(userIdx, year, effectiveDate);
         BigDecimal compensatoryDays   = accrualScheduleRepository.sumCompensatoryDays(userIdx, year, effectiveDate);
+        // 월차 + 이월월차(전년도 이월분) 합산 — sumValidMonthlyDays 쿼리가 두 타입 모두 집계
         BigDecimal monthlyLeaveDays   = accrualScheduleRepository.sumValidMonthlyDays(userIdx, year, effectiveDate);
         BigDecimal expiredMonthlyDays = accrualScheduleRepository.sumExpiredMonthlyDays(userIdx, year);
 
@@ -506,7 +513,14 @@ public class VacationServiceImpl implements VacationService {
         // 5. 조기사용연차 = MAX(0, 사용 - 유효부여)
         BigDecimal earlyUseDays = usedDays.subtract(effectiveGranted).max(BigDecimal.ZERO);
 
-        // 6. 다음 발생 예정 조회 (현재·미래 연도만 의미 있음; 과거 연도는 null 처리)
+        // 6. 다음 연도로 이월된 월차 (신년도에 이월월차 레코드가 있으면 차감)
+        // → 잔여에서 이월분을 빼서 "이미 이월됐으므로 현재 연도에서는 사용 불가"를 반영
+        BigDecimal carriedOutDays = accrualScheduleRepository
+                .sumCarriedOutDays(userIdx, year + 1)
+                .max(BigDecimal.ZERO);
+        remainingDays = remainingDays.subtract(carriedOutDays);
+
+        // 7. 다음 발생 예정 조회 (현재·미래 연도만 의미 있음; 과거 연도는 null 처리)
         LocalDate  nextAccrualDate = null;
         BigDecimal nextAccrualDays = null;
         String     nextAccrualType = null;
@@ -524,7 +538,7 @@ public class VacationServiceImpl implements VacationService {
             }
         }
 
-        // 7. UPSERT: 기존 행이 있으면 갱신, 없으면 신규 생성
+        // 8. UPSERT: 기존 행이 있으면 갱신, 없으면 신규 생성
         VacationBalance balance = balanceRepository.findByUserIdxAndYear(userIdx, year)
                 .orElse(VacationBalance.builder().userIdx(userIdx).year(year).build());
 
@@ -536,6 +550,7 @@ public class VacationServiceImpl implements VacationService {
         balance.setExpiredMonthlyDays(expiredMonthlyDays);
         balance.setUsedDays(usedDays);
         balance.setEarlyUseDays(earlyUseDays);
+        balance.setCarriedOverDays(carriedOutDays);
         balance.setRemainingDays(remainingDays);
         balance.setNextAccrualDate(nextAccrualDate);
         balance.setNextAccrualDays(nextAccrualDays);
@@ -544,8 +559,8 @@ public class VacationServiceImpl implements VacationService {
 
         balanceRepository.save(balance);
 
-        log.info("[vacation_balance 갱신 완료] userIdx={}, year={}, granted={}, used={}, remaining={}",
-                userIdx, year, grantedDays, usedDays, remainingDays);
+        log.info("[vacation_balance 갱신 완료] userIdx={}, year={}, granted={}, carriedOut={}, used={}, remaining={}",
+                userIdx, year, grantedDays, carriedOutDays, usedDays, remainingDays);
     }
 
     @Override
@@ -567,6 +582,105 @@ public class VacationServiceImpl implements VacationService {
 
         log.info("[전체 vacation_balance 갱신 완료] year={}, 처리: {}명", year, count);
         return count;
+    }
+
+    @Override
+    // @Transactional 없음 — self 프록시를 통해 사용자별 독립 트랜잭션으로 실행
+    public int performAllCarryOvers(int fromYear) {
+        log.info("[전체 월차 이월 처리] fromYear: {} → {}년", fromYear, fromYear + 1);
+
+        List<User> activeUsers = userRepository.findAllActive();
+        int count = 0;
+
+        for (User user : activeUsers) {
+            if (user.getEmpJoinDate() == null) continue;
+            try {
+                self.performCarryOverForUser(user.getIdx(), fromYear);
+                count++;
+            } catch (Exception e) {
+                log.error("[월차 이월 처리 실패] userIdx={}, error={}", user.getIdx(), e.getMessage());
+            }
+        }
+
+        log.info("[전체 월차 이월 처리 완료] fromYear={}, 처리: {}명", fromYear, count);
+        return count;
+    }
+
+    /**
+     * 단일 사용자 월차 이월 처리
+     *
+     * - fromYear 의 만료되지 않은 유효 월차 잔여분을 toYear(=fromYear+1) 의 이월월차 레코드로 생성
+     * - 이월 금액 = min(유효월차합계, 잔여일수).  잔여 = 0 이하면 스킵
+     * - 멱등성: toYear 에 TYPE_CARRY_OVER 레코드가 이미 있으면 스킵
+     * - 만료일: fromYear 유효 월차 중 가장 늦은 expiry_date 를 그대로 승계
+     *
+     * @param userIdx  사용자 IDX
+     * @param fromYear 이월 출처 연도 (예: 2025)
+     */
+    @Override
+    @Transactional
+    public void performCarryOverForUser(Long userIdx, int fromYear) {
+        int toYear = fromYear + 1;
+        LocalDate toYearStart = LocalDate.of(toYear, 1, 1);
+
+        // 1. 멱등성 체크: 이미 이월 레코드가 있으면 스킵
+        if (accrualScheduleRepository.existsByUserIdxAndYearAndAccrualType(
+                userIdx, toYear, VacationAccrualSchedule.TYPE_CARRY_OVER)) {
+            log.debug("[월차 이월 스킵 - 이미 처리됨] userIdx={}, toYear={}", userIdx, toYear);
+            return;
+        }
+
+        // 2. fromYear balance 조회 (없으면 계산)
+        VacationBalance fromBalance = balanceRepository.findByUserIdxAndYear(userIdx, fromYear)
+                .orElse(null);
+        if (fromBalance == null) {
+            log.debug("[월차 이월 스킵 - fromYear balance 없음] userIdx={}, fromYear={}", userIdx, fromYear);
+            return;
+        }
+
+        BigDecimal fromRemaining = fromBalance.getRemainingDays();
+        if (fromRemaining.compareTo(BigDecimal.ZERO) <= 0) {
+            log.debug("[월차 이월 스킵 - 잔여 없음] userIdx={}, fromYear={}, remaining={}",
+                    userIdx, fromYear, fromRemaining);
+            return;
+        }
+
+        // 3. fromYear 유효 월차 합계 (toYearStart 기준으로 만료 전)
+        //    sumValidMonthlyDays 에서 '월차'+'이월월차' 를 집계하므로 fromYear 의 실유효량 파악
+        BigDecimal validMonthly = accrualScheduleRepository
+                .sumValidMonthlyDays(userIdx, fromYear, toYearStart.minusDays(1));
+
+        if (validMonthly.compareTo(BigDecimal.ZERO) <= 0) {
+            log.debug("[월차 이월 스킵 - fromYear 유효월차 없음] userIdx={}, fromYear={}", userIdx, fromYear);
+            return;
+        }
+
+        // 4. 이월 일수 = min(유효월차, 잔여일수)
+        BigDecimal carryOverDays = validMonthly.min(fromRemaining);
+        if (carryOverDays.compareTo(BigDecimal.ZERO) <= 0) {
+            return;
+        }
+
+        // 5. 만료일: fromYear 유효 월차 중 가장 늦은 expiry_date 를 그대로 승계
+        LocalDate expiryDate = accrualScheduleRepository
+                .findMaxExpiryDateForValidMonthly(userIdx, fromYear, toYearStart.minusDays(1));
+        if (expiryDate == null) {
+            // fallback: fromYear 말일
+            expiryDate = LocalDate.of(fromYear, 12, 31);
+        }
+
+        // 6. 이월월차 레코드 생성 (toYear 소속, 발생일 = toYear 1/1)
+        VacationAccrualSchedule carryOverRecord = createAccrual(
+                userIdx, toYear, toYearStart,
+                VacationAccrualSchedule.TYPE_CARRY_OVER,
+                carryOverDays,
+                fromYear + "년 미사용 월차 이월 +" + carryOverDays.stripTrailingZeros().toPlainString() + "일",
+                expiryDate,
+                null);
+        accrualScheduleRepository.save(carryOverRecord);
+
+        log.info("[월차 이월 완료] userIdx={}, {}→{}년, 이월일수={}, 만료일={}",
+                userIdx, fromYear, toYear, carryOverDays, expiryDate);
     }
 
     /**

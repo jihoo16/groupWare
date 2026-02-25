@@ -129,4 +129,5 @@ public class VacationAccrualSchedule {
     public static final String TYPE_MONTHLY      = "월차";
     public static final String TYPE_PROPORTIONAL = "비례연차";
     public static final String TYPE_COMPENSATORY = "보상휴가";
+    public static final String TYPE_CARRY_OVER   = "이월월차";  // 전년도 미사용 월차 이월
 }
