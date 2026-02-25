@@ -287,7 +287,9 @@
                         name: relation.targetProjectName,
                         status: relation.targetProjectStatus,
                         pm: relation.targetProjectManager,
-                        period: relation.targetPeriod
+                        period: relation.targetPeriod,
+                        totalStart: relation.targetTotalPeriodStart || '',
+                        totalEnd: relation.targetTotalPeriodEnd || ''
                     }));
                     console.log('연계 프로젝트 목록 로드:', relatedProjectList);
                 } else {
@@ -802,6 +804,21 @@
             const newStartDate = this.value;
             if (!newStartDate) return;
 
+            // 연계 프로젝트가 없을 때만 총 프로젝트 기간 자동 설정
+            if (relatedProjectList.length === 0) {
+                const totalPeriodStartInput = document.getElementById('totalPeriodStart');
+                if (totalPeriodStartInput) {
+                    totalPeriodStartInput.value = newStartDate;
+                }
+
+                const startYear = new Date(newStartDate).getFullYear();
+                const autoTotalEnd = getLastBusinessDayOfYear(startYear + 3);
+                const totalPeriodEndInput = document.getElementById('totalPeriodEnd');
+                if (totalPeriodEndInput) {
+                    totalPeriodEndInput.value = autoTotalEnd;
+                }
+            }
+
             const totalPeriodEnd = document.getElementById('totalPeriodEnd').value;
             const endDate = projectEndDateInput ? projectEndDateInput.value : '';
 
@@ -882,6 +899,44 @@
             `;
             cardList.appendChild(item);
         });
+    }
+
+    /**
+     * 해당 년도의 마지막 영업일 계산
+     * 주말(토,일)과 공휴일을 제외한 12월의 마지막 근무일
+     */
+    function getLastBusinessDayOfYear(year) {
+        const holidays = getKoreanHolidays(year);
+        let date = new Date(year, 11, 31);
+
+        while (date.getMonth() === 11) {
+            const dayOfWeek = date.getDay();
+            const dateString = formatDateToString(date);
+            const isWeekend = (dayOfWeek === 0 || dayOfWeek === 6);
+            const isHoliday = holidays.includes(dateString);
+            if (!isWeekend && !isHoliday) {
+                return dateString;
+            }
+            date.setDate(date.getDate() - 1);
+        }
+        return `${year}-12-31`;
+    }
+
+    function getKoreanHolidays(year) {
+        const holidays = [];
+        holidays.push(`${year}-12-25`);
+        const christmas = new Date(year, 11, 25);
+        if (christmas.getDay() === 0) {
+            holidays.push(`${year}-12-26`);
+        }
+        return holidays;
+    }
+
+    function formatDateToString(date) {
+        const year = date.getFullYear();
+        const month = String(date.getMonth() + 1).padStart(2, '0');
+        const day = String(date.getDate()).padStart(2, '0');
+        return `${year}-${month}-${day}`;
     }
 
     // ============================================
@@ -1437,6 +1492,7 @@
                 <td><span class="status-badge ${getStatusClass(project.projectStatus)}">${getStatusLabel(project.projectStatus)}</span></td>
                 <td>${project.projectManagerName || '-'}</td>
                 <td>${project.startDate}<br>~ ${project.endDate}</td>
+                <td>${project.totalPeriodStart ? `${project.totalPeriodStart}<br>~ ${project.totalPeriodEnd || '-'}` : '-'}</td>
             `;
 
             row.style.cursor = 'pointer';
@@ -1537,7 +1593,9 @@
                 name: row.getAttribute('data-name'),
                 status: row.getAttribute('data-status'),
                 pm: row.getAttribute('data-pm'),
-                period: row.getAttribute('data-period')
+                period: row.getAttribute('data-period'),
+                totalStart: row.getAttribute('data-total-start') || '',
+                totalEnd: row.getAttribute('data-total-end') || ''
             });
         });
 
@@ -1578,7 +1636,8 @@
                     <div class="related-project-details">
                         <span><span class="status-badge ${statusClass}">${statusLabel}</span></span>
                         <span><i class="fas fa-user"></i> 연구 책임자: ${project.pm || '-'}</span>
-                        <span><i class="fas fa-calendar"></i> ${project.period || '-'}</span>
+                        <span><i class="fas fa-calendar"></i> 현재 차수 기간: ${project.period || '-'}</span>
+                        ${(project.totalStart || project.totalEnd) ? `<span><i class="fas fa-calendar-alt"></i> 총 프로젝트 기간: ${project.totalStart || '-'} ~ ${project.totalEnd || '-'}</span>` : ''}
                     </div>
                 </div>
                 <button type="button" onclick="removeRelatedProject('${project.id}')">

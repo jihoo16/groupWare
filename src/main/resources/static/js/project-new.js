@@ -1535,6 +1535,8 @@
             row.setAttribute('data-status', getStatusLabel(project.projectStatus));
             row.setAttribute('data-pm', project.projectManagerName || '-');
             row.setAttribute('data-period', `${project.startDate} ~ ${project.endDate}`);
+            row.setAttribute('data-total-start', project.totalPeriodStart || '');
+            row.setAttribute('data-total-end', project.totalPeriodEnd || '');
 
             row.innerHTML = `
                 <td><input type="checkbox" class="related-project-checkbox" value="${project.idx}"></td>
@@ -1542,6 +1544,7 @@
                 <td><span class="status-badge ${getStatusClass(project.projectStatus)}">${getStatusLabel(project.projectStatus)}</span></td>
                 <td>${project.projectManagerName || '-'}</td>
                 <td>${project.startDate}<br>~ ${project.endDate}</td>
+                <td>${project.totalPeriodStart ? `${project.totalPeriodStart}<br>~ ${project.totalPeriodEnd || '-'}` : '-'}</td>
             `;
 
             row.style.cursor = 'pointer';
@@ -1642,7 +1645,9 @@
                 name: row.getAttribute('data-name'),
                 status: row.getAttribute('data-status'),
                 pm: row.getAttribute('data-pm'),
-                period: row.getAttribute('data-period')
+                period: row.getAttribute('data-period'),
+                totalStart: row.getAttribute('data-total-start') || '',
+                totalEnd: row.getAttribute('data-total-end') || ''
             });
         });
 
@@ -1886,7 +1891,8 @@
                     <div class="related-project-details">
                         <span><i class="fas fa-circle"></i> ${project.status}</span>
                         <span><i class="fas fa-user"></i> 연구 책임자: ${project.pm}</span>
-                        <span><i class="fas fa-calendar"></i> ${project.period}</span>
+                        <span><i class="fas fa-calendar"></i> 현재 차수 기간: ${project.period}</span>
+                        ${(project.totalStart || project.totalEnd) ? `<span><i class="fas fa-calendar-alt"></i> 총 프로젝트 기간: ${project.totalStart || '-'} ~ ${project.totalEnd || '-'}</span>` : ''}
                     </div>
                 </div>
 
