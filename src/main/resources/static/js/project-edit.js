@@ -1474,7 +1474,7 @@
         const filteredProjects = projects.filter(project => project.idx != projectId);
 
         if (filteredProjects.length === 0) {
-            relatedProjectTableBody.innerHTML = '<tr><td colspan="5" class="text-center" style="padding: 40px;">등록된 프로젝트가 없습니다.</td></tr>';
+            relatedProjectTableBody.innerHTML = '<tr><td colspan="6" class="text-center" style="padding: 40px;">등록된 프로젝트가 없습니다.</td></tr>';
             return;
         }
 
@@ -1482,9 +1482,11 @@
             const row = document.createElement('tr');
             row.setAttribute('data-id', project.idx);
             row.setAttribute('data-name', project.projectName);
-            row.setAttribute('data-status', getStatusLabel(project.projectStatus));
+            row.setAttribute('data-status', project.projectStatus);
             row.setAttribute('data-pm', project.projectManagerName || '-');
             row.setAttribute('data-period', `${project.startDate} ~ ${project.endDate}`);
+            row.setAttribute('data-total-start', project.totalPeriodStart || '');
+            row.setAttribute('data-total-end', project.totalPeriodEnd || '');
 
             row.innerHTML = `
                 <td><input type="checkbox" class="related-project-checkbox" value="${project.idx}"></td>
@@ -1528,7 +1530,7 @@
         const checkboxes = document.querySelectorAll('.related-project-checkbox');
         checkboxes.forEach(checkbox => {
             const projectId = checkbox.value;
-            const isSelected = relatedProjectList.some(p => p.id === projectId);
+            const isSelected = relatedProjectList.some(p => String(p.id) === String(projectId));
             checkbox.checked = isSelected;
 
             // 행 선택 스타일
@@ -1574,38 +1576,35 @@
 
     // 연계 프로젝트 저장 (전역 함수)
     window.saveSelectedRelatedProjects = async function() {
-        const checkboxes = document.querySelectorAll('.related-project-checkbox:checked');
+        const checkedCheckboxes = document.querySelectorAll('.related-project-checkbox:checked');
 
-        if (checkboxes.length === 0) {
+        if (checkedCheckboxes.length === 0) {
             await showWarning('연계할 프로젝트를 선택해주세요.');
             return;
         }
 
-        // 선택된 프로젝트 정보 수집 (이미 등록된 프로젝트는 제외)
-        const newRelations = [];
-        checkboxes.forEach(checkbox => {
+        // 체크된 항목으로 새 목록 구성 (기존 데이터 유지 + 신규 추가 + 해제된 항목 제거)
+        const newList = [];
+        checkedCheckboxes.forEach(checkbox => {
             const projectId = checkbox.value;
-            if (relatedProjectList.some(p => p.id === projectId)) return;
-
-            const row = checkbox.closest('tr');
-            newRelations.push({
-                id: projectId,
-                name: row.getAttribute('data-name'),
-                status: row.getAttribute('data-status'),
-                pm: row.getAttribute('data-pm'),
-                period: row.getAttribute('data-period'),
-                totalStart: row.getAttribute('data-total-start') || '',
-                totalEnd: row.getAttribute('data-total-end') || ''
-            });
+            const existing = relatedProjectList.find(p => String(p.id) === String(projectId));
+            if (existing) {
+                newList.push(existing);
+            } else {
+                const row = checkbox.closest('tr');
+                newList.push({
+                    id: projectId,
+                    name: row.getAttribute('data-name'),
+                    status: row.getAttribute('data-status'),
+                    pm: row.getAttribute('data-pm'),
+                    period: row.getAttribute('data-period'),
+                    totalStart: row.getAttribute('data-total-start') || '',
+                    totalEnd: row.getAttribute('data-total-end') || ''
+                });
+            }
         });
 
-        if (newRelations.length === 0) {
-            await showWarning('새로 추가할 프로젝트가 없습니다. 선택한 프로젝트는 이미 등록되어 있습니다.');
-            return;
-        }
-
-        // 연계 프로젝트 목록에 추가
-        relatedProjectList.push(...newRelations);
+        relatedProjectList = newList;
         renderRelatedProjectList();
 
         closeRelatedProjectModal();

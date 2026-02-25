@@ -50,6 +50,16 @@ public class ProjectRelationDTO {
     private String targetPeriod;
 
     /**
+     * 대상 프로젝트 총 기간 시작일
+     */
+    private String targetTotalPeriodStart;
+
+    /**
+     * 대상 프로젝트 총 기간 종료일
+     */
+    private String targetTotalPeriodEnd;
+
+    /**
      * 생성일시
      */
     private LocalDateTime createdAt;
