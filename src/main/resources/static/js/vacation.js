@@ -1010,6 +1010,18 @@ document.addEventListener('DOMContentLoaded', async function() {
 
     if (prevYearBtn) {
         prevYearBtn.addEventListener('click', async function() {
+            if (currentCalendarYear <= 2026) {
+                Swal.fire({
+                    toast: true,
+                    position: 'top',
+                    icon: 'info',
+                    title: '서비스 게시일 이전 데이터는 <br> 조회 불가합니다.',
+                    showConfirmButton: false,
+                    timer: 2500,
+                    timerProgressBar: true
+                });
+                return;
+            }
             currentCalendarYear--;
             console.log(`[DEBUG] 이전 연도로 이동: ${currentCalendarYear}`);
             await loadYearData(currentCalendarYear);
