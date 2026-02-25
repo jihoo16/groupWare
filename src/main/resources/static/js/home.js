@@ -151,8 +151,8 @@ function loadPendingApprovals() {
     const PROJECT_DOCUMENT_TYPES = [
         '프로젝트 주간업무보고',
         '연구비증빙-회의록',
-        '연구비증빙-출장',
-        '연구비증빙-출장+회의',
+        '연구비증빙-단독 출장',
+        '연구비증빙-회의+출장',
         '연구비증빙(야근식대)'
     ];
 

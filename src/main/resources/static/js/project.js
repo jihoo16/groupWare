@@ -142,7 +142,7 @@ document.addEventListener('DOMContentLoaded', function() {
         if (!currentProjectGrid) return;
 
         if (projects.length === 0) {
-            currentProjectGrid.innerHTML = '<p class="text-center" style="grid-column: 1/-1; padding: 40px; color: #868e96;">진행중인 프로젝트가 없습니다.</p>';
+            currentProjectGrid.innerHTML = '<p class="text-center" style="grid-column: 1/-1; padding: 40px; color: #868e96; text-align: center">진행중인 프로젝트가 없습니다.</p>';
             return;
         }
 
@@ -274,7 +274,7 @@ document.addEventListener('DOMContentLoaded', function() {
         if (!currentProjectListBody) return;
 
         if (projects.length === 0) {
-            currentProjectListBody.innerHTML = '<tr><td colspan="7" class="text-center" style="padding: 40px; color: #868e96;">진행중인 프로젝트가 없습니다.</td></tr>';
+            currentProjectListBody.innerHTML = '<tr><td colspan="7" class="text-center" style="padding: 40px; color: #868e96;text-align: center">진행중인 프로젝트가 없습니다.</td></tr>';
             return;
         }
 

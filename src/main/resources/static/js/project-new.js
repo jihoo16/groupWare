@@ -12,8 +12,6 @@
     const selectAllMembersBtn = document.getElementById('selectAllMembersBtn');
     const expandAllMembersBtn = document.getElementById('expandAllMembersBtn');
     const clearSelectedMembersBtn = document.getElementById('clearSelectedMembersBtn');
-    const addCardBtn = document.getElementById('addCardBtn');
-    const cardModal = document.getElementById('cardModal');
     const cardList = document.getElementById('cardList');
     const projectFiles = document.getElementById('projectFiles');
     const fileList = document.getElementById('fileList');
@@ -935,6 +933,23 @@
             const newStartDate = this.value;
             if (!newStartDate) return;
 
+            // 연계 프로젝트가 없을 때만 총 프로젝트 기간 자동 설정
+            if (relatedProjectList.length === 0) {
+                // 총 프로젝트 시작일 자동 설정 (현재 차수 시작일과 동일)
+                const totalPeriodStartInput = document.getElementById('totalPeriodStart');
+                if (totalPeriodStartInput) {
+                    totalPeriodStartInput.value = newStartDate;
+                }
+
+                // 총 프로젝트 종료일 자동 설정 (시작연도 +3년 12월 마지막 영업일)
+                const startYear = new Date(newStartDate).getFullYear();
+                const autoTotalEnd = getLastBusinessDayOfYear(startYear + 3);
+                const totalPeriodEndInput = document.getElementById('totalPeriodEnd');
+                if (totalPeriodEndInput) {
+                    totalPeriodEndInput.value = autoTotalEnd;
+                }
+            }
+
             const totalPeriodEnd = document.getElementById('totalPeriodEnd').value;
             const endDate = projectEndDateInput ? projectEndDateInput.value : '';
 
@@ -1437,113 +1452,6 @@
         });
     }
 
-    // 카드 추가 버튼 클릭
-    if (addCardBtn) {
-        addCardBtn.addEventListener('click', function() {
-            openCardModal();
-        });
-    }
-
-    // 카드 모달 열기
-    function openCardModal() {
-        if (!cardModal) return;
-        cardModal.classList.add('active');
-
-        // 입력 필드 초기화
-        document.getElementById('cardCompany').value = '';
-        document.getElementById('cardNumber').value = '';
-        const cardNameInput = document.getElementById('cardName');
-        if (cardNameInput) {
-            cardNameInput.value = '';
-        }
-    }
-
-    // 카드 모달 닫기 (전역 함수)
-    window.closeCardModal = function() {
-        if (!cardModal) return;
-        cardModal.classList.remove('active');
-    };
-
-    // 카드 저장 (전역 함수)
-    window.saveCard = async function () {
-        const cardCompany = document.getElementById('cardCompany').value;
-        const cardNumber = document.getElementById('cardNumber').value;
-        const cardName = document.getElementById('cardName').value;
-
-        // 유효성 검사
-        if (!cardCompany) {
-            await showWarning('카드사를 선택해주세요.');
-            return;
-        }
-
-        if (!cardNumber || cardNumber.length !== 4 || !/^\d{4}$/.test(cardNumber)) {
-            await showWarning('카드 뒷 4자리를 정확히 입력해주세요.');
-            return;
-        }
-
-        if (!cardName) {
-            await showWarning('카드 닉네임을 입력해주세요.');
-            return;
-        }
-
-        // 카드 추가
-        cardIdCounter++;
-        cardListData.push({
-            id: cardIdCounter,
-            company: cardCompany,
-            number: cardNumber,
-            name: cardName
-        });
-
-        renderCardList();
-        closeCardModal();
-    };
-
-    // 카드 목록 렌더링
-    function renderCardList() {
-        if (!cardList) return;
-
-        cardList.innerHTML = '';
-
-        if (cardListData.length === 0) {
-            cardList.innerHTML = '<p style="color: #868e96; font-size: 13px; margin-top: 8px;">등록된 카드가 없습니다.</p>';
-            return;
-        }
-
-        cardListData.forEach(card => {
-            const item = document.createElement('div');
-            item.className = 'card-item';
-            item.innerHTML = `
-                <div class="card-item-info">
-                    <i class="fas fa-credit-card"></i>
-                    <div class="card-item-details">
-                        <div class="card-company">${card.company} / ${card.name}</div>
-                        <div class="card-number">**** **** **** ${card.number}</div>
-                    </div>
-                </div>
-                <button type="button" onclick="removeCard(${card.id})">
-                    <i class="fas fa-times"></i>
-                </button>
-            `;
-            cardList.appendChild(item);
-        });
-    }
-
-    // 카드 제거 (전역 함수)
-    window.removeCard = function(cardId) {
-        cardListData = cardListData.filter(card => card.id !== cardId);
-        renderCardList();
-    };
-
-    // 카드 모달 배경 클릭 시 닫기
-    if (cardModal) {
-        cardModal.addEventListener('click', function(e) {
-            if (e.target === cardModal) {
-                closeCardModal();
-            }
-        });
-    }
-
     // 연계 프로젝트 추가 버튼 클릭
     if (addRelatedProjectBtn) {
         addRelatedProjectBtn.addEventListener('click', function() {
@@ -1627,14 +1535,29 @@
             row.setAttribute('data-status', getStatusLabel(project.projectStatus));
             row.setAttribute('data-pm', project.projectManagerName || '-');
             row.setAttribute('data-period', `${project.startDate} ~ ${project.endDate}`);
+            row.setAttribute('data-total-start', project.totalPeriodStart || '');
+            row.setAttribute('data-total-end', project.totalPeriodEnd || '');
 
             row.innerHTML = `
                 <td><input type="checkbox" class="related-project-checkbox" value="${project.idx}"></td>
                 <td>${project.projectName}</td>
                 <td><span class="status-badge ${getStatusClass(project.projectStatus)}">${getStatusLabel(project.projectStatus)}</span></td>
                 <td>${project.projectManagerName || '-'}</td>
-                <td>${project.startDate} ~ ${project.endDate}</td>
+                <td>${project.startDate}<br>~ ${project.endDate}</td>
+                <td>${project.totalPeriodStart ? `${project.totalPeriodStart}<br>~ ${project.totalPeriodEnd || '-'}` : '-'}</td>
             `;
+
+            row.style.cursor = 'pointer';
+            row.addEventListener('click', function(e) {
+                if (e.target.type === 'checkbox') return;
+                const checkbox = this.querySelector('.related-project-checkbox');
+                checkbox.checked = !checkbox.checked;
+                if (checkbox.checked) {
+                    this.classList.add('selected');
+                } else {
+                    this.classList.remove('selected');
+                }
+            });
 
             relatedProjectTableBody.appendChild(row);
         });
@@ -1722,7 +1645,9 @@
                 name: row.getAttribute('data-name'),
                 status: row.getAttribute('data-status'),
                 pm: row.getAttribute('data-pm'),
-                period: row.getAttribute('data-period')
+                period: row.getAttribute('data-period'),
+                totalStart: row.getAttribute('data-total-start') || '',
+                totalEnd: row.getAttribute('data-total-end') || ''
             });
         });
 
@@ -1846,20 +1771,6 @@
                 }
             }
 
-            // 11. 연구비 카드 설정 (별도 API에서 조회)
-            if (cards && cards.length > 0 && cardListData.length === 0) {
-                cards.forEach(card => {
-                    cardIdCounter++;
-                    cardListData.push({
-                        id: cardIdCounter,
-                        company: card.cardCompany,
-                        number: card.cardLastDigits,
-                        name: card.cardNickname || ''
-                    });
-                });
-                renderCardList();
-            }
-
             // 12. 참여연구원 설정 (PI 제외, 기존 팀원이 없을 때만)
             if (project.projectMembers && project.projectMembers.length > 0 && selectedMemberList.filter(m => m.role !== 'PI').length === 0) {
                 loadTeamMembersFromProject(project.projectMembers);
@@ -1980,7 +1891,8 @@
                     <div class="related-project-details">
                         <span><i class="fas fa-circle"></i> ${project.status}</span>
                         <span><i class="fas fa-user"></i> 연구 책임자: ${project.pm}</span>
-                        <span><i class="fas fa-calendar"></i> ${project.period}</span>
+                        <span><i class="fas fa-calendar"></i> 현재 차수 기간: ${project.period}</span>
+                        ${(project.totalStart || project.totalEnd) ? `<span><i class="fas fa-calendar-alt"></i> 총 프로젝트 기간: ${project.totalStart || '-'} ~ ${project.totalEnd || '-'}</span>` : ''}
                     </div>
                 </div>
 
@@ -2082,7 +1994,6 @@
         // 12. 연구비 카드 초기화
         cardListData = [];
         cardIdCounter = 0;
-        renderCardList();
 
         // 13. 직급별 경비 설정 초기화
         resetExpenseSettingsToZero();

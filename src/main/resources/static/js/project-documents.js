@@ -37,8 +37,8 @@ document.addEventListener('DOMContentLoaded', function() {
     const PROJECT_DOCUMENT_TYPES = [
         '프로젝트 주간업무보고',
         '연구비증빙-회의록',
-        '연구비증빙-출장',
-        '연구비증빙-출장+회의',
+        '연구비증빙-단독 출장',
+        '연구비증빙-회의+출장',
         '연구비증빙(야근식대)',
         'WEEKLY_REPORT',
         'MEETING_MINUTES',
@@ -73,7 +73,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 Swal.fire({
                     icon: 'info',
                     title: '준비중입니다',
-                    text: '출장 증빙 기능은 추후 구현 예정입니다.'
+                    text: '단독 출장 증빙 기능은 추후 구현 예정입니다.'
                 });
                 documentTypeMenu.classList.remove('show');
             });
@@ -85,7 +85,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 Swal.fire({
                     icon: 'info',
                     title: '준비중입니다',
-                    text: '출장+회의 증빙 기능은 추후 구현 예정입니다.'
+                    text: '회의+출장 증빙 기능은 추후 구현 예정입니다.'
                 });
                 documentTypeMenu.classList.remove('show');
             });
@@ -105,7 +105,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 Swal.fire({
                     icon: 'info',
                     title: '준비중입니다',
-                    text: '출장 증빙 기능은 추후 구현 예정입니다.'
+                    text: '단독 장 증빙 기능은 추후 구현 예정입니다.'
                 });
                 return;
             }
@@ -114,7 +114,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 Swal.fire({
                     icon: 'info',
                     title: '준비중입니다',
-                    text: '출장+회의 증빙 기능은 추후 구현 예정입니다.'
+                    text: '회의+출장 증빙 기능은 추후 구현 예정입니다.'
                 });
                 return;
             }
@@ -139,8 +139,8 @@ document.addEventListener('DOMContentLoaded', function() {
             'all': '전체 문서',
             'project-weekly-report': '프로젝트 주간보고',
             'receipt-meeting': '회의비 증빙',
-            'receipt-trip': '여비 증빙',
-            'receipt-trip-meeting': '여비+회의비 증빙',
+            'receipt-trip': '단독 출장 증빙',
+            'receipt-trip-meeting': '회의+출장 증빙',
             'receipt-overtime': '야근식대 증빙'
         };
 
@@ -514,9 +514,9 @@ document.addEventListener('DOMContentLoaded', function() {
             'WEEKLY_REPORT': 'project-weekly-report',
             '연구비증빙-회의록': 'receipt-meeting',
             'RECEIPT_MEETING': 'receipt-meeting',
-            '연구비증빙-출장': 'receipt-trip',
+            '연구비증빙-단독 출장': 'receipt-trip',
             'BUSINESS_TRIP': 'receipt-trip',
-            '연구비증빙-출장+회의': 'receipt-trip-meeting',
+            '연구비증빙-회의+출장': 'receipt-trip-meeting',
             'MEETING_MINUTES': 'receipt-meeting',
             '연구비증빙(야근식대)': 'receipt-overtime',
             'RECEIPT_OVERTIME': 'receipt-overtime'
@@ -531,9 +531,9 @@ document.addEventListener('DOMContentLoaded', function() {
             'WEEKLY_REPORT': 'fa-calendar-week',
             '연구비증빙-회의록': 'fa-utensils',
             'RECEIPT_MEETING': 'fa-utensils',
-            '연구비증빙-출장': 'fa-plane',
+            '연구비증빙-단독 출장': 'fa-plane',
             'BUSINESS_TRIP': 'fa-plane',
-            '연구비증빙-출장+회의': 'fa-suitcase',
+            '연구비증빙-회의+출장': 'fa-suitcase',
             'MEETING_MINUTES': 'fa-utensils',
             '연구비증빙(야근식대)': 'fa-moon',
             'RECEIPT_OVERTIME': 'fa-moon'
@@ -790,9 +790,9 @@ document.addEventListener('DOMContentLoaded', function() {
             'WEEKLY_REPORT': '/approval/project-weekly-report/detail',
             '연구비증빙-회의록': '/approval/receipt-meeting',
             'RECEIPT_MEETING': '/approval/receipt-meeting',
-            '연구비증빙-출장': '/approval/receipt-trip',
+            '연구비증빙-단독 출장': '/approval/receipt-trip',
             'BUSINESS_TRIP': '/approval/receipt-trip',
-            '연구비증빙-출장+회의': '/approval/receipt-trip-meeting',
+            '연구비증빙-회의+출장': '/approval/receipt-trip-meeting',
             'MEETING_MINUTES': '/approval/receipt-meeting',
             'RECEIPT_OVERTIME': '/approval/receipt-overtime',
             '연구비증빙(야근식대)': '/approval/receipt-overtime'

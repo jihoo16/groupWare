@@ -9,8 +9,6 @@
     const memberSelectModal = document.getElementById('memberSelectModal');
     const memberSearchInput = document.getElementById('memberSearchInput');
     const teamTableBody = document.getElementById('teamTableBody');
-    const addCardBtn = document.getElementById('addCardBtn');
-    const cardModal = document.getElementById('cardModal');
     const cardList = document.getElementById('cardList');
     const projectFiles = document.getElementById('projectFiles');
     const fileList = document.getElementById('fileList');
@@ -289,7 +287,9 @@
                         name: relation.targetProjectName,
                         status: relation.targetProjectStatus,
                         pm: relation.targetProjectManager,
-                        period: relation.targetPeriod
+                        period: relation.targetPeriod,
+                        totalStart: relation.targetTotalPeriodStart || '',
+                        totalEnd: relation.targetTotalPeriodEnd || ''
                     }));
                     console.log('연계 프로젝트 목록 로드:', relatedProjectList);
                 } else {
@@ -804,6 +804,21 @@
             const newStartDate = this.value;
             if (!newStartDate) return;
 
+            // 연계 프로젝트가 없을 때만 총 프로젝트 기간 자동 설정
+            if (relatedProjectList.length === 0) {
+                const totalPeriodStartInput = document.getElementById('totalPeriodStart');
+                if (totalPeriodStartInput) {
+                    totalPeriodStartInput.value = newStartDate;
+                }
+
+                const startYear = new Date(newStartDate).getFullYear();
+                const autoTotalEnd = getLastBusinessDayOfYear(startYear + 3);
+                const totalPeriodEndInput = document.getElementById('totalPeriodEnd');
+                if (totalPeriodEndInput) {
+                    totalPeriodEndInput.value = autoTotalEnd;
+                }
+            }
+
             const totalPeriodEnd = document.getElementById('totalPeriodEnd').value;
             const endDate = projectEndDateInput ? projectEndDateInput.value : '';
 
@@ -859,75 +874,14 @@
         });
     }
 
-    // 카드 추가 버튼 클릭
-    if (addCardBtn) {
-        addCardBtn.addEventListener('click', function() {
-            openCardModal();
-        });
-    }
-
-    // 카드 모달 열기
-    function openCardModal() {
-        if (!cardModal) return;
-        cardModal.classList.add('active');
-
-        // 입력 필드 초기화
-        document.getElementById('cardCompany').value = '';
-        document.getElementById('cardNumber').value = '';
-        const cardNameInput = document.getElementById('cardName');
-        if (cardNameInput) {
-            cardNameInput.value = '';
-        }
-    }
-
-    // 카드 모달 닫기 (전역 함수)
-    window.closeCardModal = function() {
-        if (!cardModal) return;
-        cardModal.classList.remove('active');
-    };
-
-    // 카드 저장 (전역 함수)
-    window.saveCard = async function() {
-        const cardCompany = document.getElementById('cardCompany').value;
-        const cardNumber = document.getElementById('cardNumber').value;
-        const cardName = document.getElementById('cardName').value;
-
-        // 유효성 검사
-        if (!cardCompany) {
-            await showWarning('카드사를 선택해주세요.');
-            return;
-        }
-
-        if (!cardNumber || cardNumber.length !== 4 || !/^\d{4}$/.test(cardNumber)) {
-            await showWarning('카드 뒷 4자리를 정확히 입력해주세요.');
-            return;
-        }
-
-        if (!cardName) {
-            await showWarning('카드 닉네임을 입력해주세요.');
-            return;
-        }
-        console.log("cardIdCounter : " + cardIdCounter)
-        // 카드 추가 (신규 카드는 음수 ID 사용)
-        cardIdCounter--;
-        cardListData.push({
-            company: cardCompany,
-            number: cardNumber,
-            name: cardName
-        });
-
-        renderCardList();
-        closeCardModal();
-    };
-
-    // 카드 목록 렌더링
+    // 카드 목록 렌더링 (읽기 전용)
     function renderCardList() {
         if (!cardList) return;
 
         cardList.innerHTML = '';
 
         if (cardListData.length === 0) {
-            cardList.innerHTML = '<p style="color: #868e96; font-size: 13px; margin-top: 8px;">등록된 카드가 없습니다.</p>';
+            cardList.innerHTML = '<p style="color: #868e96; font-size: 13px; margin-top: 8px;">현재 등록된 카드가 없습니다.</p>';
             return;
         }
 
@@ -942,19 +896,48 @@
                         <div class="card-number">**** **** **** ${card.number}</div>
                     </div>
                 </div>
-                <button type="button" onclick="removeCard(${card.id})">
-                    <i class="fas fa-times"></i>
-                </button>
             `;
             cardList.appendChild(item);
         });
     }
 
-    // 카드 제거 (전역 함수)
-    window.removeCard = function(cardId) {
-        cardListData = cardListData.filter(card => card.id !== cardId);
-        renderCardList();
-    };
+    /**
+     * 해당 년도의 마지막 영업일 계산
+     * 주말(토,일)과 공휴일을 제외한 12월의 마지막 근무일
+     */
+    function getLastBusinessDayOfYear(year) {
+        const holidays = getKoreanHolidays(year);
+        let date = new Date(year, 11, 31);
+
+        while (date.getMonth() === 11) {
+            const dayOfWeek = date.getDay();
+            const dateString = formatDateToString(date);
+            const isWeekend = (dayOfWeek === 0 || dayOfWeek === 6);
+            const isHoliday = holidays.includes(dateString);
+            if (!isWeekend && !isHoliday) {
+                return dateString;
+            }
+            date.setDate(date.getDate() - 1);
+        }
+        return `${year}-12-31`;
+    }
+
+    function getKoreanHolidays(year) {
+        const holidays = [];
+        holidays.push(`${year}-12-25`);
+        const christmas = new Date(year, 11, 25);
+        if (christmas.getDay() === 0) {
+            holidays.push(`${year}-12-26`);
+        }
+        return holidays;
+    }
+
+    function formatDateToString(date) {
+        const year = date.getFullYear();
+        const month = String(date.getMonth() + 1).padStart(2, '0');
+        const day = String(date.getDate()).padStart(2, '0');
+        return `${year}-${month}-${day}`;
+    }
 
     // ============================================
     // 파일 관련 로직
@@ -1416,14 +1399,6 @@
         });
     }
 
-    if (cardModal) {
-        cardModal.addEventListener('click', function(e) {
-            if (e.target === cardModal) {
-                closeCardModal();
-            }
-        });
-    }
-
     // 연계 프로젝트 추가 버튼 클릭
     if (addRelatedProjectBtn) {
         addRelatedProjectBtn.addEventListener('click', function() {
@@ -1516,8 +1491,21 @@
                 <td>${project.projectName}</td>
                 <td><span class="status-badge ${getStatusClass(project.projectStatus)}">${getStatusLabel(project.projectStatus)}</span></td>
                 <td>${project.projectManagerName || '-'}</td>
-                <td>${project.startDate} ~ ${project.endDate}</td>
+                <td>${project.startDate}<br>~ ${project.endDate}</td>
+                <td>${project.totalPeriodStart ? `${project.totalPeriodStart}<br>~ ${project.totalPeriodEnd || '-'}` : '-'}</td>
             `;
+
+            row.style.cursor = 'pointer';
+            row.addEventListener('click', function(e) {
+                if (e.target.type === 'checkbox') return;
+                const checkbox = this.querySelector('.related-project-checkbox');
+                checkbox.checked = !checkbox.checked;
+                if (checkbox.checked) {
+                    this.classList.add('selected');
+                } else {
+                    this.classList.remove('selected');
+                }
+            });
 
             relatedProjectTableBody.appendChild(row);
         });
@@ -1605,7 +1593,9 @@
                 name: row.getAttribute('data-name'),
                 status: row.getAttribute('data-status'),
                 pm: row.getAttribute('data-pm'),
-                period: row.getAttribute('data-period')
+                period: row.getAttribute('data-period'),
+                totalStart: row.getAttribute('data-total-start') || '',
+                totalEnd: row.getAttribute('data-total-end') || ''
             });
         });
 
@@ -1646,7 +1636,8 @@
                     <div class="related-project-details">
                         <span><span class="status-badge ${statusClass}">${statusLabel}</span></span>
                         <span><i class="fas fa-user"></i> 연구 책임자: ${project.pm || '-'}</span>
-                        <span><i class="fas fa-calendar"></i> ${project.period || '-'}</span>
+                        <span><i class="fas fa-calendar"></i> 현재 차수 기간: ${project.period || '-'}</span>
+                        ${(project.totalStart || project.totalEnd) ? `<span><i class="fas fa-calendar-alt"></i> 총 프로젝트 기간: ${project.totalStart || '-'} ~ ${project.totalEnd || '-'}</span>` : ''}
                     </div>
                 </div>
                 <button type="button" onclick="removeRelatedProject('${project.id}')">
