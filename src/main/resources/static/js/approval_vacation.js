@@ -1739,9 +1739,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
     // 날짜가 마이너스 연차에 해당하는지 체크
     function isDateInMinusPeriod(dateStr) {
-        const totalVacation = userVacationInfo ? parseFloat(userVacationInfo.totalDays) : 15;
-        const usedVacation = userVacationInfo ? parseFloat(userVacationInfo.usedDays) : 3;
-        const remainingVacation = totalVacation - usedVacation;
+        const remainingVacation = userVacationInfo ? parseFloat(userVacationInfo.remainingDays) : 12;
 
         // 모든 기간을 날짜순으로 정렬
         const sortedPeriods = [...vacationPeriods].sort((a, b) => {
@@ -2235,9 +2233,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
     // 연차 잔여 확인 및 경고 표시
     function checkVacationBalance(totalUsedDays) {
-        const totalVacation = userVacationInfo ? parseFloat(userVacationInfo.totalDays) : 15;
-        const usedVacation = userVacationInfo ? parseFloat(userVacationInfo.usedDays) : 3;
-        const remainingVacation = totalVacation - usedVacation;
+        const remainingVacation = userVacationInfo ? parseFloat(userVacationInfo.remainingDays) : 12;
 
         const remainingAfter = remainingVacation - totalUsedDays;
 
@@ -3840,6 +3836,9 @@ document.addEventListener('DOMContentLoaded', function() {
             remainingVacationElement.textContent = `${userVacationInfo.remainingDays ?? 15}일`;
         }
 
+        // 총 연차 ⓘ 팝오버 내용 업데이트
+        updateBreakdownPopover(userVacationInfo);
+
         // 개인 정보 (주소, 생년월일, 연락처)
         const addressField = document.getElementById('address');
         const birthDateField = document.getElementById('birth_date');
@@ -3899,6 +3898,133 @@ document.addEventListener('DOMContentLoaded', function() {
         }
 
         // 결재라인 정보는 초기화 함수에서 별도로 설정됨
+    }
+
+    // 총 연차 구성 팝오버 내용 생성
+    function updateBreakdownPopover(info) {
+        const content = document.getElementById('balanceBreakdownContent');
+        if (!content || !info) return;
+
+        const n = (val) => (val !== null && val !== undefined) ? parseFloat(val) : 0;
+        const year             = info.year || new Date().getFullYear();
+        const annualLeaveDays  = n(info.annualLeaveDays);
+        const proportionalDays = n(info.proportionalDays);
+        const monthlyLeaveDays = n(info.monthlyLeaveDays);
+        const compensatoryDays = n(info.compensatoryDays);
+        const totalDays        = n(info.totalDays);
+
+        const today     = new Date(); today.setHours(0, 0, 0, 0);
+        const yearStart = new Date(year, 0, 1);
+
+        let rows = '';
+
+        if (annualLeaveDays > 0) {
+            rows += `<div class="bbp-row"><span>기본연차</span><span>+15일</span></div>`;
+
+            if (info.empJoinDate) {
+                const joinDate = new Date(info.empJoinDate + 'T00:00:00');
+                const pastMilestones   = [];
+                const earnedThisYear   = [];
+                const upcomingThisYear = [];
+                let totalCounted = 0;
+
+                for (let sy = 3; sy <= 21; sy += 2) {
+                    if (totalCounted >= 10) break;
+                    const mDate = new Date(joinDate);
+                    mDate.setFullYear(joinDate.getFullYear() + sy);
+                    const mStr = formatDate(mDate);
+                    if (mDate < yearStart) {
+                        pastMilestones.push({ years: sy, dateStr: mStr });
+                        totalCounted++;
+                    } else if (mDate.getFullYear() === year) {
+                        if (mDate <= today) earnedThisYear.push({ years: sy, dateStr: mStr });
+                        else upcomingThisYear.push({ years: sy, dateStr: mStr });
+                        totalCounted++;
+                    }
+                }
+
+                if (pastMilestones.length > 0) {
+                    rows += `<div class="bbp-group"><div class="bbp-group-header">근속가산 (연초 누적 +${pastMilestones.length}일)</div>`;
+                    pastMilestones.forEach(m => {
+                        rows += `<div class="bbp-row bbp-sub"><span>✓ 만 ${m.years}년 (${m.dateStr})</span><span>+1일</span></div>`;
+                    });
+                    rows += `</div>`;
+                }
+                earnedThisYear.forEach(m => {
+                    rows += `<div class="bbp-row bbp-earned"><span>🎉 만 ${m.years}년 (${m.dateStr}) <span class="bbp-tag-new">올해 추가</span></span><span>+1일</span></div>`;
+                });
+                upcomingThisYear.forEach(m => {
+                    rows += `<div class="bbp-row bbp-upcoming"><span>⏳ 만 ${m.years}년 (${m.dateStr}) <span class="bbp-tag-upcoming">예정</span></span><span>+1일</span></div>`;
+                });
+            } else if (annualLeaveDays > 15) {
+                rows += `<div class="bbp-row"><span>근속가산</span><span>+${annualLeaveDays - 15}일</span></div>`;
+            }
+        }
+
+        if (proportionalDays > 0) rows += `<div class="bbp-row"><span>비례연차</span><span>+${proportionalDays}일</span></div>`;
+        if (monthlyLeaveDays > 0) rows += `<div class="bbp-row"><span>월차</span><span>+${monthlyLeaveDays}일</span></div>`;
+        if (compensatoryDays > 0) rows += `<div class="bbp-row"><span>보상휴가</span><span>+${compensatoryDays}일</span></div>`;
+
+        // 다음 근속가산 예정
+        let nextHtml = '';
+        if (info.empJoinDate && annualLeaveDays > 0) {
+            const joinDate = new Date(info.empJoinDate + 'T00:00:00');
+            let counted = 0;
+            for (let sy = 3; sy <= 21; sy += 2) {
+                if (counted >= 10) break;
+                const mDate = new Date(joinDate);
+                mDate.setFullYear(joinDate.getFullYear() + sy);
+                if (mDate < yearStart) { counted++; continue; }
+                if (mDate.getFullYear() === year) { counted++; continue; }
+                nextHtml = `<div class="bbp-row bbp-next"><span>📅 만 ${sy}년 (${formatDate(mDate)})</span><span>+1일 예정</span></div>`;
+                break;
+            }
+        }
+
+        content.innerHTML = `
+            <div class="bbp-title">${year}년 연차 구성</div>
+            <div class="bbp-divider"></div>
+            ${rows || '<div class="bbp-empty">부여된 연차가 없습니다</div>'}
+            <div class="bbp-divider"></div>
+            <div class="bbp-row bbp-total"><span>합계</span><strong>${totalDays}일</strong></div>
+            ${nextHtml ? `<div class="bbp-divider"></div><div class="bbp-next-title">다음 예정</div>${nextHtml}` : ''}
+        `;
+    }
+
+    // ⓘ 버튼 hover 시 팝오버 표시
+    const totalLeaveInfoBtn = document.getElementById('totalLeaveInfoBtn');
+    const balanceBreakdownPopover = document.getElementById('balanceBreakdownPopover');
+    if (totalLeaveInfoBtn && balanceBreakdownPopover) {
+        // .vacation-balance에 backdrop-filter가 있으면 position:fixed의 containing block이
+        // viewport가 아닌 해당 요소로 바뀌어 팝오버가 엉뚱한 위치에 표시됨.
+        // body로 이동해 backdrop-filter 영향에서 완전히 탈출.
+        document.body.appendChild(balanceBreakdownPopover);
+
+        let hideTimer = null;
+
+        const showPopover = () => {
+            clearTimeout(hideTimer);
+            // position:fixed 이므로 버튼의 뷰포트 기준 좌표로 위치 계산
+            const rect = totalLeaveInfoBtn.getBoundingClientRect();
+            const popoverWidth = 272;
+            let left = rect.left + rect.width / 2 - popoverWidth / 2;
+            // 뷰포트 밖으로 나가지 않도록 클램프
+            left = Math.max(8, Math.min(left, window.innerWidth - popoverWidth - 8));
+            balanceBreakdownPopover.style.top = (rect.bottom + 10) + 'px';
+            balanceBreakdownPopover.style.left = left + 'px';
+            balanceBreakdownPopover.classList.add('show');
+        };
+        const hidePopover = () => {
+            // 버튼 → 팝오버로 마우스 이동 시 닫히지 않도록 짧은 딜레이
+            hideTimer = setTimeout(() => {
+                balanceBreakdownPopover.classList.remove('show');
+            }, 100);
+        };
+
+        totalLeaveInfoBtn.addEventListener('mouseenter', showPopover);
+        totalLeaveInfoBtn.addEventListener('mouseleave', hidePopover);
+        balanceBreakdownPopover.addEventListener('mouseenter', showPopover);
+        balanceBreakdownPopover.addEventListener('mouseleave', hidePopover);
     }
 
     // 연차신청서 페이지인 경우 초기화 (사용자 정보 로드 → 기본 날짜 설정 → 개인정보 채우기)
