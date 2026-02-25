@@ -37,9 +37,9 @@ public interface CalendarEventRepository extends JpaRepository<CalendarEvent, Lo
     List<CalendarEvent> findRecurringEvents();
 
     /**
-     * 결재 연동 일정 조회
+     * 결재 연동 일정 조회 (삭제된 이벤트 제외)
      */
-    @Query("SELECT e FROM CalendarEvent e WHERE e.approvalIdx = :approvalIdx")
+    @Query("SELECT e FROM CalendarEvent e WHERE e.approvalIdx = :approvalIdx AND e.deletedAt IS NULL")
     List<CalendarEvent> findByApprovalIdx(Long approvalIdx);
 
     /**
