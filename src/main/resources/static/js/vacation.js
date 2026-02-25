@@ -13,13 +13,11 @@ document.addEventListener('DOMContentLoaded', async function() {
     const usedLeaveSummary = document.getElementById('usedLeaveSummary');
     const remainingLeaveTableBody = document.getElementById('remainingLeaveTableBody');
     const remainingLeaveSummary = document.getElementById('remainingLeaveSummary');
-    const calculationDetailContent = document.getElementById('calculationDetailContent');
 
     // 전역 변수
     let currentUserIdx = null;
     let vacationInfo = null;
     let vacationHistory = [];
-    let calculationDetail = null;
     let currentCalendarYear = new Date().getFullYear(); // 연차 캘린더 표시 연도
 
     // 대한민국 공휴일 (2024~2026년)
@@ -133,23 +131,6 @@ document.addEventListener('DOMContentLoaded', async function() {
         }
     }
 
-    // API: 연차 계산 상세 조회
-    async function fetchCalculationDetail(userIdx, year = new Date().getFullYear()) {
-        try {
-            const response = await fetch(`/api/vacation/calculation-detail?userIdx=${userIdx}&year=${year}`);
-            if (!response.ok) {
-                if (response.status === 404) {
-                    return null;
-                }
-                throw new Error('Failed to fetch calculation detail');
-            }
-            return await response.json();
-        } catch (error) {
-            console.error('연차 계산 상세 조회 실패:', error);
-            return null;
-        }
-    }
-
     // 전역 변수 CURRENT_USER 사용 (layout.html에서 주입됨)
     function getCurrentUser() {
         if (!window.CURRENT_USER || !window.CURRENT_USER.idx) {
@@ -191,17 +172,62 @@ document.addEventListener('DOMContentLoaded', async function() {
         updateTotalDaysSubInfo();
     }
 
-    // 총 연차 카드 하단에 근속연차 예정 정보 표시
+    // 총 연차 카드 하단에 근속가산 예정 정보 표시 (표시 연도 기준, 해당자만)
     function updateTotalDaysSubInfo() {
         const totalSubInfoEl = document.querySelector('.summary-card.total .sub-info');
-        if (!totalSubInfoEl || !calculationDetail) return;
+        if (!totalSubInfoEl || !vacationInfo) return;
 
-        // 해당 연도에 새로 발생하는 근속가산이 있는 경우만 표시
-        if (calculationDetail.serviceBonusAccrualDate) {
-            const bonusDate = new Date(calculationDetail.serviceBonusAccrualDate + 'T00:00:00');
-            const month = bonusDate.getMonth() + 1;
-            const day = bonusDate.getDate();
-            totalSubInfoEl.textContent = `${month}월 ${day}일 이후 +1일`;
+        if (!vacationInfo.empJoinDate) {
+            totalSubInfoEl.textContent = '';
+            return;
+        }
+
+        const today = new Date();
+        today.setHours(0, 0, 0, 0);
+        const joinDate  = new Date(vacationInfo.empJoinDate + 'T00:00:00');
+        const year      = currentCalendarYear;
+        const todayYear = today.getFullYear();
+
+        // 과거 연도는 표시 불필요
+        if (year < todayYear) {
+            totalSubInfoEl.textContent = '';
+            return;
+        }
+
+        // 표시 연도 안에 있는 근속가산 milestone 탐색 (만 3·5·7…21년, 최대 누적 10일)
+        let accumulated = 0;
+        let milestone   = null;
+        for (let sy = 3; sy <= 21; sy += 2) {
+            const milestoneDate = new Date(joinDate);
+            milestoneDate.setFullYear(milestoneDate.getFullYear() + sy);
+            const mYear = milestoneDate.getFullYear();
+
+            if (mYear < year) {
+                // 표시 연도 이전 → 누적만
+                accumulated++;
+                if (accumulated >= 10) break;
+            } else if (mYear === year) {
+                // 표시 연도 안에 있는 milestone
+                if (accumulated < 10) {
+                    // 현재 연도 조회 시: 이미 지난 날짜는 제외
+                    if (year === todayYear && milestoneDate <= today) {
+                        accumulated++;
+                        if (accumulated >= 10) break;
+                        continue; // 이미 달성 → 다음 milestone 탐색
+                    }
+                    milestone = { years: sy, date: milestoneDate };
+                }
+                break;
+            } else {
+                // 표시 연도 이후 → 없음
+                break;
+            }
+        }
+
+        if (milestone) {
+            const m = milestone.date.getMonth() + 1;
+            const d = milestone.date.getDate();
+            totalSubInfoEl.textContent = `만 ${milestone.years}년 달성 (${m}월 ${d}일) 이후 +1일`;
         } else {
             totalSubInfoEl.textContent = '';
         }
@@ -347,21 +373,18 @@ document.addEventListener('DOMContentLoaded', async function() {
 
         const currentYear = new Date().getFullYear();
 
-        // 2. 연차 정보 조회
+        // 2. 연차 정보 조회 (vacation_balance 기반)
         vacationInfo = await fetchVacationInfo(currentUserIdx, currentYear);
         if (vacationInfo) {
             updateVacationSummaryCards(vacationInfo);
         }
 
-        // 3. 연차 계산 상세 조회
-        calculationDetail = await fetchCalculationDetail(currentUserIdx, currentYear);
-
-        // 4. 연차 사용 내역 조회
+        // 3. 연차 사용 내역 조회
         vacationHistory = await fetchVacationHistory(currentUserIdx, currentYear);
         console.log('[DEBUG] 로드된 연차 내역:', vacationHistory);
         updateVacationHistoryTable(vacationHistory);
 
-        // 5. 연간 달력 렌더링
+        // 4. 연간 달력 렌더링
         console.log('[DEBUG] 연간 달력 렌더링 시작');
         renderAnnualCalendar();
     }
@@ -389,24 +412,10 @@ document.addEventListener('DOMContentLoaded', async function() {
         updateVacationHistoryTable(vacationHistory);
         console.log(`[DEBUG] ${year}년 연차 사용 내역 로드 완료:`, vacationHistory);
 
-        // 2. 연차 계산 상세 조회 (먼저 로드하여 총 연차 카드에 사용)
-        calculationDetail = await fetchCalculationDetail(currentUserIdx, year);
-        console.log(`[DEBUG] ${year}년 연차 계산 상세 로드 완료:`, calculationDetail);
-
-        // 3. 연차 정보 조회 (총 연차, 사용 연차, 잔여 연차)
-        // 미래 연도의 경우 vacationInfo가 null일 수 있으므로 calculationDetail에서 가져옴
+        // 2. 연차 정보 조회 (vacation_balance 기반)
         vacationInfo = await fetchVacationInfo(currentUserIdx, year);
 
-        if (vacationInfo || calculationDetail) {
-            // vacationInfo가 없거나 totalDays가 0이면 calculationDetail로부터 생성
-            if ((!vacationInfo || vacationInfo.totalDays == 0) && calculationDetail) {
-                console.log(`[DEBUG] ${year}년 VacationBalance 없음, calculationDetail로 생성`);
-                vacationInfo = {
-                    totalDays: calculationDetail.totalVacationDays,
-                    usedDays: 0,
-                    remainingDays: calculationDetail.totalVacationDays
-                };
-            }
+        if (vacationInfo) {
             updateVacationSummaryCards(vacationInfo);
             console.log(`[DEBUG] ${year}년 연차 정보 로드 완료:`, vacationInfo);
         } else {
@@ -589,174 +598,224 @@ document.addEventListener('DOMContentLoaded', async function() {
         }
     });
 
-    // 총 연차 모달 열기 및 데이터 채우기
+    // 총 연차 모달 열기 및 데이터 채우기 (vacation_balance 기반)
     function openTotalLeaveModal() {
-        if (!calculationDetail) {
-            calculationDetailContent.innerHTML = `
-                <div style="text-align: center; padding: 40px; color: #666;">
-                    <i class="fas fa-exclamation-circle" style="font-size: 48px; margin-bottom: 16px; color: #ff9800;"></i>
-                    <p style="font-size: 16px; font-weight: 500; margin-bottom: 8px;">연차 계산 상세 내역이 없습니다.</p>
-                    <p style="font-size: 14px; color: #999;">연차를 먼저 계산해주세요.</p>
+        const breakdownEl = document.getElementById('totalLeaveBreakdown');
+
+        if (!vacationInfo) {
+            breakdownEl.innerHTML = `
+                <div class="lb-no-data">
+                    <i class="fas fa-exclamation-circle" style="font-size: 36px; margin-bottom: 12px; color: #ff9800; display: block;"></i>
+                    연차 정보를 불러올 수 없습니다.
                 </div>
             `;
             totalLeaveModal.classList.add('show');
             return;
         }
 
-        let contentHtml = '';
+        // 숫자 변환 헬퍼 (BigDecimal → float, null/undefined → 0)
+        const n = (val) => (val !== null && val !== undefined) ? parseFloat(val) : 0;
 
-        // 입사 첫해 여부에 따른 계산 상세 표시
-        if (calculationDetail.isFirstYear) {
-            // 입사 첫해: 월차 계산
-            contentHtml = `
-                <div class="calc-section">
-                    <div class="calc-title">📅 입사 정보</div>
-                    <div class="calc-value">${calculationDetail.joinDate}</div>
-                    <div class="calc-description">계산 기준일: ${calculationDetail.calculationBaseDate}</div>
-                </div>
+        const year             = vacationInfo.year || new Date().getFullYear();
+        const annualLeaveDays  = n(vacationInfo.annualLeaveDays);
+        const monthlyLeaveDays = n(vacationInfo.monthlyLeaveDays);
+        const proportionalDays = n(vacationInfo.proportionalDays);
+        const compensatoryDays = n(vacationInfo.compensatoryDays);
+        const expiredMonthlyDays = n(vacationInfo.expiredMonthlyDays);
+        const totalDays        = n(vacationInfo.totalDays);
+        const usedDays         = n(vacationInfo.usedDays);
+        const remainingDays    = n(vacationInfo.remainingDays);
 
-                <div class="calc-section">
-                    <div class="calc-title">⏱️ 근속 기간</div>
-                    <div class="calc-value">${calculationDetail.yearsOfService}년 ${calculationDetail.monthsOfService}개월</div>
-                    <div class="calc-description">입사 1년 미만 근무자입니다</div>
-                </div>
+        const today     = new Date(); today.setHours(0, 0, 0, 0);
+        const yearStart = new Date(year, 0, 1);  // 표시 연도 1월 1일
 
-                <div class="calc-section">
-                    <div class="calc-title">📊 월차 계산</div>
-                    <div class="calc-value">${calculationDetail.monthlyVacationDays || 0}일</div>
-                    <div class="calc-description">
-                        ${calculationDetail.monthlyStartMonth && calculationDetail.monthlyEndMonth
-                            ? `${calculationDetail.monthlyStartMonth}월 ~ ${calculationDetail.monthlyEndMonth}월 근무 기간<br>`
-                            : '1개월 미만 근무 (월차 미발생)<br>'}
-                        월차는 매월 1일씩 발생하며, 최대 11일까지 부여됩니다
-                    </div>
-                </div>
+        // ─── 부여 연차 내역 rows ─────────────────────────────────────────
+        let accrualRows = '';
 
-                <div style="margin: 20px 0; padding: 16px; background: #f8f9fa; border-radius: 8px; border-left: 4px solid #2196f3;">
-                    <div style="font-size: 14px; font-weight: 600; color: #1976d2; margin-bottom: 12px;">
-                        📌 월차 계산 방식 (개인별 상세)
-                    </div>
-                    <div style="font-size: 13px; color: #555; line-height: 1.8;">
-                        <strong>✓ 귀하의 입사일: ${calculationDetail.joinDate}</strong><br>
-                        <strong>✓ 현재 근속: ${calculationDetail.yearsOfService}년 ${calculationDetail.monthsOfService}개월</strong><br>
-                        <br>
-                        <strong style="color: #2196f3;">🔹 1년 미만 근로자 월차 계산</strong><br>
-                        • 입사 후 <strong>매월 1일씩 월차 발생</strong> (최대 11일)<br>
-                        • 귀하의 경우: <strong>${calculationDetail.monthlyStartMonth || ''}${calculationDetail.monthlyEndMonth ? '월 ~ ' + calculationDetail.monthlyEndMonth + '월' : ''}</strong> 근무 기간<br>
-                        • 발생 월차: <strong>${calculationDetail.monthlyVacationDays || 0}일</strong><br>
-                        • 근로기준법 제60조 제2항에 따른 규정<br>
-                        <br>
-                        <strong style="color: #f57c00;">💡 참고</strong><br>
-                        • 1년 미만 근로자는 연차가 아닌 <strong>월차만</strong> 발생<br>
-                        • 1년일 도래 시 <strong>전년도 근로일수 비례하여 연차 부여</strong><br>
-                        • 월차는 1년일 이후 연차로 전환됨<br>
-                    </div>
-                </div>
+        // Case 1: 1년 초과 근속자 — 기본연차 + 근속가산 상세
+        if (annualLeaveDays > 0) {
+            accrualRows += `
+                <div class="lb-row">
+                    <span><i class="fas fa-check-circle lb-icon-green"></i>기본연차</span>
+                    <span>+15일</span>
+                </div>`;
 
-                <div class="total-result">
-                    <div class="result-label">총 연차 일수</div>
-                    <div class="result-value">${calculationDetail.totalVacationDays || 0}<span>일</span></div>
-                </div>
-            `;
-        } else {
-            // 일반 연차 계산
-            contentHtml = `
-                <div class="calc-section">
-                    <div class="calc-title">📅 입사 정보</div>
-                    <div class="calc-value">${calculationDetail.joinDate}</div>
-                    <div class="calc-description">계산 기준일: ${calculationDetail.calculationBaseDate}</div>
-                </div>
+            if (vacationInfo.empJoinDate) {
+                const joinDate = new Date(vacationInfo.empJoinDate + 'T00:00:00');
 
-                <div class="calc-section">
-                    <div class="calc-title">⏱️ 근속 기간</div>
-                    <div class="calc-value">${calculationDetail.yearsOfService}년 ${calculationDetail.monthsOfService}개월</div>
-                    <div class="calc-description">재직 기간 기준으로 연차가 계산됩니다</div>
-                </div>
+                // milestone을 3가지로 분류: 연초 이전 누적 / 올해 획득 / 올해 예정
+                const pastMilestones   = [];  // milestone < yearStart (Jan 1)
+                const earnedThisYear   = [];  // yearStart <= milestone <= today, 표시연도 내
+                const upcomingThisYear = [];  // today < milestone, 표시연도 내
 
-                <div class="calc-section" style="border-left-color: #388e3c;">
-                    <div class="calc-title">✓ 기본 연차</div>
-                    <div class="calc-value" style="color: #388e3c;">${calculationDetail.baseVacationDays || 0}일</div>
-                    <div class="calc-description">근로기준법에 따른 기본 연차 일수</div>
-                </div>
+                let totalCounted = 0;
+                for (let sy = 3; sy <= 21; sy += 2) {
+                    if (totalCounted >= 10) break;
+                    const mDate = new Date(joinDate);
+                    mDate.setFullYear(joinDate.getFullYear() + sy);
+                    const mStr = formatDate(mDate);
 
-                ${(calculationDetail.serviceBonusDays || 0) > 0 ? `
-                <div class="calc-section" style="border-left-color: #f57c00;">
-                    <div class="calc-title">🎁 근속 가산 연차</div>
-                    <div class="calc-value" style="color: #f57c00;">+${calculationDetail.serviceBonusDays || 0}일</div>
-                    <div class="calc-description">
-                        ${calculationDetail.serviceBonusAccrualDate
-                            ? `<strong style="color: #f57c00;">${formatAccrualDate(calculationDetail.serviceBonusAccrualDate)} 발생 예정</strong><br>`
-                            : ''}
-                        ${calculationDetail.serviceBonusDescription || '매 만2년마다 1일씩 가산'}<br>
-                        (기본연차 합산 최대 25일, 근속가산 최대 10일)
-                    </div>
-                </div>
-                ` : ''}
+                    if (mDate < yearStart) {
+                        pastMilestones.push({ years: sy, dateStr: mStr });
+                        totalCounted++;
+                    } else if (mDate.getFullYear() === year) {
+                        if (mDate <= today) {
+                            earnedThisYear.push({ years: sy, dateStr: mStr });
+                        } else {
+                            upcomingThisYear.push({ years: sy, dateStr: mStr });
+                        }
+                        totalCounted++;
+                    }
+                }
 
-                <div style="margin: 20px 0; padding: 16px; background: white; border-radius: 8px; border: 1px solid #e0e0e0;">
-                    <div style="font-size: 13px; color: #666; margin-bottom: 8px;">💡 계산식</div>
-                    <div style="font-size: 15px; font-weight: 600; color: #333; text-align: center;">
-                        ${calculationDetail.proportionalVacationDays
-                            ? `${calculationDetail.monthlyVacationDays || 0}일 (월차) + ${calculationDetail.baseVacationDays || 0}일 (비례연차)`
-                            : `${calculationDetail.baseVacationDays || 0}일 (기본)`}
-                        ${(calculationDetail.serviceBonusDays || 0) > 0 ? ` + ${calculationDetail.serviceBonusDays || 0}일 (가산)` : ''}
-                        = <span style="color: #1976d2; font-size: 18px;">${calculationDetail.totalVacationDays || 0}일</span>
-                    </div>
-                </div>
+                // 연초 기준 누적 근속가산
+                if (pastMilestones.length > 0) {
+                    accrualRows += `<div class="lb-seniority-group">`;
+                    accrualRows += `
+                        <div class="lb-seniority-header">
+                            <i class="fas fa-history lb-icon-blue"></i>근속가산 누적 (연초 기준 +${pastMilestones.length}일)
+                        </div>`;
+                    pastMilestones.forEach(m => {
+                        accrualRows += `
+                            <div class="lb-row lb-seniority-item">
+                                <span><i class="fas fa-check lb-icon-green"></i>만 ${m.years}년 달성 (${m.dateStr})</span>
+                                <span>+1일</span>
+                            </div>`;
+                    });
+                    accrualRows += `</div>`;
+                }
 
-                <div style="margin: 20px 0; padding: 16px; background: #f8f9fa; border-radius: 8px; border-left: 4px solid #388e3c;">
-                    <div style="font-size: 14px; font-weight: 600; color: #388e3c; margin-bottom: 12px;">
-                        📌 연차 계산 상세 (개인별)
-                    </div>
-                    <div style="font-size: 13px; color: #555; line-height: 1.8;">
-                        <strong>✓ 귀하의 입사일: ${calculationDetail.joinDate}</strong><br>
-                        <strong>✓ 현재 근속: ${calculationDetail.yearsOfService}년 ${calculationDetail.monthsOfService}개월</strong><br>
-                        <br>
-                        ${calculationDetail.proportionalVacationDays ? `
-                        <strong style="color: #2196f3;">🔹 월차 (${calculationDetail.monthlyVacationDays || 0}일)</strong><br>
-                        ${calculationDetail.monthlyStartMonth && calculationDetail.monthlyEndMonth
-                            ? `• <strong>${calculationDetail.monthlyStartMonth}월 ~ ${calculationDetail.monthlyEndMonth}월</strong> 근무 기간<br>`
-                            : ''}
-                        • 매월 1일씩 발생 (입사일부터 1년일 전월까지)<br>
-                        • 귀하의 경우: <strong>${calculationDetail.monthlyVacationDays || 0}일 발생</strong><br>
-                        <br>
-                        <strong style="color: #388e3c;">🔹 비례 연차 (${calculationDetail.baseVacationDays || 0}일)</strong><br>
-                        • 1년일 도래: <strong>${calculationDetail.proportionalStartDate ? formatAccrualDate(calculationDetail.proportionalStartDate) : ''}</strong><br>
-                        • <strong>전년도 근로일수 비례 지급</strong><br>
-                        • 계산식: (전년도 근로일수 / 전년도 전체일수) × 15일 (반올림)<br>
-                        • 귀하의 경우: <strong>${calculationDetail.baseVacationDays}일 부여</strong><br>
-                        • 근로기준법 제60조 제1항에 따른 규정<br>
-                        <br>
-                        ` : `
-                        <strong style="color: #388e3c;">🔹 기본 연차 (${calculationDetail.baseVacationDays || 0}일)</strong><br>
-                        • 1년 이상 근속 시 <strong>15일 부여</strong><br>
-                        • 근로기준법 제60조 제1항에 따른 규정<br>
-                        <br>
-                        `}
-                        ${(calculationDetail.serviceBonusDays || 0) > 0 ? `
-                        <strong style="color: #f57c00;">🔹 근속 가산 연차 (${calculationDetail.serviceBonusDays}일)</strong><br>
-                        • <strong>만 2년마다 1일씩 누적 추가</strong><br>
-                        • 귀하의 경우: <strong>${calculationDetail.serviceBonusDays}일 가산</strong><br>
-                        ${calculationDetail.serviceBonusAccrualDate ? `• <strong>${formatAccrualDate(calculationDetail.serviceBonusAccrualDate)}</strong>에 1일 추가 예정<br>` : ''}
-                        • 기본연차와 합산하여 <strong>최대 25일</strong> (15일 + 10일)<br>
-                        • 근로기준법 제60조 제2항에 따른 규정<br>
-                        <br>
-                        ` : ''}
-                        <strong style="color: #1976d2;">💡 귀하의 ${calculationDetail.year}년 총 연차</strong><br>
-                        ${calculationDetail.proportionalVacationDays ? `• 월차: ${calculationDetail.monthlyVacationDays || 0}일<br>• 비례연차: ${calculationDetail.baseVacationDays || 0}일<br>` : `• 기본연차: ${calculationDetail.baseVacationDays || 0}일<br>`}
-                        ${(calculationDetail.serviceBonusDays || 0) > 0 ? `• 근속가산: ${calculationDetail.serviceBonusDays}일<br>` : ''}
-                        • <strong>합계: ${calculationDetail.totalVacationDays || 0}일</strong><br>
-                    </div>
-                </div>
+                // 올해 이미 획득한 근속가산
+                earnedThisYear.forEach(m => {
+                    accrualRows += `
+                        <div class="lb-row lb-seniority-new">
+                            <span>🎉 만 ${m.years}년 달성 (${m.dateStr}) <span class="lb-tag lb-tag-new">올해 추가</span></span>
+                            <span>+1일</span>
+                        </div>`;
+                });
 
-                <div class="total-result">
-                    <div class="result-label">총 연차 일수</div>
-                    <div class="result-value">${calculationDetail.totalVacationDays || 0}<span>일</span></div>
-                </div>
-            `;
+                // 올해 아직 미획득 (예정)
+                upcomingThisYear.forEach(m => {
+                    accrualRows += `
+                        <div class="lb-row lb-seniority-upcoming">
+                            <span>⏳ 만 ${m.years}년 예정 (${m.dateStr}) <span class="lb-tag lb-tag-upcoming">이번 연도 예정</span></span>
+                            <span>+1일</span>
+                        </div>`;
+                });
+
+            } else if (annualLeaveDays > 15) {
+                // empJoinDate 없으면 lump sum 표시
+                accrualRows += `
+                    <div class="lb-row">
+                        <span><i class="fas fa-history lb-icon-blue"></i>근속가산 연차</span>
+                        <span>+${annualLeaveDays - 15}일</span>
+                    </div>`;
+            }
         }
 
-        calculationDetailContent.innerHTML = contentHtml;
+        // 비례연차 (입사연도)
+        if (proportionalDays > 0) {
+            accrualRows += `
+                <div class="lb-row">
+                    <span><i class="fas fa-calculator lb-icon-blue"></i>비례연차 (입사연도)</span>
+                    <span>+${proportionalDays}일</span>
+                </div>`;
+        }
+
+        // 유효 월차
+        if (monthlyLeaveDays > 0) {
+            accrualRows += `<div class="lb-row"><span>월차</span><span>+${monthlyLeaveDays}일</span></div>`;
+        }
+
+        // 보상휴가
+        if (compensatoryDays > 0) {
+            accrualRows += `<div class="lb-row"><span>보상휴가</span><span>+${compensatoryDays}일</span></div>`;
+        }
+
+        if (!accrualRows) {
+            accrualRows = `<div class="lb-row"><span style="color:#aaa;">부여된 연차가 없습니다</span></div>`;
+        }
+
+        // ─── 차감/잔여 ────────────────────────────────────────────────────
+        const expiredRow = expiredMonthlyDays > 0
+            ? `<div class="lb-row negative"><span>소멸 월차</span><span>-${expiredMonthlyDays}일</span></div>`
+            : '';
+        const remainingClass = remainingDays < 0 ? 'remaining-row negative' : 'remaining-row';
+
+        // ─── 다음 발생 예정 섹션 ─────────────────────────────────────────
+        const nextAccrualItems = [];
+
+        // 표시 연도 이후 첫 번째 근속가산 milestone
+        if (vacationInfo.empJoinDate && annualLeaveDays > 0) {
+            const joinDate = new Date(vacationInfo.empJoinDate + 'T00:00:00');
+            let counted = 0;
+            let found   = false;
+            for (let sy = 3; sy <= 21 && !found; sy += 2) {
+                if (counted >= 10) break;
+                const mDate = new Date(joinDate);
+                mDate.setFullYear(joinDate.getFullYear() + sy);
+
+                if (mDate < yearStart) { counted++; continue; }
+                if (mDate.getFullYear() === year) { counted++; continue; }
+
+                // 표시 연도 이후 → 첫 번째 미래 milestone
+                nextAccrualItems.push(`
+                    <div class="lb-row next-accrual">
+                        <span>📅 만 ${sy}년 근속가산 (${formatDate(mDate)})</span>
+                        <span>+1일 예정</span>
+                    </div>`);
+                found = true;
+            }
+        }
+
+        // vacation_balance의 nextAccrual (월차, 비례연차 등 — 근속 제외)
+        if (vacationInfo.nextAccrualDate) {
+            const type = vacationInfo.nextAccrualType || '';
+            if (!type.includes('근속')) {
+                const d    = new Date(vacationInfo.nextAccrualDate + 'T00:00:00');
+                const days = n(vacationInfo.nextAccrualDays);
+                nextAccrualItems.push(`
+                    <div class="lb-row next-accrual">
+                        <span>📅 ${formatDate(d)}</span>
+                        <span>${type}&nbsp;+${days}일</span>
+                    </div>`);
+            }
+        }
+
+        const nextAccrualSectionHtml = nextAccrualItems.length > 0 ? `
+            <div class="lb-section">
+                <div class="lb-section-title">다음 발생 예정</div>
+                ${nextAccrualItems.join('')}
+            </div>
+        ` : '';
+
+        breakdownEl.innerHTML = `
+            <div class="lb-year-title">${year}년 연차 현황</div>
+
+            <div class="lb-section">
+                <div class="lb-section-title">부여 연차 내역</div>
+                ${accrualRows}
+                <div class="lb-divider"></div>
+                <div class="lb-row total-row">
+                    <span>부여 합계</span>
+                    <strong>${totalDays}일</strong>
+                </div>
+            </div>
+
+            <div class="lb-section">
+                <div class="lb-section-title">차감 / 잔여</div>
+                ${expiredRow}
+                <div class="lb-row"><span>사용 연차</span><span>-${usedDays}일</span></div>
+                <div class="lb-divider"></div>
+                <div class="lb-row ${remainingClass}">
+                    <span>현재 잔여</span>
+                    <strong>${remainingDays}일</strong>
+                </div>
+            </div>
+
+            ${nextAccrualSectionHtml}
+        `;
+
         totalLeaveModal.classList.add('show');
     }
 
