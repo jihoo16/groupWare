@@ -293,6 +293,8 @@ public class ProjectMapper {
                 .targetProjectStatus(getTargetProjectStaus(relation.getTargetProjectIdx()))
                 .targetProjectManager(getTargetProjectManager(relation.getTargetProjectIdx()))
                 .targetPeriod(getTargetProjectPeriod(relation.getTargetProjectIdx()))
+                .targetTotalPeriodStart(getTargetTotalPeriodStart(relation.getTargetProjectIdx()))
+                .targetTotalPeriodEnd(getTargetTotalPeriodEnd(relation.getTargetProjectIdx()))
                 .createdAt(relation.getCreatedAt())
                 .createdUserIdx(relation.getCreatedUserIdx())
                 .build();
@@ -347,6 +349,26 @@ public class ProjectMapper {
                     }
                     return null;
                 })
+                .orElse(null);
+    }
+
+    /**
+     * 대상 프로젝트 총 기간 시작일 조회
+     */
+    private String getTargetTotalPeriodStart(Long targetProjectIdx) {
+        if (targetProjectIdx == null) return null;
+        return projectRepository.findById(targetProjectIdx)
+                .map(project -> project.getTotalPeriodStart() != null ? project.getTotalPeriodStart().toString() : null)
+                .orElse(null);
+    }
+
+    /**
+     * 대상 프로젝트 총 기간 종료일 조회
+     */
+    private String getTargetTotalPeriodEnd(Long targetProjectIdx) {
+        if (targetProjectIdx == null) return null;
+        return projectRepository.findById(targetProjectIdx)
+                .map(project -> project.getTotalPeriodEnd() != null ? project.getTotalPeriodEnd().toString() : null)
                 .orElse(null);
     }
 

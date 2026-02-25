@@ -1524,7 +1524,7 @@
         relatedProjectTableBody.innerHTML = '';
 
         if (projects.length === 0) {
-            relatedProjectTableBody.innerHTML = '<tr><td colspan="5" class="text-center" style="padding: 40px;">등록된 프로젝트가 없습니다.</td></tr>';
+            relatedProjectTableBody.innerHTML = '<tr><td colspan="6" class="text-center" style="padding: 40px;">등록된 프로젝트가 없습니다.</td></tr>';
             return;
         }
 
@@ -1532,7 +1532,7 @@
             const row = document.createElement('tr');
             row.setAttribute('data-id', project.idx);
             row.setAttribute('data-name', project.projectName);
-            row.setAttribute('data-status', getStatusLabel(project.projectStatus));
+            row.setAttribute('data-status', project.projectStatus);
             row.setAttribute('data-pm', project.projectManagerName || '-');
             row.setAttribute('data-period', `${project.startDate} ~ ${project.endDate}`);
             row.setAttribute('data-total-start', project.totalPeriodStart || '');
@@ -1626,44 +1626,41 @@
 
     // 연계 프로젝트 저장 (전역 함수)
     window.saveSelectedRelatedProjects = async function () {
-        const checkboxes = document.querySelectorAll('.related-project-checkbox:checked');
+        const checkedCheckboxes = document.querySelectorAll('.related-project-checkbox:checked');
 
-        if (checkboxes.length === 0) {
+        if (checkedCheckboxes.length === 0) {
             await showWarning('연계할 프로젝트를 선택해주세요.');
             return;
         }
 
-        // 선택된 프로젝트 정보 수집 (이미 등록된 프로젝트는 제외)
-        const newRelations = [];
-        checkboxes.forEach(checkbox => {
+        // 체크된 항목으로 새 목록 구성 (기존 데이터 유지 + 신규 추가 + 해제된 항목 제거)
+        const wasEmpty = relatedProjectList.length === 0;
+        const newList = [];
+        checkedCheckboxes.forEach(checkbox => {
             const projectId = checkbox.value;
-            if (relatedProjectList.some(p => p.id === projectId)) return;
-
-            const row = checkbox.closest('tr');
-            newRelations.push({
-                id: projectId,
-                name: row.getAttribute('data-name'),
-                status: row.getAttribute('data-status'),
-                pm: row.getAttribute('data-pm'),
-                period: row.getAttribute('data-period'),
-                totalStart: row.getAttribute('data-total-start') || '',
-                totalEnd: row.getAttribute('data-total-end') || ''
-            });
+            const existing = relatedProjectList.find(p => p.id === projectId);
+            if (existing) {
+                newList.push(existing);
+            } else {
+                const row = checkbox.closest('tr');
+                newList.push({
+                    id: projectId,
+                    name: row.getAttribute('data-name'),
+                    status: row.getAttribute('data-status'),
+                    pm: row.getAttribute('data-pm'),
+                    period: row.getAttribute('data-period'),
+                    totalStart: row.getAttribute('data-total-start') || '',
+                    totalEnd: row.getAttribute('data-total-end') || ''
+                });
+            }
         });
 
-        if (newRelations.length === 0) {
-            await showWarning('새로 추가할 프로젝트가 없습니다. 선택한 프로젝트는 이미 등록되어 있습니다.');
-            return;
-        }
-
-        // 연계 프로젝트 목록에 추가
-        const wasEmpty = relatedProjectList.length === 0;
-        relatedProjectList.push(...newRelations);
+        relatedProjectList = newList;
         renderRelatedProjectList();
 
         // 첫 번째 연계 프로젝트가 추가된 경우, 해당 프로젝트 정보를 폼에 자동 입력
-        if (wasEmpty && newRelations.length > 0) {
-            loadProjectInfoToForm(newRelations[0].id);
+        if (wasEmpty && relatedProjectList.length > 0) {
+            loadProjectInfoToForm(relatedProjectList[0].id);
         }
 
         closeRelatedProjectModal();
@@ -1889,7 +1886,7 @@
                         ${project.name}
                     </div>
                     <div class="related-project-details">
-                        <span><i class="fas fa-circle"></i> ${project.status}</span>
+                        <span><span class="status-badge ${getStatusClass(project.status)}">${getStatusLabel(project.status)}</span></span>
                         <span><i class="fas fa-user"></i> 연구 책임자: ${project.pm}</span>
                         <span><i class="fas fa-calendar"></i> 현재 차수 기간: ${project.period}</span>
                         ${(project.totalStart || project.totalEnd) ? `<span><i class="fas fa-calendar-alt"></i> 총 프로젝트 기간: ${project.totalStart || '-'} ~ ${project.totalEnd || '-'}</span>` : ''}
