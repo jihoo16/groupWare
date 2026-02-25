@@ -2950,24 +2950,14 @@ input.auto-datetime {
 .content-byte-counter {
     margin-top: 5px;
     font-size: 12px;
-    color: #888;
-    display: flex;
-    align-items: center;
-    gap: 8px;
 }
 
-.content-byte-counter #contentByteCount {
-    font-weight: 600;
+.byte-status-insufficient {
     color: #e53e3e;
-    transition: color 0.2s;
+    font-weight: 500;
 }
 
-.content-byte-counter #contentByteCount.sufficient {
+.byte-status-sufficient {
     color: #38a169;
-}
-
-.byte-hint {
-    font-size: 11px;
-    color: #e53e3e;
     font-weight: 500;
 }
