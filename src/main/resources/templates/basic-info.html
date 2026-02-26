@@ -10,47 +10,18 @@
     <div class="header">
         <div>
             <h1>기초정보관리</h1>
-            <p class="subtitle">직급, 소속, 회사 로고 등 기본정보 관리</p>
+            <p class="subtitle">직급별 고정경비, 회사 기본정보 관리</p>
         </div>
     </div>
 
     <!-- Tab Navigation -->
     <div class="tab-container">
-        <button class="tab-button active" data-tab="code-groups">그룹코드 설정</button>
-        <button class="tab-button" data-tab="expenses">직급별 고정경비</button>
-        <button class="tab-button" data-tab="logo">회사 로고</button>
-        <button class="tab-button" data-tab="other">기타 설정</button>
-    </div>
-
-    <!-- Tab Content: Code Groups -->
-    <div class="tab-content active" id="code-groups-tab">
-        <div class="section-header">
-            <h2>그룹코드 설정</h2>
-            <button class="btn-add" id="add-code-group-btn">
-                <i class="fas fa-plus"></i> 그룹코드 추가
-            </button>
-        </div>
-
-        <div class="table-container">
-            <table class="data-table">
-                <thead>
-                <tr>
-                    <th style="width: 150px;">그룹코드</th>
-                    <th>그룹명</th>
-                    <th style="width: 250px;">설명</th>
-                    <th style="width: 100px;">사용여부</th>
-                    <th style="width: 290px;">관리</th>
-                </tr>
-                </thead>
-                <tbody id="code-groups-tbody">
-                    <!-- DB에서 로드 -->
-                </tbody>
-            </table>
-        </div>
+        <button class="tab-button active" data-tab="expenses">직급별 고정경비</button>
+        <button class="tab-button" data-tab="other">회사 기본정보</button>
     </div>
 
     <!-- Tab Content: Fixed Expenses by Position -->
-    <div class="tab-content" id="expenses-tab">
+    <div class="tab-content active" id="expenses-tab">
         <div class="section-header">
             <h2>직급별 고정경비 설정</h2>
             <button class="btn-save" id="save-expenses-btn">
@@ -106,182 +77,37 @@
         </div>
     </div>
 
-    <!-- Tab Content: Logo -->
-    <div class="tab-content" id="logo-tab">
-        <div class="section-header">
-            <h2>회사 로고 관리</h2>
-        </div>
-
-        <div class="logo-section">
-            <div class="logo-upload-area">
-                <div class="logo-preview" id="logo-preview">
-                    <img src="/images/logo-placeholder.png" alt="회사 로고" id="logo-image">
-                </div>
-                <div class="logo-upload-controls">
-                    <h3>로고 업로드</h3>
-                    <p class="upload-info">권장 크기: 300x100px / 최대 크기: 2MB / 형식: PNG, JPG, SVG</p>
-                    <input type="file" id="logo-file-input" accept="image/png,image/jpeg,image/svg+xml" style="display: none;">
-                    <div class="upload-buttons">
-                        <button class="btn-upload" id="logo-upload-btn">
-                            <i class="fas fa-upload"></i> 로고 선택
-                        </button>
-                        <button class="btn-save" id="logo-save-btn">
-                            <i class="fas fa-save"></i> 저장
-                        </button>
-                        <button class="btn-reset" id="logo-reset-btn">
-                            <i class="fas fa-undo"></i> 초기화
-                        </button>
-                    </div>
-                </div>
-            </div>
-
-            <div class="logo-usage">
-                <h3>로고 사용 위치</h3>
-                <ul>
-                    <li><i class="fas fa-check"></i> 로그인 페이지</li>
-                    <li><i class="fas fa-check"></i> 사이드바 상단</li>
-                    <li><i class="fas fa-check"></i> 문서 인쇄 헤더</li>
-                    <li><i class="fas fa-check"></i> 이메일 템플릿</li>
-                </ul>
-            </div>
-        </div>
-    </div>
-
-    <!-- Tab Content: Other Settings -->
+    <!-- Tab Content: Company Info -->
     <div class="tab-content" id="other-tab">
-        <div class="section-header">
-            <h2>기타 설정</h2>
-        </div>
-
-        <div class="settings-form">
-            <div class="form-section">
-                <h3>회사 기본 정보</h3>
-                <div class="form-grid">
-                    <div class="form-group">
+        <div class="settings-card">
+            <h3 class="card-title">회사 기본정보</h3>
+            <div class="profile-section">
+                <div class="profile-form">
+                    <div class="profile-item">
                         <label>회사명</label>
-                        <input type="text" value="(주)파인씨엔아이" placeholder="회사명을 입력하세요">
+                        <div class="info-value">(주)파인씨엔아이</div>
                     </div>
-                    <div class="form-group">
+                    <div class="profile-item">
                         <label>사업자등록번호</label>
-                        <input type="text" value="123-45-67890" placeholder="000-00-00000">
+                        <div class="info-value">110-81-70006</div>
                     </div>
-                    <div class="form-group">
+                    <div class="profile-item">
                         <label>대표자명</label>
-                        <input type="text" id="ceoName" placeholder="대표자명을 입력하세요">
+                        <div class="info-value">양재목</div>
                     </div>
-                    <div class="form-group">
+                    <div class="profile-item">
                         <label>대표전화</label>
-                        <input type="text" value="02-1234-5678" placeholder="02-0000-0000">
+                        <div class="info-value">02-412-7233</div>
                     </div>
-                    <div class="form-group full-width">
+                    <div class="profile-item" style="grid-column: 1 / -1;">
                         <label>주소</label>
-                        <input type="text" value="서울특별시 강남구 테헤란로 123" placeholder="주소를 입력하세요">
+                        <div class="info-value">서울특별시 송파구 백제고분로 237, 한림빌딩 6층 파인씨앤아이</div>
                     </div>
                 </div>
-            </div>
-
-            <div class="form-section">
-                <h3>근무 시간 설정</h3>
-                <div class="form-grid">
-                    <div class="form-group">
-                        <label>출근 시간</label>
-                        <input type="time" value="09:00">
-                    </div>
-                    <div class="form-group">
-                        <label>퇴근 시간</label>
-                        <input type="time" value="18:00">
-                    </div>
-                    <div class="form-group">
-                        <label>점심시간 시작</label>
-                        <input type="time" value="12:00">
-                    </div>
-                    <div class="form-group">
-                        <label>점심시간 종료</label>
-                        <input type="time" value="13:00">
-                    </div>
-                </div>
-            </div>
-
-            <div class="form-section">
-                <h3>연차 설정</h3>
-                <div class="form-grid">
-                    <div class="form-group">
-                        <label>신입 기본 연차</label>
-                        <input type="number" value="15" min="0" max="30">
-                        <span class="input-suffix">일</span>
-                    </div>
-                    <div class="form-group">
-                        <label>연차 생성 기준일</label>
-                        <select>
-                            <option value="hire">입사일</option>
-                            <option value="year">회계연도 (1월 1일)</option>
-                        </select>
-                    </div>
-                    <div class="form-group">
-                        <label>반차 사용 가능</label>
-                        <select>
-                            <option value="true">사용 가능</option>
-                            <option value="false">사용 불가</option>
-                        </select>
-                    </div>
-                    <div class="form-group">
-                        <label>연차 이월 가능</label>
-                        <select>
-                            <option value="true">가능</option>
-                            <option value="false">불가</option>
-                        </select>
-                    </div>
-                </div>
-            </div>
-
-            <div class="form-actions">
-                <button class="btn-save-all">
-                    <i class="fas fa-save"></i> 전체 저장
-                </button>
-                <button class="btn-cancel">
-                    <i class="fas fa-times"></i> 취소
-                </button>
             </div>
         </div>
     </div>
 </main>
-</div>
-
-<!-- Code Group Modal -->
-<div id="code-group-modal" class="modal">
-    <div class="modal-content modal-sm">
-        <div class="modal-header">
-            <h2 id="code-group-modal-title">그룹코드 추가</h2>
-            <button class="modal-close">&times;</button>
-        </div>
-        <div class="modal-body">
-            <input type="hidden" id="code-group-idx">
-            <div class="form-group">
-                <label>그룹코드 <span class="required">*</span></label>
-                <input type="text" id="code-group-code" placeholder="예: C01, C02" maxlength="10">
-                <small>영문 대문자, 숫자 조합 권장 (최대 10자)</small>
-            </div>
-            <div class="form-group">
-                <label>그룹명 <span class="required">*</span></label>
-                <input type="text" id="code-group-name" placeholder="예: 소속, 직급" maxlength="100">
-            </div>
-            <div class="form-group">
-                <label>설명</label>
-                <textarea id="code-group-description" rows="3" placeholder="그룹코드에 대한 설명을 입력하세요"></textarea>
-            </div>
-            <div class="form-group">
-                <label>사용여부</label>
-                <select id="code-group-status">
-                    <option value="Y">사용</option>
-                    <option value="N">미사용</option>
-                </select>
-            </div>
-        </div>
-        <div class="modal-footer">
-            <button class="btn-cancel">취소</button>
-            <button class="btn-confirm" id="code-group-save-btn">저장</button>
-        </div>
-    </div>
 </div>
 
 <script th:src="@{/js/basic-info.js}"></script>

@@ -46,7 +46,7 @@ public class UserServiceImpl implements UserService {
     @Override
     public List<UserSimpleDTO> getAllUsers() {
         log.debug("getAllUsers() called");
-        return userRepository.findAll().stream()
+        return userRepository.findAllNonDev().stream()
                 .map(userMapper::toSimpleDTO)
                 .collect(Collectors.toList());
     }

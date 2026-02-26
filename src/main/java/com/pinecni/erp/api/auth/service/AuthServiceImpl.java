@@ -91,6 +91,7 @@ public class AuthServiceImpl implements AuthService {
                 .empPosition(user.getEmpPosition())
                 .empEmail(user.getEmpEmail())
                 .isAdmin(user.getIsAdmin())
+                .isDev(user.getIsDev())
                 .isFirstLogin(isFirstLogin)
                 .message("로그인 성공")
                 .build();

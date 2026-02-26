@@ -45,6 +45,7 @@ public class AuthController {
         session.setAttribute("userIdx", response.getIdx());
         session.setAttribute("empName", response.getEmpName());
         session.setAttribute("isAdmin", response.getIsAdmin());
+        session.setAttribute("isDev", response.getIsDev());
         session.setAttribute("isFirstLogin", response.getIsFirstLogin()); // 최초 로그인 플래그
         session.setMaxInactiveInterval(3600 * 8); // 8시간
 

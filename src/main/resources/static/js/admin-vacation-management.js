@@ -422,24 +422,19 @@ document.addEventListener('DOMContentLoaded', function() {
             : `<td class="${cls}">${n}일</td>`;
     }
 
-    // 당해 근속가산 발생 셀
-    function seniorityEarnedCell(emp) {
+    // 근속가산 셀 (발생완료 / 예정 통합)
+    function seniorityCell(emp) {
         if (emp.seniorityEarnedShort) {
-            return `<td class="col-breakdown col-seniority-earned seniority-earned-cell">
-                        ${emp.seniorityEarnedShort} <strong>+1일</strong>
+            return `<td class="col-breakdown seniority-earned-cell">
+                        ${emp.seniorityEarnedShort} 발생완료 <strong>+1일</strong>
                     </td>`;
         }
-        return `<td class="col-breakdown col-seniority-earned bkd-zero">-</td>`;
-    }
-
-    // 근속가산 예정 셀 (미발생이므로 총 연차에 미포함)
-    function seniorityUpcomingCell(emp) {
         if (emp.seniorityUpcomingShort) {
-            return `<td class="col-breakdown col-seniority-upcoming seniority-upcoming-cell">
-                        ${emp.seniorityUpcomingShort} 이후 <strong>+1일</strong>
+            return `<td class="col-breakdown seniority-upcoming-cell">
+                        ${emp.seniorityUpcomingShort} 이후 <strong>+1일</strong> 예정
                     </td>`;
         }
-        return `<td class="col-breakdown col-seniority-upcoming bkd-zero">-</td>`;
+        return `<td class="col-breakdown bkd-zero">-</td>`;
     }
 
     // 비례연차 셀 (이미 발생한 경우 일수 표시, 예정인 경우 예정일·예정일수 표시)
@@ -474,43 +469,35 @@ document.addEventListener('DOMContentLoaded', function() {
                     <tr class="pre-employment-row">
                         <td>${index + 1}</td>
                         <td class="employee-name">${nameHtml}</td>
+                        <td>${emp.hireDate}</td>
                         <td>${deptHtml}</td>
                         <td>${posHtml}</td>
-                        <td colspan="10" class="pre-employment-cell">
+                        <td colspan="9" class="pre-employment-cell">
                             <i class="fas fa-info-circle"></i> 입사 전입니다
                         </td>
-                        <td>${emp.hireDate}</td>
                         <td>-</td>
                     </tr>
                 `;
             }
 
-            // 총 연차 — 예정 근속가산은 발생 전이므로 총수에 미포함, 소형 메모로만 표기
             const usageClass = emp.usageRate < 50 ? 'low' : emp.usageRate < 80 ? 'medium' : 'high';
-            const upcomingNote = emp.seniorityUpcomingShort
-                ? `<div class="seniority-upcoming-note">(${emp.seniorityUpcomingShort} 이후 +1)</div>`
-                : '';
 
             return `
                 <tr>
                     <td>${index + 1}</td>
                     <td class="employee-name">${nameHtml}</td>
+                    <td>${emp.hireDate}</td>
                     <td>${deptHtml}</td>
                     <td>${posHtml}</td>
-                    <td class="total-leave-cell">
-                        <strong>${emp.totalLeave}일</strong>
-                        ${upcomingNote}
-                    </td>
+                    <td class="total-leave-cell"><strong>${emp.totalLeave}일</strong></td>
                     ${bkdCell(emp.annualLeaveDays)}
-                    ${seniorityEarnedCell(emp)}
-                    ${seniorityUpcomingCell(emp)}
+                    ${seniorityCell(emp)}
                     ${proportionalCell(emp)}
                     ${bkdCell(emp.monthlyLeaveDays)}
                     ${bkdCell(emp.compensatoryDays)}
                     <td>${emp.usedLeave}일</td>
                     <td><strong>${emp.remainingLeave}일</strong></td>
                     <td><span class="usage-rate ${usageClass}">${emp.usageRate}%</span></td>
-                    <td>${emp.hireDate}</td>
                     <td><button class="btn-detail" onclick="showDetail(${emp.id})">상세보기</button></td>
                 </tr>
             `;

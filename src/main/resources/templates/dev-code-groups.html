@@ -1,0 +1,84 @@
+<!DOCTYPE html>
+<html lang="ko" xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{fragments/layout :: head('그룹코드 설정', '/css/basic-info.css')}"></head>
+<body>
+<div class="container">
+
+<div th:replace="~{fragments/sidebar :: sidebar('dev-code-groups')}"></div>
+
+<main class="main-content">
+    <div class="header">
+        <div>
+            <h1>그룹코드 설정</h1>
+            <p class="subtitle">코드 그룹 및 세부 코드 관리</p>
+        </div>
+    </div>
+
+    <div class="tab-content active">
+        <div class="section-header">
+            <h2>그룹코드 목록</h2>
+            <button class="btn-add" id="add-code-group-btn">
+                <i class="fas fa-plus"></i> 그룹코드 추가
+            </button>
+        </div>
+
+        <div class="table-container">
+            <table class="data-table">
+                <thead>
+                <tr>
+                    <th style="width: 150px;">그룹코드</th>
+                    <th>그룹명</th>
+                    <th style="width: 250px;">설명</th>
+                    <th style="width: 100px;">사용여부</th>
+                    <th style="width: 290px;">관리</th>
+                </tr>
+                </thead>
+                <tbody id="code-groups-tbody">
+                    <!-- DB에서 로드 -->
+                </tbody>
+            </table>
+        </div>
+    </div>
+</main>
+</div>
+
+<!-- Code Group Modal -->
+<div id="code-group-modal" class="modal">
+    <div class="modal-content modal-sm">
+        <div class="modal-header">
+            <h2 id="code-group-modal-title">그룹코드 추가</h2>
+            <button class="modal-close">&times;</button>
+        </div>
+        <div class="modal-body">
+            <input type="hidden" id="code-group-idx">
+            <div class="form-group">
+                <label>그룹코드 <span class="required">*</span></label>
+                <input type="text" id="code-group-code" placeholder="예: C01, C02" maxlength="10">
+                <small>영문 대문자, 숫자 조합 권장 (최대 10자)</small>
+            </div>
+            <div class="form-group">
+                <label>그룹명 <span class="required">*</span></label>
+                <input type="text" id="code-group-name" placeholder="예: 소속, 직급" maxlength="100">
+            </div>
+            <div class="form-group">
+                <label>설명</label>
+                <textarea id="code-group-description" rows="3" placeholder="그룹코드에 대한 설명을 입력하세요"></textarea>
+            </div>
+            <div class="form-group">
+                <label>사용여부</label>
+                <select id="code-group-status">
+                    <option value="Y">사용</option>
+                    <option value="N">미사용</option>
+                </select>
+            </div>
+        </div>
+        <div class="modal-footer">
+            <button class="btn-cancel modal-close-btn">취소</button>
+            <button class="btn-confirm" id="code-group-save-btn">저장</button>
+        </div>
+    </div>
+</div>
+
+<script th:src="@{/js/dev-code-groups.js}"></script>
+</body>
+</html>
