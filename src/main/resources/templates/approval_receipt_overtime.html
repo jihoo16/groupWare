@@ -244,20 +244,38 @@
                                     </div>
                                 </div>
 
-                                <!-- 첨부파일 -->
+                                <!-- 스캔파일 업로드 -->
                                 <div class="attachment-section">
-                                    <div class="section-header">
-                                        <h4><i class="fas fa-paperclip"></i> 첨부파일</h4>
+                                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px;">
+                                        <div>
+                                            <div class="section-header">
+                                                <h4><i class="fas fa-receipt"></i> 영수증 업로드</h4>
+                                            </div>
+                                            <div class="file-upload-area" id="receiptUploadArea">
+                                                <input type="file" id="receiptInput" multiple hidden>
+                                                <label for="receiptInput" class="file-upload-label">
+                                                    <i class="fas fa-cloud-upload-alt"></i>
+                                                    <span>파일을 선택하거나 드래그하세요</span>
+                                                    <small>최대 10MB, 최대 5개</small>
+                                                </label>
+                                            </div>
+                                            <div class="file-list" id="receiptFileList"></div>
+                                        </div>
+                                        <div>
+                                            <div class="section-header">
+                                                <h4><i class="fas fa-file-alt"></i> 공식문서 업로드</h4>
+                                            </div>
+                                            <div class="file-upload-area" id="documentUploadArea">
+                                                <input type="file" id="documentInput" multiple hidden>
+                                                <label for="documentInput" class="file-upload-label">
+                                                    <i class="fas fa-cloud-upload-alt"></i>
+                                                    <span>파일을 선택하거나 드래그하세요</span>
+                                                    <small>최대 10MB, 최대 5개</small>
+                                                </label>
+                                            </div>
+                                            <div class="file-list" id="documentFileList"></div>
+                                        </div>
                                     </div>
-                                    <div class="file-upload-area" id="fileUploadArea">
-                                        <input type="file" id="fileInput" multiple hidden>
-                                        <label for="fileInput" class="file-upload-label">
-                                            <i class="fas fa-cloud-upload-alt"></i>
-                                            <span>파일을 선택하거나 드래그하세요</span>
-                                            <small>최대 10MB, 최대 5개</small>
-                                        </label>
-                                    </div>
-                                    <div class="file-list" id="fileList"></div>
                                 </div>
 
                                 <!-- 공식 문서 양식 -->

@@ -5,7 +5,8 @@ document.addEventListener('DOMContentLoaded', async function() {
     console.log('🎯 DOMContentLoaded 이벤트 발생');
     // 전역 변수
     let selectedApprovers = [];
-    let selectedFiles = [];
+    let selectedReceiptFiles = [];
+    let selectedDocumentFiles = [];
     let selectedEmployee = null;
     let currentUser = null; // 현재 로그인한 사용자
     let projects = []; // 프로젝트 목록
@@ -26,9 +27,12 @@ document.addEventListener('DOMContentLoaded', async function() {
     const expandAllBtn = document.getElementById('expandAllBtn');
     const documentForm = document.getElementById('documentForm');
     const approverChips = document.getElementById('approverChips');
-    const fileInput = document.getElementById('fileInput');
-    const fileList = document.getElementById('fileList');
-    const fileUploadArea = document.getElementById('fileUploadArea');
+    const receiptInput = document.getElementById('receiptInput');
+    const receiptFileList = document.getElementById('receiptFileList');
+    const receiptUploadArea = document.getElementById('receiptUploadArea');
+    const documentInput = document.getElementById('documentInput');
+    const documentFileList = document.getElementById('documentFileList');
+    const documentUploadArea = document.getElementById('documentUploadArea');
     const approverModal = document.getElementById('approverModal');
     const employeeList = document.getElementById('employeeList');
     const approverSearch = document.getElementById('approverSearch');
@@ -1928,90 +1932,72 @@ document.addEventListener('DOMContentLoaded', async function() {
         loadEmployeeList();
     };
 
-    // 파일 업로드
-    fileInput.addEventListener('change', function(e) {
-        const files = Array.from(e.target.files);
-        files.forEach(file => {
-            if (selectedFiles.length >= 5) {
-                showWarning('최대 5개까지만 첨부 가능합니다.');
-                return;
-            }
-            if (file.size > 10 * 1024 * 1024) {
-                showWarning('파일 크기는 10MB를 초과할 수 없습니다.');
-                return;
-            }
-            selectedFiles.push(file);
+    // 파일 아이콘 헬퍼
+    function getFileIcon(name) {
+        if (name.match(/\.(jpg|jpeg|png|gif)$/i)) return 'fa-file-image';
+        if (name.match(/\.(pdf)$/i)) return 'fa-file-pdf';
+        if (name.match(/\.(doc|docx)$/i)) return 'fa-file-word';
+        if (name.match(/\.(xls|xlsx)$/i)) return 'fa-file-excel';
+        return 'fa-file';
+    }
+
+    // 업로드 영역 공통 셋업
+    function setupUpload(input, area, filesArr, updateFn) {
+        input.addEventListener('change', function(e) {
+            Array.from(e.target.files).forEach(file => {
+                if (filesArr.length >= 5) { showWarning('최대 5개까지만 첨부 가능합니다.'); return; }
+                if (file.size > 10 * 1024 * 1024) { showWarning('파일 크기는 10MB를 초과할 수 없습니다.'); return; }
+                filesArr.push(file);
+            });
+            updateFn();
+            input.value = '';
         });
-        updateFileList();
-        fileInput.value = '';
-    });
-
-    // 드래그 앤 드롭
-    fileUploadArea.addEventListener('dragover', function(e) {
-        e.preventDefault();
-        this.style.borderColor = '#667eea';
-        this.style.background = '#f5f7ff';
-    });
-
-    fileUploadArea.addEventListener('dragleave', function() {
-        this.style.borderColor = '#ddd';
-        this.style.background = 'white';
-    });
-
-    fileUploadArea.addEventListener('drop', function(e) {
-        e.preventDefault();
-        this.style.borderColor = '#ddd';
-        this.style.background = 'white';
-
-        const files = Array.from(e.dataTransfer.files);
-        files.forEach(file => {
-            if (selectedFiles.length >= 5) {
-                showWarning('최대 5개까지만 첨부 가능합니다.');
-                return;
-            }
-            if (file.size > 10 * 1024 * 1024) {
-                showWarning('파일 크기는 10MB를 초과할 수 없습니다.');
-                return;
-            }
-            selectedFiles.push(file);
-        });
-        updateFileList();
-    });
-
-    // 파일 목록 업데이트
-    function updateFileList() {
-        if (selectedFiles.length === 0) {
-            fileList.innerHTML = '';
-            return;
-        }
-
-        fileList.innerHTML = '';
-        selectedFiles.forEach((file, index) => {
-            const item = document.createElement('div');
-            item.className = 'file-item';
-
-            let icon = 'fa-file';
-            if (file.name.match(/\.(jpg|jpeg|png|gif)$/i)) icon = 'fa-file-image';
-            else if (file.name.match(/\.(pdf)$/i)) icon = 'fa-file-pdf';
-            else if (file.name.match(/\.(doc|docx)$/i)) icon = 'fa-file-word';
-            else if (file.name.match(/\.(xls|xlsx)$/i)) icon = 'fa-file-excel';
-
-            item.innerHTML = `
-                <i class="fas ${icon}"></i>
-                <span>${file.name} (${(file.size / 1024).toFixed(1)} KB)</span>
-                <button class="btn-remove-file" onclick="removeFile(${index})">
-                    <i class="fas fa-times"></i>
-                </button>
-            `;
-            fileList.appendChild(item);
+        area.addEventListener('dragover', function(e) { e.preventDefault(); this.style.borderColor = '#667eea'; this.style.background = '#f5f7ff'; });
+        area.addEventListener('dragleave', function() { this.style.borderColor = '#ddd'; this.style.background = 'white'; });
+        area.addEventListener('drop', function(e) {
+            e.preventDefault(); this.style.borderColor = '#ddd'; this.style.background = 'white';
+            Array.from(e.dataTransfer.files).forEach(file => {
+                if (filesArr.length >= 5) { showWarning('최대 5개까지만 첨부 가능합니다.'); return; }
+                if (file.size > 10 * 1024 * 1024) { showWarning('파일 크기는 10MB를 초과할 수 없습니다.'); return; }
+                filesArr.push(file);
+            });
+            updateFn();
         });
     }
 
-    // 파일 제거
-    window.removeFile = function(index) {
-        selectedFiles.splice(index, 1);
-        updateFileList();
-    };
+    function updateReceiptFileList() {
+        receiptFileList.innerHTML = '';
+        selectedReceiptFiles.forEach((file, index) => {
+            const item = document.createElement('div');
+            item.className = 'file-item';
+            item.innerHTML = `
+                <i class="fas ${getFileIcon(file.name)}"></i>
+                <span>${file.name} (${(file.size / 1024).toFixed(1)} KB)</span>
+                <button class="btn-remove-file" onclick="removeReceiptFile(${index})"><i class="fas fa-times"></i></button>
+            `;
+            receiptFileList.appendChild(item);
+        });
+    }
+
+    function updateDocumentFileList() {
+        documentFileList.innerHTML = '';
+        selectedDocumentFiles.forEach((file, index) => {
+            const item = document.createElement('div');
+            item.className = 'file-item';
+            item.innerHTML = `
+                <i class="fas ${getFileIcon(file.name)}"></i>
+                <span>${file.name} (${(file.size / 1024).toFixed(1)} KB)</span>
+                <button class="btn-remove-file" onclick="removeDocumentFile(${index})"><i class="fas fa-times"></i></button>
+            `;
+            documentFileList.appendChild(item);
+        });
+    }
+
+    setupUpload(receiptInput, receiptUploadArea, selectedReceiptFiles, updateReceiptFileList);
+    setupUpload(documentInput, documentUploadArea, selectedDocumentFiles, updateDocumentFileList);
+
+    window.removeReceiptFile = function(index) { selectedReceiptFiles.splice(index, 1); updateReceiptFileList(); };
+    window.removeDocumentFile = function(index) { selectedDocumentFiles.splice(index, 1); updateDocumentFileList(); };
 
     // 기존 첨부파일 다운로드
     window.downloadAttachment = function(fileId, fileName) {
@@ -2028,7 +2014,7 @@ document.addEventListener('DOMContentLoaded', async function() {
         if (!attachments || attachments.length === 0) return;
 
         // 파일 목록 초기화
-        fileList.innerHTML = '';
+        receiptFileList.innerHTML = '';
 
         attachments.forEach((attachment) => {
             const item = document.createElement('div');
@@ -2049,7 +2035,7 @@ document.addEventListener('DOMContentLoaded', async function() {
                     <i class="fas fa-download"></i>
                 </button>
             `;
-            fileList.appendChild(item);
+            receiptFileList.appendChild(item);
         });
     }
 
@@ -2156,11 +2142,8 @@ document.addEventListener('DOMContentLoaded', async function() {
                 formData.append('data', JSON.stringify(saveData));
 
                 // 첨부파일 추가
-                if (selectedFiles && selectedFiles.length > 0) {
-                    selectedFiles.forEach((file) => {
-                        formData.append('files', file);
-                    });
-                }
+                selectedReceiptFiles.forEach(file => formData.append('files', file));
+                selectedDocumentFiles.forEach(file => formData.append('files', file));
 
                 const response = await fetch('/api/receipt-trips', {
                     method: 'POST',

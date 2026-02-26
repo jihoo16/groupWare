@@ -2,7 +2,8 @@
 document.addEventListener('DOMContentLoaded', async function() {
     // 전역 변수
     let selectedApprovers = [];
-    let selectedFiles = [];
+    let selectedReceiptFiles = [];
+    let selectedDocumentFiles = [];
     let selectedEmployee = null;
     let projects = []; // 내가 참여한 프로젝트 목록
     let selectedProject = null; // 선택된 프로젝트
@@ -29,9 +30,12 @@ document.addEventListener('DOMContentLoaded', async function() {
     const expandAllBtn = document.getElementById('expandAllBtn');
     const documentForm = document.getElementById('documentForm');
     const approverChips = document.getElementById('approverChips');
-    const fileInput = document.getElementById('fileInput');
-    const fileList = document.getElementById('fileList');
-    const fileUploadArea = document.getElementById('fileUploadArea');
+    const receiptInput = document.getElementById('receiptInput');
+    const receiptFileList = document.getElementById('receiptFileList');
+    const receiptUploadArea = document.getElementById('receiptUploadArea');
+    const documentInput = document.getElementById('documentInput');
+    const documentFileList = document.getElementById('documentFileList');
+    const documentUploadArea = document.getElementById('documentUploadArea');
     const approverModal = document.getElementById('approverModal');
     const employeeList = document.getElementById('employeeList');
     const approverSearch = document.getElementById('approverSearch');
@@ -1790,77 +1794,45 @@ document.addEventListener('DOMContentLoaded', async function() {
         loadEmployeeList();
     };
 
-    // 파일 업로드
-    fileInput.addEventListener('change', function(e) {
-        const files = Array.from(e.target.files);
-        files.forEach(file => {
-            if (selectedFiles.length >= 5) {
-                showWarning('최대 5개까지만 첨부 가능합니다.');
-                return;
-            }
-            if (file.size > 10 * 1024 * 1024) {
-                showWarning('파일 크기는 10MB를 초과할 수 없습니다.');
-                return;
-            }
-            selectedFiles.push(file);
+    // 업로드 영역 공통 셋업
+    function setupUpload(input, area, filesArr, updateFn) {
+        input.addEventListener('change', function(e) {
+            Array.from(e.target.files).forEach(file => {
+                if (filesArr.length >= 5) { showWarning('최대 5개까지만 첨부 가능합니다.'); return; }
+                if (file.size > 10 * 1024 * 1024) { showWarning('파일 크기는 10MB를 초과할 수 없습니다.'); return; }
+                filesArr.push(file);
+            });
+            updateFn();
+            input.value = '';
         });
-        updateFileList();
-        fileInput.value = '';
-    });
-
-    // 드래그 앤 드롭
-    fileUploadArea.addEventListener('dragover', function(e) {
-        e.preventDefault();
-        this.style.borderColor = '#667eea';
-        this.style.background = '#f5f7ff';
-    });
-
-    fileUploadArea.addEventListener('dragleave', function() {
-        this.style.borderColor = '#ddd';
-        this.style.background = 'white';
-    });
-
-    fileUploadArea.addEventListener('drop', function(e) {
-        e.preventDefault();
-        this.style.borderColor = '#ddd';
-        this.style.background = 'white';
-
-        const files = Array.from(e.dataTransfer.files);
-        files.forEach(file => {
-            if (selectedFiles.length >= 5) {
-                showWarning('최대 5개까지만 첨부 가능합니다.');
-                return;
-            }
-            if (file.size > 10 * 1024 * 1024) {
-                showWarning('파일 크기는 10MB를 초과할 수 없습니다.');
-                return;
-            }
-            selectedFiles.push(file);
+        area.addEventListener('dragover', function(e) { e.preventDefault(); this.style.borderColor = '#667eea'; this.style.background = '#f5f7ff'; });
+        area.addEventListener('dragleave', function() { this.style.borderColor = '#ddd'; this.style.background = 'white'; });
+        area.addEventListener('drop', function(e) {
+            e.preventDefault(); this.style.borderColor = '#ddd'; this.style.background = 'white';
+            Array.from(e.dataTransfer.files).forEach(file => {
+                if (filesArr.length >= 5) { showWarning('최대 5개까지만 첨부 가능합니다.'); return; }
+                if (file.size > 10 * 1024 * 1024) { showWarning('파일 크기는 10MB를 초과할 수 없습니다.'); return; }
+                filesArr.push(file);
+            });
+            updateFn();
         });
-        updateFileList();
-    });
+    }
 
-    // 파일 목록 업데이트 (기존 파일 + 새 파일)
-    function updateFileList() {
-        if (!fileList) return;
+    // 파일 목록 업데이트 - 영수증 (기존 파일 + 새 파일)
+    function updateReceiptFileList() {
+        if (!receiptFileList) return;
 
-        fileList.innerHTML = '';
+        receiptFileList.innerHTML = '';
 
         // 1. 기존 파일 표시 (삭제 예정인 파일 제외)
         existingAttachments.forEach(att => {
-            // 삭제 예정 목록에 있는 파일은 표시하지 않음
-            if (deletedAttachmentIds.includes(att.idx)) {
-                return;
-            }
+            if (deletedAttachmentIds.includes(att.idx)) return;
 
             const item = document.createElement('div');
             item.className = 'file-item';
-
-            const icon = getFileIcon(att.originalFilename);
             const fileSizeKB = (att.fileSize / 1024).toFixed(1);
-
             item.innerHTML = `
-                <i class="fas ${icon}"></i>
+                <i class="fas ${getFileIcon(att.originalFilename)}"></i>
                 <span>${att.originalFilename} (${fileSizeKB} KB)</span>
                 <a href="/api/receipt-overtimes/attachments/${att.idx}/download" class="btn-download-file" download title="다운로드">
                     <i class="fas fa-download"></i>
@@ -1869,38 +1841,53 @@ document.addEventListener('DOMContentLoaded', async function() {
                     <i class="fas fa-times"></i>
                 </button>
             `;
-            fileList.appendChild(item);
+            receiptFileList.appendChild(item);
         });
 
-        // 2. 새로 선택한 파일 표시
-        selectedFiles.forEach((file, index) => {
+        // 2. 새로 선택한 영수증 파일 표시
+        selectedReceiptFiles.forEach((file, index) => {
             const item = document.createElement('div');
             item.className = 'file-item';
-
-            const icon = getFileIcon(file.name);
-
             item.innerHTML = `
-                <i class="fas ${icon}"></i>
+                <i class="fas ${getFileIcon(file.name)}"></i>
                 <span>${file.name} (${(file.size / 1024).toFixed(1)} KB) <span style="color: #667eea; font-size: 11px;">[신규]</span></span>
-                <button class="btn-remove-file" onclick="removeFile(${index})" title="삭제">
+                <button class="btn-remove-file" onclick="removeReceiptFile(${index})" title="삭제">
                     <i class="fas fa-times"></i>
                 </button>
             `;
-            fileList.appendChild(item);
+            receiptFileList.appendChild(item);
         });
 
         // 3. 파일이 하나도 없을 때 메시지 표시
         const visibleExistingFiles = existingAttachments.filter(f => !deletedAttachmentIds.includes(f.idx));
-        if (visibleExistingFiles.length === 0 && selectedFiles.length === 0) {
-            fileList.innerHTML = '<p style="color: #999; font-size: 12px; padding: 10px 0;">첨부된 파일이 없습니다.</p>';
+        if (visibleExistingFiles.length === 0 && selectedReceiptFiles.length === 0) {
+            receiptFileList.innerHTML = '<p style="color: #999; font-size: 12px; padding: 10px 0;">첨부된 파일이 없습니다.</p>';
         }
     }
 
-    // 파일 제거
-    window.removeFile = function(index) {
-        selectedFiles.splice(index, 1);
-        updateFileList();
-    };
+    // 파일 목록 업데이트 - 공식문서
+    function updateDocumentFileList() {
+        if (!documentFileList) return;
+        documentFileList.innerHTML = '';
+        selectedDocumentFiles.forEach((file, index) => {
+            const item = document.createElement('div');
+            item.className = 'file-item';
+            item.innerHTML = `
+                <i class="fas ${getFileIcon(file.name)}"></i>
+                <span>${file.name} (${(file.size / 1024).toFixed(1)} KB) <span style="color: #667eea; font-size: 11px;">[신규]</span></span>
+                <button class="btn-remove-file" onclick="removeDocumentFile(${index})" title="삭제">
+                    <i class="fas fa-times"></i>
+                </button>
+            `;
+            documentFileList.appendChild(item);
+        });
+    }
+
+    setupUpload(receiptInput, receiptUploadArea, selectedReceiptFiles, updateReceiptFileList);
+    setupUpload(documentInput, documentUploadArea, selectedDocumentFiles, updateDocumentFileList);
+
+    window.removeReceiptFile = function(index) { selectedReceiptFiles.splice(index, 1); updateReceiptFileList(); };
+    window.removeDocumentFile = function(index) { selectedDocumentFiles.splice(index, 1); updateDocumentFileList(); };
 
     // 임시저장
     if (saveDraftBtn) {
@@ -2116,11 +2103,8 @@ document.addEventListener('DOMContentLoaded', async function() {
             formData.append('data', JSON.stringify(data));
 
             // 첨부파일 추가
-            if (selectedFiles && selectedFiles.length > 0) {
-                selectedFiles.forEach(file => {
-                    formData.append('files', file);
-                });
-            }
+            selectedReceiptFiles.forEach(file => formData.append('files', file));
+            selectedDocumentFiles.forEach(file => formData.append('files', file));
 
             try {
                 // API 호출 - 수정 모드일 때 PUT, 아닐 때 POST
