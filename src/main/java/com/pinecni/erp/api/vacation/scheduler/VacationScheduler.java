@@ -38,13 +38,21 @@ public class VacationScheduler {
 
     /**
      * 매년 1월 1일 00:00에 실행 (Asia/Seoul)
-     * 신년도 전체 사용자 accrual 일정 생성 → vacation_balance 초기화
+     *
+     * 실행 순서:
+     *  1. 신년도 accrual 일정 생성
+     *  2. 전년도 balance 재계산 (잔여일수 확정)
+     *  3. 전년도 → 신년도 월차 이월 처리 (이월월차 레코드 생성)
+     *  4. 전년도 balance 재계산 (carried_over_days 반영)
+     *  5. 신년도 balance 초기화 (이월월차 포함)
      */
     @Scheduled(cron = "0 0 0 1 1 ?", zone = "Asia/Seoul")
     public void annualVacationScheduleGeneration() {
         int currentYear = LocalDate.now().getYear();
+        int prevYear = currentYear - 1;
         log.info("=== [연간] accrual 일정 생성 시작 ({}년) ===", currentYear);
 
+        // Step 1: 신년도 accrual 일정 생성
         try {
             int scheduleCount = vacationService.generateAllVacationAccrualSchedules(currentYear);
             log.info("=== [연간] accrual 일정 생성 완료 - {}년, {}명 ===", currentYear, scheduleCount);
@@ -52,12 +60,36 @@ public class VacationScheduler {
             log.error("[연간] accrual 일정 생성 실패 ({}년): {}", currentYear, e.getMessage(), e);
         }
 
-        // accrual 생성 직후 balance 초기화 (00:10 job보다 먼저 실행되므로 여기서도 처리)
+        // Step 2: 전년도 balance 재계산 (잔여일수 확정)
+        try {
+            int prevBalanceCount = vacationService.computeAndSaveAllVacationBalances(prevYear);
+            log.info("=== [연간] 전년도 balance 재계산 완료 - {}년, {}명 ===", prevYear, prevBalanceCount);
+        } catch (Exception e) {
+            log.error("[연간] 전년도 balance 재계산 실패 ({}년): {}", prevYear, e.getMessage(), e);
+        }
+
+        // Step 3: 전년도 → 신년도 월차 이월 (이월월차 레코드 생성)
+        try {
+            int carryCount = vacationService.performAllCarryOvers(prevYear);
+            log.info("=== [연간] 월차 이월 처리 완료 - {}→{}년, {}명 ===", prevYear, currentYear, carryCount);
+        } catch (Exception e) {
+            log.error("[연간] 월차 이월 처리 실패 ({}→{}년): {}", prevYear, currentYear, e.getMessage(), e);
+        }
+
+        // Step 4: 전년도 balance 재계산 (carried_over_days 반영)
+        try {
+            vacationService.computeAndSaveAllVacationBalances(prevYear);
+            log.info("=== [연간] 전년도 balance carried_over_days 반영 완료 - {}년 ===", prevYear);
+        } catch (Exception e) {
+            log.error("[연간] 전년도 balance carried_over_days 반영 실패 ({}년): {}", prevYear, e.getMessage(), e);
+        }
+
+        // Step 5: 신년도 balance 초기화 (이월월차 포함)
         try {
             int balanceCount = vacationService.computeAndSaveAllVacationBalances(currentYear);
-            log.info("=== [연간] vacation_balance 초기화 완료 - {}년, {}명 ===", currentYear, balanceCount);
+            log.info("=== [연간] 신년도 balance 초기화 완료 - {}년, {}명 ===", currentYear, balanceCount);
         } catch (Exception e) {
-            log.error("[연간] vacation_balance 초기화 실패 ({}년): {}", currentYear, e.getMessage(), e);
+            log.error("[연간] 신년도 balance 초기화 실패 ({}년): {}", currentYear, e.getMessage(), e);
         }
     }
 
@@ -121,19 +153,26 @@ public class VacationScheduler {
     /**
      * 서버 시작 15초 후 1회 실행
      *
-     * Step 1. vacation_accrual_schedule
+     * Step 1. vacation_accrual_schedule (당해)
      *   - 전체 활성 사용자 대상 일정 생성 (deleteByUserIdxAndYear 후 재생성 — 멱등성 보장)
-     *   - existsByYear 가드 제거: 일부 사용자 데이터만 존재하는 경우에도 누락 없이 처리
      *
-     * Step 2. vacation_balance
-     *   - 항상 전체 UPSERT 실행
-     *   - 신규 입사자, 당해 연도 balance 없음, 스케줄러 누락 등 모든 케이스 보정
+     * Step 2. 전년도 balance 재계산
+     *   - 이월 처리 전 잔여일수 확정
+     *
+     * Step 3. 전년도 → 당해 월차 이월
+     *   - 이월월차(TYPE_CARRY_OVER) 레코드 생성 (멱등성 보장)
+     *
+     * Step 4. 전년도 balance 재계산 (carried_over_days 반영)
+     *
+     * Step 5. 당해 vacation_balance
+     *   - 항상 전체 UPSERT (이월월차 포함)
      */
     @Scheduled(initialDelay = 15000, fixedDelay = Long.MAX_VALUE)
     public void initialVacationScheduleGeneration() {
         int currentYear = LocalDate.now().getYear();
+        int prevYear = currentYear - 1;
 
-        // Step 1: accrual schedule — 항상 재생성 (사용자별 delete→insert 이므로 멱등)
+        // Step 1: 당해 accrual schedule — 항상 재생성 (멱등)
         log.info("=== [초기화] accrual 일정 생성 시작 ({}년) ===", currentYear);
         try {
             int scheduleCount = vacationService.generateAllVacationAccrualSchedules(currentYear);
@@ -142,7 +181,33 @@ public class VacationScheduler {
             log.error("[초기화] accrual 일정 생성 실패 ({}년): {}", currentYear, e.getMessage(), e);
         }
 
-        // Step 2: vacation_balance — 항상 UPSERT (행 없으면 INSERT, 있으면 UPDATE)
+        // Step 2: 전년도 balance 재계산 (이월 처리 전 잔여 확정)
+        log.info("=== [초기화] 전년도 balance 재계산 시작 ({}년) ===", prevYear);
+        try {
+            int prevCount = vacationService.computeAndSaveAllVacationBalances(prevYear);
+            log.info("=== [초기화] 전년도 balance 재계산 완료 - {}년, {}명 ===", prevYear, prevCount);
+        } catch (Exception e) {
+            log.error("[초기화] 전년도 balance 재계산 실패 ({}년): {}", prevYear, e.getMessage(), e);
+        }
+
+        // Step 3: 전년도 → 당해 월차 이월 (멱등)
+        log.info("=== [초기화] 월차 이월 처리 시작 ({}→{}년) ===", prevYear, currentYear);
+        try {
+            int carryCount = vacationService.performAllCarryOvers(prevYear);
+            log.info("=== [초기화] 월차 이월 처리 완료 - {}→{}년, {}명 ===", prevYear, currentYear, carryCount);
+        } catch (Exception e) {
+            log.error("[초기화] 월차 이월 처리 실패 ({}→{}년): {}", prevYear, currentYear, e.getMessage(), e);
+        }
+
+        // Step 4: 전년도 balance 재계산 (carried_over_days 반영)
+        try {
+            vacationService.computeAndSaveAllVacationBalances(prevYear);
+            log.info("=== [초기화] 전년도 balance carried_over_days 반영 완료 - {}년 ===", prevYear);
+        } catch (Exception e) {
+            log.error("[초기화] 전년도 balance carried_over_days 반영 실패 ({}년): {}", prevYear, e.getMessage(), e);
+        }
+
+        // Step 5: 당해 vacation_balance — 항상 UPSERT (이월월차 포함)
         log.info("=== [초기화] vacation_balance 계산 시작 ({}년) ===", currentYear);
         try {
             int balanceCount = vacationService.computeAndSaveAllVacationBalances(currentYear);

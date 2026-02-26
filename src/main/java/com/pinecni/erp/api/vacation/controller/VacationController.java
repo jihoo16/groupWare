@@ -63,7 +63,7 @@ public class VacationController {
      * @return 사용자 정보 + 연차 잔액 정보
      */
     @GetMapping("/user-info")
-    public ResponseEntity<VacationUserInfoDTO> getUserVacationInfo(
+    public ResponseEntity<?> getUserVacationInfo(
             @RequestParam(required = false) Long userIdx,
             @RequestParam(required = false) Integer year,
             HttpSession session) {
@@ -79,6 +79,11 @@ public class VacationController {
 
         if (year == null) {
             year = LocalDate.now().getYear();
+        }
+
+        if (year < 2026) {
+            log.warn("2026년 이전 연도 조회 차단 - userIdx: {}, year: {}", userIdx, year);
+            return ResponseEntity.badRequest().body(Map.of("error", "서비스 게시일 이전 데이터는 조회 불가합니다."));
         }
 
         log.info("getUserVacationInfo - userIdx: {}, year: {}", userIdx, year);
@@ -192,7 +197,7 @@ public class VacationController {
      * @return 연차 사용 내역 리스트
      */
     @GetMapping("/history")
-    public ResponseEntity<List<VacationRequest>> getVacationHistory(
+    public ResponseEntity<?> getVacationHistory(
             @RequestParam(required = false) Long userIdx,
             @RequestParam(required = false) Integer year,
             HttpSession session) {
@@ -208,6 +213,11 @@ public class VacationController {
 
         if (year == null) {
             year = LocalDate.now().getYear();
+        }
+
+        if (year < 2026) {
+            log.warn("2026년 이전 연도 조회 차단 - userIdx: {}, year: {}", userIdx, year);
+            return ResponseEntity.badRequest().body(Map.of("error", "서비스 게시일 이전 데이터는 조회 불가합니다."));
         }
 
         log.info("GET /api/vacation/history - userIdx: {}, year: {}", userIdx, year);
@@ -225,7 +235,7 @@ public class VacationController {
      * @return 연차 발생 일정 리스트
      */
     @GetMapping("/accrual-schedule")
-    public ResponseEntity<List<VacationAccrualSchedule>> getAccrualSchedule(
+    public ResponseEntity<?> getAccrualSchedule(
             @RequestParam(required = false) Long userIdx,
             @RequestParam(required = false) Integer year,
             HttpSession session) {
@@ -241,6 +251,11 @@ public class VacationController {
 
         if (year == null) {
             year = LocalDate.now().getYear();
+        }
+
+        if (year < 2026) {
+            log.warn("2026년 이전 연도 조회 차단 - userIdx: {}, year: {}", userIdx, year);
+            return ResponseEntity.badRequest().body(Map.of("error", "서비스 게시일 이전 데이터는 조회 불가합니다."));
         }
 
         log.info("GET /api/vacation/accrual-schedule - userIdx: {}, year: {}", userIdx, year);
@@ -261,7 +276,7 @@ public class VacationController {
      * @return 연차 계산 상세 정보
      */
     @GetMapping("/calculation-detail")
-    public ResponseEntity<VacationCalculationDetailDTO> getCalculationDetail(
+    public ResponseEntity<?> getCalculationDetail(
             @RequestParam(required = false) Long userIdx,
             @RequestParam(required = false) Integer year,
             HttpSession session) {
@@ -277,6 +292,11 @@ public class VacationController {
 
         if (year == null) {
             year = LocalDate.now().getYear();
+        }
+
+        if (year < 2026) {
+            log.warn("2026년 이전 연도 조회 차단 - userIdx: {}, year: {}", userIdx, year);
+            return ResponseEntity.badRequest().body(Map.of("error", "서비스 게시일 이전 데이터는 조회 불가합니다."));
         }
 
         log.info("GET /api/vacation/calculation-detail - userIdx: {}, year: {}", userIdx, year);
@@ -350,7 +370,7 @@ public class VacationController {
      * @return 신청된 날짜 목록 (YYYY-MM-DD 형식)
      */
     @GetMapping("/requested-dates")
-    public ResponseEntity<List<String>> getRequestedDates(
+    public ResponseEntity<?> getRequestedDates(
             @RequestParam(required = false) Long userIdx,
             @RequestParam(required = false) Integer year,
             HttpSession session) {
@@ -366,6 +386,11 @@ public class VacationController {
 
         if (year == null) {
             year = LocalDate.now().getYear();
+        }
+
+        if (year < 2026) {
+            log.warn("2026년 이전 연도 조회 차단 - userIdx: {}, year: {}", userIdx, year);
+            return ResponseEntity.badRequest().body(Map.of("error", "서비스 게시일 이전 데이터는 조회 불가합니다."));
         }
 
         log.info("GET /api/vacation/requested-dates - userIdx: {}, year: {}", userIdx, year);
@@ -585,6 +610,11 @@ public class VacationController {
 
         if (year == null) {
             year = LocalDate.now().getYear();
+        }
+
+        if (year < 2026) {
+            log.warn("2026년 이전 연도 조회 차단 - year: {}", year);
+            return ResponseEntity.badRequest().body(Map.of("error", "서비스 게시일 이전 데이터는 조회 불가합니다."));
         }
 
         log.info("getAllUsersVacationInfo - year: {}", year);

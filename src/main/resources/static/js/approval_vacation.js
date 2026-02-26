@@ -2388,6 +2388,18 @@ document.addEventListener('DOMContentLoaded', function() {
     // 이전 달
     if (prevMonthBtn) {
         prevMonthBtn.addEventListener('click', async () => {
+            if (currentYear === 2026 && currentMonth === 0) {
+                Swal.fire({
+                    toast: true,
+                    position: 'top',
+                    icon: 'info',
+                    title: '서비스 게시일 이전 데이터는 <br> 조회 불가합니다.',
+                    showConfirmButton: false,
+                    timer: 2500,
+                    timerProgressBar: true
+                });
+                return;
+            }
             currentMonth--;
             if (currentMonth < 0) {
                 currentMonth = 11;

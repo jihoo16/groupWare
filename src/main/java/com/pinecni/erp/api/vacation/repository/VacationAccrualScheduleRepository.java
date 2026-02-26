@@ -118,20 +118,51 @@ public interface VacationAccrualScheduleRepository extends JpaRepository<Vacatio
                                    @Param("today") LocalDate today);
 
     /**
-     * 유효 월차 합계 (연도 기준, 소멸 전, 만료일 미도래)
+     * 유효 월차 + 이월월차 합계 (연도 기준, 소멸 전, 만료일 미도래)
      * monthly_leave_days 계산에 사용.
-     * ※ 연도별 집계이므로 accrual_schedule.year = :year 기준
+     * 이월월차(TYPE_CARRY_OVER)도 함께 집계하여 전년도 이월분이 잔여에 반영됨.
      */
     @Query("SELECT COALESCE(SUM(v.days), 0) FROM VacationAccrualSchedule v " +
            "WHERE v.userIdx = :userIdx " +
            "AND v.year = :year " +
-           "AND v.accrualType = '월차' " +
+           "AND v.accrualType IN ('월차', '이월월차') " +
            "AND v.accrualDate <= :today " +
            "AND v.isExpired = false " +
            "AND v.expiryDate >= :today")
     BigDecimal sumValidMonthlyDays(@Param("userIdx") Long userIdx,
                                    @Param("year") Integer year,
                                    @Param("today") LocalDate today);
+
+    /**
+     * 이 연도로 이월된 월차 합계 (이월월차 타입 전체)
+     * 전년도 balance의 carried_over_days 계산에 사용.
+     * 예: sumCarriedOutDays(userIdx, 2026) → 2025→2026 이월량
+     */
+    @Query("SELECT COALESCE(SUM(v.days), 0) FROM VacationAccrualSchedule v " +
+           "WHERE v.userIdx = :userIdx " +
+           "AND v.year = :year " +
+           "AND v.accrualType = '이월월차'")
+    BigDecimal sumCarriedOutDays(@Param("userIdx") Long userIdx,
+                                 @Param("year") Integer year);
+
+    /**
+     * 이월 대상 월차의 최대 만료일 조회
+     * 이월월차 레코드 생성 시 expiry_date 결정에 사용.
+     */
+    @Query("SELECT MAX(v.expiryDate) FROM VacationAccrualSchedule v " +
+           "WHERE v.userIdx = :userIdx " +
+           "AND v.year = :year " +
+           "AND v.accrualType = '월차' " +
+           "AND v.isExpired = false " +
+           "AND v.expiryDate >= :today")
+    LocalDate findMaxExpiryDateForValidMonthly(@Param("userIdx") Long userIdx,
+                                               @Param("year") Integer year,
+                                               @Param("today") LocalDate today);
+
+    /**
+     * 특정 연도에 특정 타입의 accrual이 존재하는지 확인 (이월 중복 방지용)
+     */
+    boolean existsByUserIdxAndYearAndAccrualType(Long userIdx, Integer year, String accrualType);
 
     /**
      * 소멸된 월차 합계 (연도 기준)

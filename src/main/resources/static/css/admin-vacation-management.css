@@ -177,7 +177,7 @@
     border-radius: 12px;
     overflow: hidden;
     box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
-    max-height: 550px;
+    max-height: 660px;
     overflow-y: auto;
 }
 
@@ -740,6 +740,31 @@
     font-weight: 600;
     white-space: nowrap;
     margin-top: 2px;
+}
+
+/* 비례연차 예정 셀 (1주년 미도래) — 보라색 계열, 이탤릭으로 미발생 구분 */
+.proportional-upcoming-cell {
+    color: #7c3aed !important;
+    font-size: 12px;
+    white-space: nowrap;
+    font-style: italic;
+}
+
+/* 모달 breakdown — 비례연차 예정 일수 배지 */
+.bkd-days.bkd-upcoming {
+    color: #7c3aed;
+    font-style: italic;
+}
+
+/* 모달 breakdown — 비례연차 예정 행 */
+.bkd-upcoming-row {
+    margin-top: 4px;
+    font-size: 12px;
+    color: #6d28d9;
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    flex-wrap: wrap;
 }
 
 /* ── leave-breakdown-section (상세 모달) ─────────────────── */

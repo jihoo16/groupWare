@@ -35,7 +35,7 @@ document.addEventListener('DOMContentLoaded', function() {
     // 연도 탭
     // ────────────────────────────────────────────────────────────
     function renderYearTabs() {
-        const years = [currentYear - 2, currentYear - 1, currentYear];
+        const years = [currentYear];
         yearTabsBar.innerHTML = years.map(year => `
             <button class="year-tab${year === currentYear ? ' active' : ''}" data-year="${year}">
                 ${year}년
@@ -164,6 +164,33 @@ document.addEventListener('DOMContentLoaded', function() {
     }
 
     // ────────────────────────────────────────────────────────────
+    // 비례연차 예정 계산 (1주년 미도래 & 해당 연도에 도래하는 경우)
+    // 백엔드와 동일 로직: (1주년일~12/31 일수 / 연도총일수) × 15, 반올림
+    // ────────────────────────────────────────────────────────────
+    function computeProportionalUpcoming(empJoinDate, year) {
+        if (!empJoinDate) return null;
+
+        const joinDate    = new Date(empJoinDate);
+        const anniversary = new Date(joinDate);
+        anniversary.setFullYear(joinDate.getFullYear() + 1);
+
+        if (anniversary.getFullYear() !== year) return null;
+
+        const today = new Date();
+        today.setHours(0, 0, 0, 0);
+        if (anniversary <= today) return null; // 이미 도래함
+
+        const yearEnd    = new Date(year, 11, 31);
+        const msPerDay   = 24 * 60 * 60 * 1000;
+        const remaining  = Math.round((yearEnd - anniversary) / msPerDay) + 1;
+        const isLeapYear = (year % 4 === 0 && year % 100 !== 0) || year % 400 === 0;
+        const daysInYear = isLeapYear ? 366 : 365;
+        const days       = Math.round((remaining / daysInYear) * 15);
+
+        return { date: anniversary, short: formatShortDate(anniversary), days };
+    }
+
+    // ────────────────────────────────────────────────────────────
     // 데이터 로드
     // ────────────────────────────────────────────────────────────
     async function loadVacationData() {
@@ -176,7 +203,8 @@ document.addEventListener('DOMContentLoaded', function() {
             const data = await response.json();
 
             allEmployees = data.map((item) => {
-                const ms = computeSeniorityForYear(item.empJoinDate, currentYear);
+                const ms     = computeSeniorityForYear(item.empJoinDate, currentYear);
+                const propUp = computeProportionalUpcoming(item.empJoinDate, currentYear);
 
                 return {
                     id: item.userIdx,
@@ -205,6 +233,10 @@ document.addEventListener('DOMContentLoaded', function() {
                     seniorityEarnedShort:   ms.earnedShort,   // "YY.M.D" 표시용
                     seniorityUpcomingDate:  ms.upcomingDate,  // ISO 정렬용
                     seniorityUpcomingShort: ms.upcomingShort, // "YY.M.D" 표시용
+
+                    // 비례연차 예정 (1년 미만, 1주년 미도래)
+                    proportionalUpcomingShort: propUp ? propUp.short : null,
+                    proportionalUpcomingDays:  propUp ? propUp.days  : null,
 
                     // 입사일
                     empJoinDate: item.empJoinDate || null,
@@ -410,6 +442,19 @@ document.addEventListener('DOMContentLoaded', function() {
         return `<td class="col-breakdown col-seniority-upcoming bkd-zero">-</td>`;
     }
 
+    // 비례연차 셀 (이미 발생한 경우 일수 표시, 예정인 경우 예정일·예정일수 표시)
+    function proportionalCell(emp) {
+        if (emp.proportionalDays > 0) {
+            return `<td class="col-breakdown bkd-cell">${emp.proportionalDays}일</td>`;
+        }
+        if (emp.proportionalUpcomingShort) {
+            return `<td class="col-breakdown bkd-cell proportional-upcoming-cell">
+                        ${emp.proportionalUpcomingShort} 이후 <strong>+${emp.proportionalUpcomingDays}일</strong>
+                    </td>`;
+        }
+        return `<td class="col-breakdown bkd-cell bkd-zero">-</td>`;
+    }
+
     function renderTable(searchTerm = '') {
         if (filteredEmployees.length === 0) {
             vacationTableBody.innerHTML = '';
@@ -459,7 +504,7 @@ document.addEventListener('DOMContentLoaded', function() {
                     ${bkdCell(emp.annualLeaveDays)}
                     ${seniorityEarnedCell(emp)}
                     ${seniorityUpcomingCell(emp)}
-                    ${bkdCell(emp.proportionalDays)}
+                    ${proportionalCell(emp)}
                     ${bkdCell(emp.monthlyLeaveDays)}
                     ${bkdCell(emp.compensatoryDays)}
                     <td>${emp.usedLeave}일</td>
@@ -481,7 +526,8 @@ document.addEventListener('DOMContentLoaded', function() {
         const {
             annualLeaveDays, proportionalDays, monthlyLeaveDays,
             compensatoryDays, expiredMonthlyDays, empJoinDate, totalLeave,
-            seniorityEarnedShort, seniorityUpcomingShort
+            seniorityEarnedShort, seniorityUpcomingShort,
+            proportionalUpcomingShort, proportionalUpcomingDays
         } = emp;
 
         const allZero = annualLeaveDays === 0 && proportionalDays === 0
@@ -584,6 +630,20 @@ document.addEventListener('DOMContentLoaded', function() {
                             <span class="bkd-days">${proportionalDays}일</span>
                         </div>
                         <div class="bkd-sub">입사 1년 미만 재직일수 기준 산정</div>
+                     </div>`;
+        } else if (proportionalUpcomingShort) {
+            html += `<div class="bkd-group">
+                        <div class="bkd-group-header">
+                            <i class="fas fa-chart-pie bkd-icon-purple"></i>
+                            비례연차
+                            <span class="bkd-days bkd-upcoming">예정 +${proportionalUpcomingDays}일</span>
+                        </div>
+                        <div class="bkd-upcoming-row">
+                            <i class="fas fa-clock bkd-icon-yellow"></i>
+                            ${proportionalUpcomingShort} 1주년 도래 시 발생 예정
+                            <span class="bkd-tag bkd-tag-upcoming">⏳ 미발생</span>
+                        </div>
+                        <div class="bkd-sub">총 연차 미포함 · 1주년일~12/31 재직일수 기준</div>
                      </div>`;
         }
 
