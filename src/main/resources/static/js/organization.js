@@ -69,6 +69,7 @@
     // ============================================
     let currentSelectedNode = null;
     let isAllExpanded = false;
+    let currentMember = null;
 
     // ============================================
     // DOM 유틸리티 함수
@@ -321,10 +322,31 @@
     }
 
     /**
+     * 명함 텍스트를 생성합니다.
+     * @param {object} member - 직원 데이터
+     * @returns {string}
+     */
+    function buildBusinessCardText(member) {
+        const nameRank = [member.name, member.rank].filter(Boolean).join(' ');
+        const lines = [];
+        if (nameRank) lines.push(nameRank);
+        if (member.department) lines.push(member.department);
+        const contacts = [];
+        if (member.phone) contacts.push(`T. ${member.phone}`);
+        if (member.email) contacts.push(`E. ${member.email}`);
+        if (contacts.length > 0) {
+            lines.push('');
+            contacts.forEach(c => lines.push(c));
+        }
+        return lines.join('\n');
+    }
+
+    /**
      * 직원 상세 정보를 표시합니다.
      * @param {object} member - 직원 데이터
      */
     function showEmployeeDetail(member) {
+        currentMember = member;
         const placeholder = getElement(DOM_SELECTORS.DETAIL_PLACEHOLDER);
         const detail = getElement(DOM_SELECTORS.EMPLOYEE_DETAIL);
 
@@ -503,6 +525,29 @@
         if (searchInput) {
             searchInput.addEventListener('input', function() {
                 handleSearch(this.value);
+            });
+        }
+
+        // 명함 복사 버튼
+        const copyCardBtn = getElement('copyCardBtn');
+        if (copyCardBtn) {
+            copyCardBtn.addEventListener('click', async () => {
+                if (!currentMember) return;
+                const text = buildBusinessCardText(currentMember);
+                try {
+                    await navigator.clipboard.writeText(text);
+                    Swal.fire({
+                        toast: true,
+                        position: 'top-end',
+                        icon: 'success',
+                        title: '명함 정보가 복사되었습니다',
+                        showConfirmButton: false,
+                        timer: 2000,
+                        timerProgressBar: true
+                    });
+                } catch (e) {
+                    Swal.fire({ icon: 'error', title: '복사 실패', text: '클립보드 접근에 실패했습니다.' });
+                }
             });
         }
     }

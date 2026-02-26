@@ -318,6 +318,44 @@ button:focus,
     border-radius: 12px 12px 0 0;
 }
 
+.btn-copy-card {
+    align-self: flex-end;
+    flex-shrink: 0;
+    display: flex;
+    align-items: center;
+    gap: 7px;
+    padding: 9px 18px;
+    border-radius: 50px;
+    background: rgba(255, 255, 255, 0.15);
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+    border: 1px solid rgba(255, 255, 255, 0.3);
+    color: white;
+    font-size: 13px;
+    font-weight: 500;
+    letter-spacing: 0.3px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    white-space: nowrap;
+}
+
+.btn-copy-card i {
+    font-size: 14px;
+    opacity: 0.9;
+}
+
+.btn-copy-card:hover {
+    background: rgba(255, 255, 255, 0.28);
+    border-color: rgba(255, 255, 255, 0.55);
+    transform: translateY(-2px);
+    box-shadow: 0 6px 20px rgba(0, 0, 0, 0.18);
+}
+
+.btn-copy-card:active {
+    transform: translateY(0);
+    box-shadow: none;
+}
+
 .detail-avatar {
     width: 90px;
     height: 90px;
