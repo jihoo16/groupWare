@@ -960,10 +960,33 @@ select.form-control {
 
 /* 카드 목록 */
 .card-list {
-    margin-top: 12px;
     display: flex;
     flex-direction: column;
     gap: 10px;
+}
+
+.card-empty-state {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 15px 16px;
+    background: #f8f9fa;
+    border: 1.5px dashed #dee2e6;
+    border-radius: 10px;
+    color: #adb5bd;
+    gap: 10px;
+}
+
+.card-empty-state i {
+    font-size: 30px;
+    color: #ced4da;
+}
+
+.card-empty-state p {
+    margin: 0;
+    font-size: 13px;
+    color: #adb5bd;
 }
 
 /* 연계 프로젝트 목록 */

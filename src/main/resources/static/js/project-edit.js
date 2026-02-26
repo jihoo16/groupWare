@@ -881,7 +881,7 @@
         cardList.innerHTML = '';
 
         if (cardListData.length === 0) {
-            cardList.innerHTML = '<p style="color: #868e96; font-size: 13px; margin-top: 8px;">현재 등록된 카드가 없습니다.</p>';
+            cardList.innerHTML = '<div class="card-empty-state"><i class="fas fa-credit-card"></i><p>현재 등록된 카드가 없습니다.</p></div>';
             return;
         }
 
