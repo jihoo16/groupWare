@@ -105,6 +105,9 @@ public class User extends BaseEntity {
     @Column(name = "is_admin", nullable = false)
     private Boolean isAdmin = false;
 
+    @Column(name = "is_dev", nullable = false)
+    private Boolean isDev = false;
+
     // 보고체계 관리
     @Column(name = "manager_idx")
     private Long managerIdx;

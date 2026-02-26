@@ -1,4 +1,34 @@
+// ===========================
+// Session Check & bfcache Reset
+// ===========================
+async function checkSessionAndRedirect() {
+    try {
+        const response = await fetch('/api/auth/check');
+        const data = await response.json();
+        if (data.isAuthenticated) {
+            window.location.replace('/home');
+        }
+    } catch (e) {
+        // 세션 확인 실패 시 로그인 페이지 유지
+    }
+}
+
+// 뒤로가기(bfcache 복원) 시 버튼 상태 리셋 + 세션 재확인
+window.addEventListener('pageshow', function(e) {
+    if (e.persisted) {
+        const btnLogin = document.querySelector('.btn-login');
+        if (btnLogin) {
+            btnLogin.classList.remove('loading');
+            btnLogin.disabled = false;
+        }
+        checkSessionAndRedirect();
+    }
+});
+
 document.addEventListener('DOMContentLoaded', function() {
+    // 이미 로그인된 경우 홈으로 이동
+    checkSessionAndRedirect();
+
     // ===========================
     // DOM Elements
     // ===========================

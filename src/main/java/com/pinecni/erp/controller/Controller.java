@@ -339,13 +339,22 @@ public class Controller {
 
     @GetMapping("/basic-info")
     public String basicInfo(HttpSession session) {
-        // 관리자 권한 확인
         Boolean isAdmin = (Boolean) session.getAttribute("isAdmin");
         if (isAdmin == null || !isAdmin) {
             log.warn("관리자가 아닌 사용자의 기초정보관리 접근 시도");
             return "redirect:/nope";
         }
         return "basic-info";
+    }
+
+    @GetMapping("/dev/code-groups")
+    public String devCodeGroups(HttpSession session) {
+        Boolean isDev = (Boolean) session.getAttribute("isDev");
+        if (isDev == null || !isDev) {
+            log.warn("개발자가 아닌 사용자의 그룹코드 설정 접근 시도");
+            return "redirect:/nope";
+        }
+        return "dev-code-groups";
     }
 
     @GetMapping("/basic-info/code-detail")

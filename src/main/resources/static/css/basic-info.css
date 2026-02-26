@@ -38,7 +38,6 @@
     display: none;
     animation: fadeIn 0.3s ease;
     padding: 24px;
-    background: #f9fafb;
     border-radius: 0 0 12px 12px;
 }
 
@@ -125,7 +124,7 @@
     border-radius: 12px;
     box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
     overflow: hidden;
-    max-height: 500px;
+    max-height: 660px;
     overflow-y: auto;
 }
 
@@ -1005,4 +1004,60 @@
 .code-suffix:focus + .code-prefix,
 .code-input-group:focus-within .code-prefix {
     border-color: #2563eb;
+}
+
+/* ===========================
+   Company Info (settings 스타일 동일)
+   =========================== */
+.settings-card {
+    background: white;
+    border: none;
+    border-radius: 0;
+    padding: 40px 0;
+    margin-bottom: 40px;
+    box-shadow: none;
+}
+
+.card-title {
+    font-size: 20px;
+    font-weight: 700;
+    color: #1a237e;
+    margin-bottom: 32px;
+    padding-bottom: 16px;
+    border-bottom: 3px solid #1a237e;
+}
+
+.profile-section {
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+    width: 100%;
+}
+
+.profile-form {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 32px 40px;
+    width: 100%;
+}
+
+.profile-item {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.profile-item label {
+    font-size: 14px;
+    font-weight: 600;
+    color: #666;
+    display: block;
+}
+
+.profile-item .info-value {
+    padding: 8px 0;
+    font-size: 16px;
+    font-weight: 600;
+    color: #1a237e;
+    line-height: 1.5;
 }
