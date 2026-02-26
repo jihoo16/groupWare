@@ -1391,6 +1391,7 @@ document.addEventListener('DOMContentLoaded', async function() {
             person.task = (newTask && newTask.trim()) ? newTask.trim() : null;
             syncGlobalOvertimePersons();
             renderOvertimePersonListInTemplate();
+            validateRequiredFields();
         };
 
         // 전역 함수로 등록하여 모달에서 접근 가능하게
@@ -2009,7 +2010,12 @@ document.addEventListener('DOMContentLoaded', async function() {
                 taskContent = otTaskSelect?.value || '';
             }
 
-            if (!taskContent) {
+            // 야근 인원 전원이 개인 업무내용을 입력했다면 전역 셀렉트 검증 생략
+            const overtimePersonsForTaskCheck = window.currentOvertimePersons || [];
+            const allPersonsHaveIndividualTask = overtimePersonsForTaskCheck.length > 0 &&
+                overtimePersonsForTaskCheck.every(p => p.task && p.task.trim());
+
+            if (!taskContent && !allPersonsHaveIndividualTask) {
                 showWarning('업무 내용을 선택하거나 입력해주세요.');
                 if (otTaskSelect) otTaskSelect.classList.add('error');
                 return;
@@ -2260,13 +2266,18 @@ document.addEventListener('DOMContentLoaded', async function() {
         }
 
         // 업무 내용 검증
+        // 야근 인원 전원이 개인 업무내용을 입력했다면 전역 셀렉트 검증 생략
+        const overtimePersonsForTask = window.currentOvertimePersons || [];
+        const allPersonsHaveTask = overtimePersonsForTask.length > 0 &&
+            overtimePersonsForTask.every(p => p.task && p.task.trim());
+
         const taskValue = taskSelect?.value;
-        if (!taskValue) {
+        if (!allPersonsHaveTask && !taskValue) {
             taskSelect?.classList.add('error');
             allFieldsFilled = false;
         } else {
             taskSelect?.classList.remove('error');
-            if (taskValue === 'custom' && !taskCustomInput?.value) {
+            if (!allPersonsHaveTask && taskValue === 'custom' && !taskCustomInput?.value) {
                 taskCustomInput?.classList.add('error');
                 allFieldsFilled = false;
             } else {
