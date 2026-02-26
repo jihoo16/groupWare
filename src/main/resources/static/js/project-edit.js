@@ -8,6 +8,12 @@
     const addMemberBtn = document.getElementById('addMemberBtn');
     const memberSelectModal = document.getElementById('memberSelectModal');
     const memberSearchInput = document.getElementById('memberSearchInput');
+    const memberOrgTree = document.getElementById('memberOrgTree');
+    const selectedMemberCount = document.getElementById('selectedMemberCount');
+    const selectedMembersList = document.getElementById('selectedMembersList');
+    const selectAllMembersBtn = document.getElementById('selectAllMembersBtn');
+    const expandAllMembersBtn = document.getElementById('expandAllMembersBtn');
+    const clearSelectedMembersBtn = document.getElementById('clearSelectedMembersBtn');
     const teamTableBody = document.getElementById('teamTableBody');
     const cardList = document.getElementById('cardList');
     const projectFiles = document.getElementById('projectFiles');
@@ -21,6 +27,8 @@
     // 선택된 팀원 목록
     let selectedMemberList = [];
     let memberIdCounter = 0;
+    let tempSelectedMembers = []; // 모달 내 임시 선택 목록
+    let organizationData = { departments: [] }; // 조직도 데이터
 
     // 카드 목록
     let cardListData = [];
@@ -441,11 +449,21 @@
     function openMemberModal() {
         if (!memberSelectModal) return;
 
+        // 임시 선택 목록 초기화 (기존 선택된 팀원들로 초기화, PI 제외)
+        tempSelectedMembers = selectedMemberList
+            .filter(m => m.role !== 'PI')
+            .map(m => ({
+                id: parseInt(m.id || m.idx),
+                name: m.name,
+                department: m.dept,
+                rank: m.position
+            }));
+
         // 인력 목록을 먼저 로드한 후 모달 표시
         loadMembersForModal();
     }
 
-    // 인력 목록 로드 함수
+    // 인력 목록 로드 함수 (조직도 구조로 변환)
     function loadMembersForModal() {
         fetch('/api/users')
             .then(response => {
@@ -455,15 +473,46 @@
                 return response.json();
             })
             .then(users => {
-                renderMemberSelectTable(users);
+                // 부서별로 그룹화
+                const deptMap = {};
+
+                // 현재 선택된 연구책임자 ID 가져오기
+                const currentPiIdx = projectManagerSelect ? parseInt(projectManagerSelect.value) : null;
+
+                users.forEach(user => {
+                    const isActive = user.empStatus === '재직' || !user.empStatus;
+                    const isNotPI = !currentPiIdx || user.idx !== currentPiIdx;
+
+                    if (!isActive || !isNotPI) return;
+
+                    const dept = user.empDeptName || '부서 미지정';
+                    if (!deptMap[dept]) {
+                        deptMap[dept] = [];
+                    }
+                    deptMap[dept].push({
+                        id: user.idx,
+                        name: user.empName,
+                        department: dept,
+                        rank: user.empPositionName || '직급 미지정'
+                    });
+                });
+
+                // 조직도 데이터 구조 생성
+                organizationData.departments = Object.keys(deptMap).map(deptName => ({
+                    id: deptName,
+                    name: deptName,
+                    members: deptMap[deptName].sort((a, b) =>
+                        getPositionOrder(a.rank) - getPositionOrder(b.rank)
+                    )
+                }));
+
+                buildMemberOrgTree();
+                updateSelectedMembersList();
 
                 // 모달 표시
                 memberSelectModal.classList.add('active');
-
-                // 이미 추가된 팀원들의 체크박스 상태 유지
-                updateCheckboxStates();
             })
-            .catch(async (error) => {
+            .catch(async error => {
                 console.error('Error loading members:', error);
                 await showError('인력 목록을 불러올 수 없습니다.');
             });
@@ -471,190 +520,361 @@
 
     // 직급 순서 반환 함수 (정렬용)
     function getPositionOrder(positionName) {
-        if (!positionName) {
-            return 999; // 직급 정보 없는 경우 맨 뒤로
-        }
-
+        if (!positionName) return 999;
         switch (positionName) {
-            case '대표':
-            case '대표이사':
-                return 1;
-            case '상무':
-            case '상무이사':
-                return 2;
-            case '이사':
-                return 3;
-            case '부장':
-                return 4;
-            case '차장':
-                return 5;
-            case '과장':
-                return 6;
-            case '대리':
-                return 7;
-            case '사원':
-                return 8;
-            default:
-                return 999; // 알 수 없는 직급은 맨 뒤로
+            case '대표': case '대표이사': return 1;
+            case '상무': case '상무이사': return 2;
+            case '이사': return 3;
+            case '부장': return 4;
+            case '차장': return 5;
+            case '과장': return 6;
+            case '대리': return 7;
+            case '사원': return 8;
+            default: return 999;
         }
     }
 
-    // 인력 선택 테이블 렌더링
-    function renderMemberSelectTable(users) {
-        const memberSelectTableBody = document.getElementById('memberSelectTableBody');
-        if (!memberSelectTableBody) return;
+    // 조직도 트리 생성
+    function buildMemberOrgTree() {
+        if (!memberOrgTree) return;
 
-        // 테이블 초기화
-        memberSelectTableBody.innerHTML = '';
+        memberOrgTree.innerHTML = '';
 
-        if (users.length === 0) {
-            memberSelectTableBody.innerHTML = '<tr><td colspan="4" class="text-center" style="padding: 40px;">등록된 인력이 없습니다.</td></tr>';
+        if (!organizationData.departments || organizationData.departments.length === 0) {
+            memberOrgTree.innerHTML = '<p style="padding: 20px; text-align: center; color: #999;">조직도 데이터가 없습니다.</p>';
             return;
         }
 
-        // 현재 선택된 연구책임자 ID 가져오기
-        const currentPiIdx = projectManagerSelect ? projectManagerSelect.value : '';
-
-        // 활성 상태 사용자만 표시하고, 연구책임자는 제외
-        const activeUsers = users.filter(user => {
-            const isActive = user.empStatus === '재직' || !user.empStatus;
-            const isNotPI = user.idx != currentPiIdx || !currentPiIdx;
-            return isActive && isNotPI;
+        organizationData.departments.forEach(dept => {
+            const deptNode = createDepartmentNode(dept);
+            memberOrgTree.appendChild(deptNode);
         });
 
-        // 이미 선택된 사용자와 미선택 사용자로 분리
-        const selectedUsers = activeUsers.filter(user =>
-            selectedMemberList.some(m => m.id === user.idx.toString())
-        );
-        const unselectedUsers = activeUsers.filter(user =>
-            !selectedMemberList.some(m => m.id === user.idx.toString())
-        );
+        setTimeout(() => {
+            const firstDept = memberOrgTree.querySelector('.tree-node.department');
+            if (firstDept) firstDept.classList.add('expanded');
+        }, 100);
+    }
 
-        // 각 그룹을 직급 순으로 정렬 (대표 > 상무 > 이사 > 부장 > 차장 > 과장 > 대리 > 사원)
-        selectedUsers.sort((a, b) => {
-            const orderA = getPositionOrder(a.empPositionName);
-            const orderB = getPositionOrder(b.empPositionName);
-            return orderA - orderB;
+    // 부서 노드 생성
+    function createDepartmentNode(dept) {
+        const node = document.createElement('div');
+        node.className = 'tree-node department';
+        node.setAttribute('data-id', dept.id);
+
+        const totalMembers = dept.members ? dept.members.length : 0;
+
+        node.innerHTML = `
+            <div class="tree-node-header">
+                <span class="tree-toggle">
+                    <i class="fas fa-chevron-right"></i>
+                </span>
+                <span class="tree-icon">
+                    <i class="fas fa-building"></i>
+                </span>
+                <span class="tree-label">${dept.name}</span>
+                <span class="tree-count">${totalMembers}명</span>
+            </div>
+            <div class="tree-children"></div>
+        `;
+
+        const children = node.querySelector('.tree-children');
+        if (dept.members && dept.members.length > 0) {
+            dept.members.forEach(member => {
+                const memberNode = createMemberNode(member);
+                children.appendChild(memberNode);
+            });
+        }
+
+        // 부서 인원수 뱃지 클릭 시 해당 부서 전체 선택/해제
+        const treeCount = node.querySelector('.tree-count');
+        if (treeCount && dept.members && dept.members.length > 0) {
+            treeCount.style.cursor = 'pointer';
+            treeCount.addEventListener('click', function(e) {
+                e.stopPropagation();
+                const allSelected = dept.members.every(member =>
+                    tempSelectedMembers.some(emp => emp.id === member.id)
+                );
+                if (allSelected) {
+                    dept.members.forEach(member => {
+                        tempSelectedMembers = tempSelectedMembers.filter(emp => emp.id !== member.id);
+                    });
+                } else {
+                    dept.members.forEach(member => {
+                        if (!tempSelectedMembers.some(emp => emp.id === member.id)) {
+                            tempSelectedMembers.push({ id: member.id, name: member.name, department: member.department, rank: member.rank });
+                        }
+                    });
+                }
+                updateOrgTreeCheckboxes();
+                updateSelectedMembersList();
+            });
+        }
+
+        attachToggleEvent(node);
+        return node;
+    }
+
+    // 팀원 노드 생성
+    function createMemberNode(member) {
+        const node = document.createElement('div');
+        node.className = 'tree-node member';
+        node.setAttribute('data-id', member.id);
+        node.setAttribute('data-member', JSON.stringify(member));
+
+        const isChecked = tempSelectedMembers.some(emp => emp.id === member.id);
+        const badgeClass = getPositionBadgeClass(member.rank);
+
+        node.innerHTML = `
+            <div class="tree-node-header">
+                <span class="tree-toggle invisible">
+                    <i class="fas fa-chevron-right"></i>
+                </span>
+                <input type="checkbox" class="employee-checkbox" data-id="${member.id}" ${isChecked ? 'checked' : ''}>
+                <span class="tree-icon">
+                    <i class="fas fa-user"></i>
+                </span>
+                <span class="tree-label">
+                    ${member.name}
+                    <span class="position-badge ${badgeClass}">${member.rank}</span>
+                </span>
+            </div>
+        `;
+
+        const checkbox = node.querySelector('.employee-checkbox');
+        const header = node.querySelector('.tree-node-header');
+
+        checkbox.addEventListener('change', function() {
+            const memberData = JSON.parse(node.getAttribute('data-member'));
+            if (this.checked) {
+                if (!tempSelectedMembers.some(emp => emp.id === memberData.id)) {
+                    tempSelectedMembers.push({ id: memberData.id, name: memberData.name, department: memberData.department, rank: memberData.rank });
+                }
+            } else {
+                tempSelectedMembers = tempSelectedMembers.filter(emp => emp.id !== memberData.id);
+            }
+            updateSelectedMembersList();
+            updateSelectAllButtonState();
         });
 
-        unselectedUsers.sort((a, b) => {
-            const orderA = getPositionOrder(a.empPositionName);
-            const orderB = getPositionOrder(b.empPositionName);
-            return orderA - orderB;
+        header.addEventListener('click', function(e) {
+            if (e.target === checkbox) return;
+            checkbox.checked = !checkbox.checked;
+            checkbox.dispatchEvent(new Event('change'));
         });
+        header.style.cursor = 'pointer';
 
-        // 선택된 사용자를 상단에, 미선택 사용자를 하단에 배치
-        const sortedUsers = [...selectedUsers, ...unselectedUsers];
+        return node;
+    }
 
-        sortedUsers.forEach(user => {
-            const row = document.createElement('tr');
-            const deptName = user.empDeptName || user.empDept || '-';
-            const positionName = user.empPositionName || user.empPosition || '-';
-            const positionCode = user.empPositionCode || '';
-
-            row.setAttribute('data-id', user.idx);
-            row.setAttribute('data-name', user.empName);
-            row.setAttribute('data-dept', deptName);
-            row.setAttribute('data-position', positionName);
-            row.setAttribute('data-position-code', positionCode);
-
-            row.innerHTML = `
-                <td><input type="checkbox" class="member-checkbox" value="${user.idx}"></td>
-                <td>${user.empName}</td>
-                <td>${deptName}</td>
-                <td>${positionName}</td>
-            `;
-
-            memberSelectTableBody.appendChild(row);
+    // 토글 이벤트 추가
+    function attachToggleEvent(node) {
+        const header = node.querySelector('.tree-node-header');
+        const toggle = header.querySelector('.tree-toggle');
+        if (!toggle || toggle.classList.contains('invisible')) return;
+        header.addEventListener('click', (e) => {
+            if (e.target.classList.contains('employee-checkbox')) return;
+            e.stopPropagation();
+            node.classList.toggle('expanded');
         });
+    }
+
+    // 직급 뱃지 클래스 반환
+    function getPositionBadgeClass(rank) {
+        if (!rank) return 'staff';
+        if (rank.includes('대표') || rank.includes('사장')) return 'ceo';
+        if (rank.includes('상무') || rank.includes('전무')) return 'seniorExec';
+        if (rank.includes('이사')) return 'executive';
+        if (rank.includes('부장') || rank.includes('차장')) return 'manager';
+        return 'staff';
+    }
+
+    // 선택된 팀원 목록 업데이트
+    function updateSelectedMembersList() {
+        if (!selectedMemberCount || !selectedMembersList) return;
+
+        selectedMemberCount.textContent = tempSelectedMembers.length;
+
+        if (tempSelectedMembers.length === 0) {
+            selectedMembersList.innerHTML = '<p style="text-align: center; color: #999; padding: 20px;">선택된 팀원이 없습니다.</p>';
+        } else {
+            selectedMembersList.innerHTML = tempSelectedMembers.map(emp => `
+                <div class="selected-employee-item">
+                    <div class="selected-employee-avatar">${getInitial(emp.name)}</div>
+                    <div class="selected-employee-info">
+                        <div class="selected-employee-name">${emp.name}</div>
+                        <div class="selected-employee-dept">${emp.department || '부서 미지정'} · ${emp.rank || '직급 미지정'}</div>
+                    </div>
+                    <button type="button" class="remove-employee-btn" data-id="${emp.id}">
+                        <i class="fas fa-times"></i>
+                    </button>
+                </div>
+            `).join('');
+
+            selectedMembersList.querySelectorAll('.remove-employee-btn').forEach(btn => {
+                btn.addEventListener('click', function() {
+                    const id = parseInt(this.getAttribute('data-id'));
+                    tempSelectedMembers = tempSelectedMembers.filter(emp => emp.id !== id);
+                    updateSelectedMembersList();
+                    updateOrgTreeCheckboxes();
+                    updateSelectAllButtonState();
+                });
+            });
+        }
+        updateSelectAllButtonState();
+    }
+
+    // 이름의 첫 글자 가져오기
+    function getInitial(name) {
+        if (!name) return '?';
+        return name.charAt(0);
+    }
+
+    // 조직도 트리 체크박스 업데이트
+    function updateOrgTreeCheckboxes() {
+        if (!memberOrgTree) return;
+        const checkboxes = memberOrgTree.querySelectorAll('.employee-checkbox');
+        checkboxes.forEach(checkbox => {
+            const id = parseInt(checkbox.getAttribute('data-id'));
+            checkbox.checked = tempSelectedMembers.some(emp => emp.id === id);
+        });
+    }
+
+    // 전체 선택 버튼 상태 업데이트
+    function updateSelectAllButtonState() {
+        if (!selectAllMembersBtn) return;
+        let totalEmployees = 0;
+        organizationData.departments.forEach(dept => {
+            if (dept.members) totalEmployees += dept.members.length;
+        });
+        const allSelected = tempSelectedMembers.length === totalEmployees && totalEmployees > 0;
+        if (allSelected) {
+            selectAllMembersBtn.innerHTML = '<i class="fas fa-times-circle"></i> 전체 해제';
+        } else {
+            selectAllMembersBtn.innerHTML = '<i class="fas fa-check-double"></i> 전체 선택';
+        }
     }
 
     // 모달 닫기 (전역 함수)
     window.closeMemberModal = function() {
         if (!memberSelectModal) return;
         memberSelectModal.classList.remove('active');
-
-        // 검색 초기화
-        if (memberSearchInput) {
-            memberSearchInput.value = '';
-            filterMembers();
-        }
+        if (memberSearchInput) memberSearchInput.value = '';
     };
 
-    // 체크박스 상태 업데이트
-    function updateCheckboxStates() {
-        const checkboxes = document.querySelectorAll('.member-checkbox');
-        checkboxes.forEach(checkbox => {
-            const memberId = checkbox.value;
-            // PI 역할을 제외한 멤버만 체크 상태 유지
-            const isSelected = selectedMemberList.some(m => m.id === memberId && m.role !== 'PI');
-            checkbox.checked = isSelected;
-
-            // 행 선택 스타일
-            const row = checkbox.closest('tr');
-            if (isSelected) {
-                row.classList.add('selected');
-            } else {
-                row.classList.remove('selected');
-            }
-        });
-    }
-
-    // 팀원 검색
+    // 팀원 검색 (자동 펼치기 포함)
     if (memberSearchInput) {
-        memberSearchInput.addEventListener('input', filterMembers);
-    }
+        memberSearchInput.addEventListener('input', function() {
+            const searchTerm = this.value.toLowerCase();
+            const memberNodes = memberOrgTree.querySelectorAll('.tree-node.member');
+            const deptNodes = memberOrgTree.querySelectorAll('.tree-node.department');
 
-    function filterMembers() {
-        const searchValue = memberSearchInput ? memberSearchInput.value.toLowerCase() : '';
-        const rows = document.querySelectorAll('#memberSelectTableBody tr');
-
-        rows.forEach(row => {
-            const name = row.getAttribute('data-name') || '';
-            if (name.toLowerCase().includes(searchValue)) {
-                row.style.display = '';
-            } else {
-                row.style.display = 'none';
+            if (searchTerm === '') {
+                memberNodes.forEach(node => { node.style.display = ''; });
+                deptNodes.forEach((node, index) => {
+                    if (index === 0) node.classList.add('expanded');
+                    else node.classList.remove('expanded');
+                });
+                return;
             }
+
+            const deptNodesToExpand = new Set();
+            memberNodes.forEach(node => {
+                const memberData = JSON.parse(node.getAttribute('data-member'));
+                const matches = memberData.name.toLowerCase().includes(searchTerm) ||
+                               (memberData.department && memberData.department.toLowerCase().includes(searchTerm)) ||
+                               (memberData.rank && memberData.rank.toLowerCase().includes(searchTerm));
+                node.style.display = matches ? '' : 'none';
+                if (matches) {
+                    const parentDept = node.closest('.tree-node.department');
+                    if (parentDept) deptNodesToExpand.add(parentDept);
+                }
+            });
+
+            deptNodes.forEach(deptNode => {
+                if (deptNodesToExpand.has(deptNode)) deptNode.classList.add('expanded');
+                else deptNode.classList.remove('expanded');
+            });
         });
     }
 
-    // 체크박스 클릭 시 행 선택 스타일 토글
-    document.addEventListener('click', function(e) {
-        if (e.target.classList.contains('member-checkbox')) {
-            const row = e.target.closest('tr');
-            if (e.target.checked) {
-                row.classList.add('selected');
+    // 전체 선택/해제 버튼
+    if (selectAllMembersBtn) {
+        selectAllMembersBtn.addEventListener('click', function() {
+            let totalEmployees = 0;
+            organizationData.departments.forEach(dept => {
+                if (dept.members) totalEmployees += dept.members.length;
+            });
+            const allSelected = tempSelectedMembers.length === totalEmployees && totalEmployees > 0;
+            if (allSelected) {
+                tempSelectedMembers = [];
             } else {
-                row.classList.remove('selected');
+                tempSelectedMembers = [];
+                organizationData.departments.forEach(dept => {
+                    if (dept.members) {
+                        dept.members.forEach(member => {
+                            tempSelectedMembers.push({ id: member.id, name: member.name, department: member.department, rank: member.rank });
+                        });
+                    }
+                });
             }
-        }
-    });
+            updateOrgTreeCheckboxes();
+            updateSelectedMembersList();
+        });
+    }
+
+    // 전체 펼치기 버튼
+    if (expandAllMembersBtn) {
+        expandAllMembersBtn.addEventListener('click', function() {
+            const deptNodes = memberOrgTree.querySelectorAll('.tree-node.department');
+            const allExpanded = Array.from(deptNodes).every(node => node.classList.contains('expanded'));
+            deptNodes.forEach(node => {
+                if (allExpanded) {
+                    node.classList.remove('expanded');
+                    this.innerHTML = '<i class="fas fa-plus-square"></i> 전체 펼치기';
+                } else {
+                    node.classList.add('expanded');
+                    this.innerHTML = '<i class="fas fa-minus-square"></i> 전체 접기';
+                }
+            });
+        });
+    }
+
+    // 전체 해제 버튼
+    if (clearSelectedMembersBtn) {
+        clearSelectedMembersBtn.addEventListener('click', function() {
+            tempSelectedMembers = [];
+            updateOrgTreeCheckboxes();
+            updateSelectedMembersList();
+        });
+    }
 
     // 선택 완료 (전역 함수)
     window.addSelectedMembers = function() {
-        const checkboxes = document.querySelectorAll('.member-checkbox:checked');
         const projectStartDate = document.getElementById('startDate').value;
         const projectEndDate = document.getElementById('endDate').value;
 
-        checkboxes.forEach(checkbox => {
-            const row = checkbox.closest('tr');
-            const memberId = checkbox.value;
-            const memberName = row.getAttribute('data-name');
-            const memberDept = row.getAttribute('data-dept');
-            const memberPosition = row.getAttribute('data-position');
+        // 선택된 팀원 ID 목록
+        const selectedMemberIds = new Set(tempSelectedMembers.map(m => m.id.toString()));
 
-            // 중복 체크
-            if (!selectedMemberList.some(m => m.id === memberId)) {
-                // 직급에 따라 자동으로 역할 할당
-                const autoRole = getAutoRole(memberPosition);
+        // 1. 선택 해제된 팀원 제거 (PI는 유지)
+        selectedMemberList = selectedMemberList.filter(member => {
+            if (member.role === 'PI') return true;
+            return selectedMemberIds.has(member.id) || selectedMemberIds.has(String(member.idx));
+        });
 
+        // 2. 새로운 팀원만 추가
+        tempSelectedMembers.forEach(member => {
+            const existingMember = selectedMemberList.find(m =>
+                m.id === member.id.toString() || (m.idx && m.idx === member.id)
+            );
+            if (!existingMember) {
                 selectedMemberList.push({
-                    id: memberId,
-                    name: memberName,
-                    dept: memberDept,
-                    position: memberPosition,
-                    role: autoRole, // 직급에 따라 자동 할당된 역할
+                    id: member.id.toString(),
+                    name: member.name,
+                    dept: member.department,
+                    position: member.rank,
+                    role: getAutoRole(member.rank),
                     startDate: projectStartDate || '',
                     endDate: projectEndDate || ''
                 });
@@ -791,8 +1011,8 @@
     // 팀원 제거 (전역 함수)
     window.removeMember = function(memberId) {
         selectedMemberList = selectedMemberList.filter(m => m.id !== memberId);
+        tempSelectedMembers = tempSelectedMembers.filter(emp => emp.id.toString() !== memberId.toString());
         renderTeamTable();
-        updateCheckboxStates();
     };
 
     // 프로젝트 시작일/종료일 변경 시 팀원 참여일 자동 업데이트
