@@ -162,13 +162,12 @@ document.addEventListener('DOMContentLoaded', function() {
             });
 
             if (result.isConfirmed) {
-                // Clear session storage
-                sessionStorage.removeItem('isLoggedIn');
-                sessionStorage.removeItem('username');
-                sessionStorage.removeItem('loginTime');
-
-                // Optional: Clear local storage (remember me)
-                // localStorage.removeItem('rememberedUsername');
+                try {
+                    // 서버 세션 무효화
+                    await fetch('/api/auth/logout', { method: 'POST' });
+                } catch (e) {
+                    // 네트워크 오류가 있어도 로그아웃 진행
+                }
 
                 // Show logout message
                 await Swal.fire({
@@ -178,7 +177,6 @@ document.addEventListener('DOMContentLoaded', function() {
                     timer: 1500
                 });
 
-                // Redirect to login page
                 window.location.href = '/login';
             }
         });
