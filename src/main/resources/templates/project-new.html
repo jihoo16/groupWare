@@ -26,13 +26,13 @@
                 <h2>기본 정보</h2>
                 <div class="form-group" style="margin-bottom: 20px">
                     <label>연계 프로젝트</label>
+                    <small class="form-text">연계 프로젝트를 선택하면 프로젝트명, 발주사, 연구책임자, 총 프로젝트 기간, 프로젝트 설명이 자동으로 입력됩니다.</small>
                     <button type="button" class="btn btn-secondary btn-sm form-control" id="addRelatedProjectBtn">
                         <i class="fas fa-link"></i> 연계 프로젝트 추가
                     </button>
                     <div id="relatedProjectList" class="related-project-list">
                         <!-- 연계 프로젝트 목록이 여기에 표시됩니다 -->
                     </div>
-                    <small class="form-text">연계 프로젝트를 선택하면 프로젝트명, 발주사, 연구책임자, 총 프로젝트 기간이 자동으로 입력됩니다.</small>
                 </div>
 
                 <div class="form-grid" style="margin-bottom: 20px">
@@ -141,7 +141,7 @@
             </div>
 
             <div class="form-section">
-                <h2>참여연구원 구성 <span id="teamMemberCount" class="member-count"></span></h2>
+                <h2>참여연구원 구성 &nbsp <span id="teamMemberCount" class="member-count" style="display:none"></span></h2>
                 <div class="team-members">
                     <div class="team-table-container">
                         <table class="team-table" id="teamTable">

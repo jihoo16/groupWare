@@ -846,7 +846,7 @@
                 teamAddButtonWrapper.style.display = 'none';
             }
             const countEl = document.getElementById('teamMemberCount');
-            if (countEl) countEl.textContent = '';
+            if (countEl) { countEl.textContent = ''; countEl.style.display = 'none'; }
             return;
         }
 
@@ -914,7 +914,7 @@
 
         // 총인원 표시
         const countEl = document.getElementById('teamMemberCount');
-        if (countEl) countEl.textContent = selectedMemberList.length + '명';
+        if (countEl) { countEl.textContent = selectedMemberList.length + '명'; countEl.style.display = ''; }
     }
 
     // 팀원 참여기간 업데이트 (전역 함수)
