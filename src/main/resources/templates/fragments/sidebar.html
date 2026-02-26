@@ -45,7 +45,7 @@
                     </li>
                 </ul>
             </li>
-            <li th:class="${(activeMenu == 'project' or activeMenu == 'project-new' or activeMenu == 'project-card' or activeMenu == 'project-documents' or activeMenu == 'project-weekly-report' or activeMenu == 'receipt-meeting' or activeMenu == 'receipt-trip' or activeMenu == 'receipt-trip-meeting' or activeMenu == 'receipt-overtime') ? 'menu-item menu-parent active' : 'menu-item menu-parent'}" data-tooltip="프로젝트 관리">
+            <li th:class="${(activeMenu == 'project' or activeMenu == 'project-new' or activeMenu == 'project-card') ? 'menu-item menu-parent active' : 'menu-item menu-parent'}" data-tooltip="프로젝트 관리">
                 <a href="/project" class="menu-toggle-btn">
                     <i class="fas fa-project-diagram"></i>
                     <span class="menu-text">프로젝트 관리</span>
@@ -62,43 +62,44 @@
                             <span class="submenu-text">신규 프로젝트</span>
                         </a>
                     </li>
-                    <li class="submenu-item" th:classappend="${activeMenu == 'project-card'} ? 'active' : ''">
+                    <li class="submenu-item" th:classappend="${activeMenu == 'project-card'} ? 'active' : ''" th:if="${session.isAdmin}">
                         <a href="/project/card">
                             <span class="submenu-text">연구비카드 관리</span>
                         </a>
                     </li>
-                    <li th:class="${(activeMenu == 'project-documents' or activeMenu == 'project-weekly-report' or activeMenu == 'receipt-meeting' or activeMenu == 'receipt-trip' or activeMenu == 'receipt-trip-meeting' or activeMenu == 'receipt-overtime') ? 'submenu-item submenu-parent active' : 'submenu-item submenu-parent'}">
-                        <a href="/project/documents" class="submenu-toggle-btn">
-                            <span class="submenu-text">프로젝트 문서함</span>
-                            <i class="fas fa-chevron-down submenu-arrow"></i>
+                </ul>
+            </li>
+            <li th:class="${(activeMenu == 'project-documents' or activeMenu == 'project-weekly-report' or activeMenu == 'receipt-meeting' or activeMenu == 'receipt-trip' or activeMenu == 'receipt-trip-meeting' or activeMenu == 'receipt-overtime') ? 'menu-item menu-parent active' : 'menu-item menu-parent'}" data-tooltip="프로젝트 문서함">
+                <a href="/project/documents" class="menu-toggle-btn">
+                    <i class="fas fa-folder-open"></i>
+                    <span class="menu-text">프로젝트 문서함</span>
+                    <i class="fas fa-chevron-down menu-arrow"></i>
+                </a>
+                <ul class="submenu">
+                    <li class="submenu-item" th:classappend="${activeMenu == 'project-weekly-report'} ? 'active' : ''">
+                        <a href="/approval/project-weekly-report">
+                            <span class="submenu-text">프로젝트 주간보고</span>
                         </a>
-                        <ul class="nested-submenu">
-                            <li class="nested-submenu-item" th:classappend="${activeMenu == 'project-weekly-report'} ? 'active' : ''">
-                                <a href="/approval/project-weekly-report">
-                                    <span class="nested-submenu-text">프로젝트 주간보고</span>
-                                </a>
-                            </li>
-                            <li class="nested-submenu-item" th:classappend="${activeMenu == 'receipt-meeting'} ? 'active' : ''">
-                                <a href="/approval/receipt-meeting">
-                                    <span class="nested-submenu-text">회의비 증빙</span>
-                                </a>
-                            </li>
-                            <li class="nested-submenu-item" th:classappend="${activeMenu == 'receipt-trip'} ? 'active' : ''">
-                                <a href="/approval/receipt-trip">
-                                    <span class="nested-submenu-text">단독 출장 증빙</span>
-                                </a>
-                            </li>
-                            <li class="nested-submenu-item" th:classappend="${activeMenu == 'receipt-trip-meeting'} ? 'active' : ''">
-                                <a href="/approval/receipt-trip-meeting">
-                                    <span class="nested-submenu-text">회의+출장 증빙</span>
-                                </a>
-                            </li>
-                            <li class="nested-submenu-item" th:classappend="${activeMenu == 'receipt-overtime'} ? 'active' : ''">
-                                <a href="/approval/receipt-overtime">
-                                    <span class="nested-submenu-text">야근식대 증빙</span>
-                                </a>
-                            </li>
-                        </ul>
+                    </li>
+                    <li class="submenu-item" th:classappend="${activeMenu == 'receipt-meeting'} ? 'active' : ''">
+                        <a href="/approval/receipt-meeting">
+                            <span class="submenu-text">회의비 증빙</span>
+                        </a>
+                    </li>
+                    <li class="submenu-item" th:classappend="${activeMenu == 'receipt-trip'} ? 'active' : ''">
+                        <a href="/approval/receipt-trip">
+                            <span class="submenu-text">단독 출장 증빙</span>
+                        </a>
+                    </li>
+                    <li class="submenu-item" th:classappend="${activeMenu == 'receipt-trip-meeting'} ? 'active' : ''">
+                        <a href="/approval/receipt-trip-meeting">
+                            <span class="submenu-text">회의+출장 증빙</span>
+                        </a>
+                    </li>
+                    <li class="submenu-item" th:classappend="${activeMenu == 'receipt-overtime'} ? 'active' : ''">
+                        <a href="/approval/receipt-overtime">
+                            <span class="submenu-text">야근식대 증빙</span>
+                        </a>
                     </li>
                 </ul>
             </li>

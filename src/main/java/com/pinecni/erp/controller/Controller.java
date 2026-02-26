@@ -300,7 +300,12 @@ public class Controller {
     }
 
     @GetMapping("/project/card")
-    public String projectCard() {
+    public String projectCard(HttpSession session) {
+        Boolean isAdmin = (Boolean) session.getAttribute("isAdmin");
+        if (isAdmin == null || !isAdmin) {
+            log.warn("관리자가 아닌 사용자의 연구비카드 관리 접근 시도");
+            return "redirect:/nope";
+        }
         return "project-card";
     }
 
@@ -355,11 +360,6 @@ public class Controller {
             return "redirect:/nope";
         }
         return "dev-code-groups";
-    }
-
-    @GetMapping("/basic-info/code-detail")
-    public String codeDetail() {
-        return "code-detail";
     }
 
     @GetMapping("/manage-hierarchy")
