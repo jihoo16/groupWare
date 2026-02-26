@@ -1601,32 +1601,34 @@ public class VacationServiceImpl implements VacationService {
                         .approvedAt(null)
                         .build());
 
-                // 8-3. 대표이사 (부서장의 상사 또는 isAdmin=true인 최상위 관리자)
-                User ceo = null;
-                if (manager.getManagerIdx() != null) {
-                    ceo = userRepository.findById(manager.getManagerIdx()).orElse(null);
+                // 8-3. 대표이사 (보고체계 최상단까지 체인 추적 - 프론트엔드 manager-chain API와 동일 방식)
+                User ceo = manager;
+                int ceoDepth = 0;
+                while (ceo.getManagerIdx() != null && ceoDepth < 10) {
+                    User upper = userRepository.findById(ceo.getManagerIdx()).orElse(null);
+                    if (upper == null || upper.getDeletedAt() != null) break;
+                    ceo = upper;
+                    ceoDepth++;
                 }
-                // 부서장의 상사가 없으면 isAdmin=true인 사용자 찾기
-                if (ceo == null) {
+                // 체인 최상단이 부서장과 동일한 경우(부서장이 최상위) → isAdmin=true인 사용자로 대체
+                if (ceo.getIdx().equals(manager.getIdx())) {
                     ceo = userRepository.findAll().stream()
-                            .filter(u -> Boolean.TRUE.equals(u.getIsAdmin()))
+                            .filter(u -> Boolean.TRUE.equals(u.getIsAdmin()) && !u.getIdx().equals(manager.getIdx()))
                             .findFirst()
-                            .orElse(null);
+                            .orElse(ceo);
                 }
 
-                if (ceo != null) {
-                    String ceoPositionName = codeRepository.findByCode(ceo.getEmpPosition())
-                            .map(Code::getCodeName)
-                            .orElse(ceo.getEmpPosition());
+                String ceoPositionName = codeRepository.findByCode(ceo.getEmpPosition())
+                        .map(Code::getCodeName)
+                        .orElse(ceo.getEmpPosition());
 
-                    approvers.add(com.pinecni.erp.api.vacation.dto.VacationDetailDTO.ApproverDTO.builder()
-                            .userIdx(ceo.getIdx())
-                            .name(ceo.getEmpName())
-                            .position(ceoPositionName)
-                            .status("PENDING")  // 대기 중
-                            .approvedAt(null)
-                            .build());
-                }
+                approvers.add(com.pinecni.erp.api.vacation.dto.VacationDetailDTO.ApproverDTO.builder()
+                        .userIdx(ceo.getIdx())
+                        .name(ceo.getEmpName())
+                        .position(ceoPositionName)
+                        .status("PENDING")  // 대기 중
+                        .approvedAt(null)
+                        .build());
             }
         }
 
