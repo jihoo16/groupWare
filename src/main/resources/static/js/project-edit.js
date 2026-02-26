@@ -691,7 +691,7 @@
                 teamAddButtonWrapper.style.display = 'none';
             }
             const countEl = document.getElementById('teamMemberCount');
-            if (countEl) countEl.textContent = '';
+            if (countEl) { countEl.textContent = ''; countEl.style.display = 'none'; }
             return;
         }
 
@@ -759,7 +759,7 @@
 
         // 총인원 표시
         const countEl = document.getElementById('teamMemberCount');
-        if (countEl) countEl.textContent = selectedMemberList.length + '명';
+        if (countEl) { countEl.textContent = selectedMemberList.length + '명'; countEl.style.display = ''; }
     }
 
     // 팀원 참여기간 업데이트 (전역 함수)
@@ -881,7 +881,7 @@
         cardList.innerHTML = '';
 
         if (cardListData.length === 0) {
-            cardList.innerHTML = '<p style="color: #868e96; font-size: 13px; margin-top: 8px;">현재 등록된 카드가 없습니다.</p>';
+            cardList.innerHTML = '<div class="card-empty-state"><i class="fas fa-credit-card"></i><p>현재 등록된 카드가 없습니다.</p></div>';
             return;
         }
 

@@ -672,18 +672,43 @@
     if (memberSearchInput) {
         memberSearchInput.addEventListener('input', function() {
             const searchTerm = this.value.toLowerCase();
-            const nodes = memberOrgTree.querySelectorAll('.tree-node.member');
+            const memberNodes = memberOrgTree.querySelectorAll('.tree-node.member');
+            const deptNodes = memberOrgTree.querySelectorAll('.tree-node.department');
 
-            nodes.forEach(node => {
+            if (searchTerm === '') {
+                // 검색 초기화: 전체 표시, 첫 번째 부서만 펼침
+                memberNodes.forEach(node => { node.style.display = ''; });
+                deptNodes.forEach((node, index) => {
+                    if (index === 0) {
+                        node.classList.add('expanded');
+                    } else {
+                        node.classList.remove('expanded');
+                    }
+                });
+                return;
+            }
+
+            // 매칭 멤버가 속한 부서 노드 수집
+            const deptNodesToExpand = new Set();
+
+            memberNodes.forEach(node => {
                 const memberData = JSON.parse(node.getAttribute('data-member'));
                 const matches = memberData.name.toLowerCase().includes(searchTerm) ||
                                (memberData.department && memberData.department.toLowerCase().includes(searchTerm)) ||
                                (memberData.rank && memberData.rank.toLowerCase().includes(searchTerm));
+                node.style.display = matches ? '' : 'none';
+                if (matches) {
+                    const parentDept = node.closest('.tree-node.department');
+                    if (parentDept) deptNodesToExpand.add(parentDept);
+                }
+            });
 
-                if (matches || searchTerm === '') {
-                    node.style.display = '';
+            // 매칭 멤버가 있는 부서는 펼치고, 없는 부서는 접음
+            deptNodes.forEach(deptNode => {
+                if (deptNodesToExpand.has(deptNode)) {
+                    deptNode.classList.add('expanded');
                 } else {
-                    node.style.display = 'none';
+                    deptNode.classList.remove('expanded');
                 }
             });
         });
@@ -821,7 +846,7 @@
                 teamAddButtonWrapper.style.display = 'none';
             }
             const countEl = document.getElementById('teamMemberCount');
-            if (countEl) countEl.textContent = '';
+            if (countEl) { countEl.textContent = ''; countEl.style.display = 'none'; }
             return;
         }
 
@@ -889,7 +914,7 @@
 
         // 총인원 표시
         const countEl = document.getElementById('teamMemberCount');
-        if (countEl) countEl.textContent = selectedMemberList.length + '명';
+        if (countEl) { countEl.textContent = selectedMemberList.length + '명'; countEl.style.display = ''; }
     }
 
     // 팀원 참여기간 업데이트 (전역 함수)
