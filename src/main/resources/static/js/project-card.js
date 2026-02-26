@@ -56,7 +56,8 @@ document.addEventListener('DOMContentLoaded', function() {
             renderCards(allCards);
         } catch (error) {
             console.error('연구비 카드 로드 오류:', error);
-            cardGrid.innerHTML = '<p class="empty-message">카드 목록을 불러오는데 실패했습니다.</p>';
+            cardGrid.style.display = 'block';
+            cardGrid.innerHTML = '<div class="card-empty-state"><i class="fas fa-credit-card"></i><p>카드 목록을 불러오는데 실패했습니다.</p></div>';
         }
     }
 
@@ -99,10 +100,12 @@ document.addEventListener('DOMContentLoaded', function() {
      */
     function renderCards(cards) {
         if (!cards || cards.length === 0) {
-            cardGrid.innerHTML = '<p class="empty-message">등록된 연구비 카드가 없습니다.</p>';
+            cardGrid.style.display = 'block';
+            cardGrid.innerHTML = '<div class="card-empty-state"><i class="fas fa-credit-card"></i><p>등록된 연구비 카드가 없습니다.</p></div>';
             return;
         }
 
+        cardGrid.style.display = '';
         cardGrid.innerHTML = cards.map(card => {
             console.log(card)
             // 하이라이트 적용
