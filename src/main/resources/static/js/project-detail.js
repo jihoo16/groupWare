@@ -386,8 +386,10 @@ function displayTeamMembers(members) {
         return;
     }
 
-    tbody.innerHTML = members.map((member, index) => `
-        <tr>
+    tbody.innerHTML = members.map((member, index) => {
+        const isBold = member.role === 'PI' || member.role === 'PRACTITIONER';
+        return `
+        <tr${isBold ? ' style="font-weight:700;"' : ''}>
             <td>${index + 1}</td>
             <td>${member.employeeName || '-'}</td>
             <td>${member.employeeDeptName || '-'}</td>
@@ -396,7 +398,8 @@ function displayTeamMembers(members) {
             <td>${member.participationStartDate || '-'}</td>
             <td>${member.participationEndDate || '-'}</td>
         </tr>
-    `).join('');
+        `;
+    }).join('');
 
     // 7명 초과시 펼치기/접기 버튼 표시
     if (totalCount > 7) {
