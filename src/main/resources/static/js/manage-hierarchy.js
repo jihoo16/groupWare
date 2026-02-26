@@ -591,12 +591,11 @@ document.addEventListener('DOMContentLoaded', function() {
             })
             .then(async data => {
                 console.log('상위보고자 변경 성공:', data);
-                await showSuccess(`${employee.empName}의 상위보고자가 ${newManager.empName}으로 변경되었습니다.`);
-
+                closeModal(changeManagerModal);
                 renderEmployeeTable(employeesData);
                 updateStatistics();
                 document.getElementById('newManager').disabled = false; // 드롭다운 재활성화
-                closeModal(changeManagerModal);
+                await showSuccess(`${employee.empName}의 상위보고자가 ${newManager.empName}으로 변경되었습니다.`);
             })
             .catch(async error => {
                 console.error('Error updating hierarchy:', error);
