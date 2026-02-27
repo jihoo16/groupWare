@@ -77,6 +77,9 @@ public class FileServiceImpl implements FileService {
     @Value("${file.storage.weekly-report.pattern}")
     private String weeklyReportPattern;
 
+    @Value("${file.storage.general-weekly-report.pattern}")
+    private String generalWeeklyReportPattern;
+
     @Value("${file.storage.monthly-report.pattern}")
     private String monthlyReportPattern;
 
@@ -309,7 +312,15 @@ public class FileServiceImpl implements FileService {
         String userId = null;
 
         // 문서 타입에 따라 패턴 선택 및 프로젝트 정보 조회
-        if ("프로젝트 주간업무보고".equals(documentType)) {
+        if ("주간업무보고".equals(documentType)) {
+            pattern = generalWeeklyReportPattern;
+            User drafter = userRepository.findById(approvalDocument.getDrafterUserIdx()).orElse(null);
+            if (drafter != null && drafter.getEmpId() != null && !drafter.getEmpId().isBlank()) {
+                userId = drafter.getEmpId();
+            } else {
+                userId = String.valueOf(approvalDocument.getDrafterUserIdx());
+            }
+        } else if ("프로젝트 주간업무보고".equals(documentType)) {
             pattern = weeklyReportPattern;
             // WeeklyReport에서 projectIdx 조회
             WeeklyReport weeklyReport = weeklyReportRepository.findByDocumentIdx(documentIdx)

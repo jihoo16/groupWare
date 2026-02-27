@@ -434,10 +434,12 @@ public class ReceiptMeetingServiceImpl implements ReceiptMeetingService {
             }
         }
         String date = meeting.getMeetingDate().format(DateTimeFormatter.ofPattern("yyyy-MM-dd"));
+        String year = String.valueOf(meeting.getMeetingDate().getYear());
 
         String relativePath = uploadPattern
                 .replace("{projectIdx}", String.valueOf(projectIdx))
                 .replace("{cardLastDigits}", cardLastDigits)
+                .replace("{year}", year)
                 .replace("{date}", date);
         String fullUploadPath = baseDir + File.separator + relativePath.replace("/", File.separator);
         File uploadDir = new File(fullUploadPath);
@@ -467,17 +469,17 @@ public class ReceiptMeetingServiceImpl implements ReceiptMeetingService {
                 if (dotIndex > 0) {
                     extension = originalFilename.substring(dotIndex);
                 }
-                String savedFilename = timestamp + "_" + uuid + extension;
+                String storedFileName = timestamp + "_" + uuid + extension;
 
                 // 파일 저장
-                Path filePath = Paths.get(fullUploadPath, savedFilename);
+                Path filePath = Paths.get(fullUploadPath, storedFileName);
                 Files.copy(file.getInputStream(), filePath);
 
                 // DB 저장
                 ReceiptMeetingAttachment attachment = ReceiptMeetingAttachment.builder()
                         .receiptMeetingIdx(receiptMeetingIdx)
                         .originalFilename(originalFilename)
-                        .storedFilename(savedFilename)
+                        .storedFilename(storedFileName)
                         .filePath(relativePath)
                         .fileSize(file.getSize())
                         .fileType(file.getContentType())
@@ -501,7 +503,7 @@ public class ReceiptMeetingServiceImpl implements ReceiptMeetingService {
 
                 savedAttachments.add(dto);
 
-                log.debug("첨부파일 저장 완료 - 원본명: {}, 저장명: {}", originalFilename, savedFilename);
+                log.debug("첨부파일 저장 완료 - 원본명: {}, 저장명: {}", originalFilename, storedFileName);
 
             } catch (IOException e) {
                 log.error("파일 저장 실패: {}", file.getOriginalFilename(), e);

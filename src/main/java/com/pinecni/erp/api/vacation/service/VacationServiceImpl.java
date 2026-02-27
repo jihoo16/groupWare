@@ -1171,21 +1171,24 @@ public class VacationServiceImpl implements VacationService {
             // PDF 생성: Playwright로 HTML을 PDF로 변환
             byte[] pdfBytes = pdfGenerationService.generatePdfFromRenderedHtml(fullHtml);
 
-            // 파일명 생성
+            // 파일명 생성: {yyyymmdd}_vacation.pdf (중복 시 saveVacationPdf 내부에서 _1, _2 연번 처리)
             String firstStartDate = saveDTO.getPeriods().get(0).getStartDate().toString().replace("-", "");
             String year = saveDTO.getPeriods().get(0).getStartDate().toString().substring(0, 4);
             String userIdentifier = user.getEmpId() != null && !user.getEmpId().isEmpty() ? user.getEmpId() : String.valueOf(userIdx);
-            String fileName = String.format("%s_vacation_request_%s.pdf", firstStartDate, userIdentifier);
+            String baseFileName = String.format("%s_vacation.pdf", firstStartDate);
 
-            // PDF 서버에 저장
-            String savePath = pdfGenerationService.saveVacationPdf(pdfBytes, fileName, year, userIdentifier);
+            // PDF 서버에 저장 (중복 시 내부에서 연번 부여)
+            String savePath = pdfGenerationService.saveVacationPdf(pdfBytes, baseFileName, year, userIdentifier);
             log.info("[PDF 저장 완료] path: {}", savePath);
+
+            // 실제 저장된 파일명 추출 (중복 처리로 연번이 붙었을 수 있음)
+            String actualFileName = new java.io.File(savePath).getName();
 
             // DB에 파일 정보 저장
             VacationOfficialPdf officialPdf = VacationOfficialPdf.builder()
                     .documentIdx(savedDocument.getIdx())
                     .filePath(savePath)
-                    .fileName(fileName)
+                    .fileName(actualFileName)
                     .fileSize((long) pdfBytes.length)
                     .createdUserIdx(userIdx)
                     .build();

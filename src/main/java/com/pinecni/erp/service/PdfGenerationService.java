@@ -47,6 +47,9 @@ public class PdfGenerationService {
     @Value("${pdf.storage.project-weekly-report.pattern}")
     private String projectWeeklyReportPathPattern;
 
+    @Value("${pdf.storage.general-weekly-report.pattern}")
+    private String generalWeeklyReportPathPattern;
+
     @Value("${pdf.storage.receipt-meeting.pattern}")
     private String receiptMeetingPathPattern;
 
@@ -465,6 +468,9 @@ public class PdfGenerationService {
             log.debug("PDF 저장 디렉토리 이미 존재: {}", targetDir);
         }
 
+        // 중복 파일명 처리
+        fileName = resolveUniqueFilename(targetDir, fileName);
+
         // 파일 저장
         String filePath = targetDir + File.separator + fileName;
         File file = new File(filePath);
@@ -557,6 +563,9 @@ public class PdfGenerationService {
             log.debug("PDF 저장 디렉토리 이미 존재: {}", targetDir);
         }
 
+        // 중복 파일명 처리
+        fileName = resolveUniqueFilename(targetDir, fileName);
+
         // 파일 저장
         String filePath = targetDir + File.separator + fileName;
         File file = new File(filePath);
@@ -573,21 +582,69 @@ public class PdfGenerationService {
     }
 
     /**
+     * 일반 주간업무보고 PDF를 구조화된 경로에 저장
+     * 경로 패턴: documents/weekly-report/{userId}/{year}
+     *
+     * @param pdfBytes  PDF 바이트 배열
+     * @param fileName  파일명
+     * @param year      연도 (예: 2026)
+     * @param userId    사용자 사번
+     * @return 저장된 파일 경로
+     */
+    public String saveGeneralWeeklyReportPdf(byte[] pdfBytes, String fileName, String year, String userId) throws IOException {
+        String relativePath = generalWeeklyReportPathPattern
+                .replace("{userId}", userId)
+                .replace("{year}", year);
+
+        String targetDir = pdfStoragePath + File.separator + relativePath.replace("/", File.separator);
+
+        File directory = new File(targetDir);
+        if (!directory.exists()) {
+            boolean created = directory.mkdirs();
+            if (!created) {
+                throw new IOException("PDF 저장 디렉토리 생성 실패: " + targetDir +
+                                    ". 디렉토리 권한을 확인하세요.");
+            }
+            log.info("PDF 저장 디렉토리 생성 완료: {}", targetDir);
+        } else {
+            log.debug("PDF 저장 디렉토리 이미 존재: {}", targetDir);
+        }
+
+        // 중복 파일명 처리
+        fileName = resolveUniqueFilename(targetDir, fileName);
+
+        String filePath = targetDir + File.separator + fileName;
+        File file = new File(filePath);
+
+        try (FileOutputStream fos = new FileOutputStream(file)) {
+            fos.write(pdfBytes);
+            log.info("일반 주간업무보고 PDF 파일 저장 완료: {}", filePath);
+        } catch (IOException e) {
+            log.error("PDF 파일 저장 실패: {} - {}", filePath, e.getMessage());
+            throw new IOException("PDF 파일 저장 실패: " + e.getMessage(), e);
+        }
+
+        return filePath;
+    }
+
+    /**
      * 연구비증빙 회의록 PDF를 구조화된 경로에 저장
-     * 경로 패턴: project/{projectIdx}/{cardLastDigits}/receipt-meeting/{date}
+     * 경로 패턴: project/{projectIdx}/{cardLastDigits}/{year}/receipt-meeting/{date}
      *
      * @param pdfBytes        PDF 바이트 배열
      * @param fileName        파일명
      * @param projectIdx      프로젝트 IDX
      * @param cardLastDigits  카드 뒷번호
+     * @param year            연도 (예: 2026)
      * @param date            회의 날짜 (yyyy-MM-dd)
      * @return 저장된 파일 경로
      */
-    public String saveReceiptMeetingPdf(byte[] pdfBytes, String fileName, String projectIdx, String cardLastDigits, String date) throws IOException {
-        // 경로 패턴 변환: project/{projectIdx}/{cardLastDigits}/receipt-meeting/{date}
+    public String saveReceiptMeetingPdf(byte[] pdfBytes, String fileName, String projectIdx, String cardLastDigits, String year, String date) throws IOException {
+        // 경로 패턴 변환: project/{projectIdx}/{cardLastDigits}/{year}/receipt-meeting/{date}
         String relativePath = receiptMeetingPathPattern
                 .replace("{projectIdx}", projectIdx)
                 .replace("{cardLastDigits}", cardLastDigits)
+                .replace("{year}", year)
                 .replace("{date}", date);
 
         String targetDir = pdfStoragePath + File.separator + relativePath.replace("/", File.separator);
@@ -622,20 +679,22 @@ public class PdfGenerationService {
 
     /**
      * 연구비증빙 야근식대 PDF를 구조화된 경로에 저장
-     * 경로 패턴: project/{projectIdx}/{cardLastDigits}/receipt-overtime/{date}
+     * 경로 패턴: project/{projectIdx}/{cardLastDigits}/{year}/receipt-overtime/{date}
      *
      * @param pdfBytes        PDF 바이트 배열
      * @param fileName        파일명
      * @param projectIdx      프로젝트 IDX
      * @param cardLastDigits  카드 뒷번호
+     * @param year            연도 (예: 2026)
      * @param date            야근 날짜 (yyyy-MM-dd)
      * @return 저장된 파일 경로
      */
-    public String saveReceiptOvertimePdf(byte[] pdfBytes, String fileName, String projectIdx, String cardLastDigits, String date) throws IOException {
-        // 경로 패턴 변환: project/{projectIdx}/{cardLastDigits}/receipt-overtime/{date}
+    public String saveReceiptOvertimePdf(byte[] pdfBytes, String fileName, String projectIdx, String cardLastDigits, String year, String date) throws IOException {
+        // 경로 패턴 변환: project/{projectIdx}/{cardLastDigits}/{year}/receipt-overtime/{date}
         String relativePath = receiptOvertimePathPattern
                 .replace("{projectIdx}", projectIdx)
                 .replace("{cardLastDigits}", cardLastDigits)
+                .replace("{year}", year)
                 .replace("{date}", date);
 
         String targetDir = pdfStoragePath + File.separator + relativePath.replace("/", File.separator);
@@ -666,5 +725,25 @@ public class PdfGenerationService {
         }
 
         return filePath;
+    }
+
+    /**
+     * 동일 디렉토리에 동명 파일이 있으면 _1, _2, ... 연번을 붙여 고유 파일명 반환
+     * 예: 20260101_vacation.pdf → 20260101_vacation_1.pdf → 20260101_vacation_2.pdf
+     */
+    private String resolveUniqueFilename(String targetDir, String fileName) {
+        if (!new File(targetDir + File.separator + fileName).exists()) {
+            return fileName;
+        }
+        int dotIndex = fileName.lastIndexOf('.');
+        String base = dotIndex >= 0 ? fileName.substring(0, dotIndex) : fileName;
+        String ext  = dotIndex >= 0 ? fileName.substring(dotIndex)    : "";
+        for (int i = 1; i < 10000; i++) {
+            String candidate = base + "_" + i + ext;
+            if (!new File(targetDir + File.separator + candidate).exists()) {
+                return candidate;
+            }
+        }
+        return fileName;
     }
 }

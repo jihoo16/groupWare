@@ -78,17 +78,20 @@ public class WeeklyReportServiceImpl implements WeeklyReportService {
             }
 
             // === 1. ApprovalDocument 메타데이터 저장 ===
-            String documentNo = "PROJECT-WEEKLY-" + System.currentTimeMillis() + "-" + createDTO.getUserIdx();
-            String title = "프로젝트 주간업무보고";
+            boolean isProjectReport = createDTO.getProjectIdx() != null;
+            String documentType = isProjectReport ? "프로젝트 주간업무보고" : "주간업무보고";
+            String documentNoPrefix = isProjectReport ? "PROJECT-WEEKLY-" : "WEEKLY-";
+            String documentNo = documentNoPrefix + System.currentTimeMillis() + "-" + createDTO.getUserIdx();
+            String title = documentType;
             if (createDTO.getReportPeriod() != null && !createDTO.getReportPeriod().isEmpty()) {
-                title = "프로젝트 주간업무보고 - " + createDTO.getReportPeriod();
+                title = documentType + " - " + createDTO.getReportPeriod();
             }
 
             ApprovalDocument approvalDocument = ApprovalDocument.builder()
                     .documentNo(documentNo)
                     .title(title)
-                    .documentType("프로젝트 주간업무보고")
-                    .isProject(true)  // 프로젝트 문서로 표시
+                    .documentType(documentType)
+                    .isProject(isProjectReport)
                     .drafterUserIdx(createDTO.getUserIdx())
                     .content(createDTO.getMainTasks())
                     .createdUserIdx(createDTO.getUserIdx())
@@ -132,8 +135,8 @@ public class WeeklyReportServiceImpl implements WeeklyReportService {
             return dto;
 
         } catch (Exception e) {
-            log.error("프로젝트 주간업무보고 생성 실패 - userIdx: {}, error: {}", createDTO.getUserIdx(), e.getMessage(), e);
-            throw new RuntimeException("프로젝트 주간업무보고 저장 중 오류가 발생했습니다.\n잠시 후 다시 시도하거나 관리자에게 문의해주세요.", e);
+            log.error("주간업무보고 생성 실패 - userIdx: {}, error: {}", createDTO.getUserIdx(), e.getMessage(), e);
+            throw new RuntimeException("주간업무보고 저장 중 오류가 발생했습니다.\n잠시 후 다시 시도하거나 관리자에게 문의해주세요.", e);
         }
     }
 
@@ -433,23 +436,39 @@ public class WeeklyReportServiceImpl implements WeeklyReportService {
                 // PDF 생성: Playwright로 HTML을 PDF로 변환
                 byte[] pdfBytes = pdfGenerationService.generatePdfFromRenderedHtml(fullHtml);
 
-                // 파일명 생성 (보고기간 시작일 + 프로젝트명)
+                // 보고기간에서 날짜 앞 8자리 추출 (yyyymmdd)
                 String year = String.valueOf(LocalDateTime.now().getYear());
-                String projectIdx = saved.getProjectIdx() != null ? saved.getProjectIdx().toString() : "0";
                 String reportPeriod = saved.getReportPeriod() != null ?
                     saved.getReportPeriod().replaceAll("[^0-9]", "").substring(0, 8) :
                     LocalDateTime.now().format(java.time.format.DateTimeFormatter.ofPattern("yyyyMMdd"));
-                String fileName = String.format("%s_weekly_report_project_%s.pdf", reportPeriod, projectIdx);
 
-                // PDF 서버에 저장 (경로: project/{year}/{projectIdx})
-                String savePath = pdfGenerationService.saveWeeklyReportPdf(pdfBytes, fileName, year, projectIdx);
+                String savePath;
+                String fileName;
+
+                if (saved.getProjectIdx() != null) {
+                    // 프로젝트 주간업무보고: {yyyymmdd}_weekly_report_{projectIdx}.pdf
+                    String projectIdxStr = saved.getProjectIdx().toString();
+                    fileName = String.format("%s_weekly_report_%s.pdf", reportPeriod, projectIdxStr);
+                    savePath = pdfGenerationService.saveWeeklyReportPdf(pdfBytes, fileName, year, projectIdxStr);
+                } else {
+                    // 일반 주간업무보고: {yyyymmdd}_weekly_report.pdf
+                    String userId = userRepository.findById(saved.getUserIdx())
+                        .map(u -> u.getEmpId() != null && !u.getEmpId().isBlank()
+                                  ? u.getEmpId() : String.valueOf(saved.getUserIdx()))
+                        .orElse(String.valueOf(saved.getUserIdx()));
+                    fileName = String.format("%s_weekly_report.pdf", reportPeriod);
+                    savePath = pdfGenerationService.saveGeneralWeeklyReportPdf(pdfBytes, fileName, year, userId);
+                }
+
+                // 실제 저장된 파일명 추출 (중복 처리로 연번이 붙었을 수 있음)
+                String actualFileName = new java.io.File(savePath).getName();
                 log.info("[PDF 저장 완료] path: {}", savePath);
 
                 // DB에 PDF 파일 정보 저장
                 com.pinecni.erp.entity.WeeklyReportOfficialPdf officialPdf = com.pinecni.erp.entity.WeeklyReportOfficialPdf.builder()
                         .documentIdx(savedDocument.getIdx())
                         .filePath(savePath)
-                        .fileName(fileName)
+                        .fileName(actualFileName)
                         .fileSize((long) pdfBytes.length)
                         .createdUserIdx(createDTO.getUserIdx())
                         .build();

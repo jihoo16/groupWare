@@ -516,10 +516,12 @@ public class ReceiptOvertimeServiceImpl implements ReceiptOvertimeService {
             }
         }
         String date = overtime.getOvertimeDate().format(DateTimeFormatter.ofPattern("yyyy-MM-dd"));
+        String year = String.valueOf(overtime.getOvertimeDate().getYear());
 
         String relativePath = uploadPattern
                 .replace("{projectIdx}", String.valueOf(projectIdx))
                 .replace("{cardLastDigits}", cardLastDigits)
+                .replace("{year}", year)
                 .replace("{date}", date);
         String fullUploadPath = baseDir + File.separator + relativePath.replace("/", File.separator);
         File uploadDir = new File(fullUploadPath);

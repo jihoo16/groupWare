@@ -38,8 +38,8 @@ public class ProjectFileServiceImpl implements ProjectFileService {
     private final ProjectFileRepository projectFileRepository;
     private final ProjectRepository projectRepository;
 
-    @Value("${file.storage.project.dir}")
-    private String projectUploadDir;
+    @Value("${file.base.dir}")
+    private String baseDir;
 
     @Value("${file.storage.project.pattern}")
     private String projectPathPattern;
@@ -73,7 +73,7 @@ public class ProjectFileServiceImpl implements ProjectFileService {
 
             // 저장 경로 생성
             String relativePath = generateRelativePath(project);
-            Path uploadPath = Paths.get(projectUploadDir, relativePath);
+            Path uploadPath = Paths.get(baseDir, relativePath);
 
             // 디렉토리 자동 생성
             if (!Files.exists(uploadPath)) {
@@ -123,7 +123,7 @@ public class ProjectFileServiceImpl implements ProjectFileService {
         }
 
         try {
-            Path filePath = Paths.get(projectUploadDir, projectFile.getFilePath(), projectFile.getStoredFilename());
+            Path filePath = Paths.get(baseDir, projectFile.getFilePath(), projectFile.getStoredFilename());
             Resource resource = new UrlResource(filePath.toUri());
 
             if (resource.exists() && resource.isReadable()) {

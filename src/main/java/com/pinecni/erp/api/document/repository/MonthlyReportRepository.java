@@ -15,6 +15,11 @@ import java.util.Optional;
 public interface MonthlyReportRepository extends JpaRepository<MonthlyReport, Long> {
 
     /**
+     * documentIdx로 보고서 조회
+     */
+    Optional<MonthlyReport> findByDocumentIdx(Long documentIdx);
+
+    /**
      * 특정 사용자의 보고서 목록 조회 (최신순)
      */
     List<MonthlyReport> findByUserIdxOrderByCreatedAtDesc(Long userIdx);
