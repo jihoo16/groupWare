@@ -915,15 +915,11 @@
             return;
         }
 
-        // 팀원 정렬: PI(연구책임자)를 맨 위에, 나머지는 직급 순으로 정렬
+        // 팀원 정렬: 연구책임자(PI) → 실무자(PRACTITIONER) → 연구원(RESEARCHER) 순
+        const roleOrder = { 'PI': 0, 'PRACTITIONER': 1, 'RESEARCHER': 2 };
         const sortedMembers = [...selectedMemberList].sort((a, b) => {
-            // PI는 항상 맨 위
-            if (a.role === 'PI') return -1;
-            if (b.role === 'PI') return 1;
-
-            // 나머지는 직급 순으로 정렬 (대표 > 상무 > 이사 > 부장 > 차장 > 과장 > 대리 > 사원)
-            const orderA = getPositionOrder(a.position);
-            const orderB = getPositionOrder(b.position);
+            const orderA = roleOrder[a.role] ?? 99;
+            const orderB = roleOrder[b.role] ?? 99;
             return orderA - orderB;
         });
 
