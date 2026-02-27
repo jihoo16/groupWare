@@ -77,6 +77,7 @@ public class ReceiptOvertimeMapper {
                 .filePath(entity.getFilePath())
                 .fileSize(entity.getFileSize())
                 .fileType(entity.getFileType())
+                .attachmentType(entity.getAttachmentType())
                 .createdAt(entity.getCreatedAt())
                 .updatedAt(entity.getUpdatedAt())
                 .build();

@@ -18,7 +18,8 @@ document.addEventListener('DOMContentLoaded', async function() {
     // 수정 모드 관련 변수
     let isEditMode = false;
     let editingIdx = null; // 수정 중인 야근식대 idx
-    let existingAttachments = []; // 기존 첨부파일 목록
+    let existingReceiptAttachments = []; // 기존 영수증(RECEIPT) 첨부파일 목록
+    let existingDocumentAttachments = []; // 기존 공식문서(DOCUMENT) 첨부파일 목록
     let deletedAttachmentIds = []; // 삭제 예정인 첨부파일 ID 목록
 
     // 중복 참석자 정보 저장 (통합 중복 검증)
@@ -211,7 +212,9 @@ document.addEventListener('DOMContentLoaded', async function() {
             // 수정 모드 설정
             isEditMode = true;
             editingIdx = data.idx;
-            existingAttachments = data.attachments || [];
+            const allAttachments = data.attachments || [];
+            existingReceiptAttachments = allAttachments.filter(a => a.attachmentType !== 'DOCUMENT');
+            existingDocumentAttachments = allAttachments.filter(a => a.attachmentType === 'DOCUMENT');
 
             // 프로젝트 정보 설정
             if (data.projectIdx) {
@@ -441,7 +444,8 @@ document.addEventListener('DOMContentLoaded', async function() {
 
             // 첨부파일 목록 업데이트
             deletedAttachmentIds = []; // 삭제 예정 목록 초기화
-            updateFileList();
+            updateReceiptFileList();
+            updateDocumentFileList();
 
             // 버튼 텍스트 변경
             const submitBtn = document.getElementById('submitBtn');
@@ -508,7 +512,8 @@ document.addEventListener('DOMContentLoaded', async function() {
         }
 
         // 화면 업데이트
-        updateFileList();
+        updateReceiptFileList();
+        updateDocumentFileList();
     };
 
     // 삭제 버튼 표시
@@ -1825,7 +1830,7 @@ document.addEventListener('DOMContentLoaded', async function() {
         receiptFileList.innerHTML = '';
 
         // 1. 기존 파일 표시 (삭제 예정인 파일 제외)
-        existingAttachments.forEach(att => {
+        existingReceiptAttachments.forEach(att => {
             if (deletedAttachmentIds.includes(att.idx)) return;
 
             const item = document.createElement('div');
@@ -1834,9 +1839,9 @@ document.addEventListener('DOMContentLoaded', async function() {
             item.innerHTML = `
                 <i class="fas ${getFileIcon(att.originalFilename)}"></i>
                 <span>${att.originalFilename} (${fileSizeKB} KB)</span>
-                <a href="/api/receipt-overtimes/attachments/${att.idx}/download" class="btn-download-file" download title="다운로드">
+                <button class="btn-download-file" onclick="downloadFile('/api/receipt-overtimes/attachments/${att.idx}/download', '${att.originalFilename}')" title="다운로드">
                     <i class="fas fa-download"></i>
-                </a>
+                </button>
                 <button class="btn-remove-file" onclick="removeExistingAttachment(${att.idx})" title="삭제">
                     <i class="fas fa-times"></i>
                 </button>
@@ -1859,7 +1864,7 @@ document.addEventListener('DOMContentLoaded', async function() {
         });
 
         // 3. 파일이 하나도 없을 때 메시지 표시
-        const visibleExistingFiles = existingAttachments.filter(f => !deletedAttachmentIds.includes(f.idx));
+        const visibleExistingFiles = existingReceiptAttachments.filter(f => !deletedAttachmentIds.includes(f.idx));
         if (visibleExistingFiles.length === 0 && selectedReceiptFiles.length === 0) {
             receiptFileList.innerHTML = '<p style="color: #999; font-size: 12px; padding: 10px 0;">첨부된 파일이 없습니다.</p>';
         }
@@ -1869,6 +1874,28 @@ document.addEventListener('DOMContentLoaded', async function() {
     function updateDocumentFileList() {
         if (!documentFileList) return;
         documentFileList.innerHTML = '';
+
+        // 1. 기존 공식문서 파일 표시 (삭제 예정인 파일 제외)
+        existingDocumentAttachments.forEach(att => {
+            if (deletedAttachmentIds.includes(att.idx)) return;
+
+            const item = document.createElement('div');
+            item.className = 'file-item';
+            const fileSizeKB = (att.fileSize / 1024).toFixed(1);
+            item.innerHTML = `
+                <i class="fas ${getFileIcon(att.originalFilename)}"></i>
+                <span>${att.originalFilename} (${fileSizeKB} KB)</span>
+                <button class="btn-download-file" onclick="downloadFile('/api/receipt-overtimes/attachments/${att.idx}/download', '${att.originalFilename}')" title="다운로드">
+                    <i class="fas fa-download"></i>
+                </button>
+                <button class="btn-remove-file" onclick="removeExistingAttachment(${att.idx})" title="삭제">
+                    <i class="fas fa-times"></i>
+                </button>
+            `;
+            documentFileList.appendChild(item);
+        });
+
+        // 2. 새로 선택한 공식문서 파일 표시
         selectedDocumentFiles.forEach((file, index) => {
             const item = document.createElement('div');
             item.className = 'file-item';
@@ -1881,6 +1908,12 @@ document.addEventListener('DOMContentLoaded', async function() {
             `;
             documentFileList.appendChild(item);
         });
+
+        // 3. 파일이 하나도 없을 때 메시지 표시
+        const visibleExistingDocFiles = existingDocumentAttachments.filter(f => !deletedAttachmentIds.includes(f.idx));
+        if (visibleExistingDocFiles.length === 0 && selectedDocumentFiles.length === 0) {
+            documentFileList.innerHTML = '<p style="color: #999; font-size: 12px; padding: 10px 0;">첨부된 파일이 없습니다.</p>';
+        }
     }
 
     setupUpload(receiptInput, receiptUploadArea, selectedReceiptFiles, updateReceiptFileList);
@@ -1888,6 +1921,27 @@ document.addEventListener('DOMContentLoaded', async function() {
 
     window.removeReceiptFile = function(index) { selectedReceiptFiles.splice(index, 1); updateReceiptFileList(); };
     window.removeDocumentFile = function(index) { selectedDocumentFiles.splice(index, 1); updateDocumentFileList(); };
+
+    window.downloadFile = async function(url, filename) {
+        try {
+            const response = await fetch(url);
+            if (!response.ok) {
+                Swal.fire({ icon: 'error', title: '파일을 찾을 수 없습니다', text: '파일이 서버에 존재하지 않거나 삭제되었습니다.' });
+                return;
+            }
+            const blob = await response.blob();
+            const blobUrl = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = blobUrl;
+            a.download = filename;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(blobUrl);
+        } catch (e) {
+            Swal.fire({ icon: 'error', title: '다운로드 오류', text: '파일 다운로드 중 오류가 발생했습니다.' });
+        }
+    };
 
     // 임시저장
     if (saveDraftBtn) {
@@ -2102,9 +2156,9 @@ document.addEventListener('DOMContentLoaded', async function() {
             const formData = new FormData();
             formData.append('data', JSON.stringify(data));
 
-            // 첨부파일 추가
-            selectedReceiptFiles.forEach(file => formData.append('files', file));
-            selectedDocumentFiles.forEach(file => formData.append('files', file));
+            // 첨부파일 추가 (타입별 분리)
+            selectedReceiptFiles.forEach(file => formData.append('receiptFiles', file));
+            selectedDocumentFiles.forEach(file => formData.append('documentFiles', file));
 
             try {
                 // API 호출 - 수정 모드일 때 PUT, 아닐 때 POST

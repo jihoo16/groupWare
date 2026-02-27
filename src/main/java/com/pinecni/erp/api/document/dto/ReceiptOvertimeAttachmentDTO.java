@@ -23,6 +23,7 @@ public class ReceiptOvertimeAttachmentDTO {
     private String filePath;
     private Long fileSize;
     private String fileType;
+    private String attachmentType;
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;
 }

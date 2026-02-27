@@ -66,7 +66,7 @@ public interface ReceiptOvertimeService {
     /**
      * 첨부파일 저장
      */
-    List<ReceiptOvertimeAttachmentDTO> saveAttachments(Long receiptOvertimeIdx, MultipartFile[] files);
+    List<ReceiptOvertimeAttachmentDTO> saveAttachments(Long receiptOvertimeIdx, MultipartFile[] files, String attachmentType);
 
     /**
      * 야근식대별 첨부파일 목록 조회

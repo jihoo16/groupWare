@@ -50,6 +50,10 @@ public class ReceiptOvertimeAttachment {
     @Column(name = "file_type", length = 100)
     private String fileType;
 
+    @Size(max = 20)
+    @Column(name = "attachment_type", length = 20)
+    private String attachmentType;
+
     @NotNull
     @ColumnDefault("CURRENT_TIMESTAMP")
     @Column(name = "created_at", nullable = false)

@@ -26,4 +26,10 @@ public interface ReceiptOvertimeAttachmentRepository extends JpaRepository<Recei
      */
     @Query("DELETE FROM ReceiptOvertimeAttachment a WHERE a.receiptOvertimeIdx.id = :receiptOvertimeIdx")
     void deleteByReceiptOvertimeIdx(@Param("receiptOvertimeIdx") Long receiptOvertimeIdx);
+
+    /**
+     * 야근식대 IDX + 첨부파일 종류별 파일 수 조회 (연번 계산용)
+     */
+    @Query("SELECT COUNT(a) FROM ReceiptOvertimeAttachment a WHERE a.receiptOvertimeIdx.id = :receiptOvertimeIdx AND a.attachmentType = :attachmentType")
+    long countByReceiptOvertimeIdxAndAttachmentType(@Param("receiptOvertimeIdx") Long receiptOvertimeIdx, @Param("attachmentType") String attachmentType);
 }

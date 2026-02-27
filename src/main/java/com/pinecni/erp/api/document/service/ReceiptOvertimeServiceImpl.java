@@ -34,6 +34,7 @@ import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.Comparator;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -383,6 +384,9 @@ public class ReceiptOvertimeServiceImpl implements ReceiptOvertimeService {
 
             entity = receiptOvertimeRepository.save(entity);
 
+            // 3-1. 기존 첨부파일 표시명을 수정된 정보(카드/날짜/금액)로 갱신
+            renameAttachments(entity);
+
             // 4. 기존 참석자 소프트 딜리트 후 새로 저장 (receipt_attendee 테이블)
             attendeeRepository.softDeleteByReceiptOvertimeIdx(entity.getId(), now, currentUserIdx);
 
@@ -495,8 +499,8 @@ public class ReceiptOvertimeServiceImpl implements ReceiptOvertimeService {
 
     @Override
     @Transactional
-    public List<ReceiptOvertimeAttachmentDTO> saveAttachments(Long receiptOvertimeIdx, MultipartFile[] files) {
-        log.debug("첨부파일 저장 - receiptOvertimeIdx: {}, 파일 개수: {}", receiptOvertimeIdx, files != null ? files.length : 0);
+    public List<ReceiptOvertimeAttachmentDTO> saveAttachments(Long receiptOvertimeIdx, MultipartFile[] files, String attachmentType) {
+        log.debug("첨부파일 저장 - receiptOvertimeIdx: {}, 파일 개수: {}, attachmentType: {}", receiptOvertimeIdx, files != null ? files.length : 0, attachmentType);
 
         if (files == null || files.length == 0) {
             return Collections.emptyList();
@@ -524,13 +528,25 @@ public class ReceiptOvertimeServiceImpl implements ReceiptOvertimeService {
                 .replace("{year}", year)
                 .replace("{date}", date);
         String fullUploadPath = baseDir + File.separator + relativePath.replace("/", File.separator);
-        File uploadDir = new File(fullUploadPath);
-        if (!uploadDir.exists()) {
-            uploadDir.mkdirs();
+        try {
+            Files.createDirectories(Paths.get(fullUploadPath));
+        } catch (IOException e) {
+            log.error("업로드 디렉토리 생성 실패: {}", fullUploadPath, e);
+            throw new RuntimeException("업로드 디렉토리를 생성할 수 없습니다: " + fullUploadPath, e);
         }
 
         List<ReceiptOvertimeAttachmentDTO> savedAttachments = new ArrayList<>();
         LocalDateTime now = LocalDateTime.now(ZoneId.of("Asia/Seoul"));
+
+        // 표시용 파일명 기본 구성: 카드번호_yyyymmdd_사용금액_야근식대_문서종류
+        String displayDateStr = overtime.getOvertimeDate().format(DateTimeFormatter.ofPattern("yyyyMMdd"));
+        String displayAmountStr = overtime.getTotalAmount() != null
+                ? String.format("%,d원", overtime.getTotalAmount().longValue()) : "0원";
+        String displayDocType = "DOCUMENT".equals(attachmentType) ? "공식문서" : "영수증";
+        String displayBaseName = cardLastDigits + "_" + displayDateStr + "_" + displayAmountStr + "_야근식대_" + displayDocType;
+
+        // 기존 파일 수 조회 → 연번 오프셋 (덮어쓰기 방지)
+        long existingCount = attachmentRepository.countByReceiptOvertimeIdxAndAttachmentType(receiptOvertimeIdx, attachmentType);
 
         for (MultipartFile file : files) {
             if (file.isEmpty()) {
@@ -538,20 +554,22 @@ public class ReceiptOvertimeServiceImpl implements ReceiptOvertimeService {
             }
 
             try {
-                // 원본 파일명
-                String originalFilename = file.getOriginalFilename();
-                if (originalFilename == null) {
-                    originalFilename = "unnamed_file";
+                // 확장자 추출 (실제 업로드 파일에서)
+                String actualFilename = file.getOriginalFilename();
+                if (actualFilename == null) actualFilename = "unnamed_file";
+                String extension = "";
+                int dotIndex = actualFilename.lastIndexOf('.');
+                if (dotIndex > 0) {
+                    extension = actualFilename.substring(dotIndex);
                 }
 
-                // 고유 파일명 생성 (타임스탬프 + UUID)
+                // 표시용 파일명: 카드번호_yyyymmdd_사용금액_야근식대_문서종류_N.확장자 (항상 연번)
+                long seq = existingCount + savedAttachments.size() + 1;
+                String displayFilename = displayBaseName + "_" + seq + extension;
+
+                // 저장용 고유 파일명 (디스크 저장, 타임스탬프+UUID)
                 String timestamp = LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyyMMddHHmmss"));
                 String uuid = UUID.randomUUID().toString().substring(0, 8);
-                String extension = "";
-                int dotIndex = originalFilename.lastIndexOf('.');
-                if (dotIndex > 0) {
-                    extension = originalFilename.substring(dotIndex);
-                }
                 String storedFilename = timestamp + "_" + uuid + extension;
 
                 // 파일 저장
@@ -561,11 +579,12 @@ public class ReceiptOvertimeServiceImpl implements ReceiptOvertimeService {
                 // DB 저장
                 ReceiptOvertimeAttachment attachment = new ReceiptOvertimeAttachment();
                 attachment.setReceiptOvertimeIdx(overtime);
-                attachment.setOriginalFilename(originalFilename);
+                attachment.setOriginalFilename(displayFilename);
                 attachment.setStoredFilename(storedFilename);
                 attachment.setFilePath(relativePath);
                 attachment.setFileSize(file.getSize());
                 attachment.setFileType(file.getContentType());
+                attachment.setAttachmentType(attachmentType);
                 attachment.setCreatedAt(now);
                 attachment.setUpdatedAt(now);
 
@@ -573,7 +592,7 @@ public class ReceiptOvertimeServiceImpl implements ReceiptOvertimeService {
 
                 savedAttachments.add(mapper.toAttachmentDTO(saved));
 
-                log.debug("첨부파일 저장 완료 - 원본명: {}, 저장명: {}", originalFilename, storedFilename);
+                log.debug("첨부파일 저장 완료 - 표시명: {}, 저장명: {}", displayFilename, storedFilename);
 
             } catch (IOException e) {
                 log.error("파일 저장 실패: {}", file.getOriginalFilename(), e);
@@ -627,5 +646,49 @@ public class ReceiptOvertimeServiceImpl implements ReceiptOvertimeService {
                 .orElseThrow(() -> new IllegalArgumentException("첨부파일을 찾을 수 없습니다. idx: " + attachmentIdx));
 
         return mapper.toAttachmentDTO(attachment);
+    }
+
+    /**
+     * 문서 수정 시 기존 첨부파일의 표시용 파일명을 최신 정보(카드번호/날짜/금액)로 갱신
+     */
+    private void renameAttachments(ReceiptOvertime overtime) {
+        String cardLastDigits = "no-card";
+        if (overtime.getCardIdx() != null) {
+            ProjectCard card = projectCardRepository.findById(overtime.getCardIdx()).orElse(null);
+            if (card != null && card.getCardLastDigits() != null) {
+                cardLastDigits = card.getCardLastDigits();
+            }
+        }
+        String displayDateStr = overtime.getOvertimeDate().format(DateTimeFormatter.ofPattern("yyyyMMdd"));
+        String displayAmountStr = overtime.getTotalAmount() != null
+                ? String.format("%,d원", overtime.getTotalAmount().longValue()) : "0원";
+
+        List<ReceiptOvertimeAttachment> allAttachments = attachmentRepository.findByReceiptOvertimeIdx(overtime.getId());
+
+        final String finalCardLastDigits = cardLastDigits;
+        for (String type : new String[]{"RECEIPT", "DOCUMENT"}) {
+            String displayDocType = "DOCUMENT".equals(type) ? "공식문서" : "영수증";
+            String newBaseName = finalCardLastDigits + "_" + displayDateStr + "_" + displayAmountStr + "_야근식대_" + displayDocType;
+
+            List<ReceiptOvertimeAttachment> group = allAttachments.stream()
+                    .filter(a -> type.equals(a.getAttachmentType()) || (a.getAttachmentType() == null && "RECEIPT".equals(type)))
+                    .sorted(Comparator.comparingLong(ReceiptOvertimeAttachment::getId))
+                    .collect(Collectors.toList());
+
+            for (int i = 0; i < group.size(); i++) {
+                ReceiptOvertimeAttachment att = group.get(i);
+                String storedName = att.getStoredFilename();
+                String extension = "";
+                if (storedName != null) {
+                    int dot = storedName.lastIndexOf('.');
+                    if (dot > 0) extension = storedName.substring(dot);
+                }
+                att.setOriginalFilename(newBaseName + "_" + (i + 1) + extension);
+            }
+            if (!group.isEmpty()) {
+                attachmentRepository.saveAll(group);
+            }
+        }
+        log.debug("첨부파일 파일명 갱신 완료 - receiptOvertimeIdx: {}", overtime.getId());
     }
 }

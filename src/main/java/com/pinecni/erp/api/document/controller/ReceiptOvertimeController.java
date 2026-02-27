@@ -106,7 +106,8 @@ public class ReceiptOvertimeController {
     @PostMapping(consumes = {"multipart/form-data"})
     public ResponseEntity<?> createReceiptOvertime(
             @RequestPart("data") String dataJson,
-            @RequestPart(value = "files", required = false) MultipartFile[] files,
+            @RequestPart(value = "receiptFiles", required = false) MultipartFile[] receiptFiles,
+            @RequestPart(value = "documentFiles", required = false) MultipartFile[] documentFiles,
             jakarta.servlet.http.HttpSession session) {
 
         // 세션에서 현재 로그인한 사용자 정보 가져오기
@@ -122,17 +123,24 @@ public class ReceiptOvertimeController {
             // JSON 문자열을 DTO로 변환
             ReceiptOvertimeCreateDTO createDTO = objectMapper.readValue(dataJson, ReceiptOvertimeCreateDTO.class);
 
-            log.debug("POST /api/receipt-overtimes - projectIdx: {}, authorIdx: {}, 파일 개수: {}",
-                    createDTO.getProjectIdx(), createDTO.getAuthorIdx(), files != null ? files.length : 0);
+            log.debug("POST /api/receipt-overtimes - projectIdx: {}, authorIdx: {}, 영수증파일: {}, 공식문서파일: {}",
+                    createDTO.getProjectIdx(), createDTO.getAuthorIdx(),
+                    receiptFiles != null ? receiptFiles.length : 0,
+                    documentFiles != null ? documentFiles.length : 0);
 
             // 야근식대 생성
             ReceiptOvertimeDTO receiptOvertime = receiptOvertimeService.createReceiptOvertime(createDTO, currentUserIdx);
 
-            // 첨부파일 저장
-            if (files != null && files.length > 0) {
+            // 첨부파일 저장 (타입별 분리)
+            if (receiptFiles != null && receiptFiles.length > 0) {
                 List<ReceiptOvertimeAttachmentDTO> attachments = receiptOvertimeService.saveAttachments(
-                        receiptOvertime.getIdx(), files);
-                log.debug("첨부파일 {}개 저장 완료", attachments.size());
+                        receiptOvertime.getIdx(), receiptFiles, "RECEIPT");
+                log.debug("영수증 첨부파일 {}개 저장 완료", attachments.size());
+            }
+            if (documentFiles != null && documentFiles.length > 0) {
+                List<ReceiptOvertimeAttachmentDTO> attachments = receiptOvertimeService.saveAttachments(
+                        receiptOvertime.getIdx(), documentFiles, "DOCUMENT");
+                log.debug("공식문서 첨부파일 {}개 저장 완료", attachments.size());
             }
 
             return ResponseEntity.status(HttpStatus.CREATED).body(receiptOvertime);
@@ -152,7 +160,8 @@ public class ReceiptOvertimeController {
     public ResponseEntity<?> updateReceiptOvertime(
             @PathVariable Long idx,
             @RequestPart("data") String dataJson,
-            @RequestPart(value = "files", required = false) MultipartFile[] files,
+            @RequestPart(value = "receiptFiles", required = false) MultipartFile[] receiptFiles,
+            @RequestPart(value = "documentFiles", required = false) MultipartFile[] documentFiles,
             jakarta.servlet.http.HttpSession session) {
 
         Long currentUserIdx = (Long) session.getAttribute("userIdx");
@@ -165,17 +174,24 @@ public class ReceiptOvertimeController {
         try {
             ReceiptOvertimeCreateDTO updateDTO = objectMapper.readValue(dataJson, ReceiptOvertimeCreateDTO.class);
 
-            log.debug("PUT /api/receipt-overtimes/{} - projectIdx: {}, 파일 개수: {}",
-                    idx, updateDTO.getProjectIdx(), files != null ? files.length : 0);
+            log.debug("PUT /api/receipt-overtimes/{} - projectIdx: {}, 영수증파일: {}, 공식문서파일: {}",
+                    idx, updateDTO.getProjectIdx(),
+                    receiptFiles != null ? receiptFiles.length : 0,
+                    documentFiles != null ? documentFiles.length : 0);
 
             // 야근식대 수정
             ReceiptOvertimeDTO receiptOvertime = receiptOvertimeService.updateReceiptOvertime(idx, updateDTO, currentUserIdx);
 
-            // 새 첨부파일 저장
-            if (files != null && files.length > 0) {
+            // 새 첨부파일 저장 (타입별 분리)
+            if (receiptFiles != null && receiptFiles.length > 0) {
                 List<ReceiptOvertimeAttachmentDTO> attachments = receiptOvertimeService.saveAttachments(
-                        receiptOvertime.getIdx(), files);
-                log.debug("첨부파일 {}개 저장 완료", attachments.size());
+                        receiptOvertime.getIdx(), receiptFiles, "RECEIPT");
+                log.debug("영수증 첨부파일 {}개 저장 완료", attachments.size());
+            }
+            if (documentFiles != null && documentFiles.length > 0) {
+                List<ReceiptOvertimeAttachmentDTO> attachments = receiptOvertimeService.saveAttachments(
+                        receiptOvertime.getIdx(), documentFiles, "DOCUMENT");
+                log.debug("공식문서 첨부파일 {}개 저장 완료", attachments.size());
             }
 
             return ResponseEntity.ok(receiptOvertime);
