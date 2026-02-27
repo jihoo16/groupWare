@@ -73,7 +73,7 @@ public class ReceiptOvertimeMapper {
                 .idx(entity.getId())
                 .receiptOvertimeIdx(entity.getReceiptOvertimeIdx() != null ? entity.getReceiptOvertimeIdx().getId() : null)
                 .originalFilename(entity.getOriginalFilename())
-                .savingFilename(entity.getSavingFilename())
+                .storedFilename(entity.getStoredFilename())
                 .filePath(entity.getFilePath())
                 .fileSize(entity.getFileSize())
                 .fileType(entity.getFileType())

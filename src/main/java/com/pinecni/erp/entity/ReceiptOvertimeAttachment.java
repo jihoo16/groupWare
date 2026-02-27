@@ -34,8 +34,8 @@ public class ReceiptOvertimeAttachment {
 
     @Size(max = 255)
     @NotNull
-    @Column(name = "saving_filename", nullable = false)
-    private String savingFilename;
+    @Column(name = "stored_filename", nullable = false)
+    private String storedFilename;
 
     @Size(max = 500)
     @NotNull

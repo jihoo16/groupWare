@@ -474,7 +474,6 @@ public class VacationController {
             String fileName = String.format("%s_vacation_request_%s.pdf", datePrefix, userIdentifier);
 
             // 서버의 정해진 경로에 PDF 파일 저장
-            // 경로: C:\PDF_STORAGE\vacation\YYYY\{userId}\filename
             String savePath = pdfGenerationService.saveVacationPdf(pdfBytes, fileName, year, userIdentifier);
             log.info("PDF 파일 저장 완료: {}", savePath);
 
@@ -833,4 +832,5 @@ public class VacationController {
             return ResponseEntity.internalServerError().body(Map.of("error", "삭제 처리 중 오류가 발생했습니다."));
         }
     }
+
 }

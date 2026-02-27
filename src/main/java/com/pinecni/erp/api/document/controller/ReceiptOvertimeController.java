@@ -7,6 +7,7 @@ import com.pinecni.erp.api.document.dto.ReceiptOvertimeDTO;
 import com.pinecni.erp.api.document.service.ReceiptOvertimeService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.core.io.Resource;
 import org.springframework.core.io.UrlResource;
 import org.springframework.http.HttpHeaders;
@@ -35,6 +36,9 @@ public class ReceiptOvertimeController {
 
     private final ReceiptOvertimeService receiptOvertimeService;
     private final ObjectMapper objectMapper;
+
+    @Value("${file.base.dir}")
+    private String baseDir;
 
     /**
      * 전체 야근식대 목록 조회
@@ -249,7 +253,7 @@ public class ReceiptOvertimeController {
         try {
             ReceiptOvertimeAttachmentDTO attachment = receiptOvertimeService.getAttachmentById(attachmentIdx);
 
-            Path filePath = Paths.get(attachment.getFilePath());
+            Path filePath = Paths.get(baseDir).resolve(attachment.getFilePath()).resolve(attachment.getStoredFilename());
             Resource resource = new UrlResource(filePath.toUri());
 
             if (!resource.exists() || !resource.isReadable()) {

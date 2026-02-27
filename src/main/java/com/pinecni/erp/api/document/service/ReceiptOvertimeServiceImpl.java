@@ -61,8 +61,11 @@ public class ReceiptOvertimeServiceImpl implements ReceiptOvertimeService {
     private static final String DOCUMENT_TYPE = "receipt_overtime"; // document_sequences.document_type
     private static final String DOCUMENT_TYPE_PREFIX = "RCO"; // 문서번호 prefix (RCO-2026-001)
 
-    @Value("${file.upload.path:/uploads/receipt-overtimes}")
-    private String uploadPath;
+    @Value("${file.base.dir}")
+    private String baseDir;
+
+    @Value("${file.project.receipt-overtime.pattern}")
+    private String uploadPattern;
 
     @Override
     @Transactional(readOnly = true)
@@ -503,9 +506,22 @@ public class ReceiptOvertimeServiceImpl implements ReceiptOvertimeService {
         ReceiptOvertime overtime = receiptOvertimeRepository.findById(receiptOvertimeIdx)
                 .orElseThrow(() -> new IllegalArgumentException("야근식대를 찾을 수 없습니다. IDX: " + receiptOvertimeIdx));
 
-        // 업로드 디렉토리 생성
-        String datePath = LocalDate.now().format(DateTimeFormatter.ofPattern("yyyy/MM/dd"));
-        String fullUploadPath = uploadPath + "/" + datePath + "/" + receiptOvertimeIdx;
+        // 업로드 디렉토리 생성: project/{projectIdx}/{cardLastDigits}/receipt-overtime/{date}
+        Long projectIdx = overtime.getProjectIdx().getIdx();
+        String cardLastDigits = "no-card";
+        if (overtime.getCardIdx() != null) {
+            ProjectCard card = projectCardRepository.findById(overtime.getCardIdx()).orElse(null);
+            if (card != null && card.getCardLastDigits() != null) {
+                cardLastDigits = card.getCardLastDigits();
+            }
+        }
+        String date = overtime.getOvertimeDate().format(DateTimeFormatter.ofPattern("yyyy-MM-dd"));
+
+        String relativePath = uploadPattern
+                .replace("{projectIdx}", String.valueOf(projectIdx))
+                .replace("{cardLastDigits}", cardLastDigits)
+                .replace("{date}", date);
+        String fullUploadPath = baseDir + File.separator + relativePath.replace("/", File.separator);
         File uploadDir = new File(fullUploadPath);
         if (!uploadDir.exists()) {
             uploadDir.mkdirs();
@@ -534,18 +550,18 @@ public class ReceiptOvertimeServiceImpl implements ReceiptOvertimeService {
                 if (dotIndex > 0) {
                     extension = originalFilename.substring(dotIndex);
                 }
-                String savingFilename = timestamp + "_" + uuid + extension;
+                String storedFilename = timestamp + "_" + uuid + extension;
 
                 // 파일 저장
-                Path filePath = Paths.get(fullUploadPath, savingFilename);
+                Path filePath = Paths.get(fullUploadPath, storedFilename);
                 Files.copy(file.getInputStream(), filePath);
 
                 // DB 저장
                 ReceiptOvertimeAttachment attachment = new ReceiptOvertimeAttachment();
                 attachment.setReceiptOvertimeIdx(overtime);
                 attachment.setOriginalFilename(originalFilename);
-                attachment.setSavingFilename(savingFilename);
-                attachment.setFilePath(filePath.toString());
+                attachment.setStoredFilename(storedFilename);
+                attachment.setFilePath(relativePath);
                 attachment.setFileSize(file.getSize());
                 attachment.setFileType(file.getContentType());
                 attachment.setCreatedAt(now);
@@ -555,7 +571,7 @@ public class ReceiptOvertimeServiceImpl implements ReceiptOvertimeService {
 
                 savedAttachments.add(mapper.toAttachmentDTO(saved));
 
-                log.debug("첨부파일 저장 완료 - 원본명: {}, 저장명: {}", originalFilename, savingFilename);
+                log.debug("첨부파일 저장 완료 - 원본명: {}, 저장명: {}", originalFilename, storedFilename);
 
             } catch (IOException e) {
                 log.error("파일 저장 실패: {}", file.getOriginalFilename(), e);
@@ -587,7 +603,7 @@ public class ReceiptOvertimeServiceImpl implements ReceiptOvertimeService {
 
         // 실제 파일 삭제
         try {
-            Path filePath = Paths.get(attachment.getFilePath());
+            Path filePath = Paths.get(baseDir).resolve(attachment.getFilePath()).resolve(attachment.getStoredFilename());
             Files.deleteIfExists(filePath);
             log.debug("파일 삭제 완료: {}", filePath);
         } catch (IOException e) {

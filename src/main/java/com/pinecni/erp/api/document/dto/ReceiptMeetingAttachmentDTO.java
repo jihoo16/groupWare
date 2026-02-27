@@ -27,12 +27,17 @@ public class ReceiptMeetingAttachmentDTO {
     private Long receiptMeetingIdx;
 
     /**
-     * 파일명
+     * 원본 파일명
      */
-    private String fileName;
+    private String originalFilename;
 
     /**
-     * 파일 경로
+     * 저장 파일명
+     */
+    private String storedFilename;
+
+    /**
+     * 파일 경로 (디렉토리)
      */
     private String filePath;
 

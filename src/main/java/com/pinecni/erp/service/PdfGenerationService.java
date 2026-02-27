@@ -29,28 +29,28 @@ public class PdfGenerationService {
     private final SpringTemplateEngine templateEngine;
     private final PlaywrightPdfService playwrightPdfService;
 
-    @Value("${pdf.storage.path:./pdf_storage}")
+    @Value("${pdf.storage.path}")
     private String pdfStoragePath;
 
     @Value("${pdf.inline-css:true}")
     private boolean inlineCss;
 
-    @Value("${pdf.storage.vacation.pattern:vacation/{year}/{userId}}")
+    @Value("${pdf.storage.vacation.pattern}")
     private String vacationPathPattern;
 
-    @Value("${pdf.storage.expense.pattern:expense/{year}/{userId}}")
+    @Value("${pdf.storage.expense.pattern}")
     private String expensePathPattern;
 
-    @Value("${pdf.storage.meeting.pattern:meeting/{year}/{date}}")
+    @Value("${pdf.storage.meeting.pattern}")
     private String meetingPathPattern;
 
-    @Value("${pdf.storage.project-weekly-report.pattern:project/{year}/{projectIdx}}")
+    @Value("${pdf.storage.project-weekly-report.pattern}")
     private String projectWeeklyReportPathPattern;
 
-    @Value("${pdf.storage.receipt-meeting.pattern:receipt-meeting/{year}/{date}}")
+    @Value("${pdf.storage.receipt-meeting.pattern}")
     private String receiptMeetingPathPattern;
 
-    @Value("${pdf.storage.receipt-overtime.pattern:receipt-overtime/{year}/{projectIdx}}")
+    @Value("${pdf.storage.receipt-overtime.pattern}")
     private String receiptOvertimePathPattern;
 
     /**
@@ -436,19 +436,19 @@ public class PdfGenerationService {
 
     /**
      * 연차신청서 PDF를 구조화된 경로에 저장
-     * 경로 패턴: {basePath}/vacation/{year}/{userId}/{fileName}
+     * 경로 패턴: documents/vacation/{userId}/{year}
      *
      * @param pdfBytes PDF 바이트 배열
      * @param fileName 파일명
      * @param year     연도 (예: 2026)
-     * @param userId   사용자 ID
+     * @param userId   사용자 사번
      * @return 저장된 파일 경로
      */
     public String saveVacationPdf(byte[] pdfBytes, String fileName, String year, String userId) throws IOException {
-        // 경로 패턴 변환: vacation/{year}/{userId}
+        // 경로 패턴 변환: documents/vacation/{userId}/{year}
         String relativePath = vacationPathPattern
-                .replace("{year}", year)
-                .replace("{userId}", userId);
+                .replace("{userId}", userId)
+                .replace("{year}", year);
 
         String targetDir = pdfStoragePath + File.separator + relativePath.replace("/", File.separator);
 
@@ -574,18 +574,20 @@ public class PdfGenerationService {
 
     /**
      * 연구비증빙 회의록 PDF를 구조화된 경로에 저장
-     * 경로 패턴: {basePath}/receipt-meeting/{year}/{date}/{fileName}
+     * 경로 패턴: project/{projectIdx}/{cardLastDigits}/receipt-meeting/{date}
      *
-     * @param pdfBytes PDF 바이트 배열
-     * @param fileName 파일명
-     * @param year     연도 (예: 2026)
-     * @param date     회의 날짜 (yyyy-MM-dd)
+     * @param pdfBytes        PDF 바이트 배열
+     * @param fileName        파일명
+     * @param projectIdx      프로젝트 IDX
+     * @param cardLastDigits  카드 뒷번호
+     * @param date            회의 날짜 (yyyy-MM-dd)
      * @return 저장된 파일 경로
      */
-    public String saveReceiptMeetingPdf(byte[] pdfBytes, String fileName, String year, String date) throws IOException {
-        // 경로 패턴 변환: receipt-meeting/{year}/{date}
+    public String saveReceiptMeetingPdf(byte[] pdfBytes, String fileName, String projectIdx, String cardLastDigits, String date) throws IOException {
+        // 경로 패턴 변환: project/{projectIdx}/{cardLastDigits}/receipt-meeting/{date}
         String relativePath = receiptMeetingPathPattern
-                .replace("{year}", year)
+                .replace("{projectIdx}", projectIdx)
+                .replace("{cardLastDigits}", cardLastDigits)
                 .replace("{date}", date);
 
         String targetDir = pdfStoragePath + File.separator + relativePath.replace("/", File.separator);
@@ -620,19 +622,21 @@ public class PdfGenerationService {
 
     /**
      * 연구비증빙 야근식대 PDF를 구조화된 경로에 저장
-     * 경로 패턴: {basePath}/receipt-overtime/{year}/{projectIdx}/{fileName}
+     * 경로 패턴: project/{projectIdx}/{cardLastDigits}/receipt-overtime/{date}
      *
-     * @param pdfBytes   PDF 바이트 배열
-     * @param fileName   파일명
-     * @param year       연도 (예: 2026)
-     * @param projectIdx 프로젝트 IDX
+     * @param pdfBytes        PDF 바이트 배열
+     * @param fileName        파일명
+     * @param projectIdx      프로젝트 IDX
+     * @param cardLastDigits  카드 뒷번호
+     * @param date            야근 날짜 (yyyy-MM-dd)
      * @return 저장된 파일 경로
      */
-    public String saveReceiptOvertimePdf(byte[] pdfBytes, String fileName, String year, String projectIdx) throws IOException {
-        // 경로 패턴 변환: receipt-overtime/{year}/{projectIdx}
+    public String saveReceiptOvertimePdf(byte[] pdfBytes, String fileName, String projectIdx, String cardLastDigits, String date) throws IOException {
+        // 경로 패턴 변환: project/{projectIdx}/{cardLastDigits}/receipt-overtime/{date}
         String relativePath = receiptOvertimePathPattern
-                .replace("{year}", year)
-                .replace("{projectIdx}", projectIdx);
+                .replace("{projectIdx}", projectIdx)
+                .replace("{cardLastDigits}", cardLastDigits)
+                .replace("{date}", date);
 
         String targetDir = pdfStoragePath + File.separator + relativePath.replace("/", File.separator);
 

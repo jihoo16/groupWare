@@ -2,13 +2,17 @@ package com.pinecni.erp.api.file.service;
 
 import com.pinecni.erp.api.approval.repository.ApprovalDocumentRepository;
 import com.pinecni.erp.api.approval.repository.ApprovalFileRepository;
+import com.pinecni.erp.api.document.repository.MonthlyReportRepository;
 import com.pinecni.erp.api.document.repository.WeeklyReportRepository;
 import com.pinecni.erp.api.project.repository.ProjectRepository;
+import com.pinecni.erp.api.user.repository.UserRepository;
 import com.pinecni.erp.api.file.dto.FileUploadDTO;
 import com.pinecni.erp.api.file.mapper.FileMapper;
 import com.pinecni.erp.entity.ApprovalDocument;
 import com.pinecni.erp.entity.ApprovalFile;
+import com.pinecni.erp.entity.MonthlyReport;
 import com.pinecni.erp.entity.Project;
+import com.pinecni.erp.entity.User;
 import com.pinecni.erp.entity.WeeklyReport;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -35,11 +39,12 @@ import java.util.stream.Collectors;
  * 파일 저장/관리 Service 구현체
  *
  * 파일 저장 경로 구조:
- * - Base: ${file.upload.dir} (application.properties에서 설정)
+ * - Base: ${file.base.dir} (application.properties에서 설정)
  * - Pattern: {base}/{pattern}/{timestamp}_{uuid}.{ext}
- * - 프로젝트 주간업무보고: ./file_storage/approval/weekly-report/{projectName}/{year}/{month}/파일.pdf
- * - 프로젝트 월간업무보고: ./file_storage/approval/monthly-report/{projectName}/{year}/{month}/파일.pdf
- * - 일반 문서: ./file_storage/approval/general/{year}/{month}/파일.pdf
+ * - 일반 전자문서:    /erp_file/documents/general/{year}/{month}/파일
+ * - 연차신청서:       /erp_file/documents/vacation/{userId}/{year}/파일
+ * - 프로젝트 주간보고: /erp_file/project/{projectIdx}/{year}/report/weekly/{documentIdx}/파일
+ * - 프로젝트 월간보고: /erp_file/project/{projectIdx}/{year}/report/monthly/{documentIdx}/파일
  *
  * 프로젝트명 변환 규칙:
  * - "AI 연구 과제" → "AI-연구-과제"
@@ -61,10 +66,12 @@ public class FileServiceImpl implements FileService {
     private final ApprovalFileRepository approvalFileRepository;
     private final ApprovalDocumentRepository approvalDocumentRepository;
     private final WeeklyReportRepository weeklyReportRepository;
+    private final MonthlyReportRepository monthlyReportRepository;
     private final ProjectRepository projectRepository;
+    private final UserRepository userRepository;
     private final FileMapper fileMapper;
 
-    @Value("${file.upload.dir}")
+    @Value("${file.base.dir}")
     private String uploadDir;
 
     @Value("${file.storage.weekly-report.pattern}")
@@ -75,6 +82,9 @@ public class FileServiceImpl implements FileService {
 
     @Value("${file.storage.default.pattern}")
     private String defaultPattern;
+
+    @Value("${file.storage.vacation.pattern}")
+    private String vacationPattern;
 
     // 허용되는 파일 확장자
     private static final List<String> ALLOWED_EXTENSIONS = List.of(
@@ -273,12 +283,12 @@ public class FileServiceImpl implements FileService {
      * 상대 경로 생성 (문서 타입 및 프로젝트에 따라 동적 생성)
      *
      * 패턴 예시:
-     * - 프로젝트 주간업무보고: weekly-report/{projectName}/{year}/{month}
-     * - 프로젝트 월간업무보고: monthly-report/{projectName}/{year}/{month}
+     * - 프로젝트 주간업무보고: {projectIdx}/{year}/report/weekly/{documentIdx}
+     * - 프로젝트 월간업무보고: {projectIdx}/{year}/report/monthly/{documentIdx}
      * - 일반 문서: general/{year}/{month}
      *
      * @param documentIdx 문서 IDX
-     * @return 상대 경로 (예: weekly-report/AI연구과제/2026/01)
+     * @return 상대 경로 (예: 42/2026/report/weekly/101)
      *
      * Note: 디렉토리가 존재하지 않으면 uploadFile() 메서드에서 자동 생성됨
      *       projectName은 파일시스템 안전하게 변환됨 (공백→하이픈, 특수문자 제거)
@@ -296,6 +306,7 @@ public class FileServiceImpl implements FileService {
         String pattern;
         Long projectIdx = null;
         String projectName = null;
+        String userId = null;
 
         // 문서 타입에 따라 패턴 선택 및 프로젝트 정보 조회
         if ("프로젝트 주간업무보고".equals(documentType)) {
@@ -315,10 +326,36 @@ public class FileServiceImpl implements FileService {
             }
         } else if ("프로젝트 월간업무보고".equals(documentType)) {
             pattern = monthlyReportPattern;
-
+            MonthlyReport monthlyReport = monthlyReportRepository.findByDocumentIdx(documentIdx)
+                .orElse(null);
+            if (monthlyReport != null) {
+                projectIdx = monthlyReport.getProjectIdx();
+                if (projectIdx != null) {
+                    Project project = projectRepository.findById(projectIdx).orElse(null);
+                    if (project != null) {
+                        projectName = project.getProjectName();
+                    }
+                }
+            }
+        } else if ("연차신청서".equals(documentType)) {
+            pattern = vacationPattern;
+            // 기안자의 사번(empId) 조회
+            User drafter = userRepository.findById(approvalDocument.getDrafterUserIdx()).orElse(null);
+            if (drafter != null && drafter.getEmpId() != null && !drafter.getEmpId().isBlank()) {
+                userId = drafter.getEmpId();
+            } else {
+                userId = String.valueOf(approvalDocument.getDrafterUserIdx());
+            }
         } else {
             // 기본 패턴 사용
             pattern = defaultPattern;
+            // 기안자의 사번(empId) 조회
+            User drafter = userRepository.findById(approvalDocument.getDrafterUserIdx()).orElse(null);
+            if (drafter != null && drafter.getEmpId() != null && !drafter.getEmpId().isBlank()) {
+                userId = drafter.getEmpId();
+            } else {
+                userId = String.valueOf(approvalDocument.getDrafterUserIdx());
+            }
         }
 
         // projectName을 파일시스템 안전하게 변환
@@ -330,10 +367,12 @@ public class FileServiceImpl implements FileService {
             .replace("{month}", month)
             .replace("{projectIdx}", projectIdx != null ? String.valueOf(projectIdx) : "0")
             .replace("{projectName}", sanitizedProjectName)
-            .replace("{documentIdx}", String.valueOf(documentIdx));
+            .replace("{documentIdx}", String.valueOf(documentIdx))
+            .replace("{userId}", userId != null ? userId : "unknown")
+            .replace("{documentType}", documentType != null ? documentType : "unknown");
 
-        log.debug("생성된 경로: {} (documentType: {}, projectIdx: {}, projectName: {})",
-            path, documentType, projectIdx, projectName);
+        log.debug("생성된 경로: {} (documentType: {}, projectIdx: {}, projectName: {}, userId: {})",
+            path, documentType, projectIdx, projectName, userId);
         return path;
     }
 

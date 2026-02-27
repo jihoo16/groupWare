@@ -31,8 +31,11 @@ public class ReceiptMeetingAttachment {
     @Column(name = "receipt_meeting_idx", nullable = false)
     private Long receiptMeetingIdx;
 
-    @Column(name = "file_name", nullable = false, length = 255)
-    private String fileName;
+    @Column(name = "original_filename", nullable = false, length = 255)
+    private String originalFilename;
+
+    @Column(name = "stored_filename", nullable = false, length = 255)
+    private String storedFilename;
 
     @Column(name = "file_path", nullable = false, length = 500)
     private String filePath;

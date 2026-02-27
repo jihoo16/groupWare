@@ -2082,7 +2082,7 @@ document.addEventListener('DOMContentLoaded', async function() {
     // 기존 첨부파일 다운로드
     window.downloadAttachment = function(fileId, fileName) {
         const link = document.createElement('a');
-        link.href = `/api/attachments/${fileId}/download`;
+        link.href = `/api/receipt-meetings/attachments/${fileId}/download`;
         link.download = fileName;
         document.body.appendChild(link);
         link.click();
@@ -2101,17 +2101,17 @@ document.addEventListener('DOMContentLoaded', async function() {
             item.className = 'file-item existing-file';
 
             let icon = 'fa-file';
-            if (attachment.fileName.match(/\.(jpg|jpeg|png|gif)$/i)) icon = 'fa-file-image';
-            else if (attachment.fileName.match(/\.(pdf)$/i)) icon = 'fa-file-pdf';
-            else if (attachment.fileName.match(/\.(doc|docx)$/i)) icon = 'fa-file-word';
-            else if (attachment.fileName.match(/\.(xls|xlsx)$/i)) icon = 'fa-file-excel';
+            if (attachment.originalFilename.match(/\.(jpg|jpeg|png|gif)$/i)) icon = 'fa-file-image';
+            else if (attachment.originalFilename.match(/\.(pdf)$/i)) icon = 'fa-file-pdf';
+            else if (attachment.originalFilename.match(/\.(doc|docx)$/i)) icon = 'fa-file-word';
+            else if (attachment.originalFilename.match(/\.(xls|xlsx)$/i)) icon = 'fa-file-excel';
 
             const fileSize = attachment.fileSize ? `(${(attachment.fileSize / 1024).toFixed(1)} KB)` : '';
 
             item.innerHTML = `
                 <i class="fas ${icon}"></i>
-                <span>${attachment.fileName} ${fileSize}</span>
-                <button class="btn-download-file" onclick="downloadAttachment(${attachment.idx}, '${attachment.fileName}')" title="다운로드">
+                <span>${attachment.originalFilename} ${fileSize}</span>
+                <button class="btn-download-file" onclick="downloadAttachment(${attachment.idx}, '${attachment.originalFilename}')" title="다운로드">
                     <i class="fas fa-download"></i>
                 </button>
             `;

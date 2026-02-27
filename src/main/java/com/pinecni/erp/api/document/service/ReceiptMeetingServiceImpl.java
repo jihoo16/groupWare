@@ -56,8 +56,11 @@ public class ReceiptMeetingServiceImpl implements ReceiptMeetingService {
     private final ProjectRepository projectRepository;
     private final ProjectCardRepository projectCardRepository;
 
-    @Value("${file.upload.path:/uploads/receipt-meetings}")
-    private String uploadPath;
+    @Value("${file.base.dir}")
+    private String baseDir;
+
+    @Value("${file.project.receipt-meeting.pattern}")
+    private String uploadPattern;
 
     @Override
     @Transactional(readOnly = true)
@@ -421,9 +424,22 @@ public class ReceiptMeetingServiceImpl implements ReceiptMeetingService {
         ReceiptMeeting meeting = receiptMeetingRepository.findById(receiptMeetingIdx)
                 .orElseThrow(() -> new IllegalArgumentException("회의록을 찾을 수 없습니다. IDX: " + receiptMeetingIdx));
 
-        // 업로드 디렉토리 생성
-        String datePath = LocalDate.now().format(DateTimeFormatter.ofPattern("yyyy/MM/dd"));
-        String fullUploadPath = uploadPath + "/" + datePath + "/" + receiptMeetingIdx;
+        // 업로드 디렉토리 생성: project/{projectIdx}/{cardLastDigits}/receipt-meeting/{date}
+        Long projectIdx = meeting.getProjectIdx();
+        String cardLastDigits = "no-card";
+        if (meeting.getCardIdx() != null) {
+            ProjectCard card = projectCardRepository.findById(meeting.getCardIdx()).orElse(null);
+            if (card != null && card.getCardLastDigits() != null) {
+                cardLastDigits = card.getCardLastDigits();
+            }
+        }
+        String date = meeting.getMeetingDate().format(DateTimeFormatter.ofPattern("yyyy-MM-dd"));
+
+        String relativePath = uploadPattern
+                .replace("{projectIdx}", String.valueOf(projectIdx))
+                .replace("{cardLastDigits}", cardLastDigits)
+                .replace("{date}", date);
+        String fullUploadPath = baseDir + File.separator + relativePath.replace("/", File.separator);
         File uploadDir = new File(fullUploadPath);
         if (!uploadDir.exists()) {
             uploadDir.mkdirs();
@@ -460,8 +476,9 @@ public class ReceiptMeetingServiceImpl implements ReceiptMeetingService {
                 // DB 저장
                 ReceiptMeetingAttachment attachment = ReceiptMeetingAttachment.builder()
                         .receiptMeetingIdx(receiptMeetingIdx)
-                        .fileName(originalFilename)
-                        .filePath(filePath.toString())
+                        .originalFilename(originalFilename)
+                        .storedFilename(savedFilename)
+                        .filePath(relativePath)
                         .fileSize(file.getSize())
                         .fileType(file.getContentType())
                         .uploadUserIdx(uploadUserIdx)
@@ -473,7 +490,8 @@ public class ReceiptMeetingServiceImpl implements ReceiptMeetingService {
                 ReceiptMeetingAttachmentDTO dto = ReceiptMeetingAttachmentDTO.builder()
                         .idx(saved.getIdx())
                         .receiptMeetingIdx(saved.getReceiptMeetingIdx())
-                        .fileName(saved.getFileName())
+                        .originalFilename(saved.getOriginalFilename())
+                        .storedFilename(saved.getStoredFilename())
                         .filePath(saved.getFilePath())
                         .fileSize(saved.getFileSize())
                         .fileType(saved.getFileType())
@@ -504,7 +522,8 @@ public class ReceiptMeetingServiceImpl implements ReceiptMeetingService {
                 .map(attachment -> ReceiptMeetingAttachmentDTO.builder()
                         .idx(attachment.getIdx())
                         .receiptMeetingIdx(attachment.getReceiptMeetingIdx())
-                        .fileName(attachment.getFileName())
+                        .originalFilename(attachment.getOriginalFilename())
+                        .storedFilename(attachment.getStoredFilename())
                         .filePath(attachment.getFilePath())
                         .fileSize(attachment.getFileSize())
                         .fileType(attachment.getFileType())
@@ -512,6 +531,27 @@ public class ReceiptMeetingServiceImpl implements ReceiptMeetingService {
                         .uploadedAt(attachment.getUploadedAt())
                         .build())
                 .collect(Collectors.toList());
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public ReceiptMeetingAttachmentDTO getAttachmentById(Long attachmentIdx) {
+        log.debug("회의록 첨부파일 단건 조회 - attachmentIdx: {}", attachmentIdx);
+
+        ReceiptMeetingAttachment attachment = attachmentRepository.findById(attachmentIdx)
+                .orElseThrow(() -> new IllegalArgumentException("첨부파일을 찾을 수 없습니다. idx: " + attachmentIdx));
+
+        return ReceiptMeetingAttachmentDTO.builder()
+                .idx(attachment.getIdx())
+                .receiptMeetingIdx(attachment.getReceiptMeetingIdx())
+                .originalFilename(attachment.getOriginalFilename())
+                .storedFilename(attachment.getStoredFilename())
+                .filePath(attachment.getFilePath())
+                .fileSize(attachment.getFileSize())
+                .fileType(attachment.getFileType())
+                .uploadUserIdx(attachment.getUploadUserIdx())
+                .uploadedAt(attachment.getUploadedAt())
+                .build();
     }
 
     /**

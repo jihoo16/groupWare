@@ -71,4 +71,11 @@ public interface ReceiptMeetingService {
      * @return 첨부파일 목록
      */
     List<ReceiptMeetingAttachmentDTO> getAttachmentsByReceiptMeetingIdx(Long receiptMeetingIdx);
+
+    /**
+     * 첨부파일 단건 조회
+     * @param attachmentIdx 첨부파일 IDX
+     * @return 첨부파일 정보
+     */
+    ReceiptMeetingAttachmentDTO getAttachmentById(Long attachmentIdx);
 }

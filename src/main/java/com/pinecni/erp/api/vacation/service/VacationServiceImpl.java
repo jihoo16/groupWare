@@ -1788,4 +1788,5 @@ public class VacationServiceImpl implements VacationService {
 
         log.info("[연차 승인 처리 완료] documentIdx: {}, approve: {}", documentIdx, approve);
     }
+
 }

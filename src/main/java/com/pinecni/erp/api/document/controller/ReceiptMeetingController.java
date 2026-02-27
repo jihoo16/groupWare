@@ -9,11 +9,20 @@ import com.pinecni.erp.api.document.service.ReceiptMeetingService;
 import jakarta.servlet.http.HttpSession;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.core.io.Resource;
+import org.springframework.core.io.UrlResource;
+import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
+import java.net.URLEncoder;
+import java.nio.charset.StandardCharsets;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -29,6 +38,9 @@ public class ReceiptMeetingController {
 
     private final ReceiptMeetingService receiptMeetingService;
     private final ObjectMapper objectMapper;
+
+    @Value("${file.base.dir}")
+    private String baseDir;
 
     /**
      * 전체 회의록 목록 조회
@@ -177,6 +189,40 @@ public class ReceiptMeetingController {
             Map<String, String> error = new HashMap<>();
             error.put("error", "서버 오류가 발생했습니다.");
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(error);
+        }
+    }
+
+    /**
+     * 회의록 첨부파일 다운로드
+     * GET /api/receipt-meetings/attachments/{attachmentIdx}/download
+     */
+    @GetMapping("/attachments/{attachmentIdx}/download")
+    public ResponseEntity<Resource> downloadAttachment(@PathVariable Long attachmentIdx) {
+        log.debug("GET /api/receipt-meetings/attachments/{}/download", attachmentIdx);
+
+        try {
+            ReceiptMeetingAttachmentDTO attachment = receiptMeetingService.getAttachmentById(attachmentIdx);
+
+            Path filePath = Paths.get(baseDir).resolve(attachment.getFilePath()).resolve(attachment.getStoredFilename());
+            Resource resource = new UrlResource(filePath.toUri());
+
+            if (!resource.exists() || !resource.isReadable()) {
+                log.error("파일을 찾을 수 없거나 읽을 수 없습니다: {}", filePath);
+                return ResponseEntity.notFound().build();
+            }
+
+            String encodedFilename = URLEncoder.encode(attachment.getOriginalFilename(), StandardCharsets.UTF_8)
+                    .replaceAll("\\+", "%20");
+
+            return ResponseEntity.ok()
+                    .contentType(MediaType.APPLICATION_OCTET_STREAM)
+                    .header(HttpHeaders.CONTENT_DISPOSITION,
+                            "attachment; filename*=UTF-8''" + encodedFilename)
+                    .body(resource);
+
+        } catch (Exception e) {
+            log.error("첨부파일 다운로드 실패: {}", e.getMessage(), e);
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
         }
     }
 

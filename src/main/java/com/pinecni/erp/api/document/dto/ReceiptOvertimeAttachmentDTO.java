@@ -19,7 +19,7 @@ public class ReceiptOvertimeAttachmentDTO {
     private Long idx;
     private Long receiptOvertimeIdx;
     private String originalFilename;
-    private String savingFilename;
+    private String storedFilename;
     private String filePath;
     private Long fileSize;
     private String fileType;
