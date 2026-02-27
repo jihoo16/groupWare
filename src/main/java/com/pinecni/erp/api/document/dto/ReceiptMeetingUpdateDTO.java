@@ -73,4 +73,9 @@ public class ReceiptMeetingUpdateDTO {
      * 참석자 목록
      */
     private List<ReceiptMeetingAttendeeDTO> attendees;
+
+    /**
+     * 삭제할 첨부파일 IDX 목록
+     */
+    private List<Long> deletedAttachmentIds;
 }

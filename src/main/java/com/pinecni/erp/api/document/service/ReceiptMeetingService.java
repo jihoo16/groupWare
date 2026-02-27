@@ -60,10 +60,18 @@ public interface ReceiptMeetingService {
      * 첨부파일 저장
      * @param receiptMeetingIdx 회의록 IDX
      * @param files 업로드할 파일 목록
+     * @param attachmentType 파일 종류 (RECEIPT 또는 DOCUMENT)
      * @param uploadUserIdx 업로드 사용자 IDX
      * @return 저장된 첨부파일 정보 목록
      */
-    List<ReceiptMeetingAttachmentDTO> saveAttachments(Long receiptMeetingIdx, MultipartFile[] files, Long uploadUserIdx);
+    List<ReceiptMeetingAttachmentDTO> saveAttachments(Long receiptMeetingIdx, MultipartFile[] files, String attachmentType, Long uploadUserIdx);
+
+    /**
+     * 첨부파일 소프트 딜리트
+     * @param attachmentIdx 첨부파일 IDX
+     * @param deletedUserIdx 삭제한 사용자 IDX
+     */
+    void softDeleteAttachment(Long attachmentIdx, Long deletedUserIdx);
 
     /**
      * 회의록 첨부파일 목록 조회

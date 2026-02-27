@@ -21,4 +21,9 @@ public interface ReceiptMeetingAttachmentRepository extends JpaRepository<Receip
      * 회의록 IDX로 첨부파일 삭제
      */
     void deleteByReceiptMeetingIdx(Long receiptMeetingIdx);
+
+    /**
+     * 회의록 IDX + 첨부파일 종류별 파일 수 조회 (연번 계산용)
+     */
+    long countByReceiptMeetingIdxAndAttachmentType(Long receiptMeetingIdx, String attachmentType);
 }

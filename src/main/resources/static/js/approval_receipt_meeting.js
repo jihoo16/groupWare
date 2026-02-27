@@ -43,6 +43,9 @@ document.addEventListener('DOMContentLoaded', async function() {
     let currentReceiptMeetingIdx = null; // 현재 회의록의 실제 idx (수정/삭제 시 사용)
     let shouldOpenCardModalAfterProject = false; // 과제 선택 후 카드 모달 자동 열기 플래그
     let isLoadingExistingData = false; // 기존 데이터 로딩 중 플래그 (이벤트 핸들러 초기화 방지용)
+    let existingReceiptAttachments = []; // 서버에서 로드된 기존 영수증 파일 (RECEIPT)
+    let existingDocumentAttachments = []; // 서버에서 로드된 기존 공식문서 파일 (DOCUMENT)
+    let deletedAttachmentIds = []; // 삭제 예정 기존 첨부파일 idx 목록
 
     // 주요 내용 바이트 검증
     const MIN_CONTENT_BYTES = 400;
@@ -2046,31 +2049,91 @@ document.addEventListener('DOMContentLoaded', async function() {
     }
 
     function updateReceiptFileList() {
+        if (!receiptFileList) return;
         receiptFileList.innerHTML = '';
+
+        // 1. 기존 영수증 파일 표시 (삭제 예정 제외)
+        existingReceiptAttachments.forEach(att => {
+            if (deletedAttachmentIds.includes(att.idx)) return;
+            const item = document.createElement('div');
+            item.className = 'file-item';
+            const fileSizeKB = att.fileSize ? `(${(att.fileSize / 1024).toFixed(1)} KB)` : '';
+            item.innerHTML = `
+                <i class="fas ${getFileIcon(att.originalFilename)}"></i>
+                <span>${att.originalFilename} ${fileSizeKB}</span>
+                <button class="btn-download-file" onclick="downloadAttachment(${att.idx}, '${att.originalFilename}')" title="다운로드">
+                    <i class="fas fa-download"></i>
+                </button>
+                <button class="btn-remove-file" onclick="removeExistingAttachment(${att.idx})" title="삭제">
+                    <i class="fas fa-times"></i>
+                </button>
+            `;
+            receiptFileList.appendChild(item);
+        });
+
+        // 2. 새로 선택한 영수증 파일 표시
         selectedReceiptFiles.forEach((file, index) => {
             const item = document.createElement('div');
             item.className = 'file-item';
             item.innerHTML = `
                 <i class="fas ${getFileIcon(file.name)}"></i>
-                <span>${file.name} (${(file.size / 1024).toFixed(1)} KB)</span>
-                <button class="btn-remove-file" onclick="removeReceiptFile(${index})"><i class="fas fa-times"></i></button>
+                <span>${file.name} (${(file.size / 1024).toFixed(1)} KB) <span style="color: #667eea; font-size: 11px;">[신규]</span></span>
+                <button class="btn-remove-file" onclick="removeReceiptFile(${index})" title="삭제">
+                    <i class="fas fa-times"></i>
+                </button>
             `;
             receiptFileList.appendChild(item);
         });
+
+        // 3. 파일이 하나도 없으면 안내 메시지
+        const visibleExisting = existingReceiptAttachments.filter(f => !deletedAttachmentIds.includes(f.idx));
+        if (visibleExisting.length === 0 && selectedReceiptFiles.length === 0) {
+            receiptFileList.innerHTML = '<p style="color: #999; font-size: 12px; padding: 10px 0;">첨부된 파일이 없습니다.</p>';
+        }
     }
 
     function updateDocumentFileList() {
+        if (!documentFileList) return;
         documentFileList.innerHTML = '';
+
+        // 1. 기존 공식문서 파일 표시 (삭제 예정 제외)
+        existingDocumentAttachments.forEach(att => {
+            if (deletedAttachmentIds.includes(att.idx)) return;
+            const item = document.createElement('div');
+            item.className = 'file-item';
+            const fileSizeKB = att.fileSize ? `(${(att.fileSize / 1024).toFixed(1)} KB)` : '';
+            item.innerHTML = `
+                <i class="fas ${getFileIcon(att.originalFilename)}"></i>
+                <span>${att.originalFilename} ${fileSizeKB}</span>
+                <button class="btn-download-file" onclick="downloadAttachment(${att.idx}, '${att.originalFilename}')" title="다운로드">
+                    <i class="fas fa-download"></i>
+                </button>
+                <button class="btn-remove-file" onclick="removeExistingAttachment(${att.idx})" title="삭제">
+                    <i class="fas fa-times"></i>
+                </button>
+            `;
+            documentFileList.appendChild(item);
+        });
+
+        // 2. 새로 선택한 공식문서 파일 표시
         selectedDocumentFiles.forEach((file, index) => {
             const item = document.createElement('div');
             item.className = 'file-item';
             item.innerHTML = `
                 <i class="fas ${getFileIcon(file.name)}"></i>
-                <span>${file.name} (${(file.size / 1024).toFixed(1)} KB)</span>
-                <button class="btn-remove-file" onclick="removeDocumentFile(${index})"><i class="fas fa-times"></i></button>
+                <span>${file.name} (${(file.size / 1024).toFixed(1)} KB) <span style="color: #667eea; font-size: 11px;">[신규]</span></span>
+                <button class="btn-remove-file" onclick="removeDocumentFile(${index})" title="삭제">
+                    <i class="fas fa-times"></i>
+                </button>
             `;
             documentFileList.appendChild(item);
         });
+
+        // 3. 파일이 하나도 없으면 안내 메시지
+        const visibleExisting = existingDocumentAttachments.filter(f => !deletedAttachmentIds.includes(f.idx));
+        if (visibleExisting.length === 0 && selectedDocumentFiles.length === 0) {
+            documentFileList.innerHTML = '<p style="color: #999; font-size: 12px; padding: 10px 0;">첨부된 파일이 없습니다.</p>';
+        }
     }
 
     setupUpload(receiptInput, receiptUploadArea, selectedReceiptFiles, updateReceiptFileList);
@@ -2078,45 +2141,42 @@ document.addEventListener('DOMContentLoaded', async function() {
 
     window.removeReceiptFile = function(index) { selectedReceiptFiles.splice(index, 1); updateReceiptFileList(); };
     window.removeDocumentFile = function(index) { selectedDocumentFiles.splice(index, 1); updateDocumentFileList(); };
-
-    // 기존 첨부파일 다운로드
-    window.downloadAttachment = function(fileId, fileName) {
-        const link = document.createElement('a');
-        link.href = `/api/receipt-meetings/attachments/${fileId}/download`;
-        link.download = fileName;
-        document.body.appendChild(link);
-        link.click();
-        document.body.removeChild(link);
+    window.removeExistingAttachment = function(idx) {
+        deletedAttachmentIds.push(idx);
+        updateReceiptFileList();
+        updateDocumentFileList();
     };
 
-    // 기존 첨부파일 표시 (상세보기 모드)
+    // 기존 첨부파일 다운로드
+    window.downloadAttachment = async function(fileId, fileName) {
+        try {
+            const response = await fetch(`/api/receipt-meetings/attachments/${fileId}/download`);
+            if (!response.ok) {
+                Swal.fire({ icon: 'error', title: '파일을 찾을 수 없습니다', text: '파일이 서버에 존재하지 않거나 삭제되었습니다.' });
+                return;
+            }
+            const blob = await response.blob();
+            const blobUrl = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = blobUrl;
+            a.download = fileName;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(blobUrl);
+        } catch (e) {
+            Swal.fire({ icon: 'error', title: '다운로드 오류', text: '파일 다운로드 중 오류가 발생했습니다.' });
+        }
+    };
+
+    // 기존 첨부파일을 타입별로 분리하여 상태 변수에 저장 후 렌더링
     function displayExistingAttachments(attachments) {
         if (!attachments || attachments.length === 0) return;
-
-        // 파일 목록 초기화
-        receiptFileList.innerHTML = '';
-
-        attachments.forEach((attachment) => {
-            const item = document.createElement('div');
-            item.className = 'file-item existing-file';
-
-            let icon = 'fa-file';
-            if (attachment.originalFilename.match(/\.(jpg|jpeg|png|gif)$/i)) icon = 'fa-file-image';
-            else if (attachment.originalFilename.match(/\.(pdf)$/i)) icon = 'fa-file-pdf';
-            else if (attachment.originalFilename.match(/\.(doc|docx)$/i)) icon = 'fa-file-word';
-            else if (attachment.originalFilename.match(/\.(xls|xlsx)$/i)) icon = 'fa-file-excel';
-
-            const fileSize = attachment.fileSize ? `(${(attachment.fileSize / 1024).toFixed(1)} KB)` : '';
-
-            item.innerHTML = `
-                <i class="fas ${icon}"></i>
-                <span>${attachment.originalFilename} ${fileSize}</span>
-                <button class="btn-download-file" onclick="downloadAttachment(${attachment.idx}, '${attachment.originalFilename}')" title="다운로드">
-                    <i class="fas fa-download"></i>
-                </button>
-            `;
-            receiptFileList.appendChild(item);
-        });
+        existingReceiptAttachments = attachments.filter(a => a.attachmentType === 'RECEIPT' || !a.attachmentType);
+        existingDocumentAttachments = attachments.filter(a => a.attachmentType === 'DOCUMENT');
+        deletedAttachmentIds = [];
+        updateReceiptFileList();
+        updateDocumentFileList();
     }
 
     // 저장
@@ -2393,9 +2453,9 @@ document.addEventListener('DOMContentLoaded', async function() {
                 // JSON 데이터를 문자열로 변환하여 추가
                 formData.append('data', JSON.stringify(saveData));
 
-                // 첨부파일 추가
-                selectedReceiptFiles.forEach(file => formData.append('files', file));
-                selectedDocumentFiles.forEach(file => formData.append('files', file));
+                // 첨부파일 추가 (영수증/공식문서 분리)
+                selectedReceiptFiles.forEach(file => formData.append('receiptFiles', file));
+                selectedDocumentFiles.forEach(file => formData.append('documentFiles', file));
 
                 const response = await fetch('/api/receipt-meetings', {
                     method: 'POST',
@@ -4357,15 +4417,23 @@ document.addEventListener('DOMContentLoaded', async function() {
                 amount: document.getElementById('common_amount')?.value ? parseInt(document.getElementById('common_amount').value.replace(/,/g, '')) : null,
                 purpose: document.getElementById('common_purpose')?.value || null,
                 content: document.getElementById('common_content')?.value || null,
-                attendees: attendeeDTOs
+                attendees: attendeeDTOs,
+                deletedAttachmentIds: deletedAttachmentIds.length > 0 ? [...deletedAttachmentIds] : []
             };
 
             try {
                 console.log('회의록 수정 시도 - idx:', currentReceiptMeetingIdx);
+
+                // FormData로 전송 (데이터 JSON + 새 파일)
+                const formData = new FormData();
+                formData.append('data', JSON.stringify(updateData));
+                selectedReceiptFiles.forEach(file => formData.append('receiptFiles', file));
+                selectedDocumentFiles.forEach(file => formData.append('documentFiles', file));
+
                 const response = await fetch(`/api/receipt-meetings/${currentReceiptMeetingIdx}`, {
                     method: 'PUT',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify(updateData)
+                    body: formData
+                    // Content-Type 헤더는 자동으로 설정됨 (multipart/form-data)
                 });
 
                 // 인증 실패 또는 세션 만료

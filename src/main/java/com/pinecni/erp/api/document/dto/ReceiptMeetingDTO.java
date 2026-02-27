@@ -116,6 +116,11 @@ public class ReceiptMeetingDTO {
     private List<ReceiptMeetingAttendeeDTO> attendees;
 
     /**
+     * 첨부파일 목록
+     */
+    private List<ReceiptMeetingAttachmentDTO> attachments;
+
+    /**
      * 생성 일시
      */
     private LocalDateTime createdAt;

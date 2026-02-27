@@ -87,14 +87,16 @@ public class ReceiptMeetingController {
     /**
      * 회의록 생성 (파일 첨부 포함)
      * POST /api/receipt-meetings
+     * - receiptFiles: 영수증 파일 (RECEIPT)
+     * - documentFiles: 공식문서 파일 (DOCUMENT)
      */
     @PostMapping(consumes = {"multipart/form-data"})
     public ResponseEntity<?> createReceiptMeeting(
             @RequestPart("data") String dataJson,
-            @RequestPart(value = "files", required = false) MultipartFile[] files,
+            @RequestPart(value = "receiptFiles", required = false) MultipartFile[] receiptFiles,
+            @RequestPart(value = "documentFiles", required = false) MultipartFile[] documentFiles,
             HttpSession session) {
 
-        // 세션에서 현재 로그인한 사용자 정보 가져오기
         Long currentUserIdx = (Long) session.getAttribute("userIdx");
 
         if (currentUserIdx == null) {
@@ -103,20 +105,20 @@ public class ReceiptMeetingController {
         }
 
         try {
-            // JSON 문자열을 DTO로 변환
             ReceiptMeetingCreateDTO createDTO = objectMapper.readValue(dataJson, ReceiptMeetingCreateDTO.class);
 
-            log.debug("POST /api/receipt-meetings - projectIdx: {}, authorIdx: {}, 파일 개수: {}",
-                    createDTO.getProjectIdx(), createDTO.getAuthorIdx(), files != null ? files.length : 0);
+            log.debug("POST /api/receipt-meetings - projectIdx: {}, authorIdx: {}, 영수증: {}개, 공식문서: {}개",
+                    createDTO.getProjectIdx(), createDTO.getAuthorIdx(),
+                    receiptFiles != null ? receiptFiles.length : 0,
+                    documentFiles != null ? documentFiles.length : 0);
 
-            // 회의록 생성
             ReceiptMeetingDTO receiptMeeting = receiptMeetingService.createReceiptMeeting(createDTO, currentUserIdx);
 
-            // 첨부파일 저장
-            if (files != null && files.length > 0) {
-                List<ReceiptMeetingAttachmentDTO> attachments = receiptMeetingService.saveAttachments(
-                        receiptMeeting.getIdx(), files, currentUserIdx);
-                log.debug("첨부파일 {}개 저장 완료", attachments.size());
+            if (receiptFiles != null && receiptFiles.length > 0) {
+                receiptMeetingService.saveAttachments(receiptMeeting.getIdx(), receiptFiles, "RECEIPT", currentUserIdx);
+            }
+            if (documentFiles != null && documentFiles.length > 0) {
+                receiptMeetingService.saveAttachments(receiptMeeting.getIdx(), documentFiles, "DOCUMENT", currentUserIdx);
             }
 
             return ResponseEntity.status(HttpStatus.CREATED).body(receiptMeeting);
@@ -129,34 +131,68 @@ public class ReceiptMeetingController {
     }
 
     /**
-     * 회의록 수정
+     * 회의록 수정 (파일 추가/삭제 포함)
      * PUT /api/receipt-meetings/{idx}
+     * - data: JSON (ReceiptMeetingUpdateDTO, deletedAttachmentIds 포함)
+     * - receiptFiles: 새로 추가할 영수증 파일 (RECEIPT)
+     * - documentFiles: 새로 추가할 공식문서 파일 (DOCUMENT)
      */
-    @PutMapping("/{idx}")
-    public ResponseEntity<ReceiptMeetingDTO> updateReceiptMeeting(
+    @PutMapping(value = "/{idx}", consumes = {"multipart/form-data"})
+    public ResponseEntity<?> updateReceiptMeeting(
             @PathVariable Long idx,
-            @RequestBody ReceiptMeetingUpdateDTO updateDTO,
+            @RequestPart("data") String dataJson,
+            @RequestPart(value = "receiptFiles", required = false) MultipartFile[] receiptFiles,
+            @RequestPart(value = "documentFiles", required = false) MultipartFile[] documentFiles,
             HttpSession session) {
+
         log.debug("PUT /api/receipt-meetings/{}", idx);
 
         Long currentUserIdx = (Long) session.getAttribute("userIdx");
+        if (currentUserIdx == null) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
+        }
+
         try {
-            ReceiptMeetingDTO receiptMeeting = receiptMeetingService.updateReceiptMeeting(idx, updateDTO,currentUserIdx);
+            ReceiptMeetingUpdateDTO updateDTO = objectMapper.readValue(dataJson, ReceiptMeetingUpdateDTO.class);
+
+            // 1. 회의록 데이터 + 참석자 수정
+            ReceiptMeetingDTO receiptMeeting = receiptMeetingService.updateReceiptMeeting(idx, updateDTO, currentUserIdx);
+
+            // 2. 삭제 요청된 첨부파일 소프트 딜리트
+            if (updateDTO.getDeletedAttachmentIds() != null) {
+                for (Long attachmentIdx : updateDTO.getDeletedAttachmentIds()) {
+                    receiptMeetingService.softDeleteAttachment(attachmentIdx, currentUserIdx);
+                }
+                log.debug("첨부파일 {}개 소프트 딜리트 완료", updateDTO.getDeletedAttachmentIds().size());
+            }
+
+            // 3. 새 영수증 파일 저장
+            if (receiptFiles != null && receiptFiles.length > 0) {
+                receiptMeetingService.saveAttachments(idx, receiptFiles, "RECEIPT", currentUserIdx);
+                log.debug("영수증 파일 {}개 저장 완료", receiptFiles.length);
+            }
+
+            // 4. 새 공식문서 파일 저장
+            if (documentFiles != null && documentFiles.length > 0) {
+                receiptMeetingService.saveAttachments(idx, documentFiles, "DOCUMENT", currentUserIdx);
+                log.debug("공식문서 파일 {}개 저장 완료", documentFiles.length);
+            }
+
             return ResponseEntity.ok(receiptMeeting);
         } catch (IllegalArgumentException e) {
             log.error("회의록 수정 실패: {}", e.getMessage());
             return ResponseEntity.notFound().build();
         } catch (Exception e) {
             log.error("회의록 수정 중 오류 발생: {}", e.getMessage(), e);
-            return ResponseEntity.badRequest().build();
+            Map<String, String> error = new HashMap<>();
+            error.put("error", e.getMessage());
+            return ResponseEntity.badRequest().body(error);
         }
     }
 
     /**
      * 회의록 삭제 (Soft Delete)
      * DELETE /api/receipt-meetings/{idx}
-     * @param idx 회의록 IDX
-     * @param requestBody 삭제 요청 정보 (deletedUserIdx 포함)
      */
     @DeleteMapping("/{idx}")
     public ResponseEntity<Map<String, String>> deleteReceiptMeeting(
@@ -179,13 +215,11 @@ public class ReceiptMeetingController {
             return ResponseEntity.ok(response);
         } catch (IllegalArgumentException e) {
             log.error("회의록 삭제 실패: {}", e.getMessage());
-
             Map<String, String> error = new HashMap<>();
             error.put("error", e.getMessage());
             return ResponseEntity.status(HttpStatus.NOT_FOUND).body(error);
         } catch (Exception e) {
             log.error("회의록 삭제 중 오류 발생: {}", e.getMessage(), e);
-
             Map<String, String> error = new HashMap<>();
             error.put("error", "서버 오류가 발생했습니다.");
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(error);

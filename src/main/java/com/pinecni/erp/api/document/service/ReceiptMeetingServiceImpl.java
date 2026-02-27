@@ -84,19 +84,18 @@ public class ReceiptMeetingServiceImpl implements ReceiptMeetingService {
 
         if (entityByDocumentIdx.isPresent()) {
             log.debug("documentIdx로 회의록 조회 성공 - documentIdx: {}", idx);
-            // 참석자 정보를 포함하여 다시 조회
             ReceiptMeeting entity = receiptMeetingRepository.findByIdWithDetails(entityByDocumentIdx.get().getIdx())
                     .orElseThrow(() -> new IllegalArgumentException("회의록을 찾을 수 없습니다. idx: " + idx));
-            loadAttendees(entity); // 통합 테이블에서 참석자 로드
-            return mapper.toDTO(entity);
+            loadAttendees(entity);
+            return toDTOWithAttachments(entity);
         }
 
         // documentIdx로 조회 실패 시, receipt_meeting.idx로 직접 조회
         ReceiptMeeting entity = receiptMeetingRepository.findByIdWithDetails(idx)
                 .orElseThrow(() -> new IllegalArgumentException("회의록을 찾을 수 없습니다. idx: " + idx));
-        loadAttendees(entity); // 통합 테이블에서 참석자 로드
+        loadAttendees(entity);
 
-        return mapper.toDTO(entity);
+        return toDTOWithAttachments(entity);
     }
 
     @Override
@@ -247,6 +246,9 @@ public class ReceiptMeetingServiceImpl implements ReceiptMeetingService {
         mapper.updateEntity(entity, updateDTO);
         entity.setUpdatedUserIdx(currentUserIdx);
         entity = receiptMeetingRepository.save(entity);
+
+        // 3-1. 기존 첨부파일 표시명을 수정된 정보(카드/날짜/금액)로 갱신
+        renameAttachments(entity);
 
         // 4. 참석자 목록 업데이트 (통합 테이블 사용, Soft Delete 후 재생성)
         if (updateDTO.getAttendees() != null) {
@@ -413,8 +415,8 @@ public class ReceiptMeetingServiceImpl implements ReceiptMeetingService {
 
     @Override
     @Transactional
-    public List<ReceiptMeetingAttachmentDTO> saveAttachments(Long receiptMeetingIdx, MultipartFile[] files, Long uploadUserIdx) {
-        log.debug("첨부파일 저장 - receiptMeetingIdx: {}, 파일 개수: {}", receiptMeetingIdx, files != null ? files.length : 0);
+    public List<ReceiptMeetingAttachmentDTO> saveAttachments(Long receiptMeetingIdx, MultipartFile[] files, String attachmentType, Long uploadUserIdx) {
+        log.debug("첨부파일 저장 - receiptMeetingIdx: {}, 타입: {}, 파일 개수: {}", receiptMeetingIdx, attachmentType, files != null ? files.length : 0);
 
         if (files == null || files.length == 0) {
             return Collections.emptyList();
@@ -442,12 +444,24 @@ public class ReceiptMeetingServiceImpl implements ReceiptMeetingService {
                 .replace("{year}", year)
                 .replace("{date}", date);
         String fullUploadPath = baseDir + File.separator + relativePath.replace("/", File.separator);
-        File uploadDir = new File(fullUploadPath);
-        if (!uploadDir.exists()) {
-            uploadDir.mkdirs();
+        try {
+            Files.createDirectories(Paths.get(fullUploadPath));
+        } catch (IOException e) {
+            log.error("업로드 디렉토리 생성 실패: {}", fullUploadPath, e);
+            throw new RuntimeException("업로드 디렉토리를 생성할 수 없습니다: " + fullUploadPath, e);
         }
 
         List<ReceiptMeetingAttachmentDTO> savedAttachments = new ArrayList<>();
+
+        // 표시용 파일명 기본 구성: 카드번호_yyyymmdd_사용금액_회의록_문서종류
+        String displayDateStr = meeting.getMeetingDate().format(DateTimeFormatter.ofPattern("yyyyMMdd"));
+        String displayAmountStr = meeting.getAmount() != null
+                ? String.format("%,d원", meeting.getAmount().longValue()) : "0원";
+        String displayDocType = "DOCUMENT".equals(attachmentType) ? "공식문서" : "영수증";
+        String displayBaseName = cardLastDigits + "_" + displayDateStr + "_" + displayAmountStr + "_회의록_" + displayDocType;
+
+        // 기존 파일 수 조회 → 연번 오프셋 (덮어쓰기 방지)
+        long existingCount = attachmentRepository.countByReceiptMeetingIdxAndAttachmentType(receiptMeetingIdx, attachmentType);
 
         for (MultipartFile file : files) {
             if (file.isEmpty()) {
@@ -455,20 +469,22 @@ public class ReceiptMeetingServiceImpl implements ReceiptMeetingService {
             }
 
             try {
-                // 원본 파일명
-                String originalFilename = file.getOriginalFilename();
-                if (originalFilename == null) {
-                    originalFilename = "unnamed_file";
+                // 확장자 추출 (실제 업로드 파일에서)
+                String actualFilename = file.getOriginalFilename();
+                if (actualFilename == null) actualFilename = "unnamed_file";
+                String extension = "";
+                int dotIndex = actualFilename.lastIndexOf('.');
+                if (dotIndex > 0) {
+                    extension = actualFilename.substring(dotIndex);
                 }
 
-                // 고유 파일명 생성 (타임스탬프 + UUID)
+                // 표시용 파일명: 카드번호_yyyymmdd_사용금액_회의록_문서종류_N.확장자 (항상 연번)
+                long seq = existingCount + savedAttachments.size() + 1;
+                String displayFilename = displayBaseName + "_" + seq + extension;
+
+                // 저장용 고유 파일명 (디스크 저장, 타임스탬프+UUID)
                 String timestamp = LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyyMMddHHmmss"));
                 String uuid = UUID.randomUUID().toString().substring(0, 8);
-                String extension = "";
-                int dotIndex = originalFilename.lastIndexOf('.');
-                if (dotIndex > 0) {
-                    extension = originalFilename.substring(dotIndex);
-                }
                 String storedFileName = timestamp + "_" + uuid + extension;
 
                 // 파일 저장
@@ -478,11 +494,12 @@ public class ReceiptMeetingServiceImpl implements ReceiptMeetingService {
                 // DB 저장
                 ReceiptMeetingAttachment attachment = ReceiptMeetingAttachment.builder()
                         .receiptMeetingIdx(receiptMeetingIdx)
-                        .originalFilename(originalFilename)
+                        .originalFilename(displayFilename)
                         .storedFilename(storedFileName)
                         .filePath(relativePath)
                         .fileSize(file.getSize())
                         .fileType(file.getContentType())
+                        .attachmentType(attachmentType)
                         .uploadUserIdx(uploadUserIdx)
                         .build();
 
@@ -497,13 +514,14 @@ public class ReceiptMeetingServiceImpl implements ReceiptMeetingService {
                         .filePath(saved.getFilePath())
                         .fileSize(saved.getFileSize())
                         .fileType(saved.getFileType())
+                        .attachmentType(saved.getAttachmentType())
                         .uploadUserIdx(saved.getUploadUserIdx())
                         .uploadedAt(saved.getUploadedAt())
                         .build();
 
                 savedAttachments.add(dto);
 
-                log.debug("첨부파일 저장 완료 - 원본명: {}, 저장명: {}", originalFilename, storedFileName);
+                log.debug("첨부파일 저장 완료 - 표시명: {}, 저장명: {}", displayFilename, storedFileName);
 
             } catch (IOException e) {
                 log.error("파일 저장 실패: {}", file.getOriginalFilename(), e);
@@ -529,6 +547,7 @@ public class ReceiptMeetingServiceImpl implements ReceiptMeetingService {
                         .filePath(attachment.getFilePath())
                         .fileSize(attachment.getFileSize())
                         .fileType(attachment.getFileType())
+                        .attachmentType(attachment.getAttachmentType())
                         .uploadUserIdx(attachment.getUploadUserIdx())
                         .uploadedAt(attachment.getUploadedAt())
                         .build())
@@ -551,9 +570,77 @@ public class ReceiptMeetingServiceImpl implements ReceiptMeetingService {
                 .filePath(attachment.getFilePath())
                 .fileSize(attachment.getFileSize())
                 .fileType(attachment.getFileType())
+                .attachmentType(attachment.getAttachmentType())
                 .uploadUserIdx(attachment.getUploadUserIdx())
                 .uploadedAt(attachment.getUploadedAt())
                 .build();
+    }
+
+    @Override
+    @Transactional
+    public void softDeleteAttachment(Long attachmentIdx, Long deletedUserIdx) {
+        log.debug("첨부파일 소프트 딜리트 - attachmentIdx: {}", attachmentIdx);
+        ReceiptMeetingAttachment attachment = attachmentRepository.findById(attachmentIdx)
+                .orElseThrow(() -> new IllegalArgumentException("첨부파일을 찾을 수 없습니다. idx: " + attachmentIdx));
+        attachment.setDeleted(true);
+        attachment.setDeletedAt(LocalDateTime.now());
+        attachment.setDeletedUserIdx(deletedUserIdx);
+        attachmentRepository.save(attachment);
+    }
+
+    /**
+     * 문서 수정 시 기존 첨부파일의 표시용 파일명을 최신 정보(카드번호/날짜/금액)로 갱신
+     */
+    private void renameAttachments(ReceiptMeeting meeting) {
+        String cardLastDigits = "no-card";
+        if (meeting.getCardIdx() != null) {
+            ProjectCard card = projectCardRepository.findById(meeting.getCardIdx()).orElse(null);
+            if (card != null && card.getCardLastDigits() != null) {
+                cardLastDigits = card.getCardLastDigits();
+            }
+        }
+        String displayDateStr = meeting.getMeetingDate().format(DateTimeFormatter.ofPattern("yyyyMMdd"));
+        String displayAmountStr = meeting.getAmount() != null
+                ? String.format("%,d원", meeting.getAmount().longValue()) : "0원";
+
+        List<ReceiptMeetingAttachment> allAttachments = attachmentRepository.findByReceiptMeetingIdx(meeting.getIdx());
+
+        final String finalCardLastDigits = cardLastDigits;
+        for (String type : new String[]{"RECEIPT", "DOCUMENT"}) {
+            String displayDocType = "DOCUMENT".equals(type) ? "공식문서" : "영수증";
+            String newBaseName = finalCardLastDigits + "_" + displayDateStr + "_" + displayAmountStr + "_회의록_" + displayDocType;
+
+            List<ReceiptMeetingAttachment> group = allAttachments.stream()
+                    .filter(a -> type.equals(a.getAttachmentType()) || (a.getAttachmentType() == null && "RECEIPT".equals(type)))
+                    .sorted(Comparator.comparingLong(ReceiptMeetingAttachment::getIdx))
+                    .collect(Collectors.toList());
+
+            for (int i = 0; i < group.size(); i++) {
+                ReceiptMeetingAttachment att = group.get(i);
+                String storedName = att.getStoredFilename();
+                String extension = "";
+                if (storedName != null) {
+                    int dot = storedName.lastIndexOf('.');
+                    if (dot > 0) extension = storedName.substring(dot);
+                }
+                att.setOriginalFilename(newBaseName + "_" + (i + 1) + extension);
+            }
+            if (!group.isEmpty()) {
+                attachmentRepository.saveAll(group);
+            }
+        }
+        log.debug("첨부파일 파일명 갱신 완료 - receiptMeetingIdx: {}", meeting.getIdx());
+    }
+
+    /**
+     * 상세 조회 전용 DTO 변환 — mapper.toDTO() 후 attachments를 명시적으로 세팅
+     * 목록 조회에서는 mapper.toDTO()만 호출 (lazy load 방지)
+     */
+    private ReceiptMeetingDTO toDTOWithAttachments(ReceiptMeeting entity) {
+        ReceiptMeetingDTO dto = mapper.toDTO(entity);
+        List<ReceiptMeetingAttachmentDTO> attachments = getAttachmentsByReceiptMeetingIdx(entity.getIdx());
+        dto.setAttachments(attachments);
+        return dto;
     }
 
     /**

@@ -46,6 +46,10 @@ public class ReceiptMeetingAttachment {
     @Column(name = "file_type", length = 100)
     private String fileType;
 
+    /** 첨부파일 종류: RECEIPT(영수증) 또는 DOCUMENT(공식문서) */
+    @Column(name = "attachment_type", length = 20)
+    private String attachmentType;
+
     @Column(name = "upload_user_idx", nullable = false)
     private Long uploadUserIdx;
 

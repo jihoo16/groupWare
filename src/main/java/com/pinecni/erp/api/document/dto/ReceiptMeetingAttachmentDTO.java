@@ -52,6 +52,11 @@ public class ReceiptMeetingAttachmentDTO {
     private String fileType;
 
     /**
+     * 첨부파일 종류: RECEIPT(영수증) 또는 DOCUMENT(공식문서)
+     */
+    private String attachmentType;
+
+    /**
      * 업로드 사용자 IDX
      */
     private Long uploadUserIdx;

@@ -53,6 +53,10 @@ public class ReceiptMeetingMapper {
                         .map(this::toAttendeeDTO)
                         .collect(Collectors.toList()) : null;
 
+        // 첨부파일은 서비스에서 필요 시 DTO에 직접 세팅 (getReceiptMeetingById 전용)
+        // 목록 조회에서 lazy load 방지를 위해 mapper에서는 접근하지 않음
+        List<ReceiptMeetingAttachmentDTO> attachmentDTOs = null;
+
         // 카드 정보 조합
         String cardName = null;
         if (entity.getProjectCard() != null) {
@@ -90,8 +94,28 @@ public class ReceiptMeetingMapper {
                 .purpose(entity.getPurpose())
                 .content(entity.getContent())
                 .attendees(attendeeDTOs)
+                .attachments(attachmentDTOs)
                 .createdAt(entity.getCreatedAt())
                 .updatedAt(entity.getUpdatedAt())
+                .build();
+    }
+
+    /**
+     * ReceiptMeetingAttachment Entity → DTO 변환
+     */
+    public ReceiptMeetingAttachmentDTO toAttachmentDTO(ReceiptMeetingAttachment entity) {
+        if (entity == null) return null;
+        return ReceiptMeetingAttachmentDTO.builder()
+                .idx(entity.getIdx())
+                .receiptMeetingIdx(entity.getReceiptMeetingIdx())
+                .originalFilename(entity.getOriginalFilename())
+                .storedFilename(entity.getStoredFilename())
+                .filePath(entity.getFilePath())
+                .fileSize(entity.getFileSize())
+                .fileType(entity.getFileType())
+                .attachmentType(entity.getAttachmentType())
+                .uploadUserIdx(entity.getUploadUserIdx())
+                .uploadedAt(entity.getUploadedAt())
                 .build();
     }
 
