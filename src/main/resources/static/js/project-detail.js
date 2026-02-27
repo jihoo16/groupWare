@@ -386,7 +386,14 @@ function displayTeamMembers(members) {
         return;
     }
 
-    tbody.innerHTML = members.map((member, index) => {
+    const roleOrder = { 'PI': 0, 'PRACTITIONER': 1, 'RESEARCHER': 2 };
+    const sortedMembers = [...members].sort((a, b) => {
+        const orderA = roleOrder[a.role] ?? 99;
+        const orderB = roleOrder[b.role] ?? 99;
+        return orderA - orderB;
+    });
+
+    tbody.innerHTML = sortedMembers.map((member, index) => {
         const isBold = member.role === 'PI' || member.role === 'PRACTITIONER';
         return `
         <tr${isBold ? ' style="font-weight:700;"' : ''}>
