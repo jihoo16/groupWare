@@ -8,6 +8,7 @@ import lombok.NoArgsConstructor;
 import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.util.List;
 
 /**
  * 전자 문서 목록 조회용 DTO
@@ -33,4 +34,5 @@ public class ApprovalDocumentDTO {
     private BigDecimal amount;       // 금액 (회의록, 출장, 야근식대 등)
     private Long projectIdx;         // 프로젝트 ID (프로젝트 문서인 경우)
     private String projectName;      // 프로젝트명 (프로젝트 문서인 경우)
+    private List<AttachmentSummaryDTO> attachments; // 첨부파일 요약 (회의록/야근식대 전용)
 }

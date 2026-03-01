@@ -1,7 +1,10 @@
 package com.pinecni.erp.api.approval.service;
 
 import com.pinecni.erp.api.approval.dto.ApprovalDocumentDTO;
+import com.pinecni.erp.api.approval.dto.AttachmentSummaryDTO;
 import com.pinecni.erp.api.approval.repository.ApprovalDocumentRepository;
+import com.pinecni.erp.api.document.repository.ReceiptOvertimeAttachmentRepository;
+import com.pinecni.erp.api.project.repository.ReceiptMeetingAttachmentRepository;
 import com.pinecni.erp.api.code.repository.CodeRepository;
 import com.pinecni.erp.api.document.repository.MeetingMinutesRepository;
 import com.pinecni.erp.api.document.repository.WeeklyReportRepository;
@@ -47,6 +50,8 @@ public class ApprovalDocumentServiceImpl implements ApprovalDocumentService {
     private final ReceiptOvertimeRepository receiptOvertimeRepository;
     private final ProjectCardRepository projectCardRepository;
     private final ProjectRepository projectRepository;
+    private final ReceiptMeetingAttachmentRepository receiptMeetingAttachmentRepository;
+    private final ReceiptOvertimeAttachmentRepository receiptOvertimeAttachmentRepository;
 
     @Override
     public List<ApprovalDocumentDTO> getAllDocuments(Long currentUserIdx) {
@@ -201,6 +206,7 @@ public class ApprovalDocumentServiceImpl implements ApprovalDocumentService {
                         dto.setProjectName(project.getProjectName());
                     });
                 }
+                dto.setAttachments(buildMeetingAttachments(receiptMeeting.getIdx()));
             });
         } else if ("연구비증빙-출장".equals(documentType) || "연구비증빙(출장)".equals(documentType) || "receipt_trip".equals(documentType)) {
             // 연구비증빙 출장의 원본 문서 ID 및 프로젝트 정보 조회
@@ -221,6 +227,7 @@ public class ApprovalDocumentServiceImpl implements ApprovalDocumentService {
                     dto.setProjectIdx(receiptOvertime.getProjectIdx().getIdx());
                     dto.setProjectName(receiptOvertime.getProjectIdx().getProjectName());
                 }
+                dto.setAttachments(buildOvertimeAttachments(receiptOvertime.getId()));
             });
         }
         // 다른 문서 타입들도 필요시 추가
@@ -533,6 +540,8 @@ public class ApprovalDocumentServiceImpl implements ApprovalDocumentService {
             }
         });
 
+        dto.setAttachments(buildMeetingAttachments(meeting.getIdx()));
+
         return dto;
     }
 
@@ -584,6 +593,36 @@ public class ApprovalDocumentServiceImpl implements ApprovalDocumentService {
             }
         });
 
+        dto.setAttachments(buildOvertimeAttachments(overtime.getId()));
+
         return dto;
+    }
+
+    /**
+     * 회의록 첨부파일 요약 목록 생성 (빠른 다운로드용)
+     */
+    private List<AttachmentSummaryDTO> buildMeetingAttachments(Long receiptMeetingIdx) {
+        return receiptMeetingAttachmentRepository.findByReceiptMeetingIdx(receiptMeetingIdx).stream()
+                .map(a -> AttachmentSummaryDTO.builder()
+                        .idx(a.getIdx())
+                        .originalFilename(a.getOriginalFilename())
+                        .attachmentType(a.getAttachmentType())
+                        .downloadUrl("/api/receipt-meetings/attachments/" + a.getIdx() + "/download")
+                        .build())
+                .collect(Collectors.toList());
+    }
+
+    /**
+     * 야근식대 첨부파일 요약 목록 생성 (빠른 다운로드용)
+     */
+    private List<AttachmentSummaryDTO> buildOvertimeAttachments(Long receiptOvertimeIdx) {
+        return receiptOvertimeAttachmentRepository.findByReceiptOvertimeIdx(receiptOvertimeIdx).stream()
+                .map(a -> AttachmentSummaryDTO.builder()
+                        .idx(a.getId())
+                        .originalFilename(a.getOriginalFilename())
+                        .attachmentType(a.getAttachmentType())
+                        .downloadUrl("/api/receipt-overtimes/attachments/" + a.getId() + "/download")
+                        .build())
+                .collect(Collectors.toList());
     }
 }
