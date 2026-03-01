@@ -191,6 +191,39 @@ public class ReceiptMeetingController {
     }
 
     /**
+     * 회의록 첨부파일 추가 (문서 목록에서 빠른 추가)
+     * POST /api/receipt-meetings/{idx}/attachments
+     */
+    @PostMapping(value = "/{idx}/attachments", consumes = {"multipart/form-data"})
+    public ResponseEntity<?> addAttachments(
+            @PathVariable Long idx,
+            @RequestPart(value = "receiptFiles", required = false) MultipartFile[] receiptFiles,
+            @RequestPart(value = "documentFiles", required = false) MultipartFile[] documentFiles,
+            HttpSession session) {
+
+        Long currentUserIdx = (Long) session.getAttribute("userIdx");
+        if (currentUserIdx == null) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
+        }
+
+        try {
+            if (receiptFiles != null && receiptFiles.length > 0) {
+                receiptMeetingService.saveAttachments(idx, receiptFiles, "RECEIPT", currentUserIdx);
+            }
+            if (documentFiles != null && documentFiles.length > 0) {
+                receiptMeetingService.saveAttachments(idx, documentFiles, "DOCUMENT", currentUserIdx);
+            }
+            List<ReceiptMeetingAttachmentDTO> attachments = receiptMeetingService.getAttachmentsByReceiptMeetingIdx(idx);
+            return ResponseEntity.ok(attachments);
+        } catch (Exception e) {
+            log.error("회의록 첨부파일 추가 실패: {}", e.getMessage(), e);
+            Map<String, String> error = new HashMap<>();
+            error.put("error", e.getMessage());
+            return ResponseEntity.badRequest().body(error);
+        }
+    }
+
+    /**
      * 회의록 삭제 (Soft Delete)
      * DELETE /api/receipt-meetings/{idx}
      */
