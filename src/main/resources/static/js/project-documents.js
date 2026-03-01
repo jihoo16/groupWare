@@ -769,9 +769,8 @@ document.addEventListener('DOMContentLoaded', function() {
         actionCell.style.textAlign = 'center';
         actionCell.style.verticalAlign = 'middle';
         const isReceiptType = ['RECEIPT_MEETING', '연구비증빙-회의록', 'RECEIPT_OVERTIME', '연구비증빙(야근식대)'].includes(doc.documentType);
-        const attachmentCount = (doc.attachments || []).length;
         actionCell.innerHTML = `
-            ${isReceiptType ? `<button class="btn-icon attachment-modal-btn" title="첨부파일 관리${attachmentCount > 0 ? ' (' + attachmentCount + '개)' : ''}" style="margin: 0 2px; display: inline-block;">
+            ${isReceiptType ? `<button class="btn-icon attachment-modal-btn" title="첨부파일 관리" style="margin: 0 2px; display: inline-block;">
                 <i class="fas fa-paperclip"></i>
             </button>` : ''}
             <button class="btn-icon view-btn" title="상세보기" style="margin: 0 2px; display: inline-block;">
@@ -826,6 +825,7 @@ document.addEventListener('DOMContentLoaded', function() {
     let attachmentModalEl = null;
     let pendingReceiptFiles = [];   // 저장 전 추가할 영수증 파일
     let pendingDocumentFiles = [];  // 저장 전 추가할 공식문서 파일
+    let pendingDeleteIds = [];      // 저장 전 삭제할 첨부파일 ID 목록
 
     function getAttachmentModal() {
         if (attachmentModalEl) return attachmentModalEl;
@@ -909,8 +909,9 @@ document.addEventListener('DOMContentLoaded', function() {
                 border-radius: 8px;
                 margin-bottom: 5px;
                 transition: background .12s;
+                cursor: pointer;
             }
-            .att-file-row:hover { background: #f1f5f9; }
+            .att-file-row:hover { background: #e8f0fe; border-color: #93c5fd; }
             .att-file-row .att-file-icon { color: #94a3b8; font-size: 13px; flex-shrink: 0; }
             .att-file-row .att-file-name {
                 flex: 1;
@@ -933,6 +934,20 @@ document.addEventListener('DOMContentLoaded', function() {
                 transition: background .12s, border-color .12s, color .12s;
             }
             .att-dl-btn:hover { background: #f0f9ff; border-color: #7dd3fc; color: #0284c7; }
+            .att-del-btn {
+                flex-shrink: 0;
+                background: none;
+                border: none;
+                padding: 3px 6px;
+                cursor: pointer;
+                color: #cbd5e1;
+                font-size: 15px;
+                line-height: 1;
+                border-radius: 4px;
+                transition: color .12s, background .12s;
+            }
+            .att-del-btn:hover { color: #ef4444; background: #fff1f2; }
+            .att-file-row.deleted { opacity: 0.4; text-decoration: line-through; pointer-events: none; }
             .att-empty-msg { margin: 0 0 10px; color: #b0b8c4; font-size: 13px; }
             .att-drop-zone {
                 border: 2px dashed #d1d5db;
@@ -1048,11 +1063,13 @@ document.addEventListener('DOMContentLoaded', function() {
         if (attachmentModalEl) attachmentModalEl.style.display = 'none';
         pendingReceiptFiles = [];
         pendingDocumentFiles = [];
+        pendingDeleteIds = [];
     }
 
     function openAttachmentModal(doc) {
         pendingReceiptFiles = [];
         pendingDocumentFiles = [];
+        pendingDeleteIds = [];
         const modal = getAttachmentModal();
         renderModalContent(doc);
         modal.style.display = 'flex';
@@ -1070,12 +1087,11 @@ document.addEventListener('DOMContentLoaded', function() {
         function buildExistingRow(a) {
             const safe = a.originalFilename.replace(/"/g, '&quot;');
             return `
-                <div class="att-file-row">
+                <div class="att-file-row modal-download-row" data-url="${a.downloadUrl}" data-filename="${safe}" data-att-id="${a.idx}" title="클릭하여 다운로드">
                     <i class="fas fa-file att-file-icon"></i>
-                    <span class="att-file-name" title="${safe}">${safe}</span>
-                    <button class="att-dl-btn modal-download-btn" data-url="${a.downloadUrl}" data-filename="${safe}" title="다운로드">
-                        <i class="fas fa-download"></i>
-                    </button>
+                    <span class="att-file-name">${safe}</span>
+                    <i class="fas fa-download" style="color:#93c5fd; font-size:12px; margin-left:auto; flex-shrink:0;"></i>
+                    <button class="att-del-btn" data-att-id="${a.idx}" title="삭제">&times;</button>
                 </div>`;
         }
 
@@ -1104,11 +1120,21 @@ document.addEventListener('DOMContentLoaded', function() {
             buildSection('sectionReceipt',  'att-badge-receipt',  'fas fa-receipt',   '영수증',  existingReceipt,  'receipt',  'dzReceipt',  'inputReceipt',  'pendingReceipt') +
             buildSection('sectionDocument', 'att-badge-document', 'fas fa-file-alt', '공식문서', existingDocument, 'document', 'dzDocument', 'inputDocument', 'pendingDocument');
 
-        // 다운로드 버튼 이벤트
-        document.getElementById('modalBody').querySelectorAll('.modal-download-btn').forEach(btn => {
+        // 파일 행 클릭 → 다운로드 (삭제 버튼 클릭은 제외)
+        document.getElementById('modalBody').querySelectorAll('.modal-download-row').forEach(row => {
+            row.addEventListener('click', (e) => {
+                if (e.target.closest('.att-del-btn')) return;
+                downloadSingleFile(row.dataset.url, row.dataset.filename);
+            });
+        });
+
+        // 삭제 버튼 클릭 → pendingDeleteIds에 추가 후 행 비활성화
+        document.getElementById('modalBody').querySelectorAll('.att-del-btn').forEach(btn => {
             btn.addEventListener('click', (e) => {
                 e.stopPropagation();
-                downloadSingleFile(btn.dataset.url, btn.dataset.filename);
+                const id = parseInt(btn.dataset.attId);
+                if (!pendingDeleteIds.includes(id)) pendingDeleteIds.push(id);
+                btn.closest('.att-file-row').classList.add('deleted');
             });
         });
 
@@ -1172,33 +1198,58 @@ document.addEventListener('DOMContentLoaded', function() {
     }
 
     async function saveModalAttachments(doc) {
-        if (!pendingReceiptFiles.length && !pendingDocumentFiles.length) {
+        const swalAboveModal = {
+            didOpen: () => {
+                const container = document.querySelector('.swal2-container');
+                if (container) container.style.zIndex = '20001';
+            }
+        };
+
+        if (!pendingDeleteIds.length && !pendingReceiptFiles.length && !pendingDocumentFiles.length) {
             closeAttachmentModal();
             return;
         }
+
         const isMeeting = ['RECEIPT_MEETING', '연구비증빙-회의록'].includes(doc.documentType);
-        const apiUrl = isMeeting
+        const deleteBaseUrl = isMeeting
+            ? `/api/receipt-meetings/attachments`
+            : `/api/receipt-overtimes/attachments`;
+        const uploadUrl = isMeeting
             ? `/api/receipt-meetings/${doc.sourceDocumentId}/attachments`
             : `/api/receipt-overtimes/${doc.sourceDocumentId}/attachments`;
-
-        const formData = new FormData();
-        pendingReceiptFiles.forEach(f  => formData.append('receiptFiles',  f));
-        pendingDocumentFiles.forEach(f => formData.append('documentFiles', f));
 
         const saveBtn = document.getElementById('modalSaveBtn');
         saveBtn.disabled = true;
         saveBtn.textContent = '저장 중...';
 
         try {
-            const response = await fetch(apiUrl, { method: 'POST', body: formData });
-            if (!response.ok) {
-                const err = await response.json().catch(() => ({}));
-                throw new Error(err.error || '저장에 실패했습니다.');
+            // 1. 삭제 요청된 첨부파일 순차 삭제
+            for (const id of pendingDeleteIds) {
+                const res = await fetch(`${deleteBaseUrl}/${id}`, { method: 'DELETE' });
+                if (!res.ok) {
+                    const err = await res.json().catch(() => ({}));
+                    throw new Error(err.error || `첨부파일(ID: ${id}) 삭제에 실패했습니다.`);
+                }
             }
+
+            // 2. 새 파일 업로드
+            if (pendingReceiptFiles.length || pendingDocumentFiles.length) {
+                const formData = new FormData();
+                pendingReceiptFiles.forEach(f  => formData.append('receiptFiles',  f));
+                pendingDocumentFiles.forEach(f => formData.append('documentFiles', f));
+
+                const res = await fetch(uploadUrl, { method: 'POST', body: formData });
+                if (!res.ok) {
+                    const err = await res.json().catch(() => ({}));
+                    throw new Error(err.error || '파일 업로드에 실패했습니다.');
+                }
+            }
+
             closeAttachmentModal();
             await loadAllDocuments();
+            Swal.fire({ icon: 'success', title: '저장 완료', text: '첨부파일이 저장되었습니다.', timer: 1800, showConfirmButton: false });
         } catch (err) {
-            Swal.fire({ icon: 'error', title: '저장 실패', text: err.message });
+            Swal.fire({ ...swalAboveModal, icon: 'error', title: '저장 실패', text: err.message });
         } finally {
             const btn = document.getElementById('modalSaveBtn');
             if (btn) { btn.disabled = false; btn.textContent = '저장'; }
@@ -1206,10 +1257,16 @@ document.addEventListener('DOMContentLoaded', function() {
     }
 
     async function downloadSingleFile(url, filename) {
+        const swalAboveModal = {
+            didOpen: () => {
+                const container = document.querySelector('.swal2-container');
+                if (container) container.style.zIndex = '20001';
+            }
+        };
         try {
             const response = await fetch(url);
             if (!response.ok) {
-                Swal.fire({ icon: 'error', title: '다운로드 실패', text: `파일을 찾을 수 없습니다: ${filename}` });
+                Swal.fire({ ...swalAboveModal, icon: 'error', title: '다운로드 실패', text: `파일을 찾을 수 없습니다: ${filename}` });
                 return;
             }
             const blob = await response.blob();
@@ -1222,7 +1279,7 @@ document.addEventListener('DOMContentLoaded', function() {
             document.body.removeChild(a);
             URL.revokeObjectURL(blobUrl);
         } catch (err) {
-            Swal.fire({ icon: 'error', title: '다운로드 오류', text: `파일 다운로드 중 오류가 발생했습니다: ${filename}` });
+            Swal.fire({ ...swalAboveModal, icon: 'error', title: '다운로드 오류', text: `파일 다운로드 중 오류가 발생했습니다: ${filename}` });
         }
     }
 

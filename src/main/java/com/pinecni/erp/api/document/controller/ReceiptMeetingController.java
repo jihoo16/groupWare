@@ -260,6 +260,40 @@ public class ReceiptMeetingController {
     }
 
     /**
+     * 회의록 첨부파일 삭제 (소프트 딜리트)
+     * DELETE /api/receipt-meetings/attachments/{attachmentIdx}
+     */
+    @DeleteMapping("/attachments/{attachmentIdx}")
+    public ResponseEntity<Map<String, String>> deleteAttachment(
+            @PathVariable Long attachmentIdx,
+            HttpSession session) {
+        log.debug("DELETE /api/receipt-meetings/attachments/{}", attachmentIdx);
+
+        Long currentUserIdx = (Long) session.getAttribute("userIdx");
+        if (currentUserIdx == null) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
+        }
+
+        try {
+            receiptMeetingService.softDeleteAttachment(attachmentIdx, currentUserIdx);
+
+            Map<String, String> response = new HashMap<>();
+            response.put("message", "첨부파일이 삭제되었습니다.");
+            return ResponseEntity.ok(response);
+        } catch (IllegalArgumentException e) {
+            log.error("첨부파일 삭제 실패: {}", e.getMessage());
+            Map<String, String> error = new HashMap<>();
+            error.put("error", e.getMessage());
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(error);
+        } catch (Exception e) {
+            log.error("첨부파일 삭제 중 오류 발생: {}", e.getMessage(), e);
+            Map<String, String> error = new HashMap<>();
+            error.put("error", "서버 오류가 발생했습니다.");
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(error);
+        }
+    }
+
+    /**
      * 회의록 첨부파일 다운로드
      * GET /api/receipt-meetings/attachments/{attachmentIdx}/download
      */
