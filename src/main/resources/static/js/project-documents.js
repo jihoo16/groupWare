@@ -768,8 +768,13 @@ document.addEventListener('DOMContentLoaded', function() {
         const actionCell = document.createElement('td');
         actionCell.style.textAlign = 'center';
         actionCell.style.verticalAlign = 'middle';
+        const isReceiptType = ['RECEIPT_MEETING', '연구비증빙-회의록', 'RECEIPT_OVERTIME', '연구비증빙(야근식대)'].includes(doc.documentType);
+        const attachmentCount = (doc.attachments || []).length;
         actionCell.innerHTML = `
-            <button class="btn-icon view-btn" title="상세보기" style="margin: 0 auto; display: inline-block;">
+            ${isReceiptType ? `<button class="btn-icon attachment-modal-btn" title="첨부파일 관리${attachmentCount > 0 ? ' (' + attachmentCount + '개)' : ''}" style="margin: 0 2px; display: inline-block;">
+                <i class="fas fa-paperclip"></i>
+            </button>` : ''}
+            <button class="btn-icon view-btn" title="상세보기" style="margin: 0 2px; display: inline-block;">
                 <i class="fas fa-eye"></i>
             </button>
         `;
@@ -778,6 +783,14 @@ document.addEventListener('DOMContentLoaded', function() {
         // 상세보기 버튼 이벤트
         const viewBtn = actionCell.querySelector('.view-btn');
         viewBtn.addEventListener('click', () => viewDocument(doc));
+
+        // 첨부파일 모달 버튼 이벤트
+        if (isReceiptType) {
+            actionCell.querySelector('.attachment-modal-btn').addEventListener('click', (e) => {
+                e.stopPropagation();
+                openAttachmentModal(doc);
+            });
+        }
 
         return tr;
     }
@@ -804,6 +817,412 @@ document.addEventListener('DOMContentLoaded', function() {
             window.location.href = `${url}?documentIdx=${documentId}`;
         } else {
             showWarning('해당 문서 타입의 상세 페이지가 구현되지 않았습니다.');
+        }
+    }
+
+    // ================================================
+    // 첨부파일 모달
+    // ================================================
+    let attachmentModalEl = null;
+    let pendingReceiptFiles = [];   // 저장 전 추가할 영수증 파일
+    let pendingDocumentFiles = [];  // 저장 전 추가할 공식문서 파일
+
+    function getAttachmentModal() {
+        if (attachmentModalEl) return attachmentModalEl;
+
+        // 모달 스타일 주입
+        const style = document.createElement('style');
+        style.textContent = `
+            #attachmentModal { font-family: inherit; }
+            .att-modal-inner {
+                background: #fff;
+                border-radius: 14px;
+                width: 580px;
+                max-height: 82vh;
+                display: flex;
+                flex-direction: column;
+                box-shadow: 0 24px 64px rgba(0,0,0,0.28);
+                animation: attModalIn .18s ease;
+            }
+            @keyframes attModalIn {
+                from { opacity:0; transform:translateY(-10px) scale(.98); }
+                to   { opacity:1; transform:translateY(0) scale(1); }
+            }
+            .att-modal-header {
+                display: flex;
+                align-items: center;
+                justify-content: space-between;
+                padding: 18px 22px 16px;
+                border-bottom: 1px solid #f0f0f0;
+            }
+            .att-modal-header h3 {
+                margin: 0;
+                font-size: 15px;
+                font-weight: 700;
+                color: #1a1a1a;
+                display: flex;
+                align-items: center;
+                gap: 8px;
+            }
+            .att-modal-header h3 i { color: #8b8b8b; font-size: 14px; }
+            .att-close-btn {
+                background: none;
+                border: none;
+                cursor: pointer;
+                color: #9ca3af;
+                font-size: 20px;
+                line-height: 1;
+                padding: 4px;
+                border-radius: 6px;
+                transition: background .15s, color .15s;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                width: 30px;
+                height: 30px;
+            }
+            .att-close-btn:hover { background: #f3f4f6; color: #374151; }
+            #modalBody { flex: 1; overflow-y: auto; padding: 20px 22px; }
+            .att-section { margin-bottom: 24px; }
+            .att-section:last-child { margin-bottom: 0; }
+            .att-section-badge {
+                display: inline-flex;
+                align-items: center;
+                gap: 5px;
+                padding: 4px 12px;
+                border-radius: 20px;
+                font-size: 12px;
+                font-weight: 700;
+                margin-bottom: 11px;
+                letter-spacing: .01em;
+            }
+            .att-badge-receipt { background: #fef9c3; color: #a16207; }
+            .att-badge-document { background: #eff6ff; color: #1d4ed8; }
+            .att-existing-list { margin-bottom: 10px; }
+            .att-file-row {
+                display: flex;
+                align-items: center;
+                gap: 9px;
+                padding: 7px 11px;
+                background: #f8fafc;
+                border: 1px solid #e8ecf0;
+                border-radius: 8px;
+                margin-bottom: 5px;
+                transition: background .12s;
+            }
+            .att-file-row:hover { background: #f1f5f9; }
+            .att-file-row .att-file-icon { color: #94a3b8; font-size: 13px; flex-shrink: 0; }
+            .att-file-row .att-file-name {
+                flex: 1;
+                font-size: 13px;
+                color: #334155;
+                overflow: hidden;
+                text-overflow: ellipsis;
+                white-space: nowrap;
+                font-weight: 500;
+            }
+            .att-dl-btn {
+                flex-shrink: 0;
+                background: #fff;
+                border: 1px solid #e2e8f0;
+                border-radius: 6px;
+                padding: 4px 10px;
+                cursor: pointer;
+                color: #64748b;
+                font-size: 12px;
+                transition: background .12s, border-color .12s, color .12s;
+            }
+            .att-dl-btn:hover { background: #f0f9ff; border-color: #7dd3fc; color: #0284c7; }
+            .att-empty-msg { margin: 0 0 10px; color: #b0b8c4; font-size: 13px; }
+            .att-drop-zone {
+                border: 2px dashed #d1d5db;
+                border-radius: 10px;
+                padding: 18px 16px;
+                text-align: center;
+                cursor: pointer;
+                transition: border-color .15s, background .15s;
+                background: #fafafa;
+                position: relative;
+            }
+            .att-drop-zone:hover, .att-drop-zone.drag-over {
+                border-color: #2563eb;
+                background: #eff6ff;
+            }
+            .att-drop-zone.drag-over .att-drop-icon { color: #2563eb; }
+            .att-drop-zone input[type=file] {
+                position: absolute;
+                inset: 0;
+                opacity: 0;
+                cursor: pointer;
+                width: 100%;
+                height: 100%;
+            }
+            .att-drop-icon { font-size: 22px; color: #94a3b8; margin-bottom: 6px; transition: color .15s; }
+            .att-drop-text { font-size: 13px; color: #6b7280; line-height: 1.5; }
+            .att-drop-text strong { color: #374151; }
+            .att-pending-list { margin-top: 10px; }
+            .att-pending-item {
+                display: flex;
+                align-items: center;
+                gap: 8px;
+                padding: 6px 10px;
+                background: #f0fdf4;
+                border: 1px solid #bbf7d0;
+                border-radius: 7px;
+                margin-bottom: 4px;
+            }
+            .att-pending-item i { color: #16a34a; font-size: 12px; flex-shrink: 0; }
+            .att-pending-item span { flex: 1; font-size: 13px; color: #166534; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+            .att-pending-remove {
+                background: none;
+                border: none;
+                cursor: pointer;
+                color: #86efac;
+                font-size: 14px;
+                line-height: 1;
+                padding: 0;
+                flex-shrink: 0;
+                transition: color .12s;
+            }
+            .att-pending-remove:hover { color: #dc2626; }
+            .att-modal-footer {
+                display: flex;
+                justify-content: flex-end;
+                gap: 8px;
+                padding: 14px 22px;
+                border-top: 1px solid #f0f0f0;
+            }
+            .att-btn-cancel {
+                padding: 8px 20px;
+                background: #f3f4f6;
+                border: 1px solid #e5e7eb;
+                border-radius: 8px;
+                cursor: pointer;
+                font-size: 13px;
+                color: #374151;
+                font-weight: 500;
+                transition: background .12s;
+            }
+            .att-btn-cancel:hover { background: #e9ecef; }
+            .att-btn-save {
+                padding: 8px 22px;
+                background: #2563eb;
+                color: #fff;
+                border: none;
+                border-radius: 8px;
+                cursor: pointer;
+                font-size: 13px;
+                font-weight: 600;
+                transition: background .12s;
+            }
+            .att-btn-save:hover { background: #1d4ed8; }
+            .att-btn-save:disabled { background: #93c5fd; cursor: not-allowed; }
+        `;
+        document.head.appendChild(style);
+
+        const modal = document.createElement('div');
+        modal.id = 'attachmentModal';
+        modal.style.cssText = 'position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.45);display:flex;align-items:center;justify-content:center;z-index:10000;backdrop-filter:blur(2px);';
+        modal.innerHTML = `
+            <div class="att-modal-inner">
+                <div class="att-modal-header">
+                    <h3><i class="fas fa-paperclip"></i> 첨부파일 관리</h3>
+                    <button class="att-close-btn" id="modalCloseBtn"><i class="fas fa-times"></i></button>
+                </div>
+                <div id="modalBody"></div>
+                <div class="att-modal-footer">
+                    <button class="att-btn-cancel" id="modalCancelBtn">닫기</button>
+                    <button class="att-btn-save" id="modalSaveBtn">저장</button>
+                </div>
+            </div>
+        `;
+        document.body.appendChild(modal);
+        document.getElementById('modalCloseBtn').addEventListener('click', closeAttachmentModal);
+        document.getElementById('modalCancelBtn').addEventListener('click', closeAttachmentModal);
+        modal.addEventListener('click', (e) => { if (e.target === modal) closeAttachmentModal(); });
+        attachmentModalEl = modal;
+        return modal;
+    }
+
+    function closeAttachmentModal() {
+        if (attachmentModalEl) attachmentModalEl.style.display = 'none';
+        pendingReceiptFiles = [];
+        pendingDocumentFiles = [];
+    }
+
+    function openAttachmentModal(doc) {
+        pendingReceiptFiles = [];
+        pendingDocumentFiles = [];
+        const modal = getAttachmentModal();
+        renderModalContent(doc);
+        modal.style.display = 'flex';
+        // 저장 버튼 이벤트 (중복 방지: 교체)
+        const saveBtn = document.getElementById('modalSaveBtn');
+        const newSaveBtn = saveBtn.cloneNode(true);
+        saveBtn.parentNode.replaceChild(newSaveBtn, saveBtn);
+        newSaveBtn.addEventListener('click', () => saveModalAttachments(doc));
+    }
+
+    function renderModalContent(doc) {
+        const existingReceipt   = (doc.attachments || []).filter(a => a.attachmentType !== 'DOCUMENT');
+        const existingDocument  = (doc.attachments || []).filter(a => a.attachmentType === 'DOCUMENT');
+
+        function buildExistingRow(a) {
+            const safe = a.originalFilename.replace(/"/g, '&quot;');
+            return `
+                <div class="att-file-row">
+                    <i class="fas fa-file att-file-icon"></i>
+                    <span class="att-file-name" title="${safe}">${safe}</span>
+                    <button class="att-dl-btn modal-download-btn" data-url="${a.downloadUrl}" data-filename="${safe}" title="다운로드">
+                        <i class="fas fa-download"></i>
+                    </button>
+                </div>`;
+        }
+
+        function buildSection(sectionId, badgeClass, iconClass, label, existingFiles, pendingKey, dzId, inputId, pendingListId) {
+            const existingHtml = existingFiles.length === 0
+                ? `<p class="att-empty-msg">업로드된 파일이 없습니다.</p>`
+                : existingFiles.map(buildExistingRow).join('');
+            return `
+                <div class="att-section" id="${sectionId}">
+                    <div class="att-section-badge ${badgeClass}">
+                        <i class="${iconClass}"></i> ${label}
+                    </div>
+                    <div class="att-existing-list">${existingHtml}</div>
+                    <div class="att-drop-zone" id="${dzId}">
+                        <input type="file" id="${inputId}" multiple>
+                        <div class="att-drop-icon"><i class="fas fa-cloud-upload-alt"></i></div>
+                        <div class="att-drop-text">
+                            <strong>드래그하여 파일 추가</strong><br>또는 클릭하여 선택
+                        </div>
+                    </div>
+                    <div class="att-pending-list" id="${pendingListId}"></div>
+                </div>`;
+        }
+
+        document.getElementById('modalBody').innerHTML =
+            buildSection('sectionReceipt',  'att-badge-receipt',  'fas fa-receipt',   '영수증',  existingReceipt,  'receipt',  'dzReceipt',  'inputReceipt',  'pendingReceipt') +
+            buildSection('sectionDocument', 'att-badge-document', 'fas fa-file-alt', '공식문서', existingDocument, 'document', 'dzDocument', 'inputDocument', 'pendingDocument');
+
+        // 다운로드 버튼 이벤트
+        document.getElementById('modalBody').querySelectorAll('.modal-download-btn').forEach(btn => {
+            btn.addEventListener('click', (e) => {
+                e.stopPropagation();
+                downloadSingleFile(btn.dataset.url, btn.dataset.filename);
+            });
+        });
+
+        // 드롭존 설정
+        setupDropZone('dzReceipt',  'inputReceipt',  'pendingReceipt',  pendingReceiptFiles);
+        setupDropZone('dzDocument', 'inputDocument', 'pendingDocument', pendingDocumentFiles);
+    }
+
+    function setupDropZone(dzId, inputId, pendingListId, fileArray) {
+        const dz    = document.getElementById(dzId);
+        const input = document.getElementById(inputId);
+        let dragCounter = 0;
+
+        function addFiles(newFiles) {
+            Array.from(newFiles).forEach(f => {
+                if (!fileArray.find(x => x.name === f.name && x.size === f.size)) {
+                    fileArray.push(f);
+                }
+            });
+            renderPendingList(pendingListId, fileArray);
+        }
+
+        dz.addEventListener('dragenter', (e) => {
+            e.preventDefault();
+            dragCounter++;
+            dz.classList.add('drag-over');
+        });
+        dz.addEventListener('dragleave', () => {
+            dragCounter--;
+            if (dragCounter === 0) dz.classList.remove('drag-over');
+        });
+        dz.addEventListener('dragover', (e) => { e.preventDefault(); });
+        dz.addEventListener('drop', (e) => {
+            e.preventDefault();
+            dragCounter = 0;
+            dz.classList.remove('drag-over');
+            if (e.dataTransfer.files.length) addFiles(e.dataTransfer.files);
+        });
+        input.addEventListener('change', () => {
+            if (input.files.length) addFiles(input.files);
+            input.value = ''; // 동일 파일 재선택 허용
+        });
+    }
+
+    function renderPendingList(pendingListId, fileArray) {
+        const container = document.getElementById(pendingListId);
+        if (!container) return;
+        if (fileArray.length === 0) { container.innerHTML = ''; return; }
+        container.innerHTML = fileArray.map((f, i) => `
+            <div class="att-pending-item">
+                <i class="fas fa-check-circle"></i>
+                <span title="${f.name}">${f.name}</span>
+                <button class="att-pending-remove" data-index="${i}" title="제거">&times;</button>
+            </div>`).join('');
+        container.querySelectorAll('.att-pending-remove').forEach(btn => {
+            btn.addEventListener('click', () => {
+                fileArray.splice(parseInt(btn.dataset.index), 1);
+                renderPendingList(pendingListId, fileArray);
+            });
+        });
+    }
+
+    async function saveModalAttachments(doc) {
+        if (!pendingReceiptFiles.length && !pendingDocumentFiles.length) {
+            closeAttachmentModal();
+            return;
+        }
+        const isMeeting = ['RECEIPT_MEETING', '연구비증빙-회의록'].includes(doc.documentType);
+        const apiUrl = isMeeting
+            ? `/api/receipt-meetings/${doc.sourceDocumentId}/attachments`
+            : `/api/receipt-overtimes/${doc.sourceDocumentId}/attachments`;
+
+        const formData = new FormData();
+        pendingReceiptFiles.forEach(f  => formData.append('receiptFiles',  f));
+        pendingDocumentFiles.forEach(f => formData.append('documentFiles', f));
+
+        const saveBtn = document.getElementById('modalSaveBtn');
+        saveBtn.disabled = true;
+        saveBtn.textContent = '저장 중...';
+
+        try {
+            const response = await fetch(apiUrl, { method: 'POST', body: formData });
+            if (!response.ok) {
+                const err = await response.json().catch(() => ({}));
+                throw new Error(err.error || '저장에 실패했습니다.');
+            }
+            closeAttachmentModal();
+            await loadAllDocuments();
+        } catch (err) {
+            Swal.fire({ icon: 'error', title: '저장 실패', text: err.message });
+        } finally {
+            const btn = document.getElementById('modalSaveBtn');
+            if (btn) { btn.disabled = false; btn.textContent = '저장'; }
+        }
+    }
+
+    async function downloadSingleFile(url, filename) {
+        try {
+            const response = await fetch(url);
+            if (!response.ok) {
+                Swal.fire({ icon: 'error', title: '다운로드 실패', text: `파일을 찾을 수 없습니다: ${filename}` });
+                return;
+            }
+            const blob = await response.blob();
+            const blobUrl = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = blobUrl;
+            a.download = filename;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(blobUrl);
+        } catch (err) {
+            Swal.fire({ icon: 'error', title: '다운로드 오류', text: `파일 다운로드 중 오류가 발생했습니다: ${filename}` });
         }
     }
 
