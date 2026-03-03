@@ -336,31 +336,42 @@ document.addEventListener('DOMContentLoaded', async function() {
                     }
                 }
 
-                // 업무내용 설정 (HTML select box 옵션에서 직접 매칭)
-                if (data.attendees[0].workTask) {
-                    const otTaskSelect = document.getElementById('ot_task_select');
-                    const otTaskCustom = document.getElementById('ot_task_custom');
-                    const workTask = (data.attendees[0].workTask || '').trim();
+                // 업무내용 복원: 전체 attendee의 workTask를 select 옵션과 비교하여 기본/개별 판별
+                // - select 옵션에 매칭되는 값이 있으면 → 그 값이 기본 업무내용
+                // - 매칭 없으면 → 가장 많이 나오는 값(최빈값)을 직접입력 기본으로 사용
+                const otTaskSelectEl = document.getElementById('ot_task_select');
+                const otTaskCustomEl = document.getElementById('ot_task_custom');
+                const allWorkTasks = data.attendees.map(a => (a.workTask || '').trim()).filter(t => t);
+                let restoredGlobalTask = '';
 
-                    // select box의 옵션 값을 DOM에서 직접 읽어서 매칭
-                    let matched = false;
-                    if (otTaskSelect) {
-                        for (const opt of otTaskSelect.options) {
-                            if (opt.value && opt.value !== '' && opt.value !== 'custom' && opt.value === workTask) {
-                                otTaskSelect.value = opt.value;
-                                matched = true;
-                                break;
+                if (allWorkTasks.length > 0 && otTaskSelectEl) {
+                    const selectOptions = Array.from(otTaskSelectEl.options)
+                        .map(opt => opt.value)
+                        .filter(v => v && v !== '' && v !== 'custom');
+
+                    // select 옵션에 있는 값이 1개라도 있으면 → 그 값이 기본 업무내용
+                    const matchedOption = selectOptions.find(opt => allWorkTasks.includes(opt));
+
+                    if (matchedOption) {
+                        restoredGlobalTask = matchedOption;
+                        otTaskSelectEl.value = matchedOption;
+                        if (otTaskCustomEl) otTaskCustomEl.style.display = 'none';
+                        console.log('[업무내용 복원] select 옵션 매칭:', restoredGlobalTask);
+                    } else {
+                        // 매칭 없으면 최빈값을 직접입력(기본)으로
+                        const taskFreq = {};
+                        allWorkTasks.forEach(t => { taskFreq[t] = (taskFreq[t] || 0) + 1; });
+                        restoredGlobalTask = Object.entries(taskFreq).sort((a, b) => b[1] - a[1])[0]?.[0] || '';
+                        if (restoredGlobalTask) {
+                            otTaskSelectEl.value = 'custom';
+                            if (otTaskCustomEl) {
+                                otTaskCustomEl.value = restoredGlobalTask;
+                                otTaskCustomEl.style.display = 'block';
                             }
+                            console.log('[업무내용 복원] 직접입력 처리(최빈값):', restoredGlobalTask);
                         }
                     }
-                    if (!matched) {
-                        if (otTaskSelect) otTaskSelect.value = 'custom';
-                        if (otTaskCustom) {
-                            otTaskCustom.value = data.attendees[0].workTask;
-                            otTaskCustom.style.display = 'block';
-                        }
-                    }
-                    if (otTaskSelect) otTaskSelect.dispatchEvent(new Event('change'));
+                    otTaskSelectEl.dispatchEvent(new Event('change'));
                 }
 
                 // 프로젝트 참여인원 목록 가져오기 (부서, 직급, 금액 정보용)
@@ -400,40 +411,18 @@ document.addEventListener('DOMContentLoaded', async function() {
                 if (typeof window.addOvertimePersonsToOvertime === 'function') {
                     window.addOvertimePersonsToOvertime(personsToAdd);
 
-                    // 인원별 개별 업무내용 복원
-                    // 셀렉트박스에 설정된 기본 업무내용 가져오기
-                    const otTaskSelectEl = document.getElementById('ot_task_select');
-                    const otTaskCustomEl = document.getElementById('ot_task_custom');
-                    let globalTask = '';
-                    if (otTaskSelectEl) {
-                        globalTask = otTaskSelectEl.value === 'custom'
-                            ? (otTaskCustomEl?.value || '').trim()
-                            : (otTaskSelectEl.value || '').trim();
-                    }
-
-                    // 모든 attendee의 workTask가 동일한지 확인
-                    const allTasks = data.attendees.map(a => (a.workTask || '').trim());
-                    const allSame = allTasks.every(t => t === allTasks[0]);
-
+                    // 인원별 개별 업무내용 복원: restoredGlobalTask와 다른 값만 개별로 설정
                     const currentPersons = window.getCurrentOvertimePersons ? window.getCurrentOvertimePersons() : [];
-
-                    if (allSame) {
-                        // 모든 인원이 같은 업무내용 → 전부 "기본"으로 (task = null 유지)
-                        console.log('[업무내용 복원] 모든 인원 동일 → 기본 처리:', allTasks[0]);
-                    } else {
-                        // 서로 다른 업무내용이 있는 경우
-                        // 셀렉트박스 값(기본)과 같으면 → 기본, 다르면 → 개별
-                        data.attendees.forEach(attendee => {
-                            const taskValue = (attendee.workTask || '').trim();
-                            if (taskValue && taskValue !== globalTask) {
-                                const person = currentPersons.find(p => Number(p.id) === Number(attendee.userIdx));
-                                if (person) {
-                                    person.task = attendee.workTask;
-                                }
+                    data.attendees.forEach(attendee => {
+                        const taskValue = (attendee.workTask || '').trim();
+                        if (taskValue && taskValue !== restoredGlobalTask) {
+                            const person = currentPersons.find(p => Number(p.id) === Number(attendee.userIdx));
+                            if (person) {
+                                person.task = taskValue;
                             }
-                        });
-                        console.log('[업무내용 복원] 개별 업무내용 존재 → 개별 처리 완료');
-                    }
+                        }
+                    });
+                    console.log('[업무내용 복원] 완료 - globalTask:', restoredGlobalTask);
 
                     // 변경사항 반영을 위해 다시 렌더링
                     if (typeof window.renderOvertimePersonTable === 'function') {
