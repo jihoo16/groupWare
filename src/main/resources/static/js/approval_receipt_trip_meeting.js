@@ -1694,26 +1694,53 @@ document.addEventListener('DOMContentLoaded', function() {
     let currentSearchKeyword = '';
 
     function renderYearButtons() {
+        const SERVICE_START = 2026;
         const currentYear = new Date().getFullYear();
-        const years = [currentYear, currentYear - 1, currentYear - 2];
+        const recentStart = Math.max(currentYear - 2, SERVICE_START);
         const existing = document.getElementById('projectYearFilter');
         if (existing) existing.remove();
         const container = document.createElement('div');
         container.id = 'projectYearFilter';
         container.style.cssText = 'display:flex; gap:6px; padding:8px 12px; border-bottom:1px solid #eee; flex-wrap:wrap; align-items:center;';
-        const label = document.createElement('span');
-        label.textContent = '연도:';
-        label.style.cssText = 'font-size:12px; color:#888; margin-right:2px;';
-        container.appendChild(label);
-        [null, ...years].forEach(year => {
+        // 전체 버튼
+        const allBtn = document.createElement('button');
+        allBtn.type = 'button';
+        allBtn.textContent = '전체';
+        const allActive = selectedYear === null;
+        allBtn.style.cssText = `padding:3px 10px; border-radius:12px; border:1px solid ${allActive ? '#667eea' : '#ddd'}; background:${allActive ? '#667eea' : 'white'}; color:${allActive ? 'white' : '#555'}; cursor:pointer; font-size:12px;`;
+        allBtn.addEventListener('click', () => { selectedYear = null; renderYearButtons(); applyProjectFilters(); });
+        container.appendChild(allBtn);
+        // 오래된 연도 드롭다운 (서비스 시작연도 ~ 최근 3개년 이전)
+        if (recentStart > SERVICE_START) {
+            const select = document.createElement('select');
+            const hasOldSelected = selectedYear !== null && selectedYear < recentStart;
+            select.style.cssText = `padding:3px 8px; border-radius:12px; border:1px solid ${hasOldSelected ? '#667eea' : '#ddd'}; background:${hasOldSelected ? '#eef0ff' : 'white'}; color:#555; cursor:pointer; font-size:12px; outline:none;`;
+            const defaultOpt = document.createElement('option');
+            defaultOpt.value = '';
+            defaultOpt.textContent = '연도선택';
+            select.appendChild(defaultOpt);
+            for (let y = SERVICE_START; y < recentStart; y++) {
+                const opt = document.createElement('option');
+                opt.value = y;
+                opt.textContent = y + '년';
+                if (selectedYear === y) opt.selected = true;
+                select.appendChild(opt);
+            }
+            select.addEventListener('change', function() {
+                if (this.value) { selectedYear = parseInt(this.value); renderYearButtons(); applyProjectFilters(); }
+            });
+            container.appendChild(select);
+        }
+        // 최근 3개년 버튼 (서비스 시작연도부터 최대 3개)
+        for (let year = recentStart; year <= currentYear; year++) {
             const btn = document.createElement('button');
             btn.type = 'button';
-            btn.textContent = year === null ? '전체' : year + '년';
+            btn.textContent = year + '년';
             const isActive = selectedYear === year;
             btn.style.cssText = `padding:3px 10px; border-radius:12px; border:1px solid ${isActive ? '#667eea' : '#ddd'}; background:${isActive ? '#667eea' : 'white'}; color:${isActive ? 'white' : '#555'}; cursor:pointer; font-size:12px;`;
             btn.addEventListener('click', () => { selectedYear = year; renderYearButtons(); applyProjectFilters(); });
             container.appendChild(btn);
-        });
+        }
         if (projectList && projectList.parentNode) {
             projectList.parentNode.insertBefore(container, projectList);
         }
