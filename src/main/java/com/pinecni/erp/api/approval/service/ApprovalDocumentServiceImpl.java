@@ -4,6 +4,7 @@ import com.pinecni.erp.api.approval.dto.ApprovalDocumentDTO;
 import com.pinecni.erp.api.approval.dto.AttachmentSummaryDTO;
 import com.pinecni.erp.api.approval.repository.ApprovalDocumentRepository;
 import com.pinecni.erp.api.document.repository.ReceiptOvertimeAttachmentRepository;
+import com.pinecni.erp.api.document.repository.ReceiptTripAttachmentRepository;
 import com.pinecni.erp.api.project.repository.ReceiptMeetingAttachmentRepository;
 import com.pinecni.erp.api.code.repository.CodeRepository;
 import com.pinecni.erp.api.document.repository.MeetingMinutesRepository;
@@ -52,6 +53,7 @@ public class ApprovalDocumentServiceImpl implements ApprovalDocumentService {
     private final ProjectRepository projectRepository;
     private final ReceiptMeetingAttachmentRepository receiptMeetingAttachmentRepository;
     private final ReceiptOvertimeAttachmentRepository receiptOvertimeAttachmentRepository;
+    private final ReceiptTripAttachmentRepository receiptTripAttachmentRepository;
 
     @Override
     public List<ApprovalDocumentDTO> getAllDocuments(Long currentUserIdx) {
@@ -218,6 +220,7 @@ public class ApprovalDocumentServiceImpl implements ApprovalDocumentService {
                         dto.setProjectName(project.getProjectName());
                     });
                 }
+                dto.setAttachments(buildTripAttachments(receiptTrip.getIdx()));
             });
         } else if ("연구비증빙-야근식대".equals(documentType) || "연구비증빙(야근식대)".equals(documentType) || "receipt_overtime".equals(documentType)) {
             // 연구비증빙 야근식대의 원본 문서 ID 및 프로젝트 정보 조회
@@ -499,6 +502,8 @@ public class ApprovalDocumentServiceImpl implements ApprovalDocumentService {
             }
         });
 
+        dto.setAttachments(buildTripAttachments(trip.getIdx()));
+
         return dto;
     }
 
@@ -622,6 +627,20 @@ public class ApprovalDocumentServiceImpl implements ApprovalDocumentService {
                         .originalFilename(a.getOriginalFilename())
                         .attachmentType(a.getAttachmentType())
                         .downloadUrl("/api/receipt-overtimes/attachments/" + a.getId() + "/download")
+                        .build())
+                .collect(Collectors.toList());
+    }
+
+    /**
+     * 단독출장 첨부파일 요약 목록 생성 (빠른 다운로드용)
+     */
+    private List<AttachmentSummaryDTO> buildTripAttachments(Long receiptTripIdx) {
+        return receiptTripAttachmentRepository.findByReceiptTripIdxAndDeletedFalseOrderByIdxAsc(receiptTripIdx).stream()
+                .map(a -> AttachmentSummaryDTO.builder()
+                        .idx(a.getIdx())
+                        .originalFilename(a.getOriginalFilename())
+                        .attachmentType(a.getAttachmentType())
+                        .downloadUrl("/api/receipt-trips/attachments/" + a.getIdx() + "/download")
                         .build())
                 .collect(Collectors.toList());
     }
