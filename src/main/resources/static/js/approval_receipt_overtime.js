@@ -69,17 +69,14 @@ document.addEventListener('DOMContentLoaded', async function() {
     }
 
     // ============================================
-    // 내가 참여한 프로젝트 로드
+    // 프로젝트 목록 로드
     // ============================================
     async function loadMyProjects() {
-        const currentUserIdx = window.CURRENT_USER?.idx;
-        if (!currentUserIdx) return;
-
         try {
-            const response = await fetch(`/api/projects?memberIdx=${currentUserIdx}`);
+            const response = await fetch('/api/projects');
             if (response.ok) {
                 projects = await response.json();
-                console.log('내 프로젝트 로드 완료:', projects.length + '건');
+                console.log('프로젝트 로드 완료:', projects.length + '건');
             } else {
                 console.error('프로젝트 목록 로드 실패');
             }
@@ -560,33 +557,88 @@ document.addEventListener('DOMContentLoaded', async function() {
     const projectSearch = document.getElementById('projectSearch');
     const projectListEl = document.getElementById('projectList');
 
+    // ── 프로젝트 연도 필터 ──────────────────────────────────────
+    let selectedYear = null;
+    let currentSearchKeyword = '';
+
+    function renderYearButtons() {
+        const currentYear = new Date().getFullYear();
+        const years = [currentYear, currentYear - 1, currentYear - 2];
+        const existing = document.getElementById('projectYearFilter');
+        if (existing) existing.remove();
+        const container = document.createElement('div');
+        container.id = 'projectYearFilter';
+        container.style.cssText = 'display:flex; gap:6px; padding:8px 12px; border-bottom:1px solid #eee; flex-wrap:wrap; align-items:center;';
+        const label = document.createElement('span');
+        label.textContent = '연도:';
+        label.style.cssText = 'font-size:12px; color:#888; margin-right:2px;';
+        container.appendChild(label);
+        [null, ...years].forEach(year => {
+            const btn = document.createElement('button');
+            btn.type = 'button';
+            btn.textContent = year === null ? '전체' : year + '년';
+            const isActive = selectedYear === year;
+            btn.style.cssText = `padding:3px 10px; border-radius:12px; border:1px solid ${isActive ? '#667eea' : '#ddd'}; background:${isActive ? '#667eea' : 'white'}; color:${isActive ? 'white' : '#555'}; cursor:pointer; font-size:12px;`;
+            btn.addEventListener('click', () => { selectedYear = year; renderYearButtons(); applyProjectFilters(); });
+            container.appendChild(btn);
+        });
+        if (projectListEl && projectListEl.parentNode) {
+            projectListEl.parentNode.insertBefore(container, projectListEl);
+        }
+    }
+
+    function applyProjectFilters() {
+        let filtered = projects;
+        if (selectedYear !== null) {
+            filtered = filtered.filter(proj => {
+                const s = proj.startDate ? new Date(proj.startDate).getFullYear() : null;
+                const e = proj.endDate ? new Date(proj.endDate).getFullYear() : null;
+                if (s !== null && e !== null) return s <= selectedYear && e >= selectedYear;
+                if (s !== null) return s <= selectedYear;
+                if (e !== null) return e >= selectedYear;
+                return true;
+            });
+        }
+        if (currentSearchKeyword) {
+            const kw = currentSearchKeyword.toLowerCase();
+            filtered = filtered.filter(proj => (proj.projectName || '').toLowerCase().includes(kw));
+        }
+        renderProjectList(filtered, currentSearchKeyword);
+    }
+
     function renderProjectList(list, keyword = '') {
         if (!projectListEl) return;
         projectListEl.innerHTML = '';
 
-        if (list.length === 0) {
+        if (!list || list.length === 0) {
             projectListEl.innerHTML = `
                 <div class="modal-empty-state" style="text-align:center; padding:40px; color:#999;">
                     <i class="fas fa-folder-open" style="font-size:32px; margin-bottom:10px;"></i>
-                    <p>${keyword ? '검색 결과가 없습니다' : '참여중인 프로젝트가 없습니다'}</p>
+                    <p>${keyword ? '검색 결과가 없습니다' : '등록된 프로젝트가 없습니다'}</p>
                 </div>`;
             return;
         }
 
         list.forEach(proj => {
             const item = document.createElement('div');
-            item.className = 'employee-item';
+            item.className = 'modal-item';
             if (selectedProject && selectedProject.idx === proj.idx) {
                 item.classList.add('selected');
             }
 
             const name = keyword ? highlightProjectText(proj.projectName, keyword) : proj.projectName;
-            const desc = proj.description || '설명 없음';
+            const leader = proj.projectManagerName || proj.projectLeader || '-';
+            const memberCount = proj.memberCount != null ? proj.memberCount : (proj.projectMembers ? proj.projectMembers.length : 0);
+            const startDate = proj.startDate ? new Date(proj.startDate).toLocaleDateString('ko-KR') : '-';
+            const endDate = proj.endDate ? new Date(proj.endDate).toLocaleDateString('ko-KR') : '-';
 
             item.innerHTML = `
-                <div class="employee-info">
-                    <div class="employee-name"><i class="fas fa-folder" style="margin-right:6px; color:#667eea;"></i>${name}</div>
-                    <div class="employee-detail">${desc}</div>
+                <div class="modal-item-info">
+                    <div class="modal-item-name">${name}</div>
+                    <div class="modal-item-detail">
+                        <div><i class="fas fa-user"></i> ${leader} (${memberCount}명)</div>
+                        <div><i class="fas fa-calendar"></i> ${startDate} ~ ${endDate}</div>
+                    </div>
                 </div>
             `;
 
@@ -730,20 +782,19 @@ document.addEventListener('DOMContentLoaded', async function() {
 
     if (projectSearch) {
         projectSearch.addEventListener('input', function() {
-            const keyword = this.value.trim().toLowerCase();
-            const filtered = projects.filter(proj =>
-                (proj.projectName || '').toLowerCase().includes(keyword) ||
-                (proj.description || '').toLowerCase().includes(keyword)
-            );
-            renderProjectList(filtered, this.value.trim());
+            currentSearchKeyword = this.value.trim();
+            applyProjectFilters();
         });
     }
 
     window.openProjectModal = function() {
         if (projectModal) {
+            selectedYear = null;
+            currentSearchKeyword = '';
             projectModal.classList.add('show');
-            renderProjectList(projects);
             if (projectSearch) projectSearch.value = '';
+            renderYearButtons();
+            renderProjectList(projects);
         }
     };
 

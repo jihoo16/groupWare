@@ -449,21 +449,62 @@ document.addEventListener('DOMContentLoaded', async function() {
         closeProjectModal();
     };
 
+    // ── 프로젝트 연도 필터 ──────────────────────────────────────
+    let selectedYear = null;
+    let currentSearchKeyword = '';
+
+    function renderYearButtons() {
+        const currentYear = new Date().getFullYear();
+        const years = [currentYear, currentYear - 1, currentYear - 2];
+        const existing = document.getElementById('projectYearFilter');
+        if (existing) existing.remove();
+        const container = document.createElement('div');
+        container.id = 'projectYearFilter';
+        container.style.cssText = 'display:flex; gap:6px; padding:8px 12px; border-bottom:1px solid #eee; flex-wrap:wrap; align-items:center;';
+        const label = document.createElement('span');
+        label.textContent = '연도:';
+        label.style.cssText = 'font-size:12px; color:#888; margin-right:2px;';
+        container.appendChild(label);
+        [null, ...years].forEach(year => {
+            const btn = document.createElement('button');
+            btn.type = 'button';
+            btn.textContent = year === null ? '전체' : year + '년';
+            const isActive = selectedYear === year;
+            btn.style.cssText = `padding:3px 10px; border-radius:12px; border:1px solid ${isActive ? '#667eea' : '#ddd'}; background:${isActive ? '#667eea' : 'white'}; color:${isActive ? 'white' : '#555'}; cursor:pointer; font-size:12px;`;
+            btn.addEventListener('click', () => { selectedYear = year; renderYearButtons(); applyProjectFilters(); });
+            container.appendChild(btn);
+        });
+        if (projectList && projectList.parentNode) {
+            projectList.parentNode.insertBefore(container, projectList);
+        }
+    }
+
+    function applyProjectFilters() {
+        let filtered = projects;
+        if (selectedYear !== null) {
+            filtered = filtered.filter(proj => {
+                const s = proj.startDate ? new Date(proj.startDate).getFullYear() : null;
+                const e = proj.endDate ? new Date(proj.endDate).getFullYear() : null;
+                if (s !== null && e !== null) return s <= selectedYear && e >= selectedYear;
+                if (s !== null) return s <= selectedYear;
+                if (e !== null) return e >= selectedYear;
+                return true;
+            });
+        }
+        if (currentSearchKeyword) {
+            filtered = filtered.filter(proj =>
+                matchesSearch(proj.projectName || '', currentSearchKeyword) ||
+                matchesSearch(proj.projectManagerName || '', currentSearchKeyword)
+            );
+        }
+        renderProjectList(filtered, currentSearchKeyword);
+    }
+
     // 프로젝트 검색
     if (projectSearch) {
         projectSearch.addEventListener('input', function() {
-            const keyword = this.value.trim();
-            if (!keyword) {
-                renderProjectList(projects);
-                return;
-            }
-
-            const filtered = projects.filter(proj =>
-                matchesSearch(proj.projectName || '', keyword) ||
-                matchesSearch(proj.projectManagerName || '', keyword)
-            );
-
-            renderProjectList(filtered, keyword);
+            currentSearchKeyword = this.value.trim();
+            applyProjectFilters();
         });
     }
 
@@ -481,9 +522,12 @@ document.addEventListener('DOMContentLoaded', async function() {
             await loadProjects();
         }
 
+        selectedYear = null;
+        currentSearchKeyword = '';
         projectModal.classList.add('show');
-        renderProjectList(projects);
         if (projectSearch) projectSearch.value = '';
+        renderYearButtons();
+        renderProjectList(projects);
     };
 
     // 프로젝트 모달 닫기
