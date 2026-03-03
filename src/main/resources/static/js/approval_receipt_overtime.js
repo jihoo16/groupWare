@@ -816,12 +816,12 @@ document.addEventListener('DOMContentLoaded', async function() {
 
     window.openProjectModal = function() {
         if (projectModal) {
-            selectedYear = null;
+            selectedYear = new Date().getFullYear();
             currentSearchKeyword = '';
             projectModal.classList.add('show');
             if (projectSearch) projectSearch.value = '';
             renderYearButtons();
-            renderProjectList(projects);
+            applyProjectFilters();
         }
     };
 

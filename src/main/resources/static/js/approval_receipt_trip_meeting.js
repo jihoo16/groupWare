@@ -1825,12 +1825,12 @@ document.addEventListener('DOMContentLoaded', function() {
     // 프로젝트 모달 열기
     window.openProjectModal = function() {
         if (projectModal) {
-            selectedYear = null;
+            selectedYear = new Date().getFullYear();
             currentSearchKeyword = '';
             projectModal.classList.add('show');
             if (projectSearchInput) projectSearchInput.value = '';
             renderYearButtons();
-            renderProjectList(projects);
+            applyProjectFilters();
         }
     };
 

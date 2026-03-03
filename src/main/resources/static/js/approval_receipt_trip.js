@@ -549,12 +549,12 @@ document.addEventListener('DOMContentLoaded', async function() {
             await loadProjects();
         }
 
-        selectedYear = null;
+        selectedYear = new Date().getFullYear();
         currentSearchKeyword = '';
         projectModal.classList.add('show');
         if (projectSearch) projectSearch.value = '';
         renderYearButtons();
-        renderProjectList(projects);
+        applyProjectFilters();
     };
 
     // 프로젝트 모달 닫기
