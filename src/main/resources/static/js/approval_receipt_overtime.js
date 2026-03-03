@@ -219,6 +219,20 @@ document.addEventListener('DOMContentLoaded', async function() {
             // 프로젝트 정보 설정
             if (data.projectIdx) {
                 selectedProject = projects.find(p => Number(p.idx) === Number(data.projectIdx));
+
+                // 내 프로젝트 목록에 없으면 직접 API 조회 (수정 모드에서 비멤버인 경우)
+                if (!selectedProject) {
+                    try {
+                        const projResponse = await fetch(`/api/projects/${data.projectIdx}`);
+                        if (projResponse.ok) {
+                            selectedProject = await projResponse.json();
+                            console.log('프로젝트 직접 로드 (비멤버):', selectedProject.projectName);
+                        }
+                    } catch (e) {
+                        console.error('프로젝트 직접 로드 오류:', e);
+                    }
+                }
+
                 if (selectedProject) {
                     const otProject = document.getElementById('ot_project');
                     if (otProject) {
