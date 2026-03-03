@@ -1,59 +1,63 @@
 package com.pinecni.erp.api.document.service;
 
+import com.pinecni.erp.api.document.dto.ReceiptTripAttachmentDTO;
 import com.pinecni.erp.api.document.dto.ReceiptTripCreateDTO;
 import com.pinecni.erp.api.document.dto.ReceiptTripDTO;
 import com.pinecni.erp.api.document.dto.ReceiptTripUpdateDTO;
+import org.springframework.web.multipart.MultipartFile;
 
 import java.util.List;
-import java.util.Map;
 
 /**
  * 연구비증빙 출장 Service 인터페이스
  */
 public interface ReceiptTripService {
 
-    /**
-     * 전체 출장 목록 조회
-     */
+    // ── 출장 기본 CRUD ──────────────────────────────────────────
+
     List<ReceiptTripDTO> getAllReceiptTrips();
 
-    /**
-     * 출장 상세 조회
-     */
     ReceiptTripDTO getReceiptTripById(Long idx);
 
-    /**
-     * 프로젝트별 출장 목록 조회
-     */
     List<ReceiptTripDTO> getReceiptTripsByProjectIdx(Long projectIdx);
 
-    /**
-     * 작성자별 출장 목록 조회
-     */
     List<ReceiptTripDTO> getReceiptTripsByAuthorIdx(Long authorIdx);
 
-    /**
-     * 상태별 출장 목록 조회
-     */
     List<ReceiptTripDTO> getReceiptTripsByStatus(String status);
 
-    /**
-     * 출장 생성
-     */
     ReceiptTripDTO createReceiptTrip(ReceiptTripCreateDTO createDTO);
 
-    /**
-     * 출장 수정
-     */
     ReceiptTripDTO updateReceiptTrip(Long idx, ReceiptTripUpdateDTO updateDTO);
 
-    /**
-     * 출장 삭제
-     */
-    void deleteReceiptTrip(Long idx);
+    /** 소프트 딜리트 */
+    void deleteReceiptTrip(Long idx, Long deletedUserIdx);
+
+    // ── 첨부파일 ────────────────────────────────────────────────
 
     /**
-     * 문서번호 생성
+     * 첨부파일 저장 (RECEIPT / DOCUMENT 타입 구분)
      */
+    List<ReceiptTripAttachmentDTO> saveAttachments(Long receiptTripIdx,
+                                                    MultipartFile[] files,
+                                                    String attachmentType,
+                                                    Long uploadUserIdx);
+
+    /**
+     * 출장별 첨부파일 목록 조회 (삭제되지 않은 건)
+     */
+    List<ReceiptTripAttachmentDTO> getAttachmentsByReceiptTripIdx(Long receiptTripIdx);
+
+    /**
+     * 첨부파일 단건 조회
+     */
+    ReceiptTripAttachmentDTO getAttachmentById(Long attachmentIdx);
+
+    /**
+     * 첨부파일 소프트 딜리트
+     */
+    void softDeleteAttachment(Long attachmentIdx, Long deletedUserIdx);
+
+    // ── 기타 ────────────────────────────────────────────────────
+
     String generateDocumentNumber(Long projectIdx);
 }

@@ -1,15 +1,28 @@
 package com.pinecni.erp.api.document.controller;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.pinecni.erp.api.document.dto.ReceiptTripAttachmentDTO;
 import com.pinecni.erp.api.document.dto.ReceiptTripCreateDTO;
 import com.pinecni.erp.api.document.dto.ReceiptTripDTO;
 import com.pinecni.erp.api.document.dto.ReceiptTripUpdateDTO;
 import com.pinecni.erp.api.document.service.ReceiptTripService;
+import jakarta.servlet.http.HttpSession;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.core.io.Resource;
+import org.springframework.core.io.UrlResource;
+import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.multipart.MultipartFile;
 
+import java.net.URLEncoder;
+import java.nio.charset.StandardCharsets;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -24,6 +37,10 @@ import java.util.Map;
 public class ReceiptTripController {
 
     private final ReceiptTripService receiptTripService;
+    private final ObjectMapper objectMapper;
+
+    @Value("${file.base.dir}")
+    private String baseDir;
 
     /**
      * 전체 출장 목록 조회
@@ -38,7 +55,6 @@ public class ReceiptTripController {
         log.debug("GET /api/receipt-trips - projectIdx: {}, authorIdx: {}, status: {}", projectIdx, authorIdx, status);
 
         List<ReceiptTripDTO> receiptTrips;
-
         if (projectIdx != null) {
             receiptTrips = receiptTripService.getReceiptTripsByProjectIdx(projectIdx);
         } else if (authorIdx != null) {
@@ -59,10 +75,8 @@ public class ReceiptTripController {
     @GetMapping("/{idx}")
     public ResponseEntity<ReceiptTripDTO> getReceiptTripById(@PathVariable Long idx) {
         log.debug("GET /api/receipt-trips/{}", idx);
-
         try {
-            ReceiptTripDTO receiptTrip = receiptTripService.getReceiptTripById(idx);
-            return ResponseEntity.ok(receiptTrip);
+            return ResponseEntity.ok(receiptTripService.getReceiptTripById(idx));
         } catch (IllegalArgumentException e) {
             log.error("출장 조회 실패: {}", e.getMessage());
             return ResponseEntity.notFound().build();
@@ -70,31 +84,40 @@ public class ReceiptTripController {
     }
 
     /**
-     * 출장 생성
+     * 출장 생성 (파일 첨부 포함)
      * POST /api/receipt-trips
      */
-    @PostMapping
+    @PostMapping(consumes = {"multipart/form-data"})
     public ResponseEntity<?> createReceiptTrip(
-            @RequestBody ReceiptTripCreateDTO createDTO,
-            jakarta.servlet.http.HttpSession session) {
+            @RequestPart("data") String dataJson,
+            @RequestPart(value = "receiptFiles",  required = false) MultipartFile[] receiptFiles,
+            @RequestPart(value = "documentFiles", required = false) MultipartFile[] documentFiles,
+            HttpSession session) {
 
-        // 세션에서 현재 로그인한 사용자 정보 가져오기
         Long currentUserIdx = (Long) session.getAttribute("userIdx");
-        String currentUserName = (String) session.getAttribute("empName");
-
         if (currentUserIdx == null) {
             log.error("로그인 정보가 없습니다.");
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
         }
 
-        // 작성자 정보 자동 설정
-        createDTO.setAuthorIdx(currentUserIdx);
-
-        log.debug("POST /api/receipt-trips - projectIdx: {}, authorIdx: {}, authorName: {}",
-                createDTO.getProjectIdx(), currentUserIdx, currentUserName);
-
         try {
+            ReceiptTripCreateDTO createDTO = objectMapper.readValue(dataJson, ReceiptTripCreateDTO.class);
+            createDTO.setAuthorIdx(currentUserIdx);
+
+            log.debug("POST /api/receipt-trips - projectIdx: {}, authorIdx: {}, 영수증: {}개, 공식문서: {}개",
+                    createDTO.getProjectIdx(), currentUserIdx,
+                    receiptFiles  != null ? receiptFiles.length  : 0,
+                    documentFiles != null ? documentFiles.length : 0);
+
             ReceiptTripDTO receiptTrip = receiptTripService.createReceiptTrip(createDTO);
+
+            if (receiptFiles != null && receiptFiles.length > 0) {
+                receiptTripService.saveAttachments(receiptTrip.getIdx(), receiptFiles, "RECEIPT", currentUserIdx);
+            }
+            if (documentFiles != null && documentFiles.length > 0) {
+                receiptTripService.saveAttachments(receiptTrip.getIdx(), documentFiles, "DOCUMENT", currentUserIdx);
+            }
+
             return ResponseEntity.status(HttpStatus.CREATED).body(receiptTrip);
         } catch (Exception e) {
             log.error("출장 생성 실패: {}", e.getMessage(), e);
@@ -105,50 +128,193 @@ public class ReceiptTripController {
     }
 
     /**
-     * 출장 수정
+     * 출장 수정 (파일 추가/삭제 포함)
      * PUT /api/receipt-trips/{idx}
      */
-    @PutMapping("/{idx}")
-    public ResponseEntity<ReceiptTripDTO> updateReceiptTrip(
+    @PutMapping(value = "/{idx}", consumes = {"multipart/form-data"})
+    public ResponseEntity<?> updateReceiptTrip(
             @PathVariable Long idx,
-            @RequestBody ReceiptTripUpdateDTO updateDTO) {
+            @RequestPart("data") String dataJson,
+            @RequestPart(value = "receiptFiles",  required = false) MultipartFile[] receiptFiles,
+            @RequestPart(value = "documentFiles", required = false) MultipartFile[] documentFiles,
+            HttpSession session) {
+
         log.debug("PUT /api/receipt-trips/{}", idx);
 
+        Long currentUserIdx = (Long) session.getAttribute("userIdx");
+        if (currentUserIdx == null) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
+        }
+
         try {
+            ReceiptTripUpdateDTO updateDTO = objectMapper.readValue(dataJson, ReceiptTripUpdateDTO.class);
+
             ReceiptTripDTO receiptTrip = receiptTripService.updateReceiptTrip(idx, updateDTO);
+
+            if (receiptFiles != null && receiptFiles.length > 0) {
+                receiptTripService.saveAttachments(idx, receiptFiles, "RECEIPT", currentUserIdx);
+                log.debug("영수증 파일 {}개 저장 완료", receiptFiles.length);
+            }
+            if (documentFiles != null && documentFiles.length > 0) {
+                receiptTripService.saveAttachments(idx, documentFiles, "DOCUMENT", currentUserIdx);
+                log.debug("공식문서 파일 {}개 저장 완료", documentFiles.length);
+            }
+
             return ResponseEntity.ok(receiptTrip);
         } catch (IllegalArgumentException e) {
             log.error("출장 수정 실패: {}", e.getMessage());
             return ResponseEntity.notFound().build();
         } catch (Exception e) {
             log.error("출장 수정 중 오류 발생: {}", e.getMessage(), e);
-            return ResponseEntity.badRequest().build();
+            Map<String, String> error = new HashMap<>();
+            error.put("error", e.getMessage());
+            return ResponseEntity.badRequest().body(error);
         }
     }
 
     /**
-     * 출장 삭제
+     * 출장 삭제 (소프트 딜리트)
      * DELETE /api/receipt-trips/{idx}
      */
     @DeleteMapping("/{idx}")
-    public ResponseEntity<Map<String, String>> deleteReceiptTrip(@PathVariable Long idx) {
+    public ResponseEntity<Map<String, String>> deleteReceiptTrip(
+            @PathVariable Long idx,
+            HttpSession session) {
+
         log.debug("DELETE /api/receipt-trips/{}", idx);
 
-        try {
-            receiptTripService.deleteReceiptTrip(idx);
+        Long currentUserIdx = (Long) session.getAttribute("userIdx");
+        if (currentUserIdx == null) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
+        }
 
+        try {
+            receiptTripService.deleteReceiptTrip(idx, currentUserIdx);
             Map<String, String> response = new HashMap<>();
             response.put("message", "출장 정보가 삭제되었습니다.");
             return ResponseEntity.ok(response);
         } catch (IllegalArgumentException e) {
             log.error("출장 삭제 실패: {}", e.getMessage());
-
             Map<String, String> error = new HashMap<>();
             error.put("error", e.getMessage());
             return ResponseEntity.status(HttpStatus.NOT_FOUND).body(error);
         } catch (Exception e) {
             log.error("출장 삭제 중 오류 발생: {}", e.getMessage(), e);
+            Map<String, String> error = new HashMap<>();
+            error.put("error", "서버 오류가 발생했습니다.");
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(error);
+        }
+    }
 
+    /**
+     * 출장 첨부파일 목록 조회
+     * GET /api/receipt-trips/{idx}/attachments
+     */
+    @GetMapping("/{idx}/attachments")
+    public ResponseEntity<List<ReceiptTripAttachmentDTO>> getAttachments(@PathVariable Long idx) {
+        log.debug("GET /api/receipt-trips/{}/attachments", idx);
+        try {
+            return ResponseEntity.ok(receiptTripService.getAttachmentsByReceiptTripIdx(idx));
+        } catch (Exception e) {
+            log.error("첨부파일 목록 조회 실패: {}", e.getMessage());
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
+        }
+    }
+
+    /**
+     * 출장 첨부파일 추가 (모달에서 빠른 추가)
+     * POST /api/receipt-trips/{idx}/attachments
+     */
+    @PostMapping(value = "/{idx}/attachments", consumes = {"multipart/form-data"})
+    public ResponseEntity<?> addAttachments(
+            @PathVariable Long idx,
+            @RequestPart(value = "receiptFiles",  required = false) MultipartFile[] receiptFiles,
+            @RequestPart(value = "documentFiles", required = false) MultipartFile[] documentFiles,
+            HttpSession session) {
+
+        Long currentUserIdx = (Long) session.getAttribute("userIdx");
+        if (currentUserIdx == null) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
+        }
+
+        try {
+            if (receiptFiles != null && receiptFiles.length > 0) {
+                receiptTripService.saveAttachments(idx, receiptFiles, "RECEIPT", currentUserIdx);
+            }
+            if (documentFiles != null && documentFiles.length > 0) {
+                receiptTripService.saveAttachments(idx, documentFiles, "DOCUMENT", currentUserIdx);
+            }
+            return ResponseEntity.ok(receiptTripService.getAttachmentsByReceiptTripIdx(idx));
+        } catch (Exception e) {
+            log.error("출장 첨부파일 추가 실패: {}", e.getMessage(), e);
+            Map<String, String> error = new HashMap<>();
+            error.put("error", e.getMessage());
+            return ResponseEntity.badRequest().body(error);
+        }
+    }
+
+    /**
+     * 출장 첨부파일 다운로드
+     * GET /api/receipt-trips/attachments/{attachmentIdx}/download
+     */
+    @GetMapping("/attachments/{attachmentIdx}/download")
+    public ResponseEntity<Resource> downloadAttachment(@PathVariable Long attachmentIdx) {
+        log.debug("GET /api/receipt-trips/attachments/{}/download", attachmentIdx);
+        try {
+            ReceiptTripAttachmentDTO attachment = receiptTripService.getAttachmentById(attachmentIdx);
+
+            Path filePath = Paths.get(baseDir)
+                    .resolve(attachment.getFilePath())
+                    .resolve(attachment.getStoredFilename());
+            Resource resource = new UrlResource(filePath.toUri());
+
+            if (!resource.exists() || !resource.isReadable()) {
+                log.error("파일을 찾을 수 없거나 읽을 수 없습니다: {}", filePath);
+                return ResponseEntity.notFound().build();
+            }
+
+            String encodedFilename = URLEncoder.encode(attachment.getOriginalFilename(), StandardCharsets.UTF_8)
+                    .replaceAll("\\+", "%20");
+
+            return ResponseEntity.ok()
+                    .contentType(MediaType.APPLICATION_OCTET_STREAM)
+                    .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename*=UTF-8''" + encodedFilename)
+                    .body(resource);
+
+        } catch (Exception e) {
+            log.error("첨부파일 다운로드 실패: {}", e.getMessage(), e);
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
+        }
+    }
+
+    /**
+     * 출장 첨부파일 삭제 (소프트 딜리트)
+     * DELETE /api/receipt-trips/attachments/{attachmentIdx}
+     */
+    @DeleteMapping("/attachments/{attachmentIdx}")
+    public ResponseEntity<Map<String, String>> deleteAttachment(
+            @PathVariable Long attachmentIdx,
+            HttpSession session) {
+
+        log.debug("DELETE /api/receipt-trips/attachments/{}", attachmentIdx);
+
+        Long currentUserIdx = (Long) session.getAttribute("userIdx");
+        if (currentUserIdx == null) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
+        }
+
+        try {
+            receiptTripService.softDeleteAttachment(attachmentIdx, currentUserIdx);
+            Map<String, String> response = new HashMap<>();
+            response.put("message", "첨부파일이 삭제되었습니다.");
+            return ResponseEntity.ok(response);
+        } catch (IllegalArgumentException e) {
+            log.error("첨부파일 삭제 실패: {}", e.getMessage());
+            Map<String, String> error = new HashMap<>();
+            error.put("error", e.getMessage());
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(error);
+        } catch (Exception e) {
+            log.error("첨부파일 삭제 중 오류 발생: {}", e.getMessage(), e);
             Map<String, String> error = new HashMap<>();
             error.put("error", "서버 오류가 발생했습니다.");
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(error);

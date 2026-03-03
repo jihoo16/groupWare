@@ -27,48 +27,48 @@ public class ReceiptTripMapper {
      * Entity → DTO 변환
      */
     public ReceiptTripDTO toDTO(ReceiptTrip entity) {
-        if (entity == null) {
-            return null;
-        }
+        if (entity == null) return null;
 
         // 작성자 정보 조회
         User author = userRepository.findById(entity.getAuthorIdx()).orElse(null);
         String authorUserName = null;
-        String authorDept = null;
+        String authorDept     = null;
         String authorDeptName = null;
 
         if (author != null) {
             authorUserName = author.getEmpName();
             if (author.getEmpDept() != null) {
-                authorDept = author.getEmpDept();
-                authorDeptName = codeRepository.findByGroupCodeAndCode(CodeConstants.GroupCode.DEPARTMENT.getCode(), author.getEmpDept())
+                authorDept     = author.getEmpDept();
+                authorDeptName = codeRepository
+                        .findByGroupCodeAndCode(CodeConstants.GroupCode.DEPARTMENT.getCode(), author.getEmpDept())
                         .map(Code::getCodeName)
                         .orElse(null);
             }
         }
 
         // 참석자 목록 변환
-        List<ReceiptTripAttendeeDTO> attendeeDTOs = entity.getAttendees() != null ?
-                entity.getAttendees().stream()
-                        .map(this::toAttendeeDTO)
-                        .collect(Collectors.toList()) : null;
+        List<ReceiptTripAttendeeDTO> attendeeDTOs = entity.getAttendees() != null
+                ? entity.getAttendees().stream().map(this::toAttendeeDTO).collect(Collectors.toList())
+                : null;
 
-        // 문서번호는 approval_documents 테이블에서 조회
-        String documentNumber = null;
-        if (entity.getApprovalDocument() != null) {
+        // 문서번호: entity 자체 필드 우선, 없으면 연관된 ApprovalDocument에서 조회
+        String documentNumber = entity.getDocumentNumber();
+        if (documentNumber == null && entity.getApprovalDocument() != null) {
             documentNumber = entity.getApprovalDocument().getDocumentNo();
         }
 
         return ReceiptTripDTO.builder()
                 .idx(entity.getIdx())
+                .documentIdx(entity.getDocumentIdx())
+                .documentNumber(documentNumber)
                 .projectIdx(entity.getProjectIdx())
                 .projectName(entity.getProject() != null ? entity.getProject().getProjectName() : null)
-                .documentNumber(documentNumber)
                 .authorIdx(entity.getAuthorIdx())
                 .authorUserName(authorUserName)
                 .authorDept(authorDept)
                 .authorDeptName(authorDeptName)
                 .tripDate(entity.getTripDate())
+                .duration(entity.getDuration())
                 .location(entity.getLocation())
                 .transportationFee(entity.getTransportationFee())
                 .accommodationFee(entity.getAccommodationFee())
@@ -88,14 +88,13 @@ public class ReceiptTripMapper {
      * CreateDTO → Entity 변환
      */
     public ReceiptTrip toEntity(ReceiptTripCreateDTO dto) {
-        if (dto == null) {
-            return null;
-        }
+        if (dto == null) return null;
 
         return ReceiptTrip.builder()
                 .projectIdx(dto.getProjectIdx())
                 .authorIdx(dto.getAuthorIdx())
                 .tripDate(dto.getTripDate())
+                .duration(dto.getDuration())
                 .location(dto.getLocation())
                 .transportationFee(dto.getTransportationFee())
                 .accommodationFee(dto.getAccommodationFee())
@@ -105,65 +104,65 @@ public class ReceiptTripMapper {
                 .content(dto.getContent())
                 .paymentMethod(dto.getPaymentMethod())
                 .status("PENDING")
+                .deleted(false)
                 .build();
     }
 
     /**
-     * UpdateDTO로 Entity 업데이트
+     * UpdateDTO로 Entity 필드 업데이트
      */
     public void updateEntity(ReceiptTrip entity, ReceiptTripUpdateDTO dto) {
-        if (entity == null || dto == null) {
-            return;
-        }
+        if (entity == null || dto == null) return;
 
-        if (dto.getProjectIdx() != null) {
-            entity.setProjectIdx(dto.getProjectIdx());
-        }
-        if (dto.getTripDate() != null) {
-            entity.setTripDate(dto.getTripDate());
-        }
-        if (dto.getLocation() != null) {
-            entity.setLocation(dto.getLocation());
-        }
-        if (dto.getTransportationFee() != null) {
-            entity.setTransportationFee(dto.getTransportationFee());
-        }
-        if (dto.getAccommodationFee() != null) {
-            entity.setAccommodationFee(dto.getAccommodationFee());
-        }
-        if (dto.getMealFee() != null) {
-            entity.setMealFee(dto.getMealFee());
-        }
-        if (dto.getOtherFee() != null) {
-            entity.setOtherFee(dto.getOtherFee());
-        }
-        if (dto.getPurpose() != null) {
-            entity.setPurpose(dto.getPurpose());
-        }
-        if (dto.getContent() != null) {
-            entity.setContent(dto.getContent());
-        }
-        if (dto.getPaymentMethod() != null) {
-            entity.setPaymentMethod(dto.getPaymentMethod());
-        }
+        if (dto.getProjectIdx() != null)        entity.setProjectIdx(dto.getProjectIdx());
+        if (dto.getTripDate() != null)           entity.setTripDate(dto.getTripDate());
+        if (dto.getDuration() != null)           entity.setDuration(dto.getDuration());
+        if (dto.getLocation() != null)           entity.setLocation(dto.getLocation());
+        if (dto.getTransportationFee() != null)  entity.setTransportationFee(dto.getTransportationFee());
+        if (dto.getAccommodationFee() != null)   entity.setAccommodationFee(dto.getAccommodationFee());
+        if (dto.getMealFee() != null)            entity.setMealFee(dto.getMealFee());
+        if (dto.getOtherFee() != null)           entity.setOtherFee(dto.getOtherFee());
+        if (dto.getPurpose() != null)            entity.setPurpose(dto.getPurpose());
+        if (dto.getContent() != null)            entity.setContent(dto.getContent());
+        if (dto.getPaymentMethod() != null)      entity.setPaymentMethod(dto.getPaymentMethod());
+    }
+
+    /**
+     * ReceiptTripAttachment Entity → DTO 변환
+     */
+    public ReceiptTripAttachmentDTO toAttachmentDTO(ReceiptTripAttachment entity) {
+        if (entity == null) return null;
+
+        return ReceiptTripAttachmentDTO.builder()
+                .idx(entity.getIdx())
+                .receiptTripIdx(entity.getReceiptTripIdx())
+                .originalFilename(entity.getOriginalFilename())
+                .storedFilename(entity.getStoredFilename())
+                .filePath(entity.getFilePath())
+                .fileSize(entity.getFileSize())
+                .fileType(entity.getFileType())
+                .attachmentType(entity.getAttachmentType())
+                .uploadUserIdx(entity.getUploadUserIdx())
+                .uploadedAt(entity.getUploadedAt())
+                .createdAt(entity.getCreatedAt())
+                .deleted(entity.getDeleted())
+                .deletedAt(entity.getDeletedAt())
+                .build();
     }
 
     /**
      * ReceiptTripAttendee Entity → DTO 변환
      */
     public ReceiptTripAttendeeDTO toAttendeeDTO(ReceiptTripAttendee entity) {
-        if (entity == null) {
-            return null;
-        }
-        String position = null;
+        if (entity == null) return null;
 
-        // attendee_type에 따라 직책 조회
+        String position = null;
         if ("내부".equals(entity.getAttendeeType()) && entity.getUserIdx() != null) {
-            // 내부 참석자: User에서 직급명 조회
             position = userRepository.findById(entity.getUserIdx())
                     .map(user -> {
                         if (user.getEmpPosition() != null) {
-                            return codeRepository.findByGroupCodeAndCode(CodeConstants.GroupCode.POSITION.getCode(), user.getEmpPosition())
+                            return codeRepository
+                                    .findByGroupCodeAndCode(CodeConstants.GroupCode.POSITION.getCode(), user.getEmpPosition())
                                     .map(Code::getCodeName)
                                     .orElse(null);
                         }
@@ -171,7 +170,6 @@ public class ReceiptTripMapper {
                     })
                     .orElse(null);
         } else if ("외부".equals(entity.getAttendeeType()) && entity.getUserIdx() != null) {
-            // 외부 참석자: ExternalPerson에서 직책 조회
             position = externalPersonRepository.findById(entity.getUserIdx())
                     .map(ExternalPerson::getPosition)
                     .orElse(null);
@@ -192,9 +190,7 @@ public class ReceiptTripMapper {
      * ReceiptTripAttendeeDTO → Entity 변환
      */
     public ReceiptTripAttendee toAttendeeEntity(ReceiptTripAttendeeDTO dto, Long receiptTripIdx) {
-        if (dto == null) {
-            return null;
-        }
+        if (dto == null) return null;
 
         return ReceiptTripAttendee.builder()
                 .receiptTripIdx(receiptTripIdx)
