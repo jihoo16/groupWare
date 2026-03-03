@@ -8,7 +8,6 @@ import lombok.NoArgsConstructor;
 import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
-import java.time.LocalTime;
 import java.util.List;
 
 /**
@@ -20,108 +19,75 @@ import java.util.List;
 @AllArgsConstructor
 public class ReceiptTripDTO {
 
-    /**
-     * 출장 IDX
-     */
+    /** 출장 IDX */
     private Long idx;
 
-    /**
-     * 프로젝트 IDX
-     */
-    private Long projectIdx;
+    /** 전자결재 문서 IDX */
+    private Long documentIdx;
 
-    /**
-     * 프로젝트 명
-     */
-    private String projectName;
-
-    /**
-     * 문서 번호
-     */
+    /** 문서 번호 */
     private String documentNumber;
 
-    /**
-     * 작성자 IDX
-     */
+    /** 프로젝트 IDX */
+    private Long projectIdx;
+
+    /** 프로젝트 명 */
+    private String projectName;
+
+    /** 작성자 IDX */
     private Long authorIdx;
 
-    /**
-     * 작성자 이름 (users 테이블에서 조회)
-     */
+    /** 작성자 이름 */
     private String authorUserName;
 
-    /**
-     * 작성자 부서
-     */
+    /** 작성자 부서 코드 */
     private String authorDept;
 
-    /**
-     * 작성자 부서명
-     */
+    /** 작성자 부서명 */
     private String authorDeptName;
 
-    /**
-     * 출장 일자
-     */
+    /** 출장 일자 */
     private LocalDate tripDate;
 
-    /**
-     * 출장지
-     */
+    /** 출장 기간 (일수, 0=당일) */
+    private Integer duration;
+
+    /** 출장지 */
     private String location;
 
-    /**
-     * 교통비
-     */
+    /** 교통비 */
     private BigDecimal transportationFee;
 
-    /**
-     * 숙박비
-     */
+    /** 숙박비 */
     private BigDecimal accommodationFee;
 
-    /**
-     * 식비
-     */
+    /** 식비 */
     private BigDecimal mealFee;
 
-    /**
-     * 기타/일비
-     */
+    /** 기타/일비 */
     private BigDecimal otherFee;
 
-    /**
-     * 목적
-     */
+    /** 출장 목적 */
     private String purpose;
 
-    /**
-     * 내용
-     */
+    /** 출장 내용 */
     private String content;
 
-    /**
-     * 지불 방법
-     */
+    /** 지불 방법 */
     private String paymentMethod;
 
-    /**
-     * 상태 (PENDING, APPROVED, REJECTED)
-     */
+    /** 상태 (PENDING, APPROVED, REJECTED) */
     private String status;
 
-    /**
-     * 참석자/동행자 목록
-     */
+    /** 참석자/동행자 목록 */
     private List<ReceiptTripAttendeeDTO> attendees;
 
-    /**
-     * 생성 일시
-     */
+    /** 첨부파일 목록 */
+    private List<ReceiptTripAttachmentDTO> attachments;
+
+    /** 생성 일시 */
     private LocalDateTime createdAt;
 
-    /**
-     * 수정 일시
-     */
+    /** 수정 일시 */
     private LocalDateTime updatedAt;
 }

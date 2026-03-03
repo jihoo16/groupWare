@@ -18,7 +18,7 @@ import java.util.Optional;
 public interface ReceiptTripRepository extends JpaRepository<ReceiptTrip, Long> {
 
     /**
-     * 프로젝트별 총 출장비 조회 (4개 비용 항목 합계)
+     * 프로젝트별 총 출장비 조회 (삭제되지 않은 건만 합산)
      */
     @Query("SELECT COALESCE(SUM(" +
             "COALESCE(rt.transportationFee, 0) + " +
@@ -26,11 +26,11 @@ public interface ReceiptTripRepository extends JpaRepository<ReceiptTrip, Long> 
             "COALESCE(rt.mealFee, 0) + " +
             "COALESCE(rt.otherFee, 0)), 0) " +
             "FROM ReceiptTrip rt " +
-            "WHERE rt.projectIdx = :projectIdx")
+            "WHERE rt.projectIdx = :projectIdx AND rt.deleted = false")
     BigDecimal sumAmountByProjectIdx(@Param("projectIdx") Long projectIdx);
 
     /**
-     * 프로젝트별 문서번호 prefix 기준 출장비 조회
+     * 프로젝트별 문서번호 prefix 기준 출장비 조회 (삭제되지 않은 건만 합산)
      */
     @Query("SELECT COALESCE(SUM(" +
             "COALESCE(rt.transportationFee, 0) + " +
@@ -39,38 +39,41 @@ public interface ReceiptTripRepository extends JpaRepository<ReceiptTrip, Long> 
             "COALESCE(rt.otherFee, 0)), 0) " +
             "FROM ReceiptTrip rt " +
             "JOIN rt.approvalDocument ad " +
-            "WHERE rt.projectIdx = :projectIdx AND ad.documentNo LIKE CONCAT(:prefix, '%')")
-    BigDecimal sumAmountByProjectIdxAndDocPrefix(@Param("projectIdx") Long projectIdx, @Param("prefix") String prefix);
+            "WHERE rt.projectIdx = :projectIdx " +
+            "AND ad.documentNo LIKE CONCAT(:prefix, '%') " +
+            "AND rt.deleted = false")
+    BigDecimal sumAmountByProjectIdxAndDocPrefix(@Param("projectIdx") Long projectIdx,
+                                                  @Param("prefix") String prefix);
 
     /**
-     * 프로젝트별 출장 목록 조회 (문서번호 포함 - JOIN FETCH)
+     * 프로젝트별 출장 목록 조회 (삭제되지 않은 건, 출장일 내림차순)
      */
     @Query("SELECT rt FROM ReceiptTrip rt " +
             "LEFT JOIN FETCH rt.approvalDocument " +
-            "WHERE rt.projectIdx = :projectIdx " +
+            "WHERE rt.projectIdx = :projectIdx AND rt.deleted = false " +
             "ORDER BY rt.tripDate DESC")
     List<ReceiptTrip> findByProjectIdxOrderByTripDateDesc(@Param("projectIdx") Long projectIdx);
 
     /**
-     * 작성자별 출장 목록 조회 (문서번호 포함 - JOIN FETCH)
+     * 작성자별 출장 목록 조회 (삭제되지 않은 건, 출장일 내림차순)
      */
     @Query("SELECT rt FROM ReceiptTrip rt " +
             "LEFT JOIN FETCH rt.approvalDocument " +
-            "WHERE rt.authorIdx = :authorIdx " +
+            "WHERE rt.authorIdx = :authorIdx AND rt.deleted = false " +
             "ORDER BY rt.tripDate DESC")
     List<ReceiptTrip> findByAuthorIdxOrderByTripDateDesc(@Param("authorIdx") Long authorIdx);
 
     /**
-     * 상태별 출장 목록 조회 (문서번호 포함 - JOIN FETCH)
+     * 상태별 출장 목록 조회 (삭제되지 않은 건, 출장일 내림차순)
      */
     @Query("SELECT rt FROM ReceiptTrip rt " +
             "LEFT JOIN FETCH rt.approvalDocument " +
-            "WHERE rt.status = :status " +
+            "WHERE rt.status = :status AND rt.deleted = false " +
             "ORDER BY rt.tripDate DESC")
     List<ReceiptTrip> findByStatusOrderByTripDateDesc(@Param("status") String status);
 
     /**
-     * 참석자 정보를 포함한 출장 상세 조회 (문서번호 포함 - JOIN FETCH)
+     * 참석자 정보를 포함한 출장 상세 조회
      */
     @Query("SELECT DISTINCT rt FROM ReceiptTrip rt " +
             "LEFT JOIN FETCH rt.attendees " +
@@ -79,18 +82,19 @@ public interface ReceiptTripRepository extends JpaRepository<ReceiptTrip, Long> 
     Optional<ReceiptTrip> findByIdWithDetails(@Param("idx") Long idx);
 
     /**
-     * 전체 출장 목록 조회 (최신순, 문서번호 포함 - JOIN FETCH)
+     * 전체 출장 목록 조회 (삭제되지 않은 건, 출장일 내림차순)
      */
     @Query("SELECT rt FROM ReceiptTrip rt " +
             "LEFT JOIN FETCH rt.approvalDocument " +
+            "WHERE rt.deleted = false " +
             "ORDER BY rt.tripDate DESC")
     List<ReceiptTrip> findAllByOrderByTripDateDesc();
 
     /**
-     * ApprovalDocument idx로 출장 조회 (문서번호 포함 - JOIN FETCH)
+     * ApprovalDocument idx로 출장 조회 (삭제되지 않은 건)
      */
     @Query("SELECT rt FROM ReceiptTrip rt " +
             "LEFT JOIN FETCH rt.approvalDocument " +
-            "WHERE rt.documentIdx = :documentIdx")
+            "WHERE rt.documentIdx = :documentIdx AND rt.deleted = false")
     Optional<ReceiptTrip> findByDocumentIdx(@Param("documentIdx") Long documentIdx);
 }

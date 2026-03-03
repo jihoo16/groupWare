@@ -19,7 +19,7 @@ import java.util.List;
         @Index(name = "idx_receipt_trip_author", columnList = "author_idx"),
         @Index(name = "idx_receipt_trip_status", columnList = "status"),
         @Index(name = "idx_receipt_trip_date", columnList = "trip_date"),
-        @Index(name = "idx_receipt_trip_document_number", columnList = "document_number")
+        @Index(name = "idx_receipt_trip_document", columnList = "document_idx")
 })
 @Getter
 @Setter
@@ -70,6 +70,12 @@ public class ReceiptTrip {
     @Column(name = "payment_method", length = 50)
     private String paymentMethod;
 
+    @Column(name = "document_number", length = 50)
+    private String documentNumber;
+
+    @Column(name = "duration")
+    private Integer duration;
+
     @Column(name = "status", length = 20)
     private String status = "PENDING";
 
@@ -78,6 +84,15 @@ public class ReceiptTrip {
 
     @Column(name = "updated_at")
     private LocalDateTime updatedAt;
+
+    @Column(name = "deleted", nullable = false)
+    private Boolean deleted = false;
+
+    @Column(name = "deleted_at")
+    private LocalDateTime deletedAt;
+
+    @Column(name = "deleted_user_idx")
+    private Long deletedUserIdx;
 
     // 관계 매핑
     @ManyToOne(fetch = FetchType.LAZY)
