@@ -7,6 +7,9 @@ document.addEventListener('DOMContentLoaded', async function() {
     let selectedApprovers = [];
     let selectedReceiptFiles = [];
     let selectedDocumentFiles = [];
+    let existingReceiptAttachments = [];   // RECEIPT 타입 기존 파일
+    let existingDocumentAttachments = [];  // DOCUMENT 타입 기존 파일
+    let deletedAttachmentIds = [];         // 삭제 예정 첨부파일 ID 목록
     let selectedEmployee = null;
     let currentUser = null; // 현재 로그인한 사용자
     let projects = []; // 프로젝트 목록
@@ -1967,6 +1970,24 @@ document.addEventListener('DOMContentLoaded', async function() {
 
     function updateReceiptFileList() {
         receiptFileList.innerHTML = '';
+        // 기존 RECEIPT 파일 표시 (삭제 예정 제외)
+        existingReceiptAttachments.forEach(att => {
+            if (deletedAttachmentIds.includes(att.idx)) return;
+            const item = document.createElement('div');
+            item.className = 'file-item existing-file';
+            item.innerHTML = `
+                <i class="fas ${getFileIcon(att.originalFilename)}"></i>
+                <span>${att.originalFilename}</span>
+                <button class="btn-download-file" onclick="downloadExistingAttachment(${att.idx}, '${att.originalFilename.replace(/'/g, "\\'")}')" title="다운로드">
+                    <i class="fas fa-download"></i>
+                </button>
+                <button class="btn-remove-file" onclick="removeExistingAttachment(${att.idx})" title="삭제">
+                    <i class="fas fa-times"></i>
+                </button>
+            `;
+            receiptFileList.appendChild(item);
+        });
+        // 새로 선택한 영수증 파일 표시
         selectedReceiptFiles.forEach((file, index) => {
             const item = document.createElement('div');
             item.className = 'file-item';
@@ -1981,6 +2002,24 @@ document.addEventListener('DOMContentLoaded', async function() {
 
     function updateDocumentFileList() {
         documentFileList.innerHTML = '';
+        // 기존 DOCUMENT 파일 표시 (삭제 예정 제외)
+        existingDocumentAttachments.forEach(att => {
+            if (deletedAttachmentIds.includes(att.idx)) return;
+            const item = document.createElement('div');
+            item.className = 'file-item existing-file';
+            item.innerHTML = `
+                <i class="fas ${getFileIcon(att.originalFilename)}"></i>
+                <span>${att.originalFilename}</span>
+                <button class="btn-download-file" onclick="downloadExistingAttachment(${att.idx}, '${att.originalFilename.replace(/'/g, "\\'")}')" title="다운로드">
+                    <i class="fas fa-download"></i>
+                </button>
+                <button class="btn-remove-file" onclick="removeExistingAttachment(${att.idx})" title="삭제">
+                    <i class="fas fa-times"></i>
+                </button>
+            `;
+            documentFileList.appendChild(item);
+        });
+        // 새로 선택한 공식문서 파일 표시
         selectedDocumentFiles.forEach((file, index) => {
             const item = document.createElement('div');
             item.className = 'file-item';
@@ -2000,43 +2039,35 @@ document.addEventListener('DOMContentLoaded', async function() {
     window.removeDocumentFile = function(index) { selectedDocumentFiles.splice(index, 1); updateDocumentFileList(); };
 
     // 기존 첨부파일 다운로드
-    window.downloadAttachment = function(fileId, fileName) {
+    window.downloadExistingAttachment = function(fileId, fileName) {
         const link = document.createElement('a');
-        link.href = `/api/attachments/${fileId}/download`;
+        link.href = `/api/receipt-trips/attachments/${fileId}/download`;
         link.download = fileName;
         document.body.appendChild(link);
         link.click();
         document.body.removeChild(link);
     };
 
-    // 기존 첨부파일 표시 (상세보기 모드)
+    // 기존 첨부파일 삭제 예약 (저장/수정 시 실제 삭제)
+    window.removeExistingAttachment = function(attachmentIdx) {
+        if (!deletedAttachmentIds.includes(attachmentIdx)) {
+            deletedAttachmentIds.push(attachmentIdx);
+        }
+        updateReceiptFileList();
+        updateDocumentFileList();
+    };
+
+    // 기존 첨부파일 다운로드 (하위 호환)
+    window.downloadAttachment = window.downloadExistingAttachment;
+
+    // 기존 첨부파일 상태 변수에 로드 (상세보기/수정 모드)
     function displayExistingAttachments(attachments) {
         if (!attachments || attachments.length === 0) return;
-
-        // 파일 목록 초기화
-        receiptFileList.innerHTML = '';
-
-        attachments.forEach((attachment) => {
-            const item = document.createElement('div');
-            item.className = 'file-item existing-file';
-
-            let icon = 'fa-file';
-            if (attachment.fileName.match(/\.(jpg|jpeg|png|gif)$/i)) icon = 'fa-file-image';
-            else if (attachment.fileName.match(/\.(pdf)$/i)) icon = 'fa-file-pdf';
-            else if (attachment.fileName.match(/\.(doc|docx)$/i)) icon = 'fa-file-word';
-            else if (attachment.fileName.match(/\.(xls|xlsx)$/i)) icon = 'fa-file-excel';
-
-            const fileSize = attachment.fileSize ? `(${(attachment.fileSize / 1024).toFixed(1)} KB)` : '';
-
-            item.innerHTML = `
-                <i class="fas ${icon}"></i>
-                <span>${attachment.fileName} ${fileSize}</span>
-                <button class="btn-download-file" onclick="downloadAttachment(${attachment.idx}, '${attachment.fileName}')" title="다운로드">
-                    <i class="fas fa-download"></i>
-                </button>
-            `;
-            receiptFileList.appendChild(item);
-        });
+        existingReceiptAttachments   = attachments.filter(a => a.attachmentType !== 'DOCUMENT');
+        existingDocumentAttachments  = attachments.filter(a => a.attachmentType === 'DOCUMENT');
+        deletedAttachmentIds = [];
+        updateReceiptFileList();
+        updateDocumentFileList();
     }
 
     // 저장
@@ -2142,8 +2173,8 @@ document.addEventListener('DOMContentLoaded', async function() {
                 formData.append('data', JSON.stringify(saveData));
 
                 // 첨부파일 추가
-                selectedReceiptFiles.forEach(file => formData.append('files', file));
-                selectedDocumentFiles.forEach(file => formData.append('files', file));
+                selectedReceiptFiles.forEach(file  => formData.append('receiptFiles',  file));
+                selectedDocumentFiles.forEach(file => formData.append('documentFiles', file));
 
                 const response = await fetch('/api/receipt-trips', {
                     method: 'POST',
@@ -3138,10 +3169,21 @@ document.addEventListener('DOMContentLoaded', async function() {
             };
 
             try {
+                // 1. 삭제 예정 첨부파일 순차 삭제
+                for (const id of deletedAttachmentIds) {
+                    const delRes = await fetch(`/api/receipt-trips/attachments/${id}`, { method: 'DELETE' });
+                    if (!delRes.ok) console.warn(`첨부파일(ID: ${id}) 삭제 실패`);
+                }
+
+                // 2. FormData로 수정 요청 (신규 파일 포함)
+                const formData = new FormData();
+                formData.append('data', JSON.stringify(updateData));
+                selectedReceiptFiles.forEach(file  => formData.append('receiptFiles',  file));
+                selectedDocumentFiles.forEach(file => formData.append('documentFiles', file));
+
                 const response = await fetch(`/api/receipt-trips/${receiptTripId}`, {
                     method: 'PUT',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify(updateData)
+                    body: formData
                 });
 
                 if (response.ok) {

@@ -768,7 +768,7 @@ document.addEventListener('DOMContentLoaded', function() {
         const actionCell = document.createElement('td');
         actionCell.style.textAlign = 'center';
         actionCell.style.verticalAlign = 'middle';
-        const isReceiptType = ['RECEIPT_MEETING', '연구비증빙-회의록', 'RECEIPT_OVERTIME', '연구비증빙(야근식대)'].includes(doc.documentType);
+        const isReceiptType = ['RECEIPT_MEETING', '연구비증빙-회의록', 'RECEIPT_OVERTIME', '연구비증빙(야근식대)', 'BUSINESS_TRIP', '연구비증빙-출장'].includes(doc.documentType);
         actionCell.innerHTML = `
             ${isReceiptType ? `<button class="btn-icon attachment-modal-btn" title="첨부파일 관리" style="margin: 0 2px; display: inline-block;">
                 <i class="fas fa-paperclip"></i>
@@ -1211,12 +1211,17 @@ document.addEventListener('DOMContentLoaded', function() {
         }
 
         const isMeeting = ['RECEIPT_MEETING', '연구비증빙-회의록'].includes(doc.documentType);
+        const isTrip = ['BUSINESS_TRIP', '연구비증빙-출장'].includes(doc.documentType);
         const deleteBaseUrl = isMeeting
             ? `/api/receipt-meetings/attachments`
-            : `/api/receipt-overtimes/attachments`;
+            : isTrip
+                ? `/api/receipt-trips/attachments`
+                : `/api/receipt-overtimes/attachments`;
         const uploadUrl = isMeeting
             ? `/api/receipt-meetings/${doc.sourceDocumentId}/attachments`
-            : `/api/receipt-overtimes/${doc.sourceDocumentId}/attachments`;
+            : isTrip
+                ? `/api/receipt-trips/${doc.sourceDocumentId}/attachments`
+                : `/api/receipt-overtimes/${doc.sourceDocumentId}/attachments`;
 
         const saveBtn = document.getElementById('modalSaveBtn');
         saveBtn.disabled = true;
