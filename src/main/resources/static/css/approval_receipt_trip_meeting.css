@@ -1759,3 +1759,160 @@ div h2{
     background: white;
     padding: 0;
 }
+
+/* 프로젝트 선택 모달 - 항목 목록 */
+.modal-item-list {
+    display: flex;
+    flex-direction: column;
+    max-height: 500px;
+    overflow-y: auto;
+}
+
+.modal-item {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 12px;
+    margin-bottom: 8px;
+    border: 1px solid #e2e8f0;
+    border-radius: 8px;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.modal-item:last-child {
+    margin-bottom: 0;
+}
+
+.modal-item:hover {
+    border-color: #667eea;
+    background: #f5f7ff;
+}
+
+.modal-item.selected {
+    border-color: #667eea;
+    background: #e8f0fe;
+}
+
+.modal-item i {
+    font-size: 24px;
+    color: #667eea;
+}
+
+.modal-item-info {
+    flex: 1;
+}
+
+.modal-item-name {
+    font-size: 14px;
+    font-weight: 600;
+    color: #1e293b;
+    margin-bottom: 2px;
+}
+
+.modal-item-detail {
+    font-size: 12px;
+    color: #64748b;
+}
+
+.modal-item-detail > div {
+    margin-top: 4px;
+    font-size: 11px;
+    color: #64748b;
+}
+
+.modal-item-detail > div i {
+    font-size: 10px;
+    margin-right: 4px;
+    color: #94a3b8;
+}
+
+/* 검색 하이라이트 */
+.search-highlight {
+    background: #ffeb3b;
+    color: #333;
+    font-weight: 600;
+    padding: 2px 0;
+    border-radius: 2px;
+}
+
+/* 빈 상태 메시지 */
+.modal-empty-state {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 60px 20px;
+    text-align: center;
+    color: #94a3b8;
+}
+
+.modal-empty-state i {
+    font-size: 48px;
+    margin-bottom: 16px;
+    color: #cbd5e1;
+}
+
+.modal-empty-state p {
+    font-size: 14px;
+    margin: 0;
+    color: #64748b;
+}
+
+/* 필수 필드 미입력 강조 스타일 */
+.field-empty {
+    border: 2px solid #ef4444 !important;
+    background: #fef2f2 !important;
+    animation: shake 0.5s ease;
+}
+
+.field-empty:focus {
+    border-color: #dc2626 !important;
+    box-shadow: 0 0 0 3px rgba(239, 68, 68, 0.1) !important;
+}
+
+@keyframes shake {
+    0%, 100% { transform: translateX(0); }
+    25% { transform: translateX(-5px); }
+    75% { transform: translateX(5px); }
+}
+
+/* 툴팁 버튼 스타일 */
+.btn-with-tooltip {
+    position: relative;
+}
+
+.btn-with-tooltip .tooltip-text {
+    visibility: hidden;
+    opacity: 0;
+    position: absolute;
+    top: 110%;
+    left: 50%;
+    transform: translateX(-50%);
+    background: #333;
+    color: white;
+    padding: 12px 16px;
+    border-radius: 8px;
+    font-size: 13px;
+    line-height: 1.5;
+    white-space: nowrap;
+    z-index: 1000;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+    transition: opacity 0.3s, visibility 0.3s;
+    pointer-events: none;
+}
+
+.btn-with-tooltip .tooltip-text::after {
+    content: '';
+    position: absolute;
+    bottom: 100%;
+    left: 50%;
+    transform: translateX(-50%);
+    border: 8px solid transparent;
+    border-bottom-color: #333;
+}
+
+.btn-with-tooltip:hover .tooltip-text {
+    visibility: visible;
+    opacity: 1;
+}

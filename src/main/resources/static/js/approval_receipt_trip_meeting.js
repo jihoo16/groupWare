@@ -1682,12 +1682,153 @@ document.addEventListener('DOMContentLoaded', function() {
     }, 200);
 
     // ============================================
+    // 필수 필드 검증 (빨간색 + shake 애니메이션)
+    // ============================================
+    function validateRequiredFields() {
+        const requiredIds = ['common_project', 'common_location', 'common_date', 'common_purpose', 'common_trip_result', 'common_meeting_content'];
+        let allFilled = true;
+
+        requiredIds.forEach(id => {
+            const el = document.getElementById(id);
+            if (!el) return;
+            if (!el.value || !el.value.trim()) {
+                el.classList.add('field-empty');
+                allFilled = false;
+            } else {
+                el.classList.remove('field-empty');
+            }
+        });
+
+        // 출장 인원 검증 (DOM 기반)
+        const tripPersonArea = document.getElementById('tripPersonArea');
+        if (tripPersonArea) {
+            const hasTripPersons = !!tripPersonArea.querySelector('.trip-person-item');
+            if (!hasTripPersons) {
+                tripPersonArea.classList.add('field-empty');
+                allFilled = false;
+            } else {
+                tripPersonArea.classList.remove('field-empty');
+            }
+        }
+
+        // 회의 참석자 검증 (DOM 기반)
+        const attendeeArea = document.getElementById('attendeeArea');
+        if (attendeeArea) {
+            const hasAttendees = !!attendeeArea.querySelector('.trip-person-item');
+            if (!hasAttendees) {
+                attendeeArea.classList.add('field-empty');
+                allFilled = false;
+            } else {
+                attendeeArea.classList.remove('field-empty');
+            }
+        }
+
+        // 인쇄 버튼 표시/숨김
+        const printBtn = document.getElementById('printDocumentBtn');
+        if (printBtn) {
+            printBtn.style.display = allFilled ? 'inline-flex' : 'none';
+        }
+    }
+
+    // 필드 변경 시 재검증
+    ['common_project', 'common_location', 'common_date', 'common_purpose', 'common_trip_result', 'common_meeting_content'].forEach(id => {
+        const el = document.getElementById(id);
+        if (el) {
+            el.addEventListener('input', validateRequiredFields);
+            el.addEventListener('change', validateRequiredFields);
+        }
+    });
+
+    // 인원/참석자 추가·제거 후 재검증 (전역 함수 래핑)
+    const _origRemoveTripPerson = window.removeTripPersonInTemplate;
+    window.removeTripPersonInTemplate = function(...args) {
+        if (_origRemoveTripPerson) _origRemoveTripPerson(...args);
+        validateRequiredFields();
+    };
+    const _origRemoveAttendee = window.removeAttendeeInTemplate;
+    window.removeAttendeeInTemplate = function(...args) {
+        if (_origRemoveAttendee) _origRemoveAttendee(...args);
+        validateRequiredFields();
+    };
+    const _origAddPersonsToTrip = window.addPersonsToTrip;
+    window.addPersonsToTrip = function(...args) {
+        if (_origAddPersonsToTrip) _origAddPersonsToTrip(...args);
+        validateRequiredFields();
+    };
+    const _origAddAttendeesToMeeting = window.addAttendeesToMeeting;
+    window.addAttendeesToMeeting = function(...args) {
+        if (_origAddAttendeesToMeeting) _origAddAttendeesToMeeting(...args);
+        validateRequiredFields();
+    };
+
+    // 초기 필수 필드 강조 (신규 작성 시)
+    setTimeout(() => { validateRequiredFields(); }, 300);
+
+    // ============================================
     // 프로젝트 선택 모달
     // ============================================
     const projectModal = document.getElementById('projectModal');
     const projectSearchInput = document.getElementById('projectSearchInput');
     const projectList = document.getElementById('projectList');
     const commonProject = document.getElementById('common_project');
+
+    // 초성 검색 유틸리티
+    const CHO_HANGUL = ['ㄱ', 'ㄲ', 'ㄴ', 'ㄷ', 'ㄸ', 'ㄹ', 'ㅁ', 'ㅂ', 'ㅃ', 'ㅅ', 'ㅆ', 'ㅇ', 'ㅈ', 'ㅉ', 'ㅊ', 'ㅋ', 'ㅌ', 'ㅍ', 'ㅎ'];
+
+    function getChosung(str) {
+        let result = '';
+        for (let i = 0; i < str.length; i++) {
+            const code = str.charCodeAt(i) - 44032;
+            if (code > -1 && code < 11172) {
+                result += CHO_HANGUL[Math.floor(code / 588)];
+            } else {
+                result += str.charAt(i);
+            }
+        }
+        return result;
+    }
+
+    function matchesSearch(text, keyword) {
+        if (!text || !keyword) return true;
+        const lowerText = text.toLowerCase();
+        const lowerKeyword = keyword.toLowerCase();
+        if (lowerText.includes(lowerKeyword)) return true;
+        // 초성 검색
+        const chosung = getChosung(text);
+        return chosung.includes(keyword);
+    }
+
+    function highlightText(text, keyword) {
+        if (!keyword || !text) return text;
+        const lowerText = text.toLowerCase();
+        const lowerKeyword = keyword.toLowerCase();
+        if (lowerText.includes(lowerKeyword)) {
+            const regex = new RegExp(`(${keyword.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')})`, 'gi');
+            return text.replace(regex, '<mark class="search-highlight">$1</mark>');
+        }
+        const chosung = getChosung(text);
+        if (chosung.includes(keyword)) {
+            let result = '';
+            let keywordIndex = 0;
+            for (let i = 0; i < text.length; i++) {
+                const char = text[i];
+                const code = text.charCodeAt(i) - 44032;
+                if (code > -1 && code < 11172) {
+                    const cho = CHO_HANGUL[Math.floor(code / 588)];
+                    if (keywordIndex < keyword.length && cho === keyword[keywordIndex]) {
+                        result += `<mark class="search-highlight">${char}</mark>`;
+                        keywordIndex++;
+                    } else {
+                        result += char;
+                    }
+                } else {
+                    result += char;
+                }
+            }
+            return result;
+        }
+        return text;
+    }
 
     // ── 프로젝트 연도 필터 ──────────────────────────────────────
     let selectedYear = null;
@@ -1701,7 +1842,7 @@ document.addEventListener('DOMContentLoaded', function() {
         if (existing) existing.remove();
         const container = document.createElement('div');
         container.id = 'projectYearFilter';
-        container.style.cssText = 'display:flex; gap:6px; padding:8px 12px; border-bottom:1px solid #eee; flex-wrap:wrap; align-items:center;';
+        container.style.cssText = 'display:flex; gap:6px; padding:8px 0; border-bottom:1px solid #eee; flex-wrap:wrap; align-items:center;';
         // 전체 버튼
         const allBtn = document.createElement('button');
         allBtn.type = 'button';
@@ -1742,7 +1883,7 @@ document.addEventListener('DOMContentLoaded', function() {
             container.appendChild(btn);
         }
         if (projectList && projectList.parentNode) {
-            projectList.parentNode.insertBefore(container, projectList);
+            projectList.parentNode.insertBefore(container, projectList.parentNode.firstElementChild);
         }
     }
 
@@ -1759,10 +1900,9 @@ document.addEventListener('DOMContentLoaded', function() {
             });
         }
         if (currentSearchKeyword) {
-            const kw = currentSearchKeyword.toLowerCase();
             filtered = filtered.filter(proj =>
-                (proj.projectName || '').toLowerCase().includes(kw) ||
-                (proj.projectManagerName || proj.projectLeader || '').toLowerCase().includes(kw)
+                matchesSearch(proj.projectName || '', currentSearchKeyword) ||
+                matchesSearch(proj.projectManagerName || proj.projectLeader || '', currentSearchKeyword)
             );
         }
         renderProjectList(filtered, currentSearchKeyword);
@@ -1778,7 +1918,7 @@ document.addEventListener('DOMContentLoaded', function() {
         }
 
         projectList.innerHTML = projectsToShow.map(proj => {
-            const projectName = proj.projectName || '이름 없음';
+            const projectName = highlightText(proj.projectName || '이름 없음', keyword);
             const leader = proj.projectManagerName || proj.projectLeader || '-';
             const memberCount = proj.memberCount != null ? proj.memberCount : (proj.projectMembers ? proj.projectMembers.length : 0);
             const startDate = proj.startDate ? new Date(proj.startDate).toLocaleDateString('ko-KR') : (proj.projectStartDate ? new Date(proj.projectStartDate).toLocaleDateString('ko-KR') : '-');
@@ -1806,7 +1946,8 @@ document.addEventListener('DOMContentLoaded', function() {
         // 과제명 필드에 표시
         if (commonProject) {
             commonProject.value = proj.projectName;
-            commonProject.style.borderColor = ''; // 빨간색 제거
+            commonProject.style.borderColor = '';
+            commonProject.classList.remove('field-empty');
         }
 
         const selectedProjectIdx = document.getElementById('selectedProjectIdx');
@@ -1820,6 +1961,7 @@ document.addEventListener('DOMContentLoaded', function() {
         });
 
         closeProjectModal();
+        setTimeout(() => validateRequiredFields(), 100);
     };
 
     // 프로젝트 모달 열기
