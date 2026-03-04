@@ -1519,6 +1519,7 @@ document.addEventListener('DOMContentLoaded', async function() {
                     other: 0
                 });
 
+                const isLastDay = i === days - 1;
                 const row = document.createElement('tr');
                 row.innerHTML = `
                     <td style="text-align: center; background: white; font-weight: 500;">${dateStr}</td>
@@ -1528,7 +1529,9 @@ document.addEventListener('DOMContentLoaded', async function() {
                     </td>
                     <td style="text-align: center;">
                         <input type="text" inputmode="numeric" class="expense-input" data-index="${i}" data-type="lodging"
-                               placeholder="0" style="width: 100%; text-align: right; padding: 5px;">
+                               value="${isLastDay ? '0' : ''}" placeholder="0"
+                               ${isLastDay ? 'disabled' : ''}
+                               style="width: 100%; text-align: right; padding: 5px; ${isLastDay ? 'background: #f1f5f9; color: #94a3b8; cursor: not-allowed;' : ''}">
                     </td>
                     <td style="text-align: center;">
                         <input type="text" inputmode="numeric" class="expense-input" data-index="${i}" data-type="meal"
