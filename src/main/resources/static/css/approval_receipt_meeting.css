@@ -1588,6 +1588,18 @@ input.auto-datetime {
     color: #64748b;
 }
 
+.modal-item-detail > div {
+    margin-top: 4px;
+    font-size: 11px;
+    color: #64748b;
+}
+
+.modal-item-detail > div i {
+    font-size: 10px;
+    margin-right: 4px;
+    color: #94a3b8;
+}
+
 /* 검색 하이라이트 */
 .search-highlight {
     background: #ffeb3b;

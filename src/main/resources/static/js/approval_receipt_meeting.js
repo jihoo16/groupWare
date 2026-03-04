@@ -529,7 +529,7 @@ document.addEventListener('DOMContentLoaded', async function() {
             if (existing) existing.remove();
             const container = document.createElement('div');
             container.id = 'projectYearFilter';
-            container.style.cssText = 'display:flex; gap:6px; padding:8px 12px; border-bottom:1px solid #eee; flex-wrap:wrap; align-items:center;';
+            container.style.cssText = 'display:flex; gap:6px; padding:8px 0; border-bottom:1px solid #eee; flex-wrap:wrap; align-items:center;';
             // 전체 버튼
             const allBtn = document.createElement('button');
             allBtn.type = 'button';
@@ -570,7 +570,7 @@ document.addEventListener('DOMContentLoaded', async function() {
                 container.appendChild(btn);
             }
             if (projectList && projectList.parentNode) {
-                projectList.parentNode.insertBefore(container, projectList);
+                projectList.parentNode.insertBefore(container, projectList.parentNode.firstElementChild);
             }
         }
 
