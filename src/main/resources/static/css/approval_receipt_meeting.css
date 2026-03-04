@@ -638,7 +638,7 @@ div:focus {
     gap: 8px;
     overflow-y: auto;
     flex: 1;
-    padding-right: 4px;
+    padding: 3px 4px 3px 4px; /* 좌우 translateX, 상단 translateY 클리핑 방지 */
 }
 
 /* 스크롤바 스타일 */
@@ -1781,16 +1781,16 @@ input.auto-datetime {
     color: #667eea;
 }
 
-/* 추가된 참석자 목록 스타일 - 컴팩트 버전 */
+/* 추가된 참석자 목록 스타일 */
 .trip-person-item {
     display: flex;
     justify-content: space-between;
     align-items: center;
-    padding: 8px 12px;
+    padding: 14px 16px;
     background: #ffffff;
     border: 1px solid #e2e8f0;
     border-radius: 6px;
-    font-size: 12px;
+    font-size: 13px;
     transition: all 0.2s ease;
     cursor: pointer;
 }

@@ -302,7 +302,7 @@
     gap: 8px;
     overflow-y: auto;
     flex: 1;
-    padding-right: 4px;
+    padding: 3px 4px 3px 4px; /* 클리핑 방지 여백 */
 }
 
 .attendee-list::-webkit-scrollbar {
@@ -1737,11 +1737,11 @@ div h2{
     display: flex;
     justify-content: space-between;
     align-items: center;
-    padding: 8px 12px;
+    padding: 14px 16px;
     background: #ffffff;
     border: 1px solid #e2e8f0;
     border-radius: 6px;
-    font-size: 12px;
+    font-size: 13px;
     transition: all 0.2s ease;
     cursor: default;
 }
