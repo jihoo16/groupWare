@@ -1139,6 +1139,11 @@ div h2{
     color: #555;
 }
 
+/* 출장인원 행 높이 축소 */
+.trip-person-row td {
+    padding: 4px 6px !important;
+}
+
 .form-table input,
 .form-table select,
 .form-table textarea {
@@ -1360,6 +1365,18 @@ input.auto-datetime {
 .btn-secondary:hover {
     background: #e2e8f0;
 }
+
+.btn-success {
+    background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+    color: white;
+    border: none;
+}
+
+.btn-success:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 20px rgba(16, 185, 129, 0.4);
+}
+
 
 .btn-danger {
     background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);
@@ -1875,7 +1892,6 @@ input.auto-datetime {
     display: flex;
     align-items: center;
     gap: 4px;
-    pointer-events: none;
 }
 
 .trip-person-remove:hover {
@@ -2548,6 +2564,114 @@ input.auto-datetime {
     opacity: 1;
 }
 
+/* 출장인원 수 뱃지 */
+.attendee-count-badge {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 38px;
+    height: 22px;
+    padding: 2px 8px;
+    background: #667eea;
+    color: white;
+    border-radius: 11px;
+    font-size: 12px;
+    font-weight: 600;
+    margin-left: 6px;
+    text-align: center;
+}
+
+/* 직급별 경비 툴팁 */
+.expense-tooltip-wrapper {
+    position: relative;
+    display: inline-flex;
+    align-items: center;
+    margin-left: 6px;
+}
+
+.expense-tooltip-icon {
+    color: #94a3b8;
+    font-size: 13px;
+    cursor: help;
+    transition: color 0.2s ease;
+}
+
+.expense-tooltip-icon:hover {
+    color: #667eea;
+}
+
+.expense-tooltip-content {
+    position: absolute;
+    top: calc(100% + 8px);
+    left: 50%;
+    transform: translateX(-50%);
+    background: white;
+    border: 1px solid #e2e8f0;
+    border-radius: 8px;
+    padding: 12px 14px;
+    width: max-content;
+    min-width: 220px;
+    max-width: 360px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+    opacity: 0;
+    visibility: hidden;
+    transition: opacity 0.2s ease, visibility 0.2s ease;
+    z-index: 1000;
+    pointer-events: none;
+}
+
+.expense-tooltip-content::after {
+    content: '';
+    position: absolute;
+    bottom: 100%;
+    left: 50%;
+    transform: translateX(-50%);
+    border: 6px solid transparent;
+    border-bottom-color: white;
+}
+
+.expense-tooltip-wrapper:hover .expense-tooltip-content {
+    opacity: 1;
+    visibility: visible;
+}
+
+.expense-tooltip-header {
+    font-size: 12px;
+    font-weight: 700;
+    color: #334155;
+    margin-bottom: 8px;
+    padding-bottom: 6px;
+    border-bottom: 1px solid #e2e8f0;
+}
+
+.expense-tooltip-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 16px;
+    padding: 4px 0;
+    font-size: 12px;
+}
+
+.expense-tooltip-position {
+    color: #64748b;
+    font-weight: 500;
+    white-space: nowrap;
+    flex-shrink: 0;
+}
+
+.expense-tooltip-amount {
+    color: #667eea;
+    font-weight: 600;
+    white-space: nowrap;
+}
+
+.expense-tooltip-loading {
+    font-size: 12px;
+    color: #94a3b8;
+    text-align: center;
+}
+
 /* 필수 필드 미입력 강조 스타일 */
 .field-empty {
     border: 2px solid #ef4444 !important;
@@ -2580,7 +2704,9 @@ input.auto-datetime {
     .template-sidebar,
     .common-info-section,
     .attachment-section,
-    .document-preview-toggle {
+    .document-preview-toggle,
+    .pdf-loading-modal,
+    .modal {
         display: none !important;
     }
 
@@ -2614,9 +2740,7 @@ input.auto-datetime {
     }
 
     /* 각 페이지를 새로운 페이지로 강제 */
-    #documentFormContent > div:nth-child(1),
-    #documentFormContent > div:nth-child(2),
-    #documentFormContent > div:nth-child(3) {
+    #documentFormContent > div {
         display: block !important;
         width: 210mm !important;
         min-height: 297mm !important;
@@ -2636,8 +2760,8 @@ input.auto-datetime {
         overflow: hidden !important;
     }
 
-    /* 마지막 페이지 */
-    #documentFormContent > div:nth-child(3) {
+    /* 마지막 페이지 (복명서) */
+    #documentFormContent > div:last-child {
         page-break-after: auto !important;
         break-after: auto !important;
     }
@@ -2892,6 +3016,25 @@ input.auto-datetime {
     /* 회의 목적 입력 칸 */
     #documentFormContent.many-departments > div:nth-child(1) .auto-purpose {
         font-size: 13px !important;
+    }
+
+    /* 출장인원 행 높이 축소 (인쇄용) */
+    .trip-person-row td {
+        padding: 4px 6px !important;
+    }
+
+    /* 출장내용 및 결과 좌측정렬 */
+    .trip-auto-result {
+        text-align: left !important;
+        display: block !important;
+        white-space: pre-wrap !important;
+    }
+
+    /* 공식문서 header(th) 배경 연한 회색 강제 적용 */
+    .form-table th {
+        background: #f0f0f0 !important;
+        -webkit-print-color-adjust: exact !important;
+        print-color-adjust: exact !important;
     }
 }
 

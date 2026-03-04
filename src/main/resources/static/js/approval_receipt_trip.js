@@ -1,8 +1,6 @@
 // 연구비 증빙 - 출장 페이지 JavaScript
-console.log('🎯 approval_receipt_trip.js 파일 로드 시작');
 
 document.addEventListener('DOMContentLoaded', async function() {
-    console.log('🎯 DOMContentLoaded 이벤트 발생');
     // 전역 변수
     let selectedApprovers = [];
     let selectedReceiptFiles = [];
@@ -21,6 +19,8 @@ document.addEventListener('DOMContentLoaded', async function() {
     window.currentTripPersons = []; // 현재 추가된 출장 인원 목록 (전역)
     let duplicateTripPersonsInfo = {}; // 중복된 출장인원 정보 {personId: {tripDate, projectName}}
     let tripReporter = null; // 작성자 필드 (템플릿 로드 후 설정)
+    let projectCards = []; // 선택된 프로젝트의 카드 목록
+    let selectedCard = null; // 선택된 카드
     let guideMealTotal = 0; // 선택 인원 기준 식비 합계
     let guideDailyTotal = 0; // 선택 인원 기준 일비 합계
 
@@ -55,7 +55,6 @@ document.addEventListener('DOMContentLoaded', async function() {
                     position: user.empPositionName || user.empPosition || '직급 미지정',
                     dept: user.empDept || '부서 미지정'
                 }));
-                console.log('직원 데이터 로드 완료:', employees.length + '명');
             } else {
                 console.error('직원 데이터 로드 실패:', response.status);
                 showError('직원 데이터를 불러오는데 실패했습니다. 관리자에게 문의하세요.');
@@ -72,7 +71,6 @@ document.addEventListener('DOMContentLoaded', async function() {
             const response = await fetch('/api/auth/me');
             if (response.ok) {
                 currentUser = await response.json();
-                console.log('현재 사용자 정보:', currentUser);
 
                 // 공통정보입력의 작성자 필드 채우기
                 const tripReporter = document.getElementById('trip_reporter');
@@ -104,7 +102,6 @@ document.addEventListener('DOMContentLoaded', async function() {
                     const dateB = new Date(b.createdAt);
                     return dateB - dateA; // 최신순
                 });
-                console.log('프로젝트 목록 로드 성공:', projects.length + '건');
             } else {
                 console.error('프로젝트 목록 로드 실패');
             }
@@ -133,10 +130,6 @@ document.addEventListener('DOMContentLoaded', async function() {
                 projectMembers = project.projectMembers || [];
                 projectExpenseSettings = project.projectExpenseSettings || [];
                 currentProject = project; // 전체 프로젝트 정보 저장
-                console.log('프로젝트 팀원 로드 성공:', projectMembers.length + '명');
-                console.log('팀원 데이터:', projectMembers);
-                console.log('프로젝트 경비 설정 로드:', projectExpenseSettings);
-                console.log('프로젝트 정보:', currentProject);
             } else {
                 console.error('프로젝트 팀원 로드 실패 - Status:', response.status, 'Content-Type:', contentType);
                 if (!contentType || !contentType.includes('application/json')) {
@@ -155,6 +148,21 @@ document.addEventListener('DOMContentLoaded', async function() {
         }
     }
 
+    // 프로젝트 카드 목록 로드
+    async function loadProjectCards(projectIdx) {
+        try {
+            const response = await fetch(`/api/projects/${projectIdx}/cards`);
+            if (response.ok) {
+                projectCards = await response.json();
+            } else {
+                projectCards = [];
+            }
+        } catch (error) {
+            console.error('카드 목록 로드 오류:', error);
+            projectCards = [];
+        }
+    }
+
     // 기초정보관리에서 직급별 고정경비 로드 (출장비, 중식비)
     async function loadFixedExpenses() {
         try {
@@ -165,19 +173,17 @@ document.addEventListener('DOMContentLoaded', async function() {
                 fixedExpenses = {};
                 fixedMealExpenses = {};
                 data.forEach(item => {
-                    if (item.positionName && item.amount) {
-                        // 출장비
-                        if (item.expenseItemName === '출장비') {
-                            fixedExpenses[item.positionName] = item.amount;
-                        }
-                        // 중식비 (식비로 사용)
-                        else if (item.expenseItemName === '중식비') {
-                            fixedMealExpenses[item.positionName] = item.amount;
-                        }
+                    if (!item.amount) return;
+                    // positionCode(코드값)와 positionName(한글명) 둘 다 키로 저장
+                    // → 어느 쪽으로 조회해도 매칭되도록
+                    if (item.expenseItemName === '출장비') {
+                        if (item.positionCode) fixedExpenses[item.positionCode] = item.amount;
+                        if (item.positionName)  fixedExpenses[item.positionName]  = item.amount;
+                    } else if (item.expenseItemName === '중식비') {
+                        if (item.positionCode) fixedMealExpenses[item.positionCode] = item.amount;
+                        if (item.positionName)  fixedMealExpenses[item.positionName]  = item.amount;
                     }
                 });
-                console.log('직급별 고정 출장비 로드:', fixedExpenses);
-                console.log('직급별 고정 중식비 로드:', fixedMealExpenses);
             } else {
                 console.error('직급별 고정경비 로드 실패:', response.status);
             }
@@ -359,26 +365,45 @@ document.addEventListener('DOMContentLoaded', async function() {
         const proj = projects.find(p => p.idx == projectIdx);
         if (!proj) {
             console.error('프로젝트를 찾을 수 없습니다:', projectIdx);
-            console.log('전체 프로젝트 목록:', projects);
-            console.log('전체 프로젝트 수:', projects.length);
             showError(`프로젝트를 찾을 수 없습니다. (ID: ${projectIdx})<br>페이지를 새로고침해주세요.`);
             return;
         }
 
-        console.log('프로젝트 선택:', proj);
 
         // 프로젝트 변경 시 출장인원 초기화
         window.currentTripPersons = [];
-        console.log('프로젝트 변경으로 출장인원 초기화');
 
-        // 프로젝트 팀원 로드
-        await loadProjectMembers(projectIdx);
+        // 프로젝트 팀원 & 카드 로드
+        await Promise.all([
+            loadProjectMembers(projectIdx),
+            loadProjectCards(projectIdx)
+        ]);
+
+        // 카드 자동 선택 (첫 번째 카드)
+        const tripCardField = document.getElementById('trip_card');
+        const selectedCardIdxInput = document.getElementById('selectedCardIdx');
+        if (projectCards && projectCards.length > 0) {
+            selectedCard = projectCards[0];
+            if (tripCardField) {
+                tripCardField.value = projectCards[0].cardName;
+                tripCardField.placeholder = '클릭하여 카드 선택';
+            }
+            if (selectedCardIdxInput) selectedCardIdxInput.value = projectCards[0].idx;
+        } else {
+            selectedCard = null;
+            if (tripCardField) {
+                tripCardField.value = '';
+                tripCardField.placeholder = '등록된 카드가 없습니다';
+            }
+            if (selectedCardIdxInput) selectedCardIdxInput.value = '';
+        }
 
         // 프로젝트 입력 필드에 표시
         const tripProject = document.getElementById('trip_project');
         if (tripProject) {
             tripProject.value = proj.projectName;
-            tripProject.style.borderColor = ''; // 빨간색 제거
+            tripProject.style.borderColor = '';
+            tripProject.classList.remove('field-empty');
         }
         const selectedProjectIdx = document.getElementById('selectedProjectIdx');
         if (selectedProjectIdx) {
@@ -390,11 +415,14 @@ document.addEventListener('DOMContentLoaded', async function() {
             field.textContent = proj.projectName || '';
         });
 
-        // 기본 작성자 자동 설정
-        setDefaultReporter();
+        // 연구책임자명 자동 채우기
+        document.querySelectorAll('.trip-auto-pi').forEach(field => {
+            field.textContent = proj.projectManagerName || '';
+        });
 
-        // 프로젝트 변경 시 중복 검증 재실행
+        // 프로젝트 변경 시 중복 검증 먼저 실행 후 작성자 설정 (중복 인원 제외)
         await window.checkAllTripPersonsForDuplicates();
+        setDefaultReporter();
 
         // 날짜가 선택된 경우, 선택 가능한 인원이 있는지 확인
         const dateInput = document.getElementById('trip_date');
@@ -446,7 +474,13 @@ document.addEventListener('DOMContentLoaded', async function() {
             }
         }
 
+        // 직급별 경비 툴팁 갱신
+        updateExpenseTooltip();
+
         closeProjectModal();
+
+        // setDefaultReporter 내 setTimeout(100ms) 완료 후 검증
+        setTimeout(() => validateRequiredFields(), 300);
     };
 
     // ── 프로젝트 연도 필터 ──────────────────────────────────────
@@ -461,7 +495,7 @@ document.addEventListener('DOMContentLoaded', async function() {
         if (existing) existing.remove();
         const container = document.createElement('div');
         container.id = 'projectYearFilter';
-        container.style.cssText = 'display:flex; gap:6px; padding:8px 12px; border-bottom:1px solid #eee; flex-wrap:wrap; align-items:center;';
+        container.style.cssText = 'display:flex; gap:6px; padding:8px 0; border-bottom:1px solid #eee; flex-wrap:wrap; align-items:center;';
         // 전체 버튼
         const allBtn = document.createElement('button');
         allBtn.type = 'button';
@@ -502,7 +536,7 @@ document.addEventListener('DOMContentLoaded', async function() {
             container.appendChild(btn);
         }
         if (projectList && projectList.parentNode) {
-            projectList.parentNode.insertBefore(container, projectList);
+            projectList.parentNode.insertBefore(container, projectList.parentNode.firstElementChild);
         }
     }
 
@@ -545,7 +579,6 @@ document.addEventListener('DOMContentLoaded', async function() {
 
         // 프로젝트 목록이 비어있으면 다시 로드
         if (!projects || projects.length === 0) {
-            console.log('프로젝트 목록이 비어있어서 재로드합니다.');
             await loadProjects();
         }
 
@@ -575,6 +608,88 @@ document.addEventListener('DOMContentLoaded', async function() {
     }
 
     // ============================================
+    // 카드 선택 모달
+    // ============================================
+    const cardModal  = document.getElementById('cardModal');
+    const cardList   = document.getElementById('cardList');
+    const cardSearch = document.getElementById('cardSearch');
+
+    function renderCardList(list, keyword = '') {
+        if (!cardList) return;
+        cardList.innerHTML = '';
+
+        if (list.length === 0) {
+            cardList.innerHTML = `
+                <div class="modal-empty-state">
+                    <i class="fas fa-credit-card"></i>
+                    <p>${keyword ? '검색 결과가 없습니다' : '등록된 카드가 없습니다'}</p>
+                </div>`;
+            return;
+        }
+
+        list.forEach(card => {
+            const item = document.createElement('div');
+            item.className = 'modal-item';
+            if (selectedCard && selectedCard.idx === card.idx) {
+                item.classList.add('selected');
+            }
+            item.innerHTML = `
+                <i class="fas fa-credit-card"></i>
+                <div class="modal-item-info">
+                    <div class="modal-item-name">${card.cardName}</div>
+                    <div class="modal-item-detail">${card.cardNumber || '카드번호 없음'}</div>
+                </div>`;
+            item.addEventListener('click', function() {
+                selectedCard = card;
+                const tripCardField = document.getElementById('trip_card');
+                if (tripCardField) tripCardField.value = card.cardName;
+                const selectedCardIdxInput = document.getElementById('selectedCardIdx');
+                if (selectedCardIdxInput) selectedCardIdxInput.value = card.idx;
+                closeCardModal();
+                validateRequiredFields();
+            });
+            cardList.appendChild(item);
+        });
+    }
+
+    window.openCardModal = function() {
+        const projectIdxInput = document.getElementById('selectedProjectIdx');
+        if (!projectIdxInput || !projectIdxInput.value) {
+            showWarning('프로젝트를 먼저 선택해주세요.');
+            return;
+        }
+        if (cardModal) {
+            cardModal.classList.add('show');
+            renderCardList(projectCards);
+            if (cardSearch) cardSearch.value = '';
+        }
+    };
+
+    window.closeCardModal = function() {
+        if (cardModal) {
+            cardModal.classList.remove('show');
+            if (cardSearch) cardSearch.value = '';
+        }
+    };
+
+    if (cardSearch) {
+        cardSearch.addEventListener('input', function() {
+            const keyword = this.value.trim().toLowerCase();
+            const filtered = projectCards.filter(card =>
+                card.cardName.toLowerCase().includes(keyword) ||
+                (card.cardNumber || '').toLowerCase().includes(keyword)
+            );
+            renderCardList(filtered, keyword);
+        });
+    }
+
+    if (cardModal) {
+        cardModal.addEventListener('click', function(e) {
+            if (e.target === cardModal) closeCardModal();
+        });
+    }
+
+    // ============================================
     // 작성자 선택 모달
     // ============================================
     const reporterModal = document.getElementById('reporterModal');
@@ -582,9 +697,6 @@ document.addEventListener('DOMContentLoaded', async function() {
 
     // 작성자 선택 모달 열기
     window.openReporterModal = function() {
-        console.log('🚀 openReporterModal 호출됨');
-        console.log('reporterModal:', reporterModal);
-        console.log('projectMembers:', projectMembers);
 
         if (!reporterModal) {
             console.error('❌ reporterModal 요소를 찾을 수 없습니다.');
@@ -598,7 +710,6 @@ document.addEventListener('DOMContentLoaded', async function() {
             return;
         }
 
-        console.log('✅ 모달 열기 성공');
         reporterModal.classList.add('show');
         renderReporterList();
     };
@@ -676,23 +787,24 @@ document.addEventListener('DOMContentLoaded', async function() {
             field.textContent = reporterName || '';
         });
 
-        // 작성자를 출장인원에 자동 추가 (중복 체크)
+        // 작성자를 출장인원에 자동 추가 (아직 없는 경우)
         if (!window.currentTripPersons.some(p => String(p.id) === String(reporterId))) {
+            const posName = position || '직급 미지정';
             window.currentTripPersons.push({
                 id: String(reporterId),
                 name: reporterName,
-                position: position || '직급 미지정',
-                dept: dept || '부서 미지정'
+                position: posName,
+                dept: dept || '부서 미지정',
+                mealExpense: fixedMealExpenses[posName] || 0,
+                tripExpense: fixedExpenses[posName] || 0
             });
-            console.log('작성자 출장인원에 자동 추가:', reporterName);
-
-            // 출장인원 목록 UI 업데이트
-            if (typeof renderTripPersonListInTemplate === 'function') {
-                renderTripPersonListInTemplate();
-            }
         }
 
-        console.log('작성자 변경:', reporterName);
+        // 작성자 변경 → 뱃지·제거버튼 즉시 갱신 (이미 목록에 있어도 반드시 재렌더)
+        if (typeof renderTripPersonListInTemplate === 'function') {
+            renderTripPersonListInTemplate();
+        }
+
         closeReporterModal();
     };
 
@@ -707,7 +819,13 @@ document.addEventListener('DOMContentLoaded', async function() {
 
     // 페이지 로드 시 데이터 로드
     Promise.all([loadCurrentUser(), loadProjects(), loadEmployees(), loadFixedExpenses()]).then(() => {
-        console.log('초기 데이터 로드 완료');
+        // 고정경비 로드 완료 후 툴팁·출장인원 목록 재갱신
+        updateExpenseTooltip();
+        if (window.currentTripPersons && window.currentTripPersons.length > 0) {
+            if (typeof window.renderTripPersonListInTemplate === 'function') {
+                window.renderTripPersonListInTemplate();
+            }
+        }
     });
 
     // 직책 목록
@@ -747,6 +865,15 @@ document.addEventListener('DOMContentLoaded', async function() {
 
     // 기본 작성자 설정 (출장인원 중 가장 낮은 직급)
     function setDefaultReporter() {
+        // 이미 작성자가 설정되어 있고, 출장인원에 포함되어 있으며, 중복이 없는 경우 변경하지 않음
+        const existingReporter = document.getElementById('trip_reporter');
+        const existingReporterId = existingReporter ? existingReporter.getAttribute('data-reporter-id') : null;
+        if (existingReporterId &&
+            window.currentTripPersons.some(p => String(p.id) === String(existingReporterId)) &&
+            !duplicateTripPersonsInfo[existingReporterId]) {
+            return;
+        }
+
         // 프로젝트 팀원이 없으면 현재 사용자로 설정
         if (!projectMembers || projectMembers.length === 0) {
             const tripReporter = document.getElementById('trip_reporter');
@@ -767,19 +894,24 @@ document.addEventListener('DOMContentLoaded', async function() {
             id: member.employeeIdx,
             name: member.employeeName,
             position: member.employeePositionName || '직급 미지정',
+            positionCode: member.employeePositionCode,
             dept: member.employeeDeptName || '부서 미지정'
         }));
 
         const sortedPersons = sortByPosition([...allMembers]);
         sortedPersons.reverse(); // 높은 직급부터 정렬
 
+        // 중복 없는 인원만 후보로 사용, 전원 중복이면 전체에서 선택
+        const candidates = sortedPersons.filter(p => !duplicateTripPersonsInfo[p.id]);
+        const pool = candidates.length > 0 ? candidates : sortedPersons;
+
         let defaultReporter;
-        if (sortedPersons.length >= 3) {
+        if (pool.length >= 3) {
             // 3명 이상이면 높은 직급순 3번째 (인덱스 2)
-            defaultReporter = sortedPersons[2];
+            defaultReporter = pool[2];
         } else {
             // 3명 미만이면 가장 낮은 직급 (마지막 사람)
-            defaultReporter = sortedPersons[sortedPersons.length - 1];
+            defaultReporter = pool[pool.length - 1];
         }
 
         if (defaultReporter) {
@@ -794,20 +926,22 @@ document.addEventListener('DOMContentLoaded', async function() {
                 field.textContent = defaultReporter.name || '';
             });
 
-            // 작성자를 출장인원에 자동 추가 (중복 체크)
+            // 작성자를 출장인원에 자동 추가 (아직 없는 경우)
             if (!window.currentTripPersons.some(p => String(p.id) === String(defaultReporter.id))) {
+                // 경비 정보 계산 - 1순위: projectExpenseSettings, 2순위: fixedExpenses
+                const rptCode = defaultReporter.positionCode;
+                const rptName = defaultReporter.position;
+                const rptMealSetting  = projectExpenseSettings.find(s => s.positionCode === rptCode && s.expenseItemName === '중식비');
+                const rptTripSetting  = projectExpenseSettings.find(s => s.positionCode === rptCode && s.expenseItemName === '출장비');
+                defaultReporter.mealExpense = (rptMealSetting?.amount) || fixedMealExpenses[rptCode] || fixedMealExpenses[rptName] || 0;
+                defaultReporter.tripExpense  = (rptTripSetting?.amount) || fixedExpenses[rptCode]     || fixedExpenses[rptName]     || 0;
                 window.currentTripPersons.push(defaultReporter);
-                console.log('작성자 출장인원에 자동 추가:', defaultReporter.name);
-
-                // 출장인원 목록 UI 업데이트
-                setTimeout(() => {
-                    if (typeof window.renderTripPersonListInTemplate === 'function') {
-                        window.renderTripPersonListInTemplate();
-                    }
-                }, 100);
             }
 
-            console.log('기본 작성자 설정:', defaultReporter.name, '(직급:', defaultReporter.position + ')');
+            // 작성자 변경 후 인원 목록 갱신 (뱃지·제거버튼 즉시 반영)
+            if (typeof window.renderTripPersonListInTemplate === 'function') {
+                window.renderTripPersonListInTemplate();
+            }
         }
     }
 
@@ -899,7 +1033,6 @@ document.addEventListener('DOMContentLoaded', async function() {
 
     // 출장 자동 채우기 기능
     function setupTripAutoFill() {
-        console.log('setupTripAutoFill 시작');
 
         const tripProject = document.getElementById('trip_project');
         const tripLocation = document.getElementById('trip_location');
@@ -912,10 +1045,6 @@ document.addEventListener('DOMContentLoaded', async function() {
         const tripPersonList = document.getElementById('tripPersonList');
         const dailyExpenseBody = document.getElementById('dailyExpenseBody');
 
-        console.log('엘리먼트 확인:');
-        console.log('- tripDate:', tripDate);
-        console.log('- tripDuration:', tripDuration);
-        console.log('- dailyExpenseBody:', dailyExpenseBody);
 
         let tripPersons = [];
         let dailyExpenses = [];
@@ -927,12 +1056,10 @@ document.addEventListener('DOMContentLoaded', async function() {
 
         // 작성자 필드 클릭 시 모달 열기 이벤트 리스너 추가
         if (tripReporter) {
-            console.log('✅ trip_reporter 이벤트 리스너 등록');
             tripReporter.style.cursor = 'pointer';
 
             // 클릭 시 모달 열기
             tripReporter.addEventListener('click', function(e) {
-                console.log('🔥 trip_reporter 클릭됨!');
                 e.stopPropagation();
                 openReporterModal();
             });
@@ -959,7 +1086,6 @@ document.addEventListener('DOMContentLoaded', async function() {
                 if (projectIdx) {
                     // 프로젝트 팀원 로드 (currentProject도 함께 저장됨)
                     await loadProjectMembers(projectIdx);
-                    console.log('프로젝트 선택:', projectIdx, '팀원 수:', projectMembers.length);
 
                     // 과제명 자동 채우기 (currentProject에서 가져오기)
                     if (currentProject) {
@@ -986,23 +1112,42 @@ document.addEventListener('DOMContentLoaded', async function() {
             });
         }
 
-        // 출장 인원 테이블 업데이트
+        // 출장품의서 인원 테이블 동적 생성 (행 수 = 실제 인원, 최소 1행)
         function updateTripPersonDisplay() {
-            const personRows = document.querySelectorAll('.trip-person-row');
+            const headerRow = document.getElementById('tripPersonHeaderRow');
+            if (!headerRow) return;
 
-            // 모든 행의 첫 3개 셀 업데이트 (최대 5명까지 지원)
-            personRows.forEach((row, index) => {
-                const cells = row.querySelectorAll('td');
-                if (index < window.currentTripPersons.length) {
-                    cells[0].textContent = window.currentTripPersons[index].dept || '';
-                    cells[1].textContent = window.currentTripPersons[index].position || '';
-                    cells[2].textContent = window.currentTripPersons[index].name || '';
-                } else {
-                    cells[0].textContent = '';
-                    cells[1].textContent = '';
-                    cells[2].textContent = '';
-                }
+            const table = headerRow.closest('table');
+            if (!table) return;
+
+            // 기존 인원 행 모두 제거
+            table.querySelectorAll('.trip-person-row').forEach(r => r.remove());
+
+            const persons = window.currentTripPersons || [];
+            const count = Math.max(1, persons.length);
+
+            // rowspan 업데이트 (헤더 행 1 + 인원 행 N)
+            ['tripLocationCell', 'tripDateCell', 'tripPurposeCell'].forEach(id => {
+                const cell = document.getElementById(id);
+                if (cell) cell.rowSpan = count + 1;
             });
+
+            // 인원 행 삽입
+            let insertAfter = headerRow;
+            for (let i = 0; i < count; i++) {
+                const person = persons[i];
+                const dept = person ? (person.dept || '') : '';
+                const deptFontSize = dept.length >= 5 ? '9px' : '11px';
+                const tr = document.createElement('tr');
+                tr.className = 'trip-person-row';
+                tr.innerHTML = `
+                    <td style="text-align: center; padding: 4px 6px; font-size: ${deptFontSize};">${dept}</td>
+                    <td style="text-align: center; padding: 4px 6px;">${person ? (person.position || '') : ''}</td>
+                    <td style="text-align: center; padding: 4px 6px;">${person ? (person.name || '') : ''}</td>
+                `;
+                insertAfter.insertAdjacentElement('afterend', tr);
+                insertAfter = tr;
+            }
 
             // 출장내용 및 결과 업데이트
             updateTripResult();
@@ -1113,8 +1258,9 @@ document.addEventListener('DOMContentLoaded', async function() {
                     let expenseDisplay = '';
                     if (person.type !== 'external') {
                         const positionName = person.position;
-                        const mealExpense = fixedMealExpenses[positionName] || 0;
-                        const dailyExpense = fixedExpenses[positionName] || 0;
+                        // mealExpense/tripExpense가 0이면 falsy로 처리 → fixedExpenses 테이블 fallback
+                        const mealExpense  = person.mealExpense  || fixedMealExpenses[positionName] || 0;
+                        const dailyExpense = person.tripExpense  || fixedExpenses[positionName]     || 0;
                         expenseDisplay = `<span class="expense-info" style="color: #64748b; font-size: 0.85em;">
                             식비: ${mealExpense.toLocaleString()}원 | 일비: ${dailyExpense.toLocaleString()}원
                         </span>`;
@@ -1163,10 +1309,11 @@ document.addEventListener('DOMContentLoaded', async function() {
             }
 
             updateTripPersonDisplay();
+            updateTripPersonCount();
 
-            // 가이드 행 업데이트 (경비 테이블이 있을 때만)
+            // 가이드 행 + 소요경비내역 업데이트 (경비 테이블이 있을 때만)
             if (dailyExpenseBody) {
-                addExpenseGuideRow();
+                updateTotalExpenses();
             }
         }
 
@@ -1198,19 +1345,32 @@ document.addEventListener('DOMContentLoaded', async function() {
 
         // 템플릿 내에서 출장인원 제거
         window.removeTripPersonInTemplate = async function(personId) {
-            window.currentTripPersons = window.currentTripPersons.filter(p => p.id !== personId);
+            window.currentTripPersons = window.currentTripPersons.filter(p => String(p.id) !== String(personId));
             renderTripPersonListInTemplate();
 
-            // 작성자 자동 재설정
-            setDefaultReporter();
-
-            // 중복 검증 재실행
+            // 중복 검증 먼저 실행 후 작성자 재설정 (중복 인원 제외)
             await window.checkAllTripPersonsForDuplicates();
+            setDefaultReporter();
 
             // 모달이 열려있으면 모달도 업데이트
             const tripPersonModal = document.getElementById('tripPersonModal');
             if (tripPersonModal && tripPersonModal.classList.contains('show')) {
+                // 재렌더링 전 pending 선택 상태 저장 (selected 클래스만 토글된 인원)
+                const pendingIds = Array.from(
+                    document.querySelectorAll('#tripPersonList2 .employee-item.selected')
+                ).map(el => el.getAttribute('data-id'));
+
                 renderTripPersonList2();
+
+                // 재렌더링 후 pending 선택 상태 복원
+                if (pendingIds.length > 0) {
+                    document.querySelectorAll('#tripPersonList2 .employee-item').forEach(el => {
+                        if (pendingIds.includes(el.getAttribute('data-id'))) {
+                            el.classList.add('selected');
+                        }
+                    });
+                    updateTripPersonSelectionSummary();
+                }
             }
         };
 
@@ -1260,7 +1420,12 @@ document.addEventListener('DOMContentLoaded', async function() {
 
                     // 통합 중복 체크 (회의, 야근, 출장 모두 한 번에)
                     try {
-                        const response = await fetch(`/api/receipt-common/check-duplicate?date=${date}&attendeeIdx=${personId}&projectIdx=${projectIdx}`);
+                        // 수정 모드이면 자기 자신 문서 제외
+                        const editId = getUrlParameter('id');
+                        const excludeParams = editId
+                            ? `&excludeReceiptIdx=${editId}&excludeDocumentType=RCT`
+                            : '';
+                        const response = await fetch(`/api/receipt-common/check-duplicate?date=${date}&attendeeIdx=${personId}&projectIdx=${projectIdx}${excludeParams}`);
                         if (response.ok) {
                             const contentType = response.headers.get('content-type');
                             if (contentType && contentType.includes('application/json')) {
@@ -1302,6 +1467,8 @@ document.addEventListener('DOMContentLoaded', async function() {
 
             try {
                 await window.checkAllTripPersonsForDuplicates();
+                // 날짜 변경 후 작성자가 중복이면 다른 인원으로 재설정
+                setDefaultReporter();
             } catch (error) {
                 console.error('중복 검증 재실행 오류:', error);
             }
@@ -1329,13 +1496,8 @@ document.addEventListener('DOMContentLoaded', async function() {
 
         // 날짜별 비용 입력 행 생성 함수
         function generateDailyExpenseRows() {
-            console.log('generateDailyExpenseRows 호출됨');
-            console.log('tripDate:', tripDate);
-            console.log('tripDate.value:', tripDate ? tripDate.value : 'tripDate 없음');
-            console.log('dailyExpenseBody:', dailyExpenseBody);
 
             if (!tripDate || !tripDate.value || !dailyExpenseBody) {
-                console.log('early return - 조건 불충족');
                 return;
             }
 
@@ -1343,7 +1505,6 @@ document.addEventListener('DOMContentLoaded', async function() {
             const duration = parseInt(tripDuration ? tripDuration.value : '0');
             const days = duration + 1; // 당일(0박) = 1일, 1박 = 2일
 
-            console.log('날짜별 행 생성 시작 - days:', days);
 
             // 기존 데이터 초기화
             dailyExpenses = [];
@@ -1371,20 +1532,20 @@ document.addEventListener('DOMContentLoaded', async function() {
                 row.innerHTML = `
                     <td style="text-align: center; background: white; font-weight: 500;">${dateStr}</td>
                     <td style="text-align: center;">
-                        <input type="number" class="expense-input" data-index="${i}" data-type="transport"
-                               placeholder="0" style="width: 100%; text-align: right; padding: 5px;" min="0">
+                        <input type="text" inputmode="numeric" class="expense-input" data-index="${i}" data-type="transport"
+                               placeholder="0" style="width: 100%; text-align: right; padding: 5px;">
                     </td>
                     <td style="text-align: center;">
-                        <input type="number" class="expense-input" data-index="${i}" data-type="lodging"
-                               placeholder="0" style="width: 100%; text-align: right; padding: 5px;" min="0">
+                        <input type="text" inputmode="numeric" class="expense-input" data-index="${i}" data-type="lodging"
+                               placeholder="0" style="width: 100%; text-align: right; padding: 5px;">
                     </td>
                     <td style="text-align: center;">
-                        <input type="number" class="expense-input" data-index="${i}" data-type="meal"
-                               placeholder="0" style="width: 100%; text-align: right; padding: 5px;" min="0">
+                        <input type="text" inputmode="numeric" class="expense-input" data-index="${i}" data-type="meal"
+                               placeholder="0" style="width: 100%; text-align: right; padding: 5px;">
                     </td>
                     <td style="text-align: center;">
-                        <input type="number" class="expense-input" data-index="${i}" data-type="other"
-                               placeholder="0" style="width: 100%; text-align: right; padding: 5px;" min="0">
+                        <input type="text" inputmode="numeric" class="expense-input" data-index="${i}" data-type="other"
+                               placeholder="0" style="width: 100%; text-align: right; padding: 5px;">
                     </td>
                 `;
                 dailyExpenseBody.appendChild(row);
@@ -1398,10 +1559,23 @@ document.addEventListener('DOMContentLoaded', async function() {
                 input.addEventListener('input', function() {
                     const index = parseInt(this.getAttribute('data-index'));
                     const type = this.getAttribute('data-type');
-                    const value = parseInt(this.value) || 0;
 
-                    dailyExpenses[index][type] = value;
+                    // 숫자만 추출 (-, 소수점, 문자 제거)
+                    const raw = this.value.replace(/[^0-9]/g, '');
+                    const numValue = parseInt(raw) || 0;
+
+                    // 콤마 포맷 적용
+                    this.value = numValue > 0 ? numValue.toLocaleString('ko-KR') : '';
+
+                    dailyExpenses[index][type] = numValue;
                     updateTotalExpenses();
+                });
+
+                input.addEventListener('keydown', function(e) {
+                    // -, +, e, E, . 입력 차단
+                    if (['-', '+', 'e', 'E', '.'].includes(e.key)) {
+                        e.preventDefault();
+                    }
                 });
             });
 
@@ -1418,8 +1592,10 @@ document.addEventListener('DOMContentLoaded', async function() {
                 existingGuide.remove();
             }
 
-            // 선택된 출장인원이 없으면 가이드 행 추가하지 않음
+            // 선택된 출장인원이 없으면 기준 금액 리셋 후 종료
             if (!window.currentTripPersons || window.currentTripPersons.length === 0) {
+                guideMealTotal = 0;
+                guideDailyTotal = 0;
                 return;
             }
 
@@ -1427,21 +1603,21 @@ document.addEventListener('DOMContentLoaded', async function() {
             let totalMealGuide = 0;
             let totalDailyGuide = 0;
 
+            let internalPersonCount = 0;
+
             window.currentTripPersons.forEach(person => {
                 if (person.type !== 'external') { // 내부 인원만 계산
-                    const positionName = person.position;
+                    internalPersonCount++;
 
-                    // 중식비 (식비)
-                    if (fixedMealExpenses[positionName]) {
-                        totalMealGuide += fixedMealExpenses[positionName];
-                    }
-
-                    // 출장비 (일비)
-                    if (fixedExpenses[positionName]) {
-                        totalDailyGuide += fixedExpenses[positionName];
-                    }
+                    // 중식비(식비) / 출장비(일비) — 0이면 falsy로 처리하여 fixedExpenses fallback
+                    totalMealGuide  += person.mealExpense  || fixedMealExpenses[person.position] || 0;
+                    totalDailyGuide += person.tripExpense  || fixedExpenses[person.position]     || 0;
                 }
             });
+
+            // 교통비/숙박비: 내부 인원수 × 100,000원
+            const transportGuide = internalPersonCount * 100000;
+            const lodgingGuide = internalPersonCount * 100000;
 
             // 전역 변수에 저장 (검증용)
             guideMealTotal = totalMealGuide;
@@ -1454,17 +1630,17 @@ document.addEventListener('DOMContentLoaded', async function() {
             guideRow.style.borderTop = '2px solid #3b82f6';
             guideRow.innerHTML = `
                 <td style="text-align: center; font-weight: 600; color: #1e40af; padding: 10px;">
-                    선택 인원 기준 금액
+                    1일 기준 인원 금액
                     <span class="info-tooltip info-tooltip-top" style="margin-left: 8px;">
                         <i class="fas fa-info-circle" style="color: #64748b; cursor: help; font-size: 0.9em;"></i>
-                        <span class="tooltip-text">선택한 참석자 기준으로 산정된 기본 비용입니다</span>
+                        <span class="tooltip-text">선택한 출장인원 기준으로 산정된 1일당 최대 사용가능 비용입니다</span>
                     </span>
                 </td>
-                <td style="text-align: center; color: #64748b; font-weight: 500;">
-                    실비
+                <td style="text-align: center; color: #1e40af; font-weight: 600;">
+                    ${transportGuide.toLocaleString()}원
                 </td>
-                <td style="text-align: center; color: #64748b; font-weight: 500;">
-                    실비
+                <td style="text-align: center; color: #1e40af; font-weight: 600;">
+                    ${lodgingGuide.toLocaleString()}원
                 </td>
                 <td style="text-align: center; color: #1e40af; font-weight: 600;">
                     ${totalMealGuide.toLocaleString()}원
@@ -1480,6 +1656,24 @@ document.addEventListener('DOMContentLoaded', async function() {
 
         // 합계 업데이트 함수
         function updateTotalExpenses() {
+            // 가이드 행(기준금액) 재계산 — 인원 변경 시에도 최신 값 유지
+            addExpenseGuideRow();
+
+            // 각 input placeholder에 최대(가이드) 금액 표시
+            const internalCount = (window.currentTripPersons || []).filter(p => p.type !== 'external').length;
+            const totalDays = dailyExpenses.length;
+            document.querySelectorAll('.expense-input').forEach(input => {
+                const type = input.getAttribute('data-type');
+                const idx  = parseInt(input.getAttribute('data-index'));
+                const isLast = idx === totalDays - 1;
+                let max = 0;
+                if (type === 'transport')     max = internalCount * 100000;
+                else if (type === 'lodging')  max = isLast ? 0 : internalCount * 100000;
+                else if (type === 'meal')     max = guideMealTotal;
+                else if (type === 'other')    max = guideDailyTotal;
+                input.placeholder = max > 0 ? `최대 ${max.toLocaleString()}` : '0';
+            });
+
             let totalTransport = 0;
             let totalLodging = 0;
             let totalMeal = 0;
@@ -1531,55 +1725,38 @@ document.addEventListener('DOMContentLoaded', async function() {
             }
 
             // 품의서 소요경비 내역 (선택 인원 기준 금액)
+            let proposalTotal = 0; // 소요경비내역 합계 (출장신청금액으로 사용)
             const proposalExpenseBody = document.getElementById('proposalExpenseBody');
-            if (proposalExpenseBody && tripDate && tripDate.value) {
+            if (proposalExpenseBody) {
                 proposalExpenseBody.innerHTML = '';
 
-                // 일시 계산
-                const startDate = new Date(tripDate.value);
-                const duration = parseInt(tripDuration ? tripDuration.value : '0');
-                let dateDisplay = '';
+                // 내부 인원수 × 100,000원 (교통비/숙박비 가이드)
+                const internalCount = (window.currentTripPersons || []).filter(p => p.type !== 'external').length;
 
-                if (duration === 0) {
-                    // 당일치기: 날짜만 표시
-                    const year = startDate.getFullYear();
-                    const month = String(startDate.getMonth() + 1).padStart(2, '0');
-                    const day = String(startDate.getDate()).padStart(2, '0');
-                    dateDisplay = `${year}.${month}.${day}`;
-                } else {
-                    // 숙박: 시작일~종료일
-                    const endDate = new Date(startDate);
-                    endDate.setDate(endDate.getDate() + duration);
+                // 날짜별 행 생성 (dailyExpenses 배열 기준)
+                dailyExpenses.forEach((expense, index) => {
+                    const isLastDay = index === dailyExpenses.length - 1;
 
-                    const startYear = startDate.getFullYear();
-                    const startMonth = String(startDate.getMonth() + 1).padStart(2, '0');
-                    const startDay = String(startDate.getDate()).padStart(2, '0');
-                    const endYear = endDate.getFullYear();
-                    const endMonth = String(endDate.getMonth() + 1).padStart(2, '0');
-                    const endDay = String(endDate.getDate()).padStart(2, '0');
+                    // 교통비: 매일 인원수 × 100,000원, 숙박비: 마지막날 0원
+                    const dayTransport = internalCount * 100000;
+                    const dayLodging   = isLastDay ? 0 : internalCount * 100000;
+                    const dayMeal      = guideMealTotal;
+                    const dayDaily     = guideDailyTotal;
+                    const dayTotal     = dayTransport + dayLodging + dayMeal + dayDaily;
 
-                    dateDisplay = `${startYear}.${startMonth}.${startDay} ~ ${endYear}.${endMonth}.${endDay}`;
-                }
+                    proposalTotal += dayTotal;
 
-                // 선택 인원 기준 금액 합계
-                const total = guideMealTotal + guideDailyTotal;
-
-                const row = document.createElement('tr');
-                row.innerHTML = `
-                    <td style="text-align: center; padding: 10px;">${dateDisplay}</td>
-                    <td style="text-align: center; padding: 10px;">실비</td>
-                    <td style="text-align: center; padding: 10px;">실비</td>
-                    <td style="text-align: center; padding: 10px;">${guideMealTotal.toLocaleString()}</td>
-                    <td style="text-align: center; padding: 10px;">${guideDailyTotal.toLocaleString()}</td>
-                    <td style="text-align: center; padding: 10px;">${total.toLocaleString()}</td>
-                `;
-                proposalExpenseBody.appendChild(row);
-
-                // 합계 칸 업데이트
-                const grandTotalEl = document.querySelector('.trip-auto-grand-total');
-                if (grandTotalEl) {
-                    grandTotalEl.textContent = `실비 + ${total.toLocaleString()}원`;
-                }
+                    const row = document.createElement('tr');
+                    row.innerHTML = `
+                        <td style="text-align: center; padding: 10px;">${expense.date}</td>
+                        <td style="text-align: center; padding: 10px;">${dayTransport.toLocaleString()}</td>
+                        <td style="text-align: center; padding: 10px;">${dayLodging.toLocaleString()}</td>
+                        <td style="text-align: center; padding: 10px;">${dayMeal.toLocaleString()}</td>
+                        <td style="text-align: center; padding: 10px;">${dayDaily.toLocaleString()}</td>
+                        <td style="text-align: center; padding: 10px;">${dayTotal.toLocaleString()}</td>
+                    `;
+                    proposalExpenseBody.appendChild(row);
+                });
             }
 
             // 복명서 정산 세부내역에 날짜별 행 생성
@@ -1643,15 +1820,16 @@ document.addEventListener('DOMContentLoaded', async function() {
                 field.textContent = grandTotal.toLocaleString();
             });
             document.querySelectorAll('.trip-auto-request-amount').forEach(field => {
-                field.textContent = grandTotal.toLocaleString();
+                field.textContent = proposalTotal.toLocaleString(); // 소요경비내역 합계와 동일
+            });
+            document.querySelectorAll('.trip-auto-difference').forEach(field => {
+                field.textContent = (proposalTotal - grandTotal).toLocaleString(); // 차액 = 출장신청금액 - 실집행금액
             });
         }
 
         // 출장 기간 계산 함수
         function updateTripDateRange() {
-            console.log('updateTripDateRange 호출됨');
             if (!tripDate || !tripDate.value) {
-                console.log('updateTripDateRange early return');
                 return;
             }
 
@@ -1741,9 +1919,7 @@ document.addEventListener('DOMContentLoaded', async function() {
 
         // 출장기간 자동 채우기 및 작성일/복명일자 계산
         if (tripDate) {
-            console.log('tripDate 이벤트 리스너 추가');
             tripDate.addEventListener('change', async function() {
-                console.log('tripDate change 이벤트 발생');
                 updateTripDateRange();
                 // 날짜 변경 시 출장인원 중복 재검증
                 await window.recheckTripPersons();
@@ -1799,18 +1975,14 @@ document.addEventListener('DOMContentLoaded', async function() {
                 }
             });
         } else {
-            console.log('tripDate 엘리먼트를 찾을 수 없음!');
         }
 
         // 출장 기간 셀렉트 박스 이벤트
         if (tripDuration) {
-            console.log('tripDuration 이벤트 리스너 추가');
             tripDuration.addEventListener('change', function() {
-                console.log('tripDuration change 이벤트 발생');
                 updateTripDateRange();
             });
         } else {
-            console.log('tripDuration 엘리먼트를 찾을 수 없음!');
         }
 
         // 출장목적 자동 채우기
@@ -2186,7 +2358,7 @@ document.addEventListener('DOMContentLoaded', async function() {
 
             expenseInputs.forEach(input => {
                 const type = input.getAttribute('data-type');
-                const value = parseFloat(input.value) || 0;
+                const value = parseFloat(input.value.replace(/,/g, '')) || 0;
 
                 if (type === 'transport') totalTransportFee += value;
                 else if (type === 'lodging') totalAccommodationFee += value;
@@ -2231,12 +2403,12 @@ document.addEventListener('DOMContentLoaded', async function() {
                 otherFee: totalOtherFee || null,
                 purpose: document.getElementById('trip_purpose') ? document.getElementById('trip_purpose').value : null,
                 content: document.getElementById('trip_result') ? document.getElementById('trip_result').value : null,
+                cardIdx: selectedCard ? selectedCard.idx : null,
                 paymentMethod: '카드로 결제',
                 isProject: true,  // 프로젝트 관련 문서임을 명시
                 attendees: attendeeDTOs
             };
 
-            console.log('저장 데이터:', saveData);
 
             try {
                 // FormData 생성 (첨부파일 지원)
@@ -2256,7 +2428,6 @@ document.addEventListener('DOMContentLoaded', async function() {
                 if (response.ok) {
                     const result = await response.json();
                     showSuccess('출장 정보가 저장되었습니다.');
-                    console.log('저장 결과:', result);
                     // 저장 후 목록 페이지로 이동
                     popupAwareRedirect('/project/documents');
                 } else {
@@ -2307,7 +2478,6 @@ document.addEventListener('DOMContentLoaded', async function() {
             }
 
             try {
-                console.log('PDF 저장 시작 - 출장 페이지');
 
                 // 로딩 모달 표시
                 if (loadingModal) loadingModal.classList.add('active');
@@ -2333,7 +2503,6 @@ document.addEventListener('DOMContentLoaded', async function() {
                 updateProgress(20, '문서 구조 확인 중...');
 
                 allDivs = documentForm.querySelectorAll(':scope > div');
-                console.log('찾은 div 개수:', allDivs.length);
 
                 originalDisplays = Array.from(allDivs).map(div => div.style.display);
 
@@ -2387,7 +2556,6 @@ document.addEventListener('DOMContentLoaded', async function() {
                 updateProgress(40, '출장품의서 렌더링 중...');
 
                 // 1. 출장품의서 페이지
-                console.log('출장품의서 렌더링 중...');
                 const proposalDiv = allDivs[1];
 
                 if (!proposalDiv) {
@@ -2418,12 +2586,10 @@ document.addEventListener('DOMContentLoaded', async function() {
                 const yOffset = margin + (contentHeight - imgHeight) / 2;
 
                 pdf.addImage(proposalImgData, 'PNG', xOffset, yOffset, imgWidth, imgHeight);
-                console.log('출장품의서 페이지 완료');
 
                 updateProgress(70, '출장복명서 렌더링 중...');
 
                 // 2. 출장복명서 페이지
-                console.log('출장복명서 렌더링 중...');
                 const reportDiv = allDivs[2];
 
                 if (!reportDiv) {
@@ -2452,7 +2618,6 @@ document.addEventListener('DOMContentLoaded', async function() {
                 const reportYOffset = margin + (contentHeight - reportImgHeight) / 2;
 
                 pdf.addImage(reportImgData, 'PNG', reportXOffset, reportYOffset, reportImgWidth, reportImgHeight);
-                console.log('출장복명서 페이지 완료');
 
                 updateProgress(95, 'PDF 파일 생성 중...');
 
@@ -2470,7 +2635,6 @@ document.addEventListener('DOMContentLoaded', async function() {
                 }
                 const fileName = `${dateStr}_출장.pdf`;
 
-                console.log('PDF 저장:', fileName);
                 pdf.save(fileName);
 
                 updateProgress(100, '완료!');
@@ -2506,7 +2670,6 @@ document.addEventListener('DOMContentLoaded', async function() {
         if (tripPersonModal) {
             // 프로젝트 목록이 비어있으면 다시 로드
             if (!projects || projects.length === 0) {
-                console.log('프로젝트 목록이 비어있어서 재로드합니다.');
                 await loadProjects();
             }
 
@@ -2564,28 +2727,32 @@ document.addEventListener('DOMContentLoaded', async function() {
                 );
                 if (projectSetting && projectSetting.amount) {
                     tripExpense = projectSetting.amount;
-                    console.log(`[${member.employeeName}] 프로젝트 출장비 적용 (${positionCode}): ${tripExpense}원`);
                 } else {
-                    // 2순위: 기초정보관리의 직급별 고정경비 사용
-                    if (fixedExpenses[positionName]) {
-                        tripExpense = fixedExpenses[positionName];
+                    // 2순위: 기초정보관리의 직급별 고정경비 사용 (코드값 우선, 한글명 fallback)
+                    tripExpense = fixedExpenses[positionCode] || fixedExpenses[positionName] || 0;
+                    if (tripExpense) {
                         isDefault = true;
-                        console.log(`[${member.employeeName}] 기본 출장비 적용 (${positionName}): ${tripExpense}원`);
                     }
                 }
             } else {
-                // 프로젝트 경비 설정이 없는 경우 바로 기본 경비 사용
-                if (fixedExpenses[positionName]) {
-                    tripExpense = fixedExpenses[positionName];
+                // 프로젝트 경비 설정이 없는 경우 바로 기본 경비 사용 (코드값 우선, 한글명 fallback)
+                tripExpense = fixedExpenses[positionCode] || fixedExpenses[positionName] || 0;
+                if (tripExpense) {
                     isDefault = true;
-                    console.log(`[${member.employeeName}] 기본 출장비 적용 (${positionName}): ${tripExpense}원`);
                 }
             }
 
-            // 중식비(식비) 계산 - 기초정보관리에서만 가져옴
-            if (fixedMealExpenses[positionName]) {
-                mealExpense = fixedMealExpenses[positionName];
-                console.log(`[${member.employeeName}] 중식비 적용 (${positionName}): ${mealExpense}원`);
+            // 중식비(식비) - 1순위: projectExpenseSettings, 2순위: fixedMealExpenses
+            if (projectExpenseSettings && projectExpenseSettings.length > 0 && positionCode) {
+                const mealSetting = projectExpenseSettings.find(s =>
+                    s.positionCode === positionCode && s.expenseItemName === '중식비'
+                );
+                if (mealSetting && mealSetting.amount) {
+                    mealExpense = mealSetting.amount;
+                }
+            }
+            if (!mealExpense) {
+                mealExpense = fixedMealExpenses[positionCode] || fixedMealExpenses[positionName] || 0;
             }
 
             return {
@@ -2722,14 +2889,26 @@ document.addEventListener('DOMContentLoaded', async function() {
             // 이미 추가된 출장인원인지 확인
             const isAdded = window.currentTripPersons.some(p => String(p.id) === String(person.id));
 
+            // 작성자인지 확인 (작성자는 해제 불가)
+            const currentReporterId = tripReporter ? tripReporter.getAttribute('data-reporter-id') : null;
+            const isReporter = isAdded && currentReporterId && String(person.id) === String(currentReporterId) && person.type !== 'external';
+
             // 중복 검증 결과 확인 (회의/야근/출장)
             const isDuplicate = duplicateTripPersonsInfo[person.id];
 
-            // 중복된 사람이거나 이미 추가된 사람은 선택 불가
-            const isDisabled = isDuplicate || isAdded;
+            // 중복이거나 작성자인 경우만 disabled (이미 추가된 일반 인원은 클릭으로 해제 가능)
+            const isDisabled = isDuplicate || isReporter;
             const disabledClass = isDisabled ? ' disabled' : '';
             const addedClass = isAdded ? ' added' : '';
-            const onclickAttr = isDisabled ? '' : `onclick="selectTripPerson(${person.id})"`;
+
+            let onclickAttr = '';
+            if (!isDisabled) {
+                if (isAdded) {
+                    onclickAttr = `onclick="removeTripPersonInTemplate('${person.id}')"`;
+                } else {
+                    onclickAttr = `onclick="selectTripPerson(${person.id})"`;
+                }
+            }
 
             // 하이라이트 적용
             const highlightedName = highlightText(person.name, searchText);
@@ -2761,10 +2940,14 @@ document.addEventListener('DOMContentLoaded', async function() {
                                       style="color: #f59e0b; margin-left: 6px; cursor: help;"></i>`;
             }
 
-            // 이미 추가된 사람은 체크 아이콘, 그렇지 않으면 경비 표시
+            // 우측 아이콘/내용
             let rightContent = '';
-            if (isAdded) {
-                rightContent = `<div class="employee-check"><i class="fas fa-check-circle" style="color: #10b981; font-size: 20px;"></i></div>`;
+            if (isReporter) {
+                // 작성자: 잠금 아이콘 (해제 불가)
+                rightContent = `<div class="employee-check" title="작성자는 해제할 수 없습니다"><i class="fas fa-lock" style="color: #94a3b8; font-size: 18px;"></i></div>`;
+            } else if (isAdded) {
+                // 추가된 인원: 클릭하면 해제
+                rightContent = `<div class="employee-check" title="클릭하여 해제"><i class="fas fa-check-circle" style="color: #10b981; font-size: 20px;"></i></div>`;
             } else if (isDuplicate) {
                 rightContent = `<div class="employee-expense" style="color: #9ca3af;">${formattedExpense}</div>`;
             } else {
@@ -2870,19 +3053,19 @@ document.addEventListener('DOMContentLoaded', async function() {
                     id: String(personId),
                     name: person.name,
                     dept: person.dept,
-                    position: person.position
+                    position: person.position,
+                    mealExpense: person.mealExpense,
+                    tripExpense: person.tripExpense
                 });
             }
         });
 
-        console.log('추가할 출장인원:', personsToAdd);
 
         // setupTripAutoFill에서 정의된 함수 호출 (중복 검증 포함)
         if (window.addTripPersonsToTrip) {
             await window.addTripPersonsToTrip(personsToAdd);
         }
 
-        console.log('추가 후 currentTripPersons:', window.currentTripPersons);
 
         // 모달 목록 새로고침 (추가된 출장인원에 체크마크 표시 + 중복 경고)
         renderTripPersonList2();
@@ -2909,7 +3092,6 @@ document.addEventListener('DOMContentLoaded', async function() {
 
     async function loadReceiptTripData(id) {
         try {
-            console.log('연구비증빙 출장 데이터 로드 시작 - ID:', id);
             const data = await window.fetchWithErrorHandling(`/api/receipt-trips/${id}`);
 
             if (!data) {
@@ -2917,7 +3099,6 @@ document.addEventListener('DOMContentLoaded', async function() {
                 return;
             }
 
-            console.log('로드된 데이터:', data);
 
             // 폼에 데이터 채우기
             populateForm(data);
@@ -2947,7 +3128,6 @@ document.addEventListener('DOMContentLoaded', async function() {
     }
 
     function populateForm(data) {
-        console.log('폼 데이터 채우기 시작');
 
         // 프로젝트 선택
         const projectSelect = document.getElementById('trip_project');
@@ -2988,6 +3168,23 @@ document.addEventListener('DOMContentLoaded', async function() {
             tripReporter.value = data.authorUserName;
         }
 
+        // 사용 카드 복원
+        if (data.cardIdx) {
+            const tripCardField = document.getElementById('trip_card');
+            const selectedCardIdxInput = document.getElementById('selectedCardIdx');
+            if (selectedCardIdxInput) selectedCardIdxInput.value = data.cardIdx;
+            if (tripCardField) {
+                if (data.cardName) {
+                    tripCardField.value = data.cardName;
+                } else {
+                    // 카드 목록에서 이름 조회
+                    const found = projectCards.find(c => c.idx === data.cardIdx);
+                    tripCardField.value = found ? found.cardName : `카드 #${data.cardIdx}`;
+                }
+            }
+            selectedCard = { idx: data.cardIdx, cardName: data.cardName || '' };
+        }
+
         // 출장 내용 및 결과
         const tripResult = document.getElementById('trip_result');
         if (tripResult && data.content) {
@@ -3020,7 +3217,6 @@ document.addEventListener('DOMContentLoaded', async function() {
                 };
             });
 
-            console.log('로드된 출장인원:', window.currentTripPersons);
         }
 
         // 모든 input 이벤트 트리거하여 자동 채우기 활성화
@@ -3103,30 +3299,147 @@ document.addEventListener('DOMContentLoaded', async function() {
                 `).join('');
 
                 // 출장인원 테이블 업데이트 (공식 문서의 출장품의서)
-                const personRows = document.querySelectorAll('.trip-person-row');
-                personRows.forEach((row, index) => {
-                    const cells = row.querySelectorAll('td');
-                    if (index < window.currentTripPersons.length) {
-                        cells[0].textContent = window.currentTripPersons[index].dept || '';
-                        cells[1].textContent = window.currentTripPersons[index].position || '';
-                        cells[2].textContent = window.currentTripPersons[index].name || '';
-                    } else {
-                        cells[0].textContent = '';
-                        cells[1].textContent = '';
-                        cells[2].textContent = '';
-                    }
-                });
+                updateTripPersonDisplay();
             }
 
-            console.log('폼 데이터 채우기 완료');
         }, 200);
 
         // 첨부파일 로드 및 표시
         if (data.attachments && data.attachments.length > 0) {
-            console.log('[populateForm] 첨부파일 로드:', data.attachments.length, '개');
             displayExistingAttachments(data.attachments);
         }
     }
+
+    // ============================================
+    // 직급별 경비 기준 툴팁 업데이트
+    // ============================================
+    function updateExpenseTooltip() {
+        const content = document.getElementById('expenseTooltipContent');
+        if (!content) return;
+
+        if (!projectMembers || projectMembers.length === 0) {
+            content.innerHTML = '<div class="expense-tooltip-loading" style="line-height:1.4;">프로젝트 선택 시<br>직급별 출장비 정보를<br>확인하실 수 있습니다</div>';
+            return;
+        }
+
+        // 프로젝트 팀원의 고유 직급 목록
+        const seen = new Set();
+        const positions = projectMembers
+            .map(m => ({ name: m.employeePositionName || '직급 미지정', code: m.employeePositionCode }))
+            .filter(p => { if (seen.has(p.name)) return false; seen.add(p.name); return true; });
+
+        const rows = positions.map(pos => {
+            let meal = 0;
+            if (projectExpenseSettings && projectExpenseSettings.length > 0 && pos.code) {
+                const ms = projectExpenseSettings.find(s => s.positionCode === pos.code && s.expenseItemName === '중식비');
+                if (ms && ms.amount) meal = ms.amount;
+            }
+            if (!meal) meal = fixedMealExpenses[pos.code] || fixedMealExpenses[pos.name] || 0;
+
+            let daily = 0;
+            if (projectExpenseSettings && projectExpenseSettings.length > 0 && pos.code) {
+                const ds = projectExpenseSettings.find(s => s.positionCode === pos.code && s.expenseItemName === '출장비');
+                if (ds && ds.amount) daily = ds.amount;
+            }
+            if (!daily) daily = fixedExpenses[pos.code] || fixedExpenses[pos.name] || 0;
+
+            return `<div class="expense-tooltip-item">
+                <span class="expense-tooltip-position">${pos.name}</span>
+                <span class="expense-tooltip-amount">식비 ${meal.toLocaleString()}원 / 일비 ${daily.toLocaleString()}원</span>
+            </div>`;
+        }).join('');
+
+        content.innerHTML = `
+            <div class="expense-tooltip-header">직급별 경비 기준 (1일)</div>
+            ${rows || '<div class="expense-tooltip-loading">경비 기준 정보가 없습니다</div>'}
+        `;
+    }
+
+    function updateTripPersonCount() {
+        const badge = document.getElementById('tripPersonCountBadge');
+        if (!badge) return;
+        const count = (window.currentTripPersons || []).length;
+        if (count > 0) {
+            badge.textContent = `${count}명`;
+            badge.style.display = 'inline-block';
+        } else {
+            badge.style.display = 'none';
+        }
+    }
+
+    // ============================================
+    // 필수 필드 검증 (빨간색 + shake 애니메이션)
+    // ============================================
+    function validateRequiredFields() {
+        const requiredIds = ['trip_project', 'trip_location', 'trip_date', 'trip_purpose', 'trip_result'];
+        let allFilled = true;
+
+        requiredIds.forEach(id => {
+            const el = document.getElementById(id);
+            if (!el) return;
+            if (!el.value || !el.value.trim()) {
+                el.classList.add('field-empty');
+                allFilled = false;
+            } else {
+                el.classList.remove('field-empty');
+            }
+        });
+
+        // 출장 인원 영역 검증
+        const tripPersonArea = document.getElementById('tripPersonArea');
+        const persons = window.currentTripPersons || [];
+        if (tripPersonArea) {
+            if (persons.length === 0) {
+                tripPersonArea.classList.add('field-empty');
+                allFilled = false;
+            } else {
+                tripPersonArea.classList.remove('field-empty');
+            }
+        }
+
+        // 인쇄 버튼 표시/숨김
+        const printBtn = document.getElementById('printDocumentBtn');
+        if (printBtn) {
+            printBtn.style.display = allFilled ? 'inline-flex' : 'none';
+        }
+    }
+
+    // 공식문서 인쇄
+    window.printTripDocument = function() {
+        // 공식문서 미리보기가 닫혀있으면 열기
+        const wrapper = document.querySelector('.document-form-wrapper');
+        if (wrapper && wrapper.classList.contains('collapsed')) {
+            wrapper.classList.remove('collapsed');
+            const toggle = document.getElementById('documentFormToggle');
+            if (toggle) toggle.classList.add('active');
+        }
+
+        // 잠시 대기 후 인쇄 (DOM 렌더링 완료 후)
+        setTimeout(function() {
+            window.print();
+        }, 300);
+    };
+
+    // 필드 변경 시 재검증
+    ['trip_project', 'trip_location', 'trip_date', 'trip_purpose', 'trip_result'].forEach(id => {
+        const el = document.getElementById(id);
+        if (el) {
+            el.addEventListener('input', validateRequiredFields);
+            el.addEventListener('change', validateRequiredFields);
+        }
+    });
+
+    // 출장 인원 추가/제거 시 재검증 (전역 함수 래핑)
+    const _origAddTripPersons = window.addTripPersonsToTrip;
+    window.addTripPersonsToTrip = function(...args) {
+        if (_origAddTripPersons) _origAddTripPersons(...args);
+        validateRequiredFields();
+    };
+    const _origRemoveTripPerson = window.removeTripPersonInTemplate;
+    window.removeTripPersonInTemplate = function(...args) {
+        if (_origRemoveTripPerson) _origRemoveTripPerson(...args);
+        validateRequiredFields();
+    };
 
     // 오늘 날짜 자동 설정 (상세보기 모드가 아닐 때만)
     const receiptTripId = getUrlParameter('id');
@@ -3154,10 +3467,12 @@ document.addEventListener('DOMContentLoaded', async function() {
                     }
                 });
             }
+
+            // 초기 필수 필드 강조
+            validateRequiredFields();
         }, 200);
     } else {
         // URL에 ID 파라미터가 있으면 데이터 로드
-        console.log('상세보기 모드 - ID:', receiptTripId);
         window.showPageLoadingOverlay();
         setTimeout(async () => {
             await loadReceiptTripData(receiptTripId);
@@ -3217,7 +3532,7 @@ document.addEventListener('DOMContentLoaded', async function() {
 
             expenseInputs.forEach(input => {
                 const type = input.getAttribute('data-type');
-                const value = parseFloat(input.value) || 0;
+                const value = parseFloat(input.value.replace(/,/g, '')) || 0;
 
                 if (type === 'transport') totalTransportFee += value;
                 else if (type === 'lodging') totalAccommodationFee += value;
@@ -3235,6 +3550,7 @@ document.addEventListener('DOMContentLoaded', async function() {
                 otherFee: totalOtherFee || null,
                 purpose: document.getElementById('trip_purpose')?.value || null,
                 content: document.getElementById('trip_result')?.value || null,
+                cardIdx: selectedCard ? selectedCard.idx : null,
                 paymentMethod: '카드로 결제',
                 attendees: attendeeDTOs
             };
