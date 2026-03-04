@@ -71,17 +71,6 @@ document.addEventListener('DOMContentLoaded', async function() {
             const response = await fetch('/api/auth/me');
             if (response.ok) {
                 currentUser = await response.json();
-
-                // 공통정보입력의 작성자 필드 채우기
-                const tripReporter = document.getElementById('trip_reporter');
-                if (tripReporter) {
-                    tripReporter.value = currentUser.empName || '';
-                }
-
-                // 출장복명서의 복명자 필드 채우기
-                document.querySelectorAll('.trip-auto-reporter').forEach(field => {
-                    field.textContent = currentUser.empName || '';
-                });
             } else {
                 console.error('사용자 정보 로드 실패');
             }
@@ -806,6 +795,7 @@ document.addEventListener('DOMContentLoaded', async function() {
         }
 
         closeReporterModal();
+        validateRequiredFields();
     };
 
     // 모달 외부 클릭 시 닫기
@@ -3371,7 +3361,7 @@ document.addEventListener('DOMContentLoaded', async function() {
     // 필수 필드 검증 (빨간색 + shake 애니메이션)
     // ============================================
     function validateRequiredFields() {
-        const requiredIds = ['trip_project', 'trip_location', 'trip_date', 'trip_purpose', 'trip_result'];
+        const requiredIds = ['trip_project', 'trip_reporter', 'trip_card', 'trip_location', 'trip_date', 'trip_purpose', 'trip_result'];
         let allFilled = true;
 
         requiredIds.forEach(id => {
