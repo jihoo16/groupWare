@@ -23,6 +23,7 @@ document.addEventListener('DOMContentLoaded', async function() {
     let selectedCard = null; // 선택된 카드
     let guideMealTotal = 0; // 선택 인원 기준 식비 합계
     let guideDailyTotal = 0; // 선택 인원 기준 일비 합계
+    let hasExpenseOverflow = false; // 기준 금액 초과 여부 (저장 차단용)
 
     // DOM 요소
     const templateTreeHeaders = document.querySelectorAll('.tree-node-header[data-template]');
@@ -1684,35 +1685,57 @@ document.addEventListener('DOMContentLoaded', async function() {
             document.getElementById('totalMeal').textContent = totalMeal.toLocaleString();
             document.getElementById('totalOther').textContent = totalOther.toLocaleString();
 
-            // 기준 금액 초과 검증 및 경고 표시
-            const mealInputs = document.querySelectorAll('.expense-input[data-type="meal"]');
-            const otherInputs = document.querySelectorAll('.expense-input[data-type="other"]');
+            // 기준 금액 초과 검증 (날짜·항목별 셀 단위 검증)
+            const internalCountForVal = (window.currentTripPersons || []).filter(p => p.type !== 'external').length;
+            const totalDaysForVal = dailyExpenses.length;
+            hasExpenseOverflow = false;
 
-            // 식비 검증
-            if (guideMealTotal > 0 && totalMeal > guideMealTotal) {
-                mealInputs.forEach(input => {
+            document.querySelectorAll('.expense-input').forEach(input => {
+                const type  = input.getAttribute('data-type');
+                const idx   = parseInt(input.getAttribute('data-index'));
+                const isLast = idx === totalDaysForVal - 1;
+                const value  = parseInt(input.value.replace(/[^0-9]/g, '')) || 0;
+
+                let limit = 0;
+                if (type === 'transport')    limit = internalCountForVal * 100000;
+                else if (type === 'lodging') limit = internalCountForVal * 100000;
+                else if (type === 'meal')    limit = guideMealTotal;
+                else if (type === 'other')   limit = guideDailyTotal;
+
+                // 숙박비 마지막 날: 인원이 있으면 0원 초과 자체가 오류 (퇴실일 숙박비는 0이어야 함)
+                const isLastDayLodging = type === 'lodging' && isLast && internalCountForVal > 0;
+                const isOverflow = isLastDayLodging ? value > 0 : (limit > 0 && value > limit);
+
+                const td = input.closest('td');
+                let errorEl = td ? td.querySelector('.expense-over-msg') : null;
+
+                if (isOverflow) {
                     input.style.border = '2px solid #ef4444';
                     input.style.backgroundColor = '#fee2e2';
-                });
-            } else {
-                mealInputs.forEach(input => {
+                    if (td && !errorEl) {
+                        errorEl = document.createElement('div');
+                        errorEl.className = 'expense-over-msg';
+                        errorEl.style.cssText = 'color: #ef4444; font-size: 11px; margin-top: 2px; text-align: center;';
+                        errorEl.textContent = '기준 금액을 초과하였습니다.';
+                        td.appendChild(errorEl);
+                    }
+                    hasExpenseOverflow = true;
+                } else {
                     input.style.border = '';
                     input.style.backgroundColor = '';
-                });
+                    if (errorEl) errorEl.remove();
+                }
+            });
+
+            // 저장 버튼 활성/비활성
+            if (submitBtn) {
+                submitBtn.disabled = hasExpenseOverflow;
+                submitBtn.style.opacity = hasExpenseOverflow ? '0.5' : '';
+                submitBtn.style.cursor  = hasExpenseOverflow ? 'not-allowed' : '';
             }
 
-            // 일비 검증
-            if (guideDailyTotal > 0 && totalOther > guideDailyTotal) {
-                otherInputs.forEach(input => {
-                    input.style.border = '2px solid #ef4444';
-                    input.style.backgroundColor = '#fee2e2';
-                });
-            } else {
-                otherInputs.forEach(input => {
-                    input.style.border = '';
-                    input.style.backgroundColor = '';
-                });
-            }
+            // 인쇄 버튼 갱신 (비용 입력 여부 반영)
+            validateRequiredFields();
 
             // 품의서 소요경비 내역 (선택 인원 기준 금액)
             let proposalTotal = 0; // 소요경비내역 합계 (출장신청금액으로 사용)
@@ -2356,22 +2379,16 @@ document.addEventListener('DOMContentLoaded', async function() {
                 else if (type === 'other') totalOtherFee += value;
             });
 
-            // 비용 기준 금액 초과 검증
-            const warnings = [];
-            if (guideMealTotal > 0 && totalMealFee > guideMealTotal) {
-                warnings.push(`식비: ${totalMealFee.toLocaleString()}원 (기준: ${guideMealTotal.toLocaleString()}원)`);
-            }
-            if (guideDailyTotal > 0 && totalOtherFee > guideDailyTotal) {
-                warnings.push(`일비: ${totalOtherFee.toLocaleString()}원 (기준: ${guideDailyTotal.toLocaleString()}원)`);
+            // 날짜별 비용 미입력 검증
+            const totalAllFee = totalTransportFee + totalAccommodationFee + totalMealFee + totalOtherFee;
+            if (totalAllFee === 0) {
+                showWarning('금액을 입력해주세요.');
+                return;
             }
 
-            if (warnings.length > 0) {
-                await Swal.fire({
-                    icon: 'warning',
-                    title: '비용 기준 초과',
-                    html: `선택한 참석자 기준 금액을 초과했습니다.<br><br>${warnings.join('<br>')}<br><br>참석인원을 추가하거나 비용을 조정해주세요.`,
-                    confirmButtonText: '확인'
-                });
+            // 비용 기준 금액 초과 시 저장 차단 (인라인 검증으로 이미 표시됨)
+            if (hasExpenseOverflow) {
+                showWarning('기준 금액을 초과한 항목이 있습니다. 비용을 조정해주세요.');
                 return;
             }
 
@@ -3387,10 +3404,12 @@ document.addEventListener('DOMContentLoaded', async function() {
             }
         }
 
-        // 인쇄 버튼 표시/숨김
+        // 인쇄 버튼 표시/숨김: 비용 1개 이상 입력 AND 초과 오류 없을 때만 표시
+        const hasAnyExpense = Array.from(document.querySelectorAll('.expense-input'))
+            .some(inp => (parseInt(inp.value.replace(/[^0-9]/g, '')) || 0) > 0);
         const printBtn = document.getElementById('printDocumentBtn');
         if (printBtn) {
-            printBtn.style.display = allFilled ? 'inline-flex' : 'none';
+            printBtn.style.display = (hasAnyExpense && !hasExpenseOverflow) ? 'inline-flex' : 'none';
         }
     }
 
