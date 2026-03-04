@@ -557,6 +557,32 @@ document.addEventListener('DOMContentLoaded', async function() {
     const projectSearch = document.getElementById('projectSearch');
     const projectListEl = document.getElementById('projectList');
 
+    // 초성 검색 유틸리티
+    const CHO_HANGUL = ['ㄱ', 'ㄲ', 'ㄴ', 'ㄷ', 'ㄸ', 'ㄹ', 'ㅁ', 'ㅂ', 'ㅃ', 'ㅅ', 'ㅆ', 'ㅇ', 'ㅈ', 'ㅉ', 'ㅊ', 'ㅋ', 'ㅌ', 'ㅍ', 'ㅎ'];
+
+    function getChosung(str) {
+        let result = '';
+        for (let i = 0; i < str.length; i++) {
+            const code = str.charCodeAt(i) - 44032;
+            if (code > -1 && code < 11172) {
+                result += CHO_HANGUL[Math.floor(code / 588)];
+            } else {
+                result += str.charAt(i);
+            }
+        }
+        return result;
+    }
+
+    function matchesSearch(text, keyword) {
+        if (!text || !keyword) return true;
+        const lowerText = text.toLowerCase();
+        const lowerKeyword = keyword.toLowerCase();
+        if (lowerText.includes(lowerKeyword)) return true;
+        // 초성 검색
+        const chosung = getChosung(text);
+        return chosung.includes(keyword);
+    }
+
     // ── 프로젝트 연도 필터 ──────────────────────────────────────
     let selectedYear = null;
     let currentSearchKeyword = '';
@@ -569,7 +595,7 @@ document.addEventListener('DOMContentLoaded', async function() {
         if (existing) existing.remove();
         const container = document.createElement('div');
         container.id = 'projectYearFilter';
-        container.style.cssText = 'display:flex; gap:6px; padding:8px 12px; border-bottom:1px solid #eee; flex-wrap:wrap; align-items:center;';
+        container.style.cssText = 'display:flex; gap:6px; padding:8px 0; border-bottom:1px solid #eee; flex-wrap:wrap; align-items:center;';
         // 전체 버튼
         const allBtn = document.createElement('button');
         allBtn.type = 'button';
@@ -610,7 +636,7 @@ document.addEventListener('DOMContentLoaded', async function() {
             container.appendChild(btn);
         }
         if (projectListEl && projectListEl.parentNode) {
-            projectListEl.parentNode.insertBefore(container, projectListEl);
+            projectListEl.parentNode.insertBefore(container, projectListEl.parentNode.firstElementChild);
         }
     }
 
@@ -627,8 +653,10 @@ document.addEventListener('DOMContentLoaded', async function() {
             });
         }
         if (currentSearchKeyword) {
-            const kw = currentSearchKeyword.toLowerCase();
-            filtered = filtered.filter(proj => (proj.projectName || '').toLowerCase().includes(kw));
+            filtered = filtered.filter(proj =>
+                matchesSearch(proj.projectName || '', currentSearchKeyword) ||
+                matchesSearch(proj.projectManagerName || '', currentSearchKeyword)
+            );
         }
         renderProjectList(filtered, currentSearchKeyword);
     }
@@ -803,8 +831,34 @@ document.addEventListener('DOMContentLoaded', async function() {
 
     function highlightProjectText(text, keyword) {
         if (!keyword || !text) return text;
-        const regex = new RegExp(`(${keyword.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')})`, 'gi');
-        return text.replace(regex, '<mark>$1</mark>');
+        const lowerText = text.toLowerCase();
+        const lowerKeyword = keyword.toLowerCase();
+        if (lowerText.includes(lowerKeyword)) {
+            const regex = new RegExp(`(${keyword.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')})`, 'gi');
+            return text.replace(regex, '<mark class="search-highlight">$1</mark>');
+        }
+        const chosung = getChosung(text);
+        if (chosung.includes(keyword)) {
+            let result = '';
+            let keywordIndex = 0;
+            for (let i = 0; i < text.length; i++) {
+                const char = text[i];
+                const code = text.charCodeAt(i) - 44032;
+                if (code > -1 && code < 11172) {
+                    const cho = CHO_HANGUL[Math.floor(code / 588)];
+                    if (keywordIndex < keyword.length && cho === keyword[keywordIndex]) {
+                        result += `<mark class="search-highlight">${char}</mark>`;
+                        keywordIndex++;
+                    } else {
+                        result += char;
+                    }
+                } else {
+                    result += char;
+                }
+            }
+            return result;
+        }
+        return text;
     }
 
     if (projectSearch) {
