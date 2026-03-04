@@ -684,6 +684,7 @@ document.addEventListener('DOMContentLoaded', async function() {
     // ============================================
     const reporterModal = document.getElementById('reporterModal');
     const reporterList = document.getElementById('reporterList');
+    const reporterSearch = document.getElementById('reporterSearch');
 
     // 작성자 선택 모달 열기
     window.openReporterModal = function() {
@@ -701,30 +702,31 @@ document.addEventListener('DOMContentLoaded', async function() {
         }
 
         reporterModal.classList.add('show');
-        renderReporterList();
+        if (reporterSearch) reporterSearch.value = '';
+        renderReporterList('');
+        if (reporterSearch) reporterSearch.focus();
     };
 
     // 작성자 선택 모달 닫기
     window.closeReporterModal = function() {
         if (reporterModal) {
             reporterModal.classList.remove('show');
+            if (reporterSearch) reporterSearch.value = '';
         }
     };
 
     // 작성자 목록 렌더링
-    function renderReporterList() {
+    function renderReporterList(searchText = '') {
         if (!reporterList) return;
 
-        // 출장인원이 있으면 출장인원 목록, 없으면 프로젝트 팀원 목록 표시
+        // 항상 프로젝트 팀원 전체 표시 (출장인원은 "참석중" 뱃지로 구분)
         let personsToShow = [];
-        if (window.currentTripPersons && window.currentTripPersons.length > 0) {
-            personsToShow = [...window.currentTripPersons];
-        } else if (projectMembers && projectMembers.length > 0) {
-            // 프로젝트 팀원 목록
+        if (projectMembers && projectMembers.length > 0) {
             personsToShow = projectMembers.map(member => ({
                 id: member.employeeIdx,
                 name: member.employeeName,
                 position: member.employeePositionName || '직급 미지정',
+                positionCode: member.employeePositionCode || '',
                 dept: member.employeeDeptName || '부서 미지정'
             }));
         }
@@ -734,39 +736,66 @@ document.addEventListener('DOMContentLoaded', async function() {
             return;
         }
 
-        // 직급순으로 정렬 (낮은 직급부터)
+        // 직급순 정렬 후 검색 필터링
         const sortedPersons = sortByPosition([...personsToShow]);
+        const keyword = searchText.trim().toLowerCase();
+        const filtered = keyword
+            ? sortedPersons.filter(p =>
+                p.name.toLowerCase().includes(keyword) ||
+                (p.dept || '').toLowerCase().includes(keyword) ||
+                (p.position || '').toLowerCase().includes(keyword))
+            : sortedPersons;
+
+        if (filtered.length === 0) {
+            reporterList.innerHTML = '<div style="text-align: center; padding: 40px; color: #94a3b8;">검색 결과가 없습니다.</div>';
+            return;
+        }
 
         // 현재 선택된 작성자 ID
         const currentReporterId = tripReporter ? tripReporter.getAttribute('data-reporter-id') : null;
 
-        reporterList.innerHTML = '';
-        sortedPersons.forEach(person => {
+        reporterList.innerHTML = filtered.map(person => {
             const isSelected = String(person.id) === String(currentReporterId);
-            const selectedClass = isSelected ? ' selected' : '';
-            const checkIcon = isSelected ? '<i class="fas fa-check-circle" style="color: #667eea; margin-left: auto;"></i>' : '';
+            const selectedClass = isSelected ? 'selected' : '';
+            const checkIcon = isSelected
+                ? '<i class="fas fa-check-circle" style="color: #10b981; margin-left: auto;"></i>'
+                : '';
 
-            const item = document.createElement('div');
-            item.className = `employee-item${selectedClass}`;
-            item.innerHTML = `
-                <div class="employee-info">
-                    <div class="employee-name">${person.name}</div>
-                    <div class="employee-detail">${person.position} · ${person.dept}</div>
+            // 이미 출장인원 목록에 있으면 "참석중" 뱃지 표시
+            const isTripPerson = (window.currentTripPersons || []).some(p => String(p.id) === String(person.id));
+            const attendeeBadge = isTripPerson
+                ? `<span style="background: #dbeafe; color: #1e40af; padding: 2px 8px; border-radius: 4px; font-size: 11px; margin-left: 8px; white-space: nowrap;"><i class="fas fa-user-check"></i> 참석중</span>`
+                : '';
+
+            return `
+                <div class="employee-item ${selectedClass}" onclick="selectReporter(${person.id}, '${person.name.replace(/'/g, "\\'")}', '${(person.position || '').replace(/'/g, "\\'")}', '${(person.dept || '').replace(/'/g, "\\'")}', '${(person.positionCode || '').replace(/'/g, "\\'")}')">
+                    <div class="employee-info">
+                        <div class="employee-name">${person.name}${attendeeBadge}</div>
+                        <div class="employee-detail">${person.position} · ${person.dept}</div>
+                    </div>
+                    ${checkIcon}
                 </div>
-                ${checkIcon}
             `;
+        }).join('');
+    }
 
-            // 클릭 이벤트 리스너 추가
-            item.addEventListener('click', function() {
-                selectReporter(person.id, person.name, person.position, person.dept);
-            });
-
-            reporterList.appendChild(item);
+    // 검색 입력 이벤트
+    if (reporterSearch) {
+        reporterSearch.addEventListener('input', function() {
+            renderReporterList(this.value);
         });
     }
 
     // 작성자 선택
-    window.selectReporter = function(reporterId, reporterName, position, dept) {
+    window.selectReporter = function(reporterId, reporterName, position, dept, positionCode) {
+        // 이전 작성자를 출장인원에서 제거 (새 작성자와 다른 경우)
+        const previousReporterId = tripReporter ? tripReporter.getAttribute('data-reporter-id') : null;
+        if (previousReporterId && String(previousReporterId) !== String(reporterId)) {
+            window.currentTripPersons = window.currentTripPersons.filter(
+                p => String(p.id) !== String(previousReporterId)
+            );
+        }
+
         if (tripReporter) {
             tripReporter.value = reporterName;
             tripReporter.setAttribute('data-reporter-id', reporterId);
@@ -780,13 +809,44 @@ document.addEventListener('DOMContentLoaded', async function() {
         // 작성자를 출장인원에 자동 추가 (아직 없는 경우)
         if (!window.currentTripPersons.some(p => String(p.id) === String(reporterId))) {
             const posName = position || '직급 미지정';
+            const posCode = positionCode || '';
+
+            // 일비(출장비): 1순위 projectExpenseSettings, 2순위 fixedExpenses
+            let tripExpense = 0;
+            if (projectExpenseSettings && projectExpenseSettings.length > 0 && posCode) {
+                const projectSetting = projectExpenseSettings.find(s =>
+                    s.positionCode === posCode && s.expenseItemName === '출장비'
+                );
+                if (projectSetting && projectSetting.amount) {
+                    tripExpense = projectSetting.amount;
+                } else {
+                    tripExpense = fixedExpenses[posCode] || fixedExpenses[posName] || 0;
+                }
+            } else {
+                tripExpense = fixedExpenses[posCode] || fixedExpenses[posName] || 0;
+            }
+
+            // 식비(중식비): 1순위 projectExpenseSettings, 2순위 fixedMealExpenses
+            let mealExpense = 0;
+            if (projectExpenseSettings && projectExpenseSettings.length > 0 && posCode) {
+                const mealSetting = projectExpenseSettings.find(s =>
+                    s.positionCode === posCode && s.expenseItemName === '중식비'
+                );
+                if (mealSetting && mealSetting.amount) {
+                    mealExpense = mealSetting.amount;
+                }
+            }
+            if (!mealExpense) {
+                mealExpense = fixedMealExpenses[posCode] || fixedMealExpenses[posName] || 0;
+            }
+
             window.currentTripPersons.push({
                 id: String(reporterId),
                 name: reporterName,
                 position: posName,
                 dept: dept || '부서 미지정',
-                mealExpense: fixedMealExpenses[posName] || 0,
-                tripExpense: fixedExpenses[posName] || 0
+                mealExpense: mealExpense,
+                tripExpense: tripExpense
             });
         }
 
