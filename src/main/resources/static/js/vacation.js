@@ -722,9 +722,54 @@ document.addEventListener('DOMContentLoaded', async function() {
                 </div>`;
         }
 
-        // 유효 월차
+        // 유효 월차 + 만료일별 FIFO 잔여
         if (monthlyLeaveDays > 0) {
             accrualRows += `<div class="lb-row"><span>월차</span><span>+${monthlyLeaveDays}일</span></div>`;
+
+            const expiryList = vacationInfo.monthlyExpiryBreakdown || [];
+            expiryList.forEach((batch, idx) => {
+                const prefix   = idx === expiryList.length - 1 ? '└' : '├';
+                const d        = batch.expiryDate;                      // "2026-05-31"
+                const label    = d.slice(2).replace(/-/g, '.');         // "26.05.31"
+                const issued   = Number(batch.issued);
+                const used     = Number(batch.used);
+                const remain   = Number(batch.remaining);
+
+                if (batch.expired) {
+                    if (remain > 0) {
+                        // 미사용 소멸
+                        accrualRows += `
+                            <div class="lb-row-sub lb-sub-lost">
+                                <span>${prefix} ${label} 소멸</span>
+                                <span>${remain}일 미사용 소멸</span>
+                            </div>`;
+                    } else {
+                        // 만료 전 모두 사용
+                        accrualRows += `
+                            <div class="lb-row-sub lb-sub-done">
+                                <span>${prefix} ${label} 만료</span>
+                                <span>사용 완료</span>
+                            </div>`;
+                    }
+                } else if (batch.expiringSoon) {
+                    // D-30 이내 만료 예정
+                    const today   = new Date(); today.setHours(0, 0, 0, 0);
+                    const expDate = new Date(d + 'T00:00:00');
+                    const dDay    = Math.ceil((expDate - today) / 86400000);
+                    accrualRows += `
+                        <div class="lb-row-sub lb-sub-warn">
+                            <span>${prefix} ${label} 만료 ⚠️ (D-${dDay})</span>
+                            <span>${remain}일 잔여</span>
+                        </div>`;
+                } else {
+                    // 일반 유효
+                    accrualRows += `
+                        <div class="lb-row-sub lb-sub-ok">
+                            <span>${prefix} ${label} 만료 예정</span>
+                            <span>${remain}일 잔여</span>
+                        </div>`;
+                }
+            });
         }
 
         // 보상휴가

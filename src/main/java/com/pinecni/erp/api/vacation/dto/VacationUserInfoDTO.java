@@ -6,6 +6,7 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 
 import java.math.BigDecimal;
+import java.util.List;
 
 /**
  * 연차 신청서용 사용자 정보 DTO
@@ -49,4 +50,7 @@ public class VacationUserInfoDTO {
     private BigDecimal nextAccrualDays;
     private String     nextAccrualType;
     private String     nextAccrualDesc;
+
+    // 월차 만료일별 FIFO 잔여 현황 (배치 오름차순)
+    private List<MonthlyLeaveExpiryDTO> monthlyExpiryBreakdown;
 }

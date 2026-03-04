@@ -222,11 +222,12 @@ document.addEventListener('DOMContentLoaded', function() {
                         ? Math.round((item.usedDays / item.totalDays) * 100) : 0,
 
                     // breakdown — DTO 필드명 = JS 프로퍼티명 = DB 컬럼명(snake) 대응
-                    annualLeaveDays:    item.annualLeaveDays    || 0,
-                    proportionalDays:   item.proportionalDays   || 0,
-                    monthlyLeaveDays:   item.monthlyLeaveDays   || 0,
-                    compensatoryDays:   item.compensatoryDays   || 0,
-                    expiredMonthlyDays: item.expiredMonthlyDays || 0,
+                    annualLeaveDays:        item.annualLeaveDays        || 0,
+                    proportionalDays:       item.proportionalDays       || 0,
+                    monthlyLeaveDays:       item.monthlyLeaveDays       || 0,
+                    compensatoryDays:       item.compensatoryDays       || 0,
+                    expiredMonthlyDays:     item.expiredMonthlyDays     || 0,
+                    monthlyExpiryBreakdown: item.monthlyExpiryBreakdown || [],
 
                     // 당해 연도 근속가산 (클라이언트 계산)
                     seniorityEarnedDate:    ms.earnedDate,    // ISO 정렬용
@@ -514,7 +515,8 @@ document.addEventListener('DOMContentLoaded', function() {
             annualLeaveDays, proportionalDays, monthlyLeaveDays,
             compensatoryDays, expiredMonthlyDays, empJoinDate, totalLeave,
             seniorityEarnedShort, seniorityUpcomingShort,
-            proportionalUpcomingShort, proportionalUpcomingDays
+            proportionalUpcomingShort, proportionalUpcomingDays,
+            monthlyExpiryBreakdown
         } = emp;
 
         const allZero = annualLeaveDays === 0 && proportionalDays === 0
@@ -642,9 +644,33 @@ document.addEventListener('DOMContentLoaded', function() {
                             월차
                             <span class="bkd-days">${monthlyLeaveDays}일</span>
                         </div>`;
-            if (expiredMonthlyDays > 0) {
-                html += `<div class="bkd-sub">부여: ${monthlyLeaveDays + expiredMonthlyDays}일 / 소멸: ${expiredMonthlyDays}일</div>`;
+
+            const expiryList = emp.monthlyExpiryBreakdown || [];
+            if (expiryList.length > 0) {
+                expiryList.forEach(batch => {
+                    const d      = batch.expiryDate;                   // "2026-05-31"
+                    const label  = d.slice(2).replace(/-/g, '.');      // "26.05.31"
+                    const remain = Number(batch.remaining);
+
+                    if (batch.expired) {
+                        if (remain > 0) {
+                            html += `<div class="bkd-sub" style="color:#d32f2f;">❌ ${label} 소멸 · ${remain}일 미사용 소멸</div>`;
+                        } else {
+                            html += `<div class="bkd-sub" style="color:#aaa;">✅ ${label} 만료 · 사용 완료</div>`;
+                        }
+                    } else if (batch.expiringSoon) {
+                        const today   = new Date(); today.setHours(0, 0, 0, 0);
+                        const expDate = new Date(d + 'T00:00:00');
+                        const dDay    = Math.ceil((expDate - today) / 86400000);
+                        html += `<div class="bkd-sub" style="color:#e65100;">⚠️ ${label} 만료 예정 (D-${dDay}) · ${remain}일 잔여</div>`;
+                    } else {
+                        html += `<div class="bkd-sub">${label} 만료 예정 · ${remain}일 잔여</div>`;
+                    }
+                });
+            } else if (expiredMonthlyDays > 0) {
+                html += `<div class="bkd-sub">부여: ${monthlyLeaveDays}일 / 소멸: ${expiredMonthlyDays}일</div>`;
             }
+
             html += `</div>`;
         }
 

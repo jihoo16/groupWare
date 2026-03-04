@@ -1179,6 +1179,24 @@
     font-size: 13px;
 }
 
+/* 월차 만료일별 서브 행 */
+.lb-row-sub {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 2px 0 2px 14px;
+    font-size: 12px;
+    color: #777;
+}
+.lb-row-sub span:last-child {
+    font-weight: 500;
+}
+.lb-sub-done { color: #bbb; }
+.lb-sub-done span:last-child { color: #bbb; font-weight: 400; }
+.lb-sub-lost span:last-child { color: #d32f2f; font-weight: 600; }
+.lb-sub-warn span:first-child { color: #e65100; }
+.lb-sub-warn span:last-child  { color: #e65100; font-weight: 600; }
+
 .lb-no-data {
     text-align: center;
     padding: 30px;

@@ -9,6 +9,7 @@ import com.pinecni.erp.api.user.repository.UserRepository;
 import com.pinecni.erp.api.vacation.dto.VacationUserInfoDTO;
 import com.pinecni.erp.api.vacation.dto.VacationCalculationDetailDTO;
 import com.pinecni.erp.api.vacation.dto.VacationRequestSaveDTO;
+import com.pinecni.erp.api.vacation.dto.MonthlyLeaveExpiryDTO;
 import com.pinecni.erp.api.vacation.repository.VacationAccrualScheduleRepository;
 import com.pinecni.erp.api.vacation.repository.VacationBalanceRepository;
 import com.pinecni.erp.api.vacation.repository.VacationRequestRepository;
@@ -152,6 +153,12 @@ public class VacationServiceImpl implements VacationService {
                 .nextAccrualType(balance.getNextAccrualType())
                 .nextAccrualDesc(balance.getNextAccrualDesc())
                 .build();
+
+        // 월차 만료일별 FIFO 잔여 계산
+        LocalDate infoEffectiveDate = (year == LocalDate.now().getYear())
+                ? LocalDate.now() : LocalDate.of(year, 12, 31);
+        dto.setMonthlyExpiryBreakdown(
+                computeMonthlyExpiryBreakdown(userIdx, year, infoEffectiveDate, balance.getUsedDays()));
 
         log.info("[사용자 연차 정보 조회 완료] empName={}, granted={}, expiredMonthly={}, used={}, remaining={}",
                 dto.getEmpName(), dto.getTotalDays(), dto.getExpiredMonthlyDays(), dto.getUsedDays(), dto.getRemainingDays());
@@ -494,33 +501,40 @@ public class VacationServiceImpl implements VacationService {
         BigDecimal annualLeaveDays    = accrualScheduleRepository.sumAnnualLeaveDays(userIdx, year, effectiveDate);
         BigDecimal proportionalDays   = accrualScheduleRepository.sumProportionalDays(userIdx, year, effectiveDate);
         BigDecimal compensatoryDays   = accrualScheduleRepository.sumCompensatoryDays(userIdx, year, effectiveDate);
-        // 월차 + 이월월차(전년도 이월분) 합산 — sumValidMonthlyDays 쿼리가 두 타입 모두 집계
-        BigDecimal monthlyLeaveDays   = accrualScheduleRepository.sumValidMonthlyDays(userIdx, year, effectiveDate);
+        // 유효 월차(만료 전) + 소멸 월차 전체
+        BigDecimal validMonthlyDays   = accrualScheduleRepository.sumValidMonthlyDays(userIdx, year, effectiveDate);
         BigDecimal expiredMonthlyDays = accrualScheduleRepository.sumExpiredMonthlyDays(userIdx, year);
+        // 발행된 월차 전체 = 유효 + 소멸 (이월월차는 validMonthlyDays에 포함)
+        BigDecimal allMonthlyIssuedDays = validMonthlyDays.add(expiredMonthlyDays);
 
-        // 2. 부여일수 합계 (유효한 것만)
-        BigDecimal grantedDays = annualLeaveDays.add(monthlyLeaveDays)
+        // 2. 사용 연차 (경조사, 기타 제외) — FIFO 보정을 위해 먼저 계산
+        BigDecimal usedDays = calculateUsedDays(userIdx, year);
+
+        // 3. 미사용 소멸월차 = MAX(0, 소멸월차 - 사용일수)
+        // FIFO 원칙: 만료가 빠른 월차부터 소진되므로 사용일수만큼 소멸월차를 상쇄.
+        // 이를 통해 "만료 전에 사용한 월차가 만료일에 이중 차감되는" 버그를 방지.
+        BigDecimal expiredUnusedMonthlyDays = expiredMonthlyDays.subtract(usedDays).max(BigDecimal.ZERO);
+
+        // 4. 부여일수 합계 (발행 전체: 유효 + 소멸)
+        BigDecimal grantedDays = annualLeaveDays.add(allMonthlyIssuedDays)
                                                 .add(proportionalDays)
                                                 .add(compensatoryDays);
 
-        // 3. 사용 연차 (경조사, 기타 제외)
-        BigDecimal usedDays = calculateUsedDays(userIdx, year);
-
-        // 4. 유효 부여 = 부여 - 소멸월차, 잔여 = 유효부여 - 사용
-        BigDecimal effectiveGranted = grantedDays.subtract(expiredMonthlyDays);
+        // 5. 유효 부여 = 부여 - 미사용소멸월차, 잔여 = 유효부여 - 사용
+        BigDecimal effectiveGranted = grantedDays.subtract(expiredUnusedMonthlyDays);
         BigDecimal remainingDays    = effectiveGranted.subtract(usedDays);
 
-        // 5. 조기사용연차 = MAX(0, 사용 - 유효부여)
+        // 6. 조기사용연차 = MAX(0, 사용 - 유효부여)
         BigDecimal earlyUseDays = usedDays.subtract(effectiveGranted).max(BigDecimal.ZERO);
 
-        // 6. 다음 연도로 이월된 월차 (신년도에 이월월차 레코드가 있으면 차감)
+        // 7. 다음 연도로 이월된 월차 (신년도에 이월월차 레코드가 있으면 차감)
         // → 잔여에서 이월분을 빼서 "이미 이월됐으므로 현재 연도에서는 사용 불가"를 반영
         BigDecimal carriedOutDays = accrualScheduleRepository
                 .sumCarriedOutDays(userIdx, year + 1)
                 .max(BigDecimal.ZERO);
         remainingDays = remainingDays.subtract(carriedOutDays);
 
-        // 7. 다음 발생 예정 조회 (현재·미래 연도만 의미 있음; 과거 연도는 null 처리)
+        // 8. 다음 발생 예정 조회 (현재·미래 연도만 의미 있음; 과거 연도는 null 처리)
         LocalDate  nextAccrualDate = null;
         BigDecimal nextAccrualDays = null;
         String     nextAccrualType = null;
@@ -538,16 +552,16 @@ public class VacationServiceImpl implements VacationService {
             }
         }
 
-        // 8. UPSERT: 기존 행이 있으면 갱신, 없으면 신규 생성
+        // 9. UPSERT: 기존 행이 있으면 갱신, 없으면 신규 생성
         VacationBalance balance = balanceRepository.findByUserIdxAndYear(userIdx, year)
                 .orElse(VacationBalance.builder().userIdx(userIdx).year(year).build());
 
         balance.setGrantedDays(grantedDays);
         balance.setAnnualLeaveDays(annualLeaveDays);
-        balance.setMonthlyLeaveDays(monthlyLeaveDays);
+        balance.setMonthlyLeaveDays(allMonthlyIssuedDays);   // 발행 전체(유효+소멸), 화면 breakdown 합산용
         balance.setProportionalDays(proportionalDays);
         balance.setCompensatoryDays(compensatoryDays);
-        balance.setExpiredMonthlyDays(expiredMonthlyDays);
+        balance.setExpiredMonthlyDays(expiredUnusedMonthlyDays); // 미사용 소멸분만 저장 (화면 "소멸월차" 표시)
         balance.setUsedDays(usedDays);
         balance.setEarlyUseDays(earlyUseDays);
         balance.setCarriedOverDays(carriedOutDays);
@@ -907,6 +921,61 @@ public class VacationServiceImpl implements VacationService {
         log.debug("[사용 연차 계산] userIdx={}, year={}, 총 연차 건수={}, 사용 연차={}일",
                   userIdx, year, vacationRequests.size(), usedDays);
         return usedDays;
+    }
+
+    /**
+     * 월차 만료일별 FIFO 잔여 현황 계산
+     *
+     * FIFO 원칙: 만료일이 이른 배치부터 사용일수(totalUsedDays)를 소진.
+     * 같은 만료일을 공유하는 accrual 레코드는 하나의 배치로 합산.
+     *
+     * @param userIdx       사용자 idx
+     * @param year          조회 연도
+     * @param effectiveDate 기준일 (현재 연도: 오늘, 과거/미래: 12/31)
+     * @param totalUsedDays vacation_balance.used_days (이미 계산된 값)
+     */
+    private List<MonthlyLeaveExpiryDTO> computeMonthlyExpiryBreakdown(
+            Long userIdx, Integer year, LocalDate effectiveDate, BigDecimal totalUsedDays) {
+
+        List<VacationAccrualSchedule> schedules =
+                accrualScheduleRepository.findMonthlyLeavesOrderByExpiryAsc(userIdx, year, effectiveDate);
+
+        if (schedules.isEmpty()) return List.of();
+
+        // 만료일 기준 합산 (LinkedHashMap → expiryDate ASC 순서 유지)
+        Map<LocalDate, BigDecimal> issuedByExpiry = new LinkedHashMap<>();
+        for (VacationAccrualSchedule s : schedules) {
+            if (s.getExpiryDate() == null) continue;
+            issuedByExpiry.merge(s.getExpiryDate(), s.getDays(), BigDecimal::add);
+        }
+
+        LocalDate today = LocalDate.now();
+        BigDecimal remainingUsed = totalUsedDays != null ? totalUsedDays : BigDecimal.ZERO;
+        List<MonthlyLeaveExpiryDTO> result = new ArrayList<>();
+
+        for (Map.Entry<LocalDate, BigDecimal> entry : issuedByExpiry.entrySet()) {
+            LocalDate expiry   = entry.getKey();
+            BigDecimal issued  = entry.getValue();
+
+            // FIFO: 이 배치에서 소진할 사용일수
+            BigDecimal usedFromThis = remainingUsed.min(issued);
+            remainingUsed = remainingUsed.subtract(usedFromThis).max(BigDecimal.ZERO);
+            BigDecimal remaining = issued.subtract(usedFromThis);
+
+            boolean expired      = expiry.isBefore(today);
+            boolean expiringSoon = !expired && !expiry.isAfter(today.plusDays(30));
+
+            result.add(MonthlyLeaveExpiryDTO.builder()
+                    .expiryDate(expiry.toString())
+                    .issued(issued)
+                    .used(usedFromThis)
+                    .remaining(remaining)
+                    .expired(expired)
+                    .expiringSoon(expiringSoon)
+                    .build());
+        }
+
+        return result;
     }
 
     /**

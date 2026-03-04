@@ -189,6 +189,21 @@ public interface VacationAccrualScheduleRepository extends JpaRepository<Vacatio
                                                         Pageable pageable);
 
     /**
+     * 월차 + 이월월차를 만료일 오름차순으로 조회 (FIFO 배치별 잔여 계산용)
+     * accrualDate <= today 인 발생 완료 건만 포함.
+     */
+    @Query("SELECT v FROM VacationAccrualSchedule v " +
+           "WHERE v.userIdx = :userIdx " +
+           "AND v.year = :year " +
+           "AND v.accrualType IN ('월차', '이월월차') " +
+           "AND v.accrualDate <= :today " +
+           "ORDER BY v.expiryDate ASC, v.accrualDate ASC")
+    List<VacationAccrualSchedule> findMonthlyLeavesOrderByExpiryAsc(
+            @Param("userIdx") Long userIdx,
+            @Param("year") Integer year,
+            @Param("today") LocalDate today);
+
+    /**
      * 만료된 월차 is_expired = true 로 일괄 업데이트
      * 스케줄러(매일 00:01)에서 호출
      */
