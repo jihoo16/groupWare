@@ -242,7 +242,7 @@ document.addEventListener('DOMContentLoaded', async function() {
     }
 
     // 페이지 로드 시 데이터 로드
-    Promise.all([loadCurrentUser(), loadProjects(), loadFixedExpenses()]).then(async () => {
+    Promise.all([loadCurrentUser(), loadProjects(), loadFixedExpenses(), loadPositionCodes()]).then(async () => {
         // 데이터 로드 후 회의록 자동 채우기 초기화
         setupReceiptAutoFill();
 
@@ -1216,16 +1216,12 @@ document.addEventListener('DOMContentLoaded', async function() {
                     }
 
                     // 같은 회사면 직급순 (높은 직급부터)
-                    const orderA = positionOrder[a.position] || 999;
-                    const orderB = positionOrder[b.position] || 999;
-                    return orderB - orderA;
+                    return getPositionSortOrder(b.position) - getPositionSortOrder(a.position);
                 }
 
                 // 3. 내부 참석자끼리는 직급순 (높은 직급부터)
                 if (a.type === 'internal' && b.type === 'internal') {
-                    const orderA = positionOrder[a.position] || 999;
-                    const orderB = positionOrder[b.position] || 999;
-                    return orderB - orderA;
+                    return getPositionSortOrder(b.position) - getPositionSortOrder(a.position);
                 }
 
                 return 0;
@@ -3493,29 +3489,33 @@ document.addEventListener('DOMContentLoaded', async function() {
     const authorSearchInput = document.getElementById('authorSearchInput');
     const authorListEl = document.getElementById('authorList');
 
-    // 직급 순서 정의 (낮은 직급부터)
-    const positionOrder = {
-        '사원': 1,
-        '주임': 2,
-        '대리': 3,
-        '과장': 4,
-        '차장': 5,
-        '부장': 6,
-        '이사': 7,
-        '상무': 8,
-        '전무': 9,
-        '부사장': 10,
-        '사장': 11,
-        '대표': 12
-    };
+    // 직급 코드 목록 (API에서 로드, sortOrder 오름차순 = 낮은 직급 먼저)
+    let positionCodes = [];
+
+    async function loadPositionCodes() {
+        try {
+            const response = await fetch('/api/codes/ranks?activeOnly=true');
+            if (response.ok) {
+                positionCodes = await response.json();
+                positionCodes.sort((a, b) => (a.sortOrder || 0) - (b.sortOrder || 0));
+            }
+        } catch (e) {
+            console.error('직급 코드 로드 오류:', e);
+        }
+    }
+
+    // 직급명(한글) → sortOrder 반환
+    function getPositionSortOrder(positionName) {
+        if (!positionName) return 9999;
+        const found = positionCodes.find(p => p.codeName === positionName);
+        return found ? (found.sortOrder || 9999) : 9999;
+    }
 
     // 직급으로 정렬 (낮은 직급부터)
     function sortByPosition(persons) {
-        return persons.sort((a, b) => {
-            const orderA = positionOrder[a.position] || 999;
-            const orderB = positionOrder[b.position] || 999;
-            return orderA - orderB;
-        });
+        return persons.sort((a, b) =>
+            getPositionSortOrder(a.position) - getPositionSortOrder(b.position)
+        );
     }
 
     // 작성자 모달 열기
