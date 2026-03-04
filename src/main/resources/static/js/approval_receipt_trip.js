@@ -1366,6 +1366,9 @@ document.addEventListener('DOMContentLoaded', async function() {
             if (dailyExpenseBody) {
                 updateTotalExpenses();
             }
+
+            // 출장인원 변경 시 출장 내용 및 결과 자동 갱신
+            updateTripResult();
         }
 
         // 출장인원 추가 버튼 표시
@@ -2092,26 +2095,22 @@ document.addEventListener('DOMContentLoaded', async function() {
             }
         }
 
-        // 출장내용 및 결과 업데이트
+        // 출장내용 및 결과 업데이트 (출장인원 변경 시 자동 반영)
         function updateTripResult() {
-            // 출장인원에서 이름만 가져오기 (복명자는 제외)
-            const personNames = window.currentTripPersons
-                .filter(person => person.name && person.name.trim())
-                .map(person => person.name.trim());
+            const personNames = (window.currentTripPersons || [])
+                .filter(p => p.name && p.name.trim())
+                .map(p => p.name.trim());
 
-            let resultText = '- 참석인원 :\n';
+            const namesLine = personNames.length > 0 ? personNames.join(', ') : '';
+            const autoText = `- 참여 인원 :\n${namesLine}`;
 
-            if (personNames.length > 0) {
-                resultText += `- ${personNames.join(', ')}(파인씨앤아이)`;
-            }
-
-            // textarea에 자동 생성된 내용 채우기 (사용자가 수정하지 않았을 때만)
+            // 사용자가 직접 수정하지 않은 경우에만 자동 채우기
             if (tripResult && !tripResult.dataset.userModified) {
-                tripResult.value = resultText;
+                tripResult.value = autoText;
             }
 
-            // 복명서의 출장내용 및 결과에 반영
-            const displayText = tripResult ? tripResult.value : resultText;
+            // 복명서 미리보기 동기화
+            const displayText = tripResult ? tripResult.value : autoText;
             document.querySelectorAll('.trip-auto-result').forEach(field => {
                 field.textContent = displayText;
             });
@@ -2121,7 +2120,6 @@ document.addEventListener('DOMContentLoaded', async function() {
         if (tripResult) {
             tripResult.addEventListener('input', function() {
                 this.dataset.userModified = 'true';
-                // 수정된 내용을 복명서에 바로 반영
                 document.querySelectorAll('.trip-auto-result').forEach(field => {
                     field.textContent = this.value;
                 });
@@ -2472,7 +2470,7 @@ document.addEventListener('DOMContentLoaded', async function() {
                 mealFee: totalMealFee || null,
                 otherFee: totalOtherFee || null,
                 purpose: document.getElementById('trip_purpose') ? document.getElementById('trip_purpose').value : null,
-                content: document.getElementById('trip_result') ? document.getElementById('trip_result').value : null,
+                content: document.getElementById('trip_result')?.value || null,
                 cardIdx: selectedCard ? selectedCard.idx : null,
                 paymentMethod: '카드로 결제',
                 isProject: true,  // 프로젝트 관련 문서임을 명시
@@ -3286,7 +3284,6 @@ document.addEventListener('DOMContentLoaded', async function() {
                     isExternal: attendee.isExternal
                 };
             });
-
         }
 
         // 모든 input 이벤트 트리거하여 자동 채우기 활성화
