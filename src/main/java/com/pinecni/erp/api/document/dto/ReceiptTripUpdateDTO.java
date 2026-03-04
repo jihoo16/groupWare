@@ -21,6 +21,9 @@ public class ReceiptTripUpdateDTO {
     /** 프로젝트 IDX */
     private Long projectIdx;
 
+    /** 카드 IDX */
+    private Long cardIdx;
+
     /** 출장 일자 */
     private LocalDate tripDate;
 

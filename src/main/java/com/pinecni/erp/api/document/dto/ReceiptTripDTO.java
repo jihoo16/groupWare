@@ -34,6 +34,12 @@ public class ReceiptTripDTO {
     /** 프로젝트 명 */
     private String projectName;
 
+    /** 카드 IDX */
+    private Long cardIdx;
+
+    /** 카드명 */
+    private String cardName;
+
     /** 작성자 IDX */
     private Long authorIdx;
 

@@ -46,6 +46,17 @@ public class ReceiptTripMapper {
             }
         }
 
+        // 카드명 조회
+        String cardName = null;
+        if (entity.getProjectCard() != null) {
+            ProjectCard card = entity.getProjectCard();
+            if (card.getCardNickname() != null && !card.getCardNickname().isEmpty()) {
+                cardName = card.getCardNickname();
+            } else if (card.getCardCompany() != null && card.getCardLastDigits() != null) {
+                cardName = card.getCardCompany() + " (****" + card.getCardLastDigits() + ")";
+            }
+        }
+
         // 참석자 목록 변환
         List<ReceiptTripAttendeeDTO> attendeeDTOs = entity.getAttendees() != null
                 ? entity.getAttendees().stream().map(this::toAttendeeDTO).collect(Collectors.toList())
@@ -63,6 +74,8 @@ public class ReceiptTripMapper {
                 .documentNumber(documentNumber)
                 .projectIdx(entity.getProjectIdx())
                 .projectName(entity.getProject() != null ? entity.getProject().getProjectName() : null)
+                .cardIdx(entity.getCardIdx())
+                .cardName(cardName)
                 .authorIdx(entity.getAuthorIdx())
                 .authorUserName(authorUserName)
                 .authorDept(authorDept)
@@ -92,6 +105,7 @@ public class ReceiptTripMapper {
 
         return ReceiptTrip.builder()
                 .projectIdx(dto.getProjectIdx())
+                .cardIdx(dto.getCardIdx())
                 .authorIdx(dto.getAuthorIdx())
                 .tripDate(dto.getTripDate())
                 .duration(dto.getDuration())
@@ -115,6 +129,7 @@ public class ReceiptTripMapper {
         if (entity == null || dto == null) return;
 
         if (dto.getProjectIdx() != null)        entity.setProjectIdx(dto.getProjectIdx());
+        if (dto.getCardIdx() != null)           entity.setCardIdx(dto.getCardIdx());
         if (dto.getTripDate() != null)           entity.setTripDate(dto.getTripDate());
         if (dto.getDuration() != null)           entity.setDuration(dto.getDuration());
         if (dto.getLocation() != null)           entity.setLocation(dto.getLocation());
