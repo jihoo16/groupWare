@@ -468,12 +468,8 @@ public class ApprovalDocumentServiceImpl implements ApprovalDocumentService {
             documentNo = trip.getApprovalDocument().getDocumentNo();
         }
 
-        // 출장 총액 계산 (교통비 + 숙박비 + 식비 + 기타)
-        BigDecimal tripTotal = BigDecimal.ZERO;
-        if (trip.getTransportationFee() != null) tripTotal = tripTotal.add(trip.getTransportationFee());
-        if (trip.getAccommodationFee() != null) tripTotal = tripTotal.add(trip.getAccommodationFee());
-        if (trip.getMealFee() != null) tripTotal = tripTotal.add(trip.getMealFee());
-        if (trip.getOtherFee() != null) tripTotal = tripTotal.add(trip.getOtherFee());
+        // 출장 총액
+        BigDecimal tripTotal = trip.getTotalFee() != null ? trip.getTotalFee() : BigDecimal.ZERO;
 
         // 제목 생성: 프로젝트명 (카드번호) - 날짜/금액원
         String projectName = trip.getProject() != null ? trip.getProject().getProjectName() : "프로젝트";

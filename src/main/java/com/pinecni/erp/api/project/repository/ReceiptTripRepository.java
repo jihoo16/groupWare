@@ -20,11 +20,7 @@ public interface ReceiptTripRepository extends JpaRepository<ReceiptTrip, Long> 
     /**
      * 프로젝트별 총 출장비 조회 (삭제되지 않은 건만 합산)
      */
-    @Query("SELECT COALESCE(SUM(" +
-            "COALESCE(rt.transportationFee, 0) + " +
-            "COALESCE(rt.accommodationFee, 0) + " +
-            "COALESCE(rt.mealFee, 0) + " +
-            "COALESCE(rt.otherFee, 0)), 0) " +
+    @Query("SELECT COALESCE(SUM(COALESCE(rt.totalFee, 0)), 0) " +
             "FROM ReceiptTrip rt " +
             "WHERE rt.projectIdx = :projectIdx AND rt.deleted = false")
     BigDecimal sumAmountByProjectIdx(@Param("projectIdx") Long projectIdx);
@@ -32,11 +28,7 @@ public interface ReceiptTripRepository extends JpaRepository<ReceiptTrip, Long> 
     /**
      * 프로젝트별 문서번호 prefix 기준 출장비 조회 (삭제되지 않은 건만 합산)
      */
-    @Query("SELECT COALESCE(SUM(" +
-            "COALESCE(rt.transportationFee, 0) + " +
-            "COALESCE(rt.accommodationFee, 0) + " +
-            "COALESCE(rt.mealFee, 0) + " +
-            "COALESCE(rt.otherFee, 0)), 0) " +
+    @Query("SELECT COALESCE(SUM(COALESCE(rt.totalFee, 0)), 0) " +
             "FROM ReceiptTrip rt " +
             "JOIN rt.approvalDocument ad " +
             "WHERE rt.projectIdx = :projectIdx " +
@@ -64,11 +56,11 @@ public interface ReceiptTripRepository extends JpaRepository<ReceiptTrip, Long> 
     List<ReceiptTrip> findByDrafterUserIdxOrderByTripDateDesc(@Param("drafterUserIdx") Long drafterUserIdx);
 
     /**
-     * 상태별 출장 목록 조회 (삭제되지 않은 건, 출장일 내림차순)
+     * 출장 전체 목록 조회 (삭제되지 않은 건, 출장일 내림차순) — status 컬럼 제거로 단순화
      */
     @Query("SELECT rt FROM ReceiptTrip rt " +
             "LEFT JOIN FETCH rt.approvalDocument " +
-            "WHERE rt.status = :status AND rt.deleted = false " +
+            "WHERE rt.deleted = false " +
             "ORDER BY rt.tripDate DESC")
     List<ReceiptTrip> findByStatusOrderByTripDateDesc(@Param("status") String status);
 

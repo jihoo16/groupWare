@@ -17,47 +17,35 @@ import java.util.Optional;
 public interface ReceiptTripMeetingRepository extends JpaRepository<ReceiptTripMeeting, Long> {
 
     /**
-     * 프로젝트별 회의+출장 목록 (삭제되지 않은 건, 출장일 내림차순)
+     * 프로젝트별 회의+출장 목록 (출장일 내림차순)
      */
     @Query("SELECT rtm FROM ReceiptTripMeeting rtm " +
            "LEFT JOIN FETCH rtm.approvalDocument " +
-           "WHERE rtm.projectIdx = :projectIdx AND rtm.isDeleted = false " +
+           "WHERE rtm.projectIdx = :projectIdx " +
            "ORDER BY rtm.tripDate DESC")
     List<ReceiptTripMeeting> findByProjectIdxOrderByTripDateDesc(@Param("projectIdx") Long projectIdx);
 
     /**
-     * 작성자별 회의+출장 목록 (삭제되지 않은 건, 출장일 내림차순)
+     * 작성자별 회의+출장 목록 (출장일 내림차순)
      */
     @Query("SELECT rtm FROM ReceiptTripMeeting rtm " +
            "LEFT JOIN FETCH rtm.approvalDocument " +
-           "WHERE rtm.authorIdx = :authorIdx AND rtm.isDeleted = false " +
+           "WHERE rtm.drafterUserIdx = :drafterUserIdx " +
            "ORDER BY rtm.tripDate DESC")
-    List<ReceiptTripMeeting> findByAuthorIdxOrderByTripDateDesc(@Param("authorIdx") Long authorIdx);
+    List<ReceiptTripMeeting> findByDrafterUserIdxOrderByTripDateDesc(@Param("drafterUserIdx") Long drafterUserIdx);
 
     /**
-     * ApprovalDocument idx로 조회 (삭제되지 않은 건)
+     * ApprovalDocument idx로 조회
      */
     @Query("SELECT rtm FROM ReceiptTripMeeting rtm " +
-           "WHERE rtm.documentIdx = :documentIdx AND rtm.isDeleted = false")
+           "WHERE rtm.documentIdx = :documentIdx")
     Optional<ReceiptTripMeeting> findByDocumentIdx(@Param("documentIdx") Long documentIdx);
 
     /**
-     * 프로젝트별 출장비 합계 (삭제되지 않은 건)
+     * 프로젝트별 회의+출장 비용 합계
      */
-    @Query("SELECT COALESCE(SUM(" +
-           "COALESCE(rtm.transportationFee, 0) + " +
-           "COALESCE(rtm.accommodationFee, 0) + " +
-           "COALESCE(rtm.mealFee, 0) + " +
-           "COALESCE(rtm.otherFee, 0)), 0) " +
+    @Query("SELECT COALESCE(SUM(COALESCE(rtm.totalFee, 0)), 0) " +
            "FROM ReceiptTripMeeting rtm " +
-           "WHERE rtm.projectIdx = :projectIdx AND rtm.isDeleted = false")
+           "WHERE rtm.projectIdx = :projectIdx")
     BigDecimal sumTripFeeByProjectIdx(@Param("projectIdx") Long projectIdx);
-
-    /**
-     * 프로젝트별 회의비 합계 (삭제되지 않은 건)
-     */
-    @Query("SELECT COALESCE(SUM(COALESCE(rtm.amount, 0)), 0) " +
-           "FROM ReceiptTripMeeting rtm " +
-           "WHERE rtm.projectIdx = :projectIdx AND rtm.isDeleted = false")
-    BigDecimal sumMeetingAmountByProjectIdx(@Param("projectIdx") Long projectIdx);
 }

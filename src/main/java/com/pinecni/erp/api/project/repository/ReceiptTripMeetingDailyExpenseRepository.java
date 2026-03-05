@@ -15,7 +15,7 @@ public interface ReceiptTripMeetingDailyExpenseRepository extends JpaRepository<
     /**
      * 회의+출장 IDX로 일별 명세 목록 조회 (day_number 오름차순)
      */
-    List<ReceiptTripMeetingDailyExpense> findByReceiptTripMeetingIdxOrderByDayNumberAsc(Long receiptTripMeetingIdx);
+    List<ReceiptTripMeetingDailyExpense> findByReceiptTripMeetingIdxOrderByExpenseDateAsc(Long receiptTripMeetingIdx);
 
     /**
      * 회의+출장 IDX로 일별 명세 삭제

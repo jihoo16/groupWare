@@ -62,8 +62,4 @@ public class ReceiptTripMeetingDailyExpense {
     @JoinColumn(name = "receipt_trip_meeting_idx", insertable = false, updatable = false)
     private ReceiptTripMeeting receiptTripMeeting;
 
-    @PrePersist
-    protected void onCreate() {
-        createdAt = LocalDateTime.now();
-    }
 }

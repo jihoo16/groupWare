@@ -53,9 +53,6 @@ public class ReceiptTripMeeting {
     @Column(name = "drafter_user_idx", nullable = false)
     private Long drafterUserIdx;
 
-    @Column(name = "author_name", length = 100)
-    private String authorName;
-
     // ─── 출장 필드 ───────────────────────────────────────────────────
 
     /** 출장 시작일 */
@@ -95,10 +92,6 @@ public class ReceiptTripMeeting {
     /** 출장 내용 및 결과 */
     @Column(name = "content", columnDefinition = "TEXT")
     private String content;
-
-    /** 회의록 비고 */
-    @Column(name = "notes", columnDefinition = "TEXT")
-    private String notes;
 
     /** 회의록 내용 */
     @Column(name = "minutes_notes", columnDefinition = "TEXT")

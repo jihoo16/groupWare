@@ -73,7 +73,7 @@ public interface ProjectRepository extends JpaRepository<Project, Long> {
             "p.receiptUrl, p.activityBudget, p.equipmentBudget, p.materialBudget, p.progressRate, " +
             "COUNT(DISTINCT m.idx), " +
             "((SELECT COALESCE(SUM(rm.amount), 0) FROM ReceiptMeeting rm WHERE rm.projectIdx = p.idx) + " +
-            "(SELECT COALESCE(SUM(COALESCE(rt.transportationFee, 0) + COALESCE(rt.accommodationFee, 0) + COALESCE(rt.mealFee, 0) + COALESCE(rt.otherFee, 0)), 0) FROM ReceiptTrip rt WHERE rt.projectIdx = p.idx) + " +
+            "(SELECT COALESCE(SUM(COALESCE(rt.totalFee, 0)), 0) FROM ReceiptTrip rt WHERE rt.projectIdx = p.idx) + " +
             "(SELECT COALESCE(SUM(ro.totalAmount), 0) FROM ReceiptOvertime ro WHERE ro.projectIdx = p)), " +
             "p.totalPeriodStart, p.totalPeriodEnd, " +
             "p.createdAt, p.updatedAt, p.createdUserIdx, p.updatedUserIdx " +
@@ -93,7 +93,7 @@ public interface ProjectRepository extends JpaRepository<Project, Long> {
             "p.receiptUrl, p.activityBudget, p.equipmentBudget, p.materialBudget, p.progressRate, " +
             "COUNT(DISTINCT m.idx), " +
             "((SELECT COALESCE(SUM(rm.amount), 0) FROM ReceiptMeeting rm WHERE rm.projectIdx = p.idx) + " +
-            "(SELECT COALESCE(SUM(COALESCE(rt.transportationFee, 0) + COALESCE(rt.accommodationFee, 0) + COALESCE(rt.mealFee, 0) + COALESCE(rt.otherFee, 0)), 0) FROM ReceiptTrip rt WHERE rt.projectIdx = p.idx) + " +
+            "(SELECT COALESCE(SUM(COALESCE(rt.totalFee, 0)), 0) FROM ReceiptTrip rt WHERE rt.projectIdx = p.idx) + " +
             "(SELECT COALESCE(SUM(ro.totalAmount), 0) FROM ReceiptOvertime ro WHERE ro.projectIdx = p)), " +
             "p.totalPeriodStart, p.totalPeriodEnd, " +
             "p.createdAt, p.updatedAt, p.createdUserIdx, p.updatedUserIdx " +
@@ -113,7 +113,7 @@ public interface ProjectRepository extends JpaRepository<Project, Long> {
             "p.receiptUrl, p.activityBudget, p.equipmentBudget, p.materialBudget, p.progressRate, " +
             "COUNT(DISTINCT m.idx), " +
             "((SELECT COALESCE(SUM(rm.amount), 0) FROM ReceiptMeeting rm WHERE rm.projectIdx = p.idx) + " +
-            "(SELECT COALESCE(SUM(COALESCE(rt.transportationFee, 0) + COALESCE(rt.accommodationFee, 0) + COALESCE(rt.mealFee, 0) + COALESCE(rt.otherFee, 0)), 0) FROM ReceiptTrip rt WHERE rt.projectIdx = p.idx) + " +
+            "(SELECT COALESCE(SUM(COALESCE(rt.totalFee, 0)), 0) FROM ReceiptTrip rt WHERE rt.projectIdx = p.idx) + " +
             "(SELECT COALESCE(SUM(ro.totalAmount), 0) FROM ReceiptOvertime ro WHERE ro.projectIdx = p)), " +
             "p.totalPeriodStart, p.totalPeriodEnd, " +
             "p.createdAt, p.updatedAt, p.createdUserIdx, p.updatedUserIdx " +
@@ -134,7 +134,7 @@ public interface ProjectRepository extends JpaRepository<Project, Long> {
             "p.receiptUrl, p.activityBudget, p.equipmentBudget, p.materialBudget, p.progressRate, " +
             "COUNT(DISTINCT m2.idx), " +
             "((SELECT COALESCE(SUM(rm.amount), 0) FROM ReceiptMeeting rm WHERE rm.projectIdx = p.idx) + " +
-            "(SELECT COALESCE(SUM(COALESCE(rt.transportationFee, 0) + COALESCE(rt.accommodationFee, 0) + COALESCE(rt.mealFee, 0) + COALESCE(rt.otherFee, 0)), 0) FROM ReceiptTrip rt WHERE rt.projectIdx = p.idx) + " +
+            "(SELECT COALESCE(SUM(COALESCE(rt.totalFee, 0)), 0) FROM ReceiptTrip rt WHERE rt.projectIdx = p.idx) + " +
             "(SELECT COALESCE(SUM(ro.totalAmount), 0) FROM ReceiptOvertime ro WHERE ro.projectIdx = p)), " +
             "p.totalPeriodStart, p.totalPeriodEnd, " +
             "p.createdAt, p.updatedAt, p.createdUserIdx, p.updatedUserIdx " +
