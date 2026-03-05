@@ -9,6 +9,7 @@ import com.pinecni.erp.entity.*;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 
+import java.math.BigDecimal;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -30,7 +31,7 @@ public class ReceiptTripMapper {
         if (entity == null) return null;
 
         // 작성자 정보 조회
-        User author = userRepository.findById(entity.getAuthorIdx()).orElse(null);
+        User author = userRepository.findById(entity.getDrafterUserIdx()).orElse(null);
         String authorUserName = null;
         String authorDept     = null;
         String authorDeptName = null;
@@ -76,21 +77,16 @@ public class ReceiptTripMapper {
                 .projectName(entity.getProject() != null ? entity.getProject().getProjectName() : null)
                 .cardIdx(entity.getCardIdx())
                 .cardName(cardName)
-                .authorIdx(entity.getAuthorIdx())
+                .drafterUserIdx(entity.getDrafterUserIdx())
                 .authorUserName(authorUserName)
                 .authorDept(authorDept)
                 .authorDeptName(authorDeptName)
                 .tripDate(entity.getTripDate())
                 .duration(entity.getDuration())
                 .location(entity.getLocation())
-                .transportationFee(entity.getTransportationFee())
-                .accommodationFee(entity.getAccommodationFee())
-                .mealFee(entity.getMealFee())
-                .otherFee(entity.getOtherFee())
+                .totalFee(entity.getTotalFee())
                 .purpose(entity.getPurpose())
                 .content(entity.getContent())
-                .paymentMethod(entity.getPaymentMethod())
-                .status(entity.getStatus())
                 .attendees(attendeeDTOs)
                 .createdAt(entity.getCreatedAt())
                 .updatedAt(entity.getUpdatedAt())
@@ -103,21 +99,19 @@ public class ReceiptTripMapper {
     public ReceiptTrip toEntity(ReceiptTripCreateDTO dto) {
         if (dto == null) return null;
 
+        BigDecimal totalFee = sumFees(dto.getTransportationFee(), dto.getAccommodationFee(),
+                dto.getMealFee(), dto.getOtherFee());
+
         return ReceiptTrip.builder()
                 .projectIdx(dto.getProjectIdx())
                 .cardIdx(dto.getCardIdx())
-                .authorIdx(dto.getAuthorIdx())
+                .drafterUserIdx(dto.getDrafterUserIdx())
                 .tripDate(dto.getTripDate())
                 .duration(dto.getDuration())
                 .location(dto.getLocation())
-                .transportationFee(dto.getTransportationFee())
-                .accommodationFee(dto.getAccommodationFee())
-                .mealFee(dto.getMealFee())
-                .otherFee(dto.getOtherFee())
+                .totalFee(totalFee)
                 .purpose(dto.getPurpose())
                 .content(dto.getContent())
-                .paymentMethod(dto.getPaymentMethod())
-                .status("PENDING")
                 .deleted(false)
                 .build();
     }
@@ -128,18 +122,20 @@ public class ReceiptTripMapper {
     public void updateEntity(ReceiptTrip entity, ReceiptTripUpdateDTO dto) {
         if (entity == null || dto == null) return;
 
-        if (dto.getProjectIdx() != null)        entity.setProjectIdx(dto.getProjectIdx());
-        if (dto.getCardIdx() != null)           entity.setCardIdx(dto.getCardIdx());
-        if (dto.getTripDate() != null)           entity.setTripDate(dto.getTripDate());
-        if (dto.getDuration() != null)           entity.setDuration(dto.getDuration());
-        if (dto.getLocation() != null)           entity.setLocation(dto.getLocation());
-        if (dto.getTransportationFee() != null)  entity.setTransportationFee(dto.getTransportationFee());
-        if (dto.getAccommodationFee() != null)   entity.setAccommodationFee(dto.getAccommodationFee());
-        if (dto.getMealFee() != null)            entity.setMealFee(dto.getMealFee());
-        if (dto.getOtherFee() != null)           entity.setOtherFee(dto.getOtherFee());
-        if (dto.getPurpose() != null)            entity.setPurpose(dto.getPurpose());
-        if (dto.getContent() != null)            entity.setContent(dto.getContent());
-        if (dto.getPaymentMethod() != null)      entity.setPaymentMethod(dto.getPaymentMethod());
+        if (dto.getProjectIdx() != null) entity.setProjectIdx(dto.getProjectIdx());
+        if (dto.getCardIdx() != null)    entity.setCardIdx(dto.getCardIdx());
+        if (dto.getTripDate() != null)   entity.setTripDate(dto.getTripDate());
+        if (dto.getDuration() != null)   entity.setDuration(dto.getDuration());
+        if (dto.getLocation() != null)   entity.setLocation(dto.getLocation());
+        if (dto.getPurpose() != null)    entity.setPurpose(dto.getPurpose());
+        if (dto.getContent() != null)    entity.setContent(dto.getContent());
+
+        // 개별 항목이 하나라도 넘어오면 totalFee 재계산
+        if (dto.getTransportationFee() != null || dto.getAccommodationFee() != null
+                || dto.getMealFee() != null || dto.getOtherFee() != null) {
+            entity.setTotalFee(sumFees(dto.getTransportationFee(), dto.getAccommodationFee(),
+                    dto.getMealFee(), dto.getOtherFee()));
+        }
     }
 
     /**
@@ -199,6 +195,14 @@ public class ReceiptTripMapper {
                 .position(position)
                 .displayOrder(entity.getDisplayOrder())
                 .build();
+    }
+
+    private BigDecimal sumFees(BigDecimal... fees) {
+        BigDecimal total = BigDecimal.ZERO;
+        for (BigDecimal fee : fees) {
+            if (fee != null) total = total.add(fee);
+        }
+        return total;
     }
 
     /**

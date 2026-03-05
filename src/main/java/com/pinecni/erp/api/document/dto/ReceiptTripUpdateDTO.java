@@ -33,16 +33,16 @@ public class ReceiptTripUpdateDTO {
     /** 출장지 */
     private String location;
 
-    /** 교통비 */
+    /** 교통비 (합산되어 total_fee 로 저장) */
     private BigDecimal transportationFee;
 
-    /** 숙박비 */
+    /** 숙박비 (합산되어 total_fee 로 저장) */
     private BigDecimal accommodationFee;
 
-    /** 식비 */
+    /** 식비 (합산되어 total_fee 로 저장) */
     private BigDecimal mealFee;
 
-    /** 기타/일비 */
+    /** 기타/일비 (합산되어 total_fee 로 저장) */
     private BigDecimal otherFee;
 
     /** 출장 목적 */
@@ -50,12 +50,6 @@ public class ReceiptTripUpdateDTO {
 
     /** 출장 내용 */
     private String content;
-
-    /** 지불 방법 */
-    private String paymentMethod;
-
-    /** 비고 */
-    private String notes;
 
     /** 참석자/동행자 목록 */
     private List<ReceiptTripAttendeeDTO> attendees;

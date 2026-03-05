@@ -9,6 +9,7 @@ import com.pinecni.erp.api.document.dto.ReceiptTripUpdateDTO;
 import com.pinecni.erp.api.document.mapper.ReceiptTripMapper;
 import com.pinecni.erp.api.document.repository.ReceiptTripAttachmentRepository;
 import com.pinecni.erp.api.project.repository.ReceiptTripAttendeeRepository;
+import com.pinecni.erp.api.project.repository.ProjectCardRepository;
 import com.pinecni.erp.api.project.repository.ReceiptTripRepository;
 import com.pinecni.erp.entity.*;
 import lombok.RequiredArgsConstructor;
@@ -42,6 +43,7 @@ public class ReceiptTripServiceImpl implements ReceiptTripService {
     private final ReceiptTripAttachmentRepository attachmentRepository;
     private final ApprovalDocumentRepository approvalDocumentRepository;
     private final DocumentSequenceRepository documentSequenceRepository;
+    private final ProjectCardRepository projectCardRepository;
     private final ReceiptTripMapper mapper;
 
     @Value("${file.base.dir}")
@@ -87,9 +89,9 @@ public class ReceiptTripServiceImpl implements ReceiptTripService {
 
     @Override
     @Transactional(readOnly = true)
-    public List<ReceiptTripDTO> getReceiptTripsByAuthorIdx(Long authorIdx) {
-        log.debug("작성자별 출장 목록 조회 - authorIdx: {}", authorIdx);
-        return receiptTripRepository.findByAuthorIdxOrderByTripDateDesc(authorIdx)
+    public List<ReceiptTripDTO> getReceiptTripsByAuthorIdx(Long drafterUserIdx) {
+        log.debug("작성자별 출장 목록 조회 - drafterUserIdx: {}", drafterUserIdx);
+        return receiptTripRepository.findByDrafterUserIdxOrderByTripDateDesc(drafterUserIdx)
                 .stream().map(mapper::toDTO).collect(Collectors.toList());
     }
 
@@ -103,8 +105,9 @@ public class ReceiptTripServiceImpl implements ReceiptTripService {
 
     @Override
     @Transactional
-    public ReceiptTripDTO createReceiptTrip(ReceiptTripCreateDTO createDTO) {
-        log.debug("출장 생성 - projectIdx: {}, authorIdx: {}", createDTO.getProjectIdx(), createDTO.getAuthorIdx());
+    public ReceiptTripDTO createReceiptTrip(ReceiptTripCreateDTO createDTO, Long currentUserIdx) {
+        log.debug("출장 생성 - projectIdx: {}, drafterUserIdx: {}, currentUserIdx: {}",
+                createDTO.getProjectIdx(), createDTO.getDrafterUserIdx(), currentUserIdx);
 
         try {
             // 1. 문서번호 생성
@@ -116,15 +119,17 @@ public class ReceiptTripServiceImpl implements ReceiptTripService {
             }
 
             // 2. ApprovalDocument 생성
+            //    drafterUserIdx = 화면에서 선택한 작성자 (대리 입력 시 로그인 유저와 다름)
+            //    createdUserIdx = 실제 로그인한 저장자
             ApprovalDocument approvalDocument = ApprovalDocument.builder()
                     .documentNo(documentNo)
                     .title(title)
                     .documentType("연구비증빙-출장")
                     .isProject(true)
-                    .drafterUserIdx(createDTO.getAuthorIdx())
+                    .drafterUserIdx(createDTO.getDrafterUserIdx())
                     .content(createDTO.getContent())
-                    .createdUserIdx(createDTO.getAuthorIdx())
-                    .updatedUserIdx(createDTO.getAuthorIdx())
+                    .createdUserIdx(currentUserIdx)
+                    .updatedUserIdx(currentUserIdx)
                     .build();
             ApprovalDocument savedDocument = approvalDocumentRepository.save(approvalDocument);
             log.debug("ApprovalDocument 생성 - idx: {}, documentNo: {}", savedDocument.getIdx(), documentNo);
@@ -133,6 +138,8 @@ public class ReceiptTripServiceImpl implements ReceiptTripService {
             ReceiptTrip entity = mapper.toEntity(createDTO);
             entity.setDocumentIdx(savedDocument.getIdx());
             entity.setDocumentNumber(documentNo);
+            entity.setCreatedUserIdx(currentUserIdx);
+            entity.setUpdatedUserIdx(currentUserIdx);
             entity = receiptTripRepository.save(entity);
 
             // 4. 참석자 저장
@@ -238,11 +245,21 @@ public class ReceiptTripServiceImpl implements ReceiptTripService {
         ReceiptTrip trip = receiptTripRepository.findById(receiptTripIdx)
                 .orElseThrow(() -> new IllegalArgumentException("출장을 찾을 수 없습니다. idx: " + receiptTripIdx));
 
+        // 카드번호 조회
+        String cardLastDigits = "no-card";
+        if (trip.getCardIdx() != null) {
+            var card = projectCardRepository.findById(trip.getCardIdx()).orElse(null);
+            if (card != null && card.getCardLastDigits() != null) {
+                cardLastDigits = card.getCardLastDigits();
+            }
+        }
+
         // 업로드 경로 구성
         String year  = String.valueOf(trip.getTripDate().getYear());
         String date  = trip.getTripDate().format(DateTimeFormatter.ofPattern("yyyy-MM-dd"));
         String relativePath = uploadPattern
                 .replace("{projectIdx}", String.valueOf(trip.getProjectIdx()))
+                .replace("{cardLastDigits}", cardLastDigits)
                 .replace("{year}", year)
                 .replace("{date}", date);
         String fullUploadPath = baseDir + File.separator + relativePath.replace("/", File.separator);
@@ -254,12 +271,12 @@ public class ReceiptTripServiceImpl implements ReceiptTripService {
             throw new RuntimeException("업로드 디렉토리를 생성할 수 없습니다: " + fullUploadPath, e);
         }
 
-        // 표시용 파일명 기본 구성: {yyyymmdd}_{총금액}_{출장}_{문서종류}
+        // 표시용 파일명 기본 구성: {카드번호}_{yyyymmdd}_{총금액}_{출장}_{문서종류}
         String displayDateStr   = trip.getTripDate().format(DateTimeFormatter.ofPattern("yyyyMMdd"));
         BigDecimal totalAmount  = calcTotal(trip);
         String displayAmountStr = String.format("%,d원", totalAmount.longValue());
         String displayDocType   = "DOCUMENT".equals(attachmentType) ? "공식문서" : "영수증";
-        String displayBaseName  = displayDateStr + "_" + displayAmountStr + "_출장_" + displayDocType;
+        String displayBaseName  = cardLastDigits + "_" + displayDateStr + "_" + displayAmountStr + "_출장_" + displayDocType;
 
         // 기존 파일 수 → 연번 오프셋
         long existingCount = attachmentRepository
@@ -352,9 +369,17 @@ public class ReceiptTripServiceImpl implements ReceiptTripService {
         List<ReceiptTripAttachment> all = attachmentRepository
                 .findByReceiptTripIdxOrderByIdxAsc(trip.getIdx());
 
+        String cardLastDigits = "no-card";
+        if (trip.getCardIdx() != null) {
+            var card = projectCardRepository.findById(trip.getCardIdx()).orElse(null);
+            if (card != null && card.getCardLastDigits() != null) {
+                cardLastDigits = card.getCardLastDigits();
+            }
+        }
         String displayDateStr   = trip.getTripDate().format(DateTimeFormatter.ofPattern("yyyyMMdd"));
         BigDecimal totalAmount  = calcTotal(trip);
         String displayAmountStr = String.format("%,d원", totalAmount.longValue());
+        final String finalCardLastDigits = cardLastDigits;
 
         Map<String, List<ReceiptTripAttachment>> byType = all.stream()
                 .filter(a -> !Boolean.TRUE.equals(a.getDeleted()))
@@ -365,7 +390,7 @@ public class ReceiptTripServiceImpl implements ReceiptTripService {
 
         byType.forEach((type, list) -> {
             String displayDocType = "DOCUMENT".equals(type) ? "공식문서" : "영수증";
-            String baseName = displayDateStr + "_" + displayAmountStr + "_출장_" + displayDocType;
+            String baseName = finalCardLastDigits + "_" + displayDateStr + "_" + displayAmountStr + "_출장_" + displayDocType;
 
             list.sort(Comparator.comparing(ReceiptTripAttachment::getIdx));
             for (int i = 0; i < list.size(); i++) {
@@ -383,12 +408,7 @@ public class ReceiptTripServiceImpl implements ReceiptTripService {
     }
 
     private BigDecimal calcTotal(ReceiptTrip trip) {
-        BigDecimal total = BigDecimal.ZERO;
-        if (trip.getTransportationFee() != null) total = total.add(trip.getTransportationFee());
-        if (trip.getAccommodationFee()  != null) total = total.add(trip.getAccommodationFee());
-        if (trip.getMealFee()           != null) total = total.add(trip.getMealFee());
-        if (trip.getOtherFee()          != null) total = total.add(trip.getOtherFee());
-        return total;
+        return trip.getTotalFee() != null ? trip.getTotalFee() : BigDecimal.ZERO;
     }
 
     private String generateDocumentNo() {

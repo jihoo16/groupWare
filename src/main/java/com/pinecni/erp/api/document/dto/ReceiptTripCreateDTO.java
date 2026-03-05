@@ -24,8 +24,8 @@ public class ReceiptTripCreateDTO {
     /** 카드 IDX */
     private Long cardIdx;
 
-    /** 작성자 IDX */
-    private Long authorIdx;
+    /** 문서 작성자 IDX (드래프터, 로그인 사용자와 다를 수 있음) */
+    private Long drafterUserIdx;
 
     /** 출장 일자 */
     private LocalDate tripDate;
@@ -53,12 +53,6 @@ public class ReceiptTripCreateDTO {
 
     /** 출장 내용 */
     private String content;
-
-    /** 지불 방법 */
-    private String paymentMethod;
-
-    /** 비고 */
-    private String notes;
 
     /** 참석자/동행자 목록 */
     private List<ReceiptTripAttendeeDTO> attendees;

@@ -6,7 +6,6 @@ import lombok.*;
 import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
-import java.time.LocalTime;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -17,8 +16,7 @@ import java.util.List;
 @Table(name = "receipt_trip", schema = "erp", indexes = {
         @Index(name = "idx_receipt_trip_project", columnList = "project_idx"),
         @Index(name = "idx_receipt_trip_card", columnList = "card_idx"),
-        @Index(name = "idx_receipt_trip_author", columnList = "author_idx"),
-        @Index(name = "idx_receipt_trip_status", columnList = "status"),
+        @Index(name = "idx_receipt_trip_drafter", columnList = "drafter_user_idx"),
         @Index(name = "idx_receipt_trip_date", columnList = "trip_date"),
         @Index(name = "idx_receipt_trip_document", columnList = "document_idx")
 })
@@ -44,8 +42,8 @@ public class ReceiptTrip {
     @Column(name = "document_idx")
     private Long documentIdx;
 
-    @Column(name = "author_idx", nullable = false)
-    private Long authorIdx;
+    @Column(name = "drafter_user_idx", nullable = false)
+    private Long drafterUserIdx;
 
     @Column(name = "trip_date", nullable = false)
     private LocalDate tripDate;
@@ -53,17 +51,8 @@ public class ReceiptTrip {
     @Column(name = "location", nullable = false, length = 200)
     private String location;
 
-    @Column(name = "transportation_fee", precision = 15, scale = 2)
-    private BigDecimal transportationFee;
-
-    @Column(name = "accommodation_fee", precision = 15, scale = 2)
-    private BigDecimal accommodationFee;
-
-    @Column(name = "meal_fee", precision = 15, scale = 2)
-    private BigDecimal mealFee;
-
-    @Column(name = "other_fee", precision = 15, scale = 2)
-    private BigDecimal otherFee;
+    @Column(name = "total_fee", precision = 15, scale = 2)
+    private BigDecimal totalFee;
 
     @Column(name = "purpose", columnDefinition = "TEXT")
     private String purpose;
@@ -71,17 +60,11 @@ public class ReceiptTrip {
     @Column(name = "content", columnDefinition = "TEXT")
     private String content;
 
-    @Column(name = "payment_method", length = 50)
-    private String paymentMethod;
-
     @Column(name = "document_number", length = 50)
     private String documentNumber;
 
     @Column(name = "duration")
     private Integer duration;
-
-    @Column(name = "status", length = 20)
-    private String status = "PENDING";
 
     @Column(name = "created_at", updatable = false)
     private LocalDateTime createdAt;
@@ -98,6 +81,12 @@ public class ReceiptTrip {
     @Column(name = "deleted_user_idx")
     private Long deletedUserIdx;
 
+    @Column(name = "created_user_idx")
+    private Long createdUserIdx;
+
+    @Column(name = "updated_user_idx")
+    private Long updatedUserIdx;
+
     // 관계 매핑
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "project_idx", insertable = false, updatable = false)
@@ -108,8 +97,8 @@ public class ReceiptTrip {
     private ProjectCard projectCard;
 
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "author_idx", insertable = false, updatable = false)
-    private User author;
+    @JoinColumn(name = "drafter_user_idx", insertable = false, updatable = false)
+    private User drafter;
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "document_idx", insertable = false, updatable = false)

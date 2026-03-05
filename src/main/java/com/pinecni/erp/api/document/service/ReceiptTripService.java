@@ -25,7 +25,7 @@ public interface ReceiptTripService {
 
     List<ReceiptTripDTO> getReceiptTripsByStatus(String status);
 
-    ReceiptTripDTO createReceiptTrip(ReceiptTripCreateDTO createDTO);
+    ReceiptTripDTO createReceiptTrip(ReceiptTripCreateDTO createDTO, Long currentUserIdx);
 
     ReceiptTripDTO updateReceiptTrip(Long idx, ReceiptTripUpdateDTO updateDTO);
 

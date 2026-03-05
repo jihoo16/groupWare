@@ -102,14 +102,14 @@ public class ReceiptTripController {
 
         try {
             ReceiptTripCreateDTO createDTO = objectMapper.readValue(dataJson, ReceiptTripCreateDTO.class);
-            createDTO.setAuthorIdx(currentUserIdx);
+            // drafterUserIdx는 프론트에서 선택한 작성자 IDX — 세션 유저로 덮어쓰지 않는다
 
-            log.debug("POST /api/receipt-trips - projectIdx: {}, authorIdx: {}, 영수증: {}개, 공식문서: {}개",
-                    createDTO.getProjectIdx(), currentUserIdx,
+            log.debug("POST /api/receipt-trips - projectIdx: {}, drafterUserIdx: {}, currentUserIdx: {}, 영수증: {}개, 공식문서: {}개",
+                    createDTO.getProjectIdx(), createDTO.getDrafterUserIdx(), currentUserIdx,
                     receiptFiles  != null ? receiptFiles.length  : 0,
                     documentFiles != null ? documentFiles.length : 0);
 
-            ReceiptTripDTO receiptTrip = receiptTripService.createReceiptTrip(createDTO);
+            ReceiptTripDTO receiptTrip = receiptTripService.createReceiptTrip(createDTO, currentUserIdx);
 
             if (receiptFiles != null && receiptFiles.length > 0) {
                 receiptTripService.saveAttachments(receiptTrip.getIdx(), receiptFiles, "RECEIPT", currentUserIdx);

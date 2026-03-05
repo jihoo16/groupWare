@@ -59,9 +59,9 @@ public interface ReceiptTripRepository extends JpaRepository<ReceiptTrip, Long> 
      */
     @Query("SELECT rt FROM ReceiptTrip rt " +
             "LEFT JOIN FETCH rt.approvalDocument " +
-            "WHERE rt.authorIdx = :authorIdx AND rt.deleted = false " +
+            "WHERE rt.drafterUserIdx = :drafterUserIdx AND rt.deleted = false " +
             "ORDER BY rt.tripDate DESC")
-    List<ReceiptTrip> findByAuthorIdxOrderByTripDateDesc(@Param("authorIdx") Long authorIdx);
+    List<ReceiptTrip> findByDrafterUserIdxOrderByTripDateDesc(@Param("drafterUserIdx") Long drafterUserIdx);
 
     /**
      * 상태별 출장 목록 조회 (삭제되지 않은 건, 출장일 내림차순)

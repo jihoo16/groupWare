@@ -40,8 +40,8 @@ public class ReceiptTripDTO {
     /** 카드명 */
     private String cardName;
 
-    /** 작성자 IDX */
-    private Long authorIdx;
+    /** 문서 작성자 IDX (드래프터) */
+    private Long drafterUserIdx;
 
     /** 작성자 이름 */
     private String authorUserName;
@@ -61,29 +61,14 @@ public class ReceiptTripDTO {
     /** 출장지 */
     private String location;
 
-    /** 교통비 */
-    private BigDecimal transportationFee;
-
-    /** 숙박비 */
-    private BigDecimal accommodationFee;
-
-    /** 식비 */
-    private BigDecimal mealFee;
-
-    /** 기타/일비 */
-    private BigDecimal otherFee;
+    /** 총 경비 합계 */
+    private BigDecimal totalFee;
 
     /** 출장 목적 */
     private String purpose;
 
     /** 출장 내용 */
     private String content;
-
-    /** 지불 방법 */
-    private String paymentMethod;
-
-    /** 상태 (PENDING, APPROVED, REJECTED) */
-    private String status;
 
     /** 참석자/동행자 목록 */
     private List<ReceiptTripAttendeeDTO> attendees;

@@ -485,14 +485,14 @@ public class ApprovalDocumentServiceImpl implements ApprovalDocumentService {
                 .documentNo(documentNo)
                 .title(title)
                 .documentType("BUSINESS_TRIP")
-                .drafterUserIdx(trip.getAuthorIdx())
+                .drafterUserIdx(trip.getDrafterUserIdx())
                 .createdAt(trip.getCreatedAt())
                 .updatedAt(trip.getUpdatedAt())
                 .amount(tripTotal)
                 .build();
 
         // 작성자 정보 (users 테이블에서 조회)
-        userRepository.findById(trip.getAuthorIdx()).ifPresent(user -> {
+        userRepository.findById(trip.getDrafterUserIdx()).ifPresent(user -> {
             dto.setDrafterName(user.getEmpName());
             dto.setDrafterDept(user.getEmpDept());
             if (user.getEmpDept() != null) {
