@@ -2458,12 +2458,12 @@ document.addEventListener('DOMContentLoaded', async function() {
             }
 
             // 저장 데이터 생성
+            const tripDurationEl = document.getElementById('trip_duration');
             const saveData = {
                 projectIdx: parseInt(selectedProjectIdxInput.value),
-                authorIdx: currentUser ? currentUser.idx : null,
+                drafterUserIdx: currentUser ? currentUser.idx : null,
                 tripDate: dateInput.value,
-                startTime: '00:00:00',  // 출장은 하루 전체 사용 (중복 체크용)
-                endTime: '23:59:59',    // 출장은 하루 전체 사용 (중복 체크용)
+                duration: tripDurationEl ? parseInt(tripDurationEl.value) || 0 : 0,
                 location: locationInput.value,
                 transportationFee: totalTransportFee || null,
                 accommodationFee: totalAccommodationFee || null,
@@ -2472,8 +2472,6 @@ document.addEventListener('DOMContentLoaded', async function() {
                 purpose: document.getElementById('trip_purpose') ? document.getElementById('trip_purpose').value : null,
                 content: document.getElementById('trip_result')?.value || null,
                 cardIdx: selectedCard ? selectedCard.idx : null,
-                paymentMethod: '카드로 결제',
-                isProject: true,  // 프로젝트 관련 문서임을 명시
                 attendees: attendeeDTOs
             };
 
