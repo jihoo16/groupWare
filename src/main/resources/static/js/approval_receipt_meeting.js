@@ -1219,9 +1219,9 @@ document.addEventListener('DOMContentLoaded', async function() {
                     return getPositionSortOrder(b.position) - getPositionSortOrder(a.position);
                 }
 
-                // 3. 내부 참석자끼리는 직급순 (높은 직급부터)
+                // 3. 내부 참석자끼리는 직급순 (낮은 직급부터 - 사원 먼저)
                 if (a.type === 'internal' && b.type === 'internal') {
-                    return getPositionSortOrder(b.position) - getPositionSortOrder(a.position);
+                    return getPositionSortOrder(a.position) - getPositionSortOrder(b.position);
                 }
 
                 return 0;
@@ -3455,21 +3455,16 @@ document.addEventListener('DOMContentLoaded', async function() {
         if (currentAuthorId) {
             const hasAuthor = currentAttendees.some(a => String(a.id) === String(currentAuthorId) && a.type === 'internal');
             if (!hasAuthor) {
-                // 작성자가 빠져있으면 다시 추가
-                const authorName = document.getElementById('common_author')?.value;
-                if (authorName) {
-                    // 전체 프로젝트 멤버에서 작성자 정보 찾기
-                    const authorInfo = allProjectMembers.find(m => String(m.id) === String(currentAuthorId));
-                    if (authorInfo) {
-                        currentAttendees.push({
-                            id: authorInfo.id,
-                            name: authorInfo.name,
-                            dept: authorInfo.dept,
-                            position: authorInfo.position,
-                            meetingExpense: authorInfo.meetingExpense || 0,
-                            type: 'internal'
-                        });
-                    }
+                // 작성자가 빠져있으면 내부 참석자 중 최저직급자(사원)로 작성자 업데이트
+                const internalAttendees = currentAttendees.filter(a => a.type === 'internal');
+                if (internalAttendees.length > 0) {
+                    const sorted = sortByPosition([...internalAttendees]);
+                    // sorted[0] = 최고직급, sorted[last] = 최저직급(사원)
+                    const newAuthor = sorted[sorted.length - 1];
+                    document.getElementById('common_author').value = newAuthor.name;
+                    document.getElementById('common_author_id').value = newAuthor.id;
+                    document.querySelectorAll('.auto-author').forEach(field => { field.value = newAuthor.name; });
+                    document.querySelectorAll('.auto-reporter').forEach(el => { el.textContent = newAuthor.name; });
                 }
             }
         }

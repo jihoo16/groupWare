@@ -2958,6 +2958,28 @@ input.auto-datetime {
 }
 
 
+/* 회의 내용 안내문구 */
+.meeting-content-notice {
+    display: flex;
+    align-items: flex-start;
+    gap: 8px;
+    padding: 10px 14px;
+    background: #fffbeb;
+    border: 1px solid #f59e0b;
+    border-radius: 6px;
+    font-size: 12px;
+    color: #92400e;
+    line-height: 1.5;
+    margin-bottom: 8px;
+}
+
+.meeting-content-notice i {
+    color: #f59e0b;
+    font-size: 13px;
+    flex-shrink: 0;
+    margin-top: 1px;
+}
+
 /* 주요 내용 바이트 카운터 */
 .content-byte-counter {
     margin-top: 5px;
