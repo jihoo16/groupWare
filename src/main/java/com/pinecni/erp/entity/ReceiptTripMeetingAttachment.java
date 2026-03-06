@@ -25,7 +25,7 @@ public class ReceiptTripMeetingAttachment {
     @Id
     @GeneratedValue(strategy = GenerationType.SEQUENCE, generator = "receipt_trip_meeting_attachment_seq")
     @SequenceGenerator(name = "receipt_trip_meeting_attachment_seq",
-                       sequenceName = "erp.receipt_trip_meeting_attachment_idx_seq",
+                       sequenceName = "erp.receipt_trip_meeting_attachment_sequence",
                        allocationSize = 1)
     @Column(name = "idx")
     private Long idx;

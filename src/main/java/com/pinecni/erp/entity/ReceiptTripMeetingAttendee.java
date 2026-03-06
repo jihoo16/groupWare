@@ -29,7 +29,7 @@ public class ReceiptTripMeetingAttendee {
     @Id
     @GeneratedValue(strategy = GenerationType.SEQUENCE, generator = "receipt_trip_meeting_attendee_seq")
     @SequenceGenerator(name = "receipt_trip_meeting_attendee_seq",
-                       sequenceName = "erp.receipt_trip_meeting_attendee_idx_seq",
+                       sequenceName = "erp.receipt_trip_meeting_attendee_sequence",
                        allocationSize = 1)
     @Column(name = "idx")
     private Long idx;
