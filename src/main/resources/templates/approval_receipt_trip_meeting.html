@@ -45,9 +45,10 @@
                     <div style="display: none;">
                         <!-- 영수증 처리 템플릿 - 회의+출장 -->
                         <div id="template-receipt-trip">
+                            <!-- ① 출장 정보 섹션 -->
                             <div class="common-info-section">
                                 <div class="section-header">
-                                    <h3><i class="fas fa-edit"></i> 기본 정보</h3>
+                                    <h3><i class="fas fa-plane"></i> 출장 정보</h3>
                                 </div>
 
                                 <!-- 과제명 -->
@@ -70,17 +71,26 @@
                                     <input type="hidden" id="selectedCardIdx">
                                 </div>
 
-                                <!-- 작성자 & 출장기간 -->
+                                <!-- 작성자 -->
+                                <div class="form-group full-width">
+                                    <label for="common_author">
+                                        <i class="fas fa-user-edit"></i> 작성자
+                                        <span class="info-tooltip">
+                                            <i class="fas fa-info-circle" style="margin-left: 6px; color: #64748b; cursor: help; font-size: 0.9em;"></i>
+                                            <span class="tooltip-text">출장인원 중 선택 가능합니다</span>
+                                        </span>
+                                    </label>
+                                    <input type="text" id="common_author" class="form-input clickable-input" placeholder="클릭하여 작성자 선택" readonly onclick="openAuthorModal()">
+                                </div>
+
+                                <!-- 출장지 & 출장기간 -->
                                 <div class="form-grid">
                                     <div class="form-group">
-                                        <label for="common_author">
-                                            <i class="fas fa-user-edit"></i> 작성자
-                                            <span class="info-tooltip">
-                                                <i class="fas fa-info-circle" style="margin-left: 6px; color: #64748b; cursor: help; font-size: 0.9em;"></i>
-                                                <span class="tooltip-text">작성자는 출장인원 중 선택 가능합니다</span>
-                                            </span>
+                                        <label for="common_location">
+                                            <i class="fas fa-map-marker-alt"></i> 출장지
+                                            <span class="required-mark">*</span>
                                         </label>
-                                        <input type="text" id="common_author" class="form-input" placeholder="출장 인원 등록 시 자동 설정" readonly style="cursor: default; background: #f8fafc;">
+                                        <input type="text" id="common_location" class="form-input" placeholder="출장지를 입력하세요">
                                     </div>
                                     <div class="form-group">
                                         <label for="common_date">
@@ -99,25 +109,16 @@
                                     </div>
                                 </div>
 
-                                <!-- 출장지 -->
-                                <div class="form-group full-width">
-                                    <label for="common_location">
-                                        <i class="fas fa-map-marker-alt"></i> 출장지
-                                        <span class="required-mark">*</span>
-                                    </label>
-                                    <input type="text" id="common_location" class="form-input" placeholder="출장지를 입력하세요">
-                                </div>
-
-                                <!-- 출장 인원 -->
+                                <!-- 출장인원 -->
                                 <div class="form-group full-width">
                                     <label>
-                                        <i class="fas fa-users"></i> 출장 인원
+                                        <i class="fas fa-users"></i> 출장인원
                                         <span class="required-mark">*</span>
-                                        <span id="tripPersonCount" class="person-count-badge" style="display:none;"></span>
+                                        <span class="attendee-count-badge" id="tripPersonCountBadge" style="display: none;">0명</span>
                                         <span class="expense-tooltip-wrapper">
                                             <i class="fas fa-info-circle expense-tooltip-icon"></i>
-                                            <div class="expense-tooltip-content" id="tripExpenseTooltipContent">
-                                                <div class="expense-tooltip-loading" style="line-height:1.4;">프로젝트 선택 시<br>직급별 출장비 정보를<br>확인하실 수 있습니다</div>
+                                            <div class="expense-tooltip-content" id="expenseTooltipContent">
+                                                <div class="expense-tooltip-loading" style="line-height: 1.4;">프로젝트 선택 시<br>직급별 출장비 정보를<br>확인하실 수 있습니다</div>
                                             </div>
                                         </span>
                                     </label>
@@ -125,7 +126,7 @@
                                         <div id="tripPersonList" class="attendee-list">
                                             <div class="empty-attendee-state">
                                                 <i class="fas fa-user-plus"></i>
-                                                <div>클릭하여 출장 인원 추가</div>
+                                                <div>클릭하여 출장인원 추가</div>
                                             </div>
                                         </div>
                                     </div>
@@ -137,7 +138,7 @@
                                         <i class="fas fa-bullseye"></i> 출장목적
                                         <span class="required-mark">*</span>
                                     </label>
-                                    <textarea id="common_purpose" class="form-textarea purpose-textarea" placeholder="출장 및 회의 목적을 입력하세요" rows="1"></textarea>
+                                    <textarea id="common_purpose" class="form-textarea" placeholder="출장 목적을 입력하세요" rows="1" style="resize: none;"></textarea>
                                 </div>
 
                                 <!-- 출장 내용 및 결과 -->
@@ -150,11 +151,10 @@
                                 </div>
 
                                 <!-- 날짜별 비용 입력 테이블 -->
-                                <table class="daily-expense-table" id="dailyExpenseTable">
+                                <table class="form-table common-info-table daily-expense-table" id="dailyExpenseTable" style="margin-top: 0;">
                                     <thead>
                                     <tr>
-                                        <th colspan="5"
-                                            style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 14px 20px; text-align: left; font-size: 16px; font-weight: 600; border: none;">
+                                        <th colspan="5" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 14px 20px; text-align: left; font-size: 16px; font-weight: 600; border: none;">
                                             <i class="fas fa-calculator"></i> 날짜별 사용금액 입력
                                         </th>
                                     </tr>
@@ -179,27 +179,48 @@
                                     </tr>
                                     </tfoot>
                                 </table>
+                            </div>
 
-                                <!-- 출장 / 회의 구분선 -->
-                                <div class="section-divider">
-                                    <span><i class="fas fa-comments"></i> 회의</span>
+                            <!-- ② 회의 정보 섹션 -->
+                            <div class="common-info-section">
+                                <div class="section-header">
+                                    <h3><i class="fas fa-comments"></i> 회의 정보</h3>
                                 </div>
 
-                                <!-- 회의 날짜 & 시작 시간 & 종료 시간 -->
-                                <div class="form-grid" style="grid-template-columns: repeat(3, 1fr);">
+                                <!-- 회의 작성자 & 회의 일자 -->
+                                <div class="form-grid">
+                                    <div class="form-group">
+                                        <label for="common_meeting_author">
+                                            <i class="fas fa-user-edit"></i> 회의 작성자
+                                            <span class="required-mark">*</span>
+                                            <span class="info-tooltip">
+                                                <i class="fas fa-info-circle" style="margin-left: 6px; color: #64748b; cursor: help; font-size: 0.9em;"></i>
+                                                <span class="tooltip-text">출장인원 중 선택 가능합니다</span>
+                                            </span>
+                                        </label>
+                                        <input type="text" id="common_meeting_author" class="form-input clickable-input" placeholder="출장인원 추가 후 선택" readonly onclick="openMeetingAuthorModal()">
+                                    </div>
                                     <div class="form-group">
                                         <label for="common_meeting_date">
-                                            <i class="fas fa-calendar-day"></i> 회의 날짜
+                                            <i class="fas fa-calendar-day"></i> 회의 일자
                                             <span class="required-mark">*</span>
                                         </label>
                                         <select id="common_meeting_date" class="form-input">
-                                            <option value="">출장기간을 먼저 선택하세요</option>
+                                            <option value="">출장기간 선택 후 자동 표시</option>
                                         </select>
                                     </div>
+                                </div>
+
+                                <!-- 시작 시간 & 종료 시간 -->
+                                <div class="form-grid">
                                     <div class="form-group">
                                         <label for="common_start_time">
                                             <i class="fas fa-clock"></i> 시작 시간
                                             <span class="required-mark">*</span>
+                                            <span class="label-tooltip-wrapper">
+                                                <i class="fas fa-info-circle tooltip-icon"></i>
+                                                <span class="tooltip-text">⚠️ 시간 변경 시 중복 방지를 위해 작성자 목록이 갱신됩니다</span>
+                                            </span>
                                         </label>
                                         <input type="time" id="common_start_time" class="form-input" value="10:00">
                                     </div>
@@ -212,10 +233,10 @@
                                     </div>
                                 </div>
 
-                                <!-- 회의 참석자 -->
+                                <!-- 참석자 (출장인원 자동 포함 + 외부인원 추가) -->
                                 <div class="form-group full-width">
                                     <label>
-                                        <i class="fas fa-users"></i> 회의 참석자
+                                        <i class="fas fa-users"></i> 참석자
                                         <span class="required-mark">*</span>
                                         <span id="attendeeCount" class="person-count-badge" style="display:none;"></span>
                                         <span class="expense-tooltip-wrapper">
@@ -229,7 +250,7 @@
                                         <div id="attendeeList" class="attendee-list">
                                             <div class="empty-attendee-state">
                                                 <i class="fas fa-user-plus"></i>
-                                                <div>외부 참석자를 추가해주세요</div>
+                                                <div>출장인원이 자동으로 추가됩니다</div>
                                             </div>
                                         </div>
                                         <button type="button" id="addExternalAttendeeBtn" class="add-more-persons-btn" onclick="openAttendeeModal()">
@@ -238,10 +259,46 @@
                                     </div>
                                 </div>
 
-                                <!-- 회의 내용 -->
+                                <!-- 사용 금액 & 참석자 금액 합계 -->
+                                <div class="form-grid">
+                                    <div class="form-group">
+                                        <label for="common_amount">
+                                            <i class="fas fa-won-sign"></i> 사용 금액 (원)
+                                            <span class="required-mark">*</span>
+                                        </label>
+                                        <input type="text" id="common_amount" class="form-input" placeholder="사용 금액을 입력하세요">
+                                        <div class="amount-buttons">
+                                            <button type="button" class="amount-btn" onclick="addAmount(100000)">
+                                                <i class="fas fa-plus-circle"></i> 10만원
+                                            </button>
+                                            <button type="button" class="amount-btn" onclick="addAmount(10000)">
+                                                <i class="fas fa-plus-circle"></i> 1만원
+                                            </button>
+                                            <button type="button" class="amount-btn" onclick="addAmount(1000)">
+                                                <i class="fas fa-plus-circle"></i> 1천원
+                                            </button>
+                                            <button type="button" class="amount-btn" onclick="addAmount(100)">
+                                                <i class="fas fa-plus-circle"></i> 100원
+                                            </button>
+                                            <button type="button" class="amount-reset-btn" onclick="resetAmount()">
+                                                <i class="fas fa-redo"></i> 초기화
+                                            </button>
+                                        </div>
+                                    </div>
+                                    <div class="form-group">
+                                        <label>
+                                            <i class="fas fa-calculator"></i> 참석자 금액 합계
+                                        </label>
+                                        <div class="total-amount-display">
+                                            <span id="minutesMeetingExpenseTotal">0원</span>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <!-- 주요 내용 -->
                                 <div class="form-group full-width">
                                     <label for="common_meeting_content">
-                                        <i class="fas fa-comments"></i> 회의 내용
+                                        <i class="fas fa-comments"></i> 주요 내용
                                         <span class="required-mark">*</span>
                                     </label>
                                     <div class="meeting-content-notice">
@@ -798,6 +855,30 @@
     </div>
 </div>
 
+<!-- 회의 작성자 선택 모달 -->
+<div id="meetingAuthorModal" class="modal">
+    <div class="modal-content" style="max-width: 480px; max-height: 80vh;">
+        <div class="modal-header">
+            <h3><i class="fas fa-user-edit"></i> 회의 작성자 선택</h3>
+            <button class="modal-close" onclick="closeMeetingAuthorModal()">
+                <i class="fas fa-times"></i>
+            </button>
+        </div>
+        <div class="modal-body" style="padding: 0; overflow: hidden; display: flex; flex-direction: column;">
+            <div class="modal-search" style="margin: 12px 16px 0;">
+                <i class="fas fa-search"></i>
+                <input type="text" id="meetingAuthorSearchInput" placeholder="이름 검색...">
+            </div>
+            <div class="employee-list" id="meetingAuthorList" style="padding: 12px 16px; overflow-y: auto; flex: 1;">
+                <!-- 동적 생성 -->
+            </div>
+        </div>
+        <div class="modal-footer">
+            <button class="btn-secondary" onclick="closeMeetingAuthorModal()">취소</button>
+        </div>
+    </div>
+</div>
+
 <!-- 프로젝트 선택 모달 -->
 <div id="projectModal" class="modal">
     <div class="modal-content">
@@ -854,7 +935,13 @@
             </button>
         </div>
         <div class="modal-body">
-            <div class="modal-item-list" id="authorList"></div>
+            <div class="modal-search">
+                <i class="fas fa-search"></i>
+                <input type="text" id="authorSearchInput" placeholder="이름 또는 부서 검색...">
+            </div>
+            <div class="employee-list" id="authorList">
+                <!-- 동적 생성 -->
+            </div>
         </div>
         <div class="modal-footer">
             <button class="btn-secondary" onclick="closeAuthorModal()">취소</button>

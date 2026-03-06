@@ -896,6 +896,33 @@ div:focus {
     font-weight: 400;
 }
 
+/* 날짜별 사용금액 — 필수 뱃지 */
+.expense-required-badge {
+    display: inline-block;
+    font-size: 11px;
+    font-weight: 500;
+    background: rgba(255, 255, 255, 0.25);
+    border: 1px solid rgba(255, 255, 255, 0.45);
+    border-radius: 10px;
+    padding: 2px 9px;
+    margin-left: 10px;
+    vertical-align: middle;
+    letter-spacing: 0.01em;
+}
+
+.daily-expense-table {
+    border: 2px solid #a5b4fc;
+}
+
+.daily-expense-table.field-empty {
+    border: 2px solid #ef4444 !important;
+    animation: shake 0.5s ease;
+}
+
+.daily-expense-table.field-empty thead tr:first-child th {
+    background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%) !important;
+}
+
 /* 출장 테이블 전용 - th 텍스트 줄바꿈 허용 */
 .receipt-trip-table th {
     white-space: normal;
@@ -1347,9 +1374,75 @@ div h2{
     margin-bottom: 4px;
 }
 
-.employee-detail {
+.employee-detail,
+.employee-details {
     font-size: 12.5px;
     color: #777;
+}
+
+/* 사용 금액 버튼 */
+.amount-buttons {
+    display: flex;
+    gap: 5px;
+    flex-wrap: nowrap;
+    margin-top: 8px;
+}
+
+.amount-btn {
+    padding: 6px 10px;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+    border: none;
+    border-radius: 6px;
+    font-size: 12px;
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    flex-shrink: 0;
+}
+
+.amount-btn:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 4px 8px rgba(102, 126, 234, 0.3);
+}
+
+.amount-reset-btn {
+    padding: 6px 10px;
+    background: #f1f5f9;
+    color: #64748b;
+    border: 1px solid #e2e8f0;
+    border-radius: 6px;
+    font-size: 12px;
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    flex-shrink: 0;
+}
+
+.amount-reset-btn:hover {
+    background: #e2e8f0;
+    transform: translateY(-1px);
+}
+
+/* 참석자 금액 합계 표시 */
+.total-amount-display {
+    background: #f0f4ff;
+    border: 2px solid #667eea;
+    border-radius: 8px;
+    padding: 16px;
+    text-align: center;
+    min-height: 52px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.total-amount-display span {
+    font-size: 16px;
+    font-weight: 700;
+    color: #667eea;
 }
 
 /* 출장 인원 모달 - 개인별 경비 */
@@ -2636,4 +2729,50 @@ div h2{
     padding: 1px 6px;
     border-radius: 10px;
     margin-left: 4px;
+}
+
+/* 라벨 툴팁 스타일 */
+.label-tooltip-wrapper {
+    position: relative;
+    display: inline-flex;
+    align-items: center;
+    margin-left: 4px;
+}
+
+.label-tooltip-wrapper .tooltip-icon {
+    color: #667eea;
+    font-size: 14px;
+    cursor: help;
+    transition: color 0.2s;
+}
+
+.label-tooltip-wrapper .tooltip-icon:hover {
+    color: #5a67d8;
+}
+
+.label-tooltip-wrapper .tooltip-text {
+    visibility: hidden;
+    opacity: 0;
+    position: absolute;
+    top: calc(100% + 8px);
+    left: 50%;
+    transform: translateX(-50%);
+    background: #1e293b;
+    color: #fff;
+    font-size: 12px;
+    font-weight: 400;
+    padding: 8px 12px;
+    border-radius: 6px;
+    white-space: normal !important;
+    min-width: 220px;
+    max-width: 280px;
+    width: max-content;
+    text-align: left;
+    z-index: 1000;
+    transition: opacity 0.2s ease;
+}
+
+.label-tooltip-wrapper:hover .tooltip-text {
+    visibility: visible;
+    opacity: 1;
 }
