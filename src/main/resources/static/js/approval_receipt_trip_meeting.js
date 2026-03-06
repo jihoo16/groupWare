@@ -941,6 +941,11 @@ document.addEventListener('DOMContentLoaded', function() {
             dailyExpenses = [];
             dailyExpenseBody.innerHTML = '';
 
+            // 당일출장 여부 - 숙박비 열 표시 제어
+            const isDayTrip = (duration === 0);
+            const lodgingTh = document.querySelector('#dailyExpenseTable thead tr:nth-child(2) th:nth-child(3)');
+            if (lodgingTh) lodgingTh.style.display = isDayTrip ? 'none' : '';
+
             // 날짜별 행 생성
             for (let i = 0; i < days; i++) {
                 const currentDate = new Date(startDate);
@@ -959,11 +964,15 @@ document.addEventListener('DOMContentLoaded', function() {
                     other: 0
                 });
 
+                const lodgingCell = isDayTrip
+                    ? `<td style="display:none;"><input type="text" inputmode="numeric" class="expense-input" data-index="${i}" data-type="lodging" placeholder="0"></td>`
+                    : `<td><input type="text" inputmode="numeric" class="expense-input" data-index="${i}" data-type="lodging" placeholder="0"></td>`;
+
                 const row = document.createElement('tr');
                 row.innerHTML = `
                     <td>${dateStr}</td>
                     <td><input type="text" inputmode="numeric" class="expense-input" data-index="${i}" data-type="transport" placeholder="0"></td>
-                    <td><input type="text" inputmode="numeric" class="expense-input" data-index="${i}" data-type="lodging" placeholder="0"></td>
+                    ${lodgingCell}
                     <td><input type="text" inputmode="numeric" class="expense-input" data-index="${i}" data-type="meal" placeholder="0"></td>
                     <td><input type="text" inputmode="numeric" class="expense-input" data-index="${i}" data-type="other" placeholder="0"></td>
                 `;
@@ -1014,13 +1023,20 @@ document.addEventListener('DOMContentLoaded', function() {
             tripPersons.forEach(person => {
                 if (person.type !== 'external') {
                     internalPersonCount++;
-                    totalMealGuide  += person.mealExpense  || fixedMealExpenses[person.position] || 0;
-                    totalDailyGuide += person.tripExpense  || fixedExpenses[person.position]     || 0;
+                    const { meal, daily } = getPersonExpense(person);
+                    totalMealGuide  += meal;
+                    totalDailyGuide += daily;
                 }
             });
 
             const transportGuide = internalPersonCount * 100000;
             const lodgingGuide   = internalPersonCount * 100000;
+
+            const duration = parseInt(commonDuration ? commonDuration.value : '0');
+            const isDayTrip = (duration === 0);
+            const lodgingCell = isDayTrip
+                ? `<td style="display:none; text-align: center; color: #1e40af; font-weight: 600;">${lodgingGuide.toLocaleString()}원</td>`
+                : `<td style="text-align: center; color: #1e40af; font-weight: 600;">${lodgingGuide.toLocaleString()}원</td>`;
 
             const guideRow = document.createElement('tr');
             guideRow.className = 'expense-guide-row';
@@ -1035,7 +1051,7 @@ document.addEventListener('DOMContentLoaded', function() {
                     </span>
                 </td>
                 <td style="text-align: center; color: #1e40af; font-weight: 600;">${transportGuide.toLocaleString()}원</td>
-                <td style="text-align: center; color: #1e40af; font-weight: 600;">${lodgingGuide.toLocaleString()}원</td>
+                ${lodgingCell}
                 <td style="text-align: center; color: #1e40af; font-weight: 600;">${totalMealGuide.toLocaleString()}원</td>
                 <td style="text-align: center; color: #1e40af; font-weight: 600;">${totalDailyGuide.toLocaleString()}원</td>
             `;
@@ -1602,7 +1618,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
             // [2] 출장 일별 비용 + 회의 사용금액을 합산하여 payload 구성
             const dailyExpensesPayload = dailyExpenses.map(e => ({
-                expenseDate:       e.date,
+                expenseDate:       e.date.replace(/\./g, '-'),
                 transportationFee: e.transport || 0,
                 accommodationFee:  e.lodging   || 0,
                 mealFee:           e.meal      || 0,
@@ -2996,11 +3012,14 @@ document.addEventListener('DOMContentLoaded', function() {
         if (!el) return;
         const current = parseInt(el.value.replace(/,/g, '') || '0');
         el.value = (current + value).toLocaleString();
+        el.dispatchEvent(new Event('input'));
     };
 
     window.resetAmount = function() {
         const el = document.getElementById('common_amount');
-        if (el) el.value = '';
+        if (!el) return;
+        el.value = '';
+        el.dispatchEvent(new Event('input'));
     };
 
     // ============================================
