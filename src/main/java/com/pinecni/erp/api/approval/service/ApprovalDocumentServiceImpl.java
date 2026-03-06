@@ -13,6 +13,7 @@ import com.pinecni.erp.api.document.repository.ReceiptOvertimeRepository;
 import com.pinecni.erp.api.project.repository.ProjectCardRepository;
 import com.pinecni.erp.api.project.repository.ProjectRepository;
 import com.pinecni.erp.api.project.repository.ReceiptMeetingRepository;
+import com.pinecni.erp.api.project.repository.ReceiptTripMeetingRepository;
 import com.pinecni.erp.api.project.repository.ReceiptTripRepository;
 import com.pinecni.erp.api.user.repository.UserRepository;
 import com.pinecni.erp.constant.CodeConstants;
@@ -48,6 +49,7 @@ public class ApprovalDocumentServiceImpl implements ApprovalDocumentService {
     private final MeetingMinutesRepository meetingMinutesRepository;
     private final ReceiptTripRepository receiptTripRepository;
     private final ReceiptMeetingRepository receiptMeetingRepository;
+    private final ReceiptTripMeetingRepository receiptTripMeetingRepository;
     private final ReceiptOvertimeRepository receiptOvertimeRepository;
     private final ProjectCardRepository projectCardRepository;
     private final ProjectRepository projectRepository;
@@ -222,6 +224,16 @@ public class ApprovalDocumentServiceImpl implements ApprovalDocumentService {
                 }
                 dto.setAttachments(buildTripAttachments(receiptTrip.getIdx()));
             });
+        } else if ("연구비증빙-회의+출장".equals(documentType)) {
+            receiptTripMeetingRepository.findByDocumentIdx(document.getIdx()).ifPresent(rtm -> {
+                dto.setSourceDocumentId(rtm.getIdx());
+                if (rtm.getProjectIdx() != null) {
+                    dto.setProjectIdx(rtm.getProjectIdx());
+                    projectRepository.findById(rtm.getProjectIdx()).ifPresent(project -> {
+                        dto.setProjectName(project.getProjectName());
+                    });
+                }
+            });
         } else if ("연구비증빙-야근식대".equals(documentType) || "연구비증빙(야근식대)".equals(documentType) || "receipt_overtime".equals(documentType)) {
             // 연구비증빙 야근식대의 원본 문서 ID 및 프로젝트 정보 조회
             receiptOvertimeRepository.findByDocumentIdx(document.getIdx()).ifPresent(receiptOvertime -> {
@@ -255,8 +267,11 @@ public class ApprovalDocumentServiceImpl implements ApprovalDocumentService {
         // 단독 출장 조회
         result.addAll(getReceiptTripsByProject(projectIdx));
 
-        // 회의+출장 조회
+        // 단독 회의록 조회
         result.addAll(getReceiptMeetingsByProject(projectIdx));
+
+        // 회의+출장 조회
+        result.addAll(getReceiptTripMeetingsByProject(projectIdx));
 
         // 야근식대 조회
         result.addAll(getReceiptOvertimesByProject(projectIdx));
@@ -351,13 +366,47 @@ public class ApprovalDocumentServiceImpl implements ApprovalDocumentService {
     }
 
     /**
-     * 프로젝트별 회의+출장 조회
+     * 프로젝트별 단독 회의록 조회
      */
     private List<ApprovalDocumentDTO> getReceiptMeetingsByProject(Long projectIdx) {
         List<ReceiptMeeting> meetings = receiptMeetingRepository.findByProjectIdxOrderByMeetingDateDesc(projectIdx);
 
         return meetings.stream()
                 .map(this::convertReceiptMeetingToDTO)
+                .collect(Collectors.toList());
+    }
+
+    /**
+     * 프로젝트별 회의+출장 조회
+     */
+    private List<ApprovalDocumentDTO> getReceiptTripMeetingsByProject(Long projectIdx) {
+        return receiptTripMeetingRepository.findByProjectIdxOrderByTripDateDesc(projectIdx).stream()
+                .map(rtm -> {
+                    String projectName = projectRepository.findById(rtm.getProjectIdx())
+                            .map(Project::getProjectName).orElse("프로젝트");
+                    ApprovalDocumentDTO dto = ApprovalDocumentDTO.builder()
+                            .idx(rtm.getDocumentIdx())
+                            .sourceDocumentId(rtm.getIdx())
+                            .documentType("연구비증빙-회의+출장")
+                            .documentNo(rtm.getDocumentNumber())
+                            .title(projectName + " - 회의+출장 " + (rtm.getTripDate() != null ? rtm.getTripDate() : ""))
+                            .drafterUserIdx(rtm.getDrafterUserIdx())
+                            .projectIdx(rtm.getProjectIdx())
+                            .projectName(projectName)
+                            .createdAt(rtm.getCreatedAt())
+                            .updatedAt(rtm.getUpdatedAt())
+                            .build();
+                    userRepository.findById(rtm.getDrafterUserIdx()).ifPresent(user -> {
+                        dto.setDrafterName(user.getEmpName());
+                        dto.setDrafterDept(user.getEmpDept());
+                        if (user.getEmpDept() != null) {
+                            codeRepository.findByGroupCodeAndCode(
+                                    CodeConstants.GroupCode.DEPARTMENT.getCode(), user.getEmpDept())
+                                    .ifPresent(code -> dto.setDrafterDeptName(code.getCodeName()));
+                        }
+                    });
+                    return dto;
+                })
                 .collect(Collectors.toList());
     }
 
