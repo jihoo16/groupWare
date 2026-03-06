@@ -3487,6 +3487,38 @@ document.addEventListener('DOMContentLoaded', async function() {
         }, 300);
     };
 
+    // 인쇄 시 복명서를 A4 한 장에 꽉 채우기 (출장내용 및 결과 행 자동 확장)
+    (function() {
+        let savedThHeight = null;
+        window.addEventListener('beforeprint', function() {
+            const page = document.querySelector('#documentFormContent > div:last-child');
+            const resultTh = document.querySelector(
+                '#documentFormContent > div:last-child table:first-of-type tr:last-child th'
+            );
+            if (!page || !resultTh) return;
+            savedThHeight = resultTh.style.height;
+            resultTh.style.setProperty('height', 'auto', 'important');
+            const pxPerMm = 96 / 25.4;
+            const targetPx = Math.floor(281 * pxPerMm); // 297mm - 8mm×2 padding
+            const usedPx = page.scrollHeight;
+            const extraPx = targetPx - usedPx;
+            if (extraPx > 5) {
+                const currentRowPx = resultTh.closest('tr').offsetHeight;
+                resultTh.style.setProperty('height', (currentRowPx + extraPx) + 'px', 'important');
+            }
+        });
+        window.addEventListener('afterprint', function() {
+            const resultTh = document.querySelector(
+                '#documentFormContent > div:last-child table:first-of-type tr:last-child th'
+            );
+            if (resultTh) {
+                if (savedThHeight !== null) resultTh.style.height = savedThHeight;
+                else resultTh.style.removeProperty('height');
+                savedThHeight = null;
+            }
+        });
+    })();
+
     // 필드 변경 시 재검증
     ['trip_project', 'trip_location', 'trip_date', 'trip_purpose', 'trip_result'].forEach(id => {
         const el = document.getElementById(id);

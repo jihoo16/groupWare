@@ -2744,12 +2744,9 @@ input.auto-datetime {
         display: block !important;
         width: 210mm !important;
         min-height: 297mm !important;
-        max-height: 297mm !important;
         page-break-after: always !important;
         page-break-before: auto !important;
-        page-break-inside: avoid !important;
         break-after: page !important;
-        break-inside: avoid !important;
         margin: 0 !important;
         padding: 15mm !important;
         box-sizing: border-box !important;
@@ -2757,13 +2754,61 @@ input.auto-datetime {
         border: none !important;
         box-shadow: none !important;
         position: relative !important;
-        overflow: hidden !important;
+        overflow: visible !important;
     }
 
-    /* 마지막 페이지 (복명서) */
+    /* 마지막 페이지 (복명서) - 한 장에 맞게 (가로 고정, 세로만 압축) */
     #documentFormContent > div:last-child {
         page-break-after: auto !important;
         break-after: auto !important;
+        padding-top: 8mm !important;
+        padding-bottom: 8mm !important;
+    }
+
+    /* 복명서: 출장내용 th - 내용 따라 자동 높이 */
+    #documentFormContent > div:last-child th[style*="height"] {
+        height: auto !important;
+        min-height: 40px !important;
+    }
+
+    /* 복명서: 출장내용 및 결과 td - 위아래 균등 여백 */
+    #documentFormContent > div:last-child td[style*="pre-wrap"] {
+        vertical-align: middle !important;
+        padding-top: 10px !important;
+        padding-bottom: 10px !important;
+    }
+
+    /* 복명서: 결재란 서명칸 높이 축소 */
+    #documentFormContent > div:last-child td[style*="height: 78px"] {
+        height: 48px !important;
+    }
+
+    /* 복명서: 모든 테이블 셀 세로 패딩 축소 */
+    #documentFormContent > div:last-child table td,
+    #documentFormContent > div:last-child table th {
+        padding-top: 4px !important;
+        padding-bottom: 4px !important;
+    }
+
+    /* 복명서: 정산 세부내역 행은 더 촘촘하게 */
+    #documentFormContent > div:last-child #reportExpenseBody td {
+        padding-top: 3px !important;
+        padding-bottom: 3px !important;
+    }
+
+    /* 복명서: 테이블 간격 축소 */
+    #documentFormContent > div:last-child table {
+        margin-top: 6px !important;
+    }
+
+    /* 복명서: 제목 마진 축소 */
+    #documentFormContent > div:last-child h2 {
+        margin-bottom: 4px !important;
+    }
+
+    /* 복명서: 결재란 마진 축소 */
+    #documentFormContent > div:last-child div[style*="float: right"] {
+        margin-bottom: 8px !important;
     }
 
     /* 테이블 스타일 */
