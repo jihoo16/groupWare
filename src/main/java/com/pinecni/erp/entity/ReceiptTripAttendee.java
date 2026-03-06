@@ -29,9 +29,6 @@ public class ReceiptTripAttendee {
     @Column(name = "receipt_trip_idx", nullable = false)
     private Long receiptTripIdx;
 
-    @Column(name = "attendee_type", nullable = false, length = 20)
-    private String attendeeType;
-
     @Column(name = "department", length = 100)
     private String department;
 

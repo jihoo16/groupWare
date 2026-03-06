@@ -2,7 +2,6 @@ package com.pinecni.erp.api.document.mapper;
 
 import com.pinecni.erp.api.code.repository.CodeRepository;
 import com.pinecni.erp.api.document.dto.*;
-import com.pinecni.erp.api.externalperson.repository.ExternalPersonRepository;
 import com.pinecni.erp.api.user.repository.UserRepository;
 import com.pinecni.erp.constant.CodeConstants;
 import com.pinecni.erp.entity.*;
@@ -22,7 +21,6 @@ public class ReceiptTripMapper {
 
     private final UserRepository userRepository;
     private final CodeRepository codeRepository;
-    private final ExternalPersonRepository externalPersonRepository;
 
     /**
      * Entity → DTO 변환
@@ -168,7 +166,7 @@ public class ReceiptTripMapper {
         if (entity == null) return null;
 
         String position = null;
-        if ("내부".equals(entity.getAttendeeType()) && entity.getUserIdx() != null) {
+        if (entity.getUserIdx() != null) {
             position = userRepository.findById(entity.getUserIdx())
                     .map(user -> {
                         if (user.getEmpPosition() != null) {
@@ -180,15 +178,10 @@ public class ReceiptTripMapper {
                         return null;
                     })
                     .orElse(null);
-        } else if ("외부".equals(entity.getAttendeeType()) && entity.getUserIdx() != null) {
-            position = externalPersonRepository.findById(entity.getUserIdx())
-                    .map(ExternalPerson::getPosition)
-                    .orElse(null);
         }
 
         return ReceiptTripAttendeeDTO.builder()
                 .idx(entity.getIdx())
-                .attendeeType(entity.getAttendeeType())
                 .department(entity.getDepartment())
                 .name(entity.getName())
                 .userIdx(entity.getUserIdx())
@@ -213,7 +206,6 @@ public class ReceiptTripMapper {
 
         return ReceiptTripAttendee.builder()
                 .receiptTripIdx(receiptTripIdx)
-                .attendeeType(dto.getAttendeeType())
                 .department(dto.getDepartment())
                 .name(dto.getName())
                 .userIdx(dto.getUserIdx())

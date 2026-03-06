@@ -2411,17 +2411,13 @@ document.addEventListener('DOMContentLoaded', async function() {
             }
 
             // 참석자 목록 변환 (현재 페이지의 전역 변수 사용)
-            const attendeeDTOs = (window.currentTripPersons || []).map((person, index) => {
-                const isExternal = String(person.id).startsWith('ext_');
-                return {
-                    isExternal: isExternal,
-                    department: person.dept || null,
-                    name: person.name,
-                    userIdx: isExternal ? parseInt(String(person.id).replace('ext_', '')) : parseInt(person.id),
-                    position: person.position || null,
-                    displayOrder: index
-                };
-            });
+            const attendeeDTOs = (window.currentTripPersons || []).map((person, index) => ({
+                department: person.dept || null,
+                name: person.name,
+                userIdx: parseInt(person.id),
+                position: person.position || null,
+                displayOrder: index
+            }));
 
             // 비용 합계 계산 (날짜별 비용에서)
             const expenseInputs = document.querySelectorAll('.expense-input');
@@ -3260,28 +3256,12 @@ document.addEventListener('DOMContentLoaded', async function() {
 
         // 출장인원 로드
         if (data.attendees && data.attendees.length > 0) {
-            window.currentTripPersons = data.attendees.map(attendee => {
-                let position = attendee.position || '';
-                let dept = attendee.department || '';
-
-                // 내부 참석자인 경우
-                if (!attendee.isExternal && attendee.userIdx) {
-                    dept = attendee.department || '파인씨앤아이';
-                }
-
-                // ID 생성: 외부는 ext_ 접두사, 내부는 userIdx
-                const id = attendee.isExternal
-                    ? `ext_${attendee.userIdx}`
-                    : String(attendee.userIdx);
-
-                return {
-                    id: id,
-                    name: attendee.name,
-                    dept: dept,
-                    position: position,
-                    isExternal: attendee.isExternal
-                };
-            });
+            window.currentTripPersons = data.attendees.map(attendee => ({
+                id: String(attendee.userIdx),
+                name: attendee.name,
+                dept: attendee.department || '',
+                position: attendee.position || ''
+            }));
         }
 
         // 모든 input 이벤트 트리거하여 자동 채우기 활성화
@@ -3610,17 +3590,13 @@ document.addEventListener('DOMContentLoaded', async function() {
             }
 
             // 참석자 목록 변환
-            const attendeeDTOs = (window.currentTripPersons || []).map((person, index) => {
-                const isExternal = String(person.id).startsWith('ext_');
-                return {
-                    isExternal: isExternal,
-                    department: person.dept || null,
-                    name: person.name,
-                    userIdx: isExternal ? parseInt(String(person.id).replace('ext_', '')) : parseInt(person.id),
-                    position: person.position || null,
-                    displayOrder: index
-                };
-            });
+            const attendeeDTOs = (window.currentTripPersons || []).map((person, index) => ({
+                department: person.dept || null,
+                name: person.name,
+                userIdx: parseInt(person.id),
+                position: person.position || null,
+                displayOrder: index
+            }));
 
             // 비용 합계 계산
             const expenseInputs = document.querySelectorAll('.expense-input');
@@ -3639,9 +3615,11 @@ document.addEventListener('DOMContentLoaded', async function() {
                 else if (type === 'other') totalOtherFee += value;
             });
 
+            const tripDurationEl = document.getElementById('trip_duration');
             const updateData = {
                 projectIdx: parseInt(projectSelect.value),
                 tripDate: dateInput.value,
+                duration: tripDurationEl ? parseInt(tripDurationEl.value) || 0 : 0,
                 location: locationInput.value,
                 transportationFee: totalTransportFee || null,
                 accommodationFee: totalAccommodationFee || null,

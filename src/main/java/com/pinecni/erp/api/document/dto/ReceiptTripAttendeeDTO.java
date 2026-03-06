@@ -20,11 +20,6 @@ public class ReceiptTripAttendeeDTO {
     private Long idx;
 
     /**
-     * 참석자 타입 ("내부" 또는 "외부")
-     */
-    private String attendeeType;
-
-    /**
      * 부서/소속
      */
     private String department;
@@ -35,14 +30,12 @@ public class ReceiptTripAttendeeDTO {
     private String name;
 
     /**
-     * 사용자 IDX (내부 참석자인 경우)
-     * 또는 외부인력 IDX (외부 참석자인 경우)
-     * attendee_type에 따라 User 또는 ExternalPerson 테이블 참조
+     * 사용자 IDX (User 테이블 참조)
      */
     private Long userIdx;
 
     /**
-     * 직책/직급 (조회 시 User 또는 ExternalPerson에서 가져옴)
+     * 직책/직급 (조회 시 User 테이블에서 가져옴)
      */
     private String position;
 
