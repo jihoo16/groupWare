@@ -19,6 +19,7 @@ document.addEventListener('DOMContentLoaded', async function() {
     window.currentTripPersons = []; // 현재 추가된 출장 인원 목록 (전역)
     let duplicateTripPersonsInfo = {}; // 중복된 출장인원 정보 {personId: {tripDate, projectName}}
     let tripReporter = null; // 작성자 필드 (템플릿 로드 후 설정)
+    let currentReceiptTripIdx = null; // 수정 모드 시 receipt_trip.idx (중복 체크 제외용)
     let projectCards = []; // 선택된 프로젝트의 카드 목록
     let selectedCard = null; // 선택된 카드
     let guideMealTotal = 0; // 선택 인원 기준 식비 합계
@@ -1508,10 +1509,9 @@ document.addEventListener('DOMContentLoaded', async function() {
 
                     // 통합 중복 체크 (회의, 야근, 출장 모두 한 번에)
                     try {
-                        // 수정 모드이면 자기 자신 문서 제외
-                        const editId = getUrlParameter('id');
-                        const excludeParams = editId
-                            ? `&excludeReceiptIdx=${editId}&excludeDocumentType=RCT`
+                        // 수정 모드이면 자기 자신 문서 제외 (receipt_trip.idx 사용)
+                        const excludeParams = currentReceiptTripIdx
+                            ? `&excludeReceiptIdx=${currentReceiptTripIdx}&excludeDocumentType=RCT`
                             : '';
                         const response = await fetch(`/api/receipt-common/check-duplicate?date=${date}&attendeeIdx=${personId}&projectIdx=${projectIdx}${excludeParams}`);
                         if (response.ok) {
@@ -3228,6 +3228,9 @@ document.addEventListener('DOMContentLoaded', async function() {
             }
 
 
+            // receipt_trip.idx 저장 (중복 체크 제외용)
+            currentReceiptTripIdx = data.idx;
+
             // 폼에 데이터 채우기
             populateForm(data);
 
@@ -3258,12 +3261,28 @@ document.addEventListener('DOMContentLoaded', async function() {
     function populateForm(data) {
 
         // 프로젝트 선택
-        const projectSelect = document.getElementById('trip_project');
-        if (projectSelect && data.projectIdx) {
-            projectSelect.value = data.projectIdx;
-            // 프로젝트 변경 이벤트 트리거 (프로젝트명 자동 채우기)
-            const changeEvent = new Event('change');
-            projectSelect.dispatchEvent(changeEvent);
+        const tripProject = document.getElementById('trip_project');
+        const selectedProjectIdxInput = document.getElementById('selectedProjectIdx');
+        if (data.projectIdx) {
+            const proj = projects.find(p => String(p.idx) === String(data.projectIdx));
+            if (proj) {
+                if (tripProject) {
+                    tripProject.value = proj.projectName;
+                    tripProject.style.borderColor = '';
+                    tripProject.classList.remove('field-empty');
+                }
+                if (selectedProjectIdxInput) selectedProjectIdxInput.value = proj.idx;
+                document.querySelectorAll('.trip-auto-project').forEach(f => { f.textContent = proj.projectName || ''; });
+                document.querySelectorAll('.trip-auto-pi').forEach(f => { f.textContent = proj.projectManagerName || ''; });
+                loadProjectMembers(proj.idx);
+                loadProjectCards(proj.idx);
+                if (window.loadProjectExpenseSettings) window.loadProjectExpenseSettings(proj.idx);
+            } else if (data.projectName) {
+                if (tripProject) tripProject.value = data.projectName;
+                if (selectedProjectIdxInput) selectedProjectIdxInput.value = data.projectIdx;
+                loadProjectMembers(data.projectIdx);
+                loadProjectCards(data.projectIdx);
+            }
         }
 
         // 출장 일자
@@ -3331,6 +3350,9 @@ document.addEventListener('DOMContentLoaded', async function() {
                 dept: attendee.department || '',
                 position: attendee.position || ''
             }));
+            if (typeof window.renderTripPersonListInTemplate === 'function') {
+                window.renderTripPersonListInTemplate();
+            }
         }
 
         // 모든 input 이벤트 트리거하여 자동 채우기 활성화
@@ -3591,7 +3613,7 @@ document.addEventListener('DOMContentLoaded', async function() {
     };
 
     // 오늘 날짜 자동 설정 (상세보기 모드가 아닐 때만)
-    const receiptTripId = getUrlParameter('id');
+    const receiptTripId = getUrlParameter('documentIdx') || getUrlParameter('id');
     if (!receiptTripId) {
         // 신규 작성 모드 - 로딩 오버레이 숨김
         window.hidePageLoadingOverlay();
@@ -3632,13 +3654,13 @@ document.addEventListener('DOMContentLoaded', async function() {
     const updateBtn = document.getElementById('updateBtn');
     if (updateBtn) {
         updateBtn.addEventListener('click', async function() {
-            const receiptTripId = getUrlParameter('id');
-            if (!receiptTripId) {
+            if (!currentReceiptTripIdx) {
                 showError('문서 ID를 찾을 수 없습니다.');
                 return;
             }
 
             const projectSelect = document.getElementById('trip_project');
+            const selectedProjectIdxInput = document.getElementById('selectedProjectIdx');
             const dateInput = document.getElementById('trip_date');
             const locationInput = document.getElementById('trip_location');
 
@@ -3712,7 +3734,7 @@ document.addEventListener('DOMContentLoaded', async function() {
                 ? parseInt(reporterElUpd.getAttribute('data-reporter-id')) || null
                 : null;
             const updateData = {
-                projectIdx: parseInt(projectSelect.value),
+                projectIdx: parseInt(selectedProjectIdxInput?.value) || null,
                 drafterUserIdx: drafterIdxUpd,
                 tripDate: dateInput.value,
                 duration: tripDurationEl ? parseInt(tripDurationEl.value) || 0 : 0,
@@ -3742,7 +3764,7 @@ document.addEventListener('DOMContentLoaded', async function() {
                 selectedReceiptFiles.forEach(file  => formData.append('receiptFiles',  file));
                 selectedDocumentFiles.forEach(file => formData.append('documentFiles', file));
 
-                const response = await fetch(`/api/receipt-trips/${receiptTripId}`, {
+                const response = await fetch(`/api/receipt-trips/${currentReceiptTripIdx}`, {
                     method: 'PUT',
                     body: formData
                 });
@@ -3772,8 +3794,7 @@ document.addEventListener('DOMContentLoaded', async function() {
     const deleteBtn = document.getElementById('deleteBtn');
     if (deleteBtn) {
         deleteBtn.addEventListener('click', async function() {
-            const receiptTripId = getUrlParameter('id');
-            if (!receiptTripId) {
+            if (!currentReceiptTripIdx) {
                 showError('문서 ID를 찾을 수 없습니다.');
                 return;
             }
@@ -3783,12 +3804,12 @@ document.addEventListener('DOMContentLoaded', async function() {
             }
 
             try {
-                const response = await fetch(`/api/receipt-trips/${receiptTripId}`, {
+                const response = await fetch(`/api/receipt-trips/${currentReceiptTripIdx}`, {
                     method: 'DELETE'
                 });
 
                 if (response.ok) {
-                    showSuccess('출장 정보가 삭제되었습니다.');
+                    await Swal.fire({ icon: 'success', title: '삭제 완료', text: '출장 정보가 삭제되었습니다.', timer: 2000, timerProgressBar: true, showConfirmButton: false });
                     popupAwareRedirect('/project/documents');
                 } else {
                     showError('출장 삭제에 실패했습니다.');

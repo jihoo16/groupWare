@@ -74,6 +74,22 @@ public class ReceiptTripServiceImpl implements ReceiptTripService {
     @Transactional(readOnly = true)
     public ReceiptTripDTO getReceiptTripById(Long idx) {
         log.debug("출장 상세 조회 - idx: {}", idx);
+
+        // 먼저 documentIdx(전자결재 문서 ID)로 조회 시도
+        Optional<ReceiptTrip> entityByDocumentIdx = receiptTripRepository.findByDocumentIdx(idx);
+        if (entityByDocumentIdx.isPresent()) {
+            log.debug("documentIdx로 출장 조회 성공 - documentIdx: {}", idx);
+            ReceiptTrip entity = receiptTripRepository.findByIdWithDetails(entityByDocumentIdx.get().getIdx())
+                    .orElseThrow(() -> new IllegalArgumentException("출장 정보를 찾을 수 없습니다. idx: " + idx));
+            if (Boolean.TRUE.equals(entity.getDeleted())) {
+                throw new IllegalArgumentException("삭제된 출장입니다. idx: " + idx);
+            }
+            entity.setAttendees(receiptAttendeeRepository.findByReceiptTripIdx(entity.getIdx()));
+            entity.setDailyExpenses(dailyExpenseRepository.findByReceiptTripIdxOrderByExpenseDateAsc(entity.getIdx()));
+            return mapper.toDTO(entity);
+        }
+
+        // receipt_trip.idx로 직접 조회
         ReceiptTrip entity = receiptTripRepository.findByIdWithDetails(idx)
                 .orElseThrow(() -> new IllegalArgumentException("출장 정보를 찾을 수 없습니다. idx: " + idx));
         if (Boolean.TRUE.equals(entity.getDeleted())) {
