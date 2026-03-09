@@ -8,15 +8,17 @@ import org.springframework.web.multipart.MultipartFile;
 import java.util.List;
 
 /**
- * 연구비증빙 회의+출장 통합 Service
+ * 연구비증빙 출장+회의 통합 Service
  */
 public interface ReceiptTripMeetingService {
 
-    /** 회의+출장 통합 저장 */
+    /** 출장+회의 통합 저장 */
     ReceiptTripMeetingResponseDTO createReceiptTripMeeting(
             ReceiptTripMeetingCreateDTO createDTO,
-            MultipartFile[] receiptFiles,
-            MultipartFile[] documentFiles,
+            MultipartFile[] meetingReceiptFiles,
+            MultipartFile[] meetingDocumentFiles,
+            MultipartFile[] tripReceiptFiles,
+            MultipartFile[] tripDocumentFiles,
             Long currentUserIdx);
 
     /** 상세 조회 */
@@ -32,14 +34,25 @@ public interface ReceiptTripMeetingService {
     ReceiptTripMeetingResponseDTO updateReceiptTripMeeting(
             Long idx,
             ReceiptTripMeetingCreateDTO updateDTO,
-            MultipartFile[] receiptFiles,
-            MultipartFile[] documentFiles,
+            MultipartFile[] meetingReceiptFiles,
+            MultipartFile[] meetingDocumentFiles,
+            MultipartFile[] tripReceiptFiles,
+            MultipartFile[] tripDocumentFiles,
             Long currentUserIdx);
 
     /** 소프트 딜리트 */
     void deleteReceiptTripMeeting(Long idx, Long deletedUserIdx);
 
     // ── 첨부파일 ────────────────────────────────────────────────────
+
+    /** 기존 문서에 첨부파일 추가 (목록 화면 모달용) */
+    void addAttachments(
+            Long idx,
+            MultipartFile[] meetingReceiptFiles,
+            MultipartFile[] meetingDocumentFiles,
+            MultipartFile[] tripReceiptFiles,
+            MultipartFile[] tripDocumentFiles,
+            Long currentUserIdx);
 
     /** 첨부파일 목록 조회 */
     List<ReceiptTripMeetingAttachmentDTO> getAttachmentsByReceiptTripMeetingIdx(Long receiptTripMeetingIdx);

@@ -7,7 +7,7 @@ import java.math.BigDecimal;
 import java.time.LocalDate;
 
 /**
- * 연구비증빙 회의+출장 일별 비용 명세 Entity
+ * 연구비증빙 출장+회의 일별 비용 명세 Entity
  * (receipt_trip_meeting_daily_expense 테이블)
  *
  * - 출장 기간 동안 날짜(expense_date)별로 비용 항목을 기록한다.

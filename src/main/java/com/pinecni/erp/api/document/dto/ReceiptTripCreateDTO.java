@@ -56,4 +56,7 @@ public class ReceiptTripCreateDTO {
 
     /** 참석자/동행자 목록 */
     private List<ReceiptTripAttendeeDTO> attendees;
+
+    /** 일별 비용 명세 목록 */
+    private List<ReceiptTripDailyExpenseDTO> dailyExpenses;
 }

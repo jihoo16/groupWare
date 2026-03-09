@@ -11,7 +11,7 @@ import java.util.Map;
 
 /**
  * 연구비증빙 공통 Controller
- * 회의록, 야근식대, 단독 출장, 회의+출장 등 모든 문서에서 공통으로 사용하는 API
+ * 회의록, 야근식대, 단독 출장, 출장+회의 등 모든 문서에서 공통으로 사용하는 API
  */
 @Slf4j
 @RestController
@@ -24,7 +24,7 @@ public class ReceiptCommonController {
     /**
      * 통합 참석자 중복 검증 API
      * 같은 프로젝트, 같은 날짜에서 시간대 겹침 확인 (카드 무관)
-     * 모든 문서 타입(회의록, 야근식대, 단독 출장, 회의+출장) 대상
+     * 모든 문서 타입(회의록, 야근식대, 단독 출장, 출장+회의) 대상
      *
      * @param date 검증할 날짜 (yyyy-MM-dd)
      * @param attendeeIdx 참석자 IDX

@@ -38,7 +38,7 @@ document.addEventListener('DOMContentLoaded', function() {
         '프로젝트 주간업무보고',
         '연구비증빙-회의록',
         '연구비증빙-단독 출장',
-        '연구비증빙-회의+출장',
+        '연구비증빙-출장+회의',
         '연구비증빙(야근식대)',
         'WEEKLY_REPORT',
         'MEETING_MINUTES',
@@ -85,7 +85,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 Swal.fire({
                     icon: 'info',
                     title: '준비중입니다',
-                    text: '회의+출장 증빙 기능은 추후 구현 예정입니다.'
+                    text: '출장+회의 증빙 기능은 추후 구현 예정입니다.'
                 });
                 documentTypeMenu.classList.remove('show');
             });
@@ -114,7 +114,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 Swal.fire({
                     icon: 'info',
                     title: '준비중입니다',
-                    text: '회의+출장 증빙 기능은 추후 구현 예정입니다.'
+                    text: '출장+회의 증빙 기능은 추후 구현 예정입니다.'
                 });
                 return;
             }
@@ -140,7 +140,7 @@ document.addEventListener('DOMContentLoaded', function() {
             'project-weekly-report': '프로젝트 주간보고',
             'receipt-meeting': '회의비 증빙',
             'receipt-trip': '단독 출장 증빙',
-            'receipt-trip-meeting': '회의+출장 증빙',
+            'receipt-trip-meeting': '출장+회의 증빙',
             'receipt-overtime': '야근식대 증빙'
         };
 
@@ -516,7 +516,7 @@ document.addEventListener('DOMContentLoaded', function() {
             'RECEIPT_MEETING': 'receipt-meeting',
             '연구비증빙-단독 출장': 'receipt-trip',
             'BUSINESS_TRIP': 'receipt-trip',
-            '연구비증빙-회의+출장': 'receipt-trip-meeting',
+            '연구비증빙-출장+회의': 'receipt-trip-meeting',
             'MEETING_MINUTES': 'receipt-meeting',
             '연구비증빙(야근식대)': 'receipt-overtime',
             'RECEIPT_OVERTIME': 'receipt-overtime'
@@ -533,7 +533,7 @@ document.addEventListener('DOMContentLoaded', function() {
             'RECEIPT_MEETING': 'fa-utensils',
             '연구비증빙-단독 출장': 'fa-plane',
             'BUSINESS_TRIP': 'fa-plane',
-            '연구비증빙-회의+출장': 'fa-suitcase',
+            '연구비증빙-출장+회의': 'fa-suitcase',
             'MEETING_MINUTES': 'fa-utensils',
             '연구비증빙(야근식대)': 'fa-moon',
             'RECEIPT_OVERTIME': 'fa-moon'
@@ -768,7 +768,7 @@ document.addEventListener('DOMContentLoaded', function() {
         const actionCell = document.createElement('td');
         actionCell.style.textAlign = 'center';
         actionCell.style.verticalAlign = 'middle';
-        const isReceiptType = ['RECEIPT_MEETING', '연구비증빙-회의록', 'RECEIPT_OVERTIME', '연구비증빙(야근식대)', 'BUSINESS_TRIP', '연구비증빙-출장'].includes(doc.documentType);
+        const isReceiptType = ['RECEIPT_MEETING', '연구비증빙-회의록', 'RECEIPT_OVERTIME', '연구비증빙(야근식대)', 'BUSINESS_TRIP', '연구비증빙-출장', '연구비증빙-출장+회의'].includes(doc.documentType);
         actionCell.innerHTML = `
             ${isReceiptType ? `<button class="btn-icon attachment-modal-btn" title="첨부파일 관리" style="margin: 0 2px; display: inline-block;">
                 <i class="fas fa-paperclip"></i>
@@ -807,6 +807,7 @@ document.addEventListener('DOMContentLoaded', function() {
             'BUSINESS_TRIP': '/approval/receipt-trip',
             '연구비증빙-출장': '/approval/receipt-trip',
             '연구비증빙-회의+출장': '/approval/receipt-trip-meeting',
+            '연구비증빙-출장+회의': '/approval/receipt-trip-meeting',
             'MEETING_MINUTES': '/approval/receipt-meeting',
             'RECEIPT_OVERTIME': '/approval/receipt-overtime',
             '연구비증빙(야근식대)': '/approval/receipt-overtime'
@@ -825,9 +826,13 @@ document.addEventListener('DOMContentLoaded', function() {
     // 첨부파일 모달
     // ================================================
     let attachmentModalEl = null;
-    let pendingReceiptFiles = [];   // 저장 전 추가할 영수증 파일
-    let pendingDocumentFiles = [];  // 저장 전 추가할 공식문서 파일
-    let pendingDeleteIds = [];      // 저장 전 삭제할 첨부파일 ID 목록
+    let pendingReceiptFiles = [];          // 저장 전 추가할 영수증 파일 (RCM/RCT/RCO)
+    let pendingDocumentFiles = [];         // 저장 전 추가할 공식문서 파일 (RCM/RCT/RCO)
+    let pendingMeetingReceiptFiles = [];   // RCTM 전용
+    let pendingMeetingDocumentFiles = [];  // RCTM 전용
+    let pendingTripReceiptFiles = [];      // RCTM 전용
+    let pendingTripDocumentFiles = [];     // RCTM 전용
+    let pendingDeleteIds = [];             // 저장 전 삭제할 첨부파일 ID 목록
 
     function getAttachmentModal() {
         if (attachmentModalEl) return attachmentModalEl;
@@ -1065,12 +1070,20 @@ document.addEventListener('DOMContentLoaded', function() {
         if (attachmentModalEl) attachmentModalEl.style.display = 'none';
         pendingReceiptFiles = [];
         pendingDocumentFiles = [];
+        pendingMeetingReceiptFiles = [];
+        pendingMeetingDocumentFiles = [];
+        pendingTripReceiptFiles = [];
+        pendingTripDocumentFiles = [];
         pendingDeleteIds = [];
     }
 
     function openAttachmentModal(doc) {
         pendingReceiptFiles = [];
         pendingDocumentFiles = [];
+        pendingMeetingReceiptFiles = [];
+        pendingMeetingDocumentFiles = [];
+        pendingTripReceiptFiles = [];
+        pendingTripDocumentFiles = [];
         pendingDeleteIds = [];
         const modal = getAttachmentModal();
         renderModalContent(doc);
@@ -1083,8 +1096,7 @@ document.addEventListener('DOMContentLoaded', function() {
     }
 
     function renderModalContent(doc) {
-        const existingReceipt   = (doc.attachments || []).filter(a => a.attachmentType !== 'DOCUMENT');
-        const existingDocument  = (doc.attachments || []).filter(a => a.attachmentType === 'DOCUMENT');
+        const isTripMeeting = (doc.documentType || '').includes('출장+회의');
 
         function buildExistingRow(a) {
             const safe = a.originalFilename.replace(/"/g, '&quot;');
@@ -1097,7 +1109,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 </div>`;
         }
 
-        function buildSection(sectionId, badgeClass, iconClass, label, existingFiles, pendingKey, dzId, inputId, pendingListId) {
+        function buildSection(sectionId, badgeClass, iconClass, label, existingFiles, dzId, inputId, pendingListId) {
             const existingHtml = existingFiles.length === 0
                 ? `<p class="att-empty-msg">업로드된 파일이 없습니다.</p>`
                 : existingFiles.map(buildExistingRow).join('');
@@ -1118,9 +1130,35 @@ document.addEventListener('DOMContentLoaded', function() {
                 </div>`;
         }
 
-        document.getElementById('modalBody').innerHTML =
-            buildSection('sectionReceipt',  'att-badge-receipt',  'fas fa-receipt',   '영수증',  existingReceipt,  'receipt',  'dzReceipt',  'inputReceipt',  'pendingReceipt') +
-            buildSection('sectionDocument', 'att-badge-document', 'fas fa-file-alt', '공식문서', existingDocument, 'document', 'dzDocument', 'inputDocument', 'pendingDocument');
+        if (isTripMeeting) {
+            const existingMeetingReceipt  = (doc.attachments || []).filter(a => a.attachmentType === 'MEETING_RECEIPT');
+            const existingMeetingDocument = (doc.attachments || []).filter(a => a.attachmentType === 'MEETING_DOCUMENT');
+            const existingTripReceipt     = (doc.attachments || []).filter(a => a.attachmentType === 'TRIP_RECEIPT');
+            const existingTripDocument    = (doc.attachments || []).filter(a => a.attachmentType === 'TRIP_DOCUMENT');
+
+            document.getElementById('modalBody').innerHTML =
+                `<div style="font-weight:600;color:#667eea;padding:4px 0 8px;"><i class="fas fa-users"></i> 회의 첨부파일</div>` +
+                buildSection('sectionMeetingReceipt',  'att-badge-receipt',  'fas fa-receipt',  '회의 영수증',  existingMeetingReceipt,  'dzMeetingReceipt',  'inputMeetingReceipt',  'pendingMeetingReceipt') +
+                buildSection('sectionMeetingDocument', 'att-badge-document', 'fas fa-file-alt', '회의 공식문서', existingMeetingDocument, 'dzMeetingDocument', 'inputMeetingDocument', 'pendingMeetingDocument') +
+                `<div style="font-weight:600;color:#e86c2c;padding:12px 0 8px;border-top:1px solid #f0f0f0;margin-top:8px;"><i class="fas fa-plane"></i> 출장 첨부파일</div>` +
+                buildSection('sectionTripReceipt',     'att-badge-receipt',  'fas fa-receipt',  '출장 영수증',  existingTripReceipt,     'dzTripReceipt',     'inputTripReceipt',     'pendingTripReceipt') +
+                buildSection('sectionTripDocument',    'att-badge-document', 'fas fa-file-alt', '출장 공식문서', existingTripDocument,    'dzTripDocument',    'inputTripDocument',    'pendingTripDocument');
+
+            setupDropZone('dzMeetingReceipt',  'inputMeetingReceipt',  'pendingMeetingReceipt',  pendingMeetingReceiptFiles);
+            setupDropZone('dzMeetingDocument', 'inputMeetingDocument', 'pendingMeetingDocument', pendingMeetingDocumentFiles);
+            setupDropZone('dzTripReceipt',     'inputTripReceipt',     'pendingTripReceipt',     pendingTripReceiptFiles);
+            setupDropZone('dzTripDocument',    'inputTripDocument',    'pendingTripDocument',    pendingTripDocumentFiles);
+        } else {
+            const existingReceipt  = (doc.attachments || []).filter(a => a.attachmentType !== 'DOCUMENT');
+            const existingDocument = (doc.attachments || []).filter(a => a.attachmentType === 'DOCUMENT');
+
+            document.getElementById('modalBody').innerHTML =
+                buildSection('sectionReceipt',  'att-badge-receipt',  'fas fa-receipt',  '영수증',  existingReceipt,  'dzReceipt',  'inputReceipt',  'pendingReceipt') +
+                buildSection('sectionDocument', 'att-badge-document', 'fas fa-file-alt', '공식문서', existingDocument, 'dzDocument', 'inputDocument', 'pendingDocument');
+
+            setupDropZone('dzReceipt',  'inputReceipt',  'pendingReceipt',  pendingReceiptFiles);
+            setupDropZone('dzDocument', 'inputDocument', 'pendingDocument', pendingDocumentFiles);
+        }
 
         // 파일 행 클릭 → 다운로드 (삭제 버튼 클릭은 제외)
         document.getElementById('modalBody').querySelectorAll('.modal-download-row').forEach(row => {
@@ -1139,10 +1177,6 @@ document.addEventListener('DOMContentLoaded', function() {
                 btn.closest('.att-file-row').classList.add('deleted');
             });
         });
-
-        // 드롭존 설정
-        setupDropZone('dzReceipt',  'inputReceipt',  'pendingReceipt',  pendingReceiptFiles);
-        setupDropZone('dzDocument', 'inputDocument', 'pendingDocument', pendingDocumentFiles);
     }
 
     function setupDropZone(dzId, inputId, pendingListId, fileArray) {
@@ -1207,23 +1241,32 @@ document.addEventListener('DOMContentLoaded', function() {
             }
         };
 
-        if (!pendingDeleteIds.length && !pendingReceiptFiles.length && !pendingDocumentFiles.length) {
+        const isTripMeeting = (doc.documentType || '').includes('출장+회의');
+        const hasNewFiles = isTripMeeting
+            ? (pendingMeetingReceiptFiles.length || pendingMeetingDocumentFiles.length || pendingTripReceiptFiles.length || pendingTripDocumentFiles.length)
+            : (pendingReceiptFiles.length || pendingDocumentFiles.length);
+
+        if (!pendingDeleteIds.length && !hasNewFiles) {
             closeAttachmentModal();
             return;
         }
 
         const isMeeting = ['RECEIPT_MEETING', '연구비증빙-회의록'].includes(doc.documentType);
         const isTrip = ['BUSINESS_TRIP', '연구비증빙-출장'].includes(doc.documentType);
-        const deleteBaseUrl = isMeeting
-            ? `/api/receipt-meetings/attachments`
-            : isTrip
-                ? `/api/receipt-trips/attachments`
-                : `/api/receipt-overtimes/attachments`;
-        const uploadUrl = isMeeting
-            ? `/api/receipt-meetings/${doc.sourceDocumentId}/attachments`
-            : isTrip
-                ? `/api/receipt-trips/${doc.sourceDocumentId}/attachments`
-                : `/api/receipt-overtimes/${doc.sourceDocumentId}/attachments`;
+        const deleteBaseUrl = isTripMeeting
+            ? `/api/receipt-trip-meetings/attachments`
+            : isMeeting
+                ? `/api/receipt-meetings/attachments`
+                : isTrip
+                    ? `/api/receipt-trips/attachments`
+                    : `/api/receipt-overtimes/attachments`;
+        const uploadUrl = isTripMeeting
+            ? `/api/receipt-trip-meetings/${doc.sourceDocumentId}/attachments`
+            : isMeeting
+                ? `/api/receipt-meetings/${doc.sourceDocumentId}/attachments`
+                : isTrip
+                    ? `/api/receipt-trips/${doc.sourceDocumentId}/attachments`
+                    : `/api/receipt-overtimes/${doc.sourceDocumentId}/attachments`;
 
         const saveBtn = document.getElementById('modalSaveBtn');
         saveBtn.disabled = true;
@@ -1240,7 +1283,21 @@ document.addEventListener('DOMContentLoaded', function() {
             }
 
             // 2. 새 파일 업로드
-            if (pendingReceiptFiles.length || pendingDocumentFiles.length) {
+            if (isTripMeeting) {
+                if (pendingMeetingReceiptFiles.length || pendingMeetingDocumentFiles.length || pendingTripReceiptFiles.length || pendingTripDocumentFiles.length) {
+                    const formData = new FormData();
+                    pendingMeetingReceiptFiles.forEach(f  => formData.append('meetingReceiptFiles',  f));
+                    pendingMeetingDocumentFiles.forEach(f => formData.append('meetingDocumentFiles', f));
+                    pendingTripReceiptFiles.forEach(f     => formData.append('tripReceiptFiles',     f));
+                    pendingTripDocumentFiles.forEach(f    => formData.append('tripDocumentFiles',    f));
+
+                    const res = await fetch(uploadUrl, { method: 'POST', body: formData });
+                    if (!res.ok) {
+                        const err = await res.json().catch(() => ({}));
+                        throw new Error(err.error || '파일 업로드에 실패했습니다.');
+                    }
+                }
+            } else if (pendingReceiptFiles.length || pendingDocumentFiles.length) {
                 const formData = new FormData();
                 pendingReceiptFiles.forEach(f  => formData.append('receiptFiles',  f));
                 pendingDocumentFiles.forEach(f => formData.append('documentFiles', f));

@@ -224,7 +224,7 @@ public class ApprovalDocumentServiceImpl implements ApprovalDocumentService {
                 }
                 dto.setAttachments(buildTripAttachments(receiptTrip.getIdx()));
             });
-        } else if ("연구비증빙-회의+출장".equals(documentType)) {
+        } else if ("연구비증빙-출장+회의".equals(documentType)) {
             receiptTripMeetingRepository.findByDocumentIdx(document.getIdx()).ifPresent(rtm -> {
                 dto.setSourceDocumentId(rtm.getIdx());
                 if (rtm.getProjectIdx() != null) {
@@ -272,7 +272,7 @@ public class ApprovalDocumentServiceImpl implements ApprovalDocumentService {
         // 단독 회의록 조회
         result.addAll(getReceiptMeetingsByProject(projectIdx));
 
-        // 회의+출장 조회
+        // 출장+회의 조회
         result.addAll(getReceiptTripMeetingsByProject(projectIdx));
 
         // 야근식대 조회
@@ -379,7 +379,7 @@ public class ApprovalDocumentServiceImpl implements ApprovalDocumentService {
     }
 
     /**
-     * 프로젝트별 회의+출장 조회
+     * 프로젝트별 출장+회의 조회
      */
     private List<ApprovalDocumentDTO> getReceiptTripMeetingsByProject(Long projectIdx) {
         return receiptTripMeetingRepository.findByProjectIdxOrderByTripDateDesc(projectIdx).stream()
@@ -389,9 +389,9 @@ public class ApprovalDocumentServiceImpl implements ApprovalDocumentService {
                     ApprovalDocumentDTO dto = ApprovalDocumentDTO.builder()
                             .idx(rtm.getDocumentIdx())
                             .sourceDocumentId(rtm.getIdx())
-                            .documentType("연구비증빙-회의+출장")
+                            .documentType("연구비증빙-출장+회의")
                             .documentNo(rtm.getDocumentNumber())
-                            .title(projectName + " - 회의+출장 " + (rtm.getTripDate() != null ? rtm.getTripDate() : ""))
+                            .title(projectName + " - 출장+회의 " + (rtm.getTripDate() != null ? rtm.getTripDate() : ""))
                             .drafterUserIdx(rtm.getDrafterUserIdx())
                             .projectIdx(rtm.getProjectIdx())
                             .projectName(projectName)

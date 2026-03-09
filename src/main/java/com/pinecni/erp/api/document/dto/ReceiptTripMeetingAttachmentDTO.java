@@ -8,7 +8,7 @@ import lombok.NoArgsConstructor;
 import java.time.LocalDateTime;
 
 /**
- * 연구비증빙 회의+출장 첨부파일 DTO
+ * 연구비증빙 출장+회의 첨부파일 DTO
  */
 @Data
 @Builder

@@ -24,6 +24,9 @@ public class ReceiptTripUpdateDTO {
     /** 카드 IDX */
     private Long cardIdx;
 
+    /** 문서 작성자 IDX */
+    private Long drafterUserIdx;
+
     /** 출장 일자 */
     private LocalDate tripDate;
 
@@ -53,4 +56,7 @@ public class ReceiptTripUpdateDTO {
 
     /** 참석자/동행자 목록 */
     private List<ReceiptTripAttendeeDTO> attendees;
+
+    /** 일별 비용 명세 목록 */
+    private List<ReceiptTripDailyExpenseDTO> dailyExpenses;
 }

@@ -11,7 +11,7 @@ import java.time.LocalTime;
 import java.util.List;
 
 /**
- * 연구비증빙 회의+출장 통합 생성 DTO
+ * 연구비증빙 출장+회의 통합 생성 DTO
  */
 @Data
 @Builder

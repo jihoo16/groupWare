@@ -110,6 +110,10 @@ public class ReceiptTrip {
     @Transient
     private List<ReceiptAttendee> attendees = new ArrayList<>();
 
+    /** 일별 비용 명세 목록 - 서비스 계층에서 별도 조회 후 주입 */
+    @Transient
+    private List<ReceiptTripDailyExpense> dailyExpenses = new ArrayList<>();
+
     @PrePersist
     protected void onCreate() {
         createdAt = LocalDateTime.now();

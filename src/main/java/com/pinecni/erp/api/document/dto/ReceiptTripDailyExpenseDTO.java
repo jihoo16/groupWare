@@ -9,13 +9,13 @@ import java.math.BigDecimal;
 import java.time.LocalDate;
 
 /**
- * 연구비증빙 출장+회의 일별 비용 명세 DTO
+ * 연구비증빙 단독출장 일별 비용 명세 DTO
  */
 @Data
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
-public class ReceiptTripMeetingDailyExpenseDTO {
+public class ReceiptTripDailyExpenseDTO {
 
     /** 해당 날짜 */
     private LocalDate expenseDate;

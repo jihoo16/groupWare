@@ -11,7 +11,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 /**
- * 연구비증빙 회의+출장 통합 Entity
+ * 연구비증빙 출장+회의 통합 Entity
  * - 출장 정보 (trip_date, duration, total_fee 등) 와
  *   회의 정보 (meeting_date, start_time, end_time 등) 를 한 테이블에 저장
  * - 비용 상세는 receipt_trip_meeting_daily_expense (1:N) 에 저장, total_fee 는 SUM 캐시

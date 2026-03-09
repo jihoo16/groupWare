@@ -12,7 +12,7 @@ import java.time.LocalTime;
 import java.util.List;
 
 /**
- * 연구비증빙 회의+출장 통합 응답 DTO
+ * 연구비증빙 출장+회의 통합 응답 DTO
  * - 생성/수정 응답 및 상세 조회에 공통 사용
  */
 @Data

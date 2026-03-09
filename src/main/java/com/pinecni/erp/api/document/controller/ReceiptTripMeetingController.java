@@ -27,7 +27,7 @@ import java.util.List;
 import java.util.Map;
 
 /**
- * 연구비증빙 회의+출장 통합 REST API Controller
+ * 연구비증빙 출장+회의 통합 REST API Controller
  */
 @Slf4j
 @RestController
@@ -78,20 +78,22 @@ public class ReceiptTripMeetingController {
         try {
             return ResponseEntity.ok(receiptTripMeetingService.getReceiptTripMeetingById(idx));
         } catch (IllegalArgumentException e) {
-            log.error("회의+출장 조회 실패: {}", e.getMessage());
+            log.error("출장+회의 조회 실패: {}", e.getMessage());
             return ResponseEntity.notFound().build();
         }
     }
 
     /**
-     * 회의+출장 통합 저장
+     * 출장+회의 통합 저장
      * POST /api/receipt-trip-meetings
      */
     @PostMapping(consumes = {"multipart/form-data"})
     public ResponseEntity<?> createReceiptTripMeeting(
             @RequestPart("data") String dataJson,
-            @RequestPart(value = "receiptFiles",  required = false) MultipartFile[] receiptFiles,
-            @RequestPart(value = "documentFiles", required = false) MultipartFile[] documentFiles,
+            @RequestPart(value = "meetingReceiptFiles",  required = false) MultipartFile[] meetingReceiptFiles,
+            @RequestPart(value = "meetingDocumentFiles", required = false) MultipartFile[] meetingDocumentFiles,
+            @RequestPart(value = "tripReceiptFiles",     required = false) MultipartFile[] tripReceiptFiles,
+            @RequestPart(value = "tripDocumentFiles",    required = false) MultipartFile[] tripDocumentFiles,
             HttpSession session) {
 
         Long currentUserIdx = (Long) session.getAttribute("userIdx");
@@ -104,18 +106,20 @@ public class ReceiptTripMeetingController {
             ReceiptTripMeetingCreateDTO createDTO = objectMapper.readValue(dataJson, ReceiptTripMeetingCreateDTO.class);
             createDTO.setDrafterUserIdx(currentUserIdx);
 
-            log.debug("POST /api/receipt-trip-meetings - projectIdx: {}, 영수증: {}개, 공식문서: {}개",
+            log.debug("POST /api/receipt-trip-meetings - projectIdx: {}, 회의영수증: {}개, 회의공식문서: {}개, 출장영수증: {}개, 출장공식문서: {}개",
                     createDTO.getProjectIdx(),
-                    receiptFiles  != null ? receiptFiles.length  : 0,
-                    documentFiles != null ? documentFiles.length : 0);
+                    meetingReceiptFiles  != null ? meetingReceiptFiles.length  : 0,
+                    meetingDocumentFiles != null ? meetingDocumentFiles.length : 0,
+                    tripReceiptFiles     != null ? tripReceiptFiles.length     : 0,
+                    tripDocumentFiles    != null ? tripDocumentFiles.length    : 0);
 
             ReceiptTripMeetingResponseDTO result = receiptTripMeetingService.createReceiptTripMeeting(
-                    createDTO, receiptFiles, documentFiles, currentUserIdx);
+                    createDTO, meetingReceiptFiles, meetingDocumentFiles, tripReceiptFiles, tripDocumentFiles, currentUserIdx);
 
             return ResponseEntity.status(HttpStatus.CREATED).body(result);
 
         } catch (Exception e) {
-            log.error("회의+출장 통합 저장 실패: {}", e.getMessage(), e);
+            log.error("출장+회의 통합 저장 실패: {}", e.getMessage(), e);
             Map<String, String> error = new HashMap<>();
             error.put("error", e.getMessage());
             return ResponseEntity.badRequest().body(error);
@@ -123,15 +127,17 @@ public class ReceiptTripMeetingController {
     }
 
     /**
-     * 회의+출장 수정
+     * 출장+회의 수정
      * PUT /api/receipt-trip-meetings/{idx}
      */
     @PutMapping(value = "/{idx}", consumes = {"multipart/form-data"})
     public ResponseEntity<?> updateReceiptTripMeeting(
             @PathVariable Long idx,
             @RequestPart("data") String dataJson,
-            @RequestPart(value = "receiptFiles",  required = false) MultipartFile[] receiptFiles,
-            @RequestPart(value = "documentFiles", required = false) MultipartFile[] documentFiles,
+            @RequestPart(value = "meetingReceiptFiles",  required = false) MultipartFile[] meetingReceiptFiles,
+            @RequestPart(value = "meetingDocumentFiles", required = false) MultipartFile[] meetingDocumentFiles,
+            @RequestPart(value = "tripReceiptFiles",     required = false) MultipartFile[] tripReceiptFiles,
+            @RequestPart(value = "tripDocumentFiles",    required = false) MultipartFile[] tripDocumentFiles,
             HttpSession session) {
 
         log.debug("PUT /api/receipt-trip-meetings/{}", idx);
@@ -143,13 +149,13 @@ public class ReceiptTripMeetingController {
         try {
             ReceiptTripMeetingCreateDTO updateDTO = objectMapper.readValue(dataJson, ReceiptTripMeetingCreateDTO.class);
             ReceiptTripMeetingResponseDTO result = receiptTripMeetingService.updateReceiptTripMeeting(
-                    idx, updateDTO, receiptFiles, documentFiles, currentUserIdx);
+                    idx, updateDTO, meetingReceiptFiles, meetingDocumentFiles, tripReceiptFiles, tripDocumentFiles, currentUserIdx);
             return ResponseEntity.ok(result);
         } catch (IllegalArgumentException e) {
-            log.error("회의+출장 수정 실패: {}", e.getMessage());
+            log.error("출장+회의 수정 실패: {}", e.getMessage());
             return ResponseEntity.notFound().build();
         } catch (Exception e) {
-            log.error("회의+출장 수정 중 오류: {}", e.getMessage(), e);
+            log.error("출장+회의 수정 중 오류: {}", e.getMessage(), e);
             Map<String, String> error = new HashMap<>();
             error.put("error", e.getMessage());
             return ResponseEntity.badRequest().body(error);
@@ -157,7 +163,7 @@ public class ReceiptTripMeetingController {
     }
 
     /**
-     * 회의+출장 삭제 (소프트 딜리트)
+     * 출장+회의 삭제 (소프트 딜리트)
      * DELETE /api/receipt-trip-meetings/{idx}
      */
     @DeleteMapping("/{idx}")
@@ -174,15 +180,15 @@ public class ReceiptTripMeetingController {
         try {
             receiptTripMeetingService.deleteReceiptTripMeeting(idx, currentUserIdx);
             Map<String, String> response = new HashMap<>();
-            response.put("message", "회의+출장 정보가 삭제되었습니다.");
+            response.put("message", "출장+회의 정보가 삭제되었습니다.");
             return ResponseEntity.ok(response);
         } catch (IllegalArgumentException e) {
-            log.error("회의+출장 삭제 실패: {}", e.getMessage());
+            log.error("출장+회의 삭제 실패: {}", e.getMessage());
             Map<String, String> error = new HashMap<>();
             error.put("error", e.getMessage());
             return ResponseEntity.status(HttpStatus.NOT_FOUND).body(error);
         } catch (Exception e) {
-            log.error("회의+출장 삭제 중 오류: {}", e.getMessage(), e);
+            log.error("출장+회의 삭제 중 오류: {}", e.getMessage(), e);
             Map<String, String> error = new HashMap<>();
             error.put("error", "서버 오류가 발생했습니다.");
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(error);
@@ -192,6 +198,37 @@ public class ReceiptTripMeetingController {
     // ══════════════════════════════════════════════════════════════
     // 첨부파일
     // ══════════════════════════════════════════════════════════════
+
+    /**
+     * 첨부파일 추가 업로드 (목록 화면 모달에서 사용)
+     * POST /api/receipt-trip-meetings/{idx}/attachments
+     */
+    @PostMapping(value = "/{idx}/attachments", consumes = {"multipart/form-data"})
+    public ResponseEntity<?> addAttachments(
+            @PathVariable Long idx,
+            @RequestPart(value = "meetingReceiptFiles",  required = false) MultipartFile[] meetingReceiptFiles,
+            @RequestPart(value = "meetingDocumentFiles", required = false) MultipartFile[] meetingDocumentFiles,
+            @RequestPart(value = "tripReceiptFiles",     required = false) MultipartFile[] tripReceiptFiles,
+            @RequestPart(value = "tripDocumentFiles",    required = false) MultipartFile[] tripDocumentFiles,
+            HttpSession session) {
+
+        log.debug("POST /api/receipt-trip-meetings/{}/attachments", idx);
+        Long currentUserIdx = (Long) session.getAttribute("userIdx");
+        if (currentUserIdx == null) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
+        }
+
+        try {
+            receiptTripMeetingService.addAttachments(
+                    idx, meetingReceiptFiles, meetingDocumentFiles, tripReceiptFiles, tripDocumentFiles, currentUserIdx);
+            return ResponseEntity.ok(receiptTripMeetingService.getAttachmentsByReceiptTripMeetingIdx(idx));
+        } catch (Exception e) {
+            log.error("출장+회의 첨부파일 추가 실패: {}", e.getMessage(), e);
+            Map<String, String> error = new HashMap<>();
+            error.put("error", e.getMessage());
+            return ResponseEntity.badRequest().body(error);
+        }
+    }
 
     /**
      * 첨부파일 목록 조회

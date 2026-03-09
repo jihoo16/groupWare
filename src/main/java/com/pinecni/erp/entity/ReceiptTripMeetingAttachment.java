@@ -6,7 +6,7 @@ import lombok.*;
 import java.time.LocalDateTime;
 
 /**
- * 연구비증빙 회의+출장 첨부파일 Entity
+ * 연구비증빙 출장+회의 첨부파일 Entity
  * (receipt_trip_meeting_attachment 테이블)
  */
 @Entity

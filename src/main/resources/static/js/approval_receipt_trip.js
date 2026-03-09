@@ -2487,11 +2487,36 @@ document.addEventListener('DOMContentLoaded', async function() {
                 return;
             }
 
+            // 일별 비용 명세 배열 구성
+            const dailyExpenseBodyEl = document.getElementById('dailyExpenseBody');
+            const dailyExpensesPayload = [];
+            if (dailyExpenseBodyEl) {
+                Array.from(dailyExpenseBodyEl.children)
+                    .filter(r => !r.classList.contains('expense-guide-row'))
+                    .forEach(row => {
+                        const dateCell = row.querySelector('td:first-child');
+                        const dateStr = dateCell ? dateCell.textContent.trim().replace(/\./g, '-') : null;
+                        if (!dateStr) return;
+                        const toNum = sel => parseInt((row.querySelector(sel)?.value || '0').replace(/,/g, '')) || 0;
+                        dailyExpensesPayload.push({
+                            expenseDate:       dateStr,
+                            transportationFee: toNum('[data-type="transport"]'),
+                            accommodationFee:  toNum('[data-type="lodging"]'),
+                            mealFee:           toNum('[data-type="meal"]'),
+                            otherFee:          toNum('[data-type="other"]')
+                        });
+                    });
+            }
+
             // 저장 데이터 생성
             const tripDurationEl = document.getElementById('trip_duration');
+            const reporterElSave = document.getElementById('trip_reporter');
+            const drafterIdxSave = reporterElSave
+                ? parseInt(reporterElSave.getAttribute('data-reporter-id')) || null
+                : null;
             const saveData = {
                 projectIdx: parseInt(selectedProjectIdxInput.value),
-                drafterUserIdx: currentUser ? currentUser.idx : null,
+                drafterUserIdx: drafterIdxSave,
                 tripDate: dateInput.value,
                 duration: tripDurationEl ? parseInt(tripDurationEl.value) || 0 : 0,
                 location: locationInput.value,
@@ -2502,7 +2527,8 @@ document.addEventListener('DOMContentLoaded', async function() {
                 purpose: document.getElementById('trip_purpose') ? document.getElementById('trip_purpose').value : null,
                 content: document.getElementById('trip_result')?.value || null,
                 cardIdx: selectedCard ? selectedCard.idx : null,
-                attendees: attendeeDTOs
+                attendees: attendeeDTOs,
+                dailyExpenses: dailyExpensesPayload
             };
 
 
@@ -3246,10 +3272,10 @@ document.addEventListener('DOMContentLoaded', async function() {
             tripDate.value = data.tripDate;
         }
 
-        // 출장 기간 (duration)은 기본값 0박으로 설정
+        // 출장 기간 (duration) 복원
         const tripDuration = document.getElementById('trip_duration');
         if (tripDuration) {
-            tripDuration.value = '0'; // 당일
+            tripDuration.value = data.duration != null ? data.duration : 0;
         }
 
         // 출장지
@@ -3268,6 +3294,9 @@ document.addEventListener('DOMContentLoaded', async function() {
         const tripReporter = document.getElementById('trip_reporter');
         if (tripReporter && data.authorUserName) {
             tripReporter.value = data.authorUserName;
+            if (data.drafterUserIdx) {
+                tripReporter.setAttribute('data-reporter-id', data.drafterUserIdx);
+            }
         }
 
         // 사용 카드 복원
@@ -3333,37 +3362,38 @@ document.addEventListener('DOMContentLoaded', async function() {
                 });
             }
 
-            // 비용 데이터를 날짜별 입력 테이블의 첫 번째 행에 설정
-            const dailyExpenseBody = document.getElementById('dailyExpenseBody');
-            if (dailyExpenseBody && dailyExpenseBody.children.length > 0) {
-                const firstRow = dailyExpenseBody.children[0];
+            // 일별 비용 명세 복원 (날짜 기준 매칭)
+            if (data.dailyExpenses && data.dailyExpenses.length > 0) {
+                const dailyExpenseBody = document.getElementById('dailyExpenseBody');
+                if (dailyExpenseBody) {
+                    const dataRows = Array.from(dailyExpenseBody.children)
+                        .filter(r => !r.classList.contains('expense-guide-row'));
 
-                // 교통비
-                const transportInput = firstRow.querySelector('[data-type="transport"]');
-                if (transportInput && data.transportationFee) {
-                    transportInput.value = data.transportationFee;
-                    transportInput.dispatchEvent(new Event('input'));
-                }
+                    data.dailyExpenses.forEach(expense => {
+                        // 서버 날짜 "2026-03-09" → "2026.03.09" 변환
+                        const expenseDateDot = expense.expenseDate
+                            ? String(expense.expenseDate).replace(/-/g, '.')
+                            : null;
+                        if (!expenseDateDot) return;
 
-                // 숙박비
-                const lodgingInput = firstRow.querySelector('[data-type="lodging"]');
-                if (lodgingInput && data.accommodationFee) {
-                    lodgingInput.value = data.accommodationFee;
-                    lodgingInput.dispatchEvent(new Event('input'));
-                }
+                        const row = dataRows.find(r => {
+                            const dateCell = r.querySelector('td:first-child');
+                            return dateCell && dateCell.textContent.trim() === expenseDateDot;
+                        });
+                        if (!row) return;
 
-                // 식비
-                const mealInput = firstRow.querySelector('[data-type="meal"]');
-                if (mealInput && data.mealFee) {
-                    mealInput.value = data.mealFee;
-                    mealInput.dispatchEvent(new Event('input'));
-                }
-
-                // 기타(일비)
-                const otherInput = firstRow.querySelector('[data-type="other"]');
-                if (otherInput && data.otherFee) {
-                    otherInput.value = data.otherFee;
-                    otherInput.dispatchEvent(new Event('input'));
+                        const setInput = (type, value) => {
+                            const input = row.querySelector(`[data-type="${type}"]`);
+                            if (input && value != null && Number(value) > 0) {
+                                input.value = Number(value).toLocaleString('ko-KR');
+                                input.dispatchEvent(new Event('input'));
+                            }
+                        };
+                        setInput('transport', expense.transportationFee);
+                        setInput('lodging',   expense.accommodationFee);
+                        setInput('meal',      expense.mealFee);
+                        setInput('other',     expense.otherFee);
+                    });
                 }
             }
 
@@ -3655,9 +3685,35 @@ document.addEventListener('DOMContentLoaded', async function() {
                 else if (type === 'other') totalOtherFee += value;
             });
 
+            // 일별 비용 명세 배열 구성
+            const dailyExpenseBodyElUpd = document.getElementById('dailyExpenseBody');
+            const dailyExpensesPayloadUpd = [];
+            if (dailyExpenseBodyElUpd) {
+                Array.from(dailyExpenseBodyElUpd.children)
+                    .filter(r => !r.classList.contains('expense-guide-row'))
+                    .forEach(row => {
+                        const dateCell = row.querySelector('td:first-child');
+                        const dateStr = dateCell ? dateCell.textContent.trim().replace(/\./g, '-') : null;
+                        if (!dateStr) return;
+                        const toNum = sel => parseInt((row.querySelector(sel)?.value || '0').replace(/,/g, '')) || 0;
+                        dailyExpensesPayloadUpd.push({
+                            expenseDate:       dateStr,
+                            transportationFee: toNum('[data-type="transport"]'),
+                            accommodationFee:  toNum('[data-type="lodging"]'),
+                            mealFee:           toNum('[data-type="meal"]'),
+                            otherFee:          toNum('[data-type="other"]')
+                        });
+                    });
+            }
+
             const tripDurationEl = document.getElementById('trip_duration');
+            const reporterElUpd = document.getElementById('trip_reporter');
+            const drafterIdxUpd = reporterElUpd
+                ? parseInt(reporterElUpd.getAttribute('data-reporter-id')) || null
+                : null;
             const updateData = {
                 projectIdx: parseInt(projectSelect.value),
+                drafterUserIdx: drafterIdxUpd,
                 tripDate: dateInput.value,
                 duration: tripDurationEl ? parseInt(tripDurationEl.value) || 0 : 0,
                 location: locationInput.value,
@@ -3669,7 +3725,8 @@ document.addEventListener('DOMContentLoaded', async function() {
                 content: document.getElementById('trip_result')?.value || null,
                 cardIdx: selectedCard ? selectedCard.idx : null,
                 paymentMethod: '카드로 결제',
-                attendees: attendeeDTOs
+                attendees: attendeeDTOs,
+                dailyExpenses: dailyExpensesPayloadUpd
             };
 
             try {
