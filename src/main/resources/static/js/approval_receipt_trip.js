@@ -186,8 +186,8 @@ document.addEventListener('DOMContentLoaded', async function() {
     // SweetAlert2 유틸리티 함수들
     // ============================================
 
-    function showSuccess(message) {
-        return Swal.fire({
+    async function showSuccess(message) {
+        await Swal.fire({
             icon: 'success',
             title: '성공',
             text: message,
@@ -2488,9 +2488,15 @@ document.addEventListener('DOMContentLoaded', async function() {
                 });
 
                 if (response.ok) {
-                    const result = await response.json();
-                    showSuccess('출장 정보가 저장되었습니다.');
-                    // 저장 후 목록 페이지로 이동
+                    await Swal.fire({
+                        icon: 'success',
+                        title: '저장 완료',
+                        text: '출장 정보가 저장되었습니다.',
+                        timer: 3000,
+                        timerProgressBar: true,
+                        showConfirmButton: false,
+                        allowOutsideClick: false
+                    });
                     popupAwareRedirect('/project/documents');
                 } else {
                     let errorMessage = '출장 저장에 실패했습니다.';
@@ -3651,7 +3657,15 @@ document.addEventListener('DOMContentLoaded', async function() {
                 });
 
                 if (response.ok) {
-                    showSuccess('출장 정보가 수정되었습니다.');
+                    await Swal.fire({
+                        icon: 'success',
+                        title: '수정 완료',
+                        text: '출장 정보가 수정되었습니다.',
+                        timer: 3000,
+                        timerProgressBar: true,
+                        showConfirmButton: false,
+                        allowOutsideClick: false
+                    });
                     window.location.reload();
                 } else {
                     showError('출장 수정에 실패했습니다.');
