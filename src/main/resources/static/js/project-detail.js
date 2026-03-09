@@ -787,6 +787,10 @@ async function goToDocument(documentType, sourceDocumentId) {
             url = `/approval/receipt-overtime?documentIdx=${sourceDocumentId}`;
             title = '야근식대 증빙';
             break;
+        case 'RECEIPT_TRIP':
+            url = `/approval/receipt-trip?documentIdx=${sourceDocumentId}`;
+            title = '단독 출장 증빙';
+            break;
         default:
             url = `/approval/detail?documentId=${sourceDocumentId}`;
             title = '문서 보기';
@@ -903,7 +907,7 @@ function getDocumentTypeLabel(type) {
     const typeMap = {
         'WEEKLY_REPORT': '프로젝트 주간업무보고',
         'MEETING_MINUTES': '회의록',
-        'BUSINESS_TRIP': '출장',
+        'BUSINESS_TRIP': '단독 출장',
         'RECEIPT_MEETING': '회의록',
         'RECEIPT_OVERTIME': '야근식대'
     };
