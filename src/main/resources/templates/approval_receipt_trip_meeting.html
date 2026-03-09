@@ -1,6 +1,6 @@
 <!DOCTYPE html>
 <html lang="ko" xmlns:th="http://www.thymeleaf.org">
-<head th:replace="~{fragments/layout :: head('연구비 증빙 - 회의+출장', '/css/approval_receipt_trip_meeting.css')}"></head>
+<head th:replace="~{fragments/layout :: head('연구비 증빙 - 출장+회의', '/css/approval_receipt_trip_meeting.css')}"></head>
 <body>
 <div class="container">
     <!-- 좌측 네비게이션 바 -->
@@ -10,7 +10,7 @@
     <main class="main-content">
         <header class="header">
             <div class="header-left">
-                <h1 class="page-title"><i class="fas fa-receipt"></i> <a href="/project/documents">프로젝트 문서함</a> > 연구비 증빙 - 회의+출장</h1>
+                <h1 class="page-title"><i class="fas fa-receipt"></i> <a href="/project/documents">프로젝트 문서함</a> > 연구비 증빙 - 출장+회의</h1>
             </div>
             <div class="header-right">
                 <button class="btn-secondary" id="printDocumentBtn" style="display:none;" onclick="printDocuments()">
@@ -43,7 +43,7 @@
 
                     <!-- 템플릿 저장소 (숨김) -->
                     <div style="display: none;">
-                        <!-- 영수증 처리 템플릿 - 회의+출장 -->
+                        <!-- 영수증 처리 템플릿 - 출장+회의 -->
                         <div id="template-receipt-trip">
                             <!-- ① 출장 정보 섹션 -->
                             <div class="common-info-section">
@@ -217,10 +217,6 @@
                                         <label for="common_start_time">
                                             <i class="fas fa-clock"></i> 시작 시간
                                             <span class="required-mark">*</span>
-                                            <span class="label-tooltip-wrapper">
-                                                <i class="fas fa-info-circle tooltip-icon"></i>
-                                                <span class="tooltip-text">⚠️ 시간 변경 시 중복 방지를 위해 작성자 목록이 갱신됩니다</span>
-                                            </span>
                                         </label>
                                         <input type="time" id="common_start_time" class="form-input" value="10:00">
                                     </div>
@@ -256,6 +252,9 @@
                                         <button type="button" id="addExternalAttendeeBtn" class="add-more-persons-btn" onclick="openAttendeeModal()">
                                             <i class="fas fa-user-plus"></i> 외부인원 추가
                                         </button>
+                                        <div id="externalAttendeeWarning" style="display:none; margin-top:6px; font-size:12px; color:#ef4444;">
+                                            <i class="fas fa-exclamation-circle"></i> 외부 참석자를 1명 이상 선택해주세요.
+                                        </div>
                                     </div>
                                 </div>
 
@@ -313,38 +312,83 @@
 
                             </div>
 
-                            <!-- 스캔파일 업로드 -->
+                            <!-- 스캔파일 업로드 (회의/출장 각각 영수증+공식문서 = 4칸) -->
                             <div class="attachment-section">
-                                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px;">
-                                    <div>
-                                        <div class="section-header">
-                                            <h4><i class="fas fa-receipt"></i> 영수증 업로드</h4>
-                                        </div>
-                                        <div class="file-upload-area" id="receiptUploadArea">
-                                            <input type="file" id="receiptInput" multiple hidden>
-                                            <label for="receiptInput" class="file-upload-label">
-                                                <i class="fas fa-cloud-upload-alt"></i>
-                                                <span>파일을 선택하거나 드래그하세요</span>
-                                                <small>최대 10MB, 최대 5개</small>
-                                            </label>
-                                        </div>
-                                        <div class="file-list" id="receiptFileList"></div>
+
+                                <!-- 출장 업로드 -->
+                                <div>
+                                    <div class="section-header" style="margin-bottom: 8px;">
+                                        <h4><i class="fas fa-plane"></i> 출장 첨부파일</h4>
                                     </div>
-                                    <div>
-                                        <div class="section-header">
-                                            <h4><i class="fas fa-file-alt"></i> 공식문서 업로드</h4>
+                                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px;">
+                                        <div>
+                                            <div class="section-header">
+                                                <h4><i class="fas fa-receipt"></i> 출장 영수증</h4>
+                                            </div>
+                                            <div class="file-upload-area" id="tripReceiptUploadArea">
+                                                <input type="file" id="tripReceiptInput" multiple hidden>
+                                                <label for="tripReceiptInput" class="file-upload-label">
+                                                    <i class="fas fa-cloud-upload-alt"></i>
+                                                    <span>파일을 선택하거나 드래그하세요</span>
+                                                    <small>최대 10MB, 최대 5개</small>
+                                                </label>
+                                            </div>
+                                            <div class="file-list" id="tripReceiptFileList"></div>
                                         </div>
-                                        <div class="file-upload-area" id="documentUploadArea">
-                                            <input type="file" id="documentInput" multiple hidden>
-                                            <label for="documentInput" class="file-upload-label">
-                                                <i class="fas fa-cloud-upload-alt"></i>
-                                                <span>파일을 선택하거나 드래그하세요</span>
-                                                <small>최대 10MB, 최대 5개</small>
-                                            </label>
+                                        <div>
+                                            <div class="section-header">
+                                                <h4><i class="fas fa-file-alt"></i> 출장 공식문서</h4>
+                                            </div>
+                                            <div class="file-upload-area" id="tripDocumentUploadArea">
+                                                <input type="file" id="tripDocumentInput" multiple hidden>
+                                                <label for="tripDocumentInput" class="file-upload-label">
+                                                    <i class="fas fa-cloud-upload-alt"></i>
+                                                    <span>파일을 선택하거나 드래그하세요</span>
+                                                    <small>최대 10MB, 최대 5개</small>
+                                                </label>
+                                            </div>
+                                            <div class="file-list" id="tripDocumentFileList"></div>
                                         </div>
-                                        <div class="file-list" id="documentFileList"></div>
                                     </div>
                                 </div>
+
+                                <!-- 회의 업로드 -->
+                                <div style="margin-bottom: 12px;">
+                                    <div class="section-header" style="margin-bottom: 8px;">
+                                        <h4 style="color:#667eea;"><i class="fas fa-users"></i> 회의 첨부파일</h4>
+                                    </div>
+                                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px;">
+                                        <div>
+                                            <div class="section-header">
+                                                <h4><i class="fas fa-receipt"></i> 회의 영수증</h4>
+                                            </div>
+                                            <div class="file-upload-area" id="meetingReceiptUploadArea">
+                                                <input type="file" id="meetingReceiptInput" multiple hidden>
+                                                <label for="meetingReceiptInput" class="file-upload-label">
+                                                    <i class="fas fa-cloud-upload-alt"></i>
+                                                    <span>파일을 선택하거나 드래그하세요</span>
+                                                    <small>최대 10MB, 최대 5개</small>
+                                                </label>
+                                            </div>
+                                            <div class="file-list" id="meetingReceiptFileList"></div>
+                                        </div>
+                                        <div>
+                                            <div class="section-header">
+                                                <h4><i class="fas fa-file-alt"></i> 회의 공식문서</h4>
+                                            </div>
+                                            <div class="file-upload-area" id="meetingDocumentUploadArea">
+                                                <input type="file" id="meetingDocumentInput" multiple hidden>
+                                                <label for="meetingDocumentInput" class="file-upload-label">
+                                                    <i class="fas fa-cloud-upload-alt"></i>
+                                                    <span>파일을 선택하거나 드래그하세요</span>
+                                                    <small>최대 10MB, 최대 5개</small>
+                                                </label>
+                                            </div>
+                                            <div class="file-list" id="meetingDocumentFileList"></div>
+                                        </div>
+                                    </div>
+                                </div>
+
                             </div>
 
                             <!-- 문서 미리보기: 출장 품의서, 출장 복명서, 회의록, 참석자 명단 -->
@@ -433,6 +477,7 @@
                                                 <th>숙박비</th>
                                                 <th>식비</th>
                                                 <th>기타(일비)</th>
+                                                <th>회의비</th>
                                                 <th>계</th>
                                             </tr>
                                             <tbody id="proposalExpenseBody">
@@ -440,7 +485,7 @@
                                             </tbody>
                                             <tr>
                                                 <th style="height: 80px">합 계</th>
-                                                <td colspan="5" style="text-align: center;"><span
+                                                <td colspan="6" style="text-align: center;"><span
                                                         class="auto-grand-total">0</span></td>
                                             </tr>
                                             <tr>
@@ -584,12 +629,6 @@
                                                 <th>참여자<br>(참여기관)</th>
                                                 <td colspan="3" class="auto-all-attendees"
                                                     style="padding: 10px; height: 80px; white-space: pre-wrap;"></td>
-                                            </tr>
-                                            <tr>
-                                                <th>참석자<br>금액 합계</th>
-                                                <td colspan="3" style="padding: 10px;">
-                                                    <span id="minutesMeetingExpenseTotal" style="font-weight: 600; color: #667eea;">-</span>
-                                                </td>
                                             </tr>
                                             <tr>
                                                 <th colspan="4" style="background: #f0f0f0; padding: 15px;">내용</th>

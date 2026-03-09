@@ -61,6 +61,11 @@ public class ReceiptTripMapper {
                 ? entity.getAttendees().stream().map(this::toAttendeeDTO).collect(Collectors.toList())
                 : null;
 
+        // 일별 비용 명세 변환
+        List<ReceiptTripDailyExpenseDTO> dailyExpenseDTOs = entity.getDailyExpenses() != null
+                ? entity.getDailyExpenses().stream().map(this::toDailyExpenseDTO).collect(Collectors.toList())
+                : null;
+
         // 문서번호: entity 자체 필드 우선, 없으면 연관된 ApprovalDocument에서 조회
         String documentNumber = entity.getDocumentNumber();
         if (documentNumber == null && entity.getApprovalDocument() != null) {
@@ -86,6 +91,7 @@ public class ReceiptTripMapper {
                 .purpose(entity.getPurpose())
                 .content(entity.getContent())
                 .attendees(attendeeDTOs)
+                .dailyExpenses(dailyExpenseDTOs)
                 .createdAt(entity.getCreatedAt())
                 .updatedAt(entity.getUpdatedAt())
                 .build();
@@ -120,9 +126,10 @@ public class ReceiptTripMapper {
     public void updateEntity(ReceiptTrip entity, ReceiptTripUpdateDTO dto) {
         if (entity == null || dto == null) return;
 
-        if (dto.getProjectIdx() != null) entity.setProjectIdx(dto.getProjectIdx());
-        if (dto.getCardIdx() != null)    entity.setCardIdx(dto.getCardIdx());
-        if (dto.getTripDate() != null)   entity.setTripDate(dto.getTripDate());
+        if (dto.getProjectIdx() != null)    entity.setProjectIdx(dto.getProjectIdx());
+        if (dto.getCardIdx() != null)       entity.setCardIdx(dto.getCardIdx());
+        if (dto.getDrafterUserIdx() != null) entity.setDrafterUserIdx(dto.getDrafterUserIdx());
+        if (dto.getTripDate() != null)      entity.setTripDate(dto.getTripDate());
         if (dto.getDuration() != null)   entity.setDuration(dto.getDuration());
         if (dto.getLocation() != null)   entity.setLocation(dto.getLocation());
         if (dto.getPurpose() != null)    entity.setPurpose(dto.getPurpose());
@@ -190,6 +197,35 @@ public class ReceiptTripMapper {
                 .userIdx(entity.getUserIdx())
                 .position(position)
                 .displayOrder(entity.getDisplayOrder())
+                .build();
+    }
+
+    /**
+     * ReceiptTripDailyExpense Entity → DTO 변환
+     */
+    public ReceiptTripDailyExpenseDTO toDailyExpenseDTO(ReceiptTripDailyExpense entity) {
+        if (entity == null) return null;
+        return ReceiptTripDailyExpenseDTO.builder()
+                .expenseDate(entity.getExpenseDate())
+                .transportationFee(entity.getTransportationFee())
+                .accommodationFee(entity.getAccommodationFee())
+                .mealFee(entity.getMealFee())
+                .otherFee(entity.getOtherFee())
+                .build();
+    }
+
+    /**
+     * ReceiptTripDailyExpenseDTO → Entity 변환
+     */
+    public ReceiptTripDailyExpense toDailyExpenseEntity(ReceiptTripDailyExpenseDTO dto, Long receiptTripIdx) {
+        if (dto == null) return null;
+        return ReceiptTripDailyExpense.builder()
+                .receiptTripIdx(receiptTripIdx)
+                .expenseDate(dto.getExpenseDate())
+                .transportationFee(dto.getTransportationFee() != null ? dto.getTransportationFee() : BigDecimal.ZERO)
+                .accommodationFee(dto.getAccommodationFee() != null ? dto.getAccommodationFee() : BigDecimal.ZERO)
+                .mealFee(dto.getMealFee() != null ? dto.getMealFee() : BigDecimal.ZERO)
+                .otherFee(dto.getOtherFee() != null ? dto.getOtherFee() : BigDecimal.ZERO)
                 .build();
     }
 

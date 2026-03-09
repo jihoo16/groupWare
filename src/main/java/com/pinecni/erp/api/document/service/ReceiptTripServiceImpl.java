@@ -4,12 +4,14 @@ import com.pinecni.erp.api.approval.repository.ApprovalDocumentRepository;
 import com.pinecni.erp.api.approval.repository.DocumentSequenceRepository;
 import com.pinecni.erp.api.document.dto.ReceiptTripAttachmentDTO;
 import com.pinecni.erp.api.document.dto.ReceiptTripCreateDTO;
+import com.pinecni.erp.api.document.dto.ReceiptTripDailyExpenseDTO;
 import com.pinecni.erp.api.document.dto.ReceiptTripDTO;
 import com.pinecni.erp.api.document.dto.ReceiptTripUpdateDTO;
 import com.pinecni.erp.api.document.mapper.ReceiptTripMapper;
 import com.pinecni.erp.api.document.repository.ReceiptAttendeeRepository;
 import com.pinecni.erp.api.document.repository.ReceiptTripAttachmentRepository;
 import com.pinecni.erp.api.project.repository.ProjectCardRepository;
+import com.pinecni.erp.api.project.repository.ReceiptTripDailyExpenseRepository;
 import com.pinecni.erp.api.project.repository.ReceiptTripRepository;
 import com.pinecni.erp.entity.*;
 import lombok.RequiredArgsConstructor;
@@ -39,6 +41,7 @@ import java.util.stream.Collectors;
 public class ReceiptTripServiceImpl implements ReceiptTripService {
 
     private final ReceiptTripRepository receiptTripRepository;
+    private final ReceiptTripDailyExpenseRepository dailyExpenseRepository;
     private final ReceiptAttendeeRepository receiptAttendeeRepository;
     private final ReceiptTripAttachmentRepository attachmentRepository;
     private final ApprovalDocumentRepository approvalDocumentRepository;
@@ -93,6 +96,8 @@ public class ReceiptTripServiceImpl implements ReceiptTripService {
         if (Boolean.TRUE.equals(entity.getDeleted())) {
             throw new IllegalArgumentException("삭제된 출장입니다. idx: " + idx);
         }
+        entity.setAttendees(receiptAttendeeRepository.findByReceiptTripIdx(idx));
+        entity.setDailyExpenses(dailyExpenseRepository.findByReceiptTripIdxOrderByExpenseDateAsc(idx));
         // Load attendees (they are @Transient)
         List<ReceiptAttendee> attendees = receiptAttendeeRepository.findByReceiptTripIdx(entity.getIdx());
         entity.setAttendees(attendees);
@@ -156,13 +161,35 @@ public class ReceiptTripServiceImpl implements ReceiptTripService {
 
             // 3. ReceiptTrip Entity 생성 및 저장
             ReceiptTrip entity = mapper.toEntity(createDTO);
+            // dailyExpenses가 있으면 totalFee를 일별 합산으로 재계산
+            List<ReceiptTripDailyExpenseDTO> dailyList =
+                    createDTO.getDailyExpenses() != null ? createDTO.getDailyExpenses() : Collections.emptyList();
+            if (!dailyList.isEmpty()) {
+                BigDecimal totalFee = dailyList.stream()
+                        .map(d -> orZero(d.getTransportationFee())
+                                .add(orZero(d.getAccommodationFee()))
+                                .add(orZero(d.getMealFee()))
+                                .add(orZero(d.getOtherFee())))
+                        .reduce(BigDecimal.ZERO, BigDecimal::add);
+                entity.setTotalFee(totalFee);
+            }
             entity.setDocumentIdx(savedDocument.getIdx());
             entity.setDocumentNumber(documentNo);
             entity.setCreatedUserIdx(currentUserIdx);
             entity.setUpdatedUserIdx(currentUserIdx);
             entity = receiptTripRepository.save(entity);
 
-            // 4. 참석자 저장 (receipt_attendee 통합 테이블, prefix=RCT)
+            // 4. 일별 비용 명세 저장
+            if (!dailyList.isEmpty()) {
+                final Long tripIdx = entity.getIdx();
+                List<ReceiptTripDailyExpense> dailyEntities = dailyList.stream()
+                        .map(d -> mapper.toDailyExpenseEntity(d, tripIdx))
+                        .collect(Collectors.toList());
+                dailyExpenseRepository.saveAll(dailyEntities);
+                log.debug("일별 비용 {}일분 저장 완료 - tripIdx: {}", dailyEntities.size(), tripIdx);
+            }
+
+            // 5. 참석자 저장 (receipt_attendee 통합 테이블, prefix=RCT)
             if (createDTO.getAttendees() != null && !createDTO.getAttendees().isEmpty()) {
                 final ReceiptTrip savedTrip = entity;
                 List<ReceiptAttendee> attendees = createDTO.getAttendees().stream()
@@ -171,10 +198,11 @@ public class ReceiptTripServiceImpl implements ReceiptTripService {
                 receiptAttendeeRepository.saveAll(attendees);
             }
 
-            // 5. 재조회 후 참석자 주입
+            // 6. 재조회 후 참석자 + 일별 비용 주입
             ReceiptTrip saved = receiptTripRepository.findByIdWithDetails(entity.getIdx())
                     .orElseThrow(() -> new IllegalStateException("저장된 출장 정보를 조회할 수 없습니다."));
             saved.setAttendees(receiptAttendeeRepository.findByReceiptTripIdx(saved.getIdx()));
+            saved.setDailyExpenses(dailyExpenseRepository.findByReceiptTripIdxOrderByExpenseDateAsc(saved.getIdx()));
 
             log.info("출장 생성 완료 - idx: {}, documentNo: {}", saved.getIdx(), documentNo);
             return mapper.toDTO(saved);
@@ -197,8 +225,35 @@ public class ReceiptTripServiceImpl implements ReceiptTripService {
         }
 
         mapper.updateEntity(entity, updateDTO);
+
+        // dailyExpenses가 있으면 totalFee를 일별 합산으로 재계산
+        List<ReceiptTripDailyExpenseDTO> dailyList =
+                updateDTO.getDailyExpenses() != null ? updateDTO.getDailyExpenses() : Collections.emptyList();
+        if (!dailyList.isEmpty()) {
+            BigDecimal totalFee = dailyList.stream()
+                    .map(d -> orZero(d.getTransportationFee())
+                            .add(orZero(d.getAccommodationFee()))
+                            .add(orZero(d.getMealFee()))
+                            .add(orZero(d.getOtherFee())))
+                    .reduce(BigDecimal.ZERO, BigDecimal::add);
+            entity.setTotalFee(totalFee);
+        }
+
         entity.setUpdatedUserIdx(currentUserIdx);
         entity = receiptTripRepository.save(entity);
+
+        // 일별 비용 명세 재생성 (물리 삭제 후 재삽입)
+        if (updateDTO.getDailyExpenses() != null) {
+            dailyExpenseRepository.deleteByReceiptTripIdx(idx);
+            if (!dailyList.isEmpty()) {
+                final Long tripIdx = entity.getIdx();
+                List<ReceiptTripDailyExpense> dailyEntities = dailyList.stream()
+                        .map(d -> mapper.toDailyExpenseEntity(d, tripIdx))
+                        .collect(Collectors.toList());
+                dailyExpenseRepository.saveAll(dailyEntities);
+                log.debug("일별 비용 {}일분 재저장 완료 - tripIdx: {}", dailyEntities.size(), tripIdx);
+            }
+        }
 
         // 참석자 재생성 (receipt_attendee 통합 테이블, prefix=RCT, 소프트 딜리트 후 재삽입)
         if (updateDTO.getAttendees() != null) {
@@ -218,6 +273,7 @@ public class ReceiptTripServiceImpl implements ReceiptTripService {
         ReceiptTrip updated = receiptTripRepository.findByIdWithDetails(idx)
                 .orElseThrow(() -> new IllegalStateException("수정된 출장 정보를 조회할 수 없습니다."));
         updated.setAttendees(receiptAttendeeRepository.findByReceiptTripIdx(idx));
+        updated.setDailyExpenses(dailyExpenseRepository.findByReceiptTripIdxOrderByExpenseDateAsc(idx));
 
         log.info("출장 수정 완료 - idx: {}", idx);
         return mapper.toDTO(updated);
@@ -233,21 +289,25 @@ public class ReceiptTripServiceImpl implements ReceiptTripService {
 
         LocalDateTime now = LocalDateTime.now();
 
-        // 1. 참석자 소프트 딜리트 (receipt_attendee 통합 테이블, prefix=RCT)
+        // 1. 일별 비용 명세 물리 삭제
+        dailyExpenseRepository.deleteByReceiptTripIdx(idx);
+        log.debug("ReceiptTripDailyExpense 삭제 완료 - receiptTripIdx: {}", idx);
+
+        // 2. 참석자 소프트 딜리트 (receipt_attendee 통합 테이블, prefix=RCT)
         receiptAttendeeRepository.softDeleteByReceiptIdxAndDocumentTypePrefix(idx, PREFIX, deletedUserIdx);
         log.debug("ReceiptAttendee 소프트 딜리트 완료 - receiptTripIdx: {}", idx);
 
-        // 2. 첨부파일 소프트 딜리트
+        // 3. 첨부파일 소프트 딜리트
         attachmentRepository.softDeleteByReceiptTripIdx(idx, deletedUserIdx);
         log.debug("ReceiptTripAttachment 소프트 딜리트 완료 - receiptTripIdx: {}", idx);
 
-        // 3. ReceiptTrip 소프트 딜리트
+        // 4. ReceiptTrip 소프트 딜리트
         entity.setDeleted(true);
         entity.setDeletedAt(now);
         entity.setDeletedUserIdx(deletedUserIdx);
         receiptTripRepository.save(entity);
 
-        // 4. ApprovalDocument 소프트 딜리트
+        // 5. ApprovalDocument 소프트 딜리트
         if (entity.getDocumentIdx() != null) {
             approvalDocumentRepository.findById(entity.getDocumentIdx()).ifPresent(doc -> {
                 doc.setDeletedAt(now);
@@ -442,6 +502,10 @@ public class ReceiptTripServiceImpl implements ReceiptTripService {
 
     private BigDecimal calcTotal(ReceiptTrip trip) {
         return trip.getTotalFee() != null ? trip.getTotalFee() : BigDecimal.ZERO;
+    }
+
+    private BigDecimal orZero(BigDecimal value) {
+        return value != null ? value : BigDecimal.ZERO;
     }
 
     private String generateDocumentNo() {

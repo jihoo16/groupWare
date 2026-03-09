@@ -112,7 +112,7 @@ public class ProjectDTO {
     private BigDecimal tripUsed;
 
     /**
-     * 활동비 세부 내역 - 회의+출장
+     * 활동비 세부 내역 - 출장+회의
      */
     private BigDecimal tripMeetingUsed;
 

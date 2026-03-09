@@ -11,13 +11,13 @@ import java.util.List;
 import java.util.Optional;
 
 /**
- * 연구비증빙 회의+출장 Repository
+ * 연구비증빙 출장+회의 Repository
  */
 @Repository
 public interface ReceiptTripMeetingRepository extends JpaRepository<ReceiptTripMeeting, Long> {
 
     /**
-     * 프로젝트별 회의+출장 목록 (출장일 내림차순)
+     * 프로젝트별 출장+회의 목록 (출장일 내림차순)
      */
     @Query("SELECT rtm FROM ReceiptTripMeeting rtm " +
            "LEFT JOIN FETCH rtm.approvalDocument " +
@@ -26,7 +26,7 @@ public interface ReceiptTripMeetingRepository extends JpaRepository<ReceiptTripM
     List<ReceiptTripMeeting> findByProjectIdxOrderByTripDateDesc(@Param("projectIdx") Long projectIdx);
 
     /**
-     * 작성자별 회의+출장 목록 (출장일 내림차순)
+     * 작성자별 출장+회의 목록 (출장일 내림차순)
      */
     @Query("SELECT rtm FROM ReceiptTripMeeting rtm " +
            "LEFT JOIN FETCH rtm.approvalDocument " +
@@ -42,7 +42,7 @@ public interface ReceiptTripMeetingRepository extends JpaRepository<ReceiptTripM
     Optional<ReceiptTripMeeting> findByDocumentIdx(@Param("documentIdx") Long documentIdx);
 
     /**
-     * 프로젝트별 회의+출장 비용 합계
+     * 프로젝트별 출장+회의 비용 합계
      */
     @Query("SELECT COALESCE(SUM(COALESCE(rtm.totalFee, 0)), 0) " +
            "FROM ReceiptTripMeeting rtm " +

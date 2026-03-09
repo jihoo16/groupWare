@@ -32,7 +32,7 @@ import java.util.UUID;
 import java.util.stream.Collectors;
 
 /**
- * 연구비증빙 회의+출장 통합 Service 구현체
+ * 연구비증빙 출장+회의 통합 Service 구현체
  *
  * 저장 순서 (단일 트랜잭션):
  *   1. RCTM 문서번호 생성
@@ -71,11 +71,13 @@ public class ReceiptTripMeetingServiceImpl implements ReceiptTripMeetingService 
     @Transactional
     public ReceiptTripMeetingResponseDTO createReceiptTripMeeting(
             ReceiptTripMeetingCreateDTO dto,
-            MultipartFile[] receiptFiles,
-            MultipartFile[] documentFiles,
+            MultipartFile[] meetingReceiptFiles,
+            MultipartFile[] meetingDocumentFiles,
+            MultipartFile[] tripReceiptFiles,
+            MultipartFile[] tripDocumentFiles,
             Long currentUserIdx) {
 
-        log.debug("회의+출장 통합 저장 - projectIdx: {}, drafterUserIdx: {}", dto.getProjectIdx(), dto.getDrafterUserIdx());
+        log.debug("출장+회의 통합 저장 - projectIdx: {}, drafterUserIdx: {}", dto.getProjectIdx(), dto.getDrafterUserIdx());
 
         // ── 1. 문서 번호 생성 ──────────────────────────────────────────
         String documentNo = documentSequenceService.generateDocumentNumber(DOCUMENT_TYPE, PREFIX, currentUserIdx);
@@ -86,7 +88,7 @@ public class ReceiptTripMeetingServiceImpl implements ReceiptTripMeetingService 
         ApprovalDocument approvalDocument = ApprovalDocument.builder()
                 .documentNo(documentNo)
                 .title(buildTitle(dto))
-                .documentType("연구비증빙-회의+출장")
+                .documentType("연구비증빙-출장+회의")
                 .isProject(true)
                 .drafterUserIdx(dto.getDrafterUserIdx())
                 .content(dto.getTripContent())
@@ -156,8 +158,10 @@ public class ReceiptTripMeetingServiceImpl implements ReceiptTripMeetingService 
         }
 
         // ── 6. 파일 첨부 저장 ─────────────────────────────────────────
-        saveAttachments(entity, receiptFiles,  "RECEIPT",  currentUserIdx);
-        saveAttachments(entity, documentFiles, "DOCUMENT", currentUserIdx);
+        saveAttachments(entity, meetingReceiptFiles,  "MEETING_RECEIPT",  currentUserIdx);
+        saveAttachments(entity, meetingDocumentFiles, "MEETING_DOCUMENT", currentUserIdx);
+        saveAttachments(entity, tripReceiptFiles,     "TRIP_RECEIPT",     currentUserIdx);
+        saveAttachments(entity, tripDocumentFiles,    "TRIP_DOCUMENT",    currentUserIdx);
 
         // ── 7. 출장 참석자 저장 (receipt_attendee, prefix=RCTM, participation_type='출장') ─
         LocalDateTime now = LocalDateTime.now();
@@ -215,7 +219,7 @@ public class ReceiptTripMeetingServiceImpl implements ReceiptTripMeetingService 
             log.debug("회의 참석자 {}명 저장 완료", meetingAttendees.size());
         }
 
-        log.info("회의+출장 통합 저장 완료 - rtmIdx: {}, documentNo: {}", rtmIdx, documentNo);
+        log.info("출장+회의 통합 저장 완료 - rtmIdx: {}, documentNo: {}", rtmIdx, documentNo);
 
         return ReceiptTripMeetingResponseDTO.builder()
                 .receiptTripMeetingIdx(rtmIdx)
@@ -231,11 +235,11 @@ public class ReceiptTripMeetingServiceImpl implements ReceiptTripMeetingService 
     @Override
     @Transactional(readOnly = true)
     public ReceiptTripMeetingResponseDTO getReceiptTripMeetingById(Long idx) {
-        log.debug("회의+출장 상세 조회 - idx: {}", idx);
+        log.debug("출장+회의 상세 조회 - idx: {}", idx);
         ReceiptTripMeeting entity = receiptTripMeetingRepository.findById(idx)
-                .orElseThrow(() -> new IllegalArgumentException("회의+출장 정보를 찾을 수 없습니다. idx: " + idx));
+                .orElseThrow(() -> new IllegalArgumentException("출장+회의 정보를 찾을 수 없습니다. idx: " + idx));
         if (Boolean.TRUE.equals(entity.getDeleted())) {
-            throw new IllegalArgumentException("삭제된 회의+출장입니다. idx: " + idx);
+            throw new IllegalArgumentException("삭제된 출장+회의입니다. idx: " + idx);
         }
         return toDetailDTO(entity);
     }
@@ -243,7 +247,7 @@ public class ReceiptTripMeetingServiceImpl implements ReceiptTripMeetingService 
     @Override
     @Transactional(readOnly = true)
     public List<ReceiptTripMeetingResponseDTO> getReceiptTripMeetingsByProjectIdx(Long projectIdx) {
-        log.debug("프로젝트별 회의+출장 목록 조회 - projectIdx: {}", projectIdx);
+        log.debug("프로젝트별 출장+회의 목록 조회 - projectIdx: {}", projectIdx);
         return receiptTripMeetingRepository.findByProjectIdxOrderByTripDateDesc(projectIdx)
                 .stream()
                 .filter(e -> !Boolean.TRUE.equals(e.getDeleted()))
@@ -254,7 +258,7 @@ public class ReceiptTripMeetingServiceImpl implements ReceiptTripMeetingService 
     @Override
     @Transactional(readOnly = true)
     public List<ReceiptTripMeetingResponseDTO> getReceiptTripMeetingsByDrafterUserIdx(Long drafterUserIdx) {
-        log.debug("작성자별 회의+출장 목록 조회 - drafterUserIdx: {}", drafterUserIdx);
+        log.debug("작성자별 출장+회의 목록 조회 - drafterUserIdx: {}", drafterUserIdx);
         return receiptTripMeetingRepository.findByDrafterUserIdxOrderByTripDateDesc(drafterUserIdx)
                 .stream()
                 .filter(e -> !Boolean.TRUE.equals(e.getDeleted()))
@@ -271,16 +275,18 @@ public class ReceiptTripMeetingServiceImpl implements ReceiptTripMeetingService 
     public ReceiptTripMeetingResponseDTO updateReceiptTripMeeting(
             Long idx,
             ReceiptTripMeetingCreateDTO updateDTO,
-            MultipartFile[] receiptFiles,
-            MultipartFile[] documentFiles,
+            MultipartFile[] meetingReceiptFiles,
+            MultipartFile[] meetingDocumentFiles,
+            MultipartFile[] tripReceiptFiles,
+            MultipartFile[] tripDocumentFiles,
             Long currentUserIdx) {
 
-        log.debug("회의+출장 수정 - idx: {}, currentUserIdx: {}", idx, currentUserIdx);
+        log.debug("출장+회의 수정 - idx: {}, currentUserIdx: {}", idx, currentUserIdx);
 
         ReceiptTripMeeting entity = receiptTripMeetingRepository.findById(idx)
-                .orElseThrow(() -> new IllegalArgumentException("회의+출장 정보를 찾을 수 없습니다. idx: " + idx));
+                .orElseThrow(() -> new IllegalArgumentException("출장+회의 정보를 찾을 수 없습니다. idx: " + idx));
         if (Boolean.TRUE.equals(entity.getDeleted())) {
-            throw new IllegalArgumentException("삭제된 회의+출장입니다. idx: " + idx);
+            throw new IllegalArgumentException("삭제된 출장+회의입니다. idx: " + idx);
         }
 
         // 1. 일별 비용 합계 재계산
@@ -382,8 +388,10 @@ public class ReceiptTripMeetingServiceImpl implements ReceiptTripMeetingService 
         }
 
         // 5. 새 첨부파일 저장 + 기존 첨부파일 표시명 재정렬
-        saveAttachments(entity, receiptFiles,  "RECEIPT",  currentUserIdx);
-        saveAttachments(entity, documentFiles, "DOCUMENT", currentUserIdx);
+        saveAttachments(entity, meetingReceiptFiles,  "MEETING_RECEIPT",  currentUserIdx);
+        saveAttachments(entity, meetingDocumentFiles, "MEETING_DOCUMENT", currentUserIdx);
+        saveAttachments(entity, tripReceiptFiles,     "TRIP_RECEIPT",     currentUserIdx);
+        saveAttachments(entity, tripDocumentFiles,    "TRIP_DOCUMENT",    currentUserIdx);
         renameAttachments(entity);
 
         // 6. ApprovalDocument 제목 업데이트
@@ -396,7 +404,7 @@ public class ReceiptTripMeetingServiceImpl implements ReceiptTripMeetingService 
             });
         }
 
-        log.info("회의+출장 수정 완료 - idx: {}", idx);
+        log.info("출장+회의 수정 완료 - idx: {}", idx);
         return toDetailDTO(entity);
     }
 
@@ -407,10 +415,10 @@ public class ReceiptTripMeetingServiceImpl implements ReceiptTripMeetingService 
     @Override
     @Transactional
     public void deleteReceiptTripMeeting(Long idx, Long deletedUserIdx) {
-        log.debug("회의+출장 소프트 딜리트 - idx: {}", idx);
+        log.debug("출장+회의 소프트 딜리트 - idx: {}", idx);
 
         ReceiptTripMeeting entity = receiptTripMeetingRepository.findById(idx)
-                .orElseThrow(() -> new IllegalArgumentException("회의+출장 정보를 찾을 수 없습니다. idx: " + idx));
+                .orElseThrow(() -> new IllegalArgumentException("출장+회의 정보를 찾을 수 없습니다. idx: " + idx));
 
         LocalDateTime now = LocalDateTime.now();
 
@@ -438,7 +446,7 @@ public class ReceiptTripMeetingServiceImpl implements ReceiptTripMeetingService 
         entity.setDeletedUserIdx(deletedUserIdx);
         receiptTripMeetingRepository.save(entity);
 
-        log.info("회의+출장 소프트 딜리트 완료 - idx: {}", idx);
+        log.info("출장+회의 소프트 딜리트 완료 - idx: {}", idx);
     }
 
     // ══════════════════════════════════════════════════════════════
@@ -475,6 +483,30 @@ public class ReceiptTripMeetingServiceImpl implements ReceiptTripMeetingService 
         log.debug("첨부파일 소프트 딜리트 완료 - idx: {}", attachmentIdx);
     }
 
+    @Override
+    @Transactional
+    public void addAttachments(
+            Long idx,
+            MultipartFile[] meetingReceiptFiles,
+            MultipartFile[] meetingDocumentFiles,
+            MultipartFile[] tripReceiptFiles,
+            MultipartFile[] tripDocumentFiles,
+            Long currentUserIdx) {
+
+        ReceiptTripMeeting entity = receiptTripMeetingRepository.findById(idx)
+                .orElseThrow(() -> new IllegalArgumentException("출장+회의 정보를 찾을 수 없습니다. idx: " + idx));
+        if (Boolean.TRUE.equals(entity.getDeleted())) {
+            throw new IllegalArgumentException("삭제된 출장+회의입니다. idx: " + idx);
+        }
+
+        saveAttachments(entity, meetingReceiptFiles,  "MEETING_RECEIPT",  currentUserIdx);
+        saveAttachments(entity, meetingDocumentFiles, "MEETING_DOCUMENT", currentUserIdx);
+        saveAttachments(entity, tripReceiptFiles,     "TRIP_RECEIPT",     currentUserIdx);
+        saveAttachments(entity, tripDocumentFiles,    "TRIP_DOCUMENT",    currentUserIdx);
+        renameAttachments(entity);
+        log.debug("addAttachments 완료 - receiptTripMeetingIdx: {}", idx);
+    }
+
     // ══════════════════════════════════════════════════════════════
     // 파일 저장
     // ══════════════════════════════════════════════════════════════
@@ -509,7 +541,14 @@ public class ReceiptTripMeetingServiceImpl implements ReceiptTripMeetingService 
         String displayDateStr   = rtm.getTripDate().format(DateTimeFormatter.ofPattern("yyyyMMdd"));
         BigDecimal totalAmount  = calcTotal(rtm);
         String displayAmountStr = String.format("%,d원", totalAmount.longValue());
-        String displayDocType   = "DOCUMENT".equals(attachmentType) ? "공식문서" : "영수증";
+        String displayDocType;
+        switch (attachmentType) {
+            case "MEETING_RECEIPT":  displayDocType = "회의_영수증";  break;
+            case "MEETING_DOCUMENT": displayDocType = "회의_공식문서"; break;
+            case "TRIP_RECEIPT":     displayDocType = "출장_영수증";  break;
+            case "TRIP_DOCUMENT":    displayDocType = "출장_공식문서"; break;
+            default:                 displayDocType = "영수증";       break;
+        }
         String displayBaseName  = cardLastDigits + "_" + displayDateStr + "_" + displayAmountStr + "_회의출장_" + displayDocType;
 
         long existingCount = attachmentRepository
@@ -560,7 +599,7 @@ public class ReceiptTripMeetingServiceImpl implements ReceiptTripMeetingService 
     // ══════════════════════════════════════════════════════════════
 
     private String buildTitle(ReceiptTripMeetingCreateDTO dto) {
-        StringBuilder sb = new StringBuilder("연구비증빙 회의+출장");
+        StringBuilder sb = new StringBuilder("연구비증빙 출장+회의");
         if (dto.getLocation() != null && !dto.getLocation().isEmpty()) {
             sb.append(" - ").append(dto.getLocation());
         }
@@ -806,7 +845,14 @@ public class ReceiptTripMeetingServiceImpl implements ReceiptTripMeetingService 
                         Collectors.toList()));
 
         byType.forEach((type, list) -> {
-            String displayDocType = "DOCUMENT".equals(type) ? "공식문서" : "영수증";
+            String displayDocType;
+            switch (type) {
+                case "MEETING_RECEIPT":  displayDocType = "회의_영수증";  break;
+                case "MEETING_DOCUMENT": displayDocType = "회의_공식문서"; break;
+                case "TRIP_RECEIPT":     displayDocType = "출장_영수증";  break;
+                case "TRIP_DOCUMENT":    displayDocType = "출장_공식문서"; break;
+                default:                 displayDocType = "영수증";       break;
+            }
             String baseName = finalCardLastDigits + "_" + displayDateStr + "_" + displayAmountStr + "_회의출장_" + displayDocType;
             list.sort(Comparator.comparing(ReceiptTripMeetingAttachment::getIdx));
             for (int i = 0; i < list.size(); i++) {
