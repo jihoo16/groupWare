@@ -237,12 +237,14 @@ public class ApprovalDocumentServiceImpl implements ApprovalDocumentService {
         } else if ("연구비증빙-야근식대".equals(documentType) || "연구비증빙(야근식대)".equals(documentType) || "receipt_overtime".equals(documentType)) {
             // 연구비증빙 야근식대의 원본 문서 ID 및 프로젝트 정보 조회
             receiptOvertimeRepository.findByDocumentIdx(document.getIdx()).ifPresent(receiptOvertime -> {
-                dto.setSourceDocumentId(receiptOvertime.getId());
-                if (receiptOvertime.getProjectIdx() != null && receiptOvertime.getProjectIdx().getIdx() != null) {
-                    dto.setProjectIdx(receiptOvertime.getProjectIdx().getIdx());
-                    dto.setProjectName(receiptOvertime.getProjectIdx().getProjectName());
+                dto.setSourceDocumentId(receiptOvertime.getIdx());
+                if (receiptOvertime.getProjectIdx() != null) {
+                    dto.setProjectIdx(receiptOvertime.getProjectIdx());
+                    if (receiptOvertime.getProject() != null) {
+                        dto.setProjectName(receiptOvertime.getProject().getProjectName());
+                    }
                 }
-                dto.setAttachments(buildOvertimeAttachments(receiptOvertime.getId()));
+                dto.setAttachments(buildOvertimeAttachments(receiptOvertime.getIdx()));
             });
         }
         // 다른 문서 타입들도 필요시 추가
@@ -611,7 +613,7 @@ public class ApprovalDocumentServiceImpl implements ApprovalDocumentService {
      */
     private ApprovalDocumentDTO convertReceiptOvertimeToDTO(ReceiptOvertime overtime) {
         // 제목 생성: 프로젝트명 (카드번호) - 날짜/금액원
-        String projectName = overtime.getProjectIdx() != null ? overtime.getProjectIdx().getProjectName() : "프로젝트";
+        String projectName = overtime.getProject() != null ? overtime.getProject().getProjectName() : "프로젝트";
         String cardDigits = null;
         if (overtime.getCardIdx() != null) {
             ProjectCard card = projectCardRepository.findById(overtime.getCardIdx()).orElse(null);
@@ -623,7 +625,7 @@ public class ApprovalDocumentServiceImpl implements ApprovalDocumentService {
 
         ApprovalDocumentDTO dto = ApprovalDocumentDTO.builder()
                 .idx(overtime.getDocumentIdx())
-                .sourceDocumentId(overtime.getId())
+                .sourceDocumentId(overtime.getIdx())
                 .title(title)
                 .documentType("RECEIPT_OVERTIME")
                 .drafterUserIdx(overtime.getAuthorIdx())
@@ -643,7 +645,7 @@ public class ApprovalDocumentServiceImpl implements ApprovalDocumentService {
             }
         });
 
-        dto.setAttachments(buildOvertimeAttachments(overtime.getId()));
+        dto.setAttachments(buildOvertimeAttachments(overtime.getIdx()));
 
         return dto;
     }
@@ -666,12 +668,13 @@ public class ApprovalDocumentServiceImpl implements ApprovalDocumentService {
      * 야근식대 첨부파일 요약 목록 생성 (빠른 다운로드용)
      */
     private List<AttachmentSummaryDTO> buildOvertimeAttachments(Long receiptOvertimeIdx) {
-        return receiptOvertimeAttachmentRepository.findByReceiptOvertimeIdx(receiptOvertimeIdx).stream()
+        return receiptOvertimeAttachmentRepository
+                .findByReceiptOvertimeIdxAndDeletedFalseOrderByIdxAsc(receiptOvertimeIdx).stream()
                 .map(a -> AttachmentSummaryDTO.builder()
-                        .idx(a.getId())
+                        .idx(a.getIdx())
                         .originalFilename(a.getOriginalFilename())
                         .attachmentType(a.getAttachmentType())
-                        .downloadUrl("/api/receipt-overtimes/attachments/" + a.getId() + "/download")
+                        .downloadUrl("/api/receipt-overtimes/attachments/" + a.getIdx() + "/download")
                         .build())
                 .collect(Collectors.toList());
     }

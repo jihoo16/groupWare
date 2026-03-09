@@ -149,7 +149,7 @@ public class ReceiptTripController {
         try {
             ReceiptTripUpdateDTO updateDTO = objectMapper.readValue(dataJson, ReceiptTripUpdateDTO.class);
 
-            ReceiptTripDTO receiptTrip = receiptTripService.updateReceiptTrip(idx, updateDTO);
+            ReceiptTripDTO receiptTrip = receiptTripService.updateReceiptTrip(idx, updateDTO, currentUserIdx);
 
             if (receiptFiles != null && receiptFiles.length > 0) {
                 receiptTripService.saveAttachments(idx, receiptFiles, "RECEIPT", currentUserIdx);

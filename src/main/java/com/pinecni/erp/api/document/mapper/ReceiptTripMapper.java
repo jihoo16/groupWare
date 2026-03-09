@@ -160,30 +160,33 @@ public class ReceiptTripMapper {
     }
 
     /**
-     * ReceiptTripAttendee Entity → DTO 변환
+     * ReceiptAttendee Entity → DTO 변환 (RCT 전용)
      */
-    public ReceiptTripAttendeeDTO toAttendeeDTO(ReceiptTripAttendee entity) {
+    public ReceiptTripAttendeeDTO toAttendeeDTO(ReceiptAttendee entity) {
         if (entity == null) return null;
 
-        String position = null;
+        String name       = null;
+        String department = null;
+        String position   = null;
+
         if (entity.getUserIdx() != null) {
-            position = userRepository.findById(entity.getUserIdx())
-                    .map(user -> {
-                        if (user.getEmpPosition() != null) {
-                            return codeRepository
-                                    .findByGroupCodeAndCode(CodeConstants.GroupCode.POSITION.getCode(), user.getEmpPosition())
-                                    .map(Code::getCodeName)
-                                    .orElse(null);
-                        }
-                        return null;
-                    })
-                    .orElse(null);
+            User user = userRepository.findById(entity.getUserIdx()).orElse(null);
+            if (user != null) {
+                name       = user.getEmpName();
+                department = user.getEmpDept();
+                if (user.getEmpPosition() != null) {
+                    position = codeRepository
+                            .findByGroupCodeAndCode(CodeConstants.GroupCode.POSITION.getCode(), user.getEmpPosition())
+                            .map(Code::getCodeName)
+                            .orElse(null);
+                }
+            }
         }
 
         return ReceiptTripAttendeeDTO.builder()
                 .idx(entity.getIdx())
-                .department(entity.getDepartment())
-                .name(entity.getName())
+                .department(department)
+                .name(name)
                 .userIdx(entity.getUserIdx())
                 .position(position)
                 .displayOrder(entity.getDisplayOrder())
@@ -199,17 +202,26 @@ public class ReceiptTripMapper {
     }
 
     /**
-     * ReceiptTripAttendeeDTO → Entity 변환
+     * ReceiptTripAttendeeDTO → ReceiptAttendee Entity 변환 (RCT 전용)
+     *
+     * @param dto             참석자 DTO
+     * @param trip            저장된 ReceiptTrip 엔티티 (documentDate, projectIdx, cardIdx 출처)
+     * @param currentUserIdx  저장자 IDX (createdUserIdx)
      */
-    public ReceiptTripAttendee toAttendeeEntity(ReceiptTripAttendeeDTO dto, Long receiptTripIdx) {
+    public ReceiptAttendee toAttendeeEntity(ReceiptTripAttendeeDTO dto, ReceiptTrip trip, Long currentUserIdx) {
         if (dto == null) return null;
 
-        return ReceiptTripAttendee.builder()
-                .receiptTripIdx(receiptTripIdx)
-                .department(dto.getDepartment())
-                .name(dto.getName())
+        return ReceiptAttendee.builder()
+                .documentTypePrefix("RCT")
+                .receiptIdx(trip.getIdx())
+                .projectIdx(trip.getProjectIdx())
+                .cardIdx(trip.getCardIdx())
+                .documentDate(trip.getTripDate())
                 .userIdx(dto.getUserIdx())
-                .displayOrder(dto.getDisplayOrder())
+                .isExternal(false)
+                .displayOrder(dto.getDisplayOrder() != null ? dto.getDisplayOrder() : 0)
+                .createdUserIdx(currentUserIdx)
+                .isDeleted(false)
                 .build();
     }
 }

@@ -131,9 +131,22 @@ public class ReceiptTripMeeting {
     @Builder.Default
     private List<ReceiptTripMeetingAttachment> attachments = new ArrayList<>();
 
-    @OneToMany(mappedBy = "receiptTripMeeting", cascade = CascadeType.ALL, orphanRemoval = true)
+    /** 참석자 목록 - receipt_attendee 통합 테이블 (prefix=RCTM), 서비스 계층에서 별도 조회 후 주입 */
+    @Transient
     @Builder.Default
-    private List<ReceiptTripMeetingAttendee> attendees = new ArrayList<>();
+    private List<ReceiptAttendee> attendees = new ArrayList<>();
+
+    // ─── 소프트 딜리트 ───────────────────────────────────────────────
+
+    @Builder.Default
+    @Column(name = "deleted", nullable = false)
+    private Boolean deleted = false;
+
+    @Column(name = "deleted_at")
+    private LocalDateTime deletedAt;
+
+    @Column(name = "deleted_user_idx")
+    private Long deletedUserIdx;
 
     @PrePersist
     protected void onCreate() {

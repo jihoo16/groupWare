@@ -2,6 +2,9 @@ package com.pinecni.erp.api.project.repository;
 
 import com.pinecni.erp.entity.ReceiptTripMeetingAttachment;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Modifying;
+import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
 import java.util.List;
@@ -26,4 +29,13 @@ public interface ReceiptTripMeetingAttachmentRepository extends JpaRepository<Re
      * 회의+출장 IDX로 첨부파일 전체 목록 (삭제 포함)
      */
     List<ReceiptTripMeetingAttachment> findByReceiptTripMeetingIdxOrderByIdxAsc(Long receiptTripMeetingIdx);
+
+    /**
+     * 회의+출장 삭제 시 첨부파일 일괄 소프트 딜리트
+     */
+    @Modifying
+    @Query("UPDATE ReceiptTripMeetingAttachment a SET a.deleted = true, a.deletedAt = CURRENT_TIMESTAMP, a.deletedUserIdx = :deletedUserIdx " +
+            "WHERE a.receiptTripMeetingIdx = :receiptTripMeetingIdx AND a.deleted = false")
+    void softDeleteByReceiptTripMeetingIdx(@Param("receiptTripMeetingIdx") Long receiptTripMeetingIdx,
+                                           @Param("deletedUserIdx") Long deletedUserIdx);
 }

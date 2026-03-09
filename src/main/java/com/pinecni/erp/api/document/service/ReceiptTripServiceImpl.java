@@ -7,8 +7,8 @@ import com.pinecni.erp.api.document.dto.ReceiptTripCreateDTO;
 import com.pinecni.erp.api.document.dto.ReceiptTripDTO;
 import com.pinecni.erp.api.document.dto.ReceiptTripUpdateDTO;
 import com.pinecni.erp.api.document.mapper.ReceiptTripMapper;
+import com.pinecni.erp.api.document.repository.ReceiptAttendeeRepository;
 import com.pinecni.erp.api.document.repository.ReceiptTripAttachmentRepository;
-import com.pinecni.erp.api.project.repository.ReceiptTripAttendeeRepository;
 import com.pinecni.erp.api.project.repository.ProjectCardRepository;
 import com.pinecni.erp.api.project.repository.ReceiptTripRepository;
 import com.pinecni.erp.entity.*;
@@ -39,7 +39,7 @@ import java.util.stream.Collectors;
 public class ReceiptTripServiceImpl implements ReceiptTripService {
 
     private final ReceiptTripRepository receiptTripRepository;
-    private final ReceiptTripAttendeeRepository attendeeRepository;
+    private final ReceiptAttendeeRepository receiptAttendeeRepository;
     private final ReceiptTripAttachmentRepository attachmentRepository;
     private final ApprovalDocumentRepository approvalDocumentRepository;
     private final DocumentSequenceRepository documentSequenceRepository;
@@ -142,18 +142,19 @@ public class ReceiptTripServiceImpl implements ReceiptTripService {
             entity.setUpdatedUserIdx(currentUserIdx);
             entity = receiptTripRepository.save(entity);
 
-            // 4. 참석자 저장
+            // 4. 참석자 저장 (receipt_attendee 통합 테이블, prefix=RCT)
             if (createDTO.getAttendees() != null && !createDTO.getAttendees().isEmpty()) {
-                final Long tripIdx = entity.getIdx();
-                List<ReceiptTripAttendee> attendees = createDTO.getAttendees().stream()
-                        .map(dto -> mapper.toAttendeeEntity(dto, tripIdx))
+                final ReceiptTrip savedTrip = entity;
+                List<ReceiptAttendee> attendees = createDTO.getAttendees().stream()
+                        .map(dto -> mapper.toAttendeeEntity(dto, savedTrip, currentUserIdx))
                         .collect(Collectors.toList());
-                attendeeRepository.saveAll(attendees);
+                receiptAttendeeRepository.saveAll(attendees);
             }
 
-            // 5. 재조회 (참석자 포함)
+            // 5. 재조회 후 참석자 주입
             ReceiptTrip saved = receiptTripRepository.findByIdWithDetails(entity.getIdx())
                     .orElseThrow(() -> new IllegalStateException("저장된 출장 정보를 조회할 수 없습니다."));
+            saved.setAttendees(receiptAttendeeRepository.findByReceiptTripIdx(saved.getIdx()));
 
             log.info("출장 생성 완료 - idx: {}, documentNo: {}", saved.getIdx(), documentNo);
             return mapper.toDTO(saved);
@@ -166,8 +167,8 @@ public class ReceiptTripServiceImpl implements ReceiptTripService {
 
     @Override
     @Transactional
-    public ReceiptTripDTO updateReceiptTrip(Long idx, ReceiptTripUpdateDTO updateDTO) {
-        log.debug("출장 수정 - idx: {}", idx);
+    public ReceiptTripDTO updateReceiptTrip(Long idx, ReceiptTripUpdateDTO updateDTO, Long currentUserIdx) {
+        log.debug("출장 수정 - idx: {}, currentUserIdx: {}", idx, currentUserIdx);
 
         ReceiptTrip entity = receiptTripRepository.findById(idx)
                 .orElseThrow(() -> new IllegalArgumentException("출장 정보를 찾을 수 없습니다. idx: " + idx));
@@ -176,16 +177,18 @@ public class ReceiptTripServiceImpl implements ReceiptTripService {
         }
 
         mapper.updateEntity(entity, updateDTO);
-        receiptTripRepository.save(entity);
+        entity.setUpdatedUserIdx(currentUserIdx);
+        entity = receiptTripRepository.save(entity);
 
-        // 참석자 재생성
+        // 참석자 재생성 (receipt_attendee 통합 테이블, prefix=RCT, 소프트 딜리트 후 재삽입)
         if (updateDTO.getAttendees() != null) {
-            attendeeRepository.deleteByReceiptTripIdx(idx);
+            receiptAttendeeRepository.softDeleteByReceiptIdxAndDocumentTypePrefix(idx, "RCT", currentUserIdx);
             if (!updateDTO.getAttendees().isEmpty()) {
-                List<ReceiptTripAttendee> attendees = updateDTO.getAttendees().stream()
-                        .map(dto -> mapper.toAttendeeEntity(dto, idx))
+                final ReceiptTrip savedEntity = entity;
+                List<ReceiptAttendee> attendees = updateDTO.getAttendees().stream()
+                        .map(dto -> mapper.toAttendeeEntity(dto, savedEntity, currentUserIdx))
                         .collect(Collectors.toList());
-                attendeeRepository.saveAll(attendees);
+                receiptAttendeeRepository.saveAll(attendees);
             }
         }
 
@@ -194,6 +197,7 @@ public class ReceiptTripServiceImpl implements ReceiptTripService {
 
         ReceiptTrip updated = receiptTripRepository.findByIdWithDetails(idx)
                 .orElseThrow(() -> new IllegalStateException("수정된 출장 정보를 조회할 수 없습니다."));
+        updated.setAttendees(receiptAttendeeRepository.findByReceiptTripIdx(idx));
 
         log.info("출장 수정 완료 - idx: {}", idx);
         return mapper.toDTO(updated);
@@ -207,14 +211,23 @@ public class ReceiptTripServiceImpl implements ReceiptTripService {
         ReceiptTrip entity = receiptTripRepository.findById(idx)
                 .orElseThrow(() -> new IllegalArgumentException("출장 정보를 찾을 수 없습니다. idx: " + idx));
 
-        // ReceiptTrip 소프트 딜리트
         LocalDateTime now = LocalDateTime.now();
+
+        // 1. 참석자 소프트 딜리트 (receipt_attendee 통합 테이블, prefix=RCT)
+        receiptAttendeeRepository.softDeleteByReceiptIdxAndDocumentTypePrefix(idx, PREFIX, deletedUserIdx);
+        log.debug("ReceiptAttendee 소프트 딜리트 완료 - receiptTripIdx: {}", idx);
+
+        // 2. 첨부파일 소프트 딜리트
+        attachmentRepository.softDeleteByReceiptTripIdx(idx, deletedUserIdx);
+        log.debug("ReceiptTripAttachment 소프트 딜리트 완료 - receiptTripIdx: {}", idx);
+
+        // 3. ReceiptTrip 소프트 딜리트
         entity.setDeleted(true);
         entity.setDeletedAt(now);
         entity.setDeletedUserIdx(deletedUserIdx);
         receiptTripRepository.save(entity);
 
-        // ApprovalDocument 소프트 딜리트
+        // 4. ApprovalDocument 소프트 딜리트
         if (entity.getDocumentIdx() != null) {
             approvalDocumentRepository.findById(entity.getDocumentIdx()).ifPresent(doc -> {
                 doc.setDeletedAt(now);

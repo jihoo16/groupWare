@@ -8,23 +8,25 @@ import lombok.NoArgsConstructor;
 import java.time.LocalDateTime;
 
 /**
- * 야근식대 첨부파일 DTO
+ * 연구비증빙 회의+출장 첨부파일 DTO
  */
 @Data
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
-public class ReceiptOvertimeAttachmentDTO {
+public class ReceiptTripMeetingAttachmentDTO {
 
     private Long idx;
-    private Long receiptOvertimeIdx;
+    private Long receiptTripMeetingIdx;
     private String originalFilename;
     private String storedFilename;
     private String filePath;
     private Long fileSize;
     private String fileType;
+    /** RECEIPT(영수증) / DOCUMENT(공식문서) */
     private String attachmentType;
     private Long uploadUserIdx;
+    private Boolean deleted;
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;
 }

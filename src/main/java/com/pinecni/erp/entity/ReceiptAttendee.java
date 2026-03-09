@@ -14,12 +14,21 @@ import java.time.LocalTime;
  */
 @Entity
 @Table(name = "receipt_attendee", schema = "erp", indexes = {
-        @Index(name = "idx_ra_receipt", columnList = "receipt_idx"),
-        @Index(name = "idx_ra_user", columnList = "user_idx"),
-        @Index(name = "idx_ra_project", columnList = "project_idx"),
+        // 단일 컬럼 인덱스
+        @Index(name = "idx_ra_receipt",       columnList = "receipt_idx"),
+        @Index(name = "idx_ra_user",          columnList = "user_idx"),
+        @Index(name = "idx_ra_project",       columnList = "project_idx"),
         @Index(name = "idx_ra_document_type", columnList = "document_type_prefix"),
         @Index(name = "idx_ra_document_date", columnList = "document_date"),
-        @Index(name = "idx_ra_card", columnList = "card_idx")
+        @Index(name = "idx_ra_card",          columnList = "card_idx"),
+        // 복합 인덱스: 교차 중복 검증 쿼리 전용
+        // WHERE user_idx=? AND project_idx=? AND document_date=? AND is_deleted=false
+        @Index(name = "idx_ra_dup_check",
+               columnList = "user_idx, project_idx, document_date, is_deleted"),
+        // 복합 인덱스: 문서별 참석자 조회 전용 (가장 빈번한 쿼리)
+        // WHERE receipt_idx=? AND document_type_prefix=? AND is_deleted=false
+        @Index(name = "idx_ra_receipt_type",
+               columnList = "receipt_idx, document_type_prefix, is_deleted")
 })
 @SQLRestriction("is_deleted = false")
 @Getter
@@ -40,6 +49,7 @@ public class ReceiptAttendee {
      * - RCM: 회의록 (Receipt Meeting)
      * - RCO: 야근 식대 (Receipt Overtime)
      * - RCT: 출장 (Receipt Trip)
+     * - RCTM: 출장+회의 (Receipt Trip Meeting)
      */
     @Column(name = "document_type_prefix", nullable = false, length = 20)
     private String documentTypePrefix;
@@ -49,6 +59,7 @@ public class ReceiptAttendee {
      * - RCM: receipt_meeting.idx
      * - RCO: receipt_overtime.idx
      * - RCT: receipt_trip.idx
+     * - RCTM: receipt_trip_meeting.idx
      */
     @Column(name = "receipt_idx", nullable = false)
     private Long receiptIdx;
@@ -111,6 +122,15 @@ public class ReceiptAttendee {
      */
     @Column(name = "work_task", length = 500)
     private String workTask;
+
+    /**
+     * 참여 구분 (출장+회의(RCTM) 전용)
+     * - '출장': RCTM 문서에서 출장 참석자
+     * - '회의': RCTM 문서에서 회의 참석자
+     * - null: 다른 문서 타입 (RCM, RCO, RCT)
+     */
+    @Column(name = "participation_type", length = 10)
+    private String participationType;
 
     @Column(name = "created_at", nullable = false, updatable = false)
     private LocalDateTime createdAt;

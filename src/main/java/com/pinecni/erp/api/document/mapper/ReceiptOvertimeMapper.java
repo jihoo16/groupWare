@@ -26,9 +26,9 @@ public class ReceiptOvertimeMapper {
         }
 
         return ReceiptOvertimeDTO.builder()
-                .idx(entity.getId())
-                .projectIdx(entity.getProjectIdx() != null ? entity.getProjectIdx().getIdx() : null)
-                .projectName(entity.getProjectIdx() != null ? entity.getProjectIdx().getProjectName() : null)
+                .idx(entity.getIdx())
+                .projectIdx(entity.getProjectIdx())
+                .projectName(entity.getProject() != null ? entity.getProject().getProjectName() : null)
                 .cardIdx(entity.getCardIdx())
                 .documentIdx(entity.getDocumentIdx())
                 .authorIdx(entity.getAuthorIdx())
@@ -70,14 +70,15 @@ public class ReceiptOvertimeMapper {
         }
 
         return ReceiptOvertimeAttachmentDTO.builder()
-                .idx(entity.getId())
-                .receiptOvertimeIdx(entity.getReceiptOvertimeIdx() != null ? entity.getReceiptOvertimeIdx().getId() : null)
+                .idx(entity.getIdx())
+                .receiptOvertimeIdx(entity.getReceiptOvertimeIdx())
                 .originalFilename(entity.getOriginalFilename())
                 .storedFilename(entity.getStoredFilename())
                 .filePath(entity.getFilePath())
                 .fileSize(entity.getFileSize())
                 .fileType(entity.getFileType())
                 .attachmentType(entity.getAttachmentType())
+                .uploadUserIdx(entity.getUploadUserIdx())
                 .createdAt(entity.getCreatedAt())
                 .updatedAt(entity.getUpdatedAt())
                 .build();

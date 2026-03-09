@@ -55,6 +55,51 @@ public interface ReceiptAttendeeRepository extends JpaRepository<ReceiptAttendee
     }
 
     // ==============================================
+    // 출장(RCT) 전용 편의 메서드
+    // ==============================================
+
+    /**
+     * 출장 참석자 목록 조회
+     */
+    default List<ReceiptAttendee> findByReceiptTripIdx(Long receiptTripIdx) {
+        return findByReceiptIdxAndDocumentTypePrefixOrderByDisplayOrder(receiptTripIdx, "RCT");
+    }
+
+    /**
+     * 출장 참석자 소프트 딜리트
+     */
+    default void softDeleteByReceiptTripIdx(Long receiptTripIdx, Long deletedUserIdx) {
+        softDeleteByReceiptIdxAndDocumentTypePrefix(receiptTripIdx, "RCT", deletedUserIdx);
+    }
+
+    // ==============================================
+    // 출장+회의(RCTM) 전용 편의 메서드
+    // ==============================================
+
+    /**
+     * 출장+회의 전체 참석자 목록 조회
+     */
+    default List<ReceiptAttendee> findByReceiptTripMeetingIdx(Long rtmIdx) {
+        return findByReceiptIdxAndDocumentTypePrefixOrderByDisplayOrder(rtmIdx, "RCTM");
+    }
+
+    /**
+     * 출장+회의 참여 구분별 참석자 조회 ('출장' 또는 '회의')
+     */
+    default List<ReceiptAttendee> findByReceiptTripMeetingIdxAndParticipationType(
+            Long rtmIdx, String participationType) {
+        return findByReceiptIdxAndDocumentTypePrefixAndParticipationTypeOrderByDisplayOrder(
+                rtmIdx, "RCTM", participationType);
+    }
+
+    /**
+     * 출장+회의 참석자 소프트 딜리트
+     */
+    default void softDeleteByReceiptTripMeetingIdx(Long rtmIdx, Long deletedUserIdx) {
+        softDeleteByReceiptIdxAndDocumentTypePrefix(rtmIdx, "RCTM", deletedUserIdx);
+    }
+
+    // ==============================================
     // 공통 메서드
     // ==============================================
 
@@ -67,6 +112,12 @@ public interface ReceiptAttendeeRepository extends JpaRepository<ReceiptAttendee
     List<ReceiptAttendee> findByReceiptIdxAndDocumentTypePrefixOrderByDisplayOrder(
             Long receiptIdx,
             String documentTypePrefix
+    );
+
+    List<ReceiptAttendee> findByReceiptIdxAndDocumentTypePrefixAndParticipationTypeOrderByDisplayOrder(
+            Long receiptIdx,
+            String documentTypePrefix,
+            String participationType
     );
 
     /**

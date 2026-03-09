@@ -65,10 +65,9 @@ public interface ReceiptTripRepository extends JpaRepository<ReceiptTrip, Long> 
     List<ReceiptTrip> findByStatusOrderByTripDateDesc(@Param("status") String status);
 
     /**
-     * 참석자 정보를 포함한 출장 상세 조회
+     * 출장 상세 조회 (참석자는 receipt_attendee 통합 테이블에서 별도 조회)
      */
-    @Query("SELECT DISTINCT rt FROM ReceiptTrip rt " +
-            "LEFT JOIN FETCH rt.attendees " +
+    @Query("SELECT rt FROM ReceiptTrip rt " +
             "LEFT JOIN FETCH rt.approvalDocument " +
             "WHERE rt.idx = :idx")
     Optional<ReceiptTrip> findByIdWithDetails(@Param("idx") Long idx);

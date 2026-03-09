@@ -9,6 +9,8 @@ import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 
+
+
 /**
  * 연구비증빙 출장 기본 정보 Entity
  */
@@ -104,8 +106,9 @@ public class ReceiptTrip {
     @JoinColumn(name = "document_idx", insertable = false, updatable = false)
     private ApprovalDocument approvalDocument;
 
-    @OneToMany(mappedBy = "receiptTrip", cascade = CascadeType.ALL, orphanRemoval = true)
-    private List<ReceiptTripAttendee> attendees = new ArrayList<>();
+    /** 참석자 목록 - receipt_attendee 통합 테이블 (prefix=RCT), 서비스 계층에서 별도 조회 후 주입 */
+    @Transient
+    private List<ReceiptAttendee> attendees = new ArrayList<>();
 
     @PrePersist
     protected void onCreate() {

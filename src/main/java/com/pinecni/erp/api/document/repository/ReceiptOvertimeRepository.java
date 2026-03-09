@@ -21,13 +21,13 @@ public interface ReceiptOvertimeRepository extends JpaRepository<ReceiptOvertime
      * 프로젝트별 총 야근식대 집행액 조회
      */
     @Query("SELECT COALESCE(SUM(ro.totalAmount), 0) FROM ReceiptOvertime ro " +
-            "WHERE ro.projectIdx.idx = :projectIdx")
+            "WHERE ro.projectIdx = :projectIdx")
     BigDecimal sumAmountByProjectIdx(@Param("projectIdx") Long projectIdx);
 
     /**
      * 프로젝트별 야근식대 목록 조회
      */
-    @Query("SELECT ro FROM ReceiptOvertime ro WHERE ro.projectIdx.idx = :projectIdx ORDER BY ro.overtimeDate DESC")
+    @Query("SELECT ro FROM ReceiptOvertime ro WHERE ro.projectIdx = :projectIdx ORDER BY ro.overtimeDate DESC")
     List<ReceiptOvertime> findByProjectIdxOrderByOvertimeDateDesc(@Param("projectIdx") Long projectIdx);
 
     /**

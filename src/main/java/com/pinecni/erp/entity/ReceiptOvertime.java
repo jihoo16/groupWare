@@ -22,12 +22,15 @@ public class ReceiptOvertime {
     @GeneratedValue(strategy = GenerationType.SEQUENCE, generator = "receipt_overtime_sequence")
     @SequenceGenerator(name = "receipt_overtime_sequence", sequenceName = "erp.receipt_overtime_sequence", allocationSize = 1)
     @Column(name = "idx", nullable = false)
-    private Long id;
+    private Long idx;
 
     @NotNull
-    @ManyToOne(fetch = FetchType.LAZY, optional = false)
-    @JoinColumn(name = "project_idx", nullable = false)
-    private Project projectIdx;
+    @Column(name = "project_idx", nullable = false)
+    private Long projectIdx;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "project_idx", insertable = false, updatable = false)
+    private Project project;
 
     @NotNull
     @Column(name = "author_idx", nullable = false)

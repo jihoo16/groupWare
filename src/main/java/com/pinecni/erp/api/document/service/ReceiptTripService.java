@@ -27,7 +27,7 @@ public interface ReceiptTripService {
 
     ReceiptTripDTO createReceiptTrip(ReceiptTripCreateDTO createDTO, Long currentUserIdx);
 
-    ReceiptTripDTO updateReceiptTrip(Long idx, ReceiptTripUpdateDTO updateDTO);
+    ReceiptTripDTO updateReceiptTrip(Long idx, ReceiptTripUpdateDTO updateDTO, Long currentUserIdx);
 
     /** 소프트 딜리트 */
     void deleteReceiptTrip(Long idx, Long deletedUserIdx);

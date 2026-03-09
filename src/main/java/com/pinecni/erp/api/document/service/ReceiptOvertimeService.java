@@ -66,7 +66,8 @@ public interface ReceiptOvertimeService {
     /**
      * 첨부파일 저장
      */
-    List<ReceiptOvertimeAttachmentDTO> saveAttachments(Long receiptOvertimeIdx, MultipartFile[] files, String attachmentType);
+    List<ReceiptOvertimeAttachmentDTO> saveAttachments(Long receiptOvertimeIdx, MultipartFile[] files,
+                                                       String attachmentType, Long uploadUserIdx);
 
     /**
      * 야근식대별 첨부파일 목록 조회
@@ -74,9 +75,9 @@ public interface ReceiptOvertimeService {
     List<ReceiptOvertimeAttachmentDTO> getAttachmentsByReceiptOvertimeIdx(Long receiptOvertimeIdx);
 
     /**
-     * 첨부파일 삭제
+     * 첨부파일 소프트 딜리트
      */
-    void deleteAttachment(Long attachmentIdx);
+    void deleteAttachment(Long attachmentIdx, Long deletedUserIdx);
 
     /**
      * 첨부파일 상세 조회

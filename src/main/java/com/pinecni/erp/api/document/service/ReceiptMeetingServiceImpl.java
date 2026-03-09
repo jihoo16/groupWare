@@ -408,6 +408,8 @@ public class ReceiptMeetingServiceImpl implements ReceiptMeetingService {
                 return "야근식대";
             case "RCT":
                 return "출장";
+            case "RCTM":
+                return "출장+회의";
             default:
                 return prefix;
         }
@@ -713,24 +715,21 @@ public class ReceiptMeetingServiceImpl implements ReceiptMeetingService {
                 continue; // userIdx가 없는 참석자는 스킵
             }
 
-            // 통합 테이블(receipt_attendee)에서 직접 조회
-            // - 같은 프로젝트 (카드 무관)
-            // - 같은 날짜
-            // - 같은 사용자
-            // - 시간 정보가 있는 문서 (시간대 겹침 체크)
-            // - 자기 자신 제외 (수정 시)
-            // is_deleted = false는 @SQLRestriction으로 자동 필터링됨
-            List<ReceiptAttendee> existingAttendees = receiptAttendeeRepository.findAll().stream()
-                    .filter(a -> a.getUserIdx() != null && a.getUserIdx().equals(userIdx))
-                    .filter(a -> a.getProjectIdx() != null && a.getProjectIdx().equals(projectIdx))
-                    .filter(a -> a.getDocumentDate() != null && a.getDocumentDate().equals(meetingDate))
-                    .filter(a -> a.getStartTime() != null && a.getEndTime() != null) // 시간 정보 있는 문서만
-                    .filter(a -> {
-                        // 자기 자신 제외 (수정 시)
-                        if (currentMeetingIdx == null) return true;
-                        // RCM 타입이고 receipt_idx가 현재 회의록과 같으면 제외
-                        return !"RCM".equals(a.getDocumentTypePrefix()) || !a.getReceiptIdx().equals(currentMeetingIdx);
-                    })
+            // DB 쿼리로 user+project+date 필터링 (인덱스 활용)
+            List<ReceiptAttendee> candidates;
+            if (currentMeetingIdx != null) {
+                // 수정 시: 자기 자신(RCM + currentMeetingIdx) 제외
+                candidates = receiptAttendeeRepository.findByUserAndProjectAndDateExcluding(
+                        userIdx, projectIdx, meetingDate, currentMeetingIdx, "RCM");
+            } else {
+                // 신규 생성 시
+                candidates = receiptAttendeeRepository.findByUserAndProjectAndDateAllCards(
+                        userIdx, projectIdx, meetingDate);
+            }
+
+            // 시간 정보가 있는 문서만 (야근식대 등 시간 없는 문서 제외)
+            List<ReceiptAttendee> existingAttendees = candidates.stream()
+                    .filter(a -> a.getStartTime() != null && a.getEndTime() != null)
                     .collect(Collectors.toList());
 
             log.debug("userIdx={} 에 대한 기존 참석 레코드: {}건", userIdx, existingAttendees.size());

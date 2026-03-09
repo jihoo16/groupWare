@@ -134,12 +134,12 @@ public class ReceiptOvertimeController {
             // 첨부파일 저장 (타입별 분리)
             if (receiptFiles != null && receiptFiles.length > 0) {
                 List<ReceiptOvertimeAttachmentDTO> attachments = receiptOvertimeService.saveAttachments(
-                        receiptOvertime.getIdx(), receiptFiles, "RECEIPT");
+                        receiptOvertime.getIdx(), receiptFiles, "RECEIPT", currentUserIdx);
                 log.debug("영수증 첨부파일 {}개 저장 완료", attachments.size());
             }
             if (documentFiles != null && documentFiles.length > 0) {
                 List<ReceiptOvertimeAttachmentDTO> attachments = receiptOvertimeService.saveAttachments(
-                        receiptOvertime.getIdx(), documentFiles, "DOCUMENT");
+                        receiptOvertime.getIdx(), documentFiles, "DOCUMENT", currentUserIdx);
                 log.debug("공식문서 첨부파일 {}개 저장 완료", attachments.size());
             }
 
@@ -185,12 +185,12 @@ public class ReceiptOvertimeController {
             // 새 첨부파일 저장 (타입별 분리)
             if (receiptFiles != null && receiptFiles.length > 0) {
                 List<ReceiptOvertimeAttachmentDTO> attachments = receiptOvertimeService.saveAttachments(
-                        receiptOvertime.getIdx(), receiptFiles, "RECEIPT");
+                        receiptOvertime.getIdx(), receiptFiles, "RECEIPT", currentUserIdx);
                 log.debug("영수증 첨부파일 {}개 저장 완료", attachments.size());
             }
             if (documentFiles != null && documentFiles.length > 0) {
                 List<ReceiptOvertimeAttachmentDTO> attachments = receiptOvertimeService.saveAttachments(
-                        receiptOvertime.getIdx(), documentFiles, "DOCUMENT");
+                        receiptOvertime.getIdx(), documentFiles, "DOCUMENT", currentUserIdx);
                 log.debug("공식문서 첨부파일 {}개 저장 완료", attachments.size());
             }
 
@@ -259,10 +259,10 @@ public class ReceiptOvertimeController {
 
         try {
             if (receiptFiles != null && receiptFiles.length > 0) {
-                receiptOvertimeService.saveAttachments(idx, receiptFiles, "RECEIPT");
+                receiptOvertimeService.saveAttachments(idx, receiptFiles, "RECEIPT", currentUserIdx);
             }
             if (documentFiles != null && documentFiles.length > 0) {
-                receiptOvertimeService.saveAttachments(idx, documentFiles, "DOCUMENT");
+                receiptOvertimeService.saveAttachments(idx, documentFiles, "DOCUMENT", currentUserIdx);
             }
             List<ReceiptOvertimeAttachmentDTO> attachments = receiptOvertimeService.getAttachmentsByReceiptOvertimeIdx(idx);
             return ResponseEntity.ok(attachments);
@@ -326,15 +326,19 @@ public class ReceiptOvertimeController {
     }
 
     /**
-     * 야근식대 첨부파일 삭제
+     * 야근식대 첨부파일 삭제 (소프트 딜리트)
      * DELETE /api/receipt-overtimes/attachments/{attachmentIdx}
      */
     @DeleteMapping("/attachments/{attachmentIdx}")
-    public ResponseEntity<Map<String, String>> deleteAttachment(@PathVariable Long attachmentIdx) {
+    public ResponseEntity<Map<String, String>> deleteAttachment(
+            @PathVariable Long attachmentIdx,
+            jakarta.servlet.http.HttpSession session) {
         log.debug("DELETE /api/receipt-overtimes/attachments/{}", attachmentIdx);
 
+        Long currentUserIdx = (Long) session.getAttribute("userIdx");
+
         try {
-            receiptOvertimeService.deleteAttachment(attachmentIdx);
+            receiptOvertimeService.deleteAttachment(attachmentIdx, currentUserIdx);
 
             Map<String, String> response = new HashMap<>();
             response.put("message", "첨부파일이 삭제되었습니다.");
