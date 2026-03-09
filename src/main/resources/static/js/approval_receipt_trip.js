@@ -1509,7 +1509,7 @@ document.addEventListener('DOMContentLoaded', async function() {
                     // 통합 중복 체크 (회의, 야근, 출장 모두 한 번에)
                     try {
                         // 수정 모드이면 자기 자신 문서 제외
-                        const editId = getUrlParameter('id');
+                        const editId = getUrlParameter('documentIdx') || getUrlParameter('id');
                         const excludeParams = editId
                             ? `&excludeReceiptIdx=${editId}&excludeDocumentType=RCT`
                             : '';
@@ -3232,12 +3232,33 @@ document.addEventListener('DOMContentLoaded', async function() {
     function populateForm(data) {
 
         // 프로젝트 선택
-        const projectSelect = document.getElementById('trip_project');
-        if (projectSelect && data.projectIdx) {
-            projectSelect.value = data.projectIdx;
-            // 프로젝트 변경 이벤트 트리거 (프로젝트명 자동 채우기)
-            const changeEvent = new Event('change');
-            projectSelect.dispatchEvent(changeEvent);
+        const tripProject = document.getElementById('trip_project');
+        const selectedProjectIdxInput = document.getElementById('selectedProjectIdx');
+        if (data.projectIdx) {
+            const proj = projects.find(p => p.idx === data.projectIdx || String(p.idx) === String(data.projectIdx));
+            if (proj) {
+                if (tripProject) {
+                    tripProject.value = proj.projectName;
+                    tripProject.style.borderColor = '';
+                    tripProject.classList.remove('field-empty');
+                }
+                if (selectedProjectIdxInput) {
+                    selectedProjectIdxInput.value = proj.idx;
+                }
+                // 자동 채우기
+                document.querySelectorAll('.trip-auto-project').forEach(field => {
+                    field.textContent = proj.projectName || '';
+                });
+                document.querySelectorAll('.trip-auto-pi').forEach(field => {
+                    field.textContent = proj.projectManagerName || '';
+                });
+                // 팀원/카드 로드 (change 이벤트 없이 직접 호출)
+                loadProjectMembers(proj.idx);
+                loadProjectCards(proj.idx);
+                if (window.loadProjectExpenseSettings) {
+                    window.loadProjectExpenseSettings(proj.idx);
+                }
+            }
         }
 
         // 출장 일자
@@ -3246,10 +3267,9 @@ document.addEventListener('DOMContentLoaded', async function() {
             tripDate.value = data.tripDate;
         }
 
-        // 출장 기간 (duration)은 기본값 0박으로 설정
         const tripDuration = document.getElementById('trip_duration');
         if (tripDuration) {
-            tripDuration.value = '0'; // 당일
+            tripDuration.value = data.duration !== undefined && data.duration !== null ? data.duration : '0';
         }
 
         // 출장지
@@ -3302,6 +3322,10 @@ document.addEventListener('DOMContentLoaded', async function() {
                 dept: attendee.department || '',
                 position: attendee.position || ''
             }));
+            // 출장인원 목록 렌더링
+            if (typeof window.renderTripPersonListInTemplate === 'function') {
+                window.renderTripPersonListInTemplate();
+            }
         }
 
         // 모든 input 이벤트 트리거하여 자동 채우기 활성화
@@ -3561,7 +3585,7 @@ document.addEventListener('DOMContentLoaded', async function() {
     };
 
     // 오늘 날짜 자동 설정 (상세보기 모드가 아닐 때만)
-    const receiptTripId = getUrlParameter('id');
+    const receiptTripId = getUrlParameter('documentIdx') || getUrlParameter('id');
     if (!receiptTripId) {
         // 신규 작성 모드 - 로딩 오버레이 숨김
         window.hidePageLoadingOverlay();
@@ -3602,7 +3626,7 @@ document.addEventListener('DOMContentLoaded', async function() {
     const updateBtn = document.getElementById('updateBtn');
     if (updateBtn) {
         updateBtn.addEventListener('click', async function() {
-            const receiptTripId = getUrlParameter('id');
+            const receiptTripId = getUrlParameter('documentIdx') || getUrlParameter('id');
             if (!receiptTripId) {
                 showError('문서 ID를 찾을 수 없습니다.');
                 return;
@@ -3715,7 +3739,7 @@ document.addEventListener('DOMContentLoaded', async function() {
     const deleteBtn = document.getElementById('deleteBtn');
     if (deleteBtn) {
         deleteBtn.addEventListener('click', async function() {
-            const receiptTripId = getUrlParameter('id');
+            const receiptTripId = getUrlParameter('documentIdx') || getUrlParameter('id');
             if (!receiptTripId) {
                 showError('문서 ID를 찾을 수 없습니다.');
                 return;
