@@ -767,11 +767,23 @@ document.addEventListener('DOMContentLoaded', async function() {
                 ? `<span style="background: #dbeafe; color: #1e40af; padding: 2px 8px; border-radius: 4px; font-size: 11px; margin-left: 8px; white-space: nowrap;"><i class="fas fa-user-check"></i> 참석중</span>`
                 : '';
 
+            // 중복 출장 경고 뱃지
+            const isDuplicate = duplicateTripPersonsInfo[person.id];
+            let duplicateBadge = '';
+            if (isDuplicate) {
+                let tooltipText = `이미 ${isDuplicate.date}에 ${isDuplicate.projectName} 프로젝트 ${isDuplicate.type}`;
+                if (isDuplicate.startTime && isDuplicate.endTime) {
+                    tooltipText += ` (${isDuplicate.startTime} ~ ${isDuplicate.endTime})`;
+                }
+                tooltipText += '이 있습니다.';
+                duplicateBadge = `<span style="background: #fee2e2; color: #991b1b; padding: 2px 8px; border-radius: 4px; font-size: 11px; margin-left: 8px; white-space: nowrap;" title="${tooltipText}"><i class="fas fa-exclamation-triangle"></i> 시간 중복</span>`;
+            }
+
             return `
                 <div class="employee-item ${selectedClass}" onclick="selectReporter(${person.id}, '${person.name.replace(/'/g, "\\'")}', '${(person.position || '').replace(/'/g, "\\'")}', '${(person.dept || '').replace(/'/g, "\\'")}', '${(person.positionCode || '').replace(/'/g, "\\'")}')">
                     <div class="employee-info">
-                        <div class="employee-name">${person.name}${attendeeBadge}</div>
-                        <div class="employee-detail">${person.position} · ${person.dept}</div>
+                        <div class="employee-name">${person.name}${attendeeBadge}${duplicateBadge}</div>
+                        <div class="employee-details">${person.dept} · ${person.position}</div>
                     </div>
                     ${checkIcon}
                 </div>
@@ -787,7 +799,29 @@ document.addEventListener('DOMContentLoaded', async function() {
     }
 
     // 작성자 선택
-    window.selectReporter = function(reporterId, reporterName, position, dept, positionCode) {
+    window.selectReporter = async function(reporterId, reporterName, position, dept, positionCode) {
+        // 중복 출장 경고
+        const dupInfo = duplicateTripPersonsInfo[reporterId];
+        if (dupInfo) {
+            let detailText = `이미 ${dupInfo.date}에 <strong>[${dupInfo.projectName}]</strong> 프로젝트 ${dupInfo.type}`;
+            if (dupInfo.startTime && dupInfo.endTime) {
+                detailText += ` (${dupInfo.startTime} ~ ${dupInfo.endTime})`;
+            }
+            detailText += '이 있습니다.';
+
+            const result = await Swal.fire({
+                icon: 'warning',
+                title: '출장 중복 경고',
+                html: `<strong>${reporterName}</strong>님은 해당 날짜에 출장 일정이 중복됩니다.<br><br>${detailText}<br><br>그래도 작성자로 선택하시겠습니까?`,
+                showCancelButton: true,
+                confirmButtonText: '계속 진행',
+                cancelButtonText: '취소',
+                confirmButtonColor: '#ff9800'
+            });
+
+            if (!result.isConfirmed) return;
+        }
+
         // 이전 작성자를 출장인원에서 제거 (새 작성자와 다른 경우)
         const previousReporterId = tripReporter ? tripReporter.getAttribute('data-reporter-id') : null;
         if (previousReporterId && String(previousReporterId) !== String(reporterId)) {
