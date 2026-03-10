@@ -1308,12 +1308,12 @@ document.addEventListener('DOMContentLoaded', async function() {
         window.renderTripPersonListInTemplate = function() {
             if (!tripPersonList) return;
 
-            // tripPersonArea에 has-persons 클래스 추가/제거
+            // tripPersonArea에 has-attendees 클래스 추가/제거
             if (tripPersonArea) {
                 if (window.currentTripPersons.length > 0) {
-                    tripPersonArea.classList.add('has-persons');
+                    tripPersonArea.classList.add('has-attendees');
                 } else {
-                    tripPersonArea.classList.remove('has-persons');
+                    tripPersonArea.classList.remove('has-attendees');
                 }
             }
 
@@ -1345,16 +1345,17 @@ document.addEventListener('DOMContentLoaded', async function() {
                     let expenseDisplay = '';
                     if (person.type !== 'external') {
                         const positionName = person.position;
-                        // mealExpense/tripExpense가 0이면 falsy로 처리 → fixedExpenses 테이블 fallback
                         const mealExpense  = person.mealExpense  || fixedMealExpenses[positionName] || 0;
                         const dailyExpense = person.tripExpense  || fixedExpenses[positionName]     || 0;
-                        expenseDisplay = `<span class="expense-info" style="color: #64748b; font-size: 0.85em;">
-                            식비: ${mealExpense.toLocaleString()}원 | 일비: ${dailyExpense.toLocaleString()}원
-                        </span>`;
+                        const totalExpense = mealExpense + dailyExpense;
+                        const expenseText  = totalExpense > 0
+                            ? `식비 ${mealExpense.toLocaleString()}원 · 일비 ${dailyExpense.toLocaleString()}원`
+                            : '-';
+                        expenseDisplay = `<span style="color: #667eea; font-weight: 600;">${expenseText}</span>`;
                     }
 
                     const personClass = person.type === 'external'
-                        ? 'trip-person-item external-person'
+                        ? 'trip-person-item external-attendee'
                         : 'trip-person-item';
 
                     // 중복 검증 결과 확인
@@ -1373,11 +1374,11 @@ document.addEventListener('DOMContentLoaded', async function() {
                     }
 
                     // 작성자가 아닌 경우에만 제거 버튼 표시
-                    const removeButton = isReporter ? '' : `
-                        <button type="button" class="trip-person-remove" onclick="removeTripPersonInTemplate('${person.id}')">
-                            <i class="fas fa-times"></i> 제거
-                        </button>
-                    `;
+                    const removeButton = isReporter
+                        ? '<span class="cannot-remove-text" style="color: #94a3b8; font-size: 11px;">삭제 불가</span>'
+                        : `<button type="button" class="trip-person-remove" onclick="removeTripPersonInTemplate('${person.id}')">
+                                <i class="fas fa-times"></i> 삭제
+                           </button>`;
 
                     return `
                         <div class="${personClass}" onclick="event.stopPropagation();">
