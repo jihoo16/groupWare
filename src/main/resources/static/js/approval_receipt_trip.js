@@ -3243,7 +3243,7 @@ document.addEventListener('DOMContentLoaded', async function() {
             currentReceiptTripIdx = data.idx;
 
             // 폼에 데이터 채우기
-            populateForm(data);
+            await populateForm(data);
 
             // 저장 버튼 숨기기, 수정/삭제 버튼 표시 (상세보기 모드)
             if (submitBtn) {
@@ -3269,7 +3269,7 @@ document.addEventListener('DOMContentLoaded', async function() {
         }
     }
 
-    function populateForm(data) {
+    async function populateForm(data) {
 
         // 프로젝트 선택
         const tripProject = document.getElementById('trip_project');
@@ -3285,13 +3285,12 @@ document.addEventListener('DOMContentLoaded', async function() {
                 if (selectedProjectIdxInput) selectedProjectIdxInput.value = proj.idx;
                 document.querySelectorAll('.trip-auto-project').forEach(f => { f.textContent = proj.projectName || ''; });
                 document.querySelectorAll('.trip-auto-pi').forEach(f => { f.textContent = proj.projectManagerName || ''; });
-                loadProjectMembers(proj.idx);
+                await loadProjectMembers(proj.idx);
                 loadProjectCards(proj.idx);
-                if (window.loadProjectExpenseSettings) window.loadProjectExpenseSettings(proj.idx);
             } else if (data.projectName) {
                 if (tripProject) tripProject.value = data.projectName;
                 if (selectedProjectIdxInput) selectedProjectIdxInput.value = data.projectIdx;
-                loadProjectMembers(data.projectIdx);
+                await loadProjectMembers(data.projectIdx);
                 loadProjectCards(data.projectIdx);
             }
         }
@@ -3355,12 +3354,38 @@ document.addEventListener('DOMContentLoaded', async function() {
 
         // 출장인원 로드
         if (data.attendees && data.attendees.length > 0) {
-            window.currentTripPersons = data.attendees.map(attendee => ({
-                id: String(attendee.userIdx),
-                name: attendee.name,
-                dept: attendee.department || '',
-                position: attendee.position || ''
-            }));
+            window.currentTripPersons = data.attendees.map(attendee => {
+                const posName = attendee.position || '';
+                const posCode = attendee.positionCode || '';
+
+                // 일비 계산 (1순위: projectExpenseSettings, 2순위: fixedExpenses)
+                let tripExpense = 0;
+                if (projectExpenseSettings && projectExpenseSettings.length > 0 && posCode) {
+                    const ps = projectExpenseSettings.find(s => s.positionCode === posCode && s.expenseItemName === '출장비');
+                    tripExpense = ps ? ps.amount : (fixedExpenses[posCode] || fixedExpenses[posName] || 0);
+                } else {
+                    tripExpense = fixedExpenses[posCode] || fixedExpenses[posName] || 0;
+                }
+
+                // 식비 계산 (1순위: projectExpenseSettings, 2순위: fixedMealExpenses)
+                let mealExpense = 0;
+                if (projectExpenseSettings && projectExpenseSettings.length > 0 && posCode) {
+                    const ms = projectExpenseSettings.find(s => s.positionCode === posCode && s.expenseItemName === '중식비');
+                    mealExpense = ms ? ms.amount : (fixedMealExpenses[posCode] || fixedMealExpenses[posName] || 0);
+                } else {
+                    mealExpense = fixedMealExpenses[posCode] || fixedMealExpenses[posName] || 0;
+                }
+
+                return {
+                    id: String(attendee.userIdx),
+                    name: attendee.name,
+                    dept: attendee.department || '',
+                    position: posName,
+                    posCode: posCode,
+                    mealExpense: mealExpense,
+                    tripExpense: tripExpense
+                };
+            });
             if (typeof window.renderTripPersonListInTemplate === 'function') {
                 window.renderTripPersonListInTemplate();
             }

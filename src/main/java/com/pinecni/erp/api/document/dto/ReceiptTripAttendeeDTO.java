@@ -40,6 +40,11 @@ public class ReceiptTripAttendeeDTO {
     private String position;
 
     /**
+     * 직급 코드 (User.empPosition - 경비 설정 조회용)
+     */
+    private String positionCode;
+
+    /**
      * 표시 순서
      */
     private Integer displayOrder;

@@ -172,18 +172,20 @@ public class ReceiptTripMapper {
     public ReceiptTripAttendeeDTO toAttendeeDTO(ReceiptAttendee entity) {
         if (entity == null) return null;
 
-        String name       = null;
-        String department = null;
-        String position   = null;
+        String name         = null;
+        String department   = null;
+        String position     = null;
+        String positionCode = null;
 
         if (entity.getUserIdx() != null) {
             User user = userRepository.findById(entity.getUserIdx()).orElse(null);
             if (user != null) {
-                name       = user.getEmpName();
-                department = user.getEmpDept();
-                if (user.getEmpPosition() != null) {
+                name         = user.getEmpName();
+                department   = user.getEmpDept();
+                positionCode = user.getEmpPosition();
+                if (positionCode != null) {
                     position = codeRepository
-                            .findByGroupCodeAndCode(CodeConstants.GroupCode.POSITION.getCode(), user.getEmpPosition())
+                            .findByGroupCodeAndCode(CodeConstants.GroupCode.POSITION.getCode(), positionCode)
                             .map(Code::getCodeName)
                             .orElse(null);
                 }
@@ -196,6 +198,7 @@ public class ReceiptTripMapper {
                 .name(name)
                 .userIdx(entity.getUserIdx())
                 .position(position)
+                .positionCode(positionCode)
                 .displayOrder(entity.getDisplayOrder())
                 .build();
     }
