@@ -2138,9 +2138,20 @@ document.addEventListener('DOMContentLoaded', async function() {
             const namesLine = personNames.length > 0 ? personNames.join(', ') : '';
             const autoText = `- 참여 인원 :\n${namesLine}`;
 
-            // 사용자가 직접 수정하지 않은 경우에만 자동 채우기
-            if (tripResult && !tripResult.dataset.userModified) {
-                tripResult.value = autoText;
+            if (tripResult) {
+                if (!tripResult.dataset.userModified) {
+                    // 신규 작성: 전체 자동 채우기
+                    tripResult.value = autoText;
+                } else {
+                    // 편집 모드: '- 참여 인원 :' 줄만 교체
+                    const current = tripResult.value;
+                    const personLineRegex = /^- 참여 인원 :.*(\n[^\n-]*)?/m;
+                    if (personLineRegex.test(current)) {
+                        tripResult.value = current.replace(personLineRegex, `- 참여 인원 :\n${namesLine}`);
+                    } else {
+                        tripResult.value = current + (current ? '\n' : '') + autoText;
+                    }
+                }
             }
 
             // 복명서 미리보기 동기화
@@ -3435,8 +3446,6 @@ document.addEventListener('DOMContentLoaded', async function() {
                     </div>
                 `).join('');
 
-                // 출장인원 테이블 업데이트 (공식 문서의 출장품의서)
-                updateTripPersonDisplay();
             }
 
         }, 200);
