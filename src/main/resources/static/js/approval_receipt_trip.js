@@ -20,6 +20,7 @@ document.addEventListener('DOMContentLoaded', async function() {
     let duplicateTripPersonsInfo = {}; // 중복된 출장인원 정보 {personId: {tripDate, projectName}}
     let tripReporter = null; // 작성자 필드 (템플릿 로드 후 설정)
     let currentReceiptTripIdx = null; // 수정 모드 시 receipt_trip.idx (중복 체크 제외용)
+    let isLoadingTripData = false;    // populateForm 실행 중 플래그 (textarea 덮어쓰기 방지)
     let projectCards = []; // 선택된 프로젝트의 카드 목록
     let selectedCard = null; // 선택된 카드
     let guideMealTotal = 0; // 선택 인원 기준 식비 합계
@@ -2138,18 +2139,24 @@ document.addEventListener('DOMContentLoaded', async function() {
             const namesLine = personNames.length > 0 ? personNames.join(', ') : '';
             const autoText = `- 참여 인원 :\n${namesLine}`;
 
-            if (tripResult) {
+            if (tripResult && !isLoadingTripData) {
                 if (!tripResult.dataset.userModified) {
                     // 신규 작성: 전체 자동 채우기
                     tripResult.value = autoText;
                 } else {
-                    // 편집 모드: '- 참여 인원 :' 줄만 교체
-                    const current = tripResult.value;
-                    const personLineRegex = /^- 참여 인원 :.*(\n[^\n-]*)?/m;
-                    if (personLineRegex.test(current)) {
-                        tripResult.value = current.replace(personLineRegex, `- 참여 인원 :\n${namesLine}`);
+                    // 편집 모드: '- 참여 인원 :' 줄과 바로 아래 이름 줄만 교체
+                    const lines = tripResult.value.split('\n');
+                    const headerIdx = lines.findIndex(l => l.startsWith('- 참여 인원 :'));
+                    if (headerIdx >= 0) {
+                        const namesIdx = headerIdx + 1;
+                        if (namesIdx < lines.length) {
+                            lines[namesIdx] = namesLine;
+                        } else {
+                            lines.push(namesLine);
+                        }
+                        tripResult.value = lines.join('\n');
                     } else {
-                        tripResult.value = current + (current ? '\n' : '') + autoText;
+                        tripResult.value = tripResult.value + (tripResult.value ? '\n' : '') + autoText;
                     }
                 }
             }
@@ -3270,6 +3277,7 @@ document.addEventListener('DOMContentLoaded', async function() {
     }
 
     async function populateForm(data) {
+        isLoadingTripData = true;
 
         // 프로젝트 선택
         const tripProject = document.getElementById('trip_project');
@@ -3472,6 +3480,9 @@ document.addEventListener('DOMContentLoaded', async function() {
                 `).join('');
 
             }
+
+            // 데이터 로드 완료 — 이후 updateTripResult는 textarea도 갱신
+            isLoadingTripData = false;
 
         }, 200);
 
