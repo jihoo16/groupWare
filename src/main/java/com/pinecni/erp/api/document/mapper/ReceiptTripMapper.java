@@ -181,8 +181,13 @@ public class ReceiptTripMapper {
             User user = userRepository.findById(entity.getUserIdx()).orElse(null);
             if (user != null) {
                 name         = user.getEmpName();
-                department   = user.getEmpDept();
                 positionCode = user.getEmpPosition();
+                if (user.getEmpDept() != null) {
+                    department = codeRepository
+                            .findByGroupCodeAndCode(CodeConstants.GroupCode.DEPARTMENT.getCode(), user.getEmpDept())
+                            .map(Code::getCodeName)
+                            .orElse(user.getEmpDept());
+                }
                 if (positionCode != null) {
                     position = codeRepository
                             .findByGroupCodeAndCode(CodeConstants.GroupCode.POSITION.getCode(), positionCode)
