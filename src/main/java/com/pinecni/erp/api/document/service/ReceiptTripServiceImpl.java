@@ -238,6 +238,24 @@ public class ReceiptTripServiceImpl implements ReceiptTripService {
         entity.setUpdatedUserIdx(currentUserIdx);
         entity = receiptTripRepository.save(entity);
 
+        // ApprovalDocument 업데이트 (title, drafterUserIdx, content 동기화)
+        final ReceiptTrip updatedTripEntity = entity;
+        if (updatedTripEntity.getDocumentIdx() != null) {
+            final String newTitle = (updatedTripEntity.getLocation() != null && !updatedTripEntity.getLocation().isEmpty())
+                    ? "연구비증빙 출장 - " + updatedTripEntity.getLocation()
+                    : "연구비증빙 출장";
+            approvalDocumentRepository.findById(updatedTripEntity.getDocumentIdx()).ifPresent(doc -> {
+                doc.setTitle(newTitle);
+                if (updateDTO.getDrafterUserIdx() != null) {
+                    doc.setDrafterUserIdx(updateDTO.getDrafterUserIdx());
+                }
+                doc.setContent(updatedTripEntity.getContent());
+                doc.setUpdatedUserIdx(currentUserIdx);
+                approvalDocumentRepository.save(doc);
+                log.debug("ApprovalDocument 업데이트 완료 - documentIdx: {}", updatedTripEntity.getDocumentIdx());
+            });
+        }
+
         // 일별 비용 명세 재생성 (물리 삭제 후 재삽입)
         if (updateDTO.getDailyExpenses() != null) {
             dailyExpenseRepository.deleteByReceiptTripIdx(idx);
