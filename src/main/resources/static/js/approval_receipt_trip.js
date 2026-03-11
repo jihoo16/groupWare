@@ -225,7 +225,7 @@ document.addEventListener('DOMContentLoaded', async function() {
             cancelButtonText: options.cancelText || '취소',
             confirmButtonColor: options.confirmColor || '#667eea',
             cancelButtonColor: options.cancelColor || '#94a3b8'
-        });
+        }).then(result => result.isConfirmed);
     }
 
     function showDeleteConfirm(message = '정말 삭제하시겠습니까?') {
@@ -2512,11 +2512,11 @@ document.addEventListener('DOMContentLoaded', async function() {
                         const currentTotalFee = totalTransportFee + totalAccommodationFee + totalMealFee + totalOtherFee;
                         const newTotalSpent = (budgetData.totalSpent || 0) + currentTotalFee;
                         if (newTotalSpent > (budgetData.activityBudget || 0)) {
-                            const remaining = (budgetData.activityBudget || 0) - (budgetData.totalSpent || 0);
+                            const excessAmount = newTotalSpent - (budgetData.activityBudget || 0);
                             const budgetResult = await Swal.fire({
                                 icon: 'warning',
                                 title: '활동비 초과 경고',
-                                html: `현재 등록하려는 금액(<b>${currentTotalFee.toLocaleString()}원</b>)을 포함하면<br>활동비 예산(<b>${(budgetData.activityBudget || 0).toLocaleString()}원</b>)을 초과합니다.<br><br>잔여 활동비: <b>${remaining.toLocaleString()}원</b><br><br>그래도 저장하시겠습니까?`,
+                                html: `현재 등록하려는 금액(<b>${currentTotalFee.toLocaleString()}원</b>)을 포함하면<br>활동비 예산을 <b style="color:#ef4444;">${excessAmount.toLocaleString()}원</b> 초과합니다.<br><br>그래도 저장하시겠습니까?`,
                                 showCancelButton: true,
                                 confirmButtonText: '저장',
                                 cancelButtonText: '취소',
@@ -3769,11 +3769,11 @@ document.addEventListener('DOMContentLoaded', async function() {
                         const oldTotalFee = window._originalTotalFee || 0;
                         const adjustedSpent = (budgetDataUpd.totalSpent || 0) - oldTotalFee + newTotalFeeUpd;
                         if (adjustedSpent > (budgetDataUpd.activityBudget || 0)) {
-                            const remaining = (budgetDataUpd.activityBudget || 0) - ((budgetDataUpd.totalSpent || 0) - oldTotalFee);
+                            const excessAmountUpd = adjustedSpent - (budgetDataUpd.activityBudget || 0);
                             const budgetResultUpd = await Swal.fire({
                                 icon: 'warning',
                                 title: '활동비 초과 경고',
-                                html: `수정 금액(<b>${newTotalFeeUpd.toLocaleString()}원</b>)을 포함하면<br>활동비 예산(<b>${(budgetDataUpd.activityBudget || 0).toLocaleString()}원</b>)을 초과합니다.<br><br>잔여 활동비: <b>${remaining.toLocaleString()}원</b><br><br>그래도 수정하시겠습니까?`,
+                                html: `수정 금액(<b>${newTotalFeeUpd.toLocaleString()}원</b>)을 포함하면<br>활동비 예산을 <b style="color:#ef4444;">${excessAmountUpd.toLocaleString()}원</b> 초과합니다.<br><br>그래도 수정하시겠습니까?`,
                                 showCancelButton: true,
                                 confirmButtonText: '수정',
                                 cancelButtonText: '취소',

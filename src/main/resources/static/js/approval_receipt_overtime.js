@@ -2277,11 +2277,11 @@ document.addEventListener('DOMContentLoaded', async function() {
                             newTotalSpent = (budgetData.totalSpent || 0) + amount;
                         }
                         if (newTotalSpent > (budgetData.activityBudget || 0)) {
-                            const remaining = (budgetData.activityBudget || 0) - ((budgetData.totalSpent || 0) - (isEditMode ? (window._originalOvertimeAmount || 0) : 0));
+                            const excessAmount = newTotalSpent - (budgetData.activityBudget || 0);
                             const budgetResult = await Swal.fire({
                                 icon: 'warning',
                                 title: '활동비 초과 경고',
-                                html: `등록하려는 금액(<b>${amount.toLocaleString()}원</b>)을 포함하면<br>활동비 예산(<b>${(budgetData.activityBudget || 0).toLocaleString()}원</b>)을 초과합니다.<br><br>잔여 활동비: <b>${remaining.toLocaleString()}원</b><br><br>그래도 저장하시겠습니까?`,
+                                html: `등록하려는 금액(<b>${amount.toLocaleString()}원</b>)을 포함하면<br>활동비 예산을 <b style="color:#ef4444;">${excessAmount.toLocaleString()}원</b> 초과합니다.<br><br>그래도 저장하시겠습니까?`,
                                 showCancelButton: true,
                                 confirmButtonText: '저장',
                                 cancelButtonText: '취소',
