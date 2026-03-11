@@ -2518,6 +2518,34 @@ document.addEventListener('DOMContentLoaded', async function() {
                 }
             }
 
+            // 활동비 초과 여부 확인 (경고만, 차단 없음)
+            const projIdxForBudget = parseInt(projectIdxInput.value);
+            if (projIdxForBudget) {
+                try {
+                    const budgetRes = await fetch(`/api/projects/${projIdxForBudget}/activity-usage`);
+                    if (budgetRes.ok) {
+                        const budgetData = await budgetRes.json();
+                        const currentAmount = amountInput && amountInput.value ? parseInt(amountInput.value.replace(/,/g, '')) || 0 : 0;
+                        const newTotalSpent = (budgetData.totalSpent || 0) + currentAmount;
+                        if (newTotalSpent > (budgetData.activityBudget || 0)) {
+                            const excessAmount = newTotalSpent - (budgetData.activityBudget || 0);
+                            const budgetResult = await Swal.fire({
+                                icon: 'warning',
+                                title: '활동비 초과 경고',
+                                html: `등록하려는 금액(<b>${currentAmount.toLocaleString()}원</b>)을 포함하면<br>활동비 예산을 <b style="color:#ef4444;">${excessAmount.toLocaleString()}원</b> 초과합니다.<br><br>그래도 저장하시겠습니까?`,
+                                showCancelButton: true,
+                                confirmButtonText: '저장',
+                                cancelButtonText: '취소',
+                                confirmButtonColor: '#667eea'
+                            });
+                            if (!budgetResult.isConfirmed) return;
+                        }
+                    }
+                } catch (e) {
+                    console.warn('활동비 조회 실패:', e);
+                }
+            }
+
             const confirmed = showSaveConfirm('회의록을 저장하시겠습니까?');
                 if(!confirmed)return;
             showLoading('저장 중...');
@@ -4297,6 +4325,8 @@ document.addEventListener('DOMContentLoaded', async function() {
         const amountInput = document.getElementById('common_amount');
         if (amountInput && data.amount) {
             amountInput.value = data.amount;
+            // 수정 시 활동비 비교를 위해 원래 금액 저장
+            window._originalMeetingAmount = data.amount || 0;
         }
 
         // 목적
@@ -4455,6 +4485,36 @@ document.addEventListener('DOMContentLoaded', async function() {
                 locationInput.scrollIntoView({ behavior: 'smooth', block: 'center' });
                 locationInput.focus();
                 return;
+            }
+
+            // 활동비 초과 여부 확인 (경고만, 차단 없음)
+            const projIdxForBudgetUpd = parseInt(projectIdxInput.value);
+            if (projIdxForBudgetUpd) {
+                try {
+                    const budgetResUpd = await fetch(`/api/projects/${projIdxForBudgetUpd}/activity-usage`);
+                    if (budgetResUpd.ok) {
+                        const budgetDataUpd = await budgetResUpd.json();
+                        const newAmountUpd = document.getElementById('common_amount')?.value
+                            ? parseInt(document.getElementById('common_amount').value.replace(/,/g, '')) || 0 : 0;
+                        const oldAmount = window._originalMeetingAmount || 0;
+                        const adjustedSpent = (budgetDataUpd.totalSpent || 0) - oldAmount + newAmountUpd;
+                        if (adjustedSpent > (budgetDataUpd.activityBudget || 0)) {
+                            const excessAmount = adjustedSpent - (budgetDataUpd.activityBudget || 0);
+                            const budgetResultUpd = await Swal.fire({
+                                icon: 'warning',
+                                title: '활동비 초과 경고',
+                                html: `수정 금액(<b>${newAmountUpd.toLocaleString()}원</b>)을 포함하면<br>활동비 예산을 <b style="color:#ef4444;">${excessAmount.toLocaleString()}원</b> 초과합니다.<br><br>그래도 수정하시겠습니까?`,
+                                showCancelButton: true,
+                                confirmButtonText: '수정',
+                                cancelButtonText: '취소',
+                                confirmButtonColor: '#667eea'
+                            });
+                            if (!budgetResultUpd.isConfirmed) return;
+                        }
+                    }
+                } catch (e) {
+                    console.warn('활동비 조회 실패:', e);
+                }
             }
 
             if (!(await showConfirm('회의록을 수정하시겠습니까?'))) {
