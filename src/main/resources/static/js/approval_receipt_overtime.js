@@ -318,6 +318,8 @@ document.addEventListener('DOMContentLoaded', async function() {
                     otAmount.value = data.totalAmount.toLocaleString();
                     otAmount.dispatchEvent(new Event('input'));
                 }
+                // 수정 시 활동비 비교를 위해 원래 금액 저장
+                window._originalOvertimeAmount = data.totalAmount || 0;
             }
 
             // 인원 정보 로드
@@ -2258,6 +2260,38 @@ document.addEventListener('DOMContentLoaded', async function() {
                 );
                 if (!continueAnyway) {
                     return;
+                }
+            }
+
+            // 활동비 초과 여부 확인 (경고만, 차단 없음)
+            if (projectIdx) {
+                try {
+                    const budgetRes = await fetch(`/api/projects/${projectIdx}/activity-usage`);
+                    if (budgetRes.ok) {
+                        const budgetData = await budgetRes.json();
+                        let newTotalSpent;
+                        if (isEditMode) {
+                            const oldAmount = window._originalOvertimeAmount || 0;
+                            newTotalSpent = (budgetData.totalSpent || 0) - oldAmount + amount;
+                        } else {
+                            newTotalSpent = (budgetData.totalSpent || 0) + amount;
+                        }
+                        if (newTotalSpent > (budgetData.activityBudget || 0)) {
+                            const remaining = (budgetData.activityBudget || 0) - ((budgetData.totalSpent || 0) - (isEditMode ? (window._originalOvertimeAmount || 0) : 0));
+                            const budgetResult = await Swal.fire({
+                                icon: 'warning',
+                                title: '활동비 초과 경고',
+                                html: `등록하려는 금액(<b>${amount.toLocaleString()}원</b>)을 포함하면<br>활동비 예산(<b>${(budgetData.activityBudget || 0).toLocaleString()}원</b>)을 초과합니다.<br><br>잔여 활동비: <b>${remaining.toLocaleString()}원</b><br><br>그래도 저장하시겠습니까?`,
+                                showCancelButton: true,
+                                confirmButtonText: '저장',
+                                cancelButtonText: '취소',
+                                confirmButtonColor: '#667eea'
+                            });
+                            if (!budgetResult.isConfirmed) return;
+                        }
+                    }
+                } catch (e) {
+                    console.warn('활동비 조회 실패:', e);
                 }
             }
 
