@@ -843,14 +843,14 @@ document.addEventListener('DOMContentLoaded', function() {
             // 참여자(참여기관) 텍스트 생성 - 회의록용 (내부 + 외부 모두 포함)
             let allAttendeesText = '';
             const internalNames = internalAttendees.map(a => a.name.trim());
-            const externalNames = externalAttendees.map(a => a.name.trim());
+            const externalParts = externalAttendees.map(a => `${a.name.trim()}(${(a.dept || '외부').trim()})`);
 
-            if (internalNames.length > 0 && externalNames.length > 0) {
-                allAttendeesText = internalNames.join(', ') + '(파인씨앤아이), ' + externalNames.join(', ') + '(외부)';
+            if (internalNames.length > 0 && externalParts.length > 0) {
+                allAttendeesText = internalNames.join(', ') + '(파인씨앤아이), ' + externalParts.join(', ');
             } else if (internalNames.length > 0) {
                 allAttendeesText = internalNames.join(', ') + '(파인씨앤아이)';
-            } else if (externalNames.length > 0) {
-                allAttendeesText = externalNames.join(', ') + '(외부)';
+            } else if (externalParts.length > 0) {
+                allAttendeesText = externalParts.join(', ');
             }
 
             document.querySelectorAll('.auto-all-attendees').forEach(field => {
@@ -907,6 +907,29 @@ document.addEventListener('DOMContentLoaded', function() {
             updateTripResult();
         }
 
+        // 회의록 주요 내용 동적 폰트 크기 조정 (A4 한 쪽 인쇄 유지)
+        function adjustContentFontSize(el, text) {
+            const len = text.length;
+            let fontSize, lineHeight;
+            if (len <= 100) {
+                fontSize = '20px'; lineHeight = '1.9';
+            } else if (len <= 200) {
+                fontSize = '18px'; lineHeight = '1.8';
+            } else if (len <= 350) {
+                fontSize = '16px'; lineHeight = '1.7';
+            } else if (len <= 520) {
+                fontSize = '14px'; lineHeight = '1.6';
+            } else if (len <= 750) {
+                fontSize = '12px'; lineHeight = '1.5';
+            } else if (len <= 1100) {
+                fontSize = '10px'; lineHeight = '1.4';
+            } else {
+                fontSize = '8px'; lineHeight = '1.3';
+            }
+            el.style.fontSize = fontSize;
+            el.style.lineHeight = lineHeight;
+        }
+
         // 회의 관련 필드 업데이트
         function updateMeetingFields() {
             // 작성자 (회의록, 참석자명단) - 회의 작성자 사용
@@ -957,6 +980,7 @@ document.addEventListener('DOMContentLoaded', function() {
             const contentText = commonMeetingContent ? commonMeetingContent.value : '';
             document.querySelectorAll('.auto-content').forEach(field => {
                 field.textContent = contentText;
+                adjustContentFontSize(field, contentText);
             });
         }
         window.updateMeetingFields = updateMeetingFields;
@@ -1025,6 +1049,7 @@ document.addEventListener('DOMContentLoaded', function() {
                     // input 요소면 value 속성, 아니면 textContent 설정
                     if (field.tagName === 'INPUT') {
                         field.value = value;
+                        field.style.fontSize = value.length > 15 ? '10px' : '';
                     } else {
                         field.textContent = value;
                     }
@@ -1318,9 +1343,9 @@ document.addEventListener('DOMContentLoaded', function() {
 
                 const headerRow = document.createElement('tr');
                 headerRow.innerHTML = `
-                    <th colspan="2" rowspan="${rowspan}">정산<br>세부내역</th>
+                    <th colspan="1" rowspan="${rowspan}">정산<br>세부내역</th>
                     <th>날짜</th>
-                    <th colspan="2" style="text-align: center; background: #fafafa;">구분</th>
+                    <th colspan="3" style="text-align: center; background: #fafafa;">구분</th>
                     <td style="text-align: center; font-weight: bold;">금액</td>
                 `;
                 reportExpenseBody.appendChild(headerRow);
@@ -1334,7 +1359,7 @@ document.addEventListener('DOMContentLoaded', function() {
                     const transportRow = document.createElement('tr');
                     transportRow.innerHTML = `
                         <td rowspan="${rowsForDay}" style="text-align: center; background: white; font-weight: 500; vertical-align: middle;">${expense.date}</td>
-                        <td colspan="2" style="background: white; padding: 8px; text-align: center">교통비</td>
+                        <td colspan="3" style="background: white; padding: 8px; text-align: center">교통비</td>
                         <td style="text-align: center; padding: 8px; background: white;">${expense.transport.toLocaleString()}원</td>
                     `;
                     reportExpenseBody.appendChild(transportRow);
@@ -1342,7 +1367,7 @@ document.addEventListener('DOMContentLoaded', function() {
                     // 숙박비
                     const lodgingRow = document.createElement('tr');
                     lodgingRow.innerHTML = `
-                        <td colspan="2" style="background: white; padding: 8px; text-align: center">숙박비</td>
+                        <td colspan="3" style="background: white; padding: 8px; text-align: center">숙박비</td>
                         <td style="text-align: center; padding: 8px;">${expense.lodging.toLocaleString()}원</td>
                     `;
                     reportExpenseBody.appendChild(lodgingRow);
@@ -1350,7 +1375,7 @@ document.addEventListener('DOMContentLoaded', function() {
                     // 식비
                     const mealRow = document.createElement('tr');
                     mealRow.innerHTML = `
-                        <td colspan="2" style="background: white; padding: 8px; text-align: center">식비</td>
+                        <td colspan="3" style="background: white; padding: 8px; text-align: center">식비</td>
                         <td style="text-align: center; padding: 8px;">${expense.meal.toLocaleString()}원</td>
                     `;
                     reportExpenseBody.appendChild(mealRow);
@@ -1358,7 +1383,7 @@ document.addEventListener('DOMContentLoaded', function() {
                     // 기타(일비)
                     const otherRow = document.createElement('tr');
                     otherRow.innerHTML = `
-                        <td colspan="2" style="background: white; padding: 8px; text-align: center">기타(일비)</td>
+                        <td colspan="3" style="background: white; padding: 8px; text-align: center">기타(일비)</td>
                         <td style="text-align: center; padding: 8px;">${expense.other.toLocaleString()}원</td>
                     `;
                     reportExpenseBody.appendChild(otherRow);
@@ -1367,7 +1392,7 @@ document.addEventListener('DOMContentLoaded', function() {
                     if (hasMeeting) {
                         const meetingRow = document.createElement('tr');
                         meetingRow.innerHTML = `
-                            <td colspan="2" style="background: white; padding: 8px; text-align: center;">회의비</td>
+                            <td colspan="3" style="background: white; padding: 8px; text-align: center;">회의비</td>
                             <td style="text-align: center; padding: 8px;">${commonAmountValue.toLocaleString()}원</td>
                         `;
                         reportExpenseBody.appendChild(meetingRow);
@@ -2070,21 +2095,21 @@ document.addEventListener('DOMContentLoaded', function() {
     <div style="background: white; border: 2px solid #e0e0e0; border-radius: 8px; padding: 30px; max-width: 881px; margin: 0 auto 30px">
         <h2 class="doc-title" style="margin: 0">회 의 록</h2>
         <table class="form-table">
-            <colgroup><col style="width: 15%;"><col style="width: 55%;"><col style="width: 10%;"><col style="width: 20%;"></colgroup>
-            <tr><th style="height:80px">과제명</th><td><input type="text" class="auto-project" readonly style="background:#f9f9f9;text-align:center;"></td><th>작성자</th><td><input type="text" id="doc_meeting_author_${idx}" readonly style="background:#f9f9f9;text-align:center;width:100%;padding:4px;border:1px solid #ddd;"></td></tr>
-            <tr><th style="height:80px">일시</th><td><input type="text" id="doc_meeting_datetime_${idx}" readonly style="background:#f9f9f9;text-align:center;width:100%;padding:4px;border:1px solid #ddd;"></td><th>장소</th><td><input type="text" class="auto-location" readonly style="background:#f9f9f9;text-align:center;"></td></tr>
+            <colgroup><col style="width: 15%;"><col style="width: 44%;"><col style="width: 14%;"><col style="width: 27%;"></colgroup>
+            <tr><th style="height:64px">과제명</th><td><input type="text" class="auto-project" readonly style="background:#f9f9f9;text-align:center;font-size:12px;"></td><th>작성자</th><td><input type="text" id="doc_meeting_author_${idx}" readonly style="background:#f9f9f9;text-align:center;width:100%;padding:4px;border:1px solid #ddd;"></td></tr>
+            <tr><th style="height:64px">일시</th><td><input type="text" id="doc_meeting_datetime_${idx}" readonly style="background:#f9f9f9;text-align:center;width:100%;padding:4px;border:1px solid #ddd;"></td><th>장소</th><td><input type="text" class="auto-location" readonly style="background:#f9f9f9;text-align:center;"></td></tr>
             <tr><th>참여자</th><td colspan="3" id="doc_meeting_attendees_${idx}" style="padding:10px;height:80px;white-space:pre-wrap;"></td></tr>
             <tr><th colspan="4" style="background:#f0f0f0;padding:15px;">내용</th></tr>
-            <tr><th style="vertical-align:middle;padding-top:15px;">주제</th><td colspan="3" id="doc_meeting_subject_${idx}" style="padding:10px;text-align:left;font-size:18px;height:100px"></td></tr>
-            <tr><th style="padding-top:15px;">주요 내용</th><td colspan="3" id="doc_meeting_content_${idx}" style="padding:10px;height:510px;text-align:left;white-space:pre-wrap;min-height:600px;line-height:2.5;font-size:18px"></td></tr>
+            <tr><th style="vertical-align:middle;padding-top:15px;">주제</th><td colspan="3" id="doc_meeting_subject_${idx}" style="padding:10px;text-align:left;font-size:18px;height:64px"></td></tr>
+            <tr><th style="padding-top:15px;">주요 내용</th><td colspan="3" id="doc_meeting_content_${idx}" style="padding:10px;min-height:150px;text-align:left;white-space:pre-wrap;"></td></tr>
         </table>
     </div>
     <div style="background: white; border: 2px solid #e0e0e0; border-radius: 8px; padding: 30px; margin: 0 auto 30px; max-width: 881px">
         <h2 class="doc-title" style="margin: 0">참 석 자 명 단</h2>
         <table class="form-table">
-            <colgroup><col style="width:15%;"><col style="width:55%;"><col style="width:10%;"><col style="width:20%;"></colgroup>
-            <tr><th style="height:80px">과제</th><td><input type="text" class="auto-project" readonly style="background:#f9f9f9;text-align:center;"></td><th>작성자</th><td><input type="text" id="doc_attendee_author_${idx}" readonly style="background:#f9f9f9;text-align:center;width:100%;padding:4px;border:1px solid #ddd;"></td></tr>
-            <tr><th style="height:80px">일시</th><td><input type="text" id="doc_attendee_datetime_${idx}" readonly style="background:#f9f9f9;text-align:center;width:100%;padding:4px;border:1px solid #ddd;"></td><th>장소</th><td><input type="text" class="auto-location" readonly style="background:#f9f9f9;text-align:center;"></td></tr>
+            <colgroup><col style="width:15%;"><col style="width:44%;"><col style="width:14%;"><col style="width:27%;"></colgroup>
+            <tr><th style="height:64px">과제</th><td><input type="text" class="auto-project" readonly style="background:#f9f9f9;text-align:center;font-size:12px;"></td><th>작성자</th><td><input type="text" id="doc_attendee_author_${idx}" readonly style="background:#f9f9f9;text-align:center;width:100%;padding:4px;border:1px solid #ddd;"></td></tr>
+            <tr><th style="height:64px">일시</th><td><input type="text" id="doc_attendee_datetime_${idx}" readonly style="background:#f9f9f9;text-align:center;width:100%;padding:4px;border:1px solid #ddd;"></td><th>장소</th><td><input type="text" class="auto-location" readonly style="background:#f9f9f9;text-align:center;"></td></tr>
         </table>
         <table class="form-table" style="margin-top:20px;">
             <thead><tr style="height:40px;"><th style="width:70px;">구분</th><th>소속</th><th>성명</th><th style="width:100px;">서명</th></tr></thead>
@@ -4319,12 +4344,14 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     }
 
-    // 과제명이 비어있을 때 빨간색 테두리 표시
-    setTimeout(() => {
-        if (commonProject && !commonProject.value) {
-            commonProject.style.borderColor = '#ef5350';
-        }
-    }, 500);
+    // 과제명이 비어있을 때 빨간색 테두리 표시 (신규 작성 모드에서만)
+    if (!getUrlParameter('id')) {
+        setTimeout(() => {
+            if (commonProject && !commonProject.value) {
+                commonProject.style.borderColor = '#ef5350';
+            }
+        }, 500);
+    }
 
     // ============================================
     // URL 파라미터 유틸리티
@@ -4380,7 +4407,7 @@ document.addEventListener('DOMContentLoaded', function() {
             console.log('[DEBUG] populateForm - projectIdx:', data.projectIdx, '/ projName:', projName);
             if (projName) {
                 const pEl = document.getElementById('common_project');
-                if (pEl) { pEl.value = projName; pEl.classList.remove('field-empty'); }
+                if (pEl) { pEl.value = projName; pEl.style.borderColor = ''; pEl.classList.remove('field-empty'); }
                 document.querySelectorAll('.auto-project').forEach(el => {
                     if (el.tagName === 'INPUT') el.value = projName;
                     else el.textContent = projName;

@@ -2970,7 +2970,6 @@ div h2{
     #documentFormContent > div {
         display: block !important;
         width: 210mm !important;
-        min-height: 297mm !important;
         page-break-after: always !important;
         break-after: page !important;
         margin: 0 !important;
@@ -3070,7 +3069,6 @@ div h2{
     .meeting-doc-block > div {
         display: block !important;
         width: 210mm !important;
-        min-height: 297mm !important;
         page-break-after: always !important;
         break-after: page !important;
         margin: 0 !important;
@@ -3096,11 +3094,6 @@ div h2{
     /* ── 회의록·참석자명단 h2 ── */
     .meeting-doc-block > div h2 {
         margin-bottom: 4px !important;
-    }
-
-    .auto-content {
-        font-size: 13px !important;
-        line-height: 1.6 !important;
     }
 
     .auto-subject {
