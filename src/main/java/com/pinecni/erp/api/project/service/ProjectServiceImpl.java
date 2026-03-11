@@ -4,11 +4,15 @@ import com.pinecni.erp.api.code.repository.CodeRepository;
 import com.pinecni.erp.api.project.dto.*;
 import com.pinecni.erp.api.project.dto.ProjectCardDTO;
 import com.pinecni.erp.api.project.mapper.ProjectMapper;
+import com.pinecni.erp.api.document.repository.ReceiptOvertimeRepository;
 import com.pinecni.erp.api.project.repository.ProjectExpenseSettingRepository;
 import com.pinecni.erp.api.project.repository.ProjectMemberRepository;
 import com.pinecni.erp.api.project.repository.ProjectRelationRepository;
 import com.pinecni.erp.api.project.repository.ProjectRepository;
 import com.pinecni.erp.api.project.repository.ProjectCardRepository;
+import com.pinecni.erp.api.project.repository.ReceiptMeetingRepository;
+import com.pinecni.erp.api.project.repository.ReceiptTripMeetingRepository;
+import com.pinecni.erp.api.project.repository.ReceiptTripRepository;
 import com.pinecni.erp.entity.Project;
 import com.pinecni.erp.entity.ProjectExpenseSetting;
 import com.pinecni.erp.entity.ProjectMember;
@@ -19,7 +23,10 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.math.BigDecimal;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.stream.Collectors;
 
 /**
@@ -39,6 +46,10 @@ public class ProjectServiceImpl implements ProjectService {
     private final ProjectExpenseSettingRepository projectExpenseSettingRepository;
     private final CodeRepository codeRepository;
     private final ProjectMapper mapper;
+    private final ReceiptTripRepository receiptTripRepository;
+    private final ReceiptMeetingRepository receiptMeetingRepository;
+    private final ReceiptOvertimeRepository receiptOvertimeRepository;
+    private final ReceiptTripMeetingRepository receiptTripMeetingRepository;
 
     @Override
     public List<ProjectDTO> getAllProjects() {
@@ -606,6 +617,28 @@ public class ProjectServiceImpl implements ProjectService {
                             .build();
                 })
                 .collect(Collectors.toList());
+    }
+
+    @Override
+    public Map<String, Object> getActivityBudgetUsage(Long projectIdx) {
+        log.debug("getActivityBudgetUsage() called with projectIdx: {}", projectIdx);
+
+        Project project = projectRepository.findById(projectIdx)
+                .orElseThrow(() -> new IllegalArgumentException("프로젝트를 찾을 수 없습니다: " + projectIdx));
+
+        BigDecimal activityBudget = project.getActivityBudget() != null ? project.getActivityBudget() : BigDecimal.ZERO;
+        BigDecimal tripTotal       = receiptTripRepository.sumAmountByProjectIdx(projectIdx);
+        BigDecimal meetingTotal    = receiptMeetingRepository.sumAmountByProjectIdx(projectIdx);
+        BigDecimal overtimeTotal   = receiptOvertimeRepository.sumAmountByProjectIdx(projectIdx);
+        BigDecimal tripMeetingTotal = receiptTripMeetingRepository.sumTripFeeByProjectIdx(projectIdx);
+
+        BigDecimal totalSpent = tripTotal.add(meetingTotal).add(overtimeTotal).add(tripMeetingTotal);
+
+        Map<String, Object> result = new HashMap<>();
+        result.put("activityBudget", activityBudget);
+        result.put("totalSpent", totalSpent);
+        result.put("remaining", activityBudget.subtract(totalSpent));
+        return result;
     }
 
     /**

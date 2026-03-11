@@ -302,6 +302,25 @@ public class ProjectController {
     }
 
     /**
+     * 프로젝트 활동비 사용 현황 조회
+     * GET /api/projects/{idx}/activity-usage
+     */
+    @GetMapping("/{idx}/activity-usage")
+    public ResponseEntity<Map<String, Object>> getActivityBudgetUsage(@PathVariable Long idx) {
+        log.debug("GET /api/projects/{}/activity-usage", idx);
+
+        try {
+            Map<String, Object> usage = projectService.getActivityBudgetUsage(idx);
+            return ResponseEntity.ok(usage);
+        } catch (IllegalArgumentException e) {
+            log.error("활동비 사용 현황 조회 실패: {}", e.getMessage());
+            Map<String, Object> error = new HashMap<>();
+            error.put("error", e.getMessage());
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(error);
+        }
+    }
+
+    /**
      * Exception Handler
      */
     @ExceptionHandler(Exception.class)
