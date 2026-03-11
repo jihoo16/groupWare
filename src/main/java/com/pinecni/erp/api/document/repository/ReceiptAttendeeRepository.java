@@ -93,6 +93,12 @@ public interface ReceiptAttendeeRepository extends JpaRepository<ReceiptAttendee
     }
 
     /**
+     * 특정 세션의 회의 참석자 조회 (다중 회의 지원)
+     */
+    List<ReceiptAttendee> findBySessionIdxAndParticipationTypeAndIsDeletedFalseOrderByDisplayOrder(
+            Long sessionIdx, String participationType);
+
+    /**
      * 출장+회의 참석자 소프트 딜리트
      */
     default void softDeleteByReceiptTripMeetingIdx(Long rtmIdx, Long deletedUserIdx) {

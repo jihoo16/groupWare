@@ -38,4 +38,9 @@ public interface ReceiptTripMeetingAttachmentRepository extends JpaRepository<Re
             "WHERE a.receiptTripMeetingIdx = :receiptTripMeetingIdx AND a.deleted = false")
     void softDeleteByReceiptTripMeetingIdx(@Param("receiptTripMeetingIdx") Long receiptTripMeetingIdx,
                                            @Param("deletedUserIdx") Long deletedUserIdx);
+
+    /**
+     * 세션 IDX로 첨부파일 목록 조회 (삭제되지 않은 건)
+     */
+    List<ReceiptTripMeetingAttachment> findBySessionIdxAndDeletedFalseOrderByIdxAsc(Long sessionIdx);
 }

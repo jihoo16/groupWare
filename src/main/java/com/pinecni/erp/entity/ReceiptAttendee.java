@@ -132,6 +132,14 @@ public class ReceiptAttendee {
     @Column(name = "participation_type", length = 10)
     private String participationType;
 
+    /**
+     * 출장+회의 세션 IDX (다중 회의 지원용)
+     * - null: 출장 참석자 또는 단일 회의 backward compat
+     * - non-null: 특정 회의 세션 참석자
+     */
+    @Column(name = "session_idx")
+    private Long sessionIdx;
+
     @Column(name = "created_at", nullable = false, updatable = false)
     private LocalDateTime createdAt;
 

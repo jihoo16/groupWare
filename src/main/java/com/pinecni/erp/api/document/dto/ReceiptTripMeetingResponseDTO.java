@@ -30,6 +30,7 @@ public class ReceiptTripMeetingResponseDTO {
     private Long projectIdx;
     private Long cardIdx;
     private Long drafterUserIdx;
+    private Long meetingDrafterUserIdx;
     private Boolean deleted;
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;
@@ -48,9 +49,17 @@ public class ReceiptTripMeetingResponseDTO {
     private LocalDate eventDate;
     private LocalTime startTime;
     private LocalTime endTime;
+    private String meetingPurpose;
     private String minutesNotes;
     private List<ReceiptMeetingAttendeeDTO> meetingAttendees;
 
+    // ── 회의비 ─────────────────────────────────────────────────────
+    private BigDecimal meetingAmount;
+
     // ── 첨부파일 ───────────────────────────────────────────────────
     private List<ReceiptTripMeetingAttachmentDTO> attachments;
+
+    // ── 다중 회의 세션 ──────────────────────────────────────────────
+    /** 다중 회의 세션 목록 (응답 전용) */
+    private List<MeetingSessionDTO> meetingSessions;
 }

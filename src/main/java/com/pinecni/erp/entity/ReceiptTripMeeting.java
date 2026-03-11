@@ -6,14 +6,13 @@ import lombok.*;
 import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
-import java.time.LocalTime;
 import java.util.ArrayList;
 import java.util.List;
 
 /**
  * 연구비증빙 출장+회의 통합 Entity
- * - 출장 정보 (trip_date, duration, total_fee 등) 와
- *   회의 정보 (meeting_date, start_time, end_time 등) 를 한 테이블에 저장
+ * - 출장 정보 (trip_date, duration, total_fee 등) 만 보유
+ * - 회의 정보는 receipt_trip_meeting_session (1:N) 에 별도 저장
  * - 비용 상세는 receipt_trip_meeting_daily_expense (1:N) 에 저장, total_fee 는 SUM 캐시
  */
 @Entity
@@ -67,20 +66,6 @@ public class ReceiptTripMeeting {
     @Column(name = "total_fee", precision = 15, scale = 2)
     private BigDecimal totalFee;
 
-    // ─── 회의 필드 ───────────────────────────────────────────────────
-
-    /** 회의 날짜 (기존 event_date 컬럼) */
-    @Column(name = "event_date")
-    private LocalDate eventDate;
-
-    /** 회의 시작 시간 */
-    @Column(name = "start_time")
-    private LocalTime startTime;
-
-    /** 회의 종료 시간 */
-    @Column(name = "end_time")
-    private LocalTime endTime;
-
     // ─── 공통 필드 ───────────────────────────────────────────────────
 
     @Column(name = "location", length = 200)
@@ -92,10 +77,6 @@ public class ReceiptTripMeeting {
     /** 출장 내용 및 결과 */
     @Column(name = "content", columnDefinition = "TEXT")
     private String content;
-
-    /** 회의록 내용 */
-    @Column(name = "minutes_notes", columnDefinition = "TEXT")
-    private String minutesNotes;
 
     @Column(name = "created_at", updatable = false)
     private LocalDateTime createdAt;

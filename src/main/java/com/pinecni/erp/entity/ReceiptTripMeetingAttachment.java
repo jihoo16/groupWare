@@ -57,6 +57,14 @@ public class ReceiptTripMeetingAttachment {
     @Column(name = "upload_user_idx")
     private Long uploadUserIdx;
 
+    /**
+     * 회의 세션 IDX (다중 회의 첨부파일 구분용)
+     * - null: 출장 첨부파일 또는 첫 번째 회의 backward compat
+     * - non-null: 특정 회의 세션 첨부파일
+     */
+    @Column(name = "session_idx")
+    private Long sessionIdx;
+
     @Column(name = "uploaded_at")
     private LocalDateTime uploadedAt;
 
