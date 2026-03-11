@@ -119,21 +119,25 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     }
 
-    // 프로젝트 참여인원 로드
+    // 프로젝트 참여인원 로드 (프로젝트 이름도 캐싱하여 populateForm 에서 사용)
+    let loadedProjectName = ''; // loadProjectMembers 에서 얻은 프로젝트 이름 캐시
     async function loadProjectMembers(projectIdx) {
-        if (!projectIdx) { projectMembers = []; return; }
+        if (!projectIdx) { projectMembers = []; loadedProjectName = ''; return; }
         try {
             const response = await fetch(`/api/projects/${projectIdx}`);
             const contentType = response.headers.get('content-type');
             if (response.ok && contentType && contentType.includes('application/json')) {
                 const project = await response.json();
                 projectMembers = project.projectMembers || [];
+                loadedProjectName = project.projectName || '';
             } else {
                 projectMembers = [];
+                loadedProjectName = '';
             }
         } catch (e) {
             console.error('프로젝트 참여인원 로드 오류:', e);
             projectMembers = [];
+            loadedProjectName = '';
         }
     }
 
@@ -329,6 +333,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
     async function setDefaultAuthor() {
         if (isPopulatingForm) return; // 데이터 로드 중에는 자동 설정 차단
+        if (authorPersonId) return;   // 이미 작성자가 설정된 경우 덮어쓰지 않음
         if (projectMembers.length === 0) return;
 
         const members = projectMembers.map(m => ({
@@ -663,7 +668,8 @@ document.addEventListener('DOMContentLoaded', function() {
         window.replaceTripPersons = function(persons) {
             tripPersons = persons;
             // 작성자가 인원 목록에서 빠진 경우 작성자 필드도 초기화
-            if (authorPersonId && !persons.some(p => String(p.id) === authorPersonId)) {
+            // (단, 데이터 로드 중에는 초기화하지 않음 - populateForm에서 별도 복원함)
+            if (!isPopulatingForm && authorPersonId && !persons.some(p => String(p.id) === authorPersonId)) {
                 authorPersonId = null;
                 const authorField = document.getElementById('common_author');
                 if (authorField) authorField.value = '';
@@ -1034,6 +1040,9 @@ document.addEventListener('DOMContentLoaded', function() {
             const duration = parseInt(commonDuration ? commonDuration.value : '0');
             const days = duration + 1; // 당일(0박) = 1일, 1박 = 2일
 
+            // 기존 입력값 스냅샷 보존 (박수 변경 시 날짜별 금액 유지)
+            const prevExpenses = dailyExpenses.slice();
+
             // 기존 데이터 초기화
             dailyExpenses = [];
             dailyExpenseBody.innerHTML = '';
@@ -1072,25 +1081,29 @@ document.addEventListener('DOMContentLoaded', function() {
                 const day = String(currentDate.getDate()).padStart(2, '0');
                 const dateStr = `${year}.${month}.${day}`;
 
+                // 이전 값 복원 (박수 변경 시 기존 입력 유지)
+                const prev = prevExpenses[i] || {};
+
                 dailyExpenses.push({
                     date: dateStr,
-                    transport: 0,
-                    lodging: 0,
-                    meal: 0,
-                    other: 0
+                    transport: prev.transport || 0,
+                    lodging:   prev.lodging   || 0,
+                    meal:      prev.meal      || 0,
+                    other:     prev.other     || 0
                 });
 
+                const fmt = v => (v && v > 0) ? v.toLocaleString('ko-KR') : '';
                 const lodgingCell = isDayTrip
-                    ? `<td style="display:none;"><input type="text" inputmode="numeric" class="expense-input" data-index="${i}" data-type="lodging" placeholder="0"></td>`
-                    : `<td><input type="text" inputmode="numeric" class="expense-input" data-index="${i}" data-type="lodging" placeholder="0"></td>`;
+                    ? `<td style="display:none;"><input type="text" inputmode="numeric" class="expense-input" data-index="${i}" data-type="lodging" placeholder="0" value="${fmt(prev.lodging)}"></td>`
+                    : `<td><input type="text" inputmode="numeric" class="expense-input" data-index="${i}" data-type="lodging" placeholder="0" value="${fmt(prev.lodging)}"></td>`;
 
                 const row = document.createElement('tr');
                 row.innerHTML = `
                     <td>${dateStr}</td>
-                    <td><input type="text" inputmode="numeric" class="expense-input" data-index="${i}" data-type="transport" placeholder="0"></td>
+                    <td><input type="text" inputmode="numeric" class="expense-input" data-index="${i}" data-type="transport" placeholder="0" value="${fmt(prev.transport)}"></td>
                     ${lodgingCell}
-                    <td><input type="text" inputmode="numeric" class="expense-input" data-index="${i}" data-type="meal" placeholder="0"></td>
-                    <td><input type="text" inputmode="numeric" class="expense-input" data-index="${i}" data-type="other" placeholder="0"></td>
+                    <td><input type="text" inputmode="numeric" class="expense-input" data-index="${i}" data-type="meal" placeholder="0" value="${fmt(prev.meal)}"></td>
+                    <td><input type="text" inputmode="numeric" class="expense-input" data-index="${i}" data-type="other" placeholder="0" value="${fmt(prev.other)}"></td>
                 `;
                 dailyExpenseBody.appendChild(row);
             }
@@ -1517,6 +1530,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
         // 출장 기간 변경 후 작성자/출장인원 겹침 재검증
         async function revalidateAuthorAfterTripDateChange() {
+            if (isPopulatingForm) return; // 데이터 로드 중에는 재검증 차단
             const projectIdx = document.getElementById('selectedProjectIdx')?.value;
             if (!projectIdx || !commonDate?.value) return;
 
@@ -1682,7 +1696,7 @@ document.addEventListener('DOMContentLoaded', function() {
         }
 
         // 출장내용 및 결과 업데이트
-        function updateTripResult() {
+        window.updateTripResult = function updateTripResult() {
             if (isPopulatingForm) return; // 데이터 로드 중에는 자동 덮어쓰기 차단
             const personNames = tripPersons.filter(p => p.name && p.name.trim()).map(p => p.name.trim());
 
@@ -2403,7 +2417,8 @@ document.addEventListener('DOMContentLoaded', function() {
                     text: '저장이 완료되었습니다.',
                     timer: 1500,
                     timerProgressBar: true,
-                    showConfirmButton: false
+                    showConfirmButton: true,
+                    confirmButtonText: '확인'
                 });
                 popupAwareRedirect('/project/documents');
             } catch (e) {
@@ -3013,7 +3028,7 @@ document.addEventListener('DOMContentLoaded', function() {
             tempInternalAttendeeIds = new Set(currentInternal.map(p => String(p.id)));
             await loadExternalPersons();
             renderAttendeeInternalSummary();
-            renderAttendeeList2();
+            await renderAttendeeList2();
             renderAttendeeModalBadges();
         }
     };
@@ -3135,7 +3150,7 @@ document.addEventListener('DOMContentLoaded', function() {
     }
 
     // 외부인원 목록 렌더링 (외부인력만)
-    function renderAttendeeList2(searchText = '') {
+    async function renderAttendeeList2(searchText = '') {
         const attendeeList2El = document.getElementById('attendeeList2');
         if (!attendeeList2El) return;
 
@@ -3153,16 +3168,34 @@ document.addEventListener('DOMContentLoaded', function() {
             return;
         }
 
-        attendeeList2El.innerHTML = filtered.map(person => {
+        // 회의 시간이 설정된 경우 시간대 중복 병렬 체크
+        const dateVal    = document.getElementById('common_meeting_date')?.value;
+        const startVal   = document.getElementById('common_start_time')?.value;
+        const endVal     = document.getElementById('common_end_time')?.value;
+        const projectVal = document.getElementById('selectedProjectIdx')?.value;
+        const canCheckDup = !!(dateVal && startVal && endVal && projectVal);
+
+        const dupResults = canCheckDup
+            ? await Promise.all(filtered.map(p => checkAuthorDuplicate(String(p.idx), dateVal, startVal, endVal, projectVal, null, null, true)))
+            : filtered.map(() => false);
+
+        attendeeList2El.innerHTML = filtered.map((person, i) => {
             const isSelected = tempSelectedExternalIds.has(String(person.idx));
+            const isDup = dupResults[i];
+            const dupBadge = isDup
+                ? `<span style="background:#fee2e2;color:#b91c1c;padding:2px 8px;border-radius:4px;font-size:11px;margin-left:6px;white-space:nowrap;"><i class="fas fa-exclamation-circle"></i> 시간 겹침</span>`
+                : '';
+            const disabledStyle = isDup ? 'opacity:0.45;cursor:not-allowed;' : '';
+            const clickHandler  = isDup ? '' : `onclick="selectExternalAttendee(${person.idx})"`;
             return `
-            <div class="employee-item${isSelected ? ' selected' : ''}" data-id="${person.idx}" onclick="selectExternalAttendee(${person.idx})">
+            <div class="employee-item${isSelected ? ' selected' : ''}" data-id="${person.idx}" ${clickHandler} style="${disabledStyle}">
                 <i class="far fa-user"></i>
                 <div class="employee-info">
                     <div class="employee-name">${searchUtils.highlightText(person.name, searchText)}</div>
                     <div class="employee-detail">${searchUtils.highlightText(person.position || '직급 미지정', searchText)} · ${searchUtils.highlightText(person.companyName || '', searchText)}</div>
                 </div>
                 <span class="expense-tag" style="margin-left:auto; white-space:nowrap;">회의비 30,000원</span>
+                ${dupBadge}
             </div>`;
         }).join('');
     }
@@ -3186,23 +3219,23 @@ document.addEventListener('DOMContentLoaded', function() {
     };
 
     // 모달 내 외부인원 전체 해제
-    window.clearAllExternalAttendees = function() {
+    window.clearAllExternalAttendees = async function() {
         tempSelectedExternalIds.clear();
-        renderAttendeeList2(attendeeSearchInput ? attendeeSearchInput.value : '');
+        await renderAttendeeList2(attendeeSearchInput ? attendeeSearchInput.value : '');
         renderAttendeeModalBadges();
     };
 
     // 모달 내 특정 외부인원 선택 해제
-    window.removeExternalFromModalSelection = function(personIdx) {
+    window.removeExternalFromModalSelection = async function(personIdx) {
         tempSelectedExternalIds.delete(String(personIdx));
-        renderAttendeeList2(attendeeSearchInput ? attendeeSearchInput.value : '');
+        await renderAttendeeList2(attendeeSearchInput ? attendeeSearchInput.value : '');
         renderAttendeeModalBadges();
     };
 
     // 검색 기능
     if (attendeeSearchInput) {
-        attendeeSearchInput.addEventListener('input', function(e) {
-            renderAttendeeList2(e.target.value);
+        attendeeSearchInput.addEventListener('input', async function(e) {
+            await renderAttendeeList2(e.target.value);
         });
     }
 
@@ -3258,7 +3291,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 await loadExternalPersons();
                 // 신규 등록된 외부인원을 자동으로 임시 선택 상태에 추가
                 tempSelectedExternalIds.add(String(newPerson.idx));
-                renderAttendeeList2(attendeeSearchInput ? attendeeSearchInput.value : '');
+                await renderAttendeeList2(attendeeSearchInput ? attendeeSearchInput.value : '');
                 renderAttendeeModalBadges();
             } else {
                 showError('외부인력 등록에 실패했습니다.');
@@ -3337,6 +3370,7 @@ document.addEventListener('DOMContentLoaded', function() {
     // 필수 필드 검증 (빨간색 + shake 애니메이션)
     // ============================================
     function validateRequiredFields() {
+        if (isPopulatingForm) return; // 데이터 로드 중에는 검증 건너뜀
         // 출장 + 회의 공통 필수 텍스트 필드
         const requiredIds = ['common_project', 'common_card', 'common_location', 'common_date',
                              'common_purpose', 'common_meeting_purpose', 'common_meeting_date',
@@ -3528,8 +3562,7 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     })();
 
-    // 초기 필수 필드 강조 (신규 작성 시)
-    setTimeout(() => { validateRequiredFields(); }, 300);
+    // 초기 필수 필드 강조 제거 — 저장/수정 버튼 클릭 시에만 빨간 테두리 표시
 
     // ============================================
     // 작성자 선택 모달
@@ -4333,20 +4366,26 @@ document.addEventListener('DOMContentLoaded', function() {
         if (data.projectIdx) {
             const selectedProjectIdxEl = document.getElementById('selectedProjectIdx');
             if (selectedProjectIdxEl) selectedProjectIdxEl.value = data.projectIdx;
-            const proj = projects.find(p => String(p.idx) === String(data.projectIdx));
-            if (proj) {
-                const pEl = document.getElementById('common_project');
-                if (pEl) { pEl.value = proj.projectName; pEl.classList.remove('field-empty'); }
-                document.querySelectorAll('.auto-project').forEach(el => {
-                    if (el.tagName === 'INPUT') el.value = proj.projectName;
-                    else el.textContent = proj.projectName;
-                });
-            }
+
+            // 먼저 참여인원/카드/경비 설정을 로드 (loadProjectMembers 가 projectName 도 캐싱)
             await Promise.all([
                 loadProjectMembers(data.projectIdx),
                 loadProjectCards(data.projectIdx),
                 loadProjectExpenseSettings(data.projectIdx)
             ]);
+
+            // projects 캐시에서 이름을 찾고, 없으면 loadProjectMembers 가 캐싱한 이름 사용
+            const proj = projects.find(p => String(p.idx) === String(data.projectIdx));
+            const projName = (proj ? proj.projectName : null) || loadedProjectName;
+            console.log('[DEBUG] populateForm - projectIdx:', data.projectIdx, '/ projName:', projName);
+            if (projName) {
+                const pEl = document.getElementById('common_project');
+                if (pEl) { pEl.value = projName; pEl.classList.remove('field-empty'); }
+                document.querySelectorAll('.auto-project').forEach(el => {
+                    if (el.tagName === 'INPUT') el.value = projName;
+                    else el.textContent = projName;
+                });
+            }
         }
 
         // 2. 카드
@@ -4417,6 +4456,11 @@ document.addEventListener('DOMContentLoaded', function() {
         }
 
         // 9. 출장 인원 복원
+        // 작성자 ID를 replaceTripPersons 렌더 전에 설정해야 '삭제 불가' 뱃지가 즉시 표시됨
+        if (data.drafterUserIdx) {
+            authorPersonId = String(data.drafterUserIdx);
+        }
+
         if (data.tripAttendees && data.tripAttendees.length > 0) {
             const persons = data.tripAttendees.map(att => {
                 const emp = employees.find(e => String(e.id) === String(att.userIdx));
@@ -4427,21 +4471,28 @@ document.addEventListener('DOMContentLoaded', function() {
                     position: emp ? emp.position : ''
                 };
             });
-
-            // 작성자 ID를 replaceTripPersons 렌더 전에 설정해야 '삭제 불가' 뱃지가 즉시 표시됨
-            if (data.drafterUserIdx) {
-                authorPersonId = String(data.drafterUserIdx);
-            }
             if (window.replaceTripPersons) window.replaceTripPersons(persons);
+        }
 
-            // 작성자 UI 필드 복원
-            if (data.drafterUserIdx) {
-                const authorPerson = persons.find(p => String(p.id) === String(data.drafterUserIdx));
-                if (authorPerson) {
-                    const authorField = document.getElementById('common_author');
-                    if (authorField) authorField.value = authorPerson.name;
-                }
+        // 작성자 UI 필드 복원 (출장인원 목록 유무와 무관하게 항상 수행)
+        // replaceTripPersons 이후에도 authorPersonId를 재설정해 덮어씌우기 방지
+        if (data.drafterUserIdx) {
+            authorPersonId = String(data.drafterUserIdx); // replaceTripPersons가 null로 초기화했을 경우 재설정
+            // employees가 아직 안 로드됐을 수 있으므로 tripAttendees.name을 우선 fallback으로 사용
+            const emp = employees.find(e => String(e.id) === String(data.drafterUserIdx));
+            const tripAtt = data.tripAttendees?.find(a => String(a.userIdx) === String(data.drafterUserIdx));
+            const authorName = (emp ? emp.name : null) || (tripAtt ? tripAtt.name : null);
+            console.log('[DEBUG] 작성자 복원 - drafterUserIdx:', data.drafterUserIdx,
+                '/ emp:', emp ? emp.name : 'null(employees 미로드?)',
+                '/ tripAtt.name:', tripAtt ? tripAtt.name : 'null(tripAttendees에 없음?)',
+                '/ 최종 authorName:', authorName);
+            const authorField = document.getElementById('common_author');
+            if (authorField && authorName) {
+                authorField.value = authorName;
+                authorField.classList.remove('field-empty');
             }
+        } else {
+            console.log('[DEBUG] 작성자 복원 SKIP - drafterUserIdx 없음:', data.drafterUserIdx);
         }
 
         // 10. 회의 작성자 설정
@@ -4488,8 +4539,8 @@ document.addEventListener('DOMContentLoaded', function() {
             }
         }
 
-        // 12. 일별 경비 복원 (DOM 렌더링 후)
-        setTimeout(() => {
+        // 12. 일별 경비 복원 (DOM 렌더링 후) — await 로 isPopulatingForm 을 유지한 채 실행
+        await new Promise(resolve => setTimeout(() => {
             if (data.dailyExpenses && data.dailyExpenses.length > 0) {
                 const dailyExpenseBodyEl = document.getElementById('dailyExpenseBody');
                 if (dailyExpenseBodyEl) {
@@ -4531,10 +4582,6 @@ document.addEventListener('DOMContentLoaded', function() {
 
             // 공식 문서 자동 채우기 갱신
             if (window.updateMeetingFields) window.updateMeetingFields();
-            if (typeof validateRequiredFields === 'function') validateRequiredFields();
-
-            // 로드 완료 후 출장 내용 참석인원 줄 1회 갱신 (isPopulatingForm 해제 이후)
-            updateTripResult();
 
             // 추가 회의 세션 복원 (meetingSessions[1+])
             if (data.meetingSessions && data.meetingSessions.length > 1) {
@@ -4573,9 +4620,29 @@ document.addEventListener('DOMContentLoaded', function() {
                     }
                 }
             }
-        }, 300);
+
+            // ── 최종 출장 작성자 복원 ──────────────────────────────────────────
+            // 모든 데이터 복원이 끝난 뒤 마지막으로 작성자를 재설정해
+            // setTimeout 내부 코드나 이벤트 핸들러가 작성자를 덮어쓰는 것을 방지한다.
+            if (data.drafterUserIdx) {
+                authorPersonId = String(data.drafterUserIdx);
+                const finalEmp = employees.find(e => String(e.id) === String(data.drafterUserIdx));
+                const finalAtt = data.tripAttendees?.find(a => String(a.userIdx) === String(data.drafterUserIdx));
+                const finalName = (finalEmp ? finalEmp.name : null) || (finalAtt ? finalAtt.name : null);
+                const authorField = document.getElementById('common_author');
+                if (authorField && finalName) {
+                    authorField.value = finalName;
+                    authorField.classList.remove('field-empty');
+                }
+            }
+
+            resolve();
+        }, 300));
         } finally {
             isPopulatingForm = false;
+            // isPopulatingForm 해제 후 검증 및 출장 내용 갱신
+            if (typeof validateRequiredFields === 'function') validateRequiredFields();
+            if (window.updateTripResult) window.updateTripResult();
         }
     }
 
@@ -4767,7 +4834,15 @@ document.addEventListener('DOMContentLoaded', function() {
                     const err = await response.json().catch(() => ({}));
                     throw new Error(err.error || '삭제에 실패했습니다.');
                 }
-                await Swal.fire({ icon: 'success', title: '삭제 완료', text: '삭제되었습니다.', confirmButtonText: '확인' });
+                await Swal.fire({
+                    icon: 'success',
+                    title: '삭제 완료',
+                    text: '삭제되었습니다. 잠시 후 목록으로 이동합니다.',
+                    timer: 2000,
+                    timerProgressBar: true,
+                    showConfirmButton: true,
+                    confirmButtonText: '확인'
+                });
                 popupAwareRedirect('/project/documents');
             } catch (e) {
                 showWarning('삭제 중 오류가 발생했습니다.\n' + e.message);
@@ -4780,6 +4855,7 @@ document.addEventListener('DOMContentLoaded', function() {
     // ============================================
     const receiptTripMeetingId = getUrlParameter('id');
     if (receiptTripMeetingId) {
+        isPopulatingForm = true; // 초기 validateRequiredFields(300ms) 가 빨간테두리 찍지 않도록 선제 차단
         window.showPageLoadingOverlay();
         setTimeout(async () => {
             await loadReceiptTripMeetingData(receiptTripMeetingId);
