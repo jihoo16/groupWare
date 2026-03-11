@@ -877,6 +877,7 @@ document.addEventListener('DOMContentLoaded', function() {
                         <td></td>
                     </tr>`;
                 }).join('');
+                adjustAttendeeLayout(sortedAll.length);
             }
 
             // 출장품의서 출장인원 테이블 업데이트 (외부 인원 제외)
@@ -907,6 +908,41 @@ document.addEventListener('DOMContentLoaded', function() {
             updateTripResult();
         }
 
+        // 참석자명단 동적 레이아웃 축소 (12명 이상 시 A4 한 쪽 인쇄 유지)
+        function adjustAttendeeLayout(count) {
+            const sigTable   = document.getElementById('attendee-signature-table');
+            const infoRow1   = document.getElementById('attendeeInfoRow1');
+            const infoRow2   = document.getElementById('attendeeInfoRow2');
+            if (!sigTable) return;
+
+            let rowH, infoRowH, fontSize, sigHeaderH;
+            if (count <= 10) {
+                rowH = '50px'; infoRowH = '64px'; sigHeaderH = '40px'; fontSize = '';
+            } else if (count <= 15) {
+                rowH = '38px'; infoRowH = '48px'; sigHeaderH = '32px'; fontSize = '12px';
+            } else if (count <= 20) {
+                rowH = '30px'; infoRowH = '40px'; sigHeaderH = '26px'; fontSize = '11px';
+            } else {
+                rowH = '24px'; infoRowH = '34px'; sigHeaderH = '22px'; fontSize = '10px';
+            }
+
+            // info 테이블 행 높이
+            if (infoRow1) infoRow1.style.height = infoRowH;
+            if (infoRow2) infoRow2.style.height = infoRowH;
+
+            // 서명 테이블 헤더 높이
+            const sigHeaderRow = sigTable.querySelector('thead tr');
+            if (sigHeaderRow) sigHeaderRow.style.height = sigHeaderH;
+
+            // 서명 테이블 폰트
+            sigTable.style.fontSize = fontSize;
+
+            // 각 서명 행 높이 재적용
+            sigTable.querySelectorAll('tbody tr').forEach(row => {
+                row.style.height = rowH;
+            });
+        }
+
         // 회의록 주요 내용 동적 폰트 크기 조정 (A4 한 쪽 인쇄 유지)
         function adjustContentFontSize(el, text) {
             const len = text.length;
@@ -928,6 +964,24 @@ document.addEventListener('DOMContentLoaded', function() {
             }
             el.style.fontSize = fontSize;
             el.style.lineHeight = lineHeight;
+        }
+
+        // 출장복명서 레이아웃 동적 축소 (2박 이상 시 A4 한 쪽 인쇄 유지)
+        // 스타일은 CSS의 .trip-Nday 클래스가 담당 — JS는 class 추가/제거만 수행
+        function adjustReportLayout(dayCount) {
+            const reportFormDiv = document.getElementById('reportFormDiv');
+            if (!reportFormDiv) return;
+
+            // 결재 서명칸은 항상 78px 고정 (CSS로 제어 불가한 절대 규칙)
+            const approvalRow = document.getElementById('reportApprovalSignRow');
+            if (approvalRow) approvalRow.querySelectorAll('td').forEach(td => { td.style.height = '78px'; });
+
+            // 박수에 맞는 class 추가 → print CSS의 .trip-Nday 규칙이 스타일 적용
+            reportFormDiv.classList.remove('trip-1day', 'trip-2day', 'trip-3day', 'trip-4day');
+            if      (dayCount <= 1) reportFormDiv.classList.add('trip-1day');
+            else if (dayCount === 2) reportFormDiv.classList.add('trip-2day');
+            else if (dayCount === 3) reportFormDiv.classList.add('trip-3day');
+            else                     reportFormDiv.classList.add('trip-4day');
         }
 
         // 회의 관련 필드 업데이트
@@ -1398,6 +1452,9 @@ document.addEventListener('DOMContentLoaded', function() {
                         reportExpenseBody.appendChild(meetingRow);
                     }
                 });
+
+                // 일수에 따라 복명서 레이아웃 동적 축소
+                adjustReportLayout(dailyExpenses.length);
             }
             const actualTotal = tripTotal + commonAmountValue;
 
@@ -1559,16 +1616,19 @@ document.addEventListener('DOMContentLoaded', function() {
             const projectIdx = document.getElementById('selectedProjectIdx')?.value;
             if (!projectIdx || !commonDate?.value) return;
 
+            // 수정 페이지에서는 현재 문서 자체를 중복 검사에서 제외
+            const excludeIdx = getUrlParameter('id') || null;
+
             // ── 작성자 재검증 ──
             if (authorPersonId) {
-                const isDup = await checkTripPersonConflicts(authorPersonId, projectIdx);
+                const isDup = await checkTripPersonConflicts(authorPersonId, projectIdx, excludeIdx);
                 if (isDup) {
                     // 현재 작성자 겹침 → 겹치지 않는 사람으로 교체
                     const persons = getAuthorPersons();
                     const sorted = sortByPositionAsc(persons);
                     let newAuthor = null;
                     for (const p of sorted) {
-                        const dup = await checkTripPersonConflicts(p.id, projectIdx);
+                        const dup = await checkTripPersonConflicts(p.id, projectIdx, excludeIdx);
                         if (!dup) { newAuthor = p; break; }
                     }
                     authorPersonId = null;
@@ -1583,7 +1643,7 @@ document.addEventListener('DOMContentLoaded', function() {
             // ── 출장인원 중 겹치는 인원 제거 ──
             if (tripPersons.length > 0) {
                 const dupChecks = await Promise.all(
-                    tripPersons.map(p => checkTripPersonConflicts(p.id, projectIdx))
+                    tripPersons.map(p => checkTripPersonConflicts(p.id, projectIdx, excludeIdx))
                 );
                 const valid = tripPersons.filter((_, i) => !dupChecks[i]);
                 if (valid.length !== tripPersons.length && window.replaceTripPersons) {
@@ -1599,7 +1659,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 updateMeetingFields();
             });
             commonDate.addEventListener('click', function() {
-                if (this.showPicker) this.showPicker();
+                if (this.showPicker) { try { this.showPicker(); } catch(e) {} }
             });
         }
         if (commonDuration) {
@@ -1616,7 +1676,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 updateTotalExpenses();
             });
             meetingDateInput.addEventListener('click', function() {
-                if (this.showPicker) this.showPicker();
+                if (this.showPicker) { try { this.showPicker(); } catch(e) {} }
             });
         }
 
@@ -1744,7 +1804,7 @@ document.addEventListener('DOMContentLoaded', function() {
             // 복명서 반영
             const displayText = commonTripResult ? commonTripResult.value : attendeeLine + contentMarker;
             document.querySelectorAll('.auto-trip-result').forEach(field => {
-                field.textContent = displayText;
+                field.textContent = displayText.trimEnd();
             });
         }
 
@@ -1754,7 +1814,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 this.dataset.userModified = 'true';
                 // 수정된 내용을 복명서에 바로 반영
                 document.querySelectorAll('.auto-trip-result').forEach(field => {
-                    field.textContent = this.value;
+                    field.textContent = this.value.trimEnd();
                 });
             });
         }
@@ -2753,7 +2813,7 @@ document.addEventListener('DOMContentLoaded', function() {
     let tempTripSelectedIds = new Set();
 
     // 출장 기간의 모든 날짜에 대해 중복 여부 확인
-    async function checkTripPersonConflicts(empIdx, projectIdx) {
+    async function checkTripPersonConflicts(empIdx, projectIdx, excludeIdx) {
         const startDateVal = document.getElementById('common_date')?.value;
         if (!startDateVal || !projectIdx) return false;
         const duration = parseInt(document.getElementById('common_duration')?.value || '0');
@@ -2768,7 +2828,9 @@ document.addEventListener('DOMContentLoaded', function() {
         }
         const results = await Promise.all(dates.map(async date => {
             try {
-                const res = await fetch(`/api/receipt-common/check-duplicate?date=${date}&attendeeIdx=${empIdx}&projectIdx=${projectIdx}`);
+                let url = `/api/receipt-common/check-duplicate?date=${date}&attendeeIdx=${empIdx}&projectIdx=${projectIdx}`;
+                if (excludeIdx) url += `&excludeReceiptIdx=${excludeIdx}&excludeDocumentType=RCTM`;
+                const res = await fetch(url);
                 if (!res.ok) return false;
                 const data = await res.json();
                 return Array.isArray(data) && data.length > 0;
@@ -2909,8 +2971,9 @@ document.addEventListener('DOMContentLoaded', function() {
         const projectIdx = document.getElementById('selectedProjectIdx')?.value;
         const startDateVal = document.getElementById('common_date')?.value;
         const canCheckDup = !!(startDateVal && projectIdx);
+        const excludeIdx = getUrlParameter('id') || null;
         const dupResults = canCheckDup
-            ? await Promise.all(filtered.map(p => checkTripPersonConflicts(p.id, projectIdx)))
+            ? await Promise.all(filtered.map(p => checkTripPersonConflicts(p.id, projectIdx, excludeIdx)))
             : filtered.map(() => false);
 
         // 겹치는 사람을 맨 아래로
@@ -3385,7 +3448,7 @@ document.addEventListener('DOMContentLoaded', function() {
             const el = document.getElementById(id);
             if (el) {
                 el.addEventListener('click', function() {
-                    if (this.showPicker) this.showPicker();
+                    if (this.showPicker) { try { this.showPicker(); } catch(e) {} }
                 });
             }
         });

@@ -436,7 +436,7 @@
                                 <div class="document-form" id="documentFormContent">
                                     <!-- 출장품의서 -->
                                     <div style="background: white; border: 2px solid #e0e0e0; border-radius: 8px; padding: 30px; margin: 0 auto 30px; max-width: 881px">
-                                        <h2 class="doc-title" style="font-size: 30px; font-weight: bold;">출 장 품 의 서</h2>
+                                        <h2 class="doc-title">출 장 품 의 서</h2>
 
                                         <!-- 결재란 -->
                                         <div style="float: right; margin-bottom: 20px;">
@@ -523,20 +523,18 @@
                                     </div>
 
                                     <!-- 출장복명서 -->
-                                    <div style="background: white; border: 2px solid #e0e0e0; border-radius: 8px; padding: 30px; max-width: 881px; margin: 0 auto 30px">
-                                        <h2 class="doc-title"
-                                            style="font-size: 30px; font-weight: bold; margin-bottom: 20px;">출 장 복 명
-                                            서</h2>
+                                    <div id="reportFormDiv" style="background: white; border: 2px solid #e0e0e0; border-radius: 8px; padding: 30px; max-width: 881px; margin: 0 auto 30px">
+                                        <h2 id="reportTitle" class="doc-title" style="margin-bottom: 20px;">출 장 복 명 서</h2>
 
                                         <!-- 결재란 -->
-                                        <div style="float: right; margin-bottom: 20px;">
+                                        <div id="reportApprovalBox" style="float: right; margin-bottom: 20px;">
                                             <table style="border: 2px solid #000; border-collapse: collapse;">
                                                 <tr>
                                                     <td style="width: 90px; border: 1px solid #000; padding: 5px 10px; text-align: center; background: #f0f0f0; font-weight: bold; font-size: 12px;">담당</td>
                                                     <td style="width: 90px; border: 1px solid #000; padding: 5px 10px; text-align: center; background: #f0f0f0; font-weight: bold; font-size: 12px;">연구책임자</td>
                                                     <td style="width: 90px; border: 1px solid #000; padding: 5px 10px; text-align: center; background: #f0f0f0; font-weight: bold; font-size: 12px;">대표이사</td>
                                                 </tr>
-                                                <tr>
+                                                <tr id="reportApprovalSignRow">
                                                     <td style="height: 78px; border: 1px solid #000; padding: 5px; text-align: center;"></td>
                                                     <td style="height: 78px; border: 1px solid #000; padding: 5px; text-align: center;"></td>
                                                     <td style="height: 78px; border: 1px solid #000; padding: 5px; text-align: center;"></td>
@@ -544,39 +542,39 @@
                                             </table>
                                         </div>
 
-                                        <div style="clear: both; margin-bottom: 10px; text-align: left;">
+                                        <div id="reportDateLine" style="clear: both; margin-bottom: 10px; text-align: left;">
                                         <span>복명일자 : <span class="auto-report-year"></span>년 <span
                                                 class="auto-report-month"></span>월 <span class="auto-report-day"></span>일</span>
                                         </div>
 
-                                        <table class="form-table" style="margin-top: 20px;">
+                                        <table id="reportMainTable" class="form-table" style="margin-top: 20px;">
                                             <tr>
                                                 <th style="width: 15%;">과제명</th>
-                                                <td colspan="5" style="padding: 10px;">
+                                                <td id="reportProjectCell" colspan="5" style="padding: 10px;">
                                                     <span class="auto-project"></span>
                                                 </td>
                                             </tr>
                                             <tr>
                                                 <th style="width: 15%;">복 명 자</th>
-                                                <td colspan="5" style="padding: 10px;">
+                                                <td id="reportReporterCell" colspan="5" style="padding: 10px;">
                                                     <span class="auto-reporter"></span>
                                                 </td>
                                             </tr>
                                             <tr>
                                                 <th>출 장 지</th>
-                                                <td colspan="2"><span class="auto-location"></span></td>
+                                                <td id="reportLocationCell" colspan="2"><span class="auto-location"></span></td>
                                                 <th style="width: 15%;">출장기간</th>
-                                                <td colspan="2"><span class="auto-date-range"></span></td>
+                                                <td id="reportDateCell" colspan="2"><span class="auto-date-range"></span></td>
                                             </tr>
                                             <tr>
                                                 <th>출장내용<br>및 결과</th>
-                                                <td colspan="5"
-                                                    style="white-space: pre-wrap; padding: 15px; min-height: 150px; text-align: left; vertical-align: top;">
+                                                <td id="reportTripResultCell" colspan="5"
+                                                    style="white-space: pre-wrap; text-align: left; vertical-align: top;">
                                                     <span class="auto-trip-result" style="display: block; text-align: left;"></span>
                                                 </td>
                                             </tr>
                                             <tr>
-                                                <th colspan="6"
+                                                <th id="reportSettlementHeader" colspan="6"
                                                     style="background: #f0f0f0; padding: 10px; text-align: center;">출장비
                                                     정산
                                                     내역서
@@ -594,10 +592,10 @@
                                             </tbody>
                                             <tr>
                                                 <th colspan="1">차 액</th>
-                                                <td style="text-align: center; padding: 10px;"><span
+                                                <td id="reportDiffAmountCell" style="text-align: center; padding: 10px;"><span
                                                         class="auto-difference">0</span> 원
                                                 </td>
-                                                <td colspan="4" style="padding: 10px; text-align: center">연구비 카드로 결재 (차액
+                                                <td id="reportDiffNoteCell" colspan="4" style="padding: 10px; text-align: center">연구비 카드로 결재 (차액
                                                     결재
                                                     없음)
                                                 </td>
@@ -667,13 +665,13 @@
                                     </div>
 
                                     <!-- 참석자 명단 -->
-                                    <div style="background: white; border: 2px solid #e0e0e0; border-radius: 8px; padding: 30px; margin: 0 auto 30px; max-width: 881px">
+                                    <div id="attendeeFormDiv" style="background: white; border: 2px solid #e0e0e0; border-radius: 8px; padding: 30px; margin: 0 auto 30px; max-width: 881px">
                                         <h2 class="doc-title" style="margin: 0">참 석 자 명 단</h2>
                                         <span id="doc_number_attendee"
                                               style="font-size: 14px; display: block; margin: 20px 0 5px"></span>
                                         <div style="text-align: left; margin-bottom: 10px; font-size: 14px;"></div>
 
-                                        <table class="form-table">
+                                        <table id="attendeeInfoTable" class="form-table">
                                             <colgroup>
                                                 <col style="width: 15%;">
                                                 <col style="width: 44%;">
@@ -681,7 +679,7 @@
                                                 <col style="width: 27%;">
                                             </colgroup>
                                             <tr>
-                                                <th style="height: 64px">과제</th>
+                                                <th id="attendeeInfoRow1" style="height: 64px">과제</th>
                                                 <td><input type="text" class="auto-project" readonly
                                                            style="background: #f9f9f9; text-align: center; font-size: 12px;"></td>
                                                 <th>작성자</th>
@@ -689,7 +687,7 @@
                                                            style="background: #f9f9f9; text-align: center;"></td>
                                             </tr>
                                             <tr>
-                                                <th style="height: 64px">일시</th>
+                                                <th id="attendeeInfoRow2" style="height: 64px">일시</th>
                                                 <td><input type="text" class="auto-datetime" readonly
                                                            style="background: #f9f9f9; text-align: center;"></td>
                                                 <th>장소</th>
