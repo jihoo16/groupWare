@@ -284,6 +284,9 @@ public class ReceiptTripMeetingServiceImpl implements ReceiptTripMeetingService 
         // 2. 엔티티 필드 수정
         entity.setProjectIdx(updateDTO.getProjectIdx());
         entity.setCardIdx(updateDTO.getCardIdx());
+        if (updateDTO.getDrafterUserIdx() != null) {
+            entity.setDrafterUserIdx(updateDTO.getDrafterUserIdx());
+        }
         entity.setTripDate(updateDTO.getTripDate());
         entity.setDuration(updateDTO.getDuration() != null ? updateDTO.getDuration() : 0);
         entity.setLocation(updateDTO.getLocation());
@@ -778,6 +781,7 @@ public class ReceiptTripMeetingServiceImpl implements ReceiptTripMeetingService 
 
     /** 상세 조회용 DTO (참석자, 첨부파일, 일별비용 포함) */
     private ReceiptTripMeetingResponseDTO toDetailDTO(ReceiptTripMeeting entity) {
+        log.debug("[DEBUG] toDetailDTO - idx:{}, drafterUserIdx:{}", entity.getIdx(), entity.getDrafterUserIdx());
         List<ReceiptTripMeetingDailyExpense> expenses = dailyExpenseRepository
                 .findByReceiptTripMeetingIdxOrderByExpenseDateAsc(entity.getIdx());
         List<ReceiptAttendee> tripAttendeesRaw = receiptAttendeeRepository
@@ -880,7 +884,10 @@ public class ReceiptTripMeetingServiceImpl implements ReceiptTripMeetingService 
                 .displayOrder(attendee.getDisplayOrder())
                 .build();
         if (attendee.getUserIdx() != null) {
-            userRepository.findById(attendee.getUserIdx()).ifPresent(user -> dto.setName(user.getEmpName()));
+            userRepository.findById(attendee.getUserIdx()).ifPresent(user -> {
+                dto.setName(user.getEmpName());
+                log.debug("[DEBUG] toTripAttendeeDTO - userIdx:{}, empName:{}", attendee.getUserIdx(), user.getEmpName());
+            });
         }
         return dto;
     }

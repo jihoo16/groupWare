@@ -106,7 +106,9 @@ public class ReceiptTripMeetingController {
 
         try {
             ReceiptTripMeetingCreateDTO createDTO = objectMapper.readValue(dataJson, ReceiptTripMeetingCreateDTO.class);
-            createDTO.setDrafterUserIdx(currentUserIdx);
+            if (createDTO.getDrafterUserIdx() == null) {
+                return ResponseEntity.badRequest().body(Map.of("error", "작성자를 선택해주세요."));
+            }
 
             Map<Integer, MultipartFile[]> receiptMap  = extractSessionFiles(httpRequest, "meetingReceiptFiles");
             Map<Integer, MultipartFile[]> documentMap = extractSessionFiles(httpRequest, "meetingDocumentFiles");
