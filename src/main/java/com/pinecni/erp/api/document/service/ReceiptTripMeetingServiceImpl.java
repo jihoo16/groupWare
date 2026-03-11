@@ -5,6 +5,7 @@ import com.pinecni.erp.api.approval.service.DocumentSequenceService;
 import com.pinecni.erp.api.document.dto.*;
 import com.pinecni.erp.api.document.repository.ReceiptAttendeeRepository;
 import com.pinecni.erp.api.project.repository.*;
+import com.pinecni.erp.api.project.repository.ReceiptTripMeetingSessionRepository;
 import com.pinecni.erp.api.user.repository.UserRepository;
 import com.pinecni.erp.entity.*;
 import lombok.RequiredArgsConstructor;
@@ -24,8 +25,10 @@ import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
 import java.time.format.DateTimeFormatter;
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
@@ -53,6 +56,7 @@ public class ReceiptTripMeetingServiceImpl implements ReceiptTripMeetingService 
     private final ReceiptTripMeetingDailyExpenseRepository dailyExpenseRepository;
     private final ReceiptTripMeetingAttachmentRepository attachmentRepository;
     private final ReceiptAttendeeRepository receiptAttendeeRepository;
+    private final ReceiptTripMeetingSessionRepository sessionRepository;
     private final ApprovalDocumentRepository approvalDocumentRepository;
     private final DocumentSequenceService documentSequenceService;
     private final ProjectCardRepository projectCardRepository;
@@ -71,8 +75,8 @@ public class ReceiptTripMeetingServiceImpl implements ReceiptTripMeetingService 
     @Transactional
     public ReceiptTripMeetingResponseDTO createReceiptTripMeeting(
             ReceiptTripMeetingCreateDTO dto,
-            MultipartFile[] meetingReceiptFiles,
-            MultipartFile[] meetingDocumentFiles,
+            Map<Integer, MultipartFile[]> meetingReceiptFilesMap,
+            Map<Integer, MultipartFile[]> meetingDocumentFilesMap,
             MultipartFile[] tripReceiptFiles,
             MultipartFile[] tripDocumentFiles,
             Long currentUserIdx) {
@@ -124,11 +128,6 @@ public class ReceiptTripMeetingServiceImpl implements ReceiptTripMeetingService 
                 .totalFee(totalFee)
                 .purpose(dto.getPurpose())
                 .content(dto.getTripContent())
-                // 회의
-                .eventDate(dto.getMeetingDate())
-                .startTime(dto.getStartTime())
-                .endTime(dto.getEndTime())
-                .minutesNotes(dto.getMeetingContent())
                 // 감사
                 .createdUserIdx(currentUserIdx)
                 .updatedUserIdx(currentUserIdx)
@@ -157,13 +156,11 @@ public class ReceiptTripMeetingServiceImpl implements ReceiptTripMeetingService 
             log.debug("일별 비용 {}일분 저장 완료", dailyEntities.size());
         }
 
-        // ── 6. 파일 첨부 저장 ─────────────────────────────────────────
-        saveAttachments(entity, meetingReceiptFiles,  "MEETING_RECEIPT",  currentUserIdx);
-        saveAttachments(entity, meetingDocumentFiles, "MEETING_DOCUMENT", currentUserIdx);
-        saveAttachments(entity, tripReceiptFiles,     "TRIP_RECEIPT",     currentUserIdx);
-        saveAttachments(entity, tripDocumentFiles,    "TRIP_DOCUMENT",    currentUserIdx);
+        // ── 6. 출장 파일 저장 (session_idx = null) ───────────────────────
+        saveAttachments(entity, tripReceiptFiles,  "TRIP_RECEIPT",  currentUserIdx, null);
+        saveAttachments(entity, tripDocumentFiles, "TRIP_DOCUMENT", currentUserIdx, null);
 
-        // ── 7. 출장 참석자 저장 (receipt_attendee, prefix=RCTM, participation_type='출장') ─
+        // ── 7. 출장 참석자 저장 ───────────────────────────────────────────
         LocalDateTime now = LocalDateTime.now();
         if (dto.getTripAttendees() != null && !dto.getTripAttendees().isEmpty()) {
             List<ReceiptAttendee> tripAttendees = dto.getTripAttendees().stream()
@@ -188,35 +185,20 @@ public class ReceiptTripMeetingServiceImpl implements ReceiptTripMeetingService 
             log.debug("출장 참석자 {}명 저장 완료", tripAttendees.size());
         }
 
-        // ── 8. 회의 참석자 저장 (receipt_attendee, prefix=RCTM, participation_type='회의') ─
-        if (dto.getMeetingAttendees() != null && !dto.getMeetingAttendees().isEmpty()) {
-            // 회의 참석자 시간 중복 검증
-            validateMeetingAttendeeDuplicates(
-                    dto.getMeetingDate(), dto.getStartTime(), dto.getEndTime(),
-                    dto.getProjectIdx(), dto.getMeetingAttendees(), null);
-
-            List<ReceiptAttendee> meetingAttendees = dto.getMeetingAttendees().stream()
-                    .map(a -> ReceiptAttendee.builder()
-                            .documentTypePrefix("RCTM")
-                            .receiptIdx(rtmIdx)
-                            .projectIdx(dto.getProjectIdx())
-                            .cardIdx(dto.getCardIdx())
-                            .documentDate(dto.getMeetingDate())
-                            .startTime(dto.getStartTime())
-                            .endTime(dto.getEndTime())
-                            .participationType("회의")
-                            .userIdx(a.getUserIdx())
-                            .isExternal(Boolean.TRUE.equals(a.getIsExternal()))
-                            .displayOrder(a.getDisplayOrder() != null ? a.getDisplayOrder() : 0)
-                            .createdAt(now)
-                            .createdUserIdx(currentUserIdx)
-                            .updatedAt(now)
-                            .updatedUserIdx(currentUserIdx)
-                            .isDeleted(false)
-                            .build())
-                    .collect(Collectors.toList());
-            receiptAttendeeRepository.saveAll(meetingAttendees);
-            log.debug("회의 참석자 {}명 저장 완료", meetingAttendees.size());
+        // ── 8. 회의 세션 저장 (참석자 중복 검증 + 참석자 저장 + 파일 저장 포함) ─
+        if (dto.getMeetingSessions() != null && !dto.getMeetingSessions().isEmpty()) {
+            log.info("[DEBUG] 회의세션 수: {}", dto.getMeetingSessions().size());
+            dto.getMeetingSessions().forEach(s -> log.info("[DEBUG] 세션 - date:{} start:{} end:{} attendees:{}",
+                    s.getMeetingDate(), s.getStartTime(), s.getEndTime(),
+                    s.getMeetingAttendees() == null ? 0 : s.getMeetingAttendees().stream()
+                            .filter(a -> !Boolean.TRUE.equals(a.getIsExternal()))
+                            .map(a -> String.valueOf(a.getUserIdx()))
+                            .collect(java.util.stream.Collectors.joining(","))));
+            saveMeetingSessions(dto.getMeetingSessions(), entity,
+                    dto.getProjectIdx(), dto.getCardIdx(), currentUserIdx,
+                    meetingReceiptFilesMap, meetingDocumentFilesMap, null);
+        } else {
+            log.info("[DEBUG] meetingSessions is null or empty → 회의 세션 저장 생략");
         }
 
         log.info("출장+회의 통합 저장 완료 - rtmIdx: {}, documentNo: {}", rtmIdx, documentNo);
@@ -275,8 +257,8 @@ public class ReceiptTripMeetingServiceImpl implements ReceiptTripMeetingService 
     public ReceiptTripMeetingResponseDTO updateReceiptTripMeeting(
             Long idx,
             ReceiptTripMeetingCreateDTO updateDTO,
-            MultipartFile[] meetingReceiptFiles,
-            MultipartFile[] meetingDocumentFiles,
+            Map<Integer, MultipartFile[]> meetingReceiptFilesMap,
+            Map<Integer, MultipartFile[]> meetingDocumentFilesMap,
             MultipartFile[] tripReceiptFiles,
             MultipartFile[] tripDocumentFiles,
             Long currentUserIdx) {
@@ -308,10 +290,6 @@ public class ReceiptTripMeetingServiceImpl implements ReceiptTripMeetingService 
         entity.setPurpose(updateDTO.getPurpose());
         entity.setContent(updateDTO.getTripContent());
         entity.setTotalFee(totalFee);
-        entity.setEventDate(updateDTO.getMeetingDate());
-        entity.setStartTime(updateDTO.getStartTime());
-        entity.setEndTime(updateDTO.getEndTime());
-        entity.setMinutesNotes(updateDTO.getMeetingContent());
         entity.setUpdatedUserIdx(currentUserIdx);
         entity = receiptTripMeetingRepository.save(entity);
 
@@ -359,42 +337,40 @@ public class ReceiptTripMeetingServiceImpl implements ReceiptTripMeetingService 
             receiptAttendeeRepository.saveAll(tripAttendees);
         }
 
-        if (updateDTO.getMeetingAttendees() != null && !updateDTO.getMeetingAttendees().isEmpty()) {
-            validateMeetingAttendeeDuplicates(
-                    updateDTO.getMeetingDate(), updateDTO.getStartTime(), updateDTO.getEndTime(),
-                    updateDTO.getProjectIdx(), updateDTO.getMeetingAttendees(), idx);
-
-            List<ReceiptAttendee> meetingAttendees = updateDTO.getMeetingAttendees().stream()
-                    .map(a -> ReceiptAttendee.builder()
-                            .documentTypePrefix("RCTM")
-                            .receiptIdx(rtmIdx)
-                            .projectIdx(updateDTO.getProjectIdx())
-                            .cardIdx(updateDTO.getCardIdx())
-                            .documentDate(updateDTO.getMeetingDate())
-                            .startTime(updateDTO.getStartTime())
-                            .endTime(updateDTO.getEndTime())
-                            .participationType("회의")
-                            .userIdx(a.getUserIdx())
-                            .isExternal(Boolean.TRUE.equals(a.getIsExternal()))
-                            .displayOrder(a.getDisplayOrder() != null ? a.getDisplayOrder() : 0)
-                            .createdAt(now)
-                            .createdUserIdx(currentUserIdx)
-                            .updatedAt(now)
-                            .updatedUserIdx(currentUserIdx)
-                            .isDeleted(false)
-                            .build())
-                    .collect(Collectors.toList());
-            receiptAttendeeRepository.saveAll(meetingAttendees);
+        // 5. 회의 세션 수정 (기존 소프트 딜리트 후 재삽입)
+        if (updateDTO.getMeetingSessions() != null && !updateDTO.getMeetingSessions().isEmpty()) {
+            // 기존 세션의 참석자 소프트 딜리트
+            List<ReceiptTripMeetingSession> existingSessions = sessionRepository.findByReceiptTripMeetingIdxOrderByDisplayOrderAsc(idx);
+            for (ReceiptTripMeetingSession existingSession : existingSessions) {
+                receiptAttendeeRepository.findBySessionIdxAndParticipationTypeAndIsDeletedFalseOrderByDisplayOrder(existingSession.getIdx(), "회의")
+                        .forEach(a -> {
+                            a.setIsDeleted(true);
+                            a.setDeletedAt(now);
+                            a.setDeletedUserIdx(currentUserIdx);
+                            receiptAttendeeRepository.save(a);
+                        });
+                // 기존 세션 첨부파일 소프트 딜리트
+                attachmentRepository.findBySessionIdxAndDeletedFalseOrderByIdxAsc(existingSession.getIdx())
+                        .forEach(a -> {
+                            a.setDeleted(true);
+                            a.setDeletedAt(now);
+                            a.setDeletedUserIdx(currentUserIdx);
+                            attachmentRepository.save(a);
+                        });
+            }
+            // 기존 세션 하드 딜리트 후 재삽입 (세션은 내부 구현 단위 → 하드 딜리트 허용)
+            sessionRepository.deleteByReceiptTripMeetingIdx(idx);
+            saveMeetingSessions(updateDTO.getMeetingSessions(), entity,
+                    updateDTO.getProjectIdx(), updateDTO.getCardIdx(), currentUserIdx,
+                    meetingReceiptFilesMap, meetingDocumentFilesMap, idx);
         }
 
-        // 5. 새 첨부파일 저장 + 기존 첨부파일 표시명 재정렬
-        saveAttachments(entity, meetingReceiptFiles,  "MEETING_RECEIPT",  currentUserIdx);
-        saveAttachments(entity, meetingDocumentFiles, "MEETING_DOCUMENT", currentUserIdx);
-        saveAttachments(entity, tripReceiptFiles,     "TRIP_RECEIPT",     currentUserIdx);
-        saveAttachments(entity, tripDocumentFiles,    "TRIP_DOCUMENT",    currentUserIdx);
+        // 6. 출장 파일 저장 + 첨부파일 표시명 재정렬
+        saveAttachments(entity, tripReceiptFiles,  "TRIP_RECEIPT",  currentUserIdx, null);
+        saveAttachments(entity, tripDocumentFiles, "TRIP_DOCUMENT", currentUserIdx, null);
         renameAttachments(entity);
 
-        // 6. ApprovalDocument 제목 업데이트
+        // 7. ApprovalDocument 제목 업데이트
         if (entity.getDocumentIdx() != null) {
             approvalDocumentRepository.findById(entity.getDocumentIdx()).ifPresent(doc -> {
                 doc.setTitle(buildTitle(updateDTO));
@@ -430,7 +406,16 @@ public class ReceiptTripMeetingServiceImpl implements ReceiptTripMeetingService 
         attachmentRepository.softDeleteByReceiptTripMeetingIdx(idx, deletedUserIdx);
         log.debug("ReceiptTripMeetingAttachment 소프트 딜리트 완료 - rtmIdx: {}", idx);
 
-        // 3. ApprovalDocument 소프트 딜리트
+        // 3. 회의 세션 소프트 딜리트
+        sessionRepository.findByReceiptTripMeetingIdxOrderByDisplayOrderAsc(idx).forEach(s -> {
+            s.setIsDeleted(true);
+            s.setDeletedAt(now);
+            s.setDeletedUserIdx(deletedUserIdx);
+            sessionRepository.save(s);
+        });
+        log.debug("ReceiptTripMeetingSession 소프트 딜리트 완료 - rtmIdx: {}", idx);
+
+        // 4. ApprovalDocument 소프트 딜리트
         if (entity.getDocumentIdx() != null) {
             approvalDocumentRepository.findById(entity.getDocumentIdx()).ifPresent(doc -> {
                 doc.setDeletedAt(now);
@@ -499,10 +484,11 @@ public class ReceiptTripMeetingServiceImpl implements ReceiptTripMeetingService 
             throw new IllegalArgumentException("삭제된 출장+회의입니다. idx: " + idx);
         }
 
-        saveAttachments(entity, meetingReceiptFiles,  "MEETING_RECEIPT",  currentUserIdx);
-        saveAttachments(entity, meetingDocumentFiles, "MEETING_DOCUMENT", currentUserIdx);
-        saveAttachments(entity, tripReceiptFiles,     "TRIP_RECEIPT",     currentUserIdx);
-        saveAttachments(entity, tripDocumentFiles,    "TRIP_DOCUMENT",    currentUserIdx);
+        // addAttachments는 session_idx 없이 단순 추가 (어느 세션인지 모름 → null)
+        saveAttachments(entity, meetingReceiptFiles,  "MEETING_RECEIPT",  currentUserIdx, null);
+        saveAttachments(entity, meetingDocumentFiles, "MEETING_DOCUMENT", currentUserIdx, null);
+        saveAttachments(entity, tripReceiptFiles,     "TRIP_RECEIPT",     currentUserIdx, null);
+        saveAttachments(entity, tripDocumentFiles,    "TRIP_DOCUMENT",    currentUserIdx, null);
         renameAttachments(entity);
         log.debug("addAttachments 완료 - receiptTripMeetingIdx: {}", idx);
     }
@@ -512,7 +498,7 @@ public class ReceiptTripMeetingServiceImpl implements ReceiptTripMeetingService 
     // ══════════════════════════════════════════════════════════════
 
     private void saveAttachments(ReceiptTripMeeting rtm, MultipartFile[] files,
-                                 String attachmentType, Long uploadUserIdx) {
+                                 String attachmentType, Long uploadUserIdx, Long sessionIdx) {
         if (files == null || files.length == 0) return;
 
         String cardLastDigits = "no-card";
@@ -576,6 +562,7 @@ public class ReceiptTripMeetingServiceImpl implements ReceiptTripMeetingService 
 
                 ReceiptTripMeetingAttachment attachment = ReceiptTripMeetingAttachment.builder()
                         .receiptTripMeetingIdx(rtm.getIdx())
+                        .sessionIdx(sessionIdx)
                         .originalFilename(displayFilename)
                         .storedFilename(storedFilename)
                         .filePath(relativePath)
@@ -648,13 +635,14 @@ public class ReceiptTripMeetingServiceImpl implements ReceiptTripMeetingService 
         if (attendees == null || attendees.isEmpty()) return;
         if (meetingDate == null || startTime == null || endTime == null) return;
 
-        log.debug("RCTM 회의 참석자 중복 검증 - 날짜: {}, 시간: {} ~ {}, 프로젝트: {}, 참석자 수: {}",
-                meetingDate, startTime, endTime, projectIdx, attendees.size());
+        log.info("[DEBUG] RCTM 회의 참석자 중복 검증 시작 - 날짜: {}, 시간: {} ~ {}, 프로젝트: {}, 내부참석자: {}명",
+                meetingDate, startTime, endTime, projectIdx,
+                attendees.stream().filter(a -> !Boolean.TRUE.equals(a.getIsExternal())).count());
 
         for (ReceiptMeetingAttendeeDTO attendee : attendees) {
             if (attendee.getUserIdx() == null) continue;
-            // 외부 참석자는 시간 중복 검증 제외
-            if (Boolean.TRUE.equals(attendee.getIsExternal())) continue;
+
+            boolean isExt = Boolean.TRUE.equals(attendee.getIsExternal());
 
             List<ReceiptAttendee> candidates;
             if (excludeReceiptIdx != null) {
@@ -667,7 +655,10 @@ public class ReceiptTripMeetingServiceImpl implements ReceiptTripMeetingService 
 
             List<ReceiptAttendee> withTime = candidates.stream()
                     .filter(a -> a.getStartTime() != null && a.getEndTime() != null)
+                    // is_external 타입 일치 필터 (내부 idx ↔ 외부 idx 공간 혼용 방지)
+                    .filter(a -> Boolean.TRUE.equals(a.getIsExternal()) == isExt)
                     .collect(Collectors.toList());
+            log.info("[DEBUG] userIdx:{} isExt:{} candidates:{} withTime:{}", attendee.getUserIdx(), isExt, candidates.size(), withTime.size());
 
             for (ReceiptAttendee existing : withTime) {
                 if (isTimeOverlap(startTime, endTime, existing.getStartTime(), existing.getEndTime())) {
@@ -705,6 +696,82 @@ public class ReceiptTripMeetingServiceImpl implements ReceiptTripMeetingService 
         return start1.isBefore(end2) && end1.isAfter(start2);
     }
 
+    /**
+     * 다중 회의 세션 저장 헬퍼
+     * 세션 저장 → 각 세션의 참석자 중복 검증 → 참석자 저장 → 세션별 첨부파일 저장
+     *
+     * @param receiptFilesMap   key=회의 블록 순서(0,1,...) value=회의 영수증 파일 배열
+     * @param documentFilesMap  key=회의 블록 순서(0,1,...) value=회의 공식문서 파일 배열
+     * @param excludeRtmIdx     수정 시 중복 검증 자기 자신 제외용 (신규 시 null)
+     */
+    private void saveMeetingSessions(List<MeetingSessionDTO> sessions, ReceiptTripMeeting entity,
+                                     Long projectIdx, Long cardIdx, Long currentUserIdx,
+                                     Map<Integer, MultipartFile[]> receiptFilesMap,
+                                     Map<Integer, MultipartFile[]> documentFilesMap,
+                                     Long excludeRtmIdx) {
+        LocalDateTime now = LocalDateTime.now();
+        for (int i = 0; i < sessions.size(); i++) {
+            MeetingSessionDTO sessionDTO = sessions.get(i);
+
+            // 참석자 시간 중복 검증 (세션별)
+            validateMeetingAttendeeDuplicates(
+                    sessionDTO.getMeetingDate(), sessionDTO.getStartTime(), sessionDTO.getEndTime(),
+                    projectIdx, sessionDTO.getMeetingAttendees(), excludeRtmIdx);
+
+            ReceiptTripMeetingSession session = ReceiptTripMeetingSession.builder()
+                    .receiptTripMeetingIdx(entity.getIdx())
+                    .displayOrder(i)
+                    .authorIdx(sessionDTO.getMeetingDrafterUserIdx())
+                    .meetingDate(sessionDTO.getMeetingDate())
+                    .startTime(sessionDTO.getStartTime())
+                    .endTime(sessionDTO.getEndTime())
+                    .location(entity.getLocation())
+                    .purpose(sessionDTO.getMeetingPurpose())
+                    .content(sessionDTO.getMeetingContent())
+                    .amount(sessionDTO.getMeetingAmount() != null ? sessionDTO.getMeetingAmount() : BigDecimal.ZERO)
+                    .createdUserIdx(currentUserIdx)
+                    .updatedUserIdx(currentUserIdx)
+                    .build();
+            ReceiptTripMeetingSession savedSession = sessionRepository.save(session);
+            Long sessionIdx = savedSession.getIdx();
+
+            // 세션 참석자 저장
+            if (sessionDTO.getMeetingAttendees() != null && !sessionDTO.getMeetingAttendees().isEmpty()) {
+                List<ReceiptAttendee> sessionAttendees = sessionDTO.getMeetingAttendees().stream()
+                        .map(a -> ReceiptAttendee.builder()
+                                .documentTypePrefix("RCTM")
+                                .receiptIdx(entity.getIdx())
+                                .sessionIdx(sessionIdx)
+                                .projectIdx(projectIdx)
+                                .cardIdx(cardIdx)
+                                .documentDate(sessionDTO.getMeetingDate())
+                                .startTime(sessionDTO.getStartTime())
+                                .endTime(sessionDTO.getEndTime())
+                                .participationType("회의")
+                                .userIdx(a.getUserIdx())
+                                .isExternal(Boolean.TRUE.equals(a.getIsExternal()))
+                                .displayOrder(a.getDisplayOrder() != null ? a.getDisplayOrder() : 0)
+                                .createdAt(now)
+                                .createdUserIdx(currentUserIdx)
+                                .updatedAt(now)
+                                .updatedUserIdx(currentUserIdx)
+                                .isDeleted(false)
+                                .build())
+                        .collect(Collectors.toList());
+                receiptAttendeeRepository.saveAll(sessionAttendees);
+            }
+
+            // 세션별 첨부파일 저장 (session_idx 연결)
+            if (receiptFilesMap != null && receiptFilesMap.containsKey(i)) {
+                saveAttachments(entity, receiptFilesMap.get(i), "MEETING_RECEIPT", currentUserIdx, sessionIdx);
+            }
+            if (documentFilesMap != null && documentFilesMap.containsKey(i)) {
+                saveAttachments(entity, documentFilesMap.get(i), "MEETING_DOCUMENT", currentUserIdx, sessionIdx);
+            }
+        }
+        log.debug("다중 회의 세션 {}건 저장 완료", sessions.size());
+    }
+
     // ══════════════════════════════════════════════════════════════
     // DTO 변환 헬퍼
     // ══════════════════════════════════════════════════════════════
@@ -715,10 +782,35 @@ public class ReceiptTripMeetingServiceImpl implements ReceiptTripMeetingService 
                 .findByReceiptTripMeetingIdxOrderByExpenseDateAsc(entity.getIdx());
         List<ReceiptAttendee> tripAttendeesRaw = receiptAttendeeRepository
                 .findByReceiptTripMeetingIdxAndParticipationType(entity.getIdx(), "출장");
-        List<ReceiptAttendee> meetingAttendeesRaw = receiptAttendeeRepository
-                .findByReceiptTripMeetingIdxAndParticipationType(entity.getIdx(), "회의");
         List<ReceiptTripMeetingAttachment> attachments = attachmentRepository
                 .findByReceiptTripMeetingIdxAndDeletedFalseOrderByIdxAsc(entity.getIdx());
+
+        // 다중 회의 세션 로드
+        List<ReceiptTripMeetingSession> sessions = sessionRepository
+                .findByReceiptTripMeetingIdxOrderByDisplayOrderAsc(entity.getIdx());
+
+        List<MeetingSessionDTO> meetingSessionDTOs;
+        if (!sessions.isEmpty()) {
+            // 세션 기반 (다중 회의)
+            meetingSessionDTOs = sessions.stream().map(session -> {
+                List<ReceiptAttendee> sessionAttendees = receiptAttendeeRepository
+                        .findBySessionIdxAndParticipationTypeAndIsDeletedFalseOrderByDisplayOrder(session.getIdx(), "회의");
+                return MeetingSessionDTO.builder()
+                        .sessionIdx(session.getIdx())
+                        .displayOrder(session.getDisplayOrder())
+                        .meetingDate(session.getMeetingDate())
+                        .startTime(session.getStartTime())
+                        .endTime(session.getEndTime())
+                        .meetingPurpose(session.getPurpose())
+                        .meetingContent(session.getContent())
+                        .meetingDrafterUserIdx(session.getAuthorIdx())
+                        .meetingAmount(session.getAmount())
+                        .meetingAttendees(sessionAttendees.stream().map(this::toMeetingAttendeeDTO).collect(Collectors.toList()))
+                        .build();
+            }).collect(Collectors.toList());
+        } else {
+            meetingSessionDTOs = Collections.emptyList();
+        }
 
         return ReceiptTripMeetingResponseDTO.builder()
                 .receiptTripMeetingIdx(entity.getIdx())
@@ -736,14 +828,19 @@ public class ReceiptTripMeetingServiceImpl implements ReceiptTripMeetingService 
                 .purpose(entity.getPurpose())
                 .content(entity.getContent())
                 .totalFee(entity.getTotalFee())
-                .eventDate(entity.getEventDate())
-                .startTime(entity.getStartTime())
-                .endTime(entity.getEndTime())
-                .minutesNotes(entity.getMinutesNotes())
+                // 단일 회의 필드 (backward compat, meetingSessions[0]과 동일)
+                .eventDate(meetingSessionDTOs.isEmpty() ? null : meetingSessionDTOs.get(0).getMeetingDate())
+                .startTime(meetingSessionDTOs.isEmpty() ? null : meetingSessionDTOs.get(0).getStartTime())
+                .endTime(meetingSessionDTOs.isEmpty() ? null : meetingSessionDTOs.get(0).getEndTime())
+                .meetingPurpose(meetingSessionDTOs.isEmpty() ? null : meetingSessionDTOs.get(0).getMeetingPurpose())
+                .minutesNotes(meetingSessionDTOs.isEmpty() ? null : meetingSessionDTOs.get(0).getMeetingContent())
+                .meetingDrafterUserIdx(meetingSessionDTOs.isEmpty() ? null : meetingSessionDTOs.get(0).getMeetingDrafterUserIdx())
+                .meetingAmount(meetingSessionDTOs.isEmpty() ? null : meetingSessionDTOs.get(0).getMeetingAmount())
+                .meetingAttendees(meetingSessionDTOs.isEmpty() ? Collections.emptyList() : meetingSessionDTOs.get(0).getMeetingAttendees())
                 .dailyExpenses(expenses.stream().map(this::toExpenseDTO).collect(Collectors.toList()))
                 .tripAttendees(tripAttendeesRaw.stream().map(this::toTripAttendeeDTO).collect(Collectors.toList()))
-                .meetingAttendees(meetingAttendeesRaw.stream().map(this::toMeetingAttendeeDTO).collect(Collectors.toList()))
                 .attachments(attachments.stream().map(this::toAttachmentDTO).collect(Collectors.toList()))
+                .meetingSessions(meetingSessionDTOs)
                 .build();
     }
 
@@ -763,9 +860,6 @@ public class ReceiptTripMeetingServiceImpl implements ReceiptTripMeetingService 
                 .duration(entity.getDuration())
                 .location(entity.getLocation())
                 .totalFee(entity.getTotalFee())
-                .eventDate(entity.getEventDate())
-                .startTime(entity.getStartTime())
-                .endTime(entity.getEndTime())
                 .build();
     }
 

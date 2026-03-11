@@ -5,6 +5,7 @@ import com.pinecni.erp.api.document.dto.ReceiptTripMeetingAttachmentDTO;
 import com.pinecni.erp.api.document.dto.ReceiptTripMeetingCreateDTO;
 import com.pinecni.erp.api.document.dto.ReceiptTripMeetingResponseDTO;
 import com.pinecni.erp.api.document.service.ReceiptTripMeetingService;
+import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpSession;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -17,6 +18,7 @@ import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
+import org.springframework.web.multipart.MultipartHttpServletRequest;
 
 import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
@@ -86,14 +88,14 @@ public class ReceiptTripMeetingController {
     /**
      * 출장+회의 통합 저장
      * POST /api/receipt-trip-meetings
+     * 세션별 파일: meetingReceiptFiles_0, meetingReceiptFiles_1, ...
      */
     @PostMapping(consumes = {"multipart/form-data"})
     public ResponseEntity<?> createReceiptTripMeeting(
+            HttpServletRequest httpRequest,
             @RequestPart("data") String dataJson,
-            @RequestPart(value = "meetingReceiptFiles",  required = false) MultipartFile[] meetingReceiptFiles,
-            @RequestPart(value = "meetingDocumentFiles", required = false) MultipartFile[] meetingDocumentFiles,
-            @RequestPart(value = "tripReceiptFiles",     required = false) MultipartFile[] tripReceiptFiles,
-            @RequestPart(value = "tripDocumentFiles",    required = false) MultipartFile[] tripDocumentFiles,
+            @RequestPart(value = "tripReceiptFiles",  required = false) MultipartFile[] tripReceiptFiles,
+            @RequestPart(value = "tripDocumentFiles", required = false) MultipartFile[] tripDocumentFiles,
             HttpSession session) {
 
         Long currentUserIdx = (Long) session.getAttribute("userIdx");
@@ -106,15 +108,15 @@ public class ReceiptTripMeetingController {
             ReceiptTripMeetingCreateDTO createDTO = objectMapper.readValue(dataJson, ReceiptTripMeetingCreateDTO.class);
             createDTO.setDrafterUserIdx(currentUserIdx);
 
-            log.debug("POST /api/receipt-trip-meetings - projectIdx: {}, 회의영수증: {}개, 회의공식문서: {}개, 출장영수증: {}개, 출장공식문서: {}개",
-                    createDTO.getProjectIdx(),
-                    meetingReceiptFiles  != null ? meetingReceiptFiles.length  : 0,
-                    meetingDocumentFiles != null ? meetingDocumentFiles.length : 0,
-                    tripReceiptFiles     != null ? tripReceiptFiles.length     : 0,
-                    tripDocumentFiles    != null ? tripDocumentFiles.length    : 0);
+            Map<Integer, MultipartFile[]> receiptMap  = extractSessionFiles(httpRequest, "meetingReceiptFiles");
+            Map<Integer, MultipartFile[]> documentMap = extractSessionFiles(httpRequest, "meetingDocumentFiles");
+
+            log.debug("POST /api/receipt-trip-meetings - projectIdx: {}, 회의세션파일: {}개 세션, 출장영수증: {}개",
+                    createDTO.getProjectIdx(), receiptMap.size(),
+                    tripReceiptFiles != null ? tripReceiptFiles.length : 0);
 
             ReceiptTripMeetingResponseDTO result = receiptTripMeetingService.createReceiptTripMeeting(
-                    createDTO, meetingReceiptFiles, meetingDocumentFiles, tripReceiptFiles, tripDocumentFiles, currentUserIdx);
+                    createDTO, receiptMap, documentMap, tripReceiptFiles, tripDocumentFiles, currentUserIdx);
 
             return ResponseEntity.status(HttpStatus.CREATED).body(result);
 
@@ -132,12 +134,11 @@ public class ReceiptTripMeetingController {
      */
     @PutMapping(value = "/{idx}", consumes = {"multipart/form-data"})
     public ResponseEntity<?> updateReceiptTripMeeting(
+            HttpServletRequest httpRequest,
             @PathVariable Long idx,
             @RequestPart("data") String dataJson,
-            @RequestPart(value = "meetingReceiptFiles",  required = false) MultipartFile[] meetingReceiptFiles,
-            @RequestPart(value = "meetingDocumentFiles", required = false) MultipartFile[] meetingDocumentFiles,
-            @RequestPart(value = "tripReceiptFiles",     required = false) MultipartFile[] tripReceiptFiles,
-            @RequestPart(value = "tripDocumentFiles",    required = false) MultipartFile[] tripDocumentFiles,
+            @RequestPart(value = "tripReceiptFiles",  required = false) MultipartFile[] tripReceiptFiles,
+            @RequestPart(value = "tripDocumentFiles", required = false) MultipartFile[] tripDocumentFiles,
             HttpSession session) {
 
         log.debug("PUT /api/receipt-trip-meetings/{}", idx);
@@ -148,8 +149,11 @@ public class ReceiptTripMeetingController {
 
         try {
             ReceiptTripMeetingCreateDTO updateDTO = objectMapper.readValue(dataJson, ReceiptTripMeetingCreateDTO.class);
+            Map<Integer, MultipartFile[]> receiptMap  = extractSessionFiles(httpRequest, "meetingReceiptFiles");
+            Map<Integer, MultipartFile[]> documentMap = extractSessionFiles(httpRequest, "meetingDocumentFiles");
+
             ReceiptTripMeetingResponseDTO result = receiptTripMeetingService.updateReceiptTripMeeting(
-                    idx, updateDTO, meetingReceiptFiles, meetingDocumentFiles, tripReceiptFiles, tripDocumentFiles, currentUserIdx);
+                    idx, updateDTO, receiptMap, documentMap, tripReceiptFiles, tripDocumentFiles, currentUserIdx);
             return ResponseEntity.ok(result);
         } catch (IllegalArgumentException e) {
             log.error("출장+회의 수정 실패: {}", e.getMessage());
@@ -160,6 +164,27 @@ public class ReceiptTripMeetingController {
             error.put("error", e.getMessage());
             return ResponseEntity.badRequest().body(error);
         }
+    }
+
+    /**
+     * FormData에서 세션별 파일 배열 추출
+     * meetingReceiptFiles_0, meetingReceiptFiles_1, ... → Map{0→files[], 1→files[], ...}
+     * meetingReceiptFiles (세션 없는 키) → Map{0→files[]}
+     */
+    private Map<Integer, MultipartFile[]> extractSessionFiles(HttpServletRequest request, String baseKey) {
+        Map<Integer, MultipartFile[]> result = new HashMap<>();
+        if (!(request instanceof MultipartHttpServletRequest multipart)) return result;
+
+        // 세션 0: baseKey (backward compat)
+        List<MultipartFile> s0 = multipart.getFiles(baseKey);
+        if (!s0.isEmpty()) result.put(0, s0.toArray(new MultipartFile[0]));
+
+        // 세션 1+: baseKey_1, baseKey_2, ...
+        for (int i = 1; i <= 9; i++) {
+            List<MultipartFile> files = multipart.getFiles(baseKey + "_" + i);
+            if (!files.isEmpty()) result.put(i, files.toArray(new MultipartFile[0]));
+        }
+        return result;
     }
 
     /**

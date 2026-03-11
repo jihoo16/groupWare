@@ -6,17 +6,22 @@ import com.pinecni.erp.api.document.dto.ReceiptTripMeetingResponseDTO;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.util.List;
+import java.util.Map;
 
 /**
  * 연구비증빙 출장+회의 통합 Service
  */
 public interface ReceiptTripMeetingService {
 
-    /** 출장+회의 통합 저장 */
+    /**
+     * 출장+회의 통합 저장
+     * @param meetingReceiptFilesMap 세션 인덱스 → 회의 영수증 파일 배열 (key=0,1,2...)
+     * @param meetingDocumentFilesMap 세션 인덱스 → 회의 공식문서 파일 배열
+     */
     ReceiptTripMeetingResponseDTO createReceiptTripMeeting(
             ReceiptTripMeetingCreateDTO createDTO,
-            MultipartFile[] meetingReceiptFiles,
-            MultipartFile[] meetingDocumentFiles,
+            Map<Integer, MultipartFile[]> meetingReceiptFilesMap,
+            Map<Integer, MultipartFile[]> meetingDocumentFilesMap,
             MultipartFile[] tripReceiptFiles,
             MultipartFile[] tripDocumentFiles,
             Long currentUserIdx);
@@ -34,8 +39,8 @@ public interface ReceiptTripMeetingService {
     ReceiptTripMeetingResponseDTO updateReceiptTripMeeting(
             Long idx,
             ReceiptTripMeetingCreateDTO updateDTO,
-            MultipartFile[] meetingReceiptFiles,
-            MultipartFile[] meetingDocumentFiles,
+            Map<Integer, MultipartFile[]> meetingReceiptFilesMap,
+            Map<Integer, MultipartFile[]> meetingDocumentFilesMap,
             MultipartFile[] tripReceiptFiles,
             MultipartFile[] tripDocumentFiles,
             Long currentUserIdx);
