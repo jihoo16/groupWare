@@ -13,7 +13,7 @@
                 <h1 class="page-title"><i class="fas fa-receipt"></i> <a href="/project/documents">프로젝트 문서함</a> > 연구비 증빙 - 출장+회의</h1>
             </div>
             <div class="header-right">
-                <button class="btn-secondary" id="printDocumentBtn" style="display:none;" onclick="printDocuments()">
+                <button class="btn-success" id="printDocumentBtn" style="display:none;" onclick="printDocuments()">
                     <i class="fas fa-print"></i>
                     인쇄하기
                 </button>
@@ -21,6 +21,14 @@
                     <i class="fas fa-save"></i>
                     저장하기
                     <span class="tooltip-text">💡 모든 필수값을 채우면 좌측에 인쇄하기 버튼이 나타납니다</span>
+                </button>
+                <button class="btn-primary" id="updateBtn" style="display:none;">
+                    <i class="fas fa-edit"></i>
+                    수정하기
+                </button>
+                <button class="btn-danger" id="deleteBtn" style="display:none;">
+                    <i class="fas fa-trash"></i>
+                    삭제하기
                 </button>
                 <button class="btn-secondary" onclick="history.back()">
                     <i class="fas fa-arrow-left"></i>
@@ -181,10 +189,25 @@
                                 </table>
                             </div>
 
-                            <!-- ② 회의 정보 섹션 -->
+                            <!-- ② 회의 정보 섹션 (다중 회의 컨테이너) -->
+                            <div id="meetingBlocksContainer">
+
+                            <div class="meeting-block" data-meeting-idx="0" id="meeting-block-0">
                             <div class="common-info-section">
                                 <div class="section-header">
                                     <h3><i class="fas fa-comments"></i> 회의 정보</h3>
+                                    <button type="button" class="btn-add-meeting" id="addMeetingBtn" onclick="addMeetingBlock()">
+                                        <i class="fas fa-plus"></i> 회의 추가
+                                    </button>
+                                </div>
+
+                                <!-- 회의 목적 -->
+                                <div class="form-group full-width">
+                                    <label for="common_meeting_purpose">
+                                        <i class="fas fa-bullseye"></i> 회의 목적
+                                        <span class="required-mark">*</span>
+                                    </label>
+                                    <input type="text" id="common_meeting_purpose" class="form-input" placeholder="회의 목적을 입력하세요">
                                 </div>
 
                                 <!-- 회의 작성자 & 회의 일자 -->
@@ -266,6 +289,7 @@
                                             <span class="required-mark">*</span>
                                         </label>
                                         <input type="text" id="common_amount" class="form-input" placeholder="사용 금액을 입력하세요">
+                                        <span id="amountExceedWarning" style="display:none; color:#dc2626; font-size:12px; margin-top:4px; font-weight:600;"></span>
                                         <div class="amount-buttons">
                                             <button type="button" class="amount-btn" onclick="addAmount(100000)">
                                                 <i class="fas fa-plus-circle"></i> 10만원
@@ -310,13 +334,16 @@
                                     </div>
                                 </div>
 
-                            </div>
+                            </div><!-- close common-info-section -->
 
-                            <!-- 스캔파일 업로드 (회의/출장 각각 영수증+공식문서 = 4칸) -->
+                            </div><!-- close meeting-block-0 -->
+                            </div><!-- close meetingBlocksContainer -->
+
+                            <!-- 스캔파일 업로드 (출장 → 회의 순서, 하단에 통합) -->
                             <div class="attachment-section">
 
-                                <!-- 출장 업로드 -->
-                                <div>
+                                <!-- 출장 첨부파일 -->
+                                <div class="attachment-group">
                                     <div class="section-header" style="margin-bottom: 8px;">
                                         <h4><i class="fas fa-plane"></i> 출장 첨부파일</h4>
                                     </div>
@@ -352,44 +379,49 @@
                                     </div>
                                 </div>
 
-                                <!-- 회의 업로드 -->
-                                <div style="margin-bottom: 12px;">
-                                    <div class="section-header" style="margin-bottom: 8px;">
-                                        <h4 style="color:#667eea;"><i class="fas fa-users"></i> 회의 첨부파일</h4>
-                                    </div>
-                                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px;">
-                                        <div>
-                                            <div class="section-header">
-                                                <h4><i class="fas fa-receipt"></i> 회의 영수증</h4>
-                                            </div>
-                                            <div class="file-upload-area" id="meetingReceiptUploadArea">
-                                                <input type="file" id="meetingReceiptInput" multiple hidden>
-                                                <label for="meetingReceiptInput" class="file-upload-label">
-                                                    <i class="fas fa-cloud-upload-alt"></i>
-                                                    <span>파일을 선택하거나 드래그하세요</span>
-                                                    <small>최대 10MB, 최대 5개</small>
-                                                </label>
-                                            </div>
-                                            <div class="file-list" id="meetingReceiptFileList"></div>
-                                        </div>
-                                        <div>
-                                            <div class="section-header">
-                                                <h4><i class="fas fa-file-alt"></i> 회의 공식문서</h4>
-                                            </div>
-                                            <div class="file-upload-area" id="meetingDocumentUploadArea">
-                                                <input type="file" id="meetingDocumentInput" multiple hidden>
-                                                <label for="meetingDocumentInput" class="file-upload-label">
-                                                    <i class="fas fa-cloud-upload-alt"></i>
-                                                    <span>파일을 선택하거나 드래그하세요</span>
-                                                    <small>최대 10MB, 최대 5개</small>
-                                                </label>
-                                            </div>
-                                            <div class="file-list" id="meetingDocumentFileList"></div>
-                                        </div>
-                                    </div>
-                                </div>
+                                <!-- 회의 첨부파일 (다중 회의 컨테이너 - 회의 추가 시 동적으로 늘어남) -->
+                                <div id="meetingAttachmentBlocks">
 
-                            </div>
+                                    <!-- 1번째 회의 첨부파일 -->
+                                    <div class="attachment-group meeting-attachment-group" data-attachment-meeting-idx="0" id="meeting-attachment-block-0">
+                                        <div class="section-header" style="margin-bottom: 8px;">
+                                            <h4 style="color:#667eea;"><i class="fas fa-users"></i> 회의 첨부파일 <span class="meeting-block-badge">1번째 회의</span></h4>
+                                        </div>
+                                        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px;">
+                                            <div>
+                                                <div class="section-header">
+                                                    <h4><i class="fas fa-receipt"></i> 회의 영수증</h4>
+                                                </div>
+                                                <div class="file-upload-area" id="meetingReceiptUploadArea_0">
+                                                    <input type="file" id="meetingReceiptInput_0" multiple hidden>
+                                                    <label for="meetingReceiptInput_0" class="file-upload-label">
+                                                        <i class="fas fa-cloud-upload-alt"></i>
+                                                        <span>파일을 선택하거나 드래그하세요</span>
+                                                        <small>최대 10MB, 최대 5개</small>
+                                                    </label>
+                                                </div>
+                                                <div class="file-list" id="meetingReceiptFileList_0"></div>
+                                            </div>
+                                            <div>
+                                                <div class="section-header">
+                                                    <h4><i class="fas fa-file-alt"></i> 회의 공식문서</h4>
+                                                </div>
+                                                <div class="file-upload-area" id="meetingDocumentUploadArea_0">
+                                                    <input type="file" id="meetingDocumentInput_0" multiple hidden>
+                                                    <label for="meetingDocumentInput_0" class="file-upload-label">
+                                                        <i class="fas fa-cloud-upload-alt"></i>
+                                                        <span>파일을 선택하거나 드래그하세요</span>
+                                                        <small>최대 10MB, 최대 5개</small>
+                                                    </label>
+                                                </div>
+                                                <div class="file-list" id="meetingDocumentFileList_0"></div>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                </div><!-- close meetingAttachmentBlocks -->
+
+                            </div><!-- close attachment-section -->
 
                             <!-- 문서 미리보기: 출장 품의서, 출장 복명서, 회의록, 참석자 명단 -->
                             <div class="document-preview-toggle">
@@ -410,24 +442,14 @@
                                         <div style="float: right; margin-bottom: 20px;">
                                             <table style="border: 2px solid #000; border-collapse: collapse;">
                                                 <tr>
-                                                    <td rowspan="2"
-                                                        style="width: 60px; border: 1px solid #000; padding: 10px 20px; text-align: center; background: #f0f0f0; font-weight: bold;">
-                                                        결<br><br>재
-                                                    </td>
-                                                    <td style="width: 120px; border: 1px solid #000; padding: 10px 20px; text-align: center; background: #f0f0f0; font-weight: bold;">
-                                                        담당
-                                                    </td>
-                                                    <td style="width: 120px; border: 1px solid #000; padding: 10px 20px; text-align: center; background: #f0f0f0; font-weight: bold;">
-                                                        연구책임자
-                                                    </td>
-                                                    <td style="width: 120px; border: 1px solid #000; padding: 10px 20px; text-align: center; background: #f0f0f0; font-weight: bold;">
-                                                        대표이사
-                                                    </td>
+                                                    <td style="width: 90px; border: 1px solid #000; padding: 5px 10px; text-align: center; background: #f0f0f0; font-weight: bold; font-size: 12px;">담당</td>
+                                                    <td style="width: 90px; border: 1px solid #000; padding: 5px 10px; text-align: center; background: #f0f0f0; font-weight: bold; font-size: 12px;">연구책임자</td>
+                                                    <td style="width: 90px; border: 1px solid #000; padding: 5px 10px; text-align: center; background: #f0f0f0; font-weight: bold; font-size: 12px;">대표이사</td>
                                                 </tr>
                                                 <tr>
-                                                    <td style="height: 80px; border: 1px solid #000; padding: 10px 20px; text-align: center;"></td>
-                                                    <td style="height: 80px; border: 1px solid #000; padding: 10px 20px; text-align: center;"></td>
-                                                    <td style="height: 80px; border: 1px solid #000; padding: 10px 20px; text-align: center;"></td>
+                                                    <td style="height: 78px; border: 1px solid #000; padding: 5px; text-align: center;"></td>
+                                                    <td style="height: 78px; border: 1px solid #000; padding: 5px; text-align: center;"></td>
+                                                    <td style="height: 78px; border: 1px solid #000; padding: 5px; text-align: center;"></td>
                                                 </tr>
                                             </table>
                                         </div>
@@ -439,7 +461,7 @@
                                         <table class="form-table" style="margin-top: 20px;">
                                             <tr>
                                                 <th style="width: 15%;">과제명</th>
-                                                <td colspan="5" style="padding: 10px;">
+                                                <td colspan="6" style="padding: 10px;">
                                                     <span class="auto-project"></span>
                                                 </td>
                                             </tr>
@@ -447,25 +469,23 @@
                                                 <th colspan="3" style="text-align: center;">출장인원</th>
                                                 <th style="width: 12%;">출장지</th>
                                                 <th style="width: 10%;">출장기간</th>
-                                                <th>출장목적</th>
+                                                <th colspan="2">출장목적</th>
                                             </tr>
-                                            <tr>
+                                            <tr id="proposalPersonHeaderRow">
                                                 <th style="width: 12%;">부서명</th>
                                                 <th style="width: 12%;">직 위</th>
                                                 <th style="width: 12%;">성 명</th>
-                                                <td rowspan="6" style="text-align: center; vertical-align: middle;">
+                                                <td id="proposalLocationCell" rowspan="2" style="text-align: center; vertical-align: middle;">
                                                     <span class="auto-location"></span></td>
-                                                <td rowspan="6" style="text-align: center; vertical-align: middle;">
+                                                <td id="proposalDateCell" rowspan="2" style="text-align: center; vertical-align: middle;">
                                                     <span class="auto-date"></span></td>
-                                                <td rowspan="6"
+                                                <td id="proposalPurposeCell" rowspan="2" colspan="2"
                                                     style="text-align: center; padding: 10px; vertical-align: middle;">
                                                     <span class="auto-purpose"></span></td>
                                             </tr>
-                                            <tbody id="proposalPersonBody">
-                                            <!-- 동적 생성 -->
-                                            </tbody>
+                                            <!-- 출장인원 행: JS에서 동적 생성 -->
                                             <tr>
-                                                <th colspan="6"
+                                                <th colspan="7"
                                                     style="background: #f0f0f0; padding: 15px; text-align: center;">소 요
                                                     경 비
                                                     내 역(원)
@@ -490,14 +510,14 @@
                                             </tr>
                                             <tr>
                                                 <th style="height: 80px">특이사항</th>
-                                                <td colspan="5" style="padding: 10px; text-align: center">출장과 관련하여
+                                                <td colspan="6" style="padding: 10px; text-align: center">출장과 관련하여
                                                     국내출장여비
                                                     지급기준(실비)에 따라 일부 변경될 수 있습니다.
                                                 </td>
                                             </tr>
                                             <tr>
                                                 <th style="height: 80px">결재</th>
-                                                <td colspan="5" style="padding: 10px; text-align: center">연구카드로 결제</td>
+                                                <td colspan="6" style="padding: 10px; text-align: center">연구카드로 결제</td>
                                             </tr>
                                         </table>
                                     </div>
@@ -512,24 +532,14 @@
                                         <div style="float: right; margin-bottom: 20px;">
                                             <table style="border: 2px solid #000; border-collapse: collapse;">
                                                 <tr>
-                                                    <td rowspan="2"
-                                                        style="width: 60px; border: 1px solid #000; padding: 10px 20px; text-align: center; background: #f0f0f0; font-weight: bold;">
-                                                        결<br><br>재
-                                                    </td>
-                                                    <td style="width: 120px; border: 1px solid #000; padding: 10px 20px; text-align: center; background: #f0f0f0; font-weight: bold;">
-                                                        담당
-                                                    </td>
-                                                    <td style="width: 120px; border: 1px solid #000; padding: 10px 20px; text-align: center; background: #f0f0f0; font-weight: bold;">
-                                                        연구책임자
-                                                    </td>
-                                                    <td style="width: 120px; border: 1px solid #000; padding: 10px 20px; text-align: center; background: #f0f0f0; font-weight: bold;">
-                                                        대표이사
-                                                    </td>
+                                                    <td style="width: 90px; border: 1px solid #000; padding: 5px 10px; text-align: center; background: #f0f0f0; font-weight: bold; font-size: 12px;">담당</td>
+                                                    <td style="width: 90px; border: 1px solid #000; padding: 5px 10px; text-align: center; background: #f0f0f0; font-weight: bold; font-size: 12px;">연구책임자</td>
+                                                    <td style="width: 90px; border: 1px solid #000; padding: 5px 10px; text-align: center; background: #f0f0f0; font-weight: bold; font-size: 12px;">대표이사</td>
                                                 </tr>
                                                 <tr>
-                                                    <td style="height: 80px; border: 1px solid #000; padding: 10px 20px; text-align: center;"></td>
-                                                    <td style="height: 80px; border: 1px solid #000; padding: 10px 20px; text-align: center;"></td>
-                                                    <td style="height: 80px; border: 1px solid #000; padding: 10px 20px; text-align: center;"></td>
+                                                    <td style="height: 78px; border: 1px solid #000; padding: 5px; text-align: center;"></td>
+                                                    <td style="height: 78px; border: 1px solid #000; padding: 5px; text-align: center;"></td>
+                                                    <td style="height: 78px; border: 1px solid #000; padding: 5px; text-align: center;"></td>
                                                 </tr>
                                             </table>
                                         </div>
@@ -562,7 +572,7 @@
                                                 <th>출장내용<br>및 결과</th>
                                                 <td colspan="5"
                                                     style="white-space: pre-wrap; padding: 15px; min-height: 150px; text-align: left; vertical-align: top;">
-                                                    <span class="auto-trip-result"></span>
+                                                    <span class="auto-trip-result" style="display: block; text-align: left;"></span>
                                                 </td>
                                             </tr>
                                             <tr>
@@ -595,6 +605,10 @@
                                         </table>
                                     </div>
 
+                                    <!-- 회의별 문서 블록 컨테이너 -->
+                                    <div id="meetingDocumentBlocks">
+                                    <div class="meeting-doc-block" data-doc-meeting-idx="0" id="meeting-doc-block-0">
+
                                     <!-- 회의록 -->
                                     <div style="background: white; border: 2px solid #e0e0e0; border-radius: 8px; padding: 30px; max-width: 881px; margin: 0 auto 30px">
                                         <h2 class="doc-title" style="margin: 0">회 의 록</h2>
@@ -610,7 +624,7 @@
                                                 <col style="width: 20%;">
                                             </colgroup>
                                             <tr>
-                                                <th style="height: 80px">세부<br> 업무명</th>
+                                                <th style="height: 80px">과제명</th>
                                                 <td><input type="text" class="auto-project" readonly
                                                            style="background: #f9f9f9; text-align: center;"></td>
                                                 <th>작성자</th>
@@ -667,7 +681,7 @@
                                                 <col style="width: 20%;">
                                             </colgroup>
                                             <tr>
-                                                <th style="height: 80px">세부<br> 업무명</th>
+                                                <th style="height: 80px">과제</th>
                                                 <td><input type="text" class="auto-project" readonly
                                                            style="background: #f9f9f9; text-align: center;"></td>
                                                 <th>작성자</th>
@@ -685,76 +699,22 @@
                                         </table>
                                         <table class="form-table" id="attendee-signature-table"
                                                style="margin-top: 20px;">
-                                            <tr style="height: 70px">
-                                                <th>성명</th>
-                                                <th>소속</th>
-                                                <th>서명</th>
-                                                <th>성명</th>
-                                                <th>소속</th>
-                                                <th>서명</th>
-                                            </tr>
-                                            <tr>
-                                                <td><input type="text" class="attendee-sig-name" data-index="0" readonly
-                                                           style="background: #f9f9f9;"></td>
-                                                <td><input type="text" class="attendee-sig-dept" data-index="0" readonly
-                                                           style="background: #f9f9f9;"></td>
-                                                <td style="padding: 30px;"></td>
-                                                <td><input type="text" class="attendee-sig-name" data-index="1" readonly
-                                                           style="background: #f9f9f9;"></td>
-                                                <td><input type="text" class="attendee-sig-dept" data-index="1" readonly
-                                                           style="background: #f9f9f9;"></td>
-                                                <td style="padding: 30px;"></td>
-                                            </tr>
-                                            <tr>
-                                                <td><input type="text" class="attendee-sig-name" data-index="2" readonly
-                                                           style="background: #f9f9f9;"></td>
-                                                <td><input type="text" class="attendee-sig-dept" data-index="2" readonly
-                                                           style="background: #f9f9f9;"></td>
-                                                <td style="padding: 30px;"></td>
-                                                <td><input type="text" class="attendee-sig-name" data-index="3" readonly
-                                                           style="background: #f9f9f9;"></td>
-                                                <td><input type="text" class="attendee-sig-dept" data-index="3" readonly
-                                                           style="background: #f9f9f9;"></td>
-                                                <td style="padding: 30px;"></td>
-                                            </tr>
-                                            <tr>
-                                                <td><input type="text" class="attendee-sig-name" data-index="4" readonly
-                                                           style="background: #f9f9f9;"></td>
-                                                <td><input type="text" class="attendee-sig-dept" data-index="4" readonly
-                                                           style="background: #f9f9f9;"></td>
-                                                <td style="padding: 30px;"></td>
-                                                <td><input type="text" class="attendee-sig-name" data-index="5" readonly
-                                                           style="background: #f9f9f9;"></td>
-                                                <td><input type="text" class="attendee-sig-dept" data-index="5" readonly
-                                                           style="background: #f9f9f9;"></td>
-                                                <td style="padding: 30px;"></td>
-                                            </tr>
-                                            <tr>
-                                                <td><input type="text" class="attendee-sig-name" data-index="6" readonly
-                                                           style="background: #f9f9f9;"></td>
-                                                <td><input type="text" class="attendee-sig-dept" data-index="6" readonly
-                                                           style="background: #f9f9f9;"></td>
-                                                <td style="padding: 30px;"></td>
-                                                <td><input type="text" class="attendee-sig-name" data-index="7" readonly
-                                                           style="background: #f9f9f9;"></td>
-                                                <td><input type="text" class="attendee-sig-dept" data-index="7" readonly
-                                                           style="background: #f9f9f9;"></td>
-                                                <td style="padding: 30px;"></td>
-                                            </tr>
-                                            <tr>
-                                                <td><input type="text" class="attendee-sig-name" data-index="8" readonly
-                                                           style="background: #f9f9f9;"></td>
-                                                <td><input type="text" class="attendee-sig-dept" data-index="8" readonly
-                                                           style="background: #f9f9f9;"></td>
-                                                <td style="padding: 30px;"></td>
-                                                <td><input type="text" class="attendee-sig-name" data-index="9" readonly
-                                                           style="background: #f9f9f9;"></td>
-                                                <td><input type="text" class="attendee-sig-dept" data-index="9" readonly
-                                                           style="background: #f9f9f9;"></td>
-                                                <td style="padding: 30px;"></td>
-                                            </tr>
+                                            <thead>
+                                                <tr style="height: 40px;">
+                                                    <th style="width: 70px;">구분</th>
+                                                    <th>소속</th>
+                                                    <th>성명</th>
+                                                    <th style="width: 100px;">서명</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody id="attendeeSignatureBody">
+                                            </tbody>
                                         </table>
                                     </div>
+
+                                    </div><!-- close meeting-doc-block-0 -->
+                                    </div><!-- close meetingDocumentBlocks -->
+
                                 </div><!-- document-form-content 끝 -->
                             </div><!-- document-form-wrapper 끝 -->
                         </div>
