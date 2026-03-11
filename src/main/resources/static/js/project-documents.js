@@ -815,8 +815,13 @@ document.addEventListener('DOMContentLoaded', function() {
 
         const url = urls[doc.documentType];
         if (url) {
-            const documentId = doc.idx;
-            window.location.href = `${url}?documentIdx=${documentId}`;
+            // 출장+회의는 receiptTripMeeting.idx(sourceDocumentId)를 ?id= 파라미터로 전달
+            const isTripMeetingType = ['연구비증빙-출장+회의', '연구비증빙-회의+출장'].includes(doc.documentType);
+            if (isTripMeetingType) {
+                window.location.href = `${url}?id=${doc.sourceDocumentId}`;
+            } else {
+                window.location.href = `${url}?documentIdx=${doc.idx}`;
+            }
         } else {
             showWarning('해당 문서 타입의 상세 페이지가 구현되지 않았습니다.');
         }
