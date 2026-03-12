@@ -843,14 +843,14 @@ document.addEventListener('DOMContentLoaded', function() {
             // 참여자(참여기관) 텍스트 생성 - 회의록용 (내부 + 외부 모두 포함)
             let allAttendeesText = '';
             const internalNames = internalAttendees.map(a => a.name.trim());
-            const externalNames = externalAttendees.map(a => a.name.trim());
+            const externalParts = externalAttendees.map(a => `${a.name.trim()}(${(a.dept || '외부').trim()})`);
 
-            if (internalNames.length > 0 && externalNames.length > 0) {
-                allAttendeesText = internalNames.join(', ') + '(파인씨앤아이), ' + externalNames.join(', ') + '(외부)';
+            if (internalNames.length > 0 && externalParts.length > 0) {
+                allAttendeesText = internalNames.join(', ') + '(파인씨앤아이), ' + externalParts.join(', ');
             } else if (internalNames.length > 0) {
                 allAttendeesText = internalNames.join(', ') + '(파인씨앤아이)';
-            } else if (externalNames.length > 0) {
-                allAttendeesText = externalNames.join(', ') + '(외부)';
+            } else if (externalParts.length > 0) {
+                allAttendeesText = externalParts.join(', ');
             }
 
             document.querySelectorAll('.auto-all-attendees').forEach(field => {
@@ -877,6 +877,7 @@ document.addEventListener('DOMContentLoaded', function() {
                         <td></td>
                     </tr>`;
                 }).join('');
+                adjustAttendeeLayout(sortedAll.length);
             }
 
             // 출장품의서 출장인원 테이블 업데이트 (외부 인원 제외)
@@ -905,6 +906,82 @@ document.addEventListener('DOMContentLoaded', function() {
 
             // 출장내용 및 결과 업데이트
             updateTripResult();
+        }
+
+        // 참석자명단 동적 레이아웃 축소 (12명 이상 시 A4 한 쪽 인쇄 유지)
+        function adjustAttendeeLayout(count) {
+            const sigTable   = document.getElementById('attendee-signature-table');
+            const infoRow1   = document.getElementById('attendeeInfoRow1');
+            const infoRow2   = document.getElementById('attendeeInfoRow2');
+            if (!sigTable) return;
+
+            let rowH, infoRowH, fontSize, sigHeaderH;
+            if (count <= 10) {
+                rowH = '50px'; infoRowH = '64px'; sigHeaderH = '40px'; fontSize = '';
+            } else if (count <= 15) {
+                rowH = '38px'; infoRowH = '48px'; sigHeaderH = '32px'; fontSize = '12px';
+            } else if (count <= 20) {
+                rowH = '30px'; infoRowH = '40px'; sigHeaderH = '26px'; fontSize = '11px';
+            } else {
+                rowH = '24px'; infoRowH = '34px'; sigHeaderH = '22px'; fontSize = '10px';
+            }
+
+            // info 테이블 행 높이
+            if (infoRow1) infoRow1.style.height = infoRowH;
+            if (infoRow2) infoRow2.style.height = infoRowH;
+
+            // 서명 테이블 헤더 높이
+            const sigHeaderRow = sigTable.querySelector('thead tr');
+            if (sigHeaderRow) sigHeaderRow.style.height = sigHeaderH;
+
+            // 서명 테이블 폰트
+            sigTable.style.fontSize = fontSize;
+
+            // 각 서명 행 높이 재적용
+            sigTable.querySelectorAll('tbody tr').forEach(row => {
+                row.style.height = rowH;
+            });
+        }
+
+        // 회의록 주요 내용 동적 폰트 크기 조정 (A4 한 쪽 인쇄 유지)
+        function adjustContentFontSize(el, text) {
+            const len = text.length;
+            let fontSize, lineHeight;
+            if (len <= 100) {
+                fontSize = '20px'; lineHeight = '1.9';
+            } else if (len <= 200) {
+                fontSize = '18px'; lineHeight = '1.8';
+            } else if (len <= 350) {
+                fontSize = '16px'; lineHeight = '1.7';
+            } else if (len <= 520) {
+                fontSize = '14px'; lineHeight = '1.6';
+            } else if (len <= 750) {
+                fontSize = '12px'; lineHeight = '1.5';
+            } else if (len <= 1100) {
+                fontSize = '10px'; lineHeight = '1.4';
+            } else {
+                fontSize = '8px'; lineHeight = '1.3';
+            }
+            el.style.fontSize = fontSize;
+            el.style.lineHeight = lineHeight;
+        }
+
+        // 출장복명서 레이아웃 동적 축소 (2박 이상 시 A4 한 쪽 인쇄 유지)
+        // 스타일은 CSS의 .trip-Nday 클래스가 담당 — JS는 class 추가/제거만 수행
+        function adjustReportLayout(dayCount) {
+            const reportFormDiv = document.getElementById('reportFormDiv');
+            if (!reportFormDiv) return;
+
+            // 결재 서명칸은 항상 78px 고정 (CSS로 제어 불가한 절대 규칙)
+            const approvalRow = document.getElementById('reportApprovalSignRow');
+            if (approvalRow) approvalRow.querySelectorAll('td').forEach(td => { td.style.height = '78px'; });
+
+            // 박수에 맞는 class 추가 → print CSS의 .trip-Nday 규칙이 스타일 적용
+            reportFormDiv.classList.remove('trip-1day', 'trip-2day', 'trip-3day', 'trip-4day');
+            if      (dayCount <= 1) reportFormDiv.classList.add('trip-1day');
+            else if (dayCount === 2) reportFormDiv.classList.add('trip-2day');
+            else if (dayCount === 3) reportFormDiv.classList.add('trip-3day');
+            else                     reportFormDiv.classList.add('trip-4day');
         }
 
         // 회의 관련 필드 업데이트
@@ -957,6 +1034,7 @@ document.addEventListener('DOMContentLoaded', function() {
             const contentText = commonMeetingContent ? commonMeetingContent.value : '';
             document.querySelectorAll('.auto-content').forEach(field => {
                 field.textContent = contentText;
+                adjustContentFontSize(field, contentText);
             });
         }
         window.updateMeetingFields = updateMeetingFields;
@@ -1025,6 +1103,7 @@ document.addEventListener('DOMContentLoaded', function() {
                     // input 요소면 value 속성, 아니면 textContent 설정
                     if (field.tagName === 'INPUT') {
                         field.value = value;
+                        field.style.fontSize = value.length > 15 ? '10px' : '';
                     } else {
                         field.textContent = value;
                     }
@@ -1318,9 +1397,9 @@ document.addEventListener('DOMContentLoaded', function() {
 
                 const headerRow = document.createElement('tr');
                 headerRow.innerHTML = `
-                    <th colspan="2" rowspan="${rowspan}">정산<br>세부내역</th>
+                    <th colspan="1" rowspan="${rowspan}">정산<br>세부내역</th>
                     <th>날짜</th>
-                    <th colspan="2" style="text-align: center; background: #fafafa;">구분</th>
+                    <th colspan="3" style="text-align: center; background: #fafafa;">구분</th>
                     <td style="text-align: center; font-weight: bold;">금액</td>
                 `;
                 reportExpenseBody.appendChild(headerRow);
@@ -1334,7 +1413,7 @@ document.addEventListener('DOMContentLoaded', function() {
                     const transportRow = document.createElement('tr');
                     transportRow.innerHTML = `
                         <td rowspan="${rowsForDay}" style="text-align: center; background: white; font-weight: 500; vertical-align: middle;">${expense.date}</td>
-                        <td colspan="2" style="background: white; padding: 8px; text-align: center">교통비</td>
+                        <td colspan="3" style="background: white; padding: 8px; text-align: center">교통비</td>
                         <td style="text-align: center; padding: 8px; background: white;">${expense.transport.toLocaleString()}원</td>
                     `;
                     reportExpenseBody.appendChild(transportRow);
@@ -1342,7 +1421,7 @@ document.addEventListener('DOMContentLoaded', function() {
                     // 숙박비
                     const lodgingRow = document.createElement('tr');
                     lodgingRow.innerHTML = `
-                        <td colspan="2" style="background: white; padding: 8px; text-align: center">숙박비</td>
+                        <td colspan="3" style="background: white; padding: 8px; text-align: center">숙박비</td>
                         <td style="text-align: center; padding: 8px;">${expense.lodging.toLocaleString()}원</td>
                     `;
                     reportExpenseBody.appendChild(lodgingRow);
@@ -1350,7 +1429,7 @@ document.addEventListener('DOMContentLoaded', function() {
                     // 식비
                     const mealRow = document.createElement('tr');
                     mealRow.innerHTML = `
-                        <td colspan="2" style="background: white; padding: 8px; text-align: center">식비</td>
+                        <td colspan="3" style="background: white; padding: 8px; text-align: center">식비</td>
                         <td style="text-align: center; padding: 8px;">${expense.meal.toLocaleString()}원</td>
                     `;
                     reportExpenseBody.appendChild(mealRow);
@@ -1358,7 +1437,7 @@ document.addEventListener('DOMContentLoaded', function() {
                     // 기타(일비)
                     const otherRow = document.createElement('tr');
                     otherRow.innerHTML = `
-                        <td colspan="2" style="background: white; padding: 8px; text-align: center">기타(일비)</td>
+                        <td colspan="3" style="background: white; padding: 8px; text-align: center">기타(일비)</td>
                         <td style="text-align: center; padding: 8px;">${expense.other.toLocaleString()}원</td>
                     `;
                     reportExpenseBody.appendChild(otherRow);
@@ -1367,12 +1446,15 @@ document.addEventListener('DOMContentLoaded', function() {
                     if (hasMeeting) {
                         const meetingRow = document.createElement('tr');
                         meetingRow.innerHTML = `
-                            <td colspan="2" style="background: white; padding: 8px; text-align: center;">회의비</td>
+                            <td colspan="3" style="background: white; padding: 8px; text-align: center;">회의비</td>
                             <td style="text-align: center; padding: 8px;">${commonAmountValue.toLocaleString()}원</td>
                         `;
                         reportExpenseBody.appendChild(meetingRow);
                     }
                 });
+
+                // 일수에 따라 복명서 레이아웃 동적 축소
+                adjustReportLayout(dailyExpenses.length);
             }
             const actualTotal = tripTotal + commonAmountValue;
 
@@ -1534,16 +1616,19 @@ document.addEventListener('DOMContentLoaded', function() {
             const projectIdx = document.getElementById('selectedProjectIdx')?.value;
             if (!projectIdx || !commonDate?.value) return;
 
+            // 수정 페이지에서는 현재 문서 자체를 중복 검사에서 제외
+            const excludeIdx = getUrlParameter('id') || null;
+
             // ── 작성자 재검증 ──
             if (authorPersonId) {
-                const isDup = await checkTripPersonConflicts(authorPersonId, projectIdx);
+                const isDup = await checkTripPersonConflicts(authorPersonId, projectIdx, excludeIdx);
                 if (isDup) {
                     // 현재 작성자 겹침 → 겹치지 않는 사람으로 교체
                     const persons = getAuthorPersons();
                     const sorted = sortByPositionAsc(persons);
                     let newAuthor = null;
                     for (const p of sorted) {
-                        const dup = await checkTripPersonConflicts(p.id, projectIdx);
+                        const dup = await checkTripPersonConflicts(p.id, projectIdx, excludeIdx);
                         if (!dup) { newAuthor = p; break; }
                     }
                     authorPersonId = null;
@@ -1558,7 +1643,7 @@ document.addEventListener('DOMContentLoaded', function() {
             // ── 출장인원 중 겹치는 인원 제거 ──
             if (tripPersons.length > 0) {
                 const dupChecks = await Promise.all(
-                    tripPersons.map(p => checkTripPersonConflicts(p.id, projectIdx))
+                    tripPersons.map(p => checkTripPersonConflicts(p.id, projectIdx, excludeIdx))
                 );
                 const valid = tripPersons.filter((_, i) => !dupChecks[i]);
                 if (valid.length !== tripPersons.length && window.replaceTripPersons) {
@@ -1574,7 +1659,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 updateMeetingFields();
             });
             commonDate.addEventListener('click', function() {
-                if (this.showPicker) this.showPicker();
+                if (this.showPicker) { try { this.showPicker(); } catch(e) {} }
             });
         }
         if (commonDuration) {
@@ -1591,7 +1676,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 updateTotalExpenses();
             });
             meetingDateInput.addEventListener('click', function() {
-                if (this.showPicker) this.showPicker();
+                if (this.showPicker) { try { this.showPicker(); } catch(e) {} }
             });
         }
 
@@ -1719,7 +1804,7 @@ document.addEventListener('DOMContentLoaded', function() {
             // 복명서 반영
             const displayText = commonTripResult ? commonTripResult.value : attendeeLine + contentMarker;
             document.querySelectorAll('.auto-trip-result').forEach(field => {
-                field.textContent = displayText;
+                field.textContent = displayText.trimEnd();
             });
         }
 
@@ -1729,7 +1814,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 this.dataset.userModified = 'true';
                 // 수정된 내용을 복명서에 바로 반영
                 document.querySelectorAll('.auto-trip-result').forEach(field => {
-                    field.textContent = this.value;
+                    field.textContent = this.value.trimEnd();
                 });
             });
         }
@@ -2070,21 +2155,21 @@ document.addEventListener('DOMContentLoaded', function() {
     <div style="background: white; border: 2px solid #e0e0e0; border-radius: 8px; padding: 30px; max-width: 881px; margin: 0 auto 30px">
         <h2 class="doc-title" style="margin: 0">회 의 록</h2>
         <table class="form-table">
-            <colgroup><col style="width: 15%;"><col style="width: 55%;"><col style="width: 10%;"><col style="width: 20%;"></colgroup>
-            <tr><th style="height:80px">과제명</th><td><input type="text" class="auto-project" readonly style="background:#f9f9f9;text-align:center;"></td><th>작성자</th><td><input type="text" id="doc_meeting_author_${idx}" readonly style="background:#f9f9f9;text-align:center;width:100%;padding:4px;border:1px solid #ddd;"></td></tr>
-            <tr><th style="height:80px">일시</th><td><input type="text" id="doc_meeting_datetime_${idx}" readonly style="background:#f9f9f9;text-align:center;width:100%;padding:4px;border:1px solid #ddd;"></td><th>장소</th><td><input type="text" class="auto-location" readonly style="background:#f9f9f9;text-align:center;"></td></tr>
+            <colgroup><col style="width: 15%;"><col style="width: 44%;"><col style="width: 14%;"><col style="width: 27%;"></colgroup>
+            <tr><th style="height:64px">과제명</th><td><input type="text" class="auto-project" readonly style="background:#f9f9f9;text-align:center;font-size:12px;"></td><th>작성자</th><td><input type="text" id="doc_meeting_author_${idx}" readonly style="background:#f9f9f9;text-align:center;width:100%;padding:4px;border:1px solid #ddd;"></td></tr>
+            <tr><th style="height:64px">일시</th><td><input type="text" id="doc_meeting_datetime_${idx}" readonly style="background:#f9f9f9;text-align:center;width:100%;padding:4px;border:1px solid #ddd;"></td><th>장소</th><td><input type="text" class="auto-location" readonly style="background:#f9f9f9;text-align:center;"></td></tr>
             <tr><th>참여자</th><td colspan="3" id="doc_meeting_attendees_${idx}" style="padding:10px;height:80px;white-space:pre-wrap;"></td></tr>
             <tr><th colspan="4" style="background:#f0f0f0;padding:15px;">내용</th></tr>
-            <tr><th style="vertical-align:middle;padding-top:15px;">주제</th><td colspan="3" id="doc_meeting_subject_${idx}" style="padding:10px;text-align:left;font-size:18px;height:100px"></td></tr>
-            <tr><th style="padding-top:15px;">주요 내용</th><td colspan="3" id="doc_meeting_content_${idx}" style="padding:10px;height:510px;text-align:left;white-space:pre-wrap;min-height:600px;line-height:2.5;font-size:18px"></td></tr>
+            <tr><th style="vertical-align:middle;padding-top:15px;">주제</th><td colspan="3" id="doc_meeting_subject_${idx}" style="padding:10px;text-align:left;font-size:18px;height:64px"></td></tr>
+            <tr><th style="padding-top:15px;">주요 내용</th><td colspan="3" id="doc_meeting_content_${idx}" style="padding:10px;min-height:150px;text-align:left;white-space:pre-wrap;"></td></tr>
         </table>
     </div>
     <div style="background: white; border: 2px solid #e0e0e0; border-radius: 8px; padding: 30px; margin: 0 auto 30px; max-width: 881px">
         <h2 class="doc-title" style="margin: 0">참 석 자 명 단</h2>
         <table class="form-table">
-            <colgroup><col style="width:15%;"><col style="width:55%;"><col style="width:10%;"><col style="width:20%;"></colgroup>
-            <tr><th style="height:80px">과제</th><td><input type="text" class="auto-project" readonly style="background:#f9f9f9;text-align:center;"></td><th>작성자</th><td><input type="text" id="doc_attendee_author_${idx}" readonly style="background:#f9f9f9;text-align:center;width:100%;padding:4px;border:1px solid #ddd;"></td></tr>
-            <tr><th style="height:80px">일시</th><td><input type="text" id="doc_attendee_datetime_${idx}" readonly style="background:#f9f9f9;text-align:center;width:100%;padding:4px;border:1px solid #ddd;"></td><th>장소</th><td><input type="text" class="auto-location" readonly style="background:#f9f9f9;text-align:center;"></td></tr>
+            <colgroup><col style="width:15%;"><col style="width:44%;"><col style="width:14%;"><col style="width:27%;"></colgroup>
+            <tr><th style="height:64px">과제</th><td><input type="text" class="auto-project" readonly style="background:#f9f9f9;text-align:center;font-size:12px;"></td><th>작성자</th><td><input type="text" id="doc_attendee_author_${idx}" readonly style="background:#f9f9f9;text-align:center;width:100%;padding:4px;border:1px solid #ddd;"></td></tr>
+            <tr><th style="height:64px">일시</th><td><input type="text" id="doc_attendee_datetime_${idx}" readonly style="background:#f9f9f9;text-align:center;width:100%;padding:4px;border:1px solid #ddd;"></td><th>장소</th><td><input type="text" class="auto-location" readonly style="background:#f9f9f9;text-align:center;"></td></tr>
         </table>
         <table class="form-table" style="margin-top:20px;">
             <thead><tr style="height:40px;"><th style="width:70px;">구분</th><th>소속</th><th>성명</th><th style="width:100px;">서명</th></tr></thead>
@@ -2728,7 +2813,7 @@ document.addEventListener('DOMContentLoaded', function() {
     let tempTripSelectedIds = new Set();
 
     // 출장 기간의 모든 날짜에 대해 중복 여부 확인
-    async function checkTripPersonConflicts(empIdx, projectIdx) {
+    async function checkTripPersonConflicts(empIdx, projectIdx, excludeIdx) {
         const startDateVal = document.getElementById('common_date')?.value;
         if (!startDateVal || !projectIdx) return false;
         const duration = parseInt(document.getElementById('common_duration')?.value || '0');
@@ -2743,7 +2828,9 @@ document.addEventListener('DOMContentLoaded', function() {
         }
         const results = await Promise.all(dates.map(async date => {
             try {
-                const res = await fetch(`/api/receipt-common/check-duplicate?date=${date}&attendeeIdx=${empIdx}&projectIdx=${projectIdx}`);
+                let url = `/api/receipt-common/check-duplicate?date=${date}&attendeeIdx=${empIdx}&projectIdx=${projectIdx}`;
+                if (excludeIdx) url += `&excludeReceiptIdx=${excludeIdx}&excludeDocumentType=RCTM`;
+                const res = await fetch(url);
                 if (!res.ok) return false;
                 const data = await res.json();
                 return Array.isArray(data) && data.length > 0;
@@ -2884,8 +2971,9 @@ document.addEventListener('DOMContentLoaded', function() {
         const projectIdx = document.getElementById('selectedProjectIdx')?.value;
         const startDateVal = document.getElementById('common_date')?.value;
         const canCheckDup = !!(startDateVal && projectIdx);
+        const excludeIdx = getUrlParameter('id') || null;
         const dupResults = canCheckDup
-            ? await Promise.all(filtered.map(p => checkTripPersonConflicts(p.id, projectIdx)))
+            ? await Promise.all(filtered.map(p => checkTripPersonConflicts(p.id, projectIdx, excludeIdx)))
             : filtered.map(() => false);
 
         // 겹치는 사람을 맨 아래로
@@ -3360,7 +3448,7 @@ document.addEventListener('DOMContentLoaded', function() {
             const el = document.getElementById(id);
             if (el) {
                 el.addEventListener('click', function() {
-                    if (this.showPicker) this.showPicker();
+                    if (this.showPicker) { try { this.showPicker(); } catch(e) {} }
                 });
             }
         });
@@ -4319,12 +4407,14 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     }
 
-    // 과제명이 비어있을 때 빨간색 테두리 표시
-    setTimeout(() => {
-        if (commonProject && !commonProject.value) {
-            commonProject.style.borderColor = '#ef5350';
-        }
-    }, 500);
+    // 과제명이 비어있을 때 빨간색 테두리 표시 (신규 작성 모드에서만)
+    if (!getUrlParameter('id')) {
+        setTimeout(() => {
+            if (commonProject && !commonProject.value) {
+                commonProject.style.borderColor = '#ef5350';
+            }
+        }, 500);
+    }
 
     // ============================================
     // URL 파라미터 유틸리티
@@ -4380,7 +4470,7 @@ document.addEventListener('DOMContentLoaded', function() {
             console.log('[DEBUG] populateForm - projectIdx:', data.projectIdx, '/ projName:', projName);
             if (projName) {
                 const pEl = document.getElementById('common_project');
-                if (pEl) { pEl.value = projName; pEl.classList.remove('field-empty'); }
+                if (pEl) { pEl.value = projName; pEl.style.borderColor = ''; pEl.classList.remove('field-empty'); }
                 document.querySelectorAll('.auto-project').forEach(el => {
                     if (el.tagName === 'INPUT') el.value = projName;
                     else el.textContent = projName;
