@@ -22,7 +22,7 @@ public interface ReceiptMeetingRepository extends JpaRepository<ReceiptMeeting, 
      * 회의비, 출장비 등 모든 집행액의 합계
      */
     @Query("SELECT COALESCE(SUM(rm.amount), 0) FROM ReceiptMeeting rm " +
-            "WHERE rm.projectIdx = :projectIdx ")
+            "WHERE rm.projectIdx = :projectIdx AND rm.isDeleted = false")
     BigDecimal sumAmountByProjectIdx(@Param("projectIdx") Long projectIdx);
 
     /**
