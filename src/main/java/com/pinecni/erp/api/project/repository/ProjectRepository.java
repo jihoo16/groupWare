@@ -72,9 +72,10 @@ public interface ProjectRepository extends JpaRepository<Project, Long> {
             "pm.empName, p.startDate, p.endDate, p.projectStatus, p.description, " +
             "p.receiptUrl, p.activityBudget, p.equipmentBudget, p.materialBudget, p.progressRate, " +
             "COUNT(DISTINCT m.idx), " +
-            "((SELECT COALESCE(SUM(rm.amount), 0) FROM ReceiptMeeting rm WHERE rm.projectIdx = p.idx) + " +
-            "(SELECT COALESCE(SUM(COALESCE(rt.totalFee, 0)), 0) FROM ReceiptTrip rt WHERE rt.projectIdx = p.idx) + " +
-            "(SELECT COALESCE(SUM(ro.totalAmount), 0) FROM ReceiptOvertime ro WHERE ro.projectIdx = p.idx)), " +
+            "((SELECT COALESCE(SUM(rm.amount), 0) FROM ReceiptMeeting rm WHERE rm.projectIdx = p.idx AND rm.isDeleted = false) + " +
+            "(SELECT COALESCE(SUM(COALESCE(rt.totalFee, 0)), 0) FROM ReceiptTrip rt WHERE rt.projectIdx = p.idx AND rt.deleted = false) + " +
+            "(SELECT COALESCE(SUM(ro.totalAmount), 0) FROM ReceiptOvertime ro WHERE ro.projectIdx = p.idx AND ro.isDeleted = false) + " +
+            "(SELECT COALESCE(SUM(COALESCE(rtm.totalFee, 0)), 0) FROM ReceiptTripMeeting rtm WHERE rtm.projectIdx = p.idx AND rtm.deleted = false)), " +
             "p.totalPeriodStart, p.totalPeriodEnd, " +
             "p.createdAt, p.updatedAt, p.createdUserIdx, p.updatedUserIdx " +
             "FROM Project p " +
@@ -92,9 +93,10 @@ public interface ProjectRepository extends JpaRepository<Project, Long> {
             "pm.empName, p.startDate, p.endDate, p.projectStatus, p.description, " +
             "p.receiptUrl, p.activityBudget, p.equipmentBudget, p.materialBudget, p.progressRate, " +
             "COUNT(DISTINCT m.idx), " +
-            "((SELECT COALESCE(SUM(rm.amount), 0) FROM ReceiptMeeting rm WHERE rm.projectIdx = p.idx) + " +
-            "(SELECT COALESCE(SUM(COALESCE(rt.totalFee, 0)), 0) FROM ReceiptTrip rt WHERE rt.projectIdx = p.idx) + " +
-            "(SELECT COALESCE(SUM(ro.totalAmount), 0) FROM ReceiptOvertime ro WHERE ro.projectIdx = p.idx)), " +
+            "((SELECT COALESCE(SUM(rm.amount), 0) FROM ReceiptMeeting rm WHERE rm.projectIdx = p.idx AND rm.isDeleted = false) + " +
+            "(SELECT COALESCE(SUM(COALESCE(rt.totalFee, 0)), 0) FROM ReceiptTrip rt WHERE rt.projectIdx = p.idx AND rt.deleted = false) + " +
+            "(SELECT COALESCE(SUM(ro.totalAmount), 0) FROM ReceiptOvertime ro WHERE ro.projectIdx = p.idx AND ro.isDeleted = false) + " +
+            "(SELECT COALESCE(SUM(COALESCE(rtm.totalFee, 0)), 0) FROM ReceiptTripMeeting rtm WHERE rtm.projectIdx = p.idx AND rtm.deleted = false)), " +
             "p.totalPeriodStart, p.totalPeriodEnd, " +
             "p.createdAt, p.updatedAt, p.createdUserIdx, p.updatedUserIdx " +
             "FROM Project p " +
@@ -112,9 +114,10 @@ public interface ProjectRepository extends JpaRepository<Project, Long> {
             "pm.empName, p.startDate, p.endDate, p.projectStatus, p.description, " +
             "p.receiptUrl, p.activityBudget, p.equipmentBudget, p.materialBudget, p.progressRate, " +
             "COUNT(DISTINCT m.idx), " +
-            "((SELECT COALESCE(SUM(rm.amount), 0) FROM ReceiptMeeting rm WHERE rm.projectIdx = p.idx) + " +
-            "(SELECT COALESCE(SUM(COALESCE(rt.totalFee, 0)), 0) FROM ReceiptTrip rt WHERE rt.projectIdx = p.idx) + " +
-            "(SELECT COALESCE(SUM(ro.totalAmount), 0) FROM ReceiptOvertime ro WHERE ro.projectIdx = p.idx)), " +
+            "((SELECT COALESCE(SUM(rm.amount), 0) FROM ReceiptMeeting rm WHERE rm.projectIdx = p.idx AND rm.isDeleted = false) + " +
+            "(SELECT COALESCE(SUM(COALESCE(rt.totalFee, 0)), 0) FROM ReceiptTrip rt WHERE rt.projectIdx = p.idx AND rt.deleted = false) + " +
+            "(SELECT COALESCE(SUM(ro.totalAmount), 0) FROM ReceiptOvertime ro WHERE ro.projectIdx = p.idx AND ro.isDeleted = false) + " +
+            "(SELECT COALESCE(SUM(COALESCE(rtm.totalFee, 0)), 0) FROM ReceiptTripMeeting rtm WHERE rtm.projectIdx = p.idx AND rtm.deleted = false)), " +
             "p.totalPeriodStart, p.totalPeriodEnd, " +
             "p.createdAt, p.updatedAt, p.createdUserIdx, p.updatedUserIdx " +
             "FROM Project p " +
@@ -133,9 +136,10 @@ public interface ProjectRepository extends JpaRepository<Project, Long> {
             "pm.empName, p.startDate, p.endDate, p.projectStatus, p.description, " +
             "p.receiptUrl, p.activityBudget, p.equipmentBudget, p.materialBudget, p.progressRate, " +
             "COUNT(DISTINCT m2.idx), " +
-            "((SELECT COALESCE(SUM(rm.amount), 0) FROM ReceiptMeeting rm WHERE rm.projectIdx = p.idx) + " +
-            "(SELECT COALESCE(SUM(COALESCE(rt.totalFee, 0)), 0) FROM ReceiptTrip rt WHERE rt.projectIdx = p.idx) + " +
-            "(SELECT COALESCE(SUM(ro.totalAmount), 0) FROM ReceiptOvertime ro WHERE ro.projectIdx = p.idx)), " +
+            "((SELECT COALESCE(SUM(rm.amount), 0) FROM ReceiptMeeting rm WHERE rm.projectIdx = p.idx AND rm.isDeleted = false) + " +
+            "(SELECT COALESCE(SUM(COALESCE(rt.totalFee, 0)), 0) FROM ReceiptTrip rt WHERE rt.projectIdx = p.idx AND rt.deleted = false) + " +
+            "(SELECT COALESCE(SUM(ro.totalAmount), 0) FROM ReceiptOvertime ro WHERE ro.projectIdx = p.idx AND ro.isDeleted = false) + " +
+            "(SELECT COALESCE(SUM(COALESCE(rtm.totalFee, 0)), 0) FROM ReceiptTripMeeting rtm WHERE rtm.projectIdx = p.idx AND rtm.deleted = false)), " +
             "p.totalPeriodStart, p.totalPeriodEnd, " +
             "p.createdAt, p.updatedAt, p.createdUserIdx, p.updatedUserIdx " +
             "FROM Project p " +

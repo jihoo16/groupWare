@@ -7,6 +7,7 @@ import com.pinecni.erp.api.project.repository.ProjectMemberRepository;
 import com.pinecni.erp.api.project.repository.ProjectRelationRepository;
 import com.pinecni.erp.api.project.repository.ProjectRepository;
 import com.pinecni.erp.api.project.repository.ReceiptMeetingRepository;
+import com.pinecni.erp.api.project.repository.ReceiptTripMeetingRepository;
 import com.pinecni.erp.api.project.repository.ReceiptTripRepository;
 import com.pinecni.erp.api.document.repository.ReceiptOvertimeRepository;
 import com.pinecni.erp.api.user.repository.UserRepository;
@@ -38,6 +39,7 @@ public class ProjectMapper {
     private final ProjectExpenseSettingRepository projectExpenseSettingRepository;
     private final ReceiptMeetingRepository receiptMeetingRepository;
     private final ReceiptTripRepository receiptTripRepository;
+    private final ReceiptTripMeetingRepository receiptTripMeetingRepository;
     private final ReceiptOvertimeRepository receiptOvertimeRepository;
     private final UserRepository userRepository;
     private final CodeRepository codeRepository;
@@ -116,18 +118,21 @@ public class ProjectMapper {
                 .map(this::toExpenseSettingDTO)
                 .collect(Collectors.toList());
 
-        // 활동비 사용액 조회 (회의비, 출장비, 야근식대 집행 금액 합계)
+        // 활동비 사용액 조회 (회의비, 출장비, 야근식대, 출장+회의 집행 금액 합계 - 삭제 제외)
         BigDecimal meetingUsed = receiptMeetingRepository.sumAmountByProjectIdx(entity.getIdx());
         BigDecimal tripUsed = receiptTripRepository.sumAmountByProjectIdx(entity.getIdx());
         BigDecimal overtimeUsed = receiptOvertimeRepository.sumAmountByProjectIdx(entity.getIdx());
-        BigDecimal activityUsed = meetingUsed.add(tripUsed).add(overtimeUsed);
+        BigDecimal tripMeetingUsedTotal = receiptTripMeetingRepository.sumTripFeeByProjectIdx(entity.getIdx());
+        BigDecimal activityUsed = meetingUsed.add(tripUsed).add(overtimeUsed).add(tripMeetingUsedTotal);
 
-        // 활동비 세부 내역 (문서번호 prefix 기준)
-        BigDecimal meetingOnly = receiptMeetingRepository.sumAmountByProjectIdxAndDocPrefix(entity.getIdx(), "RCM-");
-        BigDecimal tripOnly = receiptTripRepository.sumAmountByProjectIdxAndDocPrefix(entity.getIdx(), "RCT-");
-        BigDecimal tripMeetingMeeting = receiptMeetingRepository.sumAmountByProjectIdxAndDocPrefix(entity.getIdx(), "RCTM-");
-        BigDecimal tripMeetingTrip = receiptTripRepository.sumAmountByProjectIdxAndDocPrefix(entity.getIdx(), "RCTM-");
-        BigDecimal tripMeetingUsed = tripMeetingMeeting.add(tripMeetingTrip);
+        // 활동비 세부 내역
+        // - receipt_meeting 에는 RCM 문서만 저장됨
+        // - receipt_trip 에는 RCT 문서만 저장됨
+        // - receipt_trip_meeting 에는 RCTM 문서만 저장됨
+        // prefix 기반 쿼리 불필요 - 위에서 계산된 값 재사용
+        BigDecimal meetingOnly = meetingUsed;
+        BigDecimal tripOnly = tripUsed;
+        BigDecimal tripMeetingUsed = tripMeetingUsedTotal;
 
         // 장비비 사용액 (추후 구현 예정, 현재는 0)
         BigDecimal equipmentUsed = BigDecimal.ZERO;
