@@ -1041,7 +1041,7 @@ div:focus {
 
 .doc-title {
     text-align: center;
-    font-size: 20.5px;
+    font-size: 30px !important;
     font-weight: 700;
     color: #333;
     margin: 0 0 25px 0;
@@ -1107,7 +1107,7 @@ div:focus {
     border: none !important;
 }
 
-td, td span, td input {
+.editor-area td, .editor-area td span, .editor-area td input {
     font-size: 14px;
 }
 
@@ -1726,7 +1726,11 @@ input.auto-datetime {
     color: #d1d5db;
 }
 
-/* .added 클래스 제거 - 모든 참석자를 동일하게 처리 */
+.employee-item.added {
+    border-color: #667eea;
+    background: linear-gradient(135deg, #e8f0fe 0%, #f5f7ff 100%);
+    box-shadow: 0 4px 12px rgba(102, 126, 234, 0.2);
+}
 
 .employee-item i {
     font-size: 23.8px;
@@ -1936,14 +1940,15 @@ input.auto-datetime {
 }
 
 .employee-name {
-    font-size: 11.9px;
+    font-size: 14px;
     font-weight: 700;
     color: #333;
     margin-bottom: 3px;
 }
 
-.employee-detail {
-    font-size: 10.3px;
+.employee-detail,
+.employee-details {
+    font-size: 12.5px;
     color: #777;
 }
 
@@ -2679,6 +2684,15 @@ input.auto-datetime {
     animation: shake 0.5s ease;
 }
 
+.daily-expense-table.field-empty {
+    border: 2px solid #ef4444 !important;
+    animation: shake 0.5s ease;
+}
+
+.daily-expense-table.field-empty thead tr:first-child th {
+    background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%) !important;
+}
+
 .field-empty:focus {
     border-color: #dc2626 !important;
     box-shadow: 0 0 0 3px rgba(239, 68, 68, 0.1) !important;
@@ -2706,7 +2720,11 @@ input.auto-datetime {
     .attachment-section,
     .document-preview-toggle,
     .pdf-loading-modal,
-    .modal {
+    .modal,
+    #pageLoadingOverlay,
+    #documentForm > .common-info-section,
+    #documentForm > .attachment-section,
+    #documentForm > .document-preview-toggle {
         display: none !important;
     }
 
@@ -2728,7 +2746,9 @@ input.auto-datetime {
     .document-form-wrapper,
     .document-form-wrapper.collapsed,
     .document-form,
-    #documentFormContent {
+    #documentFormContent,
+    #documentForm,
+    #documentForm > div {
         all: unset !important;
         display: block !important;
         width: 100% !important;
@@ -2737,13 +2757,14 @@ input.auto-datetime {
         position: static !important;
         float: none !important;
         clear: both !important;
+        height: auto !important;
+        min-height: 0 !important;
     }
 
     /* 각 페이지를 새로운 페이지로 강제 */
     #documentFormContent > div {
         display: block !important;
         width: 210mm !important;
-        min-height: 297mm !important;
         page-break-after: always !important;
         page-break-before: auto !important;
         break-after: page !important;
@@ -2757,59 +2778,48 @@ input.auto-datetime {
         overflow: visible !important;
     }
 
-    /* 마지막 페이지 (복명서) - 한 장에 맞게 (가로 고정, 세로만 압축) */
-    #documentFormContent > div:last-child {
-        page-break-after: auto !important;
-        break-after: auto !important;
-        padding-top: 8mm !important;
-        padding-bottom: 8mm !important;
+    /* 복명서: 마지막 페이지 - 특이성을 높여 page-break-after: always 재정의 */
+    #documentFormContent > #tripReportFormDiv {
+        page-break-after: avoid !important;
+        break-after: avoid !important;
     }
 
     /* 복명서: 출장내용 th - 내용 따라 자동 높이 */
-    #documentFormContent > div:last-child th[style*="height"] {
-        height: auto !important;
-        min-height: 40px !important;
-    }
-
-    /* 복명서: 출장내용 및 결과 td - 위아래 균등 여백 */
-    #documentFormContent > div:last-child td[style*="pre-wrap"] {
+    #tripReportResultCell {
         vertical-align: middle !important;
-        padding-top: 10px !important;
-        padding-bottom: 10px !important;
+        padding: 10px !important;
     }
 
-    /* 복명서: 결재란 서명칸 높이 축소 */
-    #documentFormContent > div:last-child td[style*="height: 78px"] {
-        height: 48px !important;
-    }
+    /* ── class-based 복명서 레이아웃 (다일차 출장) ── */
 
-    /* 복명서: 모든 테이블 셀 세로 패딩 축소 */
-    #documentFormContent > div:last-child table td,
-    #documentFormContent > div:last-child table th {
-        padding-top: 4px !important;
-        padding-bottom: 4px !important;
-    }
+    /* td/span/input 의 font-size 가 table 에서 상속되도록 */
+    #tripReportFormDiv[class*="trip-"] #tripReportMainTable td,
+    #tripReportFormDiv[class*="trip-"] #tripReportMainTable td span,
+    #tripReportFormDiv[class*="trip-"] #tripReportMainTable td input,
+    #tripReportFormDiv[class*="trip-"] #tripReportMainTable th { font-size: inherit; }
 
-    /* 복명서: 정산 세부내역 행은 더 촘촘하게 */
-    #documentFormContent > div:last-child #reportExpenseBody td {
-        padding-top: 3px !important;
-        padding-bottom: 3px !important;
-    }
+    /* 2일 */
+    #tripReportFormDiv.trip-2day #tripReportMainTable { font-size: 12px; line-height: 1.3; margin-top: 8px; }
+    #tripReportFormDiv.trip-2day #tripReportMainTable th { height: 30px; padding: 4px 6px; }
+    #tripReportFormDiv.trip-2day #tripReportMainTable td { padding: 4px 6px; }
+    #tripReportFormDiv.trip-2day #reportExpenseBody td { padding: 3px 6px; }
 
-    /* 복명서: 테이블 간격 축소 */
-    #documentFormContent > div:last-child table {
-        margin-top: 6px !important;
-    }
+    /* 3일 */
+    #tripReportFormDiv.trip-3day #tripReportMainTable { font-size: 11px; line-height: 1.2; margin-top: 5px; }
+    #tripReportFormDiv.trip-3day #tripReportMainTable th { height: 22px; padding: 4px; }
+    #tripReportFormDiv.trip-3day #tripReportMainTable td { padding: 4px; }
+    #tripReportFormDiv.trip-3day #reportExpenseBody td { padding: 3px 4px; }
 
-    /* 복명서: 제목 마진 축소 */
-    #documentFormContent > div:last-child h2 {
-        margin-bottom: 4px !important;
-    }
+    /* 기본: 정산내역서 테이블 위 여백 보장 */
+    #tripReportFormDiv table:not(#tripReportMainTable) { margin-top: 20px; }
 
-    /* 복명서: 결재란 마진 축소 */
-    #documentFormContent > div:last-child div[style*="float: right"] {
-        margin-bottom: 8px !important;
-    }
+    /* 4일 - 기본정보 테이블: 읽기 가능한 크기 유지 */
+    #tripReportFormDiv.trip-4day #tripReportMainTable { font-size: 11px; line-height: 1.1; margin-top: 2px; }
+    #tripReportFormDiv.trip-4day #tripReportMainTable th { height: 16px; padding: 3px 4px; }
+    #tripReportFormDiv.trip-4day #tripReportMainTable td { padding: 3px 4px; }
+    /* 4일 - 정산내역서 테이블: 여백 최소화 */
+    #tripReportFormDiv.trip-4day #reportExpenseBody td { padding: 1px 3px; }
+    #tripReportFormDiv.trip-4day table:not(#tripReportMainTable) { font-size: 10px; margin-top: 4px !important; }
 
     /* 테이블 스타일 */
     table {
@@ -2829,6 +2839,7 @@ input.auto-datetime {
 
     .doc-title {
         color: #000 !important;
+        font-size: 30px !important;
         font-weight: bold !important;
     }
 
