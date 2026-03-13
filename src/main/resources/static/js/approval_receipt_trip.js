@@ -3266,6 +3266,13 @@ document.addEventListener('DOMContentLoaded', async function() {
             matchesSearch(person.name + person.dept + person.position, searchText)
         );
 
+        // 시간 중복 인원을 하단으로 정렬
+        filtered.sort((a, b) => {
+            const aDup = !!duplicateTripPersonsInfo[a.id];
+            const bDup = !!duplicateTripPersonsInfo[b.id];
+            return aDup - bDup;
+        });
+
         if (filtered.length === 0) {
             tripPersonList2El.innerHTML = '<div style="text-align: center; padding: 40px; color: #94a3b8;"><i class="fas fa-search" style="font-size: 32px; margin-bottom: 12px; display: block;"></i>검색 결과가 없습니다.</div>';
             return;
