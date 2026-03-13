@@ -3298,8 +3298,9 @@ document.addEventListener('DOMContentLoaded', function() {
         const projectVal = document.getElementById('selectedProjectIdx')?.value;
         const canCheckDup = !!(dateVal && startVal && endVal && projectVal);
 
+        const excludeId = getUrlParameter('id') || null;
         const dupResults = canCheckDup
-            ? await Promise.all(filtered.map(p => checkAuthorDuplicate(String(p.idx), dateVal, startVal, endVal, projectVal, null, null, true)))
+            ? await Promise.all(filtered.map(p => checkAuthorDuplicate(String(p.idx), dateVal, startVal, endVal, projectVal, excludeId, 'RCTM', true)))
             : filtered.map(() => false);
 
         attendeeList2El.innerHTML = filtered.map((person, i) => {
@@ -3942,8 +3943,9 @@ document.addEventListener('DOMContentLoaded', function() {
         const projectVal = document.getElementById('selectedProjectIdx')?.value;
         const canCheckDup = !!(dateVal && startVal && endVal && projectVal);
 
+        const excludeId = getUrlParameter('id') || null;
         const dupResults = canCheckDup
-            ? await Promise.all(filteredPersons.map(p => checkAuthorDuplicate(p.id, dateVal, startVal, endVal, projectVal)))
+            ? await Promise.all(filteredPersons.map(p => checkAuthorDuplicate(p.id, dateVal, startVal, endVal, projectVal, excludeId, 'RCTM')))
             : filteredPersons.map(() => false);
 
         // 겹치는 사람을 맨 아래로
@@ -4958,8 +4960,27 @@ document.addEventListener('DOMContentLoaded', function() {
                     const err = await response.json().catch(() => ({}));
                     throw new Error(err.error || '수정에 실패했습니다.');
                 }
-                await Swal.fire({ icon: 'success', title: '수정 완료', text: '수정이 완료되었습니다.', confirmButtonText: '확인' });
-                window.location.reload();
+                let countdown = 3;
+                const swalResult = await Swal.fire({
+                    icon: 'success',
+                    title: '수정 완료',
+                    html: `수정이 완료되었습니다.<br><br><b id="swal-countdown">${countdown}</b>초 후 목록으로 이동합니다.`,
+                    confirmButtonText: '목록으로 이동',
+                    showCancelButton: false,
+                    allowOutsideClick: false,
+                    didOpen: () => {
+                        const timer = setInterval(() => {
+                            countdown--;
+                            const el = document.getElementById('swal-countdown');
+                            if (el) el.textContent = countdown;
+                            if (countdown <= 0) {
+                                clearInterval(timer);
+                                Swal.close();
+                            }
+                        }, 1000);
+                    }
+                });
+                window.location.href = '/approval/receipt-trip-meeting';
             } catch (e) {
                 showWarning('수정 중 오류가 발생했습니다.\n' + e.message);
             }
