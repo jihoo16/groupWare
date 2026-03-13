@@ -46,6 +46,6 @@ public interface ReceiptTripMeetingRepository extends JpaRepository<ReceiptTripM
      */
     @Query("SELECT COALESCE(SUM(COALESCE(rtm.totalFee, 0)), 0) " +
            "FROM ReceiptTripMeeting rtm " +
-           "WHERE rtm.projectIdx = :projectIdx")
+           "WHERE rtm.projectIdx = :projectIdx AND rtm.deleted = false")
     BigDecimal sumTripFeeByProjectIdx(@Param("projectIdx") Long projectIdx);
 }

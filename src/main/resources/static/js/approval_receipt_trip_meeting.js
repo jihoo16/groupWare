@@ -2395,6 +2395,36 @@ document.addEventListener('DOMContentLoaded', function() {
                 }
             }
 
+            // 활동비 초과 여부 확인 (경고만, 차단 없음)
+            const projIdxForBudget = document.getElementById('selectedProjectIdx')?.value;
+            if (projIdxForBudget) {
+                try {
+                    const budgetRes = await fetch(`/api/projects/${projIdxForBudget}/activity-usage`);
+                    if (budgetRes.ok) {
+                        const budgetData = await budgetRes.json();
+                        const tripFee = dailyExpenses.reduce((s, e) => s + (e.transport||0) + (e.lodging||0) + (e.meal||0) + (e.other||0), 0);
+                        const meetingFee = parseInt((document.getElementById('common_amount')?.value || '0').replace(/,/g, '')) || 0;
+                        const currentTotalFee = tripFee + meetingFee;
+                        const newTotalSpent = (budgetData.totalSpent || 0) + currentTotalFee;
+                        if (newTotalSpent > (budgetData.activityBudget || 0)) {
+                            const excessAmount = newTotalSpent - (budgetData.activityBudget || 0);
+                            const budgetResult = await Swal.fire({
+                                icon: 'warning',
+                                title: '활동비 초과 경고',
+                                html: `등록하려는 금액(<b>${currentTotalFee.toLocaleString()}원</b>)을 포함하면<br>활동비 예산을 <b style="color:#ef4444;">${excessAmount.toLocaleString()}원</b> 초과합니다.<br><br>그래도 저장하시겠습니까?`,
+                                showCancelButton: true,
+                                confirmButtonText: '저장',
+                                cancelButtonText: '취소',
+                                confirmButtonColor: '#667eea'
+                            });
+                            if (!budgetResult.isConfirmed) return;
+                        }
+                    }
+                } catch (e) {
+                    console.warn('활동비 조회 실패:', e);
+                }
+            }
+
             if (!await showConfirm('저장하시겠습니까?')) return;
 
             // [1] 공통 값 수집
@@ -4452,6 +4482,8 @@ document.addEventListener('DOMContentLoaded', function() {
 
     async function populateForm(data) {
         isPopulatingForm = true;
+        // 수정 시 활동비 비교를 위해 원래 totalFee 저장
+        window._originalTripMeetingFee = data.totalFee || 0;
         try {
         // 출장내용 자동 업데이트 방지 (userModified 먼저 설정)
         const tripResultEl = document.getElementById('common_trip_result');
@@ -4810,6 +4842,37 @@ document.addEventListener('DOMContentLoaded', function() {
                             return;
                         }
                     }
+                }
+            }
+
+            // 활동비 초과 여부 확인 (경고만, 차단 없음)
+            const projIdxForBudgetUpd = document.getElementById('selectedProjectIdx')?.value;
+            if (projIdxForBudgetUpd) {
+                try {
+                    const budgetResUpd = await fetch(`/api/projects/${projIdxForBudgetUpd}/activity-usage`);
+                    if (budgetResUpd.ok) {
+                        const budgetDataUpd = await budgetResUpd.json();
+                        const tripFeeUpd = dailyExpenses.reduce((s, e) => s + (e.transport||0) + (e.lodging||0) + (e.meal||0) + (e.other||0), 0);
+                        const meetingFeeUpd = parseInt((document.getElementById('common_amount')?.value || '0').replace(/,/g, '')) || 0;
+                        const newTotalFeeUpd = tripFeeUpd + meetingFeeUpd;
+                        const oldFee = window._originalTripMeetingFee || 0;
+                        const adjustedSpent = (budgetDataUpd.totalSpent || 0) - oldFee + newTotalFeeUpd;
+                        if (adjustedSpent > (budgetDataUpd.activityBudget || 0)) {
+                            const excessAmount = adjustedSpent - (budgetDataUpd.activityBudget || 0);
+                            const budgetResultUpd = await Swal.fire({
+                                icon: 'warning',
+                                title: '활동비 초과 경고',
+                                html: `수정 금액(<b>${newTotalFeeUpd.toLocaleString()}원</b>)을 포함하면<br>활동비 예산을 <b style="color:#ef4444;">${excessAmount.toLocaleString()}원</b> 초과합니다.<br><br>그래도 수정하시겠습니까?`,
+                                showCancelButton: true,
+                                confirmButtonText: '수정',
+                                cancelButtonText: '취소',
+                                confirmButtonColor: '#667eea'
+                            });
+                            if (!budgetResultUpd.isConfirmed) return;
+                        }
+                    }
+                } catch (e) {
+                    console.warn('활동비 조회 실패:', e);
                 }
             }
 
