@@ -1517,15 +1517,16 @@ document.addEventListener('DOMContentLoaded', async function() {
                         const mealExpense  = person.mealExpense  || fixedMealExpenses[positionName] || 0;
                         const dailyExpense = person.tripExpense  || fixedExpenses[positionName]     || 0;
                         const totalExpense = mealExpense + dailyExpense;
-                        const expenseText  = totalExpense > 0
-                            ? `식비 ${mealExpense.toLocaleString()}원 · 일비 ${dailyExpense.toLocaleString()}원`
-                            : '-';
-                        expenseDisplay = `<span style="color: #667eea; font-weight: 600;">${expenseText}</span>`;
+                        if (totalExpense > 0) {
+                            expenseDisplay = `<span class="expense-tag">일비 ${dailyExpense.toLocaleString()}원 · 식비 ${mealExpense.toLocaleString()}원</span>`;
+                        }
                     }
 
-                    const personClass = person.type === 'external'
-                        ? 'trip-person-item external-attendee'
-                        : 'trip-person-item';
+                    const personClass = [
+                        'trip-person-item',
+                        person.type === 'external' ? 'external-attendee' : '',
+                        isReporter ? 'is-author' : ''
+                    ].filter(Boolean).join(' ');
 
                     // 중복 검증 결과 확인
                     const isDuplicate = duplicateTripPersonsInfo[person.id];
@@ -1995,11 +1996,17 @@ document.addEventListener('DOMContentLoaded', async function() {
                 }
             });
 
-            // 저장 버튼 활성/비활성
+            // 저장/수정 버튼 활성/비활성
             if (submitBtn) {
                 submitBtn.disabled = hasExpenseOverflow;
                 submitBtn.style.opacity = hasExpenseOverflow ? '0.5' : '';
                 submitBtn.style.cursor  = hasExpenseOverflow ? 'not-allowed' : '';
+            }
+            const updateBtnEl = document.getElementById('updateBtn');
+            if (updateBtnEl) {
+                updateBtnEl.disabled = hasExpenseOverflow;
+                updateBtnEl.style.opacity = hasExpenseOverflow ? '0.5' : '';
+                updateBtnEl.style.cursor  = hasExpenseOverflow ? 'not-allowed' : '';
             }
 
             // 인쇄 버튼 갱신 (비용 입력 여부 반영)
@@ -3992,6 +3999,13 @@ document.addEventListener('DOMContentLoaded', async function() {
             const totalFeeCheck = Array.from(expInputsCheck).reduce((s, inp) => s + (parseFloat(inp.value.replace(/,/g, '')) || 0), 0);
             if (totalFeeCheck === 0) {
                 showWarning('날짜별 사용금액을 입력해주세요.');
+                document.getElementById('dailyExpenseTable')?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                return;
+            }
+
+            // 기준 금액 초과 시 수정 차단
+            if (hasExpenseOverflow) {
+                showWarning('기준 금액을 초과한 항목이 있습니다. 비용을 조정해주세요.');
                 document.getElementById('dailyExpenseTable')?.scrollIntoView({ behavior: 'smooth', block: 'center' });
                 return;
             }
