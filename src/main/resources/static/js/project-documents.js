@@ -63,33 +63,6 @@ document.addEventListener('DOMContentLoaded', function() {
             }
         });
 
-        // 출장 관련 메뉴 클릭 방지
-        const tripMenuItem = documentTypeMenu.querySelector('a[href="/approval/receipt-trip"]');
-        const tripMeetingMenuItem = documentTypeMenu.querySelector('a[href="/approval/receipt-trip-meeting"]');
-
-        if (tripMenuItem) {
-            tripMenuItem.addEventListener('click', function(e) {
-                e.preventDefault();
-                Swal.fire({
-                    icon: 'info',
-                    title: '준비중입니다',
-                    text: '단독 출장 증빙 기능은 추후 구현 예정입니다.'
-                });
-                documentTypeMenu.classList.remove('show');
-            });
-        }
-
-        if (tripMeetingMenuItem) {
-            tripMeetingMenuItem.addEventListener('click', function(e) {
-                e.preventDefault();
-                Swal.fire({
-                    icon: 'info',
-                    title: '준비중입니다',
-                    text: '출장+회의 증빙 기능은 추후 구현 예정입니다.'
-                });
-                documentTypeMenu.classList.remove('show');
-            });
-        }
     }
 
     // 사이드바 메뉴 클릭
@@ -99,25 +72,6 @@ document.addEventListener('DOMContentLoaded', function() {
 
             // 문서함 선택
             const category = this.getAttribute('data-category');
-
-            // 출장 관련 카테고리는 준비중 메시지 표시
-            if (category === 'receipt-trip') {
-                Swal.fire({
-                    icon: 'info',
-                    title: '준비중입니다',
-                    text: '단독 장 증빙 기능은 추후 구현 예정입니다.'
-                });
-                return;
-            }
-
-            if (category === 'receipt-trip-meeting') {
-                Swal.fire({
-                    icon: 'info',
-                    title: '준비중입니다',
-                    text: '출장+회의 증빙 기능은 추후 구현 예정입니다.'
-                });
-                return;
-            }
 
             // 활성화 상태 변경
             sidebarMenuItems.forEach(i => i.classList.remove('active'));
