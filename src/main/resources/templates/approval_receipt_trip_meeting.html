@@ -751,13 +751,25 @@
         <div class="modal-body">
             <div class="modal-search">
                 <i class="fas fa-search"></i>
-                <input type="text" id="personSearchInput" placeholder="이름 또는 부서 검색...">
+                <input type="text" id="tripPersonSearchInput" placeholder="이름 또는 부서 검색...">
+            </div>
+            <!-- 선택된 인원 합계 표시 -->
+            <div id="tripPersonSummary" style="display: none; background: #f0f9ff; border: 1px solid #0ea5e9; border-radius: 8px; padding: 12px 16px; margin-bottom: 16px;">
+                <div style="display: flex; justify-content: space-between; align-items: center;">
+                    <span style="font-weight: 600; color: #0369a1;">
+                        <i class="fas fa-users" style="margin-right: 8px;"></i>
+                        선택 인원: <span id="selectedPersonCount">0</span>명
+                    </span>
+                    <div style="display: flex; gap: 20px; font-size: 0.95em;">
+                        <span style="color: #0369a1;">식비 합계: <strong id="selectedMealTotal">0</strong>원</span>
+                        <span style="color: #0369a1;">일비 합계: <strong id="selectedDailyTotal">0</strong>원</span>
+                    </div>
+                </div>
             </div>
             <div class="employee-list" id="tripPersonList2">
                 <!-- 동적 생성 -->
             </div>
         </div>
-        <div id="tripPersonExpenseSummary" class="trip-modal-expense-summary" style="display:none;"></div>
         <div class="modal-footer">
             <button class="btn-secondary" onclick="closeTripPersonModal()">취소</button>
             <button class="btn-primary" onclick="addSelectedPersons()">추가</button>

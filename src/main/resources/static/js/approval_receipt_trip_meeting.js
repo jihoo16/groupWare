@@ -2807,7 +2807,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
     // 출장 인원 모달 관련
     const tripPersonModal = document.getElementById('tripPersonModal');
-    const personSearchInput = document.getElementById('personSearchInput');
+    const tripPersonSearchInput = document.getElementById('tripPersonSearchInput');
 
     // 출장인원 모달 내 임시 선택 상태 (검색 시 초기화 방지)
     let tempTripSelectedIds = new Set();
@@ -2905,7 +2905,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 setDefaultAuthor();
 
                 // 인원 목록으로 전환
-                if (personSearchInput) personSearchInput.value = '';
+                if (tripPersonSearchInput) tripPersonSearchInput.value = '';
                 renderTripPersonList2('');
             });
         });
@@ -2915,7 +2915,7 @@ document.addEventListener('DOMContentLoaded', function() {
     window.openTripPersonModal = function() {
         if (tripPersonModal) {
             tripPersonModal.classList.add('show');
-            if (personSearchInput) personSearchInput.value = '';
+            if (tripPersonSearchInput) tripPersonSearchInput.value = '';
             // 현재 출장인원을 임시 선택 상태로 초기화
             tempTripSelectedIds = new Set(tripPersons.map(p => String(p.id)));
             const projectIdxInput = document.getElementById('selectedProjectIdx');
@@ -2931,7 +2931,7 @@ document.addEventListener('DOMContentLoaded', function() {
     window.closeTripPersonModal = function() {
         if (tripPersonModal) {
             tripPersonModal.classList.remove('show');
-            if (personSearchInput) personSearchInput.value = '';
+            if (tripPersonSearchInput) tripPersonSearchInput.value = '';
             tempTripSelectedIds = new Set();
         }
     };
@@ -3016,13 +3016,16 @@ document.addEventListener('DOMContentLoaded', function() {
             tempTripSelectedIds.add(id);
         }
         // 현재 검색어 유지하며 재렌더링
-        renderTripPersonList2(personSearchInput?.value || '');
+        renderTripPersonList2(tripPersonSearchInput?.value || '');
     };
 
     // 선택된 인원의 일비/식비 합계 표시
     function updateTripPersonModalSummary() {
-        const summaryEl = document.getElementById('tripPersonExpenseSummary');
-        if (!summaryEl) return;
+        const summaryEl = document.getElementById('tripPersonSummary');
+        const countEl = document.getElementById('selectedPersonCount');
+        const mealTotalEl = document.getElementById('selectedMealTotal');
+        const dailyTotalEl = document.getElementById('selectedDailyTotal');
+        if (!summaryEl || !countEl || !mealTotalEl || !dailyTotalEl) return;
 
         if (tempTripSelectedIds.size === 0) {
             summaryEl.style.display = 'none';
@@ -3039,13 +3042,15 @@ document.addEventListener('DOMContentLoaded', function() {
             }
         });
 
-        summaryEl.style.display = 'flex';
-        summaryEl.innerHTML = `<i class="fas fa-calculator"></i> 선택 ${tempTripSelectedIds.size}명 합계 (1일): 일비 ${totalDaily.toLocaleString()}원 · 식비 ${totalMeal.toLocaleString()}원`;
+        countEl.textContent = tempTripSelectedIds.size;
+        mealTotalEl.textContent = totalMeal.toLocaleString();
+        dailyTotalEl.textContent = totalDaily.toLocaleString();
+        summaryEl.style.display = 'block';
     }
 
     // 검색 기능 (프로젝트 미선택 시 프로젝트 검색, 선택 시 인원 검색)
-    if (personSearchInput) {
-        personSearchInput.addEventListener('input', function(e) {
+    if (tripPersonSearchInput) {
+        tripPersonSearchInput.addEventListener('input', function(e) {
             const projectIdxInput = document.getElementById('selectedProjectIdx');
             if (!projectIdxInput || !projectIdxInput.value) {
                 renderProjectListInTripPersonModal(e.target.value);
@@ -4950,5 +4955,8 @@ document.addEventListener('DOMContentLoaded', function() {
         setTimeout(async () => {
             await loadReceiptTripMeetingData(receiptTripMeetingId);
         }, 500);
+    } else {
+        // 신규작성 시 초기 필수 필드 빨간색 표시
+        setTimeout(() => validateRequiredFields(), 300);
     }
 });
