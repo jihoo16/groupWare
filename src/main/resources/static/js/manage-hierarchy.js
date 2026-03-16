@@ -505,39 +505,35 @@ document.addEventListener('DOMContentLoaded', function() {
 
         const newManagerSelect = document.getElementById('newManager');
 
-        // 레벨 2 (상무/이사, sortOrder 2-3): 무조건 대표이사만
-        if (currentEditingEmployee.empPositionSortOrder >= 2 && currentEditingEmployee.empPositionSortOrder <= 3) {
-            const ceo = employeesData.find(emp => emp.empPositionSortOrder === 1);
+        // 모든 부서에서 자신과 동일 직급 이상 인원 (본인 제외)
+        newManagerSelect.disabled = false;
 
-            if (ceo) {
-                newManagerSelect.innerHTML = `<option value="${ceo.idx}" selected>${ceo.empName} (${ceo.empPositionName || ceo.empPosition} / ${ceo.empDeptName || ceo.empDept})</option>`;
-                newManagerSelect.disabled = true; // 변경 불가
-            } else {
-                showError('대표이사를 찾을 수 없습니다.');
-                return;
-            }
-        } else {
-            // 레벨 3, 4: 같은 부서의 상급자만
-            newManagerSelect.disabled = false;
+        const superiors = employeesData
+            .filter(emp =>
+                emp.idx !== empIdx && // 본인 제외
+                emp.empPositionSortOrder <= currentEditingEmployee.empPositionSortOrder // 동일 직급 이상
+            )
+            .sort((a, b) => {
+                // 직급 높은 순 → 같은 직급이면 부서명 가나다순
+                if (a.empPositionSortOrder !== b.empPositionSortOrder) {
+                    return a.empPositionSortOrder - b.empPositionSortOrder;
+                }
+                const aDept = a.empDeptName || a.empDept || '';
+                const bDept = b.empDeptName || b.empDept || '';
+                return aDept.localeCompare(bDept, 'ko');
+            });
 
-            const superiors = employeesData
-                .filter(emp =>
-                    emp.idx !== empIdx && // 본인 제외
-                    emp.empDept === currentEditingEmployee.empDept && // 같은 부서
-                    emp.empPositionSortOrder < currentEditingEmployee.empPositionSortOrder // 상급자만
-                )
-                .sort((a, b) => a.empPositionSortOrder - b.empPositionSortOrder); // 직급 높은 순 정렬
+        const options = superiors
+            .map(emp => `<option value="${emp.idx}">${emp.empName} (${emp.empPositionName || emp.empPosition} / ${emp.empDeptName || emp.empDept})</option>`)
+            .join('');
 
-            const options = superiors
-                .map(emp => `<option value="${emp.idx}">${emp.empName} (${emp.empPositionName || emp.empPosition} / ${emp.empDeptName || emp.empDept})</option>`)
-                .join('');
+        newManagerSelect.innerHTML = '<option value="">선택하세요</option>' + options;
 
-            newManagerSelect.innerHTML = '<option value="">선택하세요</option>' + options;
-
-            // 가장 높은 직급을 기본값으로 선택
-            if (superiors.length > 0) {
-                newManagerSelect.value = superiors[0].idx;
-            }
+        // 현재 상위보고자가 있으면 기본 선택, 없으면 가장 높은 직급을 기본값으로 선택
+        if (currentEditingEmployee.managerIdx) {
+            newManagerSelect.value = currentEditingEmployee.managerIdx;
+        } else if (superiors.length > 0) {
+            newManagerSelect.value = superiors[0].idx;
         }
 
         // 오늘 날짜로 초기화
