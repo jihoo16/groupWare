@@ -350,13 +350,9 @@ document.addEventListener('DOMContentLoaded', function() {
         // track 할당 (겹치는 일정들을 다른 track에 배치)
         const tracks = []; // 각 track에 배치된 일정들
 
-        console.log('=== Track 할당 시작 ===');
-        console.log('할당할 multi-day 일정 수:', uniqueSchedules.length);
         uniqueSchedules.forEach(schedule => {
             const scheduleStart = new Date(schedule.startDate);
             const scheduleEnd = new Date(schedule.endDate);
-
-            console.log(`\n일정: "${schedule.title}" (${schedule.startDate} ~ ${schedule.endDate})`);
 
             // 배치 가능한 track 찾기
             let assignedTrack = -1;
@@ -364,17 +360,12 @@ document.addEventListener('DOMContentLoaded', function() {
                 const trackSchedules = tracks[i];
                 let canPlace = true;
 
-                console.log(`  Track ${i} 확인 중... (일정 수: ${trackSchedules.length})`);
-
                 // 이 track의 모든 일정과 겹치지 않는지 확인
                 for (const trackSchedule of trackSchedules) {
                     const trackStart = new Date(trackSchedule.startDate);
                     const trackEnd = new Date(trackSchedule.endDate);
 
-                    // 겹치는지 확인
                     const overlaps = !(scheduleEnd < trackStart || scheduleStart > trackEnd);
-                    console.log(`    vs "${trackSchedule.title}" (${trackSchedule.startDate} ~ ${trackSchedule.endDate}): ${overlaps ? '겹침!' : '안겹침'}`);
-
                     if (overlaps) {
                         canPlace = false;
                         break;
@@ -383,16 +374,13 @@ document.addEventListener('DOMContentLoaded', function() {
 
                 if (canPlace) {
                     assignedTrack = i;
-                    console.log(`  → Track ${i}에 배치 가능!`);
                     break;
                 }
             }
 
             if (assignedTrack === -1) {
-                // 새 track 생성
                 assignedTrack = tracks.length;
                 tracks.push([]);
-                console.log(`  → 새로운 Track ${assignedTrack} 생성`);
             }
 
             // track에 추가
@@ -406,64 +394,12 @@ document.addEventListener('DOMContentLoaded', function() {
                     s.track = assignedTrack;
                 }
             });
-
-            console.log(`  최종 할당: Track ${assignedTrack}`);
-        });
-
-        console.log('\n=== Track 할당 완료 ===');
-        console.log('총', tracks.length, '개 track 사용');
-        tracks.forEach((track, index) => {
-            console.log(`Track ${index}:`, track.map(s => s.title).join(', '));
         });
     }
 
     // 달력 렌더링
-    async function renderCalendar() {
-        const year = currentDate.getFullYear();
-        const month = currentDate.getMonth();
-
-        // 첫날과 마지막날
-        const firstDay = new Date(year, month, 1);
-        const lastDay = new Date(year, month + 1, 0);
-        const prevLastDay = new Date(year, month, 0);
-
-        // 이전달, 현재달, 다음달의 년도 공휴일 로드 (다른 년도일 수 있음)
-        const prevMonthYear = new Date(year, month - 1, 1).getFullYear();
-        const nextMonthYear = new Date(year, month + 1, 1).getFullYear();
-
-        await Promise.all([
-            loadHolidays(prevMonthYear),
-            loadHolidays(year),
-            loadHolidays(nextMonthYear)
-        ]);
-
-        // 월 타이틀 설정
-        currentMonthTitle.textContent = `${year}년 ${month + 1}월`;
-
-        // 캘린더에 실제로 표시되는 첫 번째 날짜와 마지막 날짜 계산
-        const firstDayWeek = firstDay.getDay();
-
-        // 캘린더 시작일: 이전 달에서 표시되는 첫 날짜
-        const calendarStartDate = new Date(year, month, 1);
-        calendarStartDate.setDate(calendarStartDate.getDate() - firstDayWeek);
-
-        // 캘린더 종료일: 다음 달에서 표시되는 마지막 날짜
-        const totalCells = Math.ceil((firstDayWeek + lastDay.getDate()) / 7) * 7;
-        const remainingCells = totalCells - (firstDayWeek + lastDay.getDate());
-        const calendarEndDate = new Date(year, month + 1, remainingCells);
-
-        // 일정 데이터 로드 (캘린더에 표시되는 전체 범위)
-        const startDate = formatDate(calendarStartDate);
-        const endDate = formatDate(calendarEndDate);
-        await loadSchedules(startDate, endDate);
-
-        // 전체 일정에 track 할당 (multi-day 일정이 날짜마다 같은 줄에 위치하도록)
-        assignTracksToSchedules();
-
-        const lastDate = lastDay.getDate();
-        const prevLastDate = prevLastDay.getDate();
-
-        let calendarHTML = '';
+    // 달력 그리드 HTML 빌드 (공통 함수 - 현재 schedules/holidays 상태 기준으로 렌더링)
+    function buildMonthGridHTML(year, month, firstDayWeek, lastDate, prevLastDate, remainingCells) {
         const today = new Date();
         today.setHours(0, 0, 0, 0);
 
@@ -475,25 +411,68 @@ document.addEventListener('DOMContentLoaded', function() {
             todayBtn.classList.add('show');
         }
 
+        let html = '';
+
         // 이전 달 날짜
         for (let i = firstDayWeek - 1; i >= 0; i--) {
-            const day = prevLastDate - i;
-            calendarHTML += createCalendarCell(year, month - 1, day, true);
+            html += createCalendarCell(year, month - 1, prevLastDate - i, true);
         }
 
         // 현재 달 날짜
         for (let day = 1; day <= lastDate; day++) {
-            calendarHTML += createCalendarCell(year, month, day, false);
+            html += createCalendarCell(year, month, day, false);
         }
 
-        // 다음 달 날짜 (6주 채우기) - 위에서 이미 계산한 remainingCells 사용
+        // 다음 달 날짜
         for (let day = 1; day <= remainingCells; day++) {
-            calendarHTML += createCalendarCell(year, month + 1, day, true);
+            html += createCalendarCell(year, month + 1, day, true);
         }
 
-        calendarGrid.innerHTML = calendarHTML;
+        return html;
+    }
 
-        // 일정 클릭 이벤트 추가
+    async function renderCalendar() {
+        const year = currentDate.getFullYear();
+        const month = currentDate.getMonth();
+
+        const firstDay = new Date(year, month, 1);
+        const lastDay = new Date(year, month + 1, 0);
+        const prevLastDay = new Date(year, month, 0);
+
+        const prevMonthYear = new Date(year, month - 1, 1).getFullYear();
+        const nextMonthYear = new Date(year, month + 1, 1).getFullYear();
+
+        const firstDayWeek = firstDay.getDay();
+        const calendarStartDate = new Date(year, month, 1);
+        calendarStartDate.setDate(calendarStartDate.getDate() - firstDayWeek);
+
+        const totalCells = Math.ceil((firstDayWeek + lastDay.getDate()) / 7) * 7;
+        const remainingCells = totalCells - (firstDayWeek + lastDay.getDate());
+        const calendarEndDate = new Date(year, month + 1, remainingCells);
+
+        const lastDate = lastDay.getDate();
+        const prevLastDate = prevLastDay.getDate();
+
+        // Phase 1: 월 타이틀 + 빈 그리드 즉시 렌더링 (API 기다리지 않음)
+        currentMonthTitle.textContent = `${year}년 ${month + 1}월`;
+        schedules = [];
+        calendarGrid.innerHTML = buildMonthGridHTML(year, month, firstDayWeek, lastDate, prevLastDate, remainingCells);
+        calendarGrid.classList.add('loading');
+
+        // Phase 2: 공휴일 + 일정 병렬 로드
+        const startDate = formatDate(calendarStartDate);
+        const endDate = formatDate(calendarEndDate);
+        await Promise.all([
+            loadHolidays(prevMonthYear),
+            loadHolidays(year),
+            loadHolidays(nextMonthYear),
+            loadSchedules(startDate, endDate)
+        ]);
+
+        // Phase 3: 일정/공휴일 포함 재렌더링
+        assignTracksToSchedules();
+        calendarGrid.innerHTML = buildMonthGridHTML(year, month, firstDayWeek, lastDate, prevLastDate, remainingCells);
+        calendarGrid.classList.remove('loading');
         attachScheduleClickEvents();
     }
 
@@ -1846,21 +1825,18 @@ document.addEventListener('DOMContentLoaded', function() {
             // 뷰에 맞는 캘린더 렌더링
             switch(view) {
                 case 'day':
-                    console.log('일간 뷰로 전환');
                     document.getElementById('monthView').style.display = 'none';
                     document.getElementById('weekView').style.display = 'none';
                     document.getElementById('dayView').style.display = 'flex';
                     await renderDayView();
                     break;
                 case 'week':
-                    console.log('주간 뷰로 전환');
                     document.getElementById('monthView').style.display = 'none';
                     document.getElementById('weekView').style.display = 'flex';
                     document.getElementById('dayView').style.display = 'none';
                     await renderWeekView();
                     break;
                 case 'month':
-                    console.log('월간 뷰로 전환');
                     document.getElementById('monthView').style.display = 'flex';
                     document.getElementById('weekView').style.display = 'none';
                     document.getElementById('dayView').style.display = 'none';
@@ -1959,9 +1935,6 @@ document.addEventListener('DOMContentLoaded', function() {
         activeTypeFilters = selectedTypes;
         activeTeamFilters = selectedTeams;
 
-        console.log('선택된 팀:', selectedTeams);
-        console.log('선택된 유형:', selectedTypes);
-
         // 달력 다시 렌더링
         await renderCalendar();
     }
@@ -2007,13 +1980,13 @@ document.addEventListener('DOMContentLoaded', function() {
         const endOfWeek = new Date(startOfWeek);
         endOfWeek.setDate(endOfWeek.getDate() + 6);
 
-        // 공휴일 로드 (해당 년도)
-        await loadHolidays(startOfWeek.getFullYear());
-
-        // 일정 데이터 로드 (해당 주)
+        // 공휴일 + 일정 데이터 병렬 로드
         const startDate = formatDate(startOfWeek);
         const endDate = formatDate(endOfWeek);
-        await loadSchedules(startDate, endDate);
+        await Promise.all([
+            loadHolidays(startOfWeek.getFullYear()),
+            loadSchedules(startDate, endDate)
+        ]);
 
         // 주간 타이틀 설정
         const startMonth = startOfWeek.getMonth() + 1;
@@ -2263,12 +2236,12 @@ document.addEventListener('DOMContentLoaded', function() {
         const dayEventsContainer = document.getElementById('dayEvents');
         const dayAllDayContainer = document.getElementById('dayAllDayEvents');
 
-        // 공휴일 로드 (해당 년도)
-        await loadHolidays(currentDate.getFullYear());
-
-        // 일정 데이터 로드 (해당 일)
+        // 공휴일 + 일정 데이터 병렬 로드
         const dayDate = formatDate(currentDate);
-        await loadSchedules(dayDate, dayDate);
+        await Promise.all([
+            loadHolidays(currentDate.getFullYear()),
+            loadSchedules(dayDate, dayDate)
+        ]);
 
         const today = new Date();
         today.setHours(0, 0, 0, 0);
@@ -2635,7 +2608,6 @@ document.addEventListener('DOMContentLoaded', function() {
 
             const teams = await response.json();
             quickTeamsList = teams;
-            console.log('[팀 목록 로드] 성공:', teams.length, '개 팀');
 
             // 팀 선택 드롭다운 렌더링
             renderQuickTeamSelect();
@@ -2840,35 +2812,25 @@ document.addEventListener('DOMContentLoaded', function() {
     // 간략한 모달 - 팀 멤버를 참석자로 추가
     async function loadQuickTeamMembersAsParticipants(teamIdx) {
         try {
-            console.log('[팀 멤버 로드] 팀 ID:', teamIdx);
-            // 올바른 엔드포인트: /api/teams/{teamIdx}/members
             const response = await fetch(`/api/teams/${teamIdx}/members?active=Y`);
 
             if (!response.ok) {
-                console.error('[팀 멤버 로드] API 응답 실패:', response.status, response.statusText);
                 throw new Error(`팀 멤버 목록 로드 실패 (${response.status})`);
             }
 
             const members = await response.json();
-            console.log('[팀 멤버 로드] API 응답:', members);
 
             if (!members || members.length === 0) {
-                console.warn('[팀 멤버 로드] 팀 멤버가 없습니다.');
-                // 팀 멤버가 없어도 초기화는 진행
                 selectedParticipants = [];
                 renderParticipantsList();
                 return;
             }
-
-            console.log('[팀 멤버 로드] 팀 멤버 데이터:', members);
 
             // 기존 참석자 목록 초기화 (중복 방지)
             selectedParticipants = [];
 
             // 팀 멤버들을 참석자 형식으로 변환하여 추가
             members.forEach(member => {
-                console.log('[팀 멤버 로드] 멤버 처리:', member);
-
                 selectedParticipants.push({
                     id: member.memberIdx,
                     name: member.memberName || '이름 없음',
@@ -2877,28 +2839,15 @@ document.addEventListener('DOMContentLoaded', function() {
                 });
             });
 
-            console.log('[팀 멤버 로드] 최종 참석자 목록:', selectedParticipants);
-
             // 참석자 목록 UI 업데이트
-            const participantsList = document.getElementById('participantsList');
-            if (!participantsList) {
-                console.error('[팀 멤버 로드] participantsList 요소를 찾을 수 없습니다!');
-            } else {
-                console.log('[팀 멤버 로드] participantsList 요소 발견, 렌더링 시작');
-                renderParticipantsList();
-                console.log('[팀 멤버 로드] 렌더링 완료');
-            }
+            renderParticipantsList();
 
             // 세부설정 자동으로 펼치기 (참석자 확인을 위해)
             const detailSettingsArea = document.getElementById('detailSettingsArea');
             const toggleDetailSettingsBtn = document.getElementById('toggleDetailSettings');
 
-            console.log('[팀 멤버 로드] detailSettingsArea:', detailSettingsArea);
-            console.log('[팀 멤버 로드] toggleDetailSettingsBtn:', toggleDetailSettingsBtn);
-
             if (detailSettingsArea && toggleDetailSettingsBtn) {
                 const isAlreadyExpanded = detailSettingsArea.classList.contains('show');
-                console.log('[팀 멤버 로드] 세부설정 이미 펼쳐짐?', isAlreadyExpanded);
 
                 if (!isAlreadyExpanded) {
                     detailSettingsArea.style.display = 'block';
@@ -2907,10 +2856,7 @@ document.addEventListener('DOMContentLoaded', function() {
                     }, 10);
                     toggleDetailSettingsBtn.classList.add('expanded');
                     toggleDetailSettingsBtn.innerHTML = '<i class="fas fa-chevron-up"></i> 세부설정 접기';
-                    console.log('[팀 멤버 로드] 세부설정 펼침 완료');
                 }
-            } else {
-                console.error('[팀 멤버 로드] 세부설정 요소를 찾을 수 없습니다!');
             }
 
         } catch (error) {

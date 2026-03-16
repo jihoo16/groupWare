@@ -364,6 +364,17 @@
     -ms-user-select: none;
 }
 
+.calendar-grid.loading {
+    opacity: 0.6;
+    pointer-events: none;
+    animation: calendarPulse 1s ease-in-out infinite;
+}
+
+@keyframes calendarPulse {
+    0%, 100% { opacity: 0.6; }
+    50% { opacity: 0.4; }
+}
+
 /* 큰 달력 */
 .large-calendar {
     background: white;
