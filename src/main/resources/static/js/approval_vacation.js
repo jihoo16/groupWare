@@ -2739,16 +2739,16 @@ document.addEventListener('DOMContentLoaded', function() {
     const totalDaysBadge = document.getElementById('total_days_badge');
 
     // 마이너스 연차 검증 함수 (공통 사용)
-    function validateMinusVacation(days, isGyeongjosa = false) {
-        // 경조사는 연차 차감 대상이 아니므로 검증 생략
-        if (isGyeongjosa) {
+    function validateMinusVacation(days, isGyeongjosa = false, isEtc = false) {
+        // 경조사·기타사유는 연차 차감 대상이 아니므로 검증 생략
+        if (isGyeongjosa || isEtc) {
             return true;
         }
 
-        // 마이너스 연차인지 확인 (잔여 연차 부족) - 경조사 제외
+        // 마이너스 연차인지 확인 (잔여 연차 부족) - 경조사·기타 제외
         const remainingVacation = userVacationInfo ? parseFloat(userVacationInfo.remainingDays) : 12;
         const currentTotalDays = vacationPeriods
-            .filter(p => !p.type.includes('경조사'))
+            .filter(p => !p.type.includes('경조사') && p.type !== '기타')
             .reduce((sum, p) => sum + p.days, 0);
         const newTotalDays = currentTotalDays + days;
         const isMinusVacation = newTotalDays > remainingVacation;
@@ -2841,8 +2841,9 @@ document.addEventListener('DOMContentLoaded', function() {
                 }
             }
 
-            // 마이너스 연차 검증 (경조사는 검증 생략)
-            if (!validateMinusVacation(currentSelectionDays, isGyeongjosa)) {
+            // 마이너스 연차 검증 (경조사·기타사유는 검증 생략)
+            const isEtc = vacationType === '기타';
+            if (!validateMinusVacation(currentSelectionDays, isGyeongjosa, isEtc)) {
                 return;
             }
             if (currentSelectionDays <= 0) {
@@ -3110,7 +3111,9 @@ document.addEventListener('DOMContentLoaded', function() {
 
                 // 마이너스 연차 검증 실행
                 if (currentSelectionDays > 0) {
-                    validateMinusVacation(currentSelectionDays);
+                    const isEtcType = vifVacationType ? vifVacationType.value === '기타' : false;
+                    const isGyeongjoType = vifVacationType ? vifVacationType.value === '경조사' : false;
+                    validateMinusVacation(currentSelectionDays, isGyeongjoType, isEtcType);
                 } else {
                     showInvalidPeriodMessage();
                 }

@@ -34,5 +34,7 @@ public class ApprovalDocumentDTO {
     private BigDecimal amount;       // 금액 (회의록, 출장, 야근식대 등)
     private Long projectIdx;         // 프로젝트 ID (프로젝트 문서인 경우)
     private String projectName;      // 프로젝트명 (프로젝트 문서인 경우)
-    private List<AttachmentSummaryDTO> attachments; // 첨부파일 요약 (회의록/야근식대 전용)
+    private List<AttachmentSummaryDTO> attachments;  // 첨부파일 요약 (회의록/야근식대/RCTM 전용)
+    private Integer meetingSessionCount;             // 출장+회의 세션 수
+    private List<Long> meetingSessionIds;            // 출장+회의 세션 PK 목록 (displayOrder 오름차순)
 }

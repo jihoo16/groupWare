@@ -534,8 +534,23 @@
             copyCardBtn.addEventListener('click', async () => {
                 if (!currentMember) return;
                 const text = buildBusinessCardText(currentMember);
+                const copyToClipboard = async (str) => {
+                    if (navigator.clipboard && window.isSecureContext) {
+                        await navigator.clipboard.writeText(str);
+                    } else {
+                        const ta = document.createElement('textarea');
+                        ta.value = str;
+                        ta.style.cssText = 'position:fixed;top:-9999px;left:-9999px;opacity:0';
+                        document.body.appendChild(ta);
+                        ta.focus();
+                        ta.select();
+                        const ok = document.execCommand('copy');
+                        document.body.removeChild(ta);
+                        if (!ok) throw new Error('execCommand failed');
+                    }
+                };
                 try {
-                    await navigator.clipboard.writeText(text);
+                    await copyToClipboard(text);
                     Swal.fire({
                         toast: true,
                         position: 'top-end',

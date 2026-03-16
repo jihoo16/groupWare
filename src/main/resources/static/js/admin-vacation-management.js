@@ -749,12 +749,77 @@ document.addEventListener('DOMContentLoaded', function() {
     // 기타
     // ────────────────────────────────────────────────────────────
     function exportToExcel() {
-        Swal.fire({
-            icon: 'info',
-            title: '준비 중',
-            text: 'Excel 다운로드 기능은 준비 중입니다.',
-            confirmButtonText: '확인'
+        if (!filteredEmployees || filteredEmployees.length === 0) {
+            Swal.fire({ icon: 'warning', title: '데이터 없음', text: '내보낼 데이터가 없습니다.' });
+            return;
+        }
+
+        // 근속가산 셀 텍스트 (HTML 없이 순수 텍스트)
+        function seniorityText(emp) {
+            if (emp.seniorityEarnedShort)   return `${emp.seniorityEarnedShort} 발생완료 +1일`;
+            if (emp.seniorityUpcomingShort) return `${emp.seniorityUpcomingShort} 이후 +1일 예정`;
+            return '-';
+        }
+
+        // 비례연차 셀 텍스트
+        function proportionalText(emp) {
+            if (emp.proportionalDays > 0)         return `${emp.proportionalDays}일`;
+            if (emp.proportionalUpcomingShort)     return `${emp.proportionalUpcomingShort} 이후 +${emp.proportionalUpcomingDays}일 예정`;
+            return '-';
+        }
+
+        const headers = ['번호', '이름', '입사일', '부서', '직급',
+                         '총 연차', '기본/근속가산', '근속가산', '비례연차', '월차', '보상휴가',
+                         '사용 연차', '잔여 연차', '사용률'];
+
+        const rows = filteredEmployees.map((emp, index) => {
+            if (emp.preEmployment) {
+                return [index + 1, emp.name, emp.hireDate, emp.department, emp.position,
+                        '입사 전', '입사 전', '입사 전', '입사 전', '입사 전', '입사 전',
+                        '입사 전', '입사 전', '입사 전'];
+            }
+            return [
+                index + 1,
+                emp.name,
+                emp.hireDate,
+                emp.department,
+                emp.position,
+                emp.totalLeave,
+                emp.annualLeaveDays || 0,
+                seniorityText(emp),
+                proportionalText(emp),
+                emp.monthlyLeaveDays || 0,
+                emp.compensatoryDays || 0,
+                emp.usedLeave,
+                emp.remainingLeave,
+                `${emp.usageRate}%`
+            ];
         });
+
+        const wsData = [headers, ...rows];
+        const ws = XLSX.utils.aoa_to_sheet(wsData);
+
+        // 열 너비 설정
+        ws['!cols'] = [
+            { wch: 6 },  // 번호
+            { wch: 10 }, // 이름
+            { wch: 12 }, // 입사일
+            { wch: 14 }, // 부서
+            { wch: 10 }, // 직급
+            { wch: 8 },  // 총 연차
+            { wch: 14 }, // 기본/근속가산
+            { wch: 22 }, // 근속가산
+            { wch: 22 }, // 비례연차
+            { wch: 8 },  // 월차
+            { wch: 8 },  // 보상휴가
+            { wch: 10 }, // 사용 연차
+            { wch: 10 }, // 잔여 연차
+            { wch: 8 },  // 사용률
+        ];
+
+        const wb = XLSX.utils.book_new();
+        XLSX.utils.book_append_sheet(wb, ws, `연차현황_${currentYear}`);
+        XLSX.writeFile(wb, `전체연차현황_${currentYear}년.xlsx`);
     }
 
     function showLoading() {

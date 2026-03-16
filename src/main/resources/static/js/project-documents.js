@@ -753,10 +753,10 @@ document.addEventListener('DOMContentLoaded', function() {
     let attachmentModalEl = null;
     let pendingReceiptFiles = [];          // 저장 전 추가할 영수증 파일 (RCM/RCT/RCO)
     let pendingDocumentFiles = [];         // 저장 전 추가할 공식문서 파일 (RCM/RCT/RCO)
-    let pendingMeetingReceiptFiles = [];   // RCTM 전용
-    let pendingMeetingDocumentFiles = [];  // RCTM 전용
-    let pendingTripReceiptFiles = [];      // RCTM 전용
-    let pendingTripDocumentFiles = [];     // RCTM 전용
+    let pendingMeetingReceiptFilesBySession  = []; // RCTM 전용: [[s0 파일들], [s1 파일들], ...]
+    let pendingMeetingDocumentFilesBySession = []; // RCTM 전용: [[s0 파일들], [s1 파일들], ...]
+    let pendingTripReceiptFiles  = [];             // RCTM 출장 전용
+    let pendingTripDocumentFiles = [];             // RCTM 출장 전용
     let pendingDeleteIds = [];             // 저장 전 삭제할 첨부파일 ID 목록
 
     function getAttachmentModal() {
@@ -995,9 +995,9 @@ document.addEventListener('DOMContentLoaded', function() {
         if (attachmentModalEl) attachmentModalEl.style.display = 'none';
         pendingReceiptFiles = [];
         pendingDocumentFiles = [];
-        pendingMeetingReceiptFiles = [];
-        pendingMeetingDocumentFiles = [];
-        pendingTripReceiptFiles = [];
+        pendingMeetingReceiptFilesBySession  = [];
+        pendingMeetingDocumentFilesBySession = [];
+        pendingTripReceiptFiles  = [];
         pendingTripDocumentFiles = [];
         pendingDeleteIds = [];
     }
@@ -1005,9 +1005,11 @@ document.addEventListener('DOMContentLoaded', function() {
     function openAttachmentModal(doc) {
         pendingReceiptFiles = [];
         pendingDocumentFiles = [];
-        pendingMeetingReceiptFiles = [];
-        pendingMeetingDocumentFiles = [];
-        pendingTripReceiptFiles = [];
+        // 세션 수만큼 빈 배열 준비 (renderModalContent에서 setupDropZone이 참조)
+        const sessionCount = (doc.meetingSessionCount || 1);
+        pendingMeetingReceiptFilesBySession  = Array.from({ length: sessionCount }, () => []);
+        pendingMeetingDocumentFilesBySession = Array.from({ length: sessionCount }, () => []);
+        pendingTripReceiptFiles  = [];
         pendingTripDocumentFiles = [];
         pendingDeleteIds = [];
         const modal = getAttachmentModal();
@@ -1056,23 +1058,43 @@ document.addEventListener('DOMContentLoaded', function() {
         }
 
         if (isTripMeeting) {
-            const existingMeetingReceipt  = (doc.attachments || []).filter(a => a.attachmentType === 'MEETING_RECEIPT');
-            const existingMeetingDocument = (doc.attachments || []).filter(a => a.attachmentType === 'MEETING_DOCUMENT');
-            const existingTripReceipt     = (doc.attachments || []).filter(a => a.attachmentType === 'TRIP_RECEIPT');
-            const existingTripDocument    = (doc.attachments || []).filter(a => a.attachmentType === 'TRIP_DOCUMENT');
+            const sessionCount   = doc.meetingSessionCount || 1;
+            const sessionIds     = doc.meetingSessionIds   || [];
+            const allAttachments = doc.attachments         || [];
+
+            const existingTripReceipt  = allAttachments.filter(a => a.attachmentType === 'TRIP_RECEIPT');
+            const existingTripDocument = allAttachments.filter(a => a.attachmentType === 'TRIP_DOCUMENT');
+
+            // 세션별 회의 첨부파일 섹션
+            let meetingHtml = '';
+            for (let s = 0; s < sessionCount; s++) {
+                const sessionLabel = sessionCount > 1 ? ` (${s + 1}번째 회의)` : '';
+                const sessionDbPk  = sessionIds[s] ?? null;
+                // sessionIdx가 일치하는 파일. s===0 일 때는 null(구버전 데이터)도 포함
+                const existingReceipt  = allAttachments.filter(a =>
+                    a.attachmentType === 'MEETING_RECEIPT'  &&
+                    (a.sessionIdx === sessionDbPk || (s === 0 && a.sessionIdx == null)));
+                const existingDocument = allAttachments.filter(a =>
+                    a.attachmentType === 'MEETING_DOCUMENT' &&
+                    (a.sessionIdx === sessionDbPk || (s === 0 && a.sessionIdx == null)));
+                meetingHtml +=
+                    `<div style="font-weight:600;color:#667eea;padding:${s === 0 ? '4px' : '12px'} 0 8px;${s > 0 ? 'border-top:1px solid #f0f0f0;margin-top:8px;' : ''}"><i class="fas fa-users"></i> 회의 첨부파일${sessionLabel}</div>` +
+                    buildSection(`sectionMeetingReceipt_${s}`,  'att-badge-receipt',  'fas fa-receipt',  '회의 영수증',  existingReceipt,  `dzMeetingReceipt_${s}`,  `inputMeetingReceipt_${s}`,  `pendingMeetingReceipt_${s}`) +
+                    buildSection(`sectionMeetingDocument_${s}`, 'att-badge-document', 'fas fa-file-alt', '회의 공식문서', existingDocument, `dzMeetingDocument_${s}`, `inputMeetingDocument_${s}`, `pendingMeetingDocument_${s}`);
+            }
 
             document.getElementById('modalBody').innerHTML =
-                `<div style="font-weight:600;color:#667eea;padding:4px 0 8px;"><i class="fas fa-users"></i> 회의 첨부파일</div>` +
-                buildSection('sectionMeetingReceipt',  'att-badge-receipt',  'fas fa-receipt',  '회의 영수증',  existingMeetingReceipt,  'dzMeetingReceipt',  'inputMeetingReceipt',  'pendingMeetingReceipt') +
-                buildSection('sectionMeetingDocument', 'att-badge-document', 'fas fa-file-alt', '회의 공식문서', existingMeetingDocument, 'dzMeetingDocument', 'inputMeetingDocument', 'pendingMeetingDocument') +
+                meetingHtml +
                 `<div style="font-weight:600;color:#e86c2c;padding:12px 0 8px;border-top:1px solid #f0f0f0;margin-top:8px;"><i class="fas fa-plane"></i> 출장 첨부파일</div>` +
-                buildSection('sectionTripReceipt',     'att-badge-receipt',  'fas fa-receipt',  '출장 영수증',  existingTripReceipt,     'dzTripReceipt',     'inputTripReceipt',     'pendingTripReceipt') +
-                buildSection('sectionTripDocument',    'att-badge-document', 'fas fa-file-alt', '출장 공식문서', existingTripDocument,    'dzTripDocument',    'inputTripDocument',    'pendingTripDocument');
+                buildSection('sectionTripReceipt',  'att-badge-receipt',  'fas fa-receipt',  '출장 영수증',  existingTripReceipt,  'dzTripReceipt',  'inputTripReceipt',  'pendingTripReceipt') +
+                buildSection('sectionTripDocument', 'att-badge-document', 'fas fa-file-alt', '출장 공식문서', existingTripDocument, 'dzTripDocument', 'inputTripDocument', 'pendingTripDocument');
 
-            setupDropZone('dzMeetingReceipt',  'inputMeetingReceipt',  'pendingMeetingReceipt',  pendingMeetingReceiptFiles);
-            setupDropZone('dzMeetingDocument', 'inputMeetingDocument', 'pendingMeetingDocument', pendingMeetingDocumentFiles);
-            setupDropZone('dzTripReceipt',     'inputTripReceipt',     'pendingTripReceipt',     pendingTripReceiptFiles);
-            setupDropZone('dzTripDocument',    'inputTripDocument',    'pendingTripDocument',    pendingTripDocumentFiles);
+            for (let s = 0; s < sessionCount; s++) {
+                setupDropZone(`dzMeetingReceipt_${s}`,  `inputMeetingReceipt_${s}`,  `pendingMeetingReceipt_${s}`,  pendingMeetingReceiptFilesBySession[s]);
+                setupDropZone(`dzMeetingDocument_${s}`, `inputMeetingDocument_${s}`, `pendingMeetingDocument_${s}`, pendingMeetingDocumentFilesBySession[s]);
+            }
+            setupDropZone('dzTripReceipt',  'inputTripReceipt',  'pendingTripReceipt',  pendingTripReceiptFiles);
+            setupDropZone('dzTripDocument', 'inputTripDocument', 'pendingTripDocument', pendingTripDocumentFiles);
         } else {
             const existingReceipt  = (doc.attachments || []).filter(a => a.attachmentType !== 'DOCUMENT');
             const existingDocument = (doc.attachments || []).filter(a => a.attachmentType === 'DOCUMENT');
@@ -1168,7 +1190,9 @@ document.addEventListener('DOMContentLoaded', function() {
 
         const isTripMeeting = (doc.documentType || '').includes('출장+회의');
         const hasNewFiles = isTripMeeting
-            ? (pendingMeetingReceiptFiles.length || pendingMeetingDocumentFiles.length || pendingTripReceiptFiles.length || pendingTripDocumentFiles.length)
+            ? (pendingMeetingReceiptFilesBySession.some(arr => arr.length > 0) ||
+               pendingMeetingDocumentFilesBySession.some(arr => arr.length > 0) ||
+               pendingTripReceiptFiles.length || pendingTripDocumentFiles.length)
             : (pendingReceiptFiles.length || pendingDocumentFiles.length);
 
         if (!pendingDeleteIds.length && !hasNewFiles) {
@@ -1209,12 +1233,22 @@ document.addEventListener('DOMContentLoaded', function() {
 
             // 2. 새 파일 업로드
             if (isTripMeeting) {
-                if (pendingMeetingReceiptFiles.length || pendingMeetingDocumentFiles.length || pendingTripReceiptFiles.length || pendingTripDocumentFiles.length) {
+                const hasMeetingFiles = pendingMeetingReceiptFilesBySession.some(arr => arr.length > 0) ||
+                                        pendingMeetingDocumentFilesBySession.some(arr => arr.length > 0);
+                if (hasMeetingFiles || pendingTripReceiptFiles.length || pendingTripDocumentFiles.length) {
                     const formData = new FormData();
-                    pendingMeetingReceiptFiles.forEach(f  => formData.append('meetingReceiptFiles',  f));
-                    pendingMeetingDocumentFiles.forEach(f => formData.append('meetingDocumentFiles', f));
-                    pendingTripReceiptFiles.forEach(f     => formData.append('tripReceiptFiles',     f));
-                    pendingTripDocumentFiles.forEach(f    => formData.append('tripDocumentFiles',    f));
+                    // 세션0 → 'meetingReceiptFiles' (extractSessionFiles backward compat)
+                    // 세션1+ → 'meetingReceiptFiles_1', 'meetingReceiptFiles_2', ...
+                    pendingMeetingReceiptFilesBySession.forEach((files, s) => {
+                        const key = s === 0 ? 'meetingReceiptFiles' : `meetingReceiptFiles_${s}`;
+                        files.forEach(f => formData.append(key, f));
+                    });
+                    pendingMeetingDocumentFilesBySession.forEach((files, s) => {
+                        const key = s === 0 ? 'meetingDocumentFiles' : `meetingDocumentFiles_${s}`;
+                        files.forEach(f => formData.append(key, f));
+                    });
+                    pendingTripReceiptFiles.forEach(f  => formData.append('tripReceiptFiles',  f));
+                    pendingTripDocumentFiles.forEach(f => formData.append('tripDocumentFiles', f));
 
                     const res = await fetch(uploadUrl, { method: 'POST', body: formData });
                     if (!res.ok) {

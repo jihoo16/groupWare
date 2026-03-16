@@ -13,7 +13,9 @@ import com.pinecni.erp.api.document.repository.ReceiptOvertimeRepository;
 import com.pinecni.erp.api.project.repository.ProjectCardRepository;
 import com.pinecni.erp.api.project.repository.ProjectRepository;
 import com.pinecni.erp.api.project.repository.ReceiptMeetingRepository;
+import com.pinecni.erp.api.project.repository.ReceiptTripMeetingAttachmentRepository;
 import com.pinecni.erp.api.project.repository.ReceiptTripMeetingRepository;
+import com.pinecni.erp.api.project.repository.ReceiptTripMeetingSessionRepository;
 import com.pinecni.erp.api.project.repository.ReceiptTripRepository;
 import com.pinecni.erp.api.user.repository.UserRepository;
 import com.pinecni.erp.constant.CodeConstants;
@@ -56,6 +58,8 @@ public class ApprovalDocumentServiceImpl implements ApprovalDocumentService {
     private final ReceiptMeetingAttachmentRepository receiptMeetingAttachmentRepository;
     private final ReceiptOvertimeAttachmentRepository receiptOvertimeAttachmentRepository;
     private final ReceiptTripAttachmentRepository receiptTripAttachmentRepository;
+    private final ReceiptTripMeetingSessionRepository receiptTripMeetingSessionRepository;
+    private final ReceiptTripMeetingAttachmentRepository receiptTripMeetingAttachmentRepository;
 
     @Override
     public List<ApprovalDocumentDTO> getAllDocuments(Long currentUserIdx) {
@@ -407,6 +411,14 @@ public class ApprovalDocumentServiceImpl implements ApprovalDocumentService {
                                     .ifPresent(code -> dto.setDrafterDeptName(code.getCodeName()));
                         }
                     });
+                    List<ReceiptTripMeetingSession> sessions = receiptTripMeetingSessionRepository
+                            .findByReceiptTripMeetingIdxOrderByDisplayOrderAsc(rtm.getIdx());
+                    List<Long> sessionIds = sessions.stream()
+                            .map(ReceiptTripMeetingSession::getIdx)
+                            .collect(Collectors.toList());
+                    dto.setMeetingSessionCount(Math.max(sessions.size(), 1));
+                    dto.setMeetingSessionIds(sessionIds);
+                    dto.setAttachments(buildRctmAttachments(rtm.getIdx()));
                     return dto;
                 })
                 .collect(Collectors.toList());
@@ -689,6 +701,23 @@ public class ApprovalDocumentServiceImpl implements ApprovalDocumentService {
                         .originalFilename(a.getOriginalFilename())
                         .attachmentType(a.getAttachmentType())
                         .downloadUrl("/api/receipt-trips/attachments/" + a.getIdx() + "/download")
+                        .build())
+                .collect(Collectors.toList());
+    }
+
+    /**
+     * 출장+회의(RCTM) 첨부파일 요약 목록 생성
+     * sessionIdx 포함 → 프론트에서 세션별 분류에 사용
+     */
+    private List<AttachmentSummaryDTO> buildRctmAttachments(Long rtmIdx) {
+        return receiptTripMeetingAttachmentRepository
+                .findByReceiptTripMeetingIdxAndDeletedFalseOrderByIdxAsc(rtmIdx).stream()
+                .map(a -> AttachmentSummaryDTO.builder()
+                        .idx(a.getIdx())
+                        .originalFilename(a.getOriginalFilename())
+                        .attachmentType(a.getAttachmentType())
+                        .sessionIdx(a.getSessionIdx())
+                        .downloadUrl("/api/receipt-trip-meetings/attachments/" + a.getIdx() + "/download")
                         .build())
                 .collect(Collectors.toList());
     }
