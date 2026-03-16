@@ -166,15 +166,32 @@ public interface VacationAccrualScheduleRepository extends JpaRepository<Vacatio
 
     /**
      * 소멸된 월차 합계 (연도 기준)
-     * expired_monthly_days 계산에 사용
+     * expired_monthly_days 계산에 사용.
+     * is_expired=true 인 레코드 외에, 플래그 미갱신 상태로 만료일이 지난 레코드(ghost)도 포함.
      */
     @Query("SELECT COALESCE(SUM(v.days), 0) FROM VacationAccrualSchedule v " +
            "WHERE v.userIdx = :userIdx " +
            "AND v.year = :year " +
            "AND v.accrualType = '월차' " +
-           "AND v.isExpired = true")
+           "AND (v.isExpired = true OR v.expiryDate < :today)")
     BigDecimal sumExpiredMonthlyDays(@Param("userIdx") Long userIdx,
-                                     @Param("year") Integer year);
+                                     @Param("year") Integer year,
+                                     @Param("today") LocalDate today);
+
+    /**
+     * 소멸된 월차 배치 목록 (만료일 오름차순)
+     * 만료일 기준 FIFO 계산 시 배치별 순회에 사용.
+     * ghost 레코드(is_expired=false이나 만료일 경과)도 포함.
+     */
+    @Query("SELECT v FROM VacationAccrualSchedule v " +
+           "WHERE v.userIdx = :userIdx " +
+           "AND v.year = :year " +
+           "AND v.accrualType = '월차' " +
+           "AND (v.isExpired = true OR v.expiryDate < :today) " +
+           "ORDER BY v.expiryDate ASC")
+    List<VacationAccrualSchedule> findExpiredMonthlyBatches(@Param("userIdx") Long userIdx,
+                                                             @Param("year") Integer year,
+                                                             @Param("today") LocalDate today);
 
     /**
      * 다음 발생 예정 accrual 조회 (오늘 이후 가장 빠른 것)

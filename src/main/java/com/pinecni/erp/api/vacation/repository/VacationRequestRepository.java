@@ -97,6 +97,22 @@ public interface VacationRequestRepository extends JpaRepository<VacationRequest
     boolean existsByUserIdxAndVacationTypeContaining(Long userIdx, String vacationType);
 
     /**
+     * 특정 날짜(cutoffDate) 이전에 시작한 연차 일수 합계 (경조사·기타 제외)
+     * 만료일 기준 FIFO 계산 시 "만료일 이전 사용분" 산출에 사용.
+     */
+    @Query("SELECT COALESCE(SUM(v.days), 0) FROM VacationRequest v " +
+            "JOIN ApprovalDocument ad ON v.documentIdx = ad.idx " +
+            "WHERE v.userIdx = :userIdx " +
+            "AND YEAR(v.startDate) = :year " +
+            "AND v.startDate <= :cutoffDate " +
+            "AND ad.deletedAt IS NULL " +
+            "AND v.vacationType NOT LIKE '%경조사%' " +
+            "AND v.vacationType <> '기타'")
+    BigDecimal sumDaysUsedOnOrBefore(@Param("userIdx") Long userIdx,
+                                     @Param("year") int year,
+                                     @Param("cutoffDate") LocalDate cutoffDate);
+
+    /**
      * 문서 IDX로 연차 신청 목록 조회
      * - 한 문서에 여러 개의 연차 기간이 있을 수 있음
      */

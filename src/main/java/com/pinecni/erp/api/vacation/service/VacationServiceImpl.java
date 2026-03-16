@@ -501,19 +501,21 @@ public class VacationServiceImpl implements VacationService {
         BigDecimal annualLeaveDays    = accrualScheduleRepository.sumAnnualLeaveDays(userIdx, year, effectiveDate);
         BigDecimal proportionalDays   = accrualScheduleRepository.sumProportionalDays(userIdx, year, effectiveDate);
         BigDecimal compensatoryDays   = accrualScheduleRepository.sumCompensatoryDays(userIdx, year, effectiveDate);
-        // 유효 월차(만료 전) + 소멸 월차 전체
-        BigDecimal validMonthlyDays   = accrualScheduleRepository.sumValidMonthlyDays(userIdx, year, effectiveDate);
-        BigDecimal expiredMonthlyDays = accrualScheduleRepository.sumExpiredMonthlyDays(userIdx, year);
+        // 유효 월차(만료 전) + 소멸 월차 배치 목록 (만료일 오름차순)
+        BigDecimal validMonthlyDays = accrualScheduleRepository.sumValidMonthlyDays(userIdx, year, effectiveDate);
+        List<VacationAccrualSchedule> expiredBatches = accrualScheduleRepository.findExpiredMonthlyBatches(userIdx, year, effectiveDate);
+        BigDecimal expiredMonthlyDays = expiredBatches.stream()
+                .map(VacationAccrualSchedule::getDays)
+                .reduce(BigDecimal.ZERO, BigDecimal::add);
         // 발행된 월차 전체 = 유효 + 소멸 (이월월차는 validMonthlyDays에 포함)
         BigDecimal allMonthlyIssuedDays = validMonthlyDays.add(expiredMonthlyDays);
 
-        // 2. 사용 연차 (경조사, 기타 제외) — FIFO 보정을 위해 먼저 계산
+        // 2. 사용 연차 (경조사, 기타 제외)
         BigDecimal usedDays = calculateUsedDays(userIdx, year);
 
-        // 3. 미사용 소멸월차 = MAX(0, 소멸월차 - 사용일수)
-        // FIFO 원칙: 만료가 빠른 월차부터 소진되므로 사용일수만큼 소멸월차를 상쇄.
-        // 이를 통해 "만료 전에 사용한 월차가 만료일에 이중 차감되는" 버그를 방지.
-        BigDecimal expiredUnusedMonthlyDays = expiredMonthlyDays.subtract(usedDays).max(BigDecimal.ZERO);
+        // 3. 만료일 기준 FIFO: 각 배치의 만료일 이전에 실제로 사용한 일수를 배치별로 배분하여
+        //    진짜 낭비된(사용 없이 만료된) 월차만 차감.
+        BigDecimal expiredUnusedMonthlyDays = calculateExpiredUnusedByFifo(userIdx, year, expiredBatches);
 
         // 4. 부여일수 합계 (발행 전체: 유효 + 소멸)
         BigDecimal grantedDays = annualLeaveDays.add(allMonthlyIssuedDays)
@@ -921,6 +923,38 @@ public class VacationServiceImpl implements VacationService {
         log.debug("[사용 연차 계산] userIdx={}, year={}, 총 연차 건수={}, 사용 연차={}일",
                   userIdx, year, vacationRequests.size(), usedDays);
         return usedDays;
+    }
+
+    /**
+     * 만료일 기준 FIFO로 실제 낭비된(사용 없이 만료된) 월차 일수 계산.
+     *
+     * 배치를 만료일 오름차순으로 순회하며, 각 배치의 만료일 이전에
+     * vacation_request에 기록된 사용분을 먼저 배분한다.
+     * 앞 배치에 이미 배분된 사용분은 뒤 배치 계산에서 제외(누적 차감).
+     *
+     * 예) 배치A(5일, 만료 1/31), 배치B(1일, 만료 2/28)
+     *     1/31 이전 사용 3일 → 배치A에서 3일 소진, 낭비 2일
+     *     2/28 이전 사용 누계 4일(3+1) - 이미배분 3일 = 배치B에 1일 배분, 낭비 0일
+     *     총 낭비 = 2일
+     */
+    private BigDecimal calculateExpiredUnusedByFifo(Long userIdx, int year,
+                                                     List<VacationAccrualSchedule> expiredBatches) {
+        if (expiredBatches.isEmpty()) return BigDecimal.ZERO;
+
+        BigDecimal totalExpiredUnused = BigDecimal.ZERO;
+        BigDecimal alreadyAttributed  = BigDecimal.ZERO;
+
+        for (VacationAccrualSchedule batch : expiredBatches) {
+            BigDecimal usedBeforeExpiry = vacationRequestRepository
+                    .sumDaysUsedOnOrBefore(userIdx, year, batch.getExpiryDate());
+            // 이 배치에 배분 가능한 사용량 = 만료일까지 누계 사용 - 앞 배치에 이미 배분된 양
+            BigDecimal availableForBatch = usedBeforeExpiry.subtract(alreadyAttributed).max(BigDecimal.ZERO);
+            BigDecimal usedFromBatch     = batch.getDays().min(availableForBatch);
+            totalExpiredUnused = totalExpiredUnused.add(batch.getDays().subtract(usedFromBatch));
+            alreadyAttributed  = alreadyAttributed.add(usedFromBatch);
+        }
+
+        return totalExpiredUnused;
     }
 
     /**
@@ -1572,6 +1606,12 @@ public class VacationServiceImpl implements VacationService {
                     return calculateTotalDaysForYear(u, currentYear)
                             .subtract(calculateUsedDays(userIdx, currentYear));
                 });
+
+        // 연차 차감 대상 일수가 없으면 검증 불필요 (기타사유 등 전부 제외된 경우)
+        if (totalRequestedDays.compareTo(BigDecimal.ZERO) <= 0) {
+            log.info("[잔여 연차 검증 생략] userIdx: {}, 차감 대상 일수 없음 (기타사유 등)", userIdx);
+            return;
+        }
 
         // 잔여 연차 부족 시
         if (totalRequestedDays.compareTo(remainingDays) > 0) {
