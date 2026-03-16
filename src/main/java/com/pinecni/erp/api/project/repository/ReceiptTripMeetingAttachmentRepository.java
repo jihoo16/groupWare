@@ -43,4 +43,11 @@ public interface ReceiptTripMeetingAttachmentRepository extends JpaRepository<Re
      * 세션 IDX로 첨부파일 목록 조회 (삭제되지 않은 건)
      */
     List<ReceiptTripMeetingAttachment> findBySessionIdxAndDeletedFalseOrderByIdxAsc(Long sessionIdx);
+
+    /**
+     * 세션 하드 딜리트 후 재삽입 시 보존된 첨부파일의 session_idx를 새 세션 PK로 업데이트
+     */
+    @Modifying
+    @Query("UPDATE ReceiptTripMeetingAttachment a SET a.sessionIdx = :newIdx WHERE a.sessionIdx = :oldIdx AND a.deleted = false")
+    void updateSessionIdxByOldIdx(@Param("oldIdx") Long oldIdx, @Param("newIdx") Long newIdx);
 }

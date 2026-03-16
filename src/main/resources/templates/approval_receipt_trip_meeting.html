@@ -84,7 +84,7 @@
                                     <label for="common_author">
                                         <i class="fas fa-user-edit"></i> 작성자
                                         <span class="info-tooltip">
-                                            <i class="fas fa-info-circle" style="margin-left: 6px; color: #64748b; cursor: help; font-size: 0.9em;"></i>
+                                            <i class="fas fa-info-circle expense-tooltip-icon" style="margin-left: 6px;"></i>
                                             <span class="tooltip-text">출장인원 중 선택 가능합니다</span>
                                         </span>
                                     </label>
@@ -104,6 +104,10 @@
                                         <label for="common_date">
                                             <i class="fas fa-calendar-day"></i> 출장기간
                                             <span class="required-mark">*</span>
+                                            <span class="info-tooltip">
+                                                <i class="fas fa-info-circle expense-tooltip-icon" style="margin-left: 6px;"></i>
+                                                <span class="tooltip-text">⚠️ 일자 변경 시 중복 방지를 위해 참석자 목록이 초기화됩니다</span>
+                                            </span>
                                         </label>
                                         <div style="display: flex; gap: 8px; align-items: center;">
                                             <input type="date" id="common_date" class="form-input" style="flex: 1; min-width: 0;">
@@ -217,7 +221,7 @@
                                             <i class="fas fa-user-edit"></i> 회의 작성자
                                             <span class="required-mark">*</span>
                                             <span class="info-tooltip">
-                                                <i class="fas fa-info-circle" style="margin-left: 6px; color: #64748b; cursor: help; font-size: 0.9em;"></i>
+                                                <i class="fas fa-info-circle expense-tooltip-icon" style="margin-left: 6px;"></i>
                                                 <span class="tooltip-text">출장인원 중 선택 가능합니다</span>
                                             </span>
                                         </label>
@@ -250,6 +254,15 @@
                                         </label>
                                         <input type="time" id="common_end_time" class="form-input" value="14:00">
                                     </div>
+                                </div>
+
+                                <!-- 회의 장소 -->
+                                <div class="form-group full-width">
+                                    <label for="common_meeting_location">
+                                        <i class="fas fa-map-marker-alt"></i> 회의 장소
+                                        <span class="required-mark">*</span>
+                                    </label>
+                                    <input type="text" id="common_meeting_location" class="form-input" placeholder="회의 장소를 입력하세요">
                                 </div>
 
                                 <!-- 참석자 (출장인원 자동 포함 + 외부인원 추가) -->
@@ -634,7 +647,7 @@
                                                 <td><input type="text" class="auto-datetime" readonly
                                                            style="background: #f9f9f9; text-align: center;"></td>
                                                 <th>장소</th>
-                                                <td><input type="text" class="auto-location" readonly
+                                                <td><input type="text" id="doc_meeting_location_0" readonly
                                                            style="background: #f9f9f9; text-align: center;"></td>
                                             </tr>
                                             <tr>

@@ -50,11 +50,15 @@ public interface ReceiptTripMeetingService {
 
     // ── 첨부파일 ────────────────────────────────────────────────────
 
-    /** 기존 문서에 첨부파일 추가 (목록 화면 모달용) */
+    /**
+     * 기존 문서에 첨부파일 추가 (목록 화면 모달용)
+     * @param meetingReceiptFilesMap  세션 position(0,1,...) → 회의 영수증 파일 배열
+     * @param meetingDocumentFilesMap 세션 position(0,1,...) → 회의 공식문서 파일 배열
+     */
     void addAttachments(
             Long idx,
-            MultipartFile[] meetingReceiptFiles,
-            MultipartFile[] meetingDocumentFiles,
+            Map<Integer, MultipartFile[]> meetingReceiptFilesMap,
+            Map<Integer, MultipartFile[]> meetingDocumentFilesMap,
             MultipartFile[] tripReceiptFiles,
             MultipartFile[] tripDocumentFiles,
             Long currentUserIdx);

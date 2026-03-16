@@ -34,6 +34,9 @@ public class MeetingSessionDTO {
     /** 회의 종료 시간 */
     private LocalTime endTime;
 
+    /** 회의 장소 */
+    private String meetingLocation;
+
     /** 회의 목적 */
     private String meetingPurpose;
 

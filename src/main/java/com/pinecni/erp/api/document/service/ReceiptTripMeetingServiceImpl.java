@@ -342,9 +342,19 @@ public class ReceiptTripMeetingServiceImpl implements ReceiptTripMeetingService 
 
         // 5. 회의 세션 수정 (기존 소프트 딜리트 후 재삽입)
         if (updateDTO.getMeetingSessions() != null && !updateDTO.getMeetingSessions().isEmpty()) {
-            // 기존 세션의 참석자 소프트 딜리트
             List<ReceiptTripMeetingSession> existingSessions = sessionRepository.findByReceiptTripMeetingIdxOrderByDisplayOrderAsc(idx);
-            for (ReceiptTripMeetingSession existingSession : existingSessions) {
+            int newSessionCount = updateDTO.getMeetingSessions().size();
+
+            // position → oldSessionIdx 매핑 (첨부파일 session_idx 재연결용)
+            Map<Integer, Long> posToOldSessionIdx = new java.util.LinkedHashMap<>();
+            for (int i = 0; i < existingSessions.size(); i++) {
+                posToOldSessionIdx.put(i, existingSessions.get(i).getIdx());
+            }
+
+            for (int i = 0; i < existingSessions.size(); i++) {
+                ReceiptTripMeetingSession existingSession = existingSessions.get(i);
+
+                // 참석자 소프트 딜리트
                 receiptAttendeeRepository.findBySessionIdxAndParticipationTypeAndIsDeletedFalseOrderByDisplayOrder(existingSession.getIdx(), "회의")
                         .forEach(a -> {
                             a.setIsDeleted(true);
@@ -352,20 +362,39 @@ public class ReceiptTripMeetingServiceImpl implements ReceiptTripMeetingService 
                             a.setDeletedUserIdx(currentUserIdx);
                             receiptAttendeeRepository.save(a);
                         });
-                // 기존 세션 첨부파일 소프트 딜리트
-                attachmentRepository.findBySessionIdxAndDeletedFalseOrderByIdxAsc(existingSession.getIdx())
-                        .forEach(a -> {
-                            a.setDeleted(true);
-                            a.setDeletedAt(now);
-                            a.setDeletedUserIdx(currentUserIdx);
-                            attachmentRepository.save(a);
-                        });
+
+                // 첨부파일 소프트 딜리트: 제거된 세션(position >= 새 세션 수) 또는 해당 세션에 새 파일이 업로드되는 경우만
+                boolean sessionRemoved = i >= newSessionCount;
+                boolean hasNewFiles = meetingReceiptFilesMap.containsKey(i) || meetingDocumentFilesMap.containsKey(i);
+                if (sessionRemoved || hasNewFiles) {
+                    attachmentRepository.findBySessionIdxAndDeletedFalseOrderByIdxAsc(existingSession.getIdx())
+                            .forEach(a -> {
+                                a.setDeleted(true);
+                                a.setDeletedAt(now);
+                                a.setDeletedUserIdx(currentUserIdx);
+                                attachmentRepository.save(a);
+                            });
+                }
             }
+
             // 기존 세션 하드 딜리트 후 재삽입 (세션은 내부 구현 단위 → 하드 딜리트 허용)
             sessionRepository.deleteByReceiptTripMeetingIdx(idx);
             saveMeetingSessions(updateDTO.getMeetingSessions(), entity,
                     updateDTO.getProjectIdx(), updateDTO.getCardIdx(), currentUserIdx,
                     meetingReceiptFilesMap, meetingDocumentFilesMap, idx);
+
+            // 새로 생성된 세션 PK 조회 후 보존된 첨부파일의 session_idx 재연결
+            List<ReceiptTripMeetingSession> newSessions = sessionRepository.findByReceiptTripMeetingIdxOrderByDisplayOrderAsc(idx);
+            for (int i = 0; i < newSessions.size() && i < existingSessions.size(); i++) {
+                boolean hasNewFilesForSession = meetingReceiptFilesMap.containsKey(i) || meetingDocumentFilesMap.containsKey(i);
+                if (!hasNewFilesForSession) {
+                    Long oldSessionIdx = posToOldSessionIdx.get(i);
+                    Long newSessionIdx = newSessions.get(i).getIdx();
+                    if (oldSessionIdx != null && !oldSessionIdx.equals(newSessionIdx)) {
+                        attachmentRepository.updateSessionIdxByOldIdx(oldSessionIdx, newSessionIdx);
+                    }
+                }
+            }
         }
 
         // 6. 출장 파일 저장 + 첨부파일 표시명 재정렬
@@ -475,8 +504,8 @@ public class ReceiptTripMeetingServiceImpl implements ReceiptTripMeetingService 
     @Transactional
     public void addAttachments(
             Long idx,
-            MultipartFile[] meetingReceiptFiles,
-            MultipartFile[] meetingDocumentFiles,
+            Map<Integer, MultipartFile[]> meetingReceiptFilesMap,
+            Map<Integer, MultipartFile[]> meetingDocumentFilesMap,
             MultipartFile[] tripReceiptFiles,
             MultipartFile[] tripDocumentFiles,
             Long currentUserIdx) {
@@ -487,11 +516,20 @@ public class ReceiptTripMeetingServiceImpl implements ReceiptTripMeetingService 
             throw new IllegalArgumentException("삭제된 출장+회의입니다. idx: " + idx);
         }
 
-        // addAttachments는 session_idx 없이 단순 추가 (어느 세션인지 모름 → null)
-        saveAttachments(entity, meetingReceiptFiles,  "MEETING_RECEIPT",  currentUserIdx, null);
-        saveAttachments(entity, meetingDocumentFiles, "MEETING_DOCUMENT", currentUserIdx, null);
-        saveAttachments(entity, tripReceiptFiles,     "TRIP_RECEIPT",     currentUserIdx, null);
-        saveAttachments(entity, tripDocumentFiles,    "TRIP_DOCUMENT",    currentUserIdx, null);
+        // 세션 position → DB PK 매핑 (displayOrder 오름차순)
+        List<ReceiptTripMeetingSession> sessions =
+                sessionRepository.findByReceiptTripMeetingIdxOrderByDisplayOrderAsc(idx);
+
+        meetingReceiptFilesMap.forEach((position, files) -> {
+            Long sessionIdx = position < sessions.size() ? sessions.get(position).getIdx() : null;
+            saveAttachments(entity, files, "MEETING_RECEIPT", currentUserIdx, sessionIdx);
+        });
+        meetingDocumentFilesMap.forEach((position, files) -> {
+            Long sessionIdx = position < sessions.size() ? sessions.get(position).getIdx() : null;
+            saveAttachments(entity, files, "MEETING_DOCUMENT", currentUserIdx, sessionIdx);
+        });
+        saveAttachments(entity, tripReceiptFiles,  "TRIP_RECEIPT",  currentUserIdx, null);
+        saveAttachments(entity, tripDocumentFiles, "TRIP_DOCUMENT", currentUserIdx, null);
         renameAttachments(entity);
         log.debug("addAttachments 완료 - receiptTripMeetingIdx: {}", idx);
     }
@@ -700,6 +738,31 @@ public class ReceiptTripMeetingServiceImpl implements ReceiptTripMeetingService 
     }
 
     /**
+     * 동일 RCTM 내 세션들 간 시간 겹침 검증
+     * 같은 출장 내 두 회의는 동시에 진행될 수 없음
+     */
+    private void validateInterSessionTimeOverlap(List<MeetingSessionDTO> sessions) {
+        for (int i = 0; i < sessions.size(); i++) {
+            MeetingSessionDTO a = sessions.get(i);
+            if (a.getMeetingDate() == null || a.getStartTime() == null || a.getEndTime() == null) continue;
+            for (int j = i + 1; j < sessions.size(); j++) {
+                MeetingSessionDTO b = sessions.get(j);
+                if (b.getMeetingDate() == null || b.getStartTime() == null || b.getEndTime() == null) continue;
+                if (a.getMeetingDate().equals(b.getMeetingDate()) &&
+                        isTimeOverlap(a.getStartTime(), a.getEndTime(), b.getStartTime(), b.getEndTime())) {
+                    throw new IllegalStateException(String.format(
+                            "%d번째 회의(%s ~ %s)와 %d번째 회의(%s ~ %s)가 같은 날짜(%s)에 시간이 겹칩니다.\n" +
+                            "같은 출장 내 회의는 동시에 진행할 수 없습니다.",
+                            i + 1, a.getStartTime(), a.getEndTime(),
+                            j + 1, b.getStartTime(), b.getEndTime(),
+                            a.getMeetingDate()
+                    ));
+                }
+            }
+        }
+    }
+
+    /**
      * 다중 회의 세션 저장 헬퍼
      * 세션 저장 → 각 세션의 참석자 중복 검증 → 참석자 저장 → 세션별 첨부파일 저장
      *
@@ -712,6 +775,9 @@ public class ReceiptTripMeetingServiceImpl implements ReceiptTripMeetingService 
                                      Map<Integer, MultipartFile[]> receiptFilesMap,
                                      Map<Integer, MultipartFile[]> documentFilesMap,
                                      Long excludeRtmIdx) {
+        // 세션 간 시간 겹침 선검증 (같은 출장 내 두 회의는 동시 진행 불가)
+        validateInterSessionTimeOverlap(sessions);
+
         LocalDateTime now = LocalDateTime.now();
         for (int i = 0; i < sessions.size(); i++) {
             MeetingSessionDTO sessionDTO = sessions.get(i);
@@ -728,7 +794,8 @@ public class ReceiptTripMeetingServiceImpl implements ReceiptTripMeetingService 
                     .meetingDate(sessionDTO.getMeetingDate())
                     .startTime(sessionDTO.getStartTime())
                     .endTime(sessionDTO.getEndTime())
-                    .location(entity.getLocation())
+                    .location(sessionDTO.getMeetingLocation() != null && !sessionDTO.getMeetingLocation().isBlank()
+                            ? sessionDTO.getMeetingLocation() : entity.getLocation())
                     .purpose(sessionDTO.getMeetingPurpose())
                     .content(sessionDTO.getMeetingContent())
                     .amount(sessionDTO.getMeetingAmount() != null ? sessionDTO.getMeetingAmount() : BigDecimal.ZERO)
@@ -805,6 +872,7 @@ public class ReceiptTripMeetingServiceImpl implements ReceiptTripMeetingService 
                         .meetingDate(session.getMeetingDate())
                         .startTime(session.getStartTime())
                         .endTime(session.getEndTime())
+                        .meetingLocation(session.getLocation())
                         .meetingPurpose(session.getPurpose())
                         .meetingContent(session.getContent())
                         .meetingDrafterUserIdx(session.getAuthorIdx())

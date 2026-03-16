@@ -232,11 +232,10 @@ public class ReceiptTripMeetingController {
      */
     @PostMapping(value = "/{idx}/attachments", consumes = {"multipart/form-data"})
     public ResponseEntity<?> addAttachments(
+            HttpServletRequest httpRequest,
             @PathVariable Long idx,
-            @RequestPart(value = "meetingReceiptFiles",  required = false) MultipartFile[] meetingReceiptFiles,
-            @RequestPart(value = "meetingDocumentFiles", required = false) MultipartFile[] meetingDocumentFiles,
-            @RequestPart(value = "tripReceiptFiles",     required = false) MultipartFile[] tripReceiptFiles,
-            @RequestPart(value = "tripDocumentFiles",    required = false) MultipartFile[] tripDocumentFiles,
+            @RequestPart(value = "tripReceiptFiles",  required = false) MultipartFile[] tripReceiptFiles,
+            @RequestPart(value = "tripDocumentFiles", required = false) MultipartFile[] tripDocumentFiles,
             HttpSession session) {
 
         log.debug("POST /api/receipt-trip-meetings/{}/attachments", idx);
@@ -246,8 +245,10 @@ public class ReceiptTripMeetingController {
         }
 
         try {
+            Map<Integer, MultipartFile[]> receiptMap  = extractSessionFiles(httpRequest, "meetingReceiptFiles");
+            Map<Integer, MultipartFile[]> documentMap = extractSessionFiles(httpRequest, "meetingDocumentFiles");
             receiptTripMeetingService.addAttachments(
-                    idx, meetingReceiptFiles, meetingDocumentFiles, tripReceiptFiles, tripDocumentFiles, currentUserIdx);
+                    idx, receiptMap, documentMap, tripReceiptFiles, tripDocumentFiles, currentUserIdx);
             return ResponseEntity.ok(receiptTripMeetingService.getAttachmentsByReceiptTripMeetingIdx(idx));
         } catch (Exception e) {
             log.error("출장+회의 첨부파일 추가 실패: {}", e.getMessage(), e);

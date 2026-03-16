@@ -217,7 +217,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
     // 출장인원 툴팁: 직급별 식비/일비
     function updateTripExpenseTooltip() {
-        const content = document.getElementById('tripExpenseTooltipContent');
+        const content = document.getElementById('expenseTooltipContent');
         if (!content) return;
         if (!projectMembers || projectMembers.length === 0) {
             content.innerHTML = '<div class="expense-tooltip-loading" style="line-height:1.4;">프로젝트 선택 시<br>직급별 출장비 정보를<br>확인하실 수 있습니다</div>';
@@ -255,18 +255,15 @@ document.addEventListener('DOMContentLoaded', function() {
         `;
     }
 
-    // 회의참석자 툴팁: 직급별 회의비
-    function updateMeetingExpenseTooltip() {
-        const content = document.getElementById('meetingExpenseTooltipContent');
+    // 회의참석자 툴팁: 직급별 회의비 — contentId 요소에 내용을 채움
+    function fillMeetingExpenseTooltipContent(contentId) {
+        const content = document.getElementById(contentId);
         if (!content) return;
         if (!projectExpenseSettings || projectExpenseSettings.length === 0) {
             content.innerHTML = '<div class="expense-tooltip-loading" style="line-height:1.4;">프로젝트 선택 시<br>직급별 회의비 정보를<br>확인하실 수 있습니다</div>';
             return;
         }
-        const meetingExpenses = projectExpenseSettings.filter(s => {
-            const name = (s.expenseItemName || '').toLowerCase();
-            return name.includes('회의');
-        });
+        const meetingExpenses = projectExpenseSettings.filter(s => (s.expenseItemName || '').toLowerCase().includes('회의'));
         if (meetingExpenses.length === 0) {
             content.innerHTML = '<div class="expense-tooltip-empty">회의비 설정이 없습니다</div>';
             return;
@@ -279,6 +276,12 @@ document.addEventListener('DOMContentLoaded', function() {
             </div>`;
         });
         content.innerHTML = html;
+    }
+
+    // meeting-0 + 모든 추가 회의 tooltip 갱신
+    function updateMeetingExpenseTooltip() {
+        fillMeetingExpenseTooltipContent('meetingExpenseTooltipContent');
+        extraMeetings.forEach(m => fillMeetingExpenseTooltipContent(`meetingExpenseTooltipContent_${m.idx}`));
     }
 
     // 직급 코드 로드 (C02, sortOrder 오름차순 = 낮은 직급 먼저)
@@ -329,6 +332,86 @@ document.addEventListener('DOMContentLoaded', function() {
 
     function isTimeOverlap(s1, e1, s2, e2) {
         return s1 < e2 && s2 < e1;
+    }
+
+    // ── 회의 참석자 중복 검증 공통 헬퍼 ──────────────────────────────
+
+    /** meeting-block 순서 번호 반환 (DOM 기준) */
+    function getMeetingBlockNum(meetingIdx) {
+        const blockEl = document.getElementById(`meeting-block-${meetingIdx}`);
+        return blockEl
+            ? [...(document.getElementById('meetingBlocksContainer') || document)
+                .querySelectorAll('.meeting-block[data-meeting-idx]')].indexOf(blockEl) + 1
+            : meetingIdx + 1;
+    }
+
+    /** meeting-0 참석자 목록 수집 ({id, name, isExternal}) */
+    function collectMeeting0Persons() {
+        return [
+            ...tripPersons.filter(p => !p.isExternal).map(p => ({ id: p.id, name: p.name, isExternal: false })),
+            ...attendees.filter(a => a.isExternal && a.id).map(a => ({ id: a.id, name: a.name, isExternal: true }))
+        ];
+    }
+
+    /** extraMeeting 참석자 목록 수집 ({id, name, isExternal}) */
+    function collectExtraMeetingPersons(m) {
+        return [
+            ...(m.tripPersonsForMeeting || []).map(p => ({ id: p.id, name: p.name, isExternal: false })),
+            ...(m.attendees || []).filter(a => a.id).map(a => ({ id: a.id, name: a.name, isExternal: Boolean(a.isExternal) }))
+        ];
+    }
+
+    /**
+     * 특정 세션 참석자들의 시간 중복 여부를 검증합니다.
+     * @param {Array}  persons           [{id, name, isExternal}, ...]
+     * @param {string} date              'YYYY-MM-DD'
+     * @param {string} start             'HH:mm'
+     * @param {string} end               'HH:mm'
+     * @param {string} projectIdx
+     * @param {string|null} sessionLabel 경고 메시지 접두어 (null이면 생략)
+     * @param {*}      excludeReceiptIdx 수정 시 자기 자신 제외 ID (null=신규)
+     * @param {string} excludeDocType    제외 문서 타입 ('RCTM' 등)
+     * @returns {Promise<boolean>} 충돌이 있으면 true (호출부에서 return 처리)
+     */
+    async function checkSessionAttendeeDuplicates(persons, date, start, end, projectIdx, sessionLabel, excludeReceiptIdx, excludeDocType) {
+        if (!persons.length || !date || !start || !end || !projectIdx) return false;
+        const dupResults = await Promise.all(
+            persons.map(p => checkAuthorDuplicate(p.id, date, start, end, projectIdx, excludeReceiptIdx ?? null, excludeDocType ?? null, p.isExternal))
+        );
+        const conflicts = persons.filter((_, i) => dupResults[i]);
+        if (conflicts.length === 0) return false;
+        const names  = conflicts.map(p => p.name).join(', ');
+        const prefix = sessionLabel ? `${sessionLabel} 참석자 중 ` : '다음 ';
+        await showWarning(`${prefix}참석자가 해당 시간대(${start}~${end})에 이미 다른 회의에 참석 중입니다.\n\n${names}\n\n회의 시간 또는 참석자를 수정해주세요.`);
+        return true;
+    }
+
+    /**
+     * 전체 회의 세션(meeting-0 + extraMeetings)의 참석자 시간 중복을 일괄 검증합니다.
+     * @param {string} projectIdx
+     * @param {*}      excludeReceiptIdx  수정 시 자기 자신 제외 ID (null=신규)
+     * @param {string} excludeDocType     제외 문서 타입
+     * @returns {Promise<boolean>} 충돌이 있으면 true (호출부에서 return 처리)
+     */
+    async function checkAllMeetingAttendeeDuplicates(projectIdx, excludeReceiptIdx, excludeDocType) {
+        const date  = document.getElementById('common_meeting_date')?.value;
+        const start = document.getElementById('common_start_time')?.value;
+        const end   = document.getElementById('common_end_time')?.value;
+
+        if (date && start && end) {
+            if (await checkSessionAttendeeDuplicates(collectMeeting0Persons(), date, start, end, projectIdx, null, excludeReceiptIdx, excludeDocType)) return true;
+        }
+
+        for (const m of extraMeetings) {
+            const mDate  = document.getElementById(`meeting_date_${m.idx}`)?.value;
+            const mStart = document.getElementById(`meeting_start_time_${m.idx}`)?.value;
+            const mEnd   = document.getElementById(`meeting_end_time_${m.idx}`)?.value;
+            if (!mDate || !mStart || !mEnd) continue;
+            const label = `${getMeetingBlockNum(m.idx)}번째 회의`;
+            if (await checkSessionAttendeeDuplicates(collectExtraMeetingPersons(m), mDate, mStart, mEnd, projectIdx, label, excludeReceiptIdx, excludeDocType)) return true;
+        }
+
+        return false;
     }
 
     async function setDefaultAuthor() {
@@ -1036,6 +1119,13 @@ document.addEventListener('DOMContentLoaded', function() {
                 field.textContent = contentText;
                 adjustContentFontSize(field, contentText);
             });
+
+            // 회의 장소 (회의록 문서 - 회의-0)
+            const meetingLocationEl = document.getElementById('common_meeting_location');
+            const docMeetingLocationEl = document.getElementById('doc_meeting_location_0');
+            if (meetingLocationEl && docMeetingLocationEl) {
+                docMeetingLocationEl.value = meetingLocationEl.value;
+            }
         }
         window.updateMeetingFields = updateMeetingFields;
 
@@ -1108,6 +1198,15 @@ document.addEventListener('DOMContentLoaded', function() {
                         field.textContent = value;
                     }
                 });
+            });
+        }
+
+        // 회의 장소 자동 채우기 (회의록 문서 - 회의-0)
+        const commonMeetingLocationEl = document.getElementById('common_meeting_location');
+        if (commonMeetingLocationEl) {
+            commonMeetingLocationEl.addEventListener('input', function() {
+                updateMeetingFields();
+                validateRequiredFields();
             });
         }
 
@@ -1650,11 +1749,53 @@ document.addEventListener('DOMContentLoaded', function() {
                     window.replaceTripPersons(valid);
                 }
             }
+
+            // ── 회의 외부 참석자 초기화 (날짜 변경 시 중복검증 불가 → 전체 초기화) ──
+            // meeting-0
+            if (attendees.length > 0) {
+                attendees = [];
+                renderAttendeeListInTemplate();
+            }
+            // 추가 회의 블록
+            extraMeetings.forEach(m => {
+                if (m.attendees.length > 0) {
+                    m.attendees = [];
+                    renderExtraMeetingAttendees(m.idx);
+                }
+            });
+            // 회의 작성자 → 출장 작성자와 동기화 (출장 작성자가 없으면 초기화)
+            const finalAuthorName = document.getElementById('common_author')?.value || '';
+            meetingAuthorPersonId = authorPersonId || null;
+            const mtgAuthorField = document.getElementById('common_meeting_author');
+            if (mtgAuthorField) mtgAuthorField.value = finalAuthorName;
+            extraMeetings.forEach(m => {
+                m.authorPersonId = authorPersonId || null;
+                const f = document.getElementById(`meeting_author_${m.idx}`);
+                if (f) f.value = finalAuthorName;
+            });
+        }
+
+        // 출장 날짜/기간 변경 전 확인 (수정 모드 + 출장인원 있을 때)
+        async function confirmTripDateChangeIfNeeded(revertFn) {
+            if (!!getUrlParameter('id') && tripPersons.length > 0) {
+                const confirmed = await showConfirm(
+                    '날짜/기간 변경 시 출장과 회의 작성자 및 참석인원이<br>모두 초기화 됩니다.<br>(참석인원 중복 등록 방지)<br>계속하시겠습니까?',
+                    '출장 기간 변경',
+                    { icon: 'warning', confirmText: '변경', cancelText: '취소' }
+                );
+                if (!confirmed) { revertFn(); return false; }
+            }
+            return true;
         }
 
         // 출장 날짜/기간 변경 → 날짜별 비용 테이블 재생성
         if (commonDate) {
-            commonDate.addEventListener('change', function() {
+            let prevDateValue = commonDate.value;
+            commonDate.addEventListener('focus', function() { prevDateValue = this.value; });
+            commonDate.addEventListener('change', async function() {
+                const ok = await confirmTripDateChangeIfNeeded(() => { commonDate.value = prevDateValue; });
+                if (!ok) return;
+                prevDateValue = this.value;
                 updateTripDateRange();
                 updateMeetingFields();
             });
@@ -1663,7 +1804,12 @@ document.addEventListener('DOMContentLoaded', function() {
             });
         }
         if (commonDuration) {
-            commonDuration.addEventListener('change', function() {
+            let prevDurationValue = commonDuration.value;
+            commonDuration.addEventListener('focus', function() { prevDurationValue = this.value; });
+            commonDuration.addEventListener('change', async function() {
+                const ok = await confirmTripDateChangeIfNeeded(() => { commonDuration.value = prevDurationValue; });
+                if (!ok) return;
+                prevDurationValue = this.value;
                 updateTripDateRange();
             });
         }
@@ -1674,9 +1820,6 @@ document.addEventListener('DOMContentLoaded', function() {
             meetingDateInput.addEventListener('change', function() {
                 updateMeetingFields();
                 updateTotalExpenses();
-            });
-            meetingDateInput.addEventListener('click', function() {
-                if (this.showPicker) { try { this.showPicker(); } catch(e) {} }
             });
         }
 
@@ -1756,29 +1899,7 @@ document.addEventListener('DOMContentLoaded', function() {
             });
         }
 
-        function validateMeetingAmount() {
-            const amountEl = document.getElementById('common_amount');
-            const warnEl   = document.getElementById('amountExceedWarning');
-            if (!amountEl) return;
-
-            // 참석자 금액 합계 (minutesMeetingExpenseTotal) 에서 한도 읽기
-            const totalEl  = document.getElementById('minutesMeetingExpenseTotal');
-            const limitVal = parseInt((totalEl?.textContent || '0').replace(/[^\d]/g, '')) || 0;
-            const entered  = parseInt(amountEl.value.replace(/[^\d]/g, '')) || 0;
-
-            if (limitVal > 0 && entered > limitVal) {
-                amountEl.style.borderColor = '#dc2626';
-                amountEl.style.color       = '#dc2626';
-                if (warnEl) {
-                    warnEl.textContent     = `참석자 금액 합계(${limitVal.toLocaleString()}원)를 초과했습니다.`;
-                    warnEl.style.display   = 'block';
-                }
-            } else {
-                amountEl.style.borderColor = '';
-                amountEl.style.color       = '';
-                if (warnEl) warnEl.style.display = 'none';
-            }
-        }
+        function validateMeetingAmount() { validateMeetingAmountForBlock(null); }
 
         // 출장내용 및 결과 업데이트
         window.updateTripResult = function updateTripResult() {
@@ -1927,8 +2048,16 @@ document.addEventListener('DOMContentLoaded', function() {
             listEl.innerHTML = '<div class="empty-attendee-state"><i class="fas fa-user-plus"></i><div>외부 참석자를 추가해주세요</div></div>';
         } else {
             const html = [
-                ...internal.map(p => `<div class="trip-person-item"><div class="trip-person-info"><span class="name">${p.name}</span><span>${p.dept}</span><span>${p.position}</span><span class="attendee-internal-badge"><i class="fas fa-building"></i> 내부</span></div></div>`),
-                ...external.map(a => `<div class="trip-person-item"><div class="trip-person-info"><span class="name">${a.name}<span class="external-badge">외부</span></span><span>${a.dept}</span><span>${a.position}</span></div><button type="button" class="trip-person-remove attendee-remove" onclick="removeExtraMeetingAttendee(${idx},'${a.id}')"><i class="fas fa-times"></i> 제거</button></div>`)
+                ...internal.map(p => {
+                    const exp = getPersonMeetingExpense(p);
+                    const expTag = exp > 0 ? `<span class="expense-tag">회의비 ${exp.toLocaleString()}원</span>` : '';
+                    return `<div class="trip-person-item"><div class="trip-person-info"><span class="name">${p.name}</span><span>${p.dept}</span><span>${p.position}</span><span class="attendee-internal-badge"><i class="fas fa-building"></i> 내부</span>${expTag}</div></div>`;
+                }),
+                ...external.map(a => {
+                    const exp = getPersonMeetingExpense(a);
+                    const expTag = exp > 0 ? `<span class="expense-tag">회의비 ${exp.toLocaleString()}원</span>` : '';
+                    return `<div class="trip-person-item"><div class="trip-person-info"><span class="name">${a.name}<span class="external-badge">외부</span></span><span>${a.dept}</span><span>${a.position}</span>${expTag}</div><button type="button" class="trip-person-remove attendee-remove" onclick="removeExtraMeetingAttendee(${idx},'${a.id}')"><i class="fas fa-times"></i> 제거</button></div>`;
+                })
             ].join('');
             listEl.innerHTML = html;
         }
@@ -1948,6 +2077,38 @@ document.addEventListener('DOMContentLoaded', function() {
             external.forEach(p => { total += getPersonMeetingExpense(p); });
             totalEl.textContent = total > 0 ? `${total.toLocaleString()}원` : '-';
         }
+        // 금액 초과 재검증
+        validateExtraMeetingAmount(idx);
+    }
+
+    // idx=null → 기본 회의(meeting-0), idx=number → 추가 회의
+    function validateMeetingAmountForBlock(idx) {
+        const amountId = idx == null ? 'common_amount'                : `meeting_amount_${idx}`;
+        const totalId  = idx == null ? 'minutesMeetingExpenseTotal'   : `minutesMeetingExpenseTotal_${idx}`;
+        const warnId   = idx == null ? 'amountExceedWarning'          : `amountExceedWarning_${idx}`;
+        const amountEl = document.getElementById(amountId);
+        const warnEl   = document.getElementById(warnId);
+        if (!amountEl) return;
+        const limitVal = parseInt((document.getElementById(totalId)?.textContent || '0').replace(/[^\d]/g, '')) || 0;
+        const entered  = parseInt((amountEl.value || '0').replace(/[^\d]/g, '')) || 0;
+        if (limitVal > 0 && entered > limitVal) {
+            amountEl.style.borderColor = '#dc2626';
+            amountEl.style.color       = '#dc2626';
+            if (warnEl) {
+                warnEl.textContent   = `참석자 금액 합계(${limitVal.toLocaleString()}원)를 초과했습니다.`;
+                warnEl.style.display = 'block';
+            }
+        } else {
+            amountEl.style.borderColor = '';
+            amountEl.style.color       = '';
+            if (warnEl) warnEl.style.display = 'none';
+        }
+    }
+    function validateExtraMeetingAmount(idx) { validateMeetingAmountForBlock(idx); }
+    window.validateExtraMeetingAmount = validateExtraMeetingAmount;
+
+    function updateExtraMeetingExpenseTooltip(idx) {
+        fillMeetingExpenseTooltipContent(`meetingExpenseTooltipContent_${idx}`);
     }
 
     window.removeExtraMeetingAttendee = function(idx, attendeeId) {
@@ -1988,31 +2149,44 @@ document.addEventListener('DOMContentLoaded', function() {
         </div>
         <div class="form-group">
             <label for="meeting_date_${idx}"><i class="fas fa-calendar-day"></i> 회의 일자 <span class="required-mark">*</span></label>
-            <select id="meeting_date_${idx}" class="form-input">${dateOptionsHtml}</select>
+            <select id="meeting_date_${idx}" class="form-input"><option value="">날짜를 선택하세요</option>${dateOptionsHtml}</select>
         </div>
     </div>
     <div class="form-grid">
         <div class="form-group">
             <label for="meeting_start_time_${idx}"><i class="fas fa-clock"></i> 시작 시간 <span class="required-mark">*</span></label>
-            <input type="time" id="meeting_start_time_${idx}" class="form-input" value="10:00">
+            <input type="time" id="meeting_start_time_${idx}" class="form-input">
         </div>
         <div class="form-group">
             <label for="meeting_end_time_${idx}"><i class="fas fa-clock"></i> 종료 시간 <span class="required-mark">*</span></label>
-            <input type="time" id="meeting_end_time_${idx}" class="form-input" value="14:00">
+            <input type="time" id="meeting_end_time_${idx}" class="form-input">
         </div>
+    </div>
+    <div class="form-group full-width">
+        <label for="meeting_location_${idx}"><i class="fas fa-map-marker-alt"></i> 회의 장소 <span class="required-mark">*</span></label>
+        <input type="text" id="meeting_location_${idx}" class="form-input" placeholder="회의 장소를 입력하세요">
     </div>
     <div class="form-group full-width">
         <label>
             <i class="fas fa-users"></i> 참석자 <span class="required-mark">*</span>
             <span id="attendeeCount_${idx}" class="person-count-badge" style="display:none;"></span>
+            <span class="expense-tooltip-wrapper">
+                <i class="fas fa-info-circle expense-tooltip-icon"></i>
+                <div class="expense-tooltip-content" id="meetingExpenseTooltipContent_${idx}">
+                    <div class="expense-tooltip-loading" style="line-height:1.4;">프로젝트 선택 시<br>직급별 회의비 정보를<br>확인하실 수 있습니다</div>
+                </div>
+            </span>
         </label>
-        <div class="attendee-area">
+        <div class="attendee-area" id="attendeeArea_${idx}">
             <div id="attendeeList_${idx}" class="attendee-list">
                 <div class="empty-attendee-state"><i class="fas fa-user-plus"></i><div>출장인원이 자동으로 추가됩니다</div></div>
             </div>
             <button type="button" class="add-more-persons-btn" onclick="openAttendeeModal(${idx})">
                 <i class="fas fa-user-plus"></i> 외부인원 추가
             </button>
+            <div id="externalAttendeeWarning_${idx}" style="display:none; margin-top:6px; font-size:12px; color:#ef4444;">
+                <i class="fas fa-exclamation-circle"></i> 외부 참석자를 1명 이상 선택해주세요.
+            </div>
         </div>
     </div>
     <div class="form-grid">
@@ -2023,8 +2197,9 @@ document.addEventListener('DOMContentLoaded', function() {
                 <button type="button" class="amount-btn" onclick="addExtraMeetingAmount(${idx},100000)"><i class="fas fa-plus-circle"></i> 10만원</button>
                 <button type="button" class="amount-btn" onclick="addExtraMeetingAmount(${idx},10000)"><i class="fas fa-plus-circle"></i> 1만원</button>
                 <button type="button" class="amount-btn" onclick="addExtraMeetingAmount(${idx},1000)"><i class="fas fa-plus-circle"></i> 1천원</button>
-                <button type="button" class="amount-reset-btn" onclick="document.getElementById('meeting_amount_${idx}').value=''"><i class="fas fa-redo"></i> 초기화</button>
+                <button type="button" class="amount-reset-btn" onclick="document.getElementById('meeting_amount_${idx}').value=''; validateExtraMeetingAmount(${idx});"><i class="fas fa-redo"></i> 초기화</button>
             </div>
+            <div id="amountExceedWarning_${idx}" style="display:none; margin-top:4px; font-size:12px; color:#dc2626;"></div>
         </div>
         <div class="form-group">
             <label><i class="fas fa-calculator"></i> 참석자 금액 합계</label>
@@ -2033,8 +2208,9 @@ document.addEventListener('DOMContentLoaded', function() {
     </div>
     <div class="form-group full-width">
         <label for="meeting_content_${idx}"><i class="fas fa-comments"></i> 주요 내용 <span class="required-mark">*</span></label>
-        <div class="meeting-content-notice"><i class="fas fa-exclamation-triangle"></i> 회의록은 업무 관련 비용임을 입증하는 필수 증빙자료입니다.</div>
-        <textarea id="meeting_content_${idx}" class="form-textarea" rows="6" placeholder="회의 내용을 상세히 작성해주세요."></textarea>
+        <div class="meeting-content-notice"><i class="fas fa-exclamation-triangle"></i> 회의록은 업무 관련 비용임을 입증하는 필수 증빙자료입니다. 논의 내용·결정 사항·참석자별 발언 등을 구체적으로 작성해주세요. 형식적으로만 작성된 경우 <strong>정산 시 반려</strong>될 수 있습니다.</div>
+        <textarea id="meeting_content_${idx}" class="form-textarea" rows="6" placeholder="회의록은 단순 형식 요건이 아닌, 업무 관련 비용임을 입증하는 필수 증빙자료입니다.&#10;업무 목적이 명확히 드러나도록 상세히 작성해 주시기 바랍니다.&#10;&#10;⚠  구체적인 논의 내용 없이 형식적으로 작성된 경우, 추후 비용 적정성 검토 과정에서 추가 소명이 요청될 수 있습니다."></textarea>
+        <div id="meetingContentByteStatus_${idx}" class="byte-status"></div>
     </div>
 </div>
 </div><!-- close meeting-block-${idx} -->`;
@@ -2103,6 +2279,55 @@ document.addEventListener('DOMContentLoaded', function() {
         // 문서 미리보기 블록 추가
         addMeetingDocBlock(idx);
 
+        // 뱃지 재번호
+        renumberMeetingBadges();
+
+        // 필드 변경 시 유효성 재검증 이벤트
+        [`meeting_purpose_${idx}`, `meeting_date_${idx}`, `meeting_start_time_${idx}`, `meeting_end_time_${idx}`].forEach(id => {
+            const el = document.getElementById(id);
+            if (el) {
+                el.addEventListener('input', validateRequiredFields);
+                el.addEventListener('change', validateRequiredFields);
+            }
+        });
+
+        // 사용금액 입력 시 초과 검증 + 유효성 검증
+        const amountInputEl = document.getElementById(`meeting_amount_${idx}`);
+        if (amountInputEl) {
+            amountInputEl.addEventListener('input', function() {
+                // 숫자만 입력되도록 포맷
+                const raw = this.value.replace(/[^\d]/g, '');
+                this.value = raw ? parseInt(raw, 10).toLocaleString('ko-KR') : '';
+                validateExtraMeetingAmount(idx);
+                validateRequiredFields();
+            });
+        }
+
+        // 회의 장소 → 문서 미리보기 자동 동기화
+        const meetingLocInput = document.getElementById(`meeting_location_${idx}`);
+        const docMeetingLocInput = document.getElementById(`doc_meeting_location_${idx}`);
+        if (meetingLocInput && docMeetingLocInput) {
+            meetingLocInput.addEventListener('input', function() {
+                docMeetingLocInput.value = this.value;
+                validateRequiredFields();
+            });
+        }
+
+        // 바이트 카운터 이벤트 설정
+        const contentTextarea = document.getElementById(`meeting_content_${idx}`);
+        if (contentTextarea) {
+            contentTextarea.addEventListener('input', () => updateExtraMeetingByteCounter(idx));
+        }
+
+        // 직급별 회의비 tooltip 초기화
+        updateExtraMeetingExpenseTooltip(idx);
+
+        // 기본 작성자 자동 설정
+        setDefaultAuthorForExtra(idx);
+
+        // 빈 필수 필드 즉시 빨간색 표시
+        validateRequiredFields();
+
         // 새 회의 블록으로 스크롤
         const newBlock = document.getElementById(`meeting-block-${idx}`);
         if (newBlock) newBlock.scrollIntoView({ behavior: 'smooth', block: 'start' });
@@ -2142,6 +2367,8 @@ document.addEventListener('DOMContentLoaded', function() {
         if (!el) return;
         const current = parseInt((el.value || '0').replace(/,/g, '')) || 0;
         el.value = (current + amount).toLocaleString('ko-KR');
+        validateExtraMeetingAmount(idx);
+        validateRequiredFields();
     };
 
     function addMeetingDocBlock(idx) {
@@ -2157,7 +2384,7 @@ document.addEventListener('DOMContentLoaded', function() {
         <table class="form-table">
             <colgroup><col style="width: 15%;"><col style="width: 44%;"><col style="width: 14%;"><col style="width: 27%;"></colgroup>
             <tr><th style="height:64px">과제명</th><td><input type="text" class="auto-project" readonly style="background:#f9f9f9;text-align:center;font-size:12px;"></td><th>작성자</th><td><input type="text" id="doc_meeting_author_${idx}" readonly style="background:#f9f9f9;text-align:center;width:100%;padding:4px;border:1px solid #ddd;"></td></tr>
-            <tr><th style="height:64px">일시</th><td><input type="text" id="doc_meeting_datetime_${idx}" readonly style="background:#f9f9f9;text-align:center;width:100%;padding:4px;border:1px solid #ddd;"></td><th>장소</th><td><input type="text" class="auto-location" readonly style="background:#f9f9f9;text-align:center;"></td></tr>
+            <tr><th style="height:64px">일시</th><td><input type="text" id="doc_meeting_datetime_${idx}" readonly style="background:#f9f9f9;text-align:center;width:100%;padding:4px;border:1px solid #ddd;"></td><th>장소</th><td><input type="text" id="doc_meeting_location_${idx}" readonly style="background:#f9f9f9;text-align:center;width:100%;padding:4px;border:1px solid #ddd;"></td></tr>
             <tr><th>참여자</th><td colspan="3" id="doc_meeting_attendees_${idx}" style="padding:10px;height:80px;white-space:pre-wrap;"></td></tr>
             <tr><th colspan="4" style="background:#f0f0f0;padding:15px;">내용</th></tr>
             <tr><th style="vertical-align:middle;padding-top:15px;">주제</th><td colspan="3" id="doc_meeting_subject_${idx}" style="padding:10px;text-align:left;font-size:18px;height:64px"></td></tr>
@@ -2193,7 +2420,110 @@ document.addEventListener('DOMContentLoaded', function() {
         // 상태 제거
         const pos = extraMeetings.findIndex(m => m.idx === idx);
         if (pos !== -1) extraMeetings.splice(pos, 1);
+        // 남은 블록 뱃지 재번호
+        renumberMeetingBadges();
     };
+
+    // 회의 블록 뱃지를 DOM 순서 기준으로 재번호 매기기 + 첨부/문서 블록 순서도 동기화
+    function renumberMeetingBadges() {
+        const meetingContainer = document.getElementById('meetingBlocksContainer');
+        const attachContainer  = document.getElementById('meetingAttachmentBlocks');
+        const docContainer     = document.getElementById('meetingDocumentBlocks');
+        if (!meetingContainer) return;
+
+        // meetingBlocksContainer 내부의 블록만 선택 (document 전체 탐색 방지)
+        const allBlocks = meetingContainer.querySelectorAll('.meeting-block[data-meeting-idx]');
+
+        allBlocks.forEach((block, i) => {
+            const label      = `${i + 1}번째 회의`;
+            const meetingIdx = block.getAttribute('data-meeting-idx');
+
+            // 회의 정보 블록 뱃지
+            const badge = block.querySelector('.meeting-block-badge');
+            if (badge) badge.textContent = label;
+
+            // 첨부파일 블록 — 뱃지 갱신 후 컨테이너 끝으로 이동 (순서 재정렬)
+            const attachBlock = document.getElementById(`meeting-attachment-block-${meetingIdx}`);
+            if (attachBlock) {
+                const attachBadge = attachBlock.querySelector('.meeting-block-badge');
+                if (attachBadge) attachBadge.textContent = label;
+                if (attachContainer) attachContainer.appendChild(attachBlock);
+            }
+
+            // 문서 미리보기 블록 — 라벨 갱신 후 컨테이너 끝으로 이동 (순서 재정렬)
+            const docBlock = document.getElementById(`meeting-doc-block-${meetingIdx}`);
+            if (docBlock) {
+                const docLabel = docBlock.querySelector('strong');
+                if (docLabel) docLabel.innerHTML = `<i class="fas fa-comments"></i> ${label}`;
+                if (docContainer) docContainer.appendChild(docBlock);
+            }
+        });
+    }
+
+    // 추가된 회의 바이트 카운터 업데이트
+    const MIN_MEETING_CONTENT_BYTES = 400;
+    function updateExtraMeetingByteCounter(idx) {
+        const textarea = document.getElementById(`meeting_content_${idx}`);
+        const statusEl = document.getElementById(`meetingContentByteStatus_${idx}`);
+        if (!statusEl || !textarea) return;
+        const bytes = new TextEncoder().encode(textarea.value || '').length;
+        if (bytes === 0) {
+            statusEl.className = '';
+            statusEl.textContent = '';
+        } else if (bytes >= MIN_MEETING_CONTENT_BYTES) {
+            statusEl.className = 'byte-status-sufficient';
+            statusEl.textContent = `✓ 조건 충족 · ${bytes} bytes 입력됨`;
+        } else {
+            statusEl.className = 'byte-status-insufficient';
+            statusEl.textContent = `최소 ${MIN_MEETING_CONTENT_BYTES} bytes 필요 · 현재 ${bytes} bytes (${MIN_MEETING_CONTENT_BYTES - bytes} bytes 부족)`;
+        }
+    }
+
+    // 추가된 회의 기본 작성자 자동 설정
+    async function setDefaultAuthorForExtra(idx) {
+        const mtgState = extraMeetings.find(m => m.idx === idx);
+        if (!mtgState || mtgState.authorPersonId) return;
+        if (projectMembers.length === 0) return;
+
+        const members = projectMembers.map(m => ({
+            id: m.employeeIdx || m.id,
+            name: m.employeeName || m.name,
+            dept: m.employeeDeptName || m.dept || '',
+            position: m.employeePositionName || m.position || '',
+            positionCode: m.employeePositionCode || m.positionCode || ''
+        }));
+        const sorted = sortByPositionAsc(members);
+
+        const dateVal  = document.getElementById(`meeting_date_${idx}`)?.value;
+        const startVal = document.getElementById(`meeting_start_time_${idx}`)?.value;
+        const endVal   = document.getElementById(`meeting_end_time_${idx}`)?.value;
+        const projVal  = document.getElementById('selectedProjectIdx')?.value;
+
+        let author = null;
+        if (dateVal && startVal && endVal && projVal) {
+            const excludeId = getUrlParameter('id') || null;
+            const candidate = sorted[3] || sorted[0];
+            const isDup = await checkAuthorDuplicate(candidate.id, dateVal, startVal, endVal, projVal, excludeId, 'RCTM');
+            if (!isDup) {
+                author = candidate;
+            } else {
+                for (const person of sorted) {
+                    const dup = await checkAuthorDuplicate(person.id, dateVal, startVal, endVal, projVal, excludeId, 'RCTM');
+                    if (!dup) { author = person; break; }
+                }
+            }
+        } else {
+            author = sorted[3] || sorted[0];
+        }
+
+        if (author) {
+            mtgState.authorPersonId = author.id;
+            const authorField = document.getElementById(`meeting_author_${idx}`);
+            const docAuthorField = document.getElementById(`doc_meeting_author_${idx}`);
+            if (authorField) { authorField.value = author.name; authorField.classList.remove('field-empty'); }
+            if (docAuthorField) docAuthorField.value = author.name;
+        }
+    }
 
     // 모든 회의 세션 payload 구성
     function buildMeetingSessionsPayload() {
@@ -2210,13 +2540,14 @@ document.addEventListener('DOMContentLoaded', function() {
         }));
         sessions.push({
             displayOrder: 0,
-            meetingDate:    document.getElementById('common_meeting_date')?.value || null,
-            startTime:      document.getElementById('common_start_time')?.value || null,
-            endTime:        document.getElementById('common_end_time')?.value || null,
-            meetingPurpose: document.getElementById('common_meeting_purpose')?.value || null,
-            meetingContent: document.getElementById('common_meeting_content')?.value || null,
+            meetingDate:     document.getElementById('common_meeting_date')?.value || null,
+            startTime:       document.getElementById('common_start_time')?.value || null,
+            endTime:         document.getElementById('common_end_time')?.value || null,
+            meetingLocation: document.getElementById('common_meeting_location')?.value || null,
+            meetingPurpose:  document.getElementById('common_meeting_purpose')?.value || null,
+            meetingContent:  document.getElementById('common_meeting_content')?.value || null,
             meetingDrafterUserIdx: meetingAuthorPersonId ? parseInt(meetingAuthorPersonId) : null,
-            meetingAmount:  parseInt((document.getElementById('common_amount')?.value || '0').replace(/,/g, '')) || 0,
+            meetingAmount:   parseInt((document.getElementById('common_amount')?.value || '0').replace(/,/g, '')) || 0,
             meetingAttendees: [...internalM0, ...externalM0]
         });
 
@@ -2233,13 +2564,14 @@ document.addEventListener('DOMContentLoaded', function() {
             }));
             sessions.push({
                 displayOrder: order + 1,
-                meetingDate:    document.getElementById(`meeting_date_${idx}`)?.value || null,
-                startTime:      document.getElementById(`meeting_start_time_${idx}`)?.value || null,
-                endTime:        document.getElementById(`meeting_end_time_${idx}`)?.value || null,
-                meetingPurpose: document.getElementById(`meeting_purpose_${idx}`)?.value || null,
-                meetingContent: document.getElementById(`meeting_content_${idx}`)?.value || null,
+                meetingDate:     document.getElementById(`meeting_date_${idx}`)?.value || null,
+                startTime:       document.getElementById(`meeting_start_time_${idx}`)?.value || null,
+                endTime:         document.getElementById(`meeting_end_time_${idx}`)?.value || null,
+                meetingLocation: document.getElementById(`meeting_location_${idx}`)?.value || null,
+                meetingPurpose:  document.getElementById(`meeting_purpose_${idx}`)?.value || null,
+                meetingContent:  document.getElementById(`meeting_content_${idx}`)?.value || null,
                 meetingDrafterUserIdx: m.authorPersonId ? parseInt(m.authorPersonId) : null,
-                meetingAmount:  parseInt((document.getElementById(`meeting_amount_${idx}`)?.value || '0').replace(/,/g, '')) || 0,
+                meetingAmount:   parseInt((document.getElementById(`meeting_amount_${idx}`)?.value || '0').replace(/,/g, '')) || 0,
                 meetingAttendees: [...internalMn, ...externalMn]
             });
         });
@@ -2287,11 +2619,19 @@ document.addEventListener('DOMContentLoaded', function() {
                 return;
             }
             const tripResultEl2 = document.getElementById('common_trip_result');
-            if (!tripResultEl2?.value?.trim() || tripResultEl2.value.trim() === '- 참석인원 :\n- 출장 내용 :') {
-                await showWarning('출장 내용 및 결과를 입력해주세요.');
-                tripResultEl2?.scrollIntoView({ behavior: 'smooth', block: 'center' });
-                tripResultEl2?.focus({ preventScroll: true });
-                return;
+            {
+                const marker2 = '- 출장 내용 :';
+                const val2 = tripResultEl2?.value || '';
+                const markerIdx2 = val2.indexOf(marker2);
+                const hasContent2 = markerIdx2 !== -1
+                    ? val2.slice(markerIdx2 + marker2.length).trim().length > 0
+                    : val2.trim().length > 0;
+                if (!hasContent2) {
+                    await showWarning('출장 내용 및 결과를 입력해주세요.');
+                    tripResultEl2?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                    tripResultEl2?.focus({ preventScroll: true });
+                    return;
+                }
             }
             const totalTripExpense = dailyExpenses.reduce((s, e) => s + (e.transport||0) + (e.lodging||0) + (e.meal||0) + (e.other||0), 0);
             if (totalTripExpense === 0) {
@@ -2317,82 +2657,188 @@ document.addEventListener('DOMContentLoaded', function() {
                 document.getElementById('dailyExpenseTable')?.scrollIntoView({ behavior: 'smooth', block: 'center' });
                 return;
             }
-            const meetingDateEl = document.getElementById('common_meeting_date');
-            if (!meetingDateEl?.value) {
-                await showWarning('회의 일자를 입력해주세요.');
-                meetingDateEl?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            // ── 1번째 회의 필수 필드 검증 (화면 위→아래 순서) ──────────────
+            if (!document.getElementById('common_meeting_purpose')?.value?.trim()) {
+                await showWarning('1번째 회의 목적을 입력해주세요.');
+                document.getElementById('common_meeting_purpose')?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                document.getElementById('common_meeting_purpose')?.focus({ preventScroll: true });
                 return;
             }
-            if (attendees.length === 0 && tripPersons.length === 0) {
-                await showWarning('참석자를 추가해주세요.');
+            if (!document.getElementById('common_meeting_author')?.value?.trim()) {
+                await showWarning('1번째 회의 작성자를 선택해주세요.');
+                document.getElementById('common_meeting_author')?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                return;
+            }
+            if (!document.getElementById('common_meeting_date')?.value) {
+                await showWarning('1번째 회의 일자를 선택해주세요.');
+                document.getElementById('common_meeting_date')?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                return;
+            }
+            if (!document.getElementById('common_start_time')?.value) {
+                await showWarning('1번째 회의 시작 시간을 입력해주세요.');
+                document.getElementById('common_start_time')?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                document.getElementById('common_start_time')?.focus({ preventScroll: true });
+                return;
+            }
+            if (!document.getElementById('common_end_time')?.value) {
+                await showWarning('1번째 회의 종료 시간을 입력해주세요.');
+                document.getElementById('common_end_time')?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                document.getElementById('common_end_time')?.focus({ preventScroll: true });
+                return;
+            }
+            if (!document.getElementById('common_meeting_location')?.value?.trim()) {
+                await showWarning('1번째 회의 장소를 입력해주세요.');
+                document.getElementById('common_meeting_location')?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                document.getElementById('common_meeting_location')?.focus({ preventScroll: true });
+                return;
+            }
+            if (attendees.length === 0) {
+                await showWarning('1번째 회의에 외부 참석자를 1명 이상 추가해주세요.');
                 document.getElementById('attendeeArea')?.scrollIntoView({ behavior: 'smooth', block: 'center' });
                 return;
             }
             const amountEl = document.getElementById('common_amount');
-            const amountVal = parseInt((amountEl?.value || '0').replace(/,/g, ''));
+            const amountVal = parseInt((amountEl?.value || '0').replace(/[^\d]/g, '')) || 0;
             if (!amountVal || amountVal <= 0) {
-                await showWarning('사용 금액을 입력해주세요.');
+                await showWarning('1번째 회의 사용 금액을 입력해주세요.');
                 amountEl?.scrollIntoView({ behavior: 'smooth', block: 'center' });
                 amountEl?.focus({ preventScroll: true });
                 return;
             }
-            // 참석자 금액 합계 초과 검증
-            const meetingTotalEl  = document.getElementById('minutesMeetingExpenseTotal');
-            const meetingLimitVal = parseInt((meetingTotalEl?.textContent || '0').replace(/[^\d]/g, '')) || 0;
-            if (meetingLimitVal > 0 && amountVal > meetingLimitVal) {
-                await showWarning(`사용 금액(${amountVal.toLocaleString()}원)이 참석자 금액 합계(${meetingLimitVal.toLocaleString()}원)를 초과합니다.\n금액을 수정해주세요.`);
-                amountEl?.scrollIntoView({ behavior: 'smooth', block: 'center' });
-                amountEl?.focus({ preventScroll: true });
-                return;
-            }
-            // 회의 내용 바이트 검증
-            const meetingContentEl = document.getElementById('common_meeting_content');
-            const MIN_BYTES = 400;
-            if (meetingContentEl) {
-                const contentBytes = new TextEncoder().encode(meetingContentEl.value.trim()).length;
-                if (contentBytes < MIN_BYTES) {
-                    await Swal.fire({
-                        icon: 'warning',
-                        title: '회의 내용을 더 상세히 작성해주세요',
-                        html: `현재 <b>${contentBytes}bytes</b> 입력되었습니다.<br><br>
-                               회의 내용이 부실하게 작성된 경우 <b>정산 시 반려</b>될 수 있습니다.<br>
-                               논의된 내용, 결정 사항, 참석자별 발언 등을 구체적으로 작성해주세요.<br><br>
-                               <span style="color:#888;font-size:13px;">최소 ${MIN_BYTES}bytes 이상 입력 필요 (${MIN_BYTES - contentBytes}bytes 더 필요)</span>`,
-                        confirmButtonText: '다시 작성하기'
-                    });
-                    meetingContentEl.scrollIntoView({ behavior: 'smooth', block: 'center' });
-                    meetingContentEl.focus();
+            {
+                let m0LimitVal = 0;
+                meetingTripPersons.forEach(p => { m0LimitVal += getPersonMeetingExpense(p); });
+                attendees.forEach(p => { m0LimitVal += getPersonMeetingExpense(p); });
+                if (m0LimitVal > 0 && amountVal > m0LimitVal) {
+                    await showWarning(`1번째 회의 사용 금액(${amountVal.toLocaleString()}원)이 참석자 금액 합계(${m0LimitVal.toLocaleString()}원)를 초과합니다.\n금액을 수정해주세요.`);
+                    amountEl?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                    amountEl?.focus({ preventScroll: true });
                     return;
                 }
             }
-
-            // 회의 참석자 전원 시간대 중복 사전 검증 (내부 + 외부 모두)
+            const MIN_BYTES = 400;
             {
-                const chkDate  = document.getElementById('common_meeting_date')?.value;
-                const chkStart = document.getElementById('common_start_time')?.value;
-                const chkEnd   = document.getElementById('common_end_time')?.value;
-                const chkProj  = document.getElementById('selectedProjectIdx')?.value;
-                if (chkDate && chkStart && chkEnd && chkProj) {
-                    // 내부 인원 (tripPersons 중 isExternal=false)
-                    const internalPersons = tripPersons.filter(p => !p.isExternal);
-                    // 외부 인원 (attendees 배열에서 isExternal=true이고 id가 있는 회의 참석자)
-                    const externalPersons = attendees.filter(a => a.isExternal && a.id);
-                    const allPersons = [
-                        ...internalPersons.map(p => ({ ...p, isExternal: false })),
-                        ...externalPersons.map(a => ({ id: a.id, name: a.name, isExternal: true }))
-                    ];
-                    if (allPersons.length > 0) {
-                        const dupResults = await Promise.all(
-                            allPersons.map(p => checkAuthorDuplicate(p.id, chkDate, chkStart, chkEnd, chkProj, null, null, p.isExternal))
-                        );
-                        const conflicts = allPersons.filter((_, i) => dupResults[i]);
-                        if (conflicts.length > 0) {
-                            const names = conflicts.map(p => p.name).join(', ');
-                            await showWarning(`다음 참석자가 해당 시간대(${chkStart}~${chkEnd})에 이미 다른 회의에 참석 중입니다.\n\n${names}\n\n회의 시간 또는 참석자를 수정해주세요.`);
+                const meetingContentEl = document.getElementById('common_meeting_content');
+                if (meetingContentEl) {
+                    const contentBytes = new TextEncoder().encode(meetingContentEl.value.trim()).length;
+                    if (contentBytes < MIN_BYTES) {
+                        await Swal.fire({
+                            icon: 'warning',
+                            title: '1번째 회의 내용을 더 상세히 작성해주세요',
+                            html: `현재 <b>${contentBytes}bytes</b> 입력되었습니다.<br><br>
+                                   회의 내용이 부실하게 작성된 경우 <b>정산 시 반려</b>될 수 있습니다.<br>
+                                   논의된 내용, 결정 사항, 참석자별 발언 등을 구체적으로 작성해주세요.<br><br>
+                                   <span style="color:#888;font-size:13px;">최소 ${MIN_BYTES}bytes 이상 입력 필요 (${MIN_BYTES - contentBytes}bytes 더 필요)</span>`,
+                            confirmButtonText: '다시 작성하기'
+                        });
+                        meetingContentEl.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                        meetingContentEl.focus();
+                        return;
+                    }
+                }
+            }
+
+            // ── 추가된 회의 필수 필드 검증 (회의별, 화면 위→아래 순서) ────────
+            for (const m of extraMeetings) {
+                const blockNum = getMeetingBlockNum(m.idx);
+                const scrollTo = (id) => document.getElementById(id)?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                const focusEl  = (id) => document.getElementById(id)?.focus({ preventScroll: true });
+
+                if (!document.getElementById(`meeting_purpose_${m.idx}`)?.value?.trim()) {
+                    await showWarning(`${blockNum}번째 회의 목적을 입력해주세요.`);
+                    scrollTo(`meeting_purpose_${m.idx}`); focusEl(`meeting_purpose_${m.idx}`); return;
+                }
+                if (!document.getElementById(`meeting_author_${m.idx}`)?.value?.trim()) {
+                    await showWarning(`${blockNum}번째 회의 작성자를 선택해주세요.`);
+                    scrollTo(`meeting_author_${m.idx}`); return;
+                }
+                if (!document.getElementById(`meeting_date_${m.idx}`)?.value) {
+                    await showWarning(`${blockNum}번째 회의 일자를 선택해주세요.`);
+                    scrollTo(`meeting_date_${m.idx}`); return;
+                }
+                if (!document.getElementById(`meeting_start_time_${m.idx}`)?.value) {
+                    await showWarning(`${blockNum}번째 회의 시작 시간을 입력해주세요.`);
+                    scrollTo(`meeting_start_time_${m.idx}`); focusEl(`meeting_start_time_${m.idx}`); return;
+                }
+                if (!document.getElementById(`meeting_end_time_${m.idx}`)?.value) {
+                    await showWarning(`${blockNum}번째 회의 종료 시간을 입력해주세요.`);
+                    scrollTo(`meeting_end_time_${m.idx}`); focusEl(`meeting_end_time_${m.idx}`); return;
+                }
+                if (!document.getElementById(`meeting_location_${m.idx}`)?.value?.trim()) {
+                    await showWarning(`${blockNum}번째 회의 장소를 입력해주세요.`);
+                    scrollTo(`meeting_location_${m.idx}`); focusEl(`meeting_location_${m.idx}`); return;
+                }
+                if (m.attendees.length === 0) {
+                    await showWarning(`${blockNum}번째 회의에 외부 참석자를 1명 이상 추가해주세요.`);
+                    scrollTo(`attendeeArea_${m.idx}`); return;
+                }
+                const mAmountEl = document.getElementById(`meeting_amount_${m.idx}`);
+                const mAmountVal = parseInt((mAmountEl?.value || '0').replace(/[^\d]/g, '')) || 0;
+                if (!mAmountVal || mAmountVal <= 0) {
+                    await showWarning(`${blockNum}번째 회의 사용 금액을 입력해주세요.`);
+                    scrollTo(`meeting_amount_${m.idx}`); focusEl(`meeting_amount_${m.idx}`); return;
+                }
+                {
+                    let mLimitVal = 0;
+                    (m.tripPersonsForMeeting || []).forEach(p => { mLimitVal += getPersonMeetingExpense(p); });
+                    m.attendees.forEach(p => { mLimitVal += getPersonMeetingExpense(p); });
+                    if (mLimitVal > 0 && mAmountVal > mLimitVal) {
+                        await showWarning(`${blockNum}번째 회의 사용 금액(${mAmountVal.toLocaleString()}원)이 참석자 금액 합계(${mLimitVal.toLocaleString()}원)를 초과합니다.\n금액을 수정해주세요.`);
+                        scrollTo(`meeting_amount_${m.idx}`); focusEl(`meeting_amount_${m.idx}`); return;
+                    }
+                }
+                {
+                    const mContentEl = document.getElementById(`meeting_content_${m.idx}`);
+                    if (mContentEl) {
+                        const bytes = new TextEncoder().encode(mContentEl.value.trim()).length;
+                        if (bytes < MIN_BYTES) {
+                            await Swal.fire({
+                                icon: 'warning',
+                                title: `${blockNum}번째 회의 내용을 더 상세히 작성해주세요`,
+                                html: `현재 <b>${bytes}bytes</b> 입력되었습니다.<br><br>
+                                       논의된 내용, 결정 사항, 참석자별 발언 등을 구체적으로 작성해주세요.<br><br>
+                                       <span style="color:#888;font-size:13px;">최소 ${MIN_BYTES}bytes 이상 입력 필요 (${MIN_BYTES - bytes}bytes 더 필요)</span>`,
+                                confirmButtonText: '다시 작성하기'
+                            });
+                            mContentEl.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                            mContentEl.focus();
                             return;
                         }
                     }
                 }
+            }
+
+            // 회의 간 시간 겹침 검증
+            {
+                const allMeetings = [
+                    { date: document.getElementById('common_meeting_date')?.value,
+                      start: document.getElementById('common_start_time')?.value,
+                      end:   document.getElementById('common_end_time')?.value,
+                      label: '1번째 회의' },
+                    ...extraMeetings.map(m => ({
+                        date:  document.getElementById(`meeting_date_${m.idx}`)?.value,
+                        start: document.getElementById(`meeting_start_time_${m.idx}`)?.value,
+                        end:   document.getElementById(`meeting_end_time_${m.idx}`)?.value,
+                        label: `${getMeetingBlockNum(m.idx)}번째 회의`
+                    }))
+                ].filter(m => m.date && m.start && m.end);
+
+                for (let i = 0; i < allMeetings.length; i++) {
+                    for (let j = i + 1; j < allMeetings.length; j++) {
+                        const a = allMeetings[i], b = allMeetings[j];
+                        if (a.date !== b.date) continue;
+                        if (a.start < b.end && b.start < a.end) {
+                            await showWarning(`${a.label}(${a.start}~${a.end})과 ${b.label}(${b.start}~${b.end})의 시간이 겹칩니다.\n회의 시간을 조정해주세요.`);
+                            return;
+                        }
+                    }
+                }
+            }
+
+            // 회의 참석자 전원 시간대 중복 사전 검증 (전체 세션, 신규)
+            {
+                const chkProj = document.getElementById('selectedProjectIdx')?.value;
+                if (chkProj && await checkAllMeetingAttendeeDuplicates(chkProj, null, null)) return;
             }
 
             // 활동비 초과 여부 확인 (경고만, 차단 없음)
@@ -2505,13 +2951,16 @@ document.addEventListener('DOMContentLoaded', function() {
             // [5] multipart FormData 구성
             const formData = new FormData();
             formData.append('data', JSON.stringify(saveData));
-            // 회의-0 파일
+            // 회의-0 파일 (세션 position 0 → 키 접미사 없음)
             selectedMeetingReceiptFiles.forEach(f  => formData.append('meetingReceiptFiles',  f));
             selectedMeetingDocumentFiles.forEach(f => formData.append('meetingDocumentFiles', f));
-            // 추가 회의 파일 (_1, _2, ...)
-            extraMeetings.forEach(m => {
-                m.receiptFiles.forEach(f  => formData.append(`meetingReceiptFiles_${m.idx}`, f));
-                m.documentFiles.forEach(f => formData.append(`meetingDocumentFiles_${m.idx}`, f));
+            // 추가 회의 파일 (세션 position 1,2,... → _1, _2, ...)
+            // m.idx 는 JS 블록 생성 순서라 삭제 시 불연속할 수 있으므로
+            // extraMeetings 배열 내 순서(order+1)를 키로 사용
+            extraMeetings.forEach((m, order) => {
+                const sessionPos = order + 1;
+                m.receiptFiles.forEach(f  => formData.append(`meetingReceiptFiles_${sessionPos}`,  f));
+                m.documentFiles.forEach(f => formData.append(`meetingDocumentFiles_${sessionPos}`, f));
             });
             selectedTripReceiptFiles.forEach(f     => formData.append('tripReceiptFiles',     f));
             selectedTripDocumentFiles.forEach(f    => formData.append('tripDocumentFiles',    f));
@@ -2906,33 +3355,10 @@ document.addEventListener('DOMContentLoaded', function() {
 
         listEl.querySelectorAll('.project-item-in-card').forEach(item => {
             item.addEventListener('click', async function() {
-                const projectIdx = this.getAttribute('data-project-idx');
-                const proj = projects.find(p => String(p.idx) === String(projectIdx));
+                const proj = projects.find(p => String(p.idx) === this.getAttribute('data-project-idx'));
                 if (!proj) return;
 
-                // 과제 필드 채우기
-                const commonProjectEl = document.getElementById('common_project');
-                if (commonProjectEl) {
-                    commonProjectEl.value = proj.projectName;
-                    commonProjectEl.classList.remove('field-empty');
-                }
-                const selectedProjectIdxEl = document.getElementById('selectedProjectIdx');
-                if (selectedProjectIdxEl) selectedProjectIdxEl.value = proj.idx;
-
-                document.querySelectorAll('.auto-project').forEach(el => {
-                    if (el.tagName === 'INPUT') el.value = proj.projectName;
-                    else el.textContent = proj.projectName;
-                });
-
-                // 참여인원 + 경비 설정 로드
-                await Promise.all([
-                    loadProjectMembers(proj.idx),
-                    loadProjectExpenseSettings(proj.idx)
-                ]);
-                updateTripExpenseTooltip();
-                updateMeetingExpenseTooltip();
-                if (window.refreshTripPersonBadges) window.refreshTripPersonBadges();
-                setDefaultAuthor();
+                await applyProjectSelection(proj);
 
                 // 인원 목록으로 전환
                 if (tripPersonSearchInput) tripPersonSearchInput.value = '';
@@ -3292,9 +3718,16 @@ document.addEventListener('DOMContentLoaded', function() {
         }
 
         // 회의 시간이 설정된 경우 시간대 중복 병렬 체크
-        const dateVal    = document.getElementById('common_meeting_date')?.value;
-        const startVal   = document.getElementById('common_start_time')?.value;
-        const endVal     = document.getElementById('common_end_time')?.value;
+        const isExtraMeeting = currentMeetingIdx > 0;
+        const dateVal    = isExtraMeeting
+            ? document.getElementById(`meeting_date_${currentMeetingIdx}`)?.value
+            : document.getElementById('common_meeting_date')?.value;
+        const startVal   = isExtraMeeting
+            ? document.getElementById(`meeting_start_time_${currentMeetingIdx}`)?.value
+            : document.getElementById('common_start_time')?.value;
+        const endVal     = isExtraMeeting
+            ? document.getElementById(`meeting_end_time_${currentMeetingIdx}`)?.value
+            : document.getElementById('common_end_time')?.value;
         const projectVal = document.getElementById('selectedProjectIdx')?.value;
         const canCheckDup = !!(dateVal && startVal && endVal && projectVal);
 
@@ -3498,7 +3931,8 @@ document.addEventListener('DOMContentLoaded', function() {
         // 출장 + 회의 공통 필수 텍스트 필드
         const requiredIds = ['common_project', 'common_card', 'common_location', 'common_date',
                              'common_purpose', 'common_meeting_purpose', 'common_meeting_date',
-                             'common_start_time', 'common_end_time', 'common_meeting_content'];
+                             'common_start_time', 'common_end_time', 'common_meeting_location',
+                             'common_meeting_content'];
         let allFilled = true;
 
         requiredIds.forEach(id => {
@@ -3578,6 +4012,51 @@ document.addEventListener('DOMContentLoaded', function() {
             }
         }
 
+        // 추가된 회의 블록 검증
+        extraMeetings.forEach(m => {
+            const extraRequiredIds = [
+                `meeting_purpose_${m.idx}`,
+                `meeting_date_${m.idx}`,
+                `meeting_start_time_${m.idx}`,
+                `meeting_end_time_${m.idx}`,
+                `meeting_location_${m.idx}`,
+                `meeting_author_${m.idx}`,
+                `meeting_content_${m.idx}`
+            ];
+            extraRequiredIds.forEach(id => {
+                const el = document.getElementById(id);
+                if (!el) return;
+                if (!el.value || !el.value.trim()) {
+                    el.classList.add('field-empty');
+                    allFilled = false;
+                } else {
+                    el.classList.remove('field-empty');
+                }
+            });
+
+            // 사용 금액 검증
+            const amountEl = document.getElementById(`meeting_amount_${m.idx}`);
+            if (amountEl) {
+                const val = parseInt((amountEl.value || '0').replace(/,/g, '')) || 0;
+                if (val <= 0) { amountEl.classList.add('field-empty'); allFilled = false; }
+                else amountEl.classList.remove('field-empty');
+            }
+
+            // 외부 참석자 검증
+            const areaEl = document.getElementById(`attendeeArea_${m.idx}`);
+            const warnEl = document.getElementById(`externalAttendeeWarning_${m.idx}`);
+            if (areaEl) {
+                if (m.attendees.length === 0) {
+                    areaEl.classList.add('field-empty');
+                    if (warnEl) warnEl.style.display = 'block';
+                    allFilled = false;
+                } else {
+                    areaEl.classList.remove('field-empty');
+                    if (warnEl) warnEl.style.display = 'none';
+                }
+            }
+        });
+
         // 인쇄 버튼 표시/숨김: 필수값 모두 충족 AND 초과 입력 없을 때
         const hasExpenseOverflow = document.querySelector('.expense-input[style*="color: rgb(220, 38, 38)"]') !== null;
         const printBtn = document.getElementById('printDocumentBtn');
@@ -3600,7 +4079,7 @@ document.addEventListener('DOMContentLoaded', function() {
     // 필드 변경 시 재검증
     ['common_project', 'common_card', 'common_location', 'common_date', 'common_purpose',
      'common_trip_result', 'common_meeting_purpose', 'common_meeting_date', 'common_amount',
-     'common_start_time', 'common_end_time', 'common_meeting_content'].forEach(id => {
+     'common_start_time', 'common_end_time', 'common_meeting_location', 'common_meeting_content'].forEach(id => {
         const el = document.getElementById(id);
         if (el) {
             el.addEventListener('input', validateRequiredFields);
@@ -3852,50 +4331,10 @@ document.addEventListener('DOMContentLoaded', function() {
 
         authorListEl.querySelectorAll('.project-item-in-card').forEach(item => {
             item.addEventListener('click', async function() {
-                const projectIdx = this.getAttribute('data-project-idx');
-                const proj = projects.find(p => String(p.idx) === String(projectIdx));
+                const proj = projects.find(p => String(p.idx) === this.getAttribute('data-project-idx'));
                 if (!proj) return;
 
-                // 과제 필드 채우기
-                const commonProjectEl = document.getElementById('common_project');
-                if (commonProjectEl) {
-                    commonProjectEl.value = proj.projectName;
-                    commonProjectEl.classList.remove('field-empty');
-                }
-                const selectedProjectIdxEl = document.getElementById('selectedProjectIdx');
-                if (selectedProjectIdxEl) selectedProjectIdxEl.value = proj.idx;
-
-                document.querySelectorAll('.auto-project').forEach(el => {
-                    if (el.tagName === 'INPUT') el.value = proj.projectName;
-                    else el.textContent = proj.projectName;
-                });
-
-                // 참여인원 + 경비 설정 로드
-                await Promise.all([
-                    loadProjectMembers(proj.idx),
-                    loadProjectExpenseSettings(proj.idx)
-                ]);
-                updateTripExpenseTooltip();
-                updateMeetingExpenseTooltip();
-                if (window.refreshTripPersonBadges) window.refreshTripPersonBadges();
-
-                // 카드 로드 및 첫 번째 카드 자동 선택
-                await loadProjectCards(proj.idx);
-                const commonCard = document.getElementById('common_card');
-                const selectedCardIdx = document.getElementById('selectedCardIdx');
-                if (projectCards.length > 0) {
-                    const firstCard = projectCards[0];
-                    selectedCard = firstCard;
-                    if (commonCard) commonCard.value = firstCard.cardName;
-                    if (selectedCardIdx) selectedCardIdx.value = firstCard.idx;
-                } else {
-                    selectedCard = null;
-                    if (commonCard) { commonCard.value = ''; commonCard.placeholder = '클릭하여 카드 선택'; }
-                    if (selectedCardIdx) selectedCardIdx.value = '';
-                }
-
-                // 기본 작성자 설정
-                await setDefaultAuthor();
+                await applyProjectSelection(proj);
 
                 // 검색창 비우기 후 인원 목록 렌더링
                 if (authorSearchInput) authorSearchInput.value = '';
@@ -4047,13 +4486,63 @@ document.addEventListener('DOMContentLoaded', function() {
             item.addEventListener('click', function() {
                 selectedCard = card;
                 const cardField = document.getElementById('common_card');
-                if (cardField) cardField.value = card.cardName;
+                if (cardField) { cardField.value = card.cardName; cardField.classList.remove('field-empty'); }
                 const selectedCardIdxInput = document.getElementById('selectedCardIdx');
                 if (selectedCardIdxInput) selectedCardIdxInput.value = card.idx;
                 closeCardModal();
+                validateRequiredFields();
             });
             cardList.appendChild(item);
         });
+    }
+
+    /**
+     * 과제 선택 공통 처리 (카드 모달 / 작성자 모달 공용)
+     * - 과제 필드 채우기 + field-empty 제거
+     * - 관련 데이터 로드 (멤버, 경비, 카드)
+     * - 첫 번째 카드 자동 선택 + field-empty 제거
+     * - 기본 작성자 설정
+     * - 필수 필드 재검증
+     */
+    async function applyProjectSelection(proj) {
+        const commonProjectEl  = document.getElementById('common_project');
+        const selectedProjectIdxEl = document.getElementById('selectedProjectIdx');
+        const commonCardEl     = document.getElementById('common_card');
+        const selectedCardIdxEl = document.getElementById('selectedCardIdx');
+
+        if (commonProjectEl) {
+            commonProjectEl.value = proj.projectName;
+            commonProjectEl.classList.remove('field-empty');
+        }
+        if (selectedProjectIdxEl) selectedProjectIdxEl.value = proj.idx;
+
+        document.querySelectorAll('.auto-project').forEach(el => {
+            if (el.tagName === 'INPUT') el.value = proj.projectName;
+            else el.textContent = proj.projectName;
+        });
+
+        await Promise.all([
+            loadProjectMembers(proj.idx),
+            loadProjectExpenseSettings(proj.idx)
+        ]);
+        updateTripExpenseTooltip();
+        updateMeetingExpenseTooltip();
+        if (window.refreshTripPersonBadges) window.refreshTripPersonBadges();
+
+        await loadProjectCards(proj.idx);
+        if (projectCards.length > 0) {
+            const firstCard = projectCards[0];
+            selectedCard = firstCard;
+            if (commonCardEl) { commonCardEl.value = firstCard.cardName; commonCardEl.classList.remove('field-empty'); }
+            if (selectedCardIdxEl) selectedCardIdxEl.value = firstCard.idx;
+        } else {
+            selectedCard = null;
+            if (commonCardEl) { commonCardEl.value = ''; commonCardEl.placeholder = '클릭하여 카드 선택'; }
+            if (selectedCardIdxEl) selectedCardIdxEl.value = '';
+        }
+
+        await setDefaultAuthor();
+        validateRequiredFields();
     }
 
     function renderProjectListInCardModal(searchText = '') {
@@ -4092,37 +4581,12 @@ document.addEventListener('DOMContentLoaded', function() {
 
         cardList.querySelectorAll('.project-item-in-card').forEach(item => {
             item.addEventListener('click', async function() {
-                const projectIdx = this.getAttribute('data-project-idx');
-                const proj = projects.find(p => String(p.idx) === String(projectIdx));
+                const proj = projects.find(p => String(p.idx) === this.getAttribute('data-project-idx'));
                 if (!proj) return;
 
-                // 과제 필드 채우기
-                const commonProject = document.getElementById('common_project');
-                if (commonProject) {
-                    commonProject.value = proj.projectName;
-                    commonProject.classList.remove('field-empty');
-                }
-                const selectedProjectIdx = document.getElementById('selectedProjectIdx');
-                if (selectedProjectIdx) selectedProjectIdx.value = proj.idx;
+                await applyProjectSelection(proj);
 
-                document.querySelectorAll('.auto-project').forEach(el => {
-                    if (el.tagName === 'INPUT') el.value = proj.projectName;
-                    else el.textContent = proj.projectName;
-                });
-
-
-                // 참여인원 + 경비 설정 로드 → 툴팁 갱신 + 기본 작성자 자동 설정
-                await Promise.all([
-                    loadProjectMembers(proj.idx),
-                    loadProjectExpenseSettings(proj.idx)
-                ]);
-                updateTripExpenseTooltip();
-                updateMeetingExpenseTooltip();
-                if (window.refreshTripPersonBadges) window.refreshTripPersonBadges();
-                setDefaultAuthor();
-
-                // 카드 로드 후 카드 목록으로 전환
-                await loadProjectCards(proj.idx);
+                // 카드 목록으로 전환 (사용자가 원하는 카드로 변경 가능)
                 renderCardList(projectCards);
                 if (cardSearch) cardSearch.value = '';
             });
@@ -4563,11 +5027,12 @@ document.addEventListener('DOMContentLoaded', function() {
 
         // 7. 텍스트 필드
         [
-            { id: 'common_location',        val: data.location },
-            { id: 'common_purpose',         val: data.purpose },
-            { id: 'common_trip_result',     val: data.content },
-            { id: 'common_meeting_purpose', val: data.meetingPurpose },
-            { id: 'common_meeting_content', val: data.minutesNotes }
+            { id: 'common_location',         val: data.location },
+            { id: 'common_purpose',          val: data.purpose },
+            { id: 'common_trip_result',      val: data.content },
+            { id: 'common_meeting_purpose',  val: data.meetingPurpose },
+            { id: 'common_meeting_location', val: data.meetingSessions?.[0]?.meetingLocation },
+            { id: 'common_meeting_content',  val: data.minutesNotes }
         ].forEach(({ id, val }) => {
             if (!val) return;
             const el = document.getElementById(id);
@@ -4725,6 +5190,9 @@ document.addEventListener('DOMContentLoaded', function() {
                     setVal(`meeting_date_${newIdx}`, session.meetingDate);
                     setVal(`meeting_start_time_${newIdx}`, session.startTime ? String(session.startTime).substring(0, 5) : null);
                     setVal(`meeting_end_time_${newIdx}`, session.endTime ? String(session.endTime).substring(0, 5) : null);
+                    setVal(`meeting_location_${newIdx}`, session.meetingLocation);
+                    // 문서 미리보기 장소 동기화
+                    setVal(`doc_meeting_location_${newIdx}`, session.meetingLocation);
                     setVal(`meeting_content_${newIdx}`, session.meetingContent);
                     if (session.meetingAmount) setVal(`meeting_amount_${newIdx}`, Number(session.meetingAmount).toLocaleString('ko-KR'));
                     // 작성자 복원
@@ -4811,40 +5279,222 @@ document.addEventListener('DOMContentLoaded', function() {
                 document.getElementById('tripPersonArea')?.scrollIntoView({ behavior: 'smooth', block: 'center' });
                 return;
             }
-            const amountElU = document.getElementById('common_amount');
-            const amountValU = parseInt((amountElU?.value || '0').replace(/,/g, ''));
-            if (!amountValU || amountValU <= 0) {
-                await showWarning('사용 금액을 입력해주세요.');
-                amountElU?.scrollIntoView({ behavior: 'smooth', block: 'center' });
-                return;
-            }
-
-            // 회의 참석자 전원 시간대 중복 사전 검증 (현재 문서 제외, 내부 + 외부 모두)
+            // 출장 내용 및 결과 검증 (수정 모드)
             {
-                const chkDate  = document.getElementById('common_meeting_date')?.value;
-                const chkStart = document.getElementById('common_start_time')?.value;
-                const chkEnd   = document.getElementById('common_end_time')?.value;
-                const chkProj  = document.getElementById('selectedProjectIdx')?.value;
-                const excludeId = id; // 현재 문서 ID (수정 시 자기 자신 제외)
-                if (chkDate && chkStart && chkEnd && chkProj) {
-                    const internalPersons = tripPersons.filter(p => !p.isExternal);
-                    const externalPersons = attendees.filter(a => a.isExternal && a.id);
-                    const allPersons = [
-                        ...internalPersons.map(p => ({ ...p, isExternal: false })),
-                        ...externalPersons.map(a => ({ id: a.id, name: a.name, isExternal: true }))
-                    ];
-                    if (allPersons.length > 0) {
-                        const dupResults = await Promise.all(
-                            allPersons.map(p => checkAuthorDuplicate(p.id, chkDate, chkStart, chkEnd, chkProj, excludeId, 'RCTM', p.isExternal))
-                        );
-                        const conflicts = allPersons.filter((_, i) => dupResults[i]);
-                        if (conflicts.length > 0) {
-                            const names = conflicts.map(p => p.name).join(', ');
-                            await showWarning(`다음 참석자가 해당 시간대(${chkStart}~${chkEnd})에 이미 다른 회의에 참석 중입니다.\n\n${names}\n\n회의 시간 또는 참석자를 수정해주세요.`);
-                            return;
+                const tripResultElU = document.getElementById('common_trip_result');
+                const markerU = '- 출장 내용 :';
+                const valU = tripResultElU?.value || '';
+                const markerIdxU = valU.indexOf(markerU);
+                const hasContentU = markerIdxU !== -1
+                    ? valU.slice(markerIdxU + markerU.length).trim().length > 0
+                    : valU.trim().length > 0;
+                if (!hasContentU) {
+                    await showWarning('출장 내용 및 결과를 입력해주세요.');
+                    tripResultElU?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                    tripResultElU?.focus({ preventScroll: true });
+                    return;
+                }
+            }
+            // 1일 기준 인원 금액 초과 검증 (수정 모드)
+            {
+                const expenseLimitsU = window.getExpenseLimits ? window.getExpenseLimits() : {};
+                const exceededTypesU = { transport: '교통비', lodging: '숙박비', meal: '식비', other: '기타(일비)' };
+                let exceededLabelU = null;
+                outerU: for (const expense of dailyExpenses) {
+                    for (const [type, label] of Object.entries(exceededTypesU)) {
+                        const limit = expenseLimitsU[type] || 0;
+                        if (limit > 0 && (expense[type] || 0) > limit) {
+                            exceededLabelU = label;
+                            break outerU;
                         }
                     }
                 }
+                if (exceededLabelU) {
+                    await showWarning(`1일 기준 인원 금액을 초과한 항목(${exceededLabelU})이 있습니다.\n빨간색으로 표시된 항목을 수정해주세요.`);
+                    document.getElementById('dailyExpenseTable')?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                    return;
+                }
+            }
+            const amountElU = document.getElementById('common_amount');
+            const amountValU = parseInt((amountElU?.value || '0').replace(/[^\d]/g, '')) || 0;
+
+            // ── 1번째 회의 필수 필드 검증 (화면 위→아래 순서, 수정 모드) ──────
+            if (!document.getElementById('common_meeting_purpose')?.value?.trim()) {
+                await showWarning('1번째 회의 목적을 입력해주세요.');
+                document.getElementById('common_meeting_purpose')?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                document.getElementById('common_meeting_purpose')?.focus({ preventScroll: true });
+                return;
+            }
+            if (!document.getElementById('common_meeting_author')?.value?.trim()) {
+                await showWarning('1번째 회의 작성자를 선택해주세요.');
+                document.getElementById('common_meeting_author')?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                return;
+            }
+            if (!document.getElementById('common_meeting_date')?.value) {
+                await showWarning('1번째 회의 일자를 선택해주세요.');
+                document.getElementById('common_meeting_date')?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                return;
+            }
+            if (!document.getElementById('common_start_time')?.value) {
+                await showWarning('1번째 회의 시작 시간을 입력해주세요.');
+                document.getElementById('common_start_time')?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                document.getElementById('common_start_time')?.focus({ preventScroll: true });
+                return;
+            }
+            if (!document.getElementById('common_end_time')?.value) {
+                await showWarning('1번째 회의 종료 시간을 입력해주세요.');
+                document.getElementById('common_end_time')?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                document.getElementById('common_end_time')?.focus({ preventScroll: true });
+                return;
+            }
+            if (!document.getElementById('common_meeting_location')?.value?.trim()) {
+                await showWarning('1번째 회의 장소를 입력해주세요.');
+                document.getElementById('common_meeting_location')?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                document.getElementById('common_meeting_location')?.focus({ preventScroll: true });
+                return;
+            }
+            if (attendees.length === 0) {
+                await showWarning('1번째 회의에 외부 참석자를 1명 이상 추가해주세요.');
+                document.getElementById('attendeeArea')?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                return;
+            }
+            if (!amountValU || amountValU <= 0) {
+                await showWarning('1번째 회의 사용 금액을 입력해주세요.');
+                amountElU?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                amountElU?.focus({ preventScroll: true });
+                return;
+            }
+            // 참석자 금액 합계 초과 검증 (수정 모드 - 1번째 회의, JS 변수로 직접 계산)
+            {
+                let limitValU = 0;
+                meetingTripPersons.forEach(p => { limitValU += getPersonMeetingExpense(p); });
+                attendees.forEach(p => { limitValU += getPersonMeetingExpense(p); });
+                if (limitValU > 0 && amountValU > limitValU) {
+                    await showWarning(`1번째 회의 사용 금액(${amountValU.toLocaleString()}원)이 참석자 금액 합계(${limitValU.toLocaleString()}원)를 초과합니다.\n금액을 수정해주세요.`);
+                    amountElU?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                    amountElU?.focus({ preventScroll: true });
+                    return;
+                }
+            }
+            {
+                const MIN_BYTES_UPD = 400;
+                const contentElU = document.getElementById('common_meeting_content');
+                if (contentElU) {
+                    const bytes = new TextEncoder().encode(contentElU.value.trim()).length;
+                    if (bytes < MIN_BYTES_UPD) {
+                        await Swal.fire({
+                            icon: 'warning',
+                            title: '1번째 회의 내용을 더 상세히 작성해주세요',
+                            html: `현재 <b>${bytes}bytes</b> 입력되었습니다.<br><br>
+                                   회의 내용이 부실하게 작성된 경우 <b>정산 시 반려</b>될 수 있습니다.<br>
+                                   논의된 내용, 결정 사항, 참석자별 발언 등을 구체적으로 작성해주세요.<br><br>
+                                   <span style="color:#888;font-size:13px;">최소 ${MIN_BYTES_UPD}bytes 이상 입력 필요 (${MIN_BYTES_UPD - bytes}bytes 더 필요)</span>`,
+                            confirmButtonText: '다시 작성하기'
+                        });
+                        contentElU.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                        contentElU.focus();
+                        return;
+                    }
+                }
+            }
+
+            // ── 추가된 회의 필수 필드 검증 (회의별, 화면 위→아래 순서, 수정 모드) ──
+            {
+                const MIN_BYTES_UPD = 400;
+                for (const m of extraMeetings) {
+                    const blockNum = getMeetingBlockNum(m.idx);
+                    const scrollTo = (id) => document.getElementById(id)?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                    const focusEl  = (id) => document.getElementById(id)?.focus({ preventScroll: true });
+
+                    if (!document.getElementById(`meeting_purpose_${m.idx}`)?.value?.trim()) {
+                        await showWarning(`${blockNum}번째 회의 목적을 입력해주세요.`);
+                        scrollTo(`meeting_purpose_${m.idx}`); focusEl(`meeting_purpose_${m.idx}`); return;
+                    }
+                    if (!document.getElementById(`meeting_author_${m.idx}`)?.value?.trim()) {
+                        await showWarning(`${blockNum}번째 회의 작성자를 선택해주세요.`);
+                        scrollTo(`meeting_author_${m.idx}`); return;
+                    }
+                    if (!document.getElementById(`meeting_date_${m.idx}`)?.value) {
+                        await showWarning(`${blockNum}번째 회의 일자를 선택해주세요.`);
+                        scrollTo(`meeting_date_${m.idx}`); return;
+                    }
+                    if (!document.getElementById(`meeting_start_time_${m.idx}`)?.value) {
+                        await showWarning(`${blockNum}번째 회의 시작 시간을 입력해주세요.`);
+                        scrollTo(`meeting_start_time_${m.idx}`); focusEl(`meeting_start_time_${m.idx}`); return;
+                    }
+                    if (!document.getElementById(`meeting_end_time_${m.idx}`)?.value) {
+                        await showWarning(`${blockNum}번째 회의 종료 시간을 입력해주세요.`);
+                        scrollTo(`meeting_end_time_${m.idx}`); focusEl(`meeting_end_time_${m.idx}`); return;
+                    }
+                    if (!document.getElementById(`meeting_location_${m.idx}`)?.value?.trim()) {
+                        await showWarning(`${blockNum}번째 회의 장소를 입력해주세요.`);
+                        scrollTo(`meeting_location_${m.idx}`); focusEl(`meeting_location_${m.idx}`); return;
+                    }
+                    if (m.attendees.length === 0) {
+                        await showWarning(`${blockNum}번째 회의에 외부 참석자를 1명 이상 추가해주세요.`);
+                        scrollTo(`attendeeArea_${m.idx}`); return;
+                    }
+                    const mAmountElU = document.getElementById(`meeting_amount_${m.idx}`);
+                    const mAmountValU = parseInt((mAmountElU?.value || '0').replace(/[^\d]/g, '')) || 0;
+                    if (!mAmountValU || mAmountValU <= 0) {
+                        await showWarning(`${blockNum}번째 회의 사용 금액을 입력해주세요.`);
+                        scrollTo(`meeting_amount_${m.idx}`); focusEl(`meeting_amount_${m.idx}`); return;
+                    }
+                    {
+                        let mLimitValU = 0;
+                        (m.tripPersonsForMeeting || []).forEach(p => { mLimitValU += getPersonMeetingExpense(p); });
+                        m.attendees.forEach(p => { mLimitValU += getPersonMeetingExpense(p); });
+                        if (mLimitValU > 0 && mAmountValU > mLimitValU) {
+                            await showWarning(`${blockNum}번째 회의 사용 금액(${mAmountValU.toLocaleString()}원)이 참석자 금액 합계(${mLimitValU.toLocaleString()}원)를 초과합니다.\n금액을 수정해주세요.`);
+                            scrollTo(`meeting_amount_${m.idx}`); focusEl(`meeting_amount_${m.idx}`); return;
+                        }
+                    }
+                    {
+                        const mContentEl = document.getElementById(`meeting_content_${m.idx}`);
+                        if (mContentEl) {
+                            const bytes = new TextEncoder().encode(mContentEl.value.trim()).length;
+                            if (bytes < MIN_BYTES_UPD) {
+                                await Swal.fire({
+                                    icon: 'warning',
+                                    title: `${blockNum}번째 회의 내용을 더 상세히 작성해주세요`,
+                                    html: `현재 <b>${bytes}bytes</b> 입력되었습니다.<br><br>
+                                           논의된 내용, 결정 사항, 참석자별 발언 등을 구체적으로 작성해주세요.<br><br>
+                                           <span style="color:#888;font-size:13px;">최소 ${MIN_BYTES_UPD}bytes 이상 입력 필요 (${MIN_BYTES_UPD - bytes}bytes 더 필요)</span>`,
+                                    confirmButtonText: '다시 작성하기'
+                                });
+                                mContentEl.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                                mContentEl.focus();
+                                return;
+                            }
+                        }
+                    }
+                }
+            }
+
+            // 회의 간 시간 겹침 검증 (수정 모드)
+            {
+                const allMtgsUpd = [
+                    { date: document.getElementById('common_meeting_date')?.value, start: document.getElementById('common_start_time')?.value, end: document.getElementById('common_end_time')?.value, label: '1번째 회의' },
+                    ...extraMeetings.map(m => ({
+                        date:  document.getElementById(`meeting_date_${m.idx}`)?.value,
+                        start: document.getElementById(`meeting_start_time_${m.idx}`)?.value,
+                        end:   document.getElementById(`meeting_end_time_${m.idx}`)?.value,
+                        label: `${getMeetingBlockNum(m.idx)}번째 회의`
+                    }))
+                ].filter(m => m.date && m.start && m.end);
+                for (let i = 0; i < allMtgsUpd.length; i++) {
+                    for (let j = i + 1; j < allMtgsUpd.length; j++) {
+                        const a = allMtgsUpd[i], b = allMtgsUpd[j];
+                        if (a.date !== b.date) continue;
+                        if (a.start < b.end && b.start < a.end) { await showWarning(`${a.label}(${a.start}~${a.end})과 ${b.label}(${b.start}~${b.end})의 시간이 겹칩니다.`); return; }
+                    }
+                }
+            }
+
+            // 회의 참석자 전원 시간대 중복 사전 검증 (전체 세션, 현재 문서 제외)
+            {
+                const chkProjUpd = document.getElementById('selectedProjectIdx')?.value;
+                if (chkProjUpd && await checkAllMeetingAttendeeDuplicates(chkProjUpd, id, 'RCTM')) return;
             }
 
             // 활동비 초과 여부 확인 (경고만, 차단 없음)
@@ -4940,13 +5590,16 @@ document.addEventListener('DOMContentLoaded', function() {
 
             const formDataU = new FormData();
             formDataU.append('data', JSON.stringify(updateData));
-            // 회의-0 파일
+            // 회의-0 파일 (세션 position 0 → 키 접미사 없음)
             selectedMeetingReceiptFiles.forEach(f  => formDataU.append('meetingReceiptFiles',  f));
             selectedMeetingDocumentFiles.forEach(f => formDataU.append('meetingDocumentFiles', f));
-            // 추가 회의 파일
-            extraMeetings.forEach(m => {
-                m.receiptFiles.forEach(f  => formDataU.append(`meetingReceiptFiles_${m.idx}`, f));
-                m.documentFiles.forEach(f => formDataU.append(`meetingDocumentFiles_${m.idx}`, f));
+            // 추가 회의 파일 (세션 position 1,2,... → _1, _2, ...)
+            // m.idx 는 JS 블록 생성 순서라 삭제 시 불연속할 수 있으므로
+            // extraMeetings 배열 내 순서(order+1)를 키로 사용
+            extraMeetings.forEach((m, order) => {
+                const sessionPos = order + 1;
+                m.receiptFiles.forEach(f  => formDataU.append(`meetingReceiptFiles_${sessionPos}`,  f));
+                m.documentFiles.forEach(f => formDataU.append(`meetingDocumentFiles_${sessionPos}`, f));
             });
             selectedTripReceiptFiles.forEach(f     => formDataU.append('tripReceiptFiles',     f));
             selectedTripDocumentFiles.forEach(f    => formDataU.append('tripDocumentFiles',    f));
@@ -4960,27 +5613,16 @@ document.addEventListener('DOMContentLoaded', function() {
                     const err = await response.json().catch(() => ({}));
                     throw new Error(err.error || '수정에 실패했습니다.');
                 }
-                let countdown = 3;
-                const swalResult = await Swal.fire({
+                await Swal.fire({
                     icon: 'success',
                     title: '수정 완료',
-                    html: `수정이 완료되었습니다.<br><br><b id="swal-countdown">${countdown}</b>초 후 목록으로 이동합니다.`,
-                    confirmButtonText: '목록으로 이동',
-                    showCancelButton: false,
-                    allowOutsideClick: false,
-                    didOpen: () => {
-                        const timer = setInterval(() => {
-                            countdown--;
-                            const el = document.getElementById('swal-countdown');
-                            if (el) el.textContent = countdown;
-                            if (countdown <= 0) {
-                                clearInterval(timer);
-                                Swal.close();
-                            }
-                        }, 1000);
-                    }
+                    text: '수정이 완료되었습니다. 잠시 후 목록으로 이동합니다.',
+                    timer: 2000,
+                    timerProgressBar: true,
+                    showConfirmButton: true,
+                    confirmButtonText: '확인'
                 });
-                window.location.href = '/approval/receipt-trip-meeting';
+                popupAwareRedirect('/project/documents');
             } catch (e) {
                 showWarning('수정 중 오류가 발생했습니다.\n' + e.message);
             }
