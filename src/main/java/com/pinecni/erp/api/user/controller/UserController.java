@@ -412,6 +412,36 @@ public class UserController {
     }
 
     /**
+     * 직속 상위보고자 단건 조회
+     * GET /api/users/{idx}/direct-manager
+     */
+    @GetMapping("/{idx}/direct-manager")
+    public ResponseEntity<UserSimpleDTO> getDirectManager(@PathVariable Long idx) {
+        log.debug("GET /api/users/{}/direct-manager - getDirectManager()", idx);
+        UserSimpleDTO manager = userService.getDirectManager(idx);
+        if (manager == null) {
+            return ResponseEntity.notFound().build();
+        }
+        return ResponseEntity.ok(manager);
+    }
+
+    /**
+     * 대표이사 조회 (결재라인 자동 설정용)
+     * GET /api/users/ceo
+     *
+     * 전직원 공통 - 항상 isAdmin=true인 대표이사 반환
+     */
+    @GetMapping("/ceo")
+    public ResponseEntity<UserSimpleDTO> getCeo() {
+        log.debug("GET /api/users/ceo - getCeo()");
+        UserSimpleDTO ceo = userService.getCeo();
+        if (ceo == null) {
+            return ResponseEntity.notFound().build();
+        }
+        return ResponseEntity.ok(ceo);
+    }
+
+    /**
      * Exception Handler
      */
     @ExceptionHandler(IllegalArgumentException.class)

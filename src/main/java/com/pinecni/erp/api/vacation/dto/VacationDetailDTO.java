@@ -28,7 +28,6 @@ public class VacationDetailDTO {
     private String drafterPosition;
     private BigDecimal remainingDays;
     private String reason;
-    private String status;
     private Boolean isApproved;
 
     // 연차 기간 목록
@@ -65,8 +64,6 @@ public class VacationDetailDTO {
         private Long userIdx;
         private String name;
         private String position;
-        private String status;  // PENDING, APPROVED, REJECTED
-        private String approvedAt;
     }
 
     /**

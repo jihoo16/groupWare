@@ -1,6 +1,7 @@
 package com.pinecni.erp.api.user.service;
 
 import com.pinecni.erp.api.code.service.CodeService;
+import com.pinecni.erp.constant.CodeConstants;
 import com.pinecni.erp.api.user.dto.UserCreateDTO;
 import com.pinecni.erp.api.user.repository.UserRepository;
 import com.pinecni.erp.entity.User;
@@ -20,6 +21,7 @@ import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
+import java.util.Set;
 import java.util.stream.Collectors;
 
 /**
@@ -309,12 +311,19 @@ public class UserServiceImpl implements UserService {
             return managerChain;
         }
 
-        // 상위 보고자 체인 따라가기 (무한 루프 방지: 최대 10단계)
+        // 상위 보고자 체인 따라가기 (무한 루프 방지: 방문 집합 + 최대 10단계)
         Long currentManagerIdx = currentUser.getManagerIdx();
         int depth = 0;
         int maxDepth = 10;
+        Set<Long> visited = new java.util.HashSet<>();
+        visited.add(userIdx); // 본인 idx를 방문 목록에 추가하여 자기 자신이 체인에 포함되지 않도록 방지
 
         while (currentManagerIdx != null && depth < maxDepth) {
+            if (visited.contains(currentManagerIdx)) {
+                log.warn("상위 보고자 체인에서 순환 참조 감지. userIdx: {}, cycleIdx: {}", userIdx, currentManagerIdx);
+                break;
+            }
+
             User manager = userRepository.findById(currentManagerIdx).orElse(null);
 
             if (manager == null || manager.getDeletedAt() != null) {
@@ -322,6 +331,9 @@ public class UserServiceImpl implements UserService {
                 log.debug("상위 보고자를 찾을 수 없거나 삭제됨. managerIdx: {}", currentManagerIdx);
                 break;
             }
+
+            // 방문 기록
+            visited.add(currentManagerIdx);
 
             // 상위 보고자를 리스트에 추가
             managerChain.add(userMapper.toSimpleDTO(manager));
@@ -437,6 +449,35 @@ public class UserServiceImpl implements UserService {
             log.warn("부서 상무를 찾을 수 없습니다. userIdx: {}, 부서: {}", userIdx, user.getEmpDept());
             return null;
         }
+    }
+
+    @Override
+    public UserSimpleDTO getDirectManager(Long userIdx) {
+        log.debug("getDirectManager() called with userIdx: {}", userIdx);
+        User user = userRepository.findById(userIdx).orElse(null);
+        if (user == null || user.getManagerIdx() == null) {
+            return null;
+        }
+        return userRepository.findById(user.getManagerIdx())
+                .filter(m -> m.getDeletedAt() == null)
+                .map(userMapper::toSimpleDTO)
+                .orElse(null);
+    }
+
+    @Override
+    public UserSimpleDTO getCeo() {
+        log.debug("getCeo() called");
+        return userRepository.findActiveByEmpPosition(CodeConstants.Position.CEO.getCode())
+                .stream()
+                .findFirst()
+                .map(ceo -> {
+                    log.info("대표이사 조회 완료: {} (idx: {})", ceo.getEmpName(), ceo.getIdx());
+                    return userMapper.toSimpleDTO(ceo);
+                })
+                .orElseGet(() -> {
+                    log.warn("대표이사(Position.CEO={})를 찾을 수 없습니다.", CodeConstants.Position.CEO.getCode());
+                    return null;
+                });
     }
 
     /**

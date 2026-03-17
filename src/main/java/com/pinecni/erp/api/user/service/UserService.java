@@ -123,4 +123,16 @@ public interface UserService {
      * @return 해당 부서의 상무 (없으면 null)
      */
     UserSimpleDTO getDeptDirector(Long userIdx);
+
+    /**
+     * 대표이사 조회 (isAdmin = true인 사용자)
+     * 결재라인 대표이사 자리에 항상 고정으로 사용
+     * @return 대표이사 정보 (없으면 null)
+     */
+    UserSimpleDTO getCeo();
+
+    /**
+     * 직속 상위보고자 단건 조회 (managerIdx로 직접 조회)
+     */
+    UserSimpleDTO getDirectManager(Long userIdx);
 }

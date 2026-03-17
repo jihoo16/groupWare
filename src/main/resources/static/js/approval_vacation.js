@@ -3719,67 +3719,54 @@ document.addEventListener('DOMContentLoaded', function() {
                 damDangApprover.style.color = '#333';
             }
 
-            // 상위 보고자 체인 조회 API 호출 (대표이사 설정용)
-            const managerResponse = await fetch(`/api/users/${userVacationInfo.userIdx}/manager-chain`);
-            if (!managerResponse.ok) {
-                throw new Error('상위 보고자 정보를 가져오는데 실패했습니다.');
-            }
-
-            const managerChain = await managerResponse.json();
-            console.log('상위 보고자 체인 로드 완료:', managerChain);
-
-            // 대표이사: 최상위 보고자 (managerChain의 마지막) - 고정
+            // 대표이사 조회 (회사 전체 고정 - isAdmin=true인 사용자)
+            const ceoResponse = await fetch('/api/users/ceo');
             const ceoApprover = document.getElementById('ceoName');
-            if (ceoApprover && managerChain && managerChain.length > 0) {
-                const topManager = managerChain[managerChain.length - 1];
-                ceoApprover.textContent = topManager.empName;
-                ceoApprover.style.color = '#333';
-                ceoApprover.dataset.approverIdx = topManager.idx; // idx 저장
-                console.log('✓ 대표이사 설정:', topManager.empName);
+            if (ceoResponse.ok) {
+                const ceo = await ceoResponse.json();
+                if (ceoApprover) {
+                    ceoApprover.textContent = ceo.empName;
+                    ceoApprover.style.color = '#333';
+                    ceoApprover.dataset.approverIdx = ceo.idx;
+                    console.log('✓ 대표이사 설정:', ceo.empName);
+                }
             } else if (ceoApprover) {
                 ceoApprover.textContent = '대표이사';
                 ceoApprover.style.color = '#999';
             }
 
-            // 부서장: 상위 보고자 체인에서 직속 상위보고자 설정
-            const buseoJangSelect = document.getElementById('buseoJangSelect');
-            const buseoJangName = document.getElementById('buseoJangName');
+            // 부서장: 직속 상위보고자 단건 조회
+            const managerResponse = await fetch(`/api/users/${userVacationInfo.userIdx}/direct-manager`);
+            const managerSelect = document.getElementById('managerSelect');
+            const managerName = document.getElementById('managerName');
 
-            if (managerChain && managerChain.length > 0) {
-                // 첫 번째가 직속 상위보고자
-                const directManager = managerChain[0];
-
-                if (buseoJangName) {
-                    buseoJangName.textContent = directManager.empName;
-                    buseoJangName.style.color = '#333';
-                    buseoJangName.dataset.approverIdx = directManager.idx; // idx 저장
-                    console.log('✓ 부서장 설정 (직속 상위보고자):', directManager.empName);
-                }
-
-                // 드롭다운이 있다면 숨김
-                if (buseoJangSelect) {
-                    buseoJangSelect.style.display = 'none';
+            if (managerResponse.ok) {
+                const directManager = await managerResponse.json();
+                if (managerName) {
+                    managerName.textContent = directManager.empName;
+                    managerName.style.color = '#333';
+                    managerName.dataset.approverIdx = directManager.idx;
+                    console.log('✓ 부서장 설정:', directManager.empName);
                 }
             } else {
-                // 상위보고자가 없는 경우
                 console.warn('상위보고자를 찾을 수 없습니다.');
-                if (buseoJangName) {
-                    buseoJangName.textContent = '부서장';
-                    buseoJangName.style.color = '#999';
+                if (managerName) {
+                    managerName.textContent = '부서장';
+                    managerName.style.color = '#999';
                 }
-                if (buseoJangSelect) {
-                    buseoJangSelect.style.display = 'none';
-                }
+            }
+            if (managerSelect) {
+                managerSelect.style.display = 'none';
             }
 
             console.log('✓ 결재라인 자동 설정 완료');
         } catch (error) {
             console.error('결재라인 설정 중 오류 발생:', error);
             // 오류 발생 시 기본값으로 표시
-            const buseoJangName = document.getElementById('buseoJangName');
-            if (buseoJangName) {
-                buseoJangName.textContent = '부서장';
-                buseoJangName.style.color = '#999';
+            const managerName = document.getElementById('managerName');
+            if (managerName) {
+                managerName.textContent = '부서장';
+                managerName.style.color = '#999';
             }
 
             const ceoApprover = document.getElementById('ceoName');

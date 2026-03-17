@@ -1693,11 +1693,9 @@ public class VacationServiceImpl implements VacationService {
                 .userIdx(drafter.getIdx())
                 .name(drafter.getEmpName())
                 .position(positionName)
-                .status("APPROVED")  // 담당은 신청과 동시에 승인
-                .approvedAt(vacationRequests.getFirst().getCreatedAt().toString())
                 .build());
 
-        // 8-2. 부서장 (기안자의 상사)
+        // 8-2. 부서장 (기안자의 보고체계 상위보고자)
         if (drafter.getManagerIdx() != null) {
             User manager = userRepository.findById(drafter.getManagerIdx()).orElse(null);
             if (manager != null) {
@@ -1709,39 +1707,25 @@ public class VacationServiceImpl implements VacationService {
                         .userIdx(manager.getIdx())
                         .name(manager.getEmpName())
                         .position(managerPositionName)
-                        .status("PENDING")  // 대기 중
-                        .approvedAt(null)
-                        .build());
-
-                // 8-3. 대표이사 (보고체계 최상단까지 체인 추적 - 프론트엔드 manager-chain API와 동일 방식)
-                User ceo = manager;
-                int ceoDepth = 0;
-                while (ceo.getManagerIdx() != null && ceoDepth < 10) {
-                    User upper = userRepository.findById(ceo.getManagerIdx()).orElse(null);
-                    if (upper == null || upper.getDeletedAt() != null) break;
-                    ceo = upper;
-                    ceoDepth++;
-                }
-                // 체인 최상단이 부서장과 동일한 경우(부서장이 최상위) → isAdmin=true인 사용자로 대체
-                if (ceo.getIdx().equals(manager.getIdx())) {
-                    ceo = userRepository.findAll().stream()
-                            .filter(u -> Boolean.TRUE.equals(u.getIsAdmin()) && !u.getIdx().equals(manager.getIdx()))
-                            .findFirst()
-                            .orElse(ceo);
-                }
-
-                String ceoPositionName = codeRepository.findByCode(ceo.getEmpPosition())
-                        .map(Code::getCodeName)
-                        .orElse(ceo.getEmpPosition());
-
-                approvers.add(com.pinecni.erp.api.vacation.dto.VacationDetailDTO.ApproverDTO.builder()
-                        .userIdx(ceo.getIdx())
-                        .name(ceo.getEmpName())
-                        .position(ceoPositionName)
-                        .status("PENDING")  // 대기 중
-                        .approvedAt(null)
                         .build());
             }
+        }
+
+        // 8-3. 대표이사 (직급코드 CEO 고정 - 전직원 공통)
+        User ceo = userRepository.findActiveByEmpPosition(CodeConstants.Position.CEO.getCode())
+                .stream().findFirst().orElse(null);
+        if (ceo != null) {
+            String ceoPositionName = codeRepository.findByCode(ceo.getEmpPosition())
+                    .map(Code::getCodeName)
+                    .orElse(ceo.getEmpPosition());
+
+            approvers.add(com.pinecni.erp.api.vacation.dto.VacationDetailDTO.ApproverDTO.builder()
+                    .userIdx(ceo.getIdx())
+                    .name(ceo.getEmpName())
+                    .position(ceoPositionName)
+                    .build());
+        } else {
+            log.warn("대표이사(Position.CEO={})를 찾을 수 없습니다. documentIdx: {}", CodeConstants.Position.CEO.getCode(), documentIdx);
         }
 
         // 9. 사유 (첫 번째 요청의 reason 사용)
@@ -1761,7 +1745,6 @@ public class VacationServiceImpl implements VacationService {
                 .drafterPosition(positionName)
                 .remainingDays(remainingDays)
                 .reason(reason)
-                .status("PENDING")  // TODO: ApprovalDocument에 status 필드 추가 후 실제 상태 반환
                 .isApproved(isApproved != null ? isApproved : false)
                 .periods(periods)
                 .approvers(approvers)

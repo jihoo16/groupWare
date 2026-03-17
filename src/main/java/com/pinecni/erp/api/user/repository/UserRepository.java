@@ -130,4 +130,5 @@ public interface UserRepository extends JpaRepository<User, Long> {
      */
     @Query("SELECT u FROM User u WHERE u.empDept = :empDept AND u.empPosition = :empPosition AND u.deletedAt IS NULL")
     Optional<User> findActiveByEmpDeptAndEmpPosition(String empDept, String empPosition);
+
 }
