@@ -768,6 +768,13 @@ document.addEventListener('DOMContentLoaded', function() {
             return '-';
         }
 
+        const today = new Date();
+        const yyyy = today.getFullYear();
+        const mm = String(today.getMonth() + 1).padStart(2, '0');
+        const dd = String(today.getDate()).padStart(2, '0');
+        const todayLabel = `${yyyy}년 ${mm}월 ${dd}일`;
+        const todayPrefix = `${yyyy}${mm}${dd}`;
+
         const headers = ['번호', '이름', '입사일', '부서', '직급',
                          '총 연차', '기본/근속가산', '근속가산', '비례연차', '월차', '보상휴가',
                          '사용 연차', '잔여 연차', '사용률'];
@@ -796,11 +803,16 @@ document.addEventListener('DOMContentLoaded', function() {
             ];
         });
 
-        const wsData = [headers, ...rows];
+        // A1: 기준일자, B1~: 헤더, B2~: 데이터
+        const wsData = [
+            [`기준일자 : ${todayLabel}`, ...headers],
+            ...rows.map(row => ['', ...row])
+        ];
         const ws = XLSX.utils.aoa_to_sheet(wsData);
 
         // 열 너비 설정
         ws['!cols'] = [
+            { wch: 20 }, // A: 기준일자
             { wch: 6 },  // 번호
             { wch: 10 }, // 이름
             { wch: 12 }, // 입사일
@@ -819,7 +831,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
         const wb = XLSX.utils.book_new();
         XLSX.utils.book_append_sheet(wb, ws, `연차현황_${currentYear}`);
-        XLSX.writeFile(wb, `전체연차현황_${currentYear}년.xlsx`);
+        XLSX.writeFile(wb, `${todayPrefix}_전체연차현황_${currentYear}년.xlsx`);
     }
 
     function showLoading() {
