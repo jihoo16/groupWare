@@ -29,6 +29,33 @@ document.addEventListener('DOMContentLoaded', function() {
     let meetingBlockCount = 1;   // 지금까지 생성된 최대 회의 인덱스+1
     let extraMeetings = [];      // 추가 회의 상태 (idx 1~): [{ idx, receiptFiles:[], documentFiles:[], authorPersonId:null, attendees:[], tripPersonsForMeeting:[] }]
     let isPopulatingForm = false; // populateForm() 실행 중 여부 (setDefaultAuthor 자동실행 차단용)
+    let holidays = {}; // 공휴일 캐시 { 'YYYY-MM-DD': '공휴일명', ... }
+    let loadedHolidayYears = new Set(); // 이미 로드한 년도
+
+    async function ensureHolidaysLoaded(year) {
+        if (loadedHolidayYears.has(year)) return;
+        try {
+            const res = await fetch(`/api/holidays?year=${year}`);
+            if (res.ok) Object.assign(holidays, await res.json());
+        } catch (e) {
+            console.warn(`[TripMeeting] ${year}년 공휴일 로드 실패:`, e);
+        }
+        loadedHolidayYears.add(year);
+    }
+
+    async function getNextBusinessDay(date) {
+        const next = new Date(date);
+        next.setDate(next.getDate() + 1);
+        await ensureHolidaysLoaded(next.getFullYear());
+        while (true) {
+            const dow = next.getDay();
+            const key = `${next.getFullYear()}-${String(next.getMonth() + 1).padStart(2, '0')}-${String(next.getDate()).padStart(2, '0')}`;
+            if (dow !== 0 && dow !== 6 && !holidays[key]) break;
+            next.setDate(next.getDate() + 1);
+            await ensureHolidaysLoaded(next.getFullYear());
+        }
+        return next;
+    }
 
     // DOM 요소
     const templateTreeHeaders = document.querySelectorAll('.tree-node-header[data-template]');
@@ -1611,7 +1638,7 @@ document.addEventListener('DOMContentLoaded', function() {
             });
         }
 
-        function updateTripDateRange() {
+        async function updateTripDateRange() {
             if (!commonDate || !commonDate.value) return;
 
             const startDate = new Date(commonDate.value);
@@ -1678,12 +1705,12 @@ document.addEventListener('DOMContentLoaded', function() {
                 field.textContent = writeFormatted;
             });
 
-            // 복명일자 계산 (출장 종료일 기준, YYYY년 MM월 DD일 형식)
-            let reportDate = startDate;
+            // 복명일자 계산 (출장 종료일 다음 영업일)
+            let tripEndDate = new Date(startDate);
             if (duration > 0) {
-                reportDate = new Date(startDate);
-                reportDate.setDate(reportDate.getDate() + duration);
+                tripEndDate.setDate(tripEndDate.getDate() + duration);
             }
+            const reportDate = await getNextBusinessDay(tripEndDate);
 
             const reportYear = reportDate.getFullYear();
             const reportMonth = String(reportDate.getMonth() + 1).padStart(2, '0');
@@ -1796,7 +1823,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 const ok = await confirmTripDateChangeIfNeeded(() => { commonDate.value = prevDateValue; });
                 if (!ok) return;
                 prevDateValue = this.value;
-                updateTripDateRange();
+                await updateTripDateRange();
                 updateMeetingFields();
             });
             commonDate.addEventListener('click', function() {
@@ -1810,7 +1837,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 const ok = await confirmTripDateChangeIfNeeded(() => { commonDuration.value = prevDurationValue; });
                 if (!ok) return;
                 prevDurationValue = this.value;
-                updateTripDateRange();
+                await updateTripDateRange();
             });
         }
 
@@ -1957,6 +1984,35 @@ document.addEventListener('DOMContentLoaded', function() {
         if (commonDate && !commonDate.value) commonDate.value = todayStr;
         updateTripDateRange(); // updateMeetingDateSelect()도 내부에서 호출됨
         updateMeetingFields();
+
+        // 파일 업로드 이벤트 등록 (innerHTML 복사 후 새 요소에 등록해야 drag-drop 동작)
+        const mReceiptInput = document.getElementById('meetingReceiptInput_0');
+        const mReceiptList  = document.getElementById('meetingReceiptFileList_0');
+        const mReceiptArea  = document.getElementById('meetingReceiptUploadArea_0');
+        const mDocInput     = document.getElementById('meetingDocumentInput_0');
+        const mDocList      = document.getElementById('meetingDocumentFileList_0');
+        const mDocArea      = document.getElementById('meetingDocumentUploadArea_0');
+        const tReceiptInput = document.getElementById('tripReceiptInput');
+        const tReceiptList  = document.getElementById('tripReceiptFileList');
+        const tReceiptArea  = document.getElementById('tripReceiptUploadArea');
+        const tDocInput     = document.getElementById('tripDocumentInput');
+        const tDocList      = document.getElementById('tripDocumentFileList');
+        const tDocArea      = document.getElementById('tripDocumentUploadArea');
+
+        const updMReceiptList  = makeUpdateFileList(mReceiptList,  selectedMeetingReceiptFiles,  'removeMeetingReceiptFile');
+        const updMDocList      = makeUpdateFileList(mDocList,      selectedMeetingDocumentFiles, 'removeMeetingDocumentFile');
+        const updTReceiptList  = makeUpdateFileList(tReceiptList,  selectedTripReceiptFiles,     'removeTripReceiptFile');
+        const updTDocList      = makeUpdateFileList(tDocList,      selectedTripDocumentFiles,    'removeTripDocumentFile');
+
+        setupUpload(mReceiptInput, mReceiptArea, selectedMeetingReceiptFiles,  updMReceiptList);
+        setupUpload(mDocInput,     mDocArea,     selectedMeetingDocumentFiles, updMDocList);
+        setupUpload(tReceiptInput, tReceiptArea, selectedTripReceiptFiles,     updTReceiptList);
+        setupUpload(tDocInput,     tDocArea,     selectedTripDocumentFiles,    updTDocList);
+
+        window.removeMeetingReceiptFile  = function(i) { selectedMeetingReceiptFiles.splice(i, 1);  updMReceiptList(); };
+        window.removeMeetingDocumentFile = function(i) { selectedMeetingDocumentFiles.splice(i, 1); updMDocList(); };
+        window.removeTripReceiptFile     = function(i) { selectedTripReceiptFiles.splice(i, 1);     updTReceiptList(); };
+        window.removeTripDocumentFile    = function(i) { selectedTripDocumentFiles.splice(i, 1);    updTDocList(); };
     }
 
     // 파일 아이콘 헬퍼
@@ -1970,26 +2026,25 @@ document.addEventListener('DOMContentLoaded', function() {
 
     // 업로드 영역 공통 셋업
     function setupUpload(input, area, filesArr, updateFn) {
-        input.addEventListener('change', function(e) {
-            Array.from(e.target.files).forEach(file => {
+        function processFiles(files) {
+            Array.from(files).forEach(file => {
                 if (filesArr.length >= 5) { showWarning('최대 5개까지만 첨부 가능합니다.'); return; }
                 if (file.size > 10 * 1024 * 1024) { showWarning('파일 크기는 10MB를 초과할 수 없습니다.'); return; }
                 filesArr.push(file);
             });
             updateFn();
-            input.value = '';
-        });
-        area.addEventListener('dragover', function(e) { e.preventDefault(); this.style.borderColor = '#667eea'; this.style.background = '#f5f7ff'; });
-        area.addEventListener('dragleave', function() { this.style.borderColor = '#ddd'; this.style.background = 'white'; });
-        area.addEventListener('drop', function(e) {
-            e.preventDefault(); this.style.borderColor = '#ddd'; this.style.background = 'white';
-            Array.from(e.dataTransfer.files).forEach(file => {
-                if (filesArr.length >= 5) { showWarning('최대 5개까지만 첨부 가능합니다.'); return; }
-                if (file.size > 10 * 1024 * 1024) { showWarning('파일 크기는 10MB를 초과할 수 없습니다.'); return; }
-                filesArr.push(file);
-            });
-            updateFn();
-        });
+        }
+        input.addEventListener('change', function(e) { processFiles(e.target.files); input.value = ''; });
+        area.addEventListener('dragover', function(e) { e.preventDefault(); area.style.borderColor = '#667eea'; area.style.background = '#f5f7ff'; });
+        area.addEventListener('dragleave', function(e) { if (!area.contains(e.relatedTarget)) { area.style.borderColor = '#ddd'; area.style.background = 'white'; } });
+        area.addEventListener('drop', function(e) { e.preventDefault(); area.style.borderColor = '#ddd'; area.style.background = 'white'; processFiles(e.dataTransfer.files); });
+        // label이 area 전체를 덮고 있어 drag 이벤트가 label 위에서 발생하므로 label에도 직접 처리
+        const label = area.querySelector('label');
+        if (label) {
+            label.addEventListener('dragover', function(e) { e.preventDefault(); area.style.borderColor = '#667eea'; area.style.background = '#f5f7ff'; });
+            label.addEventListener('dragleave', function(e) { if (!area.contains(e.relatedTarget)) { area.style.borderColor = '#ddd'; area.style.background = 'white'; } });
+            label.addEventListener('drop', function(e) { e.preventDefault(); e.stopPropagation(); area.style.borderColor = '#ddd'; area.style.background = 'white'; processFiles(e.dataTransfer.files); });
+        }
     }
 
     function makeUpdateFileList(fileList, filesArr, removeFnName) {
@@ -2008,20 +2063,6 @@ document.addEventListener('DOMContentLoaded', function() {
         };
     }
 
-    const updateMeetingReceiptFileList  = makeUpdateFileList(meetingReceiptFileList,  selectedMeetingReceiptFiles,  'removeMeetingReceiptFile');
-    const updateMeetingDocumentFileList = makeUpdateFileList(meetingDocumentFileList, selectedMeetingDocumentFiles, 'removeMeetingDocumentFile');
-    const updateTripReceiptFileList     = makeUpdateFileList(tripReceiptFileList,     selectedTripReceiptFiles,     'removeTripReceiptFile');
-    const updateTripDocumentFileList    = makeUpdateFileList(tripDocumentFileList,    selectedTripDocumentFiles,    'removeTripDocumentFile');
-
-    setupUpload(meetingReceiptInput,  meetingReceiptUploadArea,  selectedMeetingReceiptFiles,  updateMeetingReceiptFileList);
-    setupUpload(meetingDocumentInput, meetingDocumentUploadArea, selectedMeetingDocumentFiles, updateMeetingDocumentFileList);
-    setupUpload(tripReceiptInput,     tripReceiptUploadArea,     selectedTripReceiptFiles,     updateTripReceiptFileList);
-    setupUpload(tripDocumentInput,    tripDocumentUploadArea,    selectedTripDocumentFiles,    updateTripDocumentFileList);
-
-    window.removeMeetingReceiptFile  = function(i) { selectedMeetingReceiptFiles.splice(i, 1);  updateMeetingReceiptFileList(); };
-    window.removeMeetingDocumentFile = function(i) { selectedMeetingDocumentFiles.splice(i, 1); updateMeetingDocumentFileList(); };
-    window.removeTripReceiptFile     = function(i) { selectedTripReceiptFiles.splice(i, 1);     updateTripReceiptFileList(); };
-    window.removeTripDocumentFile    = function(i) { selectedTripDocumentFiles.splice(i, 1);    updateTripDocumentFileList(); };
 
     // ══════════════════════════════════════════════════════════════
     // 다중 회의 상태 헬퍼
@@ -2291,6 +2332,12 @@ document.addEventListener('DOMContentLoaded', function() {
             }
         });
 
+        // 시간 input 전체 클릭 시 picker 열기
+        [`meeting_start_time_${idx}`, `meeting_end_time_${idx}`].forEach(id => {
+            const el = document.getElementById(id);
+            if (el) el.addEventListener('click', function() { if (this.showPicker) { try { this.showPicker(); } catch(e) {} } });
+        });
+
         // 사용금액 입력 시 초과 검증 + 유효성 검증
         const amountInputEl = document.getElementById(`meeting_amount_${idx}`);
         if (amountInputEl) {
@@ -2313,10 +2360,13 @@ document.addEventListener('DOMContentLoaded', function() {
             });
         }
 
-        // 바이트 카운터 이벤트 설정
+        // 바이트 카운터 이벤트 설정 + 독자적 필수값 검증
         const contentTextarea = document.getElementById(`meeting_content_${idx}`);
         if (contentTextarea) {
-            contentTextarea.addEventListener('input', () => updateExtraMeetingByteCounter(idx));
+            contentTextarea.addEventListener('input', () => {
+                updateExtraMeetingByteCounter(idx);
+                validateRequiredFields();
+            });
         }
 
         // 직급별 회의비 tooltip 초기화
@@ -2483,14 +2533,15 @@ document.addEventListener('DOMContentLoaded', function() {
     async function setDefaultAuthorForExtra(idx) {
         const mtgState = extraMeetings.find(m => m.idx === idx);
         if (!mtgState || mtgState.authorPersonId) return;
-        if (projectMembers.length === 0) return;
+        if (tripPersons.length === 0) return; // 출장 인원이 없으면 자동 설정 안 함
 
-        const members = projectMembers.map(m => ({
-            id: m.employeeIdx || m.id,
-            name: m.employeeName || m.name,
-            dept: m.employeeDeptName || m.dept || '',
-            position: m.employeePositionName || m.position || '',
-            positionCode: m.employeePositionCode || m.positionCode || ''
+        // 출장 참석인원 중에서만 작성자 후보 선정
+        const members = tripPersons.map(p => ({
+            id: p.id,
+            name: p.name,
+            dept: p.dept || '',
+            position: p.position || '',
+            positionCode: p.positionCode || ''
         }));
         const sorted = sortByPositionAsc(members);
 
@@ -3930,9 +3981,9 @@ document.addEventListener('DOMContentLoaded', function() {
         if (isPopulatingForm) return; // 데이터 로드 중에는 검증 건너뜀
         // 출장 + 회의 공통 필수 텍스트 필드
         const requiredIds = ['common_project', 'common_card', 'common_location', 'common_date',
-                             'common_purpose', 'common_meeting_purpose', 'common_meeting_date',
-                             'common_start_time', 'common_end_time', 'common_meeting_location',
-                             'common_meeting_content'];
+                             'common_purpose', 'common_meeting_purpose', 'common_meeting_author',
+                             'common_meeting_date', 'common_start_time', 'common_end_time',
+                             'common_meeting_location', 'common_meeting_content'];
         let allFilled = true;
 
         requiredIds.forEach(id => {
@@ -4020,8 +4071,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 `meeting_start_time_${m.idx}`,
                 `meeting_end_time_${m.idx}`,
                 `meeting_location_${m.idx}`,
-                `meeting_author_${m.idx}`,
-                `meeting_content_${m.idx}`
+                `meeting_author_${m.idx}`
             ];
             extraRequiredIds.forEach(id => {
                 const el = document.getElementById(id);
@@ -4033,6 +4083,18 @@ document.addEventListener('DOMContentLoaded', function() {
                     el.classList.remove('field-empty');
                 }
             });
+
+            // 주요 내용 — 빈칸 또는 400bytes 미만이면 red border
+            const contentEl = document.getElementById(`meeting_content_${m.idx}`);
+            if (contentEl) {
+                const bytes = new TextEncoder().encode(contentEl.value || '').length;
+                if (bytes < 400) {
+                    contentEl.classList.add('field-empty');
+                    allFilled = false;
+                } else {
+                    contentEl.classList.remove('field-empty');
+                }
+            }
 
             // 사용 금액 검증
             const amountEl = document.getElementById(`meeting_amount_${m.idx}`);
@@ -5279,6 +5341,13 @@ document.addEventListener('DOMContentLoaded', function() {
                 document.getElementById('tripPersonArea')?.scrollIntoView({ behavior: 'smooth', block: 'center' });
                 return;
             }
+            const purposeElU = document.getElementById('common_purpose');
+            if (!purposeElU?.value?.trim()) {
+                await showWarning('출장목적을 입력해주세요.');
+                purposeElU?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                purposeElU?.focus({ preventScroll: true });
+                return;
+            }
             // 출장 내용 및 결과 검증 (수정 모드)
             {
                 const tripResultElU = document.getElementById('common_trip_result');
@@ -5292,6 +5361,15 @@ document.addEventListener('DOMContentLoaded', function() {
                     await showWarning('출장 내용 및 결과를 입력해주세요.');
                     tripResultElU?.scrollIntoView({ behavior: 'smooth', block: 'center' });
                     tripResultElU?.focus({ preventScroll: true });
+                    return;
+                }
+            }
+            // 날짜별 사용금액 합계 검증 (수정 모드)
+            {
+                const totalTripExpenseU = dailyExpenses.reduce((s, e) => s + (e.transport||0) + (e.lodging||0) + (e.meal||0) + (e.other||0), 0);
+                if (totalTripExpenseU === 0) {
+                    await showWarning('날짜별 사용금액을 입력해주세요.');
+                    document.getElementById('dailyExpenseTable')?.scrollIntoView({ behavior: 'smooth', block: 'center' });
                     return;
                 }
             }
@@ -5641,7 +5719,7 @@ document.addEventListener('DOMContentLoaded', function() {
             const result = await Swal.fire({
                 icon: 'warning',
                 title: '삭제 확인',
-                text: '출장+회의 문서를 삭제하시겠습니까? 이 작업은 되돌릴 수 없습니다.',
+                text: '출장+회의 문서를 삭제하시겠습니까? <br> 이 작업은 되돌릴 수 없습니다.',
                 showCancelButton: true,
                 confirmButtonColor: '#ef4444',
                 confirmButtonText: '삭제',
