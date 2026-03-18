@@ -1106,3 +1106,232 @@
     color: #666;
     line-height: 1.6;
 }
+
+/* ============================================================
+   역량관리 모달 추가 스타일
+   ============================================================ */
+
+/* 역량관리 모달 안내사항 박스 */
+.competency-notice {
+    display: flex;
+    gap: 14px;
+    align-items: flex-start;
+    padding: 14px 18px;
+    background: #f0f3ff;
+    border-left: 4px solid #1a237e;
+    border-radius: 0 4px 4px 0;
+    margin-bottom: 24px;
+}
+
+.competency-notice > i {
+    color: #1a237e;
+    font-size: 16px;
+    margin-top: 2px;
+    flex-shrink: 0;
+}
+
+.competency-notice strong {
+    display: block;
+    font-size: 13px;
+    font-weight: 700;
+    color: #1a237e;
+    margin-bottom: 4px;
+}
+
+.competency-notice p {
+    font-size: 13px;
+    color: #444;
+    line-height: 1.6;
+    margin: 0;
+}
+
+.nowrap {
+    white-space: nowrap;
+}
+
+/* form-row 2칸 스팬 */
+.form-row .form-group.span-2 {
+    grid-column: span 2;
+}
+
+/* 체크박스 그룹 (is_now, is_industry_experience, is_expired) */
+.checkbox-group {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding-top: 36px; /* label 높이만큼 맞춤 */
+}
+
+.checkbox-group input[type="checkbox"] {
+    width: 18px;
+    height: 18px;
+    accent-color: #1a237e;
+    cursor: pointer;
+    flex-shrink: 0;
+}
+
+.checkbox-group label {
+    font-size: 14px;
+    color: #333;
+    cursor: pointer;
+    user-select: none;
+    font-weight: 500 !important;
+}
+
+/* 경력 기간 자동 계산 표시 */
+.career-period-display {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding-top: 36px;
+}
+
+.career-period-box {
+    flex: 1;
+    padding: 12px 16px;
+    background: #f0f3ff;
+    border: 1px solid #c5cae9;
+    border-radius: 4px;
+    font-size: 14px;
+    color: #1a237e;
+    font-weight: 600;
+    text-align: center;
+}
+
+.career-period-label {
+    font-size: 13px;
+    color: #666;
+    white-space: nowrap;
+}
+
+/* 모달 내 필수값 표시 */
+.modal-body .required-mark {
+    color: #d32f2f;
+    margin-left: 2px;
+}
+
+/* 모달 타이틀 아이콘 색상 */
+.modal-header h2 i {
+    color: #1a237e;
+}
+
+/* 모달 저장 버튼 */
+.modal-footer .btn-primary {
+    padding: 10px 28px;
+    background: #1a237e;
+    color: white;
+    border: none;
+    border-radius: 4px;
+    font-size: 14px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: background 0.2s ease;
+}
+
+.modal-footer .btn-primary:hover {
+    background: #283593;
+}
+
+.modal-footer .btn-secondary {
+    padding: 10px 20px;
+    background: white;
+    color: #666;
+    border: 1px solid #d0d0d0;
+    border-radius: 4px;
+    font-size: 14px;
+    cursor: pointer;
+    transition: background 0.2s ease;
+}
+
+.modal-footer .btn-secondary:hover {
+    background: #f5f5f5;
+}
+
+/* 모달 내 form-row (기존 .form-row 와 동일하게 적용) */
+.modal-body .form-row {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 20px 24px;
+    margin-bottom: 20px;
+}
+
+.modal-body .form-row:last-child {
+    margin-bottom: 0;
+}
+
+.modal-body .form-row .form-group {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.modal-body .form-row .form-group label {
+    font-size: 13px;
+    font-weight: 600;
+    color: #333;
+}
+
+.modal-body .form-row .form-group .form-input,
+.modal-body .form-row .form-group .form-select,
+.modal-body .form-row .form-group .form-textarea {
+    display: block;
+    width: 100%;
+    padding: 10px 14px;
+    border: 1px solid #d0d0d0;
+    border-radius: 4px;
+    font-size: 14px;
+    transition: border-color 0.2s ease;
+    box-sizing: border-box;
+}
+
+.modal-body .form-row .form-group .form-input:focus,
+.modal-body .form-row .form-group .form-select:focus,
+.modal-body .form-row .form-group .form-textarea:focus {
+    border-color: #1a237e;
+    outline: none;
+}
+
+.modal-body .form-row .form-group.full-width {
+    grid-column: 1 / -1;
+}
+
+.modal-body .form-row .form-group.span-2 {
+    grid-column: span 2;
+}
+
+.modal-body .form-input.error,
+.modal-body .form-select.error {
+    border-color: #d32f2f;
+    background: #fff5f5;
+}
+
+/* 만료 뱃지 (자격증) */
+.badge-expired {
+    display: inline-block;
+    padding: 2px 8px;
+    background: #fdecea;
+    color: #c62828;
+    border-radius: 3px;
+    font-size: 11px;
+    font-weight: 600;
+    margin-left: 6px;
+}
+
+/* 경력 뱃지 (업계경력 여부 표시) */
+.badge-industry {
+    display: inline-block;
+    padding: 2px 8px;
+    background: #e8eaf6;
+    color: #1a237e;
+    border-radius: 3px;
+    font-size: 11px;
+    font-weight: 600;
+    margin-left: 6px;
+}
+
+/* is_now 체크 시 career_end_date 비활성화 스타일 */
+.form-input:disabled {
+    background: #f5f5f5;
+    color: #999;
+    cursor: not-allowed;
+}

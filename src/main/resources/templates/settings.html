@@ -450,6 +450,250 @@
     </div>
     -->
 
+    <!-- =====================================================
+         학력 모달
+         ===================================================== -->
+    <div id="schoolModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2><i class="fas fa-graduation-cap"></i> <span id="schoolModalTitle">학력 추가</span></h2>
+                <button class="modal-close" id="closeSchoolModal">&times;</button>
+            </div>
+            <div class="modal-body">
+                <div class="competency-notice">
+                    <i class="fas fa-info-circle"></i>
+                    <div>
+                        <strong>안내</strong>
+                        <p>입력하신 학력 정보는 사업계획서·제안서 등 회사 공식 문서에 포함될 수 있으며, <b class="nowrap" style="color:red">관련 업무 배정자</b>에게 공개될 수 있습니다. <br> 정확한 정보를 입력해 주세요.</p>
+                    </div>
+                </div>
+                <input type="hidden" id="schoolIdx">
+                <div class="form-row">
+                    <div class="form-group span-2">
+                        <label>학교명 <span class="required-mark">*</span></label>
+                        <input type="text" id="schoolName" class="form-input" placeholder="예) 고려대학교">
+                    </div>
+                    <div class="form-group">
+                        <label>학위구분 <span class="required-mark">*</span></label>
+                        <select id="degreeType" class="form-select">
+                            <option value="">선택하세요</option>
+                            <option value="HIGH_SCHOOL">고졸</option>
+                            <option value="ASSOCIATE">전문학사</option>
+                            <option value="BACHELOR">학사</option>
+                            <option value="MASTER">석사</option>
+                            <option value="DOCTOR">박사</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="form-row">
+                    <div class="form-group span-2">
+                        <label>전공</label>
+                        <input type="text" id="majorName" class="form-input" placeholder="예) 식품공학과">
+                    </div>
+                    <div class="form-group">
+                        <label>졸업일자</label>
+                        <input type="date" id="graduationDate" class="form-input">
+                    </div>
+                </div>
+                <div class="form-row">
+                    <div class="form-group full-width">
+                        <label>비고</label>
+                        <textarea id="schoolNotes" class="form-textarea" rows="3" placeholder="추가 메모를 입력하세요"></textarea>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn-secondary" id="cancelSchoolModal">취소</button>
+                <button class="btn-primary" id="saveSchoolBtn">
+                    <i class="fas fa-save"></i> 저장
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- =====================================================
+         자격증 모달
+         ===================================================== -->
+    <div id="certificateModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2><i class="fas fa-certificate"></i> <span id="certificateModalTitle">자격증 추가</span></h2>
+                <button class="modal-close" id="closeCertificateModal">&times;</button>
+            </div>
+            <div class="modal-body">
+                <div class="competency-notice">
+                    <i class="fas fa-info-circle"></i>
+                    <div>
+                        <strong>안내</strong>
+                        <p>입력하신 자격증 정보는 사업계획서·제안서 등 회사 공식 문서에 포함될 수 있으며, <b class="nowrap" style="color:red">관련 업무 배정자</b>에게 공개될 수 있습니다. <br class="nowrap"> 필기·실기 중 <b>필기만 합격한 경우(중도합격)는 등록하지 마세요.</b> 최종합격(자격증 발급 완료) 건만 등록해 주세요.</p>
+                    </div>
+                </div>
+                <input type="hidden" id="certificateIdx">
+                <div class="form-row">
+                    <div class="form-group span-2">
+                        <label>자격증명 <span class="required-mark">*</span></label>
+                        <input type="text" id="certificateName" class="form-input" placeholder="예) 정보처리기사">
+                    </div>
+                    <div class="form-group">
+                        <label>발급기관 <span class="required-mark">*</span></label>
+                        <input type="text" id="issuingOrgName" class="form-input" placeholder="예) 한국산업인력공단">
+                    </div>
+                </div>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label>취득일 <span class="required-mark">*</span></label>
+                        <input type="date" id="issuedDate" class="form-input">
+                    </div>
+                    <div class="form-group">
+                        <div class="checkbox-group">
+                            <input type="checkbox" id="isExpired">
+                            <label for="isExpired">만료된 자격증</label>
+                        </div>
+                    </div>
+                </div>
+                <div class="form-row">
+                    <div class="form-group full-width">
+                        <label>비고</label>
+                        <textarea id="certificateNotes" class="form-textarea" rows="3" placeholder="추가 메모를 입력하세요"></textarea>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn-secondary" id="cancelCertificateModal">취소</button>
+                <button class="btn-primary" id="saveCertificateBtn">
+                    <i class="fas fa-save"></i> 저장
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- =====================================================
+         경력 모달
+         ===================================================== -->
+    <div id="careerModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2><i class="fas fa-briefcase"></i> <span id="careerModalTitle">경력 추가</span></h2>
+                <button class="modal-close" id="closeCareerModal">&times;</button>
+            </div>
+            <div class="modal-body">
+                <div class="competency-notice">
+                    <i class="fas fa-info-circle"></i>
+                    <div>
+                        <strong>안내</strong>
+                        <p>입력하신 경력 정보는 사업계획서·제안서 등 회사 공식 문서에 포함될 수 있으며, <b class="nowrap" style="color:red">관련 업무 배정자</b>에게 공개될 수 있습니다. <br> 실제 근무한 경력만 정확히 입력해 주세요.</p>
+                    </div>
+                </div>
+                <input type="hidden" id="careerIdx">
+                <div class="form-row">
+                    <div class="form-group span-2">
+                        <label>경력분야 <span class="required-mark">*</span></label>
+                        <input type="text" id="careerCategory" class="form-input" placeholder="예) 소프트웨어 개발 - (주) 파인씨앤아이">
+                    </div>
+                    <div class="form-group">
+                        <div class="checkbox-group">
+                            <input type="checkbox" id="isIndustryExperience">
+                            <label for="isIndustryExperience">업계경력</label>
+                        </div>
+                    </div>
+                </div>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label>시작일 <span class="required-mark">*</span></label>
+                        <input type="date" id="careerStartDate" class="form-input">
+                    </div>
+                    <div class="form-group">
+                        <label>종료일</label>
+                        <input type="date" id="careerEndDate" class="form-input">
+                    </div>
+                    <div class="form-group">
+                        <div class="checkbox-group">
+                            <input type="checkbox" id="isNow">
+                            <label for="isNow">현재 재직중</label>
+                        </div>
+                    </div>
+                </div>
+                <div class="form-row">
+                    <div class="form-group full-width">
+                        <label>경력기간 (자동 계산)</label>
+                        <div class="career-period-display">
+                            <div class="career-period-box" id="careerPeriodDisplay">-</div>
+                            <span class="career-period-label">날짜 입력 시 자동 계산됩니다</span>
+                        </div>
+                    </div>
+                </div>
+                <div class="form-row">
+                    <div class="form-group full-width">
+                        <label>경력 요약</label>
+                        <textarea id="careerSummary" class="form-textarea" rows="3" placeholder="예) 식품 수입 및 상품개발 수행"></textarea>
+                    </div>
+                </div>
+                <div class="form-row">
+                    <div class="form-group full-width">
+                        <label>비고</label>
+                        <textarea id="careerNotes" class="form-textarea" rows="2" placeholder="추가 메모를 입력하세요"></textarea>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn-secondary" id="cancelCareerModal">취소</button>
+                <button class="btn-primary" id="saveCareerBtn">
+                    <i class="fas fa-save"></i> 저장
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- =====================================================
+         교육이수 모달
+         ===================================================== -->
+    <div id="trainingModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2><i class="fas fa-book-open"></i> <span id="trainingModalTitle">교육이수 추가</span></h2>
+                <button class="modal-close" id="closeTrainingModal">&times;</button>
+            </div>
+            <div class="modal-body">
+                <div class="competency-notice">
+                    <i class="fas fa-info-circle"></i>
+                    <div>
+                        <strong>안내</strong>
+                        <p>입력하신 교육이수 정보는 사업계획서·제안서 등 회사 공식 문서에 포함될 수 있으며, <b class="nowrap" style="color:red">관련 업무 배정자</b>에게 공개될 수 있습니다. <br> 실제 이수완료한 교육만 등록해 주세요.</p>
+                    </div>
+                </div>
+                <input type="hidden" id="trainingIdx">
+                <div class="form-row">
+                    <div class="form-group span-2">
+                        <label>교육명 <span class="required-mark">*</span></label>
+                        <input type="text" id="trainingName" class="form-input" placeholder="예) 법정의무교육 - 산업안전보건교육">
+                    </div>
+                    <div class="form-group">
+                        <label>교육기관 <span class="required-mark">*</span></label>
+                        <input type="text" id="trainingOrgName" class="form-input" placeholder="예) 대한산업안전협회">
+                    </div>
+                </div>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label>이수일자 <span class="required-mark">*</span></label>
+                        <input type="date" id="completionDate" class="form-input">
+                    </div>
+                </div>
+                <div class="form-row">
+                    <div class="form-group full-width">
+                        <label>비고</label>
+                        <textarea id="trainingNotes" class="form-textarea" rows="3" placeholder="추가 메모를 입력하세요"></textarea>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn-secondary" id="cancelTrainingModal">취소</button>
+                <button class="btn-primary" id="saveTrainingBtn">
+                    <i class="fas fa-save"></i> 저장
+                </button>
+            </div>
+        </div>
+    </div>
+
     <script th:src="@{/js/settings.js}" defer></script>
 </body>
 </html>

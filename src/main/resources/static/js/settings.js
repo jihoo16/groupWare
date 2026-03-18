@@ -497,12 +497,58 @@ function initSignatureCanvas() {
 }
 */
 
-// 역량관리 데이터 구조
-const competencyData = {
-    education: [],
-    certificate: [],
-    career: [],
-    training: []
+// ============================================================
+// 역량관리 - API 연동
+// ============================================================
+
+let currentUserIdx = null;
+
+const DEGREE_TYPE_LABEL = {
+    HIGH_SCHOOL: '고졸',
+    ASSOCIATE:   '전문학사',
+    BACHELOR:    '학사',
+    MASTER:      '석사',
+    DOCTOR:      '박사'
+};
+
+// type → 설정 매핑
+const COMPETENCY_CONFIG = {
+    education: {
+        apiPath:   '/api/competency/schools',
+        modalId:   'schoolModal',
+        titleElId: 'schoolModalTitle',
+        listId:    'educationList',
+        titleAdd:  '학력 추가',
+        titleEdit: '학력 수정',
+        saveBtnId: 'saveSchoolBtn'
+    },
+    certificate: {
+        apiPath:   '/api/competency/certificates',
+        modalId:   'certificateModal',
+        titleElId: 'certificateModalTitle',
+        listId:    'certificateList',
+        titleAdd:  '자격증 추가',
+        titleEdit: '자격증 수정',
+        saveBtnId: 'saveCertificateBtn'
+    },
+    career: {
+        apiPath:   '/api/competency/careers',
+        modalId:   'careerModal',
+        titleElId: 'careerModalTitle',
+        listId:    'careerList',
+        titleAdd:  '경력 추가',
+        titleEdit: '경력 수정',
+        saveBtnId: 'saveCareerBtn'
+    },
+    training: {
+        apiPath:   '/api/competency/trainings',
+        modalId:   'trainingModal',
+        titleElId: 'trainingModalTitle',
+        listId:    'trainingList',
+        titleAdd:  '교육이수 추가',
+        titleEdit: '교육이수 수정',
+        saveBtnId: 'saveTrainingBtn'
+    }
 };
 
 // 역량관리 초기화
@@ -511,412 +557,482 @@ document.addEventListener('DOMContentLoaded', function() {
 });
 
 function initCompetencyManagement() {
-    // 저장된 데이터 불러오기
-    loadCompetencyData();
-
-    // 추가 버튼 이벤트 리스너 - 이벤트 위임 방식으로 안정적으로 처리
+    // 추가 버튼 → 해당 모달 열기 (추가 모드)
     document.addEventListener('click', function(e) {
         const btn = e.target.closest('.btn-add');
         if (!btn) return;
         e.preventDefault();
         e.stopPropagation();
-        Swal.fire({
-            icon: 'info',
-            title: '준비중',
-            text: '해당 기능은 현재 준비중입니다.',
-            confirmButtonText: '확인',
-            confirmButtonColor: '#667eea'
-        });
+        const type = btn.getAttribute('data-type');
+        openCompetencyModal(type, null);
     });
 
-    // 초기 데이터 렌더링
-    renderAllCompetencies();
+    // 모달 닫기 버튼 / 배경 클릭 / 저장 버튼
+    Object.keys(COMPETENCY_CONFIG).forEach(function(type) {
+        const cfg       = COMPETENCY_CONFIG[type];
+        const modal     = document.getElementById(cfg.modalId);
+        const prefix    = cfg.modalId.replace('Modal', '');
+        const capPrefix = prefix.charAt(0).toUpperCase() + prefix.slice(1);
+        const closeBtn  = document.getElementById('close' + capPrefix + 'Modal');
+        const cancelBtn = document.getElementById('cancel' + capPrefix + 'Modal');
+        const saveBtn   = document.getElementById(cfg.saveBtnId);
+
+        if (closeBtn)  closeBtn.addEventListener('click',  () => closeCompetencyModal(type));
+        if (cancelBtn) cancelBtn.addEventListener('click', () => closeCompetencyModal(type));
+        if (modal)     modal.addEventListener('click', function(e) {
+            if (e.target === modal) closeCompetencyModal(type);
+        });
+        if (saveBtn)   saveBtn.addEventListener('click', () => saveCompetency(type));
+    });
+
+    // 경력 모달 — is_now 체크 시 종료일 비활성화 + 기간 자동 계산
+    const isNowCheckbox        = document.getElementById('isNow');
+    const careerEndDateInput   = document.getElementById('careerEndDate');
+    const careerStartDateInput = document.getElementById('careerStartDate');
+
+    if (isNowCheckbox) {
+        isNowCheckbox.addEventListener('change', function() {
+            if (this.checked) {
+                careerEndDateInput.value    = '';
+                careerEndDateInput.disabled = true;
+            } else {
+                careerEndDateInput.disabled = false;
+            }
+            updateCareerPeriodDisplay();
+        });
+    }
+    if (careerStartDateInput) careerStartDateInput.addEventListener('change', updateCareerPeriodDisplay);
+    if (careerEndDateInput)   careerEndDateInput.addEventListener('change',   updateCareerPeriodDisplay);
 }
 
-// 역량 항목 폼 표시
-async function showCompetencyForm(type) {
-    const listContainer = document.getElementById(`${type}List`);
+// ============================================================
+// 모달 열기 / 닫기
+// ============================================================
 
-    // 이미 입력 중인 폼이 있는지 확인
-    if (listContainer.querySelector('.competency-form')) {
-        await showWarning('현재 입력 중인 항목을 먼저 완료해주세요.');
-        return;
+function openCompetencyModal(type, item) {
+    const cfg   = COMPETENCY_CONFIG[type];
+    const modal = document.getElementById(cfg.modalId);
+    const title = document.getElementById(cfg.titleElId);
+
+    if (item) {
+        if (title) title.textContent = cfg.titleEdit;
+        fillModalFields(type, item);
+    } else {
+        if (title) title.textContent = cfg.titleAdd;
+        resetModalFields(type);
     }
 
-    let formHTML = '';
+    if (modal) {
+        modal.style.display = 'flex';
+        modal.classList.add('show');
+    }
+}
 
+function closeCompetencyModal(type) {
+    const cfg   = COMPETENCY_CONFIG[type];
+    const modal = document.getElementById(cfg.modalId);
+    if (modal) {
+        modal.classList.remove('show');
+        modal.style.display = 'none';
+    }
+    resetModalFields(type);
+}
+
+// ============================================================
+// 모달 필드 초기화 / 채우기
+// ============================================================
+
+function resetModalFields(type) {
     switch(type) {
         case 'education':
-            formHTML = `
-                <div class="competency-form">
-                    <div class="form-row">
-                        <div class="form-group">
-                            <label>학교명</label>
-                            <input type="text" class="form-input" data-field="school" placeholder="학교명을 입력하세요">
-                        </div>
-                        <div class="form-group">
-                            <label>전공</label>
-                            <input type="text" class="form-input" data-field="major" placeholder="전공을 입력하세요">
-                        </div>
-                    </div>
-                    <div class="form-row">
-                        <div class="form-group">
-                            <label>학위</label>
-                            <select class="form-select" data-field="degree">
-                                <option value="">선택하세요</option>
-                                <option value="고졸">고졸</option>
-                                <option value="전문학사">전문학사</option>
-                                <option value="학사">학사</option>
-                                <option value="석사">석사</option>
-                                <option value="박사">박사</option>
-                            </select>
-                        </div>
-                        <div class="form-group">
-                            <label>입학일</label>
-                            <input type="date" class="form-input" data-field="startDate">
-                        </div>
-                        <div class="form-group">
-                            <label>졸업일</label>
-                            <input type="date" class="form-input" data-field="endDate">
-                        </div>
-                    </div>
-                    <div class="form-actions">
-                        <button class="btn-secondary btn-cancel">취소</button>
-                        <button class="btn-primary btn-save" data-type="${type}">저장</button>
-                    </div>
-                </div>
-            `;
+            document.getElementById('schoolIdx').value        = '';
+            document.getElementById('schoolName').value       = '';
+            document.getElementById('degreeType').value       = '';
+            document.getElementById('majorName').value        = '';
+            document.getElementById('graduationDate').value   = '';
+            document.getElementById('schoolNotes').value      = '';
+            document.getElementById('schoolName').classList.remove('error');
+            document.getElementById('degreeType').classList.remove('error');
             break;
-
         case 'certificate':
-            formHTML = `
-                <div class="competency-form">
-                    <div class="form-row">
-                        <div class="form-group">
-                            <label>자격증명</label>
-                            <input type="text" class="form-input" data-field="name" placeholder="자격증명을 입력하세요">
-                        </div>
-                        <div class="form-group">
-                            <label>발급기관</label>
-                            <input type="text" class="form-input" data-field="issuer" placeholder="발급기관을 입력하세요">
-                        </div>
-                    </div>
-                    <div class="form-row">
-                        <div class="form-group">
-                            <label>취득일</label>
-                            <input type="date" class="form-input" data-field="date">
-                        </div>
-                        <div class="form-group">
-                            <label>자격증번호</label>
-                            <input type="text" class="form-input" data-field="number" placeholder="자격증번호를 입력하세요">
-                        </div>
-                    </div>
-                    <div class="form-actions">
-                        <button class="btn-secondary btn-cancel">취소</button>
-                        <button class="btn-primary btn-save" data-type="${type}">저장</button>
-                    </div>
-                </div>
-            `;
+            document.getElementById('certificateIdx').value   = '';
+            document.getElementById('certificateName').value  = '';
+            document.getElementById('issuingOrgName').value   = '';
+            document.getElementById('issuedDate').value       = '';
+            document.getElementById('isExpired').checked      = false;
+            document.getElementById('certificateNotes').value = '';
+            document.getElementById('certificateName').classList.remove('error');
+            document.getElementById('issuingOrgName').classList.remove('error');
+            document.getElementById('issuedDate').classList.remove('error');
             break;
-
         case 'career':
-            formHTML = `
-                <div class="competency-form">
-                    <div class="form-row">
-                        <div class="form-group">
-                            <label>회사명</label>
-                            <input type="text" class="form-input" data-field="company" placeholder="회사명을 입력하세요">
-                        </div>
-                        <div class="form-group">
-                            <label>직급/직책</label>
-                            <input type="text" class="form-input" data-field="position" placeholder="직급/직책을 입력하세요">
-                        </div>
-                    </div>
-                    <div class="form-row">
-                        <div class="form-group">
-                            <label>입사일</label>
-                            <input type="date" class="form-input" data-field="startDate">
-                        </div>
-                        <div class="form-group">
-                            <label>퇴사일</label>
-                            <input type="date" class="form-input" data-field="endDate">
-                        </div>
-                    </div>
-                    <div class="form-row">
-                        <div class="form-group full-width">
-                            <label>주요업무</label>
-                            <textarea class="form-textarea" data-field="description" rows="3" placeholder="주요업무를 입력하세요"></textarea>
-                        </div>
-                    </div>
-                    <div class="form-actions">
-                        <button class="btn-secondary btn-cancel">취소</button>
-                        <button class="btn-primary btn-save" data-type="${type}">저장</button>
-                    </div>
-                </div>
-            `;
+            document.getElementById('careerIdx').value           = '';
+            document.getElementById('careerCategory').value      = '';
+            document.getElementById('isIndustryExperience').checked = false;
+            document.getElementById('careerStartDate').value     = '';
+            document.getElementById('careerEndDate').value       = '';
+            document.getElementById('careerEndDate').disabled    = false;
+            document.getElementById('isNow').checked             = false;
+            document.getElementById('careerPeriodDisplay').textContent = '-';
+            document.getElementById('careerSummary').value       = '';
+            document.getElementById('careerNotes').value         = '';
+            document.getElementById('careerCategory').classList.remove('error');
+            document.getElementById('careerStartDate').classList.remove('error');
             break;
-
         case 'training':
-            formHTML = `
-                <div class="competency-form">
-                    <div class="form-row">
-                        <div class="form-group">
-                            <label>교육명</label>
-                            <input type="text" class="form-input" data-field="name" placeholder="교육명을 입력하세요">
-                        </div>
-                        <div class="form-group">
-                            <label>교육기관</label>
-                            <input type="text" class="form-input" data-field="institution" placeholder="교육기관을 입력하세요">
-                        </div>
-                    </div>
-                    <div class="form-row">
-                        <div class="form-group">
-                            <label>시작일</label>
-                            <input type="date" class="form-input" data-field="startDate">
-                        </div>
-                        <div class="form-group">
-                            <label>종료일</label>
-                            <input type="date" class="form-input" data-field="endDate">
-                        </div>
-                        <div class="form-group">
-                            <label>교육시간</label>
-                            <input type="number" class="form-input" data-field="hours" placeholder="시간">
-                        </div>
-                    </div>
-                    <div class="form-actions">
-                        <button class="btn-secondary btn-cancel">취소</button>
-                        <button class="btn-primary btn-save" data-type="${type}">저장</button>
-                    </div>
-                </div>
-            `;
+            document.getElementById('trainingIdx').value        = '';
+            document.getElementById('trainingName').value       = '';
+            document.getElementById('trainingOrgName').value    = '';
+            document.getElementById('completionDate').value     = '';
+            document.getElementById('trainingNotes').value      = '';
+            document.getElementById('trainingName').classList.remove('error');
+            document.getElementById('trainingOrgName').classList.remove('error');
+            document.getElementById('completionDate').classList.remove('error');
             break;
     }
-
-    listContainer.insertAdjacentHTML('afterbegin', formHTML);
-
-    // 폼 버튼 이벤트 리스너
-    const form = listContainer.querySelector('.competency-form');
-    const cancelBtn = form.querySelector('.btn-cancel');
-    const saveBtn = form.querySelector('.btn-save');
-
-    cancelBtn.addEventListener('click', function() {
-        form.remove();
-    });
-
-    saveBtn.addEventListener('click', async function() {
-        await saveCompetencyItem(type, form);
-    });
 }
 
-// 역량 항목 저장
-async function saveCompetencyItem(type, form) {
-    const inputs = form.querySelectorAll('[data-field]');
-    const item = {
-        id: Date.now(),
-        createdAt: new Date().toISOString()
-    };
+function fillModalFields(type, item) {
+    switch(type) {
+        case 'education':
+            document.getElementById('schoolIdx').value       = item.idx || '';
+            document.getElementById('schoolName').value      = item.schoolName || '';
+            document.getElementById('degreeType').value      = item.degreeType || '';
+            document.getElementById('majorName').value       = item.majorName || '';
+            document.getElementById('graduationDate').value  = item.graduationDate || '';
+            document.getElementById('schoolNotes').value     = item.notes || '';
+            break;
+        case 'certificate':
+            document.getElementById('certificateIdx').value   = item.idx || '';
+            document.getElementById('certificateName').value  = item.certificateName || '';
+            document.getElementById('issuingOrgName').value   = item.issuingOrgName || '';
+            document.getElementById('issuedDate').value       = item.issuedDate || '';
+            document.getElementById('isExpired').checked      = item.isExpired || false;
+            document.getElementById('certificateNotes').value = item.notes || '';
+            break;
+        case 'career':
+            document.getElementById('careerIdx').value              = item.idx || '';
+            document.getElementById('careerCategory').value         = item.careerCategory || '';
+            document.getElementById('isIndustryExperience').checked = item.isIndustryExperience || false;
+            document.getElementById('careerStartDate').value        = item.careerStartDate || '';
+            document.getElementById('isNow').checked                = item.isNow || false;
+            if (item.isNow) {
+                document.getElementById('careerEndDate').value    = '';
+                document.getElementById('careerEndDate').disabled = true;
+            } else {
+                document.getElementById('careerEndDate').value    = item.careerEndDate || '';
+                document.getElementById('careerEndDate').disabled = false;
+            }
+            document.getElementById('careerSummary').value = item.careerSummary || '';
+            document.getElementById('careerNotes').value   = item.notes || '';
+            updateCareerPeriodDisplay();
+            break;
+        case 'training':
+            document.getElementById('trainingIdx').value        = item.idx || '';
+            document.getElementById('trainingName').value       = item.trainingName || '';
+            document.getElementById('trainingOrgName').value    = item.trainingOrgName || '';
+            document.getElementById('completionDate').value     = item.completionDate || '';
+            document.getElementById('trainingNotes').value      = item.notes || '';
+            break;
+    }
+}
 
-    let isValid = true;
-    inputs.forEach(input => {
-        const field = input.getAttribute('data-field');
-        const value = input.value.trim();
+// ============================================================
+// 경력기간 자동 계산 표시
+// ============================================================
 
-        // 필수 필드 검증
-        if (input.hasAttribute('required') && !value) {
-            isValid = false;
-            input.classList.add('error');
-        } else {
-            input.classList.remove('error');
+function updateCareerPeriodDisplay() {
+    const startVal  = document.getElementById('careerStartDate').value;
+    const endVal    = document.getElementById('careerEndDate').value;
+    const isNow     = document.getElementById('isNow').checked;
+    const display   = document.getElementById('careerPeriodDisplay');
+
+    if (!startVal) { display.textContent = '-'; return; }
+
+    const start = new Date(startVal);
+    const end   = isNow ? new Date() : (endVal ? new Date(endVal) : null);
+
+    if (!end || end <= start) { display.textContent = '-'; return; }
+
+    let years  = end.getFullYear() - start.getFullYear();
+    let months = end.getMonth()    - start.getMonth();
+    if (months < 0) { years--; months += 12; }
+
+    let text = '';
+    if (years > 0)  text += years  + '년 ';
+    if (months > 0) text += months + '개월';
+    display.textContent = text.trim() || '1개월 미만';
+}
+
+// ============================================================
+// API 호출 — 목록 로드
+// ============================================================
+
+async function loadCompetency(type) {
+    if (!currentUserIdx) return;
+    const cfg = COMPETENCY_CONFIG[type];
+    try {
+        const res = await fetch(`${cfg.apiPath}?userIdx=${currentUserIdx}`);
+        if (!res.ok) throw new Error();
+        const items = await res.json();
+        renderCompetencyList(type, items);
+    } catch (e) {
+        console.error(`[${type}] 목록 로드 실패`, e);
+    }
+}
+
+async function loadAllCompetencies() {
+    await Promise.all(Object.keys(COMPETENCY_CONFIG).map(type => loadCompetency(type)));
+}
+
+// ============================================================
+// API 호출 — 저장 (추가 / 수정)
+// ============================================================
+
+async function saveCompetency(type) {
+    if (!currentUserIdx) return;
+    const cfg     = COMPETENCY_CONFIG[type];
+    const payload = buildPayload(type);
+    if (!payload) return; // 유효성 검증 실패
+
+    const idxVal  = document.getElementById(getIdxFieldId(type)).value;
+    const isEdit  = !!idxVal;
+    const url     = isEdit ? `${cfg.apiPath}/${idxVal}` : `${cfg.apiPath}?userIdx=${currentUserIdx}`;
+    const method  = isEdit ? 'PUT' : 'POST';
+
+    try {
+        const res = await fetch(url, {
+            method,
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(payload)
+        });
+
+        if (res.status === 403) {
+            await showWarning('본인 또는 관리자만 수정할 수 있습니다.');
+            return;
+        }
+        if (!res.ok) {
+            const data = await res.json().catch(() => ({}));
+            await showError(data.error || '저장에 실패했습니다.');
+            return;
         }
 
-        item[field] = value;
-    });
-
-    if (!isValid) {
-        await showWarning('필수 항목을 입력해주세요.');
-        return;
+        closeCompetencyModal(type);
+        await loadCompetency(type);
+        await showSuccess(isEdit ? '수정되었습니다.' : '저장되었습니다.');
+    } catch (e) {
+        console.error(`[${type}] 저장 실패`, e);
+        await showError('저장 중 오류가 발생했습니다.');
     }
-
-    // 데이터 추가
-    competencyData[type].push(item);
-
-    // LocalStorage에 저장
-    saveCompetencyData();
-
-    // 폼 제거
-    form.remove();
-
-    // 목록 다시 렌더링
-    renderCompetencyList(type);
-
-    await showSuccess('저장되었습니다.');
 }
 
-// 역량 항목 삭제
-async function deleteCompetencyItem(type, id) {
+// ============================================================
+// API 호출 — 삭제
+// ============================================================
+
+async function deleteCompetency(type, idx) {
     const confirmed = await showDeleteConfirm('삭제하시겠습니까?');
-    if (confirmed) {
-        competencyData[type] = competencyData[type].filter(item => item.id !== id);
-        saveCompetencyData();
-        renderCompetencyList(type);
+    if (!confirmed) return;
+
+    const cfg = COMPETENCY_CONFIG[type];
+    try {
+        const res = await fetch(`${cfg.apiPath}/${idx}`, { method: 'DELETE' });
+
+        if (res.status === 403) {
+            await showWarning('본인 또는 관리자만 삭제할 수 있습니다.');
+            return;
+        }
+        if (!res.ok) throw new Error();
+
+        await loadCompetency(type);
         await showSuccess('삭제되었습니다.');
+    } catch (e) {
+        console.error(`[${type}] 삭제 실패`, e);
+        await showError('삭제 중 오류가 발생했습니다.');
     }
 }
 
-// 역량 항목 수정
-async function editCompetencyItem(type, id) {
-    const item = competencyData[type].find(item => item.id === id);
-    if (!item) return;
+// ============================================================
+// payload 빌드 + 유효성 검증
+// ============================================================
 
-    // TODO: 수정 폼 표시 및 처리
-    await showAlert('수정 기능은 추후 구현됩니다.');
+function getIdxFieldId(type) {
+    const map = { education: 'schoolIdx', certificate: 'certificateIdx', career: 'careerIdx', training: 'trainingIdx' };
+    return map[type];
 }
 
-// 역량 목록 렌더링
-function renderCompetencyList(type) {
-    const listContainer = document.getElementById(`${type}List`);
-    const items = competencyData[type];
+function buildPayload(type) {
+    switch(type) {
+        case 'education': {
+            const schoolName   = document.getElementById('schoolName').value.trim();
+            const degreeType   = document.getElementById('degreeType').value;
+            if (!schoolName) {
+                document.getElementById('schoolName').classList.add('error');
+                showWarning('학교명을 입력해주세요.'); return null;
+            }
+            if (!degreeType) {
+                document.getElementById('degreeType').classList.add('error');
+                showWarning('학위구분을 선택해주세요.'); return null;
+            }
+            return {
+                schoolName,
+                degreeType,
+                majorName:      document.getElementById('majorName').value.trim() || null,
+                graduationDate: document.getElementById('graduationDate').value   || null,
+                notes:          document.getElementById('schoolNotes').value.trim() || null
+            };
+        }
+        case 'certificate': {
+            const certificateName = document.getElementById('certificateName').value.trim();
+            const issuingOrgName  = document.getElementById('issuingOrgName').value.trim();
+            const issuedDate      = document.getElementById('issuedDate').value;
+            if (!certificateName) {
+                document.getElementById('certificateName').classList.add('error');
+                showWarning('자격증명을 입력해주세요.'); return null;
+            }
+            if (!issuingOrgName) {
+                document.getElementById('issuingOrgName').classList.add('error');
+                showWarning('발급기관을 입력해주세요.'); return null;
+            }
+            if (!issuedDate) {
+                document.getElementById('issuedDate').classList.add('error');
+                showWarning('취득일을 입력해주세요.'); return null;
+            }
+            return {
+                certificateName,
+                issuingOrgName,
+                issuedDate,
+                isExpired: document.getElementById('isExpired').checked,
+                notes:     document.getElementById('certificateNotes').value.trim() || null
+            };
+        }
+        case 'career': {
+            const careerCategory  = document.getElementById('careerCategory').value.trim();
+            const careerStartDate = document.getElementById('careerStartDate').value;
+            const isNow           = document.getElementById('isNow').checked;
+            const careerEndDate   = document.getElementById('careerEndDate').value;
+            if (!careerCategory) {
+                document.getElementById('careerCategory').classList.add('error');
+                showWarning('경력분야를 입력해주세요.'); return null;
+            }
+            if (!careerStartDate) {
+                document.getElementById('careerStartDate').classList.add('error');
+                showWarning('시작일을 입력해주세요.'); return null;
+            }
+            if (!isNow && !careerEndDate) {
+                document.getElementById('careerEndDate').classList.add('error');
+                showWarning('종료일을 입력하거나 현재 재직중을 체크해주세요.'); return null;
+            }
+            return {
+                careerCategory,
+                isIndustryExperience: document.getElementById('isIndustryExperience').checked,
+                careerSummary:        document.getElementById('careerSummary').value.trim() || null,
+                careerStartDate,
+                careerEndDate:        isNow ? null : careerEndDate,
+                isNow,
+                notes:                document.getElementById('careerNotes').value.trim() || null
+            };
+        }
+        case 'training': {
+            const trainingName    = document.getElementById('trainingName').value.trim();
+            const trainingOrgName = document.getElementById('trainingOrgName').value.trim();
+            const completionDate  = document.getElementById('completionDate').value;
+            if (!trainingName) {
+                document.getElementById('trainingName').classList.add('error');
+                showWarning('교육명을 입력해주세요.'); return null;
+            }
+            if (!trainingOrgName) {
+                document.getElementById('trainingOrgName').classList.add('error');
+                showWarning('교육기관을 입력해주세요.'); return null;
+            }
+            if (!completionDate) {
+                document.getElementById('completionDate').classList.add('error');
+                showWarning('이수일자를 입력해주세요.'); return null;
+            }
+            return {
+                trainingName,
+                trainingOrgName,
+                completionDate,
+                notes: document.getElementById('trainingNotes').value.trim() || null
+            };
+        }
+    }
+    return null;
+}
 
-    // 기존 항목 제거 (폼 제외)
-    const existingItems = listContainer.querySelectorAll('.competency-item');
-    existingItems.forEach(item => item.remove());
+// ============================================================
+// 목록 렌더링
+// ============================================================
 
-    if (items.length === 0) {
+function renderCompetencyList(type, items) {
+    const cfg           = COMPETENCY_CONFIG[type];
+    const listContainer = document.getElementById(cfg.listId);
+    if (!listContainer) return;
+
+    if (!items || items.length === 0) {
         listContainer.innerHTML = '<div class="empty-message">등록된 항목이 없습니다.</div>';
         return;
     }
 
-    let itemsHTML = '';
-    items.forEach(item => {
-        let contentHTML = '';
+    listContainer.innerHTML = items.map(item => {
+        let mainHTML = '';
+        let detailHTML = '';
+        let periodHTML = '';
 
         switch(type) {
             case 'education':
-                contentHTML = `
-                    <div class="competency-item">
-                        <div class="item-content">
-                            <div class="item-main">
-                                <strong>${item.school || '-'}</strong>
-                                <span class="item-detail">${item.major || '-'} | ${item.degree || '-'}</span>
-                            </div>
-                            <div class="item-period">
-                                ${formatDate(item.startDate)} ~ ${formatDate(item.endDate)}
-                            </div>
-                        </div>
-                        <div class="item-actions">
-                            <button class="btn-icon btn-edit" onclick="editCompetencyItem('${type}', ${item.id})">
-                                <i class="fas fa-edit"></i>
-                            </button>
-                            <button class="btn-icon btn-delete" onclick="deleteCompetencyItem('${type}', ${item.id})">
-                                <i class="fas fa-trash"></i>
-                            </button>
-                        </div>
-                    </div>
-                `;
+                mainHTML   = `<strong>${item.schoolName}</strong>`;
+                detailHTML = [DEGREE_TYPE_LABEL[item.degreeType] || item.degreeType, item.majorName].filter(Boolean).join(' · ');
+                periodHTML = item.graduationDate ? `졸업 ${formatDate(item.graduationDate)}` : '';
                 break;
-
             case 'certificate':
-                contentHTML = `
-                    <div class="competency-item">
-                        <div class="item-content">
-                            <div class="item-main">
-                                <strong>${item.name || '-'}</strong>
-                                <span class="item-detail">${item.issuer || '-'}</span>
-                            </div>
-                            <div class="item-period">
-                                ${formatDate(item.date)} | ${item.number || '-'}
-                            </div>
-                        </div>
-                        <div class="item-actions">
-                            <button class="btn-icon btn-edit" onclick="editCompetencyItem('${type}', ${item.id})">
-                                <i class="fas fa-edit"></i>
-                            </button>
-                            <button class="btn-icon btn-delete" onclick="deleteCompetencyItem('${type}', ${item.id})">
-                                <i class="fas fa-trash"></i>
-                            </button>
-                        </div>
-                    </div>
-                `;
+                mainHTML   = `<strong>${item.certificateName}</strong>`;
+                detailHTML = item.issuingOrgName || '';
+                periodHTML = `취득 ${formatDate(item.issuedDate)}`
+                           + (item.isExpired ? ' <span class="badge-expired">만료</span>' : '');
                 break;
-
             case 'career':
-                contentHTML = `
-                    <div class="competency-item">
-                        <div class="item-content">
-                            <div class="item-main">
-                                <strong>${item.company || '-'}</strong>
-                                <span class="item-detail">${item.position || '-'}</span>
-                            </div>
-                            <div class="item-period">
-                                ${formatDate(item.startDate)} ~ ${formatDate(item.endDate)}
-                            </div>
-                            ${item.description ? `<div class="item-description">${item.description}</div>` : ''}
-                        </div>
-                        <div class="item-actions">
-                            <button class="btn-icon btn-edit" onclick="editCompetencyItem('${type}', ${item.id})">
-                                <i class="fas fa-edit"></i>
-                            </button>
-                            <button class="btn-icon btn-delete" onclick="deleteCompetencyItem('${type}', ${item.id})">
-                                <i class="fas fa-trash"></i>
-                            </button>
-                        </div>
-                    </div>
-                `;
+                mainHTML   = `<strong>${item.careerCategory}</strong>`
+                           + (item.isIndustryExperience ? ' <span class="badge-industry">업계경력</span>' : '');
+                detailHTML = item.careerSummary || '';
+                periodHTML = `${formatDate(item.careerStartDate)} ~ ${item.isNow ? '현재' : formatDate(item.careerEndDate)}`
+                           + (item.careerPeriodYears || item.careerPeriodMonths
+                               ? ` · ${item.careerPeriodYears > 0 ? item.careerPeriodYears + '년 ' : ''}${item.careerPeriodMonths > 0 ? item.careerPeriodMonths + '개월' : ''}`
+                               : '');
                 break;
-
             case 'training':
-                contentHTML = `
-                    <div class="competency-item">
-                        <div class="item-content">
-                            <div class="item-main">
-                                <strong>${item.name || '-'}</strong>
-                                <span class="item-detail">${item.institution || '-'}</span>
-                            </div>
-                            <div class="item-period">
-                                ${formatDate(item.startDate)} ~ ${formatDate(item.endDate)}
-                                ${item.hours ? ` | ${item.hours}시간` : ''}
-                            </div>
-                        </div>
-                        <div class="item-actions">
-                            <button class="btn-icon btn-edit" onclick="editCompetencyItem('${type}', ${item.id})">
-                                <i class="fas fa-edit"></i>
-                            </button>
-                            <button class="btn-icon btn-delete" onclick="deleteCompetencyItem('${type}', ${item.id})">
-                                <i class="fas fa-trash"></i>
-                            </button>
-                        </div>
-                    </div>
-                `;
+                mainHTML   = `<strong>${item.trainingName}</strong>`;
+                detailHTML = item.trainingOrgName || '';
+                periodHTML = `이수 ${formatDate(item.completionDate)}`;
                 break;
         }
 
-        itemsHTML += contentHTML;
-    });
-
-    listContainer.innerHTML = itemsHTML;
+        return `
+        <div class="competency-item">
+            <div class="item-content">
+                <div class="item-main">
+                    ${mainHTML}
+                    ${detailHTML ? `<span class="item-detail">${detailHTML}</span>` : ''}
+                </div>
+                ${periodHTML ? `<div class="item-period">${periodHTML}</div>` : ''}
+            </div>
+            <div class="item-actions">
+                <button class="btn-icon btn-edit"   onclick="openCompetencyModal('${type}', ${JSON.stringify(item).replace(/"/g, '&quot;')})">
+                    <i class="fas fa-edit"></i>
+                </button>
+                <button class="btn-icon btn-delete" onclick="deleteCompetency('${type}', ${item.idx})">
+                    <i class="fas fa-trash"></i>
+                </button>
+            </div>
+        </div>`;
+    }).join('');
 }
 
-// 모든 역량 목록 렌더링
-function renderAllCompetencies() {
-    renderCompetencyList('education');
-    renderCompetencyList('certificate');
-    renderCompetencyList('career');
-    renderCompetencyList('training');
-}
+// 역량 데이터 저장 (localStorage 제거 — API 사용으로 대체)
+function saveCompetencyData() {}
 
-// 역량 데이터 저장
-function saveCompetencyData() {
-    localStorage.setItem('competencyData', JSON.stringify(competencyData));
-}
-
-// 역량 데이터 불러오기
-function loadCompetencyData() {
-    const savedData = localStorage.getItem('competencyData');
-    if (savedData) {
-        const parsed = JSON.parse(savedData);
-        Object.assign(competencyData, parsed);
-    }
-}
+// 역량 데이터 불러오기 (localStorage 제거 — API 사용으로 대체)
+function loadCompetencyData() {}
 
 // 날짜 포맷팅
 function formatDate(dateString) {
@@ -1099,6 +1215,10 @@ async function loadCurrentUserProfile() {
 
         const user = await response.json();
         console.log('현재 사용자 정보:', user);
+
+        // 역량관리 — 현재 사용자 idx 저장 후 목록 로드
+        currentUserIdx = user.idx;
+        loadAllCompetencies();
 
         // 폼 필드에 데이터 채우기
         const userNameDiv = document.getElementById('userName');
