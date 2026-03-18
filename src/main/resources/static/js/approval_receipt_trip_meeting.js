@@ -1705,7 +1705,10 @@ document.addEventListener('DOMContentLoaded', function() {
                 field.textContent = writeFormatted;
             });
 
-            // 복명일자 계산 (출장 종료일 다음 영업일)
+            // 날짜별 비용 입력 테이블 생성 (동기 — await 이전에 실행해야 복원 로직과 순서 보장)
+            generateDailyExpenseRows();
+
+            // 복명일자 계산 (출장 종료일 다음 영업일) — 공휴일 API 비동기 호출
             let tripEndDate = new Date(startDate);
             if (duration > 0) {
                 tripEndDate.setDate(tripEndDate.getDate() + duration);
@@ -1725,9 +1728,6 @@ document.addEventListener('DOMContentLoaded', function() {
             document.querySelectorAll('.auto-report-day').forEach(field => {
                 field.textContent = reportDay.replace(/^0/, '');
             });
-
-            // 날짜별 비용 입력 테이블 생성
-            generateDailyExpenseRows();
 
             // 회의 날짜 selectbox 업데이트
             updateMeetingDateSelect();

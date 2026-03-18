@@ -27,6 +27,8 @@ document.addEventListener('DOMContentLoaded', async function() {
     let guideMealTotal = 0; // 선택 인원 기준 식비 합계
     let guideDailyTotal = 0; // 선택 인원 기준 일비 합계
     let hasExpenseOverflow = false; // 기준 금액 초과 여부 (저장 차단용)
+    let holidays = {}; // 공휴일 캐시 { 'YYYY-MM-DD': '공휴일명', ... }
+    let loadedHolidayYears = new Set(); // 이미 로드한 년도
 
     // DOM 요소
     const templateTreeHeaders = document.querySelectorAll('.tree-node-header[data-template]');
@@ -2119,7 +2121,34 @@ document.addEventListener('DOMContentLoaded', async function() {
         }
 
         // 출장 기간 계산 함수
-        function updateTripDateRange() {
+        async function ensureHolidaysLoaded(year) {
+            if (loadedHolidayYears.has(year)) return;
+            try {
+                const res = await fetch(`/api/holidays?year=${year}`);
+                if (res.ok) Object.assign(holidays, await res.json());
+            } catch (e) {
+                console.warn(`[Trip] ${year}년 공휴일 로드 실패:`, e);
+            }
+            loadedHolidayYears.add(year);
+        }
+
+        async function getNextBusinessDay(date) {
+            const next = new Date(date);
+            next.setDate(next.getDate() + 1);
+            // 필요한 년도 공휴일 사전 로드
+            await ensureHolidaysLoaded(next.getFullYear());
+            while (true) {
+                const dow = next.getDay();
+                const key = `${next.getFullYear()}-${String(next.getMonth() + 1).padStart(2, '0')}-${String(next.getDate()).padStart(2, '0')}`;
+                if (dow !== 0 && dow !== 6 && !holidays[key]) break;
+                next.setDate(next.getDate() + 1);
+                // 년도가 바뀌면 해당 년도 공휴일 추가 로드
+                await ensureHolidaysLoaded(next.getFullYear());
+            }
+            return next;
+        }
+
+        async function updateTripDateRange() {
             if (!tripDate || !tripDate.value) {
                 return;
             }
@@ -2183,12 +2212,15 @@ document.addEventListener('DOMContentLoaded', async function() {
                 field.textContent = writeFormatted;
             });
 
-            // 복명일자 계산 (출장 종료일 기준, YYYY년 MM월 DD일 형식)
-            let reportDate = startDate;
+            // 날짜별 비용 입력 테이블 생성 (동기 — await 이전에 실행해야 복원 로직과 순서 보장)
+            generateDailyExpenseRows();
+
+            // 복명일자 계산 (출장 종료일 다음 영업일) — 공휴일 API 비동기 호출
+            let tripEndDate = new Date(startDate);
             if (duration > 0) {
-                reportDate = new Date(startDate);
-                reportDate.setDate(reportDate.getDate() + duration);
+                tripEndDate.setDate(tripEndDate.getDate() + duration);
             }
+            const reportDate = await getNextBusinessDay(tripEndDate);
 
             const reportYear = reportDate.getFullYear();
             const reportMonth = String(reportDate.getMonth() + 1).padStart(2, '0');
@@ -2203,15 +2235,12 @@ document.addEventListener('DOMContentLoaded', async function() {
             document.querySelectorAll('.trip-auto-report-day').forEach(field => {
                 field.textContent = reportDay.replace(/^0/, '');
             });
-
-            // 날짜별 비용 입력 테이블 생성
-            generateDailyExpenseRows();
         }
 
         // 출장기간 자동 채우기 및 작성일/복명일자 계산
         if (tripDate) {
             tripDate.addEventListener('change', async function() {
-                updateTripDateRange();
+                await updateTripDateRange();
                 // 날짜 변경 시 출장인원 중복 재검증
                 await window.recheckTripPersons();
 
@@ -2270,8 +2299,8 @@ document.addEventListener('DOMContentLoaded', async function() {
 
         // 출장 기간 셀렉트 박스 이벤트
         if (tripDuration) {
-            tripDuration.addEventListener('change', function() {
-                updateTripDateRange();
+            tripDuration.addEventListener('change', async function() {
+                await updateTripDateRange();
             });
         } else {
         }
