@@ -40,7 +40,7 @@ public class HolidayController {
                 return ResponseEntity.ok(holidays);
             } catch (Exception e) {
                 log.error("{}년 공휴일 조회 실패: {}", year, e.getMessage(), e);
-                return ResponseEntity.internalServerError().build();
+                return ResponseEntity.ok(new HashMap<>());
             }
         } else {
             // 년도 파라미터가 없으면 전체 조회 (하위 호환성)
@@ -51,7 +51,7 @@ public class HolidayController {
                 return ResponseEntity.ok(holidays);
             } catch (Exception e) {
                 log.error("공휴일 조회 실패: {}", e.getMessage(), e);
-                return ResponseEntity.internalServerError().build();
+                return ResponseEntity.ok(new HashMap<>());
             }
         }
     }

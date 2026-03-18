@@ -395,27 +395,32 @@ public class VacationController {
 
         log.info("GET /api/vacation/requested-dates - userIdx: {}, year: {}", userIdx, year);
 
-        // 해당 연도의 연차 신청 내역 조회
-        List<VacationRequest> requests = vacationRequestRepository.findByUserIdxAndYear(userIdx, year);
+        try {
+            // 해당 연도의 연차 신청 내역 조회
+            List<VacationRequest> requests = vacationRequestRepository.findByUserIdxAndYear(userIdx, year);
 
-        // 신청된 모든 날짜 수집
-        Set<String> requestedDates = new HashSet<>();
-        for (VacationRequest request : requests) {
-            LocalDate currentDate = request.getStartDate();
-            LocalDate endDate = request.getEndDate();
+            // 신청된 모든 날짜 수집
+            Set<String> requestedDates = new HashSet<>();
+            for (VacationRequest request : requests) {
+                LocalDate currentDate = request.getStartDate();
+                LocalDate endDate = request.getEndDate();
 
-            while (!currentDate.isAfter(endDate)) {
-                requestedDates.add(currentDate.toString()); // YYYY-MM-DD 형식
-                currentDate = currentDate.plusDays(1);
+                while (!currentDate.isAfter(endDate)) {
+                    requestedDates.add(currentDate.toString()); // YYYY-MM-DD 형식
+                    currentDate = currentDate.plusDays(1);
+                }
             }
+
+            List<String> sortedDates = new ArrayList<>(requestedDates);
+            Collections.sort(sortedDates);
+
+            log.info("신청된 연차 날짜 수: {}", sortedDates.size());
+
+            return ResponseEntity.ok(sortedDates);
+        } catch (Exception e) {
+            log.error("신청된 연차 날짜 조회 실패: {}", e.getMessage(), e);
+            return ResponseEntity.ok(new ArrayList<>());
         }
-
-        List<String> sortedDates = new ArrayList<>(requestedDates);
-        Collections.sort(sortedDates);
-
-        log.info("신청된 연차 날짜 수: {}", sortedDates.size());
-
-        return ResponseEntity.ok(sortedDates);
     }
 
     /**
