@@ -3546,11 +3546,13 @@ document.addEventListener('DOMContentLoaded', async function() {
                 document.querySelectorAll('.trip-auto-pi').forEach(f => { f.textContent = proj.projectManagerName || ''; });
                 await loadProjectMembers(proj.idx);
                 loadProjectCards(proj.idx);
+                updateExpenseTooltip();
             } else if (data.projectName) {
                 if (tripProject) tripProject.value = data.projectName;
                 if (selectedProjectIdxInput) selectedProjectIdxInput.value = data.projectIdx;
                 await loadProjectMembers(data.projectIdx);
                 loadProjectCards(data.projectIdx);
+                updateExpenseTooltip();
             }
         }
 
