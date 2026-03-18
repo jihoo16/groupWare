@@ -197,13 +197,13 @@ public class Controller {
         return "approval_vacation";
     }
 
-    // 지출 - 추후 구현 예정
-    /*
     @GetMapping("/approval/expense")
     public String approvalExpense() {
         return "approval_expense";
     }
 
+    // 구매요청서 - 추후 구현 예정
+    /*
     @GetMapping("/approval/purchase")
     public String approvalPurchase() {
         return "approval_purchase";

@@ -26,75 +26,22 @@
                     </a>
                 </div>
             </div>
-            <div style="margin-bottom: 634px"></div>
-<!--
-            &lt;!&ndash; 지출 &ndash;&gt;
+            <!-- 지출 -->
             <div class="menu-category expanded">
                 <div class="category-header">
                     <i class="fas fa-chevron-right category-toggle"></i>
                     <i class="fas fa-coins"></i>
                     <span>지출</span>
-                    <span class="category-badge">2</span>
+                    <span class="category-badge">1</span>
                 </div>
                 <div class="category-items">
-                    <a href="/approval/expense" th:classappend="${activePage == 'expense'} ? 'menu-item active' : 'menu-item'" data-disabled="true">
+                    <a href="/approval/expense" th:classappend="${activePage == 'expense'} ? 'menu-item active' : 'menu-item'">
                         <i class="fas fa-won-sign"></i>
                         <span>지출승인서</span>
                     </a>
-                    <a href="/approval/purchase" th:classappend="${activePage == 'purchase'} ? 'menu-item active' : 'menu-item'" data-disabled="true">
-                        <i class="fas fa-shopping-cart"></i>
-                        <span>구매요청서</span>
-                    </a>
                 </div>
             </div>
-
-            &lt;!&ndash; 보고 &ndash;&gt;
-            <div class="menu-category expanded">
-                <div class="category-header">
-                    <i class="fas fa-chevron-right category-toggle"></i>
-                    <i class="fas fa-chart-line"></i>
-                    <span>보고</span>
-                    <span class="category-badge">4</span>
-                </div>
-                <div class="category-items">
-                    <a href="/approval/weekly-report" th:classappend="${activePage == 'weekly-report'} ? 'menu-item active' : 'menu-item'" data-disabled="true">
-                        <i class="fas fa-calendar-week"></i>
-                        <span>주간업무보고</span>
-                    </a>
-                    <a href="/approval/monthly-report" th:classappend="${activePage == 'monthly-report'} ? 'menu-item active' : 'menu-item'" data-disabled="true">
-                        <i class="fas fa-calendar-alt"></i>
-                        <span>월간업무보고</span>
-                    </a>
-                    <a href="/approval/meeting" th:classappend="${activePage == 'meeting'} ? 'menu-item active' : 'menu-item'" data-disabled="true">
-                        <i class="fas fa-users"></i>
-                        <span>회의록</span>
-                    </a>
-                    <a href="/approval/general" th:classappend="${activePage == 'general'} ? 'menu-item active' : 'menu-item'" data-disabled="true">
-                        <i class="fas fa-file-alt"></i>
-                        <span>일반기안문서</span>
-                    </a>
-                </div>
-            </div>
-
-            &lt;!&ndash; 출장 &ndash;&gt;
-            <div class="menu-category expanded">
-                <div class="category-header">
-                    <i class="fas fa-chevron-right category-toggle"></i>
-                    <i class="fas fa-plane-departure"></i>
-                    <span>출장</span>
-                    <span class="category-badge">2</span>
-                </div>
-                <div class="category-items">
-                    <a href="/approval/business-trip" th:classappend="${activePage == 'business-trip'} ? 'menu-item active' : 'menu-item'" data-disabled="true">
-                        <i class="fas fa-plane"></i>
-                        <span>출장신청</span>
-                    </a>
-                    <a href="/approval/trip-report" th:classappend="${activePage == 'trip-report'} ? 'menu-item active' : 'menu-item'" data-disabled="true">
-                        <i class="fas fa-clipboard-list"></i>
-                        <span>출장보고서</span>
-                    </a>
-                </div>
-            </div>-->
+            <div style="margin-bottom: 540px"></div>
         </nav>
     </div>
 </aside>
