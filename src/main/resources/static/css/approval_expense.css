@@ -466,14 +466,6 @@ div h2{
     color: #d32f2f;
 }
 
-/* 제출 버튼 */
-.submit-actions {
-    display: flex;
-    justify-content: flex-end;
-    gap: 12px;
-    padding-top: 10px;
-}
-
 .btn-lg {
     padding: 14px 28px;
     font-size: 12.7px;
@@ -921,6 +913,7 @@ div h2{
     background: #f5f5f5;
     font-weight: 700;
     text-align: center;
+    white-space: nowrap;
 }
 
 .expense-info-table input[type="text"] {
@@ -1001,6 +994,7 @@ div h2{
     padding: 8px 4px;
     font-size: 13px;
     text-align: center;
+    white-space: nowrap;
 }
 
 .expense-detail-table tbody td {
@@ -1068,6 +1062,7 @@ div h2{
     background: #f5f5f5;
     font-weight: 700;
     text-align: center;
+    white-space: nowrap;
 }
 
 .expense-summary-table input[type="text"],
@@ -1097,6 +1092,30 @@ div h2{
 .expense-summary-table textarea:focus {
     outline: 1px solid #667eea;
     background: #f5f7ff;
+}
+
+/* 결제 내역 테이블 */
+.expense-payment-table {
+    width: 100%;
+    border-collapse: collapse;
+    border: 1px solid #333;
+    margin-top: -1px;
+    font-size: 12px;
+}
+
+.expense-payment-table th,
+.expense-payment-table td {
+    border: 1px solid #333;
+    padding: 5px 8px;
+    font-size: 12px;
+}
+
+.expense-payment-table th {
+    background: #f5f5f5;
+    font-weight: 700;
+    text-align: center;
+    white-space: nowrap;
+    width: 55px;
 }
 
 /* 하단 결재란 */
@@ -1473,24 +1492,12 @@ div h2{
 }
 
 /* ============================================
-   제출 버튼
+   헤더 액션 버튼 그룹
    ============================================ */
-.submit-actions {
+.action-buttons {
     display: flex;
-    justify-content: flex-end;
-    align-items: center;
     gap: 12px;
-    padding: 16px 24px;
-    background: white;
-    border-top: 2px solid #e8e8e8;
-    position: fixed;
-    bottom: 0;
-    left: 380px;
-    right: 25px;
-    z-index: 100;
-    box-shadow: 0 -4px 12px rgba(0, 0, 0, 0.08);
-    border-radius: 12px 12px 0 0;
-    transition: left 0.3s ease;
+    align-items: center;
 }
 
 .btn-primary,
@@ -1904,4 +1911,186 @@ div h2{
     background: #f8f9fa !important;
     transform: none !important;
     box-shadow: none !important;
+}
+
+/* ============================================
+   인쇄 버튼
+   ============================================ */
+.btn-print {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+    border: none;
+    border-radius: 8px;
+    font-weight: 600;
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    transition: all 0.2s;
+    box-shadow: 0 4px 12px rgba(102, 126, 234, 0.3);
+}
+
+.btn-print:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 16px rgba(102, 126, 234, 0.4);
+}
+
+/* ============================================
+   필수 입력 마크
+   ============================================ */
+.required-mark {
+    color: #ef4444;
+    font-weight: 700;
+    margin-left: 2px;
+}
+
+/* ============================================
+   필수값 빈칸 강조 (빨간 테두리 + 흔들기)
+   ============================================ */
+.field-empty {
+    border: 2px solid #ef4444 !important;
+    background: #fef2f2 !important;
+    animation: shake 0.5s ease;
+}
+
+@keyframes shake {
+    0%, 100% { transform: translateX(0); }
+    20%       { transform: translateX(-6px); }
+    40%       { transform: translateX(6px); }
+    60%       { transform: translateX(-4px); }
+    80%       { transform: translateX(4px); }
+}
+
+/* ============================================
+   인쇄 스타일
+   ============================================ */
+@media print {
+    @page {
+        margin: 1cm;
+        size: A4;
+    }
+
+    html, body {
+        height: auto !important;
+        overflow: visible !important;
+        background: white !important;
+    }
+
+    /* 인쇄 시 숨길 요소 */
+    .sidebar,
+    .template-sidebar,
+    .header,
+    .action-buttons,
+    .btn-secondary,
+    .btn-primary,
+    .btn-print,
+    .input-area,
+    .document-preview-toggle {
+        display: none !important;
+    }
+
+    /* 레이아웃 풀기 */
+    .main-content {
+        margin: 0 !important;
+        padding: 0 !important;
+        width: 100% !important;
+    }
+
+    .write-container {
+        padding: 0 !important;
+    }
+
+    .write-layout {
+        display: block !important;
+    }
+
+    .editor-area {
+        padding: 0 !important;
+        box-shadow: none !important;
+        background: white !important;
+        overflow: visible !important;
+    }
+
+    /* 미리보기 영역 강제 펼침 */
+    .document-form-wrapper,
+    .document-form-wrapper.collapsed {
+        max-height: none !important;
+        padding: 0 !important;
+        margin: 0 !important;
+        opacity: 1 !important;
+        box-shadow: none !important;
+        overflow: visible !important;
+    }
+
+    /* 공식 문서 인쇄 스타일 */
+    .document-form {
+        box-shadow: none !important;
+        padding: 10px !important;
+        max-width: 100% !important;
+        margin: 0 !important;
+    }
+
+    /* 제목+결재란 flex 레이아웃 인쇄 안정화 */
+    .document-form > div[style*="display: flex"] {
+        display: flex !important;
+    }
+
+    /* 결재란 인라인 테이블 배경 강제 출력 */
+    .document-form td[style*="background: #f0f0f0"] {
+        background-color: #f0f0f0 !important;
+        -webkit-print-color-adjust: exact;
+        print-color-adjust: exact;
+    }
+
+    /* 정보/내역/합계/결제 테이블 인쇄 안정화 */
+    .expense-info-table,
+    .expense-detail-table,
+    .expense-summary-table,
+    .expense-payment-table {
+        border-collapse: collapse !important;
+        width: 100% !important;
+        page-break-inside: avoid;
+    }
+
+    .expense-info-table th,
+    .expense-info-table td,
+    .expense-detail-table thead th,
+    .expense-detail-table tbody td,
+    .expense-summary-table th,
+    .expense-summary-table td,
+    .expense-payment-table th,
+    .expense-payment-table td {
+        border: 1px solid #333 !important;
+        -webkit-print-color-adjust: exact;
+        print-color-adjust: exact;
+    }
+
+    /* 배경색 강제 출력 */
+    .expense-info-table th,
+    .expense-detail-table thead th,
+    .expense-summary-table th,
+    .expense-payment-table th {
+        background-color: #f5f5f5 !important;
+        -webkit-print-color-adjust: exact;
+        print-color-adjust: exact;
+    }
+
+    /* 헤더 구분선 */
+    .expense-header {
+        border-bottom: 2px solid #333 !important;
+    }
+
+    /* 페이지 나누기 방지 */
+    .expense-header,
+    .expense-info-table,
+    .expense-detail-section,
+    .expense-summary-table,
+    .expense-payment-table {
+        page-break-inside: avoid;
+    }
+
+    * {
+        page-break-after: avoid !important;
+        page-break-before: avoid !important;
+    }
 }

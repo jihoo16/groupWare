@@ -17,6 +17,16 @@
                         <i class="fas fa-arrow-left"></i>
                         돌아가기
                     </button>
+                    <div class="action-buttons" id="actionButtons" style="display:none;">
+                        <button class="btn-print btn-lg" id="printBtn">
+                            <i class="fas fa-print"></i>
+                            인쇄하기
+                        </button>
+                        <button class="btn-primary btn-lg" id="submitBtn">
+                            <i class="fas fa-paper-plane"></i>
+                            저장
+                        </button>
+                    </div>
                 </div>
             </header>
 
@@ -44,12 +54,22 @@
                                         <div class="form-text-display" id="applicantName">-</div>
                                     </div>
                                     <div class="form-group">
-                                        <label for="documentDate"><i class="fas fa-calendar"></i> 기안일자</label>
+                                        <label for="documentDate"><i class="fas fa-calendar"></i> 기안일자 <span class="required-mark">*</span></label>
                                         <input type="date" id="documentDate" class="form-input auto-today">
                                     </div>
                                     <div class="form-group">
-                                        <label for="projectName"><i class="fas fa-project-diagram"></i> 프로젝트명</label>
+                                        <label for="projectName"><i class="fas fa-project-diagram"></i> 프로젝트명 <span class="required-mark">*</span></label>
                                         <input type="text" id="projectName" class="form-input" placeholder="프로젝트명 입력">
+                                    </div>
+                                    <div class="form-group">
+                                        <label for="paymentMethod"><i class="fas fa-credit-card"></i> 결제수단 <span class="required-mark">*</span></label>
+                                        <select id="paymentMethod" class="form-input">
+                                            <option value="">선택하세요</option>
+                                            <option value="법인카드">법인카드</option>
+                                            <option value="개인카드" selected>개인카드</option>
+                                            <option value="현금">현금</option>
+                                            <option value="기타">기타</option>
+                                        </select>
                                     </div>
                                 </div>
                             </div>
@@ -57,7 +77,7 @@
                             <!-- 지출 내역 -->
                             <div class="input-section">
                                 <div class="section-header">
-                                    <h3><i class="fas fa-list"></i> 지출 내역</h3>
+                                    <h3><i class="fas fa-list"></i> 지출 내역 <span class="required-mark">*</span></h3>
                                     <button type="button" class="btn-add-row" id="addRowBtn">
                                         <i class="fas fa-plus"></i> 항목 추가
                                     </button>
@@ -105,16 +125,6 @@
                                 </div>
                             </div>
 
-                            <!-- 품의 내용 -->
-                            <div class="input-section">
-                                <div class="section-header">
-                                    <h3><i class="fas fa-file-alt"></i> 품의 내용</h3>
-                                </div>
-                                <div class="form-group full-width">
-                                    <textarea id="requestContent" class="form-textarea" rows="5" placeholder="품의 내용을 입력하세요"></textarea>
-                                </div>
-                            </div>
-
                             <!-- 첨부파일 -->
                             <div class="input-section">
                                 <div class="section-header">
@@ -144,40 +154,52 @@
                         <!-- 공식 문서 미리보기 영역 -->
                         <div class="document-form-wrapper collapsed">
                             <div class="document-form">
-                                <!-- 상단 헤더: 제목 + 결재라인 -->
-                                <div class="expense-header">
-                                    <div class="expense-title-section">
+
+                                <!-- 제목 + 결재란 (flex 레이아웃) -->
+                                <div style="display: flex; align-items: flex-start; gap: 16px; margin-bottom: 10px;">
+                                    <div style="flex-shrink: 0; padding-top: 2px;">
                                         <h2 class="expense-doc-title">支 出 稟 議 書</h2>
-                                        <div class="expense-date">
-                                            <span class="auto-date">2025. 01. 12</span>
+                                        <div style="font-size: 12px; color: #555; margin-top: 4px;">
+                                            <span class="auto-date">-</span>
                                         </div>
                                     </div>
-                                    <div class="expense-approval-line">
-                                        <table class="expense-approval-table">
+                                    <div style="flex: 0 0 80%;">
+                                        <table style="width: 100%; border: 2px solid #000; border-collapse: collapse; table-layout: fixed;">
+                                            <colgroup>
+                                                <col style="width: 26px;">
+                                                <col>
+                                                <col>
+                                                <col>
+                                                <col>
+                                            </colgroup>
                                             <tr>
-                                                <th class="approval-position">담 당</th>
-                                                <th class="approval-position">상 무</th>
-                                                <th class="approval-position">대 표</th>
+                                                <td rowspan="2" style="border: 1px solid #000; padding: 4px; text-align: center; background: #f0f0f0; font-weight: bold; font-size: 11px; writing-mode: vertical-lr; letter-spacing: 3px;">결재</td>
+                                                <td style="border: 1px solid #000; padding: 4px 6px; text-align: center; background: #f0f0f0; font-weight: bold; font-size: 11px; white-space: nowrap;">담 당</td>
+                                                <td style="border: 1px solid #000; padding: 4px 6px; text-align: center; background: #f0f0f0; font-weight: bold; font-size: 11px; white-space: nowrap;">부서장</td>
+                                                <td style="border: 1px solid #000; padding: 4px 6px; text-align: center; background: #f0f0f0; font-weight: bold; font-size: 11px; white-space: nowrap;">상 무</td>
+                                                <td style="border: 1px solid #000; padding: 4px 6px; text-align: center; background: #f0f0f0; font-weight: bold; font-size: 11px; white-space: nowrap;">대 표</td>
                                             </tr>
                                             <tr>
-                                                <td class="approval-sign"></td>
-                                                <td class="approval-sign"></td>
-                                                <td class="approval-sign"></td>
+                                                <td style="height: 70px; border: 1px solid #000; padding: 5px; text-align: center;"></td>
+                                                <td style="height: 70px; border: 1px solid #000; padding: 5px; text-align: center;"></td>
+                                                <td style="height: 70px; border: 1px solid #000; padding: 5px; text-align: center;"></td>
+                                                <td style="height: 70px; border: 1px solid #000; padding: 5px; text-align: center;"></td>
                                             </tr>
                                         </table>
                                     </div>
                                 </div>
 
-                                <!-- 기본 정보 테이블 -->
+                                <!-- 품의부서 / 프로젝트명 / 一金 테이블 -->
                                 <table class="expense-info-table">
                                     <tr>
-                                        <th style="width: 80px;">부서/팀</th>
-                                        <td style="width: 150px;" class="auto-dept">-</td>
-                                        <th style="width: 100px;">프로젝트명</th>
+                                        <th style="width: 70px;">품의부서</th>
+                                        <td style="width: 160px;" class="auto-dept">-</td>
+                                        <th style="width: 70px;">프로젝트명</th>
                                         <td class="auto-project">-</td>
+                                        <td rowspan="2" style="width: 55px; text-align: center; font-weight: bold; font-size: 13px; vertical-align: middle; background: #f5f5f5;">검 인</td>
                                     </tr>
                                     <tr>
-                                        <th>一金</th>
+                                        <th>一 金</th>
                                         <td colspan="3">
                                             <div class="amount-display">
                                                 <span id="amountKorean" class="korean-amount">일금</span>
@@ -193,11 +215,11 @@
                                     <table class="expense-detail-table" id="expensePreviewTable">
                                         <thead>
                                             <tr>
-                                                <th style="width: 70px;">월/일</th>
-                                                <th style="width: 35%;">적요</th>
-                                                <th style="width: 100px;">상 호</th>
+                                                <th style="width: 60px;">일 자</th>
+                                                <th>적 요</th>
+                                                <th style="width: 110px;">상 호</th>
                                                 <th style="width: 120px;">금 액</th>
-                                                <th style="width: 80px;">비고</th>
+                                                <th style="width: 80px;">비 고</th>
                                             </tr>
                                         </thead>
                                         <tbody id="expensePreviewBody">
@@ -208,39 +230,70 @@
                                     </table>
                                 </div>
 
-                                <!-- 하단 정보 -->
+                                <!-- 합계 -->
                                 <table class="expense-summary-table">
                                     <tr>
-                                        <th style="width: 100px;">합계</th>
-                                        <td style="width: 150px;" class="auto-total">₩ 0</td>
-                                        <th style="width: 100px;">기안일자</th>
-                                        <td class="auto-doc-date">-</td>
-                                    </tr>
-                                    <tr>
-                                        <th>금액</th>
-                                        <td class="auto-total-copy">₩ 0</td>
-                                        <th>기안자</th>
-                                        <td class="auto-applicant">-</td>
-                                    </tr>
-                                    <tr>
-                                        <th>품의내용</th>
-                                        <td colspan="3"><div class="auto-request-content" style="white-space: pre-wrap; min-height: 60px;">-</div></td>
+                                        <th style="width: 80px;">합 計</th>
+                                        <td class="auto-total" style="font-weight: 700;">₩ 0</td>
                                     </tr>
                                 </table>
+
+                                <!-- 결제 내역 테이블 -->
+                                <table class="expense-payment-table">
+                                    <tr>
+                                        <th>현 금</th>
+                                        <td id="cashAmountDisplay"></td>
+                                        <th>기 일</th>
+                                        <td></td>
+                                        <th>작성자</th>
+                                        <td class="auto-applicant" colspan="3">-</td>
+                                    </tr>
+                                    <tr>
+                                        <th>카 드</th>
+                                        <td id="cardAmountDisplay"></td>
+                                        <th>카드업원</th>
+                                        <td id="paymentMethodDisplay"></td>
+                                        <th>카드번호</th>
+                                        <td colspan="3"></td>
+                                    </tr>
+                                    <tr>
+                                        <th>상 호</th>
+                                        <td colspan="3"></td>
+                                        <th>사업자번호</th>
+                                        <td colspan="3"></td>
+                                    </tr>
+                                    <tr>
+                                        <th>품의번호</th>
+                                        <td></td>
+                                        <th>거래일자</th>
+                                        <td></td>
+                                        <th>자동승인일</th>
+                                        <td colspan="3"></td>
+                                    </tr>
+                                    <tr>
+                                        <th>비 고</th>
+                                        <td colspan="7"></td>
+                                    </tr>
+                                </table>
+
+                                <!-- 하단: 정산입력 + 회사명 -->
+                                <div style="display: flex; justify-content: flex-end; align-items: flex-end; margin-top: 10px; gap: 16px;">
+                                    <table style="border: 1px solid #000; border-collapse: collapse;">
+                                        <tr>
+                                            <td style="width: 80px; border: 1px solid #000; padding: 4px 8px; text-align: center; font-size: 11px; font-weight: bold; background: #f0f0f0;">정 산 입 력</td>
+                                        </tr>
+                                        <tr>
+                                            <td style="height: 40px; border: 1px solid #000; padding: 5px;"></td>
+                                        </tr>
+                                    </table>
+                                    <div style="font-size: 12px; font-weight: bold; padding-bottom: 4px;">
+                                        주식회사 파인씨앤아이
+                                    </div>
+                                </div>
+
                             </div>
                         </div>
 
-                        <!-- 제출 버튼 -->
-                        <div class="submit-actions">
-                            <button class="btn-secondary btn-lg" onclick="history.back()">
-                                <i class="fas fa-times"></i>
-                                취소
-                            </button>
-                            <button class="btn-primary btn-lg" id="submitBtn">
-                                <i class="fas fa-paper-plane"></i>
-                                저장
-                            </button>
-                        </div>
                     </div>
                 </div>
             </div>

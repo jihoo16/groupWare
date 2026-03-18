@@ -1325,9 +1325,10 @@ document.addEventListener('DOMContentLoaded', async function() {
     // 폼 데이터 수집 함수
     function collectFormData() {
         // 기본 정보
-        const projectName = document.getElementById('projectName')?.value.trim() || '';
-        const documentDate = document.getElementById('documentDate')?.value || '';
-        const content = document.getElementById('content')?.value.trim() || '';
+        const projectName   = document.getElementById('projectName')?.value.trim() || '';
+        const documentDate  = document.getElementById('documentDate')?.value || '';
+        const paymentMethod = document.getElementById('paymentMethod')?.value || '';
+        const content       = document.getElementById('requestContent')?.value.trim() || '';
 
         // 사용자 정보 (세션에서 가져올 것이므로 프론트에서는 null로 전송)
         const userIdx = window.CURRENT_USER?.idx || null;
@@ -1359,6 +1360,7 @@ document.addEventListener('DOMContentLoaded', async function() {
             userIdx: userIdx,
             documentDate: documentDate,
             projectName: projectName,
+            paymentMethod: paymentMethod,
             content: content,
             expenseDetails: expenseDetails
         };
@@ -1732,35 +1734,59 @@ document.addEventListener('DOMContentLoaded', async function() {
     // 실시간 미리보기 업데이트
     function updatePreview() {
         // 기본 정보 업데이트
-        const dept = document.getElementById('applicantDept')?.textContent || '';
-        const name = document.getElementById('applicantName')?.textContent || '';
+        const dept    = document.getElementById('applicantDept')?.textContent || '';
+        const name    = document.getElementById('applicantName')?.textContent || '';
         const project = document.getElementById('projectName')?.value || '';
         const docDate = document.getElementById('documentDate')?.value || '';
-        const requestContent = document.getElementById('requestContent')?.value || '';
+        const payment = document.getElementById('paymentMethod')?.value || '';
 
-        const autoDept = document.querySelector('.auto-dept');
-        const autoApplicant = document.querySelector('.auto-applicant');
-        const autoProject = document.querySelector('.auto-project');
-        const autoDate = document.querySelector('.auto-date');
-        const autoDocDate = document.querySelector('.auto-doc-date');
-        const autoRequestContent = document.querySelector('.auto-request-content');
-
-        if (autoDept) autoDept.textContent = dept || '-';
-        if (autoApplicant) autoApplicant.textContent = name || '-';
-        if (autoProject) autoProject.textContent = project || '-';
-        if (autoRequestContent) autoRequestContent.textContent = requestContent || '-';
+        document.querySelectorAll('.auto-dept').forEach(el => { el.textContent = dept || '-'; });
+        document.querySelectorAll('.auto-applicant').forEach(el => { el.textContent = name || '-'; });
+        document.querySelectorAll('.auto-project').forEach(el => { el.textContent = project || '-'; });
+        document.querySelectorAll('.auto-payment-method').forEach(el => { el.textContent = payment || '-'; });
 
         if (docDate) {
             const date = new Date(docDate);
             const formatted = date.getFullYear() + '. ' +
                               String(date.getMonth() + 1).padStart(2, '0') + '. ' +
                               String(date.getDate()).padStart(2, '0');
-            if (autoDate) autoDate.textContent = formatted;
-            if (autoDocDate) autoDocDate.textContent = formatted;
+            document.querySelectorAll('.auto-date').forEach(el => { el.textContent = formatted; });
+            document.querySelectorAll('.auto-doc-date').forEach(el => { el.textContent = formatted; });
         }
 
         // 지출 내역 테이블 업데이트
         updatePreviewTable();
+
+        // 결제수단 표시 동기화 (payment method가 바뀔 때 현금/카드 재분류)
+        syncPaymentAmountDisplay();
+    }
+
+    // 결제수단에 따라 현금/카드 금액 칸 업데이트
+    function syncPaymentAmountDisplay(total) {
+        if (total === undefined) {
+            total = 0;
+            document.querySelectorAll('.amount-input').forEach(input => {
+                const v = input.value.replace(/[^0-9]/g, '');
+                if (v) total += parseInt(v);
+            });
+        }
+        const payment = document.getElementById('paymentMethod')?.value || '';
+        const cashEl = document.getElementById('cashAmountDisplay');
+        const cardEl = document.getElementById('cardAmountDisplay');
+        const pmEl   = document.getElementById('paymentMethodDisplay');
+        if (!cashEl || !cardEl) return;
+        const formatted = total > 0 ? '₩ ' + total.toLocaleString('ko-KR') : '';
+        if (payment === '현금') {
+            cashEl.textContent = formatted;
+            cardEl.textContent = '';
+        } else if (payment.includes('카드')) {
+            cashEl.textContent = '';
+            cardEl.textContent = formatted;
+        } else {
+            cashEl.textContent = '';
+            cardEl.textContent = '';
+        }
+        if (pmEl) pmEl.textContent = payment;
     }
 
     // 지출 내역 미리보기 테이블 업데이트
@@ -1898,6 +1924,13 @@ document.addEventListener('DOMContentLoaded', async function() {
         }
     });
 
+    // 결제수단 변경 시 미리보기 업데이트
+    document.addEventListener('change', function(e) {
+        if (e.target.matches('#paymentMethod')) {
+            updatePreview();
+        }
+    });
+
     // 합계 계산 함수 개선
     const originalCalculateTotal = window.calculateTotal || function() {};
 
@@ -1928,6 +1961,9 @@ document.addEventListener('DOMContentLoaded', async function() {
         if (typeof updateKoreanAmount === 'function') {
             updateKoreanAmount(total);
         }
+
+        // 결제수단에 따라 현금/카드 금액 표시
+        syncPaymentAmountDisplay(total);
 
         return total;
     };
@@ -2244,6 +2280,9 @@ document.addEventListener('DOMContentLoaded', async function() {
         // 미리보기 업데이트
         updatePreview();
 
+        // 필수 필드 재검증 (input 이벤트가 발생하지 않으므로 직접 호출)
+        if (typeof validateRequiredFields === 'function') validateRequiredFields();
+
         // 모달 닫기
         closeDateModal();
     }
@@ -2323,4 +2362,146 @@ document.addEventListener('DOMContentLoaded', async function() {
     updateItemNumbers();
     updatePreview();
     calculateTotal();
+
+    // ============================================
+    // 필수 필드 검증 + 인쇄 버튼 노출 제어
+    // ============================================
+
+    const actionButtons = document.getElementById('actionButtons');
+
+    // 필수 필드 전체 검증 — 빨간 테두리 부여 및 allFilled 반환
+    function validateRequiredFields() {
+        let allFilled = true;
+
+        // 1. 기안일자
+        const documentDate = document.getElementById('documentDate');
+        if (!documentDate?.value) {
+            documentDate?.classList.add('field-empty');
+            allFilled = false;
+        } else {
+            documentDate?.classList.remove('field-empty');
+        }
+
+        // 2. 프로젝트명
+        const projectName = document.getElementById('projectName');
+        if (!projectName?.value?.trim()) {
+            projectName?.classList.add('field-empty');
+            allFilled = false;
+        } else {
+            projectName?.classList.remove('field-empty');
+        }
+
+        // 3. 결제수단 (번호 유지)
+        const paymentMethod = document.getElementById('paymentMethod');
+        if (!paymentMethod?.value) {
+            paymentMethod?.classList.add('field-empty');
+            allFilled = false;
+        } else {
+            paymentMethod?.classList.remove('field-empty');
+        }
+
+        // 3. 지출 항목 — 각 항목의 날짜·적요·금액 필수
+        const expenseItems = document.querySelectorAll('.expense-item');
+        let hasCompleteItem = false;
+
+        expenseItems.forEach(item => {
+            const dateInput   = item.querySelector('.date-input');
+            const descInput   = item.querySelector('.description-input');
+            const amountInput = item.querySelector('.amount-input');
+
+            const dateFilled   = !!dateInput?.value;
+            const descFilled   = !!(descInput?.value?.trim());
+            const amountFilled = !!amountInput?.value;
+
+            if (!dateFilled) {
+                dateInput?.classList.add('field-empty');
+                allFilled = false;
+            } else {
+                dateInput?.classList.remove('field-empty');
+            }
+
+            if (!descFilled) {
+                descInput?.classList.add('field-empty');
+                allFilled = false;
+            } else {
+                descInput?.classList.remove('field-empty');
+            }
+
+            if (!amountFilled) {
+                amountInput?.classList.add('field-empty');
+                allFilled = false;
+            } else {
+                amountInput?.classList.remove('field-empty');
+            }
+
+            if (dateFilled && descFilled && amountFilled) {
+                hasCompleteItem = true;
+            }
+        });
+
+        if (!hasCompleteItem) allFilled = false;
+
+
+        // 인쇄/저장 버튼 노출 제어
+        if (actionButtons) {
+            actionButtons.style.display = allFilled ? 'flex' : 'none';
+        }
+
+        return allFilled;
+    }
+
+    // 필수 필드 이벤트 바인딩 (document 이벤트는 동적 항목도 처리)
+    document.addEventListener('input', function(e) {
+        if (e.target.matches('#projectName, #documentDate, .date-input, .description-input, .amount-input')) {
+            validateRequiredFields();
+        }
+    });
+
+    document.addEventListener('change', function(e) {
+        if (e.target.matches('#documentDate, #paymentMethod')) {
+            validateRequiredFields();
+        }
+    });
+
+    // 항목 추가/삭제 시에도 재검증 (addRowBtn click 에 append)
+    if (addRowBtnNew) {
+        addRowBtnNew.addEventListener('click', function() {
+            // 항목 추가 후 재검증 (기존 click 핸들러 이후 실행)
+            setTimeout(validateRequiredFields, 0);
+        });
+    }
+
+    // removeExpenseItem 래핑 — 삭제 후 재검증
+    const _origRemoveExpenseItem = window.removeExpenseItem;
+    window.removeExpenseItem = function(button) {
+        _origRemoveExpenseItem(button);
+        validateRequiredFields();
+    };
+
+    // 인쇄 버튼
+    const printBtn = document.getElementById('printBtn');
+    if (printBtn) {
+        printBtn.addEventListener('click', function() {
+            // 미리보기가 닫혀있으면 열고 인쇄
+            if (documentFormWrapper && documentFormWrapper.classList.contains('collapsed')) {
+                documentFormWrapper.classList.remove('collapsed');
+                if (documentFormToggle) documentFormToggle.classList.add('active');
+            }
+            setTimeout(() => window.print(), 200);
+        });
+    }
+
+    // 저장 버튼 — validateRequiredFields 재검증 후 진행
+    const submitBtnHeader = document.getElementById('submitBtn');
+    if (submitBtnHeader) {
+        // 기존 click 리스너는 1287줄에 이미 등록되어 있으므로 추가 검증만 prepend
+        submitBtnHeader.addEventListener('click', function(e) {
+            if (!validateRequiredFields()) {
+                e.stopImmediatePropagation();
+            }
+        }, true); // capture phase — 기존 핸들러보다 먼저 실행
+    }
+
+    // 페이지 로드 시 초기 검증
+    setTimeout(validateRequiredFields, 300);
 });
