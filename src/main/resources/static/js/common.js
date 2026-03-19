@@ -316,7 +316,7 @@ window.fetchWithErrorHandling = async function(url, options = {}, autoHandle404 
                 if (window.hidePageLoadingOverlay) {
                     window.hidePageLoadingOverlay();
                 }
-                window.location.href = '/nothing';
+                window.location.replace('/nothing');
                 return null; // 리다이렉트 중이므로 null 반환
             }
 
@@ -327,7 +327,7 @@ window.fetchWithErrorHandling = async function(url, options = {}, autoHandle404 
                 if (window.hidePageLoadingOverlay) {
                     window.hidePageLoadingOverlay();
                 }
-                window.location.href = '/nope';
+                window.location.replace('/nope');
                 return null;
             }
 
@@ -338,7 +338,7 @@ window.fetchWithErrorHandling = async function(url, options = {}, autoHandle404 
                 if (window.hidePageLoadingOverlay) {
                     window.hidePageLoadingOverlay();
                 }
-                window.location.href = '/boom';
+                window.location.replace('/boom');
                 return null;
             }
 

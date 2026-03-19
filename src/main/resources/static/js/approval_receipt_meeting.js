@@ -4671,7 +4671,8 @@ document.addEventListener('DOMContentLoaded', async function() {
                         title: '삭제 완료',
                         text: '회의록이 삭제되었습니다.',
                         timer: 1500,
-                        showConfirmButton: false,
+                        showConfirmButton: true,
+                        confirmButtonText: '확인',
                         timerProgressBar: true
                     });
                     popupAwareRedirect('/project/documents');

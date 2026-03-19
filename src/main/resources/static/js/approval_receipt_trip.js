@@ -4214,7 +4214,7 @@ document.addEventListener('DOMContentLoaded', async function() {
                 });
 
                 if (response.ok) {
-                    await Swal.fire({ icon: 'success', title: '삭제 완료', text: '출장 정보가 삭제되었습니다.', timer: 2000, timerProgressBar: true, showConfirmButton: false });
+                    await Swal.fire({ icon: 'success', title: '삭제 완료', text: '출장 정보가 삭제되었습니다.', timer: 2000, timerProgressBar: true, showConfirmButton: true, confirmButtonText: '확인' });
                     popupAwareRedirect('/project/documents');
                 } else {
                     showError('출장 삭제에 실패했습니다.');

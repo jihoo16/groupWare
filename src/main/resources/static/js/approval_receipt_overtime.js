@@ -538,10 +538,8 @@ document.addEventListener('DOMContentLoaded', async function() {
             });
 
             if (response.ok) {
-                showSuccess('야근식대가 삭제되었습니다.');
-                setTimeout(() => {
-                    popupAwareRedirect('/project/documents');
-                }, 1500);
+                await Swal.fire({ icon: 'success', title: '삭제 완료', text: '야근식대가 삭제되었습니다.', timer: 2000, timerProgressBar: true, showConfirmButton: true, confirmButtonText: '확인' });
+                popupAwareRedirect('/project/documents');
             } else {
                 const error = await response.json();
                 showError(error.error || '삭제 중 오류가 발생했습니다.');
