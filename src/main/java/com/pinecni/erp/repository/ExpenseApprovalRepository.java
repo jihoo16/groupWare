@@ -6,7 +6,6 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
-import java.time.LocalDate;
 import java.util.List;
 import java.util.Optional;
 
@@ -14,14 +13,9 @@ import java.util.Optional;
 public interface ExpenseApprovalRepository extends JpaRepository<ExpenseApproval, Long> {
 
     /**
-     * 사용자별 지출승인서 목록 조회
+     * 사용자별 지출승인서 목록 조회 (soft delete 제외, 최신순)
      */
-    List<ExpenseApproval> findByUserIdxOrderByApplyDateDesc(Long userIdx);
-
-    /**
-     * 날짜 범위로 조회
-     */
-    List<ExpenseApproval> findByDocumentDateBetweenOrderByDocumentDateDesc(LocalDate startDate, LocalDate endDate);
+    List<ExpenseApproval> findByUserIdxAndDeletedFalseOrderByCreatedAtDesc(Long userIdx);
 
     /**
      * document_idx로 조회
@@ -33,6 +27,6 @@ public interface ExpenseApprovalRepository extends JpaRepository<ExpenseApproval
      */
     @Query("SELECT DISTINCT ea FROM ExpenseApproval ea " +
            "LEFT JOIN FETCH ea.expenseDetails " +
-           "WHERE ea.idx = :idx")
+           "WHERE ea.idx = :idx AND ea.deleted = false")
     Optional<ExpenseApproval> findByIdxWithDetails(@Param("idx") Long idx);
 }

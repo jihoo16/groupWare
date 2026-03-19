@@ -2,7 +2,6 @@ package com.pinecni.erp.api.expense.dto;
 
 import lombok.*;
 
-import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -16,29 +15,10 @@ import java.util.List;
 @Builder
 public class ExpenseApprovalCreateDTO {
 
-    /**
-     * 기안자 사용자 IDX
-     */
+    /** 기안자 사용자 IDX (서버에서 세션 기반으로 세팅, 프론트 null 허용) */
     private Long userIdx;
 
-    /**
-     * 기안일자
-     */
-    private LocalDate documentDate;
-
-    /**
-     * 프로젝트명
-     */
-    private String projectName;
-
-    /**
-     * 품의내용
-     */
-    private String content;
-
-    /**
-     * 지출 항목 목록
-     */
+    /** 지출 항목 목록 (최소 1건 필수) */
     @Builder.Default
     private List<ExpenseDetailDTO> expenseDetails = new ArrayList<>();
 }

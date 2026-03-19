@@ -12,7 +12,6 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.time.LocalDate;
 import java.util.List;
 
 @Service
@@ -36,15 +35,11 @@ public class ExpenseApprovalServiceImpl implements ExpenseApprovalService {
         // ExpenseApproval 생성
         ExpenseApproval expenseApproval = ExpenseApproval.builder()
                 .userIdx(createDTO.getUserIdx())
-                .documentDate(createDTO.getDocumentDate())
-                .projectName(createDTO.getProjectName())
-                .applyDate(LocalDate.now())
                 .totalAmount(totalAmount)
-                .content(createDTO.getContent())
                 .createdUserIdx(createDTO.getUserIdx())
+                .updatedUserIdx(createDTO.getUserIdx())
                 .build();
 
-        // 저장
         expenseApproval = expenseApprovalRepository.save(expenseApproval);
 
         // ExpenseDetail 생성 및 저장
@@ -55,9 +50,11 @@ public class ExpenseApprovalServiceImpl implements ExpenseApprovalService {
                         .expenseDate(dto.getExpenseDate())
                         .description(dto.getDescription())
                         .shopName(dto.getShopName())
+                        .paymentMethod(dto.getPaymentMethod() != null ? dto.getPaymentMethod() : "개인카드")
                         .amount(dto.getAmount())
                         .note(dto.getNote())
                         .createdUserIdx(createDTO.getUserIdx())
+                        .updatedUserIdx(createDTO.getUserIdx())
                         .build())
                 .toList();
 
@@ -81,7 +78,7 @@ public class ExpenseApprovalServiceImpl implements ExpenseApprovalService {
     @Transactional(readOnly = true)
     public List<ExpenseApproval> getExpenseApprovalsByUser(Long userIdx) {
         log.info("사용자별 지출승인서 목록 조회 - 사용자 IDX: {}", userIdx);
-        return expenseApprovalRepository.findByUserIdxOrderByApplyDateDesc(userIdx);
+        return expenseApprovalRepository.findByUserIdxAndDeletedFalseOrderByCreatedAtDesc(userIdx);
     }
 
     @Override

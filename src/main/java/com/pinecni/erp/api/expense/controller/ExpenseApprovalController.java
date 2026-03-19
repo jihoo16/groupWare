@@ -117,17 +117,17 @@ public class ExpenseApprovalController {
         return ExpenseApprovalDTO.builder()
                 .idx(entity.getIdx())
                 .userIdx(entity.getUserIdx())
-                .documentDate(entity.getDocumentDate())
-                .projectName(entity.getProjectName())
-                .applyDate(entity.getApplyDate())
                 .totalAmount(entity.getTotalAmount())
-                .content(entity.getContent())
                 .documentIdx(entity.getDocumentIdx())
+                .documentNumber(entity.getDocumentNumber())
                 .expenseDetails(detailDTOs)
                 .createdAt(entity.getCreatedAt())
                 .updatedAt(entity.getUpdatedAt())
                 .createdUserIdx(entity.getCreatedUserIdx())
                 .updatedUserIdx(entity.getUpdatedUserIdx())
+                .deleted(entity.getDeleted())
+                .deletedAt(entity.getDeletedAt())
+                .deletedUserIdx(entity.getDeletedUserIdx())
                 .build();
     }
 
@@ -139,6 +139,7 @@ public class ExpenseApprovalController {
                 .expenseDate(entity.getExpenseDate())
                 .description(entity.getDescription())
                 .shopName(entity.getShopName())
+                .paymentMethod(entity.getPaymentMethod())
                 .amount(entity.getAmount())
                 .note(entity.getNote())
                 .build();
