@@ -1293,8 +1293,8 @@ document.addEventListener('DOMContentLoaded', function() {
                     date: dateStr,
                     transport: prev.transport || 0,
                     lodging:   prev.lodging   || 0,
-                    meal:      prev.meal      || 0,
-                    other:     prev.other     || 0
+                    meal:      0, // 출장+회의 규정: 회의비 사용 시 식비 불가
+                    other:     0  // 출장+회의 규정: 회의비 사용 시 일비 불가
                 });
 
                 const fmt = v => (v && v > 0) ? v.toLocaleString('ko-KR') : '';
@@ -1307,8 +1307,8 @@ document.addEventListener('DOMContentLoaded', function() {
                     <td>${dateStr}</td>
                     <td><input type="text" inputmode="numeric" class="expense-input" data-index="${i}" data-type="transport" placeholder="0" value="${fmt(prev.transport)}"></td>
                     ${lodgingCell}
-                    <td><input type="text" inputmode="numeric" class="expense-input" data-index="${i}" data-type="meal" placeholder="0" value="${fmt(prev.meal)}"></td>
-                    <td><input type="text" inputmode="numeric" class="expense-input" data-index="${i}" data-type="other" placeholder="0" value="${fmt(prev.other)}"></td>
+                    <td class="expense-restricted"><input type="text" class="expense-input" data-index="${i}" data-type="meal" placeholder="-" disabled></td>
+                    <td class="expense-restricted"><input type="text" class="expense-input" data-index="${i}" data-type="other" placeholder="-" disabled></td>
                 `;
                 dailyExpenseBody.appendChild(row);
             }
@@ -5230,8 +5230,7 @@ document.addEventListener('DOMContentLoaded', function() {
                         };
                         setInput('transport', expense.transportationFee);
                         setInput('lodging',   expense.accommodationFee);
-                        setInput('meal',      expense.mealFee);
-                        setInput('other',     displayOther);
+                        // meal·other는 출장+회의 규정상 회의비 사용 시 사용 불가 — disabled 처리됨
                     });
                 }
             }

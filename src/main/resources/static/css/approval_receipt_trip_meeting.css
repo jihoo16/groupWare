@@ -1019,6 +1019,68 @@ div:focus {
     background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%) !important;
 }
 
+/* ============================================================
+   날짜별 비용 — 회의비 사용 시 식비·일비 비활성화 셀
+   ============================================================ */
+.expense-restricted {
+    position: relative;
+    cursor: not-allowed;
+    background: #f8fafc !important;
+}
+
+.expense-restricted .expense-input:disabled {
+    width: 100%;
+    background: transparent;
+    color: #b0bec5;
+    border: 1px dashed #cfd8e3;
+    border-radius: 6px;
+    padding: 6px 8px;
+    font-size: 13px;
+    text-align: center;
+    cursor: not-allowed;
+    box-sizing: border-box;
+    letter-spacing: 0.05em;
+}
+
+/* 툴팁 말풍선 */
+.expense-restricted::before {
+    content: '회의비가 사용된 경우, 식비와 일비는 사용 불가능합니다.';
+    position: absolute;
+    bottom: calc(100% + 8px);
+    left: 50%;
+    transform: translateX(-50%);
+    background: #1e293b;
+    color: #fff;
+    font-size: 11.5px;
+    white-space: nowrap;
+    padding: 6px 11px;
+    border-radius: 6px;
+    pointer-events: none;
+    opacity: 0;
+    transition: opacity 0.15s ease;
+    z-index: 300;
+}
+
+/* 툴팁 꼬리 */
+.expense-restricted::after {
+    content: '';
+    position: absolute;
+    bottom: calc(100% + 3px);
+    left: 50%;
+    transform: translateX(-50%);
+    border: 5px solid transparent;
+    border-top-color: #1e293b;
+    pointer-events: none;
+    opacity: 0;
+    transition: opacity 0.15s ease;
+    z-index: 300;
+}
+
+.expense-restricted:hover::before,
+.expense-restricted:hover::after {
+    opacity: 1;
+}
+
 /* 출장 테이블 전용 - th 텍스트 줄바꿈 허용 */
 .receipt-trip-table th {
     white-space: normal;
