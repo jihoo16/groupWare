@@ -64,10 +64,9 @@ div:focus {
     background: white;
     border-radius: 12px;
     box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
-    overflow-y: auto;
+    overflow-y: visible;
     position: sticky;
     top: 20px;
-    max-height: calc(100vh - 40px);
 }
 
 /* 사이드바 섹션 */
@@ -1162,7 +1161,6 @@ div h2{
     border-radius: 12px;
     box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
     padding: 24px;
-    padding-bottom: 120px;
     overflow-y: auto;
     display: flex;
     flex-direction: column;
@@ -1492,12 +1490,119 @@ div h2{
 }
 
 /* ============================================
-   헤더 액션 버튼 그룹
+   저장 버튼 툴팁 래퍼
    ============================================ */
-.action-buttons {
+
+/* ============================================
+   개인경비 월간 제출 안내 배너 (editor-area 최상단)
+   ============================================ */
+.monthly-notice {
     display: flex;
-    gap: 12px;
     align-items: center;
+    gap: 0;
+    background: linear-gradient(135deg, #fff7ed 0%, #ffedd5 100%);
+    border: 1px solid #fdba74;
+    border-radius: 10px;
+    overflow: hidden;
+    flex-shrink: 0;
+}
+
+.monthly-notice-icon {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 56px;
+    flex-shrink: 0;
+    background: #f97316;
+    color: #fff;
+    font-size: 20px;
+    align-self: stretch;
+}
+
+.monthly-notice-divider {
+    width: 1px;
+    background: #fdba74;
+    align-self: stretch;
+}
+
+.monthly-notice-body {
+    flex: 1;
+    padding: 12px 18px;
+}
+
+.monthly-notice-title {
+    font-size: 12.5px;
+    font-weight: 700;
+    color: #c2410c;
+    margin-bottom: 6px;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+}
+
+.monthly-notice-items {
+    display: flex;
+    gap: 24px;
+    flex-wrap: wrap;
+    font-size: 13px;
+    color: #7c2d12;
+    line-height: 1.5;
+}
+
+.monthly-notice-items i {
+    color: #f97316;
+    font-size: 8px;
+    vertical-align: middle;
+    margin-right: 4px;
+}
+
+.monthly-notice-items strong {
+    color: #c2410c;
+}
+
+.monthly-notice-items em {
+    font-style: normal;
+    color: #9a3412;
+    font-size: 12px;
+}
+.submit-tooltip-wrapper {
+    position: relative;
+    display: inline-flex;
+    align-items: center;
+}
+
+.submit-tooltip {
+    position: absolute;
+    top: calc(100% + 8px);
+    right: 0;
+    background: #1e293b;
+    color: #fff;
+    font-size: 12px;
+    line-height: 1.6;
+    padding: 8px 12px;
+    border-radius: 8px;
+    white-space: nowrap;
+    pointer-events: none;
+    opacity: 0;
+    transform: translateY(-4px);
+    transition: opacity 0.2s, transform 0.2s;
+    z-index: 100;
+    text-align: center;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.25);
+}
+
+.submit-tooltip::before {
+    content: '';
+    position: absolute;
+    top: -5px;
+    right: 18px;
+    border-left: 5px solid transparent;
+    border-right: 5px solid transparent;
+    border-bottom: 5px solid #1e293b;
+}
+
+.submit-tooltip-wrapper:hover .submit-tooltip {
+    opacity: 1;
+    transform: translateY(0);
 }
 
 .btn-primary,
@@ -1966,8 +2071,18 @@ div h2{
    ============================================ */
 @media print {
     @page {
-        margin: 1cm;
+        margin: 1.5cm 2cm;
         size: A4;
+    }
+
+    /* 인쇄 꼬릿말 */
+    body::after {
+        content: "(주)파인씨앤아이";
+        position: fixed;
+        bottom: 0.5cm;
+        right: 1cm;
+        font-size: 11px;
+        color: #555;
     }
 
     html, body {
@@ -1980,9 +2095,8 @@ div h2{
     .sidebar,
     .template-sidebar,
     .header,
-    .action-buttons,
+    .submit-tooltip-wrapper,
     .btn-secondary,
-    .btn-primary,
     .btn-print,
     .input-area,
     .document-preview-toggle {
@@ -2007,11 +2121,12 @@ div h2{
     .editor-area {
         padding: 0 !important;
         box-shadow: none !important;
+        border: none !important;
         background: white !important;
         overflow: visible !important;
     }
 
-    /* 미리보기 영역 강제 펼침 */
+    /* 미리보기 래퍼 — 테두리/그림자 제거, 펼침 */
     .document-form-wrapper,
     .document-form-wrapper.collapsed {
         max-height: none !important;
@@ -2019,13 +2134,17 @@ div h2{
         margin: 0 !important;
         opacity: 1 !important;
         box-shadow: none !important;
+        border: none !important;
+        border-radius: 0 !important;
         overflow: visible !important;
     }
 
-    /* 공식 문서 인쇄 스타일 */
+    /* 공식 문서 — 테두리/그림자 제거, 상하좌우 여백 */
     .document-form {
         box-shadow: none !important;
-        padding: 10px !important;
+        border: none !important;
+        border-radius: 0 !important;
+        padding: 1cm 1.5cm !important;
         max-width: 100% !important;
         margin: 0 !important;
     }
