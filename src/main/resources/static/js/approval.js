@@ -33,8 +33,8 @@ document.addEventListener('DOMContentLoaded', function() {
             // 문서함 선택
             const category = this.getAttribute('data-category');
 
-            // 휴가 신청서 외 미구현 기능 알림
-            const notImplementedCategories = ['weekly-report', 'monthly-report', 'expense', 'purchase', 'meeting', 'general'];
+            // 미구현 기능 알림
+            const notImplementedCategories = ['weekly-report', 'monthly-report', 'purchase', 'meeting', 'general'];
             if (notImplementedCategories.includes(category)) {
                 Swal.fire({
                     icon: 'info',
@@ -398,6 +398,8 @@ document.addEventListener('DOMContentLoaded', function() {
             } else if (category === 'vacation' && reportId) {
                 // 연차신청서 상세페이지로 이동 (documentIdx 사용)
                 window.location.href = `/approval/vacation/detail?documentIdx=${reportId}`;
+            } else if (category === 'expense' && reportId) {
+                window.location.href = `/approval/expense/detail?idx=${reportId}`;
             } else {
                 const title = docRow.querySelector('.title-wrap').textContent;
                 showWarning(`"${title}" 상세보기 기능은 추후 구현됩니다.`);
@@ -432,6 +434,8 @@ document.addEventListener('DOMContentLoaded', function() {
             } else if (category === 'vacation' && reportId) {
                 // 연차신청서 상세페이지로 이동 (documentIdx 사용)
                 window.location.href = `/approval/vacation/detail?documentIdx=${reportId}`;
+            } else if (category === 'expense' && reportId) {
+                window.location.href = `/approval/expense/detail?idx=${reportId}`;
             } else {
                 const title = titleWrap.textContent;
                 showWarning(`"${title}" 상세보기 기능은 추후 구현됩니다.`);
@@ -507,7 +511,8 @@ document.addEventListener('DOMContentLoaded', function() {
             '주간업무보고': 'weekly-report',
             '월간업무보고': 'monthly-report',
             '회의록': 'meeting',
-            '연차신청서': 'vacation'
+            '연차신청서': 'vacation',
+            '지출승인서': 'expense'
         };
         return categoryMap[documentType] || 'general';
     }
@@ -518,7 +523,8 @@ document.addEventListener('DOMContentLoaded', function() {
             '주간업무보고': 'fa-calendar-week',
             '월간업무보고': 'fa-calendar-alt',
             '회의록': 'fa-users',
-            '연차신청서': 'fa-umbrella-beach'
+            '연차신청서': 'fa-umbrella-beach',
+            '지출승인서': 'fa-won-sign'
         };
         return iconMap[documentType] || 'fa-file-alt';
     }
