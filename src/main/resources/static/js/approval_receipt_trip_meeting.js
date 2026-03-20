@@ -809,6 +809,7 @@ document.addEventListener('DOMContentLoaded', function() {
         };
 
         window.setAuthorInTemplate = function(person) {
+            const prevAuthorId = authorPersonId; // 기존 작성자 ID 보관
             authorPersonId = String(person.id); // 작성자 ID 기록
             meetingAuthorPersonId = String(person.id); // 회의 작성자 ID도 동기화
             const authorField = document.getElementById('common_author');
@@ -825,7 +826,21 @@ document.addEventListener('DOMContentLoaded', function() {
                 meetingAuthorField.value = label ? `${person.name} (${label})` : person.name;
             }
 
-            // 작성자를 출장인원에 자동 등록 (내부인원은 회의참석자로 자동 표시됨)
+            // 기존 작성자가 회의 작성자로도 쓰이지 않는다면 출장인원에서 제거
+            if (prevAuthorId && prevAuthorId !== String(person.id)) {
+                const isStillMeetingAuthor =
+                    String(meetingAuthorPersonId) === prevAuthorId ||
+                    extraMeetings.some(m => m.authorPersonId && String(m.authorPersonId) === prevAuthorId);
+                if (!isStillMeetingAuthor) {
+                    tripPersons = tripPersons.filter(p => String(p.id) !== prevAuthorId);
+                    meetingTripPersons = meetingTripPersons.filter(p => String(p.id) !== prevAuthorId);
+                    extraMeetings.forEach(m => {
+                        m.tripPersonsForMeeting = m.tripPersonsForMeeting.filter(p => String(p.id) !== prevAuthorId);
+                    });
+                }
+            }
+
+            // 새 작성자를 출장인원에 자동 등록 (내부인원은 회의참석자로 자동 표시됨)
             const personEntry = {
                 id: String(person.id),
                 name: person.name,
@@ -4330,10 +4345,34 @@ document.addEventListener('DOMContentLoaded', function() {
     }
 
     window.selectMeetingAuthor = function(id, name, dept, position) {
+        const oldAuthorId = getMtgAuthorId(currentMeetingIdx);
         setMtgAuthorId(currentMeetingIdx, id ? String(id) : null);
         const authorFieldId = currentMeetingIdx === 0 ? 'common_meeting_author' : `meeting_author_${currentMeetingIdx}`;
         const el = document.getElementById(authorFieldId);
         if (el) el.value = name ? `${name} (${position || dept || ''})` : '';
+
+        // 기존 작성자가 다른 회의 블록의 작성자가 아니라면 출장인원에서 제거
+        if (oldAuthorId && String(oldAuthorId) !== String(id)) {
+            const isStillMeetingAuthor =
+                (currentMeetingIdx !== 0 && meetingAuthorPersonId && String(meetingAuthorPersonId) === String(oldAuthorId)) ||
+                extraMeetings.some(m => m.idx !== currentMeetingIdx && m.authorPersonId && String(m.authorPersonId) === String(oldAuthorId));
+
+            if (!isStillMeetingAuthor) {
+                const newTripPersons = tripPersons.filter(p => String(p.id) !== String(oldAuthorId));
+                if (newTripPersons.length !== tripPersons.length && window.replaceTripPersons) {
+                    // 출장 작성자가 동일인이면 함께 초기화
+                    if (authorPersonId && String(authorPersonId) === String(oldAuthorId)) {
+                        authorPersonId = null;
+                        const authorField = document.getElementById('common_author');
+                        if (authorField) authorField.value = '';
+                        document.querySelectorAll('.auto-author').forEach(ae => { ae.value = ''; });
+                        document.querySelectorAll('.auto-reporter').forEach(ae => { ae.textContent = ''; });
+                    }
+                    window.replaceTripPersons(newTripPersons);
+                }
+            }
+        }
+
         if (window.updateMeetingFields) window.updateMeetingFields();
         closeMeetingAuthorModal();
     };
