@@ -3,6 +3,7 @@ document.addEventListener('DOMContentLoaded', async function() {
     // 전역 변수
     let selectedApprovers = [];
     let selectedEmployee = null;
+    let editIdx = null; // 수정 모드일 때 문서 idx
 
     // DOM 요소
     const templateTreeHeaders = document.querySelectorAll('.tree-node-header[data-template]');
@@ -1138,25 +1139,21 @@ document.addEventListener('DOMContentLoaded', async function() {
 
             // 하나라도 입력된 경우 모든 필수 필드 검증
             if (!dateInput || !dateInput.value) {
-                showWarning(`${itemNumber}번 항목의 날짜를 선택해주세요.`);
                 dateInput?.focus();
                 return false;
             }
 
             if (!descInput || !descInput.value.trim()) {
-                showWarning(`${itemNumber}번 항목의 적요를 입력해주세요.`);
                 descInput?.focus();
                 return false;
             }
 
             if (!shopInput || !shopInput.value.trim()) {
-                showWarning(`${itemNumber}번 항목의 상호를 입력해주세요.`);
                 shopInput?.focus();
                 return false;
             }
 
             if (!amountInput || !amountInput.value.trim()) {
-                showWarning(`${itemNumber}번 항목의 금액을 입력해주세요.`);
                 amountInput?.focus();
                 return false;
             }
@@ -1187,9 +1184,14 @@ document.addEventListener('DOMContentLoaded', async function() {
                     // 폼 데이터 수집
                     const formData = collectFormData();
 
-                    // API 호출
-                    const response = await fetch('/api/approval/expense', {
-                        method: 'POST',
+                    // API 호출 (수정: PUT, 신규: POST)
+                    const apiUrl = editIdx
+                        ? `/api/approval/expense/${editIdx}`
+                        : '/api/approval/expense';
+                    const apiMethod = editIdx ? 'PUT' : 'POST';
+
+                    const response = await fetch(apiUrl, {
+                        method: apiMethod,
                         headers: {
                             'Content-Type': 'application/json'
                         },
@@ -1201,10 +1203,14 @@ document.addEventListener('DOMContentLoaded', async function() {
                     }
 
                     const result = await response.json();
-                    console.log('지출승인서 생성 완료:', result);
+                    console.log('지출승인서 저장 완료:', result);
 
                     showSuccess('저장이 완료되었습니다.');
-                    window.location.href = '/approval';
+                    if (editIdx) {
+                        window.location.href = `/approval/expense/detail?idx=${editIdx}`;
+                    } else {
+                        window.location.href = '/approval';
+                    }
                 } catch (error) {
                     console.error('저장 중 오류 발생:', error);
                     showError('저장 중 오류가 발생했습니다. 다시 시도해주세요.');
@@ -2309,6 +2315,113 @@ document.addEventListener('DOMContentLoaded', async function() {
     calculateTotal();
 
     // ============================================
+    // 수정 모드: URL ?idx= 파라미터가 있으면 기존 데이터 로드
+    // ============================================
+    const _urlParams = new URLSearchParams(window.location.search);
+    editIdx = _urlParams.get('idx');
+
+    if (editIdx) {
+        // 페이지 제목 변경
+        const pageTitle = document.querySelector('.page-title');
+        if (pageTitle) pageTitle.innerHTML = '<i class="fas fa-won-sign"></i> 문서 수정 > 지출승인서';
+
+        try {
+            const res = await fetch(`/api/approval/expense/${editIdx}`);
+            if (res.status === 401) { window.location.href = '/login'; return; }
+            if (res.status === 403) {
+                await showWarning('본인 문서만 수정할 수 있습니다.');
+                history.back();
+                return;
+            }
+            if (!res.ok) throw new Error();
+
+            const doc = await res.json();
+
+            // 지출 내역 오름차순 정렬
+            const details = (doc.expenseDetails || []).slice().sort(
+                (a, b) => new Date(a.expenseDate) - new Date(b.expenseDate)
+            );
+
+            // 기존 항목 전부 제거 후 재생성
+            const container = document.getElementById('expenseItemsContainer');
+            if (container && details.length > 0) {
+                container.innerHTML = '';
+
+                details.forEach((d, i) => {
+                    const div = document.createElement('div');
+                    div.className = 'expense-item';
+                    div.innerHTML = `
+                        <div class="expense-item-header">
+                            <span class="expense-item-number">${i + 1}</span>
+                            <button type="button" class="btn-remove-item" onclick="removeExpenseItem(this)">
+                                <i class="fas fa-times"></i>
+                            </button>
+                        </div>
+                        <div class="expense-item-body">
+                            <div class="form-row">
+                                <div class="form-group" style="flex: 0 0 180px;">
+                                    <label><i class="fas fa-calendar-day"></i> 날짜</label>
+                                    <input type="text" class="form-input date-input expense-date-picker" placeholder="날짜 선택" readonly>
+                                </div>
+                                <div class="form-group" style="flex: 1;">
+                                    <label><i class="fas fa-edit"></i> 적요</label>
+                                    <input type="text" class="form-input description-input" placeholder="지출 내역 입력">
+                                </div>
+                            </div>
+                            <div class="form-row">
+                                <div class="form-group" style="flex: 1;">
+                                    <label><i class="fas fa-store"></i> 상호</label>
+                                    <input type="text" class="form-input shop-input" placeholder="상호명 입력">
+                                </div>
+                                <div class="form-group" style="flex: 0 0 120px;">
+                                    <label><i class="fas fa-credit-card"></i> 결제수단</label>
+                                    <select class="form-input payment-method-select">
+                                        <option value="개인카드">개인카드</option>
+                                        <option value="현금">현금</option>
+                                    </select>
+                                </div>
+                                <div class="form-group" style="flex: 0 0 180px;">
+                                    <label><i class="fas fa-won-sign"></i> 금액</label>
+                                    <input type="text" class="form-input amount-input" placeholder="금액 입력" inputmode="numeric">
+                                </div>
+                                <div class="form-group" style="flex: 0 0 150px;">
+                                    <label><i class="fas fa-sticky-note"></i> 비고</label>
+                                    <input type="text" class="form-input note-input" placeholder="">
+                                </div>
+                            </div>
+                        </div>
+                    `;
+                    container.appendChild(div);
+
+                    // 각 필드에 값 세팅 (XSS 방지를 위해 .value로 직접 세팅)
+                    const dateInput   = div.querySelector('.date-input');
+                    const descInput   = div.querySelector('.description-input');
+                    const shopInput   = div.querySelector('.shop-input');
+                    const pmSelect    = div.querySelector('.payment-method-select');
+                    const amountInput = div.querySelector('.amount-input');
+                    const noteInput   = div.querySelector('.note-input');
+
+                    if (dateInput && d.expenseDate) setDateInput(dateInput, d.expenseDate);
+                    if (descInput)   descInput.value   = d.description   || '';
+                    if (shopInput)   shopInput.value   = d.shopName      || '';
+                    if (pmSelect)    pmSelect.value    = d.paymentMethod  || '개인카드';
+                    if (amountInput) amountInput.value = d.amount ? Number(d.amount).toLocaleString('ko-KR') : '';
+                    if (noteInput)   noteInput.value   = d.note          || '';
+                });
+            }
+
+            itemCounter = details.length;
+            updateItemNumbers();
+            calculateTotal();
+            updatePreview();
+            setTimeout(validateRequiredFields, 100);
+
+        } catch (e) {
+            showError('문서를 불러오는 데 실패했습니다.');
+        }
+    }
+
+    // ============================================
     // 필수 필드 검증 + 인쇄 버튼 노출 제어
     // ============================================
 
@@ -2425,6 +2538,7 @@ document.addEventListener('DOMContentLoaded', async function() {
             const isValid = validateRequiredFields();
             if (!isValid) {
                 e.stopImmediatePropagation();
+                showWarning('필수값을 모두 입력해주세요.<br>필수값은 빨간 테두리로 표시 됩니다.');
                 // 화면 상단부터 첫 번째 빈 필드로 스크롤
                 const firstEmpty = document.querySelector('.field-empty');
                 if (firstEmpty) {

@@ -13,6 +13,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.server.ResponseStatusException;
 
 import java.util.List;
 import java.util.stream.Collectors;
@@ -38,27 +39,26 @@ public class ExpenseApprovalController {
             HttpSession session) {
         log.debug("POST /api/approval/expense");
 
-        // 세션에서 로그인한 사용자 IDX 가져오기
-        Long userIdx = (Long) session.getAttribute("userIdx");
-        if (userIdx == null) {
-            // DTO에 userIdx가 있으면 사용, 없으면 기본값
-            userIdx = createDTO.getUserIdx() != null ? createDTO.getUserIdx() : 1L;
-        }
+        Long loginUserIdx = getLoginUserIdx(session);
+        createDTO.setUserIdx(loginUserIdx);
 
-        // DTO에 userIdx 설정
-        createDTO.setUserIdx(userIdx);
-
-        log.debug("Creating expense approval for userIdx: {}", userIdx);
-
-        // 서비스 호출
         ExpenseApproval created = expenseApprovalService.createExpenseApproval(createDTO);
+        return ResponseEntity.status(HttpStatus.CREATED).body(mapToDTO(created));
+    }
 
-        // Entity를 DTO로 변환
-        ExpenseApprovalDTO responseDTO = mapToDTO(created);
+    /**
+     * 지출승인서 목록 조회 (본인 것만)
+     * GET /api/approval/expense
+     */
+    @GetMapping
+    public ResponseEntity<List<ExpenseApprovalDTO>> getMyExpenseApprovals(HttpSession session) {
+        log.debug("GET /api/approval/expense");
 
-        log.debug("Expense approval created successfully - IDX: {}", created.getIdx());
+        Long loginUserIdx = getLoginUserIdx(session);
+        List<ExpenseApproval> list = expenseApprovalService.getExpenseApprovalsByUser(loginUserIdx);
+        List<ExpenseApprovalDTO> result = list.stream().map(this::mapToDTO).collect(Collectors.toList());
 
-        return ResponseEntity.status(HttpStatus.CREATED).body(responseDTO);
+        return ResponseEntity.ok(result);
     }
 
     /**
@@ -66,52 +66,70 @@ public class ExpenseApprovalController {
      * GET /api/approval/expense/{idx}
      */
     @GetMapping("/{idx}")
-    public ResponseEntity<ExpenseApprovalDTO> getExpenseApproval(@PathVariable Long idx) {
+    public ResponseEntity<ExpenseApprovalDTO> getExpenseApproval(
+            @PathVariable Long idx,
+            HttpSession session) {
         log.debug("GET /api/approval/expense/{}", idx);
 
+        Long loginUserIdx = getLoginUserIdx(session);
         ExpenseApproval expenseApproval = expenseApprovalService.getExpenseApprovalWithDetails(idx);
-        ExpenseApprovalDTO responseDTO = mapToDTO(expenseApproval);
 
-        return ResponseEntity.ok(responseDTO);
+        // 본인 문서 또는 관리자만 조회 가능 (현재는 본인만)
+        if (!expenseApproval.getUserIdx().equals(loginUserIdx)) {
+            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "본인 문서만 조회할 수 있습니다.");
+        }
+
+        return ResponseEntity.ok(mapToDTO(expenseApproval));
     }
 
     /**
-     * 사용자별 지출승인서 목록 조회
-     * GET /api/approval/expense/user/{userIdx}
+     * 지출승인서 수정
+     * PUT /api/approval/expense/{idx}
      */
-    @GetMapping("/user/{userIdx}")
-    public ResponseEntity<List<ExpenseApprovalDTO>> getExpenseApprovalsByUser(@PathVariable Long userIdx) {
-        log.debug("GET /api/approval/expense/user/{}", userIdx);
+    @PutMapping("/{idx}")
+    public ResponseEntity<ExpenseApprovalDTO> updateExpenseApproval(
+            @PathVariable Long idx,
+            @Valid @RequestBody ExpenseApprovalCreateDTO updateDTO,
+            HttpSession session) {
+        log.debug("PUT /api/approval/expense/{}", idx);
 
-        List<ExpenseApproval> expenseApprovals = expenseApprovalService.getExpenseApprovalsByUser(userIdx);
-        List<ExpenseApprovalDTO> responseDTOs = expenseApprovals.stream()
-                .map(this::mapToDTO)
-                .collect(Collectors.toList());
+        Long loginUserIdx = getLoginUserIdx(session);
+        ExpenseApproval updated = expenseApprovalService.updateExpenseApproval(idx, updateDTO, loginUserIdx);
 
-        return ResponseEntity.ok(responseDTOs);
+        return ResponseEntity.ok(mapToDTO(updated));
     }
 
     /**
-     * 지출승인서 삭제
+     * 지출승인서 삭제 (soft delete)
      * DELETE /api/approval/expense/{idx}
      */
     @DeleteMapping("/{idx}")
-    public ResponseEntity<Void> deleteExpenseApproval(@PathVariable Long idx) {
+    public ResponseEntity<Void> deleteExpenseApproval(
+            @PathVariable Long idx,
+            HttpSession session) {
         log.debug("DELETE /api/approval/expense/{}", idx);
 
-        expenseApprovalService.deleteExpenseApproval(idx);
+        Long loginUserIdx = getLoginUserIdx(session);
+        expenseApprovalService.deleteExpenseApproval(idx, loginUserIdx);
 
         return ResponseEntity.noContent().build();
     }
 
-    /**
-     * ExpenseApproval Entity를 ExpenseApprovalDTO로 변환
-     */
+    // ── private helpers ────────────────────────────────────────────────────
+
+    private Long getLoginUserIdx(HttpSession session) {
+        Long userIdx = (Long) session.getAttribute("userIdx");
+        if (userIdx == null) {
+            throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "로그인이 필요합니다.");
+        }
+        return userIdx;
+    }
+
     private ExpenseApprovalDTO mapToDTO(ExpenseApproval entity) {
         List<ExpenseDetailDTO> detailDTOs = entity.getExpenseDetails() != null
                 ? entity.getExpenseDetails().stream()
-                .map(this::mapDetailToDTO)
-                .collect(Collectors.toList())
+                        .map(this::mapDetailToDTO)
+                        .collect(Collectors.toList())
                 : List.of();
 
         return ExpenseApprovalDTO.builder()
@@ -131,9 +149,6 @@ public class ExpenseApprovalController {
                 .build();
     }
 
-    /**
-     * ExpenseDetail Entity를 ExpenseDetailDTO로 변환
-     */
     private ExpenseDetailDTO mapDetailToDTO(ExpenseDetail entity) {
         return ExpenseDetailDTO.builder()
                 .expenseDate(entity.getExpenseDate())
