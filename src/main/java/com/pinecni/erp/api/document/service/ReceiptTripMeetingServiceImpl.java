@@ -123,6 +123,7 @@ public class ReceiptTripMeetingServiceImpl implements ReceiptTripMeetingService 
                 .drafterUserIdx(dto.getDrafterUserIdx())
                 // 출장
                 .tripDate(dto.getTripDate())
+                .requisitionDate(dto.getRequisitionDate())
                 .duration(dto.getDuration() != null ? dto.getDuration() : 0)
                 .location(dto.getLocation())
                 .totalFee(totalFee)
@@ -288,6 +289,7 @@ public class ReceiptTripMeetingServiceImpl implements ReceiptTripMeetingService 
             entity.setDrafterUserIdx(updateDTO.getDrafterUserIdx());
         }
         entity.setTripDate(updateDTO.getTripDate());
+        entity.setRequisitionDate(updateDTO.getRequisitionDate());
         entity.setDuration(updateDTO.getDuration() != null ? updateDTO.getDuration() : 0);
         entity.setLocation(updateDTO.getLocation());
         entity.setPurpose(updateDTO.getPurpose());
@@ -895,6 +897,7 @@ public class ReceiptTripMeetingServiceImpl implements ReceiptTripMeetingService 
                 .createdAt(entity.getCreatedAt())
                 .updatedAt(entity.getUpdatedAt())
                 .tripDate(entity.getTripDate())
+                .requisitionDate(entity.getRequisitionDate())
                 .duration(entity.getDuration())
                 .location(entity.getLocation())
                 .purpose(entity.getPurpose())
@@ -929,6 +932,7 @@ public class ReceiptTripMeetingServiceImpl implements ReceiptTripMeetingService 
                 .createdAt(entity.getCreatedAt())
                 .updatedAt(entity.getUpdatedAt())
                 .tripDate(entity.getTripDate())
+                .requisitionDate(entity.getRequisitionDate())
                 .duration(entity.getDuration())
                 .location(entity.getLocation())
                 .totalFee(entity.getTotalFee())

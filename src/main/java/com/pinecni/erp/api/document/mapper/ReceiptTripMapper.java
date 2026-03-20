@@ -85,6 +85,7 @@ public class ReceiptTripMapper {
                 .authorDept(authorDept)
                 .authorDeptName(authorDeptName)
                 .tripDate(entity.getTripDate())
+                .requisitionDate(entity.getRequisitionDate())
                 .duration(entity.getDuration())
                 .location(entity.getLocation())
                 .totalFee(entity.getTotalFee())
@@ -111,6 +112,7 @@ public class ReceiptTripMapper {
                 .cardIdx(dto.getCardIdx())
                 .drafterUserIdx(dto.getDrafterUserIdx())
                 .tripDate(dto.getTripDate())
+                .requisitionDate(dto.getRequisitionDate())
                 .duration(dto.getDuration())
                 .location(dto.getLocation())
                 .totalFee(totalFee)
@@ -130,6 +132,7 @@ public class ReceiptTripMapper {
         if (dto.getCardIdx() != null)       entity.setCardIdx(dto.getCardIdx());
         if (dto.getDrafterUserIdx() != null) entity.setDrafterUserIdx(dto.getDrafterUserIdx());
         if (dto.getTripDate() != null)      entity.setTripDate(dto.getTripDate());
+        entity.setRequisitionDate(dto.getRequisitionDate());
         if (dto.getDuration() != null)   entity.setDuration(dto.getDuration());
         if (dto.getLocation() != null)   entity.setLocation(dto.getLocation());
         if (dto.getPurpose() != null)    entity.setPurpose(dto.getPurpose());

@@ -37,6 +37,7 @@ public class ReceiptTripMeetingResponseDTO {
 
     // ── 출장 정보 ──────────────────────────────────────────────────
     private LocalDate tripDate;
+    private LocalDate requisitionDate;
     private Integer duration;
     private String location;
     private String purpose;

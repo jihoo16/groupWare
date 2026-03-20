@@ -1,4 +1,8 @@
 // 연구비 증빙 - 출장+회의 통합 페이지 JavaScript
+function getTodayString() {
+    return new Date().toISOString().slice(0, 10);
+}
+
 document.addEventListener('DOMContentLoaded', function() {
     // 전역 변수
     let selectedMeetingReceiptFiles = [];
@@ -1720,6 +1724,14 @@ document.addEventListener('DOMContentLoaded', function() {
                 field.textContent = writeFormatted;
             });
 
+            // 품의서 작성날짜 입력 필드 연동 (default = writeDate, max = writeDate)
+            const requisitionInput = document.getElementById('common_requisition_date');
+            if (requisitionInput) {
+                const writeDateStr = `${writeYear}-${writeMonth}-${writeDay}`;
+                requisitionInput.value = writeDateStr;
+                requisitionInput.max = writeDateStr;
+            }
+
             // 날짜별 비용 입력 테이블 생성 (동기 — await 이전에 실행해야 복원 로직과 순서 보장)
             generateDailyExpenseRows();
 
@@ -2991,6 +3003,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 drafterUserIdx:        authorPersonId ? parseInt(authorPersonId) : null,
                 meetingDrafterUserIdx: meetingAuthorPersonId ? parseInt(meetingAuthorPersonId) : null,
                 tripDate:         tripDate,
+                requisitionDate:  document.getElementById('common_requisition_date')?.value || null,
                 duration:         duration,
                 location:         document.getElementById('common_location')?.value,
                 dailyExpenses:    dailyExpensesPayload,
@@ -5107,6 +5120,12 @@ document.addEventListener('DOMContentLoaded', function() {
             }
         }
 
+        // 품의서 날짜 복원
+        const requisitionDateInputPop = document.getElementById('common_requisition_date');
+        if (requisitionDateInputPop) {
+            requisitionDateInputPop.value = data.requisitionDate || getTodayString();
+        }
+
         // 5. 회의 날짜 (select)
         if (data.eventDate) {
             const meetingDateEl = document.getElementById('common_meeting_date');
@@ -5685,6 +5704,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 drafterUserIdx:        authorPersonId ? parseInt(authorPersonId) : null,
                 meetingDrafterUserIdx: meetingAuthorPersonId ? parseInt(meetingAuthorPersonId) : null,
                 tripDate:    tripDateU,
+                requisitionDate: document.getElementById('common_requisition_date')?.value || null,
                 duration:    durationU,
                 location:    document.getElementById('common_location')?.value,
                 dailyExpenses: dailyExpensesPayloadU,
@@ -5800,5 +5820,10 @@ document.addEventListener('DOMContentLoaded', function() {
     } else {
         // 신규작성 시 초기 필수 필드 빨간색 표시
         setTimeout(() => validateRequiredFields(), 300);
+        // 품의서 날짜: 신규 작성 시 오늘 날짜 기본 세팅
+        const requisitionDateInput = document.getElementById('common_requisition_date');
+        if (requisitionDateInput && !requisitionDateInput.value) {
+            requisitionDateInput.value = getTodayString();
+        }
     }
 });

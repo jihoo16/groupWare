@@ -1,5 +1,9 @@
 // 연구비 증빙 - 출장 페이지 JavaScript
 
+function getTodayString() {
+    return new Date().toISOString().slice(0, 10);
+}
+
 document.addEventListener('DOMContentLoaded', async function() {
     // 전역 변수
     let selectedApprovers = [];
@@ -217,6 +221,8 @@ document.addEventListener('DOMContentLoaded', async function() {
             icon: 'success',
             title: '성공',
             text: message,
+            timer: 2000,
+            timerProgressBar: true,
             confirmButtonText: '확인'
         });
     }
@@ -2212,6 +2218,14 @@ document.addEventListener('DOMContentLoaded', async function() {
                 field.textContent = writeFormatted;
             });
 
+            // 품의서 작성날짜 입력 필드 연동 (default = writeDate, max = writeDate)
+            const requisitionInput = document.getElementById('trip_requisition_date');
+            if (requisitionInput) {
+                const writeDateStr = `${writeYear}-${writeMonth}-${writeDay}`;
+                requisitionInput.value = writeDateStr;
+                requisitionInput.max = writeDateStr;
+            }
+
             // 날짜별 비용 입력 테이블 생성 (동기 — await 이전에 실행해야 복원 로직과 순서 보장)
             generateDailyExpenseRows();
 
@@ -2802,6 +2816,7 @@ document.addEventListener('DOMContentLoaded', async function() {
                 projectIdx: parseInt(selectedProjectIdxInput.value),
                 drafterUserIdx: drafterIdxSave,
                 tripDate: dateInput.value,
+                requisitionDate: document.getElementById('trip_requisition_date')?.value || null,
                 duration: tripDurationEl ? parseInt(tripDurationEl.value) || 0 : 0,
                 location: locationInput.value,
                 transportationFee: totalTransportFee || null,
@@ -2838,7 +2853,8 @@ document.addEventListener('DOMContentLoaded', async function() {
                         text: '출장 정보가 저장되었습니다.',
                         timer: 3000,
                         timerProgressBar: true,
-                        showConfirmButton: false,
+                        showConfirmButton: true,
+                        confirmButtonText: '확인',
                         allowOutsideClick: false
                     });
                     popupAwareRedirect('/project/documents');
@@ -3562,6 +3578,12 @@ document.addEventListener('DOMContentLoaded', async function() {
             tripDate.value = data.tripDate;
         }
 
+        // 품의서 날짜 복원
+        const requisitionDateInputPop = document.getElementById('trip_requisition_date');
+        if (requisitionDateInputPop) {
+            requisitionDateInputPop.value = data.requisitionDate || getTodayString();
+        }
+
         // 출장 기간 (duration) 복원
         const tripDuration = document.getElementById('trip_duration');
         if (tripDuration) {
@@ -4142,6 +4164,7 @@ document.addEventListener('DOMContentLoaded', async function() {
                 projectIdx: parseInt(selectedProjectIdxInput?.value) || null,
                 drafterUserIdx: drafterIdxUpd,
                 tripDate: dateInput.value,
+                requisitionDate: document.getElementById('trip_requisition_date')?.value || null,
                 duration: tripDurationEl ? parseInt(tripDurationEl.value) || 0 : 0,
                 location: locationInput.value,
                 transportationFee: totalTransportFee || null,
@@ -4181,7 +4204,8 @@ document.addEventListener('DOMContentLoaded', async function() {
                         text: '출장 정보가 수정되었습니다.',
                         timer: 3000,
                         timerProgressBar: true,
-                        showConfirmButton: false,
+                        showConfirmButton: true,
+                        confirmButtonText: '확인',
                         allowOutsideClick: false
                     });
                     window.location.reload();
@@ -4233,4 +4257,10 @@ document.addEventListener('DOMContentLoaded', async function() {
             tripProject.style.borderColor = '#ef5350';
         }
     }, 500);
+
+    // 품의서 날짜: 신규 작성 시 오늘 날짜 기본 세팅
+    const requisitionDateInput = document.getElementById('trip_requisition_date');
+    if (requisitionDateInput && !requisitionDateInput.value) {
+        requisitionDateInput.value = getTodayString();
+    }
 });

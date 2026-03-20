@@ -58,6 +58,10 @@ public class ReceiptTripMeeting {
     @Column(name = "trip_date")
     private LocalDate tripDate;
 
+    /** 품의서 날짜 (출장 예매 기준일, nullable) */
+    @Column(name = "requisition_date")
+    private LocalDate requisitionDate;
+
     /** 출장 박 수 (0 = 당일) */
     @Column(name = "duration", nullable = false)
     private Integer duration = 0;

@@ -68,6 +68,10 @@ public class ReceiptTrip {
     @Column(name = "duration")
     private Integer duration;
 
+    /** 품의서 날짜 (출장 예매 기준일, nullable) */
+    @Column(name = "requisition_date")
+    private LocalDate requisitionDate;
+
     @Column(name = "created_at", updatable = false)
     private LocalDateTime createdAt;
 

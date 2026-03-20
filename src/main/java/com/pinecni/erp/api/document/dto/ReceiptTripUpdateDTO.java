@@ -30,6 +30,9 @@ public class ReceiptTripUpdateDTO {
     /** 출장 일자 */
     private LocalDate tripDate;
 
+    /** 품의서 날짜 */
+    private LocalDate requisitionDate;
+
     /** 출장 기간 (일수, 0=당일) */
     private Integer duration;
 

@@ -36,6 +36,9 @@ public class ReceiptTripMeetingCreateDTO {
     /** 출장 시작일 */
     private LocalDate tripDate;
 
+    /** 품의서 날짜 */
+    private LocalDate requisitionDate;
+
     /** 출장 박 수 (0=당일) */
     private Integer duration;
 
