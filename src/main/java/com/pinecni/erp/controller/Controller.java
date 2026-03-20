@@ -202,6 +202,11 @@ public class Controller {
         return "approval_expense";
     }
 
+    @GetMapping("/approval/expense/detail")
+    public String approvalExpenseDetail() {
+        return "approval_expense_detail";
+    }
+
     // 구매요청서 - 추후 구현 예정
     /*
     @GetMapping("/approval/purchase")
