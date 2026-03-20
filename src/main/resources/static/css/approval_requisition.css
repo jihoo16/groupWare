@@ -1,0 +1,948 @@
+/* ==========================================
+   지출품의서 — approval_expense.css 패턴 통일
+   ========================================== */
+
+* {
+    -webkit-tap-highlight-color: transparent;
+    outline: none;
+    box-sizing: border-box;
+}
+*:focus { outline: none !important; }
+*::before, *::after { box-sizing: border-box; }
+::selection { background: rgba(102, 126, 234, 0.2); color: inherit; }
+button { -webkit-user-select: none; user-select: none; }
+[title]:hover::after, [title]:hover::before { display: none !important; content: none !important; }
+button:focus, a:focus, div:focus { outline: none !important; box-shadow: none !important; }
+
+/* ==========================================
+   레이아웃
+   ========================================== */
+
+.write-container { padding: 20px 20px 10px 20px; }
+
+.write-layout {
+    display: grid;
+    grid-template-columns: 280px 1fr;
+    gap: 21px;
+    height: calc(100vh - 100px);
+}
+
+/* ==========================================
+   템플릿 사이드바 (approval_expense.css 동일)
+   ========================================== */
+
+.template-sidebar {
+    background: white;
+    border-radius: 12px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+    overflow-y: visible;
+    position: sticky;
+    top: 20px;
+}
+
+.sidebar-section { padding: 15px; }
+
+.sidebar-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 15px;
+}
+
+.sidebar-title {
+    font-size: 12.9px;
+    font-weight: 700;
+    color: #333;
+    margin: 0;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.sidebar-title i { font-size: 16px; color: #667eea; }
+
+.btn-toggle-all {
+    background: none;
+    border: none;
+    color: #667eea;
+    cursor: pointer;
+    font-size: 16px;
+    padding: 4px;
+    transition: all 0.2s ease;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.btn-toggle-all:hover { color: #5568d3; transform: scale(1.1); }
+
+/* 사이드바 메뉴 — 모두 .template-sidebar 하위로 스코핑 */
+.template-sidebar .sidebar-menu {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.template-sidebar .menu-category {
+    border-bottom: 1px solid #f0f0f0;
+    padding-bottom: 8px;
+    margin-bottom: 8px;
+}
+
+.template-sidebar .menu-category:last-child {
+    border-bottom: none;
+    margin-bottom: 0;
+}
+
+.template-sidebar .category-header {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 8px 12px;
+    font-size: 12px;
+    font-weight: 600;
+    color: #667eea;
+    margin-bottom: 4px;
+    cursor: pointer;
+    border-radius: 6px;
+    transition: all 0.2s ease;
+}
+
+.template-sidebar .category-header:hover { background: #f5f7fa; }
+.template-sidebar .category-header i { font-size: 14px; }
+
+.template-sidebar .category-toggle {
+    transition: transform 0.3s ease;
+    font-size: 12px !important;
+}
+
+.template-sidebar .menu-category.expanded .category-toggle {
+    transform: rotate(90deg);
+}
+
+.template-sidebar .category-badge {
+    margin-left: auto;
+    background: #e3f2fd;
+    color: #1976d2;
+    padding: 2px 6px;
+    border-radius: 10px;
+    font-size: 10px;
+    font-weight: 600;
+}
+
+.template-sidebar .category-items {
+    max-height: 500px;
+    overflow: hidden;
+    transition: max-height 0.3s ease;
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+}
+
+.template-sidebar .menu-category:not(.expanded) .category-items {
+    max-height: 0;
+}
+
+.template-sidebar .menu-item {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 10px 16px;
+    margin-left: 8px;
+    font-size: 13px;
+    color: #333;
+    text-decoration: none;
+    border-radius: 8px;
+    transition: all 0.2s ease;
+    cursor: pointer;
+}
+
+.template-sidebar .menu-item i {
+    font-size: 14px;
+    color: #4facfe;
+    width: 20px;
+    text-align: center;
+}
+
+.template-sidebar .menu-item:hover { background: #f5f7fa; }
+
+.template-sidebar .menu-item.active {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+    font-weight: 600;
+}
+
+.template-sidebar .menu-item.active i { color: white; }
+
+/* ==========================================
+   버튼 (approval_expense.css 동일)
+   ========================================== */
+
+.btn-primary,
+.btn-secondary,
+.btn-outline {
+    padding: 12px 24px;
+    border-radius: 8px;
+    font-size: 14px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s;
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    border: none;
+}
+
+.btn-lg { padding: 14px 28px; font-size: 15px; }
+
+.btn-primary {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+    box-shadow: 0 4px 12px rgba(102, 126, 234, 0.3);
+}
+
+.btn-primary:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 16px rgba(102, 126, 234, 0.4);
+}
+
+.btn-secondary { background: #f1f5f9; color: #475569; }
+.btn-secondary:hover { background: #e2e8f0; }
+
+.btn-outline { background: white; border: 2px solid #667eea; color: #667eea; }
+.btn-outline:hover { background: #667eea; color: white; }
+
+/* 저장 버튼 툴팁 */
+.btn-with-tooltip {
+    position: relative;
+}
+
+.btn-with-tooltip .tooltip-text {
+    visibility: hidden;
+    opacity: 0;
+    position: absolute;
+    top: calc(100% + 8px);
+    right: 0;
+    background: #1e293b;
+    color: #fff;
+    font-size: 12px;
+    font-weight: 500;
+    line-height: 1.6;
+    padding: 8px 12px;
+    border-radius: 8px;
+    white-space: nowrap;
+    z-index: 100;
+    pointer-events: none;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.25);
+    transition: opacity 0.2s ease, visibility 0.2s ease;
+}
+
+.btn-with-tooltip .tooltip-text::before {
+    content: '';
+    position: absolute;
+    top: -5px;
+    right: 18px;
+    border-left: 5px solid transparent;
+    border-right: 5px solid transparent;
+    border-bottom: 5px solid #1e293b;
+}
+
+.btn-with-tooltip:hover .tooltip-text {
+    visibility: visible;
+    opacity: 1;
+}
+
+/* ==========================================
+   에디터 영역 — 단일 흰색 카드 (approval_expense 동일)
+   ========================================== */
+
+.editor-area {
+    background: white;
+    border-radius: 12px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+    padding: 24px;
+    overflow-y: auto;
+    display: flex;
+    flex-direction: column;
+    gap: 21px;
+    align-self: start;
+}
+
+.editor-area::-webkit-scrollbar { width: 6px; }
+.editor-area::-webkit-scrollbar-track { background: transparent; border-radius: 3px; }
+.editor-area::-webkit-scrollbar-thumb { background: transparent; border-radius: 3px; }
+.editor-area:hover::-webkit-scrollbar-thumb { background: #ccc; }
+.editor-area::-webkit-scrollbar-thumb:hover { background: #999 !important; }
+
+/* ==========================================
+   입력 섹션 — 배경/그림자 없음, 평평하게
+   ========================================== */
+
+.input-area {
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+    padding-bottom: 20px;
+}
+
+.input-section { background: white; }
+
+.section-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 16px;
+    padding-bottom: 10px;
+    border-bottom: 2px solid #f0f0f0;
+}
+
+.section-header h3 {
+    font-size: 14px;
+    font-weight: 700;
+    color: #1a1a1a;
+    margin: 0;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.section-header h3 i { font-size: 15px; color: #667eea; }
+
+.required-mark { color: #e74c3c; font-weight: 700; }
+
+/* ==========================================
+   폼 요소 (approval_expense 동일)
+   ========================================== */
+
+.form-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 14px;
+}
+
+.form-group {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+}
+
+.form-group label {
+    font-size: 13px;
+    font-weight: 600;
+    color: #334155;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.form-group label i { color: #667eea; font-size: 13px; }
+
+/* 기본 정보 — 텍스트 표시만, 입력창 아님 */
+.form-text-display {
+    padding: 10px 0;
+    font-size: 14px;
+    color: #1e293b;
+    font-weight: 600;
+    min-height: 41px;
+    display: flex;
+    align-items: center;
+}
+
+.form-input,
+.form-textarea {
+    padding: 10px 14px;
+    border: 1px solid #e2e8f0;
+    border-radius: 6px;
+    font-size: 13.5px;
+    color: #334155;
+    transition: all 0.2s;
+    font-family: inherit;
+    background: white;
+    width: 100%;
+}
+
+.form-input:hover { border-color: #cbd5e1; }
+
+.form-input:focus,
+.form-textarea:focus {
+    border-color: #667eea;
+    box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+    outline: none;
+}
+
+.form-input[readonly] {
+    background: #f8fafc;
+    color: #64748b;
+    cursor: pointer;
+}
+
+.form-textarea {
+    resize: vertical;
+    min-height: 80px;
+    line-height: 1.5;
+}
+
+.form-row {
+    display: flex;
+    gap: 12px;
+    margin-bottom: 12px;
+}
+
+.form-row:last-child { margin-bottom: 0; }
+
+/* 지급 종류 라디오 */
+.payment-type-group {
+    display: flex;
+    gap: 24px;
+    align-items: center;
+    padding: 10px 14px;
+    background: #f8fafc;
+    border: 1px solid #e2e8f0;
+    border-radius: 6px;
+    min-height: 44px;
+}
+
+.radio-label {
+    display: flex;
+    align-items: center;
+    gap: 7px;
+    cursor: pointer;
+    font-size: 13.5px;
+    color: #334155;
+    font-weight: 500;
+    user-select: none;
+}
+
+.radio-label input[type="radio"] { display: none; }
+
+.radio-custom {
+    width: 17px;
+    height: 17px;
+    border: 2px solid #cbd5e1;
+    border-radius: 50%;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.2s;
+    flex-shrink: 0;
+}
+
+.radio-label input[type="radio"]:checked + .radio-custom {
+    border-color: #667eea;
+    background: #667eea;
+    box-shadow: inset 0 0 0 3px white;
+}
+
+/* ==========================================
+   지출 예정 내역 — expense-item 패턴 동일
+   ========================================== */
+
+.btn-add-row {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+    border: none;
+    padding: 8px 16px;
+    border-radius: 6px;
+    font-size: 13px;
+    font-weight: 600;
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    transition: all 0.2s;
+}
+
+.btn-add-row:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
+}
+
+.expense-items-container {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+}
+
+.expense-item {
+    background: #f8fafc;
+    border: 1px solid #e2e8f0;
+    border-radius: 8px;
+    padding: 16px;
+    transition: all 0.2s;
+}
+
+.expense-item:hover {
+    border-color: #cbd5e1;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+}
+
+.expense-item-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 12px;
+}
+
+.expense-item-number {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 28px;
+    height: 28px;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+    border-radius: 50%;
+    font-size: 13px;
+    font-weight: 700;
+}
+
+.btn-remove-item {
+    background: #ef4444;
+    color: white;
+    border: none;
+    width: 28px;
+    height: 28px;
+    border-radius: 50%;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 14px;
+    transition: all 0.2s;
+}
+
+.btn-remove-item:hover { background: #dc2626; transform: scale(1.1); }
+
+/* 합계 — 그라디언트 배경 */
+.total-amount-display {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+    padding: 16px 20px;
+    border-radius: 8px;
+    margin-top: 16px;
+}
+
+.total-amount-display label { font-size: 15px; font-weight: 600; }
+.total-amount-display .total-amount { font-size: 20px; font-weight: 700; }
+
+/* ==========================================
+   공식 문서 미리보기 토글 — 그라디언트 버튼
+   ========================================== */
+
+.document-preview-toggle { margin-top: 20px; }
+
+.toggle-btn {
+    width: 100%;
+    padding: 14px 20px;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+    border: none;
+    border-radius: 10px;
+    font-size: 14px;
+    font-weight: 600;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+    transition: all 0.3s;
+    box-shadow: 0 4px 12px rgba(102, 126, 234, 0.3);
+}
+
+.toggle-btn:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 16px rgba(102, 126, 234, 0.4);
+}
+
+.toggle-icon { transition: transform 0.3s; }
+.toggle-btn.active .toggle-icon { transform: rotate(180deg); }
+
+/* ==========================================
+   공식 문서 미리보기 영역 (approval_expense 동일)
+   ========================================== */
+
+.document-form-wrapper {
+    margin-top: 16px;
+    margin-bottom: 0;
+    background: white;
+    border-radius: 12px;
+    padding: 30px;
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.08);
+    max-height: 5000px;
+    transition: all 0.4s ease-in-out;
+    opacity: 1;
+}
+
+.document-form-wrapper.collapsed {
+    max-height: 0;
+    padding: 0;
+    margin-top: 0;
+    margin-bottom: 0;
+    opacity: 0;
+    box-shadow: none;
+    overflow: hidden;
+}
+
+.document-form {
+    width: 100%;
+    max-width: 800px;
+    margin: 0 auto;
+    font-family: '맑은 고딕', 'Malgun Gothic', sans-serif;
+    font-size: 12.5px;
+    color: #111;
+    transition: opacity 0.3s ease;
+}
+
+.document-form-wrapper.collapsed .document-form { opacity: 0; }
+
+.empty-row {
+    text-align: center;
+    color: #94a3b8;
+    font-style: italic;
+    padding: 20px !important;
+}
+
+/* ==========================================
+   공식 문서 내부 — expense-* 클래스 재사용 + 품의서 전용
+   ========================================== */
+
+/* 제목 (expense-doc-title 동일) */
+.req-doc-title {
+    font-size: 28px;
+    font-weight: 700;
+    color: #333;
+    margin: 0 0 10px 0;
+    letter-spacing: 8px;
+}
+
+/* 기본 정보 테이블 (expense-info-table 동일) */
+.expense-info-table {
+    width: 100%;
+    border-collapse: collapse;
+    border: 1px solid #333;
+    margin-bottom: 15px;
+}
+
+.expense-info-table th,
+.expense-info-table td {
+    border: 1px solid #333;
+    padding: 8px 12px;
+    font-size: 14px;
+}
+
+.expense-info-table th {
+    background: #f5f5f5;
+    font-weight: 700;
+    text-align: center;
+    white-space: nowrap;
+}
+
+/* 내역 테이블 (expense-detail-table 동일) */
+.expense-detail-section { margin-bottom: 0; }
+
+.expense-detail-table {
+    width: 100%;
+    border-collapse: collapse;
+    border: 1px solid #333;
+}
+
+.expense-detail-table thead th {
+    background: #f5f5f5;
+    font-weight: 700;
+    border: 1px solid #333;
+    padding: 8px 4px;
+    font-size: 13px;
+    text-align: center;
+    white-space: nowrap;
+}
+
+.expense-detail-table tbody td {
+    border: 1px solid #333;
+    padding: 7px 6px;
+    font-size: 13px;
+    text-align: center;
+}
+
+/* 계 / 지급종류 / 특의사항 / 작성자 — 단일 통합 테이블 */
+.req-bottom-table {
+    width: 100%;
+    border-collapse: collapse;
+    border: 1px solid #333;
+    margin-top: -1px;
+    font-size: 13px;
+}
+
+.req-bottom-table th,
+.req-bottom-table td {
+    border: 1px solid #333;
+    padding: 8px 12px;
+    font-size: 13px;
+}
+
+.req-bottom-table th {
+    background: #f5f5f5;
+    font-weight: 700;
+    text-align: center;
+    white-space: nowrap;
+}
+
+/* 빈 행 */
+.empty-row {
+    text-align: center;
+    color: #94a3b8;
+    font-style: italic;
+    padding: 20px !important;
+}
+
+/* 회사명 */
+.req-company-name {
+    text-align: right;
+    font-size: 12px;
+    font-weight: 600;
+    color: #333;
+    margin-top: 10px;
+}
+
+/* ==========================================
+   날짜 선택 모달 (approval_expense.css 완전 동일)
+   ========================================== */
+
+.date-modal {
+    display: none;
+    position: fixed;
+    top: 0; left: 0;
+    width: 100%; height: 100%;
+    background: rgba(0, 0, 0, 0.5);
+    backdrop-filter: blur(4px);
+    z-index: 10000;
+    align-items: center;
+    justify-content: center;
+}
+
+.date-modal.show { display: flex; }
+
+.date-modal-content {
+    background: white;
+    border-radius: 16px;
+    width: 90%;
+    max-width: 400px;
+    box-shadow: 0 10px 40px rgba(0, 0, 0, 0.2);
+    animation: slideUp 0.3s ease;
+    overflow: hidden;
+}
+
+.date-modal-header {
+    padding: 20px 24px;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.date-modal-header h3 {
+    margin: 0;
+    font-size: 18px;
+    font-weight: 700;
+    color: white;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.date-modal-close {
+    background: rgba(255, 255, 255, 0.2);
+    border: none;
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: white;
+    font-size: 14px;
+    transition: all 0.2s ease;
+}
+
+.date-modal-close:hover { background: rgba(255, 255, 255, 0.3); transform: scale(1.1); }
+
+.date-modal-body { padding: 24px; }
+
+.date-calendar-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 16px;
+}
+
+.date-calendar-title { margin: 0; font-size: 16px; font-weight: 700; color: #333; }
+
+.date-calendar-nav {
+    width: 36px;
+    height: 36px;
+    border-radius: 8px;
+    border: 1px solid #dee2e6;
+    background: white;
+    color: #495057;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.date-calendar-nav:hover {
+    background: #667eea;
+    color: white;
+    border-color: #667eea;
+    transform: scale(1.05);
+}
+
+.date-calendar-weekdays {
+    display: grid;
+    grid-template-columns: repeat(7, 1fr);
+    gap: 4px;
+    margin-bottom: 8px;
+}
+
+.date-weekday {
+    text-align: center;
+    font-size: 13px;
+    font-weight: 600;
+    color: #495057;
+    padding: 8px 0;
+}
+
+.date-weekday.sun { color: #dc3545; }
+.date-weekday.sat { color: #0d6efd; }
+
+.date-calendar-days {
+    display: grid;
+    grid-template-columns: repeat(7, 1fr);
+    gap: 4px;
+}
+
+/* approval_expense와 동일: date-calendar-day */
+.date-calendar-day {
+    aspect-ratio: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 8px;
+    font-size: 14px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    background: white;
+    border: 2px solid transparent;
+    position: relative;
+}
+
+.date-calendar-day:hover:not(.disabled):not(.future-date) {
+    background: #e7f3ff;
+    transform: scale(1.05);
+    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.1);
+}
+
+.date-calendar-day.other-month { color: #adb5bd; cursor: pointer; }
+.date-calendar-day.other-month.future-date { cursor: not-allowed; }
+
+.date-calendar-day.today { font-weight: 700; color: #667eea; }
+
+.date-calendar-day.today::before {
+    content: '';
+    position: absolute;
+    bottom: 4px;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 4px;
+    height: 4px;
+    border-radius: 50%;
+    background: #667eea;
+    z-index: 1;
+}
+
+.date-calendar-day.sunday { color: #dc3545; }
+.date-calendar-day.saturday { color: #0d6efd; }
+
+.date-calendar-day.holiday { color: #dc3545; background: #fff5f5; }
+.date-calendar-day.holiday:hover:not(.future-date) { background: #ffe0e0 !important; }
+.date-calendar-day.other-month.holiday { color: rgba(220, 53, 69, 0.6); background: rgba(255, 245, 245, 0.3); }
+
+.date-calendar-day.vacation-day {
+    background: #f3e8ff;
+    border: 1px solid #c084fc;
+    cursor: not-allowed;
+    position: relative;
+    opacity: 0.7;
+}
+
+.date-calendar-day.vacation-day:hover {
+    background: #f3e8ff !important;
+    transform: none !important;
+    box-shadow: none !important;
+    cursor: not-allowed !important;
+}
+
+.date-calendar-day.vacation-day::after {
+    content: '휴가';
+    position: absolute;
+    bottom: 2px;
+    right: 2px;
+    font-size: 8px;
+    font-weight: 700;
+    color: #9333ea;
+    background: white;
+    padding: 1px 3px;
+    border-radius: 3px;
+    line-height: 1;
+}
+
+.date-calendar-day.other-month.vacation-day {
+    background: rgba(243, 232, 255, 0.4);
+    border: 1px solid rgba(192, 132, 252, 0.3);
+    opacity: 0.5;
+}
+
+.date-calendar-day.other-month.vacation-day::after { opacity: 0.6; }
+
+.date-calendar-day.selected {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%) !important;
+    color: white !important;
+    font-weight: 700;
+    border-color: #667eea;
+}
+
+.date-calendar-day.future-date { color: #dee2e6; cursor: not-allowed; background: #f8f9fa; }
+.date-calendar-day.future-date:hover { background: #f8f9fa !important; transform: none !important; box-shadow: none !important; }
+
+/* ==========================================
+   인쇄
+   ========================================== */
+
+@media print {
+    .write-layout { display: block; }
+
+    .template-sidebar,
+    .input-area,
+    .document-preview-toggle,
+    .header,
+    .sidebar { display: none !important; }
+
+    .document-form-wrapper {
+        max-height: none !important;
+        padding: 0 !important;
+        margin: 0 !important;
+        opacity: 1 !important;
+        box-shadow: none !important;
+        display: block !important;
+    }
+
+    .document-form { font-size: 10.5pt; }
+
+    .req-detail-table, .req-sub-table, .req-author-table,
+    .req-approval-table { page-break-inside: avoid; }
+}
