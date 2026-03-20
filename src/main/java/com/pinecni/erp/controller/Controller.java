@@ -149,6 +149,14 @@ public class Controller {
         return "approval_receipt_overtime";
     }
 
+    /*
+    @GetMapping("/approval/receipt-purchase")
+    public String approvalReceiptPurchase(@RequestParam(defaultValue = "material") String type, Model model) {
+        model.addAttribute("purchaseType", type);
+        return "approval_receipt_purchase";
+    }
+    */
+
     // 인사
     @GetMapping("/approval/vacation")
     public String approvalVacation() {
@@ -201,6 +209,13 @@ public class Controller {
     public String approvalExpense() {
         return "approval_expense";
     }
+
+    /*
+    @GetMapping("/approval/requisition")
+    public String approvalRequisition() {
+        return "approval_requisition";
+    }
+    */
 
     // 구매요청서 - 추후 구현 예정
     /*

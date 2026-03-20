@@ -15,12 +15,13 @@ import java.time.LocalDateTime;
 @Getter
 @Setter
 @Entity
-@Table(name = "receipt_overtime", schema = "erp")
+@Table(name = "receipt_purchase", schema = "erp")
 @SQLRestriction("is_deleted = false")
-public class ReceiptOvertime {
+public class ReceiptPurchase {
+
     @Id
-    @GeneratedValue(strategy = GenerationType.SEQUENCE, generator = "receipt_overtime_sequence")
-    @SequenceGenerator(name = "receipt_overtime_sequence", sequenceName = "erp.receipt_overtime_sequence", allocationSize = 1)
+    @GeneratedValue(strategy = GenerationType.SEQUENCE, generator = "receipt_purchase_sequence")
+    @SequenceGenerator(name = "receipt_purchase_sequence", sequenceName = "erp.receipt_purchase_sequence", allocationSize = 1)
     @Column(name = "idx", nullable = false)
     private Long idx;
 
@@ -39,9 +40,11 @@ public class ReceiptOvertime {
     @Column(name = "card_idx")
     private Long cardIdx;
 
+    /** 구매 유형: 'material'(재료비) or 'equipment'(장비비) */
     @NotNull
-    @Column(name = "overtime_date", nullable = false)
-    private LocalDate overtimeDate;
+    @Size(max = 20)
+    @Column(name = "purchase_type", nullable = false, length = 20)
+    private String purchaseType;
 
     @NotNull
     @Column(name = "approval_date", nullable = false)
@@ -54,8 +57,16 @@ public class ReceiptOvertime {
     @Column(name = "document_content", length = Integer.MAX_VALUE)
     private String documentContent;
 
+    /** 지급종류: 'card'(연구비카드) or 'transfer'(연구비이체) */
+    @Size(max = 20)
+    @Column(name = "payment_type", length = 20)
+    private String paymentType;
+
     @Column(name = "total_amount", precision = 15, scale = 2)
     private BigDecimal totalAmount;
+
+    @Column(name = "document_idx")
+    private Long documentIdx;
 
     @NotNull
     @ColumnDefault("CURRENT_TIMESTAMP")
@@ -72,9 +83,6 @@ public class ReceiptOvertime {
 
     @Column(name = "updated_user_idx")
     private Long updatedUserIdx;
-
-    @Column(name = "document_idx")
-    private Long documentIdx;
 
     @NotNull
     @ColumnDefault("false")
