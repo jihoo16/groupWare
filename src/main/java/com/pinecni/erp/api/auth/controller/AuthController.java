@@ -4,6 +4,8 @@ import com.pinecni.erp.api.auth.dto.ChangePasswordRequestDTO;
 import com.pinecni.erp.api.auth.dto.LoginRequestDTO;
 import com.pinecni.erp.api.auth.dto.LoginResponseDTO;
 import com.pinecni.erp.api.auth.service.AuthService;
+import jakarta.servlet.http.Cookie;
+import jakarta.servlet.http.HttpServletResponse;
 import jakarta.servlet.http.HttpSession;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -32,7 +34,8 @@ public class AuthController {
     @PostMapping("/login")
     public ResponseEntity<LoginResponseDTO> login(
             @Valid @RequestBody LoginRequestDTO loginRequest,
-            HttpSession session) {
+            HttpSession session,
+            HttpServletResponse httpResponse) {
 
         log.debug("POST /api/auth/login - empId: {}", loginRequest.getEmpId());
 
@@ -47,10 +50,24 @@ public class AuthController {
         session.setAttribute("isAdmin", response.getIsAdmin());
         session.setAttribute("isDev", response.getIsDev());
         session.setAttribute("isFirstLogin", response.getIsFirstLogin()); // 최초 로그인 플래그
-        session.setMaxInactiveInterval(3600 * 8); // 8시간
 
-        log.info("Session created for user: {} (session ID: {}, isFirstLogin: {})",
-                response.getEmpId(), session.getId(), response.getIsFirstLogin());
+        // 로그인 유지 여부에 따라 세션 만료 시간 및 쿠키 설정
+        boolean rememberMe = Boolean.TRUE.equals(loginRequest.getRememberMe());
+        if (rememberMe) {
+            int sevenDays = 7 * 24 * 3600;
+            session.setMaxInactiveInterval(sevenDays); // 7일
+            // 브라우저 닫아도 유지되는 영구 쿠키 설정
+            Cookie cookie = new Cookie("JSESSIONID", session.getId());
+            cookie.setMaxAge(sevenDays);
+            cookie.setHttpOnly(true);
+            cookie.setPath("/");
+            httpResponse.addCookie(cookie);
+            log.info("Session created (remember-me 7days) for user: {} (session ID: {})", response.getEmpId(), session.getId());
+        } else {
+            session.setMaxInactiveInterval(3600 * 8); // 8시간
+            log.info("Session created (8hours) for user: {} (session ID: {}, isFirstLogin: {})",
+                    response.getEmpId(), session.getId(), response.getIsFirstLogin());
+        }
 
         return ResponseEntity.ok(response);
     }
