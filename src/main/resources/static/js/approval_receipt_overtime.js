@@ -46,6 +46,17 @@ document.addEventListener('DOMContentLoaded', async function() {
     // 직원 데이터 (API로 로드)
     let employees = [];
 
+    function showSuccess(message) {
+        return Swal.fire({
+            icon: 'success',
+            title: '성공',
+            text: message,
+            timer: 2000,
+            timerProgressBar: true,
+            confirmButtonText: '확인'
+        });
+    }
+
     async function loadEmployees() {
         try {
             const response = await fetch('/api/users');

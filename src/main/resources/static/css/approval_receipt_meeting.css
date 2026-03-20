@@ -1422,7 +1422,7 @@ input.auto-datetime {
 
 /* 헤더 버튼 기본 스타일 */
 .header-right button {
-    padding: 10px 20px;
+    padding: 12px 24px;
     border: none;
     border-radius: 8px;
     font-size: 14px;

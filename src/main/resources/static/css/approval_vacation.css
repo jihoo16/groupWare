@@ -867,8 +867,8 @@ div h2{
 }
 
 .btn-lg {
-    padding: 12px 20px;
-    font-size: 13px;
+    padding: 14px 28px;
+    font-size: 15px;
     font-weight: 600;
     border-radius: 8px;
     cursor: pointer;
@@ -881,7 +881,6 @@ div h2{
 
 .btn-primary {
     background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-    padding: 12px 24px;
     color: white;
 }
 
@@ -2184,6 +2183,12 @@ div h2{
     background: white;
     border: 1px solid #dee2e6;
     color: #6c757d;
+}
+
+.btn-reset.btn-lg {
+    flex: none;
+    padding: 14px 28px;
+    font-size: 12.7px;
 }
 
 .btn-reset:hover {

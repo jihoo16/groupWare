@@ -13,11 +13,7 @@
                 <h1 class="page-title"><i class="fas fa-umbrella-beach"></i> 문서 작성 > 연차신청서</h1>
             </div>
             <div class="header-right">
-                <button class="btn-secondary" onclick="history.back()">
-                    <i class="fas fa-arrow-left"></i>
-                    돌아가기
-                </button>
-                <button class="btn-reset" id="resetSelectionBtn" style="display: none;">
+                <button class="btn-reset btn-lg" id="resetSelectionBtn" style="display: none;">
                     <i class="fas fa-redo"></i>
                     선택 초기화
                 </button>
@@ -26,7 +22,7 @@
                     <span>날짜를 선택하고 <strong>"기간 추가"</strong> 버튼을 눌러주세요</span>
                 </div>
                 <div class="action-buttons" id="actionButtons" style="display: none;">
-                    <button class="btn-print btn-lg" id="printBtn">
+                    <button class="btn-outline btn-lg" id="printBtn">
                         <i class="fas fa-print"></i>
                         인쇄
                     </button>
@@ -35,6 +31,10 @@
                         저장
                     </button>
                 </div>
+                <button class="btn-secondary btn-lg" onclick="history.back()">
+                    <i class="fas fa-arrow-left"></i>
+                    돌아가기
+                </button>
             </div>
         </header>
 

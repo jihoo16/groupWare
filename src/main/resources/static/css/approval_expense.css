@@ -1165,6 +1165,7 @@ div h2{
     display: flex;
     flex-direction: column;
     gap: 21px;
+    align-self: start;
 }
 
 .input-area {
@@ -1211,7 +1212,7 @@ div h2{
 /* 폼 그리드 */
 .form-grid {
     display: grid;
-    grid-template-columns: repeat(2, 1fr);
+    grid-template-columns: repeat(3, 1fr);
     gap: 14px;
 }
 
@@ -1564,33 +1565,32 @@ div h2{
     color: #9a3412;
     font-size: 12px;
 }
-.submit-tooltip-wrapper {
+/* 저장 버튼 툴팁 */
+.btn-with-tooltip {
     position: relative;
-    display: inline-flex;
-    align-items: center;
 }
 
-.submit-tooltip {
+.btn-with-tooltip .tooltip-text {
+    visibility: hidden;
+    opacity: 0;
     position: absolute;
     top: calc(100% + 8px);
     right: 0;
     background: #1e293b;
     color: #fff;
     font-size: 12px;
+    font-weight: 500;
     line-height: 1.6;
     padding: 8px 12px;
     border-radius: 8px;
     white-space: nowrap;
-    pointer-events: none;
-    opacity: 0;
-    transform: translateY(-4px);
-    transition: opacity 0.2s, transform 0.2s;
     z-index: 100;
-    text-align: center;
+    pointer-events: none;
     box-shadow: 0 4px 12px rgba(0,0,0,0.25);
+    transition: opacity 0.2s ease, visibility 0.2s ease;
 }
 
-.submit-tooltip::before {
+.btn-with-tooltip .tooltip-text::before {
     content: '';
     position: absolute;
     top: -5px;
@@ -1600,9 +1600,9 @@ div h2{
     border-bottom: 5px solid #1e293b;
 }
 
-.submit-tooltip-wrapper:hover .submit-tooltip {
+.btn-with-tooltip:hover .tooltip-text {
+    visibility: visible;
     opacity: 1;
-    transform: translateY(0);
 }
 
 .btn-primary,
@@ -2095,11 +2095,12 @@ div h2{
     .sidebar,
     .template-sidebar,
     .header,
-    .submit-tooltip-wrapper,
+    .btn-with-tooltip .tooltip-text,
     .btn-secondary,
     .btn-print,
     .input-area,
-    .document-preview-toggle {
+    .document-preview-toggle,
+    .monthly-notice {
         display: none !important;
     }
 

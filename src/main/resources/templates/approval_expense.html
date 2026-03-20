@@ -13,24 +13,19 @@
                     <h1 class="page-title"><i class="fas fa-won-sign"></i> 문서 작성 > 지출승인서</h1>
                 </div>
                 <div class="header-right">
-                    <button class="btn-secondary" onclick="history.back()">
-                        <i class="fas fa-arrow-left"></i>
-                        돌아가기
-                    </button>
-                    <button class="btn-print btn-lg" id="printBtn" style="display:none;">
+                    <button class="btn-outline btn-lg" id="printBtn" style="display:none;">
                         <i class="fas fa-print"></i>
                         인쇄하기
                     </button>
-                    <div class="submit-tooltip-wrapper">
-                        <button class="btn-primary btn-lg" id="submitBtn">
-                            <i class="fas fa-paper-plane"></i>
-                            저장
-                        </button>
-                        <div class="submit-tooltip" id="submitHoverTooltip">
-                            <i class="fas fa-info-circle"></i>
-                            필수값을 모두 채우면<br>인쇄하기 버튼이 좌측에 나타납니다
-                        </div>
-                    </div>
+                    <button class="btn-primary btn-lg btn-with-tooltip" id="submitBtn">
+                        <i class="fas fa-paper-plane"></i>
+                        저장
+                        <span class="tooltip-text">💡 모든 필수값을 채우면 좌측에 인쇄하기 버튼이 나타납니다</span>
+                    </button>
+                    <button class="btn-secondary btn-lg" onclick="history.back()">
+                        <i class="fas fa-arrow-left"></i>
+                        돌아가기
+                    </button>
                 </div>
             </header>
 

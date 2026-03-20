@@ -169,6 +169,8 @@ document.addEventListener('DOMContentLoaded', async function() {
             icon: 'success',
             title: '성공',
             text: message,
+            timer: 2000,
+            timerProgressBar: true,
             confirmButtonText: '확인'
         });
     }
@@ -2596,7 +2598,8 @@ document.addEventListener('DOMContentLoaded', async function() {
                         text: '회의록이 저장되었습니다.',
                         timer: 3000,
                         timerProgressBar: true,
-                        showConfirmButton: false,
+                        showConfirmButton: true,
+                        confirmButtonText: '확인',
                         allowOutsideClick: false
                     });
 
@@ -4596,7 +4599,8 @@ document.addEventListener('DOMContentLoaded', async function() {
                         text: '수정되었습니다!',
                         timer: 3000,
                         timerProgressBar: true,
-                        showConfirmButton: false,
+                        showConfirmButton: true,
+                        confirmButtonText: '확인',
                         allowOutsideClick: false
                     });
                     window.location.reload();
