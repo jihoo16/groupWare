@@ -10,31 +10,31 @@
                 <div class="header-left">
                     <h1 class="page-title"><i class="fas fa-won-sign"></i> 지출승인서 상세</h1>
                 </div>
-                <div class="header-right" id="headerButtons">
-                    <button class="btn-secondary" onclick="history.back()">
-                        <i class="fas fa-arrow-left"></i>
-                        돌아가기
-                    </button>
-                    <button class="btn-print btn-lg" id="printBtn" style="display:none;" onclick="window.print()">
+                <div class="header-right">
+                    <button class="btn-print btn-lg" id="printBtn" style="display:none;">
                         <i class="fas fa-print"></i>
                         인쇄하기
-                    </button>
-                    <button class="btn-danger btn-lg" id="deleteBtn" style="display:none;">
-                        <i class="fas fa-trash"></i>
-                        삭제
                     </button>
                     <button class="btn-primary btn-lg" id="editBtn" style="display:none;">
                         <i class="fas fa-edit"></i>
                         수정
                     </button>
+                    <button class="btn-danger btn-lg" id="deleteBtn" style="display:none;">
+                        <i class="fas fa-trash"></i>
+                        삭제
+                    </button>
+                    <button class="btn-secondary" onclick="history.back()">
+                        <i class="fas fa-arrow-left"></i>
+                        돌아가기
+                    </button>
                 </div>
             </header>
 
             <div class="write-container">
-                <div class="editor-area" style="max-width: 860px; margin: 0 auto;">
+                <div class="editor-area" style="max-width: 860px; margin: 0 auto; padding: 24px;">
 
-                    <!-- 기본 정보 -->
                     <div class="input-area">
+                        <!-- 기본 정보 -->
                         <div class="input-section">
                             <div class="section-header">
                                 <h3><i class="fas fa-info-circle"></i> 기본 정보</h3>
@@ -76,9 +76,7 @@
                                     </tr>
                                 </thead>
                                 <tbody id="detailTableBody">
-                                    <tr>
-                                        <td colspan="6" class="empty-row">로딩 중...</td>
-                                    </tr>
+                                    <tr><td colspan="6" class="empty-row">로딩 중...</td></tr>
                                 </tbody>
                             </table>
                             <div class="total-amount-display">
@@ -86,19 +84,22 @@
                                 <span class="total-amount" id="detailTotalAmount">₩ 0</span>
                             </div>
                         </div>
-                    </div>
 
-                    <!-- 공식 문서 미리보기 -->
-                    <div class="document-preview-toggle">
-                        <button class="toggle-btn" id="documentFormToggle">
-                            <i class="fas fa-file-alt"></i>
-                            공식 문서 미리보기
-                            <i class="fas fa-chevron-down toggle-icon"></i>
-                        </button>
-                    </div>
+                        <!-- 공식 문서 미리보기 토글 (write 폼과 동일하게 input-area 마지막에 위치) -->
+                        <div class="document-preview-toggle">
+                            <button class="toggle-btn" id="documentFormToggle">
+                                <i class="fas fa-file-alt"></i>
+                                공식 문서 미리보기
+                                <i class="fas fa-chevron-down toggle-icon"></i>
+                            </button>
+                        </div>
+                    </div><!-- /input-area -->
 
-                    <div class="document-form-wrapper collapsed" id="documentFormWrapper">
+                    <!-- 공식 문서 미리보기 영역 (input-area 바깥, editor-area 안) -->
+                    <div class="document-form-wrapper collapsed">
                         <div class="document-form">
+
+                            <!-- 제목 + 결재란 -->
                             <div style="display: flex; align-items: flex-start; gap: 16px; margin-bottom: 10px;">
                                 <div style="flex-shrink: 0; padding-top: 2px;">
                                     <h2 class="expense-doc-title">지출결의서</h2>
@@ -123,6 +124,7 @@
                                 </div>
                             </div>
 
+                            <!-- 품의부서 / 합계 -->
                             <table class="expense-info-table">
                                 <tr>
                                     <th style="width: 70px;">품의부서</th>
@@ -141,6 +143,7 @@
                                 </tr>
                             </table>
 
+                            <!-- 지출 내역 테이블 -->
                             <div class="expense-detail-section">
                                 <table class="expense-detail-table" id="previewExpenseTable">
                                     <thead>
@@ -161,6 +164,7 @@
                                 </table>
                             </div>
 
+                            <!-- 합계 -->
                             <table class="expense-summary-table">
                                 <tr>
                                     <th style="width: 80px;">합계</th>
@@ -168,6 +172,7 @@
                                 </tr>
                             </table>
 
+                            <!-- 결제수단별 금액 -->
                             <table class="expense-payment-table">
                                 <tr>
                                     <th>현금</th>
@@ -178,11 +183,12 @@
                                     <td id="previewCard">₩ 0</td>
                                 </tr>
                             </table>
-                        </div>
-                    </div>
 
-                </div>
-            </div>
+                        </div><!-- /document-form -->
+                    </div><!-- /document-form-wrapper -->
+
+                </div><!-- /editor-area -->
+            </div><!-- /write-container -->
         </main>
     </div>
 

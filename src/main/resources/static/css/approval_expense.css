@@ -498,6 +498,17 @@ div h2{
     background: #e2e8f0;
 }
 
+.btn-danger {
+    background: #ef5350;
+    color: white;
+}
+
+.btn-danger:hover {
+    background: #e53935;
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(239, 83, 80, 0.4);
+}
+
 .btn-outline {
     background: white;
     color: #667eea;
@@ -1644,6 +1655,17 @@ div h2{
 
 .btn-secondary:hover {
     background: #e2e8f0;
+}
+
+.btn-danger {
+    background: #ef5350;
+    color: white;
+}
+
+.btn-danger:hover {
+    background: #e53935;
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(239, 83, 80, 0.4);
 }
 
 .btn-outline {
