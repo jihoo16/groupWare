@@ -82,8 +82,8 @@ public class ApprovalDocumentServiceImpl implements ApprovalDocumentService {
                     if ("연차신청서".equals(dto.getDocumentType())) {
                         return dto.getDrafterUserIdx().equals(currentUserIdx);
                     }
-                    // 다른 문서 타입은 일단 모두 포함
-                    return true;
+                    // 일반 전자결재 문서는 본인이 작성한 것만 포함 (민감한 재무 정보)
+                    return dto.getDrafterUserIdx() != null && dto.getDrafterUserIdx().equals(currentUserIdx);
                 })
                 .collect(Collectors.toList());
 
