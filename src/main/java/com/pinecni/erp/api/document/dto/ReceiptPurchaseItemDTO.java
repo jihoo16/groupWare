@@ -14,6 +14,8 @@ public class ReceiptPurchaseItemDTO {
     private String itemDate;    // "yyyy-MM-dd" string
     private String itemDesc;
     private Integer quantity;
+    private String taxType;         // 과세 / 면세 / 영세
+    private BigDecimal paymentAmount;
     private BigDecimal supplyAmount;
     private BigDecimal taxAmount;
     private String remark;
