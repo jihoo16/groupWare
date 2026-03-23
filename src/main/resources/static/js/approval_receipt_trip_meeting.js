@@ -236,12 +236,23 @@ document.addEventListener('DOMContentLoaded', function() {
     // 직급명 기준으로 개인 회의비 계산 (외부인원은 고정 30,000원)
     function getPersonMeetingExpense(person) {
         if (person.isExternal) return 30000;
-        const codeEntry = positionCodes.find(p => p.codeName === person.position);
-        const code = codeEntry?.code || '';
+        // positionCode 직접 사용, 없으면 positionCodes 배열에서 이름으로 탐색
+        let code = person.positionCode || '';
+        if (!code) {
+            const codeEntry = positionCodes.find(p => p.codeName === person.position);
+            code = codeEntry?.code || '';
+        }
         let meeting = 0;
-        if (projectExpenseSettings.length > 0 && code) {
-            const ms = projectExpenseSettings.find(s => s.positionCode === code && (s.expenseItemName || '').includes('회의'));
-            if (ms?.amount) meeting = ms.amount;
+        if (projectExpenseSettings.length > 0) {
+            if (code) {
+                const ms = projectExpenseSettings.find(s => s.positionCode === code && (s.expenseItemName || '').includes('회의'));
+                if (ms?.amount) meeting = ms.amount;
+            }
+            // code로 못 찾은 경우 position 이름으로 fallback
+            if (!meeting && person.position) {
+                const ms = projectExpenseSettings.find(s => s.positionName === person.position && (s.expenseItemName || '').includes('회의'));
+                if (ms?.amount) meeting = ms.amount;
+            }
         }
         return meeting;
     }
@@ -849,7 +860,8 @@ document.addEventListener('DOMContentLoaded', function() {
                 id: String(person.id),
                 name: person.name,
                 dept: person.dept || '',
-                position: person.position || ''
+                position: person.position || '',
+                positionCode: person.positionCode || ''
             };
             if (window.addPersonsToTrip) window.addPersonsToTrip([personEntry]);
         };
@@ -3606,7 +3618,8 @@ document.addEventListener('DOMContentLoaded', function() {
                     id: String(personId),
                     name: person.name,
                     dept: person.dept,
-                    position: person.position
+                    position: person.position,
+                    positionCode: person.positionCode || ''
                 });
             }
         });
@@ -5227,11 +5240,16 @@ document.addEventListener('DOMContentLoaded', function() {
                 .filter(a => !a.isExternal)
                 .map(att => {
                     const emp = employees.find(e => String(e.id) === String(att.userIdx));
+                    const member = projectMembers.find(m => String(m.employeeIdx || m.id) === String(att.userIdx));
+                    const posName = emp ? emp.position : '';
+                    const posCode = member?.employeePositionCode || member?.positionCode
+                        || (positionCodes.find(p => p.codeName === posName)?.code || '');
                     return {
                         id: String(att.userIdx),
                         name: att.name || (emp ? emp.name : ''),
                         dept: emp ? emp.dept : '',
-                        position: emp ? emp.position : ''
+                        position: posName,
+                        positionCode: posCode
                     };
                 });
 
@@ -5324,7 +5342,11 @@ document.addEventListener('DOMContentLoaded', function() {
                     if (session.meetingAttendees) {
                         const intAtt = session.meetingAttendees.filter(a => !a.isExternal).map(att => {
                             const emp = employees.find(e => String(e.id) === String(att.userIdx));
-                            return { id: String(att.userIdx), name: att.name || (emp?.name||''), dept: emp?.dept||'', position: emp?.position||'' };
+                            const member = projectMembers.find(m => String(m.employeeIdx || m.id) === String(att.userIdx));
+                            const posName = emp?.position || '';
+                            const posCode = member?.employeePositionCode || member?.positionCode
+                                || (positionCodes.find(p => p.codeName === posName)?.code || '');
+                            return { id: String(att.userIdx), name: att.name || (emp?.name||''), dept: emp?.dept||'', position: posName, positionCode: posCode };
                         });
                         const extAtt = session.meetingAttendees.filter(a => a.isExternal).map(att => {
                             const ep = allExternalPersons.find(p => String(p.idx) === String(att.userIdx));

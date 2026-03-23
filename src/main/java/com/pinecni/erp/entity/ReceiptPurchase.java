@@ -40,10 +40,10 @@ public class ReceiptPurchase {
     @Column(name = "card_idx")
     private Long cardIdx;
 
-    /** 구매 유형: 'material'(재료비) or 'equipment'(장비비) */
+    /** 구매 유형: 'material'(재료비), 'equipment'(장비비) 등 자유값 */
     @NotNull
-    @Size(max = 20)
-    @Column(name = "purchase_type", nullable = false, length = 20)
+    @Size(max = 50)
+    @Column(name = "purchase_type", nullable = false, length = 50)
     private String purchaseType;
 
     @NotNull

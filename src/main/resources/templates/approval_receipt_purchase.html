@@ -2,6 +2,9 @@
 <html lang="ko" xmlns:th="http://www.thymeleaf.org">
 <head th:replace="~{fragments/layout :: head(${purchaseType == 'equipment'} ? '연구비 증빙 - 장비비' : '연구비 증빙 - 재료비', '/css/approval_receipt_purchase.css')}"></head>
 <body>
+<!-- 테이블 헤더 플로팅 툴팁 -->
+<div id="th-floating-tooltip"></div>
+
 <!-- 로딩 오버레이 -->
 <div th:replace="~{fragments/loading-overlay :: overlay}"></div>
 
@@ -115,7 +118,13 @@
                                 <input type="hidden" id="selectedApplicantIdx">
                             </div>
 
-                            <!-- 품의일자 & 품의명 -->
+                            <!-- 품의명 (고정값, hidden) -->
+                            <input type="hidden" id="pu_title"
+                                   th:value="${purchaseType == 'equipment'} ? '장비비' : '재료비'">
+                            <!-- 전자결재 문서 연결 -->
+                            <input type="hidden" id="pu_document_idx">
+
+                            <!-- 품의일자 & 지급종류 -->
                             <div class="form-grid">
                                 <div class="form-group">
                                     <label for="pu_approval_date">
@@ -125,33 +134,22 @@
                                     <input type="date" id="pu_approval_date" class="form-input">
                                 </div>
                                 <div class="form-group">
-                                    <label for="pu_title">
-                                        <i class="fas fa-heading"></i> 품의명
+                                    <label>
+                                        <i class="fas fa-money-check-alt"></i> 지급종류
                                         <span class="required-mark">*</span>
                                     </label>
-                                    <input type="text" id="pu_title" class="form-input"
-                                           th:placeholder="${purchaseType == 'equipment'} ? '예: 장비비' : '예: 재료비'"
-                                           th:value="${purchaseType == 'equipment'} ? '장비비' : '재료비'">
-                                </div>
-                            </div>
-
-                            <!-- 지급종류 -->
-                            <div class="form-group full-width">
-                                <label>
-                                    <i class="fas fa-money-check-alt"></i> 지급종류
-                                    <span class="required-mark">*</span>
-                                </label>
-                                <div class="payment-type-group">
-                                    <label class="radio-label">
-                                        <input type="radio" name="paymentType" value="card" checked>
-                                        <span class="radio-custom"></span>
-                                        연구비카드
-                                    </label>
-                                    <label class="radio-label">
-                                        <input type="radio" name="paymentType" value="transfer">
-                                        <span class="radio-custom"></span>
-                                        연구비이체
-                                    </label>
+                                    <div class="payment-type-group">
+                                        <label class="radio-label">
+                                            <input type="radio" name="paymentType" value="card" checked>
+                                            <span class="radio-custom"></span>
+                                            연구비카드
+                                        </label>
+                                        <label class="radio-label">
+                                            <input type="radio" name="paymentType" value="transfer">
+                                            <span class="radio-custom"></span>
+                                            연구비이체
+                                        </label>
+                                    </div>
                                 </div>
                             </div>
 
@@ -171,7 +169,7 @@
                             <div class="section-header">
                                 <h3><i class="fas fa-list-alt"></i> 품의 내역서</h3>
                                 <button type="button" class="btn-add-item" onclick="addItemRow()">
-                                    <i class="fas fa-plus"></i> 항 추가
+                                    <i class="fas fa-plus"></i> 항목 추가
                                 </button>
                             </div>
 
@@ -179,13 +177,21 @@
                                 <table class="item-table" id="itemTable">
                                     <thead>
                                         <tr>
-                                            <th style="width: 110px;">날짜</th>
+                                            <th style="width: 155px;">날짜</th>
                                             <th>적요</th>
-                                            <th style="width: 70px;">수량</th>
-                                            <th style="width: 120px;">총공급가액</th>
-                                            <th style="width: 100px;">총세액</th>
-                                            <th style="width: 120px;">비고</th>
-                                            <th style="width: 44px;"></th>
+                                            <th style="width: 77px;">수량</th>
+                                            <th style="width: 112px;">과세구분</th>
+                                            <th style="width: 155px;">
+                                                총 결제금액 <span class="th-tooltip"><i class="fas fa-question-circle"></i><span class="th-tooltip-text">VAT 합산금액</span></span>
+                                            </th>
+                                            <th style="width: 155px;">
+                                                공급가액 <span class="th-tooltip"><i class="fas fa-question-circle"></i><span class="th-tooltip-text">세금계산서 기준</span></span>
+                                            </th>
+                                            <th style="width: 140px;">
+                                                세액 <span class="th-tooltip"><i class="fas fa-question-circle"></i><span class="th-tooltip-text">세금계산서 기준</span></span>
+                                            </th>
+                                            <th style="width: 140px;">비고</th>
+                                            <th style="width: 50px;"></th>
                                         </tr>
                                     </thead>
                                     <tbody id="itemTableBody">
@@ -194,6 +200,8 @@
                                     <tfoot>
                                         <tr class="item-total-row">
                                             <td colspan="3" style="text-align: center; font-weight: bold;">계</td>
+                                            <td></td>
+                                            <td id="totalPaymentAmount" style="text-align: right; font-weight: bold;">0</td>
                                             <td id="totalSupplyAmount" style="text-align: right; font-weight: bold;">0</td>
                                             <td id="totalTaxAmount" style="text-align: right; font-weight: bold;">0</td>
                                             <td colspan="2"></td>
@@ -265,17 +273,17 @@
                                 <div style="background: white; border: 2px solid #e0e0e0; border-radius: 8px; padding: 30px; margin: 0 auto 30px; max-width: 881px;">
 
                                     <!-- 결재란 -->
-                                    <div style="text-align: right; margin-bottom: 20px;">
+                                    <div style="text-align: right; margin-bottom: 40px;">
                                         <table style="border: 2px solid #000; border-collapse: collapse; display: inline-table;">
                                             <tr>
-                                                <td style="width: 110px; height: 20px; border: 1px solid #000; padding: 2px 16px; text-align: center; background: #f0f0f0; font-weight: bold; line-height: 1;">신청자</td>
-                                                <td style="width: 110px; height: 20px; border: 1px solid #000; padding: 2px 16px; text-align: center; background: #f0f0f0; font-weight: bold; line-height: 1;">연구책임자</td>
-                                                <td style="width: 110px; height: 20px; border: 1px solid #000; padding: 2px 16px; text-align: center; background: #f0f0f0; font-weight: bold; line-height: 1;">대표자</td>
+                                                <td style="width: 120px; height: 20px; border: 1px solid #000; padding: 2px 20px; text-align: center; background: #f0f0f0; font-weight: bold; line-height: 1;">신청자</td>
+                                                <td style="width: 120px; height: 20px; border: 1px solid #000; padding: 2px 20px; text-align: center; background: #f0f0f0; font-weight: bold; line-height: 1;">연구책임자</td>
+                                                <td style="width: 120px; height: 20px; border: 1px solid #000; padding: 2px 20px; text-align: center; background: #f0f0f0; font-weight: bold; line-height: 1;">대표이사</td>
                                             </tr>
                                             <tr>
-                                                <td class="pu-signature-applicant" style="height: 80px; border: 1px solid #000; padding: 10px 16px; text-align: center; min-width: 80px;"></td>
-                                                <td class="pu-signature-manager" style="height: 80px; border: 1px solid #000; padding: 10px 16px; text-align: center; min-width: 80px;"></td>
-                                                <td style="height: 80px; border: 1px solid #000; padding: 10px 16px; text-align: center; min-width: 80px;"></td>
+                                                <td class="pu-signature-applicant" style="height: 80px; border: 1px solid #000; padding: 10px 20px; text-align: center; min-width: 80px;"></td>
+                                                <td class="pu-signature-manager" style="height: 80px; border: 1px solid #000; padding: 10px 20px; text-align: center; min-width: 80px;"></td>
+                                                <td style="height: 80px; border: 1px solid #000; padding: 10px 20px; text-align: center; min-width: 80px;"></td>
                                             </tr>
                                         </table>
                                     </div>
@@ -285,71 +293,52 @@
                                     <table class="form-table" style="margin-top: 20px;">
                                         <tr>
                                             <th style="width: 13%;">과 제 명</th>
-                                            <td style="padding: 10px;"><span class="pu-auto-project"></span></td>
-                                            <th style="width: 15%;">연구책임자명</th>
-                                            <td style="padding: 10px; text-align: center;"><span class="pu-auto-manager"></span></td>
+                                            <td colspan="4" style="padding: 10px;"><span class="pu-auto-project"></span></td>
+                                            <th style="width: 10%;">연구책임자명</th>
+                                            <td style="width: 10%; padding: 10px; text-align: center;"><span class="pu-auto-manager"></span></td>
                                         </tr>
                                         <tr>
                                             <th>품의일자</th>
-                                            <td colspan="3" style="text-align: center;"><span class="pu-auto-approval-date"></span></td>
+                                            <td colspan="6" style="text-align: center;"><span class="pu-auto-approval-date"></span></td>
                                         </tr>
                                         <tr>
                                             <th>신 청 자</th>
-                                            <td colspan="3" style="text-align: center;"><span class="pu-auto-applicant"></span> 연구원</td>
+                                            <td colspan="6" style="text-align: center;"><span class="pu-auto-applicant"></span></td>
                                         </tr>
                                         <tr>
                                             <th>품 의 명</th>
-                                            <td colspan="3" style="text-align: center;"><span class="pu-auto-title"></span></td>
+                                            <td colspan="6" style="text-align: center;"><span class="pu-auto-title"></span></td>
                                         </tr>
                                         <tr>
                                             <th>지급종류</th>
-                                            <td colspan="3" style="text-align: center;">
+                                            <td colspan="6" style="text-align: center;">
                                                 연구비카드(<span class="pu-auto-payment-card"></span>) / 연구비이체(<span class="pu-auto-payment-transfer"></span>)
                                             </td>
                                         </tr>
                                         <tr>
                                             <th style="height: 180px; vertical-align: top; padding-top: 12px;">품의 내용</th>
-                                            <td colspan="3" style="text-align: left; padding: 12px; white-space: pre-wrap; height: 180px; vertical-align: top;"><span class="pu-auto-content"></span></td>
+                                            <td colspan="6" style="text-align: left; padding: 12px; white-space: pre-wrap; height: 180px; vertical-align: top;"><span class="pu-auto-content"></span></td>
                                         </tr>
                                         <tr>
-                                            <th colspan="4" style="background: #f0f0f0; padding: 12px; text-align: center;">품의 내역서</th>
+                                            <th colspan="7" style="background: #f0f0f0; padding: 12px; text-align: center;">품의 내역서</th>
                                         </tr>
                                         <tr>
                                             <th style="text-align: center;">날짜</th>
                                             <th style="text-align: center;">적요</th>
-                                            <th style="text-align: center; width: 60px;">수량</th>
-                                            <th style="text-align: center; width: 110px;">총공급가액</th>
+                                            <th style="text-align: center; width: 50px;">수량</th>
+                                            <th style="text-align: center; width: 100px;">공급가액</th>
+                                            <th style="text-align: center; width: 80px;">세액</th>
+                                            <th style="text-align: center; width: 100px;">합계</th>
+                                            <th style="text-align: center; width: 80px;">비고</th>
                                         </tr>
                                         <!-- 동적으로 채워지는 내역서 행 -->
-                                        <tbody id="docItemTableBody">
-                                            <tr>
-                                                <td style="height: 40px;"></td>
-                                                <td></td>
-                                                <td></td>
-                                                <td></td>
-                                            </tr>
-                                            <tr>
-                                                <td style="height: 40px;"></td>
-                                                <td></td>
-                                                <td></td>
-                                                <td></td>
-                                            </tr>
-                                            <tr>
-                                                <td style="height: 40px;"></td>
-                                                <td></td>
-                                                <td></td>
-                                                <td></td>
-                                            </tr>
-                                            <tr>
-                                                <td style="height: 40px;"></td>
-                                                <td></td>
-                                                <td></td>
-                                                <td></td>
-                                            </tr>
-                                        </tbody>
+                                        <tbody id="docItemTableBody"></tbody>
                                         <tr>
                                             <td colspan="3" style="text-align: center; font-weight: bold; background: #f9f9f9;">계</td>
-                                            <td style="text-align: right; font-weight: bold; padding-right: 8px;"><span class="pu-auto-total-amount"></span></td>
+                                            <td style="text-align: right; font-weight: bold; padding-right: 8px;"><span class="pu-auto-total-supply"></span></td>
+                                            <td style="text-align: right; font-weight: bold; padding-right: 8px;"><span class="pu-auto-total-tax"></span></td>
+                                            <td style="text-align: right; font-weight: bold; padding-right: 8px;"><span class="pu-auto-total-payment"></span></td>
+                                            <td></td>
                                         </tr>
                                     </table>
                                 </div>

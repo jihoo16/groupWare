@@ -33,6 +33,14 @@ public class ReceiptPurchaseItem {
     @Column(name = "quantity")
     private Integer quantity;
 
+    /** 과세구분: '과세' | '면세' | '영세' */
+    @Builder.Default
+    @Column(name = "tax_type", nullable = false, length = 10)
+    private String taxType = "과세";
+
+    @Column(name = "payment_amount", precision = 15, scale = 2)
+    private BigDecimal paymentAmount;
+
     @Column(name = "supply_amount", precision = 15, scale = 2)
     private BigDecimal supplyAmount;
 

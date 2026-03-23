@@ -58,6 +58,13 @@ document.addEventListener('DOMContentLoaded', async function() {
             <td><input type="date" class="item-input item-date" placeholder="날짜"></td>
             <td><input type="text" class="item-input item-desc" placeholder="품명/내역 입력"></td>
             <td><input type="number" class="item-input num-input item-qty" placeholder="0" min="0"></td>
+            <td>
+                <select class="item-input item-taxtype">
+                    <option value="과세">과세</option>
+                    <option value="면세">면세</option>
+                </select>
+            </td>
+            <td><input type="text" class="item-input num-input item-payment" placeholder="0"></td>
             <td><input type="text" class="item-input num-input item-supply" placeholder="0"></td>
             <td><input type="text" class="item-input num-input item-tax" placeholder="0"></td>
             <td><input type="text" class="item-input item-remark" placeholder="비고"></td>
@@ -65,17 +72,100 @@ document.addEventListener('DOMContentLoaded', async function() {
                 <i class="fas fa-times"></i>
             </button></td>
         `;
-        tr.querySelector('.item-supply').addEventListener('input', function() {
+
+        const paymentEl = tr.querySelector('.item-payment');
+        const supplyEl  = tr.querySelector('.item-supply');
+        const taxEl     = tr.querySelector('.item-tax');
+        const taxtypeEl = tr.querySelector('.item-taxtype');
+
+        // 세액 편집 가능 여부 갱신 (값 있을 때만 편집 허용)
+        function updateTaxEditable() {
+            if (parseNumber(taxEl.value) > 0) {
+                taxEl.removeAttribute('readonly');
+            } else {
+                taxEl.setAttribute('readonly', '');
+            }
+        }
+
+        // 총 결제금액 → 공급가액·세액 자동 계산
+        function recalcFromPayment() {
+            const payment = parseNumber(paymentEl.value);
+            const taxType = taxtypeEl.value;
+            let supply, tax;
+            if (taxType === '과세') {
+                supply = Math.round(payment / 1.1);
+                tax = payment - supply;
+            } else {
+                supply = payment;
+                tax = 0;
+            }
+            supplyEl.value = supply > 0 ? supply.toLocaleString() : '';
+            taxEl.value    = tax > 0 ? tax.toLocaleString() : (payment > 0 ? '0' : '');
+            updateTaxEditable();
+            updateItemTotals();
+        }
+
+        // 공급가액 → 세액·총 결제금액 역산
+        function recalcFromSupply() {
+            const supply  = parseNumber(supplyEl.value);
+            const taxType = taxtypeEl.value;
+            const tax     = (taxType === '과세') ? Math.round(supply * 0.1) : 0;
+            const payment = supply + tax;
+            taxEl.value     = tax > 0 ? tax.toLocaleString() : (supply > 0 ? '0' : '');
+            paymentEl.value = payment > 0 ? payment.toLocaleString() : '';
+            updateTaxEditable();
+            updateItemTotals();
+        }
+
+        // 수량 기본값 1
+        tr.querySelector('.item-qty').value = 1;
+        taxEl.setAttribute('readonly', '');  // 초기 세액 readonly
+
+        paymentEl.addEventListener('input', function() {
             this.value = formatNumberInput(this.value);
+            this.classList.toggle('error', parseNumber(this.value) <= 0);
+            recalcFromPayment();
+            validateRequiredFields();
+        });
+
+        taxtypeEl.addEventListener('change', function() {
+            if (parseNumber(paymentEl.value) > 0) recalcFromPayment();
+            else if (parseNumber(supplyEl.value) > 0) recalcFromSupply();
+        });
+
+        supplyEl.addEventListener('input', function() {
+            this.value = formatNumberInput(this.value);
+            recalcFromSupply();
+            updateOfficialDocument();
+        });
+
+        // 세액 — 값 있을 때만 편집 가능, 공급가액 = 결제금액 - 세액
+        taxEl.addEventListener('input', function() {
+            this.value = formatNumberInput(this.value);
+            const payment = parseNumber(paymentEl.value);
+            const tax     = parseNumber(this.value);
+            supplyEl.value = (payment - tax) >= 0 ? (payment - tax).toLocaleString() : '0';
+            updateItemTotals();
+            updateOfficialDocument();
+        });
+        tr.querySelector('.item-qty').addEventListener('input', function() {
+            this.classList.toggle('error', !this.value || parseInt(this.value) <= 0);
             updateItemTotals();
         });
-        tr.querySelector('.item-tax').addEventListener('input', function() {
-            this.value = formatNumberInput(this.value);
-            updateItemTotals();
+        const dateInput = tr.querySelector('.item-date');
+        const approvalDate = document.getElementById('pu_approval_date').value || '';
+        dateInput.value = approvalDate;
+        dateInput.max = approvalDate;
+        dateInput.addEventListener('change', updateOfficialDocument);
+        dateInput.addEventListener('click', function() {
+            try { this.showPicker(); } catch(e) {}
         });
-        tr.querySelector('.item-qty').addEventListener('input', updateItemTotals);
-        tr.querySelector('.item-date').addEventListener('change', updateOfficialDocument);
-        tr.querySelector('.item-desc').addEventListener('input', updateOfficialDocument);
+        tr.querySelector('.item-desc').addEventListener('input', function() {
+            this.classList.toggle('error', !this.value.trim());
+            updateOfficialDocument();
+            validateRequiredFields();
+        });
+        tr.querySelector('.item-remark').addEventListener('input', updateOfficialDocument);
         itemTableBody.appendChild(tr);
         updateItemTotals();
     };
@@ -85,6 +175,7 @@ document.addEventListener('DOMContentLoaded', async function() {
         tr.remove();
         updateItemTotals();
         updateOfficialDocument();
+        validateRequiredFields();
     };
 
     // ============================================
@@ -109,6 +200,11 @@ document.addEventListener('DOMContentLoaded', async function() {
     // 데이터 로드
     await Promise.all([loadEmployees(), loadMyProjects()]);
 
+    // 신규 작성 모드: 초기 필수 필드 강조
+    if (!documentIdx) {
+        validateRequiredFields();
+    }
+
     // ============================================
     // 오늘 날짜 기본값
     // ============================================
@@ -116,6 +212,10 @@ document.addEventListener('DOMContentLoaded', async function() {
         const today = new Date().toISOString().split('T')[0];
         document.getElementById('pu_approval_date').value = today;
     }
+
+    document.getElementById('pu_approval_date')?.addEventListener('click', function() {
+        try { this.showPicker(); } catch(e) {}
+    });
 
     // ============================================
     // 직원 데이터 로드
@@ -304,15 +404,12 @@ document.addEventListener('DOMContentLoaded', async function() {
                 selectedProject = proj;
                 document.getElementById('pu_project').value = proj.projectName;
                 document.getElementById('selectedProjectIdx').value = proj.idx;
-                document.getElementById('pu_project').classList.remove('is-invalid');
                 await loadProjectMembers(proj.idx);
                 await loadProjectCards(proj.idx);
-                selectedApplicant = null;
-                document.getElementById('pu_applicant').value = '';
-                document.getElementById('selectedApplicantIdx').value = '';
-                document.getElementById('pu_applicant').placeholder = '클릭하여 신청자 선택';
+                setDefaultApplicant();
                 closeProjectModal();
                 updateOfficialDocument();
+                validateRequiredFields();
             });
             projectListEl.appendChild(item);
         });
@@ -401,33 +498,92 @@ document.addEventListener('DOMContentLoaded', async function() {
                 selectedCard = card;
                 document.getElementById('pu_card').value = cardName;
                 document.getElementById('selectedCardIdx').value = card.idx;
-                document.getElementById('pu_card').classList.remove('is-invalid');
                 closeCardModal();
                 updateOfficialDocument();
+                validateRequiredFields();
             });
             container.appendChild(item);
         });
     }
 
-    window.openCardModal = function() {
-        if (!selectedProject) {
-            Swal.fire({ icon: 'warning', title: '과제 미선택', text: '먼저 과제를 선택해주세요.' });
+    // 카드 모달 내 프로젝트 목록 렌더링 (프로젝트 미선택 시)
+    function renderProjectListInCardModal(searchText) {
+        const container = document.getElementById('cardList');
+        if (!container) return;
+
+        let filtered = projects;
+        if (searchText) {
+            filtered = projects.filter(proj =>
+                matchesSearch(proj.projectName || '', searchText)
+            );
+        }
+
+        if (filtered.length === 0) {
+            container.innerHTML = `
+                <div style="text-align: center; padding: 40px; color: #94a3b8;">
+                    <i class="fas fa-search" style="font-size: 32px; margin-bottom: 12px; display: block;"></i>
+                    ${searchText ? '검색 결과가 없습니다.' : '등록된 프로젝트가 없습니다.'}
+                </div>
+            `;
             return;
         }
+
+        const header = `
+            <div class="convenience-notice">
+                <div class="notice-icon"><i class="fas fa-lightbulb"></i></div>
+                <div class="notice-content">
+                    <div class="notice-title">프로젝트를 먼저 선택해주세요</div>
+                    <div class="notice-desc">프로젝트를 선택하면 카드 목록이 표시됩니다</div>
+                </div>
+            </div>
+        `;
+
+        const items = filtered.map(proj => `
+            <div class="project-item-in-attendee" data-project-idx="${proj.idx}">
+                <div class="project-item-icon"><i class="fas fa-folder"></i></div>
+                <div class="project-item-info">
+                    <div class="project-item-name">${highlightText(proj.projectName || '', searchText)}</div>
+                </div>
+                <div class="project-item-arrow"><i class="fas fa-chevron-right"></i></div>
+            </div>
+        `).join('');
+
+        container.innerHTML = header + items;
+
+        container.querySelectorAll('.project-item-in-attendee').forEach(item => {
+            item.addEventListener('click', async function() {
+                const projectIdx = this.getAttribute('data-project-idx');
+                const proj = projects.find(p => String(p.idx) === String(projectIdx));
+                if (!proj) return;
+
+                selectedProject = proj;
+                document.getElementById('pu_project').value = proj.projectName;
+                document.getElementById('selectedProjectIdx').value = proj.idx;
+
+                await loadProjectMembers(proj.idx);
+                await loadProjectCards(proj.idx);
+                setDefaultApplicant();
+
+                updateOfficialDocument();
+                renderCardList(projectCards);
+                const cardSearchEl = document.getElementById('cardSearch');
+                if (cardSearchEl) cardSearchEl.value = '';
+                validateRequiredFields();
+            });
+        });
+    }
+
+    window.openCardModal = function() {
         const modal = document.getElementById('cardModal');
+        if (!modal) return;
         modal.classList.add('show');
-        renderCardList(projectCards);
-        const searchInput = document.getElementById('cardSearch');
-        if (searchInput) {
-            searchInput.value = '';
-            searchInput.oninput = function() {
-                const q = this.value.toLowerCase();
-                const filtered = projectCards.filter(c =>
-                    (c.cardName || c.cardAlias || '').toLowerCase().includes(q) ||
-                    (c.cardNumber || '').toLowerCase().includes(q)
-                );
-                renderCardList(filtered, this.value);
-            };
+        const cardSearchEl = document.getElementById('cardSearch');
+        if (cardSearchEl) cardSearchEl.value = '';
+
+        if (!selectedProject) {
+            renderProjectListInCardModal('');
+        } else {
+            renderCardList(projectCards);
         }
     };
 
@@ -439,9 +595,49 @@ document.addEventListener('DOMContentLoaded', async function() {
         if (e.target === e.currentTarget) closeCardModal();
     });
 
+    // 카드 모달 검색 — 프로젝트 미선택 시 프로젝트 필터, 선택 시 카드 필터
+    const cardSearchInput = document.getElementById('cardSearch');
+    if (cardSearchInput) {
+        cardSearchInput.addEventListener('input', function() {
+            const keyword = this.value.trim();
+            if (!selectedProject) {
+                renderProjectListInCardModal(keyword);
+            } else {
+                const filtered = projectCards.filter(c =>
+                    matchesSearch(c.cardName || c.cardAlias || '', keyword) ||
+                    matchesSearch(c.cardNumber || '', keyword)
+                );
+                renderCardList(filtered, keyword);
+            }
+        });
+    }
+
     // ============================================
     // 신청자 모달
     // ============================================
+    // 참여인력 중 밑에서 5번째 직급 default 신청자 자동 선택
+    function setDefaultApplicant() {
+        if (!projectMembers || projectMembers.length === 0) return;
+
+        // employeePositionSortOrder 오름차순 정렬 (낮은 값 = 높은 직급)
+        const sorted = [...projectMembers].sort((a, b) =>
+            (a.employeePositionSortOrder || 999) - (b.employeePositionSortOrder || 999)
+        );
+
+        // 밑에서 5번째 (5명 이하이면 가장 아래 직급)
+        const targetIdx = sorted.length > 5 ? sorted.length - 5 : sorted.length - 1;
+        const member = sorted[targetIdx];
+        if (!member) return;
+
+        const memberName = member.employeeName || member.name || '';
+        const memberPosition = member.employeePositionName || member.position || '';
+        const memberId = member.employeeIdx || member.userIdx || member.idx;
+
+        selectedApplicant = { idx: memberId, name: memberName };
+        document.getElementById('pu_applicant').value = memberName;
+        document.getElementById('selectedApplicantIdx').value = memberId;
+    }
+
     function getProjectMembers() {
         if (!selectedProject) return [];
         if (projectMembers.length > 0) {
@@ -476,31 +672,92 @@ document.addEventListener('DOMContentLoaded', async function() {
                 selectedApplicant = { idx: member.id, name: member.name };
                 document.getElementById('pu_applicant').value = member.name;
                 document.getElementById('selectedApplicantIdx').value = member.id;
-                document.getElementById('pu_applicant').classList.remove('is-invalid');
                 closeApplicantModal();
                 updateOfficialDocument();
+                validateRequiredFields();
             });
             container.appendChild(item);
         });
     }
 
-    window.openApplicantModal = function() {
-        if (!selectedProject) {
-            Swal.fire({ icon: 'warning', title: '과제 미선택', text: '먼저 과제를 선택해주세요.' });
+    // 신청자 모달 내 프로젝트 목록 렌더링 (프로젝트 미선택 시)
+    function renderProjectListInApplicantModal(searchText) {
+        const container = document.getElementById('applicantList');
+        if (!container) return;
+
+        let filtered = projects;
+        if (searchText) {
+            filtered = projects.filter(proj =>
+                matchesSearch(proj.projectName || '', searchText)
+            );
+        }
+
+        if (filtered.length === 0) {
+            container.innerHTML = `
+                <div style="text-align: center; padding: 40px; color: #94a3b8;">
+                    <i class="fas fa-search" style="font-size: 32px; margin-bottom: 12px; display: block;"></i>
+                    ${searchText ? '검색 결과가 없습니다.' : '등록된 프로젝트가 없습니다.'}
+                </div>
+            `;
             return;
         }
+
+        const header = `
+            <div class="convenience-notice">
+                <div class="notice-icon"><i class="fas fa-lightbulb"></i></div>
+                <div class="notice-content">
+                    <div class="notice-title">프로젝트를 먼저 선택해주세요</div>
+                    <div class="notice-desc">프로젝트를 선택하면 신청자 목록이 표시됩니다</div>
+                </div>
+            </div>
+        `;
+
+        const items = filtered.map(proj => `
+            <div class="project-item-in-attendee" data-project-idx="${proj.idx}">
+                <div class="project-item-icon"><i class="fas fa-folder"></i></div>
+                <div class="project-item-info">
+                    <div class="project-item-name">${highlightText(proj.projectName || '', searchText)}</div>
+                </div>
+                <div class="project-item-arrow"><i class="fas fa-chevron-right"></i></div>
+            </div>
+        `).join('');
+
+        container.innerHTML = header + items;
+
+        container.querySelectorAll('.project-item-in-attendee').forEach(item => {
+            item.addEventListener('click', async function() {
+                const projectIdx = this.getAttribute('data-project-idx');
+                const proj = projects.find(p => String(p.idx) === String(projectIdx));
+                if (!proj) return;
+
+                selectedProject = proj;
+                document.getElementById('pu_project').value = proj.projectName;
+                document.getElementById('selectedProjectIdx').value = proj.idx;
+
+                await loadProjectMembers(proj.idx);
+                await loadProjectCards(proj.idx);
+                setDefaultApplicant();
+
+                updateOfficialDocument();
+                renderApplicantList(getProjectMembers());
+                const applicantSearchEl = document.getElementById('applicantSearch');
+                if (applicantSearchEl) applicantSearchEl.value = '';
+                validateRequiredFields();
+            });
+        });
+    }
+
+    window.openApplicantModal = function() {
         const modal = document.getElementById('applicantModal');
+        if (!modal) return;
         modal.classList.add('show');
-        const members = getProjectMembers();
-        renderApplicantList(members);
-        const searchInput = document.getElementById('applicantSearch');
-        if (searchInput) {
-            searchInput.value = '';
-            searchInput.oninput = function() {
-                const q = this.value.toLowerCase();
-                const filtered = members.filter(m => m.name.toLowerCase().includes(q));
-                renderApplicantList(filtered, this.value);
-            };
+        const applicantSearchEl = document.getElementById('applicantSearch');
+        if (applicantSearchEl) applicantSearchEl.value = '';
+
+        if (!selectedProject) {
+            renderProjectListInApplicantModal('');
+        } else {
+            renderApplicantList(getProjectMembers());
         }
     };
 
@@ -511,6 +768,23 @@ document.addEventListener('DOMContentLoaded', async function() {
     document.getElementById('applicantModal')?.addEventListener('click', e => {
         if (e.target === e.currentTarget) closeApplicantModal();
     });
+
+    // 신청자 모달 검색 — 프로젝트 미선택 시 프로젝트 필터, 선택 시 신청자 필터
+    const applicantSearchInput = document.getElementById('applicantSearch');
+    if (applicantSearchInput) {
+        applicantSearchInput.addEventListener('input', function() {
+            const keyword = this.value.trim();
+            if (!selectedProject) {
+                renderProjectListInApplicantModal(keyword);
+            } else {
+                const members = getProjectMembers();
+                const filtered = members.filter(m =>
+                    matchesSearch(m.name || '', keyword)
+                );
+                renderApplicantList(filtered, keyword);
+            }
+        });
+    }
 
     function formatNumberInput(val) {
         const num = val.replace(/[^0-9]/g, '');
@@ -524,21 +798,26 @@ document.addEventListener('DOMContentLoaded', async function() {
     }
 
     function updateItemTotals() {
+        let totalPayment = 0;
         let totalSupply = 0;
         let totalTax = 0;
 
         itemTableBody.querySelectorAll('tr').forEach(tr => {
+            totalPayment += parseNumber(tr.querySelector('.item-payment')?.value);
             totalSupply += parseNumber(tr.querySelector('.item-supply')?.value);
             totalTax += parseNumber(tr.querySelector('.item-tax')?.value);
         });
 
+        const totalPaymentEl = document.getElementById('totalPaymentAmount');
+        if (totalPaymentEl) totalPaymentEl.textContent = totalPayment.toLocaleString();
         document.getElementById('totalSupplyAmount').textContent = totalSupply.toLocaleString();
         document.getElementById('totalTaxAmount').textContent = totalTax.toLocaleString();
 
-        const total = totalSupply;
-        document.getElementById('pu_amount').value = total > 0 ? total.toLocaleString() + '원' : '';
+        // 총 공급대가 = 결제대금 합계
+        document.getElementById('pu_amount').value = totalPayment > 0 ? totalPayment.toLocaleString() + '원' : '';
 
         updateOfficialDocument();
+        if (typeof validateRequiredFields === 'function') validateRequiredFields();
     }
 
     function collectItems() {
@@ -547,15 +826,19 @@ document.addEventListener('DOMContentLoaded', async function() {
             const itemDate = tr.querySelector('.item-date')?.value || null;
             const itemDesc = tr.querySelector('.item-desc')?.value || '';
             const quantity = parseInt(tr.querySelector('.item-qty')?.value) || null;
+            const taxType = tr.querySelector('.item-taxtype')?.value || '과세';
+            const paymentAmount = parseNumber(tr.querySelector('.item-payment')?.value);
             const supplyAmount = parseNumber(tr.querySelector('.item-supply')?.value);
             const taxAmount = parseNumber(tr.querySelector('.item-tax')?.value);
             const remark = tr.querySelector('.item-remark')?.value || '';
 
-            if (itemDesc || supplyAmount > 0) {
+            if (itemDesc || paymentAmount > 0 || supplyAmount > 0) {
                 items.push({
                     itemDate: itemDate || null,
                     itemDesc,
                     quantity,
+                    taxType,
+                    paymentAmount: paymentAmount || null,
                     supplyAmount: supplyAmount || null,
                     taxAmount: taxAmount || null,
                     remark,
@@ -571,8 +854,8 @@ document.addEventListener('DOMContentLoaded', async function() {
     // ============================================
     function updateOfficialDocument() {
         const projectName = document.getElementById('pu_project').value || '';
-        const managerName = (selectedProject && selectedProject.managerName) ? selectedProject.managerName : '';
-        const applicantName = document.getElementById('pu_applicant').value || '';
+        const managerName = (selectedProject && selectedProject.projectManagerName) ? selectedProject.projectManagerName : '';
+        const applicantName = (selectedApplicant && selectedApplicant.name) || document.getElementById('pu_applicant').value || '';
         const approvalDate = document.getElementById('pu_approval_date').value || '';
         const title = document.getElementById('pu_title').value || '';
         const content = document.getElementById('pu_content').value || '';
@@ -581,9 +864,7 @@ document.addEventListener('DOMContentLoaded', async function() {
         const paymentType = document.querySelector('input[name="paymentType"]:checked')?.value || 'card';
         const isCard = paymentType === 'card';
 
-        // 결재란
-        document.querySelectorAll('.pu-signature-applicant').forEach(el => el.textContent = applicantName);
-        document.querySelectorAll('.pu-signature-manager').forEach(el => el.textContent = managerName);
+        // 결재란 — 서명칸은 자필서명용으로 비워둠
 
         // 기본 필드 자동입력
         document.querySelectorAll('.pu-auto-project').forEach(el => el.textContent = projectName);
@@ -617,6 +898,7 @@ document.addEventListener('DOMContentLoaded', async function() {
 
         const rows = itemTableBody.querySelectorAll('tr');
         let totalSupply = 0;
+        let totalTax = 0;
         let html = '';
 
         rows.forEach(tr => {
@@ -625,9 +907,12 @@ document.addEventListener('DOMContentLoaded', async function() {
             const qty = tr.querySelector('.item-qty')?.value || '';
             const supply = parseNumber(tr.querySelector('.item-supply')?.value);
             const tax = parseNumber(tr.querySelector('.item-tax')?.value);
+            const remark = tr.querySelector('.item-remark')?.value || '';
 
             if (itemDesc || supply > 0) {
                 totalSupply += supply;
+                totalTax += tax;
+                const rowTotal = supply + tax;
                 const dateFormatted = itemDate ? formatDateSlash(itemDate) : '';
                 html += `
                     <tr>
@@ -635,21 +920,25 @@ document.addEventListener('DOMContentLoaded', async function() {
                         <td style="padding:8px;">${escapeHtml(itemDesc)}</td>
                         <td style="text-align:center;">${escapeHtml(qty)}</td>
                         <td style="text-align:right; padding-right:8px;">${supply > 0 ? supply.toLocaleString() : ''}</td>
+                        <td style="text-align:right; padding-right:8px;">${tax > 0 ? tax.toLocaleString() : (supply > 0 ? '0' : '')}</td>
+                        <td style="text-align:right; padding-right:8px; font-weight:600;">${rowTotal > 0 ? rowTotal.toLocaleString() : ''}</td>
+                        <td style="padding:8px; font-size:12px;">${escapeHtml(remark)}</td>
                     </tr>
                 `;
             }
         });
 
-        // 빈 행 채우기 (최소 4행)
-        const rowCount = (html.match(/<tr>/g) || []).length;
-        for (let i = rowCount; i < 4; i++) {
-            html += `<tr><td style="height:40px;"></td><td></td><td></td><td></td></tr>`;
-        }
-
         docItemTableBody.innerHTML = html;
 
-        document.querySelectorAll('.pu-auto-total-amount').forEach(el => {
+        const totalPayment = totalSupply + totalTax;
+        document.querySelectorAll('.pu-auto-total-supply').forEach(el => {
             el.textContent = totalSupply > 0 ? totalSupply.toLocaleString() : '';
+        });
+        document.querySelectorAll('.pu-auto-total-tax').forEach(el => {
+            el.textContent = totalTax > 0 ? totalTax.toLocaleString() : '';
+        });
+        document.querySelectorAll('.pu-auto-total-payment').forEach(el => {
+            el.textContent = totalPayment > 0 ? totalPayment.toLocaleString() : '';
         });
     }
 
@@ -663,11 +952,10 @@ document.addEventListener('DOMContentLoaded', async function() {
         const hasProject = !!document.getElementById('selectedProjectIdx').value;
         const hasApplicant = !!document.getElementById('selectedApplicantIdx').value;
         const hasDate = !!document.getElementById('pu_approval_date').value;
-        const hasTitle = !!document.getElementById('pu_title').value.trim();
         const hasContent = !!document.getElementById('pu_content').value.trim();
         const hasItems = collectItems().length > 0;
 
-        if (hasProject && hasApplicant && hasDate && hasTitle && hasContent && hasItems) {
+        if (hasProject && hasApplicant && hasDate && hasContent && hasItems) {
             printBtn.style.display = 'flex';
         } else {
             printBtn.style.display = 'none';
@@ -675,7 +963,7 @@ document.addEventListener('DOMContentLoaded', async function() {
     }
 
     // 폼 입력 change/input 이벤트 → 공식문서 업데이트
-    ['pu_approval_date', 'pu_title', 'pu_content'].forEach(id => {
+    ['pu_approval_date', 'pu_content'].forEach(id => {
         const el = document.getElementById(id);
         if (el) {
             el.addEventListener('input', updateOfficialDocument);
@@ -874,7 +1162,10 @@ document.addEventListener('DOMContentLoaded', async function() {
     function buildFormData() {
         const items = collectItems();
         const paymentType = document.querySelector('input[name="paymentType"]:checked')?.value || 'card';
-        const totalSupply = parseNumber(document.getElementById('totalSupplyAmount').textContent);
+        const totalPaymentEl = document.getElementById('totalPaymentAmount');
+        const totalPayment = totalPaymentEl
+            ? parseNumber(totalPaymentEl.textContent)
+            : parseNumber(document.getElementById('totalSupplyAmount').textContent);
 
         const data = {
             projectIdx: parseInt(document.getElementById('selectedProjectIdx').value) || null,
@@ -885,7 +1176,8 @@ document.addEventListener('DOMContentLoaded', async function() {
             documentTitle: document.getElementById('pu_title').value || null,
             documentContent: document.getElementById('pu_content').value || null,
             paymentType: paymentType,
-            totalAmount: totalSupply || null,
+            totalAmount: totalPayment || null,
+            documentIdx: parseInt(document.getElementById('pu_document_idx').value) || null,
             items: items
         };
 
@@ -903,34 +1195,15 @@ document.addEventListener('DOMContentLoaded', async function() {
     }
 
     function validateForm() {
-        // 이전 검증 상태 초기화
-        document.querySelectorAll('.form-input.is-invalid, .form-textarea.is-invalid').forEach(el => el.classList.remove('is-invalid'));
+        validateRequiredFields();
 
-        const projectInput = document.getElementById('pu_project');
-        const projectIdx = document.getElementById('selectedProjectIdx').value;
-        const applicantInput = document.getElementById('pu_applicant');
-        const applicantIdx = document.getElementById('selectedApplicantIdx').value;
-        const approvalDateInput = document.getElementById('pu_approval_date');
-        const titleInput = document.getElementById('pu_title');
-        const contentInput = document.getElementById('pu_content');
-
-        let valid = true;
-
-        if (!projectIdx) { projectInput.classList.add('is-invalid'); valid = false; }
-        if (!applicantIdx) { applicantInput.classList.add('is-invalid'); valid = false; }
-        if (!approvalDateInput.value) { approvalDateInput.classList.add('is-invalid'); valid = false; }
-        if (!titleInput.value.trim()) { titleInput.classList.add('is-invalid'); valid = false; }
-        if (!contentInput.value.trim()) { contentInput.classList.add('is-invalid'); valid = false; }
-        if (collectItems().length === 0) {
-            document.getElementById('itemTable').style.outline = '2px solid #ef4444';
-            valid = false;
-        } else {
-            document.getElementById('itemTable').style.outline = '';
-        }
+        const valid = !document.querySelector(
+            '.form-input.error, .form-textarea.error, .item-table.error'
+        );
 
         if (!valid) {
-            const firstInvalid = document.querySelector('.form-input.is-invalid, .form-textarea.is-invalid');
-            if (firstInvalid) firstInvalid.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            const firstError = document.querySelector('.form-input.error, .form-textarea.error');
+            if (firstError) firstError.scrollIntoView({ behavior: 'smooth', block: 'center' });
             setTimeout(() => {
                 Swal.fire({ icon: 'warning', title: '입력 오류', text: '필수 항목을 모두 입력해주세요.' });
             }, 150);
@@ -939,13 +1212,112 @@ document.addEventListener('DOMContentLoaded', async function() {
         return valid;
     }
 
-    // 필수 입력 필드 - 입력 시 is-invalid 제거
-    ['pu_project', 'pu_applicant', 'pu_approval_date', 'pu_title', 'pu_content'].forEach(id => {
+    // ============================================
+    // 실시간 필수 필드 유효성 검사
+    // ============================================
+    function validateRequiredFields() {
+        const printBtn = document.getElementById('printDocumentBtn');
+
+        const projectInput = document.getElementById('pu_project');
+        const cardInput = document.getElementById('pu_card');
+        const applicantInput = document.getElementById('pu_applicant');
+        const dateInput = document.getElementById('pu_approval_date');
+        const contentInput = document.getElementById('pu_content');
+        const itemTable = document.getElementById('itemTable');
+
+        let allFilled = true;
+
+        // 과제명
+        if (!document.getElementById('selectedProjectIdx').value) {
+            projectInput?.classList.add('error');
+            allFilled = false;
+        } else {
+            projectInput?.classList.remove('error');
+        }
+
+        // 사용 카드
+        if (!document.getElementById('selectedCardIdx').value) {
+            cardInput?.classList.add('error');
+            allFilled = false;
+        } else {
+            cardInput?.classList.remove('error');
+        }
+
+        // 신청자
+        if (!document.getElementById('selectedApplicantIdx').value) {
+            applicantInput?.classList.add('error');
+            allFilled = false;
+        } else {
+            applicantInput?.classList.remove('error');
+        }
+
+        // 품의일자
+        if (!dateInput?.value) {
+            dateInput?.classList.add('error');
+            allFilled = false;
+        } else {
+            dateInput?.classList.remove('error');
+        }
+
+        // 품의 내용
+        if (!contentInput?.value?.trim()) {
+            contentInput?.classList.add('error');
+            allFilled = false;
+        } else {
+            contentInput?.classList.remove('error');
+        }
+
+        // 품의 내역서 (최소 1항목)
+        const items = collectItems();
+        if (items.length === 0) {
+            itemTable?.classList.add('error');
+            allFilled = false;
+        } else {
+            itemTable?.classList.remove('error');
+        }
+
+        // 항목별 필수값 검증 (적요 · 수량 · 결제대금)
+        itemTableBody.querySelectorAll('tr').forEach(tr => {
+            const descEl    = tr.querySelector('.item-desc');
+            const qtyEl     = tr.querySelector('.item-qty');
+            const paymentEl = tr.querySelector('.item-payment');
+
+            const descEmpty    = !descEl?.value?.trim();
+            const qtyEmpty     = !qtyEl?.value || parseInt(qtyEl.value) <= 0;
+            const paymentEmpty = parseNumber(paymentEl?.value) <= 0;
+
+            descEl?.classList.toggle('error', descEmpty);
+            qtyEl?.classList.toggle('error', qtyEmpty);
+            paymentEl?.classList.toggle('error', paymentEmpty);
+
+            if (descEmpty || qtyEmpty || paymentEmpty) allFilled = false;
+        });
+
+        // 인쇄 버튼 표시/숨김
+        if (printBtn) {
+            printBtn.style.display = allFilled ? 'inline-flex' : 'none';
+        }
+    }
+
+    // 필수 입력 필드 - 입력/변경 시 실시간 검증
+    ['pu_approval_date', 'pu_content'].forEach(id => {
         const el = document.getElementById(id);
         if (el) {
-            el.addEventListener('input', () => el.classList.remove('is-invalid'));
-            el.addEventListener('change', () => el.classList.remove('is-invalid'));
+            el.addEventListener('input', validateRequiredFields);
+            el.addEventListener('change', validateRequiredFields);
         }
+    });
+
+    // 품의일자 변경 시 모든 항목 날짜의 max 갱신
+    document.getElementById('pu_approval_date')?.addEventListener('change', function() {
+        const newMax = this.value || '';
+        itemTableBody.querySelectorAll('.item-date').forEach(dateEl => {
+            dateEl.max = newMax;
+            // 이미 입력된 날짜가 품의일자보다 미래이면 품의일자로 보정
+            if (newMax && dateEl.value && dateEl.value > newMax) {
+                dateEl.value = newMax;
+            }
+        });
     });
 
     // ============================================
@@ -1032,6 +1404,7 @@ document.addEventListener('DOMContentLoaded', async function() {
         if (data.approvalDate) document.getElementById('pu_approval_date').value = data.approvalDate;
         if (data.documentTitle) document.getElementById('pu_title').value = data.documentTitle;
         if (data.documentContent) document.getElementById('pu_content').value = data.documentContent;
+        if (data.documentIdx) document.getElementById('pu_document_idx').value = data.documentIdx;
 
         // 지급종류
         if (data.paymentType) {
@@ -1084,8 +1457,17 @@ document.addEventListener('DOMContentLoaded', async function() {
                 if (item.itemDate) lastRow.querySelector('.item-date').value = item.itemDate;
                 if (item.itemDesc) lastRow.querySelector('.item-desc').value = item.itemDesc;
                 if (item.quantity != null) lastRow.querySelector('.item-qty').value = item.quantity;
+                if (item.taxType) {
+                    const sel = lastRow.querySelector('.item-taxtype');
+                    if (sel) sel.value = item.taxType;
+                }
+                if (item.paymentAmount != null) lastRow.querySelector('.item-payment').value = Number(item.paymentAmount).toLocaleString();
                 if (item.supplyAmount != null) lastRow.querySelector('.item-supply').value = Number(item.supplyAmount).toLocaleString();
-                if (item.taxAmount != null) lastRow.querySelector('.item-tax').value = Number(item.taxAmount).toLocaleString();
+                if (item.taxAmount != null) {
+                    const taxEl = lastRow.querySelector('.item-tax');
+                    taxEl.value = Number(item.taxAmount).toLocaleString();
+                    if (item.taxAmount > 0) taxEl.removeAttribute('readonly');
+                }
                 if (item.remark) lastRow.querySelector('.item-remark').value = item.remark;
             });
         } else {
@@ -1145,6 +1527,11 @@ document.addEventListener('DOMContentLoaded', async function() {
     // 초기 공식문서 업데이트
     updateOfficialDocument();
 
+    // 신규 작성 시 필수 필드 빨간색 표시
+    if (!isEditMode) {
+        validateRequiredFields();
+    }
+
     // ============================================
     // 템플릿 사이드바 접기/펼치기
     // ============================================
@@ -1166,6 +1553,26 @@ document.addEventListener('DOMContentLoaded', async function() {
         header.addEventListener('click', function(e) {
             e.preventDefault();
             this.closest('.menu-category').classList.toggle('expanded');
+        });
+    });
+
+    // ============================================
+    // 테이블 헤더 플로팅 툴팁
+    // ============================================
+    const floatingTooltip = document.getElementById('th-floating-tooltip');
+    document.querySelectorAll('.th-tooltip').forEach(th => {
+        const text = th.querySelector('.th-tooltip-text')?.textContent?.trim();
+        if (!text || !floatingTooltip) return;
+        th.addEventListener('mouseenter', function(e) {
+            floatingTooltip.textContent = text;
+            floatingTooltip.style.display = 'block';
+        });
+        th.addEventListener('mousemove', function(e) {
+            floatingTooltip.style.left = e.clientX + 'px';
+            floatingTooltip.style.top = (e.clientY - 36) + 'px';
+        });
+        th.addEventListener('mouseleave', function() {
+            floatingTooltip.style.display = 'none';
         });
     });
 });
