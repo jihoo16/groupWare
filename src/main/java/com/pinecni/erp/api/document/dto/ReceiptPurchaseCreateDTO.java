@@ -22,5 +22,6 @@ public class ReceiptPurchaseCreateDTO {
     /** 'card' or 'transfer' */
     private String paymentType;
     private BigDecimal totalAmount;
+    private Long documentIdx;   // 수정 모드 시 기존 document_idx
     private List<ReceiptPurchaseItemDTO> items;
 }
