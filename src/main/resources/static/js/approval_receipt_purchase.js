@@ -582,14 +582,12 @@ document.addEventListener('DOMContentLoaded', async function() {
         const member = sorted[targetIdx];
         if (!member) return;
 
-        selectedApplicant = member;
         const memberName = member.employeeName || member.name || '';
         const memberPosition = member.employeePositionName || member.position || '';
         const memberId = member.employeeIdx || member.userIdx || member.idx;
 
-        document.getElementById('pu_applicant').value = memberPosition
-            ? `${memberName} (${memberPosition})`
-            : memberName;
+        selectedApplicant = { idx: memberId, name: memberName };
+        document.getElementById('pu_applicant').value = memberName;
         document.getElementById('selectedApplicantIdx').value = memberId;
     }
 
@@ -810,7 +808,7 @@ document.addEventListener('DOMContentLoaded', async function() {
     function updateOfficialDocument() {
         const projectName = document.getElementById('pu_project').value || '';
         const managerName = (selectedProject && selectedProject.projectManagerName) ? selectedProject.projectManagerName : '';
-        const applicantName = document.getElementById('pu_applicant').value || '';
+        const applicantName = (selectedApplicant && selectedApplicant.name) || document.getElementById('pu_applicant').value || '';
         const approvalDate = document.getElementById('pu_approval_date').value || '';
         const title = document.getElementById('pu_title').value || '';
         const content = document.getElementById('pu_content').value || '';
@@ -880,12 +878,6 @@ document.addEventListener('DOMContentLoaded', async function() {
                 `;
             }
         });
-
-        // 빈 행 채우기 (최소 4행)
-        const rowCount = (html.match(/<tr>/g) || []).length;
-        for (let i = rowCount; i < 4; i++) {
-            html += `<tr><td style="height:40px;"></td><td></td><td></td><td></td><td></td><td></td></tr>`;
-        }
 
         docItemTableBody.innerHTML = html;
 
