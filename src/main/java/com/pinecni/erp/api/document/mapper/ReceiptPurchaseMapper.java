@@ -57,6 +57,8 @@ public class ReceiptPurchaseMapper {
                 .itemDate(item.getItemDate() != null ? item.getItemDate().toString() : null)
                 .itemDesc(item.getItemDesc())
                 .quantity(item.getQuantity())
+                .taxType(item.getTaxType())
+                .paymentAmount(item.getPaymentAmount())
                 .supplyAmount(item.getSupplyAmount())
                 .taxAmount(item.getTaxAmount())
                 .remark(item.getRemark())
