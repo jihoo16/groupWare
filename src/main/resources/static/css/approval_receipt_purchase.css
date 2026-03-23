@@ -686,6 +686,48 @@
     display: block;
 }
 
+/* 테이블 헤더 툴팁 */
+.th-tooltip {
+    display: inline-flex;
+    align-items: center;
+    color: #94a3b8;
+    font-size: 12px;
+    vertical-align: middle;
+}
+
+.th-tooltip:hover {
+    color: #667eea;
+}
+
+.th-tooltip .th-tooltip-text {
+    display: none;
+}
+
+#th-floating-tooltip {
+    display: none;
+    position: fixed;
+    background: #1e293b;
+    color: #fff;
+    font-size: 13px;
+    font-weight: 400;
+    white-space: nowrap;
+    padding: 5px 10px;
+    border-radius: 6px;
+    z-index: 9999;
+    pointer-events: none;
+    transform: translateX(-50%);
+}
+
+#th-floating-tooltip::after {
+    content: '';
+    position: absolute;
+    top: 100%;
+    left: 50%;
+    transform: translateX(-50%);
+    border: 5px solid transparent;
+    border-top-color: #1e293b;
+}
+
 /* ========================================
    카드 모달 내 프로젝트 선택 (convenience-notice)
    ======================================== */
@@ -793,12 +835,24 @@
 
 .clickable-input.error,
 .form-input.error,
-.form-textarea.error,
-.item-table.error {
+.form-textarea.error {
     border-color: #ef5350 !important;
     border-width: 2px !important;
     background: #fef2f2 !important;
     animation: shake 0.5s ease;
+}
+
+.item-table.error {
+    border-color: #ef5350 !important;
+    border-width: 2px !important;
+    background: #fef2f2 !important;
+}
+
+/* 항목 테이블 개별 input error */
+.item-table .item-input.error {
+    border-color: #ef5350 !important;
+    border-width: 1px !important;
+    background: #fef2f2 !important;
 }
 
 @keyframes shake {
@@ -1372,7 +1426,7 @@ mark.search-highlight {
         font-weight: bold;
         font-size: 24px;
         text-align: center;
-        margin: 70px 0 16px 0;
+        margin: 35mm 0 5mm 0;
     }
 
     /* input/textarea → 텍스트처럼 */

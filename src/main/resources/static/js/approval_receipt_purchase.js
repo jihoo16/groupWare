@@ -62,11 +62,10 @@ document.addEventListener('DOMContentLoaded', async function() {
                 <select class="item-input item-taxtype">
                     <option value="과세">과세</option>
                     <option value="면세">면세</option>
-                    <option value="영세">영세</option>
                 </select>
             </td>
             <td><input type="text" class="item-input num-input item-payment" placeholder="0"></td>
-            <td><input type="text" class="item-input num-input item-supply item-auto-calc" placeholder="0" readonly tabindex="-1"></td>
+            <td><input type="text" class="item-input num-input item-supply" placeholder="0"></td>
             <td><input type="text" class="item-input num-input item-tax" placeholder="0"></td>
             <td><input type="text" class="item-input item-remark" placeholder="비고"></td>
             <td><button type="button" class="btn-remove-row" onclick="removeItemRow(this)" title="행 삭제">
@@ -74,10 +73,24 @@ document.addEventListener('DOMContentLoaded', async function() {
             </button></td>
         `;
 
-        // 결제대금·과세구분 변경 시 공급가액·세액 자동 계산
-        function recalcRow() {
-            const payment = parseNumber(tr.querySelector('.item-payment').value);
-            const taxType = tr.querySelector('.item-taxtype').value;
+        const paymentEl = tr.querySelector('.item-payment');
+        const supplyEl  = tr.querySelector('.item-supply');
+        const taxEl     = tr.querySelector('.item-tax');
+        const taxtypeEl = tr.querySelector('.item-taxtype');
+
+        // 세액 편집 가능 여부 갱신 (값 있을 때만 편집 허용)
+        function updateTaxEditable() {
+            if (parseNumber(taxEl.value) > 0) {
+                taxEl.removeAttribute('readonly');
+            } else {
+                taxEl.setAttribute('readonly', '');
+            }
+        }
+
+        // 총 결제금액 → 공급가액·세액 자동 계산
+        function recalcFromPayment() {
+            const payment = parseNumber(paymentEl.value);
+            const taxType = taxtypeEl.value;
             let supply, tax;
             if (taxType === '과세') {
                 supply = Math.round(payment / 1.1);
@@ -86,27 +99,59 @@ document.addEventListener('DOMContentLoaded', async function() {
                 supply = payment;
                 tax = 0;
             }
-            tr.querySelector('.item-supply').value = supply > 0 ? supply.toLocaleString() : '';
-            tr.querySelector('.item-tax').value = tax > 0 ? tax.toLocaleString() : (tax === 0 && payment > 0 ? '0' : '');
+            supplyEl.value = supply > 0 ? supply.toLocaleString() : '';
+            taxEl.value    = tax > 0 ? tax.toLocaleString() : (payment > 0 ? '0' : '');
+            updateTaxEditable();
             updateItemTotals();
         }
 
-        tr.querySelector('.item-payment').addEventListener('input', function() {
+        // 공급가액 → 세액·총 결제금액 역산
+        function recalcFromSupply() {
+            const supply  = parseNumber(supplyEl.value);
+            const taxType = taxtypeEl.value;
+            const tax     = (taxType === '과세') ? Math.round(supply * 0.1) : 0;
+            const payment = supply + tax;
+            taxEl.value     = tax > 0 ? tax.toLocaleString() : (supply > 0 ? '0' : '');
+            paymentEl.value = payment > 0 ? payment.toLocaleString() : '';
+            updateTaxEditable();
+            updateItemTotals();
+        }
+
+        // 수량 기본값 1
+        tr.querySelector('.item-qty').value = 1;
+        taxEl.setAttribute('readonly', '');  // 초기 세액 readonly
+
+        paymentEl.addEventListener('input', function() {
             this.value = formatNumberInput(this.value);
-            recalcRow();
+            this.classList.toggle('error', parseNumber(this.value) <= 0);
+            recalcFromPayment();
             validateRequiredFields();
         });
-        tr.querySelector('.item-taxtype').addEventListener('change', recalcRow);
-        tr.querySelector('.item-tax').addEventListener('input', function() {
+
+        taxtypeEl.addEventListener('change', function() {
+            if (parseNumber(paymentEl.value) > 0) recalcFromPayment();
+            else if (parseNumber(supplyEl.value) > 0) recalcFromSupply();
+        });
+
+        supplyEl.addEventListener('input', function() {
             this.value = formatNumberInput(this.value);
-            // 세액 수동 수정 시 공급가액 = 결제대금 - 세액
-            const payment = parseNumber(tr.querySelector('.item-payment').value);
-            const tax = parseNumber(this.value);
-            const supply = payment - tax;
-            tr.querySelector('.item-supply').value = supply >= 0 ? supply.toLocaleString() : '0';
+            recalcFromSupply();
+            updateOfficialDocument();
+        });
+
+        // 세액 — 값 있을 때만 편집 가능, 공급가액 = 결제금액 - 세액
+        taxEl.addEventListener('input', function() {
+            this.value = formatNumberInput(this.value);
+            const payment = parseNumber(paymentEl.value);
+            const tax     = parseNumber(this.value);
+            supplyEl.value = (payment - tax) >= 0 ? (payment - tax).toLocaleString() : '0';
+            updateItemTotals();
+            updateOfficialDocument();
+        });
+        tr.querySelector('.item-qty').addEventListener('input', function() {
+            this.classList.toggle('error', !this.value || parseInt(this.value) <= 0);
             updateItemTotals();
         });
-        tr.querySelector('.item-qty').addEventListener('input', updateItemTotals);
         const dateInput = tr.querySelector('.item-date');
         const approvalDate = document.getElementById('pu_approval_date').value || '';
         dateInput.value = approvalDate;
@@ -116,9 +161,11 @@ document.addEventListener('DOMContentLoaded', async function() {
             try { this.showPicker(); } catch(e) {}
         });
         tr.querySelector('.item-desc').addEventListener('input', function() {
+            this.classList.toggle('error', !this.value.trim());
             updateOfficialDocument();
             validateRequiredFields();
         });
+        tr.querySelector('.item-remark').addEventListener('input', updateOfficialDocument);
         itemTableBody.appendChild(tr);
         updateItemTotals();
     };
@@ -860,6 +907,7 @@ document.addEventListener('DOMContentLoaded', async function() {
             const qty = tr.querySelector('.item-qty')?.value || '';
             const supply = parseNumber(tr.querySelector('.item-supply')?.value);
             const tax = parseNumber(tr.querySelector('.item-tax')?.value);
+            const remark = tr.querySelector('.item-remark')?.value || '';
 
             if (itemDesc || supply > 0) {
                 totalSupply += supply;
@@ -874,6 +922,7 @@ document.addEventListener('DOMContentLoaded', async function() {
                         <td style="text-align:right; padding-right:8px;">${supply > 0 ? supply.toLocaleString() : ''}</td>
                         <td style="text-align:right; padding-right:8px;">${tax > 0 ? tax.toLocaleString() : (supply > 0 ? '0' : '')}</td>
                         <td style="text-align:right; padding-right:8px; font-weight:600;">${rowTotal > 0 ? rowTotal.toLocaleString() : ''}</td>
+                        <td style="padding:8px; font-size:12px;">${escapeHtml(remark)}</td>
                     </tr>
                 `;
             }
@@ -1128,6 +1177,7 @@ document.addEventListener('DOMContentLoaded', async function() {
             documentContent: document.getElementById('pu_content').value || null,
             paymentType: paymentType,
             totalAmount: totalPayment || null,
+            documentIdx: parseInt(document.getElementById('pu_document_idx').value) || null,
             items: items
         };
 
@@ -1225,6 +1275,23 @@ document.addEventListener('DOMContentLoaded', async function() {
         } else {
             itemTable?.classList.remove('error');
         }
+
+        // 항목별 필수값 검증 (적요 · 수량 · 결제대금)
+        itemTableBody.querySelectorAll('tr').forEach(tr => {
+            const descEl    = tr.querySelector('.item-desc');
+            const qtyEl     = tr.querySelector('.item-qty');
+            const paymentEl = tr.querySelector('.item-payment');
+
+            const descEmpty    = !descEl?.value?.trim();
+            const qtyEmpty     = !qtyEl?.value || parseInt(qtyEl.value) <= 0;
+            const paymentEmpty = parseNumber(paymentEl?.value) <= 0;
+
+            descEl?.classList.toggle('error', descEmpty);
+            qtyEl?.classList.toggle('error', qtyEmpty);
+            paymentEl?.classList.toggle('error', paymentEmpty);
+
+            if (descEmpty || qtyEmpty || paymentEmpty) allFilled = false;
+        });
 
         // 인쇄 버튼 표시/숨김
         if (printBtn) {
@@ -1337,6 +1404,7 @@ document.addEventListener('DOMContentLoaded', async function() {
         if (data.approvalDate) document.getElementById('pu_approval_date').value = data.approvalDate;
         if (data.documentTitle) document.getElementById('pu_title').value = data.documentTitle;
         if (data.documentContent) document.getElementById('pu_content').value = data.documentContent;
+        if (data.documentIdx) document.getElementById('pu_document_idx').value = data.documentIdx;
 
         // 지급종류
         if (data.paymentType) {
@@ -1395,7 +1463,11 @@ document.addEventListener('DOMContentLoaded', async function() {
                 }
                 if (item.paymentAmount != null) lastRow.querySelector('.item-payment').value = Number(item.paymentAmount).toLocaleString();
                 if (item.supplyAmount != null) lastRow.querySelector('.item-supply').value = Number(item.supplyAmount).toLocaleString();
-                if (item.taxAmount != null) lastRow.querySelector('.item-tax').value = Number(item.taxAmount).toLocaleString();
+                if (item.taxAmount != null) {
+                    const taxEl = lastRow.querySelector('.item-tax');
+                    taxEl.value = Number(item.taxAmount).toLocaleString();
+                    if (item.taxAmount > 0) taxEl.removeAttribute('readonly');
+                }
                 if (item.remark) lastRow.querySelector('.item-remark').value = item.remark;
             });
         } else {
@@ -1481,6 +1553,26 @@ document.addEventListener('DOMContentLoaded', async function() {
         header.addEventListener('click', function(e) {
             e.preventDefault();
             this.closest('.menu-category').classList.toggle('expanded');
+        });
+    });
+
+    // ============================================
+    // 테이블 헤더 플로팅 툴팁
+    // ============================================
+    const floatingTooltip = document.getElementById('th-floating-tooltip');
+    document.querySelectorAll('.th-tooltip').forEach(th => {
+        const text = th.querySelector('.th-tooltip-text')?.textContent?.trim();
+        if (!text || !floatingTooltip) return;
+        th.addEventListener('mouseenter', function(e) {
+            floatingTooltip.textContent = text;
+            floatingTooltip.style.display = 'block';
+        });
+        th.addEventListener('mousemove', function(e) {
+            floatingTooltip.style.left = e.clientX + 'px';
+            floatingTooltip.style.top = (e.clientY - 36) + 'px';
+        });
+        th.addEventListener('mouseleave', function() {
+            floatingTooltip.style.display = 'none';
         });
     });
 });
