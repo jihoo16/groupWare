@@ -223,21 +223,21 @@
 .item-table {
     width: 100%;
     border-collapse: collapse;
-    font-size: 13px;
+    font-size: 18px;
 }
 
 .item-table thead th {
     background: #f1f5f9;
     color: #334155;
     font-weight: 700;
-    padding: 10px 10px;
+    padding: 14px 14px;
     text-align: center;
     border-bottom: 2px solid #e2e8f0;
     white-space: nowrap;
 }
 
 .item-table tbody td {
-    padding: 6px 6px;
+    padding: 8px 8px;
     border-bottom: 1px solid #f1f5f9;
     vertical-align: middle;
 }
@@ -248,18 +248,18 @@
 
 .item-table tfoot .item-total-row td {
     background: #f8fafc;
-    padding: 10px 10px;
+    padding: 14px 14px;
     border-top: 2px solid #e2e8f0;
-    font-size: 13px;
+    font-size: 18px;
     color: #1e293b;
 }
 
 .item-table .item-input {
     width: 100%;
-    padding: 6px 8px;
+    padding: 8px 11px;
     border: 1px solid transparent;
     border-radius: 5px;
-    font-size: 13px;
+    font-size: 18px;
     background: transparent;
     transition: border-color 0.15s, background 0.15s;
     box-sizing: border-box;
@@ -276,7 +276,66 @@
 }
 
 .item-table .item-input[type="date"] {
-    font-size: 12px;
+    font-size: 17px;
+}
+
+/* 공급가액 — 출력값처럼 표시 (완전 읽기 전용) */
+.item-table .item-auto-calc {
+    background: transparent !important;
+    border-color: transparent !important;
+    color: #1e293b;
+    cursor: default;
+    pointer-events: none;
+}
+
+/* 세액 — 출력값처럼 보이지만 클릭 시 편집 가능 */
+.item-table .item-tax {
+    background: transparent;
+    border-color: transparent;
+    cursor: default;
+}
+.item-table .item-tax:hover {
+    border-color: transparent;
+}
+.item-table .item-tax:focus {
+    background: #f8faff;
+    border-color: #667eea;
+    cursor: text;
+}
+
+/* 과세구분 셀렉트 */
+.item-table .item-taxtype {
+    text-align: center;
+    cursor: pointer;
+    font-size: 17px;
+    padding: 8px 6px;
+}
+
+/* 품의일자 — 커서 포인터 */
+#pu_approval_date {
+    cursor: pointer;
+}
+
+/* 총 공급대가 — 자동 계산 출력값 표시 */
+#pu_amount {
+    border-color: transparent;
+    background: transparent;
+    color: #1e293b;
+    font-size: 18px;
+    font-weight: 700;
+    padding-left: 0;
+    cursor: default;
+    pointer-events: none;
+}
+
+#pu_amount:hover {
+    border-color: transparent;
+}
+
+#pu_amount::placeholder {
+    font-size: 13px;
+    font-weight: 400;
+    color: #cbd5e1;
 }
 
 .btn-remove-row {
@@ -628,25 +687,124 @@
 }
 
 /* ========================================
+   카드 모달 내 프로젝트 선택 (convenience-notice)
+   ======================================== */
+
+.convenience-notice {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin: 0 16px 16px 16px;
+    padding: 16px;
+    background: linear-gradient(135deg, #fff7ed 0%, #ffedd5 100%);
+    border: 2px dashed #f97316;
+    border-radius: 12px;
+    box-shadow: 0 2px 8px rgba(249, 115, 22, 0.1);
+}
+
+.notice-icon {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 40px;
+    height: 40px;
+    background: linear-gradient(135deg, #fb923c 0%, #f97316 100%);
+    color: white;
+    border-radius: 50%;
+    font-size: 18px;
+    flex-shrink: 0;
+}
+
+.notice-content { flex: 1; }
+
+.notice-title {
+    font-size: 14px;
+    font-weight: 700;
+    color: #9a3412;
+    margin-bottom: 4px;
+}
+
+.notice-desc {
+    font-size: 12px;
+    color: #c2410c;
+}
+
+.project-item-in-attendee {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 10px 14px;
+    margin: 6px 16px;
+    background: white;
+    border: 2px solid #e2e8f0;
+    border-radius: 8px;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.project-item-in-attendee:hover {
+    border-color: #667eea;
+    background: #f5f7ff;
+    transform: translateX(4px);
+    box-shadow: 0 4px 12px rgba(102, 126, 234, 0.15);
+}
+
+.project-item-icon {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 32px;
+    height: 32px;
+    background: linear-gradient(135deg, #e0e7ff 0%, #ddd6fe 100%);
+    color: #5b21b6;
+    border-radius: 6px;
+    font-size: 14px;
+    flex-shrink: 0;
+}
+
+.project-item-info { flex: 1; min-width: 0; }
+
+.project-item-name {
+    font-size: 13px;
+    font-weight: 600;
+    color: #1e293b;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.project-item-arrow {
+    display: flex;
+    align-items: center;
+    color: #cbd5e1;
+    font-size: 12px;
+    flex-shrink: 0;
+    transition: all 0.2s;
+}
+
+.project-item-in-attendee:hover .project-item-arrow {
+    color: #667eea;
+    transform: translateX(2px);
+}
+
+/* ========================================
    유효성 검사 시각 피드백
    ======================================== */
 
-.form-input.is-invalid,
-.form-textarea.is-invalid {
-    border-color: #ef4444 !important;
-    box-shadow: 0 0 0 3px rgba(239, 68, 68, 0.12) !important;
-    animation: shake 0.3s ease;
-}
-
-.payment-type-group.is-invalid {
-    border-color: #ef4444 !important;
-    box-shadow: 0 0 0 3px rgba(239, 68, 68, 0.12) !important;
+.clickable-input.error,
+.form-input.error,
+.form-textarea.error,
+.item-table.error {
+    border-color: #ef5350 !important;
+    border-width: 2px !important;
+    background: #fef2f2 !important;
+    animation: shake 0.5s ease;
 }
 
 @keyframes shake {
     0%, 100% { transform: translateX(0); }
-    25% { transform: translateX(-4px); }
-    75% { transform: translateX(4px); }
+    25% { transform: translateX(-5px); }
+    75% { transform: translateX(5px); }
 }
 
 /* ========================================
@@ -1075,37 +1233,170 @@ mark.search-highlight {
    ======================================== */
 
 @media print {
-    .write-container,
-    .write-layout {
-        padding: 0;
-        display: block;
+    @page {
+        size: A4 portrait;
+        margin: 0;
     }
 
-    .template-sidebar,
+    * {
+        -webkit-print-color-adjust: exact !important;
+        print-color-adjust: exact !important;
+    }
+
+    /* 인쇄 시 숨기기 */
+    .sidebar,
     .header,
-    .document-preview-toggle,
+    .template-sidebar,
     .common-info-section,
     .attachment-section,
-    .btn-add-item,
-    .btn-remove-row {
+    .document-preview-toggle,
+    .btn-outline,
+    .btn-primary,
+    .btn-secondary,
+    .btn-danger {
         display: none !important;
     }
 
-    .document-form-wrapper {
-        max-height: none !important;
-    }
-
-    .document-form {
+    /* body / html 초기화 */
+    body, html {
+        margin: 0;
         padding: 0;
+        width: 210mm;
+        height: auto;
+        overflow: visible;
     }
 
-    .editor-area {
-        background: white;
+    /* 모든 컨테이너 초기화 */
+    .container,
+    .main-content,
+    .write-container,
+    .write-layout,
+    .editor-area,
+    .document-form-wrapper,
+    .document-form-wrapper.collapsed,
+    .document-form {
+        all: unset;
+        display: block;
+        width: 100%;
+        max-width: none;
+        overflow: visible;
     }
 
-    .form-table input[type="text"],
-    .form-table input[type="date"] {
-        border: none;
-        background: transparent;
+    /* 문서 페이지 */
+    .document-form > div {
+        display: block !important;
+        width: 210mm !important;
+        min-height: 297mm !important;
+        page-break-after: always;
+        page-break-inside: avoid;
+        margin: 0 !important;
+        padding: 15mm !important;
+        box-sizing: border-box !important;
+        background: white !important;
+        border: none !important;
+        border-radius: 0 !important;
+        box-shadow: none !important;
+        max-width: none !important;
+        position: relative;
+    }
+
+    .document-form > div:last-child {
+        page-break-after: auto;
+    }
+
+    /* 결재란 — 우측 상단 고정 */
+    .document-form > div > div[style*="text-align: right"] {
+        text-align: right !important;
+        margin-bottom: 0 !important;
+        position: absolute !important;
+        top: 15mm !important;
+        right: 15mm !important;
+        width: auto !important;
+    }
+
+    .document-form > div > div[style*="text-align: right"] table {
+        border: 2px solid #000 !important;
+        border-collapse: collapse !important;
+        display: inline-table !important;
+        width: auto !important;
+        margin: 0 !important;
+    }
+
+    .document-form > div > div[style*="text-align: right"] table td {
+        width: 100px !important;
+        min-width: 100px !important;
+        max-width: 100px !important;
+        padding: 3px 10px !important;
+        border: 1px solid #000 !important;
+    }
+
+    .document-form > div > div[style*="text-align: right"] table tr:first-child td {
+        height: 18px !important;
+        font-size: 12px !important;
+        background: #f0f0f0 !important;
+        padding: 2px 10px !important;
+    }
+
+    .document-form > div > div[style*="text-align: right"] table tr:last-child td {
+        height: 60px !important;
+        padding: 6px 10px !important;
+    }
+
+    /* 테이블 */
+    table,
+    .form-table {
+        width: 100%;
+        border-collapse: collapse;
+        margin: 6px 0;
+    }
+
+    table td,
+    table th {
+        color: #000;
+        border-color: #000;
+        padding: 7px 9px;
+        font-size: 11px;
+        line-height: 1.5;
+    }
+
+    .form-table th {
+        font-size: 11px;
+        font-weight: 600;
+        background: #f0f0f0 !important;
+    }
+
+    /* 제목 */
+    .doc-title,
+    h2.doc-title {
+        color: #000;
+        font-weight: bold;
+        font-size: 24px;
+        text-align: center;
+        margin: 70px 0 16px 0;
+    }
+
+    /* input/textarea → 텍스트처럼 */
+    input, textarea, select {
+        color: #000 !important;
+        font-size: 11px !important;
+        border: none !important;
+        background: transparent !important;
+        pointer-events: none;
+    }
+
+    span {
+        color: #000;
+        font-size: 11px;
+    }
+
+    /* 품의 내용 높이 축소 */
+    td[style*="height: 180px"],
+    th[style*="height: 180px"] {
+        height: 80px !important;
+    }
+
+    /* 내역서 행 삭제 버튼 숨기기 */
+    .btn-remove-row {
+        display: none !important;
     }
 }
