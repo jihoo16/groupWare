@@ -5,9 +5,12 @@ import com.pinecni.erp.api.document.dto.ReceiptPurchaseCreateDTO;
 import com.pinecni.erp.api.document.dto.ReceiptPurchaseDTO;
 import com.pinecni.erp.api.document.dto.ReceiptPurchaseItemDTO;
 import com.pinecni.erp.api.document.mapper.ReceiptPurchaseMapper;
+import com.pinecni.erp.api.approval.repository.ApprovalDocumentRepository;
+import com.pinecni.erp.api.approval.service.DocumentSequenceService;
 import com.pinecni.erp.api.document.repository.ReceiptPurchaseAttachmentRepository;
 import com.pinecni.erp.api.document.repository.ReceiptPurchaseItemRepository;
 import com.pinecni.erp.api.document.repository.ReceiptPurchaseRepository;
+import com.pinecni.erp.entity.ApprovalDocument;
 import com.pinecni.erp.entity.ReceiptPurchase;
 import com.pinecni.erp.entity.ReceiptPurchaseAttachment;
 import com.pinecni.erp.entity.ReceiptPurchaseItem;
@@ -39,6 +42,8 @@ public class ReceiptPurchaseServiceImpl implements ReceiptPurchaseService {
     private final ReceiptPurchaseItemRepository itemRepository;
     private final ReceiptPurchaseAttachmentRepository attachmentRepository;
     private final ReceiptPurchaseMapper mapper;
+    private final ApprovalDocumentRepository approvalDocumentRepository;
+    private final DocumentSequenceService documentSequenceService;
 
     @Value("${file.base.dir}")
     private String baseDir;
@@ -100,16 +105,35 @@ public class ReceiptPurchaseServiceImpl implements ReceiptPurchaseService {
                                                      List<MultipartFile> receiptFiles,
                                                      List<MultipartFile> documentFiles,
                                                      Long uploadUserIdx) {
+        String purchaseType = dto.getPurchaseType() != null ? dto.getPurchaseType() : "material";
+        String documentType = "material".equals(purchaseType) ? "재료비" : "장비비";
+        String prefix = "material".equals(purchaseType) ? "MAT" : "EQP";
+
+        // 1. approval_documents 생성 및 문서번호 채번
+        String documentNo = documentSequenceService.generateDocumentNumber(documentType, prefix, uploadUserIdx);
+        ApprovalDocument approvalDoc = ApprovalDocument.builder()
+                .documentNo(documentNo)
+                .title(documentType)
+                .documentType(documentType)
+                .isProject(false)
+                .drafterUserIdx(uploadUserIdx)
+                .createdUserIdx(uploadUserIdx)
+                .updatedUserIdx(uploadUserIdx)
+                .build();
+        approvalDoc = approvalDocumentRepository.save(approvalDoc);
+
+        // 2. receipt_purchase 생성
         ReceiptPurchase entity = new ReceiptPurchase();
         entity.setProjectIdx(dto.getProjectIdx());
         entity.setCardIdx(dto.getCardIdx());
         entity.setAuthorIdx(dto.getAuthorIdx());
-        entity.setPurchaseType(dto.getPurchaseType() != null ? dto.getPurchaseType() : "material");
+        entity.setPurchaseType(purchaseType);
         entity.setApprovalDate(dto.getApprovalDate());
         entity.setDocumentTitle(dto.getDocumentTitle());
         entity.setDocumentContent(dto.getDocumentContent());
         entity.setPaymentType(dto.getPaymentType());
         entity.setTotalAmount(dto.getTotalAmount());
+        entity.setDocumentIdx(approvalDoc.getIdx());
         entity.setIsDeleted(false);
         entity.setCreatedAt(LocalDateTime.now());
         entity.setUpdatedAt(LocalDateTime.now());
@@ -196,6 +220,8 @@ public class ReceiptPurchaseServiceImpl implements ReceiptPurchaseService {
                             ? LocalDate.parse(dto.getItemDate()) : null)
                     .itemDesc(dto.getItemDesc())
                     .quantity(dto.getQuantity())
+                    .taxType(dto.getTaxType() != null ? dto.getTaxType() : "과세")
+                    .paymentAmount(dto.getPaymentAmount())
                     .supplyAmount(dto.getSupplyAmount())
                     .taxAmount(dto.getTaxAmount())
                     .remark(dto.getRemark())
