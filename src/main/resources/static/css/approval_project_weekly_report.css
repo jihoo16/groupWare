@@ -1481,9 +1481,9 @@ div:focus {
 .btn-primary,
 .btn-secondary,
 .btn-outline {
-    padding: 12px 24px;
+    padding: 14px 28px;
     border-radius: 8px;
-    font-size: 14px;
+    font-size: 15px;
     font-weight: 600;
     cursor: pointer;
     transition: all 0.2s;

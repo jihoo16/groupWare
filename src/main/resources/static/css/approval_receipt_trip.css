@@ -1334,10 +1334,10 @@ input.auto-datetime {
 
 /* 헤더 버튼 기본 스타일 */
 .header-right button {
-    padding: 12px 24px;
+    padding: 14px 28px;
     border: none;
     border-radius: 8px;
-    font-size: 14px;
+    font-size: 15px;
     font-weight: 600;
     cursor: pointer;
     transition: all 0.2s ease;
