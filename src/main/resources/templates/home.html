@@ -16,9 +16,10 @@
                     </h1>
                 </div>
                 <div class="header-right">
-                    <div class="search-box">
+                    <div class="search-box" id="globalSearchBox">
                         <i class="fas fa-search"></i>
-                        <input type="text" placeholder="검색...">
+                        <input type="text" id="globalSearchInput" placeholder="메뉴 검색..." autocomplete="off">
+                        <div id="searchDropdown" class="search-dropdown"></div>
                     </div>
                     <!-- 알림 버튼 - 구현되지 않은 서비스 (주석처리)
                     <button class="notification-btn">

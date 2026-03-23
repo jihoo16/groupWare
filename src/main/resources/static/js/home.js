@@ -22,16 +22,8 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     });
 
-    // 검색 기능 (추후 구현)
-    const searchInput = document.querySelector('.search-box input');
-    if (searchInput) {
-        searchInput.addEventListener('keypress', function(e) {
-            if (e.key === 'Enter') {
-                console.log('검색:', this.value);
-                // 검색 로직 추가
-            }
-        });
-    }
+    // 글로벌 메뉴 검색
+    initGlobalSearch();
 
     // 알림 버튼 클릭 이벤트 (추후 구현)
     const notificationBtn = document.querySelector('.notification-btn');
@@ -506,3 +498,232 @@ document.getElementById('scheduleDetailModal').addEventListener('click', functio
 document.getElementById('goToCalendarBtn').addEventListener('click', function() {
     window.location.href = '/calendar';
 });
+
+// ══════════════════════════════════════════════════════
+// 글로벌 메뉴 검색
+// ══════════════════════════════════════════════════════
+
+// 메뉴 항목 + 검색 키워드(동의어) 정의
+const MENU_ITEMS = [
+    // ── 전자 문서 ──
+    {
+        category: '전자 문서', label: '전자 문서함', url: '/approval', icon: 'fa-inbox',
+        keywords: ['결재함','문서함','내문서','결재대기','결재목록','승인대기','전자결재']
+    },
+    {
+        category: '전자 문서', label: '연차신청서', url: '/approval/vacation', icon: 'fa-umbrella-beach',
+        keywords: ['연차','휴가','월차','반차','연차신청','휴가신청','반차신청','연가','연차관리',
+                   '휴가신청서','반차신청서','월차신청','연차신청서작성','연차관리','반차','유급휴가']
+    },
+    {
+        category: '전자 문서', label: '개인경비 청구서', url: '/approval/expense', icon: 'fa-receipt',
+        keywords: ['개인경비','경비청구','개인경비청구','교통비','식비청구','경비','개인비용','청구서','경비신청']
+    },
+    {
+        category: '전자 문서', label: '구매요청서', url: '/approval/receipt-purchase', icon: 'fa-shopping-cart',
+        keywords: ['구매','구매요청','물품구매','구매신청','비품','소모품','구매품의','자재구매','물품신청']
+    },
+    // ── 프로젝트 문서함 ──
+    {
+        category: '프로젝트 문서함', label: '프로젝트 주간보고', url: '/approval/project-weekly-report', icon: 'fa-chart-line',
+        keywords: ['주간보고','주간업무','주간업무보고','주간보고서','위클리','weekly','보고서']
+    },
+    {
+        category: '프로젝트 문서함', label: '회의비 증빙', url: '/approval/receipt-meeting', icon: 'fa-users',
+        keywords: ['회의비','회의록','연구비회의','회의비청구','회의증빙','회의비신청','회의','회의비신청서']
+    },
+    {
+        category: '프로젝트 문서함', label: '단독 출장 증빙', url: '/approval/receipt-trip', icon: 'fa-plane',
+        keywords: ['출장','출장비','출장증빙','단독출장','출장신청','출장비청구','출장비증빙','연구비출장','출장신청서']
+    },
+    {
+        category: '프로젝트 문서함', label: '출장+회의 증빙', url: '/approval/receipt-trip-meeting', icon: 'fa-plane-arrival',
+        keywords: ['출장회의','출장+회의','출장및회의','출장회의증빙','출장+회의증빙','출장회의신청']
+    },
+    {
+        category: '프로젝트 문서함', label: '야근식대 증빙', url: '/approval/receipt-overtime', icon: 'fa-moon',
+        keywords: ['야근','야근식대','저녁식사','야근비','시간외','야근식비','초과근무식대','야근식대청구','야근신청']
+    },
+    // ── 프로젝트 관리 ──
+    {
+        category: '프로젝트 관리', label: '프로젝트 목록', url: '/project', icon: 'fa-project-diagram',
+        keywords: ['프로젝트','과제','프로젝트목록','프로젝트현황','연구과제','과제목록']
+    },
+    {
+        category: '프로젝트 관리', label: '신규 프로젝트', url: '/project/new', icon: 'fa-plus-circle',
+        keywords: ['프로젝트등록','신규과제','프로젝트생성','과제등록','신규프로젝트등록']
+    },
+    // ── 공통 메뉴 ──
+    {
+        category: '공통', label: '조직도', url: '/organization', icon: 'fa-sitemap',
+        keywords: ['조직','부서','직원','조직현황','회사구조','팀구성','org']
+    },
+    {
+        category: '공통', label: '일정관리', url: '/calendar', icon: 'fa-calendar-alt',
+        keywords: ['일정','캘린더','스케줄','회의실예약','일정등록','calendar','일정추가']
+    },
+    {
+        category: '공통', label: '외부인원 관리', url: '/external-person', icon: 'fa-user-tie',
+        keywords: ['외부인원','외부인력','협력사','외부인','외부직원','외부인원등록']
+    },
+    {
+        category: '공통', label: '설정', url: '/settings', icon: 'fa-user-cog',
+        keywords: ['설정','내정보','프로필','비밀번호변경','계정','마이페이지','개인설정']
+    },
+    // ── 관리 ──
+    {
+        category: '관리', label: '전체 연차관리', url: '/admin/vacation-management', icon: 'fa-users-cog',
+        keywords: ['연차관리','전체연차','직원연차','연차현황','연차승인','연차승인관리','연차현황관리']
+    },
+    {
+        category: '관리', label: '연차신청서 관리', url: '/admin/vacation-documents', icon: 'fa-file-alt',
+        keywords: ['연차신청관리','연차문서관리','휴가관리','연차문서']
+    },
+    {
+        category: '관리', label: '사용자 관리', url: '/hr', icon: 'fa-users',
+        keywords: ['직원관리','인사관리','임직원관리','계정관리','hr']
+    },
+    {
+        category: '관리', label: '보고체계 관리', url: '/manage-hierarchy', icon: 'fa-sitemap',
+        keywords: ['보고체계','결재라인','결재선','보고구조','결재체계']
+    },
+    {
+        category: '관리', label: '기초정보관리', url: '/basic-info', icon: 'fa-database',
+        keywords: ['기초정보','경비기준','직급별경비','기준경비','기초설정','비용기준']
+    },
+];
+
+// 쿼리와 메뉴 항목 매칭 (점수 기반)
+function searchMenuItems(query) {
+    if (!query || !query.trim()) return [];
+    const q = query.trim().toLowerCase();
+
+    return MENU_ITEMS
+        .map(item => {
+            const label    = item.label.toLowerCase();
+            const category = item.category.toLowerCase();
+            const keywords = item.keywords.map(k => k.toLowerCase());
+            let score = 0;
+
+            if (label === q)                               score = 100;
+            else if (label.startsWith(q))                  score = 80;
+            else if (label.includes(q))                    score = 60;
+            else if (keywords.some(k => k === q))          score = 75;
+            else if (keywords.some(k => k.startsWith(q)))  score = 55;
+            else if (keywords.some(k => k.includes(q)))    score = 35;
+            else if (category.includes(q))                 score = 20;
+
+            return { item, score };
+        })
+        .filter(x => x.score > 0)
+        .sort((a, b) => b.score - a.score)
+        .slice(0, 7)
+        .map(x => x.item);
+}
+
+// 쿼리 부분을 <mark>로 하이라이트
+function highlightSearchText(text, query) {
+    if (!query || !query.trim()) return escapeHtml(text);
+    const q = query.trim();
+    const idx = text.toLowerCase().indexOf(q.toLowerCase());
+    if (idx === -1) return escapeHtml(text);
+    return escapeHtml(text.substring(0, idx))
+        + `<mark>${escapeHtml(text.substring(idx, idx + q.length))}</mark>`
+        + escapeHtml(text.substring(idx + q.length));
+}
+
+// 검색 기능 초기화
+function initGlobalSearch() {
+    const input    = document.getElementById('globalSearchInput');
+    const box      = document.getElementById('globalSearchBox');
+    const dropdown = document.getElementById('searchDropdown');
+    if (!input || !dropdown) return;
+
+    let kbdIdx = -1; // 키보드 선택 인덱스
+
+    function showDropdown(items, query) {
+        kbdIdx = -1;
+        if (items.length === 0) {
+            dropdown.innerHTML = `
+                <div class="search-dropdown-empty">
+                    <i class="fas fa-search"></i>
+                    '<strong>${escapeHtml(query)}</strong>'에 대한 결과가 없습니다
+                </div>`;
+        } else {
+            dropdown.innerHTML = items.map((item, i) => `
+                <div class="search-dropdown-item" data-url="${item.url}" data-i="${i}">
+                    <div class="search-dropdown-icon"><i class="fas ${item.icon}"></i></div>
+                    <div class="search-dropdown-info">
+                        <div class="search-dropdown-label">${highlightSearchText(item.label, query)}</div>
+                        <div class="search-dropdown-breadcrumb">
+                            <span>${escapeHtml(item.category)}</span>
+                            <i class="fas fa-chevron-right" style="font-size:9px;"></i>
+                            <span>${escapeHtml(item.label)}</span>
+                        </div>
+                    </div>
+                    <i class="fas fa-arrow-right search-dropdown-arrow"></i>
+                </div>
+            `).join('');
+
+            // 클릭 이벤트 위임
+            dropdown.querySelectorAll('.search-dropdown-item').forEach(el => {
+                el.addEventListener('click', () => {
+                    window.location.href = el.getAttribute('data-url');
+                });
+            });
+        }
+        dropdown.classList.add('visible');
+    }
+
+    function hideDropdown() {
+        dropdown.classList.remove('visible');
+        kbdIdx = -1;
+    }
+
+    function updateKbdHighlight() {
+        dropdown.querySelectorAll('.search-dropdown-item').forEach((el, i) => {
+            el.classList.toggle('kbd-active', i === kbdIdx);
+        });
+    }
+
+    input.addEventListener('input', function () {
+        const q = this.value.trim();
+        if (!q) { hideDropdown(); return; }
+        const results = searchMenuItems(q);
+        showDropdown(results, q);
+    });
+
+    input.addEventListener('keydown', function (e) {
+        const items = dropdown.querySelectorAll('.search-dropdown-item');
+        if (!dropdown.classList.contains('visible')) return;
+
+        if (e.key === 'ArrowDown') {
+            e.preventDefault();
+            kbdIdx = Math.min(kbdIdx + 1, items.length - 1);
+            updateKbdHighlight();
+        } else if (e.key === 'ArrowUp') {
+            e.preventDefault();
+            kbdIdx = Math.max(kbdIdx - 1, -1);
+            updateKbdHighlight();
+        } else if (e.key === 'Enter') {
+            if (kbdIdx >= 0 && items[kbdIdx]) {
+                window.location.href = items[kbdIdx].getAttribute('data-url');
+            }
+        } else if (e.key === 'Escape') {
+            hideDropdown();
+            this.blur();
+        }
+    });
+
+    input.addEventListener('focus', function () {
+        if (this.value.trim()) {
+            const results = searchMenuItems(this.value.trim());
+            showDropdown(results, this.value.trim());
+        }
+    });
+
+    // 검색박스 외부 클릭 시 닫기
+    document.addEventListener('click', function (e) {
+        if (box && !box.contains(e.target)) hideDropdown();
+    });
+}
