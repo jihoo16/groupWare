@@ -1,4 +1,4 @@
-package com.pinecni.erp.service;
+package com.pinecni.erp.api.expense.service;
 
 import com.pinecni.erp.api.expense.dto.ExpenseApprovalCreateDTO;
 import com.pinecni.erp.entity.ExpenseApproval;
