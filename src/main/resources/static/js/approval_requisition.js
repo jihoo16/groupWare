@@ -2,6 +2,17 @@
 document.addEventListener('DOMContentLoaded', function() {
 
     // ==========================================
+    // 편집 상태
+    // ==========================================
+    let editingIdx = null;
+
+    const urlParams = new URLSearchParams(window.location.search);
+    const idxParam = urlParams.get('idx');
+    if (idxParam) {
+        editingIdx = parseInt(idxParam, 10);
+    }
+
+    // ==========================================
     // 날짜 모달 상태
     // ==========================================
     let currentDateInput = null;
@@ -31,20 +42,24 @@ document.addEventListener('DOMContentLoaded', function() {
 
     initBasicInfo();
 
-    // 개인카드 기본 선택
-    const payTypePersonalCard = document.getElementById('payTypePersonalCard');
-    if (payTypePersonalCard) {
-        payTypePersonalCard.checked = true;
-        updatePreview(); // 미리보기 반영
+    // 개인카드 기본 선택 (신규 작성 시에만)
+    if (!editingIdx) {
+        const payTypePersonalCard = document.getElementById('payTypePersonalCard');
+        if (payTypePersonalCard) {
+            payTypePersonalCard.checked = true;
+            updatePreview(); // 미리보기 반영
+        }
     }
 
-    // 첫 번째 항목 날짜 오늘 기본값
+    // 첫 번째 항목 날짜 오늘 기본값 (신규 작성 시에만)
     function todayStr() {
         const t = new Date();
         return `${t.getFullYear()}-${String(t.getMonth()+1).padStart(2,'0')}-${String(t.getDate()).padStart(2,'0')}`;
     }
-    const firstDateInput = document.querySelector('.req-date-picker');
-    if (firstDateInput) firstDateInput.value = todayStr();
+    if (!editingIdx) {
+        const firstDateInput = document.querySelector('.req-date-picker');
+        if (firstDateInput) firstDateInput.value = todayStr();
+    }
 
     // ==========================================
     // 템플릿 사이드바 카테고리 토글
@@ -259,9 +274,32 @@ document.addEventListener('DOMContentLoaded', function() {
     }
 
     // ==========================================
+    // 페이로드 수집
+    // ==========================================
+    function buildPayload() {
+        const content = document.getElementById('requisitionContent')?.value?.trim() || '';
+        const paymentType = document.querySelector('input[name="paymentType"]:checked')?.value || '';
+        const specialNote = document.getElementById('specialNote')?.value?.trim() || '';
+
+        const items = [];
+        let sortOrder = 0;
+        document.querySelectorAll('.expense-item').forEach(item => {
+            const itemDate = item.querySelector('.req-date-picker')?.value || null;
+            const itemDesc = item.querySelector('.desc-input')?.value?.trim() || '';
+            const amtRaw = (item.querySelector('.amount-input')?.value || '').replace(/,/g, '');
+            const amount = amtRaw ? parseFloat(amtRaw) : null;
+            const vendor = item.querySelector('.vendor-input')?.value?.trim() || '';
+            const remark = item.querySelector('.note-input')?.value?.trim() || '';
+            items.push({ itemDate: itemDate || null, itemDesc, amount, vendor, remark, sortOrder: sortOrder++ });
+        });
+
+        return { content, paymentType, specialNote, items };
+    }
+
+    // ==========================================
     // 저장 버튼
     // ==========================================
-    document.getElementById('submitBtn')?.addEventListener('click', function() {
+    document.getElementById('submitBtn')?.addEventListener('click', async function() {
         const content = document.getElementById('requisitionContent')?.value?.trim();
         const payType = document.querySelector('input[name="paymentType"]:checked')?.value;
 
@@ -283,20 +321,86 @@ document.addEventListener('DOMContentLoaded', function() {
             return;
         }
 
-        // 미리보기 열기
-        if (formWrapper && !formWrapper.classList.contains('expanded')) {
-            formWrapper.classList.add('expanded');
-            formWrapper.classList.remove('collapsed');
-            if (toggleBtn) toggleBtn.classList.add('active');
-            updatePreview();
-        }
+        const payload = buildPayload();
+        const isEdit = !!editingIdx;
+        const url = isEdit ? `/api/approval/requisition/${editingIdx}` : '/api/approval/requisition';
+        const method = isEdit ? 'PUT' : 'POST';
 
-        Swal.fire({
-            icon: 'success',
-            title: '저장 완료',
-            text: '품의서가 저장되었습니다. 인쇄하기 버튼으로 출력하세요.',
-            confirmButtonColor: '#667eea'
+        try {
+            const res = await fetch(url, {
+                method,
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(payload)
+            });
+
+            if (!res.ok) {
+                const err = await res.json().catch(() => ({}));
+                throw new Error(err.message || `서버 오류 (${res.status})`);
+            }
+
+            const data = await res.json();
+            editingIdx = data.idx;
+
+            // URL 업데이트 (신규 → 수정 모드로 전환, 새로고침 없이)
+            if (!isEdit) {
+                const newUrl = new URL(window.location.href);
+                newUrl.searchParams.set('idx', data.idx);
+                window.history.replaceState({}, '', newUrl.toString());
+            }
+
+            // 미리보기 열기
+            if (formWrapper && !formWrapper.classList.contains('expanded')) {
+                formWrapper.classList.add('expanded');
+                formWrapper.classList.remove('collapsed');
+                if (toggleBtn) toggleBtn.classList.add('active');
+                updatePreview();
+            }
+
+            // 삭제 버튼 표시
+            const deleteBtn = document.getElementById('deleteBtn');
+            if (deleteBtn) deleteBtn.style.display = 'flex';
+
+            Swal.fire({
+                icon: 'success',
+                title: isEdit ? '수정 완료' : '저장 완료',
+                text: isEdit ? '품의서가 수정되었습니다.' : '품의서가 저장되었습니다. 인쇄하기 버튼으로 출력하세요.',
+                confirmButtonColor: '#667eea'
+            });
+        } catch (e) {
+            Swal.fire({ icon: 'error', title: '저장 실패', text: e.message });
+        }
+    });
+
+    // ==========================================
+    // 삭제 버튼
+    // ==========================================
+    document.getElementById('deleteBtn')?.addEventListener('click', async function() {
+        if (!editingIdx) return;
+
+        const result = await Swal.fire({
+            title: '품의서 삭제',
+            text: '삭제된 품의서는 복구할 수 없습니다. 삭제하시겠습니까?',
+            icon: 'warning',
+            showCancelButton: true,
+            confirmButtonColor: '#e53e3e',
+            cancelButtonColor: '#718096',
+            confirmButtonText: '삭제',
+            cancelButtonText: '취소'
         });
+
+        if (!result.isConfirmed) return;
+
+        try {
+            const res = await fetch(`/api/approval/requisition/${editingIdx}`, { method: 'DELETE' });
+            if (!res.ok) {
+                const err = await res.json().catch(() => ({}));
+                throw new Error(err.message || `서버 오류 (${res.status})`);
+            }
+            await Swal.fire({ icon: 'success', title: '삭제 완료', text: '품의서가 삭제되었습니다.', confirmButtonColor: '#667eea' });
+            history.back();
+        } catch (e) {
+            Swal.fire({ icon: 'error', title: '삭제 실패', text: e.message });
+        }
     });
 
     // ==========================================
@@ -536,5 +640,95 @@ document.addEventListener('DOMContentLoaded', function() {
     document.querySelectorAll('.req-date-picker').forEach(el => {
         el.addEventListener('click', function() { openDateModal(this); });
     });
+
+    // ==========================================
+    // 편집 모드: 기존 데이터 불러오기
+    // ==========================================
+    function populateForm(data) {
+        // 기본 정보 (작성자는 CURRENT_USER 그대로 유지)
+        if (data.content) {
+            const el = document.getElementById('requisitionContent');
+            if (el) el.value = data.content;
+        }
+        if (data.specialNote) {
+            const el = document.getElementById('specialNote');
+            if (el) el.value = data.specialNote;
+        }
+        if (data.paymentType) {
+            const radio = document.querySelector(`input[name="paymentType"][value="${data.paymentType}"]`);
+            if (radio) radio.checked = true;
+        }
+
+        // 항목 목록 재구성
+        const container = document.getElementById('requisitionItemsContainer');
+        if (container && data.items && data.items.length > 0) {
+            container.innerHTML = '';
+            itemCount = 0;
+            data.items.forEach((item, idx) => {
+                itemCount++;
+                const div = document.createElement('div');
+                div.className = 'expense-item';
+                div.innerHTML = `
+                    <div class="expense-item-header">
+                        <span class="expense-item-number">${itemCount}</span>
+                        <button type="button" class="btn-remove-item" onclick="removeRequisitionItem(this)">
+                            <i class="fas fa-times"></i>
+                        </button>
+                    </div>
+                    <div class="expense-item-body">
+                        <div class="form-row">
+                            <div class="form-group" style="flex: 0 0 160px;">
+                                <label><i class="fas fa-calendar-day"></i> 날짜</label>
+                                <input type="text" class="form-input date-input req-date-picker" value="${item.itemDate || ''}" readonly>
+                            </div>
+                            <div class="form-group" style="flex: 1;">
+                                <label><i class="fas fa-edit"></i> 적요</label>
+                                <input type="text" class="form-input desc-input" placeholder="내용 입력" value="${item.itemDesc || ''}">
+                            </div>
+                        </div>
+                        <div class="form-row">
+                            <div class="form-group" style="flex: 1;">
+                                <label><i class="fas fa-won-sign"></i> 금액</label>
+                                <input type="text" class="form-input amount-input" placeholder="금액 입력" inputmode="numeric"
+                                    value="${item.amount != null ? Number(item.amount).toLocaleString('ko-KR') : ''}">
+                            </div>
+                            <div class="form-group" style="flex: 1;">
+                                <label><i class="fas fa-store"></i> 상대처</label>
+                                <input type="text" class="form-input vendor-input" placeholder="상대처 입력" value="${item.vendor || ''}">
+                            </div>
+                            <div class="form-group" style="flex: 0 0 160px;">
+                                <label><i class="fas fa-sticky-note"></i> 비고</label>
+                                <input type="text" class="form-input note-input" placeholder="" value="${item.remark || ''}">
+                            </div>
+                        </div>
+                    </div>
+                `;
+                container.appendChild(div);
+                bindItemEvents(div);
+            });
+        }
+
+        // 삭제 버튼 표시
+        const deleteBtn = document.getElementById('deleteBtn');
+        if (deleteBtn) deleteBtn.style.display = 'flex';
+
+        updateTotals();
+        updatePreview();
+    }
+
+    async function loadDocument(idx) {
+        try {
+            const res = await fetch(`/api/approval/requisition/${idx}`);
+            if (!res.ok) throw new Error(`불러오기 실패 (${res.status})`);
+            const data = await res.json();
+            populateForm(data);
+        } catch (e) {
+            Swal.fire({ icon: 'error', title: '불러오기 실패', text: e.message });
+        }
+    }
+
+    if (editingIdx) {
+        loadDocument(editingIdx);
+    }
 
 });

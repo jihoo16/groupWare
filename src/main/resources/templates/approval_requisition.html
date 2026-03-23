@@ -20,6 +20,10 @@
                         저장
                         <span class="tooltip-text">💡 모든 필수값을 채우면 좌측에 인쇄하기 버튼이 나타납니다</span>
                     </button>
+                    <button class="btn-danger btn-lg" id="deleteBtn" style="display:none;">
+                        <i class="fas fa-trash"></i>
+                        삭제
+                    </button>
                     <button class="btn-secondary btn-lg" onclick="history.back()">
                         <i class="fas fa-arrow-left"></i>
                         돌아가기
@@ -229,20 +233,19 @@
                                     </colgroup>
                                     <tr>
                                         <th>계</th>
-                                        <td id="previewTotalAmount" style="font-weight: 700;">-</td>
+                                        <td colspan="4" id="previewTotalAmount" style="font-weight: 700;">-</td>
                                     </tr>
                                     <tr>
                                         <th>지급 종류</th>
-                                        <td id="previewPaymentType">현금( &nbsp;&nbsp;) / 사업비카드( &nbsp;&nbsp;) / 개인카드( &nbsp;&nbsp;)</td>
+                                        <td colspan="4" id="previewPaymentType">현금( &nbsp;&nbsp;) / 사업비카드( &nbsp;&nbsp;) / 개인카드( &nbsp;&nbsp;)</td>
                                     </tr>
                                     <tr>
                                         <th style="vertical-align: top; padding-top: 10px;">특의사항</th>
-                                        <td id="previewSpecialNote" style="min-height: 60px; white-space: pre-wrap; vertical-align: top; padding-top: 10px;"></td>
+                                        <td colspan="4" id="previewSpecialNote" style="min-height: 60px; white-space: pre-wrap; vertical-align: top; padding-top: 10px;"></td>
                                     </tr>
                                     <tr>
                                         <th>작 성 자</th>
-                                        <td colspan="5"></td>
-                                        <th style="width: 60px;">확 인</th>
+                                        <td colspan="4"></td>
                                     </tr>
                                     <tr>
                                         <th>일 자</th>
@@ -250,7 +253,6 @@
                                         <th style="width: 40px;">성 명</th>
                                         <td id="previewApplicant">-</td>
                                         <td style="width: 36px; text-align: center;">(인)</td>
-                                        <td colspan="2"></td>
                                     </tr>
                                 </table>
 

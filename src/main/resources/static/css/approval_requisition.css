@@ -209,6 +209,9 @@ button:focus, a:focus, div:focus { outline: none !important; box-shadow: none !i
 .btn-secondary { background: #f1f5f9; color: #475569; }
 .btn-secondary:hover { background: #e2e8f0; }
 
+.btn-danger { background: #ef5350; color: white; }
+.btn-danger:hover { background: #e53935; transform: translateY(-2px); }
+
 .btn-outline { background: white; border: 2px solid #667eea; color: #667eea; }
 .btn-outline:hover { background: #667eea; color: white; }
 
