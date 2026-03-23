@@ -20,7 +20,7 @@ import com.pinecni.erp.api.project.repository.ReceiptTripRepository;
 import com.pinecni.erp.api.user.repository.UserRepository;
 import com.pinecni.erp.constant.CodeConstants;
 import com.pinecni.erp.entity.*;
-import com.pinecni.erp.repository.ExpenseApprovalRepository;
+import com.pinecni.erp.api.expense.repository.ExpenseApprovalRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;

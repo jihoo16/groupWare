@@ -1,4 +1,4 @@
-package com.pinecni.erp.service.impl;
+package com.pinecni.erp.api.expense.service;
 
 import com.pinecni.erp.api.approval.repository.ApprovalDocumentRepository;
 import com.pinecni.erp.api.approval.service.DocumentSequenceService;
@@ -7,9 +7,8 @@ import com.pinecni.erp.api.expense.dto.ExpenseDetailDTO;
 import com.pinecni.erp.entity.ApprovalDocument;
 import com.pinecni.erp.entity.ExpenseApproval;
 import com.pinecni.erp.entity.ExpenseDetail;
-import com.pinecni.erp.repository.ExpenseApprovalRepository;
-import com.pinecni.erp.repository.ExpenseDetailRepository;
-import com.pinecni.erp.service.ExpenseApprovalService;
+import com.pinecni.erp.api.expense.repository.ExpenseApprovalRepository;
+import com.pinecni.erp.api.expense.repository.ExpenseDetailRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;

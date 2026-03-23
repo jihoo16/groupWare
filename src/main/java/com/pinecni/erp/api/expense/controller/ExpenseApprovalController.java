@@ -5,7 +5,7 @@ import com.pinecni.erp.api.expense.dto.ExpenseApprovalDTO;
 import com.pinecni.erp.api.expense.dto.ExpenseDetailDTO;
 import com.pinecni.erp.entity.ExpenseApproval;
 import com.pinecni.erp.entity.ExpenseDetail;
-import com.pinecni.erp.service.ExpenseApprovalService;
+import com.pinecni.erp.api.expense.service.ExpenseApprovalService;
 import jakarta.servlet.http.HttpSession;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
