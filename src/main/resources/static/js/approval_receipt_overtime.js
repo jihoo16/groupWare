@@ -991,30 +991,134 @@ document.addEventListener('DOMContentLoaded', async function() {
         return text.replace(regex, '<mark>$1</mark>');
     }
 
+    // 카드 모달에서 프로젝트 목록 렌더링
+    function renderProjectListInCardModal(searchText = '') {
+        if (!cardList) return;
+
+        let filtered = projects;
+        if (searchText) {
+            filtered = projects.filter(proj =>
+                matchesSearch(proj.projectName + (proj.description || ''), searchText)
+            );
+        }
+
+        if (filtered.length === 0) {
+            cardList.innerHTML = `
+                <div style="text-align: center; padding: 40px; color: #94a3b8;">
+                    <i class="fas fa-search" style="font-size: 32px; margin-bottom: 12px; display: block;"></i>
+                    ${searchText ? '검색 결과가 없습니다.' : '등록된 프로젝트가 없습니다.'}
+                </div>
+            `;
+            return;
+        }
+
+        const headerMessage = `
+            <div class="convenience-notice">
+                <div class="notice-icon"><i class="fas fa-lightbulb"></i></div>
+                <div class="notice-content">
+                    <div class="notice-title">프로젝트를 먼저 선택해주세요</div>
+                    <div class="notice-desc">프로젝트를 선택하면 카드 목록이 표시됩니다</div>
+                </div>
+            </div>
+        `;
+
+        const projectItems = filtered.map(proj => {
+            const highlightedName = searchText
+                ? proj.projectName.replace(new RegExp(`(${searchText.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')})`, 'gi'), '<mark>$1</mark>')
+                : proj.projectName;
+            return `
+                <div class="project-item-in-attendee" data-project-idx="${proj.idx}">
+                    <div class="project-item-icon"><i class="fas fa-folder"></i></div>
+                    <div class="project-item-info">
+                        <div class="project-item-name">${highlightedName}</div>
+                    </div>
+                    <div class="project-item-arrow"><i class="fas fa-chevron-right"></i></div>
+                </div>
+            `;
+        }).join('');
+
+        cardList.innerHTML = headerMessage + projectItems;
+
+        cardList.querySelectorAll('.project-item-in-attendee').forEach(item => {
+            item.addEventListener('click', async function() {
+                const projectIdx = this.getAttribute('data-project-idx');
+                const proj = projects.find(p => String(p.idx) === String(projectIdx));
+                if (!proj) return;
+
+                selectedProject = proj;
+
+                const otProject = document.getElementById('ot_project');
+                if (otProject) {
+                    otProject.value = proj.projectName;
+                    otProject.classList.remove('error');
+                }
+                const selectedProjectIdx = document.getElementById('selectedProjectIdx');
+                if (selectedProjectIdx) selectedProjectIdx.value = proj.idx;
+
+                document.querySelectorAll('.ot-auto-project').forEach(field => {
+                    field.textContent = proj.projectName;
+                });
+
+                const otManager = document.getElementById('ot_manager');
+                if (otManager && proj.projectManagerName) {
+                    otManager.value = proj.projectManagerName;
+                    otManager.classList.remove('error');
+                    document.querySelectorAll('.ot-auto-manager').forEach(field => {
+                        field.textContent = proj.projectManagerName;
+                    });
+                }
+
+                await loadProjectMembers(proj.idx);
+                await loadProjectCards(proj.idx);
+
+                if (projectCards && projectCards.length > 0) {
+                    selectedCard = projectCards[0];
+                    const otCard = document.getElementById('ot_card');
+                    if (otCard) {
+                        otCard.value = projectCards[0].cardName;
+                        otCard.classList.remove('error');
+                    }
+                    const selectedCardIdx = document.getElementById('selectedCardIdx');
+                    if (selectedCardIdx) selectedCardIdx.value = projectCards[0].idx;
+                }
+
+                renderCardList(projectCards);
+                if (cardSearch) cardSearch.value = '';
+            });
+        });
+    }
+
     // 카드 검색
     if (cardSearch) {
         cardSearch.addEventListener('input', function() {
-            const keyword = this.value.trim().toLowerCase();
-            const filtered = projectCards.filter(card =>
-                (card.cardName || '').toLowerCase().includes(keyword) ||
-                (card.cardNumber || '').toLowerCase().includes(keyword)
-            );
-            renderCardList(filtered, this.value.trim());
+            const keyword = this.value.trim();
+            const projectIdxInput = document.getElementById('selectedProjectIdx');
+
+            if (!projectIdxInput || !projectIdxInput.value) {
+                renderProjectListInCardModal(keyword);
+            } else {
+                const filtered = projectCards.filter(card =>
+                    (card.cardName || '').toLowerCase().includes(keyword.toLowerCase()) ||
+                    (card.cardNumber || '').toLowerCase().includes(keyword.toLowerCase())
+                );
+                renderCardList(filtered, keyword);
+            }
         });
     }
 
     window.openCardModal = function() {
         const projectIdxInput = document.getElementById('selectedProjectIdx');
 
-        if (!projectIdxInput || !projectIdxInput.value) {
-            showWarning('과제를 먼저 선택해주세요.');
-            return;
-        }
-
         if (cardModal) {
             cardModal.classList.add('show');
-            renderCardList(projectCards);
-            if (cardSearch) cardSearch.value = '';
+
+            if (!projectIdxInput || !projectIdxInput.value) {
+                renderProjectListInCardModal('');
+                if (cardSearch) cardSearch.value = '';
+            } else {
+                renderCardList(projectCards);
+                if (cardSearch) cardSearch.value = '';
+            }
         }
     };
 
