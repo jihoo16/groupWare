@@ -10,6 +10,7 @@ import com.pinecni.erp.api.code.repository.CodeRepository;
 import com.pinecni.erp.api.document.repository.MeetingMinutesRepository;
 import com.pinecni.erp.api.document.repository.WeeklyReportRepository;
 import com.pinecni.erp.api.document.repository.ReceiptOvertimeRepository;
+import com.pinecni.erp.api.document.repository.ReceiptPurchaseRepository;
 import com.pinecni.erp.api.project.repository.ProjectCardRepository;
 import com.pinecni.erp.api.project.repository.ProjectRepository;
 import com.pinecni.erp.api.project.repository.ReceiptMeetingRepository;
@@ -54,6 +55,7 @@ public class ApprovalDocumentServiceImpl implements ApprovalDocumentService {
     private final ReceiptMeetingRepository receiptMeetingRepository;
     private final ReceiptTripMeetingRepository receiptTripMeetingRepository;
     private final ReceiptOvertimeRepository receiptOvertimeRepository;
+    private final ReceiptPurchaseRepository receiptPurchaseRepository;
     private final ProjectCardRepository projectCardRepository;
     private final ProjectRepository projectRepository;
     private final ReceiptMeetingAttachmentRepository receiptMeetingAttachmentRepository;
@@ -252,6 +254,23 @@ public class ApprovalDocumentServiceImpl implements ApprovalDocumentService {
                 }
                 dto.setAttachments(buildOvertimeAttachments(receiptOvertime.getIdx()));
             });
+        } else if ("재료비".equals(documentType) || "장비비".equals(documentType)) {
+            receiptPurchaseRepository.findByDocumentIdx(document.getIdx()).ifPresent(purchase -> {
+                dto.setSourceDocumentId(purchase.getIdx());
+                dto.setAmount(purchase.getTotalAmount());
+                String formattedAmount = purchase.getTotalAmount() != null && purchase.getTotalAmount().compareTo(BigDecimal.ZERO) != 0
+                        ? String.format("%,d", purchase.getTotalAmount().longValue()) + "원" : "0원";
+                dto.setTitle(documentType + " - " + formattedAmount);
+                if (purchase.getProjectIdx() != null) {
+                    dto.setProjectIdx(purchase.getProjectIdx());
+                    projectRepository.findById(purchase.getProjectIdx()).ifPresent(project -> {
+                        dto.setProjectName(project.getProjectName());
+                    });
+                }
+                if (purchase.getApprovalDate() != null) {
+                    dto.setEventDate(purchase.getApprovalDate());
+                }
+            });
         } else if ("지출승인서".equals(documentType)) {
             expenseApprovalRepository.findByDocumentIdx(document.getIdx()).ifPresent(expense -> {
                 dto.setSourceDocumentId(expense.getIdx());
@@ -287,6 +306,9 @@ public class ApprovalDocumentServiceImpl implements ApprovalDocumentService {
 
         // 야근식대 조회
         result.addAll(getReceiptOvertimesByProject(projectIdx));
+
+        // 재료비/장비비 조회
+        result.addAll(getReceiptPurchasesByProject(projectIdx));
 
         // 최신순 정렬
         result.sort(Comparator.comparing(ApprovalDocumentDTO::getCreatedAt, Comparator.nullsLast(Comparator.reverseOrder())));
@@ -664,6 +686,48 @@ public class ApprovalDocumentServiceImpl implements ApprovalDocumentService {
         });
 
         dto.setAttachments(buildOvertimeAttachments(overtime.getIdx()));
+
+        return dto;
+    }
+
+    private List<ApprovalDocumentDTO> getReceiptPurchasesByProject(Long projectIdx) {
+        return receiptPurchaseRepository.findByProjectIdxOrderByApprovalDateDesc(projectIdx).stream()
+                .map(this::convertReceiptPurchaseToDTO)
+                .collect(Collectors.toList());
+    }
+
+    private ApprovalDocumentDTO convertReceiptPurchaseToDTO(ReceiptPurchase purchase) {
+        String documentTypeName = "material".equals(purchase.getPurchaseType()) ? "재료비" : "장비비";
+        String formattedAmount = purchase.getTotalAmount() != null && purchase.getTotalAmount().compareTo(BigDecimal.ZERO) != 0
+                ? String.format("%,d", purchase.getTotalAmount().longValue()) + "원" : "0원";
+
+        ApprovalDocumentDTO dto = ApprovalDocumentDTO.builder()
+                .idx(purchase.getDocumentIdx())
+                .sourceDocumentId(purchase.getIdx())
+                .title(documentTypeName + " - " + formattedAmount)
+                .documentType(documentTypeName)
+                .drafterUserIdx(purchase.getAuthorIdx())
+                .content(purchase.getDocumentContent())
+                .createdAt(purchase.getCreatedAt())
+                .updatedAt(purchase.getUpdatedAt())
+                .amount(purchase.getTotalAmount())
+                .projectIdx(purchase.getProjectIdx())
+                .eventDate(purchase.getApprovalDate())
+                .build();
+
+        if (purchase.getProjectIdx() != null) {
+            projectRepository.findById(purchase.getProjectIdx()).ifPresent(project ->
+                    dto.setProjectName(project.getProjectName()));
+        }
+
+        userRepository.findById(purchase.getAuthorIdx()).ifPresent(user -> {
+            dto.setDrafterName(user.getEmpName());
+            dto.setDrafterDept(user.getEmpDept());
+            if (user.getEmpDept() != null) {
+                codeRepository.findByGroupCodeAndCode(CodeConstants.GroupCode.DEPARTMENT.getCode(), user.getEmpDept())
+                        .ifPresent(code -> dto.setDrafterDeptName(code.getCodeName()));
+            }
+        });
 
         return dto;
     }
