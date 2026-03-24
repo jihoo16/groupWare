@@ -439,6 +439,8 @@ document.addEventListener('DOMContentLoaded', function() {
                 window.location.href = `/approval/vacation/detail?documentIdx=${reportId}`;
             } else if (category === 'expense' && reportId) {
                 window.location.href = `/approval/expense/detail?idx=${reportId}`;
+            } else if (category === 'requisition' && reportId) {
+                window.location.href = `/approval/requisition/detail?idx=${reportId}`;
             } else {
                 const title = titleWrap.textContent;
                 showWarning(`"${title}" 상세보기 기능은 추후 구현됩니다.`);

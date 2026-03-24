@@ -923,6 +923,32 @@ button:focus, a:focus, div:focus { outline: none !important; box-shadow: none !i
 .date-calendar-day.future-date:hover { background: #f8f9fa !important; transform: none !important; box-shadow: none !important; }
 
 /* ==========================================
+   필수값 유효성
+   ========================================== */
+
+.field-empty {
+    border: 2px solid #ef4444 !important;
+    background: #fef2f2 !important;
+    animation: shake 0.5s ease;
+}
+
+.payment-type-group.field-empty {
+    outline: 2px solid #ef4444;
+    border-radius: 8px;
+    background: #fef2f2 !important;
+    padding: 6px 8px;
+    animation: shake 0.5s ease;
+}
+
+@keyframes shake {
+    0%, 100% { transform: translateX(0); }
+    20%       { transform: translateX(-6px); }
+    40%       { transform: translateX(6px); }
+    60%       { transform: translateX(-4px); }
+    80%       { transform: translateX(4px); }
+}
+
+/* ==========================================
    인쇄
    ========================================== */
 

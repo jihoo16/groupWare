@@ -175,6 +175,7 @@ document.addEventListener('DOMContentLoaded', function() {
         reNumberItems();
         updateTotals();
         updatePreview();
+        validateRequiredFields();
     };
 
     function reNumberItems() {
@@ -198,12 +199,19 @@ document.addEventListener('DOMContentLoaded', function() {
             this.value = raw ? Number(raw).toLocaleString('ko-KR') : '';
             updateTotals();
             updatePreview();
+            validateRequiredFields();
         });
 
-        // 나머지 필드 → 미리보기 갱신
+        // 나머지 필드 → 미리보기 갱신 + 검증
         ['desc-input', 'vendor-input', 'note-input'].forEach(cls => {
-            item.querySelector(`.${cls}`)?.addEventListener('input', updatePreview);
+            item.querySelector(`.${cls}`)?.addEventListener('input', function() {
+                updatePreview();
+                validateRequiredFields();
+            });
         });
+
+        // 날짜 변경 시 검증
+        item.querySelector('.req-date-picker')?.addEventListener('change', validateRequiredFields);
     }
 
     // 초기 아이템 이벤트 바인딩
@@ -285,10 +293,6 @@ document.addEventListener('DOMContentLoaded', function() {
             ? '일금 ' + toKoreanAmount(totalAmount) + '원정  (₩ ' + totalAmount.toLocaleString('ko-KR') + ')'
             : '-');
 
-        // 인쇄 버튼 가시성
-        const hasRequired = content.trim() && payType && totalAmount > 0;
-        const printBtn = document.getElementById('printBtn');
-        if (printBtn) printBtn.style.display = hasRequired ? 'flex' : 'none';
     }
 
     // 입력 이벤트 연결
@@ -338,27 +342,79 @@ document.addEventListener('DOMContentLoaded', function() {
     }
 
     // ==========================================
+    // 필수값 검증
+    // ==========================================
+    function validateRequiredFields() {
+        let allFilled = true;
+
+        // 품의 내용
+        const contentEl = document.getElementById('requisitionContent');
+        if (contentEl) {
+            if (!contentEl.value.trim()) {
+                contentEl.classList.add('field-empty');
+                allFilled = false;
+            } else {
+                contentEl.classList.remove('field-empty');
+            }
+        }
+
+        // 지출 예정 내역 — 날짜·적요·금액 필수
+        document.querySelectorAll('.expense-item').forEach(item => {
+            const dateInput   = item.querySelector('.req-date-picker');
+            const descInput   = item.querySelector('.desc-input');
+            const amountInput = item.querySelector('.amount-input');
+
+            const dateFilled   = !!(dateInput?.value);
+            const descFilled   = !!(descInput?.value?.trim());
+            const amountFilled = !!(amountInput?.value?.replace(/,/g, ''));
+
+            if (!dateFilled) { dateInput?.classList.add('field-empty');    allFilled = false; }
+            else              { dateInput?.classList.remove('field-empty'); }
+
+            if (!descFilled)  { descInput?.classList.add('field-empty');    allFilled = false; }
+            else              { descInput?.classList.remove('field-empty'); }
+
+            if (!amountFilled){ amountInput?.classList.add('field-empty');   allFilled = false; }
+            else              { amountInput?.classList.remove('field-empty'); }
+        });
+
+        // 지급 종류
+        const payType = document.querySelector('input[name="paymentType"]:checked')?.value;
+        const payGroup = document.querySelector('.payment-type-group');
+        if (!payType) {
+            payGroup?.classList.add('field-empty');
+            allFilled = false;
+        } else {
+            payGroup?.classList.remove('field-empty');
+        }
+
+        // 인쇄 버튼 표시
+        const printBtn = document.getElementById('printBtn');
+        if (printBtn) printBtn.style.display = allFilled ? 'flex' : 'none';
+
+        return allFilled;
+    }
+
+    // 실시간 검증 — 품의 내용·지급 종류
+    document.getElementById('requisitionContent')?.addEventListener('input', validateRequiredFields);
+    document.querySelectorAll('input[name="paymentType"]').forEach(r =>
+        r.addEventListener('change', validateRequiredFields)
+    );
+
+    // 항목 추가 후 재검증
+    document.getElementById('addRowBtn')?.addEventListener('click', () =>
+        setTimeout(validateRequiredFields, 0)
+    );
+
+    // ==========================================
     // 저장 버튼
     // ==========================================
     document.getElementById('submitBtn')?.addEventListener('click', async function() {
-        const content = document.getElementById('requisitionContent')?.value?.trim();
-        const payType = document.querySelector('input[name="paymentType"]:checked')?.value;
-
-        if (!content) {
-            Swal.fire({ icon: 'warning', title: '입력 필요', text: '품의 내용을 입력해주세요.' });
-            document.getElementById('requisitionContent')?.focus();
-            return;
-        }
-        if (!payType) {
-            Swal.fire({ icon: 'warning', title: '입력 필요', text: '지급 종류를 선택해주세요.' });
-            return;
-        }
-        let hasAmount = false;
-        document.querySelectorAll('.amount-input').forEach(input => {
-            if (Number(input.value.replace(/,/g, '')) > 0) hasAmount = true;
-        });
-        if (!hasAmount) {
-            Swal.fire({ icon: 'warning', title: '입력 필요', text: '지출 예정 내역에 금액을 입력해주세요.' });
+        const isValid = validateRequiredFields();
+        if (!isValid) {
+            showWarning('필수값을 모두 입력해주세요.<br>필수값은 빨간 테두리로 표시 됩니다.');
+            const firstEmpty = document.querySelector('.field-empty');
+            if (firstEmpty) firstEmpty.scrollIntoView({ behavior: 'smooth', block: 'center' });
             return;
         }
 
@@ -380,35 +436,10 @@ document.addEventListener('DOMContentLoaded', function() {
             }
 
             const data = await res.json();
-            editingIdx = data.idx;
-
-            // URL 업데이트 (신규 → 수정 모드로 전환, 새로고침 없이)
-            if (!isEdit) {
-                const newUrl = new URL(window.location.href);
-                newUrl.searchParams.set('idx', data.idx);
-                window.history.replaceState({}, '', newUrl.toString());
-            }
-
-            // 미리보기 열기
-            if (formWrapper && !formWrapper.classList.contains('expanded')) {
-                formWrapper.classList.add('expanded');
-                formWrapper.classList.remove('collapsed');
-                if (toggleBtn) toggleBtn.classList.add('active');
-                updatePreview();
-            }
-
-            // 삭제 버튼 표시
-            const deleteBtn = document.getElementById('deleteBtn');
-            if (deleteBtn) deleteBtn.style.display = 'flex';
-
-            Swal.fire({
-                icon: 'success',
-                title: isEdit ? '수정 완료' : '저장 완료',
-                text: isEdit ? '품의서가 수정되었습니다.' : '품의서가 저장되었습니다. 인쇄하기 버튼으로 출력하세요.',
-                confirmButtonColor: '#667eea'
-            });
+            await showSuccess('저장이 완료되었습니다.');
+            window.location.href = '/approval';
         } catch (e) {
-            Swal.fire({ icon: 'error', title: '저장 실패', text: e.message });
+            showError(e.message || '저장 중 오류가 발생했습니다. 다시 시도해주세요.');
         }
     });
 
@@ -418,18 +449,8 @@ document.addEventListener('DOMContentLoaded', function() {
     document.getElementById('deleteBtn')?.addEventListener('click', async function() {
         if (!editingIdx) return;
 
-        const result = await Swal.fire({
-            title: '품의서 삭제',
-            text: '삭제된 품의서는 복구할 수 없습니다. 삭제하시겠습니까?',
-            icon: 'warning',
-            showCancelButton: true,
-            confirmButtonColor: '#e53e3e',
-            cancelButtonColor: '#718096',
-            confirmButtonText: '삭제',
-            cancelButtonText: '취소'
-        });
-
-        if (!result.isConfirmed) return;
+        const confirmed = await showDeleteConfirm('삭제된 품의서는 복구할 수 없습니다. 삭제하시겠습니까?', '품의서 삭제');
+        if (!confirmed) return;
 
         try {
             const res = await fetch(`/api/approval/requisition/${editingIdx}`, { method: 'DELETE' });
@@ -437,10 +458,10 @@ document.addEventListener('DOMContentLoaded', function() {
                 const err = await res.json().catch(() => ({}));
                 throw new Error(err.message || `서버 오류 (${res.status})`);
             }
-            await Swal.fire({ icon: 'success', title: '삭제 완료', text: '품의서가 삭제되었습니다.', confirmButtonColor: '#667eea' });
-            history.back();
+            await showSuccess('품의서가 삭제되었습니다.');
+            window.location.href = '/approval';
         } catch (e) {
-            Swal.fire({ icon: 'error', title: '삭제 실패', text: e.message });
+            showError(e.message || '삭제 중 오류가 발생했습니다.');
         }
     });
 
@@ -760,6 +781,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
         updateTotals();
         updatePreview();
+        validateRequiredFields();
     }
 
     async function loadDocument(idx) {
@@ -776,5 +798,8 @@ document.addEventListener('DOMContentLoaded', function() {
     if (editingIdx) {
         loadDocument(editingIdx);
     }
+
+    // 페이지 로드 후 초기 검증
+    setTimeout(validateRequiredFields, 300);
 
 });

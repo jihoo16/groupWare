@@ -7,7 +7,9 @@ import com.pinecni.erp.api.document.dto.ExpenseRequisitionDTO;
 import com.pinecni.erp.api.document.dto.ExpenseRequisitionItemDTO;
 import com.pinecni.erp.api.document.repository.ExpenseRequisitionItemRepository;
 import com.pinecni.erp.api.document.repository.ExpenseRequisitionRepository;
+import com.pinecni.erp.api.code.repository.CodeRepository;
 import com.pinecni.erp.api.user.repository.UserRepository;
+import com.pinecni.erp.constant.CodeConstants;
 import com.pinecni.erp.entity.ApprovalDocument;
 import com.pinecni.erp.entity.ExpenseRequisition;
 import com.pinecni.erp.entity.ExpenseRequisitionItem;
@@ -41,6 +43,7 @@ public class ExpenseRequisitionServiceImpl implements ExpenseRequisitionService 
     private final ApprovalDocumentRepository approvalDocumentRepository;
     private final DocumentSequenceService documentSequenceService;
     private final UserRepository userRepository;
+    private final CodeRepository codeRepository;
 
     // ── CREATE ───────────────────────────────────────────────────────────────
 
@@ -63,7 +66,9 @@ public class ExpenseRequisitionServiceImpl implements ExpenseRequisitionService 
                 .documentNo(documentNo)
                 .title(DOCUMENT_TYPE)
                 .documentType(DOCUMENT_TYPE)
-                .content("신청금액: ₩" + String.format("%,d", totalAmount.longValue()))
+                .content((dto.getContent() != null && !dto.getContent().isBlank()
+                        ? dto.getContent() + " | " : "")
+                        + "신청금액: ₩" + String.format("%,d", totalAmount.longValue()))
                 .isProject(false)
                 .drafterUserIdx(userIdx)
                 .createdUserIdx(userIdx)
@@ -165,7 +170,9 @@ public class ExpenseRequisitionServiceImpl implements ExpenseRequisitionService 
             final BigDecimal finalTotalAmount = totalAmount;
             approvalDocumentRepository.findById(requisition.getDocumentIdx()).ifPresent(doc -> {
                 doc.setUpdatedUserIdx(userIdx);
-                doc.setContent("신청금액: ₩" + String.format("%,d", finalTotalAmount.longValue()));
+                String contentText = dto.getContent() != null && !dto.getContent().isBlank()
+                        ? dto.getContent() + " | " : "";
+                doc.setContent(contentText + "신청금액: ₩" + String.format("%,d", finalTotalAmount.longValue()));
                 approvalDocumentRepository.save(doc);
             });
         }
@@ -258,7 +265,11 @@ public class ExpenseRequisitionServiceImpl implements ExpenseRequisitionService 
                 .idx(r.getIdx())
                 .authorIdx(r.getAuthorIdx())
                 .authorName(author != null ? author.getEmpName() : null)
-                .authorDept(author != null ? author.getEmpDept() : null)
+                .authorDept(author != null
+                        ? codeRepository.findByGroupCodeAndCode(CodeConstants.GroupCode.DEPARTMENT.getCode(), author.getEmpDept())
+                                .map(c -> c.getCodeName())
+                                .orElse(author.getEmpDept())
+                        : null)
                 .content(r.getContent())
                 .paymentType(r.getPaymentType())
                 .totalAmount(r.getTotalAmount())
