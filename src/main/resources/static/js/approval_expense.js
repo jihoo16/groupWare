@@ -1205,7 +1205,7 @@ document.addEventListener('DOMContentLoaded', async function() {
                     const result = await response.json();
                     console.log('지출승인서 저장 완료:', result);
 
-                    showSuccess('저장이 완료되었습니다.');
+                    await showSuccess('저장이 완료되었습니다.');
                     if (editIdx) {
                         window.location.href = `/approval/expense/detail?idx=${editIdx}`;
                     } else {

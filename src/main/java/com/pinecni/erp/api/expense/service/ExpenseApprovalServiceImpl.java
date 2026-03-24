@@ -45,11 +45,17 @@ public class ExpenseApprovalServiceImpl implements ExpenseApprovalService {
         // 1. 문서번호 채번
         String documentNo = documentSequenceService.generateDocumentNumber(DOCUMENT_TYPE, DOCUMENT_PREFIX, loginUserIdx);
 
+        // 3. total_amount 계산 (approval_documents.content에도 기록하기 위해 먼저)
+        long totalAmount = createDTO.getExpenseDetails().stream()
+                .mapToLong(ExpenseDetailDTO::getAmount)
+                .sum();
+
         // 2. approval_documents 저장
         ApprovalDocument doc = ApprovalDocument.builder()
                 .documentNo(documentNo)
                 .title(DOCUMENT_TYPE)
                 .documentType(DOCUMENT_TYPE)
+                .content("총 지출금액: ₩" + String.format("%,d", totalAmount))
                 .isProject(false)
                 .drafterUserIdx(loginUserIdx)
                 .createdUserIdx(loginUserIdx)
@@ -57,11 +63,6 @@ public class ExpenseApprovalServiceImpl implements ExpenseApprovalService {
                 .build();
         doc = approvalDocumentRepository.save(doc);
         log.debug("approval_documents 저장 완료 - idx: {}, documentNo: {}", doc.getIdx(), documentNo);
-
-        // 3. total_amount 계산
-        long totalAmount = createDTO.getExpenseDetails().stream()
-                .mapToLong(ExpenseDetailDTO::getAmount)
-                .sum();
 
         // 4. ExpenseApproval 저장
         ExpenseApproval expenseApproval = ExpenseApproval.builder()
@@ -133,10 +134,12 @@ public class ExpenseApprovalServiceImpl implements ExpenseApprovalService {
         List<ExpenseDetail> newDetails = buildDetails(updateDTO.getExpenseDetails(), idx, loginUserIdx);
         expenseDetailRepository.saveAll(newDetails);
 
-        // approval_documents 업데이트
+        // approval_documents 수정자 + content(금액) 업데이트
+        final long finalTotalAmount = totalAmount;
         if (expenseApproval.getDocumentIdx() != null) {
             approvalDocumentRepository.findById(expenseApproval.getDocumentIdx()).ifPresent(doc -> {
                 doc.setUpdatedUserIdx(loginUserIdx);
+                doc.setContent("총 지출금액: ₩" + String.format("%,d", finalTotalAmount));
                 approvalDocumentRepository.save(doc);
             });
         }

@@ -7,7 +7,9 @@ import com.pinecni.erp.api.document.dto.ExpenseRequisitionDTO;
 import com.pinecni.erp.api.document.dto.ExpenseRequisitionItemDTO;
 import com.pinecni.erp.api.document.repository.ExpenseRequisitionItemRepository;
 import com.pinecni.erp.api.document.repository.ExpenseRequisitionRepository;
+import com.pinecni.erp.api.code.repository.CodeRepository;
 import com.pinecni.erp.api.user.repository.UserRepository;
+import com.pinecni.erp.constant.CodeConstants;
 import com.pinecni.erp.entity.ApprovalDocument;
 import com.pinecni.erp.entity.ExpenseRequisition;
 import com.pinecni.erp.entity.ExpenseRequisitionItem;
@@ -41,6 +43,7 @@ public class ExpenseRequisitionServiceImpl implements ExpenseRequisitionService 
     private final ApprovalDocumentRepository approvalDocumentRepository;
     private final DocumentSequenceService documentSequenceService;
     private final UserRepository userRepository;
+    private final CodeRepository codeRepository;
 
     // ── CREATE ───────────────────────────────────────────────────────────────
 
@@ -53,22 +56,25 @@ public class ExpenseRequisitionServiceImpl implements ExpenseRequisitionService 
         // 1. 문서번호 채번
         String documentNo = documentSequenceService.generateDocumentNumber(DOCUMENT_TYPE, DOCUMENT_PREFIX, userIdx);
 
+        // 3. total_amount 계산 (approval_documents.content에도 기록하기 위해 먼저)
+        BigDecimal totalAmount = dto.getItems().stream()
+                .map(i -> i.getAmount() != null ? i.getAmount() : BigDecimal.ZERO)
+                .reduce(BigDecimal.ZERO, BigDecimal::add);
+
         // 2. approval_documents 저장
         ApprovalDocument doc = ApprovalDocument.builder()
                 .documentNo(documentNo)
                 .title(DOCUMENT_TYPE)
                 .documentType(DOCUMENT_TYPE)
+                .content((dto.getContent() != null && !dto.getContent().isBlank()
+                        ? dto.getContent() + " | " : "")
+                        + "신청금액: ₩" + String.format("%,d", totalAmount.longValue()))
                 .isProject(false)
                 .drafterUserIdx(userIdx)
                 .createdUserIdx(userIdx)
                 .updatedUserIdx(userIdx)
                 .build();
         doc = approvalDocumentRepository.save(doc);
-
-        // 3. total_amount 계산
-        BigDecimal totalAmount = dto.getItems().stream()
-                .map(i -> i.getAmount() != null ? i.getAmount() : BigDecimal.ZERO)
-                .reduce(BigDecimal.ZERO, BigDecimal::add);
 
         // 4. ExpenseRequisition 저장
         ExpenseRequisition requisition = ExpenseRequisition.builder()
@@ -159,10 +165,14 @@ public class ExpenseRequisitionServiceImpl implements ExpenseRequisitionService 
         List<ExpenseRequisitionItem> newItems = buildItems(dto.getItems(), idx);
         itemRepository.saveAll(newItems);
 
-        // approval_documents 수정자 업데이트
+        // approval_documents 수정자 + content(금액) 업데이트
         if (requisition.getDocumentIdx() != null) {
+            final BigDecimal finalTotalAmount = totalAmount;
             approvalDocumentRepository.findById(requisition.getDocumentIdx()).ifPresent(doc -> {
                 doc.setUpdatedUserIdx(userIdx);
+                String contentText = dto.getContent() != null && !dto.getContent().isBlank()
+                        ? dto.getContent() + " | " : "";
+                doc.setContent(contentText + "신청금액: ₩" + String.format("%,d", finalTotalAmount.longValue()));
                 approvalDocumentRepository.save(doc);
             });
         }
@@ -255,7 +265,11 @@ public class ExpenseRequisitionServiceImpl implements ExpenseRequisitionService 
                 .idx(r.getIdx())
                 .authorIdx(r.getAuthorIdx())
                 .authorName(author != null ? author.getEmpName() : null)
-                .authorDept(author != null ? author.getEmpDept() : null)
+                .authorDept(author != null
+                        ? codeRepository.findByGroupCodeAndCode(CodeConstants.GroupCode.DEPARTMENT.getCode(), author.getEmpDept())
+                                .map(c -> c.getCodeName())
+                                .orElse(author.getEmpDept())
+                        : null)
                 .content(r.getContent())
                 .paymentType(r.getPaymentType())
                 .totalAmount(r.getTotalAmount())

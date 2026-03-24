@@ -66,7 +66,8 @@ document.addEventListener('DOMContentLoaded', function() {
             'weekly-report': '주간 보고',
             'monthly-report': '월간 보고',
             'vacation': '휴가 신청',
-            'expense': '지출 결의',
+            'expense': '지출승인서',
+            'requisition': '지출품의서',
             'purchase': '구매 요청',
             'meeting': '회의록',
             'general': '일반 기안'
@@ -400,6 +401,8 @@ document.addEventListener('DOMContentLoaded', function() {
                 window.location.href = `/approval/vacation/detail?documentIdx=${reportId}`;
             } else if (category === 'expense' && reportId) {
                 window.location.href = `/approval/expense/detail?idx=${reportId}`;
+            } else if (category === 'requisition' && reportId) {
+                window.location.href = `/approval/requisition/detail?idx=${reportId}`;
             } else {
                 const title = docRow.querySelector('.title-wrap').textContent;
                 showWarning(`"${title}" 상세보기 기능은 추후 구현됩니다.`);
@@ -436,6 +439,8 @@ document.addEventListener('DOMContentLoaded', function() {
                 window.location.href = `/approval/vacation/detail?documentIdx=${reportId}`;
             } else if (category === 'expense' && reportId) {
                 window.location.href = `/approval/expense/detail?idx=${reportId}`;
+            } else if (category === 'requisition' && reportId) {
+                window.location.href = `/approval/requisition/detail?idx=${reportId}`;
             } else {
                 const title = titleWrap.textContent;
                 showWarning(`"${title}" 상세보기 기능은 추후 구현됩니다.`);
@@ -512,7 +517,8 @@ document.addEventListener('DOMContentLoaded', function() {
             '월간업무보고': 'monthly-report',
             '회의록': 'meeting',
             '연차신청서': 'vacation',
-            '지출승인서': 'expense'
+            '지출승인서': 'expense',
+            '지출품의서': 'requisition'
         };
         return categoryMap[documentType] || 'general';
     }
@@ -524,7 +530,8 @@ document.addEventListener('DOMContentLoaded', function() {
             '월간업무보고': 'fa-calendar-alt',
             '회의록': 'fa-users',
             '연차신청서': 'fa-umbrella-beach',
-            '지출승인서': 'fa-won-sign'
+            '지출승인서': 'fa-won-sign',
+            '지출품의서': 'fa-file-invoice'
         };
         return iconMap[documentType] || 'fa-file-alt';
     }

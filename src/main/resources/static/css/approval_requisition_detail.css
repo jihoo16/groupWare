@@ -1,5 +1,5 @@
 /* ==========================================
-   지출승인서 상세보기 전용 CSS
+   지출품의서 상세보기 전용 CSS
    ========================================== */
 
 * { -webkit-tap-highlight-color: transparent; outline: none; box-sizing: border-box; }
@@ -7,7 +7,6 @@
 *::before, *::after { box-sizing: border-box; }
 ::selection { background: rgba(102, 126, 234, 0.2); color: inherit; }
 button { -webkit-user-select: none; user-select: none; }
-[title]:hover::after, [title]:hover::before { display: none !important; content: none !important; }
 button:focus, a:focus, div:focus { outline: none !important; box-shadow: none !important; }
 
 /* ==========================================
@@ -31,6 +30,8 @@ button:focus, a:focus, div:focus { outline: none !important; box-shadow: none !i
     border-radius: 16px;
     box-shadow: 0 2px 16px rgba(0, 0, 0, 0.07);
     padding: 40px 44px 52px;
+    max-width: 1000px;
+    margin: 0 auto;
 }
 
 /* ==========================================
@@ -70,9 +71,7 @@ button:focus, a:focus, div:focus { outline: none !important; box-shadow: none !i
     font-size: 14px;
 }
 
-.section-title:first-of-type {
-    margin-top: 0;
-}
+.section-title:first-of-type { margin-top: 0; }
 
 /* ==========================================
    기본 정보 그리드
@@ -101,10 +100,7 @@ button:focus, a:focus, div:focus { outline: none !important; box-shadow: none !i
     line-height: 1;
 }
 
-.info-label i {
-    color: #667eea;
-    font-size: 11px;
-}
+.info-label i { color: #667eea; font-size: 11px; }
 
 .info-value {
     font-size: 14px;
@@ -115,7 +111,28 @@ button:focus, a:focus, div:focus { outline: none !important; box-shadow: none !i
 }
 
 /* ==========================================
-   지출 내역 테이블
+   품의 내용 / 특이사항 박스
+   ========================================== */
+
+.content-box {
+    background: #f8fafc;
+    border: 1px solid #e2e8f0;
+    border-radius: 8px;
+    padding: 16px 20px;
+    min-height: 60px;
+}
+
+.content-text {
+    margin: 0;
+    font-size: 14px;
+    line-height: 1.7;
+    color: #334155;
+    white-space: pre-wrap;
+    word-break: break-word;
+}
+
+/* ==========================================
+   지출 예정 내역 테이블
    ========================================== */
 
 .table-wrapper {
@@ -141,10 +158,7 @@ button:focus, a:focus, div:focus { outline: none !important; box-shadow: none !i
 }
 
 .detail-table thead th:nth-child(1),
-.detail-table thead th:nth-child(2) {
-    text-align: left;
-}
-
+.detail-table thead th:nth-child(2) { text-align: left; }
 .detail-table thead th:nth-child(1) { padding-left: 20px; }
 .detail-table thead th:nth-child(2) { padding-left: 14px; }
 
@@ -168,19 +182,16 @@ button:focus, a:focus, div:focus { outline: none !important; box-shadow: none !i
     font-weight: 500;
 }
 
-.detail-table tbody td:nth-child(5) {
+.detail-table tbody td:nth-child(3) {
     font-variant-numeric: tabular-nums;
     font-weight: 600;
     color: #1e293b;
+    text-align: right;
+    padding-right: 20px;
 }
 
-.detail-table tbody tr:last-child td {
-    border-bottom: none;
-}
-
-.detail-table tbody tr:hover {
-    background: #fafbff;
-}
+.detail-table tbody tr:last-child td { border-bottom: none; }
+.detail-table tbody tr:hover { background: #fafbff; }
 
 .empty-row {
     text-align: center !important;
@@ -204,24 +215,59 @@ button:focus, a:focus, div:focus { outline: none !important; box-shadow: none !i
     margin-top: 16px;
 }
 
-.total-label {
-    font-size: 15px;
-    font-weight: 600;
+.total-label { font-size: 15px; font-weight: 600; }
+.total-amount { font-size: 22px; font-weight: 700; letter-spacing: -0.5px; }
+
+/* ==========================================
+   지급종류 / 특이사항 메타 그리드
+   ========================================== */
+
+.meta-grid {
+    display: flex;
+    gap: 16px;
+    margin-top: 20px;
 }
 
-.total-amount {
-    font-size: 22px;
-    font-weight: 700;
-    letter-spacing: -0.5px;
+.meta-item {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    flex-shrink: 0;
+}
+
+.meta-item--wide {
+    flex: 1;
+}
+
+.meta-label {
+    font-size: 11.5px;
+    font-weight: 600;
+    color: #64748b;
+    display: flex;
+    align-items: center;
+    gap: 5px;
+}
+
+.meta-label i { color: #667eea; font-size: 11px; }
+
+.meta-value {
+    font-size: 14px;
+    font-weight: 600;
+    color: #1e293b;
+    background: #f8fafc;
+    border: 1px solid #e2e8f0;
+    border-radius: 6px;
+    padding: 10px 16px;
+    min-height: 40px;
+    white-space: pre-wrap;
+    word-break: break-word;
 }
 
 /* ==========================================
    공식 문서 미리보기 토글
    ========================================== */
 
-.document-preview-toggle {
-    margin-top: 28px;
-}
+.document-preview-toggle { margin-top: 28px; }
 
 .toggle-btn {
     width: 100%;
@@ -246,13 +292,8 @@ button:focus, a:focus, div:focus { outline: none !important; box-shadow: none !i
     box-shadow: 0 6px 16px rgba(102, 126, 234, 0.4);
 }
 
-.toggle-icon {
-    transition: transform 0.3s;
-}
-
-.toggle-btn.active .toggle-icon {
-    transform: rotate(180deg);
-}
+.toggle-icon { transition: transform 0.3s; }
+.toggle-btn.active .toggle-icon { transform: rotate(180deg); }
 
 /* ==========================================
    공식 문서 미리보기 영역
@@ -286,12 +327,10 @@ button:focus, a:focus, div:focus { outline: none !important; box-shadow: none !i
     color: #111;
 }
 
-.document-form-wrapper.collapsed .document-form {
-    opacity: 0;
-}
+.document-form-wrapper.collapsed .document-form { opacity: 0; }
 
-/* 문서 제목 (공식 양식 내) */
-.expense-doc-title {
+/* 공식 문서 제목 */
+.req-doc-title {
     font-size: 28px;
     font-weight: 700;
     color: #333;
@@ -299,12 +338,12 @@ button:focus, a:focus, div:focus { outline: none !important; box-shadow: none !i
     letter-spacing: 6px;
 }
 
-/* 기본 정보 테이블 */
+/* 품의 내용 테이블 */
 .expense-info-table {
     width: 100%;
     border-collapse: collapse;
     border: 1px solid #333;
-    margin-bottom: 15px;
+    margin-bottom: 0;
 }
 
 .expense-info-table th,
@@ -321,25 +360,7 @@ button:focus, a:focus, div:focus { outline: none !important; box-shadow: none !i
     white-space: nowrap;
 }
 
-.amount-display {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-}
-
-.korean-amount {
-    font-weight: 600;
-    color: #333;
-}
-
-.amount-number {
-    font-size: 14px;
-    font-weight: 700;
-    color: #667eea;
-    margin-left: auto;
-}
-
-/* 지출 내역 테이블 (공식 양식) */
+/* 지출 예정 내역 테이블 (공식 양식) */
 .expense-detail-section { margin-bottom: 0; }
 
 .expense-detail-table {
@@ -365,46 +386,22 @@ button:focus, a:focus, div:focus { outline: none !important; box-shadow: none !i
     text-align: center;
 }
 
-/* 합계 테이블 */
-.expense-summary-table {
+/* 계/지급종류/특이사항/작성자 테이블 */
+.req-bottom-table {
     width: 100%;
     border-collapse: collapse;
     border: 1px solid #333;
-    margin-bottom: 0;
     margin-top: -1px;
 }
 
-.expense-summary-table th,
-.expense-summary-table td {
+.req-bottom-table th,
+.req-bottom-table td {
     border: 1px solid #333;
     padding: 8px 12px;
-    font-size: 14px;
+    font-size: 13px;
 }
 
-.expense-summary-table th {
-    background: #f5f5f5;
-    font-weight: 700;
-    text-align: center;
-    white-space: nowrap;
-}
-
-/* 결제 수단 테이블 */
-.expense-payment-table {
-    width: 100%;
-    border-collapse: collapse;
-    border: 1px solid #333;
-    margin-top: -1px;
-    font-size: 12px;
-}
-
-.expense-payment-table th,
-.expense-payment-table td {
-    border: 1px solid #333;
-    padding: 5px 8px;
-    font-size: 12px;
-}
-
-.expense-payment-table th {
+.req-bottom-table th {
     background: #f5f5f5;
     font-weight: 700;
     text-align: center;
@@ -416,6 +413,16 @@ button:focus, a:focus, div:focus { outline: none !important; box-shadow: none !i
     color: #94a3b8;
     font-style: italic;
     padding: 20px !important;
+}
+
+/* 회사명 */
+.req-company-name {
+    text-align: right;
+    font-size: 13px;
+    font-weight: 600;
+    color: #333;
+    margin-top: 12px;
+    padding-right: 4px;
 }
 
 /* ==========================================
@@ -474,7 +481,6 @@ button:focus, a:focus, div:focus { outline: none !important; box-shadow: none !i
         size: A4;
     }
 
-    /* 인쇄 꼬릿말 */
     body::after {
         content: "(주)파인씨앤아이";
         position: fixed;
@@ -490,28 +496,26 @@ button:focus, a:focus, div:focus { outline: none !important; box-shadow: none !i
         background: white !important;
     }
 
-    /* 인쇄 시 숨길 요소 */
     .sidebar,
     .header,
     .doc-title,
     .section-title,
     .info-grid,
+    .content-box,
     .table-wrapper,
     .total-bar,
+    .meta-grid,
     .document-preview-toggle {
         display: none !important;
     }
 
-    /* 레이아웃 풀기 */
     .main-content {
         margin: 0 !important;
         padding: 0 !important;
         width: 100% !important;
     }
 
-    .write-container {
-        padding: 0 !important;
-    }
+    .write-container { padding: 0 !important; }
 
     .editor-area {
         padding: 0 !important;
@@ -522,7 +526,6 @@ button:focus, a:focus, div:focus { outline: none !important; box-shadow: none !i
         max-width: 100% !important;
     }
 
-    /* 미리보기 래퍼 — 테두리/그림자 제거, 펼침 */
     .document-form-wrapper,
     .document-form-wrapper.collapsed {
         max-height: none !important;
@@ -536,7 +539,6 @@ button:focus, a:focus, div:focus { outline: none !important; box-shadow: none !i
         display: block !important;
     }
 
-    /* 공식 문서 — 테두리/그림자 제거, 상하좌우 여백 */
     .document-form {
         box-shadow: none !important;
         border: none !important;
@@ -546,29 +548,19 @@ button:focus, a:focus, div:focus { outline: none !important; box-shadow: none !i
         margin: 0 !important;
     }
 
-    /* 제목+결재란 flex 레이아웃 인쇄 안정화 */
     .document-form > div[style*="display: flex"] {
         display: flex !important;
     }
 
-    /* 결재란 인라인 테이블 배경 강제 출력 */
     .document-form td[style*="background: #f0f0f0"] {
         background-color: #f0f0f0 !important;
         -webkit-print-color-adjust: exact;
         print-color-adjust: exact;
     }
 
-    /* 표 간격 — write 페이지와 동일하게 맞춤 */
-    .expense-detail-section { margin-bottom: 15px !important; }
-    .expense-summary-table  { margin-top: 0 !important; margin-bottom: 15px !important; }
-    .expense-detail-table tbody td { padding: 4px !important; }
-    .expense-payment-table th { width: 55px !important; }
-
-    /* 정보/내역/합계/결제 테이블 인쇄 안정화 */
     .expense-info-table,
     .expense-detail-table,
-    .expense-summary-table,
-    .expense-payment-table {
+    .req-bottom-table {
         border-collapse: collapse !important;
         width: 100% !important;
         page-break-inside: avoid;
@@ -578,30 +570,29 @@ button:focus, a:focus, div:focus { outline: none !important; box-shadow: none !i
     .expense-info-table td,
     .expense-detail-table thead th,
     .expense-detail-table tbody td,
-    .expense-summary-table th,
-    .expense-summary-table td,
-    .expense-payment-table th,
-    .expense-payment-table td {
+    .req-bottom-table th,
+    .req-bottom-table td {
         border: 1px solid #333 !important;
         -webkit-print-color-adjust: exact;
         print-color-adjust: exact;
     }
 
-    /* 배경색 강제 출력 */
     .expense-info-table th,
     .expense-detail-table thead th,
-    .expense-summary-table th,
-    .expense-payment-table th {
+    .req-bottom-table th {
         background-color: #f5f5f5 !important;
         -webkit-print-color-adjust: exact;
         print-color-adjust: exact;
     }
 
-    /* 페이지 나누기 방지 */
-    .expense-info-table,
+    .expense-detail-table thead tr:first-child th {
+        background-color: #efefef !important;
+        -webkit-print-color-adjust: exact;
+        print-color-adjust: exact;
+    }
+
     .expense-detail-section,
-    .expense-summary-table,
-    .expense-payment-table {
+    .req-bottom-table {
         page-break-inside: avoid;
     }
 

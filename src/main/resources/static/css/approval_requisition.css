@@ -923,23 +923,67 @@ button:focus, a:focus, div:focus { outline: none !important; box-shadow: none !i
 .date-calendar-day.future-date:hover { background: #f8f9fa !important; transform: none !important; box-shadow: none !important; }
 
 /* ==========================================
+   필수값 유효성
+   ========================================== */
+
+.field-empty {
+    border: 2px solid #ef4444 !important;
+    background: #fef2f2 !important;
+    animation: shake 0.5s ease;
+}
+
+.payment-type-group.field-empty {
+    outline: 2px solid #ef4444;
+    border-radius: 8px;
+    background: #fef2f2 !important;
+    padding: 6px 8px;
+    animation: shake 0.5s ease;
+}
+
+@keyframes shake {
+    0%, 100% { transform: translateX(0); }
+    20%       { transform: translateX(-6px); }
+    40%       { transform: translateX(6px); }
+    60%       { transform: translateX(-4px); }
+    80%       { transform: translateX(4px); }
+}
+
+/* ==========================================
    인쇄
    ========================================== */
 
 @media print {
-    .write-layout { display: block; }
+    @page { margin: 1.5cm 2cm; size: A4; }
 
+    body::after {
+        content: "(주)파인씨앤아이";
+        position: fixed;
+        bottom: 0.5cm;
+        right: 1cm;
+        font-size: 11px;
+        color: #555;
+    }
+
+    html, body { height: auto; overflow: visible; background: white; }
+
+    .sidebar,
+    .header,
     .template-sidebar,
     .input-area,
-    .document-preview-toggle,
-    .header,
-    .sidebar { display: none !important; }
+    .document-preview-toggle { display: none; }
 
-    .document-form-wrapper {
+    .main-content { margin: 0; padding: 0; width: 100%; }
+    .write-layout { display: block; }
+
+    .editor-area { box-shadow: none; }
+
+    .document-form-wrapper,
+    .document-form-wrapper.collapsed {
         max-height: none !important;
         padding: 0 !important;
         margin: 0 !important;
         opacity: 1 !important;
+        overflow: visible !important;
         box-shadow: none !important;
         display: block !important;
     }

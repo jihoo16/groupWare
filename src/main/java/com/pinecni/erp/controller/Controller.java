@@ -213,6 +213,11 @@ public class Controller {
         return "approval_requisition";
     }
 
+    @GetMapping("/approval/requisition/detail")
+    public String approvalRequisitionDetail() {
+        return "approval_requisition_detail";
+    }
+
     @GetMapping("/approval/expense/detail")
     public String approvalExpenseDetail() {
         return "approval_expense_detail";
