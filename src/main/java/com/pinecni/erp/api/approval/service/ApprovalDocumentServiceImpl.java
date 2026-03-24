@@ -105,13 +105,8 @@ public class ApprovalDocumentServiceImpl implements ApprovalDocumentService {
 
         List<ApprovalDocumentDTO> result = documents.stream()
                 .map(this::convertToDTO)
-                .filter(dto -> {
-                    // 원본 문서가 존재하는 것만 포함
-                    if ("주간업무보고".equals(dto.getDocumentType()) || "프로젝트 주간업무보고".equals(dto.getDocumentType())) {
-                        return dto.getSourceDocumentId() != null;
-                    }
-                    return true;
-                })
+                // 원본 문서가 삭제된 경우 sourceDocumentId가 null이 되므로 제외
+                .filter(dto -> dto.getSourceDocumentId() != null)
                 .collect(Collectors.toList());
 
         log.debug("[프로젝트 문서 전체 조회] 완료 - 총 {}건", result.size());
