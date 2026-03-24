@@ -115,7 +115,8 @@ public class ReceiptPurchaseServiceImpl implements ReceiptPurchaseService {
                 .documentNo(documentNo)
                 .title(documentType)
                 .documentType(documentType)
-                .isProject(false)
+                .isProject(true)
+                .content(dto.getDocumentContent())
                 .drafterUserIdx(uploadUserIdx)
                 .createdUserIdx(uploadUserIdx)
                 .updatedUserIdx(uploadUserIdx)
@@ -172,6 +173,14 @@ public class ReceiptPurchaseServiceImpl implements ReceiptPurchaseService {
         entity.setUpdatedAt(LocalDateTime.now());
         entity.setUpdatedUserIdx(uploadUserIdx);
 
+        if (entity.getDocumentIdx() != null) {
+            approvalDocumentRepository.findById(entity.getDocumentIdx()).ifPresent(doc -> {
+                doc.setContent(dto.getDocumentContent());
+                doc.setUpdatedUserIdx(uploadUserIdx);
+                approvalDocumentRepository.save(doc);
+            });
+        }
+
         itemRepository.deleteByReceiptPurchaseIdx(idx);
         saveItems(idx, dto.getItems());
 
@@ -201,6 +210,14 @@ public class ReceiptPurchaseServiceImpl implements ReceiptPurchaseService {
         entity.setDeletedAt(LocalDateTime.now());
         entity.setDeletedUserIdx(deletedUserIdx);
         receiptPurchaseRepository.save(entity);
+
+        if (entity.getDocumentIdx() != null) {
+            approvalDocumentRepository.findById(entity.getDocumentIdx()).ifPresent(doc -> {
+                doc.setDeletedAt(LocalDateTime.now());
+                doc.setDeletedUserIdx(deletedUserIdx);
+                approvalDocumentRepository.save(doc);
+            });
+        }
     }
 
     @Override
