@@ -39,7 +39,9 @@ document.addEventListener('DOMContentLoaded', function() {
         '연구비증빙-회의록',
         '연구비증빙-출장',
         '연구비증빙-출장+회의',
-        '연구비증빙(야근식대)'
+        '연구비증빙(야근식대)',
+        '재료비',
+        '장비비'
     ];
 
     // 새 문서 작성 드롭다운
@@ -91,7 +93,9 @@ document.addEventListener('DOMContentLoaded', function() {
             'receipt-meeting': '회의비 증빙',
             'receipt-trip': '단독 출장 증빙',
             'receipt-trip-meeting': '출장+회의 증빙',
-            'receipt-overtime': '야근식대 증빙'
+            'receipt-overtime': '야근식대 증빙',
+            'receipt-purchase-material': '재료비 증빙',
+            'receipt-purchase-equipment': '장비비 증빙'
         };
 
         const titleText = titles[category] || '문서 목록';
@@ -458,7 +462,9 @@ document.addEventListener('DOMContentLoaded', function() {
             '연구비증빙-회의록': 'receipt-meeting',
             '연구비증빙-출장': 'receipt-trip',
             '연구비증빙-출장+회의': 'receipt-trip-meeting',
-            '연구비증빙(야근식대)': 'receipt-overtime'
+            '연구비증빙(야근식대)': 'receipt-overtime',
+            '재료비': 'receipt-purchase-material',
+            '장비비': 'receipt-purchase-equipment'
         };
         return categoryMap[documentType] || 'unknown';
     }
@@ -470,7 +476,9 @@ document.addEventListener('DOMContentLoaded', function() {
             '연구비증빙-회의록': 'fa-utensils',
             '연구비증빙-출장': 'fa-plane',
             '연구비증빙-출장+회의': 'fa-suitcase',
-            '연구비증빙(야근식대)': 'fa-moon'
+            '연구비증빙(야근식대)': 'fa-moon',
+            '재료비': 'fa-box',
+            '장비비': 'fa-tools'
         };
         return iconMap[documentType] || 'fa-file-alt';
     }
@@ -730,15 +738,21 @@ document.addEventListener('DOMContentLoaded', function() {
             '연구비증빙-회의록': '/approval/receipt-meeting',
             '연구비증빙-출장': '/approval/receipt-trip',
             '연구비증빙-출장+회의': '/approval/receipt-trip-meeting',
-            '연구비증빙(야근식대)': '/approval/receipt-overtime'
+            '연구비증빙(야근식대)': '/approval/receipt-overtime',
+            '재료비': '/approval/receipt-purchase?type=material',
+            '장비비': '/approval/receipt-purchase?type=equipment'
         };
 
         const url = urls[doc.documentType];
         if (url) {
             // 출장+회의는 receiptTripMeeting.idx(sourceDocumentId)를 ?id= 파라미터로 전달
             const isTripMeetingType = doc.documentType === '연구비증빙-출장+회의';
+            // 재료비/장비비는 receipt_purchase.idx(sourceDocumentId)를 documentIdx로 전달
+            const isPurchaseType = doc.documentType === '재료비' || doc.documentType === '장비비';
             if (isTripMeetingType) {
                 window.location.href = `${url}?id=${doc.sourceDocumentId}`;
+            } else if (isPurchaseType) {
+                window.location.href = `${url}&documentIdx=${doc.sourceDocumentId}`;
             } else {
                 window.location.href = `${url}?documentIdx=${doc.idx}`;
             }
