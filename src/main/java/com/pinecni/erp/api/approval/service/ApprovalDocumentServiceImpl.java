@@ -20,6 +20,7 @@ import com.pinecni.erp.api.project.repository.ReceiptTripRepository;
 import com.pinecni.erp.api.user.repository.UserRepository;
 import com.pinecni.erp.constant.CodeConstants;
 import com.pinecni.erp.entity.*;
+import com.pinecni.erp.api.document.repository.ExpenseRequisitionRepository;
 import com.pinecni.erp.api.expense.repository.ExpenseApprovalRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -62,6 +63,7 @@ public class ApprovalDocumentServiceImpl implements ApprovalDocumentService {
     private final ReceiptTripMeetingSessionRepository receiptTripMeetingSessionRepository;
     private final ReceiptTripMeetingAttachmentRepository receiptTripMeetingAttachmentRepository;
     private final ExpenseApprovalRepository expenseApprovalRepository;
+    private final ExpenseRequisitionRepository expenseRequisitionRepository;
 
     @Override
     public List<ApprovalDocumentDTO> getAllDocuments(Long currentUserIdx) {
@@ -255,6 +257,10 @@ public class ApprovalDocumentServiceImpl implements ApprovalDocumentService {
         } else if ("지출승인서".equals(documentType)) {
             expenseApprovalRepository.findByDocumentIdx(document.getIdx()).ifPresent(expense -> {
                 dto.setSourceDocumentId(expense.getIdx());
+            });
+        } else if ("지출품의서".equals(documentType)) {
+            expenseRequisitionRepository.findByDocumentIdxAndIsDeletedFalse(document.getIdx()).ifPresent(requisition -> {
+                dto.setSourceDocumentId(requisition.getIdx());
             });
         }
         // 다른 문서 타입들도 필요시 추가

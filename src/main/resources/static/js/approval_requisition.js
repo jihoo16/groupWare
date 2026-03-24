@@ -1,4 +1,31 @@
 // 지출품의서 JavaScript
+
+const KOR_UNITS = ['', '일', '이', '삼', '사', '오', '육', '칠', '팔', '구'];
+const KOR_TENS  = ['', '십', '백', '천'];
+const KOR_MEGA  = ['', '만', '억', '조'];
+
+function chunkToKorean(n) {
+    let result = '';
+    for (let i = 3; i >= 0; i--) {
+        const digit = Math.floor(n / Math.pow(10, i)) % 10;
+        if (digit > 0) result += KOR_UNITS[digit] + KOR_TENS[i];
+    }
+    return result;
+}
+
+function toKoreanAmount(num) {
+    if (!num || num === 0) return '영';
+    let result = '';
+    let megaIdx = 0;
+    while (num > 0) {
+        const chunk = num % 10000;
+        if (chunk > 0) result = chunkToKorean(chunk) + KOR_MEGA[megaIdx] + result;
+        num = Math.floor(num / 10000);
+        megaIdx++;
+    }
+    return result;
+}
+
 document.addEventListener('DOMContentLoaded', function() {
 
     // ==========================================
@@ -27,9 +54,13 @@ document.addEventListener('DOMContentLoaded', function() {
         const yyyy = today.getFullYear();
         const mm = String(today.getMonth() + 1).padStart(2, '0');
         const dd = String(today.getDate()).padStart(2, '0');
-        const formatted = `${yyyy}-${mm}-${dd}`;
+        const isoDate = `${yyyy}-${mm}-${dd}`;
+        const display = `${yyyy}. ${mm}. ${dd}`;
         const docDateEl = document.getElementById('documentDate');
-        if (docDateEl) docDateEl.textContent = formatted;
+        if (docDateEl) {
+            docDateEl.textContent = display;
+            docDateEl.dataset.isoDate = isoDate;
+        }
 
         if (window.CURRENT_USER) {
             const user = window.CURRENT_USER;
@@ -194,22 +225,30 @@ document.addEventListener('DOMContentLoaded', function() {
     // 공식 문서 미리보기 갱신
     // ==========================================
     function updatePreview() {
-        const docDate = document.getElementById('documentDate')?.textContent || '-';
+        const isoDate = document.getElementById('documentDate')?.dataset?.isoDate || '';
+        let docDate = '-';
+        if (isoDate) {
+            const d = new Date(isoDate);
+            docDate = d.getFullYear() + '. ' +
+                      String(d.getMonth() + 1).padStart(2, '0') + '. ' +
+                      String(d.getDate()).padStart(2, '0');
+        }
         const applicant = document.getElementById('applicantName')?.textContent || '-';
         const content = document.getElementById('requisitionContent')?.value || '';
         const specialNote = document.getElementById('specialNote')?.value || '';
         const payType = document.querySelector('input[name="paymentType"]:checked')?.value || null;
 
-        // 지급 종류 표시 (○ 마킹)
-        const cashMark    = payType === '현금'      ? '○' : '&nbsp;&nbsp;';
-        const bizMark     = payType === '사업비카드' ? '○' : '&nbsp;&nbsp;';
-        const personalMark = payType === '개인카드'  ? '○' : '&nbsp;&nbsp;';
-        const payTypeHtml = `현금(${cashMark}) / 사업비카드(${bizMark}) / 개인카드(${personalMark})`;
+        // 지급 종류 표시 (✓ 마킹)
+        const cashMark    = payType === '현금'      ? '✓' : '&nbsp;&nbsp;';
+        const bizMark     = payType === '사업비카드' ? '✓' : '&nbsp;&nbsp;';
+        const personalMark = payType === '개인카드'  ? '✓' : '&nbsp;&nbsp;';
+        const payTypeHtml = `현금( ${cashMark} ) / 사업비카드( ${bizMark} ) / 개인카드( ${personalMark} )`;
 
         const set = (id, val) => { const el = document.getElementById(id); if (el) el.textContent = val; };
         const setHtml = (id, val) => { const el = document.getElementById(id); if (el) el.innerHTML = val; };
 
         set('previewDocDate', docDate);
+        set('previewDocDateTop', docDate);
         set('previewApplicant', applicant);
         set('previewContent', content || '-');
         set('previewSpecialNote', specialNote);
@@ -235,14 +274,16 @@ document.addEventListener('DOMContentLoaded', function() {
             rows += `<tr>
                 <td>${date}</td>
                 <td style="text-align:left;">${desc}</td>
-                <td style="text-align:right;">${amt ? amt.toLocaleString('ko-KR') : ''}</td>
+                <td style="text-align:right;">${amt ? '₩ ' + amt.toLocaleString('ko-KR') : ''}</td>
                 <td>${vendor}</td>
                 <td>${note}</td>
             </tr>`;
         });
 
         tbody.innerHTML = rows || '<tr><td class="empty-row" colspan="5">내역이 없습니다</td></tr>';
-        set('previewTotalAmount', totalAmount ? totalAmount.toLocaleString('ko-KR') : '-');
+        set('previewTotalAmount', totalAmount
+            ? '일금 ' + toKoreanAmount(totalAmount) + '원정  (₩ ' + totalAmount.toLocaleString('ko-KR') + ')'
+            : '-');
 
         // 인쇄 버튼 가시성
         const hasRequired = content.trim() && payType && totalAmount > 0;
@@ -408,7 +449,12 @@ document.addEventListener('DOMContentLoaded', function() {
     // ==========================================
     document.getElementById('printBtn')?.addEventListener('click', function() {
         updatePreview();
-        window.print();
+        if (formWrapper && formWrapper.classList.contains('collapsed')) {
+            formWrapper.classList.remove('collapsed');
+            formWrapper.classList.add('expanded');
+            if (toggleBtn) toggleBtn.classList.add('active');
+        }
+        setTimeout(() => window.print(), 200);
     });
 
     // ==========================================

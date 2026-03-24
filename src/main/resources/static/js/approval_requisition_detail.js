@@ -1,18 +1,18 @@
 document.addEventListener('DOMContentLoaded', async function () {
 
-    // ── 헬퍼 함수 (최상단 정의 — 이후 어디서든 호출 가능) ────────
+    // ── 헬퍼 함수 ────────────────────────────────────────────────
     function pad(n) { return String(n).padStart(2, '0'); }
 
     function formatAmount(amount) {
         if (amount == null) return '₩ 0';
-        return '₩ ' + Number(amount).toLocaleString();
+        return '₩ ' + Number(amount).toLocaleString('ko-KR');
     }
 
     function formatDateForDisplay(dateStr) {
         if (!dateStr) return '-';
         const parts = dateStr.split('-');
         if (parts.length < 3) return dateStr;
-        return `${parts[1]}/${parts[2]}`;
+        return `${parseInt(parts[1])}/${parseInt(parts[2])}`;
     }
 
     const KOR_UNITS = ['', '일', '이', '삼', '사', '오', '육', '칠', '팔', '구'];
@@ -52,13 +52,13 @@ document.addEventListener('DOMContentLoaded', async function () {
     }
 
     // ── DOM 참조 ──────────────────────────────────────────────────
-    const toggleBtn   = document.getElementById('documentFormToggle');
-    const formWrapper = document.querySelector('.document-form-wrapper');
-    const printBtn    = document.getElementById('printBtn');
-    const editBtn     = document.getElementById('editBtn');
-    const deleteBtn   = document.getElementById('deleteBtn');
+    const toggleBtn    = document.getElementById('documentFormToggle');
+    const formWrapper  = document.querySelector('.document-form-wrapper');
+    const printBtn     = document.getElementById('printBtn');
+    const editBtn      = document.getElementById('editBtn');
+    const deleteBtn    = document.getElementById('deleteBtn');
 
-    // ── 미리보기 토글 (write 폼과 동일) ──────────────────────────
+    // ── 미리보기 토글 ─────────────────────────────────────────────
     if (toggleBtn && formWrapper) {
         toggleBtn.addEventListener('click', function () {
             formWrapper.classList.toggle('collapsed');
@@ -69,7 +69,7 @@ document.addEventListener('DOMContentLoaded', async function () {
     // ── 데이터 로드 ───────────────────────────────────────────────
     let doc = null;
     try {
-        const res = await fetch(`/api/approval/expense/${idx}`);
+        const res = await fetch(`/api/approval/requisition/${idx}`);
         if (res.status === 401) { window.location.href = '/login'; return; }
         if (res.status === 403) {
             Swal.fire({ icon: 'warning', title: '접근 불가', text: '본인 문서만 조회할 수 있습니다.' })
@@ -89,89 +89,84 @@ document.addEventListener('DOMContentLoaded', async function () {
         return;
     }
 
-    // ── 작성자 정보 로드 ──────────────────────────────────────────
-    let drafter = null;
-    try {
-        const res = await fetch(`/api/users/${doc.userIdx}`);
-        if (res.ok) drafter = await res.json();
-    } catch (_) {}
-
     // ── 기본 정보 세팅 ────────────────────────────────────────────
-    const draftDate  = doc.createdAt ? new Date(doc.createdAt) : null;
-    const dateStr    = draftDate
+    const draftDate = doc.createdAt ? new Date(doc.createdAt) : null;
+    const dateStr = draftDate
         ? `${draftDate.getFullYear()}.${pad(draftDate.getMonth() + 1)}.${pad(draftDate.getDate())}`
         : '-';
-    const deptName   = drafter ? (drafter.empDeptName || drafter.empDept || '-') : '-';
-    const drafterName = drafter ? (drafter.empName || '-') : '-';
 
-    document.getElementById('detailDept').textContent = deptName;
-    document.getElementById('detailName').textContent = drafterName;
-    document.getElementById('detailDate').textContent = dateStr;
+    document.getElementById('detailDept').textContent          = doc.authorDept || '-';
+    document.getElementById('detailName').textContent          = doc.authorName || '-';
+    document.getElementById('detailDate').textContent          = dateStr;
     document.getElementById('detailDocumentNumber').textContent = doc.documentNumber || '-';
 
-    // ── 지출 내역 정렬 ────────────────────────────────────────────
-    const details = (doc.expenseDetails || []).sort(
-        (a, b) => new Date(a.expenseDate) - new Date(b.expenseDate)
-    );
+    // ── 품의 내용 ─────────────────────────────────────────────────
+    document.getElementById('detailContent').textContent = doc.content || '-';
+
+    // ── 아이템 정렬 ───────────────────────────────────────────────
+    const items = (doc.items || []).sort((a, b) => (a.sortOrder ?? 0) - (b.sortOrder ?? 0));
     const total = doc.totalAmount || 0;
 
-    // ── 상단 지출 내역 테이블 렌더링 ──────────────────────────────
+    // ── 상단 지출 예정 내역 테이블 ────────────────────────────────
     const tbody = document.getElementById('detailTableBody');
-    if (details.length === 0) {
-        tbody.innerHTML = '<tr><td colspan="6" class="empty-row">지출 내역이 없습니다</td></tr>';
+    if (items.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="5" class="empty-row">지출 예정 내역이 없습니다</td></tr>';
     } else {
-        tbody.innerHTML = details.map(d => `
+        tbody.innerHTML = items.map(item => `
             <tr>
-                <td>${d.expenseDate || '-'}</td>
-                <td>${d.description || '-'}</td>
-                <td>${d.shopName || '-'}</td>
-                <td>${d.paymentMethod || '-'}</td>
-                <td style="text-align:right;">${formatAmount(d.amount)}</td>
-                <td>${d.note || ''}</td>
+                <td>${item.itemDate || '-'}</td>
+                <td>${item.itemDesc || '-'}</td>
+                <td style="text-align:right; padding-right:20px;">${formatAmount(item.amount)}</td>
+                <td>${item.vendor || '-'}</td>
+                <td>${item.remark || ''}</td>
             </tr>
         `).join('');
     }
-    document.getElementById('detailTotalAmount').textContent = '₩ ' + total.toLocaleString();
+
+    document.getElementById('detailTotalAmount').textContent = '₩ ' + Number(total).toLocaleString('ko-KR');
+
+    // ── 지급종류 / 특이사항 ───────────────────────────────────────
+    document.getElementById('detailPaymentType').textContent  = doc.paymentType || '-';
+    document.getElementById('detailSpecialNote').textContent  = doc.specialNote || '-';
 
     // ── 공식 문서 미리보기 렌더링 ─────────────────────────────────
-    let cashTotal = 0;
-    let cardTotal = 0;
+    document.getElementById('previewContent').textContent = doc.content || '-';
 
-    // 헤더 정보
-    document.getElementById('previewDate').textContent = dateStr;
-    document.getElementById('previewDept').textContent = deptName;
-    document.getElementById('previewName').textContent = drafterName;
-
-    // 합계 금액 (한글 + 숫자)
-    document.getElementById('previewAmountKorean').textContent = '일금 ' + toKoreanAmount(total) + '원정';
-    document.getElementById('previewAmountNumber').textContent = '(₩ ' + total.toLocaleString() + ')';
-    document.getElementById('previewTotal').textContent = '₩ ' + total.toLocaleString();
-
-    // 지출 내역 행
-    const previewBody = document.getElementById('previewExpenseBody');
-    if (details.length === 0) {
-        previewBody.innerHTML = '<tr><td class="empty-row" colspan="6">지출 내역이 없습니다</td></tr>';
+    // 지출 예정 내역 (미리보기)
+    const previewBody = document.getElementById('previewItemBody');
+    if (items.length === 0) {
+        previewBody.innerHTML = '<tr><td class="empty-preview-row" colspan="5">내역이 없습니다</td></tr>';
     } else {
-        previewBody.innerHTML = details.map(d => {
-            const amount = d.amount || 0;
-            if (d.paymentMethod === '현금') cashTotal += amount;
-            else cardTotal += amount;
-            return `
-                <tr>
-                    <td>${formatDateForDisplay(d.expenseDate)}</td>
-                    <td>${d.description || '-'}</td>
-                    <td>${d.shopName || '-'}</td>
-                    <td>${d.paymentMethod || '-'}</td>
-                    <td style="text-align:right;">${formatAmount(amount)}</td>
-                    <td>${d.note || ''}</td>
-                </tr>
-            `;
-        }).join('');
+        previewBody.innerHTML = items.map(item => `
+            <tr>
+                <td>${formatDateForDisplay(item.itemDate)}</td>
+                <td style="text-align:left; padding-left:8px;">${item.itemDesc || '-'}</td>
+                <td style="text-align:right;">${formatAmount(item.amount)}</td>
+                <td>${item.vendor || '-'}</td>
+                <td>${item.remark || ''}</td>
+            </tr>
+        `).join('');
     }
 
-    // 현금 / 카드 합계
-    document.getElementById('previewCash').textContent = '₩ ' + cashTotal.toLocaleString();
-    document.getElementById('previewCard').textContent = '₩ ' + cardTotal.toLocaleString();
+    // 계 (한글 + 숫자)
+    const totalNum = Number(total);
+    document.getElementById('previewTotalAmount').textContent =
+        '일금 ' + toKoreanAmount(totalNum) + '원정  (₩ ' + totalNum.toLocaleString('ko-KR') + ')';
+
+    // 지급종류 체크표시
+    const pt = doc.paymentType || '';
+    const ptChecked = { '현금': '&nbsp;&nbsp;', '사업비카드': '&nbsp;&nbsp;', '개인카드': '&nbsp;&nbsp;' };
+    if (ptChecked.hasOwnProperty(pt)) ptChecked[pt] = '✓';
+    document.getElementById('previewPaymentType').innerHTML =
+        `현금( ${ptChecked['현금']} ) / 사업비카드( ${ptChecked['사업비카드']} ) / 개인카드( ${ptChecked['개인카드']} )`;
+
+    // 특이사항
+    document.getElementById('previewSpecialNote').textContent = doc.specialNote || '';
+
+    // 일자 / 성명
+    document.getElementById('previewDocDate').textContent   = dateStr;
+    document.getElementById('previewDocDateTop').textContent = dateStr;
+    document.getElementById('previewApplicant').textContent = doc.authorName || '-';
 
     // ── 버튼 표시 (API 200 = 본인 문서 확인됨) ───────────────────
     if (printBtn)  printBtn.style.display  = '';
@@ -192,7 +187,7 @@ document.addEventListener('DOMContentLoaded', async function () {
     // ── 수정 ──────────────────────────────────────────────────────
     if (editBtn) {
         editBtn.addEventListener('click', function () {
-            window.location.href = `/approval/expense?idx=${idx}`;
+            window.location.href = `/approval/requisition?idx=${idx}`;
         });
     }
 
@@ -211,7 +206,7 @@ document.addEventListener('DOMContentLoaded', async function () {
             if (!result.isConfirmed) return;
 
             try {
-                const res = await fetch(`/api/approval/expense/${idx}`, { method: 'DELETE' });
+                const res = await fetch(`/api/approval/requisition/${idx}`, { method: 'DELETE' });
                 if (res.status === 204) {
                     await Swal.fire({ icon: 'success', title: '삭제 완료', timer: 1200, showConfirmButton: false });
                     window.location.href = '/approval';

@@ -838,6 +838,18 @@
     box-shadow: 0 4px 12px rgba(16, 185, 129, 0.3);
 }
 
+.btn-outline {
+    background: white;
+    border: 2px solid #667eea;
+    color: #667eea;
+}
+
+.btn-outline:hover {
+    background: #667eea;
+    border-color: #667eea;
+    color: white;
+}
+
 .btn-with-tooltip {
     position: relative;
 }

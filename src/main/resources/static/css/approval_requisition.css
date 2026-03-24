@@ -927,19 +927,37 @@ button:focus, a:focus, div:focus { outline: none !important; box-shadow: none !i
    ========================================== */
 
 @media print {
-    .write-layout { display: block; }
+    @page { margin: 1.5cm 2cm; size: A4; }
 
+    body::after {
+        content: "(주)파인씨앤아이";
+        position: fixed;
+        bottom: 0.5cm;
+        right: 1cm;
+        font-size: 11px;
+        color: #555;
+    }
+
+    html, body { height: auto; overflow: visible; background: white; }
+
+    .sidebar,
+    .header,
     .template-sidebar,
     .input-area,
-    .document-preview-toggle,
-    .header,
-    .sidebar { display: none !important; }
+    .document-preview-toggle { display: none; }
 
-    .document-form-wrapper {
+    .main-content { margin: 0; padding: 0; width: 100%; }
+    .write-layout { display: block; }
+
+    .editor-area { box-shadow: none; }
+
+    .document-form-wrapper,
+    .document-form-wrapper.collapsed {
         max-height: none !important;
         padding: 0 !important;
         margin: 0 !important;
         opacity: 1 !important;
+        overflow: visible !important;
         box-shadow: none !important;
         display: block !important;
     }

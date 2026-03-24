@@ -53,22 +53,23 @@ public class ExpenseRequisitionServiceImpl implements ExpenseRequisitionService 
         // 1. 문서번호 채번
         String documentNo = documentSequenceService.generateDocumentNumber(DOCUMENT_TYPE, DOCUMENT_PREFIX, userIdx);
 
+        // 3. total_amount 계산 (approval_documents.content에도 기록하기 위해 먼저)
+        BigDecimal totalAmount = dto.getItems().stream()
+                .map(i -> i.getAmount() != null ? i.getAmount() : BigDecimal.ZERO)
+                .reduce(BigDecimal.ZERO, BigDecimal::add);
+
         // 2. approval_documents 저장
         ApprovalDocument doc = ApprovalDocument.builder()
                 .documentNo(documentNo)
                 .title(DOCUMENT_TYPE)
                 .documentType(DOCUMENT_TYPE)
+                .content("신청금액: ₩" + String.format("%,d", totalAmount.longValue()))
                 .isProject(false)
                 .drafterUserIdx(userIdx)
                 .createdUserIdx(userIdx)
                 .updatedUserIdx(userIdx)
                 .build();
         doc = approvalDocumentRepository.save(doc);
-
-        // 3. total_amount 계산
-        BigDecimal totalAmount = dto.getItems().stream()
-                .map(i -> i.getAmount() != null ? i.getAmount() : BigDecimal.ZERO)
-                .reduce(BigDecimal.ZERO, BigDecimal::add);
 
         // 4. ExpenseRequisition 저장
         ExpenseRequisition requisition = ExpenseRequisition.builder()
@@ -159,10 +160,12 @@ public class ExpenseRequisitionServiceImpl implements ExpenseRequisitionService 
         List<ExpenseRequisitionItem> newItems = buildItems(dto.getItems(), idx);
         itemRepository.saveAll(newItems);
 
-        // approval_documents 수정자 업데이트
+        // approval_documents 수정자 + content(금액) 업데이트
         if (requisition.getDocumentIdx() != null) {
+            final BigDecimal finalTotalAmount = totalAmount;
             approvalDocumentRepository.findById(requisition.getDocumentIdx()).ifPresent(doc -> {
                 doc.setUpdatedUserIdx(userIdx);
+                doc.setContent("신청금액: ₩" + String.format("%,d", finalTotalAmount.longValue()));
                 approvalDocumentRepository.save(doc);
             });
         }

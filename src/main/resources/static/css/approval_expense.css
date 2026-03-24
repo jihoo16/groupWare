@@ -1675,8 +1675,9 @@ div h2{
 }
 
 .btn-outline:hover {
+    background: #667eea;
     border-color: #667eea;
-    color: #667eea;
+    color: white;
 }
 
 /* ============================================

@@ -1,0 +1,214 @@
+<!DOCTYPE html>
+<html lang="ko" xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{fragments/layout :: head('지출품의서 상세', '/css/approval_requisition_detail.css')}"></head>
+<body>
+    <div class="container">
+        <div th:replace="~{fragments/sidebar :: sidebar('approval')}"></div>
+
+        <main class="main-content">
+            <header class="header">
+                <div class="header-left">
+                    <h1 class="page-title"><i class="fas fa-file-invoice"></i> 지출품의서 상세</h1>
+                </div>
+                <div class="header-right">
+                    <button class="btn-print btn-lg" id="printBtn" style="display:none;">
+                        <i class="fas fa-print"></i>
+                        인쇄하기
+                    </button>
+                    <button class="btn-primary btn-lg" id="editBtn" style="display:none;">
+                        <i class="fas fa-edit"></i>
+                        수정
+                    </button>
+                    <button class="btn-danger btn-lg" id="deleteBtn" style="display:none;">
+                        <i class="fas fa-trash"></i>
+                        삭제
+                    </button>
+                    <button class="btn-secondary btn-lg" onclick="history.back()">
+                        <i class="fas fa-arrow-left"></i>
+                        돌아가기
+                    </button>
+                </div>
+            </header>
+
+            <div class="write-container">
+                <div class="editor-area">
+
+                    <!-- 문서 제목 -->
+                    <h2 class="doc-title">지 출 품 의 서</h2>
+
+                    <!-- 기본 정보 -->
+                    <h3 class="section-title"><i class="fas fa-info-circle"></i> 기본 정보</h3>
+                    <div class="info-grid">
+                        <div class="info-item">
+                            <span class="info-label"><i class="fas fa-building"></i> 부서/팀</span>
+                            <span class="info-value" id="detailDept">-</span>
+                        </div>
+                        <div class="info-item">
+                            <span class="info-label"><i class="fas fa-user"></i> 기안자</span>
+                            <span class="info-value" id="detailName">-</span>
+                        </div>
+                        <div class="info-item">
+                            <span class="info-label"><i class="fas fa-calendar-alt"></i> 기안일자</span>
+                            <span class="info-value" id="detailDate">-</span>
+                        </div>
+                        <div class="info-item">
+                            <span class="info-label"><i class="fas fa-hashtag"></i> 문서번호</span>
+                            <span class="info-value" id="detailDocumentNumber">-</span>
+                        </div>
+                    </div>
+
+                    <!-- 품의 내용 -->
+                    <h3 class="section-title" style="margin-top: 28px;"><i class="fas fa-align-left"></i> 품의 내용</h3>
+                    <div class="content-box">
+                        <p id="detailContent" class="content-text">-</p>
+                    </div>
+
+                    <!-- 지출 예정 내역 -->
+                    <h3 class="section-title"><i class="fas fa-receipt"></i> 지출 예정 내역</h3>
+                    <div class="table-wrapper">
+                        <table class="detail-table">
+                            <thead>
+                                <tr>
+                                    <th style="width: 110px;">날짜</th>
+                                    <th>적요</th>
+                                    <th style="width: 130px;">금액</th>
+                                    <th style="width: 130px;">상대처</th>
+                                    <th style="width: 110px;">비고</th>
+                                </tr>
+                            </thead>
+                            <tbody id="detailTableBody">
+                                <tr><td colspan="5" class="empty-row">로딩 중...</td></tr>
+                            </tbody>
+                        </table>
+                    </div>
+
+                    <!-- 합계 -->
+                    <div class="total-bar">
+                        <span class="total-label">총 합계</span>
+                        <span class="total-amount" id="detailTotalAmount">₩ 0</span>
+                    </div>
+
+                    <!-- 지급종류 / 특이사항 -->
+                    <div class="meta-grid">
+                        <div class="meta-item">
+                            <span class="meta-label"><i class="fas fa-credit-card"></i> 지급종류</span>
+                            <span class="meta-value" id="detailPaymentType">-</span>
+                        </div>
+                        <div class="meta-item meta-item--wide">
+                            <span class="meta-label"><i class="fas fa-exclamation-circle"></i> 특이사항</span>
+                            <span class="meta-value" id="detailSpecialNote">-</span>
+                        </div>
+                    </div>
+
+                    <!-- 공식 문서 미리보기 토글 -->
+                    <div class="document-preview-toggle">
+                        <button class="toggle-btn" id="documentFormToggle">
+                            <i class="fas fa-file-alt"></i>
+                            공식 문서 미리보기
+                            <i class="fas fa-chevron-down toggle-icon"></i>
+                        </button>
+                    </div>
+
+                    <!-- 공식 문서 미리보기 -->
+                    <div class="document-form-wrapper collapsed">
+                        <div class="document-form">
+
+                            <!-- 제목 + 결재란 -->
+                            <div style="display: flex; align-items: flex-start; gap: 16px; margin-bottom: 10px;">
+                                <div style="flex-shrink: 0; padding-top: 2px;">
+                                    <h2 class="req-doc-title">지 출 품 의 서</h2>
+                                    <div style="font-size: 12px; color: #555; margin-top: 4px;">
+                                        <span id="previewDocDateTop">-</span>
+                                    </div>
+                                </div>
+                                <div style="flex-shrink: 0; margin-left: auto;">
+                                    <table style="border: 2px solid #000; border-collapse: collapse;">
+                                        <tr>
+                                            <td rowspan="2" style="width: 14px; border: 1px solid #000; padding: 4px 1px; text-align: center; background: #f0f0f0; font-weight: bold; font-size: 11px; writing-mode: vertical-lr; letter-spacing: 3px;">결재</td>
+                                            <td style="width: 80px; border: 1px solid #000; padding: 4px 6px; text-align: center; background: #f0f0f0; font-weight: bold; font-size: 11px; white-space: nowrap;">담 당</td>
+                                            <td style="width: 80px; border: 1px solid #000; padding: 4px 6px; text-align: center; background: #f0f0f0; font-weight: bold; font-size: 11px; white-space: nowrap;">검 토</td>
+                                            <td style="width: 80px; border: 1px solid #000; padding: 4px 6px; text-align: center; background: #f0f0f0; font-weight: bold; font-size: 11px; white-space: nowrap;">승 인</td>
+                                        </tr>
+                                        <tr>
+                                            <td style="height: 70px; border: 1px solid #000; padding: 5px; text-align: center;"></td>
+                                            <td style="height: 70px; border: 1px solid #000; padding: 5px; text-align: center;"></td>
+                                            <td style="height: 70px; border: 1px solid #000; padding: 5px; text-align: center;"></td>
+                                        </tr>
+                                    </table>
+                                </div>
+                            </div>
+
+                            <!-- 품의 내용 -->
+                            <table class="expense-info-table" style="margin-bottom: 0;">
+                                <tr>
+                                    <th style="width: 80px;">품 의 내 용</th>
+                                    <td id="previewContent">-</td>
+                                </tr>
+                            </table>
+
+                            <!-- 지출 예정 내역 -->
+                            <div class="expense-detail-section" style="margin-top: 15px;">
+                                <table class="expense-detail-table">
+                                    <thead>
+                                        <tr>
+                                            <th colspan="5" style="text-align: center; letter-spacing: 4px; background: #efefef; font-size: 12px; padding: 7px;">지 출 예 정 내 역</th>
+                                        </tr>
+                                        <tr>
+                                            <th style="width: 68px;">날 짜</th>
+                                            <th>적 요</th>
+                                            <th style="width: 120px;">금 액</th>
+                                            <th style="width: 120px;">상 대 처</th>
+                                            <th style="width: 80px;">비 고</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="previewItemBody">
+                                        <tr><td class="empty-preview-row" colspan="5">내역이 없습니다</td></tr>
+                                    </tbody>
+                                </table>
+                            </div>
+
+                            <!-- 계 / 지급종류 / 특이사항 / 작성자 -->
+                            <table class="req-bottom-table">
+                                <colgroup>
+                                    <col style="width: 80px;">
+                                    <col>
+                                </colgroup>
+                                <tr>
+                                    <th>계</th>
+                                    <td colspan="4" id="previewTotalAmount" style="font-weight: 700;">-</td>
+                                </tr>
+                                <tr>
+                                    <th>지급 종류</th>
+                                    <td colspan="4" id="previewPaymentType">현금( &nbsp;&nbsp;) / 사업비카드( &nbsp;&nbsp;) / 개인카드( &nbsp;&nbsp;)</td>
+                                </tr>
+                                <tr>
+                                    <th style="vertical-align: top; padding-top: 10px;">특이사항</th>
+                                    <td colspan="4" id="previewSpecialNote" style="min-height: 60px; white-space: pre-wrap; vertical-align: top; padding-top: 10px;"></td>
+                                </tr>
+                                <tr>
+                                    <th>작 성 자</th>
+                                    <td colspan="4"></td>
+                                </tr>
+                                <tr>
+                                    <th>일 자</th>
+                                    <td id="previewDocDate">-</td>
+                                    <th style="width: 40px;">성 명</th>
+                                    <td id="previewApplicant">-</td>
+                                    <td style="width: 36px; text-align: center;">(인)</td>
+                                </tr>
+                            </table>
+
+                            <!-- 회사명 -->
+                            <div class="req-company-name">주식회사 파인씨엔아이</div>
+
+                        </div><!-- /document-form -->
+                    </div><!-- /document-form-wrapper -->
+
+                </div><!-- /editor-area -->
+            </div><!-- /write-container -->
+        </main>
+    </div>
+
+    <script th:src="@{/js/approval_requisition_detail.js}"></script>
+</body>
+</html>
