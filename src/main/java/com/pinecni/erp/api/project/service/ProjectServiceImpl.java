@@ -5,6 +5,7 @@ import com.pinecni.erp.api.project.dto.*;
 import com.pinecni.erp.api.project.dto.ProjectCardDTO;
 import com.pinecni.erp.api.project.mapper.ProjectMapper;
 import com.pinecni.erp.api.document.repository.ReceiptOvertimeRepository;
+import com.pinecni.erp.api.document.repository.ReceiptPurchaseRepository;
 import com.pinecni.erp.api.project.repository.ProjectExpenseSettingRepository;
 import com.pinecni.erp.api.project.repository.ProjectMemberRepository;
 import com.pinecni.erp.api.project.repository.ProjectRelationRepository;
@@ -49,6 +50,7 @@ public class ProjectServiceImpl implements ProjectService {
     private final ReceiptTripRepository receiptTripRepository;
     private final ReceiptMeetingRepository receiptMeetingRepository;
     private final ReceiptOvertimeRepository receiptOvertimeRepository;
+    private final ReceiptPurchaseRepository receiptPurchaseRepository;
     private final ReceiptTripMeetingRepository receiptTripMeetingRepository;
 
     @Override
@@ -638,6 +640,36 @@ public class ProjectServiceImpl implements ProjectService {
         result.put("activityBudget", activityBudget);
         result.put("totalSpent", totalSpent);
         result.put("remaining", activityBudget.subtract(totalSpent));
+        return result;
+    }
+
+    @Override
+    public Map<String, Object> getMaterialBudgetUsage(Long projectIdx) {
+        Project project = projectRepository.findById(projectIdx)
+                .orElseThrow(() -> new IllegalArgumentException("프로젝트를 찾을 수 없습니다: " + projectIdx));
+
+        BigDecimal materialBudget = project.getMaterialBudget() != null ? project.getMaterialBudget() : BigDecimal.ZERO;
+        BigDecimal totalSpent = receiptPurchaseRepository.sumAmountByProjectIdxAndPurchaseType(projectIdx, "material");
+
+        Map<String, Object> result = new HashMap<>();
+        result.put("materialBudget", materialBudget);
+        result.put("totalSpent", totalSpent);
+        result.put("remaining", materialBudget.subtract(totalSpent));
+        return result;
+    }
+
+    @Override
+    public Map<String, Object> getEquipmentBudgetUsage(Long projectIdx) {
+        Project project = projectRepository.findById(projectIdx)
+                .orElseThrow(() -> new IllegalArgumentException("프로젝트를 찾을 수 없습니다: " + projectIdx));
+
+        BigDecimal equipmentBudget = project.getEquipmentBudget() != null ? project.getEquipmentBudget() : BigDecimal.ZERO;
+        BigDecimal totalSpent = receiptPurchaseRepository.sumAmountByProjectIdxAndPurchaseType(projectIdx, "equipment");
+
+        Map<String, Object> result = new HashMap<>();
+        result.put("equipmentBudget", equipmentBudget);
+        result.put("totalSpent", totalSpent);
+        result.put("remaining", equipmentBudget.subtract(totalSpent));
         return result;
     }
 

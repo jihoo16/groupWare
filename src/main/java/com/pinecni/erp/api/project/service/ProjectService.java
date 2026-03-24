@@ -61,6 +61,16 @@ public interface ProjectService {
     java.util.Map<String, Object> getActivityBudgetUsage(Long projectIdx);
 
     /**
+     * 프로젝트 재료비 사용 현황 조회
+     */
+    java.util.Map<String, Object> getMaterialBudgetUsage(Long projectIdx);
+
+    /**
+     * 프로젝트 장비비 사용 현황 조회
+     */
+    java.util.Map<String, Object> getEquipmentBudgetUsage(Long projectIdx);
+
+    /**
      * 프로젝트 필터용 목록 조회 (문서 개수 포함)
      */
     List<ProjectFilterDTO> getProjectsForFilter();

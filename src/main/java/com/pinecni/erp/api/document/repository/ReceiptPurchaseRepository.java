@@ -16,6 +16,9 @@ public interface ReceiptPurchaseRepository extends JpaRepository<ReceiptPurchase
     @Query("SELECT COALESCE(SUM(rp.totalAmount), 0) FROM ReceiptPurchase rp WHERE rp.projectIdx = :projectIdx AND rp.isDeleted = false")
     BigDecimal sumAmountByProjectIdx(@Param("projectIdx") Long projectIdx);
 
+    @Query("SELECT COALESCE(SUM(rp.totalAmount), 0) FROM ReceiptPurchase rp WHERE rp.projectIdx = :projectIdx AND rp.purchaseType = :purchaseType AND rp.isDeleted = false")
+    BigDecimal sumAmountByProjectIdxAndPurchaseType(@Param("projectIdx") Long projectIdx, @Param("purchaseType") String purchaseType);
+
     @Query("SELECT rp FROM ReceiptPurchase rp WHERE rp.projectIdx = :projectIdx ORDER BY rp.approvalDate DESC")
     List<ReceiptPurchase> findByProjectIdxOrderByApprovalDateDesc(@Param("projectIdx") Long projectIdx);
 
