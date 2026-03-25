@@ -1146,13 +1146,7 @@ document.addEventListener('DOMContentLoaded', async function() {
                     confirmButtonColor: '#667eea'
                 });
 
-                if (!isEditMode) {
-                    // 수정 모드로 전환
-                    isEditMode = true;
-                    editingIdx = data.idx;
-                    window.history.replaceState({}, '', `?type=${purchaseType}&documentIdx=${data.idx}`);
-                    updateButtonsForEditMode();
-                }
+                window.location.href = '/project/documents';
             } else {
                 hideLoading();
                 const err = await res.json().catch(() => ({}));
