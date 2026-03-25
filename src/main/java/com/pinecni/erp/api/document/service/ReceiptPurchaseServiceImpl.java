@@ -111,9 +111,11 @@ public class ReceiptPurchaseServiceImpl implements ReceiptPurchaseService {
 
         // 1. approval_documents 생성 및 문서번호 채번
         String documentNo = documentSequenceService.generateDocumentNumber(documentType, prefix, uploadUserIdx);
+        String docTitle = (dto.getDocumentTitle() != null && !dto.getDocumentTitle().isBlank())
+                ? dto.getDocumentTitle() : documentType;
         ApprovalDocument approvalDoc = ApprovalDocument.builder()
                 .documentNo(documentNo)
-                .title(documentType)
+                .title(docTitle)
                 .documentType(documentType)
                 .isProject(true)
                 .content(dto.getDocumentContent())
@@ -175,6 +177,9 @@ public class ReceiptPurchaseServiceImpl implements ReceiptPurchaseService {
 
         if (entity.getDocumentIdx() != null) {
             approvalDocumentRepository.findById(entity.getDocumentIdx()).ifPresent(doc -> {
+                if (dto.getDocumentTitle() != null && !dto.getDocumentTitle().isBlank()) {
+                    doc.setTitle(dto.getDocumentTitle());
+                }
                 doc.setContent(dto.getDocumentContent());
                 doc.setUpdatedUserIdx(uploadUserIdx);
                 approvalDocumentRepository.save(doc);
