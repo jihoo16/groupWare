@@ -151,10 +151,12 @@ document.addEventListener('DOMContentLoaded', function() {
                 const usedAmount = used || 0;
                 const budgetAmount = budget || 0;
                 const remaining = budgetAmount - usedAmount;
+                const isLow = remaining < 0 || (budgetAmount > 0 && remaining < budgetAmount * 0.1);
                 return {
                     used: formatCurrency(usedAmount),
                     total: formatCurrency(budgetAmount),
-                    remaining: formatCurrency(remaining)
+                    remaining: formatCurrency(remaining),
+                    isLow
                 };
             };
 
@@ -206,7 +208,7 @@ document.addEventListener('DOMContentLoaded', function() {
                                     </div>
                                     <div class="budget-row">
                                         <span class="budget-label">잔여금액</span>
-                                        <span class="budget-value budget-remaining">${activity.remaining}</span>
+                                        <span class="budget-value budget-remaining${activity.isLow ? ' budget-remaining-low' : ''}">${activity.remaining}</span>
                                     </div>
                                 </div>
                             </div>
@@ -223,7 +225,7 @@ document.addEventListener('DOMContentLoaded', function() {
                                     </div>
                                     <div class="budget-row">
                                         <span class="budget-label">잔여금액</span>
-                                        <span class="budget-value budget-remaining">${equipment.remaining}</span>
+                                        <span class="budget-value budget-remaining${equipment.isLow ? ' budget-remaining-low' : ''}">${equipment.remaining}</span>
                                     </div>
                                 </div>
                             </div>
@@ -240,7 +242,7 @@ document.addEventListener('DOMContentLoaded', function() {
                                     </div>
                                     <div class="budget-row">
                                         <span class="budget-label">잔여금액</span>
-                                        <span class="budget-value budget-remaining">${material.remaining}</span>
+                                        <span class="budget-value budget-remaining${material.isLow ? ' budget-remaining-low' : ''}">${material.remaining}</span>
                                     </div>
                                 </div>
                             </div>

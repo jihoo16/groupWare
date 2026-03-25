@@ -321,6 +321,40 @@ public class ProjectController {
     }
 
     /**
+     * 프로젝트 재료비 사용 현황 조회
+     * GET /api/projects/{idx}/material-usage
+     */
+    @GetMapping("/{idx}/material-usage")
+    public ResponseEntity<Map<String, Object>> getMaterialBudgetUsage(@PathVariable Long idx) {
+        log.debug("GET /api/projects/{}/material-usage", idx);
+        try {
+            Map<String, Object> usage = projectService.getMaterialBudgetUsage(idx);
+            return ResponseEntity.ok(usage);
+        } catch (IllegalArgumentException e) {
+            Map<String, Object> error = new HashMap<>();
+            error.put("error", e.getMessage());
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(error);
+        }
+    }
+
+    /**
+     * 프로젝트 장비비 사용 현황 조회
+     * GET /api/projects/{idx}/equipment-usage
+     */
+    @GetMapping("/{idx}/equipment-usage")
+    public ResponseEntity<Map<String, Object>> getEquipmentBudgetUsage(@PathVariable Long idx) {
+        log.debug("GET /api/projects/{}/equipment-usage", idx);
+        try {
+            Map<String, Object> usage = projectService.getEquipmentBudgetUsage(idx);
+            return ResponseEntity.ok(usage);
+        } catch (IllegalArgumentException e) {
+            Map<String, Object> error = new HashMap<>();
+            error.put("error", e.getMessage());
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(error);
+        }
+    }
+
+    /**
      * Exception Handler
      */
     @ExceptionHandler(Exception.class)

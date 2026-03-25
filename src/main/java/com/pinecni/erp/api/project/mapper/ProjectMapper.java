@@ -10,6 +10,7 @@ import com.pinecni.erp.api.project.repository.ReceiptMeetingRepository;
 import com.pinecni.erp.api.project.repository.ReceiptTripMeetingRepository;
 import com.pinecni.erp.api.project.repository.ReceiptTripRepository;
 import com.pinecni.erp.api.document.repository.ReceiptOvertimeRepository;
+import com.pinecni.erp.api.document.repository.ReceiptPurchaseRepository;
 import com.pinecni.erp.api.user.repository.UserRepository;
 import com.pinecni.erp.entity.Project;
 import com.pinecni.erp.entity.ProjectExpenseSetting;
@@ -41,6 +42,7 @@ public class ProjectMapper {
     private final ReceiptTripRepository receiptTripRepository;
     private final ReceiptTripMeetingRepository receiptTripMeetingRepository;
     private final ReceiptOvertimeRepository receiptOvertimeRepository;
+    private final ReceiptPurchaseRepository receiptPurchaseRepository;
     private final UserRepository userRepository;
     private final CodeRepository codeRepository;
 
@@ -69,8 +71,8 @@ public class ProjectMapper {
                 .progressRate((BigDecimal) row[13])
                 .memberCount(((Long) row[14]).intValue())
                 .activityUsed((BigDecimal) row[15])
-                .equipmentUsed(BigDecimal.ZERO)  // 장비비는 추후 구현
-                .materialUsed(BigDecimal.ZERO)   // 재료비는 추후 구현
+                .equipmentUsed(receiptPurchaseRepository.sumAmountByProjectIdxAndPurchaseType((Long) row[0], "equipment"))
+                .materialUsed(receiptPurchaseRepository.sumAmountByProjectIdxAndPurchaseType((Long) row[0], "material"))
                 .totalPeriodStart((LocalDate) row[16])
                 .totalPeriodEnd((LocalDate) row[17])
                 .progress(calculateProgressFromDates((LocalDate) row[5], (LocalDate) row[6]))
@@ -134,11 +136,11 @@ public class ProjectMapper {
         BigDecimal tripOnly = tripUsed;
         BigDecimal tripMeetingUsed = tripMeetingUsedTotal;
 
-        // 장비비 사용액 (추후 구현 예정, 현재는 0)
-        BigDecimal equipmentUsed = BigDecimal.ZERO;
+        // 장비비 사용액
+        BigDecimal equipmentUsed = receiptPurchaseRepository.sumAmountByProjectIdxAndPurchaseType(entity.getIdx(), "equipment");
 
-        // 재료비 사용액 (추후 구현 예정, 현재는 0)
-        BigDecimal materialUsed = BigDecimal.ZERO;
+        // 재료비 사용액
+        BigDecimal materialUsed = receiptPurchaseRepository.sumAmountByProjectIdxAndPurchaseType(entity.getIdx(), "material");
 
         // 프로젝트 관리자 이름 조회 (LAZY 로딩 문제 해결)
         String projectManagerName = null;

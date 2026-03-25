@@ -230,15 +230,24 @@ function displayBasicInfo(data) {
  * 예산 정보 표시
  */
 function displayBudgetInfo(data) {
+    const setRemaining = (elementId, budget, used) => {
+        const b = budget || 0;
+        const u = used || 0;
+        const remaining = b - u;
+        const el = document.getElementById(elementId);
+        el.textContent = formatCurrency(remaining);
+        el.style.color = (remaining < 0 || (b > 0 && remaining < b * 0.1)) ? '#e03131' : '#4361ee';
+    };
+
     document.getElementById('activityBudget').textContent = formatCurrency(data.activityBudget || 0);
     document.getElementById('activityUsed').textContent = formatCurrency(data.activityUsed || 0);
-    document.getElementById('activityRemaining').textContent = formatCurrency((data.activityBudget-data.activityUsed) || 0);
+    setRemaining('activityRemaining', data.activityBudget, data.activityUsed);
     document.getElementById('equipmentBudget').textContent = formatCurrency(data.equipmentBudget || 0);
     document.getElementById('equipmentUsed').textContent = formatCurrency(data.equipmentUsed || 0);
-    document.getElementById('equipmentRemaining').textContent = formatCurrency((data.equipmentBudget-data.equipmentUsed) || 0);
+    setRemaining('equipmentRemaining', data.equipmentBudget, data.equipmentUsed);
     document.getElementById('materialBudget').textContent = formatCurrency(data.materialBudget || 0);
     document.getElementById('materialUsed').textContent = formatCurrency(data.materialUsed || 0);
-    document.getElementById('materialRemaining').textContent = formatCurrency((data.materialBudget-data.materialUsed) || 0);
+    setRemaining('materialRemaining', data.materialBudget, data.materialUsed);
 
     // 활동비 세부 내역 클릭 이벤트
     const activityUsedLabel = document.getElementById('activityUsedLabel');

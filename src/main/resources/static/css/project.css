@@ -431,6 +431,11 @@
     font-weight: 600;
 }
 
+.budget-remaining-low {
+    color: #e03131 !important;
+    font-weight: 600;
+}
+
 /* 진행률 바 */
 .project-progress {
     display: flex;
