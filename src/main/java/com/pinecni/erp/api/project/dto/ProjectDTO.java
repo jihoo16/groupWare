@@ -132,6 +132,21 @@ public class ProjectDTO {
     private BigDecimal materialUsed;
 
     /**
+     * 활동비 보정액 (현재 유효값)
+     */
+    private BigDecimal activityAdjustment;
+
+    /**
+     * 장비비 보정액 (현재 유효값)
+     */
+    private BigDecimal equipmentAdjustment;
+
+    /**
+     * 재료비 보정액 (현재 유효값)
+     */
+    private BigDecimal materialAdjustment;
+
+    /**
      * 팀원 수 (ProjectMember 개수)
      */
     private Integer memberCount;

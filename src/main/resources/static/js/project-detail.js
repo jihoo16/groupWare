@@ -1,7 +1,18 @@
 // 프로젝트 상세보기 JavaScript
 document.addEventListener('DOMContentLoaded', async function () {
-    // 현재 로그인한 사용자 정보
+    // 현재 로그인한 사용자 정보 로드
+    try {
+        const meRes = await fetch('/api/auth/me');
+        if (meRes.ok) window.CURRENT_USER = await meRes.json();
+    } catch (e) { /* 미로그인 상태 무시 */ }
+
     const currentUserIdx = window.CURRENT_USER?.idx || null;
+
+    // 연필 아이콘: 프로젝트 데이터 로드 후 checkAndShowParticipantButtons에서 처리하므로 초기 숨김
+    ['activityAdjBtn', 'equipmentAdjBtn', 'materialAdjBtn'].forEach(id => {
+        const el = document.getElementById(id);
+        if (el) el.style.display = 'none';
+    });
 
     // URL에서 프로젝트 ID 가져오기
     const urlParams = new URLSearchParams(window.location.search);
@@ -77,6 +88,40 @@ document.addEventListener('DOMContentLoaded', async function () {
     });
 
     document.getElementById('adjTargetRemaining')?.addEventListener('input', onRemainingInput);
+
+    document.getElementById('adjustmentSaveBtn')?.addEventListener('click', async () => {
+        const raw = document.getElementById('adjTargetRemaining').value.replace(/[^0-9]/g, '');
+        if (!raw) {
+            Swal.fire({ icon: 'warning', title: '잔여금액을 입력해주세요.' });
+            return;
+        }
+        const reason = document.getElementById('adjReason').value.trim();
+        if (!reason) {
+            Swal.fire({ icon: 'warning', title: '보정 사유를 입력해주세요.' });
+            return;
+        }
+
+        const newRemaining = parseFloat(raw);
+        const adjustmentAmount = newRemaining - _adjBaseRemaining;
+
+        try {
+            const res = await fetch(`/api/projects/${projectId}/budget-adjustments`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ budgetType: _adjBudgetType, adjustmentAmount, reason })
+            });
+            if (res.ok) {
+                closeAdjustmentModal();
+                await Swal.fire({ icon: 'success', title: '저장 완료', text: '보정값이 저장되었습니다.', confirmButtonColor: '#4361ee' });
+                loadProjectDetail(projectId, currentUserIdx);
+            } else {
+                const err = await res.json().catch(() => ({}));
+                Swal.fire({ icon: 'error', title: '저장 실패', text: err.message || '저장에 실패했습니다.' });
+            }
+        } catch (e) {
+            Swal.fire({ icon: 'error', title: '오류', text: '저장 중 오류가 발생했습니다.' });
+        }
+    });
 
     // 직급별 경비 설정 보기/접기
     const toggleExpenseBtn = document.getElementById('toggleExpenseBtn');
@@ -194,6 +239,13 @@ function checkAndShowParticipantButtons(projectMembers, currentUserIdx) {
     // 삭제 권한: PI(연구책임자) 또는 PRACTITIONER(실무자) 또는 Admin
     const canDelete = isAdmin || (isParticipant && (memberRole === 'PI' || memberRole === 'PRACTITIONER'));
 
+    // 예산 보정 연필 아이콘: 관리자 또는 연구책임자(PI) 또는 실무자(PRACTITIONER)
+    const canAdjust = isAdmin || (isParticipant && (memberRole === 'PI' || memberRole === 'PRACTITIONER'));
+    ['activityAdjBtn', 'equipmentAdjBtn', 'materialAdjBtn'].forEach(id => {
+        const el = document.getElementById(id);
+        if (el) el.style.display = canAdjust ? 'inline-block' : 'none';
+    });
+
     // 주간업무보고 작성: 모든 참여자
     if (createWeeklyReportBtn) createWeeklyReportBtn.style.display = isParticipant ? 'inline-flex' : 'none';
 
@@ -203,7 +255,7 @@ function checkAndShowParticipantButtons(projectMembers, currentUserIdx) {
     // 삭제 버튼
     if (deleteBtn) deleteBtn.style.display = canDelete ? 'inline-flex' : 'none';
 
-    console.log(`권한 확인 - 참여자: ${isParticipant}, 역할: ${memberRole}, 수정: ${canEdit}, 삭제: ${canDelete}, Admin: ${isAdmin}`);
+    console.log(`권한 확인 - 참여자: ${isParticipant}, 역할: ${memberRole}, 수정: ${canEdit}, 삭제: ${canDelete}, Admin: ${isAdmin}, 보정: ${canAdjust}`);
 }
 
 /**
@@ -230,24 +282,41 @@ function displayBasicInfo(data) {
  * 예산 정보 표시
  */
 function displayBudgetInfo(data) {
-    const setRemaining = (elementId, budget, used) => {
+    const setRemaining = (elementId, budget, used, adjustment) => {
         const b = budget || 0;
         const u = used || 0;
-        const remaining = b - u;
+        const a = adjustment || 0;
+        const remaining = b - u + a;
         const el = document.getElementById(elementId);
         el.textContent = formatCurrency(remaining);
         el.style.color = (remaining < 0 || (b > 0 && remaining < b * 0.1)) ? '#e03131' : '#4361ee';
     };
 
+    const setAdjustment = (elementId, adjustment) => {
+        const a = adjustment || 0;
+        const el = document.getElementById(elementId);
+        if (!el) return;
+        if (a === 0) {
+            el.textContent = '-';
+            el.style.color = '';
+        } else {
+            el.textContent = (a > 0 ? '+' : '') + formatCurrency(a);
+            el.style.color = a > 0 ? '#2f9e44' : '#e03131';
+        }
+    };
+
     document.getElementById('activityBudget').textContent = formatCurrency(data.activityBudget || 0);
     document.getElementById('activityUsed').textContent = formatCurrency(data.activityUsed || 0);
-    setRemaining('activityRemaining', data.activityBudget, data.activityUsed);
+    setAdjustment('activityAdjustment', data.activityAdjustment);
+    setRemaining('activityRemaining', data.activityBudget, data.activityUsed, data.activityAdjustment);
     document.getElementById('equipmentBudget').textContent = formatCurrency(data.equipmentBudget || 0);
     document.getElementById('equipmentUsed').textContent = formatCurrency(data.equipmentUsed || 0);
-    setRemaining('equipmentRemaining', data.equipmentBudget, data.equipmentUsed);
+    setAdjustment('equipmentAdjustment', data.equipmentAdjustment);
+    setRemaining('equipmentRemaining', data.equipmentBudget, data.equipmentUsed, data.equipmentAdjustment);
     document.getElementById('materialBudget').textContent = formatCurrency(data.materialBudget || 0);
     document.getElementById('materialUsed').textContent = formatCurrency(data.materialUsed || 0);
-    setRemaining('materialRemaining', data.materialBudget, data.materialUsed);
+    setAdjustment('materialAdjustment', data.materialAdjustment);
+    setRemaining('materialRemaining', data.materialBudget, data.materialUsed, data.materialAdjustment);
 
     // 활동비 세부 내역 클릭 이벤트
     const activityUsedLabel = document.getElementById('activityUsedLabel');
@@ -946,7 +1015,7 @@ function openAdjustmentModal(budgetType, label) {
 
     document.getElementById('adjModalTitle').innerHTML = `<i class="fas fa-sliders-h"></i> ${label} 보정값 관리`;
     document.getElementById('adjRemainingLabel').textContent = `${label} 잔여금액`;
-    document.getElementById('adjTargetRemaining').value = formatCurrency(currentRemaining);
+    document.getElementById('adjTargetRemaining').value = formatCurrency(currentRemaining, false);
     document.getElementById('adjCalcDisplay').textContent = '-';
     document.getElementById('adjCalcDisplay').className = 'adj-calc-display';
     document.getElementById('adjReason').value = '';
@@ -969,11 +1038,11 @@ function onRemainingInput() {
     const raw = input.value.replace(/[^0-9]/g, '');
     const newRemaining = parseFloat(raw);
 
-    // 숫자만 입력되도록 콤마 포매팅 적용
+    // 숫자만 입력되도록 콤마 포매팅 적용 (원 단위 없이)
     if (raw !== '' && !isNaN(newRemaining)) {
         const pos = input.selectionStart;
         const prevLen = input.value.length;
-        input.value = formatCurrency(newRemaining);
+        input.value = formatCurrency(newRemaining, false);
         // 커서 위치 보정 (콤마 추가/제거로 인한 offset)
         input.setSelectionRange(pos + (input.value.length - prevLen), pos + (input.value.length - prevLen));
     }
@@ -989,10 +1058,10 @@ function onRemainingInput() {
     if (adjustment === 0) {
         display.textContent = '0원 (변경 없음)';
     } else if (adjustment > 0) {
-        display.textContent = '+' + formatCurrency(adjustment) + '원';
+        display.textContent = '+' + formatCurrency(adjustment);
         display.classList.add('positive');
     } else {
-        display.textContent = formatCurrency(adjustment) + '원';
+        display.textContent = formatCurrency(adjustment);
         display.classList.add('negative');
     }
 }

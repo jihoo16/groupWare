@@ -80,6 +80,9 @@ public class ProjectMapper {
                 .updatedAt((LocalDateTime) row[19])
                 .createdUserIdx((Long) row[20])
                 .updatedUserIdx((Long) row[21])
+                .activityAdjustment(row[22] != null ? (BigDecimal) row[22] : BigDecimal.ZERO)
+                .equipmentAdjustment(row[23] != null ? (BigDecimal) row[23] : BigDecimal.ZERO)
+                .materialAdjustment(row[24] != null ? (BigDecimal) row[24] : BigDecimal.ZERO)
                 .build();
     }
 
@@ -174,6 +177,9 @@ public class ProjectMapper {
                 .overtimeUsed(overtimeUsed)
                 .equipmentUsed(equipmentUsed)
                 .materialUsed(materialUsed)
+                .activityAdjustment(entity.getActivityBudgetAdjustment() != null ? entity.getActivityBudgetAdjustment() : BigDecimal.ZERO)
+                .equipmentAdjustment(entity.getEquipmentBudgetAdjustment() != null ? entity.getEquipmentBudgetAdjustment() : BigDecimal.ZERO)
+                .materialAdjustment(entity.getMaterialBudgetAdjustment() != null ? entity.getMaterialBudgetAdjustment() : BigDecimal.ZERO)
                 .memberCount(members.size())
                 .progress(calculateProgress(entity))
                 .projectRelations(relations)

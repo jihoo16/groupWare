@@ -1,5 +1,6 @@
 package com.pinecni.erp.api.project.service;
 
+import com.pinecni.erp.api.project.dto.BudgetAdjustmentRequestDTO;
 import com.pinecni.erp.api.project.dto.ProjectCreateDTO;
 import com.pinecni.erp.api.project.dto.ProjectDTO;
 import com.pinecni.erp.api.project.dto.ProjectExpenseSettingDTO;
@@ -74,4 +75,10 @@ public interface ProjectService {
      * 프로젝트 필터용 목록 조회 (문서 개수 포함)
      */
     List<ProjectFilterDTO> getProjectsForFilter();
+
+    /**
+     * 예산 보정값 저장 (관리자 전용)
+     * projects 테이블의 보정액 컬럼 덮어쓰기 + 이력 INSERT
+     */
+    void saveBudgetAdjustment(Long projectIdx, BudgetAdjustmentRequestDTO dto, Long userIdx);
 }

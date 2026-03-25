@@ -1053,6 +1053,11 @@
     justify-content: center;
 }
 
+/* 모달 위에 SweetAlert2가 표시되도록 z-index 강제 설정 */
+.swal2-container {
+    z-index: 9999 !important;
+}
+
 .adj-modal-overlay.show {
     display: flex;
 }

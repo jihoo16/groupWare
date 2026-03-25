@@ -9,12 +9,14 @@ import com.pinecni.erp.api.document.repository.ReceiptPurchaseRepository;
 import com.pinecni.erp.api.project.repository.ProjectExpenseSettingRepository;
 import com.pinecni.erp.api.project.repository.ProjectMemberRepository;
 import com.pinecni.erp.api.project.repository.ProjectRelationRepository;
+import com.pinecni.erp.api.project.repository.ProjectBudgetAdjustmentRepository;
 import com.pinecni.erp.api.project.repository.ProjectRepository;
 import com.pinecni.erp.api.project.repository.ProjectCardRepository;
 import com.pinecni.erp.api.project.repository.ReceiptMeetingRepository;
 import com.pinecni.erp.api.project.repository.ReceiptTripMeetingRepository;
 import com.pinecni.erp.api.project.repository.ReceiptTripRepository;
 import com.pinecni.erp.entity.Project;
+import com.pinecni.erp.entity.ProjectBudgetAdjustment;
 import com.pinecni.erp.entity.ProjectExpenseSetting;
 import com.pinecni.erp.entity.ProjectMember;
 import com.pinecni.erp.entity.ProjectRelation;
@@ -45,6 +47,7 @@ public class ProjectServiceImpl implements ProjectService {
     private final ProjectCardRepository projectCardRepository;
     private final ProjectRelationRepository projectRelationRepository;
     private final ProjectExpenseSettingRepository projectExpenseSettingRepository;
+    private final ProjectBudgetAdjustmentRepository budgetAdjustmentRepository;
     private final CodeRepository codeRepository;
     private final ProjectMapper mapper;
     private final ReceiptTripRepository receiptTripRepository;
@@ -678,6 +681,44 @@ public class ProjectServiceImpl implements ProjectService {
      * DB 상태: PLANNING(기획), IN_PROGRESS(진행중), COMPLETED(완료), PENDING(대기), CANCELLED(취소)
      * 필터 상태: ACTIVE(진행중), COMPLETED(완료), PAUSED(보류)
      */
+    @Override
+    @Transactional
+    public void saveBudgetAdjustment(Long projectIdx, BudgetAdjustmentRequestDTO dto, Long userIdx) {
+        Project project = projectRepository.findById(projectIdx)
+                .orElseThrow(() -> new IllegalArgumentException("프로젝트를 찾을 수 없습니다. idx: " + projectIdx));
+
+        String type = dto.getBudgetType();
+        BigDecimal amount = dto.getAdjustmentAmount() != null ? dto.getAdjustmentAmount() : BigDecimal.ZERO;
+
+        // 1. projects 테이블 보정액 컬럼 덮어쓰기
+        switch (type) {
+            case "ACTIVITY":
+                project.setActivityBudgetAdjustment(amount);
+                break;
+            case "EQUIPMENT":
+                project.setEquipmentBudgetAdjustment(amount);
+                break;
+            case "MATERIAL":
+                project.setMaterialBudgetAdjustment(amount);
+                break;
+            default:
+                throw new IllegalArgumentException("유효하지 않은 budgetType: " + type);
+        }
+        project.setUpdatedUserIdx(userIdx);
+        projectRepository.save(project);
+
+        // 2. 이력 테이블 INSERT
+        ProjectBudgetAdjustment log = ProjectBudgetAdjustment.builder()
+                .projectIdx(projectIdx)
+                .budgetType(type)
+                .adjustmentAmount(amount)
+                .reason(dto.getReason())
+                .build();
+        log.setCreatedUserIdx(userIdx);
+        log.setUpdatedUserIdx(userIdx);
+        budgetAdjustmentRepository.save(log);
+    }
+
     private String convertProjectStatusToFilterStatus(String projectStatus) {
         if (projectStatus == null) {
             return "ACTIVE";

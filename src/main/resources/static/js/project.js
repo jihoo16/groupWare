@@ -147,10 +147,11 @@ document.addEventListener('DOMContentLoaded', function() {
         }
 
         currentProjectGrid.innerHTML = projects.map(project => {
-            const formatBudgetBox = (used, budget) => {
+            const formatBudgetBox = (used, budget, adjustment) => {
                 const usedAmount = used || 0;
                 const budgetAmount = budget || 0;
-                const remaining = budgetAmount - usedAmount;
+                const adj = adjustment || 0;
+                const remaining = budgetAmount - usedAmount + adj;
                 const isLow = remaining < 0 || (budgetAmount > 0 && remaining < budgetAmount * 0.1);
                 return {
                     used: formatCurrency(usedAmount),
@@ -160,9 +161,9 @@ document.addEventListener('DOMContentLoaded', function() {
                 };
             };
 
-            const activity = formatBudgetBox(project.activityUsed, project.activityBudget);
-            const equipment = formatBudgetBox(project.equipmentUsed, project.equipmentBudget);
-            const material = formatBudgetBox(project.materialUsed, project.materialBudget);
+            const activity = formatBudgetBox(project.activityUsed, project.activityBudget, project.activityAdjustment);
+            const equipment = formatBudgetBox(project.equipmentUsed, project.equipmentBudget, project.equipmentAdjustment);
+            const material = formatBudgetBox(project.materialUsed, project.materialBudget, project.materialAdjustment);
 
             // 내가 참여한 프로젝트인지 확인
             const isMyProject = myProjectIds.includes(project.idx);

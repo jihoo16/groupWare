@@ -75,6 +75,18 @@ public class Project extends BaseEntity {
     @Column(name = "total_period_end")
     private LocalDate totalPeriodEnd;
 
+    @Builder.Default
+    @Column(name = "activity_budget_adjustment", precision = 15, scale = 2)
+    private BigDecimal activityBudgetAdjustment = BigDecimal.ZERO;
+
+    @Builder.Default
+    @Column(name = "equipment_budget_adjustment", precision = 15, scale = 2)
+    private BigDecimal equipmentBudgetAdjustment = BigDecimal.ZERO;
+
+    @Builder.Default
+    @Column(name = "material_budget_adjustment", precision = 15, scale = 2)
+    private BigDecimal materialBudgetAdjustment = BigDecimal.ZERO;
+
 
     // 관계 매핑
     @ManyToOne(fetch = FetchType.LAZY)

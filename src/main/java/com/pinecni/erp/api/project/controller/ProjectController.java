@@ -1,5 +1,6 @@
 package com.pinecni.erp.api.project.controller;
 
+import com.pinecni.erp.api.project.dto.BudgetAdjustmentRequestDTO;
 import com.pinecni.erp.api.project.dto.ProjectCreateDTO;
 import com.pinecni.erp.api.project.dto.ProjectDTO;
 import com.pinecni.erp.api.project.dto.ProjectFilterDTO;
@@ -8,6 +9,7 @@ import com.pinecni.erp.api.project.dto.ProjectCardDTO;
 import com.pinecni.erp.api.project.repository.ProjectMemberRepository;
 import com.pinecni.erp.api.project.dto.ProjectExpenseSettingDTO;
 import com.pinecni.erp.api.project.service.ProjectService;
+import jakarta.servlet.http.HttpSession;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
@@ -352,6 +354,30 @@ public class ProjectController {
             error.put("error", e.getMessage());
             return ResponseEntity.status(HttpStatus.NOT_FOUND).body(error);
         }
+    }
+
+    /**
+     * 예산 보정값 저장 (관리자 전용)
+     * POST /api/projects/{projectIdx}/budget-adjustments
+     */
+    @PostMapping("/{projectIdx}/budget-adjustments")
+    public ResponseEntity<Map<String, String>> saveBudgetAdjustment(
+            @PathVariable Long projectIdx,
+            @RequestBody BudgetAdjustmentRequestDTO dto,
+            HttpSession session) {
+
+        if (dto.getReason() == null || dto.getReason().isBlank()) {
+            Map<String, String> error = new HashMap<>();
+            error.put("message", "보정 사유는 필수입니다.");
+            return ResponseEntity.badRequest().body(error);
+        }
+
+        Long userIdx = (Long) session.getAttribute("userIdx");
+        projectService.saveBudgetAdjustment(projectIdx, dto, userIdx);
+
+        Map<String, String> result = new HashMap<>();
+        result.put("message", "보정값이 저장되었습니다.");
+        return ResponseEntity.ok(result);
     }
 
     /**
