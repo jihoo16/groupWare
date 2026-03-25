@@ -8,12 +8,20 @@ import com.pinecni.erp.api.document.service.ReceiptPurchaseService;
 import jakarta.servlet.http.HttpSession;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.core.io.Resource;
+import org.springframework.core.io.UrlResource;
+import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
+import java.net.URLEncoder;
+import java.nio.charset.StandardCharsets;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -29,6 +37,9 @@ public class ReceiptPurchaseController {
 
     private final ReceiptPurchaseService receiptPurchaseService;
     private final ObjectMapper objectMapper;
+
+    @Value("${file.base.dir}")
+    private String baseDir;
 
     /**
      * 목록 조회
@@ -75,11 +86,12 @@ public class ReceiptPurchaseController {
             @RequestPart("data") String dataJson,
             @RequestPart(value = "receiptFiles", required = false) List<MultipartFile> receiptFiles,
             @RequestPart(value = "documentFiles", required = false) List<MultipartFile> documentFiles,
+            @RequestPart(value = "estimateFiles", required = false) List<MultipartFile> estimateFiles,
             HttpSession session) {
         try {
             ReceiptPurchaseCreateDTO dto = objectMapper.readValue(dataJson, ReceiptPurchaseCreateDTO.class);
             Long userIdx = (Long) session.getAttribute("userIdx");
-            ReceiptPurchaseDTO result = receiptPurchaseService.createReceiptPurchase(dto, receiptFiles, documentFiles, userIdx);
+            ReceiptPurchaseDTO result = receiptPurchaseService.createReceiptPurchase(dto, receiptFiles, documentFiles, estimateFiles, userIdx);
             return ResponseEntity.ok(result);
         } catch (Exception e) {
             log.error("구매품의 저장 실패", e);
@@ -99,6 +111,7 @@ public class ReceiptPurchaseController {
             @RequestPart("data") String dataJson,
             @RequestPart(value = "receiptFiles", required = false) List<MultipartFile> receiptFiles,
             @RequestPart(value = "documentFiles", required = false) List<MultipartFile> documentFiles,
+            @RequestPart(value = "estimateFiles", required = false) List<MultipartFile> estimateFiles,
             @RequestPart(value = "deletedAttachmentIds", required = false) String deletedIdsJson,
             HttpSession session) {
         try {
@@ -110,7 +123,7 @@ public class ReceiptPurchaseController {
             }
             Long userIdx = (Long) session.getAttribute("userIdx");
             ReceiptPurchaseDTO result = receiptPurchaseService.updateReceiptPurchase(
-                    idx, dto, receiptFiles, documentFiles, deletedIds, userIdx);
+                    idx, dto, receiptFiles, documentFiles, estimateFiles, deletedIds, userIdx);
             return ResponseEntity.ok(result);
         } catch (Exception e) {
             log.error("구매품의 수정 실패 - idx: {}", idx, e);
@@ -147,5 +160,96 @@ public class ReceiptPurchaseController {
     @GetMapping("/{idx}/attachments")
     public ResponseEntity<List<ReceiptPurchaseAttachmentDTO>> getAttachments(@PathVariable Long idx) {
         return ResponseEntity.ok(receiptPurchaseService.getAttachments(idx));
+    }
+
+    /**
+     * 첨부파일 추가 (목록 화면 모달에서 사용)
+     * POST /api/receipt-purchases/{idx}/attachments
+     */
+    @PostMapping(value = "/{idx}/attachments", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+    public ResponseEntity<?> addAttachments(
+            @PathVariable Long idx,
+            @RequestPart(value = "receiptFiles", required = false) List<MultipartFile> receiptFiles,
+            @RequestPart(value = "documentFiles", required = false) List<MultipartFile> documentFiles,
+            @RequestPart(value = "estimateFiles", required = false) List<MultipartFile> estimateFiles,
+            HttpSession session) {
+        try {
+            Long userIdx = (Long) session.getAttribute("userIdx");
+            List<ReceiptPurchaseAttachmentDTO> result = receiptPurchaseService.addAttachments(
+                    idx, receiptFiles, documentFiles, estimateFiles, userIdx);
+            return ResponseEntity.ok(result);
+        } catch (Exception e) {
+            log.error("첨부파일 추가 실패 - idx: {}", idx, e);
+            Map<String, String> error = new HashMap<>();
+            error.put("error", e.getMessage());
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(error);
+        }
+    }
+
+    /**
+     * 첨부파일 다운로드
+     * GET /api/receipt-purchases/attachments/{attachmentIdx}/download
+     */
+    @GetMapping("/attachments/{attachmentIdx}/download")
+    public ResponseEntity<Resource> downloadAttachment(@PathVariable Long attachmentIdx) {
+        log.debug("GET /api/receipt-purchases/attachments/{}/download", attachmentIdx);
+        try {
+            ReceiptPurchaseAttachmentDTO attachment = receiptPurchaseService.getAttachmentById(attachmentIdx);
+
+            Path filePath = Paths.get(baseDir)
+                    .resolve(attachment.getFilePath())
+                    .resolve(attachment.getStoredFilename());
+            Resource resource = new UrlResource(filePath.toUri());
+
+            if (!resource.exists() || !resource.isReadable()) {
+                log.error("파일을 찾을 수 없거나 읽을 수 없습니다: {}", filePath);
+                return ResponseEntity.notFound().build();
+            }
+
+            String encodedFilename = URLEncoder.encode(attachment.getOriginalFilename(), StandardCharsets.UTF_8)
+                    .replaceAll("\\+", "%20");
+
+            return ResponseEntity.ok()
+                    .contentType(MediaType.APPLICATION_OCTET_STREAM)
+                    .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename*=UTF-8''" + encodedFilename)
+                    .body(resource);
+
+        } catch (Exception e) {
+            log.error("첨부파일 다운로드 실패: {}", e.getMessage(), e);
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
+        }
+    }
+
+    /**
+     * 첨부파일 삭제 (소프트 딜리트)
+     * DELETE /api/receipt-purchases/attachments/{attachmentIdx}
+     */
+    @DeleteMapping("/attachments/{attachmentIdx}")
+    public ResponseEntity<Map<String, String>> deleteAttachment(
+            @PathVariable Long attachmentIdx,
+            HttpSession session) {
+        log.debug("DELETE /api/receipt-purchases/attachments/{}", attachmentIdx);
+
+        Long userIdx = (Long) session.getAttribute("userIdx");
+        if (userIdx == null) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
+        }
+
+        try {
+            receiptPurchaseService.softDeleteAttachment(attachmentIdx, userIdx);
+            Map<String, String> response = new HashMap<>();
+            response.put("message", "첨부파일이 삭제되었습니다.");
+            return ResponseEntity.ok(response);
+        } catch (RuntimeException e) {
+            log.error("첨부파일 삭제 실패: {}", e.getMessage());
+            Map<String, String> error = new HashMap<>();
+            error.put("error", e.getMessage());
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(error);
+        } catch (Exception e) {
+            log.error("첨부파일 삭제 중 오류 발생: {}", e.getMessage(), e);
+            Map<String, String> error = new HashMap<>();
+            error.put("error", "서버 오류가 발생했습니다.");
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(error);
+        }
     }
 }

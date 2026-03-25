@@ -6,6 +6,7 @@ document.addEventListener('DOMContentLoaded', async function() {
     // ============================================
     let selectedReceiptFiles = [];
     let selectedDocumentFiles = [];
+    let selectedEstimateFiles = [];
     let projects = [];
     let selectedProject = null;
     let projectCards = [];
@@ -20,6 +21,7 @@ document.addEventListener('DOMContentLoaded', async function() {
     let editingIdx = null;
     let existingReceiptAttachments = [];
     let existingDocumentAttachments = [];
+    let existingEstimateAttachments = [];
     let deletedAttachmentIds = [];
 
     // PURCHASE_TYPE은 Thymeleaf 인라인 스크립트로 주입됨 (layout에서)
@@ -42,6 +44,11 @@ document.addEventListener('DOMContentLoaded', async function() {
     const documentInput = document.getElementById('documentInput');
     const documentFileList = document.getElementById('documentFileList');
     const documentUploadArea = document.getElementById('documentUploadArea');
+    const estimateInput = document.getElementById('estimateInput');
+    const estimateFileList = document.getElementById('estimateFileList');
+    const estimateUploadArea = document.getElementById('estimateUploadArea');
+    const estimateSection = document.getElementById('estimateSection');
+    const attachmentGrid = document.getElementById('attachmentGrid');
     const toggleBtn = document.getElementById('documentFormToggle');
     const formWrapper = document.querySelector('.document-form-wrapper');
     const itemTableBody = document.getElementById('itemTableBody');
@@ -183,6 +190,13 @@ document.addEventListener('DOMContentLoaded', async function() {
     // ============================================
     setTodayDate();
     addItemRow(); // 첫 행 자동 추가
+
+    // 장비비일 때: 그리드 3열 전환 + 견적서 영역 표시
+    if (purchaseType === 'equipment') {
+        if (attachmentGrid) attachmentGrid.style.gridTemplateColumns = '1fr 1fr 1fr';
+        if (estimateSection) estimateSection.style.display = 'block';
+    }
+
     setupFileUpload();
     setupToggle();
     setupProjectInput();
@@ -983,6 +997,9 @@ document.addEventListener('DOMContentLoaded', async function() {
     function setupFileUpload() {
         setupSingleFileArea(receiptInput, receiptFileList, receiptUploadArea, selectedReceiptFiles, 'receipt');
         setupSingleFileArea(documentInput, documentFileList, documentUploadArea, selectedDocumentFiles, 'document');
+        if (purchaseType === 'equipment') {
+            setupSingleFileArea(estimateInput, estimateFileList, estimateUploadArea, selectedEstimateFiles, 'estimate');
+        }
     }
 
     function setupSingleFileArea(input, listEl, area, fileArray, type) {
@@ -1031,15 +1048,24 @@ document.addEventListener('DOMContentLoaded', async function() {
     }
 
     window.removeNewFile = function(idx, listId) {
-        const isReceipt = listId === 'receiptFileList';
-        const arr = isReceipt ? selectedReceiptFiles : selectedDocumentFiles;
+        let arr, listEl;
+        if (listId === 'receiptFileList') {
+            arr = selectedReceiptFiles; listEl = receiptFileList;
+        } else if (listId === 'estimateFileList') {
+            arr = selectedEstimateFiles; listEl = estimateFileList;
+        } else {
+            arr = selectedDocumentFiles; listEl = documentFileList;
+        }
         arr.splice(idx, 1);
-        renderFileList(arr, isReceipt ? receiptFileList : documentFileList);
+        renderFileList(arr, listEl);
     };
 
     function renderExistingFiles() {
         renderExistingFileList(existingReceiptAttachments, receiptFileList, selectedReceiptFiles, 'receipt');
         renderExistingFileList(existingDocumentAttachments, documentFileList, selectedDocumentFiles, 'document');
+        if (purchaseType === 'equipment') {
+            renderExistingFileList(existingEstimateAttachments, estimateFileList, selectedEstimateFiles, 'estimate');
+        }
     }
 
     function renderExistingFileList(existingArr, listEl, newArr, type) {
@@ -1049,11 +1075,12 @@ document.addEventListener('DOMContentLoaded', async function() {
             item.className = 'file-item existing-file';
             item.dataset.attachmentId = a.idx;
             item.innerHTML = `
-                <div class="file-name">
+                <div class="file-name" style="cursor:pointer;" onclick="downloadPurchaseAttachment(${a.idx})">
                     <i class="fas fa-file"></i>
                     <span>${escapeHtml(a.originalFilename)}</span>
                 </div>
                 <span class="file-size">${formatFileSize(a.fileSize)}</span>
+                <button class="btn-download-file" onclick="downloadPurchaseAttachment(${a.idx})"><i class="fas fa-download"></i></button>
                 <button class="btn-remove-file" onclick="removeExistingFile(${a.idx}, '${type}')"><i class="fas fa-times"></i></button>
             `;
             listEl.appendChild(item);
@@ -1073,6 +1100,10 @@ document.addEventListener('DOMContentLoaded', async function() {
         });
     }
 
+    window.downloadPurchaseAttachment = function(attachmentIdx) {
+        window.location.href = `/api/receipt-purchases/attachments/${attachmentIdx}/download`;
+    };
+
     window.removeExistingFile = function(attachmentId, type) {
         if (!deletedAttachmentIds.includes(attachmentId)) {
             deletedAttachmentIds.push(attachmentId);
@@ -1080,9 +1111,12 @@ document.addEventListener('DOMContentLoaded', async function() {
         if (type === 'receipt') {
             existingReceiptAttachments = existingReceiptAttachments.filter(a => a.idx !== attachmentId);
             renderExistingFileList(existingReceiptAttachments, receiptFileList, selectedReceiptFiles, 'receipt');
-        } else {
+        } else if (type === 'document') {
             existingDocumentAttachments = existingDocumentAttachments.filter(a => a.idx !== attachmentId);
             renderExistingFileList(existingDocumentAttachments, documentFileList, selectedDocumentFiles, 'document');
+        } else if (type === 'estimate') {
+            existingEstimateAttachments = existingEstimateAttachments.filter(a => a.idx !== attachmentId);
+            renderExistingFileList(existingEstimateAttachments, estimateFileList, selectedEstimateFiles, 'estimate');
         }
     };
 
@@ -1186,6 +1220,9 @@ document.addEventListener('DOMContentLoaded', async function() {
 
         selectedReceiptFiles.forEach(f => formData.append('receiptFiles', f));
         selectedDocumentFiles.forEach(f => formData.append('documentFiles', f));
+        if (purchaseType === 'equipment') {
+            selectedEstimateFiles.forEach(f => formData.append('estimateFiles', f));
+        }
 
         if (isEditMode && deletedAttachmentIds.length > 0) {
             formData.append('deletedAttachmentIds', JSON.stringify(deletedAttachmentIds));
@@ -1476,8 +1513,9 @@ document.addEventListener('DOMContentLoaded', async function() {
 
         // 첨부파일 복원
         if (data.attachments) {
-            existingReceiptAttachments = data.attachments.filter(a => a.attachmentType === 'RECEIPT');
-            existingDocumentAttachments = data.attachments.filter(a => a.attachmentType === 'DOCUMENT');
+            existingReceiptAttachments   = data.attachments.filter(a => a.attachmentType === 'RECEIPT');
+            existingDocumentAttachments  = data.attachments.filter(a => a.attachmentType === 'DOCUMENT');
+            existingEstimateAttachments  = data.attachments.filter(a => a.attachmentType === 'ESTIMATE');
             renderExistingFiles();
         }
 

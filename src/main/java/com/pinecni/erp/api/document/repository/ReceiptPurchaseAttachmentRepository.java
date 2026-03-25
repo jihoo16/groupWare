@@ -9,5 +9,6 @@ import java.util.List;
 @Repository
 public interface ReceiptPurchaseAttachmentRepository extends JpaRepository<ReceiptPurchaseAttachment, Long> {
     List<ReceiptPurchaseAttachment> findByReceiptPurchaseIdxAndDeletedFalseOrderByIdxAsc(Long receiptPurchaseIdx);
+    long countByReceiptPurchaseIdxAndAttachmentTypeAndDeletedFalse(Long receiptPurchaseIdx, String attachmentType);
     void deleteByReceiptPurchaseIdx(Long receiptPurchaseIdx);
 }

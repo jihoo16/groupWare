@@ -37,7 +37,7 @@ public class ReceiptPurchaseAttachment {
     @Column(name = "file_type", length = 100)
     private String fileType;
 
-    /** 'RECEIPT' or 'DOCUMENT' */
+    /** 'RECEIPT', 'DOCUMENT', or 'ESTIMATE' */
     @Column(name = "attachment_type", length = 20)
     private String attachmentType;
 
