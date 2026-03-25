@@ -392,12 +392,18 @@ document.addEventListener('DOMContentLoaded', async function() {
             const memberCount = proj.memberCount != null ? proj.memberCount : (proj.projectMembers ? proj.projectMembers.length : 0);
             const startDate = proj.startDate ? new Date(proj.startDate).toLocaleDateString('ko-KR') : '-';
             const endDate = proj.endDate ? new Date(proj.endDate).toLocaleDateString('ko-KR') : '-';
+            const budget = purchaseType === 'equipment' ? (proj.equipmentBudget || 0) : (proj.materialBudget || 0);
+            const used = purchaseType === 'equipment' ? (proj.equipmentUsed || 0) : (proj.materialUsed || 0);
+            const remaining = budget - used;
+            const remainingFormatted = remaining.toLocaleString('ko-KR') + '원';
+            const remainingStyle = remaining < 0 || (budget > 0 && remaining < budget * 0.1) ? 'color:#e03131;font-weight:600;' : 'color:#4361ee;font-weight:600;';
             item.innerHTML = `
                 <div class="modal-item-info">
                     <div class="modal-item-name">${highlightText(proj.projectName, keyword)}</div>
                     <div class="modal-item-detail">
                         <div><i class="fas fa-user"></i> ${escapeHtml(leader)} (${memberCount}명)</div>
                         <div><i class="fas fa-calendar"></i> ${startDate} ~ ${endDate}</div>
+                        <div><i class="fas fa-wallet"></i> 잔여 ${purchaseTypeLabel} : <span style="${remainingStyle}">${remainingFormatted}</span></div>
                     </div>
                 </div>`;
             item.addEventListener('click', async function() {
