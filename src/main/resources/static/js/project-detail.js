@@ -46,6 +46,38 @@ document.addEventListener('DOMContentLoaded', async function () {
         deleteBtn.addEventListener('click', () => deleteProject(projectId));
     }
 
+    // 활동비 세부 내역 모달
+    const closeBreakdown = () => document.getElementById('activityBreakdownOverlay').classList.remove('show');
+    document.getElementById('activityBreakdownClose')?.addEventListener('click', closeBreakdown);
+    document.getElementById('activityBreakdownConfirm')?.addEventListener('click', closeBreakdown);
+    document.getElementById('activityBreakdownOverlay')?.addEventListener('click', function (e) {
+        if (e.target === this) closeBreakdown();
+    });
+
+    // 예산 보정값 모달
+    const adjBtnMap = {
+        activityAdjBtn:  { type: 'ACTIVITY',  label: '활동비' },
+        equipmentAdjBtn: { type: 'EQUIPMENT', label: '장비비' },
+        materialAdjBtn:  { type: 'MATERIAL',  label: '재료비' },
+    };
+    Object.entries(adjBtnMap).forEach(([id, meta]) => {
+        document.getElementById(id)?.addEventListener('click', () => openAdjustmentModal(meta.type, meta.label));
+    });
+    document.getElementById('adjustmentModalClose')?.addEventListener('click', closeAdjustmentModal);
+    document.getElementById('adjustmentCancelBtn')?.addEventListener('click', closeAdjustmentModal);
+
+    // 드래그로 인한 오발 방지: mousedown이 오버레이에서 시작된 경우만 닫기
+    let _adjOverlayMouseDown = false;
+    const adjOverlay = document.getElementById('adjustmentModalOverlay');
+    adjOverlay?.addEventListener('mousedown', function (e) {
+        _adjOverlayMouseDown = e.target === this;
+    });
+    adjOverlay?.addEventListener('click', function (e) {
+        if (e.target === this && _adjOverlayMouseDown) closeAdjustmentModal();
+    });
+
+    document.getElementById('adjTargetRemaining')?.addEventListener('input', onRemainingInput);
+
     // 직급별 경비 설정 보기/접기
     const toggleExpenseBtn = document.getElementById('toggleExpenseBtn');
     const expenseContainer = document.getElementById('expenseSettingsContainer');
@@ -218,58 +250,16 @@ function displayBudgetInfo(data) {
 }
 
 /**
- * 활동비 세부 내역 팝업 표시
+ * 활동비 세부 내역 모달 표시
  */
 function showActivityBreakdownPopup(data) {
-    const meetingUsed = data.meetingUsed || 0;
-    const tripUsed = data.tripUsed || 0;
-    const tripMeetingUsed = data.tripMeetingUsed || 0;
-    const overtimeUsed = data.overtimeUsed || 0;
-    const total = data.activityUsed || 0;
+    document.getElementById('breakdown-meeting').textContent     = formatCurrency(data.meetingUsed || 0);
+    document.getElementById('breakdown-overtime').textContent    = formatCurrency(data.overtimeUsed || 0);
+    document.getElementById('breakdown-trip').textContent        = formatCurrency(data.tripUsed || 0);
+    document.getElementById('breakdown-tripmeeting').textContent = formatCurrency(data.tripMeetingUsed || 0);
+    document.getElementById('breakdown-total').textContent       = formatCurrency(data.activityUsed || 0);
 
-    Swal.fire({
-        title: '활동비 사용액 세부 내역',
-        html: `
-            <table style="width: 100%; border-collapse: collapse; font-size: 14px;">
-                <thead>
-                    <tr style="background: #f8f9fa; border-bottom: 2px solid #4361ee;">
-                        <th style="padding: 12px 16px; text-align: left; font-weight: 600; color: #1a237e;">구분</th>
-                        <th style="padding: 12px 16px; text-align: right; font-weight: 600; color: #1a237e;">금액</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    <tr style="border-bottom: 1px solid #e9ecef;">
-                        <td style="padding: 11px 16px; color: #333;">회의록</td>
-                        <td style="padding: 11px 16px; text-align: right; font-weight: 500;">${formatCurrency(meetingUsed)}</td>
-                    </tr>
-                    <tr style="border-bottom: 1px solid #e9ecef;">
-                        <td style="padding: 11px 16px; color: #333;">야근식대</td>
-                        <td style="padding: 11px 16px; text-align: right; font-weight: 500;">${formatCurrency(overtimeUsed)}</td>
-                    </tr>
-                    <tr style="border-bottom: 1px solid #e9ecef;">
-                        <td style="padding: 11px 16px; color: #333;">출장</td>
-                        <td style="padding: 11px 16px; text-align: right; font-weight: 500;">${formatCurrency(tripUsed)}</td>
-                    </tr>
-                    <tr style="border-bottom: 1px solid #e9ecef;">
-                        <td style="padding: 11px 16px; color: #333;">출장 + 회의</td>
-                        <td style="padding: 11px 16px; text-align: right; font-weight: 500;">${formatCurrency(tripMeetingUsed)}</td>
-                    </tr>
-                </tbody>
-                <tfoot>
-                    <tr style="background: #f0f4ff; border-top: 2px solid #4361ee;">
-                        <td style="padding: 12px 16px; font-weight: 700; color: #1a237e;">합계</td>
-                        <td style="padding: 12px 16px; text-align: right; font-weight: 700; color: #4361ee; font-size: 15px;">${formatCurrency(total)}</td>
-                    </tr>
-                </tfoot>
-            </table>
-        `,
-        width: 420,
-        showCloseButton: true,
-        showConfirmButton: false,
-        customClass: {
-            popup: 'activity-breakdown-popup'
-        }
-    });
+    document.getElementById('activityBreakdownOverlay').classList.add('show');
 }
 
 /**
@@ -922,3 +912,85 @@ function formatDocumentDate(dateString) {
     const date = new Date(dateString);
     return `${date.getFullYear()}.${String(date.getMonth() + 1).padStart(2, '0')}.${String(date.getDate()).padStart(2, '0')}`;
 }
+
+// 현재 열린 예산 구분의 기준 잔액 (예산 - 사용액)
+let _adjBaseRemaining = 0;
+let _adjBudgetType = '';
+
+function openAdjustmentModal(budgetType, label) {
+    _adjBudgetType = budgetType;
+
+    const keyMap = {
+        ACTIVITY: { budget: 'activityBudget', used: 'activityUsed' },
+        EQUIPMENT: { budget: 'equipmentBudget', used: 'equipmentUsed' },
+        MATERIAL: { budget: 'materialBudget', used: 'materialUsed' },
+    };
+    const keys = keyMap[budgetType];
+    const budget  = parseCurrency(document.getElementById(keys.budget).textContent);
+    const used    = parseCurrency(document.getElementById(keys.used).textContent);
+    _adjBaseRemaining = budget - used;
+
+    // 현재 화면에 표시된 잔액 (보정액 이미 반영된 값)
+    const remainingKey = budgetType.charAt(0) + budgetType.slice(1).toLowerCase() + 'Remaining';
+    const idMap = { ACTIVITY: 'activityRemaining', EQUIPMENT: 'equipmentRemaining', MATERIAL: 'materialRemaining' };
+    const currentRemaining = parseCurrency(document.getElementById(idMap[budgetType]).textContent);
+
+    document.getElementById('adjModalTitle').innerHTML = `<i class="fas fa-sliders-h"></i> ${label} 보정값 관리`;
+    document.getElementById('adjRemainingLabel').textContent = `${label} 잔여금액`;
+    document.getElementById('adjTargetRemaining').value = formatCurrency(currentRemaining);
+    document.getElementById('adjCalcDisplay').textContent = '-';
+    document.getElementById('adjCalcDisplay').className = 'adj-calc-display';
+    document.getElementById('adjReason').value = '';
+
+    // 초기 보정액 계산
+    onRemainingInput();
+
+    document.getElementById('adjustmentModalOverlay').classList.add('show');
+}
+
+function closeAdjustmentModal() {
+    document.getElementById('adjustmentModalOverlay').classList.remove('show');
+}
+
+function onRemainingInput() {
+    const input = document.getElementById('adjTargetRemaining');
+    const display = document.getElementById('adjCalcDisplay');
+
+    // 콤마 제거 후 숫자 파싱
+    const raw = input.value.replace(/,/g, '');
+    const newRemaining = parseFloat(raw);
+
+    // 숫자만 입력되도록 콤마 포매팅 적용
+    if (raw !== '' && !isNaN(newRemaining)) {
+        const pos = input.selectionStart;
+        const prevLen = input.value.length;
+        input.value = formatCurrency(newRemaining);
+        // 커서 위치 보정 (콤마 추가/제거로 인한 offset)
+        input.setSelectionRange(pos + (input.value.length - prevLen), pos + (input.value.length - prevLen));
+    }
+
+    if (raw === '' || isNaN(newRemaining)) {
+        display.textContent = '-';
+        display.className = 'adj-calc-display';
+        return;
+    }
+
+    const adjustment = newRemaining - _adjBaseRemaining;
+    display.className = 'adj-calc-display';
+    if (adjustment === 0) {
+        display.textContent = '0원 (변경 없음)';
+    } else if (adjustment > 0) {
+        display.textContent = '+' + formatCurrency(adjustment) + '원';
+        display.classList.add('positive');
+    } else {
+        display.textContent = formatCurrency(adjustment) + '원';
+        display.classList.add('negative');
+    }
+}
+
+// 화면에 표시된 통화 문자열 → 숫자 변환
+function parseCurrency(str) {
+    if (!str) return 0;
+    return parseFloat(str.replace(/,/g, '')) || 0;
+}
+

@@ -108,59 +108,61 @@
 
                     <!-- 예산 정보 -->
                     <h3 class="section-title">예산 정보</h3>
-                    <table class="form-table">
+                    <table class="form-table budget-vertical-table">
                         <colgroup>
-                            <col style="width: 15%;">
-                            <col style="width: 15%;">
-                            <col style="width: 15%;">
-                            <col style="width: 15%;">
-                            <col style="width: 15%;">
-                            <col style="width: 15%;">
+                            <col style="width: 18%;">
+                            <col style="width: 27%;">
+                            <col style="width: 27%;">
+                            <col style="width: 28%;">
                         </colgroup>
-                        <tr>
-                            <th>활동비 예산</th>
-                            <td>
-                                <span id="activityBudget"></span>
-                            </td>
-                            <th>활동비 사용액</th>
-                            <td>
-                                <span class="clickable-amount" id="activityUsedLabel" title="클릭하여 세부 내역 보기">
-                                    <span id="activityUsed"></span>
-                                    <i class="fas fa-search-plus" style="font-size: 11px; color: #4361ee; margin-left: 4px;"></i>
-                                </span>
-                            <th>활동비 잔여금액</th>
-                            <td>
-                            <span id="activityRemaining" style="font-weight: bold; color: #4361ee;"></span>
-                             </td>
-                        </tr>
-                        <tr>
-                            <th>장비비 예산</th>
-                            <td>
-                                <span id="equipmentBudget"></span>
-                            </td>
-                            <th>장비비 사용액</th>
-                            <td>
-                                <span id="equipmentUsed"></span>
-                            </td>
-                            <th>장비비 잔여금액</th>
-                            <td>
-                                <span id="equipmentRemaining" style="font-weight: bold; color: #4361ee;"></span>
-                            </td>
-                        </tr>
-                        <tr>
-                            <th>재료비 예산</th>
-                            <td>
-                                <span id="materialBudget"></span>
-                            </td>
-                            <th>재료비 사용액</th>
-                            <td>
-                                <span id="materialUsed"></span>
-                            </td>
-                            <th>재료비 잔여금액</th>
-                            <td>
-                                <span id="materialRemaining" style="font-weight: bold; color: #4361ee;"></span>
-                            </td>
-                        </tr>
+                        <thead>
+                            <tr>
+                                <th class="budget-corner"></th>
+                                <th class="budget-type-header">활동비</th>
+                                <th class="budget-type-header">장비비</th>
+                                <th class="budget-type-header">재료비</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <th>예산</th>
+                                <td><span id="activityBudget"></span></td>
+                                <td><span id="equipmentBudget"></span></td>
+                                <td><span id="materialBudget"></span></td>
+                            </tr>
+                            <tr>
+                                <th>사용액</th>
+                                <td>
+                                    <span class="clickable-amount" id="activityUsedLabel" title="클릭하여 세부 내역 보기">
+                                        <span id="activityUsed"></span>
+                                        <i class="fas fa-search-plus" style="font-size: 11px; color: #4361ee; margin-left: 4px;"></i>
+                                    </span>
+                                </td>
+                                <td><span id="equipmentUsed"></span></td>
+                                <td><span id="materialUsed"></span></td>
+                            </tr>
+                            <tr>
+                                <th>보정액</th>
+                                <td><span id="activityAdjustment" class="adjustment-amount">-</span></td>
+                                <td><span id="equipmentAdjustment" class="adjustment-amount">-</span></td>
+                                <td><span id="materialAdjustment" class="adjustment-amount">-</span></td>
+                            </tr>
+                            <tr>
+                                <th>잔여금액</th>
+                                <td>
+                                    <span id="activityRemaining" class="budget-remaining"></span>
+                                    <i class="fas fa-pencil-alt btn-adj-pencil" id="activityAdjBtn" title="보정값 관리"></i>
+                                </td>
+                                <td>
+                                    <span id="equipmentRemaining" class="budget-remaining"></span>
+                                    <i class="fas fa-pencil-alt btn-adj-pencil" id="equipmentAdjBtn" title="보정값 관리"></i>
+                                </td>
+                                <td>
+                                    <span id="materialRemaining" class="budget-remaining"></span>
+                                    <i class="fas fa-pencil-alt btn-adj-pencil" id="materialAdjBtn" title="보정값 관리"></i>
+                                </td>
+                            </tr>
+                        </tbody>
                     </table>
 
                     <!-- 연구비 카드 -->
@@ -322,6 +324,75 @@
                 <span>로딩 중...</span>
             </div>
             <iframe id="iframeModalContent" frameborder="0"></iframe>
+        </div>
+    </div>
+</div>
+
+<!-- 활동비 세부 내역 모달 -->
+<div class="adj-modal-overlay" id="activityBreakdownOverlay">
+    <div class="adj-modal">
+        <div class="adj-modal-header">
+            <h3 class="adj-modal-title"><i class="fas fa-chart-bar"></i> 활동비 사용액 세부 내역</h3>
+            <button type="button" class="adj-modal-close" id="activityBreakdownClose"><i class="fas fa-times"></i></button>
+        </div>
+        <div class="adj-modal-body">
+            <table class="adj-summary-table">
+                <thead>
+                    <tr>
+                        <th>구분</th>
+                        <th style="text-align: right;">금액</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr><td>회의록</td><td style="text-align: right;" id="breakdown-meeting">-</td></tr>
+                    <tr><td>야근식대</td><td style="text-align: right;" id="breakdown-overtime">-</td></tr>
+                    <tr><td>출장</td><td style="text-align: right;" id="breakdown-trip">-</td></tr>
+                    <tr><td>출장 + 회의</td><td style="text-align: right;" id="breakdown-tripmeeting">-</td></tr>
+                </tbody>
+                <tfoot>
+                    <tr class="breakdown-total-row">
+                        <td><strong>합계</strong></td>
+                        <td style="text-align: right;"><strong id="breakdown-total">-</strong></td>
+                    </tr>
+                </tfoot>
+            </table>
+        </div>
+        <div class="adj-modal-footer">
+            <button type="button" class="btn btn-primary" id="activityBreakdownConfirm">확인</button>
+        </div>
+    </div>
+</div>
+
+<!-- 예산 보정값 관리 모달 -->
+<div class="adj-modal-overlay" id="adjustmentModalOverlay">
+    <div class="adj-modal">
+        <div class="adj-modal-header">
+            <h3 class="adj-modal-title" id="adjModalTitle"><i class="fas fa-sliders-h"></i> 보정값 관리</h3>
+            <button type="button" class="adj-modal-close" id="adjustmentModalClose"><i class="fas fa-times"></i></button>
+        </div>
+        <div class="adj-modal-body">
+            <div class="adj-form">
+                <div class="adj-form-row">
+                    <label class="adj-label" id="adjRemainingLabel">현재 잔여금액</label>
+                    <div class="adj-amount-wrap">
+                        <input type="text" id="adjTargetRemaining" class="adj-input" placeholder="수정할 잔여금액 입력">
+                        <span class="adj-unit">원</span>
+                    </div>
+                </div>
+                <div class="adj-form-row">
+                    <label class="adj-label">자동 계산된 보정액</label>
+                    <div class="adj-calc-display" id="adjCalcDisplay">-</div>
+                    <p class="adj-hint">잔여금액을 수정하면 보정액이 자동으로 계산됩니다.</p>
+                </div>
+                <div class="adj-form-row">
+                    <label class="adj-label">보정 사유 <span class="required-mark">*</span></label>
+                    <textarea id="adjReason" class="adj-textarea" placeholder="예: 부가세 복원, 오입력 정정 등"></textarea>
+                </div>
+            </div>
+        </div>
+        <div class="adj-modal-footer">
+            <button type="button" class="btn btn-secondary" id="adjustmentCancelBtn">취소</button>
+            <button type="button" class="btn btn-primary" id="adjustmentSaveBtn"><i class="fas fa-save"></i> 저장</button>
         </div>
     </div>
 </div>
