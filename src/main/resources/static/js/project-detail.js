@@ -956,8 +956,8 @@ function onRemainingInput() {
     const input = document.getElementById('adjTargetRemaining');
     const display = document.getElementById('adjCalcDisplay');
 
-    // 콤마 제거 후 숫자 파싱
-    const raw = input.value.replace(/,/g, '');
+    // 숫자와 콤마 외 문자 제거 후 파싱
+    const raw = input.value.replace(/[^0-9]/g, '');
     const newRemaining = parseFloat(raw);
 
     // 숫자만 입력되도록 콤마 포매팅 적용
