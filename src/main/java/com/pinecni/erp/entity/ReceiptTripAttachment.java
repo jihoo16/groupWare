@@ -6,7 +6,7 @@ import lombok.*;
 import java.time.LocalDateTime;
 
 /**
- * 연구비증빙 출장 첨부파일 Entity
+ * 연구비증빙 단독출장 첨부파일 Entity
  */
 @Entity
 @Table(name = "receipt_trip_attachment", schema = "erp", indexes = {

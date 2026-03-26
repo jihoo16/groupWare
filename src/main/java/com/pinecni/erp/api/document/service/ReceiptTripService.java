@@ -9,7 +9,7 @@ import org.springframework.web.multipart.MultipartFile;
 import java.util.List;
 
 /**
- * 연구비증빙 출장 Service 인터페이스
+ * 연구비증빙 단독출장 Service 인터페이스
  */
 public interface ReceiptTripService {
 

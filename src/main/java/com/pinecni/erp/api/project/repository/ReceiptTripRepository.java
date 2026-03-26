@@ -12,7 +12,7 @@ import java.util.Optional;
 
 /**
  * ReceiptTrip Repository
- * 연구비증빙 출장 및 집행 내역 조회
+ * 연구비증빙 단독출장 및 집행 내역 조회
  */
 @Repository
 public interface ReceiptTripRepository extends JpaRepository<ReceiptTrip, Long> {

@@ -11,7 +11,7 @@ import java.util.List;
 
 /**
  * ReceiptTripAttachment Repository
- * 연구비증빙 출장 첨부파일 조회
+ * 연구비증빙 단독출장 첨부파일 조회
  */
 @Repository
 public interface ReceiptTripAttachmentRepository extends JpaRepository<ReceiptTripAttachment, Long> {

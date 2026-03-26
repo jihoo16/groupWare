@@ -28,7 +28,7 @@ import java.util.List;
 import java.util.Map;
 
 /**
- * 연구비증빙 출장 REST API Controller
+ * 연구비증빙 단독출장 REST API Controller
  */
 @Slf4j
 @RestController

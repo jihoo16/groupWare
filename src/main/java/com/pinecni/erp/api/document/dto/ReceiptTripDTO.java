@@ -11,7 +11,7 @@ import java.time.LocalDateTime;
 import java.util.List;
 
 /**
- * 연구비증빙 출장 조회용 DTO
+ * 연구비증빙 단독출장 조회용 DTO
  */
 @Data
 @Builder

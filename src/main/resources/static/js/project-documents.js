@@ -37,7 +37,7 @@ document.addEventListener('DOMContentLoaded', function() {
     const PROJECT_DOCUMENT_TYPES = [
         '프로젝트 주간업무보고',
         '연구비증빙-회의록',
-        '연구비증빙-출장',
+        '연구비증빙 - 단독출장',
         '연구비증빙-출장+회의',
         '연구비증빙(야근식대)',
         '재료비',
@@ -460,7 +460,7 @@ document.addEventListener('DOMContentLoaded', function() {
         const categoryMap = {
             '프로젝트 주간업무보고': 'project-weekly-report',
             '연구비증빙-회의록': 'receipt-meeting',
-            '연구비증빙-출장': 'receipt-trip',
+            '연구비증빙 - 단독출장': 'receipt-trip',
             '연구비증빙-출장+회의': 'receipt-trip-meeting',
             '연구비증빙(야근식대)': 'receipt-overtime',
             '재료비': 'receipt-purchase-material',
@@ -474,7 +474,7 @@ document.addEventListener('DOMContentLoaded', function() {
         const iconMap = {
             '프로젝트 주간업무보고': 'fa-calendar-week',
             '연구비증빙-회의록': 'fa-utensils',
-            '연구비증빙-출장': 'fa-plane',
+            '연구비증빙 - 단독출장': 'fa-plane',
             '연구비증빙-출장+회의': 'fa-suitcase',
             '연구비증빙(야근식대)': 'fa-moon',
             '재료비': 'fa-box',
@@ -704,7 +704,7 @@ document.addEventListener('DOMContentLoaded', function() {
         const actionCell = document.createElement('td');
         actionCell.style.textAlign = 'center';
         actionCell.style.verticalAlign = 'middle';
-        const isReceiptType = ['연구비증빙-회의록', '연구비증빙(야근식대)', '연구비증빙-출장', '연구비증빙-출장+회의'].includes(doc.documentType);
+        const isReceiptType = ['연구비증빙-회의록', '연구비증빙(야근식대)', '연구비증빙 - 단독출장', '연구비증빙-출장+회의'].includes(doc.documentType);
         actionCell.innerHTML = `
             ${isReceiptType ? `<button class="btn-icon attachment-modal-btn" title="첨부파일 관리" style="margin: 0 2px; display: inline-block;">
                 <i class="fas fa-paperclip"></i>
@@ -736,7 +736,7 @@ document.addEventListener('DOMContentLoaded', function() {
         const urls = {
             '프로젝트 주간업무보고': '/approval/project-weekly-report/detail',
             '연구비증빙-회의록': '/approval/receipt-meeting',
-            '연구비증빙-출장': '/approval/receipt-trip',
+            '연구비증빙 - 단독출장': '/approval/receipt-trip',
             '연구비증빙-출장+회의': '/approval/receipt-trip-meeting',
             '연구비증빙(야근식대)': '/approval/receipt-overtime',
             '재료비': '/approval/receipt-purchase?type=material',
@@ -1215,7 +1215,7 @@ document.addEventListener('DOMContentLoaded', function() {
         }
 
         const isMeeting = doc.documentType === '연구비증빙-회의록';
-        const isTrip = doc.documentType === '연구비증빙-출장';
+        const isTrip = doc.documentType === '연구비증빙 - 단독출장';
         const deleteBaseUrl = isTripMeeting
             ? `/api/receipt-trip-meetings/attachments`
             : isMeeting

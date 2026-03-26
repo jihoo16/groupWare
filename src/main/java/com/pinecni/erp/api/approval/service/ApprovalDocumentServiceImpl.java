@@ -217,8 +217,8 @@ public class ApprovalDocumentServiceImpl implements ApprovalDocumentService {
                 }
                 dto.setAttachments(buildMeetingAttachments(receiptMeeting.getIdx()));
             });
-        } else if ("연구비증빙-출장".equals(documentType) || "연구비증빙(출장)".equals(documentType) || "receipt_trip".equals(documentType)) {
-            // 연구비증빙 출장의 원본 문서 ID 및 프로젝트 정보 조회
+        } else if ("연구비증빙 - 단독출장".equals(documentType) || "연구비증빙(출장)".equals(documentType) || "receipt_trip".equals(documentType)) {
+            // 연구비증빙 단독출장의 원본 문서 ID 및 프로젝트 정보 조회
             receiptTripRepository.findByDocumentIdx(document.getIdx()).ifPresent(receiptTrip -> {
                 dto.setSourceDocumentId(receiptTrip.getIdx());
                 if (receiptTrip.getProjectIdx() != null) {

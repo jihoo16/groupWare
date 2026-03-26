@@ -10,7 +10,7 @@ import java.time.LocalDate;
 import java.util.List;
 
 /**
- * 연구비증빙 출장 수정용 DTO
+ * 연구비증빙 단독출장 수정용 DTO
  */
 @Data
 @Builder
