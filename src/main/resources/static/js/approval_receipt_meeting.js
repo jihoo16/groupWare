@@ -2290,17 +2290,19 @@ document.addEventListener('DOMContentLoaded', async function() {
                         if (duplicates.length > 0) {
                             const duplicate = duplicates[0];
                             const meeting = duplicate.meeting;
-                            const meetingDate = meeting.meetingDate || '';
+                            const meetingDate = meeting.documentDate || '';
                             const projectName = meeting.projectName || '알 수 없는 프로젝트';
-                            const documentType = meeting.type || '회의록';
+                            const documentTypePrefix = meeting.type || 'RCM';
+                            const documentTypeName = meeting.typeName || documentTypePrefix;
+                            const dateLabel = documentTypePrefix === 'RCM' ? '회의' : '야근';
 
                             let message = `저장할 수 없습니다.<br><br>`;
-                            message += `동일 날짜에 이미 다른 ${documentType}에 참석 중인 인원이 있습니다.<br><br>`;
-                            message += `${documentType === '회의록' ? '회의' : '야근'} 날짜: ${meetingDate}<br>`;
+                            message += `동일 날짜에 이미 다른 ${documentTypeName}에 참석 중인 인원이 있습니다.<br><br>`;
+                            message += `${dateLabel} 날짜: ${meetingDate}<br>`;
 
                             if (meeting.startTime && meeting.endTime) {
                                 const timeRange = `${meeting.startTime.substring(0, 5)} ~ ${meeting.endTime.substring(0, 5)}`;
-                                message += `${documentType === '회의록' ? '회의' : '야근'} 시간: ${timeRange}<br>`;
+                                message += `${dateLabel} 시간: ${timeRange}<br>`;
                             }
 
                             message += `프로젝트: <strong>[${projectName}]</strong>`;
@@ -3438,10 +3440,10 @@ document.addEventListener('DOMContentLoaded', async function() {
                 if (duplicates.length > 0) {
                     const duplicate = duplicates[0];
                     const meeting = duplicate.meeting;
-                    const meetingDate = meeting.meetingDate || '';
+                    const meetingDate = meeting.documentDate || '';
                     const projectName = meeting.projectName || '알 수 없는 프로젝트';
                     const documentTypeCode = meeting.type || 'RCM';
-                    const documentTypeName = getDocumentTypeName(documentTypeCode);
+                    const documentTypeName = meeting.typeName || getDocumentTypeName(documentTypeCode);
 
                     // 중복된 참석자 이름 찾기
                     const duplicateAttendee = tempSelectedAttendees.find(a => parseInt(a.id) === duplicate.attendeeId);

@@ -214,48 +214,59 @@ public class CodeConstants {
 
     /**
      * 문서유형 코드 (C04)
+     * code     : DB 저장값 (approval_documents.document_type, document_sequences.document_type)
+     * name     : 한글 표시명
+     * nameEn   : 영문 식별자
+     * prefix   : 문서번호 prefix / receipt_attendee.document_type_prefix 연동값
+     * sortOrder: 정렬 순서
      */
     public enum DocumentType {
-        VACATION("C0401", "연차신청서", "VACATION", 1),
-        EXPENSE("C0402", "지출결의서", "EXPENSE", 2),
-        PURCHASE("C0403", "구매품의서", "PURCHASE", 3),
-        BUSINESS_TRIP("C0404", "출장신청서", "BUSINESS_TRIP", 4);
+        EXPENSE_APPROVAL     ("C0401", "지출승인서",            "EXPENSE_APPROVAL",      "EXP",   1),
+        EXPENSE_REQUEST      ("C0402", "지출품의서",            "EXPENSE_REQUEST",        "REQ",   2),
+        RECEIPT_OVERTIME     ("C0403", "야근식대",              "RECEIPT_OVERTIME",       "RCO",   3),
+        RECEIPT_TRIP         ("C0404", "단독출장",              "RECEIPT_TRIP",           "RCT",   4),
+        RECEIPT_TRIP_MEETING ("C0405", "출장+회의",             "RECEIPT_TRIP_MEETING",   "RCTM",  5),
+        RECEIPT_MEETING      ("C0406", "연구비증빙-회의록",     "RECEIPT_MEETING",        "RCM",   6),
+        RECEIPT_MATERIAL     ("C0407", "재료비",               "RECEIPT_MATERIAL",        "MAT",   7),
+        RECEIPT_EQUIPMENT    ("C0408", "장비비",               "RECEIPT_EQUIPMENT",       "EQP",   8),
+        WEEKLY_REPORT        ("C0409", "주간업무보고",          "WEEKLY_REPORT",          "WKR",   9),
+        PROJECT_WEEKLY_REPORT("C0410", "프로젝트 주간업무보고", "PROJECT_WEEKLY_REPORT",  "PWKR", 10),
+        MONTHLY_REPORT       ("C0411", "월간업무보고",          "MONTHLY_REPORT",         "MOR",  11),
+        MEETING_MINUTES      ("C0412", "회의록",               "MEETING_MINUTES",         "MTG",  12),
+        VACATION             ("C0413", "연차신청서",            "VACATION",               "VAC",  13);
 
         private final String code;
         private final String name;
         private final String nameEn;
+        private final String prefix;
         private final int sortOrder;
 
-        DocumentType(String code, String name, String nameEn, int sortOrder) {
+        DocumentType(String code, String name, String nameEn, String prefix, int sortOrder) {
             this.code = code;
             this.name = name;
             this.nameEn = nameEn;
+            this.prefix = prefix;
             this.sortOrder = sortOrder;
         }
 
-        public String getCode() {
-            return code;
-        }
-
-        public String getName() {
-            return name;
-        }
-
-        public String getNameEn() {
-            return nameEn;
-        }
-
-        public int getSortOrder() {
-            return sortOrder;
-        }
+        public String getCode() { return code; }
+        public String getName() { return name; }
+        public String getNameEn() { return nameEn; }
+        public String getPrefix() { return prefix; }
+        public int getSortOrder() { return sortOrder; }
 
         public static DocumentType fromCode(String code) {
             for (DocumentType type : values()) {
-                if (type.code.equals(code)) {
-                    return type;
-                }
+                if (type.code.equals(code)) return type;
             }
             throw new IllegalArgumentException("Unknown document type code: " + code);
+        }
+
+        public static DocumentType fromCodeOrNull(String code) {
+            for (DocumentType type : values()) {
+                if (type.code.equals(code)) return type;
+            }
+            return null;
         }
     }
 

@@ -8,6 +8,7 @@ import com.pinecni.erp.api.project.repository.ProjectRepository;
 import com.pinecni.erp.api.user.repository.UserRepository;
 import com.pinecni.erp.api.file.dto.FileUploadDTO;
 import com.pinecni.erp.api.file.mapper.FileMapper;
+import com.pinecni.erp.constant.CodeConstants;
 import com.pinecni.erp.entity.ApprovalDocument;
 import com.pinecni.erp.entity.ApprovalFile;
 import com.pinecni.erp.entity.MonthlyReport;
@@ -306,13 +307,16 @@ public class FileServiceImpl implements FileService {
             .orElseThrow(() -> new RuntimeException("문서를 찾을 수 없습니다. documentIdx: " + documentIdx));
 
         String documentType = approvalDocument.getDocumentType();
+        // 경로 빌딩에 사용할 표시명 (파일 경로 하위 호환성 유지)
+        CodeConstants.DocumentType docTypeEnum = CodeConstants.DocumentType.fromCodeOrNull(documentType);
+        String documentTypeName = docTypeEnum != null ? docTypeEnum.getName() : documentType;
         String pattern;
         Long projectIdx = null;
         String projectName = null;
         String userId = null;
 
         // 문서 타입에 따라 패턴 선택 및 프로젝트 정보 조회
-        if ("주간업무보고".equals(documentType)) {
+        if (CodeConstants.DocumentType.WEEKLY_REPORT.getCode().equals(documentType)) {
             pattern = generalWeeklyReportPattern;
             User drafter = userRepository.findById(approvalDocument.getDrafterUserIdx()).orElse(null);
             if (drafter != null && drafter.getEmpId() != null && !drafter.getEmpId().isBlank()) {
@@ -320,7 +324,7 @@ public class FileServiceImpl implements FileService {
             } else {
                 userId = String.valueOf(approvalDocument.getDrafterUserIdx());
             }
-        } else if ("프로젝트 주간업무보고".equals(documentType)) {
+        } else if (CodeConstants.DocumentType.PROJECT_WEEKLY_REPORT.getCode().equals(documentType)) {
             pattern = weeklyReportPattern;
             // WeeklyReport에서 projectIdx 조회
             WeeklyReport weeklyReport = weeklyReportRepository.findByDocumentIdx(documentIdx)
@@ -335,7 +339,7 @@ public class FileServiceImpl implements FileService {
                     }
                 }
             }
-        } else if ("프로젝트 월간업무보고".equals(documentType)) {
+        } else if (CodeConstants.DocumentType.MONTHLY_REPORT.getCode().equals(documentType)) {
             pattern = monthlyReportPattern;
             MonthlyReport monthlyReport = monthlyReportRepository.findByDocumentIdx(documentIdx)
                 .orElse(null);
@@ -348,7 +352,7 @@ public class FileServiceImpl implements FileService {
                     }
                 }
             }
-        } else if ("연차신청서".equals(documentType)) {
+        } else if (CodeConstants.DocumentType.VACATION.getCode().equals(documentType)) {
             pattern = vacationPattern;
             // 기안자의 사번(empId) 조회
             User drafter = userRepository.findById(approvalDocument.getDrafterUserIdx()).orElse(null);
@@ -380,7 +384,7 @@ public class FileServiceImpl implements FileService {
             .replace("{projectName}", sanitizedProjectName)
             .replace("{documentIdx}", String.valueOf(documentIdx))
             .replace("{userId}", userId != null ? userId : "unknown")
-            .replace("{documentType}", documentType != null ? documentType : "unknown");
+            .replace("{documentType}", documentTypeName != null ? documentTypeName : "unknown");
 
         log.debug("생성된 경로: {} (documentType: {}, projectIdx: {}, projectName: {}, userId: {})",
             path, documentType, projectIdx, projectName, userId);

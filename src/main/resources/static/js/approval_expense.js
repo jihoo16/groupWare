@@ -2334,8 +2334,8 @@ document.addEventListener('DOMContentLoaded', async function() {
                 if (periodData.exists) {
                     await Swal.fire({
                         icon: 'warning',
-                        title: '이미 작성된 지출승인서가 있습니다',
-                        html: `이번 기간(<b>${periodData.periodStart} ~ ${periodData.periodEnd}</b>)에<br>작성된 지출승인서가 존재합니다.<br><br>문서번호: <b>${periodData.documentNumber}</b>`,
+                        title: '이번 달 작성중인 지출승인서가 있습니다',
+                        html: `기간 <b>${periodData.periodStart} ~ ${periodData.periodEnd}</b> 내<br>작성된 지출승인서가 이미 존재합니다.<br>해당 문서로 이동합니다.`,
                         confirmButtonText: '확인'
                     });
                     window.location.href = `/approval/expense/detail?idx=${periodData.documentIdx}`;
@@ -2378,12 +2378,7 @@ document.addEventListener('DOMContentLoaded', async function() {
                     const div = document.createElement('div');
                     div.className = 'expense-item';
                     div.innerHTML = `
-                        <div class="expense-item-header">
-                            <span class="expense-item-number">${i + 1}</span>
-                            <button type="button" class="btn-remove-item" onclick="removeExpenseItem(this)">
-                                <i class="fas fa-times"></i>
-                            </button>
-                        </div>
+                        <span class="expense-item-number">${i + 1}</span>
                         <div class="expense-item-body">
                             <div class="form-row">
                                 <div class="form-group" style="flex: 0 0 180px;">
@@ -2400,13 +2395,6 @@ document.addEventListener('DOMContentLoaded', async function() {
                                     <label><i class="fas fa-store"></i> 상호</label>
                                     <input type="text" class="form-input shop-input" placeholder="상호명 입력">
                                 </div>
-                                <div class="form-group" style="flex: 0 0 120px;">
-                                    <label><i class="fas fa-credit-card"></i> 결제수단</label>
-                                    <select class="form-input payment-method-select">
-                                        <option value="개인카드">개인카드</option>
-                                        <option value="현금">현금</option>
-                                    </select>
-                                </div>
                                 <div class="form-group" style="flex: 0 0 180px;">
                                     <label><i class="fas fa-won-sign"></i> 금액</label>
                                     <input type="text" class="form-input amount-input" placeholder="금액 입력" inputmode="numeric">
@@ -2415,8 +2403,18 @@ document.addEventListener('DOMContentLoaded', async function() {
                                     <label><i class="fas fa-sticky-note"></i> 비고</label>
                                     <input type="text" class="form-input note-input" placeholder="">
                                 </div>
+                                <div class="form-group" style="flex: 0 0 120px;">
+                                    <label><i class="fas fa-credit-card"></i> 결제수단</label>
+                                    <select class="form-input payment-method-select">
+                                        <option value="개인카드">개인카드</option>
+                                        <option value="현금">현금</option>
+                                    </select>
+                                </div>
                             </div>
                         </div>
+                        <button type="button" class="btn-remove-item" onclick="removeExpenseItem(this)">
+                            <i class="fas fa-times"></i>
+                        </button>
                     `;
                     container.appendChild(div);
 

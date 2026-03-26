@@ -12,6 +12,7 @@ import com.pinecni.erp.api.project.repository.ProjectRepository;
 import com.pinecni.erp.api.project.repository.ProjectCardRepository;
 import com.pinecni.erp.api.approval.repository.ApprovalDocumentRepository;
 import com.pinecni.erp.api.approval.service.DocumentSequenceService;
+import com.pinecni.erp.constant.CodeConstants;
 import com.pinecni.erp.entity.ReceiptMeeting;
 import com.pinecni.erp.entity.ReceiptMeetingAttachment;
 import com.pinecni.erp.entity.ReceiptAttendee;
@@ -139,7 +140,7 @@ public class ReceiptMeetingServiceImpl implements ReceiptMeetingService {
             );
 
             // 2. 전자결재 문서번호 생성 (시퀀스 사용)
-            String documentNo = documentSequenceService.generateDocumentNumber("receipt_meeting", "RCM", currentUserIdx);
+            String documentNo = documentSequenceService.generateDocumentNumber(CodeConstants.DocumentType.RECEIPT_MEETING.getCode(), CodeConstants.DocumentType.RECEIPT_MEETING.getPrefix(), currentUserIdx);
 
             // 제목 생성: "프로젝트이름 (카드번호) - 날짜/금액"
             StringBuilder titleBuilder = new StringBuilder();
@@ -179,7 +180,7 @@ public class ReceiptMeetingServiceImpl implements ReceiptMeetingService {
             ApprovalDocument approvalDocument = ApprovalDocument.builder()
                     .documentNo(documentNo)
                     .title(title)
-                    .documentType("연구비증빙-회의록")  // 화면 표시용
+                    .documentType(CodeConstants.DocumentType.RECEIPT_MEETING.getCode())
                     .isProject(true)  // 프로젝트 문서로 표시
                     .drafterUserIdx(createDTO.getAuthorIdx())
                     .content(createDTO.getContent())

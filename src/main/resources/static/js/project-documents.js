@@ -396,8 +396,8 @@ document.addEventListener('DOMContentLoaded', function() {
 
             switch (column) {
                 case 'type':
-                    valueA = displayNameMap[a.documentType] || a.documentType || '';
-                    valueB = displayNameMap[b.documentType] || b.documentType || '';
+                    valueA = a.documentTypeName || a.documentType || '';
+                    valueB = b.documentTypeName || b.documentType || '';
                     break;
                 case 'title':
                     valueA = a.title || '';
@@ -456,13 +456,13 @@ document.addEventListener('DOMContentLoaded', function() {
     // 문서 카테고리 매핑
     function getCategoryFromDocumentType(documentType) {
         const categoryMap = {
-            '프로젝트 주간업무보고': 'project-weekly-report',
-            '연구비증빙-회의록': 'receipt-meeting',
-            '연구비증빙-단독출장': 'receipt-trip',
-            '연구비증빙-출장+회의': 'receipt-trip-meeting',
-            '연구비증빙-야근식대': 'receipt-overtime',
-            '재료비': 'receipt-purchase-material',
-            '장비비': 'receipt-purchase-equipment'
+            'C0410': 'project-weekly-report',
+            'C0406': 'receipt-meeting',
+            'C0404': 'receipt-trip',
+            'C0405': 'receipt-trip-meeting',
+            'C0403': 'receipt-overtime',
+            'C0407': 'receipt-purchase-material',
+            'C0408': 'receipt-purchase-equipment'
         };
         return categoryMap[documentType] || 'unknown';
     }
@@ -470,13 +470,13 @@ document.addEventListener('DOMContentLoaded', function() {
     // 문서 타입별 아이콘 매핑
     function getIconFromDocumentType(documentType) {
         const iconMap = {
-            '프로젝트 주간업무보고': 'fa-calendar-week',
-            '연구비증빙-회의록': 'fa-utensils',
-            '연구비증빙-단독출장': 'fa-plane',
-            '연구비증빙-출장+회의': 'fa-suitcase',
-            '연구비증빙-야근식대': 'fa-moon',
-            '재료비': 'fa-box',
-            '장비비': 'fa-tools'
+            'C0410': 'fa-calendar-week',
+            'C0406': 'fa-utensils',
+            'C0404': 'fa-plane',
+            'C0405': 'fa-suitcase',
+            'C0403': 'fa-moon',
+            'C0407': 'fa-box',
+            'C0408': 'fa-tools'
         };
         return iconMap[documentType] || 'fa-file-alt';
     }
@@ -674,8 +674,7 @@ document.addEventListener('DOMContentLoaded', function() {
         const typeCell = document.createElement('td');
         typeCell.className = 'doc-type-cell';
         const icon = getIconFromDocumentType(doc.documentType);
-        const displayNameMap = {};
-        const documentType = displayNameMap[doc.documentType] || doc.documentType || '-';
+        const documentType = doc.documentTypeName || doc.documentType || '-';
         const highlightedDocType = keyword ? searchUtils.highlightText(documentType, keyword) : documentType;
         typeCell.innerHTML = `
             <span class="doc-type">
@@ -750,8 +749,7 @@ document.addEventListener('DOMContentLoaded', function() {
         const actionCell = document.createElement('td');
         actionCell.style.textAlign = 'center';
         actionCell.style.verticalAlign = 'middle';
-        const isReceiptType = ['연구비증빙-회의록', '연구비증빙(야근식대)', '연구비증빙 - 단독출장', '연구비증빙-출장+회의', '재료비', '장비비'].includes(doc.documentType);
-        const isReceiptType = ['연구비증빙-회의록', '연구비증빙-야근식대', '연구비증빙-단독출장', '연구비증빙-출장+회의'].includes(doc.documentType);
+        const isReceiptType = ['C0403', 'C0404', 'C0405', 'C0406', 'C0407', 'C0408'].includes(doc.documentType);
         actionCell.innerHTML = `
             ${isReceiptType ? `<button class="btn-icon attachment-modal-btn" title="첨부파일 관리" style="margin: 0 2px; display: inline-block;">
                 <i class="fas fa-paperclip"></i>
@@ -781,21 +779,21 @@ document.addEventListener('DOMContentLoaded', function() {
     function viewDocument(doc) {
         // 문서 타입에 따라 다른 상세 페이지로 이동
         const urls = {
-            '프로젝트 주간업무보고': '/approval/project-weekly-report/detail',
-            '연구비증빙-회의록': '/approval/receipt-meeting',
-            '연구비증빙-단독출장': '/approval/receipt-trip',
-            '연구비증빙-출장+회의': '/approval/receipt-trip-meeting',
-            '연구비증빙-야근식대': '/approval/receipt-overtime',
-            '재료비': '/approval/receipt-purchase?type=material',
-            '장비비': '/approval/receipt-purchase?type=equipment'
+            'C0410': '/approval/project-weekly-report/detail',  // 프로젝트 주간업무보고
+            'C0406': '/approval/receipt-meeting',               // 연구비증빙-회의록
+            'C0404': '/approval/receipt-trip',                  // 단독출장
+            'C0405': '/approval/receipt-trip-meeting',          // 출장+회의
+            'C0403': '/approval/receipt-overtime',              // 야근식대
+            'C0407': '/approval/receipt-purchase?type=material',// 재료비
+            'C0408': '/approval/receipt-purchase?type=equipment'// 장비비
         };
 
         const url = urls[doc.documentType];
         if (url) {
             // 출장+회의는 receiptTripMeeting.idx(sourceDocumentId)를 ?id= 파라미터로 전달
-            const isTripMeetingType = doc.documentType === '연구비증빙-출장+회의';
+            const isTripMeetingType = doc.documentType === 'C0405';
             // 재료비/장비비는 receipt_purchase.idx(sourceDocumentId)를 documentIdx로 전달
-            const isPurchaseType = doc.documentType === '재료비' || doc.documentType === '장비비';
+            const isPurchaseType = doc.documentType === 'C0407' || doc.documentType === 'C0408';
             if (isTripMeetingType) {
                 window.location.href = `${url}?id=${doc.sourceDocumentId}`;
             } else if (isPurchaseType) {
@@ -1087,9 +1085,9 @@ document.addEventListener('DOMContentLoaded', function() {
     }
 
     function renderModalContent(doc) {
-        const isTripMeeting = (doc.documentType || '').includes('출장+회의');
-        const isPurchase = doc.documentType === '재료비' || doc.documentType === '장비비';
-        const isEquipment = doc.documentType === '장비비';
+        const isTripMeeting = doc.documentType === 'C0405';
+        const isPurchase = doc.documentType === 'C0407' || doc.documentType === 'C0408';
+        const isEquipment = doc.documentType === 'C0408';
 
         function buildExistingRow(a) {
             const safe = a.originalFilename.replace(/"/g, '&quot;');
@@ -1278,9 +1276,9 @@ document.addEventListener('DOMContentLoaded', function() {
             }
         };
 
-        const isTripMeeting = (doc.documentType || '').includes('출장+회의');
-        const isPurchase = doc.documentType === '재료비' || doc.documentType === '장비비';
-        const isEquipment = doc.documentType === '장비비';
+        const isTripMeeting = doc.documentType === 'C0405';
+        const isPurchase = doc.documentType === 'C0407' || doc.documentType === 'C0408';
+        const isEquipment = doc.documentType === 'C0408';
         const hasNewFiles = isTripMeeting
             ? (pendingMeetingReceiptFilesBySession.some(arr => arr.length > 0) ||
                pendingMeetingDocumentFilesBySession.some(arr => arr.length > 0) ||
@@ -1294,8 +1292,8 @@ document.addEventListener('DOMContentLoaded', function() {
             return;
         }
 
-        const isMeeting = doc.documentType === '연구비증빙-회의록';
-        const isTrip = doc.documentType === '연구비증빙 - 단독출장';
+        const isMeeting = doc.documentType === 'C0406';
+        const isTrip = doc.documentType === 'C0404';
         const deleteBaseUrl = isPurchase
             ? `/api/receipt-purchases/attachments`
             : isTripMeeting

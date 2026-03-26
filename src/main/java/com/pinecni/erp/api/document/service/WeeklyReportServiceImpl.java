@@ -9,6 +9,8 @@ import com.pinecni.erp.api.user.repository.UserRepository;
 import com.pinecni.erp.api.code.repository.CodeRepository;
 import com.pinecni.erp.api.project.repository.ProjectRepository;
 import com.pinecni.erp.api.approval.repository.ApprovalDocumentRepository;
+import com.pinecni.erp.api.approval.service.DocumentSequenceService;
+import com.pinecni.erp.constant.CodeConstants;
 import com.pinecni.erp.entity.WeeklyReport;
 import com.pinecni.erp.entity.Project;
 import com.pinecni.erp.entity.ApprovalDocument;
@@ -38,6 +40,7 @@ public class WeeklyReportServiceImpl implements WeeklyReportService {
     private final CodeRepository codeRepository;
     private final ProjectRepository projectRepository;
     private final ApprovalDocumentRepository approvalDocumentRepository;
+    private final DocumentSequenceService documentSequenceService;
     private final PdfGenerationService pdfGenerationService;
     private final com.pinecni.erp.api.document.repository.WeeklyReportOfficialPdfRepository weeklyReportOfficialPdfRepository;
 
@@ -79,18 +82,19 @@ public class WeeklyReportServiceImpl implements WeeklyReportService {
 
             // === 1. ApprovalDocument 메타데이터 저장 ===
             boolean isProjectReport = createDTO.getProjectIdx() != null;
-            String documentType = isProjectReport ? "프로젝트 주간업무보고" : "주간업무보고";
-            String documentNoPrefix = isProjectReport ? "PROJECT-WEEKLY-" : "WEEKLY-";
-            String documentNo = documentNoPrefix + System.currentTimeMillis() + "-" + createDTO.getUserIdx();
-            String title = documentType;
+            CodeConstants.DocumentType docType = isProjectReport
+                    ? CodeConstants.DocumentType.PROJECT_WEEKLY_REPORT
+                    : CodeConstants.DocumentType.WEEKLY_REPORT;
+            String documentNo = documentSequenceService.generateDocumentNumber(docType.getCode(), docType.getPrefix(), createDTO.getUserIdx());
+            String title = docType.getName();
             if (createDTO.getReportPeriod() != null && !createDTO.getReportPeriod().isEmpty()) {
-                title = documentType + " - " + createDTO.getReportPeriod();
+                title = docType.getName() + " - " + createDTO.getReportPeriod();
             }
 
             ApprovalDocument approvalDocument = ApprovalDocument.builder()
                     .documentNo(documentNo)
                     .title(title)
-                    .documentType(documentType)
+                    .documentType(docType.getCode())
                     .isProject(isProjectReport)
                     .drafterUserIdx(createDTO.getUserIdx())
                     .content(createDTO.getMainTasks())

@@ -1172,12 +1172,12 @@ public class VacationServiceImpl implements VacationService {
         }
 
         // 문서번호 생성 (시퀀스 사용)
-        String documentNo = documentSequenceService.generateDocumentNumber("연차신청서", "VAC", userIdx);
+        String documentNo = documentSequenceService.generateDocumentNumber(CodeConstants.DocumentType.VACATION.getCode(), CodeConstants.DocumentType.VACATION.getPrefix(), userIdx);
 
         ApprovalDocument document = ApprovalDocument.builder()
                 .documentNo(documentNo)
                 .title(title)
-                .documentType("연차신청서")
+                .documentType(CodeConstants.DocumentType.VACATION.getCode())
                 .drafterUserIdx(userIdx)
                 .isProject(false)
                 .content(saveDTO.getReason())
