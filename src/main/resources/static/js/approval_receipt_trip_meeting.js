@@ -2264,8 +2264,8 @@ document.addEventListener('DOMContentLoaded', function() {
             <button type="button" class="add-more-persons-btn" onclick="openAttendeeModal(${idx})">
                 <i class="fas fa-user-plus"></i> 외부인원 추가
             </button>
-            <div id="externalAttendeeWarning_${idx}" style="display:none; margin-top:6px; font-size:12px; color:#ef4444;">
-                <i class="fas fa-exclamation-circle"></i> 외부 참석자를 1명 이상 선택해주세요.
+            <div id="externalAttendeeWarning_${idx}" class="external-attendee-warning" style="display:none;">
+                <i class="fas fa-exclamation-triangle"></i> 외부인원이 없습니다. 외부인원을 1명 이상 추가해주세요.
             </div>
         </div>
     </div>

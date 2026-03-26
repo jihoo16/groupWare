@@ -65,15 +65,15 @@ document.addEventListener('DOMContentLoaded', async function() {
             <td><input type="date" class="item-input item-date" placeholder="날짜"></td>
             <td><input type="text" class="item-input item-desc" placeholder="품명/내역 입력"></td>
             <td><input type="number" class="item-input num-input item-qty" placeholder="0" min="0"></td>
+            <td><input type="text" class="item-input num-input item-payment" placeholder="0"></td>
+            <td><input type="text" class="item-input num-input item-supply" placeholder="0"></td>
+            <td><input type="text" class="item-input num-input item-tax" placeholder="0"></td>
             <td>
                 <select class="item-input item-taxtype">
                     <option value="과세">과세</option>
                     <option value="면세">면세</option>
                 </select>
             </td>
-            <td><input type="text" class="item-input num-input item-payment" placeholder="0"></td>
-            <td><input type="text" class="item-input num-input item-supply" placeholder="0"></td>
-            <td><input type="text" class="item-input num-input item-tax" placeholder="0"></td>
             <td><input type="text" class="item-input item-remark" placeholder="비고"></td>
             <td><button type="button" class="btn-remove-row" onclick="removeItemRow(this)" title="행 삭제">
                 <i class="fas fa-times"></i>

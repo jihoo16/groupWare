@@ -2352,6 +2352,25 @@ div h2{
     75% { transform: translateX(5px); }
 }
 
+/* 외부인원 경고 메시지 */
+.external-attendee-warning {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    margin-top: 8px;
+    padding: 6px 10px;
+    background: #fef2f2;
+    border: 1px solid #fca5a5;
+    border-radius: 6px;
+    color: #dc2626;
+    font-size: 12px;
+    font-weight: 500;
+}
+
+.external-attendee-warning i {
+    flex-shrink: 0;
+}
+
 /* 툴팁 버튼 스타일 */
 .btn-with-tooltip {
     position: relative;

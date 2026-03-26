@@ -94,24 +94,37 @@
                                         <div class="expense-item-body">
                                             <div class="form-row">
                                                 <div class="form-group" style="flex: 0 0 160px;">
-                                                    <label><i class="fas fa-calendar-day"></i> 날짜</label>
+                                                    <label><i class="fas fa-calendar-day"></i> 날짜 <span class="required-mark">*</span></label>
                                                     <input type="text" class="form-input date-input req-date-picker" placeholder="날짜 선택" readonly>
                                                 </div>
                                                 <div class="form-group" style="flex: 1;">
-                                                    <label><i class="fas fa-edit"></i> 적요</label>
+                                                    <label><i class="fas fa-edit"></i> 적요 <span class="required-mark">*</span></label>
                                                     <input type="text" class="form-input desc-input" placeholder="내용 입력">
                                                 </div>
                                             </div>
                                             <div class="form-row">
                                                 <div class="form-group" style="flex: 1;">
-                                                    <label><i class="fas fa-won-sign"></i> 금액</label>
+                                                    <label><i class="fas fa-won-sign"></i> 금액 <span class="required-mark">*</span></label>
                                                     <input type="text" class="form-input amount-input" placeholder="금액 입력" inputmode="numeric">
+                                                </div>
+                                                <div class="form-group" style="flex: 0 0 120px;">
+                                                    <label><i class="fas fa-percent"></i> 세액</label>
+                                                    <input type="text" class="form-input tax-input" placeholder="세액 입력" inputmode="numeric">
+                                                </div>
+                                                <div class="form-group" style="flex: 0 0 120px;">
+                                                    <label><i class="fas fa-tags"></i> 과세구분</label>
+                                                    <select class="form-input tax-type-select">
+                                                        <option value="">선택</option>
+                                                        <option value="과세">과세</option>
+                                                        <option value="비과세">비과세</option>
+                                                        <option value="면세">면세</option>
+                                                    </select>
                                                 </div>
                                                 <div class="form-group" style="flex: 1;">
                                                     <label><i class="fas fa-store"></i> 상대처</label>
                                                     <input type="text" class="form-input vendor-input" placeholder="상대처 입력">
                                                 </div>
-                                                <div class="form-group" style="flex: 0 0 160px;">
+                                                <div class="form-group" style="flex: 0 0 120px;">
                                                     <label><i class="fas fa-sticky-note"></i> 비고</label>
                                                     <input type="text" class="form-input note-input" placeholder="">
                                                 </div>

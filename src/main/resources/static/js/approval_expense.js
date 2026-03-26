@@ -2338,7 +2338,7 @@ document.addEventListener('DOMContentLoaded', async function() {
                         html: `기간 <b>${periodData.periodStart} ~ ${periodData.periodEnd}</b> 내<br>작성된 지출승인서가 이미 존재합니다.<br>해당 문서로 이동합니다.`,
                         confirmButtonText: '확인'
                     });
-                    window.location.href = `/approval/expense/detail?idx=${periodData.documentIdx}`;
+                    window.location.href = `/approval/expense?idx=${periodData.documentIdx}`;
                     return;
                 }
             }

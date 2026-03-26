@@ -180,7 +180,6 @@
                                             <th style="width: 155px;">날짜</th>
                                             <th>적요</th>
                                             <th style="width: 77px;">수량</th>
-                                            <th style="width: 112px;">과세구분</th>
                                             <th style="width: 155px;">
                                                 총 결제금액 <span class="th-tooltip"><i class="fas fa-question-circle"></i><span class="th-tooltip-text">VAT 합산금액</span></span>
                                             </th>
@@ -190,6 +189,7 @@
                                             <th style="width: 140px;">
                                                 세액 <span class="th-tooltip"><i class="fas fa-question-circle"></i><span class="th-tooltip-text">세금계산서 기준</span></span>
                                             </th>
+                                            <th style="width: 112px;">과세구분</th>
                                             <th style="width: 140px;">비고</th>
                                             <th style="width: 50px;"></th>
                                         </tr>
@@ -199,12 +199,23 @@
                                     </tbody>
                                     <tfoot>
                                         <tr class="item-total-row">
-                                            <td colspan="3" style="text-align: center; font-weight: bold;">계</td>
-                                            <td></td>
-                                            <td id="totalPaymentAmount" style="text-align: right; font-weight: bold;">0</td>
-                                            <td id="totalSupplyAmount" style="text-align: right; font-weight: bold;">0</td>
-                                            <td id="totalTaxAmount" style="text-align: right; font-weight: bold;">0</td>
-                                            <td colspan="2"></td>
+                                            <td colspan="9">
+                                                <div class="item-footer-inner">
+                                                    <button type="button" class="btn-add-item-bottom" onclick="addItemRow()">
+                                                        <i class="fas fa-plus"></i> 항목 추가
+                                                    </button>
+                                                    <div class="item-total-amounts">
+                                                        <span class="total-label">총 결제금액</span>
+                                                        <span id="totalPaymentAmount" class="total-value">0</span>
+                                                        <span class="total-sep">|</span>
+                                                        <span class="total-label">공급가액</span>
+                                                        <span id="totalSupplyAmount" class="total-value">0</span>
+                                                        <span class="total-sep">|</span>
+                                                        <span class="total-label">세액</span>
+                                                        <span id="totalTaxAmount" class="total-value">0</span>
+                                                    </div>
+                                                </div>
+                                            </td>
                                         </tr>
                                     </tfoot>
                                 </table>
