@@ -6,7 +6,7 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 
 /**
- * 연구비증빙 출장 참석자/동행자 DTO
+ * 연구비증빙 단독출장 참석자/동행자 DTO
  */
 @Data
 @Builder

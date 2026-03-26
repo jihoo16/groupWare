@@ -12,7 +12,7 @@ import java.util.List;
 
 
 /**
- * 연구비증빙 출장 기본 정보 Entity
+ * 연구비증빙 단독출장 기본 정보 Entity
  */
 @Entity
 @Table(name = "receipt_trip", schema = "erp", indexes = {

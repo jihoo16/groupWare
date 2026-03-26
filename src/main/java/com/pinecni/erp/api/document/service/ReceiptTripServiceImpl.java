@@ -33,7 +33,7 @@ import java.util.*;
 import java.util.stream.Collectors;
 
 /**
- * 연구비증빙 출장 Service 구현체
+ * 연구비증빙 단독출장 Service 구현체
  */
 @Slf4j
 @Service
@@ -136,9 +136,9 @@ public class ReceiptTripServiceImpl implements ReceiptTripService {
             // 1. 문서번호 생성
             String documentNo = generateDocumentNo();
 
-            String title = "연구비증빙 출장";
+            String title = "연구비증빙 단독출장";
             if (createDTO.getLocation() != null && !createDTO.getLocation().isEmpty()) {
-                title = "연구비증빙 출장 - " + createDTO.getLocation();
+                title = "연구비증빙 단독출장 - " + createDTO.getLocation();
             }
 
             // 2. ApprovalDocument 생성
@@ -147,7 +147,7 @@ public class ReceiptTripServiceImpl implements ReceiptTripService {
             ApprovalDocument approvalDocument = ApprovalDocument.builder()
                     .documentNo(documentNo)
                     .title(title)
-                    .documentType("연구비증빙-출장")
+                    .documentType("연구비증빙 - 단독출장")
                     .isProject(true)
                     .drafterUserIdx(createDTO.getDrafterUserIdx())
                     .content(createDTO.getContent())
@@ -244,8 +244,8 @@ public class ReceiptTripServiceImpl implements ReceiptTripService {
         final ReceiptTrip updatedTripEntity = entity;
         if (updatedTripEntity.getDocumentIdx() != null) {
             final String newTitle = (updatedTripEntity.getLocation() != null && !updatedTripEntity.getLocation().isEmpty())
-                    ? "연구비증빙 출장 - " + updatedTripEntity.getLocation()
-                    : "연구비증빙 출장";
+                    ? "연구비증빙 단독출장 - " + updatedTripEntity.getLocation()
+                    : "연구비증빙 단독출장";
             approvalDocumentRepository.findById(updatedTripEntity.getDocumentIdx()).ifPresent(doc -> {
                 doc.setTitle(newTitle);
                 if (updateDTO.getDrafterUserIdx() != null) {
