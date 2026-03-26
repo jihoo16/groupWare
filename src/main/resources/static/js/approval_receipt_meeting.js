@@ -16,13 +16,13 @@ function getDocumentTypeName(typeCode) {
     const typeMap = {
         'RCM': '연구비증빙-회의록',
         'RCO': '연구비증빙-야근식대',
-        'RCT': '연구비증빙 - 단독출장',
+        'RCT': '연구비증빙-단독출장',
         'RECEIPT_MEETING': '연구비증빙-회의록',
         'RECEIPT_OVERTIME': '연구비증빙-야근식대',
-        'RECEIPT_TRIP': '연구비증빙 - 단독출장',
+        'RECEIPT_TRIP': '연구비증빙-단독출장',
         '회의록': '연구비증빙-회의록',
         '야근식대': '연구비증빙-야근식대',
-        '출장': '연구비증빙 - 단독출장'
+        '출장': '연구비증빙-단독출장'
     };
     return typeMap[typeCode] || typeCode;
 }
