@@ -3,6 +3,7 @@ package com.pinecni.erp.api.approval.service;
 import com.pinecni.erp.api.approval.dto.ApprovalDocumentDTO;
 import com.pinecni.erp.api.approval.dto.AttachmentSummaryDTO;
 import com.pinecni.erp.api.approval.repository.ApprovalDocumentRepository;
+import com.pinecni.erp.api.document.repository.ReceiptAttendeeRepository;
 import com.pinecni.erp.api.document.repository.ReceiptOvertimeAttachmentRepository;
 import com.pinecni.erp.api.document.repository.ReceiptTripAttachmentRepository;
 import com.pinecni.erp.api.project.repository.ReceiptMeetingAttachmentRepository;
@@ -66,6 +67,7 @@ public class ApprovalDocumentServiceImpl implements ApprovalDocumentService {
     private final ReceiptTripMeetingAttachmentRepository receiptTripMeetingAttachmentRepository;
     private final ExpenseApprovalRepository expenseApprovalRepository;
     private final ExpenseRequisitionRepository expenseRequisitionRepository;
+    private final ReceiptAttendeeRepository receiptAttendeeRepository;
 
     @Override
     public List<ApprovalDocumentDTO> getAllDocuments(Long currentUserIdx) {
@@ -218,6 +220,7 @@ public class ApprovalDocumentServiceImpl implements ApprovalDocumentService {
                 dto.setEventDate(receiptMeeting.getMeetingDate());
                 dto.setPurpose(receiptMeeting.getPurpose());
                 dto.setAmount(receiptMeeting.getAmount());
+                dto.setParticipantNames(buildParticipantNames(receiptMeeting.getIdx(), "RCM"));
                 dto.setAttachments(buildMeetingAttachments(receiptMeeting.getIdx()));
             });
         } else if ("연구비증빙-단독출장".equals(documentType) || "연구비증빙(출장)".equals(documentType) || "receipt_trip".equals(documentType)) {
@@ -233,6 +236,7 @@ public class ApprovalDocumentServiceImpl implements ApprovalDocumentService {
                 dto.setEventDate(receiptTrip.getTripDate());
                 dto.setLocation(receiptTrip.getLocation());
                 dto.setAmount(receiptTrip.getTotalFee());
+                dto.setParticipantNames(buildParticipantNames(receiptTrip.getIdx(), "RCT"));
                 dto.setAttachments(buildTripAttachments(receiptTrip.getIdx()));
             });
         } else if ("연구비증빙-출장+회의".equals(documentType)) {
@@ -248,6 +252,7 @@ public class ApprovalDocumentServiceImpl implements ApprovalDocumentService {
                 dto.setLocation(rtm.getLocation());
                 dto.setPurpose(rtm.getPurpose());
                 dto.setAmount(rtm.getTotalFee());
+                dto.setParticipantNames(buildParticipantNames(rtm.getIdx(), "RCTM"));
             });
         } else if ("연구비증빙-야근식대".equals(documentType) || "연구비증빙(야근식대)".equals(documentType) || "receipt_overtime".equals(documentType)) {
             // 연구비증빙 야근식대의 원본 문서 ID 및 프로젝트 정보 조회
@@ -261,6 +266,7 @@ public class ApprovalDocumentServiceImpl implements ApprovalDocumentService {
                 }
                 dto.setEventDate(receiptOvertime.getOvertimeDate());
                 dto.setAmount(receiptOvertime.getTotalAmount());
+                dto.setParticipantNames(buildParticipantNames(receiptOvertime.getIdx(), "RCO"));
                 dto.setAttachments(buildOvertimeAttachments(receiptOvertime.getIdx()));
             });
         } else if ("재료비".equals(documentType) || "장비비".equals(documentType)) {
@@ -801,5 +807,25 @@ public class ApprovalDocumentServiceImpl implements ApprovalDocumentService {
                         .downloadUrl("/api/receipt-trip-meetings/attachments/" + a.getIdx() + "/download")
                         .build())
                 .collect(Collectors.toList());
+    }
+
+    /**
+     * 참석자 이름 목록을 쉼표 구분 문자열로 반환
+     */
+    private String buildParticipantNames(Long receiptIdx, String prefix) {
+        return receiptAttendeeRepository.findAttendeesWithAllPersonInfo(receiptIdx, prefix).stream()
+                .map(row -> {
+                    ReceiptAttendee attendee = (ReceiptAttendee) row[0];
+                    User user = (User) row[1];
+                    ExternalPerson ep = (ExternalPerson) row[2];
+                    if (Boolean.TRUE.equals(attendee.getIsExternal()) && ep != null) {
+                        return ep.getName();
+                    } else if (user != null) {
+                        return user.getEmpName();
+                    }
+                    return null;
+                })
+                .filter(name -> name != null && !name.isBlank())
+                .collect(Collectors.joining(", "));
     }
 }

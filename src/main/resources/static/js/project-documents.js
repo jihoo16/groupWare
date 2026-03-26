@@ -717,8 +717,12 @@ document.addEventListener('DOMContentLoaded', function() {
         const amountBadge = doc.amount != null
             ? `<span class="doc-amount-badge">${Number(doc.amount).toLocaleString()}원</span>`
             : '';
+        const participantLine = doc.participantNames
+            ? `<div class="desc-wrap">참석인원: ${doc.participantNames}</div>`
+            : '';
         titleCell.innerHTML = `
             <div class="title-wrap">${highlightedTitle}${amountBadge}</div>
+            ${participantLine}
         `;
         titleCell.addEventListener('click', () => viewDocument(doc));
         tr.appendChild(titleCell);
