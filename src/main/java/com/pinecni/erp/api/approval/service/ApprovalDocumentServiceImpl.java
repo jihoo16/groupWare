@@ -474,6 +474,11 @@ public class ApprovalDocumentServiceImpl implements ApprovalDocumentService {
                             .collect(Collectors.toList());
                     dto.setMeetingSessionCount(Math.max(sessions.size(), 1));
                     dto.setMeetingSessionIds(sessionIds);
+                    dto.setEventDate(rtm.getTripDate());
+                    dto.setLocation(rtm.getLocation());
+                    dto.setPurpose(rtm.getPurpose());
+                    dto.setAmount(rtm.getTotalFee());
+                    dto.setParticipantNames(buildParticipantNames(rtm.getIdx(), "RCTM"));
                     dto.setAttachments(buildRctmAttachments(rtm.getIdx()));
                     return dto;
                 })
@@ -620,6 +625,13 @@ public class ApprovalDocumentServiceImpl implements ApprovalDocumentService {
             }
         });
 
+        dto.setEventDate(trip.getTripDate());
+        dto.setLocation(trip.getLocation());
+        dto.setParticipantNames(buildParticipantNames(trip.getIdx(), "RCT"));
+        if (trip.getProject() != null) {
+            dto.setProjectIdx(trip.getProjectIdx());
+            dto.setProjectName(trip.getProject().getProjectName());
+        }
         dto.setAttachments(buildTripAttachments(trip.getIdx()));
 
         return dto;
@@ -664,6 +676,13 @@ public class ApprovalDocumentServiceImpl implements ApprovalDocumentService {
             }
         });
 
+        dto.setEventDate(meeting.getMeetingDate());
+        dto.setPurpose(meeting.getPurpose());
+        dto.setParticipantNames(buildParticipantNames(meeting.getIdx(), "RCM"));
+        if (meeting.getProject() != null) {
+            dto.setProjectIdx(meeting.getProjectIdx());
+            dto.setProjectName(meeting.getProject().getProjectName());
+        }
         dto.setAttachments(buildMeetingAttachments(meeting.getIdx()));
 
         return dto;
@@ -718,6 +737,12 @@ public class ApprovalDocumentServiceImpl implements ApprovalDocumentService {
             }
         });
 
+        dto.setEventDate(overtime.getOvertimeDate());
+        dto.setParticipantNames(buildParticipantNames(overtime.getIdx(), "RCO"));
+        if (overtime.getProject() != null) {
+            dto.setProjectIdx(overtime.getProjectIdx());
+            dto.setProjectName(overtime.getProject().getProjectName());
+        }
         dto.setAttachments(buildOvertimeAttachments(overtime.getIdx()));
 
         return dto;
@@ -750,6 +775,8 @@ public class ApprovalDocumentServiceImpl implements ApprovalDocumentService {
                 .projectIdx(purchase.getProjectIdx())
                 .eventDate(purchase.getApprovalDate())
                 .build();
+
+        dto.setPurpose(purchase.getDocumentContent());
 
         if (purchase.getProjectIdx() != null) {
             projectRepository.findById(purchase.getProjectIdx()).ifPresent(project ->

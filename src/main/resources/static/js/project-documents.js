@@ -631,28 +631,27 @@ document.addEventListener('DOMContentLoaded', function() {
         const date = fmtDate(doc.eventDate);
 
         const TYPE_TAG_CONFIG = {
-            '연구비증빙-회의록':    { label: '회의록',   cls: 'tag-meeting' },
-            '연구비증빙-단독출장':  { label: '단독출장', cls: 'tag-trip' },
-            '연구비증빙-출장+회의': { label: '출장+회의', cls: 'tag-trip-meeting' },
-            '재료비':               { label: '재료비',   cls: 'tag-material' },
-            '장비비':               { label: '장비비',   cls: 'tag-equipment' },
-            '연구비증빙-야근식대':  { label: '야근식대', cls: 'tag-overtime' },
-            '연구비증빙(야근식대)': { label: '야근식대', cls: 'tag-overtime' },
+            'C0406': { label: '회의록',    cls: 'tag-meeting' },
+            'C0404': { label: '단독출장',  cls: 'tag-trip' },
+            'C0405': { label: '출장+회의', cls: 'tag-trip-meeting' },
+            'C0407': { label: '재료비',    cls: 'tag-material' },
+            'C0408': { label: '장비비',    cls: 'tag-equipment' },
+            'C0403': { label: '야근식대',  cls: 'tag-overtime' },
         };
 
         const tagCfg = TYPE_TAG_CONFIG[type];
         const tag = tagCfg ? `<span class="doc-type-tag ${tagCfg.cls}">${tagCfg.label}</span>` : '';
 
         let text;
-        if (type === '연구비증빙-회의록') {
+        if (type === 'C0406') {
             text = [purpose, date].filter(Boolean).join(' - ');
-        } else if (type === '연구비증빙-단독출장') {
+        } else if (type === 'C0404') {
             text = [location, date].filter(Boolean).join(' - ');
-        } else if (type === '연구비증빙-출장+회의') {
+        } else if (type === 'C0405') {
             text = [location, date, purpose].filter(Boolean).join(' - ');
-        } else if (type === '재료비' || type === '장비비') {
+        } else if (type === 'C0407' || type === 'C0408') {
             text = [purpose, date].filter(Boolean).join(' - ');
-        } else if (type === '연구비증빙-야근식대' || type === '연구비증빙(야근식대)') {
+        } else if (type === 'C0403') {
             text = date || doc.title || '-';
         } else {
             text = doc.title || '-';
