@@ -1312,22 +1312,6 @@ document.addEventListener('DOMContentLoaded', function() {
                     : isTrip
                         ? `/api/receipt-trips/${doc.sourceDocumentId}/attachments`
                         : `/api/receipt-overtimes/${doc.sourceDocumentId}/attachments`;
-        const isTrip = doc.documentType === '연구비증빙-단독출장';
-        const deleteBaseUrl = isTripMeeting
-            ? `/api/receipt-trip-meetings/attachments`
-            : isMeeting
-                ? `/api/receipt-meetings/attachments`
-                : isTrip
-                    ? `/api/receipt-trips/attachments`
-                    : `/api/receipt-overtimes/attachments`;
-        const uploadUrl = isTripMeeting
-            ? `/api/receipt-trip-meetings/${doc.sourceDocumentId}/attachments`
-            : isMeeting
-                ? `/api/receipt-meetings/${doc.sourceDocumentId}/attachments`
-                : isTrip
-                    ? `/api/receipt-trips/${doc.sourceDocumentId}/attachments`
-                    : `/api/receipt-overtimes/${doc.sourceDocumentId}/attachments`;
-
         const saveBtn = document.getElementById('modalSaveBtn');
         saveBtn.disabled = true;
         saveBtn.textContent = '저장 중...';
