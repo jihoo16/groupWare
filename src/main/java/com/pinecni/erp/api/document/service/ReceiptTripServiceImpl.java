@@ -145,7 +145,7 @@ public class ReceiptTripServiceImpl implements ReceiptTripService {
             ApprovalDocument approvalDocument = ApprovalDocument.builder()
                     .documentNo(documentNo)
                     .title(title)
-                    .documentType("연구비증빙 - 단독출장")
+                    .documentType("연구비증빙-단독출장")
                     .isProject(true)
                     .drafterUserIdx(createDTO.getDrafterUserIdx())
                     .content(createDTO.getContent())

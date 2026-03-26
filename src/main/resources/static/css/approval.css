@@ -349,15 +349,20 @@ div[title]:hover::after {
 
 .doc-title-cell {
     text-align: left !important;
+    max-width: 0;
+    overflow: hidden;
 }
 
 .doc-title-cell .title-wrap {
+    display: flex;
+    align-items: center;
+    gap: 6px;
     font-size: 12.9px;
     font-weight: 600;
     color: #333;
     margin-bottom: 4px;
     cursor: pointer;
-    text-align: left;
+    width: 100%;
 }
 
 .doc-title-cell .title-wrap:hover {
@@ -369,6 +374,44 @@ div[title]:hover::after {
     font-size: 11px;
     color: #777;
     text-align: left;
+}
+
+.doc-title-cell .title-wrap .title-text {
+    flex: 1;
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.doc-type-tag {
+    display: inline-block;
+    padding: 1px 6px;
+    border-radius: 4px;
+    font-size: 11px;
+    font-weight: 700;
+    margin-right: 6px;
+    vertical-align: middle;
+    white-space: nowrap;
+}
+.doc-type-tag.tag-meeting      { background-color: #dbeafe; color: #1d4ed8; border: 1px solid #bfdbfe; }
+.doc-type-tag.tag-trip         { background-color: #dcfce7; color: #15803d; border: 1px solid #bbf7d0; }
+.doc-type-tag.tag-trip-meeting { background-color: #ccfbf1; color: #0f766e; border: 1px solid #99f6e4; }
+.doc-type-tag.tag-material     { background-color: #ffedd5; color: #c2410c; border: 1px solid #fed7aa; }
+.doc-type-tag.tag-equipment    { background-color: #fef3c7; color: #b45309; border: 1px solid #fde68a; }
+.doc-type-tag.tag-overtime     { background-color: #ede9fe; color: #7c3aed; border: 1px solid #ddd6fe; }
+
+.doc-amount-badge {
+    margin-left: auto;
+    flex-shrink: 0;
+    padding: 1px 7px;
+    background-color: #eef2ff;
+    color: #4f46e5;
+    border: 1px solid #c7d2fe;
+    border-radius: 10px;
+    font-size: 11px;
+    font-weight: 600;
+    white-space: nowrap;
 }
 
 .approver-line {

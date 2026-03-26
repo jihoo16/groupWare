@@ -215,9 +215,12 @@ public class ApprovalDocumentServiceImpl implements ApprovalDocumentService {
                         dto.setProjectName(project.getProjectName());
                     });
                 }
+                dto.setEventDate(receiptMeeting.getMeetingDate());
+                dto.setPurpose(receiptMeeting.getPurpose());
+                dto.setAmount(receiptMeeting.getAmount());
                 dto.setAttachments(buildMeetingAttachments(receiptMeeting.getIdx()));
             });
-        } else if ("연구비증빙 - 단독출장".equals(documentType) || "연구비증빙(출장)".equals(documentType) || "receipt_trip".equals(documentType)) {
+        } else if ("연구비증빙-단독출장".equals(documentType) || "연구비증빙(출장)".equals(documentType) || "receipt_trip".equals(documentType)) {
             // 연구비증빙 단독출장의 원본 문서 ID 및 프로젝트 정보 조회
             receiptTripRepository.findByDocumentIdx(document.getIdx()).ifPresent(receiptTrip -> {
                 dto.setSourceDocumentId(receiptTrip.getIdx());
@@ -227,6 +230,9 @@ public class ApprovalDocumentServiceImpl implements ApprovalDocumentService {
                         dto.setProjectName(project.getProjectName());
                     });
                 }
+                dto.setEventDate(receiptTrip.getTripDate());
+                dto.setLocation(receiptTrip.getLocation());
+                dto.setAmount(receiptTrip.getTotalFee());
                 dto.setAttachments(buildTripAttachments(receiptTrip.getIdx()));
             });
         } else if ("연구비증빙-출장+회의".equals(documentType)) {
@@ -238,6 +244,10 @@ public class ApprovalDocumentServiceImpl implements ApprovalDocumentService {
                         dto.setProjectName(project.getProjectName());
                     });
                 }
+                dto.setEventDate(rtm.getTripDate());
+                dto.setLocation(rtm.getLocation());
+                dto.setPurpose(rtm.getPurpose());
+                dto.setAmount(rtm.getTotalFee());
             });
         } else if ("연구비증빙-야근식대".equals(documentType) || "연구비증빙(야근식대)".equals(documentType) || "receipt_overtime".equals(documentType)) {
             // 연구비증빙 야근식대의 원본 문서 ID 및 프로젝트 정보 조회
@@ -249,15 +259,15 @@ public class ApprovalDocumentServiceImpl implements ApprovalDocumentService {
                         dto.setProjectName(receiptOvertime.getProject().getProjectName());
                     }
                 }
+                dto.setEventDate(receiptOvertime.getOvertimeDate());
+                dto.setAmount(receiptOvertime.getTotalAmount());
                 dto.setAttachments(buildOvertimeAttachments(receiptOvertime.getIdx()));
             });
         } else if ("재료비".equals(documentType) || "장비비".equals(documentType)) {
             receiptPurchaseRepository.findByDocumentIdx(document.getIdx()).ifPresent(purchase -> {
                 dto.setSourceDocumentId(purchase.getIdx());
                 dto.setAmount(purchase.getTotalAmount());
-                String formattedAmount = purchase.getTotalAmount() != null && purchase.getTotalAmount().compareTo(BigDecimal.ZERO) != 0
-                        ? String.format("%,d", purchase.getTotalAmount().longValue()) + "원" : "0원";
-                dto.setTitle(documentType + " - " + formattedAmount);
+                dto.setPurpose(purchase.getDocumentContent());
                 if (purchase.getProjectIdx() != null) {
                     dto.setProjectIdx(purchase.getProjectIdx());
                     projectRepository.findById(purchase.getProjectIdx()).ifPresent(project -> {

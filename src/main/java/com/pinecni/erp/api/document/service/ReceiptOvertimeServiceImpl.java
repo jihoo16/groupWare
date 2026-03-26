@@ -215,7 +215,7 @@ public class ReceiptOvertimeServiceImpl implements ReceiptOvertimeService {
             ApprovalDocument approvalDocument = ApprovalDocument.builder()
                     .documentNo(documentNo)
                     .title(title)
-                    .documentType("연구비증빙(야근식대)")
+                    .documentType("연구비증빙-야근식대")
                     .isProject(true)
                     .drafterUserIdx(createDTO.getAuthorIdx())
                     .content(createDTO.getDocumentContent())
