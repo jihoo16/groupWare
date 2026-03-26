@@ -86,12 +86,7 @@
                                 <div class="expense-items-container" id="expenseItemsContainer">
                                     <!-- 지출 항목이 여기에 추가됩니다 -->
                                     <div class="expense-item">
-                                        <div class="expense-item-header">
-                                            <span class="expense-item-number">1</span>
-                                            <button type="button" class="btn-remove-item" onclick="removeExpenseItem(this)">
-                                                <i class="fas fa-times"></i>
-                                            </button>
-                                        </div>
+                                        <span class="expense-item-number">1</span>
                                         <div class="expense-item-body">
                                             <div class="form-row">
                                                 <div class="form-group" style="flex: 0 0 180px;">
@@ -108,13 +103,6 @@
                                                     <label><i class="fas fa-store"></i> 상호</label>
                                                     <input type="text" class="form-input shop-input" placeholder="상호명 입력">
                                                 </div>
-                                                <div class="form-group" style="flex: 0 0 120px;">
-                                                    <label><i class="fas fa-credit-card"></i> 결제수단</label>
-                                                    <select class="form-input payment-method-select">
-                                                        <option value="개인카드" selected>개인카드</option>
-                                                        <option value="현금">현금</option>
-                                                    </select>
-                                                </div>
                                                 <div class="form-group" style="flex: 0 0 180px;">
                                                     <label><i class="fas fa-won-sign"></i> 금액</label>
                                                     <input type="text" class="form-input amount-input" placeholder="금액 입력" inputmode="numeric">
@@ -123,8 +111,18 @@
                                                     <label><i class="fas fa-sticky-note"></i> 비고</label>
                                                     <input type="text" class="form-input note-input" placeholder="">
                                                 </div>
+                                                <div class="form-group" style="flex: 0 0 120px;">
+                                                    <label><i class="fas fa-credit-card"></i> 결제수단</label>
+                                                    <select class="form-input payment-method-select">
+                                                        <option value="개인카드" selected>개인카드</option>
+                                                        <option value="현금">현금</option>
+                                                    </select>
+                                                </div>
                                             </div>
                                         </div>
+                                        <button type="button" class="btn-remove-item" onclick="removeExpenseItem(this)">
+                                            <i class="fas fa-times"></i>
+                                        </button>
                                     </div>
                                 </div>
                                 <div class="expense-items-footer">

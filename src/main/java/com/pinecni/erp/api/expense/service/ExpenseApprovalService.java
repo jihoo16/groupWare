@@ -1,9 +1,11 @@
 package com.pinecni.erp.api.expense.service;
 
 import com.pinecni.erp.api.expense.dto.ExpenseApprovalCreateDTO;
+import com.pinecni.erp.api.expense.dto.ExpenseApprovalDTO;
 import com.pinecni.erp.entity.ExpenseApproval;
 
 import java.util.List;
+import java.util.Map;
 
 public interface ExpenseApprovalService {
 
@@ -31,4 +33,10 @@ public interface ExpenseApprovalService {
      * 지출승인서 삭제 (soft delete, approval_documents 함께 처리)
      */
     void deleteExpenseApproval(Long idx, Long loginUserIdx);
+
+    /**
+     * 현재 기간(전월 14일 ~ 당월 13일) 내 문서 존재 여부 확인
+     * exists: 존재 여부, documentIdx: 존재 시 해당 문서 idx
+     */
+    Map<String, Object> checkCurrentPeriod(Long userIdx);
 }

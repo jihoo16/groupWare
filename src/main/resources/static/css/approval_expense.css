@@ -1314,14 +1314,17 @@ div h2{
 .expense-items-container {
     display: flex;
     flex-direction: column;
-    gap: 16px;
+    gap: 8px;
 }
 
 .expense-item {
+    display: flex;
+    align-items: center;
+    gap: 10px;
     background: #f8fafc;
     border: 1px solid #e2e8f0;
     border-radius: 8px;
-    padding: 16px;
+    padding: 10px 12px;
     transition: all 0.2s;
 }
 
@@ -1330,39 +1333,36 @@ div h2{
     box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
 }
 
-.expense-item-header {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    margin-bottom: 12px;
-}
-
 .expense-item-number {
     display: inline-flex;
     align-items: center;
     justify-content: center;
-    width: 28px;
-    height: 28px;
+    flex-shrink: 0;
+    width: 24px;
+    height: 24px;
     background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
     color: white;
     border-radius: 50%;
-    font-size: 13px;
+    font-size: 12px;
     font-weight: 700;
+    align-self: center;
 }
 
 .btn-remove-item {
     background: #ef4444;
     color: white;
     border: none;
-    width: 28px;
-    height: 28px;
+    flex-shrink: 0;
+    width: 24px;
+    height: 24px;
     border-radius: 50%;
     cursor: pointer;
     display: flex;
     align-items: center;
     justify-content: center;
-    font-size: 14px;
+    font-size: 12px;
     transition: all 0.2s;
+    align-self: center;
 }
 
 .btn-remove-item:hover {
@@ -1371,7 +1371,8 @@ div h2{
 }
 
 .expense-item-body {
-    /* 폼 행들이 들어감 */
+    flex: 1;
+    min-width: 0;
 }
 
 /* 항목 하단 푸터 (추가 버튼 + 총합계) */
