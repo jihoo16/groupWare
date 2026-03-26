@@ -842,16 +842,28 @@
     background: white;
     border: 2px solid #667eea;
     color: #667eea;
+    padding: 12px 24px;
+    border-radius: 8px;
+    font-size: 14px;
+    font-weight: 600;
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    transition: all 0.3s;
 }
 
-.header-right .btn-outline {
-    border: 2px solid #667eea;
-}
-
-.btn-outline:hover {
+.btn-outline:hover:not(:disabled) {
     background: #667eea;
     border-color: #667eea;
     color: white;
+}
+
+.btn-outline:disabled {
+    border-color: #cbd5e1;
+    color: #94a3b8;
+    cursor: not-allowed;
+    opacity: 0.6;
 }
 
 .btn-with-tooltip {
