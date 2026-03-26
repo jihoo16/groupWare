@@ -11,6 +11,7 @@ import com.pinecni.erp.api.document.repository.ReceiptPurchaseAttachmentReposito
 import com.pinecni.erp.api.document.repository.ReceiptPurchaseItemRepository;
 import com.pinecni.erp.api.document.repository.ReceiptPurchaseRepository;
 import com.pinecni.erp.api.project.repository.ProjectCardRepository;
+import com.pinecni.erp.constant.CodeConstants;
 import com.pinecni.erp.entity.ApprovalDocument;
 import com.pinecni.erp.entity.ReceiptPurchase;
 import com.pinecni.erp.entity.ReceiptPurchaseAttachment;
@@ -116,17 +117,18 @@ public class ReceiptPurchaseServiceImpl implements ReceiptPurchaseService {
                                                      List<MultipartFile> estimateFiles,
                                                      Long uploadUserIdx) {
         String purchaseType = dto.getPurchaseType() != null ? dto.getPurchaseType() : "material";
-        String documentType = "material".equals(purchaseType) ? "재료비" : "장비비";
-        String prefix = "material".equals(purchaseType) ? "MAT" : "EQP";
+        CodeConstants.DocumentType docType = "material".equals(purchaseType)
+                ? CodeConstants.DocumentType.RECEIPT_MATERIAL
+                : CodeConstants.DocumentType.RECEIPT_EQUIPMENT;
 
         // 1. approval_documents 생성 및 문서번호 채번
-        String documentNo = documentSequenceService.generateDocumentNumber(documentType, prefix, uploadUserIdx);
+        String documentNo = documentSequenceService.generateDocumentNumber(docType.getCode(), docType.getPrefix(), uploadUserIdx);
         String docTitle = (dto.getDocumentTitle() != null && !dto.getDocumentTitle().isBlank())
-                ? dto.getDocumentTitle() : documentType;
+                ? dto.getDocumentTitle() : docType.getName();
         ApprovalDocument approvalDoc = ApprovalDocument.builder()
                 .documentNo(documentNo)
                 .title(docTitle)
-                .documentType(documentType)
+                .documentType(docType.getCode())
                 .isProject(true)
                 .content(dto.getDocumentContent())
                 .drafterUserIdx(uploadUserIdx)

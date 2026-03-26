@@ -1,7 +1,7 @@
 package com.pinecni.erp.api.document.service;
 
 import com.pinecni.erp.api.approval.repository.ApprovalDocumentRepository;
-import com.pinecni.erp.api.approval.repository.DocumentSequenceRepository;
+import com.pinecni.erp.api.approval.service.DocumentSequenceService;
 import com.pinecni.erp.api.document.dto.ReceiptOvertimeAttachmentDTO;
 import com.pinecni.erp.api.document.dto.ReceiptOvertimeCreateDTO;
 import com.pinecni.erp.api.document.dto.ReceiptOvertimeDTO;
@@ -13,6 +13,7 @@ import com.pinecni.erp.api.document.repository.ReceiptOvertimeRepository;
 import com.pinecni.erp.api.project.repository.ProjectCardRepository;
 import com.pinecni.erp.api.project.repository.ProjectRepository;
 import com.pinecni.erp.api.user.repository.UserRepository;
+import com.pinecni.erp.constant.CodeConstants;
 import com.pinecni.erp.entity.*;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -26,7 +27,6 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.time.Instant;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
@@ -54,13 +54,12 @@ public class ReceiptOvertimeServiceImpl implements ReceiptOvertimeService {
     private final ReceiptOvertimeAttachmentRepository attachmentRepository;
     private final ReceiptOvertimeMapper mapper;
     private final ApprovalDocumentRepository approvalDocumentRepository;
-    private final DocumentSequenceRepository documentSequenceRepository;
+    private final DocumentSequenceService documentSequenceService;
     private final ProjectRepository projectRepository;
     private final ProjectCardRepository projectCardRepository;
     private final UserRepository userRepository;
 
-    private static final String DOCUMENT_TYPE = "receipt_overtime"; // document_sequences.document_type
-    private static final String DOCUMENT_TYPE_PREFIX = "RCO"; // 문서번호 prefix (RCO-2026-001)
+    private static final CodeConstants.DocumentType DOC_TYPE = CodeConstants.DocumentType.RECEIPT_OVERTIME;
 
     @Value("${file.base.dir}")
     private String baseDir;
@@ -184,7 +183,7 @@ public class ReceiptOvertimeServiceImpl implements ReceiptOvertimeService {
                     .orElseThrow(() -> new IllegalArgumentException("프로젝트를 찾을 수 없습니다. idx: " + createDTO.getProjectIdx()));
 
             // 2. document_sequences를 이용한 문서번호 생성 (RCO-year-number)
-            String documentNo = generateDocumentNo(currentUserIdx);
+            String documentNo = documentSequenceService.generateDocumentNumber(DOC_TYPE.getCode(), DOC_TYPE.getPrefix(), currentUserIdx);
 
             // 3. ApprovalDocument 메타데이터 저장
             // 제목 형식: 프로젝트이름 (카드번호) - YYYY-MM-DD/사용금액
@@ -208,7 +207,7 @@ public class ReceiptOvertimeServiceImpl implements ReceiptOvertimeService {
             ApprovalDocument approvalDocument = ApprovalDocument.builder()
                     .documentNo(documentNo)
                     .title(title)
-                    .documentType("연구비증빙(야근식대)")
+                    .documentType(DOC_TYPE.getCode())
                     .isProject(true)
                     .drafterUserIdx(createDTO.getAuthorIdx())
                     .content(createDTO.getDocumentContent())
@@ -245,7 +244,7 @@ public class ReceiptOvertimeServiceImpl implements ReceiptOvertimeService {
                 int displayOrder = 0;
                 for (ReceiptOvertimeAttendeeDTO dto : createDTO.getAttendees()) {
                     ReceiptAttendee attendee = ReceiptAttendee.builder()
-                            .documentTypePrefix(DOCUMENT_TYPE_PREFIX)
+                            .documentTypePrefix(DOC_TYPE.getPrefix())
                             .receiptIdx(savedOvertime.getIdx())
                             .projectIdx(createDTO.getProjectIdx())
                             .cardIdx(createDTO.getCardIdx())
@@ -277,40 +276,6 @@ public class ReceiptOvertimeServiceImpl implements ReceiptOvertimeService {
                     createDTO.getProjectIdx(), createDTO.getAuthorIdx(), e.getMessage(), e);
             throw new RuntimeException("연구비증빙 야근식대 저장 중 오류가 발생했습니다.\n잠시 후 다시 시도하거나 관리자에게 문의해주세요.", e);
         }
-    }
-
-    /**
-     * document_sequences 테이블을 이용한 문서번호 생성
-     * 형식: RCO-year-number (예: RCO-2026-001)
-     */
-    private String generateDocumentNo(Long currentUserIdx) {
-        int currentYear = LocalDateTime.now(ZoneId.of("Asia/Seoul")).getYear();
-        LocalDateTime now = LocalDateTime.now(ZoneId.of("Asia/Seoul"));
-
-        // 해당 연도의 시퀀스 조회 또는 생성
-        DocumentSequence sequence = documentSequenceRepository
-                .findByDocumentTypeAndYear(DOCUMENT_TYPE, currentYear)
-                .orElseGet(() -> {
-                    DocumentSequence newSequence = DocumentSequence.builder()
-                            .documentType(DOCUMENT_TYPE)
-                            .prefix(DOCUMENT_TYPE_PREFIX)
-                            .year(currentYear)
-                            .lastNumber(0)
-                            .currentSequence(0)
-                            .createdAt(now)
-                            .createdUserIdx(currentUserIdx)
-                            .build();
-                    return documentSequenceRepository.save(newSequence);
-                });
-
-        // last_number 증가
-        sequence.setLastNumber(sequence.getLastNumber() + 1);
-        sequence.setUpdatedAt(now);
-        sequence.setUpdatedUserIdx(currentUserIdx);
-        documentSequenceRepository.save(sequence);
-
-        // 문서번호 생성 (RCO-year-number, 3자리 패딩)
-        return String.format("%s-%d-%03d", sequence.getPrefix(), sequence.getYear(), sequence.getLastNumber());
     }
 
     /**
@@ -390,7 +355,7 @@ public class ReceiptOvertimeServiceImpl implements ReceiptOvertimeService {
                 int displayOrder = 0;
                 for (ReceiptOvertimeAttendeeDTO dto : updateDTO.getAttendees()) {
                     ReceiptAttendee attendee = ReceiptAttendee.builder()
-                            .documentTypePrefix(DOCUMENT_TYPE_PREFIX)
+                            .documentTypePrefix(DOC_TYPE.getPrefix())
                             .receiptIdx(savedOvertime.getIdx())
                             .projectIdx(updateDTO.getProjectIdx())
                             .cardIdx(updateDTO.getCardIdx())

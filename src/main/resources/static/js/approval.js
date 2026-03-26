@@ -464,16 +464,13 @@ document.addEventListener('DOMContentLoaded', function() {
 
                 // 프로젝트 관련 문서 타입 제외
                 const PROJECT_DOCUMENT_TYPES = [
-                    '프로젝트 주간업무보고',
-                    '연구비증빙(회의록)',
-                    '연구비증빙(단독 출장)',
-                    '연구비증빙(출장+회의)',
-                    '연구비증빙(야근식대)',
-                    '연구비증빙-야근식대',
-                    '연구비증빙-회의록',
-                    '연구비증빙 - 단독출장',
-                    '연구비증빙-출장+회의',
-                    '연구비증빙-야근식대'
+                    'C0403', // 야근식대
+                    'C0404', // 단독출장
+                    'C0405', // 출장+회의
+                    'C0406', // 연구비증빙-회의록
+                    'C0407', // 재료비
+                    'C0408', // 장비비
+                    'C0410'  // 프로젝트 주간업무보고
                 ];
 
                 // 전체 문서 저장 (프로젝트 문서 제외)
@@ -484,10 +481,10 @@ document.addEventListener('DOMContentLoaded', function() {
                 console.log('프로젝트 문서 제외 후:', allDocuments.length + '건');
 
                 // 문서 타입별로 분류
-                weeklyReports = allDocuments.filter(doc => doc.documentType === '주간업무보고');
-                monthlyReports = allDocuments.filter(doc => doc.documentType === '월간업무보고');
-                meetingMinutes = allDocuments.filter(doc => doc.documentType === '회의록');
-                vacationRequests = allDocuments.filter(doc => doc.documentType === '연차신청서');
+                weeklyReports = allDocuments.filter(doc => doc.documentType === 'C0409');
+                monthlyReports = allDocuments.filter(doc => doc.documentType === 'C0411');
+                meetingMinutes = allDocuments.filter(doc => doc.documentType === 'C0412');
+                vacationRequests = allDocuments.filter(doc => doc.documentType === 'C0413');
 
                 console.log('주간보고서:', weeklyReports.length + '건');
                 console.log('월간보고서:', monthlyReports.length + '건');
@@ -513,12 +510,12 @@ document.addEventListener('DOMContentLoaded', function() {
     // documentType을 sidebar category로 매핑
     function getCategoryFromDocumentType(documentType) {
         const categoryMap = {
-            '주간업무보고': 'weekly-report',
-            '월간업무보고': 'monthly-report',
-            '회의록': 'meeting',
-            '연차신청서': 'vacation',
-            '지출승인서': 'expense',
-            '지출품의서': 'requisition'
+            'C0409': 'weekly-report',   // 주간업무보고
+            'C0411': 'monthly-report',  // 월간업무보고
+            'C0412': 'meeting',         // 회의록
+            'C0413': 'vacation',        // 연차신청서
+            'C0401': 'expense',         // 지출승인서
+            'C0402': 'requisition'      // 지출품의서
         };
         return categoryMap[documentType] || 'general';
     }
@@ -526,12 +523,12 @@ document.addEventListener('DOMContentLoaded', function() {
     // documentType별 아이콘 매핑
     function getIconFromDocumentType(documentType) {
         const iconMap = {
-            '주간업무보고': 'fa-calendar-week',
-            '월간업무보고': 'fa-calendar-alt',
-            '회의록': 'fa-users',
-            '연차신청서': 'fa-umbrella-beach',
-            '지출승인서': 'fa-won-sign',
-            '지출품의서': 'fa-file-invoice'
+            'C0409': 'fa-calendar-week',    // 주간업무보고
+            'C0411': 'fa-calendar-alt',     // 월간업무보고
+            'C0412': 'fa-users',            // 회의록
+            'C0413': 'fa-umbrella-beach',   // 연차신청서
+            'C0401': 'fa-won-sign',         // 지출승인서
+            'C0402': 'fa-file-invoice'      // 지출품의서
         };
         return iconMap[documentType] || 'fa-file-alt';
     }
@@ -576,7 +573,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 <td>
                     <span class="doc-type">
                         <i class="fas ${icon}"></i>
-                        ${doc.documentType}
+                        ${doc.documentTypeName || doc.documentType}
                     </span>
                 </td>
                 <td class="doc-title-cell">

@@ -8,6 +8,8 @@ import com.pinecni.erp.api.document.repository.MeetingMinutesRepository;
 import com.pinecni.erp.api.user.repository.UserRepository;
 import com.pinecni.erp.api.code.repository.CodeRepository;
 import com.pinecni.erp.api.approval.repository.ApprovalDocumentRepository;
+import com.pinecni.erp.api.approval.service.DocumentSequenceService;
+import com.pinecni.erp.constant.CodeConstants;
 import com.pinecni.erp.entity.MeetingsMinutes;
 import com.pinecni.erp.entity.User;
 import com.pinecni.erp.entity.ApprovalDocument;
@@ -17,7 +19,6 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
-import java.time.format.DateTimeFormatter;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -31,6 +32,7 @@ public class MeetingMinutesServiceImpl implements MeetingMinutesService {
     private final UserRepository userRepository;
     private final CodeRepository codeRepository;
     private final ApprovalDocumentRepository approvalDocumentRepository;
+    private final DocumentSequenceService documentSequenceService;
     @Override
     @Transactional
     public MeetingMinutesDTO createMeetingMinute(MeetingMinutesCreateDTO createDTO) {
@@ -50,16 +52,16 @@ public class MeetingMinutesServiceImpl implements MeetingMinutesService {
         }
 
         // === 1. ApprovalDocument 메타데이터 저장 ===
-        String documentNo = "MEETING-" + System.currentTimeMillis() + "-" + createDTO.getUserIdx();
-        String title = "회의록";
+        String documentNo = documentSequenceService.generateDocumentNumber(CodeConstants.DocumentType.MEETING_MINUTES.getCode(), CodeConstants.DocumentType.MEETING_MINUTES.getPrefix(), createDTO.getUserIdx());
+        String title = CodeConstants.DocumentType.MEETING_MINUTES.getName();
         if (createDTO.getMeetingTitle() != null && !createDTO.getMeetingTitle().isEmpty()) {
-            title = "회의록 - " + createDTO.getMeetingTitle();
+            title = CodeConstants.DocumentType.MEETING_MINUTES.getName() + " - " + createDTO.getMeetingTitle();
         }
 
         ApprovalDocument approvalDocument = ApprovalDocument.builder()
                 .documentNo(documentNo)
                 .title(title)
-                .documentType("회의록")
+                .documentType(CodeConstants.DocumentType.MEETING_MINUTES.getCode())
                 .drafterUserIdx(createDTO.getUserIdx())
                 .content(createDTO.getContent())
                 .createdUserIdx(createDTO.getUserIdx())

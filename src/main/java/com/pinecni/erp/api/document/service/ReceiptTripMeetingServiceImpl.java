@@ -7,6 +7,7 @@ import com.pinecni.erp.api.document.repository.ReceiptAttendeeRepository;
 import com.pinecni.erp.api.project.repository.*;
 import com.pinecni.erp.api.project.repository.ReceiptTripMeetingSessionRepository;
 import com.pinecni.erp.api.user.repository.UserRepository;
+import com.pinecni.erp.constant.CodeConstants;
 import com.pinecni.erp.entity.*;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -68,8 +69,7 @@ public class ReceiptTripMeetingServiceImpl implements ReceiptTripMeetingService 
     @Value("${file.project.receipt-trip-meeting.pattern}")
     private String uploadPattern;
 
-    private static final String DOCUMENT_TYPE = "receipt_trip_meeting";
-    private static final String PREFIX        = "RCTM";
+    private static final CodeConstants.DocumentType DOC_TYPE = CodeConstants.DocumentType.RECEIPT_TRIP_MEETING;
 
     @Override
     @Transactional
@@ -84,7 +84,7 @@ public class ReceiptTripMeetingServiceImpl implements ReceiptTripMeetingService 
         log.debug("출장+회의 통합 저장 - projectIdx: {}, drafterUserIdx: {}", dto.getProjectIdx(), dto.getDrafterUserIdx());
 
         // ── 1. 문서 번호 생성 ──────────────────────────────────────────
-        String documentNo = documentSequenceService.generateDocumentNumber(DOCUMENT_TYPE, PREFIX, currentUserIdx);
+        String documentNo = documentSequenceService.generateDocumentNumber(DOC_TYPE.getCode(), DOC_TYPE.getPrefix(), currentUserIdx);
 
         // ── 2. ApprovalDocument 생성 ──────────────────────────────────
         //      drafterUserIdx = 문서상 작성자 (화면에서 선택)
@@ -92,7 +92,7 @@ public class ReceiptTripMeetingServiceImpl implements ReceiptTripMeetingService 
         ApprovalDocument approvalDocument = ApprovalDocument.builder()
                 .documentNo(documentNo)
                 .title(buildTitle(dto))
-                .documentType("연구비증빙-출장+회의")
+                .documentType(DOC_TYPE.getCode())
                 .isProject(true)
                 .drafterUserIdx(dto.getDrafterUserIdx())
                 .content(dto.getTripContent())

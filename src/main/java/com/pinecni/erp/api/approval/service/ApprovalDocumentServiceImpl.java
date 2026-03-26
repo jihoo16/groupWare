@@ -79,11 +79,11 @@ public class ApprovalDocumentServiceImpl implements ApprovalDocumentService {
                 .filter(dto -> {
                     // 원본 문서가 존재하는 것만 포함 (sourceDocumentId가 null이 아닌 경우)
                     // 원본 문서가 삭제된 경우를 필터링
-                    if ("주간업무보고".equals(dto.getDocumentType()) || "프로젝트 주간업무보고".equals(dto.getDocumentType())) {
+                    if (CodeConstants.DocumentType.WEEKLY_REPORT.getCode().equals(dto.getDocumentType()) || CodeConstants.DocumentType.PROJECT_WEEKLY_REPORT.getCode().equals(dto.getDocumentType())) {
                         return dto.getSourceDocumentId() != null;
                     }
                     // 연차신청서는 본인이 작성한 것만 포함
-                    if ("연차신청서".equals(dto.getDocumentType())) {
+                    if (CodeConstants.DocumentType.VACATION.getCode().equals(dto.getDocumentType())) {
                         return dto.getDrafterUserIdx().equals(currentUserIdx);
                     }
                     // 일반 전자결재 문서는 본인이 작성한 것만 포함 (민감한 재무 정보)
@@ -126,7 +126,7 @@ public class ApprovalDocumentServiceImpl implements ApprovalDocumentService {
                 .map(this::convertToDTO)
                 .filter(dto -> {
                     // 원본 문서가 존재하는 것만 포함
-                    if ("주간업무보고".equals(dto.getDocumentType()) || "프로젝트 주간업무보고".equals(dto.getDocumentType())) {
+                    if (CodeConstants.DocumentType.WEEKLY_REPORT.getCode().equals(dto.getDocumentType()) || CodeConstants.DocumentType.PROJECT_WEEKLY_REPORT.getCode().equals(dto.getDocumentType())) {
                         return dto.getSourceDocumentId() != null;
                     }
                     return true;
@@ -148,7 +148,7 @@ public class ApprovalDocumentServiceImpl implements ApprovalDocumentService {
                 .map(this::convertToDTO)
                 .filter(dto -> {
                     // 원본 문서가 존재하는 것만 포함
-                    if ("주간업무보고".equals(dto.getDocumentType()) || "프로젝트 주간업무보고".equals(dto.getDocumentType())) {
+                    if (CodeConstants.DocumentType.WEEKLY_REPORT.getCode().equals(dto.getDocumentType()) || CodeConstants.DocumentType.PROJECT_WEEKLY_REPORT.getCode().equals(dto.getDocumentType())) {
                         return dto.getSourceDocumentId() != null;
                     }
                     return true;
@@ -163,11 +163,16 @@ public class ApprovalDocumentServiceImpl implements ApprovalDocumentService {
      * Entity → DTO 변환 (사용자 정보 포함)
      */
     private ApprovalDocumentDTO convertToDTO(ApprovalDocument document) {
+        String docTypeCode = document.getDocumentType();
+        CodeConstants.DocumentType docTypeEnum = CodeConstants.DocumentType.fromCodeOrNull(docTypeCode);
+        String docTypeName = docTypeEnum != null ? docTypeEnum.getName() : docTypeCode;
+
         ApprovalDocumentDTO dto = ApprovalDocumentDTO.builder()
                 .idx(document.getIdx())
                 .documentNo(document.getDocumentNo())
                 .title(document.getTitle())
-                .documentType(document.getDocumentType())
+                .documentType(docTypeCode)
+                .documentTypeName(docTypeName)
                 .drafterUserIdx(document.getDrafterUserIdx())
                 .content(document.getContent())
                 .createdAt(document.getCreatedAt())
@@ -195,7 +200,7 @@ public class ApprovalDocumentServiceImpl implements ApprovalDocumentService {
 
         // 원본 문서 ID 조회 및 설정
         String documentType = document.getDocumentType();
-        if ("주간업무보고".equals(documentType) || "프로젝트 주간업무보고".equals(documentType)) {
+        if (CodeConstants.DocumentType.WEEKLY_REPORT.getCode().equals(documentType) || CodeConstants.DocumentType.PROJECT_WEEKLY_REPORT.getCode().equals(documentType)) {
             weeklyReportRepository.findByDocumentIdx(document.getIdx()).ifPresent(weeklyReport -> {
                 dto.setSourceDocumentId(weeklyReport.getId());
                 if (weeklyReport.getProjectIdx() != null) {
@@ -205,7 +210,7 @@ public class ApprovalDocumentServiceImpl implements ApprovalDocumentService {
                     });
                 }
             });
-        } else if ("연구비증빙-회의록".equals(documentType) || "연구비증빙(회의록)".equals(documentType) || "receipt_meeting".equals(documentType)) {
+        } else if (CodeConstants.DocumentType.RECEIPT_MEETING.getCode().equals(documentType)) {
             // 연구비증빙 회의록의 원본 문서 ID 및 프로젝트 정보 조회
             receiptMeetingRepository.findByDocumentIdx(document.getIdx()).ifPresent(receiptMeeting -> {
                 dto.setSourceDocumentId(receiptMeeting.getIdx());
@@ -217,7 +222,7 @@ public class ApprovalDocumentServiceImpl implements ApprovalDocumentService {
                 }
                 dto.setAttachments(buildMeetingAttachments(receiptMeeting.getIdx()));
             });
-        } else if ("연구비증빙 - 단독출장".equals(documentType) || "연구비증빙(출장)".equals(documentType) || "receipt_trip".equals(documentType)) {
+        } else if (CodeConstants.DocumentType.RECEIPT_TRIP.getCode().equals(documentType)) {
             // 연구비증빙 단독출장의 원본 문서 ID 및 프로젝트 정보 조회
             receiptTripRepository.findByDocumentIdx(document.getIdx()).ifPresent(receiptTrip -> {
                 dto.setSourceDocumentId(receiptTrip.getIdx());
@@ -229,7 +234,7 @@ public class ApprovalDocumentServiceImpl implements ApprovalDocumentService {
                 }
                 dto.setAttachments(buildTripAttachments(receiptTrip.getIdx()));
             });
-        } else if ("연구비증빙-출장+회의".equals(documentType)) {
+        } else if (CodeConstants.DocumentType.RECEIPT_TRIP_MEETING.getCode().equals(documentType)) {
             receiptTripMeetingRepository.findByDocumentIdx(document.getIdx()).ifPresent(rtm -> {
                 dto.setSourceDocumentId(rtm.getIdx());
                 if (rtm.getProjectIdx() != null) {
@@ -239,7 +244,7 @@ public class ApprovalDocumentServiceImpl implements ApprovalDocumentService {
                     });
                 }
             });
-        } else if ("연구비증빙-야근식대".equals(documentType) || "연구비증빙(야근식대)".equals(documentType) || "receipt_overtime".equals(documentType)) {
+        } else if (CodeConstants.DocumentType.RECEIPT_OVERTIME.getCode().equals(documentType)) {
             // 연구비증빙 야근식대의 원본 문서 ID 및 프로젝트 정보 조회
             receiptOvertimeRepository.findByDocumentIdx(document.getIdx()).ifPresent(receiptOvertime -> {
                 dto.setSourceDocumentId(receiptOvertime.getIdx());
@@ -251,13 +256,13 @@ public class ApprovalDocumentServiceImpl implements ApprovalDocumentService {
                 }
                 dto.setAttachments(buildOvertimeAttachments(receiptOvertime.getIdx()));
             });
-        } else if ("재료비".equals(documentType) || "장비비".equals(documentType)) {
+        } else if (CodeConstants.DocumentType.RECEIPT_MATERIAL.getCode().equals(documentType) || CodeConstants.DocumentType.RECEIPT_EQUIPMENT.getCode().equals(documentType)) {
             receiptPurchaseRepository.findByDocumentIdx(document.getIdx()).ifPresent(purchase -> {
                 dto.setSourceDocumentId(purchase.getIdx());
                 dto.setAmount(purchase.getTotalAmount());
                 String formattedAmount = purchase.getTotalAmount() != null && purchase.getTotalAmount().compareTo(BigDecimal.ZERO) != 0
                         ? String.format("%,d", purchase.getTotalAmount().longValue()) + "원" : "0원";
-                dto.setTitle(documentType + " - " + formattedAmount);
+                dto.setTitle(docTypeName + " - " + formattedAmount);
                 if (purchase.getProjectIdx() != null) {
                     dto.setProjectIdx(purchase.getProjectIdx());
                     projectRepository.findById(purchase.getProjectIdx()).ifPresent(project -> {
@@ -268,11 +273,11 @@ public class ApprovalDocumentServiceImpl implements ApprovalDocumentService {
                     dto.setEventDate(purchase.getApprovalDate());
                 }
             });
-        } else if ("지출승인서".equals(documentType)) {
+        } else if (CodeConstants.DocumentType.EXPENSE_APPROVAL.getCode().equals(documentType)) {
             expenseApprovalRepository.findByDocumentIdx(document.getIdx()).ifPresent(expense -> {
                 dto.setSourceDocumentId(expense.getIdx());
             });
-        } else if ("지출품의서".equals(documentType)) {
+        } else if (CodeConstants.DocumentType.EXPENSE_REQUEST.getCode().equals(documentType)) {
             expenseRequisitionRepository.findByDocumentIdxAndIsDeletedFalse(document.getIdx()).ifPresent(requisition -> {
                 dto.setSourceDocumentId(requisition.getIdx());
             });
@@ -325,19 +330,19 @@ public class ApprovalDocumentServiceImpl implements ApprovalDocumentService {
         List<ApprovalDocumentDTO> result;
 
         switch (documentType) {
-            case "WEEKLY_REPORT":
+            case "C0410":   // PROJECT_WEEKLY_REPORT
                 result = getWeeklyReportsByProject(projectIdx);
                 break;
-            case "MEETING_MINUTES":
+            case "C0412":   // MEETING_MINUTES
                 result = getMeetingMinutesByProject(projectIdx);
                 break;
-            case "BUSINESS_TRIP":
+            case "C0404":   // RECEIPT_TRIP
                 result = getReceiptTripsByProject(projectIdx);
                 break;
-            case "RECEIPT_MEETING":
+            case "C0406":   // RECEIPT_MEETING
                 result = getReceiptMeetingsByProject(projectIdx);
                 break;
-            case "RECEIPT_OVERTIME":
+            case "C0403":   // RECEIPT_OVERTIME
                 result = getReceiptOvertimesByProject(projectIdx);
                 break;
             default:
@@ -422,7 +427,8 @@ public class ApprovalDocumentServiceImpl implements ApprovalDocumentService {
                     ApprovalDocumentDTO dto = ApprovalDocumentDTO.builder()
                             .idx(rtm.getDocumentIdx())
                             .sourceDocumentId(rtm.getIdx())
-                            .documentType("연구비증빙-출장+회의")
+                            .documentType(CodeConstants.DocumentType.RECEIPT_TRIP_MEETING.getCode())
+                            .documentTypeName(CodeConstants.DocumentType.RECEIPT_TRIP_MEETING.getName())
                             .documentNo(rtm.getDocumentNumber())
                             .title(projectName + " - 출장+회의 " + (rtm.getTripDate() != null ? rtm.getTripDate() : ""))
                             .drafterUserIdx(rtm.getDrafterUserIdx())
@@ -464,7 +470,8 @@ public class ApprovalDocumentServiceImpl implements ApprovalDocumentService {
                 .idx(report.getDocumentIdx())
                 .sourceDocumentId(report.getId())
                 .title(projectName + " - " + report.getReportPeriod())
-                .documentType("WEEKLY_REPORT")
+                .documentType(CodeConstants.DocumentType.PROJECT_WEEKLY_REPORT.getCode())
+                .documentTypeName(CodeConstants.DocumentType.PROJECT_WEEKLY_REPORT.getName())
                 .drafterUserIdx(report.getUserIdx())
                 .createdAt(report.getCreatedAt())
                 .updatedAt(report.getUpdatedAt())
@@ -499,7 +506,8 @@ public class ApprovalDocumentServiceImpl implements ApprovalDocumentService {
                 .idx(minutes.getDocumentIdx())
                 .sourceDocumentId(minutes.getId())
                 .title(minutes.getMeetingTitle())
-                .documentType("MEETING_MINUTES")
+                .documentType(CodeConstants.DocumentType.MEETING_MINUTES.getCode())
+                .documentTypeName(CodeConstants.DocumentType.MEETING_MINUTES.getName())
                 .drafterUserIdx(minutes.getUserIdx())
                 .createdAt(minutes.getCreatedAt())
                 .updatedAt(minutes.getUpdatedAt())
@@ -572,7 +580,8 @@ public class ApprovalDocumentServiceImpl implements ApprovalDocumentService {
                 .sourceDocumentId(trip.getIdx())
                 .documentNo(documentNo)
                 .title(title)
-                .documentType("BUSINESS_TRIP")
+                .documentType(CodeConstants.DocumentType.RECEIPT_TRIP.getCode())
+                .documentTypeName(CodeConstants.DocumentType.RECEIPT_TRIP.getName())
                 .drafterUserIdx(trip.getDrafterUserIdx())
                 .createdAt(trip.getCreatedAt())
                 .updatedAt(trip.getUpdatedAt())
@@ -615,7 +624,8 @@ public class ApprovalDocumentServiceImpl implements ApprovalDocumentService {
                 .sourceDocumentId(meeting.getIdx())
                 .documentNo(documentNo)
                 .title(title)
-                .documentType("RECEIPT_MEETING")
+                .documentType(CodeConstants.DocumentType.RECEIPT_MEETING.getCode())
+                .documentTypeName(CodeConstants.DocumentType.RECEIPT_MEETING.getName())
                 .drafterUserIdx(meeting.getAuthorIdx())
                 .createdAt(meeting.getCreatedAt())
                 .updatedAt(meeting.getUpdatedAt())
@@ -668,7 +678,8 @@ public class ApprovalDocumentServiceImpl implements ApprovalDocumentService {
                 .idx(overtime.getDocumentIdx())
                 .sourceDocumentId(overtime.getIdx())
                 .title(title)
-                .documentType("RECEIPT_OVERTIME")
+                .documentType(CodeConstants.DocumentType.RECEIPT_OVERTIME.getCode())
+                .documentTypeName(CodeConstants.DocumentType.RECEIPT_OVERTIME.getName())
                 .drafterUserIdx(overtime.getAuthorIdx())
                 .createdAt(overtime.getCreatedAt())
                 .updatedAt(overtime.getUpdatedAt())
@@ -698,15 +709,18 @@ public class ApprovalDocumentServiceImpl implements ApprovalDocumentService {
     }
 
     private ApprovalDocumentDTO convertReceiptPurchaseToDTO(ReceiptPurchase purchase) {
-        String documentTypeName = "material".equals(purchase.getPurchaseType()) ? "재료비" : "장비비";
+        CodeConstants.DocumentType docType = "material".equals(purchase.getPurchaseType())
+                ? CodeConstants.DocumentType.RECEIPT_MATERIAL
+                : CodeConstants.DocumentType.RECEIPT_EQUIPMENT;
         String formattedAmount = purchase.getTotalAmount() != null && purchase.getTotalAmount().compareTo(BigDecimal.ZERO) != 0
                 ? String.format("%,d", purchase.getTotalAmount().longValue()) + "원" : "0원";
 
         ApprovalDocumentDTO dto = ApprovalDocumentDTO.builder()
                 .idx(purchase.getDocumentIdx())
                 .sourceDocumentId(purchase.getIdx())
-                .title(documentTypeName + " - " + formattedAmount)
-                .documentType(documentTypeName)
+                .title(docType.getName() + " - " + formattedAmount)
+                .documentType(docType.getCode())
+                .documentTypeName(docType.getName())
                 .drafterUserIdx(purchase.getAuthorIdx())
                 .content(purchase.getDocumentContent())
                 .createdAt(purchase.getCreatedAt())

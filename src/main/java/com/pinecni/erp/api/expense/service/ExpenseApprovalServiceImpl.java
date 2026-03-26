@@ -16,6 +16,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.server.ResponseStatusException;
 
+import com.pinecni.erp.constant.CodeConstants;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.HashMap;
@@ -29,8 +30,7 @@ import java.util.Set;
 @Transactional
 public class ExpenseApprovalServiceImpl implements ExpenseApprovalService {
 
-    private static final String DOCUMENT_TYPE = "지출승인서";
-    private static final String DOCUMENT_PREFIX = "EXP";
+    private static final CodeConstants.DocumentType DOC_TYPE = CodeConstants.DocumentType.EXPENSE_APPROVAL;
     private static final Set<String> ALLOWED_PAYMENT_METHODS = Set.of("개인카드", "현금");
 
     private final ExpenseApprovalRepository expenseApprovalRepository;
@@ -46,7 +46,7 @@ public class ExpenseApprovalServiceImpl implements ExpenseApprovalService {
         validateExpenseDetails(createDTO.getExpenseDetails());
 
         // 1. 문서번호 채번
-        String documentNo = documentSequenceService.generateDocumentNumber(DOCUMENT_TYPE, DOCUMENT_PREFIX, loginUserIdx);
+        String documentNo = documentSequenceService.generateDocumentNumber(DOC_TYPE.getCode(), DOC_TYPE.getPrefix(), loginUserIdx);
 
         // 3. total_amount 계산 (approval_documents.content에도 기록하기 위해 먼저)
         long totalAmount = createDTO.getExpenseDetails().stream()
@@ -56,8 +56,8 @@ public class ExpenseApprovalServiceImpl implements ExpenseApprovalService {
         // 2. approval_documents 저장
         ApprovalDocument doc = ApprovalDocument.builder()
                 .documentNo(documentNo)
-                .title(DOCUMENT_TYPE)
-                .documentType(DOCUMENT_TYPE)
+                .title(DOC_TYPE.getName())
+                .documentType(DOC_TYPE.getCode())
                 .content("총 지출금액: ₩" + String.format("%,d", totalAmount))
                 .isProject(false)
                 .drafterUserIdx(loginUserIdx)

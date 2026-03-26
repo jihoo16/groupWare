@@ -8,6 +8,8 @@ import com.pinecni.erp.api.document.repository.MonthlyReportRepository;
 import com.pinecni.erp.api.user.repository.UserRepository;
 import com.pinecni.erp.api.code.repository.CodeRepository;
 import com.pinecni.erp.api.approval.repository.ApprovalDocumentRepository;
+import com.pinecni.erp.api.approval.service.DocumentSequenceService;
+import com.pinecni.erp.constant.CodeConstants;
 import com.pinecni.erp.entity.MonthlyReport;
 import com.pinecni.erp.entity.ApprovalDocument;
 import lombok.RequiredArgsConstructor;
@@ -34,6 +36,7 @@ public class MonthlyReportServiceImpl implements MonthlyReportService {
     private final UserRepository userRepository;
     private final CodeRepository codeRepository;
     private final ApprovalDocumentRepository approvalDocumentRepository;
+    private final DocumentSequenceService documentSequenceService;
 
     @Override
     @Transactional
@@ -55,16 +58,16 @@ public class MonthlyReportServiceImpl implements MonthlyReportService {
         }
 
         // === 1. ApprovalDocument 메타데이터 저장 ===
-        String documentNo = "MONTHLY-" + System.currentTimeMillis() + "-" + createDTO.getUserIdx();
-        String title = "월간업무보고";
+        String documentNo = documentSequenceService.generateDocumentNumber(CodeConstants.DocumentType.MONTHLY_REPORT.getCode(), CodeConstants.DocumentType.MONTHLY_REPORT.getPrefix(), createDTO.getUserIdx());
+        String title = CodeConstants.DocumentType.MONTHLY_REPORT.getName();
         if (createDTO.getReportMonth() != null && !createDTO.getReportMonth().isEmpty()) {
-            title = "월간업무보고 - " + createDTO.getReportMonth();
+            title = CodeConstants.DocumentType.MONTHLY_REPORT.getName() + " - " + createDTO.getReportMonth();
         }
 
         ApprovalDocument approvalDocument = ApprovalDocument.builder()
                 .documentNo(documentNo)
                 .title(title)
-                .documentType("월간업무보고")
+                .documentType(CodeConstants.DocumentType.MONTHLY_REPORT.getCode())
                 .drafterUserIdx(createDTO.getUserIdx())
                 .content(createDTO.getMainTasks())
                 .createdUserIdx(createDTO.getUserIdx())

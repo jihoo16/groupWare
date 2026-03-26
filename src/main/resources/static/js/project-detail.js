@@ -737,7 +737,7 @@ function formatFileSize(bytes) {
 async function loadProjectDocuments(projectId) {
     try {
         // 주간업무보고 로드
-        const weeklyResponse = await fetch(`/api/approval/documents/project/${projectId}?documentType=WEEKLY_REPORT`);
+        const weeklyResponse = await fetch(`/api/approval/documents/project/${projectId}?documentType=C0410`);
         if (weeklyResponse.ok) {
             const weeklyData = await weeklyResponse.json();
             displayWeeklyReports(weeklyData || []);
@@ -746,7 +746,7 @@ async function loadProjectDocuments(projectId) {
         }
 
         // 연구비증빙 로드 (회의록, 출장, 야근식대)
-        const expenseResponse = await fetch(`/api/approval/documents/project/${projectId}?documentTypes=RECEIPT_MEETING,BUSINESS_TRIP,RECEIPT_OVERTIME`);
+        const expenseResponse = await fetch(`/api/approval/documents/project/${projectId}?documentTypes=C0406,C0404,C0403`);
         if (expenseResponse.ok) {
             const expenseData = await expenseResponse.json();
             displayExpenseReports(expenseData || []);
@@ -825,9 +825,9 @@ function displayExpenseReports(reports) {
  */
 function getExpenseDocIcon(documentType) {
     const iconMap = {
-        'RECEIPT_MEETING': 'fa-utensils',
-        'BUSINESS_TRIP': 'fa-plane',
-        'RECEIPT_OVERTIME': 'fa-moon'
+        'C0406': 'fa-utensils',  // 연구비증빙-회의록
+        'C0404': 'fa-plane',     // 단독출장
+        'C0403': 'fa-moon'       // 야근식대
     };
     return iconMap[documentType] || 'fa-receipt';
 }
@@ -841,23 +841,21 @@ async function goToDocument(documentType, sourceDocumentId) {
     let url;
     let title;
     switch (documentType) {
-        case 'WEEKLY_REPORT':
+        case 'C0410':  // 프로젝트 주간업무보고
             url = `/approval/project-weekly-report/detail?documentIdx=${sourceDocumentId}`;
             title = '프로젝트 주간업무보고';
             break;
-        case 'MEETING_MINUTES':
-        case 'BUSINESS_TRIP':
-        case 'RECEIPT_MEETING':
+        case 'C0406':  // 연구비증빙-회의록
             url = `/approval/receipt-meeting?documentIdx=${sourceDocumentId}`;
             title = '연구비 증빙';
             break;
-        case 'RECEIPT_OVERTIME':
-            url = `/approval/receipt-overtime?documentIdx=${sourceDocumentId}`;
-            title = '야근식대 증빙';
-            break;
-        case 'RECEIPT_TRIP':
+        case 'C0404':  // 단독출장
             url = `/approval/receipt-trip?documentIdx=${sourceDocumentId}`;
             title = '단독 출장 증빙';
+            break;
+        case 'C0403':  // 야근식대
+            url = `/approval/receipt-overtime?documentIdx=${sourceDocumentId}`;
+            title = '야근식대 증빙';
             break;
         default:
             url = `/approval/detail?documentId=${sourceDocumentId}`;
@@ -973,11 +971,11 @@ function getDocumentStatusLabel(status) {
  */
 function getDocumentTypeLabel(type) {
     const typeMap = {
-        'WEEKLY_REPORT': '프로젝트 주간업무보고',
-        'MEETING_MINUTES': '회의록',
-        'BUSINESS_TRIP': '단독 출장',
-        'RECEIPT_MEETING': '회의록',
-        'RECEIPT_OVERTIME': '야근식대'
+        'C0410': '프로젝트 주간업무보고',
+        'C0412': '회의록',
+        'C0406': '연구비증빙-회의록',
+        'C0404': '단독출장',
+        'C0403': '야근식대'
     };
     return typeMap[type] || type || '-';
 }

@@ -1,7 +1,7 @@
 package com.pinecni.erp.api.document.service;
 
 import com.pinecni.erp.api.approval.repository.ApprovalDocumentRepository;
-import com.pinecni.erp.api.approval.repository.DocumentSequenceRepository;
+import com.pinecni.erp.api.approval.service.DocumentSequenceService;
 import com.pinecni.erp.api.document.dto.ReceiptTripAttachmentDTO;
 import com.pinecni.erp.api.document.dto.ReceiptTripCreateDTO;
 import com.pinecni.erp.api.document.dto.ReceiptTripDailyExpenseDTO;
@@ -13,6 +13,7 @@ import com.pinecni.erp.api.document.repository.ReceiptTripAttachmentRepository;
 import com.pinecni.erp.api.project.repository.ProjectCardRepository;
 import com.pinecni.erp.api.project.repository.ReceiptTripDailyExpenseRepository;
 import com.pinecni.erp.api.project.repository.ReceiptTripRepository;
+import com.pinecni.erp.constant.CodeConstants;
 import com.pinecni.erp.entity.*;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -45,7 +46,7 @@ public class ReceiptTripServiceImpl implements ReceiptTripService {
     private final ReceiptAttendeeRepository receiptAttendeeRepository;
     private final ReceiptTripAttachmentRepository attachmentRepository;
     private final ApprovalDocumentRepository approvalDocumentRepository;
-    private final DocumentSequenceRepository documentSequenceRepository;
+    private final DocumentSequenceService documentSequenceService;
     private final ProjectCardRepository projectCardRepository;
     private final ReceiptTripMapper mapper;
 
@@ -55,8 +56,7 @@ public class ReceiptTripServiceImpl implements ReceiptTripService {
     @Value("${file.project.receipt-trip.pattern}")
     private String uploadPattern;
 
-    private static final String DOCUMENT_TYPE = "receipt_trip";
-    private static final String PREFIX        = "RCT";
+    private static final CodeConstants.DocumentType DOC_TYPE = CodeConstants.DocumentType.RECEIPT_TRIP;
 
     // ══════════════════════════════════════════════════════════════
     // 출장 기본 CRUD
@@ -134,7 +134,7 @@ public class ReceiptTripServiceImpl implements ReceiptTripService {
 
         try {
             // 1. 문서번호 생성
-            String documentNo = generateDocumentNo();
+            String documentNo = documentSequenceService.generateDocumentNumber(DOC_TYPE.getCode(), DOC_TYPE.getPrefix(), currentUserIdx);
 
             String title = "연구비증빙 단독출장";
             if (createDTO.getLocation() != null && !createDTO.getLocation().isEmpty()) {
@@ -147,7 +147,7 @@ public class ReceiptTripServiceImpl implements ReceiptTripService {
             ApprovalDocument approvalDocument = ApprovalDocument.builder()
                     .documentNo(documentNo)
                     .title(title)
-                    .documentType("연구비증빙 - 단독출장")
+                    .documentType(DOC_TYPE.getCode())
                     .isProject(true)
                     .drafterUserIdx(createDTO.getDrafterUserIdx())
                     .content(createDTO.getContent())
@@ -310,7 +310,7 @@ public class ReceiptTripServiceImpl implements ReceiptTripService {
         log.debug("ReceiptTripDailyExpense 삭제 완료 - receiptTripIdx: {}", idx);
 
         // 2. 참석자 소프트 딜리트 (receipt_attendee 통합 테이블, prefix=RCT)
-        receiptAttendeeRepository.softDeleteByReceiptIdxAndDocumentTypePrefix(idx, PREFIX, deletedUserIdx);
+        receiptAttendeeRepository.softDeleteByReceiptIdxAndDocumentTypePrefix(idx, DOC_TYPE.getPrefix(), deletedUserIdx);
         log.debug("ReceiptAttendee 소프트 딜리트 완료 - receiptTripIdx: {}", idx);
 
         // 3. 첨부파일 소프트 딜리트
@@ -524,25 +524,5 @@ public class ReceiptTripServiceImpl implements ReceiptTripService {
         return value != null ? value : BigDecimal.ZERO;
     }
 
-    private String generateDocumentNo() {
-        int currentYear = LocalDateTime.now().getYear();
-        DocumentSequence sequence = documentSequenceRepository
-                .findByDocumentTypeAndYear(DOCUMENT_TYPE, currentYear)
-                .orElseGet(() -> {
-                    DocumentSequence s = DocumentSequence.builder()
-                            .documentType(DOCUMENT_TYPE)
-                            .prefix(PREFIX)
-                            .year(currentYear)
-                            .lastNumber(0)
-                            .currentSequence(0)
-                            .createdAt(LocalDateTime.now())
-                            .build();
-                    return documentSequenceRepository.save(s);
-                });
-        sequence.setLastNumber(sequence.getLastNumber() + 1);
-        sequence.setUpdatedAt(LocalDateTime.now());
-        documentSequenceRepository.save(sequence);
-        return String.format("%s-%d-%04d", sequence.getPrefix(), sequence.getYear(), sequence.getLastNumber());
-    }
 
 }

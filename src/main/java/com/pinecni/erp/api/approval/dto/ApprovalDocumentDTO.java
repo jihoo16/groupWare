@@ -22,7 +22,8 @@ public class ApprovalDocumentDTO {
     private Long sourceDocumentId;   // 원본 문서 테이블의 idx (weekly_report, monthly_report 등)
     private String documentNo;
     private String title;
-    private String documentType;
+    private String documentType;     // C04xx 코드값 (라우팅/로직용)
+    private String documentTypeName; // 한글 표시명 (화면 렌더링용)
     private Long drafterUserIdx;
     private String drafterName;      // 작성자 이름
     private String drafterDept;       // 작성자 부서 코드

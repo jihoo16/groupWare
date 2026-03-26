@@ -33,8 +33,7 @@ import java.util.Set;
 @Transactional
 public class ExpenseRequisitionServiceImpl implements ExpenseRequisitionService {
 
-    private static final String DOCUMENT_TYPE   = "지출품의서";
-    private static final String DOCUMENT_PREFIX = "REQ";
+    private static final CodeConstants.DocumentType DOC_TYPE = CodeConstants.DocumentType.EXPENSE_REQUEST;
     private static final Set<String> ALLOWED_PAYMENT_TYPES =
             Set.of("현금", "사업비카드", "개인카드");
 
@@ -54,7 +53,7 @@ public class ExpenseRequisitionServiceImpl implements ExpenseRequisitionService 
         validate(dto);
 
         // 1. 문서번호 채번
-        String documentNo = documentSequenceService.generateDocumentNumber(DOCUMENT_TYPE, DOCUMENT_PREFIX, userIdx);
+        String documentNo = documentSequenceService.generateDocumentNumber(DOC_TYPE.getCode(), DOC_TYPE.getPrefix(), userIdx);
 
         // 3. total_amount 계산 (approval_documents.content에도 기록하기 위해 먼저)
         BigDecimal totalAmount = dto.getItems().stream()
@@ -64,8 +63,8 @@ public class ExpenseRequisitionServiceImpl implements ExpenseRequisitionService 
         // 2. approval_documents 저장
         ApprovalDocument doc = ApprovalDocument.builder()
                 .documentNo(documentNo)
-                .title(DOCUMENT_TYPE)
-                .documentType(DOCUMENT_TYPE)
+                .title(DOC_TYPE.getName())
+                .documentType(DOC_TYPE.getCode())
                 .content((dto.getContent() != null && !dto.getContent().isBlank()
                         ? dto.getContent() + " | " : "")
                         + "신청금액: ₩" + String.format("%,d", totalAmount.longValue()))
