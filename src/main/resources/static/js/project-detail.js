@@ -745,8 +745,8 @@ async function loadProjectDocuments(projectId) {
             displayWeeklyReports([]);
         }
 
-        // 연구비증빙 로드 (회의록, 출장, 야근식대)
-        const expenseResponse = await fetch(`/api/approval/documents/project/${projectId}?documentTypes=C0406,C0404,C0403`);
+        // 연구비증빙 로드 (회의록, 단독출장, 출장+회의, 야근식대)
+        const expenseResponse = await fetch(`/api/approval/documents/project/${projectId}?documentTypes=C0406,C0404,C0405,C0403`);
         if (expenseResponse.ok) {
             const expenseData = await expenseResponse.json();
             displayExpenseReports(expenseData || []);
@@ -825,8 +825,9 @@ function displayExpenseReports(reports) {
  */
 function getExpenseDocIcon(documentType) {
     const iconMap = {
-        'C0406': 'fa-utensils',  // 연구비증빙-회의록
+        'C0406': 'fa-utensils',   // 연구비증빙-회의록
         'C0404': 'fa-plane',     // 단독출장
+        'C0405': 'fa-suitcase',  // 출장+회의
         'C0403': 'fa-moon'       // 야근식대
     };
     return iconMap[documentType] || 'fa-receipt';
@@ -853,7 +854,7 @@ async function goToDocument(documentType, sourceDocumentId) {
             url = `/approval/receipt-trip?documentIdx=${sourceDocumentId}`;
             title = '단독출장 증빙';
             break;
-        case 'RECEIPT_TRIP_MEETING':
+        case 'C0405':  // 출장+회의
             url = `/approval/receipt-trip-meeting?documentIdx=${sourceDocumentId}`;
             title = '출장+회의 증빙';
             break;
@@ -979,6 +980,7 @@ function getDocumentTypeLabel(type) {
         'C0412': '회의록',
         'C0406': '연구비증빙-회의록',
         'C0404': '단독출장',
+        'C0405': '출장+회의',
         'C0403': '야근식대'
     };
     return typeMap[type] || type || '-';
