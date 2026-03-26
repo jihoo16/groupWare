@@ -348,7 +348,11 @@ public class ApprovalDocumentServiceImpl implements ApprovalDocumentService {
                 result = getMeetingMinutesByProject(projectIdx);
                 break;
             case "BUSINESS_TRIP":
+            case "RECEIPT_TRIP":
                 result = getReceiptTripsByProject(projectIdx);
+                break;
+            case "RECEIPT_TRIP_MEETING":
+                result = getReceiptTripMeetingsByProject(projectIdx);
                 break;
             case "RECEIPT_MEETING":
                 result = getReceiptMeetingsByProject(projectIdx);

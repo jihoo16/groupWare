@@ -745,8 +745,8 @@ async function loadProjectDocuments(projectId) {
             displayWeeklyReports([]);
         }
 
-        // 연구비증빙 로드 (회의록, 출장, 야근식대)
-        const expenseResponse = await fetch(`/api/approval/documents/project/${projectId}?documentTypes=RECEIPT_MEETING,BUSINESS_TRIP,RECEIPT_OVERTIME`);
+        // 연구비증빙 로드 (회의록, 단독출장, 출장+회의, 야근식대)
+        const expenseResponse = await fetch(`/api/approval/documents/project/${projectId}?documentTypes=RECEIPT_MEETING,RECEIPT_TRIP,RECEIPT_TRIP_MEETING,RECEIPT_OVERTIME`);
         if (expenseResponse.ok) {
             const expenseData = await expenseResponse.json();
             displayExpenseReports(expenseData || []);
@@ -825,9 +825,11 @@ function displayExpenseReports(reports) {
  */
 function getExpenseDocIcon(documentType) {
     const iconMap = {
-        'RECEIPT_MEETING': 'fa-utensils',
-        'BUSINESS_TRIP': 'fa-plane',
-        'RECEIPT_OVERTIME': 'fa-moon'
+        'RECEIPT_MEETING':      'fa-utensils',
+        'BUSINESS_TRIP':        'fa-plane',
+        'RECEIPT_TRIP':         'fa-plane',
+        'RECEIPT_TRIP_MEETING': 'fa-suitcase',
+        'RECEIPT_OVERTIME':     'fa-moon'
     };
     return iconMap[documentType] || 'fa-receipt';
 }
@@ -855,9 +857,14 @@ async function goToDocument(documentType, sourceDocumentId) {
             url = `/approval/receipt-overtime?documentIdx=${sourceDocumentId}`;
             title = '야근식대 증빙';
             break;
+        case 'BUSINESS_TRIP':
         case 'RECEIPT_TRIP':
             url = `/approval/receipt-trip?documentIdx=${sourceDocumentId}`;
-            title = '단독 출장 증빙';
+            title = '단독출장 증빙';
+            break;
+        case 'RECEIPT_TRIP_MEETING':
+            url = `/approval/receipt-trip-meeting?documentIdx=${sourceDocumentId}`;
+            title = '출장+회의 증빙';
             break;
         default:
             url = `/approval/detail?documentId=${sourceDocumentId}`;
@@ -974,10 +981,12 @@ function getDocumentStatusLabel(status) {
 function getDocumentTypeLabel(type) {
     const typeMap = {
         'WEEKLY_REPORT': '프로젝트 주간업무보고',
-        'MEETING_MINUTES': '회의록',
-        'BUSINESS_TRIP': '단독 출장',
-        'RECEIPT_MEETING': '회의록',
-        'RECEIPT_OVERTIME': '야근식대'
+        'MEETING_MINUTES':      '회의록',
+        'BUSINESS_TRIP':        '단독출장',
+        'RECEIPT_TRIP':         '단독출장',
+        'RECEIPT_TRIP_MEETING': '출장+회의',
+        'RECEIPT_MEETING':      '회의록',
+        'RECEIPT_OVERTIME':     '야근식대'
     };
     return typeMap[type] || type || '-';
 }
