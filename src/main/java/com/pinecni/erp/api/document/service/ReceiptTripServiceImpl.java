@@ -86,6 +86,7 @@ public class ReceiptTripServiceImpl implements ReceiptTripService {
             }
             entity.setAttendees(receiptAttendeeRepository.findByReceiptTripIdx(entity.getIdx()));
             entity.setDailyExpenses(dailyExpenseRepository.findByReceiptTripIdxOrderByExpenseDateAsc(entity.getIdx()));
+            entity.setAttachments(attachmentRepository.findByReceiptTripIdxAndDeletedFalseOrderByIdxAsc(entity.getIdx()));
             return mapper.toDTO(entity);
         }
 
@@ -97,6 +98,7 @@ public class ReceiptTripServiceImpl implements ReceiptTripService {
         }
         entity.setAttendees(receiptAttendeeRepository.findByReceiptTripIdx(idx));
         entity.setDailyExpenses(dailyExpenseRepository.findByReceiptTripIdxOrderByExpenseDateAsc(idx));
+        entity.setAttachments(attachmentRepository.findByReceiptTripIdxAndDeletedFalseOrderByIdxAsc(idx));
         return mapper.toDTO(entity);
     }
 
@@ -543,8 +545,4 @@ public class ReceiptTripServiceImpl implements ReceiptTripService {
         return String.format("%s-%d-%04d", sequence.getPrefix(), sequence.getYear(), sequence.getLastNumber());
     }
 
-    @Override
-    public String generateDocumentNumber(Long projectIdx) {
-        return generateDocumentNo();
-    }
 }

@@ -33,6 +33,7 @@ import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import java.util.Optional;
 import java.util.UUID;
 import java.util.stream.Collectors;
 
@@ -89,16 +90,14 @@ public class ReceiptPurchaseServiceImpl implements ReceiptPurchaseService {
     @Override
     @Transactional(readOnly = true)
     public ReceiptPurchaseDTO getReceiptPurchaseById(Long idx) {
+        // documentIdx(전자결재 문서 ID)로 먼저 조회 시도
+        Optional<ReceiptPurchase> byDocumentIdx = receiptPurchaseRepository.findByDocumentIdx(idx);
+        if (byDocumentIdx.isPresent()) {
+            return buildDTOWithDetails(byDocumentIdx.get());
+        }
+        // receipt_purchase.idx 로 직접 조회
         ReceiptPurchase entity = receiptPurchaseRepository.findById(idx)
                 .orElseThrow(() -> new IllegalArgumentException("구매품의를 찾을 수 없습니다. idx: " + idx));
-        return buildDTOWithDetails(entity);
-    }
-
-    @Override
-    @Transactional(readOnly = true)
-    public ReceiptPurchaseDTO getReceiptPurchaseByDocumentIdx(Long documentIdx) {
-        ReceiptPurchase entity = receiptPurchaseRepository.findByDocumentIdx(documentIdx)
-                .orElseThrow(() -> new IllegalArgumentException("구매품의를 찾을 수 없습니다. documentIdx: " + documentIdx));
         return buildDTOWithDetails(entity);
     }
 

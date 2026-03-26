@@ -13,7 +13,6 @@ public interface ReceiptPurchaseService {
     List<ReceiptPurchaseDTO> getReceiptPurchasesByProjectIdx(Long projectIdx);
     List<ReceiptPurchaseDTO> getReceiptPurchasesByAuthorIdx(Long authorIdx);
     ReceiptPurchaseDTO getReceiptPurchaseById(Long idx);
-    ReceiptPurchaseDTO getReceiptPurchaseByDocumentIdx(Long documentIdx);
     ReceiptPurchaseDTO createReceiptPurchase(ReceiptPurchaseCreateDTO createDTO,
                                              List<MultipartFile> receiptFiles,
                                              List<MultipartFile> documentFiles,

@@ -382,20 +382,6 @@ public class ReceiptMeetingServiceImpl implements ReceiptMeetingService {
         log.info("회의록 삭제 완료 - idx: {}, deletedUserIdx: {}", idx, deletedUserIdx);
     }
 
-    @Override
-    public String generateDocumentNumber(Long projectIdx) {
-        // 문서번호 형식: RM-{projectIdx}-{YYYYMMDD}-{순번}
-        // 예: RM-1-20250101-001
-
-        String dateStr = LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyyMMdd"));
-        String prefix = String.format("RM-%d-%s", projectIdx, dateStr);
-
-        // 같은 날짜의 문서 개수 조회하여 순번 생성 (삭제된 문서 포함)
-        long count = receiptMeetingRepository.countByDocumentNumberStartingWithIncludingDeleted(prefix);
-
-        return String.format("%s-%03d", prefix, count + 1);
-    }
-
     /**
      * 문서 타입 prefix를 한글 이름으로 변환
      */

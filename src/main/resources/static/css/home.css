@@ -1014,6 +1014,18 @@ html.popup-mode .btn-secondary[onclick="history.back()"] {
     font-weight: 600;
 }
 
+/* 지난 일정 (흐리게 표시) */
+.schedule-item.past-schedule {
+    opacity: 0.45;
+    background: #f3f4f6;
+}
+
+.schedule-item.past-schedule:hover {
+    opacity: 0.65;
+    background: #e9ebee;
+    transform: translateX(5px);
+}
+
 .schedule-item-header {
     display: flex;
     justify-content: space-between;

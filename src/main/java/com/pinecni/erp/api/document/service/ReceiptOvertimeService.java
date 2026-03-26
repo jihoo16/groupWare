@@ -6,7 +6,6 @@ import com.pinecni.erp.api.document.dto.ReceiptOvertimeDTO;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.util.List;
-import java.util.Map;
 
 /**
  * 연구비증빙 야근식대 Service Interface
@@ -37,11 +36,6 @@ public interface ReceiptOvertimeService {
      * 작성자별 야근식대 목록 조회
      */
     List<ReceiptOvertimeDTO> getReceiptOvertimesByAuthorIdx(Long authorIdx);
-
-    /**
-     * 상태별 야근식대 목록 조회
-     */
-    List<ReceiptOvertimeDTO> getReceiptOvertimesByStatus(String status);
 
     /**
      * 야근식대 생성

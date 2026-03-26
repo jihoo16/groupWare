@@ -1405,6 +1405,10 @@ div h2{
     border: 2px solid #667eea;
 }
 
+.header-right .btn-outline {
+    border: 2px solid #667eea;
+}
+
 .btn-outline:hover {
     background: #667eea;
     color: white;

@@ -98,7 +98,6 @@ document.addEventListener('DOMContentLoaded', async function () {
     document.getElementById('detailDept').textContent          = doc.authorDept || '-';
     document.getElementById('detailName').textContent          = doc.authorName || '-';
     document.getElementById('detailDate').textContent          = dateStr;
-    document.getElementById('detailDocumentNumber').textContent = doc.documentNumber || '-';
 
     // ── 품의 내용 ─────────────────────────────────────────────────
     document.getElementById('detailContent').textContent = doc.content || '-';

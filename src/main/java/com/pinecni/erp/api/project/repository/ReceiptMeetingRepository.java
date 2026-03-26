@@ -76,10 +76,4 @@ public interface ReceiptMeetingRepository extends JpaRepository<ReceiptMeeting, 
             "WHERE rm.documentIdx = :documentIdx")
     Optional<ReceiptMeeting> findByDocumentIdx(@Param("documentIdx") Long documentIdx);
 
-    /**
-     * 문서번호 prefix로 시작하는 모든 문서 개수 조회 (삭제된 것 포함)
-     * approval_documents 테이블에서 조회
-     */
-    @Query(value = "SELECT COUNT(*) FROM erp.approval_documents WHERE document_no LIKE :prefix || '%'", nativeQuery = true)
-    long countByDocumentNumberStartingWithIncludingDeleted(@Param("prefix") String prefix);
 }

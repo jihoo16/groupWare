@@ -174,13 +174,6 @@ public class ReceiptOvertimeServiceImpl implements ReceiptOvertimeService {
     }
 
     @Override
-    @Transactional(readOnly = true)
-    public List<ReceiptOvertimeDTO> getReceiptOvertimesByStatus(String status) {
-        log.debug("상태별 야근식대 목록 조회 - status: {}", status);
-        return null;
-    }
-
-    @Override
     @Transactional
     public ReceiptOvertimeDTO createReceiptOvertime(ReceiptOvertimeCreateDTO createDTO, Long currentUserIdx) {
         log.debug("야근식대 생성 - projectIdx: {}, authorIdx: {}, currentUserIdx: {}", createDTO.getProjectIdx(), createDTO.getAuthorIdx(), currentUserIdx);
