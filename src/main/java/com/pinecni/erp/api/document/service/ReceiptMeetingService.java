@@ -7,7 +7,6 @@ import com.pinecni.erp.api.document.dto.ReceiptMeetingUpdateDTO;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.util.List;
-import java.util.Map;
 
 /**
  * 연구비증빙 회의록 Service 인터페이스
@@ -50,11 +49,6 @@ public interface ReceiptMeetingService {
      * @param deletedUserIdx 삭제한 사용자 IDX
      */
     void deleteReceiptMeeting(Long idx, Long deletedUserIdx);
-
-    /**
-     * 문서번호 생성
-     */
-    String generateDocumentNumber(Long projectIdx);
 
     /**
      * 첨부파일 저장

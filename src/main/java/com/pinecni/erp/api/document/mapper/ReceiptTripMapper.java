@@ -66,6 +66,11 @@ public class ReceiptTripMapper {
                 ? entity.getDailyExpenses().stream().map(this::toDailyExpenseDTO).collect(Collectors.toList())
                 : null;
 
+        // 첨부파일 변환
+        List<ReceiptTripAttachmentDTO> attachmentDTOs = entity.getAttachments() != null
+                ? entity.getAttachments().stream().map(this::toAttachmentDTO).collect(Collectors.toList())
+                : null;
+
         // 문서번호: entity 자체 필드 우선, 없으면 연관된 ApprovalDocument에서 조회
         String documentNumber = entity.getDocumentNumber();
         if (documentNumber == null && entity.getApprovalDocument() != null) {
@@ -93,6 +98,7 @@ public class ReceiptTripMapper {
                 .content(entity.getContent())
                 .attendees(attendeeDTOs)
                 .dailyExpenses(dailyExpenseDTOs)
+                .attachments(attachmentDTOs)
                 .createdAt(entity.getCreatedAt())
                 .updatedAt(entity.getUpdatedAt())
                 .build();

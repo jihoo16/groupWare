@@ -16,6 +16,7 @@ import org.springframework.web.bind.annotation.*;
 import org.springframework.web.server.ResponseStatusException;
 
 import java.util.List;
+import java.util.Map;
 import java.util.stream.Collectors;
 
 /**
@@ -28,6 +29,16 @@ import java.util.stream.Collectors;
 public class ExpenseApprovalController {
 
     private final ExpenseApprovalService expenseApprovalService;
+
+    /**
+     * 현재 기간(전월 14일 ~ 당월 13일) 내 문서 존재 여부 확인
+     * GET /api/approval/expense/check-period
+     */
+    @GetMapping("/check-period")
+    public ResponseEntity<Map<String, Object>> checkCurrentPeriod(HttpSession session) {
+        Long loginUserIdx = getLoginUserIdx(session);
+        return ResponseEntity.ok(expenseApprovalService.checkCurrentPeriod(loginUserIdx));
+    }
 
     /**
      * 지출승인서 생성

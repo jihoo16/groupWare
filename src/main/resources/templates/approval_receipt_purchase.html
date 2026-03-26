@@ -224,10 +224,12 @@
 
                         <!-- 파일 업로드 섹션 -->
                         <div class="attachment-section">
-                            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px;">
+                            <div id="attachmentGrid" style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px;">
                                 <div>
                                     <div class="section-header">
-                                        <h4><i class="fas fa-receipt"></i> 영수증 업로드</h4>
+                                        <h4><i class="fas fa-receipt"></i>
+                                            <span th:text="${purchaseType == 'material'} ? '거래명세서 (영수증) 업로드' : '영수증 업로드'"></span>
+                                        </h4>
                                     </div>
                                     <div class="file-upload-area" id="receiptUploadArea">
                                         <input type="file" id="receiptInput" multiple hidden>
@@ -252,6 +254,21 @@
                                         </label>
                                     </div>
                                     <div class="file-list" id="documentFileList"></div>
+                                </div>
+                                <!-- 장비비 전용: JS에서 equipment일 때 표시 -->
+                                <div id="estimateSection" style="display:none;">
+                                    <div class="section-header">
+                                        <h4><i class="fas fa-file-invoice"></i> 견적서 업로드</h4>
+                                    </div>
+                                    <div class="file-upload-area" id="estimateUploadArea">
+                                        <input type="file" id="estimateInput" multiple hidden>
+                                        <label for="estimateInput" class="file-upload-label">
+                                            <i class="fas fa-cloud-upload-alt"></i>
+                                            <span>파일을 선택하거나 드래그하세요</span>
+                                            <small>최대 10MB, 최대 5개</small>
+                                        </label>
+                                    </div>
+                                    <div class="file-list" id="estimateFileList"></div>
                                 </div>
                             </div>
                         </div>

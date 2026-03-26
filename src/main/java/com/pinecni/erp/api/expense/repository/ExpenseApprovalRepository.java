@@ -6,6 +6,7 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
 
@@ -21,6 +22,18 @@ public interface ExpenseApprovalRepository extends JpaRepository<ExpenseApproval
      * document_idx로 조회
      */
     Optional<ExpenseApproval> findByDocumentIdx(Long documentIdx);
+
+    /**
+     * 기간 내 문서 존재 여부 확인 (전월 14일 ~ 당월 13일 중복 방지용)
+     */
+    @Query("SELECT ea FROM ExpenseApproval ea " +
+           "WHERE ea.userIdx = :userIdx AND ea.deleted = false " +
+           "AND ea.createdAt >= :periodStart AND ea.createdAt <= :periodEnd " +
+           "ORDER BY ea.createdAt DESC")
+    List<ExpenseApproval> findByUserIdxAndPeriod(
+            @Param("userIdx") Long userIdx,
+            @Param("periodStart") LocalDateTime periodStart,
+            @Param("periodEnd") LocalDateTime periodEnd);
 
     /**
      * 지출 상세 항목과 함께 조회 (N+1 방지)

@@ -516,20 +516,46 @@ button:focus, a:focus, div:focus { outline: none !important; box-shadow: none !i
 
 .btn-remove-item:hover { background: #dc2626; transform: scale(1.1); }
 
-/* 합계 — 그라디언트 배경 */
-.total-amount-display {
+/* 항목 하단 푸터 (추가 버튼 + 합계) */
+.expense-items-footer {
     display: flex;
-    justify-content: space-between;
     align-items: center;
-    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-    color: white;
-    padding: 16px 20px;
+    justify-content: space-between;
+    margin-top: 12px;
+    padding: 10px 16px;
+    background: #f5f4ff;
     border-radius: 8px;
-    margin-top: 16px;
+    border: 1px dashed #c4b5fd;
 }
 
-.total-amount-display label { font-size: 15px; font-weight: 600; }
-.total-amount-display .total-amount { font-size: 20px; font-weight: 700; }
+.btn-add-row-bottom {
+    background: none;
+    color: #667eea;
+    border: none;
+    padding: 4px 8px;
+    border-radius: 6px;
+    font-size: 13px;
+    font-weight: 600;
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    transition: all 0.15s;
+}
+
+.btn-add-row-bottom:hover {
+    background: #ede9fe;
+}
+
+/* 합계 */
+.total-amount-display {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+}
+
+.total-amount-display label { font-size: 13px; font-weight: 600; color: #6b7280; }
+.total-amount-display .total-amount { font-size: 18px; font-weight: 700; color: #4f46e5; }
 
 /* ==========================================
    공식 문서 미리보기 토글 — 그라디언트 버튼

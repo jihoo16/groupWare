@@ -118,6 +118,10 @@ public class ReceiptTrip {
     @Transient
     private List<ReceiptTripDailyExpense> dailyExpenses = new ArrayList<>();
 
+    /** 첨부파일 목록 - 서비스 계층에서 별도 조회 후 주입 */
+    @Transient
+    private List<ReceiptTripAttachment> attachments = new ArrayList<>();
+
     @PrePersist
     protected void onCreate() {
         createdAt = LocalDateTime.now();

@@ -243,8 +243,17 @@ function loadWeeklySchedule() {
                 return startDate <= todayStr && todayStr <= endDate;
             };
 
-            // 오늘 일정을 상단으로 정렬
+            // 이미 지난 일정인지 판별하는 함수 (endDate가 오늘 이전)
+            const isPast = (schedule) => {
+                const endDate = schedule.endDate || schedule.startDate;
+                return endDate < todayStr;
+            };
+
+            // 오늘 일정을 상단, 지난 일정을 하단으로 정렬
             events.sort((a, b) => {
+                const aPast = isPast(a) ? 1 : 0;
+                const bPast = isPast(b) ? 1 : 0;
+                if (aPast !== bPast) return aPast - bPast; // 지난 일정은 아래로
                 const aTodayFlag = isToday(a) ? 1 : 0;
                 const bTodayFlag = isToday(b) ? 1 : 0;
                 if (aTodayFlag !== bTodayFlag) {
@@ -258,7 +267,7 @@ function loadWeeklySchedule() {
             listElement.innerHTML = schedules.map(schedule => {
                 const dateStr = formatScheduleDateFromStrings(schedule.startDate, schedule.endDate);
                 const timeStr = schedule.isAllDay ? '종일' : formatScheduleTimeFromStrings(schedule.startTime, schedule.endTime);
-                const todayClass = isToday(schedule) ? 'today-schedule' : '';
+                const todayClass = isToday(schedule) ? 'today-schedule' : (isPast(schedule) ? 'past-schedule' : '');
 
                 return `
                     <div class="schedule-item ${todayClass}" onclick="openScheduleModal(${schedule.idx})">

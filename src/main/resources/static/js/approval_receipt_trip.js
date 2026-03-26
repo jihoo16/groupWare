@@ -40,12 +40,12 @@ document.addEventListener('DOMContentLoaded', async function() {
     const expandAllBtn = document.getElementById('expandAllBtn');
     const documentForm = document.getElementById('documentForm');
     const approverChips = document.getElementById('approverChips');
-    const receiptInput = document.getElementById('receiptInput');
-    const receiptFileList = document.getElementById('receiptFileList');
-    const receiptUploadArea = document.getElementById('receiptUploadArea');
-    const documentInput = document.getElementById('documentInput');
-    const documentFileList = document.getElementById('documentFileList');
-    const documentUploadArea = document.getElementById('documentUploadArea');
+    let receiptInput = document.getElementById('receiptInput');
+    let receiptFileList = document.getElementById('receiptFileList');
+    let receiptUploadArea = document.getElementById('receiptUploadArea');
+    let documentInput = document.getElementById('documentInput');
+    let documentFileList = document.getElementById('documentFileList');
+    let documentUploadArea = document.getElementById('documentUploadArea');
     const approverModal = document.getElementById('approverModal');
     const employeeList = document.getElementById('employeeList');
     const approverSearch = document.getElementById('approverSearch');
@@ -1290,6 +1290,20 @@ document.addEventListener('DOMContentLoaded', async function() {
                 setTimeout(() => {
                     setupTripAutoFill();
                     setupDocumentFormToggle();
+                    // 템플릿 로드 후 documentForm 내 실제 DOM 요소로 재할당
+                    receiptInput = document.getElementById('receiptInput');
+                    receiptFileList = document.getElementById('receiptFileList');
+                    receiptUploadArea = document.getElementById('receiptUploadArea');
+                    documentInput = document.getElementById('documentInput');
+                    documentFileList = document.getElementById('documentFileList');
+                    documentUploadArea = document.getElementById('documentUploadArea');
+                    // 실제 visible 요소에 파일 업로드 이벤트 재등록
+                    if (receiptInput && receiptUploadArea) {
+                        setupUpload(receiptInput, receiptUploadArea, selectedReceiptFiles, updateReceiptFileList);
+                    }
+                    if (documentInput && documentUploadArea) {
+                        setupUpload(documentInput, documentUploadArea, selectedDocumentFiles, updateDocumentFileList);
+                    }
                 }, 0);
             }
         }
@@ -2549,7 +2563,9 @@ document.addEventListener('DOMContentLoaded', async function() {
     }
 
     function updateReceiptFileList() {
-        receiptFileList.innerHTML = '';
+        const listEl = documentForm.querySelector('#receiptFileList');
+        if (!listEl) return;
+        listEl.innerHTML = '';
         // 기존 RECEIPT 파일 표시 (삭제 예정 제외)
         existingReceiptAttachments.forEach(att => {
             if (deletedAttachmentIds.includes(att.idx)) return;
@@ -2565,7 +2581,7 @@ document.addEventListener('DOMContentLoaded', async function() {
                     <i class="fas fa-times"></i>
                 </button>
             `;
-            receiptFileList.appendChild(item);
+            listEl.appendChild(item);
         });
         // 새로 선택한 영수증 파일 표시
         selectedReceiptFiles.forEach((file, index) => {
@@ -2576,12 +2592,14 @@ document.addEventListener('DOMContentLoaded', async function() {
                 <span>${file.name} (${(file.size / 1024).toFixed(1)} KB)</span>
                 <button class="btn-remove-file" onclick="removeReceiptFile(${index})"><i class="fas fa-times"></i></button>
             `;
-            receiptFileList.appendChild(item);
+            listEl.appendChild(item);
         });
     }
 
     function updateDocumentFileList() {
-        documentFileList.innerHTML = '';
+        const listEl = documentForm.querySelector('#documentFileList');
+        if (!listEl) return;
+        listEl.innerHTML = '';
         // 기존 DOCUMENT 파일 표시 (삭제 예정 제외)
         existingDocumentAttachments.forEach(att => {
             if (deletedAttachmentIds.includes(att.idx)) return;
@@ -2597,7 +2615,7 @@ document.addEventListener('DOMContentLoaded', async function() {
                     <i class="fas fa-times"></i>
                 </button>
             `;
-            documentFileList.appendChild(item);
+            listEl.appendChild(item);
         });
         // 새로 선택한 공식문서 파일 표시
         selectedDocumentFiles.forEach((file, index) => {
@@ -2608,12 +2626,11 @@ document.addEventListener('DOMContentLoaded', async function() {
                 <span>${file.name} (${(file.size / 1024).toFixed(1)} KB)</span>
                 <button class="btn-remove-file" onclick="removeDocumentFile(${index})"><i class="fas fa-times"></i></button>
             `;
-            documentFileList.appendChild(item);
+            listEl.appendChild(item);
         });
     }
 
-    setupUpload(receiptInput, receiptUploadArea, selectedReceiptFiles, updateReceiptFileList);
-    setupUpload(documentInput, documentUploadArea, selectedDocumentFiles, updateDocumentFileList);
+    // setupUpload은 loadTemplate 내 setTimeout에서 실제 DOM 요소 할당 후 호출됨
 
     window.removeReceiptFile = function(index) { selectedReceiptFiles.splice(index, 1); updateReceiptFileList(); };
     window.removeDocumentFile = function(index) { selectedDocumentFiles.splice(index, 1); updateDocumentFileList(); };

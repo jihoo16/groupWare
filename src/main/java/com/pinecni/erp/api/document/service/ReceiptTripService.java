@@ -56,8 +56,4 @@ public interface ReceiptTripService {
      * 첨부파일 소프트 딜리트
      */
     void softDeleteAttachment(Long attachmentIdx, Long deletedUserIdx);
-
-    // ── 기타 ────────────────────────────────────────────────────
-
-    String generateDocumentNumber(Long projectIdx);
 }

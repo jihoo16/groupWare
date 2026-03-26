@@ -107,7 +107,6 @@ document.addEventListener('DOMContentLoaded', async function () {
     document.getElementById('detailDept').textContent = deptName;
     document.getElementById('detailName').textContent = drafterName;
     document.getElementById('detailDate').textContent = dateStr;
-    document.getElementById('detailDocumentNumber').textContent = doc.documentNumber || '-';
 
     // ── 지출 내역 정렬 ────────────────────────────────────────────
     const details = (doc.expenseDetails || []).sort(

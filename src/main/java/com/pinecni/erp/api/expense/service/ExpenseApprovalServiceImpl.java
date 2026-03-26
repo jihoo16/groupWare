@@ -16,8 +16,11 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.server.ResponseStatusException;
 
+import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 
 @Service
@@ -182,6 +185,41 @@ public class ExpenseApprovalServiceImpl implements ExpenseApprovalService {
         }
 
         log.info("지출승인서 삭제 완료 - idx: {}", idx);
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public Map<String, Object> checkCurrentPeriod(Long userIdx) {
+        // 기간 계산: 당일이 13일 이하이면 전월 14일 ~ 당월 13일, 14일 이상이면 당월 14일 ~ 익월 13일
+        LocalDate today = LocalDate.now();
+        LocalDate periodStart;
+        LocalDate periodEnd;
+
+        if (today.getDayOfMonth() <= 13) {
+            periodStart = today.minusMonths(1).withDayOfMonth(14);
+            periodEnd   = today.withDayOfMonth(13);
+        } else {
+            periodStart = today.withDayOfMonth(14);
+            periodEnd   = today.plusMonths(1).withDayOfMonth(13);
+        }
+
+        List<ExpenseApproval> found = expenseApprovalRepository.findByUserIdxAndPeriod(
+                userIdx,
+                periodStart.atStartOfDay(),
+                periodEnd.atTime(23, 59, 59));
+
+        Map<String, Object> result = new HashMap<>();
+        if (found.isEmpty()) {
+            result.put("exists", false);
+        } else {
+            ExpenseApproval doc = found.get(0);
+            result.put("exists", true);
+            result.put("documentIdx", doc.getIdx());
+            result.put("documentNumber", doc.getDocumentNumber());
+            result.put("periodStart", periodStart.toString());
+            result.put("periodEnd", periodEnd.toString());
+        }
+        return result;
     }
 
     // ── private helpers ────────────────────────────────────────────────────

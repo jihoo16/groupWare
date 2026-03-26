@@ -121,6 +121,10 @@ document.addEventListener('DOMContentLoaded', function() {
     // ==========================================
     let itemCount = 1;
 
+    document.getElementById('addRowBtnBottom')?.addEventListener('click', function() {
+        document.getElementById('addRowBtn').click();
+    });
+
     document.getElementById('addRowBtn').addEventListener('click', function() {
         itemCount++;
         const container = document.getElementById('requisitionItemsContainer');
