@@ -1466,7 +1466,8 @@ input.auto-datetime {
     background: linear-gradient(135deg, #dc2626 0%, #b91c1c 100%);
 }
 
-.btn-outline {
+.btn-outline,
+.header-right .btn-outline {
     background: white;
     color: #667eea;
     border: 2px solid #667eea;
@@ -1481,7 +1482,8 @@ input.auto-datetime {
     transition: all 0.3s;
 }
 
-.btn-outline:hover:not(:disabled) {
+.btn-outline:hover:not(:disabled),
+.header-right .btn-outline:hover:not(:disabled) {
     background: #667eea;
     color: white;
 }

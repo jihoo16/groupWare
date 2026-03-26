@@ -838,7 +838,8 @@
     box-shadow: 0 4px 12px rgba(16, 185, 129, 0.3);
 }
 
-.btn-outline {
+.btn-outline,
+.header-right .btn-outline {
     background: white;
     border: 2px solid #667eea;
     color: #667eea;
@@ -853,7 +854,8 @@
     transition: all 0.3s;
 }
 
-.btn-outline:hover:not(:disabled) {
+.btn-outline:hover:not(:disabled),
+.header-right .btn-outline:hover:not(:disabled) {
     background: #667eea;
     border-color: #667eea;
     color: white;
