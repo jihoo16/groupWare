@@ -1374,26 +1374,54 @@ div h2{
     /* 폼 행들이 들어감 */
 }
 
+/* 항목 하단 푸터 (추가 버튼 + 총합계) */
+.expense-items-footer {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-top: 12px;
+    padding: 10px 16px;
+    background: #f5f4ff;
+    border-radius: 8px;
+    border: 1px dashed #c4b5fd;
+}
+
+.btn-add-row-bottom {
+    background: none;
+    color: #667eea;
+    border: none;
+    padding: 4px 8px;
+    border-radius: 6px;
+    font-size: 13px;
+    font-weight: 600;
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    transition: all 0.15s;
+}
+
+.btn-add-row-bottom:hover {
+    background: #ede9fe;
+}
+
 /* 총 합계 표시 */
 .total-amount-display {
     display: flex;
-    justify-content: space-between;
     align-items: center;
-    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-    color: white;
-    padding: 16px 20px;
-    border-radius: 8px;
-    margin-top: 16px;
+    gap: 16px;
 }
 
 .total-amount-display label {
-    font-size: 15px;
+    font-size: 13px;
     font-weight: 600;
+    color: #6b7280;
 }
 
 .total-amount-display .total-amount {
-    font-size: 20px;
+    font-size: 18px;
     font-weight: 700;
+    color: #4f46e5;
 }
 
 /* 항목 추가 버튼 */

@@ -206,17 +206,18 @@ button:focus, a:focus, div:focus { outline: none !important; box-shadow: none !i
 
 .total-bar {
     display: flex;
-    justify-content: space-between;
+    justify-content: flex-end;
     align-items: center;
-    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-    color: white;
-    padding: 16px 24px;
+    gap: 16px;
+    background: #f5f4ff;
+    border: 1px dashed #c4b5fd;
+    padding: 10px 16px;
     border-radius: 8px;
-    margin-top: 16px;
+    margin-top: 12px;
 }
 
-.total-label { font-size: 15px; font-weight: 600; }
-.total-amount { font-size: 22px; font-weight: 700; letter-spacing: -0.5px; }
+.total-label { font-size: 13px; font-weight: 600; color: #6b7280; }
+.total-amount { font-size: 18px; font-weight: 700; color: #4f46e5; letter-spacing: -0.5px; }
 
 /* ==========================================
    지급종류 / 특이사항 메타 그리드

@@ -1730,6 +1730,13 @@ document.addEventListener('DOMContentLoaded', async function() {
     const expenseItemsContainer = document.getElementById('expenseItemsContainer');
     const addRowBtnNew = document.getElementById('addRowBtn');
 
+    const addRowBtnBottom = document.getElementById('addRowBtnBottom');
+    if (addRowBtnBottom) {
+        addRowBtnBottom.addEventListener('click', function() {
+            addRowBtnNew?.click();
+        });
+    }
+
     if (addRowBtnNew && expenseItemsContainer) {
         addRowBtnNew.addEventListener('click', function() {
             itemCounter++;
