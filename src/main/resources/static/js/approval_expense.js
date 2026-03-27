@@ -1190,12 +1190,14 @@ document.addEventListener('DOMContentLoaded', async function() {
                         : '/api/approval/expense';
                     const apiMethod = editIdx ? 'PUT' : 'POST';
 
+                    const multipart = new FormData();
+                    multipart.append('data', new Blob([JSON.stringify(formData)], { type: 'application/json' }));
+                    receiptFiles.forEach(f => multipart.append('receiptFiles', f));
+                    signedDocFiles.forEach(f => multipart.append('signedDocFiles', f));
+
                     const response = await fetch(apiUrl, {
                         method: apiMethod,
-                        headers: {
-                            'Content-Type': 'application/json'
-                        },
-                        body: JSON.stringify(formData)
+                        body: multipart
                     });
 
                     if (!response.ok) {
@@ -1253,12 +1255,16 @@ document.addEventListener('DOMContentLoaded', async function() {
             }
         });
 
-        return {
+        const result = {
             userIdx: userIdx,
             documentDate: documentDate,
             content: content,
             expenseDetails: expenseDetails
         };
+        if (deletedAttachmentIds.length > 0) {
+            result.deletedAttachmentIds = deletedAttachmentIds;
+        }
+        return result;
     }
 
     // PDF 저장 버튼 이벤트
@@ -2441,6 +2447,9 @@ document.addEventListener('DOMContentLoaded', async function() {
             updatePreview();
             setTimeout(validateRequiredFields, 100);
 
+            // 기존 첨부파일 렌더링
+            renderServerAttachments(doc.attachments || []);
+
         } catch (e) {
             showError('문서를 불러오는 데 실패했습니다.');
         }
@@ -2585,6 +2594,36 @@ document.addEventListener('DOMContentLoaded', async function() {
 
     let receiptFiles = [];
     let signedDocFiles = [];
+    let deletedAttachmentIds = [];
+
+    /** 수정 모드 - 서버에서 받아온 기존 첨부파일을 파일 목록에 렌더링 */
+    function renderServerAttachments(attachments) {
+        if (!attachments || attachments.length === 0) return;
+
+        attachments.forEach(att => {
+            const listId = att.attachmentType === 'DOCUMENT' ? 'signedDocFileList' : 'receiptFileList';
+            const listEl = document.getElementById(listId);
+            if (!listEl) return;
+
+            const item = document.createElement('div');
+            item.className = 'file-item';
+            item.dataset.attachmentIdx = att.idx;
+            item.innerHTML = `
+                <i class="fas ${getFileIcon(att.originalFilename)}"></i>
+                <span>${att.originalFilename} <small style="color:#94a3b8;">(${(att.fileSize / 1024).toFixed(1)} KB)</small></span>
+                <button type="button" class="btn-download-file" title="다운로드" style="background:none;border:none;cursor:pointer;color:#667eea;padding:3px 6px;font-size:13px;"><i class="fas fa-download"></i></button>
+                <button type="button" class="btn-remove-file" title="삭제"><i class="fas fa-times"></i></button>
+            `;
+            item.querySelector('.btn-download-file').addEventListener('click', () => {
+                window.location.href = `/api/approval/expense/attachments/${att.idx}/download`;
+            });
+            item.querySelector('.btn-remove-file').addEventListener('click', () => {
+                deletedAttachmentIds.push(att.idx);
+                item.remove();
+            });
+            listEl.appendChild(item);
+        });
+    }
 
     function getFileIcon(name) {
         if (/\.(jpg|jpeg|png|gif|webp)$/i.test(name)) return 'fa-file-image';

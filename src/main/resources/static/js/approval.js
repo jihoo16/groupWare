@@ -502,85 +502,263 @@ document.addEventListener('DOMContentLoaded', function() {
         return (bytes / (1024 * 1024)).toFixed(1) + ' MB';
     }
 
-    // 지출승인서 paperclip → 첨부파일 모달
+    // ============================================
+    // 지출승인서 첨부파일 모달 (연구비증빙 패턴)
+    // ============================================
+
+    let expenseAttModal = null;
+    let expensePendingReceipt = [];
+    let expensePendingDocument = [];
+    let expensePendingDeleteIds = [];
+
+    function getExpenseAttModal() {
+        if (expenseAttModal) return expenseAttModal;
+
+        // CSS 주입 (att- 클래스는 project-documents.js와 동일)
+        if (!document.getElementById('expenseAttModalStyle')) {
+            const style = document.createElement('style');
+            style.id = 'expenseAttModalStyle';
+            style.textContent = `
+                #expenseAttachmentModal { font-family: inherit; }
+                .exp-att-modal-inner {
+                    background: #fff; border-radius: 14px; width: 580px; max-height: 82vh;
+                    display: flex; flex-direction: column;
+                    box-shadow: 0 24px 64px rgba(0,0,0,0.28); animation: expAttIn .18s ease;
+                }
+                @keyframes expAttIn { from { opacity:0; transform:translateY(-10px) scale(.98); } to { opacity:1; transform:translateY(0) scale(1); } }
+                .exp-att-modal-header { display:flex; align-items:center; justify-content:space-between; padding:18px 22px 16px; border-bottom:1px solid #f0f0f0; }
+                .exp-att-modal-header h3 { margin:0; font-size:15px; font-weight:700; color:#1a1a1a; display:flex; align-items:center; gap:8px; }
+                .exp-att-modal-header h3 i { color:#7c3aed; font-size:14px; }
+                .exp-att-close-btn { background:none; border:none; cursor:pointer; color:#9ca3af; font-size:20px; line-height:1; padding:4px; border-radius:6px; transition:background .15s, color .15s; display:flex; align-items:center; justify-content:center; width:30px; height:30px; }
+                .exp-att-close-btn:hover { background:#f3f4f6; color:#374151; }
+                #expModalBody { flex:1; overflow-y:auto; padding:20px 22px; }
+                .exp-att-section { margin-bottom:24px; }
+                .exp-att-section:last-child { margin-bottom:0; }
+                .exp-att-badge { display:inline-flex; align-items:center; gap:5px; padding:4px 12px; border-radius:20px; font-size:12px; font-weight:700; margin-bottom:11px; letter-spacing:.01em; }
+                .exp-badge-receipt { background:#fef9c3; color:#a16207; }
+                .exp-badge-document { background:#eff6ff; color:#1d4ed8; }
+                .exp-att-existing { margin-bottom:10px; }
+                .exp-att-file-row { display:flex; align-items:center; gap:9px; padding:7px 11px; background:#f8fafc; border:1px solid #e8ecf0; border-radius:8px; margin-bottom:5px; transition:background .12s; cursor:pointer; }
+                .exp-att-file-row:hover { background:#e8f0fe; border-color:#93c5fd; }
+                .exp-att-file-row .exp-file-icon { color:#94a3b8; font-size:13px; flex-shrink:0; }
+                .exp-att-file-row .exp-file-name { flex:1; font-size:13px; color:#334155; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; font-weight:500; }
+                .exp-att-file-row.deleted { opacity:0.4; text-decoration:line-through; pointer-events:none; }
+                .exp-att-del-btn { flex-shrink:0; background:none; border:none; padding:3px 6px; cursor:pointer; color:#cbd5e1; font-size:15px; line-height:1; border-radius:4px; transition:color .12s, background .12s; }
+                .exp-att-del-btn:hover { color:#ef4444; background:#fff1f2; }
+                .exp-att-empty { margin:0 0 10px; color:#b0b8c4; font-size:13px; }
+                .exp-att-drop { border:2px dashed #d1d5db; border-radius:10px; padding:18px 16px; text-align:center; cursor:pointer; transition:border-color .15s, background .15s; background:#fafafa; position:relative; }
+                .exp-att-drop:hover, .exp-att-drop.drag-over { border-color:#7c3aed; background:#f5f3ff; }
+                .exp-att-drop.drag-over .exp-drop-icon { color:#7c3aed; }
+                .exp-att-drop input[type=file] { position:absolute; inset:0; opacity:0; cursor:pointer; width:100%; height:100%; }
+                .exp-drop-icon { font-size:22px; color:#94a3b8; margin-bottom:6px; transition:color .15s; }
+                .exp-drop-text { font-size:13px; color:#6b7280; line-height:1.5; }
+                .exp-drop-text strong { color:#374151; }
+                .exp-att-pending { margin-top:10px; }
+                .exp-att-pending-item { display:flex; align-items:center; gap:8px; padding:6px 10px; background:#f0fdf4; border:1px solid #bbf7d0; border-radius:7px; margin-bottom:4px; }
+                .exp-att-pending-item i { color:#16a34a; font-size:12px; flex-shrink:0; }
+                .exp-att-pending-item span { flex:1; font-size:13px; color:#166534; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+                .exp-att-pending-remove { background:none; border:none; cursor:pointer; color:#86efac; font-size:14px; line-height:1; padding:0; flex-shrink:0; transition:color .12s; }
+                .exp-att-pending-remove:hover { color:#dc2626; }
+                .exp-att-footer { display:flex; justify-content:flex-end; gap:8px; padding:14px 22px; border-top:1px solid #f0f0f0; }
+                .exp-att-btn-cancel { padding:8px 20px; background:#f3f4f6; border:1px solid #e5e7eb; border-radius:8px; cursor:pointer; font-size:13px; color:#374151; font-weight:500; transition:background .12s; }
+                .exp-att-btn-cancel:hover { background:#e9ecef; }
+                .exp-att-btn-save { padding:8px 22px; background:#7c3aed; color:#fff; border:none; border-radius:8px; cursor:pointer; font-size:13px; font-weight:600; transition:background .12s; }
+                .exp-att-btn-save:hover { background:#6d28d9; }
+                .exp-att-btn-save:disabled { background:#c4b5fd; cursor:not-allowed; }
+            `;
+            document.head.appendChild(style);
+        }
+
+        const modal = document.createElement('div');
+        modal.id = 'expenseAttachmentModal';
+        modal.style.cssText = 'position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.45);display:none;align-items:center;justify-content:center;z-index:10000;backdrop-filter:blur(2px);';
+        modal.innerHTML = `
+            <div class="exp-att-modal-inner">
+                <div class="exp-att-modal-header">
+                    <h3><i class="fas fa-paperclip"></i> 첨부파일 관리 — 지출승인서</h3>
+                    <button class="exp-att-close-btn" id="expModalCloseBtn"><i class="fas fa-times"></i></button>
+                </div>
+                <div id="expModalBody"></div>
+                <div class="exp-att-footer">
+                    <button class="exp-att-btn-cancel" id="expModalCancelBtn">닫기</button>
+                    <button class="exp-att-btn-save" id="expModalSaveBtn">저장</button>
+                </div>
+            </div>
+        `;
+        document.body.appendChild(modal);
+        modal.addEventListener('click', (e) => { if (e.target === modal) closeExpenseAttModal(); });
+        modal.querySelector('#expModalCloseBtn').addEventListener('click', closeExpenseAttModal);
+        modal.querySelector('#expModalCancelBtn').addEventListener('click', closeExpenseAttModal);
+        expenseAttModal = modal;
+        return modal;
+    }
+
+    function closeExpenseAttModal() {
+        if (expenseAttModal) expenseAttModal.style.display = 'none';
+        expensePendingReceipt = [];
+        expensePendingDocument = [];
+        expensePendingDeleteIds = [];
+    }
+
+    function expenseSetupDropZone(dzId, inputId, pendingListId, fileArray) {
+        const dz = document.getElementById(dzId);
+        const input = document.getElementById(inputId);
+        if (!dz || !input) return;
+        let dragCounter = 0;
+
+        function addFiles(newFiles) {
+            Array.from(newFiles).forEach(f => {
+                if (!fileArray.find(x => x.name === f.name && x.size === f.size)) fileArray.push(f);
+            });
+            expenseRenderPending(pendingListId, fileArray);
+        }
+
+        dz.addEventListener('dragenter', (e) => { e.preventDefault(); dragCounter++; dz.classList.add('drag-over'); });
+        dz.addEventListener('dragleave', () => { dragCounter--; if (dragCounter === 0) dz.classList.remove('drag-over'); });
+        dz.addEventListener('dragover', (e) => { e.preventDefault(); });
+        dz.addEventListener('drop', (e) => { e.preventDefault(); dragCounter = 0; dz.classList.remove('drag-over'); if (e.dataTransfer.files.length) addFiles(e.dataTransfer.files); });
+        input.addEventListener('change', () => { if (input.files.length) addFiles(input.files); input.value = ''; });
+    }
+
+    function expenseRenderPending(pendingListId, fileArray) {
+        const container = document.getElementById(pendingListId);
+        if (!container) return;
+        if (fileArray.length === 0) { container.innerHTML = ''; return; }
+        container.innerHTML = fileArray.map((f, i) => `
+            <div class="exp-att-pending-item">
+                <i class="fas fa-check-circle"></i>
+                <span title="${f.name}">${f.name}</span>
+                <button class="exp-att-pending-remove" data-index="${i}" title="제거">&times;</button>
+            </div>`).join('');
+        container.querySelectorAll('.exp-att-pending-remove').forEach(btn => {
+            btn.addEventListener('click', () => {
+                fileArray.splice(parseInt(btn.dataset.index), 1);
+                expenseRenderPending(pendingListId, fileArray);
+            });
+        });
+    }
+
+    function buildExpenseSection(sectionId, badgeClass, iconClass, label, existingFiles, dzId, inputId, pendingListId) {
+        const existingHtml = existingFiles.length === 0
+            ? `<p class="exp-att-empty">업로드된 파일이 없습니다.</p>`
+            : existingFiles.map(a => {
+                const safe = (a.originalFilename || '').replace(/"/g, '&quot;');
+                return `
+                    <div class="exp-att-file-row" data-att-id="${a.idx}" data-url="/api/approval/expense/attachments/${a.idx}/download" data-filename="${safe}" title="클릭하여 다운로드">
+                        <i class="fas fa-file exp-file-icon"></i>
+                        <span class="exp-file-name">${safe}</span>
+                        <i class="fas fa-download" style="color:#93c5fd;font-size:12px;margin-left:auto;flex-shrink:0;"></i>
+                        <button class="exp-att-del-btn" data-att-id="${a.idx}" title="삭제">&times;</button>
+                    </div>`;
+            }).join('');
+        return `
+            <div class="exp-att-section" id="${sectionId}">
+                <div class="exp-att-badge ${badgeClass}"><i class="${iconClass}"></i> ${label}</div>
+                <div class="exp-att-existing">${existingHtml}</div>
+                <div class="exp-att-drop" id="${dzId}">
+                    <input type="file" id="${inputId}" multiple>
+                    <div class="exp-drop-icon"><i class="fas fa-cloud-upload-alt"></i></div>
+                    <div class="exp-drop-text"><strong>드래그하여 파일 추가</strong><br>또는 클릭하여 선택</div>
+                </div>
+                <div class="exp-att-pending" id="${pendingListId}"></div>
+            </div>`;
+    }
+
     document.addEventListener('click', async function(e) {
         const btn = e.target.closest('.btn-expense-attach');
         if (!btn) return;
         e.stopPropagation();
         const id = btn.getAttribute('data-id');
 
-        openAttachModal('첨부파일 — 지출승인서', `
+        expensePendingReceipt = [];
+        expensePendingDocument = [];
+        expensePendingDeleteIds = [];
+
+        const modal = getExpenseAttModal();
+        document.getElementById('expModalBody').innerHTML = `
             <div style="text-align:center;padding:20px 0;color:#64748b;font-size:13px;">
                 <i class="fas fa-spinner fa-spin" style="font-size:22px;margin-bottom:10px;display:block;color:#7c3aed;"></i>
                 불러오는 중...
-            </div>
-        `);
+            </div>`;
+        modal.style.display = 'flex';
 
+        let attachments = [];
         try {
-            const res = await fetch(`/api/approval/expense/${id}/attachments`);
-            if (res.status === 404 || res.status === 204) {
-                renderExpenseAttachModal(id, { receiptFiles: [], signedDocFiles: [] });
+            const res = await fetch(`/api/approval/expense/${id}`);
+            if (res.ok) {
+                const doc = await res.json();
+                attachments = doc.attachments || [];
+            }
+        } catch (_) {}
+
+        const receiptFiles  = attachments.filter(a => a.attachmentType !== 'DOCUMENT');
+        const docFiles      = attachments.filter(a => a.attachmentType === 'DOCUMENT');
+
+        document.getElementById('expModalBody').innerHTML =
+            buildExpenseSection('expSecReceipt',  'exp-badge-receipt',  'fas fa-receipt',  '영수증',          receiptFiles, 'expDzReceipt',  'expInputReceipt',  'expPendingReceipt') +
+            buildExpenseSection('expSecDocument', 'exp-badge-document', 'fas fa-file-alt', '서명완료 공식문서', docFiles,     'expDzDocument', 'expInputDocument', 'expPendingDocument');
+
+        expenseSetupDropZone('expDzReceipt',  'expInputReceipt',  'expPendingReceipt',  expensePendingReceipt);
+        expenseSetupDropZone('expDzDocument', 'expInputDocument', 'expPendingDocument', expensePendingDocument);
+
+        // 기존 파일 클릭 → 다운로드
+        document.getElementById('expModalBody').querySelectorAll('.exp-att-file-row').forEach(row => {
+            row.addEventListener('click', (ev) => {
+                if (ev.target.closest('.exp-att-del-btn')) return;
+                const url = row.dataset.url;
+                if (url) window.location.href = url;
+            });
+        });
+
+        // 삭제 버튼 → 비활성화 + pendingDeleteIds 추가
+        document.getElementById('expModalBody').querySelectorAll('.exp-att-del-btn').forEach(delBtn => {
+            delBtn.addEventListener('click', (ev) => {
+                ev.stopPropagation();
+                const attId = parseInt(delBtn.dataset.attId);
+                if (!expensePendingDeleteIds.includes(attId)) expensePendingDeleteIds.push(attId);
+                delBtn.closest('.exp-att-file-row').classList.add('deleted');
+            });
+        });
+
+        // 저장 버튼 바인딩 (중복 방지)
+        const saveBtn = document.getElementById('expModalSaveBtn');
+        const newSaveBtn = saveBtn.cloneNode(true);
+        saveBtn.parentNode.replaceChild(newSaveBtn, saveBtn);
+        newSaveBtn.addEventListener('click', async () => {
+            const hasNew = expensePendingReceipt.length || expensePendingDocument.length;
+            if (!expensePendingDeleteIds.length && !hasNew) {
+                closeExpenseAttModal();
                 return;
             }
-            if (!res.ok) throw new Error();
-            const data = await res.json();
-            renderExpenseAttachModal(id, data);
-        } catch (_) {
-            renderExpenseAttachModal(id, null);
-        }
+
+            newSaveBtn.disabled = true;
+            newSaveBtn.textContent = '저장 중...';
+
+            try {
+                // 삭제
+                for (const attId of expensePendingDeleteIds) {
+                    const r = await fetch(`/api/approval/expense/attachments/${attId}`, { method: 'DELETE' });
+                    if (!r.ok) throw new Error('삭제 실패');
+                }
+                // 업로드
+                if (hasNew) {
+                    const formData = new FormData();
+                    expensePendingReceipt.forEach(f => formData.append('receiptFiles', f));
+                    expensePendingDocument.forEach(f => formData.append('signedDocFiles', f));
+                    const r = await fetch(`/api/approval/expense/${id}/attachments`, { method: 'POST', body: formData });
+                    if (!r.ok) throw new Error('업로드 실패');
+                }
+                closeExpenseAttModal();
+                loadAllDocuments();
+                Swal.fire({ icon: 'success', title: '저장 완료', text: '첨부파일이 저장되었습니다.', timer: 1500, showConfirmButton: false });
+            } catch (err) {
+                Swal.fire({ icon: 'error', title: '저장 실패', text: err.message, didOpen: () => { const c = document.querySelector('.swal2-container'); if (c) c.style.zIndex = '20001'; } });
+            } finally {
+                newSaveBtn.disabled = false;
+                newSaveBtn.textContent = '저장';
+            }
+        });
     });
-
-    function renderExpenseAttachModal(id, data) {
-        const receiptFiles  = data?.receiptFiles  || [];
-        const signedFiles   = data?.signedDocFiles || [];
-        const total = receiptFiles.length + signedFiles.length;
-
-        if (total === 0) {
-            openAttachModal('첨부파일 — 지출승인서', `
-                <div style="text-align:center;padding:28px 0;color:#94a3b8;font-size:13px;">
-                    <i class="fas fa-paperclip" style="font-size:28px;display:block;margin-bottom:10px;"></i>
-                    첨부된 파일이 없습니다.
-                </div>
-                <div style="text-align:center;margin-top:4px;">
-                    <a href="/approval/expense/detail?idx=${id}" style="font-size:12px;color:#7c3aed;text-decoration:none;">
-                        <i class="fas fa-external-link-alt"></i> 상세페이지에서 파일 업로드
-                    </a>
-                </div>
-            `);
-            return;
-        }
-
-        function fileRow(file) {
-            const icon = /\.(jpg|jpeg|png|gif|webp)$/i.test(file.originalFileName || file.name)
-                ? 'fa-file-image' : /\.pdf$/i.test(file.originalFileName || file.name)
-                ? 'fa-file-pdf' : 'fa-file';
-            const name = file.originalFileName || file.name || '-';
-            const size = formatFileSize(file.fileSize);
-            const downloadBtn = file.idx
-                ? `<a href="/api/approval/expense/attachments/${file.idx}/download" style="color:#7c3aed;font-size:13px;padding:3px 5px;" title="다운로드"><i class="fas fa-download"></i></a>`
-                : '';
-            return `
-                <div style="display:flex;align-items:center;gap:10px;padding:8px 10px;background:#fafafa;border:1px solid #e8edf2;border-radius:8px;margin-bottom:6px;">
-                    <i class="fas ${icon}" style="color:#7c3aed;font-size:15px;"></i>
-                    <span style="flex:1;font-size:12px;color:#334155;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${name}</span>
-                    <span style="font-size:11px;color:#94a3b8;white-space:nowrap;">${size}</span>
-                    ${downloadBtn}
-                </div>
-            `;
-        }
-
-        let html = '';
-        if (receiptFiles.length) {
-            html += `<p style="font-size:12px;font-weight:600;color:#475569;margin:0 0 6px;">영수증 (${receiptFiles.length})</p>`;
-            html += receiptFiles.map(fileRow).join('');
-        }
-        if (signedFiles.length) {
-            html += `<p style="font-size:12px;font-weight:600;color:#475569;margin:${receiptFiles.length ? '12px' : '0'} 0 6px;">서명완료 공식문서 (${signedFiles.length})</p>`;
-            html += signedFiles.map(fileRow).join('');
-        }
-
-        openAttachModal('첨부파일 — 지출승인서', html);
-    }
 
     // 연차신청서 paperclip → PDF 목록 모달
     document.addEventListener('click', async function(e) {
@@ -790,6 +968,29 @@ document.addEventListener('DOMContentLoaded', function() {
         });
 
         filterDocuments();
+
+        // 지출승인서 공식문서 미첨부 표시
+        markExpenseMissingDocuments();
+    }
+
+    async function markExpenseMissingDocuments() {
+        try {
+            const res = await fetch('/api/approval/expense/attachment-status');
+            if (!res.ok) return;
+            const statusMap = await res.json(); // { "123": "all" | "partial" | "ok" }
+
+            document.querySelectorAll('.btn-expense-attach').forEach(btn => {
+                const id = btn.getAttribute('data-id');
+                const status = statusMap[id];
+                if (status === 'all') {
+                    btn.classList.add('missing-all');
+                    btn.title = '첨부파일 전체 누락';
+                } else if (status === 'partial') {
+                    btn.classList.add('missing-partial');
+                    btn.title = '첨부파일 일부 누락';
+                }
+            });
+        } catch (_) {}
     }
 
     // 페이지 로드 시 approval_documents 통합 조회

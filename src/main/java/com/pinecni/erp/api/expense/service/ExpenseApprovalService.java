@@ -1,8 +1,10 @@
 package com.pinecni.erp.api.expense.service;
 
+import com.pinecni.erp.api.expense.dto.ExpenseApprovalAttachmentDTO;
 import com.pinecni.erp.api.expense.dto.ExpenseApprovalCreateDTO;
 import com.pinecni.erp.api.expense.dto.ExpenseApprovalDTO;
 import com.pinecni.erp.entity.ExpenseApproval;
+import org.springframework.web.multipart.MultipartFile;
 
 import java.util.List;
 import java.util.Map;
@@ -39,4 +41,17 @@ public interface ExpenseApprovalService {
      * exists: 존재 여부, documentIdx: 존재 시 해당 문서 idx
      */
     Map<String, Object> checkCurrentPeriod(Long userIdx);
+
+    /** 첨부파일 저장 (RECEIPT 또는 DOCUMENT 타입) */
+    List<ExpenseApprovalAttachmentDTO> saveAttachments(Long expenseApprovalIdx, MultipartFile[] files,
+                                                       String attachmentType, Long uploadUserIdx);
+
+    /** 지출승인서 첨부파일 목록 조회 */
+    List<ExpenseApprovalAttachmentDTO> getAttachments(Long expenseApprovalIdx);
+
+    /** 첨부파일 소프트 딜리트 */
+    void deleteAttachment(Long attachmentIdx, Long deletedUserIdx);
+
+    /** 첨부파일 단건 조회 (다운로드용) */
+    ExpenseApprovalAttachmentDTO getAttachmentById(Long attachmentIdx);
 }

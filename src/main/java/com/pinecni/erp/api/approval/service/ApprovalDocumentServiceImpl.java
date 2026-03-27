@@ -23,6 +23,7 @@ import com.pinecni.erp.api.user.repository.UserRepository;
 import com.pinecni.erp.constant.CodeConstants;
 import com.pinecni.erp.entity.*;
 import com.pinecni.erp.api.document.repository.ExpenseRequisitionRepository;
+import com.pinecni.erp.api.document.repository.ReceiptPurchaseAttachmentRepository;
 import com.pinecni.erp.api.expense.repository.ExpenseApprovalRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -68,6 +69,7 @@ public class ApprovalDocumentServiceImpl implements ApprovalDocumentService {
     private final ExpenseApprovalRepository expenseApprovalRepository;
     private final ExpenseRequisitionRepository expenseRequisitionRepository;
     private final ReceiptAttendeeRepository receiptAttendeeRepository;
+    private final ReceiptPurchaseAttachmentRepository receiptPurchaseAttachmentRepository;
 
     @Override
     public List<ApprovalDocumentDTO> getAllDocuments(Long currentUserIdx) {
@@ -290,6 +292,7 @@ public class ApprovalDocumentServiceImpl implements ApprovalDocumentService {
                 if (purchase.getApprovalDate() != null) {
                     dto.setEventDate(purchase.getApprovalDate());
                 }
+                dto.setAttachments(buildPurchaseAttachments(purchase.getIdx()));
             });
         } else if (CodeConstants.DocumentType.EXPENSE_APPROVAL.getCode().equals(documentType)) {
             expenseApprovalRepository.findByDocumentIdx(document.getIdx()).ifPresent(expense -> {
@@ -777,6 +780,7 @@ public class ApprovalDocumentServiceImpl implements ApprovalDocumentService {
                 .build();
 
         dto.setPurpose(purchase.getDocumentContent());
+        dto.setAttachments(buildPurchaseAttachments(purchase.getIdx()));
 
         if (purchase.getProjectIdx() != null) {
             projectRepository.findById(purchase.getProjectIdx()).ifPresent(project ->
@@ -851,6 +855,21 @@ public class ApprovalDocumentServiceImpl implements ApprovalDocumentService {
                         .attachmentType(a.getAttachmentType())
                         .sessionIdx(a.getSessionIdx())
                         .downloadUrl("/api/receipt-trip-meetings/attachments/" + a.getIdx() + "/download")
+                        .build())
+                .collect(Collectors.toList());
+    }
+
+    /**
+     * 재료비/장비비 첨부파일 요약 목록 생성
+     */
+    private List<AttachmentSummaryDTO> buildPurchaseAttachments(Long receiptPurchaseIdx) {
+        return receiptPurchaseAttachmentRepository
+                .findByReceiptPurchaseIdxAndDeletedFalseOrderByIdxAsc(receiptPurchaseIdx).stream()
+                .map(a -> AttachmentSummaryDTO.builder()
+                        .idx(a.getIdx())
+                        .originalFilename(a.getOriginalFilename())
+                        .attachmentType(a.getAttachmentType())
+                        .downloadUrl("/api/receipt-purchases/attachments/" + a.getIdx() + "/download")
                         .build())
                 .collect(Collectors.toList());
     }

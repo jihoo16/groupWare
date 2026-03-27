@@ -182,6 +182,137 @@ document.addEventListener('DOMContentLoaded', async function () {
         else if (count >= 16) previewTable.classList.add('items-compact');
     }
 
+    // ── 첨부파일 렌더링 ───────────────────────────────────────────
+    const MAX_FILE_SIZE = 50 * 1024 * 1024; // 50MB
+
+    function getFileIcon(name) {
+        if (/\.(jpg|jpeg|png|gif|webp)$/i.test(name)) return 'fa-file-image';
+        if (/\.pdf$/i.test(name)) return 'fa-file-pdf';
+        return 'fa-file';
+    }
+
+    /** 서버에서 받아온 첨부파일 목록을 두 섹션에 렌더링 */
+    function renderServerAttachments(attachments) {
+        const receiptList  = document.getElementById('receiptFileList');
+        const signedList   = document.getElementById('signedDocFileList');
+        if (!receiptList || !signedList) return;
+
+        receiptList.innerHTML = '';
+        signedList.innerHTML  = '';
+
+        (attachments || []).forEach(att => {
+            const item = document.createElement('div');
+            item.className = 'file-item';
+            item.dataset.attachmentIdx = att.idx;
+            item.innerHTML = `
+                <i class="fas ${getFileIcon(att.originalFilename)}"></i>
+                <span>${att.originalFilename} <small style="color:#94a3b8;">(${(att.fileSize / 1024).toFixed(1)} KB)</small></span>
+                <button type="button" class="btn-download-file" title="다운로드"><i class="fas fa-download"></i></button>
+                <button type="button" class="btn-remove-file" title="삭제"><i class="fas fa-times"></i></button>
+            `;
+
+            item.querySelector('.btn-download-file').addEventListener('click', () => {
+                window.location.href = `/api/approval/expense/attachments/${att.idx}/download`;
+            });
+
+            item.querySelector('.btn-remove-file').addEventListener('click', async () => {
+                const result = await Swal.fire({
+                    title: '첨부파일을 삭제하시겠습니까?',
+                    icon: 'warning',
+                    showCancelButton: true,
+                    confirmButtonText: '삭제',
+                    cancelButtonText: '취소',
+                    confirmButtonColor: '#d33'
+                });
+                if (!result.isConfirmed) return;
+
+                try {
+                    const res = await fetch(`/api/approval/expense/attachments/${att.idx}`, { method: 'DELETE' });
+                    if (res.ok) {
+                        item.remove();
+                    } else {
+                        Swal.fire({ icon: 'error', title: '삭제 실패', text: '잠시 후 다시 시도해 주세요.' });
+                    }
+                } catch (_) {
+                    Swal.fire({ icon: 'error', title: '삭제 실패', text: '잠시 후 다시 시도해 주세요.' });
+                }
+            });
+
+            if (att.attachmentType === 'DOCUMENT') {
+                signedList.appendChild(item);
+            } else {
+                receiptList.appendChild(item);
+            }
+        });
+    }
+
+    renderServerAttachments(doc.attachments);
+
+    /** 새 파일을 서버에 업로드하고 목록에 추가 */
+    async function uploadFiles(files, attachmentType) {
+        const formData = new FormData();
+        files.forEach(f => {
+            formData.append(attachmentType === 'DOCUMENT' ? 'signedDocFiles' : 'receiptFiles', f);
+        });
+
+        try {
+            const res = await fetch(`/api/approval/expense/${idx}/attachments`, {
+                method: 'POST',
+                body: formData
+            });
+            if (!res.ok) throw new Error();
+            const updatedAttachments = await res.json();
+            renderServerAttachments(updatedAttachments);
+        } catch (_) {
+            Swal.fire({ icon: 'error', title: '업로드 실패', text: '파일 업로드 중 오류가 발생했습니다.' });
+        }
+    }
+
+    function setupUpload(inputId, areaId, attachmentType) {
+        const inputEl = document.getElementById(inputId);
+        const areaEl  = document.getElementById(areaId);
+        if (!inputEl || !areaEl) return;
+
+        function handleFiles(fileList) {
+            const valid = Array.from(fileList).filter(f => {
+                if (f.size > MAX_FILE_SIZE) {
+                    Swal.fire({ icon: 'warning', title: '파일 크기 초과', text: `50MB를 초과합니다: ${f.name}` });
+                    return false;
+                }
+                return true;
+            });
+            if (valid.length > 0) uploadFiles(valid, attachmentType);
+        }
+
+        inputEl.addEventListener('change', function () {
+            handleFiles(this.files);
+            this.value = '';
+        });
+
+        areaEl.addEventListener('dragover', function (e) {
+            e.preventDefault();
+            this.style.borderColor = '#667eea';
+            this.style.background  = '#f5f7ff';
+        });
+
+        areaEl.addEventListener('dragleave', function (e) {
+            if (!this.contains(e.relatedTarget)) {
+                this.style.borderColor = '';
+                this.style.background  = '';
+            }
+        });
+
+        areaEl.addEventListener('drop', function (e) {
+            e.preventDefault();
+            this.style.borderColor = '';
+            this.style.background  = '';
+            handleFiles(e.dataTransfer.files);
+        });
+    }
+
+    setupUpload('receiptInput',   'receiptUploadArea',   'RECEIPT');
+    setupUpload('signedDocInput', 'signedDocUploadArea', 'DOCUMENT');
+
     // ── 버튼 표시 (API 200 = 본인 문서 확인됨) ───────────────────
     if (printBtn)  printBtn.style.display  = '';
     if (editBtn)   editBtn.style.display   = '';

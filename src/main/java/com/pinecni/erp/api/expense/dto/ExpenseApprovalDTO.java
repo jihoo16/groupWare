@@ -5,6 +5,7 @@ import lombok.*;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Collections;
 
 /**
  * 지출승인서 조회 응답 DTO
@@ -33,6 +34,10 @@ public class ExpenseApprovalDTO {
     /** 지출 항목 목록 */
     @Builder.Default
     private List<ExpenseDetailDTO> expenseDetails = new ArrayList<>();
+
+    /** 첨부파일 목록 */
+    @Builder.Default
+    private List<ExpenseApprovalAttachmentDTO> attachments = new ArrayList<>();
 
     /** 기안일자 (= createdAt) */
     private LocalDateTime createdAt;

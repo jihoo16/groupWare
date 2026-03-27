@@ -753,8 +753,54 @@ document.addEventListener('DOMContentLoaded', function() {
         actionCell.style.textAlign = 'center';
         actionCell.style.verticalAlign = 'middle';
         const isReceiptType = ['C0403', 'C0404', 'C0405', 'C0406', 'C0407', 'C0408'].includes(doc.documentType);
+        const isWeeklyReport = doc.documentType === 'C0410';
+
+        // 첨부파일 누락 체크: 필수 항목별 존재 여부 → 전체 누락(빨강) / 일부 누락(주황)
+        let missingCls = '';
+        let missingTitle = '첨부파일 관리';
+        if (isReceiptType) {
+            const atts = doc.attachments || [];
+            const isPurchase = doc.documentType === 'C0407' || doc.documentType === 'C0408';
+            const isEquipment = doc.documentType === 'C0408';
+            const isTripMeeting = doc.documentType === 'C0405';
+
+            let checks = []; // true=있음, false=없음
+            if (isTripMeeting) {
+                checks = [
+                    atts.some(a => a.attachmentType === 'MEETING_RECEIPT'),
+                    atts.some(a => a.attachmentType === 'MEETING_DOCUMENT'),
+                    atts.some(a => a.attachmentType === 'TRIP_RECEIPT'),
+                    atts.some(a => a.attachmentType === 'TRIP_DOCUMENT'),
+                ];
+            } else if (isPurchase) {
+                checks = [
+                    atts.some(a => a.attachmentType === 'RECEIPT'),
+                    atts.some(a => a.attachmentType === 'DOCUMENT'),
+                ];
+                if (isEquipment) checks.push(atts.some(a => a.attachmentType === 'ESTIMATE'));
+            } else {
+                checks = [
+                    atts.some(a => a.attachmentType !== 'DOCUMENT'),
+                    atts.some(a => a.attachmentType === 'DOCUMENT'),
+                ];
+            }
+
+            const filled = checks.filter(Boolean).length;
+            const total  = checks.length;
+            if (filled === 0) {
+                missingCls = ' missing-all';
+                missingTitle = '첨부파일 전체 누락';
+            } else if (filled < total) {
+                missingCls = ' missing-partial';
+                missingTitle = '첨부파일 일부 누락';
+            }
+        }
+
         actionCell.innerHTML = `
-            ${isReceiptType ? `<button class="btn-icon attachment-modal-btn" title="첨부파일 관리" style="margin: 0 2px; display: inline-block;">
+            ${isReceiptType ? `<button class="btn-icon attachment-modal-btn${missingCls}" title="${missingTitle}" style="margin: 0 2px; display: inline-block;">
+                <i class="fas fa-paperclip"></i>
+            </button>` : ''}
+            ${isWeeklyReport ? `<button class="btn-icon weekly-pdf-btn" title="PDF 다운로드" style="margin: 0 2px; display: inline-block;">
                 <i class="fas fa-paperclip"></i>
             </button>` : ''}
             <button class="btn-icon view-btn" title="상세보기" style="margin: 0 2px; display: inline-block;">
@@ -772,6 +818,14 @@ document.addEventListener('DOMContentLoaded', function() {
             actionCell.querySelector('.attachment-modal-btn').addEventListener('click', (e) => {
                 e.stopPropagation();
                 openAttachmentModal(doc);
+            });
+        }
+
+        // 주간업무보고 PDF 모달 이벤트
+        if (isWeeklyReport) {
+            actionCell.querySelector('.weekly-pdf-btn').addEventListener('click', (e) => {
+                e.stopPropagation();
+                openWeeklyPdfModal(doc);
             });
         }
 
@@ -1078,6 +1132,13 @@ document.addEventListener('DOMContentLoaded', function() {
         pendingTripDocumentFiles = [];
         pendingDeleteIds = [];
         const modal = getAttachmentModal();
+
+        // 모달 헤더에 문서 타입명 표시
+        const typeNames = { 'C0403': '야근식대', 'C0404': '단독출장', 'C0405': '출장+회의', 'C0406': '회의록', 'C0407': '재료비', 'C0408': '장비비' };
+        const typeName = typeNames[doc.documentType] || '';
+        const headerH3 = modal.querySelector('.att-modal-header h3');
+        if (headerH3) headerH3.innerHTML = `<i class="fas fa-paperclip"></i> 첨부파일 관리 — ${typeName}`;
+
         renderModalContent(doc);
         modal.style.display = 'flex';
         // 저장 버튼 이벤트 (중복 방지: 교체)
@@ -1661,6 +1722,118 @@ document.addEventListener('DOMContentLoaded', function() {
     // 프로젝트 필터 초기값 설정
     if (projectSearchInput) {
         projectSearchInput.value = '전체 프로젝트';
+    }
+
+    // ============================================
+    // 주간업무보고 PDF 모달
+    // ============================================
+
+    let weeklyPdfModal = null;
+
+    function getWeeklyPdfModal() {
+        if (weeklyPdfModal) return weeklyPdfModal;
+
+        if (!document.getElementById('weeklyPdfModalStyle')) {
+            const style = document.createElement('style');
+            style.id = 'weeklyPdfModalStyle';
+            style.textContent = `
+                #weeklyPdfModal { font-family: inherit; }
+                .wpdf-modal-inner { background:#fff; border-radius:14px; width:460px; max-height:80vh; display:flex; flex-direction:column; box-shadow:0 20px 60px rgba(0,0,0,0.25); overflow:hidden; animation:wpdfIn .18s ease; }
+                @keyframes wpdfIn { from{opacity:0;transform:translateY(-10px) scale(.98);} to{opacity:1;transform:translateY(0) scale(1);} }
+                .wpdf-modal-header { padding:18px 20px 14px; border-bottom:1px solid #f0f0f0; display:flex; align-items:center; justify-content:space-between; }
+                .wpdf-modal-header h3 { margin:0; font-size:15px; font-weight:700; color:#1e293b; display:flex; align-items:center; gap:8px; }
+                .wpdf-modal-header h3 i { color:#7c3aed; }
+                .wpdf-close-btn { background:none; border:none; font-size:18px; color:#94a3b8; cursor:pointer; padding:2px 6px; border-radius:6px; transition:background .15s,color .15s; }
+                .wpdf-close-btn:hover { background:#f3f4f6; color:#374151; }
+                #weeklyPdfBody { padding:16px 20px; overflow-y:auto; flex:1; }
+                .wpdf-file-row { display:flex; align-items:center; gap:10px; padding:10px 12px; background:#fafafa; border:1px solid #e8edf2; border-radius:8px; margin-bottom:6px; transition:background .12s; cursor:pointer; }
+                .wpdf-file-row:hover { background:#e8f0fe; border-color:#93c5fd; }
+                .wpdf-file-row i.pdf-icon { color:#ef4444; font-size:16px; }
+                .wpdf-file-row span { flex:1; font-size:12px; color:#334155; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+                .wpdf-file-row .wpdf-size { font-size:11px; color:#94a3b8; white-space:nowrap; }
+                .wpdf-dl-btn { background:#f3e8ff; color:#7c3aed; border:none; border-radius:6px; padding:4px 10px; font-size:12px; cursor:pointer; text-decoration:none; white-space:nowrap; transition:background .12s; }
+                .wpdf-dl-btn:hover { background:#e9d5ff; }
+            `;
+            document.head.appendChild(style);
+        }
+
+        const modal = document.createElement('div');
+        modal.id = 'weeklyPdfModal';
+        modal.style.cssText = 'position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.45);display:none;align-items:center;justify-content:center;z-index:10000;backdrop-filter:blur(2px);';
+        modal.innerHTML = `
+            <div class="wpdf-modal-inner">
+                <div class="wpdf-modal-header">
+                    <h3><i class="fas fa-paperclip"></i> PDF — 프로젝트 주간업무보고</h3>
+                    <button class="wpdf-close-btn" id="weeklyPdfCloseBtn"><i class="fas fa-times"></i></button>
+                </div>
+                <div id="weeklyPdfBody"></div>
+            </div>
+        `;
+        document.body.appendChild(modal);
+        modal.addEventListener('click', (e) => { if (e.target === modal) closeWeeklyPdfModal(); });
+        modal.querySelector('#weeklyPdfCloseBtn').addEventListener('click', closeWeeklyPdfModal);
+        weeklyPdfModal = modal;
+        return modal;
+    }
+
+    function closeWeeklyPdfModal() {
+        if (weeklyPdfModal) weeklyPdfModal.style.display = 'none';
+    }
+
+    function fmtFileSize(bytes) {
+        if (!bytes) return '';
+        if (bytes < 1024) return bytes + ' B';
+        if (bytes < 1024 * 1024) return (bytes / 1024).toFixed(1) + ' KB';
+        return (bytes / (1024 * 1024)).toFixed(1) + ' MB';
+    }
+
+    async function openWeeklyPdfModal(doc) {
+        const modal = getWeeklyPdfModal();
+        document.getElementById('weeklyPdfBody').innerHTML = `
+            <div style="text-align:center;padding:20px 0;color:#64748b;font-size:13px;">
+                <i class="fas fa-spinner fa-spin" style="font-size:22px;margin-bottom:10px;display:block;color:#7c3aed;"></i>
+                불러오는 중...
+            </div>`;
+        modal.style.display = 'flex';
+
+        const docIdx = doc.sourceDocumentId || doc.idx;
+        try {
+            const res = await fetch(`/api/document/weekly-report/official-pdf/${docIdx}`);
+            if (!res.ok) throw new Error();
+            const pdfList = await res.json();
+
+            if (!pdfList || pdfList.length === 0) {
+                document.getElementById('weeklyPdfBody').innerHTML = `
+                    <div style="text-align:center;padding:28px 0;color:#94a3b8;font-size:13px;">
+                        <i class="fas fa-file-pdf" style="font-size:28px;display:block;margin-bottom:10px;"></i>
+                        생성된 PDF가 없습니다.
+                    </div>`;
+                return;
+            }
+
+            document.getElementById('weeklyPdfBody').innerHTML = pdfList.map(f => `
+                <div class="wpdf-file-row" data-url="/api/document/weekly-report/download/${f.idx}">
+                    <i class="fas fa-file-pdf pdf-icon"></i>
+                    <span>${f.fileName || 'weekly-report.pdf'}</span>
+                    <span class="wpdf-size">${fmtFileSize(f.fileSize)}</span>
+                    <a href="/api/document/weekly-report/download/${f.idx}" class="wpdf-dl-btn" onclick="event.stopPropagation();">
+                        <i class="fas fa-download"></i> 다운로드
+                    </a>
+                </div>
+            `).join('');
+
+            document.getElementById('weeklyPdfBody').querySelectorAll('.wpdf-file-row').forEach(row => {
+                row.addEventListener('click', () => {
+                    window.location.href = row.dataset.url;
+                });
+            });
+        } catch (_) {
+            document.getElementById('weeklyPdfBody').innerHTML = `
+                <div style="text-align:center;padding:28px 0;color:#ef4444;font-size:13px;">
+                    <i class="fas fa-exclamation-circle" style="font-size:24px;display:block;margin-bottom:8px;"></i>
+                    파일 정보를 불러오는 데 실패했습니다.
+                </div>`;
+        }
     }
 });
 

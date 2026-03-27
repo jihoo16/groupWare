@@ -490,6 +490,46 @@ div[title]:hover::after {
     color: white;
 }
 
+/* 첨부파일 누락 경고 뱃지 */
+.btn-icon.btn-attach.missing-all,
+.btn-icon.btn-attach.missing-partial,
+.btn-icon.attachment-modal-btn.missing-all,
+.btn-icon.attachment-modal-btn.missing-partial {
+    position: relative;
+}
+
+.btn-icon.btn-attach.missing-all::after,
+.btn-icon.btn-attach.missing-partial::after,
+.btn-icon.attachment-modal-btn.missing-all::after,
+.btn-icon.attachment-modal-btn.missing-partial::after {
+    content: '';
+    position: absolute;
+    top: 2px;
+    right: 2px;
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    border: 1.5px solid #fff;
+    animation: missingPulse 2s ease-in-out infinite;
+}
+
+/* 전체 누락 — 빨간불 */
+.btn-icon.btn-attach.missing-all::after,
+.btn-icon.attachment-modal-btn.missing-all::after {
+    background: #ef4444;
+}
+
+/* 일부 누락 — 주황불 */
+.btn-icon.btn-attach.missing-partial::after,
+.btn-icon.attachment-modal-btn.missing-partial::after {
+    background: #f59e0b;
+}
+
+@keyframes missingPulse {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.4; }
+}
+
 /* 상태 뱃지 */
 .status-badge {
     padding: 6px 12px;

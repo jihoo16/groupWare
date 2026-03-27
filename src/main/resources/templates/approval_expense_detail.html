@@ -180,6 +180,39 @@
                         </div><!-- /document-form -->
                     </div><!-- /document-form-wrapper -->
 
+                    <!-- 첨부파일 -->
+                    <div class="attachment-section" style="margin-top: 28px;">
+                        <h3 class="section-title"><i class="fas fa-paperclip"></i> 첨부파일</h3>
+                        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-top: 12px;">
+                            <!-- 영수증 -->
+                            <div>
+                                <div class="attach-sub-title"><i class="fas fa-receipt"></i> 영수증</div>
+                                <div class="file-upload-area" id="receiptUploadArea">
+                                    <input type="file" id="receiptInput" multiple hidden accept="image/*,.pdf">
+                                    <label for="receiptInput" class="file-upload-label">
+                                        <i class="fas fa-cloud-upload-alt"></i>
+                                        <span>파일을 선택하거나 드래그하세요</span>
+                                        <small>최대 50MB · 이미지, PDF</small>
+                                    </label>
+                                </div>
+                                <div class="file-list" id="receiptFileList"></div>
+                            </div>
+                            <!-- 서명완료 공식문서 -->
+                            <div>
+                                <div class="attach-sub-title"><i class="fas fa-file-signature"></i> 서명완료 공식문서</div>
+                                <div class="file-upload-area" id="signedDocUploadArea">
+                                    <input type="file" id="signedDocInput" multiple hidden accept="image/*,.pdf">
+                                    <label for="signedDocInput" class="file-upload-label">
+                                        <i class="fas fa-cloud-upload-alt"></i>
+                                        <span>파일을 선택하거나 드래그하세요</span>
+                                        <small>최대 50MB · 이미지, PDF</small>
+                                    </label>
+                                </div>
+                                <div class="file-list" id="signedDocFileList"></div>
+                            </div>
+                        </div>
+                    </div>
+
                 </div><!-- /editor-area -->
             </div><!-- /write-container -->
         </main>

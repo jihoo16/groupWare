@@ -14,6 +14,10 @@ button:focus, a:focus, div:focus { outline: none !important; box-shadow: none !i
    레이아웃
    ========================================== */
 
+.main-content {
+    background: #f0f2f5;
+}
+
 .write-container {
     padding: 20px;
     background: #f0f2f5;
@@ -656,4 +660,134 @@ button:focus, a:focus, div:focus { outline: none !important; box-shadow: none !i
         font-size: 9px !important;
         padding: 2px !important;
     }
+}
+
+
+/* ==========================================
+   첨부파일 섹션
+   ========================================== */
+
+.attachment-section {
+    background: #f8f9fa;
+    border: 2px solid #e8e8e8;
+    border-radius: 12px;
+    padding: 20px 20px 16px;
+}
+
+.attach-sub-title {
+    font-size: 13px;
+    font-weight: 600;
+    color: #475569;
+    margin-bottom: 10px;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.attach-sub-title i {
+    color: #667eea;
+}
+
+.file-upload-area {
+    border: 2px dashed #ddd;
+    border-radius: 10px;
+    padding: 18px 12px;
+    text-align: center;
+    cursor: pointer;
+    transition: border-color 0.2s, background 0.2s;
+    background: #fff;
+}
+
+.file-upload-area:hover {
+    border-color: #667eea;
+    background: #f5f7ff;
+}
+
+.file-upload-label {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 5px;
+    cursor: pointer;
+}
+
+.file-upload-label i {
+    font-size: 28px;
+    color: #667eea;
+}
+
+.file-upload-label span {
+    font-size: 12px;
+    font-weight: 500;
+    color: #64748b;
+}
+
+.file-upload-label small {
+    font-size: 10px;
+    color: #999;
+}
+
+.file-list {
+    margin-top: 10px;
+}
+
+.file-item {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 7px 10px;
+    background: #fff;
+    border-radius: 6px;
+    border: 1px solid #e2e8f0;
+    margin-bottom: 5px;
+}
+
+.file-item i {
+    font-size: 15px;
+    color: #667eea;
+}
+
+.file-item span {
+    flex: 1;
+    font-size: 12px;
+    color: #334155;
+    word-break: break-all;
+}
+
+.file-item .btn-download-file {
+    background: none;
+    border: none;
+    cursor: pointer;
+    color: #667eea;
+    padding: 3px 6px;
+    border-radius: 4px;
+    font-size: 13px;
+    transition: background 0.15s;
+}
+
+.file-item .btn-download-file:hover {
+    background: #f0f4ff;
+}
+
+.file-item .btn-remove-file {
+    background: none;
+    border: none;
+    cursor: pointer;
+    color: #94a3b8;
+    padding: 3px 6px;
+    border-radius: 4px;
+    font-size: 13px;
+    transition: color 0.15s;
+}
+
+.file-item .btn-remove-file:hover {
+    color: #d32f2f;
+}
+
+.file-item.uploading {
+    opacity: 0.6;
+}
+
+@media print {
+    .attachment-section { display: none !important; }
 }

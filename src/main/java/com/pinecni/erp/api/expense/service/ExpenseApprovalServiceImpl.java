@@ -2,27 +2,42 @@ package com.pinecni.erp.api.expense.service;
 
 import com.pinecni.erp.api.approval.repository.ApprovalDocumentRepository;
 import com.pinecni.erp.api.approval.service.DocumentSequenceService;
+import com.pinecni.erp.api.expense.dto.ExpenseApprovalAttachmentDTO;
 import com.pinecni.erp.api.expense.dto.ExpenseApprovalCreateDTO;
 import com.pinecni.erp.api.expense.dto.ExpenseDetailDTO;
+import com.pinecni.erp.api.expense.repository.ExpenseApprovalAttachmentRepository;
 import com.pinecni.erp.entity.ApprovalDocument;
 import com.pinecni.erp.entity.ExpenseApproval;
+import com.pinecni.erp.entity.ExpenseApprovalAttachment;
 import com.pinecni.erp.entity.ExpenseDetail;
 import com.pinecni.erp.api.expense.repository.ExpenseApprovalRepository;
 import com.pinecni.erp.api.expense.repository.ExpenseDetailRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.multipart.MultipartFile;
 import org.springframework.web.server.ResponseStatusException;
 
 import com.pinecni.erp.constant.CodeConstants;
+import java.io.File;
+import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.time.ZoneId;
+import java.time.format.DateTimeFormatter;
+import java.util.ArrayList;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.UUID;
 
 @Service
 @RequiredArgsConstructor
@@ -37,6 +52,13 @@ public class ExpenseApprovalServiceImpl implements ExpenseApprovalService {
     private final ExpenseDetailRepository expenseDetailRepository;
     private final ApprovalDocumentRepository approvalDocumentRepository;
     private final DocumentSequenceService documentSequenceService;
+    private final ExpenseApprovalAttachmentRepository attachmentRepository;
+
+    @Value("${file.base.dir}")
+    private String baseDir;
+
+    @Value("${file.storage.expense.pattern:documents/expense/{userId}/{year}}")
+    private String uploadPattern;
 
     @Override
     public ExpenseApproval createExpenseApproval(ExpenseApprovalCreateDTO createDTO) {
@@ -184,6 +206,9 @@ public class ExpenseApprovalServiceImpl implements ExpenseApprovalService {
             });
         }
 
+        // 첨부파일 소프트 딜리트
+        attachmentRepository.softDeleteByExpenseApprovalIdx(idx, loginUserIdx);
+
         log.info("지출승인서 삭제 완료 - idx: {}", idx);
     }
 
@@ -220,6 +245,126 @@ public class ExpenseApprovalServiceImpl implements ExpenseApprovalService {
             result.put("periodEnd", periodEnd.toString());
         }
         return result;
+    }
+
+    @Override
+    @Transactional
+    public List<ExpenseApprovalAttachmentDTO> saveAttachments(Long expenseApprovalIdx, MultipartFile[] files,
+                                                              String attachmentType, Long uploadUserIdx) {
+        log.debug("첨부파일 저장 - expenseApprovalIdx: {}, 파일 개수: {}, type: {}",
+                expenseApprovalIdx, files != null ? files.length : 0, attachmentType);
+
+        if (files == null || files.length == 0) return Collections.emptyList();
+
+        ExpenseApproval approval = expenseApprovalRepository.findById(expenseApprovalIdx)
+                .orElseThrow(() -> new IllegalArgumentException("지출승인서를 찾을 수 없습니다. idx: " + expenseApprovalIdx));
+
+        String year = String.valueOf(approval.getCreatedAt() != null
+                ? approval.getCreatedAt().getYear()
+                : LocalDateTime.now().getYear());
+        String relativePath = uploadPattern
+                .replace("{userId}", String.valueOf(approval.getUserIdx()))
+                .replace("{year}", year);
+        String fullUploadPath = baseDir + File.separator + relativePath.replace("/", File.separator);
+
+        try {
+            Files.createDirectories(Paths.get(fullUploadPath));
+        } catch (IOException e) {
+            throw new RuntimeException("업로드 디렉토리를 생성할 수 없습니다: " + fullUploadPath, e);
+        }
+
+        String month = approval.getCreatedAt() != null
+                ? approval.getCreatedAt().format(DateTimeFormatter.ofPattern("yyyyMM"))
+                : LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyyMM"));
+        String docTypeLabel = "DOCUMENT".equals(attachmentType) ? "공식문서" : "영수증";
+        String displayBase = "지출승인서_" + month + "_" + docTypeLabel;
+
+        long existingCount = attachmentRepository
+                .countByExpenseApprovalIdxAndAttachmentTypeAndDeletedFalse(expenseApprovalIdx, attachmentType);
+
+        List<ExpenseApprovalAttachmentDTO> saved = new ArrayList<>();
+
+        for (MultipartFile file : files) {
+            if (file.isEmpty()) continue;
+            try {
+                String original = file.getOriginalFilename();
+                if (original == null) original = "unnamed";
+                String ext = original.contains(".") ? original.substring(original.lastIndexOf('.')) : "";
+
+                long seq = existingCount + saved.size() + 1;
+                String displayFilename = displayBase + "_" + seq + ext;
+
+                String timestamp = LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyyMMddHHmmss"));
+                String uuid = UUID.randomUUID().toString().substring(0, 8);
+                String storedFilename = timestamp + "_" + uuid + ext;
+
+                Files.copy(file.getInputStream(), Paths.get(fullUploadPath, storedFilename));
+
+                ExpenseApprovalAttachment attachment = ExpenseApprovalAttachment.builder()
+                        .expenseApprovalIdx(expenseApprovalIdx)
+                        .originalFilename(displayFilename)
+                        .storedFilename(storedFilename)
+                        .filePath(relativePath)
+                        .fileSize(file.getSize())
+                        .fileType(file.getContentType())
+                        .attachmentType(attachmentType)
+                        .uploadUserIdx(uploadUserIdx)
+                        .deleted(false)
+                        .build();
+
+                ExpenseApprovalAttachment result = attachmentRepository.save(attachment);
+                saved.add(toAttachmentDTO(result));
+
+                log.debug("첨부파일 저장 완료 - 표시명: {}, 저장명: {}", displayFilename, storedFilename);
+            } catch (IOException e) {
+                throw new RuntimeException("파일 저장 중 오류가 발생했습니다: " + file.getOriginalFilename(), e);
+            }
+        }
+        return saved;
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public List<ExpenseApprovalAttachmentDTO> getAttachments(Long expenseApprovalIdx) {
+        return attachmentRepository
+                .findByExpenseApprovalIdxAndDeletedFalseOrderByIdxAsc(expenseApprovalIdx)
+                .stream().map(this::toAttachmentDTO).toList();
+    }
+
+    @Override
+    @Transactional
+    public void deleteAttachment(Long attachmentIdx, Long deletedUserIdx) {
+        ExpenseApprovalAttachment attachment = attachmentRepository.findById(attachmentIdx)
+                .orElseThrow(() -> new IllegalArgumentException("첨부파일을 찾을 수 없습니다. idx: " + attachmentIdx));
+        attachment.setDeleted(true);
+        attachment.setDeletedAt(LocalDateTime.now(ZoneId.of("Asia/Seoul")));
+        attachment.setDeletedUserIdx(deletedUserIdx);
+        attachmentRepository.save(attachment);
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public ExpenseApprovalAttachmentDTO getAttachmentById(Long attachmentIdx) {
+        return attachmentRepository.findById(attachmentIdx)
+                .map(this::toAttachmentDTO)
+                .orElseThrow(() -> new IllegalArgumentException("첨부파일을 찾을 수 없습니다. idx: " + attachmentIdx));
+    }
+
+    private ExpenseApprovalAttachmentDTO toAttachmentDTO(ExpenseApprovalAttachment e) {
+        return ExpenseApprovalAttachmentDTO.builder()
+                .idx(e.getIdx())
+                .expenseApprovalIdx(e.getExpenseApprovalIdx())
+                .originalFilename(e.getOriginalFilename())
+                .storedFilename(e.getStoredFilename())
+                .filePath(e.getFilePath())
+                .fileSize(e.getFileSize())
+                .fileType(e.getFileType())
+                .attachmentType(e.getAttachmentType())
+                .uploadUserIdx(e.getUploadUserIdx())
+                .deleted(e.getDeleted())
+                .createdAt(e.getCreatedAt())
+                .updatedAt(e.getUpdatedAt())
+                .build();
     }
 
     // ── private helpers ────────────────────────────────────────────────────

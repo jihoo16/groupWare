@@ -21,4 +21,7 @@ public class ExpenseApprovalCreateDTO {
     /** 지출 항목 목록 (최소 1건 필수) */
     @Builder.Default
     private List<ExpenseDetailDTO> expenseDetails = new ArrayList<>();
+
+    /** 수정 시 삭제할 첨부파일 IDX 목록 */
+    private List<Long> deletedAttachmentIds;
 }

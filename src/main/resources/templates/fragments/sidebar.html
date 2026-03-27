@@ -3,6 +3,10 @@
 <body>
     <!-- 좌측 네비게이션 바 -->
     <nav class="sidebar" th:fragment="sidebar(activeMenu)">
+        <!-- 환경 표시 배너 (DEV/LOCAL일 때 표시) -->
+        <div class="env-banner env-dev" th:if="${@environment.getProperty('app.env') == 'DEV'}">개발서버 (DEV)</div>
+        <div class="env-banner env-local" th:if="${@environment.getProperty('app.env') == 'LOCAL'}">로컬테스트 (LOCAL)</div>
+
         <a href="/home" class="logo">
             <i class="fas fa-building"></i>
             <span class="logo-text">ERP</span>
