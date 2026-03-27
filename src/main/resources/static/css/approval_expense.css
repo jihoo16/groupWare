@@ -2143,7 +2143,8 @@ div h2{
     .btn-print,
     .input-area,
     .document-preview-toggle,
-    .monthly-notice {
+    .monthly-notice,
+    .attachment-section {
         display: none !important;
     }
 

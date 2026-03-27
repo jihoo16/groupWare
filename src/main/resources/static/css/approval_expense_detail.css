@@ -468,6 +468,31 @@ button:focus, a:focus, div:focus { outline: none !important; box-shadow: none !i
 }
 
 /* ==========================================
+   공식 문서 내역 — 항목 수 기반 font 자동 축소
+   ========================================== */
+
+/* 16~22개: compact */
+#previewExpenseTable.items-compact thead th,
+#previewExpenseTable.items-compact tbody td {
+    font-size: 11px;
+    padding: 5px 4px;
+}
+
+/* 23~30개: tight */
+#previewExpenseTable.items-tight thead th,
+#previewExpenseTable.items-tight tbody td {
+    font-size: 10px;
+    padding: 4px 3px;
+}
+
+/* 31개+: mini */
+#previewExpenseTable.items-mini thead th,
+#previewExpenseTable.items-mini tbody td {
+    font-size: 9px;
+    padding: 3px;
+}
+
+/* ==========================================
    인쇄
    ========================================== */
 
@@ -611,5 +636,24 @@ button:focus, a:focus, div:focus { outline: none !important; box-shadow: none !i
     * {
         page-break-after: avoid !important;
         page-break-before: avoid !important;
+    }
+
+    /* 항목 수 기반 font 축소 — 인쇄 오버라이드 */
+    #previewExpenseTable.items-compact thead th,
+    #previewExpenseTable.items-compact tbody td {
+        font-size: 11px !important;
+        padding: 3px 4px !important;
+    }
+
+    #previewExpenseTable.items-tight thead th,
+    #previewExpenseTable.items-tight tbody td {
+        font-size: 10px !important;
+        padding: 2px 3px !important;
+    }
+
+    #previewExpenseTable.items-mini thead th,
+    #previewExpenseTable.items-mini tbody td {
+        font-size: 9px !important;
+        padding: 2px !important;
     }
 }

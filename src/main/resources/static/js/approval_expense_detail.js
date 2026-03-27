@@ -172,6 +172,16 @@ document.addEventListener('DOMContentLoaded', async function () {
     document.getElementById('previewCash').textContent = '₩ ' + cashTotal.toLocaleString();
     document.getElementById('previewCard').textContent = '₩ ' + cardTotal.toLocaleString();
 
+    // 항목 수에 따라 공식 문서 내역 테이블 font 크기 자동 조절
+    const previewTable = document.getElementById('previewExpenseTable');
+    if (previewTable) {
+        const count = details.length;
+        previewTable.classList.remove('items-compact', 'items-tight', 'items-mini');
+        if (count >= 31) previewTable.classList.add('items-mini');
+        else if (count >= 23) previewTable.classList.add('items-tight');
+        else if (count >= 16) previewTable.classList.add('items-compact');
+    }
+
     // ── 버튼 표시 (API 200 = 본인 문서 확인됨) ───────────────────
     if (printBtn)  printBtn.style.display  = '';
     if (editBtn)   editBtn.style.display   = '';

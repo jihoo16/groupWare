@@ -449,6 +449,192 @@ document.addEventListener('DOMContentLoaded', function() {
     });
 
     // ============================================
+    // 첨부파일 모달
+    // ============================================
+
+    let attachModal = null;
+
+    function getAttachModal() {
+        if (attachModal) return attachModal;
+
+        const el = document.createElement('div');
+        el.id = 'approvalAttachModal';
+        el.style.cssText = 'position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.45);display:none;align-items:center;justify-content:center;z-index:10000;';
+        el.innerHTML = `
+            <div style="background:#fff;border-radius:14px;width:460px;max-height:80vh;display:flex;flex-direction:column;box-shadow:0 20px 60px rgba(0,0,0,0.25);overflow:hidden;">
+                <div style="padding:18px 20px 14px;border-bottom:1px solid #f0f0f0;display:flex;align-items:center;justify-content:space-between;">
+                    <h3 id="attachModalTitle" style="margin:0;font-size:15px;font-weight:700;color:#1e293b;display:flex;align-items:center;gap:8px;">
+                        <i class="fas fa-paperclip" style="color:#7c3aed;"></i> 첨부파일
+                    </h3>
+                    <button id="attachModalClose" style="background:none;border:none;font-size:18px;color:#94a3b8;cursor:pointer;padding:2px 6px;">
+                        <i class="fas fa-times"></i>
+                    </button>
+                </div>
+                <div id="attachModalBody" style="padding:16px 20px;overflow-y:auto;flex:1;"></div>
+            </div>
+        `;
+        document.body.appendChild(el);
+
+        el.addEventListener('click', function(e) {
+            if (e.target === el) closeAttachModal();
+        });
+        el.querySelector('#attachModalClose').addEventListener('click', closeAttachModal);
+
+        attachModal = el;
+        return el;
+    }
+
+    function openAttachModal(title, bodyHtml) {
+        const modal = getAttachModal();
+        modal.querySelector('#attachModalTitle').innerHTML = `<i class="fas fa-paperclip" style="color:#7c3aed;"></i> ${title}`;
+        modal.querySelector('#attachModalBody').innerHTML = bodyHtml;
+        modal.style.display = 'flex';
+    }
+
+    function closeAttachModal() {
+        if (attachModal) attachModal.style.display = 'none';
+    }
+
+    function formatFileSize(bytes) {
+        if (!bytes) return '';
+        if (bytes < 1024) return bytes + ' B';
+        if (bytes < 1024 * 1024) return (bytes / 1024).toFixed(1) + ' KB';
+        return (bytes / (1024 * 1024)).toFixed(1) + ' MB';
+    }
+
+    // 지출승인서 paperclip → 첨부파일 모달
+    document.addEventListener('click', async function(e) {
+        const btn = e.target.closest('.btn-expense-attach');
+        if (!btn) return;
+        e.stopPropagation();
+        const id = btn.getAttribute('data-id');
+
+        openAttachModal('첨부파일 — 지출승인서', `
+            <div style="text-align:center;padding:20px 0;color:#64748b;font-size:13px;">
+                <i class="fas fa-spinner fa-spin" style="font-size:22px;margin-bottom:10px;display:block;color:#7c3aed;"></i>
+                불러오는 중...
+            </div>
+        `);
+
+        try {
+            const res = await fetch(`/api/approval/expense/${id}/attachments`);
+            if (res.status === 404 || res.status === 204) {
+                renderExpenseAttachModal(id, { receiptFiles: [], signedDocFiles: [] });
+                return;
+            }
+            if (!res.ok) throw new Error();
+            const data = await res.json();
+            renderExpenseAttachModal(id, data);
+        } catch (_) {
+            renderExpenseAttachModal(id, null);
+        }
+    });
+
+    function renderExpenseAttachModal(id, data) {
+        const receiptFiles  = data?.receiptFiles  || [];
+        const signedFiles   = data?.signedDocFiles || [];
+        const total = receiptFiles.length + signedFiles.length;
+
+        if (total === 0) {
+            openAttachModal('첨부파일 — 지출승인서', `
+                <div style="text-align:center;padding:28px 0;color:#94a3b8;font-size:13px;">
+                    <i class="fas fa-paperclip" style="font-size:28px;display:block;margin-bottom:10px;"></i>
+                    첨부된 파일이 없습니다.
+                </div>
+                <div style="text-align:center;margin-top:4px;">
+                    <a href="/approval/expense/detail?idx=${id}" style="font-size:12px;color:#7c3aed;text-decoration:none;">
+                        <i class="fas fa-external-link-alt"></i> 상세페이지에서 파일 업로드
+                    </a>
+                </div>
+            `);
+            return;
+        }
+
+        function fileRow(file) {
+            const icon = /\.(jpg|jpeg|png|gif|webp)$/i.test(file.originalFileName || file.name)
+                ? 'fa-file-image' : /\.pdf$/i.test(file.originalFileName || file.name)
+                ? 'fa-file-pdf' : 'fa-file';
+            const name = file.originalFileName || file.name || '-';
+            const size = formatFileSize(file.fileSize);
+            const downloadBtn = file.idx
+                ? `<a href="/api/approval/expense/attachments/${file.idx}/download" style="color:#7c3aed;font-size:13px;padding:3px 5px;" title="다운로드"><i class="fas fa-download"></i></a>`
+                : '';
+            return `
+                <div style="display:flex;align-items:center;gap:10px;padding:8px 10px;background:#fafafa;border:1px solid #e8edf2;border-radius:8px;margin-bottom:6px;">
+                    <i class="fas ${icon}" style="color:#7c3aed;font-size:15px;"></i>
+                    <span style="flex:1;font-size:12px;color:#334155;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${name}</span>
+                    <span style="font-size:11px;color:#94a3b8;white-space:nowrap;">${size}</span>
+                    ${downloadBtn}
+                </div>
+            `;
+        }
+
+        let html = '';
+        if (receiptFiles.length) {
+            html += `<p style="font-size:12px;font-weight:600;color:#475569;margin:0 0 6px;">영수증 (${receiptFiles.length})</p>`;
+            html += receiptFiles.map(fileRow).join('');
+        }
+        if (signedFiles.length) {
+            html += `<p style="font-size:12px;font-weight:600;color:#475569;margin:${receiptFiles.length ? '12px' : '0'} 0 6px;">서명완료 공식문서 (${signedFiles.length})</p>`;
+            html += signedFiles.map(fileRow).join('');
+        }
+
+        openAttachModal('첨부파일 — 지출승인서', html);
+    }
+
+    // 연차신청서 paperclip → PDF 목록 모달
+    document.addEventListener('click', async function(e) {
+        const btn = e.target.closest('.btn-pdf-download');
+        if (!btn) return;
+        e.stopPropagation();
+        const id = btn.getAttribute('data-id');
+
+        openAttachModal('연차신청서 PDF', `
+            <div style="text-align:center;padding:20px 0;color:#64748b;font-size:13px;">
+                <i class="fas fa-spinner fa-spin" style="font-size:22px;margin-bottom:10px;display:block;color:#7c3aed;"></i>
+                불러오는 중...
+            </div>
+        `);
+
+        try {
+            const res = await fetch(`/api/vacation/detail?documentIdx=${id}`);
+            if (!res.ok) throw new Error();
+            const detail = await res.json();
+            const attachments = detail.attachments || [];
+
+            if (attachments.length === 0) {
+                openAttachModal('연차신청서 PDF', `
+                    <div style="text-align:center;padding:28px 0;color:#94a3b8;font-size:13px;">
+                        <i class="fas fa-file-pdf" style="font-size:28px;display:block;margin-bottom:10px;"></i>
+                        생성된 PDF가 없습니다.
+                    </div>
+                `);
+                return;
+            }
+
+            const rows = attachments.map(f => `
+                <div style="display:flex;align-items:center;gap:10px;padding:10px 12px;background:#fafafa;border:1px solid #e8edf2;border-radius:8px;margin-bottom:6px;">
+                    <i class="fas fa-file-pdf" style="color:#ef4444;font-size:16px;"></i>
+                    <span style="flex:1;font-size:12px;color:#334155;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${f.originalFileName || 'vacation.pdf'}</span>
+                    <span style="font-size:11px;color:#94a3b8;white-space:nowrap;">${formatFileSize(f.fileSize)}</span>
+                    <a href="/api/vacation/download/${f.idx}" style="background:#f3e8ff;color:#7c3aed;border:none;border-radius:6px;padding:4px 10px;font-size:12px;cursor:pointer;text-decoration:none;white-space:nowrap;">
+                        <i class="fas fa-download"></i> 다운로드
+                    </a>
+                </div>
+            `).join('');
+
+            openAttachModal('연차신청서 PDF', rows);
+        } catch (_) {
+            openAttachModal('연차신청서 PDF', `
+                <div style="text-align:center;padding:28px 0;color:#ef4444;font-size:13px;">
+                    <i class="fas fa-exclamation-circle" style="font-size:24px;display:block;margin-bottom:8px;"></i>
+                    파일 정보를 불러오는 데 실패했습니다.
+                </div>
+            `);
+        }
+    });
+
+    // ============================================
     // API: approval_documents 통합 조회
     // ============================================
     async function loadAllDocuments() {
@@ -569,6 +755,13 @@ document.addEventListener('DOMContentLoaded', function() {
 
             const icon = getIconFromDocumentType(doc.documentType);
 
+            const docId = doc.sourceDocumentId || doc.idx;
+            const attachBtn = (category === 'vacation')
+                ? `<button class="btn-icon btn-attach btn-pdf-download" data-id="${docId}" title="PDF 다운로드"><i class="fas fa-paperclip"></i></button>`
+                : (category === 'expense')
+                ? `<button class="btn-icon btn-attach btn-expense-attach" data-id="${docId}" title="첨부파일"><i class="fas fa-paperclip"></i></button>`
+                : '';
+
             tr.innerHTML = `
                 <td>
                     <span class="doc-type">
@@ -585,7 +778,8 @@ document.addEventListener('DOMContentLoaded', function() {
                 <td>${formattedDate}</td>
                 <td>
                     <div class="table-actions">
-                        <button class="btn-icon btn-view" data-id="${doc.sourceDocumentId || doc.idx}" data-type="${category}">
+                        ${attachBtn}
+                        <button class="btn-icon btn-view" data-id="${docId}" data-type="${category}">
                             <i class="fas fa-eye"></i>
                         </button>
                     </div>

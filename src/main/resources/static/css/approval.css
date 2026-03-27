@@ -478,6 +478,18 @@ div[title]:hover::after {
     color: white;
 }
 
+.btn-icon.btn-attach,
+.btn-icon.attachment-modal-btn {
+    background: #f3e8ff;
+    color: #7c3aed;
+}
+
+.btn-icon.btn-attach:hover,
+.btn-icon.attachment-modal-btn:hover {
+    background: #7c3aed;
+    color: white;
+}
+
 /* 상태 뱃지 */
 .status-badge {
     padding: 6px 12px;

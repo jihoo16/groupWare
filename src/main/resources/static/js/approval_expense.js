@@ -2576,4 +2576,88 @@ document.addEventListener('DOMContentLoaded', async function() {
 
     // 페이지 로드 시 초기 검증
     setTimeout(validateRequiredFields, 300);
+
+    // ============================================
+    // 첨부파일 업로드 (영수증 / 서명완료 공식문서)
+    // ============================================
+
+    const MAX_FILE_SIZE = 50 * 1024 * 1024; // 50MB
+
+    let receiptFiles = [];
+    let signedDocFiles = [];
+
+    function getFileIcon(name) {
+        if (/\.(jpg|jpeg|png|gif|webp)$/i.test(name)) return 'fa-file-image';
+        if (/\.pdf$/i.test(name)) return 'fa-file-pdf';
+        return 'fa-file';
+    }
+
+    function setupUpload(inputId, areaId, listId, filesArr, rerender) {
+        const inputEl = document.getElementById(inputId);
+        const areaEl  = document.getElementById(areaId);
+        const listEl  = document.getElementById(listId);
+        if (!inputEl || !areaEl || !listEl) return;
+
+        function addFiles(files) {
+            Array.from(files).forEach(file => {
+                if (file.size > MAX_FILE_SIZE) {
+                    showWarning(`파일 크기가 50MB를 초과합니다: ${file.name}`);
+                    return;
+                }
+                filesArr.push(file);
+            });
+            rerender();
+        }
+
+        inputEl.addEventListener('change', function() {
+            addFiles(this.files);
+            this.value = '';
+        });
+
+        areaEl.addEventListener('dragover', function(e) {
+            e.preventDefault();
+            this.style.borderColor = '#667eea';
+            this.style.background = '#f5f7ff';
+        });
+
+        areaEl.addEventListener('dragleave', function(e) {
+            if (!this.contains(e.relatedTarget)) {
+                this.style.borderColor = '';
+                this.style.background = '';
+            }
+        });
+
+        areaEl.addEventListener('drop', function(e) {
+            e.preventDefault();
+            this.style.borderColor = '';
+            this.style.background = '';
+            addFiles(e.dataTransfer.files);
+        });
+    }
+
+    function renderUploadList(listId, filesArr, rerender) {
+        const listEl = document.getElementById(listId);
+        if (!listEl) return;
+        listEl.innerHTML = '';
+        filesArr.forEach((file, index) => {
+            const item = document.createElement('div');
+            item.className = 'file-item';
+            item.innerHTML = `
+                <i class="fas ${getFileIcon(file.name)}"></i>
+                <span>${file.name} <small style="color:#94a3b8;">(${(file.size / 1024).toFixed(1)} KB)</small></span>
+                <button type="button" class="btn-remove-file" title="삭제"><i class="fas fa-times"></i></button>
+            `;
+            item.querySelector('.btn-remove-file').addEventListener('click', () => {
+                filesArr.splice(index, 1);
+                rerender();
+            });
+            listEl.appendChild(item);
+        });
+    }
+
+    function rerenderReceipt()   { renderUploadList('receiptFileList',   receiptFiles,   rerenderReceipt); }
+    function rerenderSignedDoc() { renderUploadList('signedDocFileList', signedDocFiles, rerenderSignedDoc); }
+
+    setupUpload('receiptInput',   'receiptUploadArea',   'receiptFileList',   receiptFiles,   rerenderReceipt);
+    setupUpload('signedDocInput', 'signedDocUploadArea', 'signedDocFileList', signedDocFiles, rerenderSignedDoc);
 });

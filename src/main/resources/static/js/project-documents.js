@@ -399,6 +399,10 @@ document.addEventListener('DOMContentLoaded', function() {
                     valueA = a.documentTypeName || a.documentType || '';
                     valueB = b.documentTypeName || b.documentType || '';
                     break;
+                case 'project':
+                    valueA = a.projectName || '';
+                    valueB = b.projectName || '';
+                    break;
                 case 'title':
                     valueA = a.title || '';
                     valueB = b.title || '';
@@ -855,7 +859,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 align-items: center;
                 gap: 8px;
             }
-            .att-modal-header h3 i { color: #8b8b8b; font-size: 14px; }
+            .att-modal-header h3 i { color: #7c3aed; font-size: 14px; }
             .att-close-btn {
                 background: none;
                 border: none;
@@ -925,7 +929,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 font-size: 12px;
                 transition: background .12s, border-color .12s, color .12s;
             }
-            .att-dl-btn:hover { background: #f0f9ff; border-color: #7dd3fc; color: #0284c7; }
+            .att-dl-btn:hover { background: #f5f3ff; border-color: #c4b5fd; color: #7c3aed; }
             .att-del-btn {
                 flex-shrink: 0;
                 background: none;
@@ -952,10 +956,10 @@ document.addEventListener('DOMContentLoaded', function() {
                 position: relative;
             }
             .att-drop-zone:hover, .att-drop-zone.drag-over {
-                border-color: #2563eb;
-                background: #eff6ff;
+                border-color: #7c3aed;
+                background: #f5f3ff;
             }
-            .att-drop-zone.drag-over .att-drop-icon { color: #2563eb; }
+            .att-drop-zone.drag-over .att-drop-icon { color: #7c3aed; }
             .att-drop-zone input[type=file] {
                 position: absolute;
                 inset: 0;
@@ -1013,7 +1017,7 @@ document.addEventListener('DOMContentLoaded', function() {
             .att-btn-cancel:hover { background: #e9ecef; }
             .att-btn-save {
                 padding: 8px 22px;
-                background: #2563eb;
+                background: #7c3aed;
                 color: #fff;
                 border: none;
                 border-radius: 8px;
@@ -1022,8 +1026,8 @@ document.addEventListener('DOMContentLoaded', function() {
                 font-weight: 600;
                 transition: background .12s;
             }
-            .att-btn-save:hover { background: #1d4ed8; }
-            .att-btn-save:disabled { background: #93c5fd; cursor: not-allowed; }
+            .att-btn-save:hover { background: #6d28d9; }
+            .att-btn-save:disabled { background: #c4b5fd; cursor: not-allowed; }
         `;
         document.head.appendChild(style);
 
