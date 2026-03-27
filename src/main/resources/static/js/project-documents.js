@@ -630,19 +630,7 @@ document.addEventListener('DOMContentLoaded', function() {
         const purpose = doc.purpose || '';
         const date = fmtDate(doc.eventDate);
 
-        const TYPE_TAG_CONFIG = {
-            'C0406': { label: '회의록',    cls: 'tag-meeting' },
-            'C0404': { label: '단독출장',  cls: 'tag-trip' },
-            'C0405': { label: '출장+회의', cls: 'tag-trip-meeting' },
-            'C0407': { label: '재료비',    cls: 'tag-material' },
-            'C0408': { label: '장비비',    cls: 'tag-equipment' },
-            'C0403': { label: '야근식대',  cls: 'tag-overtime' },
-        };
-
-        const tagCfg = TYPE_TAG_CONFIG[type];
-        const tag = tagCfg ? `<span class="doc-type-tag ${tagCfg.cls}">${tagCfg.label}</span>` : '';
-
-        let text;
+let text;
         if (type === 'C0406') {
             text = [purpose, date].filter(Boolean).join(' - ');
         } else if (type === 'C0404') {
@@ -657,7 +645,7 @@ document.addEventListener('DOMContentLoaded', function() {
             text = doc.title || '-';
         }
 
-        return `${tag}<span class="title-text" title="${text}">${text}</span>`;
+        return `<span class="title-text" title="${text}">${text}</span>`;
     }
 
     // 문서 행 생성
