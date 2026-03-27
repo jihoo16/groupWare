@@ -292,6 +292,11 @@ public class ApprovalDocumentServiceImpl implements ApprovalDocumentService {
                 if (purchase.getApprovalDate() != null) {
                     dto.setEventDate(purchase.getApprovalDate());
                 }
+                String purposeText = purchase.getDocumentContent();
+                if (purposeText == null || purposeText.isBlank()) {
+                    purposeText = purchase.getDocumentTitle();
+                }
+                dto.setPurpose(purposeText);
                 dto.setAttachments(buildPurchaseAttachments(purchase.getIdx()));
             });
         } else if (CodeConstants.DocumentType.EXPENSE_APPROVAL.getCode().equals(documentType)) {
@@ -779,7 +784,11 @@ public class ApprovalDocumentServiceImpl implements ApprovalDocumentService {
                 .eventDate(purchase.getApprovalDate())
                 .build();
 
-        dto.setPurpose(purchase.getDocumentContent());
+        String purposeText = purchase.getDocumentContent();
+        if (purposeText == null || purposeText.isBlank()) {
+            purposeText = purchase.getDocumentTitle();
+        }
+        dto.setPurpose(purposeText);
         dto.setAttachments(buildPurchaseAttachments(purchase.getIdx()));
 
         if (purchase.getProjectIdx() != null) {
