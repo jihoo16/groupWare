@@ -18,7 +18,7 @@ public class ExpenseRequisitionItemDTO {
     private String itemDate;            // "yyyy-MM-dd"
     private String itemDesc;            // 적요
     private BigDecimal amount;          // 금액
-    private String vendor;              // 상대처
+    private String vendor;              // 상호
     private String remark;              // 비고
     private Integer sortOrder;          // 화면 표시 순서 (0-based)
 }

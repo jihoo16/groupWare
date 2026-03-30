@@ -130,52 +130,43 @@ document.addEventListener('DOMContentLoaded', function() {
         const container = document.getElementById('requisitionItemsContainer');
         const item = document.createElement('div');
         item.className = 'expense-item';
+
+        // 이전 항목의 날짜를 새 항목에 복사
+        const allItems = container.querySelectorAll('.expense-item');
+        const prevItem = allItems[allItems.length - 1];
+        const prevDate = prevItem?.querySelector('.date-input')?.value || todayStr();
+
         item.innerHTML = `
-            <div class="expense-item-header">
-                <span class="expense-item-number">${itemCount}</span>
-                <button type="button" class="btn-remove-item" onclick="removeRequisitionItem(this)">
-                    <i class="fas fa-times"></i>
-                </button>
-            </div>
+            <span class="expense-item-number">${itemCount}</span>
             <div class="expense-item-body">
                 <div class="form-row">
-                    <div class="form-group" style="flex: 0 0 160px;">
+                    <div class="form-group" style="flex: 0 0 180px;">
                         <label><i class="fas fa-calendar-day"></i> 날짜 <span class="required-mark">*</span></label>
-                        <input type="text" class="form-input date-input req-date-picker" value="${todayStr()}" readonly>
+                        <input type="text" class="form-input date-input req-date-picker" value="${prevDate}" readonly>
                     </div>
                     <div class="form-group" style="flex: 1;">
                         <label><i class="fas fa-edit"></i> 적요 <span class="required-mark">*</span></label>
-                        <input type="text" class="form-input desc-input" placeholder="내용 입력">
+                        <input type="text" class="form-input description-input" placeholder="지출 예정 내역 입력">
                     </div>
                 </div>
                 <div class="form-row">
                     <div class="form-group" style="flex: 1;">
+                        <label><i class="fas fa-store"></i> 상호</label>
+                        <input type="text" class="form-input shop-input" placeholder="상호명 입력">
+                    </div>
+                    <div class="form-group" style="flex: 0 0 180px;">
                         <label><i class="fas fa-won-sign"></i> 금액 <span class="required-mark">*</span></label>
                         <input type="text" class="form-input amount-input" placeholder="금액 입력" inputmode="numeric">
                     </div>
-                    <div class="form-group" style="flex: 0 0 120px;">
-                        <label><i class="fas fa-percent"></i> 세액</label>
-                        <input type="text" class="form-input tax-input" placeholder="세액 입력" inputmode="numeric">
-                    </div>
-                    <div class="form-group" style="flex: 0 0 120px;">
-                        <label><i class="fas fa-tags"></i> 과세구분</label>
-                        <select class="form-input tax-type-select">
-                            <option value="">선택</option>
-                            <option value="과세">과세</option>
-                            <option value="비과세">비과세</option>
-                            <option value="면세">면세</option>
-                        </select>
-                    </div>
-                    <div class="form-group" style="flex: 1;">
-                        <label><i class="fas fa-store"></i> 상대처</label>
-                        <input type="text" class="form-input vendor-input" placeholder="상대처 입력">
-                    </div>
-                    <div class="form-group" style="flex: 0 0 120px;">
+                    <div class="form-group" style="flex: 0 0 150px;">
                         <label><i class="fas fa-sticky-note"></i> 비고</label>
                         <input type="text" class="form-input note-input" placeholder="">
                     </div>
                 </div>
             </div>
+            <button type="button" class="btn-remove-item" onclick="removeRequisitionItem(this)">
+                <i class="fas fa-times"></i>
+            </button>
         `;
         container.appendChild(item);
         bindItemEvents(item);
@@ -220,22 +211,12 @@ document.addEventListener('DOMContentLoaded', function() {
         });
 
         // 나머지 텍스트 필드 → 미리보기 갱신 + 검증
-        ['desc-input', 'vendor-input', 'note-input'].forEach(cls => {
+        ['description-input', 'shop-input', 'note-input'].forEach(cls => {
             item.querySelector(`.${cls}`)?.addEventListener('input', function() {
                 updatePreview();
                 validateRequiredFields();
             });
         });
-
-        // 세액 — 숫자/콤마 포맷
-        item.querySelector('.tax-input')?.addEventListener('input', function() {
-            const raw = this.value.replace(/[^0-9]/g, '');
-            this.value = raw ? Number(raw).toLocaleString('ko-KR') : '';
-            updatePreview();
-        });
-
-        // 과세구분
-        item.querySelector('.tax-type-select')?.addEventListener('change', updatePreview);
 
         // 날짜 변경 시 검증
         item.querySelector('.req-date-picker')?.addEventListener('change', validateRequiredFields);
@@ -307,9 +288,9 @@ document.addEventListener('DOMContentLoaded', function() {
         document.querySelectorAll('.expense-item').forEach(item => {
             const rawDate = item.querySelector('.req-date-picker')?.value || '';
             const date = rawDate ? rawDate.slice(5).replace('-', '/') : ''; // MM/DD 표시
-            const desc   = item.querySelector('.desc-input')?.value || '';
+            const desc   = item.querySelector('.description-input')?.value || '';
+            const shop   = item.querySelector('.shop-input')?.value || '';
             const amtRaw = (item.querySelector('.amount-input')?.value || '').replace(/,/g, '');
-            const vendor = item.querySelector('.vendor-input')?.value || '';
             const note   = item.querySelector('.note-input')?.value || '';
             const amt    = Number(amtRaw) || 0;
             totalAmount += amt;
@@ -317,8 +298,8 @@ document.addEventListener('DOMContentLoaded', function() {
             rows += `<tr>
                 <td>${date}</td>
                 <td style="text-align:left;">${desc}</td>
+                <td>${shop}</td>
                 <td style="text-align:right;">${amt ? '₩ ' + amt.toLocaleString('ko-KR') : ''}</td>
-                <td>${vendor}</td>
                 <td>${note}</td>
             </tr>`;
         });
@@ -365,15 +346,12 @@ document.addEventListener('DOMContentLoaded', function() {
         let sortOrder = 0;
         document.querySelectorAll('.expense-item').forEach(item => {
             const itemDate = item.querySelector('.req-date-picker')?.value || null;
-            const itemDesc = item.querySelector('.desc-input')?.value?.trim() || '';
+            const itemDesc = item.querySelector('.description-input')?.value?.trim() || '';
             const amtRaw = (item.querySelector('.amount-input')?.value || '').replace(/,/g, '');
             const amount = amtRaw ? parseFloat(amtRaw) : null;
-            const taxRaw = (item.querySelector('.tax-input')?.value || '').replace(/,/g, '');
-            const taxAmount = taxRaw ? parseFloat(taxRaw) : null;
-            const taxType = item.querySelector('.tax-type-select')?.value || '';
-            const vendor = item.querySelector('.vendor-input')?.value?.trim() || '';
+            const vendor = item.querySelector('.shop-input')?.value?.trim() || '';
             const remark = item.querySelector('.note-input')?.value?.trim() || '';
-            items.push({ itemDate: itemDate || null, itemDesc, amount, taxAmount, taxType, vendor, remark, sortOrder: sortOrder++ });
+            items.push({ itemDate: itemDate || null, itemDesc, amount, vendor, remark, sortOrder: sortOrder++ });
         });
 
         return { content, paymentType, specialNote, items };
@@ -399,7 +377,7 @@ document.addEventListener('DOMContentLoaded', function() {
         // 지출 예정 내역 — 날짜·적요·금액 필수
         document.querySelectorAll('.expense-item').forEach(item => {
             const dateInput   = item.querySelector('.req-date-picker');
-            const descInput   = item.querySelector('.desc-input');
+            const descInput   = item.querySelector('.description-input');
             const amountInput = item.querySelector('.amount-input');
 
             const dateFilled   = !!(dateInput?.value);
@@ -708,7 +686,7 @@ document.addEventListener('DOMContentLoaded', function() {
         updatePreview();
         // 날짜 선택 후 같은 항목의 적요 필드로 포커스 이동
         const item = targetInput.closest('.expense-item');
-        const descInput = item?.querySelector('.desc-input');
+        const descInput = item?.querySelector('.description-input');
         if (descInput) setTimeout(() => descInput.focus(), 50);
     }
 
@@ -778,52 +756,38 @@ document.addEventListener('DOMContentLoaded', function() {
                 itemCount++;
                 const div = document.createElement('div');
                 div.className = 'expense-item';
-                const taxTypeOptions = ['', '과세', '비과세', '면세'].map(v =>
-                    `<option value="${v}"${v === (item.taxType || '') ? ' selected' : ''}>${v || '선택'}</option>`
-                ).join('');
                 div.innerHTML = `
-                    <div class="expense-item-header">
-                        <span class="expense-item-number">${itemCount}</span>
-                        <button type="button" class="btn-remove-item" onclick="removeRequisitionItem(this)">
-                            <i class="fas fa-times"></i>
-                        </button>
-                    </div>
+                    <span class="expense-item-number">${itemCount}</span>
                     <div class="expense-item-body">
                         <div class="form-row">
-                            <div class="form-group" style="flex: 0 0 160px;">
+                            <div class="form-group" style="flex: 0 0 180px;">
                                 <label><i class="fas fa-calendar-day"></i> 날짜 <span class="required-mark">*</span></label>
                                 <input type="text" class="form-input date-input req-date-picker" value="${item.itemDate || ''}" readonly>
                             </div>
                             <div class="form-group" style="flex: 1;">
                                 <label><i class="fas fa-edit"></i> 적요 <span class="required-mark">*</span></label>
-                                <input type="text" class="form-input desc-input" placeholder="내용 입력" value="${item.itemDesc || ''}">
+                                <input type="text" class="form-input description-input" placeholder="지출 예정 내역 입력" value="${item.itemDesc || ''}">
                             </div>
                         </div>
                         <div class="form-row">
                             <div class="form-group" style="flex: 1;">
+                                <label><i class="fas fa-store"></i> 상호</label>
+                                <input type="text" class="form-input shop-input" placeholder="상호명 입력" value="${item.vendor || ''}">
+                            </div>
+                            <div class="form-group" style="flex: 0 0 180px;">
                                 <label><i class="fas fa-won-sign"></i> 금액 <span class="required-mark">*</span></label>
                                 <input type="text" class="form-input amount-input" placeholder="금액 입력" inputmode="numeric"
                                     value="${item.amount != null ? Number(item.amount).toLocaleString('ko-KR') : ''}">
                             </div>
-                            <div class="form-group" style="flex: 0 0 120px;">
-                                <label><i class="fas fa-percent"></i> 세액</label>
-                                <input type="text" class="form-input tax-input" placeholder="세액 입력" inputmode="numeric"
-                                    value="${item.taxAmount != null ? Number(item.taxAmount).toLocaleString('ko-KR') : ''}">
-                            </div>
-                            <div class="form-group" style="flex: 0 0 120px;">
-                                <label><i class="fas fa-tags"></i> 과세구분</label>
-                                <select class="form-input tax-type-select">${taxTypeOptions}</select>
-                            </div>
-                            <div class="form-group" style="flex: 1;">
-                                <label><i class="fas fa-store"></i> 상대처</label>
-                                <input type="text" class="form-input vendor-input" placeholder="상대처 입력" value="${item.vendor || ''}">
-                            </div>
-                            <div class="form-group" style="flex: 0 0 120px;">
+                            <div class="form-group" style="flex: 0 0 150px;">
                                 <label><i class="fas fa-sticky-note"></i> 비고</label>
                                 <input type="text" class="form-input note-input" placeholder="" value="${item.remark || ''}">
                             </div>
                         </div>
                     </div>
+                    <button type="button" class="btn-remove-item" onclick="removeRequisitionItem(this)">
+                        <i class="fas fa-times"></i>
+                    </button>
                 `;
                 container.appendChild(div);
                 bindItemEvents(div);

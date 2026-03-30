@@ -75,10 +75,16 @@ public class ExpenseApprovalServiceImpl implements ExpenseApprovalService {
                 .mapToLong(ExpenseDetailDTO::getAmount)
                 .sum();
 
-        // 2. approval_documents 저장
+        // 2. approval_documents 저장 (정산월 기준 제목: 14일 이상 → 다음달, 13일 이하 → 당월)
+        LocalDate today = LocalDate.now(ZoneId.of("Asia/Seoul"));
+        int settlementMonth = today.getDayOfMonth() >= 14
+                ? today.plusMonths(1).getMonthValue()
+                : today.getMonthValue();
+        String title = DOC_TYPE.getName() + " - " + settlementMonth + "월";
+
         ApprovalDocument doc = ApprovalDocument.builder()
                 .documentNo(documentNo)
-                .title(DOC_TYPE.getName())
+                .title(title)
                 .documentType(DOC_TYPE.getCode())
                 .content("총 지출금액: ₩" + String.format("%,d", totalAmount))
                 .isProject(false)

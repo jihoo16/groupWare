@@ -115,8 +115,8 @@ document.addEventListener('DOMContentLoaded', async function () {
             <tr>
                 <td>${item.itemDate || '-'}</td>
                 <td>${item.itemDesc || '-'}</td>
-                <td style="text-align:right; padding-right:20px;">${formatAmount(item.amount)}</td>
                 <td>${item.vendor || '-'}</td>
+                <td style="text-align:right; padding-right:20px;">${formatAmount(item.amount)}</td>
                 <td>${item.remark || ''}</td>
             </tr>
         `).join('');
@@ -140,8 +140,8 @@ document.addEventListener('DOMContentLoaded', async function () {
             <tr>
                 <td>${formatDateForDisplay(item.itemDate)}</td>
                 <td style="text-align:left; padding-left:8px;">${item.itemDesc || '-'}</td>
-                <td style="text-align:right;">${formatAmount(item.amount)}</td>
                 <td>${item.vendor || '-'}</td>
+                <td style="text-align:right;">${formatAmount(item.amount)}</td>
                 <td>${item.remark || ''}</td>
             </tr>
         `).join('');
