@@ -1782,7 +1782,7 @@ document.addEventListener('DOMContentLoaded', function() {
             if (!projectIdx || !commonDate?.value) return;
 
             // 수정 페이지에서는 현재 문서 자체를 중복 검사에서 제외
-            const excludeIdx = getUrlParameter('id') || null;
+            const excludeIdx = getUrlParameter('documentIdx') || getUrlParameter('id') || null;
 
             // ── 작성자 재검증 ──
             if (authorPersonId) {
@@ -1843,7 +1843,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
         // 출장 날짜/기간 변경 전 확인 (수정 모드 + 출장인원 있을 때)
         async function confirmTripDateChangeIfNeeded(revertFn) {
-            if (!!getUrlParameter('id') && tripPersons.length > 0) {
+            if (!!(getUrlParameter('documentIdx') || getUrlParameter('id')) && tripPersons.length > 0) {
                 const confirmed = await showConfirm(
                     '날짜/기간 변경 시 출장과 회의 작성자 및 참석인원이<br>모두 초기화 됩니다.<br>(참석인원 중복 등록 방지)<br>계속하시겠습니까?',
                     '출장 기간 변경',
@@ -2591,7 +2591,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
         let author = null;
         if (dateVal && startVal && endVal && projVal) {
-            const excludeId = getUrlParameter('id') || null;
+            const excludeId = getUrlParameter('documentIdx') || getUrlParameter('id') || null;
             const candidate = sorted[3] || sorted[0];
             const isDup = await checkAuthorDuplicate(candidate.id, dateVal, startVal, endVal, projVal, excludeId, 'RCTM');
             if (!isDup) {
@@ -3518,7 +3518,7 @@ document.addEventListener('DOMContentLoaded', function() {
         const projectIdx = document.getElementById('selectedProjectIdx')?.value;
         const startDateVal = document.getElementById('common_date')?.value;
         const canCheckDup = !!(startDateVal && projectIdx);
-        const excludeIdx = getUrlParameter('id') || null;
+        const excludeIdx = getUrlParameter('documentIdx') || getUrlParameter('id') || null;
         const dupResults = canCheckDup
             ? await Promise.all(filtered.map(p => checkTripPersonConflicts(p.id, projectIdx, excludeIdx)))
             : filtered.map(() => false);
@@ -3823,7 +3823,7 @@ document.addEventListener('DOMContentLoaded', function() {
         const projectVal = document.getElementById('selectedProjectIdx')?.value;
         const canCheckDup = !!(dateVal && startVal && endVal && projectVal);
 
-        const excludeId = getUrlParameter('id') || null;
+        const excludeId = getUrlParameter('documentIdx') || getUrlParameter('id') || null;
         const dupResults = canCheckDup
             ? await Promise.all(filtered.map(p => checkAuthorDuplicate(String(p.idx), dateVal, startVal, endVal, projectVal, excludeId, 'RCTM', true)))
             : filtered.map(() => false);
@@ -4509,7 +4509,7 @@ document.addEventListener('DOMContentLoaded', function() {
         const projectVal = document.getElementById('selectedProjectIdx')?.value;
         const canCheckDup = !!(dateVal && startVal && endVal && projectVal);
 
-        const excludeId = getUrlParameter('id') || null;
+        const excludeId = getUrlParameter('documentIdx') || getUrlParameter('id') || null;
         const dupResults = canCheckDup
             ? await Promise.all(filteredPersons.map(p => checkAuthorDuplicate(p.id, dateVal, startVal, endVal, projectVal, excludeId, 'RCTM')))
             : filteredPersons.map(() => false);
@@ -5036,7 +5036,7 @@ document.addEventListener('DOMContentLoaded', function() {
     }
 
     // 과제명이 비어있을 때 빨간색 테두리 표시 (신규 작성 모드에서만)
-    if (!getUrlParameter('id')) {
+    if (!(getUrlParameter('documentIdx') || getUrlParameter('id'))) {
         setTimeout(() => {
             if (commonProject && !commonProject.value) {
                 commonProject.style.borderColor = '#ef5350';
@@ -5390,7 +5390,7 @@ document.addEventListener('DOMContentLoaded', function() {
     const updateBtn = document.getElementById('updateBtn');
     if (updateBtn) {
         updateBtn.addEventListener('click', async function() {
-            const id = getUrlParameter('id');
+            const id = getUrlParameter('documentIdx') || getUrlParameter('id');
             if (!id) { showError('문서 ID를 찾을 수 없습니다.'); return; }
 
             // 필수 필드 검증 (submit과 동일)
@@ -5793,7 +5793,7 @@ document.addEventListener('DOMContentLoaded', function() {
     const deleteBtn = document.getElementById('deleteBtn');
     if (deleteBtn) {
         deleteBtn.addEventListener('click', async function() {
-            const id = getUrlParameter('id');
+            const id = getUrlParameter('documentIdx') || getUrlParameter('id');
             if (!id) { showError('문서 ID를 찾을 수 없습니다.'); return; }
 
             const result = await Swal.fire({
@@ -5832,7 +5832,7 @@ document.addEventListener('DOMContentLoaded', function() {
     // ============================================
     // 초기화 - 상세보기/수정 모드 체크
     // ============================================
-    const receiptTripMeetingId = getUrlParameter('id');
+    const receiptTripMeetingId = getUrlParameter('documentIdx') || getUrlParameter('id');
     if (receiptTripMeetingId) {
         isPopulatingForm = true; // 초기 validateRequiredFields(300ms) 가 빨간테두리 찍지 않도록 선제 차단
         window.showPageLoadingOverlay();

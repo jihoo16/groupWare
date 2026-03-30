@@ -26,13 +26,7 @@ import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
 import java.time.format.DateTimeFormatter;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.Comparator;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.UUID;
+import java.util.*;
 import java.util.stream.Collectors;
 
 /**
@@ -219,6 +213,20 @@ public class ReceiptTripMeetingServiceImpl implements ReceiptTripMeetingService 
     @Transactional(readOnly = true)
     public ReceiptTripMeetingResponseDTO getReceiptTripMeetingById(Long idx) {
         log.debug("출장+회의 상세 조회 - idx: {}", idx);
+
+        // 먼저 documentIdx(전자결재 문서 ID)로 조회 시도
+        Optional<ReceiptTripMeeting> entityByDocumentIdx = receiptTripMeetingRepository.findByDocumentIdx(idx);
+        if (entityByDocumentIdx.isPresent()) {
+            log.debug("documentIdx로 출장+회의 조회 성공 - documentIdx: {}", idx);
+            ReceiptTripMeeting entity = receiptTripMeetingRepository.findById(entityByDocumentIdx.get().getIdx())
+                    .orElseThrow(() -> new IllegalArgumentException("출장+회의 정보를 찾을 수 없습니다. idx: " + idx));
+            if (Boolean.TRUE.equals(entity.getDeleted())) {
+                throw new IllegalArgumentException("삭제된 출장+회의입니다. idx: " + idx);
+            }
+            return toDetailDTO(entity);
+        }
+
+        // documentIdx로 조회 실패 시, receipt_trip_meeting.idx로 직접 조회
         ReceiptTripMeeting entity = receiptTripMeetingRepository.findById(idx)
                 .orElseThrow(() -> new IllegalArgumentException("출장+회의 정보를 찾을 수 없습니다. idx: " + idx));
         if (Boolean.TRUE.equals(entity.getDeleted())) {
