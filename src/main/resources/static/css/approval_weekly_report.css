@@ -532,7 +532,9 @@ div:focus {
 }
 
 .approval-sign-cell {
-    height: 60px;
+    height: 70px;
+    width: 110px;
+    padding: 4px;
     vertical-align: middle;
     background: white;
 }

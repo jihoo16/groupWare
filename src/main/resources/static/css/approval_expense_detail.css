@@ -297,6 +297,49 @@ button:focus, a:focus, div:focus { outline: none !important; box-shadow: none !i
     opacity: 0;
 }
 
+/* 제목 + 결재란 헤더 (flex) */
+.doc-print-header {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    margin-bottom: 10px;
+}
+.doc-print-header-right {
+    margin-left: 20px;
+    flex-shrink: 0;
+}
+.doc-approval-table {
+    border-collapse: collapse;
+    border: 2px solid #000;
+}
+.doc-approval-label {
+    width: 16px;
+    border: 1px solid #000;
+    padding: 4px 1px;
+    text-align: center;
+    background: #f0f0f0;
+    font-weight: bold;
+    font-size: 12px;
+    writing-mode: vertical-rl;
+    text-orientation: mixed;
+    letter-spacing: 2px;
+}
+.doc-approval-head {
+    width: 110px;
+    border: 1px solid #000;
+    padding: 5px 10px;
+    text-align: center;
+    background: #f0f0f0;
+    font-weight: bold;
+    font-size: 12px;
+}
+.doc-approval-sign {
+    height: 70px;
+    border: 1px solid #000;
+    padding: 5px;
+    text-align: center;
+}
+
 /* 문서 제목 (공식 양식 내) */
 .expense-doc-title {
     font-size: 28px;
@@ -502,124 +545,102 @@ button:focus, a:focus, div:focus { outline: none !important; box-shadow: none !i
 
 @media print {
     @page {
-        margin: 1.5cm 2cm;
         size: A4;
+        margin: 10mm;
     }
 
-    /* 인쇄 꼬릿말 */
-    body::after {
-        content: "(주)파인씨앤아이";
-        position: fixed;
-        bottom: 0.5cm;
-        right: 1cm;
-        font-size: 11px;
-        color: #555;
-    }
-
-    html, body {
-        height: auto !important;
-        overflow: visible !important;
-        background: white !important;
-    }
-
-    /* 인쇄 시 숨길 요소 */
+    /* 인쇄 시 숨길 요소 — display:none으로 flow에서 완전 제거 */
     .sidebar,
     .header,
+    .template-sidebar,
     .doc-title,
     .section-title,
     .info-grid,
     .table-wrapper,
     .total-bar,
-    .document-preview-toggle {
+    .document-preview-toggle,
+    .attachment-section,
+    .modal,
+    [class*="modal"] {
         display: none !important;
     }
 
-    /* 레이아웃 풀기 */
-    .main-content {
-        margin: 0 !important;
-        padding: 0 !important;
-        width: 100% !important;
-    }
-
-    .write-container {
-        padding: 0 !important;
-    }
-
-    .editor-area {
-        padding: 0 !important;
-        box-shadow: none !important;
-        border: none !important;
-        background: white !important;
-        overflow: visible !important;
-        max-width: 100% !important;
-    }
-
-    /* 미리보기 래퍼 — 테두리/그림자 제거, 펼침 */
+    /* 모든 컨테이너 all:unset — 패딩/마진/높이 완전 리셋 */
+    .container,
+    .main-content,
+    .write-container,
+    .write-layout,
+    .editor-area,
     .document-form-wrapper,
-    .document-form-wrapper.collapsed {
-        max-height: none !important;
-        padding: 0 !important;
-        margin: 0 !important;
-        opacity: 1 !important;
-        box-shadow: none !important;
-        border: none !important;
-        border-radius: 0 !important;
-        overflow: visible !important;
-        display: block !important;
-    }
-
-    /* 공식 문서 — 테두리/그림자 제거, 상하좌우 여백 */
+    .document-form-wrapper.collapsed,
     .document-form {
-        box-shadow: none !important;
-        border: none !important;
-        border-radius: 0 !important;
-        padding: 1cm 1.5cm !important;
-        max-width: 100% !important;
+        all: unset !important;
+        display: block !important;
+        width: 100% !important;
+        max-width: none !important;
+        overflow: visible !important;
+        position: static !important;
+        float: none !important;
+        clear: both !important;
+    }
+
+    html, body {
         margin: 0 !important;
+        padding: 0 !important;
+        height: auto !important;
+        overflow: visible !important;
+        background: #fff !important;
     }
 
-    /* 제목+결재란 flex 레이아웃 인쇄 안정화 */
-    .document-form > div[style*="display: flex"] {
+    /* 헤더 flex */
+    .doc-print-header {
         display: flex !important;
+        align-items: flex-start !important;
+        justify-content: space-between !important;
+        margin-bottom: 10px !important;
+    }
+    .doc-print-header-right {
+        margin-left: 20px !important;
+        flex-shrink: 0 !important;
     }
 
-    /* 결재란 인라인 테이블 배경 강제 출력 */
-    .document-form td[style*="background: #f0f0f0"] {
-        background-color: #f0f0f0 !important;
+    /* 결재란 배경색 인쇄 */
+    .doc-approval-table {
+        border-collapse: collapse !important;
+        border: 2px solid #000 !important;
+    }
+    .doc-approval-label,
+    .doc-approval-head,
+    .doc-approval-sign {
         -webkit-print-color-adjust: exact;
         print-color-adjust: exact;
     }
+    .doc-approval-label {
+        background-color: #f0f0f0 !important;
+    }
+    .doc-approval-head {
+        background-color: #f0f0f0 !important;
+    }
 
-    /* 표 간격 — write 페이지와 동일하게 맞춤 */
-    .expense-detail-section { margin-bottom: 15px !important; }
-    .expense-summary-table  { margin-top: 0 !important; margin-bottom: 15px !important; }
-    .expense-detail-table tbody td { padding: 4px !important; }
-    .expense-payment-table th { width: 55px !important; }
-
-    /* 정보/내역/합계/결제 테이블 인쇄 안정화 */
+    /* 본문 테이블 */
     .expense-info-table,
     .expense-detail-table,
     .expense-summary-table,
     .expense-payment-table {
-        border-collapse: collapse !important;
         width: 100% !important;
-        page-break-inside: avoid;
+        border-collapse: collapse !important;
+        margin-bottom: 8px !important;
     }
 
-    .expense-info-table th,
-    .expense-info-table td,
-    .expense-detail-table thead th,
-    .expense-detail-table tbody td,
-    .expense-summary-table th,
-    .expense-summary-table td,
-    .expense-payment-table th,
-    .expense-payment-table td {
+    .expense-info-table th, .expense-info-table td,
+    .expense-detail-table th, .expense-detail-table td,
+    .expense-summary-table th, .expense-summary-table td,
+    .expense-payment-table th, .expense-payment-table td {
         border: 1px solid #333 !important;
         -webkit-print-color-adjust: exact;
         print-color-adjust: exact;
     }
 
-    /* 배경색 강제 출력 */
     .expense-info-table th,
     .expense-detail-table thead th,
     .expense-summary-table th,
@@ -629,20 +650,19 @@ button:focus, a:focus, div:focus { outline: none !important; box-shadow: none !i
         print-color-adjust: exact;
     }
 
-    /* 페이지 나누기 방지 */
-    .expense-info-table,
-    .expense-detail-section,
-    .expense-summary-table,
-    .expense-payment-table {
-        page-break-inside: avoid;
+    .amount-display {
+        display: inline !important;
     }
 
-    * {
-        page-break-after: avoid !important;
-        page-break-before: avoid !important;
+    .expense-detail-section {
+        margin-bottom: 8px !important;
     }
 
-    /* 항목 수 기반 font 축소 — 인쇄 오버라이드 */
+    .expense-payment-table th {
+        width: 80px !important;
+    }
+
+    /* 항목 수 기반 font 축소 */
     #previewExpenseTable.items-compact thead th,
     #previewExpenseTable.items-compact tbody td {
         font-size: 11px !important;

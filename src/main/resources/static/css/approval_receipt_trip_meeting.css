@@ -1131,6 +1131,39 @@ div h2{
     padding: 24px;
 }
 
+/* 결재란 (공식문서 공통 스타일) */
+.doc-approval-table {
+    border-collapse: collapse;
+    border: 2px solid #000;
+}
+.doc-approval-label {
+    width: 16px;
+    border: 1px solid #000;
+    padding: 4px 1px;
+    text-align: center;
+    background: #f0f0f0;
+    font-weight: bold;
+    font-size: 12px;
+    writing-mode: vertical-rl;
+    text-orientation: mixed;
+    letter-spacing: 2px;
+}
+.doc-approval-head {
+    width: 110px;
+    border: 1px solid #000;
+    padding: 5px 10px;
+    text-align: center;
+    background: #f0f0f0;
+    font-weight: bold;
+    font-size: 12px;
+}
+.doc-approval-sign {
+    height: 70px;
+    border: 1px solid #000;
+    padding: 5px;
+    text-align: center;
+}
+
 .doc-title {
     text-align: center;
     font-size: 30px !important;
@@ -3015,14 +3048,8 @@ div h2{
    ============================================================ */
 @media print {
     @page {
-        size: A4 portrait;
-        margin: 0;
-    }
-
-    /* 색상 보존 */
-    * {
-        -webkit-print-color-adjust: exact !important;
-        print-color-adjust: exact !important;
+        size: A4;
+        margin: 10mm;
     }
 
     /* ── UI 요소 숨기기 ── */
@@ -3032,21 +3059,12 @@ div h2{
     .common-info-section,
     .attachment-section,
     .document-preview-toggle,
-    .modal {
+    .modal,
+    [class*="modal"] {
         display: none !important;
     }
 
-    /* ── body/html 초기화 ── */
-    body, html {
-        margin: 0 !important;
-        padding: 0 !important;
-        width: 210mm !important;
-        height: auto !important;
-        overflow: visible !important;
-        background: white !important;
-    }
-
-    /* ── 레이아웃 컨테이너 전부 단순 블록으로 평탄화 ── */
+    /* ── 컨테이너 all:unset ── */
     .container,
     .main-content,
     .write-container,
@@ -3059,46 +3077,87 @@ div h2{
         display: block !important;
         width: 100% !important;
         max-width: none !important;
-        height: auto !important;
         overflow: visible !important;
         position: static !important;
-        background: transparent !important;
     }
 
-    /* ── 각 공식문서 페이지: A4 크기 강제 ── */
-    #documentFormContent > div {
-        display: block !important;
-        width: 210mm !important;
-        page-break-after: always !important;
-        break-after: page !important;
+    html, body {
         margin: 0 !important;
-        padding: 15mm !important;
-        box-sizing: border-box !important;
+        padding: 0 !important;
+        height: auto !important;
+        overflow: visible !important;
+        background: #fff !important;
+    }
+
+    /* ── 각 페이지 div — 인라인 스타일 리셋 + 페이지 나눔 ── */
+    #documentFormContent > div {
         background: white !important;
         border: none !important;
-        box-shadow: none !important;
         border-radius: 0 !important;
+        box-shadow: none !important;
+        padding: 0 !important;
+        margin: 0 !important;
+        max-width: none !important;
         overflow: visible !important;
-        position: relative !important;
+        position: static !important;
+        page-break-after: always !important;
     }
 
-    /* 마지막 페이지: page-break 없음, 패딩 줄임 */
     #documentFormContent > div:last-child {
         page-break-after: auto !important;
-        break-after: auto !important;
-        padding-top: 8mm !important;
-        padding-bottom: 8mm !important;
     }
 
-    /* ── 테이블 공통 ── */
-    table {
+    /* ── 결재란 — doc-approval-* 클래스로 정확히 제어 ── */
+    .doc-approval-table {
+        border: 2px solid #000 !important;
+        border-collapse: collapse !important;
+        width: auto !important;
+    }
+
+    .doc-approval-label {
+        width: 16px !important;
+        border: 1px solid #000 !important;
+        background: #f0f0f0 !important;
+        font-size: 12px !important;
+        -webkit-print-color-adjust: exact;
+        print-color-adjust: exact;
+    }
+
+    .doc-approval-head {
+        width: 110px !important;
+        height: 20px !important;
+        border: 1px solid #000 !important;
+        background: #f0f0f0 !important;
+        font-size: 12px !important;
+        white-space: nowrap !important;
+        -webkit-print-color-adjust: exact;
+        print-color-adjust: exact;
+    }
+
+    .doc-approval-sign {
+        width: 110px !important;
+        height: 70px !important;
+        border: 1px solid #000 !important;
+    }
+
+    /* ── 본문 테이블 — .form-table에만 한정 ── */
+    .form-table {
         width: 100% !important;
         border-collapse: collapse !important;
     }
 
-    table td, table th {
+    .form-table td,
+    .form-table th {
         color: #000 !important;
-        border-color: #000 !important;
+        border: 1px solid #000 !important;
+        -webkit-print-color-adjust: exact;
+        print-color-adjust: exact;
+    }
+
+    .form-table th {
+        background-color: #f5f5f5 !important;
+        -webkit-print-color-adjust: exact;
+        print-color-adjust: exact;
     }
 
     input, textarea {
@@ -3107,8 +3166,9 @@ div h2{
 
     .doc-title {
         color: #000 !important;
-        font-size: 30px !important;
+        font-size: 24px !important;
         font-weight: bold !important;
+        margin: 10px 0 !important;
     }
 
     /* ── 1페이지: 출장품의서 ── */
@@ -3180,30 +3240,22 @@ div h2{
         position: static !important;
     }
 
-    /* ── 회의록·참석자명단: 출장 페이지와 동일하게 A4 처리 ── */
+    /* ── 회의록·참석자명단 페이지 div ── */
     .meeting-doc-block > div {
-        display: block !important;
-        width: 210mm !important;
-        page-break-after: always !important;
-        break-after: page !important;
-        margin: 0 !important;
-        padding: 15mm !important;
-        box-sizing: border-box !important;
         background: white !important;
         border: none !important;
-        box-shadow: none !important;
         border-radius: 0 !important;
-        overflow: visible !important;
-        position: relative !important;
+        box-shadow: none !important;
+        padding: 0 !important;
+        margin: 0 !important;
         max-width: none !important;
+        overflow: visible !important;
+        position: static !important;
+        page-break-after: always !important;
     }
 
-    /* 마지막 세션의 참석자명단 = 마지막 페이지: page-break 없음, 패딩 줄임 */
     .meeting-doc-block:last-child > div:last-child {
         page-break-after: auto !important;
-        break-after: auto !important;
-        padding-top: 8mm !important;
-        padding-bottom: 8mm !important;
     }
 
     /* ── 회의록·참석자명단 h2 ── */

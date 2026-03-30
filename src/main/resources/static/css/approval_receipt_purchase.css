@@ -241,14 +241,13 @@
 }
 
 /* 각 행 = 카드
-   Grid: [날짜 148px] [적요 1fr] [적요cont 1fr] [수량 108px]
-   Row1: 날짜 | 적요(span 2) | 수량
-   Row2: 과세구분 | 총결제금액 | 공급가액 | 세액
-   Row3: 비고 (full width)
+   Grid: [날짜 140px] [1fr] [1fr] [1fr] [90px]
+   Row1: 날짜 | 적요(span 3) | 수량
+   Row2: 총결제금액 | 공급가액 | 세액 | 비고 | 과세구분
 */
 .item-table tbody tr {
     display: grid;
-    grid-template-columns: 148px 1fr 1fr 108px;
+    grid-template-columns: 140px 1fr 1fr 1fr 90px;
     gap: 14px 12px;
     background: white;
     border: 1px solid #e8edf2;
@@ -291,21 +290,19 @@
     min-width: 0;
 }
 
-/* ─── 그리드 배치: 3행 레이아웃 ─── */
+/* ─── 그리드 배치: 2행 레이아웃 ─── */
 
-/* Row 1: 날짜(1) | 적요(2–3) | 수량(4) */
+/* Row 1: 날짜(1) | 적요(2–4) | 수량(5) */
 .item-table tbody td:nth-child(1) { grid-column: 1; grid-row: 1; }
-.item-table tbody td:nth-child(2) { grid-column: 2 / 4; grid-row: 1; }
-.item-table tbody td:nth-child(3) { grid-column: 4; grid-row: 1; }
+.item-table tbody td:nth-child(2) { grid-column: 2 / 5; grid-row: 1; }
+.item-table tbody td:nth-child(3) { grid-column: 5; grid-row: 1; }
 
-/* Row 2: 과세구분(1) | 총결제금액(2) | 공급가액(3) | 세액(4) */
+/* Row 2: 총결제금액(1) | 공급가액(2) | 세액(3) | 비고(4) | 과세구분(5) */
 .item-table tbody td:nth-child(4) { grid-column: 1; grid-row: 2; }
 .item-table tbody td:nth-child(5) { grid-column: 2; grid-row: 2; }
 .item-table tbody td:nth-child(6) { grid-column: 3; grid-row: 2; }
-.item-table tbody td:nth-child(7) { grid-column: 4; grid-row: 2; }
-
-/* Row 3: 비고 전체 폭 */
-.item-table tbody td:nth-child(8) { grid-column: 1 / -1; grid-row: 3; }
+.item-table tbody td:nth-child(7) { grid-column: 5; grid-row: 2; }
+.item-table tbody td:nth-child(8) { grid-column: 4; grid-row: 2; }
 
 /* 삭제 버튼 셀 — 카드 우측 상단 */
 .item-table tbody td:nth-child(9) {
@@ -327,26 +324,21 @@
 /* 주요 필드 레이블은 조금 더 강조 */
 .item-table tbody td:nth-child(1)::before,
 .item-table tbody td:nth-child(2)::before,
-.item-table tbody td:nth-child(5)::before {
+.item-table tbody td:nth-child(4)::before {
     color: #475569;
 }
 
 .item-table tbody td:nth-child(1)::before { content: '날짜'; }
 .item-table tbody td:nth-child(2)::before { content: '적요'; }
 .item-table tbody td:nth-child(3)::before { content: '수량'; }
-.item-table tbody td:nth-child(4)::before { content: '과세구분'; }
-.item-table tbody td:nth-child(5)::before { content: '총 결제금액'; }
-.item-table tbody td:nth-child(6)::before { content: '공급가액'; }
-.item-table tbody td:nth-child(7)::before { content: '세액'; }
+.item-table tbody td:nth-child(4)::before { content: '총 결제금액'; }
+.item-table tbody td:nth-child(5)::before { content: '공급가액'; }
+.item-table tbody td:nth-child(6)::before { content: '세액'; }
+.item-table tbody td:nth-child(7)::before { content: '과세구분'; }
 .item-table tbody td:nth-child(8)::before { content: '비고'; color: #94a3b8; font-weight: 500; }
 .item-table tbody td:nth-child(9)::before { display: none; }
 
-/* Row 2와 Row 3 사이 구분선 */
-.item-table tbody td:nth-child(8) {
-    padding-top: 14px;
-    border-top: 1px dashed #f1f5f9;
-    margin-top: 2px;
-}
+/* 비고 필드 — 별도 스타일 없음 (Row 2에 통합) */
 
 /* 입력 필드 */
 .item-table .item-input {
@@ -502,22 +494,24 @@
 }
 
 .btn-add-item-bottom {
-    background: none;
-    border: none;
+    background: #ffffff;
     color: #667eea;
+    border: 1px dashed #a5b4fc;
+    padding: 7px 16px;
+    border-radius: 6px;
     font-size: 13px;
     font-weight: 600;
     cursor: pointer;
     display: inline-flex;
     align-items: center;
     gap: 6px;
-    padding: 4px 8px;
-    border-radius: 6px;
-    transition: background 0.2s;
+    transition: all 0.2s;
 }
 
 .btn-add-item-bottom:hover {
-    background: #ede9fe;
+    background: #eef2ff;
+    border-color: #667eea;
+    color: #4f46e5;
 }
 
 .item-total-amounts {
@@ -727,6 +721,41 @@
 
 .document-form {
     background: #fff;
+}
+
+/* 결재란 */
+.doc-approval-table {
+    border-collapse: collapse;
+    border: 2px solid #000;
+}
+.doc-approval-label {
+    width: 16px;
+    border: 1px solid #000;
+    padding: 4px 1px;
+    text-align: center;
+    background: #f0f0f0;
+    font-weight: bold;
+    font-size: 12px;
+    writing-mode: vertical-rl;
+    text-orientation: mixed;
+    letter-spacing: 2px;
+}
+.doc-approval-head {
+    width: 110px;
+    border: 1px solid #000;
+    padding: 5px 10px;
+    text-align: center;
+    background: #f0f0f0;
+    font-weight: bold;
+    font-size: 12px;
+    white-space: nowrap;
+}
+.doc-approval-sign {
+    height: 70px;
+    width: 110px;
+    border: 1px solid #000;
+    padding: 5px;
+    text-align: center;
 }
 
 .doc-title {
@@ -1504,16 +1533,11 @@ mark.search-highlight {
 
 @media print {
     @page {
-        size: A4 portrait;
-        margin: 0;
+        size: A4;
+        margin: 10mm;
     }
 
-    * {
-        -webkit-print-color-adjust: exact !important;
-        print-color-adjust: exact !important;
-    }
-
-    /* 인쇄 시 숨기기 */
+    /* 인쇄 시 숨길 요소 */
     .sidebar,
     .header,
     .template-sidebar,
@@ -1523,20 +1547,14 @@ mark.search-highlight {
     .btn-outline,
     .btn-primary,
     .btn-secondary,
-    .btn-danger {
+    .btn-danger,
+    .btn-remove-row,
+    .modal,
+    [class*="modal"] {
         display: none !important;
     }
 
-    /* body / html 초기화 */
-    body, html {
-        margin: 0;
-        padding: 0;
-        width: 210mm;
-        height: auto;
-        overflow: visible;
-    }
-
-    /* 모든 컨테이너 초기화 */
+    /* 모든 컨테이너 all:unset */
     .container,
     .main-content,
     .write-container,
@@ -1545,94 +1563,63 @@ mark.search-highlight {
     .document-form-wrapper,
     .document-form-wrapper.collapsed,
     .document-form {
-        all: unset;
-        display: block;
-        width: 100%;
-        max-width: none;
-        overflow: visible;
+        all: unset !important;
+        display: block !important;
+        width: 100% !important;
+        max-width: none !important;
+        overflow: visible !important;
+        position: static !important;
+        float: none !important;
+        clear: both !important;
     }
 
-    /* 문서 페이지 */
-    .document-form > div {
-        display: block !important;
-        width: 210mm !important;
-        min-height: 297mm !important;
-        page-break-after: always;
-        page-break-inside: avoid;
+    html, body {
         margin: 0 !important;
-        padding: 15mm !important;
-        box-sizing: border-box !important;
+        padding: 0 !important;
+        height: auto !important;
+        overflow: visible !important;
+        background: #fff !important;
+    }
+
+    /* 문서 내부 래퍼 div — 인라인 스타일 리셋 */
+    .document-form > div {
         background: white !important;
         border: none !important;
         border-radius: 0 !important;
         box-shadow: none !important;
+        padding: 0 !important;
+        margin: 0 !important;
         max-width: none !important;
-        position: relative;
     }
 
-    .document-form > div:last-child {
-        page-break-after: auto;
-    }
-
-    /* 결재란 — 우측 상단 고정 */
-    .document-form > div > div[style*="text-align: right"] {
-        text-align: right !important;
-        margin-bottom: 0 !important;
-        position: absolute !important;
-        top: 15mm !important;
-        right: 15mm !important;
-        width: auto !important;
-    }
-
-    .document-form > div > div[style*="text-align: right"] table {
+    /* 결재란 — doc-approval-* 클래스로 제어 */
+    .doc-approval-table {
         border: 2px solid #000 !important;
         border-collapse: collapse !important;
-        display: inline-table !important;
         width: auto !important;
-        margin: 0 !important;
     }
-
-    .document-form > div > div[style*="text-align: right"] table td {
-        width: 100px !important;
-        min-width: 100px !important;
-        max-width: 100px !important;
-        padding: 3px 10px !important;
+    .doc-approval-label {
+        width: 16px !important;
         border: 1px solid #000 !important;
-    }
-
-    .document-form > div > div[style*="text-align: right"] table tr:first-child td {
-        height: 18px !important;
+        background: #f0f0f0 !important;
         font-size: 12px !important;
+        -webkit-print-color-adjust: exact;
+        print-color-adjust: exact;
+    }
+    .doc-approval-head {
+        width: 110px !important;
+        height: 20px !important;
+        border: 1px solid #000 !important;
         background: #f0f0f0 !important;
-        padding: 2px 10px !important;
+        font-size: 12px !important;
+        white-space: nowrap !important;
+        -webkit-print-color-adjust: exact;
+        print-color-adjust: exact;
     }
-
-    .document-form > div > div[style*="text-align: right"] table tr:last-child td {
-        height: 60px !important;
-        padding: 6px 10px !important;
-    }
-
-    /* 테이블 */
-    table,
-    .form-table {
-        width: 100%;
-        border-collapse: collapse;
-        margin: 6px 0;
-    }
-
-    table td,
-    table th {
-        color: #000;
-        border-color: #000;
-        padding: 7px 9px;
-        font-size: 11px;
-        line-height: 1.5;
-    }
-
-    .form-table th {
-        font-size: 11px;
-        font-weight: 600;
-        background: #f0f0f0 !important;
+    .doc-approval-sign {
+        width: 110px !important;
+        height: 70px !important;
+        border: 1px solid #000 !important;
     }
 
     /* 제목 */
@@ -1642,7 +1629,32 @@ mark.search-highlight {
         font-weight: bold;
         font-size: 24px;
         text-align: center;
-        margin: 35mm 0 5mm 0;
+        margin: 10px 0 !important;
+    }
+
+    /* 본문 테이블 — 결재란 제외 */
+    .form-table {
+        width: 100% !important;
+        border-collapse: collapse !important;
+    }
+
+    .form-table td,
+    .form-table th {
+        color: #000;
+        border: 1px solid #000 !important;
+        padding: 7px 9px;
+        font-size: 11px;
+        line-height: 1.5;
+        -webkit-print-color-adjust: exact;
+        print-color-adjust: exact;
+    }
+
+    .form-table th {
+        font-size: 11px;
+        font-weight: 600;
+        background: #f5f5f5 !important;
+        -webkit-print-color-adjust: exact !important;
+        print-color-adjust: exact !important;
     }
 
     /* input/textarea → 텍스트처럼 */
@@ -1654,19 +1666,9 @@ mark.search-highlight {
         pointer-events: none;
     }
 
-    span {
-        color: #000;
-        font-size: 11px;
-    }
-
     /* 품의 내용 높이 축소 */
     td[style*="height: 180px"],
     th[style*="height: 180px"] {
         height: 80px !important;
-    }
-
-    /* 내역서 행 삭제 버튼 숨기기 */
-    .btn-remove-row {
-        display: none !important;
     }
 }
