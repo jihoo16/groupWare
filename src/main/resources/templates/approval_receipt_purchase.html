@@ -301,17 +301,18 @@
                                 <div style="background: white; border: 2px solid #e0e0e0; border-radius: 8px; padding: 30px; margin: 0 auto 30px; max-width: 881px;">
 
                                     <!-- 결재란 -->
-                                    <div style="text-align: right; margin-bottom: 40px;">
-                                        <table style="border: 2px solid #000; border-collapse: collapse; display: inline-table;">
+                                    <div style="display: flex; justify-content: flex-end; margin-bottom: 15px;">
+                                        <table class="doc-approval-table">
                                             <tr>
-                                                <td style="width: 120px; height: 20px; border: 1px solid #000; padding: 2px 20px; text-align: center; background: #f0f0f0; font-weight: bold; line-height: 1;">신청자</td>
-                                                <td style="width: 120px; height: 20px; border: 1px solid #000; padding: 2px 20px; text-align: center; background: #f0f0f0; font-weight: bold; line-height: 1;">연구책임자</td>
-                                                <td style="width: 120px; height: 20px; border: 1px solid #000; padding: 2px 20px; text-align: center; background: #f0f0f0; font-weight: bold; line-height: 1;">대표이사</td>
+
+                                                <td class="doc-approval-head">신청자</td>
+                                                <td class="doc-approval-head">연구책임자</td>
+                                                <td class="doc-approval-head">대표이사</td>
                                             </tr>
                                             <tr>
-                                                <td class="pu-signature-applicant" style="height: 80px; border: 1px solid #000; padding: 10px 20px; text-align: center; min-width: 80px;"></td>
-                                                <td class="pu-signature-manager" style="height: 80px; border: 1px solid #000; padding: 10px 20px; text-align: center; min-width: 80px;"></td>
-                                                <td style="height: 80px; border: 1px solid #000; padding: 10px 20px; text-align: center; min-width: 80px;"></td>
+                                                <td class="doc-approval-sign pu-signature-applicant"></td>
+                                                <td class="doc-approval-sign pu-signature-manager"></td>
+                                                <td class="doc-approval-sign"></td>
                                             </tr>
                                         </table>
                                     </div>

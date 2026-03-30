@@ -67,9 +67,9 @@
                                 <tr>
                                     <th style="width: 110px;">날짜</th>
                                     <th>적요</th>
+                                    <th style="width: 120px;">상호</th>
                                     <th style="width: 130px;">금액</th>
-                                    <th style="width: 130px;">상대처</th>
-                                    <th style="width: 110px;">비고</th>
+                                    <th style="width: 100px;">비고</th>
                                 </tr>
                             </thead>
                             <tbody id="detailTableBody">
@@ -110,25 +110,25 @@
                         <div class="document-form">
 
                             <!-- 제목 + 결재란 -->
-                            <div style="display: flex; align-items: flex-start; gap: 16px; margin-bottom: 10px;">
-                                <div style="flex-shrink: 0; padding-top: 2px;">
+                            <div class="doc-print-header">
+                                <div class="doc-print-header-left">
                                     <h2 class="req-doc-title">지 출 품 의 서</h2>
                                     <div style="font-size: 12px; color: #555; margin-top: 4px;">
                                         <span id="previewDocDateTop">-</span>
                                     </div>
                                 </div>
-                                <div style="flex-shrink: 0; margin-left: auto;">
-                                    <table style="border: 2px solid #000; border-collapse: collapse;">
+                                <div class="doc-print-header-right">
+                                    <table class="doc-approval-table">
                                         <tr>
-                                            <td rowspan="2" style="width: 14px; border: 1px solid #000; padding: 4px 1px; text-align: center; background: #f0f0f0; font-weight: bold; font-size: 12px; writing-mode: vertical-lr; letter-spacing: 3px;">결재</td>
-                                            <td style="width: 90px; border: 1px solid #000; padding: 5px 10px; text-align: center; background: #f0f0f0; font-weight: bold; font-size: 12px; white-space: nowrap;">담 당</td>
-                                            <td style="width: 90px; border: 1px solid #000; padding: 5px 10px; text-align: center; background: #f0f0f0; font-weight: bold; font-size: 12px; white-space: nowrap;">검 토</td>
-                                            <td style="width: 90px; border: 1px solid #000; padding: 5px 10px; text-align: center; background: #f0f0f0; font-weight: bold; font-size: 12px; white-space: nowrap;">승 인</td>
+
+                                            <td class="doc-approval-head">신청자</td>
+                                            <td class="doc-approval-head">부 서 장</td>
+                                            <td class="doc-approval-head">대 표</td>
                                         </tr>
                                         <tr>
-                                            <td style="height: 78px; border: 1px solid #000; padding: 5px; text-align: center;"></td>
-                                            <td style="height: 78px; border: 1px solid #000; padding: 5px; text-align: center;"></td>
-                                            <td style="height: 78px; border: 1px solid #000; padding: 5px; text-align: center;"></td>
+                                            <td class="doc-approval-sign"></td>
+                                            <td class="doc-approval-sign"></td>
+                                            <td class="doc-approval-sign"></td>
                                         </tr>
                                     </table>
                                 </div>
@@ -137,7 +137,7 @@
                             <!-- 품의 내용 -->
                             <table class="expense-info-table" style="margin-bottom: 0;">
                                 <tr>
-                                    <th style="width: 80px;">품 의 내 용</th>
+                                    <th style="width: 90px;">품 의 내 용</th>
                                     <td id="previewContent">-</td>
                                 </tr>
                             </table>
@@ -150,10 +150,10 @@
                                             <th colspan="5" style="text-align: center; letter-spacing: 4px; background: #efefef; font-size: 12px; padding: 7px;">지 출 예 정 내 역</th>
                                         </tr>
                                         <tr>
-                                            <th style="width: 68px;">날 짜</th>
+                                            <th style="width: 90px;">날 짜</th>
                                             <th>적 요</th>
+                                            <th style="width: 100px;">상 호</th>
                                             <th style="width: 120px;">금 액</th>
-                                            <th style="width: 120px;">상 대 처</th>
                                             <th style="width: 80px;">비 고</th>
                                         </tr>
                                     </thead>
@@ -166,7 +166,7 @@
                             <!-- 계 / 지급종류 / 특이사항 / 작성자 -->
                             <table class="req-bottom-table">
                                 <colgroup>
-                                    <col style="width: 80px;">
+                                    <col style="width: 90px;">
                                     <col>
                                 </colgroup>
                                 <tr>

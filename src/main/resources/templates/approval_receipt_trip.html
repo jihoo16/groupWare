@@ -248,25 +248,27 @@
                                 <div class="document-form" id="documentFormContent">
                                     <!-- 출장품의서 -->
                                     <div id="tripProposalFormDiv" style="background: white; border: 2px solid #e0e0e0; border-radius: 8px; padding: 30px; margin: 0 auto 30px; max-width: 881px">
-                                        <h2 class="doc-title">출 장 품 의 서</h2>
 
                                         <!-- 결재란 -->
-                                        <div style="float: right; margin-bottom: 20px;">
-                                            <table style="border: 2px solid #000; border-collapse: collapse;">
+                                        <div style="display: flex; justify-content: flex-end; margin-bottom: 15px;">
+                                            <table class="doc-approval-table">
                                                 <tr>
-                                                    <td style="width: 90px; border: 1px solid #000; padding: 5px 10px; text-align: center; background: #f0f0f0; font-weight: bold; font-size: 12px;">담당</td>
-                                                    <td style="width: 90px; border: 1px solid #000; padding: 5px 10px; text-align: center; background: #f0f0f0; font-weight: bold; font-size: 12px;">연구책임자</td>
-                                                    <td style="width: 90px; border: 1px solid #000; padding: 5px 10px; text-align: center; background: #f0f0f0; font-weight: bold; font-size: 12px;">대표이사</td>
+
+                                                    <td class="doc-approval-head">신청자</td>
+                                                    <td class="doc-approval-head">연구책임자</td>
+                                                    <td class="doc-approval-head">대표이사</td>
                                                 </tr>
                                                 <tr>
-                                                    <td style="height: 78px; border: 1px solid #000; padding: 5px; text-align: center;"></td>
-                                                    <td style="height: 78px; border: 1px solid #000; padding: 5px; text-align: center;"></td>
-                                                    <td style="height: 78px; border: 1px solid #000; padding: 5px; text-align: center;"></td>
+                                                    <td class="doc-approval-sign"></td>
+                                                    <td class="doc-approval-sign"></td>
+                                                    <td class="doc-approval-sign"></td>
                                                 </tr>
                                             </table>
                                         </div>
 
-                                        <div style="clear: both; margin-bottom: 10px; text-align: left;">
+                                        <h2 class="doc-title">출 장 품 의 서</h2>
+
+                                        <div style="margin-bottom: 10px; text-align: left;">
                                             <span>작성일 : <span class="trip-auto-write-date"></span></span>
                                         </div>
 
@@ -333,25 +335,27 @@
 
                                     <!-- 출장복명서 -->
                                     <div id="tripReportFormDiv" style="background: white; border: 2px solid #e0e0e0; border-radius: 8px; padding: 30px; max-width: 881px; margin: 0 auto 30px">
-                                        <h2 class="doc-title" style="margin-bottom: 20px;">출 장 복 명 서</h2>
 
                                         <!-- 결재란 -->
-                                        <div style="float: right; margin-bottom: 20px;">
-                                            <table style="border: 2px solid #000; border-collapse: collapse;">
+                                        <div style="display: flex; justify-content: flex-end; margin-bottom: 15px;">
+                                            <table class="doc-approval-table">
                                                 <tr>
-                                                    <td style="width: 90px; border: 1px solid #000; padding: 5px 10px; text-align: center; background: #f0f0f0; font-weight: bold; font-size: 12px;">담당</td>
-                                                    <td style="width: 90px; border: 1px solid #000; padding: 5px 10px; text-align: center; background: #f0f0f0; font-weight: bold; font-size: 12px;">연구책임자</td>
-                                                    <td style="width: 90px; border: 1px solid #000; padding: 5px 10px; text-align: center; background: #f0f0f0; font-weight: bold; font-size: 12px;">대표이사</td>
+
+                                                    <td class="doc-approval-head">신청자</td>
+                                                    <td class="doc-approval-head">연구책임자</td>
+                                                    <td class="doc-approval-head">대표이사</td>
                                                 </tr>
                                                 <tr id="tripReportSignRow">
-                                                    <td style="height: 78px; border: 1px solid #000; padding: 5px; text-align: center;"></td>
-                                                    <td style="height: 78px; border: 1px solid #000; padding: 5px; text-align: center;"></td>
-                                                    <td style="height: 78px; border: 1px solid #000; padding: 5px; text-align: center;"></td>
+                                                    <td class="doc-approval-sign"></td>
+                                                    <td class="doc-approval-sign"></td>
+                                                    <td class="doc-approval-sign"></td>
                                                 </tr>
                                             </table>
                                         </div>
 
-                                        <table id="tripReportMainTable" class="form-table" style="clear: both; margin-top: 20px;">
+                                        <h2 class="doc-title" style="margin-bottom: 20px;">출 장 복 명 서</h2>
+
+                                        <table id="tripReportMainTable" class="form-table" style="margin-top: 20px;">
                                             <tr>
                                                 <th style="width: 15%;">과 제 명</th>
                                                 <td colspan="3" style="padding: 10px;">
