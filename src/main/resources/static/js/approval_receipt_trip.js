@@ -3575,7 +3575,14 @@ document.addEventListener('DOMContentLoaded', async function() {
                     tripProject.classList.remove('field-empty');
                 }
                 if (selectedProjectIdxInput) selectedProjectIdxInput.value = proj.idx;
-                document.querySelectorAll('.trip-auto-project').forEach(f => { f.textContent = proj.projectName || ''; });
+                document.querySelectorAll('.trip-auto-project').forEach(f => {
+                    const name = proj.projectName || '';
+                    f.textContent = name;
+                    if (name.length > 35) { f.style.fontSize = '8px'; }
+                    else if (name.length > 25) { f.style.fontSize = '9px'; }
+                    else if (name.length > 15) { f.style.fontSize = '10px'; }
+                    else { f.style.fontSize = ''; }
+                });
                 document.querySelectorAll('.trip-auto-pi').forEach(f => { f.textContent = proj.projectManagerName || ''; });
                 await loadProjectMembers(proj.idx);
                 loadProjectCards(proj.idx);

@@ -252,6 +252,11 @@ document.addEventListener('DOMContentLoaded', async function() {
 
                     document.querySelectorAll('.ot-auto-project').forEach(field => {
                         field.textContent = selectedProject.projectName;
+                        const len = (selectedProject.projectName || '').length;
+                        if (len > 35) { field.style.fontSize = '8px'; }
+                        else if (len > 25) { field.style.fontSize = '9px'; }
+                        else if (len > 15) { field.style.fontSize = '10px'; }
+                        else { field.style.fontSize = ''; }
                     });
 
                     if (selectedProject.projectManagerName) {

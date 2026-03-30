@@ -1226,12 +1226,12 @@ document.addEventListener('DOMContentLoaded', function() {
             commonProject.addEventListener('input', function() {
                 const value = this.value;
                 document.querySelectorAll('.auto-project').forEach(field => {
-                    // input 요소면 value 속성, 아니면 textContent 설정
-                    if (field.tagName === 'INPUT') {
-                        field.value = value;
-                    } else {
-                        field.textContent = value;
-                    }
+                    if (field.tagName === 'INPUT') { field.value = value; }
+                    else { field.textContent = value; }
+                    if (value && value.length > 35) { field.style.fontSize = '8px'; }
+                    else if (value && value.length > 25) { field.style.fontSize = '9px'; }
+                    else if (value && value.length > 15) { field.style.fontSize = '10px'; }
+                    else { field.style.fontSize = ''; }
                 });
             });
         }
@@ -4644,8 +4644,13 @@ document.addEventListener('DOMContentLoaded', function() {
         if (selectedProjectIdxEl) selectedProjectIdxEl.value = proj.idx;
 
         document.querySelectorAll('.auto-project').forEach(el => {
-            if (el.tagName === 'INPUT') el.value = proj.projectName;
-            else el.textContent = proj.projectName;
+            const name = proj.projectName || '';
+            if (el.tagName === 'INPUT') el.value = name;
+            else el.textContent = name;
+            if (name.length > 35) { el.style.fontSize = '8px'; }
+            else if (name.length > 25) { el.style.fontSize = '9px'; }
+            else if (name.length > 15) { el.style.fontSize = '10px'; }
+            else { el.style.fontSize = ''; }
         });
 
         await Promise.all([
@@ -4954,8 +4959,12 @@ document.addEventListener('DOMContentLoaded', function() {
 
         // 자동 채우기
         document.querySelectorAll('.auto-project').forEach(field => {
-            if (field.tagName === 'INPUT') field.value = proj.projectName || '';
-            else field.textContent = proj.projectName || '';
+            const name = proj.projectName || '';
+            if (field.tagName === 'INPUT') field.value = name;
+            else field.textContent = name;
+            if (name.length > 30) { field.style.fontSize = '9px'; }
+            else if (name.length > 20) { field.style.fontSize = '10px'; }
+            else { field.style.fontSize = ''; }
         });
 
         // 참여인원 + 경비 설정 로드 → 툴팁 갱신 + 기본 작성자 자동 설정

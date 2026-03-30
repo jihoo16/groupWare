@@ -887,7 +887,14 @@ document.addEventListener('DOMContentLoaded', async function() {
         // 결재란 — 서명칸은 자필서명용으로 비워둠
 
         // 기본 필드 자동입력
-        document.querySelectorAll('.pu-auto-project').forEach(el => el.textContent = projectName);
+        document.querySelectorAll('.pu-auto-project').forEach(el => {
+            el.textContent = projectName;
+            const len = (projectName || '').length;
+            if (len > 35) { el.style.fontSize = '8px'; }
+            else if (len > 25) { el.style.fontSize = '9px'; }
+            else if (len > 15) { el.style.fontSize = '10px'; }
+            else { el.style.fontSize = ''; }
+        });
         document.querySelectorAll('.pu-auto-manager').forEach(el => el.textContent = managerName);
         document.querySelectorAll('.pu-auto-applicant').forEach(el => el.textContent = applicantName);
         document.querySelectorAll('.pu-auto-title').forEach(el => el.textContent = title);

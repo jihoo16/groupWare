@@ -649,6 +649,11 @@ document.addEventListener('DOMContentLoaded', async function() {
                     // 자동 채우기
                     document.querySelectorAll('.auto-project').forEach(field => {
                         field.value = proj.projectName;
+                        const len = (proj.projectName || '').length;
+                        if (len > 35) { field.style.fontSize = '8px'; }
+                        else if (len > 25) { field.style.fontSize = '9px'; }
+                        else if (len > 15) { field.style.fontSize = '10px'; }
+                        else { field.style.fontSize = ''; }
                     });
 
                     // 프로젝트 팀원 로드
@@ -929,6 +934,11 @@ document.addEventListener('DOMContentLoaded', async function() {
                     // 자동 채우기
                     document.querySelectorAll('.auto-project').forEach(field => {
                         field.value = proj.projectName;
+                        const len = (proj.projectName || '').length;
+                        if (len > 35) { field.style.fontSize = '8px'; }
+                        else if (len > 25) { field.style.fontSize = '9px'; }
+                        else if (len > 15) { field.style.fontSize = '10px'; }
+                        else { field.style.fontSize = ''; }
                     });
 
                     // 참석자 목록 초기화 (기본 작성자만 남기기)

@@ -1983,6 +1983,18 @@ document.addEventListener('DOMContentLoaded', function() {
                 }
             }
 
+            // 로딩 스피너 표시
+            Swal.fire({
+                title: 'PDF 생성 중...',
+                html: '보고서를 저장하고 있습니다.<br>잠시만 기다려주세요.',
+                allowOutsideClick: false,
+                allowEscapeKey: false,
+                showConfirmButton: false,
+                didOpen: () => {
+                    Swal.showLoading();
+                }
+            });
+
             try {
                 const projectIdx = selectedProjectIdx.value ? parseInt(selectedProjectIdx.value) : null;
                 const projectName = selectedProject ? selectedProject.projectName : null;
@@ -2049,6 +2061,9 @@ document.addEventListener('DOMContentLoaded', function() {
                         }
                     }
 
+                    // 로딩 스피너 닫기
+                    Swal.close();
+
                     // 삭제 예정인 파일들을 실제로 삭제
                     if (deletedFileIds.length > 0) {
                         console.log(`${deletedFileIds.length}개의 파일 삭제 시작`);
@@ -2073,11 +2088,13 @@ document.addEventListener('DOMContentLoaded', function() {
                     await showSuccess(successMessage);
                     popupAwareRedirect('/project/documents');
                 } else {
+                    Swal.close();
                     const error = await response.text();
                     console.error('저장 실패:', error);
                     showError('저장에 실패했습니다.');
                 }
             } catch (error) {
+                Swal.close();
                 console.error('API 호출 오류:', error);
                 showError('저장 중 오류가 발생했습니다: ' + error.message);
             }
