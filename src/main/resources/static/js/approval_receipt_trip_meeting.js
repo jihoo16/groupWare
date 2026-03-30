@@ -33,6 +33,7 @@ document.addEventListener('DOMContentLoaded', function() {
     let meetingBlockCount = 1;   // 지금까지 생성된 최대 회의 인덱스+1
     let extraMeetings = [];      // 추가 회의 상태 (idx 1~): [{ idx, receiptFiles:[], documentFiles:[], authorPersonId:null, attendees:[], tripPersonsForMeeting:[] }]
     let isPopulatingForm = false; // populateForm() 실행 중 여부 (setDefaultAuthor 자동실행 차단용)
+    let loadedReceiptTripMeetingIdx = null; // 상세보기 모드에서 로드된 출장+회의 자체 idx
     let holidays = {}; // 공휴일 캐시 { 'YYYY-MM-DD': '공휴일명', ... }
     let loadedHolidayYears = new Set(); // 이미 로드한 년도
 
@@ -5058,6 +5059,7 @@ document.addEventListener('DOMContentLoaded', function() {
         try {
             const data = await window.fetchWithErrorHandling(`/api/receipt-trip-meetings/${id}`);
             if (!data) return;
+            loadedReceiptTripMeetingIdx = data.receiptTripMeetingIdx || null;
             await populateForm(data);
             const submitBtnEl = document.getElementById('submitBtn');
             if (submitBtnEl) submitBtnEl.style.display = 'none';
@@ -5390,7 +5392,7 @@ document.addEventListener('DOMContentLoaded', function() {
     const updateBtn = document.getElementById('updateBtn');
     if (updateBtn) {
         updateBtn.addEventListener('click', async function() {
-            const id = getUrlParameter('documentIdx') || getUrlParameter('id');
+            const id = loadedReceiptTripMeetingIdx || getUrlParameter('documentIdx') || getUrlParameter('id');
             if (!id) { showError('문서 ID를 찾을 수 없습니다.'); return; }
 
             // 필수 필드 검증 (submit과 동일)
@@ -5793,7 +5795,7 @@ document.addEventListener('DOMContentLoaded', function() {
     const deleteBtn = document.getElementById('deleteBtn');
     if (deleteBtn) {
         deleteBtn.addEventListener('click', async function() {
-            const id = getUrlParameter('documentIdx') || getUrlParameter('id');
+            const id = loadedReceiptTripMeetingIdx || getUrlParameter('documentIdx') || getUrlParameter('id');
             if (!id) { showError('문서 ID를 찾을 수 없습니다.'); return; }
 
             const result = await Swal.fire({
