@@ -66,7 +66,7 @@ document.addEventListener('DOMContentLoaded', function() {
             'weekly-report': '주간 보고',
             'monthly-report': '월간 보고',
             'vacation': '휴가 신청',
-            'expense': '지출승인서',
+            'expense': '개인경비청구',
             'requisition': '지출품의서',
             'purchase': '구매 요청',
             'meeting': '회의록',
@@ -575,7 +575,7 @@ document.addEventListener('DOMContentLoaded', function() {
         modal.innerHTML = `
             <div class="exp-att-modal-inner">
                 <div class="exp-att-modal-header">
-                    <h3><i class="fas fa-paperclip"></i> 첨부파일 관리 — 지출승인서</h3>
+                    <h3><i class="fas fa-paperclip"></i> 첨부파일 관리 — 개인경비청구</h3>
                     <button class="exp-att-close-btn" id="expModalCloseBtn"><i class="fas fa-times"></i></button>
                 </div>
                 <div id="expModalBody"></div>

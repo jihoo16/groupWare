@@ -2340,8 +2340,8 @@ document.addEventListener('DOMContentLoaded', async function() {
                 if (periodData.exists) {
                     await Swal.fire({
                         icon: 'warning',
-                        title: '이번 달 작성중인 지출승인서가 있습니다',
-                        html: `기간 <b>${periodData.periodStart} ~ ${periodData.periodEnd}</b> 내<br>작성된 지출승인서가 이미 존재합니다.<br>해당 문서로 이동합니다.`,
+                        title: '이번 달 작성중인 개인경비청구가 있습니다',
+                        html: `기간 <b>${periodData.periodStart} ~ ${periodData.periodEnd}</b> 내<br>작성된 개인경비청구가 이미 존재합니다.<br>해당 문서로 이동합니다.`,
                         confirmButtonText: '확인'
                     });
                     window.location.href = `/approval/expense?idx=${periodData.documentIdx}`;
@@ -2356,7 +2356,7 @@ document.addEventListener('DOMContentLoaded', async function() {
     if (editIdx) {
         // 페이지 제목 변경
         const pageTitle = document.querySelector('.page-title');
-        if (pageTitle) pageTitle.innerHTML = '<i class="fas fa-won-sign"></i> 문서 수정 > 지출승인서';
+        if (pageTitle) pageTitle.innerHTML = '<i class="fas fa-won-sign"></i> 문서 수정 > 개인경비청구';
 
         try {
             const res = await fetch(`/api/approval/expense/${editIdx}`);
