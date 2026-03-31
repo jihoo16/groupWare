@@ -94,41 +94,27 @@
                                         <input type="hidden" id="selectedCardIdx">
                                     </div>
 
-                                    <!-- 신청자 & 연구책임자 -->
-                                    <div class="form-grid">
-                                        <div class="form-group">
-                                            <label for="ot_applicant">
-                                                <i class="fas fa-user-edit"></i> 신청자
-                                                <span class="required-mark">*</span>
-                                            </label>
-                                            <input type="text" id="ot_applicant" class="form-input clickable-input" placeholder="과제를 먼저 선택하세요" readonly onclick="openApplicantModal()">
-                                            <input type="hidden" id="selectedApplicantIdx">
-                                        </div>
-                                        <div class="form-group">
-                                            <label for="ot_manager">
-                                                <i class="fas fa-user-tie"></i> 연구책임자
-                                                <span class="required-mark">*</span>
-                                            </label>
-                                            <input type="text" id="ot_manager" class="form-input" placeholder="과제 선택 시 자동입력" readonly>
-                                        </div>
+                                    <!-- 신청자 -->
+                                    <div class="form-group full-width">
+                                        <label for="ot_applicant">
+                                            <i class="fas fa-user-edit"></i> 신청자
+                                            <span class="required-mark">*</span>
+                                        </label>
+                                        <input type="text" id="ot_applicant" class="form-input clickable-input" placeholder="과제를 먼저 선택하세요" readonly onclick="openApplicantModal()">
+                                        <input type="hidden" id="selectedApplicantIdx">
                                     </div>
 
-                                    <!-- 품의일자 & 품의명 -->
-                                    <div class="form-grid">
-                                        <div class="form-group">
-                                            <label for="ot_approval_date">
-                                                <i class="fas fa-calendar-day"></i> 품의일자
-                                                <span class="required-mark">*</span>
-                                            </label>
-                                            <input type="date" id="ot_approval_date" class="form-input">
-                                        </div>
-                                        <div class="form-group">
-                                            <label for="ot_title">
-                                                <i class="fas fa-heading"></i> 품의명
-                                                <span class="required-mark">*</span>
-                                            </label>
-                                            <input type="text" id="ot_title" class="form-input" placeholder="예: 야근 식대" value="야근 식대">
-                                        </div>
+                                    <!-- 품의일자 -->
+                                    <div class="form-group full-width">
+                                        <label for="ot_approval_date">
+                                            <i class="fas fa-calendar-day"></i> 품의일자
+                                            <span class="required-mark">*</span>
+                                            <span class="label-tooltip-wrapper" style="margin-left: 4px;">
+                                                <i class="fas fa-info-circle" style="color: #94a3b8; font-size: 12px; cursor: help;"></i>
+                                                <span class="tooltip-text">⚠️ 날짜 변경 시 중복 방지를 위해 야근인원이 초기화됩니다</span>
+                                            </span>
+                                        </label>
+                                        <input type="date" id="ot_approval_date" class="form-input">
                                     </div>
 
                                     <!-- 시작 시간 & 종료 시간 -->
@@ -137,6 +123,10 @@
                                             <label for="ot_start_time">
                                                 <i class="fas fa-clock"></i> 시작 시간
                                                 <span class="required-mark">*</span>
+                                                <span class="label-tooltip-wrapper" style="margin-left: 4px;">
+                                                    <i class="fas fa-info-circle" style="color: #94a3b8; font-size: 12px; cursor: help;"></i>
+                                                    <span class="tooltip-text">⚠️ 시간 변경 시 중복 방지를 위해 야근인원이 초기화됩니다</span>
+                                                </span>
                                             </label>
                                             <input type="time" id="ot_start_time" class="form-input" value="18:00">
                                         </div>
@@ -144,6 +134,10 @@
                                             <label for="ot_end_time">
                                                 <i class="fas fa-clock"></i> 종료 시간
                                                 <span class="required-mark">*</span>
+                                                <span class="label-tooltip-wrapper" style="margin-left: 4px;">
+                                                    <i class="fas fa-info-circle" style="color: #94a3b8; font-size: 12px; cursor: help;"></i>
+                                                    <span class="tooltip-text">⚠️ 시간 변경 시 중복 방지를 위해 야근인원이 초기화됩니다</span>
+                                                </span>
                                             </label>
                                             <input type="time" id="ot_end_time" class="form-input" value="21:00">
                                         </div>
@@ -228,7 +222,7 @@
                                     <div class="form-grid">
                                         <div class="form-group">
                                             <label for="ot_amount">
-                                                <i class="fas fa-won-sign"></i> 총 공급대가
+                                                <i class="fas fa-won-sign"></i> 사용 금액
                                                 <span class="required-mark">*</span>
                                             </label>
                                             <input type="text" id="ot_amount" class="form-input" placeholder="금액을 입력하세요">
@@ -523,7 +517,7 @@
             <div class="modal-body">
                 <div class="search-box">
                     <i class="fas fa-search"></i>
-                    <input type="text" id="applicantSearch" placeholder="이름으로 검색">
+                    <input type="text" id="applicantSearch" placeholder="이름 또는 부서 검색...">
                 </div>
                 <div class="modal-item-list" id="applicantList"></div>
             </div>
