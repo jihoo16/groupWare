@@ -1784,7 +1784,7 @@ let text;
             </div>`;
         modal.style.display = 'flex';
 
-        const docIdx = doc.sourceDocumentId || doc.idx;
+        const docIdx = doc.idx; // approval_documents.idx (API가 기대하는 값)
         try {
             const res = await fetch(`/api/document/weekly-report/official-pdf/${docIdx}`);
             if (!res.ok) throw new Error();
