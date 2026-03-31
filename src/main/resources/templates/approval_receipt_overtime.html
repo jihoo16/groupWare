@@ -94,15 +94,8 @@
                                         <input type="hidden" id="selectedCardIdx">
                                     </div>
 
-                                    <!-- 연구책임자 & 신청자 -->
+                                    <!-- 신청자 & 연구책임자 -->
                                     <div class="form-grid">
-                                        <div class="form-group">
-                                            <label for="ot_manager">
-                                                <i class="fas fa-user-tie"></i> 연구책임자
-                                                <span class="required-mark">*</span>
-                                            </label>
-                                            <input type="text" id="ot_manager" class="form-input" placeholder="과제 선택 시 자동입력" readonly>
-                                        </div>
                                         <div class="form-group">
                                             <label for="ot_applicant">
                                                 <i class="fas fa-user-edit"></i> 신청자
@@ -110,6 +103,13 @@
                                             </label>
                                             <input type="text" id="ot_applicant" class="form-input clickable-input" placeholder="과제를 먼저 선택하세요" readonly onclick="openApplicantModal()">
                                             <input type="hidden" id="selectedApplicantIdx">
+                                        </div>
+                                        <div class="form-group">
+                                            <label for="ot_manager">
+                                                <i class="fas fa-user-tie"></i> 연구책임자
+                                                <span class="required-mark">*</span>
+                                            </label>
+                                            <input type="text" id="ot_manager" class="form-input" placeholder="과제 선택 시 자동입력" readonly>
                                         </div>
                                     </div>
 
@@ -158,16 +158,43 @@
                                         <div class="task-input-wrapper">
                                             <select id="ot_task_select" class="form-input">
                                                 <option value="">업무 내용을 선택하세요</option>
-                                                <option value="백엔드 API 개발">백엔드 API 개발</option>
-                                                <option value="프론트엔드 UI 개발">프론트엔드 UI 개발</option>
-                                                <option value="데이터베이스 설계">데이터베이스 설계</option>
-                                                <option value="시스템 아키텍처 설계">시스템 아키텍처 설계</option>
-                                                <option value="버그 수정 및 디버깅">버그 수정 및 디버깅</option>
-                                                <option value="코드 리뷰 및 품질 관리">코드 리뷰 및 품질 관리</option>
-                                                <option value="테스트 코드 작성">테스트 코드 작성</option>
-                                                <option value="배포 및 운영 환경 구축">배포 및 운영 환경 구축</option>
-                                                <option value="성능 최적화">성능 최적화</option>
-                                                <option value="기술 문서 작성">기술 문서 작성</option>
+                                                <option value="서비스 배포 직전 안정화 코드 오류 수정 및 예외 케이스 대응">서비스 배포 직전 안정화 코드 오류 수정 및 예외 케이스 대응</option>
+                                                <option value="운영 서버 장애 원인 분석 기반 긴급 복구 및 서비스 정상화">운영 서버 장애 원인 분석 기반 긴급 복구 및 서비스 정상화</option>
+                                                <option value="외부 API 연동 실패 구간 디버깅 및 데이터 수신 오류 개선">외부 API 연동 실패 구간 디버깅 및 데이터 수신 오류 개선</option>
+                                                <option value="고객사 요청 기능 변경 반영 및 기존 로직 수정 작업">고객사 요청 기능 변경 반영 및 기존 로직 수정 작업</option>
+                                                <option value="신규 기능 배포 이후 발생한 예외 버그 수정 및 재배포">신규 기능 배포 이후 발생한 예외 버그 수정 및 재배포</option>
+                                                <option value="DB 데이터 정합성 오류 수정 및 트랜잭션 로직 보완">DB 데이터 정합성 오류 수정 및 트랜잭션 로직 보완</option>
+                                                <option value="트래픽 증가 대응 서버 성능 개선 및 병목 구간 최적화">트래픽 증가 대응 서버 성능 개선 및 병목 구간 최적화</option>
+                                                <option value="프로젝트 일정 대응 핵심 기능 개발 마무리 및 코드 정리">프로젝트 일정 대응 핵심 기능 개발 마무리 및 코드 정리</option>
+                                                <option value="장애 재발 방지 목적 로그 분석 및 에러 패턴 정리">장애 재발 방지 목적 로그 분석 및 에러 패턴 정리</option>
+                                                <option value="레거시 코드 구조 개선 및 리팩토링 기반 유지보수성 향상">레거시 코드 구조 개선 및 리팩토링 기반 유지보수성 향상</option>
+                                                <option value="QA 테스트 과정 발견 결함 수정 및 재검증 대응">QA 테스트 과정 발견 결함 수정 및 재검증 대응</option>
+                                                <option value="프론트-백엔드 데이터 연동 오류 수정 및 UI 동기화 개선">프론트-백엔드 데이터 연동 오류 수정 및 UI 동기화 개선</option>
+                                                <option value="서비스 런칭 전 전체 기능 통합 점검 및 시나리오 검증">서비스 런칭 전 전체 기능 통합 점검 및 시나리오 검증</option>
+                                                <option value="데이터 마이그레이션 이후 결과값 검증 및 누락 데이터 보완">데이터 마이그레이션 이후 결과값 검증 및 누락 데이터 보완</option>
+                                                <option value="보안 취약점 점검 결과 반영 코드 수정 및 접근제어 강화">보안 취약점 점검 결과 반영 코드 수정 및 접근제어 강화</option>
+                                                <option value="결제 시스템 오류 발생 구간 수정 및 트랜잭션 정상화 처리">결제 시스템 오류 발생 구간 수정 및 트랜잭션 정상화 처리</option>
+                                                <option value="배치 작업 실패 원인 분석 및 스케줄 처리 로직 개선">배치 작업 실패 원인 분석 및 스케줄 처리 로직 개선</option>
+                                                <option value="외부 서비스 정책 변경 대응 API 구조 수정 및 테스트">외부 서비스 정책 변경 대응 API 구조 수정 및 테스트</option>
+                                                <option value="로그 누락 및 비정상 기록 문제 개선을 위한 로깅 구조 수정">로그 누락 및 비정상 기록 문제 개선을 위한 로깅 구조 수정</option>
+                                                <option value="기획 변경 사항 반영 기능 수정 및 사용자 흐름 개선">기획 변경 사항 반영 기능 수정 및 사용자 흐름 개선</option>
+                                                <option value="사용자 피드백 기반 UX 개선 및 기능 보완 작업">사용자 피드백 기반 UX 개선 및 기능 보완 작업</option>
+                                                <option value="통계 데이터 집계 오류 수정 및 리포트 기준 데이터 정리">통계 데이터 집계 오류 수정 및 리포트 기준 데이터 정리</option>
+                                                <option value="서버 모니터링 시스템 설정 및 알림 조건 최적화">서버 모니터링 시스템 설정 및 알림 조건 최적화</option>
+                                                <option value="테스트 케이스 기반 기능 검증 및 오류 재현 확인">테스트 케이스 기반 기능 검증 및 오류 재현 확인</option>
+                                                <option value="운영 중 데이터 누락 이슈 복구 및 정합성 재확인">운영 중 데이터 누락 이슈 복구 및 정합성 재확인</option>
+                                                <option value="관리자 페이지 기능 개선 및 권한 처리 로직 수정">관리자 페이지 기능 개선 및 권한 처리 로직 수정</option>
+                                                <option value="파일 업로드 및 이미지 처리 오류 수정 및 저장 구조 개선">파일 업로드 및 이미지 처리 오류 수정 및 저장 구조 개선</option>
+                                                <option value="CI/CD 배포 프로세스 오류 수정 및 자동화 안정화 작업">CI/CD 배포 프로세스 오류 수정 및 자동화 안정화 작업</option>
+                                                <option value="DB 쿼리 튜닝 및 응답 속도 개선을 위한 인덱스 최적화">DB 쿼리 튜닝 및 응답 속도 개선을 위한 인덱스 최적화</option>
+                                                <option value="신규 서버 환경 구성 및 배포 환경 세팅 작업">신규 서버 환경 구성 및 배포 환경 세팅 작업</option>
+                                                <option value="사용자 인증 및 인가 로직 오류 수정 및 보안 강화">사용자 인증 및 인가 로직 오류 수정 및 보안 강화</option>
+                                                <option value="모바일 환경 UI 깨짐 문제 수정 및 반응형 대응 개선">모바일 환경 UI 깨짐 문제 수정 및 반응형 대응 개선</option>
+                                                <option value="로그 데이터 분석 기반 이상 패턴 탐지 및 대응 로직 보완">로그 데이터 분석 기반 이상 패턴 탐지 및 대응 로직 보완</option>
+                                                <option value="테스트 환경과 운영 환경 차이로 발생한 오류 수정">테스트 환경과 운영 환경 차이로 발생한 오류 수정</option>
+                                                <option value="API 연동 기능 개발 및 데이터 처리 로직 구현">API 연동 기능 개발 및 데이터 처리 로직 구현</option>
+                                                <option value="예외 처리 로직 보완 및 시스템 안정성 강화 작업">예외 처리 로직 보완 및 시스템 안정성 강화 작업</option>
+                                                <option value="서비스 배포 전 최종 점검 및 전체 기능 동작 검증">서비스 배포 전 최종 점검 및 전체 기능 동작 검증</option>
                                                 <option value="custom">직접 입력</option>
                                             </select>
                                             <input type="text" id="ot_task_custom" class="form-input" placeholder="업무 내용을 직접 입력하세요" style="display: none; margin-top: 8px;">

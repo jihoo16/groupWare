@@ -1788,15 +1788,16 @@ div h2{
 /* 야근인원 아이템 스타일 */
 .trip-person-item {
     display: flex;
-    justify-content: space-between;
-    align-items: center;
-    padding: 14px 16px;
+    flex-direction: column;
+    gap: 6px;
+    padding: 12px 14px;
     background: #ffffff;
     border: 1px solid #e2e8f0;
     border-radius: 6px;
     font-size: 13px;
     transition: all 0.2s ease;
     cursor: default;
+    position: relative;
 }
 
 .trip-person-item:hover {
@@ -1846,13 +1847,16 @@ div h2{
 }
 
 .trip-person-remove {
-    padding: 4px 8px;
+    position: absolute;
+    top: 8px;
+    right: 8px;
+    padding: 3px 8px;
     background: #fee2e2;
     color: #dc2626;
     border: 1px solid #fca5a5;
     border-radius: 4px;
     cursor: pointer;
-    font-size: 11px;
+    font-size: 10px;
     font-weight: 600;
     transition: all 0.2s ease;
     display: flex;
@@ -1875,76 +1879,25 @@ div h2{
     display: flex;
     align-items: center;
     gap: 6px;
-    margin-left: 8px;
-    margin-right: 10px;
-    flex-shrink: 0;
-    max-width: 180px;
+    width: 100%;
     min-width: 0;
 }
 
-.person-task-badge {
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    padding: 1px 6px;
-    background: #667eea;
-    color: white;
-    border-radius: 4px;
-    font-size: 10px;
-    font-weight: 600;
-    white-space: nowrap;
-    flex-shrink: 0;
-}
-
-.person-task-default {
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    padding: 1px 6px;
-    background: #e2e8f0;
-    color: #64748b;
-    border-radius: 4px;
-    font-size: 10px;
-    font-weight: 600;
-    white-space: nowrap;
-    flex-shrink: 0;
-}
-
-.person-task-text {
+.ot-person-task-select {
+    flex: 1;
     font-size: 11px;
-    color: #475569;
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    max-width: 100px;
-}
-
-.btn-edit-task {
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    width: 22px;
-    height: 22px;
-    padding: 0;
-    background: #f1f5f9;
-    border: 1px solid #e2e8f0;
+    padding: 4px 6px;
+    border: 1px solid #ddd;
     border-radius: 4px;
-    color: #667eea;
     cursor: pointer;
-    transition: all 0.2s ease;
-    flex-shrink: 0;
+    color: #333;
+    background: #fff;
+    min-width: 0;
 }
 
-.btn-edit-task:hover {
-    background: #667eea;
-    color: white;
+.ot-person-task-select:focus {
+    outline: none;
     border-color: #667eea;
-    transform: scale(1.1);
-}
-
-.btn-edit-task i {
-    font-size: 9px;
-    pointer-events: none;
 }
 
 .add-more-attendees-btn {
