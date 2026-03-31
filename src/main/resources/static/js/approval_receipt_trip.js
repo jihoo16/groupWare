@@ -486,7 +486,10 @@ document.addEventListener('DOMContentLoaded', async function() {
         closeProjectModal();
 
         // setDefaultReporter 내 setTimeout(100ms) 완료 후 검증
-        setTimeout(() => validateRequiredFields(), 300);
+        setTimeout(() => {
+            window._tripLoadingData = false;
+            validateRequiredFields();
+        }, 300);
     };
 
     // ── 프로젝트 연도 필터 ──────────────────────────────────────
@@ -2269,6 +2272,20 @@ document.addEventListener('DOMContentLoaded', async function() {
         if (tripDate) {
             tripDate.addEventListener('change', async function() {
                 await updateTripDateRange();
+
+                // 날짜 변경 시 출장인원 초기화
+                if (!window._tripLoadingData && tripPersons.length > 0) {
+                    Swal.fire({
+                        icon: 'warning',
+                        title: '출장인원 초기화',
+                        text: '날짜 변경 시 출장인원이 초기화됩니다.',
+                        confirmButtonText: '확인',
+                        confirmButtonColor: '#667eea'
+                    });
+                    tripPersons = [];
+                    renderTripPersonList();
+                }
+
                 // 날짜 변경 시 출장인원 중복 재검증
                 await window.recheckTripPersons();
 
@@ -2328,6 +2345,17 @@ document.addEventListener('DOMContentLoaded', async function() {
         // 출장 기간 셀렉트 박스 이벤트
         if (tripDuration) {
             tripDuration.addEventListener('change', async function() {
+                if (!window._tripLoadingData && tripPersons.length > 0) {
+                    Swal.fire({
+                        icon: 'warning',
+                        title: '출장인원 초기화',
+                        text: '기간 변경 시 출장인원이 초기화됩니다.',
+                        confirmButtonText: '확인',
+                        confirmButtonColor: '#667eea'
+                    });
+                    tripPersons = [];
+                    renderTripPersonList();
+                }
                 await updateTripDateRange();
             });
         } else {
@@ -3340,17 +3368,21 @@ document.addEventListener('DOMContentLoaded', async function() {
             return;
         }
 
+        const reporterId = tripReporter?.getAttribute('data-reporter-id') || '';
         tripPersonList2El.innerHTML = filtered.map(person => {
             // tempTripSelectedIds 기반으로 선택 상태 확인
             const isSelected = tempTripSelectedIds.has(String(person.id));
+            const isReporter = String(person.id) === String(reporterId);
 
             // 중복 검증 결과 확인 (회의/야근/출장)
             const isDuplicate = duplicateTripPersonsInfo[person.id];
 
-            const disabledClass = isDuplicate ? ' disabled' : '';
+            const isLocked = isReporter || isDuplicate;
+            const disabledClass = isLocked ? ' disabled' : '';
             const selectedClass = isSelected ? ' added' : '';
 
-            const onclickAttr = isDuplicate ? '' : `onclick="selectTripPerson(${person.id})"`;
+            const onclickAttr = isLocked ? '' : `onclick="selectTripPerson(${person.id})"`;
+            const disabledStyle = isLocked ? 'opacity: 0.6; cursor: not-allowed;' : '';
 
             // 하이라이트 적용
             const highlightedName = highlightText(person.name, searchText);
@@ -3384,7 +3416,9 @@ document.addEventListener('DOMContentLoaded', async function() {
 
             // 우측 아이콘/내용
             let rightContent = '';
-            if (isSelected) {
+            if (isReporter) {
+                rightContent = `<i class="fas fa-check-circle" style="color:#94a3b8; font-size:18px; margin-left:auto; flex-shrink:0;"></i>`;
+            } else if (isSelected) {
                 rightContent = `<i class="fas fa-check-circle" style="color:#10b981; font-size:18px; margin-left:auto; flex-shrink:0;"></i>`;
             } else if (isDuplicate) {
                 rightContent = `<div class="employee-expense" style="color: #9ca3af;">${formattedExpense}</div>`;
@@ -3393,9 +3427,9 @@ document.addEventListener('DOMContentLoaded', async function() {
             }
 
             return `
-            <div class="employee-item${selectedClass}${disabledClass}" data-id="${person.id}" ${onclickAttr}>
+            <div class="employee-item${selectedClass}${disabledClass}" data-id="${person.id}" ${onclickAttr} style="${disabledStyle}">
                 <div class="employee-info">
-                    <div class="employee-name">${highlightedName}${duplicateWarning}</div>
+                    <div class="employee-name">${highlightedName}${isReporter ? '<span style="background:#e0e7ff; color:#4338ca; padding:2px 8px; border-radius:4px; font-size:11px; margin-left:8px; white-space:nowrap;"><i class="fas fa-user-check"></i> 작성자</span>' : ''}${duplicateWarning}</div>
                     <div class="employee-detail">${highlightedPosition} · ${highlightedDept}</div>
                 </div>
                 ${rightContent}
@@ -3445,6 +3479,11 @@ document.addEventListener('DOMContentLoaded', async function() {
         if (item?.classList.contains('disabled')) return;
 
         const id = String(personId);
+        const reporterId = tripReporter?.getAttribute('data-reporter-id') || '';
+
+        // 작성자는 렌더링에서 클릭 차단됨 (안전장치)
+        if (id === String(reporterId)) return;
+
         if (tempTripSelectedIds.has(id)) {
             tempTripSelectedIds.delete(id);
         } else {
@@ -3530,6 +3569,9 @@ document.addEventListener('DOMContentLoaded', async function() {
 
             // receipt_trip.idx 저장 (중복 체크 제외용)
             currentReceiptTripIdx = data.idx;
+
+            // 데이터 로드 중 초기화 방지
+            window._tripLoadingData = true;
 
             // 폼에 데이터 채우기
             await populateForm(data);
@@ -3852,7 +3894,7 @@ document.addEventListener('DOMContentLoaded', async function() {
     // 필수 필드 검증 (빨간색 + shake 애니메이션)
     // ============================================
     function validateRequiredFields() {
-        const requiredIds = ['trip_project', 'trip_reporter', 'trip_card', 'trip_location', 'trip_date', 'trip_purpose'];
+        const requiredIds = ['trip_project', 'trip_reporter', 'trip_card', 'trip_location', 'trip_purpose'];
         let allFilled = true;
 
         requiredIds.forEach(id => {

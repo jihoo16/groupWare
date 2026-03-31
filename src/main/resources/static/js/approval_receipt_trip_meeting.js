@@ -2899,7 +2899,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 }
             }
 
-            // 회의 간 시간 겹침 검증
+            // 회의 간 시간 중복 검증
             {
                 const allMeetings = [
                     { date: document.getElementById('common_meeting_date')?.value,
@@ -3530,22 +3530,29 @@ document.addEventListener('DOMContentLoaded', function() {
 
         tripPersonList2El.innerHTML = paired.map(({ person, isDup }) => {
             const isSelected = tempTripSelectedIds.has(String(person.id));
+            const isAuthor = String(person.id) === String(authorPersonId);
+            const isLocked = isAuthor || isDup;
             const { meal, daily } = getPersonExpense(person);
             const expenseRow = (meal || daily)
                 ? `<div class="employee-expense-row">일비 ${daily.toLocaleString()}원 · 식비 ${meal.toLocaleString()}원</div>`
                 : '';
+            const authorBadge = isAuthor ? '<span style="background:#e0e7ff; color:#4338ca; padding:2px 8px; border-radius:4px; font-size:11px; margin-left:8px; white-space:nowrap;"><i class="fas fa-user-check"></i> 작성자</span>' : '';
             const dupBadge = isDup
-                ? `<span style="background: #fee2e2; color: #b91c1c; padding: 2px 8px; border-radius: 4px; font-size: 11px; margin-left: 8px; white-space: nowrap;"><i class="fas fa-exclamation-circle"></i> 기간 겹침</span>`
+                ? `<span style="background: #fee2e2; color: #991b1b; padding: 2px 8px; border-radius: 4px; font-size: 11px; margin-left: 8px; white-space: nowrap;"><i class="fas fa-exclamation-triangle"></i> 기간 겹침</span>`
                 : '';
-            const disabledStyle = isDup ? 'opacity: 0.45; cursor: not-allowed;' : '';
+            const disabledStyle = isLocked ? 'opacity: 0.6; cursor: not-allowed;' : '';
+            const onclickAttr = isLocked ? '' : `onclick="selectTripPerson(${person.id})"`;
+            const checkIcon = isAuthor
+                ? '<i class="fas fa-check-circle" style="color:#94a3b8; font-size:18px; margin-left:auto; flex-shrink:0;"></i>'
+                : (isSelected ? '<i class="fas fa-check-circle" style="color:#10b981; font-size:18px; margin-left:auto; flex-shrink:0;"></i>' : '');
             return `
-            <div class="employee-item${isSelected ? ' selected' : ''}" data-id="${person.id}" data-dup="${isDup}" onclick="selectTripPerson(${person.id})" style="${disabledStyle}">
+            <div class="employee-item${isSelected ? ' selected' : ''}" data-id="${person.id}" data-dup="${isDup}" ${onclickAttr} style="${disabledStyle}">
                 <div class="employee-info">
-                    <div class="employee-name">${searchUtils.highlightText(person.name, searchText)}${dupBadge}</div>
+                    <div class="employee-name">${searchUtils.highlightText(person.name, searchText)}${authorBadge}${dupBadge}</div>
                     <div class="employee-detail">${searchUtils.highlightText(person.position, searchText)} · ${searchUtils.highlightText(person.dept, searchText)}</div>
                     ${expenseRow}
                 </div>
-                ${isSelected ? '<i class="fas fa-check-circle" style="color:#10b981; font-size:18px; margin-left:auto; flex-shrink:0;"></i>' : ''}
+                ${checkIcon}
             </div>`;
         }).join('');
 
@@ -3558,6 +3565,10 @@ document.addEventListener('DOMContentLoaded', function() {
         if (item?.getAttribute('data-dup') === 'true') return; // 겹침 인원 차단
 
         const id = String(personId);
+
+        // 작성자는 렌더링에서 클릭 차단됨 (안전장치)
+        if (id === String(authorPersonId)) return;
+
         if (tempTripSelectedIds.has(id)) {
             tempTripSelectedIds.delete(id);
         } else {
@@ -3711,19 +3722,26 @@ document.addEventListener('DOMContentLoaded', function() {
         }
 
         let totalMeeting = 0;
+        const mtgAuthorId = String(currentMeetingIdx === 0 ? meetingAuthorPersonId : (extraMeetings.find(m => m.idx === currentMeetingIdx)?.authorPersonId || ''));
         summaryEl.innerHTML = persons.map(person => {
             const meeting = getPersonMeetingExpense(person);
             const isChecked = tempInternalAttendeeIds.has(String(person.id));
+            const isMtgAuthor = String(person.id) === mtgAuthorId;
             if (isChecked) totalMeeting += meeting;
             const expenseText = meeting > 0 ? `회의비 ${meeting.toLocaleString()}원` : '회의비 미설정';
-            const checkIcon = isChecked
-                ? `<i class="fas fa-check-circle" style="color:#10b981; font-size:18px; flex-shrink:0;"></i>`
-                : `<i class="far fa-circle" style="color:#d1d5db; font-size:18px; flex-shrink:0;"></i>`;
+            const authorBadge = isMtgAuthor ? '<span style="background:#e0e7ff; color:#4338ca; padding:2px 8px; border-radius:4px; font-size:11px; margin-left:8px; white-space:nowrap;"><i class="fas fa-user-check"></i> 작성자</span>' : '';
+            const checkIcon = isMtgAuthor
+                ? `<i class="fas fa-check-circle" style="color:#94a3b8; font-size:18px; flex-shrink:0;"></i>`
+                : (isChecked
+                    ? `<i class="fas fa-check-circle" style="color:#10b981; font-size:18px; flex-shrink:0;"></i>`
+                    : `<i class="far fa-circle" style="color:#d1d5db; font-size:18px; flex-shrink:0;"></i>`);
+            const onclickAttr = isMtgAuthor ? '' : `onclick="selectInternalAttendee('${person.id}')"`;
+            const lockedStyle = isMtgAuthor ? 'opacity: 0.6; cursor: not-allowed;' : 'cursor:pointer;';
             return `
-            <div class="employee-item${isChecked ? ' selected' : ''}" onclick="selectInternalAttendee('${person.id}')" style="cursor:pointer;">
+            <div class="employee-item${isChecked ? ' selected' : ''}" ${onclickAttr} style="${lockedStyle}">
                 <i class="far fa-user"></i>
                 <div class="employee-info">
-                    <div class="employee-name">${person.name}</div>
+                    <div class="employee-name">${person.name}${authorBadge}</div>
                     <div class="employee-detail">${person.position} · ${person.dept}</div>
                 </div>
                 <div style="display:flex; flex-direction:column; align-items:flex-end; gap:4px; margin-left:auto;">
@@ -3741,6 +3759,11 @@ document.addEventListener('DOMContentLoaded', function() {
     // 내부인원 선택 토글
     window.selectInternalAttendee = function(personId) {
         const id = String(personId);
+
+        // 작성자는 렌더링에서 클릭 차단됨 (안전장치)
+        const currentMeetingAuthorId = String(currentMeetingIdx === 0 ? meetingAuthorPersonId : (extraMeetings.find(m => m.idx === currentMeetingIdx)?.authorPersonId || ''));
+        if (id === currentMeetingAuthorId) return;
+
         if (tempInternalAttendeeIds.has(id)) {
             tempInternalAttendeeIds.delete(id);
         } else {
@@ -3833,9 +3856,9 @@ document.addEventListener('DOMContentLoaded', function() {
             const isSelected = tempSelectedExternalIds.has(String(person.idx));
             const isDup = dupResults[i];
             const dupBadge = isDup
-                ? `<span style="background:#fee2e2;color:#b91c1c;padding:2px 8px;border-radius:4px;font-size:11px;margin-left:6px;white-space:nowrap;"><i class="fas fa-exclamation-circle"></i> 시간 겹침</span>`
+                ? `<span style="background:#fee2e2;color:#991b1b;padding:2px 8px;border-radius:4px;font-size:11px;margin-left:6px;white-space:nowrap;"><i class="fas fa-exclamation-triangle"></i> 시간 중복</span>`
                 : '';
-            const disabledStyle = isDup ? 'opacity:0.45;cursor:not-allowed;' : '';
+            const disabledStyle = isDup ? 'opacity:0.6;cursor:not-allowed;' : '';
             const clickHandler  = isDup ? '' : `onclick="selectExternalAttendee(${person.idx})"`;
             return `
             <div class="employee-item${isSelected ? ' selected' : ''}" data-id="${person.idx}" ${clickHandler} style="${disabledStyle}">
@@ -4022,9 +4045,8 @@ document.addEventListener('DOMContentLoaded', function() {
     function validateRequiredFields() {
         if (isPopulatingForm) return; // 데이터 로드 중에는 검증 건너뜀
         // 출장 + 회의 공통 필수 텍스트 필드
-        const requiredIds = ['common_project', 'common_card', 'common_location', 'common_date',
+        const requiredIds = ['common_project', 'common_card', 'common_author', 'common_location',
                              'common_purpose', 'common_meeting_purpose', 'common_meeting_author',
-                             'common_meeting_date', 'common_start_time', 'common_end_time',
                              'common_meeting_location', 'common_meeting_content'];
         let allFilled = true;
 
@@ -4506,7 +4528,7 @@ document.addEventListener('DOMContentLoaded', function() {
             return;
         }
 
-        // 회의 시간/날짜/프로젝트가 설정된 경우 타 문서 시간 겹침 병렬 체크
+        // 회의 시간/날짜/프로젝트가 설정된 경우 타 문서 시간 중복 병렬 체크
         const dateVal    = document.getElementById('common_meeting_date')?.value;
         const startVal   = document.getElementById('common_start_time')?.value;
         const endVal     = document.getElementById('common_end_time')?.value;
@@ -4539,11 +4561,11 @@ document.addEventListener('DOMContentLoaded', function() {
                 ? `<span style="background: #d1fae5; color: #065f46; padding: 2px 8px; border-radius: 4px; font-size: 11px; margin-left: 8px; white-space: nowrap;"><i class="fas fa-user-check"></i> 회의 참석중</span>`
                 : '';
 
-            // 타 문서 시간 겹침 여부
+            // 타 문서 시간 중복 여부
             const dupBadge = isDup
-                ? `<span style="background: #fee2e2; color: #b91c1c; padding: 2px 8px; border-radius: 4px; font-size: 11px; margin-left: 8px; white-space: nowrap;"><i class="fas fa-exclamation-circle"></i> 시간 겹침</span>`
+                ? `<span style="background: #fee2e2; color: #991b1b; padding: 2px 8px; border-radius: 4px; font-size: 11px; margin-left: 8px; white-space: nowrap;"><i class="fas fa-exclamation-triangle"></i> 시간 중복</span>`
                 : '';
-            const disabledStyle = isDup ? 'opacity: 0.45; cursor: not-allowed;' : '';
+            const disabledStyle = isDup ? 'opacity: 0.6; cursor: not-allowed;' : '';
 
             return `
                 <div class="employee-item ${selectedClass}" data-id="${person.id}" data-dup="${isDup}" onclick="selectAuthor(${person.id})" style="${disabledStyle}">
@@ -4559,7 +4581,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
     window.selectAuthor = function(personId) {
         const item = document.querySelector(`#authorList .employee-item[data-id="${personId}"]`);
-        if (item?.getAttribute('data-dup') === 'true') return; // 시간 겹침 인원 차단
+        if (item?.getAttribute('data-dup') === 'true') return; // 시간 중복 인원 차단
 
         const person = getAuthorPersons().find(p => String(p.id) === String(personId));
         if (!person) return;
@@ -5642,7 +5664,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 }
             }
 
-            // 회의 간 시간 겹침 검증 (수정 모드)
+            // 회의 간 시간 중복 검증 (수정 모드)
             {
                 const allMtgsUpd = [
                     { date: document.getElementById('common_meeting_date')?.value, start: document.getElementById('common_start_time')?.value, end: document.getElementById('common_end_time')?.value, label: '1번째 회의' },

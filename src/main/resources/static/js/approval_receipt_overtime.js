@@ -218,6 +218,7 @@ document.addEventListener('DOMContentLoaded', async function() {
             console.log('기존 야근식대 데이터 로드:', data);
 
             // 수정 모드 설정
+            window._otLoadingData = true;
             isEditMode = true;
             editingIdx = data.idx;
             const allAttachments = data.attachments || [];
@@ -260,8 +261,6 @@ document.addEventListener('DOMContentLoaded', async function() {
                     });
 
                     if (selectedProject.projectManagerName) {
-                        const otManager = document.getElementById('ot_manager');
-                        if (otManager) otManager.value = selectedProject.projectManagerName;
                         document.querySelectorAll('.ot-auto-manager').forEach(field => {
                             field.textContent = selectedProject.projectManagerName;
                         });
@@ -318,14 +317,13 @@ document.addEventListener('DOMContentLoaded', async function() {
                 }
             }
 
-            // 품의명 설정
-            if (data.documentTitle) {
-                const otTitle = document.getElementById('ot_title');
-                if (otTitle) {
-                    otTitle.value = data.documentTitle;
-                    otTitle.dispatchEvent(new Event('input'));
-                }
-            }
+            // 품의명 공식문서 자동반영
+            document.querySelectorAll('.ot-auto-title').forEach(field => {
+                field.textContent = '야근 식대';
+            });
+            document.querySelectorAll('.ot-auto-desc').forEach(field => {
+                field.textContent = '야근 식대';
+            });
 
             // 금액 설정
             if (data.totalAmount) {
@@ -482,6 +480,7 @@ document.addEventListener('DOMContentLoaded', async function() {
 
             // 수정 모드에서 필수 필드 검증 실행 (인쇄 버튼 표시)
             setTimeout(() => {
+                window._otLoadingData = false;
                 validateRequiredFields();
             }, 500);
 
@@ -719,7 +718,7 @@ document.addEventListener('DOMContentLoaded', async function() {
                 const otProject = document.getElementById('ot_project');
                 if (otProject) {
                     otProject.value = proj.projectName;
-                    otProject.classList.remove('error');
+                    otProject.classList.remove('field-empty');
                 }
                 const selectedProjectIdx = document.getElementById('selectedProjectIdx');
                 if (selectedProjectIdx) selectedProjectIdx.value = proj.idx;
@@ -729,11 +728,8 @@ document.addEventListener('DOMContentLoaded', async function() {
                     field.textContent = proj.projectName;
                 });
 
-                // 연구책임자 자동 채우기
-                const otManager = document.getElementById('ot_manager');
-                if (otManager && proj.projectManagerName) {
-                    otManager.value = proj.projectManagerName;
-                    otManager.classList.remove('error');
+                // 연구책임자 공식문서 자동 채우기
+                if (proj.projectManagerName) {
                     document.querySelectorAll('.ot-auto-manager').forEach(field => {
                         field.textContent = proj.projectManagerName;
                     });
@@ -751,7 +747,7 @@ document.addEventListener('DOMContentLoaded', async function() {
                     const otCard = document.getElementById('ot_card');
                     if (otCard) {
                         otCard.value = projectCards[0].cardName;
-                        otCard.classList.remove('error');
+                        otCard.classList.remove('field-empty');
                     }
                     const selectedCardIdx = document.getElementById('selectedCardIdx');
                     if (selectedCardIdx) {
@@ -800,7 +796,7 @@ document.addEventListener('DOMContentLoaded', async function() {
                         const otApplicant = document.getElementById('ot_applicant');
                         if (otApplicant) {
                             otApplicant.value = currentUserInProject.name;
-                            otApplicant.classList.remove('error');
+                            otApplicant.classList.remove('field-empty');
                         }
                         const selectedApplicantIdx = document.getElementById('selectedApplicantIdx');
                         if (selectedApplicantIdx) selectedApplicantIdx.value = currentUserInProject.id;
@@ -975,7 +971,7 @@ document.addEventListener('DOMContentLoaded', async function() {
                 const otCard = document.getElementById('ot_card');
                 if (otCard) {
                     otCard.value = card.cardName;
-                    otCard.classList.remove('error');
+                    otCard.classList.remove('field-empty');
                 }
                 const selectedCardIdx = document.getElementById('selectedCardIdx');
                 if (selectedCardIdx) {
@@ -1055,7 +1051,7 @@ document.addEventListener('DOMContentLoaded', async function() {
                 const otProject = document.getElementById('ot_project');
                 if (otProject) {
                     otProject.value = proj.projectName;
-                    otProject.classList.remove('error');
+                    otProject.classList.remove('field-empty');
                 }
                 const selectedProjectIdx = document.getElementById('selectedProjectIdx');
                 if (selectedProjectIdx) selectedProjectIdx.value = proj.idx;
@@ -1064,10 +1060,7 @@ document.addEventListener('DOMContentLoaded', async function() {
                     field.textContent = proj.projectName;
                 });
 
-                const otManager = document.getElementById('ot_manager');
-                if (otManager && proj.projectManagerName) {
-                    otManager.value = proj.projectManagerName;
-                    otManager.classList.remove('error');
+                if (proj.projectManagerName) {
                     document.querySelectorAll('.ot-auto-manager').forEach(field => {
                         field.textContent = proj.projectManagerName;
                     });
@@ -1081,7 +1074,7 @@ document.addEventListener('DOMContentLoaded', async function() {
                     const otCard = document.getElementById('ot_card');
                     if (otCard) {
                         otCard.value = projectCards[0].cardName;
-                        otCard.classList.remove('error');
+                        otCard.classList.remove('field-empty');
                     }
                     const selectedCardIdx = document.getElementById('selectedCardIdx');
                     if (selectedCardIdx) selectedCardIdx.value = projectCards[0].idx;
@@ -1208,14 +1201,14 @@ document.addEventListener('DOMContentLoaded', async function() {
                 const otProject = document.getElementById('ot_project');
                 if (otProject) {
                     otProject.value = proj.projectName;
-                    otProject.classList.remove('error');
+                    otProject.classList.remove('field-empty');
                 }
                 const selectedProjectIdxInput = document.getElementById('selectedProjectIdx');
                 if (selectedProjectIdxInput) selectedProjectIdxInput.value = proj.idx;
 
                 await loadProjectCards(proj.idx);
                 await loadProjectMembers(proj.idx);
-                await loadProjectExpenseSettings(proj.idx);
+                // expense settings는 loadProjectMembers 내에서 함께 로드됨
 
                 document.querySelectorAll('.ot-auto-project').forEach(field => {
                     field.textContent = proj.projectName;
@@ -1290,11 +1283,13 @@ document.addEventListener('DOMContentLoaded', async function() {
                 duplicateBadge = `<span style="background: #fee2e2; color: #991b1b; padding: 2px 8px; border-radius: 4px; font-size: 11px; margin-left: 8px; white-space: nowrap;" title="${docInfo}"><i class="fas fa-ban"></i> 시간 중복</span>`;
             }
 
+            const isSelected = selectedApplicant && selectedApplicant.id === member.id;
             item.innerHTML = `
                 <div class="employee-info">
                     <div class="employee-name"><i class="fas fa-user" style="margin-right:6px; color:#667eea;"></i>${highlightedName}${duplicateBadge}</div>
-                    <div class="employee-detail">${member.dept || '-'} / ${member.position || '-'}</div>
+                    <div class="employee-detail">${member.dept || '-'} · ${member.position || '-'}</div>
                 </div>
+                ${isSelected ? '<i class="fas fa-check-circle" style="color: #10b981; font-size: 18px; margin-left: auto;"></i>' : ''}
             `;
 
             item.addEventListener('click', function() {
@@ -1312,7 +1307,7 @@ document.addEventListener('DOMContentLoaded', async function() {
                 const otApplicant = document.getElementById('ot_applicant');
                 if (otApplicant) {
                     otApplicant.value = member.name;
-                    otApplicant.classList.remove('error');
+                    otApplicant.classList.remove('field-empty');
                 }
                 const selectedApplicantIdx = document.getElementById('selectedApplicantIdx');
                 if (selectedApplicantIdx) {
@@ -1348,7 +1343,7 @@ document.addEventListener('DOMContentLoaded', async function() {
             } else {
                 const persons = typeof getOvertimePersons === 'function' ? getOvertimePersons() : [];
                 const filtered = persons.filter(member =>
-                    (member.name || '').toLowerCase().includes(keyword.toLowerCase())
+                    matchesSearch(member.name + member.dept + member.position, keyword)
                 );
                 renderApplicantList(filtered, keyword);
             }
@@ -1476,10 +1471,8 @@ document.addEventListener('DOMContentLoaded', async function() {
     // 야근식대 자동 채우기 기능
     function setupOvertimeAutoFill() {
         const otProject = document.getElementById('ot_project');
-        const otManager = document.getElementById('ot_manager');
         const otApplicant = document.getElementById('ot_applicant');
         const otApprovalDate = document.getElementById('ot_approval_date');
-        const otTitle = document.getElementById('ot_title');
         const otAmount = document.getElementById('ot_amount');
         const otContent = document.getElementById('ot_content');
         const otStartTime = document.getElementById('ot_start_time');
@@ -1574,13 +1567,14 @@ document.addEventListener('DOMContentLoaded', async function() {
                         `<option value="${opt}"${opt === selectedTask ? ' selected' : ''}>${opt}</option>`
                     ).join('');
                     const isApplicant = String(person.id) === String(applicantIdx);
+                    const applicantBadge = isApplicant ? '<span class="author-badge">신청자</span>' : '';
                     const removeBtn = isApplicant
-                        ? `<span style="position:absolute; top:8px; right:8px; font-size:10px; color:#667eea; font-weight:600;">신청자</span>`
+                        ? `<span class="cannot-remove-text"><i class="fas fa-lock"></i> 삭제 불가</span>`
                         : `<button type="button" class="trip-person-remove" onclick="event.stopPropagation(); removeOvertimePersonInTemplate('${person.id}')"><i class="fas fa-times"></i> 삭제</button>`;
                     return `
-                    <div class="trip-person-item" style="cursor: default;">
+                    <div class="trip-person-item ${isApplicant ? 'is-author' : ''}" style="cursor: default;">
                         <div class="trip-person-info" style="pointer-events: auto;">
-                            <span class="name">${person.name}</span>
+                            <span class="name">${person.name}${applicantBadge}</span>
                             <span>${person.dept}</span>
                             <span>${person.position}</span>
                             <span style="color: #667eea; font-weight: 600;">${expenseText}</span>
@@ -1921,28 +1915,13 @@ document.addEventListener('DOMContentLoaded', async function() {
             });
         }
 
-        // 품의명 자동 채우기
-        if (otTitle) {
-            otTitle.addEventListener('input', function() {
-                const value = this.value;
-                document.querySelectorAll('.ot-auto-title').forEach(field => {
-                    field.textContent = value;
-                });
-                document.querySelectorAll('.ot-auto-desc').forEach(field => {
-                    field.textContent = value;
-                });
-            });
-
-            // 초기값 설정
-            if (otTitle.value) {
-                document.querySelectorAll('.ot-auto-title').forEach(field => {
-                    field.textContent = otTitle.value;
-                });
-                document.querySelectorAll('.ot-auto-desc').forEach(field => {
-                    field.textContent = otTitle.value;
-                });
-            }
-        }
+        // 품의명은 "야근 식대" 고정 — 공식문서에 고정값 표시
+        document.querySelectorAll('.ot-auto-title').forEach(field => {
+            field.textContent = '야근 식대';
+        });
+        document.querySelectorAll('.ot-auto-desc').forEach(field => {
+            field.textContent = '야근 식대';
+        });
 
         // 품의내용 자동 채우기
         if (otContent) {
@@ -1969,12 +1948,32 @@ document.addEventListener('DOMContentLoaded', async function() {
             field.textContent = '';
         });
 
-        // 시작/종료 시간 변경 시 테이블 업데이트
+        // 날짜/시간 변경 시 야근인원 초기화 + 테이블 업데이트
+        function clearOvertimePersonsOnChange() {
+            if (window._otLoadingData) return;
+            if (overtimePersons.length > 0) {
+                Swal.fire({
+                    icon: 'warning',
+                    title: '야근인원 초기화',
+                    text: '날짜 또는 시간 변경 시 야근인원이 초기화됩니다.',
+                    confirmButtonText: '확인',
+                    confirmButtonColor: '#667eea'
+                });
+                overtimePersons = [];
+                syncGlobalOvertimePersons();
+                renderOvertimePersonListInTemplate();
+            }
+            updateOvertimeTable();
+        }
+
+        if (otApprovalDate) {
+            otApprovalDate.addEventListener('change', clearOvertimePersonsOnChange);
+        }
         if (otStartTime) {
-            otStartTime.addEventListener('change', updateOvertimeTable);
+            otStartTime.addEventListener('change', clearOvertimePersonsOnChange);
         }
         if (otEndTime) {
-            otEndTime.addEventListener('change', updateOvertimeTable);
+            otEndTime.addEventListener('change', clearOvertimePersonsOnChange);
         }
 
         // 업무 내용 선택 변경 시 처리
@@ -2015,12 +2014,7 @@ document.addEventListener('DOMContentLoaded', async function() {
             });
         }
 
-        // 연구책임자 초기값 자동 채우기 (프로젝트 선택 시 설정됨)
-        if (otManager && otManager.value) {
-            document.querySelectorAll('.ot-auto-manager').forEach(field => {
-                field.textContent = otManager.value;
-            });
-        }
+        // 연구책임자는 프로젝트 선택 시 자동 설정됨
 
         // 초기화
         overtimePersons = [];
@@ -2299,14 +2293,12 @@ document.addEventListener('DOMContentLoaded', async function() {
             const projectIdx = document.getElementById('selectedProjectIdx')?.value;
             const otProject = document.getElementById('ot_project');
             const otApprovalDate = document.getElementById('ot_approval_date');
-            const otTitle = document.getElementById('ot_title');
             const otAmount = document.getElementById('ot_amount');
             const otStartTime = document.getElementById('ot_start_time');
             const otEndTime = document.getElementById('ot_end_time');
             const otTaskSelect = document.getElementById('ot_task_select');
             const otTaskCustom = document.getElementById('ot_task_custom');
             const otContent = document.getElementById('ot_content');
-            const otManager = document.getElementById('ot_manager');
 
             // 카드 입력 필드 참조
             const otCard = document.getElementById('ot_card');
@@ -2314,75 +2306,67 @@ document.addEventListener('DOMContentLoaded', async function() {
 
             if (!projectIdx) {
                 showWarning('과제를 선택해주세요.');
-                if (otProject) otProject.classList.add('error');
+                if (otProject) otProject.classList.add('field-empty');
                 return;
             } else {
-                if (otProject) otProject.classList.remove('error');
+                if (otProject) otProject.classList.remove('field-empty');
             }
 
             // 카드 선택 검증
             const cardIdx = document.getElementById('selectedCardIdx')?.value;
             if (!cardIdx) {
                 showWarning('사용 카드를 선택해주세요.');
-                if (otCard) otCard.classList.add('error');
+                if (otCard) otCard.classList.add('field-empty');
                 return;
             } else {
-                if (otCard) otCard.classList.remove('error');
+                if (otCard) otCard.classList.remove('field-empty');
             }
 
             // 신청자 선택 검증
             const applicantIdx = document.getElementById('selectedApplicantIdx')?.value;
             if (!applicantIdx) {
                 showWarning('신청자를 선택해주세요.');
-                if (otApplicant) otApplicant.classList.add('error');
+                if (otApplicant) otApplicant.classList.add('field-empty');
                 return;
             } else {
-                if (otApplicant) otApplicant.classList.remove('error');
+                if (otApplicant) otApplicant.classList.remove('field-empty');
             }
 
             if (!otApprovalDate?.value) {
                 showWarning('품의일자를 입력해주세요.');
-                if (otApprovalDate) otApprovalDate.classList.add('error');
+                if (otApprovalDate) otApprovalDate.classList.add('field-empty');
                 return;
             } else {
-                if (otApprovalDate) otApprovalDate.classList.remove('error');
-            }
-
-            if (!otTitle?.value) {
-                showWarning('품의명을 입력해주세요.');
-                if (otTitle) otTitle.classList.add('error');
-                return;
-            } else {
-                if (otTitle) otTitle.classList.remove('error');
+                if (otApprovalDate) otApprovalDate.classList.remove('field-empty');
             }
 
             // 총 공급대가 검증
             const amountValidation = parseInt((otAmount?.value || '').replace(/,/g, '')) || 0;
             if (amountValidation <= 0) {
-                showWarning('총 공급대가을 입력해주세요.');
-                if (otAmount) otAmount.classList.add('error');
+                showWarning('총 사용 금액을 입력해주세요.');
+                if (otAmount) otAmount.classList.add('field-empty');
                 return;
             } else {
-                if (otAmount) otAmount.classList.remove('error');
+                if (otAmount) otAmount.classList.remove('field-empty');
             }
 
             // 품의내용 검증
             if (!otContent?.value || !otContent.value.trim()) {
                 showWarning('품의내용을 입력해주세요.');
-                if (otContent) otContent.classList.add('error');
+                if (otContent) otContent.classList.add('field-empty');
                 return;
             } else {
-                if (otContent) otContent.classList.remove('error');
+                if (otContent) otContent.classList.remove('field-empty');
             }
 
             if (!otStartTime?.value || !otEndTime?.value) {
                 showWarning('시작 시간과 종료 시간을 입력해주세요.');
-                if (otStartTime && !otStartTime.value) otStartTime.classList.add('error');
-                if (otEndTime && !otEndTime.value) otEndTime.classList.add('error');
+                if (otStartTime && !otStartTime.value) otStartTime.classList.add('field-empty');
+                if (otEndTime && !otEndTime.value) otEndTime.classList.add('field-empty');
                 return;
             } else {
-                if (otStartTime) otStartTime.classList.remove('error');
-                if (otEndTime) otEndTime.classList.remove('error');
+                if (otStartTime) otStartTime.classList.remove('field-empty');
+                if (otEndTime) otEndTime.classList.remove('field-empty');
             }
 
             // 업무 내용 가져오기
@@ -2400,10 +2384,10 @@ document.addEventListener('DOMContentLoaded', async function() {
 
             if (!taskContent && !allPersonsHaveIndividualTask) {
                 showWarning('업무 내용을 선택하거나 입력해주세요.');
-                if (otTaskSelect) otTaskSelect.classList.add('error');
+                if (otTaskSelect) otTaskSelect.classList.add('field-empty');
                 return;
             } else {
-                if (otTaskSelect) otTaskSelect.classList.remove('error');
+                if (otTaskSelect) otTaskSelect.classList.remove('field-empty');
             }
 
             // 야근 인원 확인
@@ -2415,7 +2399,9 @@ document.addEventListener('DOMContentLoaded', async function() {
 
             // 야근인원 업무내용 전원 동일 사유 검증
             if (overtimePersons.length > 1) {
-                const globalTask = getCurrentTask();
+                const otTaskSel = document.getElementById('ot_task_select');
+                const otTaskCus = document.getElementById('ot_task_custom');
+                const globalTask = otTaskSel?.value === 'custom' ? (otTaskCus?.value || '') : (otTaskSel?.value || '');
                 const tasks = overtimePersons.map(p => {
                     const hasPersonTask = p.task !== null && p.task !== undefined && p.task !== '';
                     return hasPersonTask ? p.task : globalTask;
@@ -2529,7 +2515,7 @@ document.addEventListener('DOMContentLoaded', async function() {
                 authorIdx: parseInt(applicantIdx),
                 overtimeDate: otApprovalDate.value,
                 approvalDate: otApprovalDate.value,
-                documentTitle: otTitle.value,
+                documentTitle: '야근 식대',
                 documentContent: otContent?.value || '',
                 totalAmount: amount,
                 isProject: true,  // 프로젝트 관련 문서임을 명시
@@ -2608,7 +2594,6 @@ document.addEventListener('DOMContentLoaded', async function() {
         const cardInput = document.getElementById('ot_card');
         const applicantInput = document.getElementById('ot_applicant');
         const dateInput = document.getElementById('ot_approval_date');
-        const titleInput = document.getElementById('ot_title');
         const amountInput = document.getElementById('ot_amount');
         const startTimeInput = document.getElementById('ot_start_time');
         const endTimeInput = document.getElementById('ot_end_time');
@@ -2620,76 +2605,46 @@ document.addEventListener('DOMContentLoaded', async function() {
 
         // 과제명 검증
         if (!projectInput?.value) {
-            projectInput?.classList.add('error');
+            projectInput?.classList.add('field-empty');
             allFieldsFilled = false;
         } else {
-            projectInput?.classList.remove('error');
+            projectInput?.classList.remove('field-empty');
         }
 
         // 사용 카드 검증
         if (!cardInput?.value) {
-            cardInput?.classList.add('error');
+            cardInput?.classList.add('field-empty');
             allFieldsFilled = false;
         } else {
-            cardInput?.classList.remove('error');
-        }
-
-        // 연구책임자 검증
-        const managerInput = document.getElementById('ot_manager');
-        if (!managerInput?.value) {
-            managerInput?.classList.add('error');
-            allFieldsFilled = false;
-        } else {
-            managerInput?.classList.remove('error');
+            cardInput?.classList.remove('field-empty');
         }
 
         // 신청자 검증
         if (!applicantInput?.value) {
-            applicantInput?.classList.add('error');
+            applicantInput?.classList.add('field-empty');
             allFieldsFilled = false;
         } else {
-            applicantInput?.classList.remove('error');
+            applicantInput?.classList.remove('field-empty');
         }
 
         // 품의일자 검증
         if (!dateInput?.value) {
-            dateInput?.classList.add('error');
+            dateInput?.classList.add('field-empty');
             allFieldsFilled = false;
         } else {
-            dateInput?.classList.remove('error');
-        }
-
-        // 품의명 검증
-        if (!titleInput?.value) {
-            titleInput?.classList.add('error');
-            allFieldsFilled = false;
-        } else {
-            titleInput?.classList.remove('error');
+            dateInput?.classList.remove('field-empty');
         }
 
         // 총 공급대가 검증
         const amountValue = parseInt((amountInput?.value || '').replace(/,/g, '')) || 0;
         if (amountValue <= 0) {
-            amountInput?.classList.add('error');
+            amountInput?.classList.add('field-empty');
             allFieldsFilled = false;
         } else {
-            amountInput?.classList.remove('error');
+            amountInput?.classList.remove('field-empty');
         }
 
-        // 시작/종료 시간 검증
-        if (!startTimeInput?.value) {
-            startTimeInput?.classList.add('error');
-            allFieldsFilled = false;
-        } else {
-            startTimeInput?.classList.remove('error');
-        }
-
-        if (!endTimeInput?.value) {
-            endTimeInput?.classList.add('error');
-            allFieldsFilled = false;
-        } else {
-            endTimeInput?.classList.remove('error');
-        }
+        // startTime, endTime은 기본값이 있으므로 빨간 테두리 불필요
 
         // 업무 내용 검증
         // 야근 인원 전원이 개인 업무내용을 입력했다면 전역 셀렉트 검증 생략
@@ -2699,34 +2654,34 @@ document.addEventListener('DOMContentLoaded', async function() {
 
         const taskValue = taskSelect?.value;
         if (!allPersonsHaveTask && !taskValue) {
-            taskSelect?.classList.add('error');
+            taskSelect?.classList.add('field-empty');
             allFieldsFilled = false;
         } else {
-            taskSelect?.classList.remove('error');
+            taskSelect?.classList.remove('field-empty');
             if (!allPersonsHaveTask && taskValue === 'custom' && !taskCustomInput?.value) {
-                taskCustomInput?.classList.add('error');
+                taskCustomInput?.classList.add('field-empty');
                 allFieldsFilled = false;
             } else {
-                taskCustomInput?.classList.remove('error');
+                taskCustomInput?.classList.remove('field-empty');
             }
         }
 
         // 품의 내용 검증
         if (!contentInput?.value || !contentInput.value.trim()) {
-            contentInput?.classList.add('error');
+            contentInput?.classList.add('field-empty');
             allFieldsFilled = false;
         } else {
-            contentInput?.classList.remove('error');
+            contentInput?.classList.remove('field-empty');
         }
 
         // 야근 인원 검증
         const overtimePersons = window.currentOvertimePersons || [];
         const overtimePersonArea = document.getElementById('overtimePersonArea');
         if (overtimePersons.length === 0) {
-            overtimePersonArea?.classList.add('error');
+            overtimePersonArea?.classList.add('field-empty');
             allFieldsFilled = false;
         } else {
-            overtimePersonArea?.classList.remove('error');
+            overtimePersonArea?.classList.remove('field-empty');
         }
 
         // 인쇄 버튼 표시/숨김
@@ -2765,7 +2720,7 @@ document.addEventListener('DOMContentLoaded', async function() {
     // 필수 필드 변경 시 검증
     const fieldsToWatch = [
         'ot_project', 'ot_card', 'ot_applicant', 'ot_approval_date',
-        'ot_title', 'ot_amount', 'ot_start_time', 'ot_end_time',
+        'ot_amount', 'ot_start_time', 'ot_end_time',
         'ot_task_select', 'ot_task_custom', 'ot_content'
     ];
 
@@ -2807,17 +2762,90 @@ document.addEventListener('DOMContentLoaded', async function() {
     // ============================================
 
     // 모달 열기
+    // 야근인원 모달 내 프로젝트 목록 렌더링 (과제 미선택 시)
+    function renderProjectListInOvertimePersonModal(searchText = '') {
+        const listEl = document.getElementById('overtimePersonList2');
+        if (!listEl) return;
+
+        let filtered = projects;
+        if (searchText) {
+            filtered = projects.filter(proj =>
+                matchesSearch(proj.projectName + (proj.description || ''), searchText)
+            );
+        }
+
+        if (filtered.length === 0) {
+            listEl.innerHTML = `<div style="text-align: center; padding: 40px; color: #94a3b8;">
+                <i class="fas fa-search" style="font-size: 32px; margin-bottom: 12px; display: block;"></i>
+                ${searchText ? '검색 결과가 없습니다.' : '등록된 프로젝트가 없습니다.'}
+            </div>`;
+            return;
+        }
+
+        const headerMessage = `<div class="convenience-notice">
+            <div class="notice-icon"><i class="fas fa-lightbulb"></i></div>
+            <div class="notice-content">
+                <div class="notice-title">프로젝트를 먼저 선택해주세요</div>
+                <div class="notice-desc">프로젝트를 선택하면 야근인원 목록이 표시됩니다</div>
+            </div>
+        </div>`;
+
+        listEl.innerHTML = headerMessage + filtered.map(proj => {
+            const highlightedName = searchText
+                ? proj.projectName.replace(new RegExp(`(${searchText.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')})`, 'gi'), '<mark>$1</mark>')
+                : proj.projectName;
+            return `<div class="project-item-in-attendee" data-project-idx="${proj.idx}">
+                <div class="project-item-icon"><i class="fas fa-folder"></i></div>
+                <div class="project-item-info"><div class="project-item-name">${highlightedName}</div></div>
+                <div class="project-item-arrow"><i class="fas fa-chevron-right"></i></div>
+            </div>`;
+        }).join('');
+
+        listEl.querySelectorAll('.project-item-in-attendee').forEach(item => {
+            item.addEventListener('click', async function() {
+                const projectIdx = this.getAttribute('data-project-idx');
+                const proj = projects.find(p => String(p.idx) === String(projectIdx));
+                if (!proj) return;
+
+                selectedProject = proj;
+                const otProject = document.getElementById('ot_project');
+                if (otProject) { otProject.value = proj.projectName; otProject.classList.remove('field-empty'); }
+                const selectedProjectIdxInput = document.getElementById('selectedProjectIdx');
+                if (selectedProjectIdxInput) selectedProjectIdxInput.value = proj.idx;
+
+                await loadProjectCards(proj.idx);
+                await loadProjectMembers(proj.idx);
+                // expense settings는 loadProjectMembers 내에서 함께 로드됨
+
+                document.querySelectorAll('.ot-auto-project').forEach(field => {
+                    field.textContent = proj.projectName;
+                    const len = (proj.projectName || '').length;
+                    if (len > 35) { field.style.fontSize = '8px'; }
+                    else if (len > 25) { field.style.fontSize = '9px'; }
+                    else if (len > 15) { field.style.fontSize = '10px'; }
+                    else { field.style.fontSize = ''; }
+                });
+                document.querySelectorAll('.ot-auto-manager').forEach(f => f.textContent = proj.projectManagerName || '');
+
+                // 프로젝트 선택 후 인원 목록으로 전환
+                renderOvertimePersonList2('');
+                renderSelectedOvertimeBadges();
+                validateRequiredFields();
+            });
+        });
+    }
+
     window.openOvertimePersonModal = async function() {
-        if (!selectedProject) {
-            showWarning('과제를 먼저 선택해주세요.');
-            return;
-        }
-        const dateInput = document.getElementById('ot_approval_date');
-        if (!dateInput?.value) {
-            showWarning('날짜를 먼저 선택해주세요.');
-            return;
-        }
         if (overtimePersonModal) {
+            overtimePersonModal.classList.add('show');
+            if (overtimePersonSearchInput) overtimePersonSearchInput.value = '';
+
+            if (!selectedProject) {
+                // 과제 미선택 → 프로젝트 목록 먼저 표시
+                renderProjectListInOvertimePersonModal('');
+                return;
+            }
+
             // 기존 선택된 야근인원을 temp에 복사
             const currentOvertimePersons = window.getCurrentOvertimePersons ? window.getCurrentOvertimePersons() : [];
             tempSelectedOvertimePersons = currentOvertimePersons.map(p => ({
@@ -2828,11 +2856,8 @@ document.addEventListener('DOMContentLoaded', async function() {
                 overtimeExpense: p.overtimeExpense || 0
             }));
 
-            overtimePersonModal.classList.add('show');
-            if (overtimePersonSearchInput) overtimePersonSearchInput.value = '';
-
             // 중복 검증 정보 로드 후 렌더링
-            renderOvertimePersonList2('', true); // 로딩 상태로 먼저 렌더링
+            renderOvertimePersonList2('', true);
             await loadDuplicateInfoForAllPersons();
             renderOvertimePersonList2('');
             renderSelectedOvertimeBadges();
@@ -2915,18 +2940,23 @@ document.addEventListener('DOMContentLoaded', async function() {
                 statusBadge = `<span style="background: #fee2e2; color: #991b1b; padding: 2px 8px; border-radius: 4px; font-size: 11px; margin-left: 8px; white-space: nowrap;" title="${tooltipText}"><i class="fas fa-ban"></i> 시간 중복</span>`;
             }
 
-            const isDisabled = isDuplicate && !isApplicant;
+            const isLocked = isApplicant || (isDuplicate && !isApplicant);
+            const onclickAttr = isLocked ? '' : `onclick="toggleOvertimePerson(${person.id})"`;
+            const lockedStyle = isLocked ? 'opacity: 0.6; cursor: not-allowed;' : '';
+            const checkIcon = isApplicant
+                ? '<i class="fas fa-check-circle" style="color: #94a3b8; font-size: 18px; margin-left: auto;"></i>'
+                : (isSelected ? '<i class="fas fa-check-circle" style="color: #10b981; font-size: 18px; margin-left: auto;"></i>' : '');
 
             return `
-                <div class="employee-item ${isSelected ? 'selected' : ''} ${isDisabled ? 'duplicate-disabled' : ''}"
+                <div class="employee-item ${isSelected ? 'selected' : ''} ${isLocked ? 'duplicate-disabled' : ''}"
                      data-id="${person.id}"
-                     onclick="toggleOvertimePerson(${person.id})"
-                     style="${isDisabled ? 'opacity: 0.6; cursor: not-allowed;' : ''}">
+                     ${onclickAttr}
+                     style="${lockedStyle}">
                     <div class="employee-info">
                         <div class="employee-name">${person.name}${statusBadge}</div>
                         <div class="employee-detail">${person.position} · ${person.dept} · ${formattedExpense}</div>
                     </div>
-                    ${isSelected ? '<i class="fas fa-check-circle" style="color: #10b981; font-size: 18px; margin-left: auto;"></i>' : ''}
+                    ${checkIcon}
                 </div>
             `;
         }).join('');
@@ -2938,15 +2968,9 @@ document.addEventListener('DOMContentLoaded', async function() {
         const person = persons.find(p => p.id === personId);
         if (!person) return;
 
-        // 신청자는 해제 불가
+        // 신청자는 렌더링에서 클릭 차단됨 (안전장치)
         const applicantIdx = document.getElementById('selectedApplicantIdx')?.value || '';
-        if (String(personId) === String(applicantIdx)) {
-            const isSelected = tempSelectedOvertimePersons.some(a => String(a.id) === String(personId));
-            if (isSelected) {
-                showWarning('신청자는 야근인원에서 제외할 수 없습니다.');
-                return;
-            }
-        }
+        if (String(personId) === String(applicantIdx)) return;
 
         // 중복 체크 - 중복이면 선택 불가
         const duplicateInfo = duplicateAttendeesInfo[personId];
@@ -3027,7 +3051,12 @@ document.addEventListener('DOMContentLoaded', async function() {
     // 검색 기능
     if (overtimePersonSearchInput) {
         overtimePersonSearchInput.addEventListener('input', function(e) {
-            renderOvertimePersonList2(e.target.value);
+            const keyword = e.target.value.trim();
+            if (!selectedProject) {
+                renderProjectListInOvertimePersonModal(keyword);
+            } else {
+                renderOvertimePersonList2(keyword);
+            }
         });
     }
 
@@ -3206,7 +3235,7 @@ document.addEventListener('DOMContentLoaded', async function() {
                 const otApplicant = document.getElementById('ot_applicant');
                 if (otApplicant) {
                     otApplicant.value = '';
-                    otApplicant.classList.add('error');
+                    otApplicant.classList.add('field-empty');
                 }
                 if (selectedApplicantIdxInput) selectedApplicantIdxInput.value = '';
             }
@@ -3306,16 +3335,13 @@ document.addEventListener('DOMContentLoaded', async function() {
             }
         });
 
-        // 품의명 기본값 자동 채우기
-        const otTitle = document.getElementById('ot_title');
-        if (otTitle && otTitle.value) {
-            document.querySelectorAll('.ot-auto-title').forEach(field => {
-                field.textContent = otTitle.value;
-            });
-            document.querySelectorAll('.ot-auto-desc').forEach(field => {
-                field.textContent = otTitle.value;
-            });
-        }
+        // 품의명 기본값 자동 채우기 (고정값)
+        document.querySelectorAll('.ot-auto-title').forEach(field => {
+            field.textContent = '야근 식대';
+        });
+        document.querySelectorAll('.ot-auto-desc').forEach(field => {
+            field.textContent = '야근 식대';
+        });
 
         // URL 파라미터 확인 - 수정 모드 진입
         const urlParams = new URLSearchParams(window.location.search);

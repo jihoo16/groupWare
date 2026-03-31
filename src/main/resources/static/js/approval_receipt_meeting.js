@@ -263,7 +263,7 @@ document.addEventListener('DOMContentLoaded', async function() {
             setTimeout(() => {
                 const commonProject = document.getElementById('common_project');
                 if (commonProject && !commonProject.value) {
-                    commonProject.classList.add('error');
+                    commonProject.classList.add('field-empty');
                 }
             }, 100);
         }
@@ -639,7 +639,7 @@ document.addEventListener('DOMContentLoaded', async function() {
                     // 프로젝트 입력 필드에 표시
                     if (commonProject) {
                         commonProject.value = proj.projectName;
-                        commonProject.classList.remove('error'); // 빨간색 제거
+                        commonProject.classList.remove('field-empty');
                     }
                     const selectedProjectIdx = document.getElementById('selectedProjectIdx');
                     if (selectedProjectIdx) {
@@ -1290,7 +1290,7 @@ document.addEventListener('DOMContentLoaded', async function() {
                     // 작성자가 아닌 경우에만 클릭 이벤트와 삭제 버튼 표시
                     const clickEvent = isAuthor ? '' : `onclick="removeAttendeeInTemplate('${attendee.id}')"`;
                     const deleteButton = isAuthor
-                        ? '<span class="cannot-remove-text" style="color: #94a3b8; font-size: 11px;">삭제 불가</span>'
+                        ? '<span class="cannot-remove-text"><i class="fas fa-lock"></i> 삭제 불가</span>'
                         : '<button type="button" class="trip-person-remove attendee-remove"><i class="fas fa-times"></i> 삭제</button>';
 
                     return `
@@ -1871,6 +1871,40 @@ document.addEventListener('DOMContentLoaded', async function() {
                 projectInput.classList.add('field-empty');
             } else {
                 projectInput.classList.remove('field-empty');
+            }
+        }
+
+        if (cardInput) {
+            if (cardInput.value.trim() === '') {
+                cardInput.classList.add('field-empty');
+            } else {
+                cardInput.classList.remove('field-empty');
+            }
+        }
+
+        if (authorInput) {
+            if (authorInput.value.trim() === '') {
+                authorInput.classList.add('field-empty');
+            } else {
+                authorInput.classList.remove('field-empty');
+            }
+        }
+
+        if (dateInput) {
+            if (dateInput.value.trim() === '') {
+                dateInput.classList.add('field-empty');
+            } else {
+                dateInput.classList.remove('field-empty');
+            }
+        }
+
+        // startTime, endTime은 기본값이 있고 빈 값 불가능하므로 빨간 테두리 불필요
+
+        if (locationInput) {
+            if (locationInput.value.trim() === '') {
+                locationInput.classList.add('field-empty');
+            } else {
+                locationInput.classList.remove('field-empty');
             }
         }
 
@@ -2806,7 +2840,7 @@ document.addEventListener('DOMContentLoaded', async function() {
                 const commonProject = document.getElementById('common_project');
                 if (commonProject) {
                     commonProject.value = proj.projectName;
-                    commonProject.classList.remove('error'); // 빨간색 제거
+                    commonProject.classList.remove('field-empty');
                 }
                 const selectedProjectIdx = document.getElementById('selectedProjectIdx');
                 if (selectedProjectIdx) {
@@ -2891,14 +2925,19 @@ document.addEventListener('DOMContentLoaded', async function() {
             return;
         }
 
+        const currentAuthorId = document.getElementById('common_author_id')?.value || '';
         internalListEl.innerHTML = filtered.map(person => {
             const isSelected = tempSelectedAttendees.some(a => String(a.id) === String(person.id) && a.type === 'internal');
+            const isAuthor = String(person.id) === String(currentAuthorId);
             const formattedExpense = person.meetingExpense ? person.meetingExpense.toLocaleString('ko-KR') + '원' : '-';
             const isDuplicate = duplicateAttendeesInfo[person.id];
 
             const highlightedName = highlightText(person.name, searchText);
             const highlightedDept = highlightText(person.dept, searchText);
             const highlightedPosition = highlightText(person.position, searchText);
+
+            // 작성자 뱃지
+            const authorBadge = isAuthor ? '<span style="background:#e0e7ff; color:#4338ca; padding:2px 8px; border-radius:4px; font-size:11px; margin-left:8px; white-space:nowrap;"><i class="fas fa-user-check"></i> 작성자</span>' : '';
 
             // 중복 참석자 뱃지
             let duplicateBadge = '';
@@ -2911,19 +2950,24 @@ document.addEventListener('DOMContentLoaded', async function() {
                 duplicateBadge = `<span style="background: #fee2e2; color: #991b1b; padding: 2px 8px; border-radius: 4px; font-size: 11px; margin-left: 8px; white-space: nowrap;" title="${tooltipText}"><i class="fas fa-ban"></i> 시간 중복</span>`;
             }
 
-            const disabledStyle = isDuplicate ? 'opacity: 0.5; cursor: not-allowed; pointer-events: none;' : '';
+            const isLocked = isAuthor || isDuplicate;
+            const lockedStyle = isLocked ? 'opacity: 0.6; cursor: not-allowed;' : '';
+            const onclickAttr = isLocked ? '' : `onclick="toggleInternalAttendee(${person.id})"`;
+            const checkIcon = isAuthor
+                ? '<i class="fas fa-check-circle" style="color: #94a3b8; font-size: 18px; margin-left: auto;"></i>'
+                : (isSelected ? '<i class="fas fa-check-circle" style="color: #10b981; font-size: 18px; margin-left: auto;"></i>' : '');
 
             return `
-                <div class="employee-item ${isSelected ? 'selected' : ''} ${isDuplicate ? 'duplicate-disabled' : ''}"
+                <div class="employee-item ${isSelected ? 'selected' : ''} ${isLocked ? 'duplicate-disabled' : ''}"
                      data-id="${person.id}"
                      data-type="internal"
-                     style="${disabledStyle}"
-                     onclick="toggleInternalAttendee(${person.id})">
+                     style="${lockedStyle}"
+                     ${onclickAttr}>
                     <div class="employee-info">
-                        <div class="employee-name">${highlightedName}${duplicateBadge}</div>
+                        <div class="employee-name">${highlightedName}${authorBadge}${duplicateBadge}</div>
                         <div class="employee-details">${highlightedPosition} · ${highlightedDept} · ${formattedExpense}</div>
                     </div>
-                    ${isSelected ? '<i class="fas fa-check-circle" style="color: #10b981; font-size: 18px; margin-left: auto;"></i>' : ''}
+                    ${checkIcon}
                 </div>
             `;
         }).join('');
@@ -2992,6 +3036,10 @@ document.addEventListener('DOMContentLoaded', async function() {
         const attendeePersons = getAttendeePersons();
         const person = attendeePersons.find(p => p.id === personId);
         if (!person) return;
+
+        // 작성자는 렌더링에서 클릭 차단됨 (안전장치)
+        const currentAuthorId = document.getElementById('common_author_id')?.value || '';
+        if (String(personId) === String(currentAuthorId)) return;
 
         const index = tempSelectedAttendees.findIndex(a => String(a.id) === String(personId) && a.type === 'internal');
 
@@ -3560,7 +3608,7 @@ document.addEventListener('DOMContentLoaded', async function() {
     window.openAuthorModal = async function() {
         if (authorModal) {
             authorModal.classList.add('show');
-            if (authorSearch) authorSearch.value = '';
+            if (authorSearchInput) authorSearchInput.value = '';
 
             const projectIdxInput = document.getElementById('selectedProjectIdx');
             if (!projectIdxInput || !projectIdxInput.value) {
@@ -3677,7 +3725,7 @@ document.addEventListener('DOMContentLoaded', async function() {
                 const commonProject = document.getElementById('common_project');
                 if (commonProject) {
                     commonProject.value = proj.projectName;
-                    commonProject.classList.remove('error'); // 빨간색 제거
+                    commonProject.classList.remove('field-empty');
                 }
                 const selectedProjectIdx = document.getElementById('selectedProjectIdx');
                 if (selectedProjectIdx) {

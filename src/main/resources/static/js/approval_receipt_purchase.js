@@ -130,7 +130,7 @@ document.addEventListener('DOMContentLoaded', async function() {
 
         paymentEl.addEventListener('input', function() {
             this.value = formatNumberInput(this.value);
-            this.classList.toggle('error', parseNumber(this.value) <= 0);
+            this.classList.toggle('field-empty', parseNumber(this.value) <= 0);
             recalcFromPayment();
             validateRequiredFields();
         });
@@ -156,7 +156,7 @@ document.addEventListener('DOMContentLoaded', async function() {
             updateOfficialDocument();
         });
         tr.querySelector('.item-qty').addEventListener('input', function() {
-            this.classList.toggle('error', !this.value || parseInt(this.value) <= 0);
+            this.classList.toggle('field-empty', !this.value || parseInt(this.value) <= 0);
             updateItemTotals();
         });
         const dateInput = tr.querySelector('.item-date');
@@ -168,7 +168,7 @@ document.addEventListener('DOMContentLoaded', async function() {
             try { this.showPicker(); } catch(e) {}
         });
         tr.querySelector('.item-desc').addEventListener('input', function() {
-            this.classList.toggle('error', !this.value.trim());
+            this.classList.toggle('field-empty', !this.value.trim());
             updateOfficialDocument();
             validateRequiredFields();
         });
@@ -682,12 +682,14 @@ document.addEventListener('DOMContentLoaded', async function() {
         list.forEach(member => {
             const item = document.createElement('div');
             item.className = 'employee-item';
-            if (selectedApplicant && selectedApplicant.idx === member.id) item.classList.add('selected');
+            const isSelected = selectedApplicant && selectedApplicant.idx === member.id;
+            if (isSelected) item.classList.add('selected');
             item.innerHTML = `
                 <div class="employee-info">
                     <div class="employee-name"><i class="fas fa-user" style="margin-right:6px;color:#667eea;"></i>${escapeHtml(member.name)}</div>
-                    <div class="employee-detail">${escapeHtml(member.dept || '')} ${escapeHtml(member.position || '')}</div>
-                </div>`;
+                    <div class="employee-detail">${escapeHtml(member.dept || '')} · ${escapeHtml(member.position || '')}</div>
+                </div>
+                ${isSelected ? '<i class="fas fa-check-circle" style="color: #10b981; font-size: 18px; margin-left: auto;"></i>' : ''}`;
             item.addEventListener('click', function() {
                 selectedApplicant = { idx: member.id, name: member.name };
                 document.getElementById('pu_applicant').value = member.name;
@@ -799,7 +801,7 @@ document.addEventListener('DOMContentLoaded', async function() {
             } else {
                 const members = getProjectMembers();
                 const filtered = members.filter(m =>
-                    matchesSearch(m.name || '', keyword)
+                    matchesSearch((m.name || '') + (m.dept || '') + (m.position || ''), keyword)
                 );
                 renderApplicantList(filtered, keyword);
             }
@@ -1038,20 +1040,17 @@ document.addEventListener('DOMContentLoaded', async function() {
     }
 
     function renderFileList(fileArray, listEl) {
-        listEl.innerHTML = '';
-        fileArray.forEach((f, i) => {
-            const item = document.createElement('div');
-            item.className = 'file-item';
-            item.innerHTML = `
-                <div class="file-name">
-                    <i class="fas fa-file"></i>
-                    <span>${escapeHtml(f.name)}</span>
-                </div>
-                <span class="file-size">${formatFileSize(f.size)}</span>
-                <button class="btn-remove-file" onclick="removeNewFile(${i}, '${listEl.id}')"><i class="fas fa-times"></i></button>
-            `;
-            listEl.appendChild(item);
-        });
+        // 기존 첨부파일도 함께 렌더링
+        let existingArr = [];
+        let type = '';
+        if (listEl === receiptFileList) {
+            existingArr = existingReceiptAttachments; type = 'receipt';
+        } else if (listEl === estimateFileList) {
+            existingArr = existingEstimateAttachments; type = 'estimate';
+        } else if (listEl === documentFileList) {
+            existingArr = existingDocumentAttachments; type = 'document';
+        }
+        renderExistingFileList(existingArr, listEl, fileArray, type);
     }
 
     window.removeNewFile = function(idx, listId) {
@@ -1273,52 +1272,46 @@ document.addEventListener('DOMContentLoaded', async function() {
 
         // 과제명
         if (!document.getElementById('selectedProjectIdx').value) {
-            projectInput?.classList.add('error');
+            projectInput?.classList.add('field-empty');
             allFilled = false;
         } else {
-            projectInput?.classList.remove('error');
+            projectInput?.classList.remove('field-empty');
         }
 
         // 사용 카드
         if (!document.getElementById('selectedCardIdx').value) {
-            cardInput?.classList.add('error');
+            cardInput?.classList.add('field-empty');
             allFilled = false;
         } else {
-            cardInput?.classList.remove('error');
+            cardInput?.classList.remove('field-empty');
         }
 
         // 신청자
         if (!document.getElementById('selectedApplicantIdx').value) {
-            applicantInput?.classList.add('error');
+            applicantInput?.classList.add('field-empty');
             allFilled = false;
         } else {
-            applicantInput?.classList.remove('error');
+            applicantInput?.classList.remove('field-empty');
         }
 
         // 품의일자
         if (!dateInput?.value) {
-            dateInput?.classList.add('error');
+            dateInput?.classList.add('field-empty');
             allFilled = false;
         } else {
-            dateInput?.classList.remove('error');
+            dateInput?.classList.remove('field-empty');
         }
 
         // 품의 내용
         if (!contentInput?.value?.trim()) {
-            contentInput?.classList.add('error');
+            contentInput?.classList.add('field-empty');
             allFilled = false;
         } else {
-            contentInput?.classList.remove('error');
+            contentInput?.classList.remove('field-empty');
         }
 
-        // 품의 내역서 (최소 1항목)
+        // 품의 내역서 항목별 검증
         const items = collectItems();
-        if (items.length === 0) {
-            itemTable?.classList.add('error');
-            allFilled = false;
-        } else {
-            itemTable?.classList.remove('error');
-        }
 
         // 항목별 필수값 검증 (적요 · 수량 · 결제대금)
         itemTableBody.querySelectorAll('tr').forEach(tr => {
@@ -1330,9 +1323,9 @@ document.addEventListener('DOMContentLoaded', async function() {
             const qtyEmpty     = !qtyEl?.value || parseInt(qtyEl.value) <= 0;
             const paymentEmpty = parseNumber(paymentEl?.value) <= 0;
 
-            descEl?.classList.toggle('error', descEmpty);
-            qtyEl?.classList.toggle('error', qtyEmpty);
-            paymentEl?.classList.toggle('error', paymentEmpty);
+            descEl?.classList.toggle('field-empty', descEmpty);
+            qtyEl?.classList.toggle('field-empty', qtyEmpty);
+            paymentEl?.classList.toggle('field-empty', paymentEmpty);
 
             if (descEmpty || qtyEmpty || paymentEmpty) allFilled = false;
         });
