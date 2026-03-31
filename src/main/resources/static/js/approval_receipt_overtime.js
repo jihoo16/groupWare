@@ -1150,6 +1150,91 @@ document.addEventListener('DOMContentLoaded', async function() {
     const applicantSearch = document.getElementById('applicantSearch');
     const applicantList = document.getElementById('applicantList');
 
+    // 신청자 모달 내 프로젝트 목록 렌더링 (과제 미선택 시)
+    function renderProjectListInApplicantModal(searchText = '') {
+        if (!applicantList) return;
+
+        let filtered = projects;
+        if (searchText) {
+            filtered = projects.filter(proj =>
+                matchesSearch(proj.projectName + (proj.description || ''), searchText)
+            );
+        }
+
+        if (filtered.length === 0) {
+            applicantList.innerHTML = `
+                <div style="text-align: center; padding: 40px; color: #94a3b8;">
+                    <i class="fas fa-search" style="font-size: 32px; margin-bottom: 12px; display: block;"></i>
+                    ${searchText ? '검색 결과가 없습니다.' : '등록된 프로젝트가 없습니다.'}
+                </div>
+            `;
+            return;
+        }
+
+        const headerMessage = `
+            <div class="convenience-notice">
+                <div class="notice-icon"><i class="fas fa-lightbulb"></i></div>
+                <div class="notice-content">
+                    <div class="notice-title">프로젝트를 먼저 선택해주세요</div>
+                    <div class="notice-desc">프로젝트를 선택하면 신청자 목록이 표시됩니다</div>
+                </div>
+            </div>
+        `;
+
+        const projectItems = filtered.map(proj => {
+            const highlightedName = searchText
+                ? proj.projectName.replace(new RegExp(`(${searchText.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')})`, 'gi'), '<mark>$1</mark>')
+                : proj.projectName;
+            return `
+                <div class="project-item-in-attendee" data-project-idx="${proj.idx}">
+                    <div class="project-item-icon"><i class="fas fa-folder"></i></div>
+                    <div class="project-item-info">
+                        <div class="project-item-name">${highlightedName}</div>
+                    </div>
+                    <div class="project-item-arrow"><i class="fas fa-chevron-right"></i></div>
+                </div>
+            `;
+        }).join('');
+
+        applicantList.innerHTML = headerMessage + projectItems;
+
+        applicantList.querySelectorAll('.project-item-in-attendee').forEach(item => {
+            item.addEventListener('click', async function() {
+                const projectIdx = this.getAttribute('data-project-idx');
+                const proj = projects.find(p => String(p.idx) === String(projectIdx));
+                if (!proj) return;
+
+                selectedProject = proj;
+                const otProject = document.getElementById('ot_project');
+                if (otProject) {
+                    otProject.value = proj.projectName;
+                    otProject.classList.remove('error');
+                }
+                const selectedProjectIdxInput = document.getElementById('selectedProjectIdx');
+                if (selectedProjectIdxInput) selectedProjectIdxInput.value = proj.idx;
+
+                await loadProjectCards(proj.idx);
+                await loadProjectMembers(proj.idx);
+                await loadProjectExpenseSettings(proj.idx);
+
+                document.querySelectorAll('.ot-auto-project').forEach(field => {
+                    field.textContent = proj.projectName;
+                    const len = (proj.projectName || '').length;
+                    if (len > 35) { field.style.fontSize = '8px'; }
+                    else if (len > 25) { field.style.fontSize = '9px'; }
+                    else if (len > 15) { field.style.fontSize = '10px'; }
+                    else { field.style.fontSize = ''; }
+                });
+                document.querySelectorAll('.ot-auto-manager').forEach(f => f.textContent = proj.projectManagerName || '');
+
+                // 프로젝트 선택 후 신청자 목록으로 전환
+                const persons = typeof getOvertimePersons === 'function' ? getOvertimePersons() : [];
+                renderApplicantList(persons);
+                validateRequiredFields();
+            });
+        });
+    }
+
     // 신청자 목록 렌더링 (프로젝트 참여인원에서 선택)
     function renderApplicantList(list, keyword = '', isLoading = false) {
         if (!applicantList) return;
@@ -1253,41 +1338,39 @@ document.addEventListener('DOMContentLoaded', async function() {
         return text.replace(regex, '<mark>$1</mark>');
     }
 
-    // 신청자 검색
+    // 신청자 검색 — 프로젝트 미선택 시 프로젝트 필터, 선택 시 신청자 필터
     if (applicantSearch) {
         applicantSearch.addEventListener('input', function() {
-            const keyword = this.value.trim().toLowerCase();
-            const persons = typeof getOvertimePersons === 'function' ? getOvertimePersons() : [];
-            const filtered = persons.filter(member =>
-                (member.name || '').toLowerCase().includes(keyword)
-            );
-            renderApplicantList(filtered, this.value.trim());
+            const keyword = this.value.trim();
+            const projectIdxInput = document.getElementById('selectedProjectIdx');
+            if (!projectIdxInput || !projectIdxInput.value) {
+                renderProjectListInApplicantModal(keyword);
+            } else {
+                const persons = typeof getOvertimePersons === 'function' ? getOvertimePersons() : [];
+                const filtered = persons.filter(member =>
+                    (member.name || '').toLowerCase().includes(keyword.toLowerCase())
+                );
+                renderApplicantList(filtered, keyword);
+            }
         });
     }
 
     window.openApplicantModal = async function() {
         const projectIdxInput = document.getElementById('selectedProjectIdx');
-        const dateInput = document.getElementById('ot_approval_date');
-
-        if (!projectIdxInput || !projectIdxInput.value) {
-            showWarning('과제를 먼저 선택해주세요.');
-            return;
-        }
-        if (!dateInput || !dateInput.value) {
-            showWarning('날짜를 먼저 선택해주세요.');
-            return;
-        }
 
         if (applicantModal) {
             applicantModal.classList.add('show');
             if (applicantSearch) applicantSearch.value = '';
 
-            const persons = typeof getOvertimePersons === 'function' ? getOvertimePersons() : [];
-
-            // 중복 검증 정보 로드 후 렌더링
-            renderApplicantList(persons, '', true); // 로딩 상태로 먼저 렌더링
-            await loadDuplicateInfoForAllPersons();
-            renderApplicantList(persons);
+            if (!projectIdxInput || !projectIdxInput.value) {
+                // 과제 미선택 → 프로젝트 목록 먼저 표시
+                renderProjectListInApplicantModal('');
+            } else {
+                const persons = typeof getOvertimePersons === 'function' ? getOvertimePersons() : [];
+                renderApplicantList(persons, '', true);
+                await loadDuplicateInfoForAllPersons();
+                renderApplicantList(persons);
+            }
         }
     };
 
@@ -1408,28 +1491,45 @@ document.addEventListener('DOMContentLoaded', async function() {
 
         let overtimePersons = [];
 
-        // IT 업무 내용 목록
+        // 업무 내용 목록
         const taskOptions = [
-            '데이터베이스 설계',
-            '백엔드 API 개발',
-            '프론트엔드 UI 개발',
-            '시스템 아키텍처 설계',
-            '코드 리뷰 및 품질 관리',
-            '버그 수정 및 디버깅',
-            '테스트 코드 작성',
-            '배포 및 운영 환경 구축',
-            '성능 최적화',
-            '보안 취약점 분석',
-            '클라우드 인프라 구축',
-            '마이크로서비스 개발',
-            '모바일 앱 개발',
-            '웹 서비스 개발',
-            '알고리즘 개발',
-            '데이터 분석 및 시각화',
-            '머신러닝 모델 개발',
-            'DevOps 파이프라인 구축',
-            '기술 문서 작성',
-            'CI/CD 환경 구축'
+            '서비스 배포 직전 안정화 코드 오류 수정 및 예외 케이스 대응',
+            '운영 서버 장애 원인 분석 기반 긴급 복구 및 서비스 정상화',
+            '외부 API 연동 실패 구간 디버깅 및 데이터 수신 오류 개선',
+            '고객사 요청 기능 변경 반영 및 기존 로직 수정 작업',
+            '신규 기능 배포 이후 발생한 예외 버그 수정 및 재배포',
+            'DB 데이터 정합성 오류 수정 및 트랜잭션 로직 보완',
+            '트래픽 증가 대응 서버 성능 개선 및 병목 구간 최적화',
+            '프로젝트 일정 대응 핵심 기능 개발 마무리 및 코드 정리',
+            '장애 재발 방지 목적 로그 분석 및 에러 패턴 정리',
+            '레거시 코드 구조 개선 및 리팩토링 기반 유지보수성 향상',
+            'QA 테스트 과정 발견 결함 수정 및 재검증 대응',
+            '프론트-백엔드 데이터 연동 오류 수정 및 UI 동기화 개선',
+            '서비스 런칭 전 전체 기능 통합 점검 및 시나리오 검증',
+            '데이터 마이그레이션 이후 결과값 검증 및 누락 데이터 보완',
+            '보안 취약점 점검 결과 반영 코드 수정 및 접근제어 강화',
+            '결제 시스템 오류 발생 구간 수정 및 트랜잭션 정상화 처리',
+            '배치 작업 실패 원인 분석 및 스케줄 처리 로직 개선',
+            '외부 서비스 정책 변경 대응 API 구조 수정 및 테스트',
+            '로그 누락 및 비정상 기록 문제 개선을 위한 로깅 구조 수정',
+            '기획 변경 사항 반영 기능 수정 및 사용자 흐름 개선',
+            '사용자 피드백 기반 UX 개선 및 기능 보완 작업',
+            '통계 데이터 집계 오류 수정 및 리포트 기준 데이터 정리',
+            '서버 모니터링 시스템 설정 및 알림 조건 최적화',
+            '테스트 케이스 기반 기능 검증 및 오류 재현 확인',
+            '운영 중 데이터 누락 이슈 복구 및 정합성 재확인',
+            '관리자 페이지 기능 개선 및 권한 처리 로직 수정',
+            '파일 업로드 및 이미지 처리 오류 수정 및 저장 구조 개선',
+            'CI/CD 배포 프로세스 오류 수정 및 자동화 안정화 작업',
+            'DB 쿼리 튜닝 및 응답 속도 개선을 위한 인덱스 최적화',
+            '신규 서버 환경 구성 및 배포 환경 세팅 작업',
+            '사용자 인증 및 인가 로직 오류 수정 및 보안 강화',
+            '모바일 환경 UI 깨짐 문제 수정 및 반응형 대응 개선',
+            '로그 데이터 분석 기반 이상 패턴 탐지 및 대응 로직 보완',
+            '테스트 환경과 운영 환경 차이로 발생한 오류 수정',
+            'API 연동 기능 개발 및 데이터 처리 로직 구현',
+            '예외 처리 로직 보완 및 시스템 안정성 강화 작업',
+            '서비스 배포 전 최종 점검 및 전체 기능 동작 검증'
         ];
 
         // 야근인원 영역 클릭 시 모달 열기
@@ -1462,15 +1562,21 @@ document.addEventListener('DOMContentLoaded', async function() {
                 }
                 hideAddOvertimeButton();
             } else {
+                const applicantIdx = document.getElementById('selectedApplicantIdx')?.value || '';
                 overtimePersonList.innerHTML = overtimePersons.map(person => {
                     const expenseText = person.overtimeExpense
                         ? person.overtimeExpense.toLocaleString('ko-KR') + '원'
                         : '-';
                     const globalTask = getCurrentTask();
-                    const hasCustomTask = person.task !== null && person.task !== undefined && person.task !== '';
-                    const displayTask = hasCustomTask ? person.task : (globalTask || '기본 업무내용 미설정');
-                    const taskBadgeClass = hasCustomTask ? 'person-task-badge' : 'person-task-default';
-                    const taskLabel = hasCustomTask ? '개별' : '기본';
+                    const hasPersonTask = person.task !== null && person.task !== undefined && person.task !== '';
+                    const selectedTask = hasPersonTask ? person.task : globalTask;
+                    const taskOptionsHtml = taskOptions.map(opt =>
+                        `<option value="${opt}"${opt === selectedTask ? ' selected' : ''}>${opt}</option>`
+                    ).join('');
+                    const isApplicant = String(person.id) === String(applicantIdx);
+                    const removeBtn = isApplicant
+                        ? `<span style="position:absolute; top:8px; right:8px; font-size:10px; color:#667eea; font-weight:600;">신청자</span>`
+                        : `<button type="button" class="trip-person-remove" onclick="event.stopPropagation(); removeOvertimePersonInTemplate('${person.id}')"><i class="fas fa-times"></i> 삭제</button>`;
                     return `
                     <div class="trip-person-item" style="cursor: default;">
                         <div class="trip-person-info" style="pointer-events: auto;">
@@ -1480,15 +1586,12 @@ document.addEventListener('DOMContentLoaded', async function() {
                             <span style="color: #667eea; font-weight: 600;">${expenseText}</span>
                         </div>
                         <div class="person-task-row">
-                            <span class="${taskBadgeClass}">${taskLabel}</span>
-                            <span class="person-task-text" title="${displayTask}">${displayTask}</span>
-                            <button type="button" class="btn-edit-task" onclick="event.stopPropagation(); window.editPersonTask('${person.id}')">
-                                <i class="fas fa-pen"></i>
-                            </button>
+                            <select class="ot-person-task-select" data-person-id="${person.id}" style="flex: 1; font-size: 11px; padding: 4px 6px; border: 1px solid #ddd; border-radius: 4px; cursor: pointer;">
+                                <option value="">업무 내용 선택</option>
+                                ${taskOptionsHtml}
+                            </select>
                         </div>
-                        <button type="button" class="trip-person-remove" onclick="event.stopPropagation(); removeOvertimePersonInTemplate('${person.id}')">
-                            <i class="fas fa-times"></i> 삭제
-                        </button>
+                        ${removeBtn}
                     </div>
                     `;
                 }).join('');
@@ -1497,6 +1600,21 @@ document.addEventListener('DOMContentLoaded', async function() {
                     overtimePersonArea.classList.add('has-attendees');
                 }
                 showAddOvertimeButton();
+
+                // select change 이벤트 바인딩
+                overtimePersonList.querySelectorAll('.ot-person-task-select').forEach(select => {
+                    select.addEventListener('change', function() {
+                        const personId = this.dataset.personId;
+                        const person = overtimePersons.find(p => String(p.id) === String(personId));
+                        if (person) {
+                            person.task = this.value || null;
+                            syncGlobalOvertimePersons();
+                            updateOvertimeTable();
+                            updateContentText();
+                            validateRequiredFields();
+                        }
+                    });
+                });
             }
 
             updateOvertimeTable();
@@ -1625,38 +1743,7 @@ document.addEventListener('DOMContentLoaded', async function() {
             renderOvertimePersonListInTemplate();
         };
 
-        // 인원별 업무내용 개별 설정 함수
-        window.editPersonTask = async function(personId) {
-            const person = overtimePersons.find(p => String(p.id) === String(personId));
-            if (!person) return;
-
-            const globalTask = getCurrentTask();
-            const currentValue = (person.task !== null && person.task !== undefined && person.task !== '') ? person.task : '';
-
-            const { value: newTask, isConfirmed } = await Swal.fire({
-                title: `${person.name} 업무내용`,
-                input: 'text',
-                inputValue: currentValue,
-                inputPlaceholder: globalTask || '업무 내용을 입력하세요',
-                showCancelButton: true,
-                confirmButtonText: '설정',
-                cancelButtonText: '취소',
-                confirmButtonColor: '#667eea',
-                inputAttributes: {
-                    style: 'font-size: 14px;'
-                },
-                html: `<div style="font-size: 12px; color: #64748b; margin-bottom: 8px;">
-                    비워두면 기본 업무내용(${globalTask || '미설정'})이 적용됩니다.
-                </div>`,
-            });
-
-            if (!isConfirmed) return;
-
-            person.task = (newTask && newTask.trim()) ? newTask.trim() : null;
-            syncGlobalOvertimePersons();
-            renderOvertimePersonListInTemplate();
-            validateRequiredFields();
-        };
+        // (selectbox로 대체됨 — editPersonTask 제거)
 
         // 전역 함수로 등록하여 모달에서 접근 가능하게
         window.addOvertimePersonsToOvertime = function(persons) {
@@ -2326,6 +2413,20 @@ document.addEventListener('DOMContentLoaded', async function() {
                 return;
             }
 
+            // 야근인원 업무내용 전원 동일 사유 검증
+            if (overtimePersons.length > 1) {
+                const globalTask = getCurrentTask();
+                const tasks = overtimePersons.map(p => {
+                    const hasPersonTask = p.task !== null && p.task !== undefined && p.task !== '';
+                    return hasPersonTask ? p.task : globalTask;
+                });
+                const allSame = tasks.every(t => t && t === tasks[0]);
+                if (allSame && tasks[0]) {
+                    showWarning('모든 야근인원의 업무 내용이 동일합니다. 인원별로 다른 업무 내용을 선택해주세요.');
+                    return;
+                }
+            }
+
             // 신청자가 야근인원에 포함되어 있는지 확인
             const isApplicantInPersons = overtimePersons.some(person =>
                 Number(person.id) === Number(applicantIdx)
@@ -2795,28 +2896,34 @@ document.addEventListener('DOMContentLoaded', async function() {
             return;
         }
 
+        const applicantIdx = document.getElementById('selectedApplicantIdx')?.value || '';
         overtimePersonList2El.innerHTML = filtered.map(person => {
             const isSelected = tempSelectedOvertimePersons.some(a => String(a.id) === String(person.id));
+            const isApplicant = String(person.id) === String(applicantIdx);
             const formattedExpense = person.overtimeExpense ? person.overtimeExpense.toLocaleString('ko-KR') + '원' : '-';
 
             // 중복 체크
             const duplicateInfo = duplicateAttendeesInfo[person.id];
             const isDuplicate = duplicateInfo?.hasDuplicate;
-            let duplicateBadge = '';
-            if (isDuplicate) {
+            let statusBadge = '';
+            if (isApplicant) {
+                statusBadge = `<span style="background: #e0e7ff; color: #4338ca; padding: 2px 8px; border-radius: 4px; font-size: 11px; margin-left: 8px; white-space: nowrap;"><i class="fas fa-user-check"></i> 신청자</span>`;
+            } else if (isDuplicate) {
                 const docs = duplicateInfo.documents || [];
                 const docInfo = docs.map(d => `${d.typeName} (${d.startTime}~${d.endTime})`).join(', ');
                 const tooltipText = `시간 중복: ${docInfo}`;
-                duplicateBadge = `<span style="background: #fee2e2; color: #991b1b; padding: 2px 8px; border-radius: 4px; font-size: 11px; margin-left: 8px; white-space: nowrap;" title="${tooltipText}"><i class="fas fa-ban"></i> 시간 중복</span>`;
+                statusBadge = `<span style="background: #fee2e2; color: #991b1b; padding: 2px 8px; border-radius: 4px; font-size: 11px; margin-left: 8px; white-space: nowrap;" title="${tooltipText}"><i class="fas fa-ban"></i> 시간 중복</span>`;
             }
 
+            const isDisabled = isDuplicate && !isApplicant;
+
             return `
-                <div class="employee-item ${isSelected ? 'selected' : ''} ${isDuplicate ? 'duplicate-disabled' : ''}"
+                <div class="employee-item ${isSelected ? 'selected' : ''} ${isDisabled ? 'duplicate-disabled' : ''}"
                      data-id="${person.id}"
                      onclick="toggleOvertimePerson(${person.id})"
-                     style="${isDuplicate ? 'opacity: 0.6; cursor: not-allowed;' : ''}">
+                     style="${isDisabled ? 'opacity: 0.6; cursor: not-allowed;' : ''}">
                     <div class="employee-info">
-                        <div class="employee-name">${person.name}${duplicateBadge}</div>
+                        <div class="employee-name">${person.name}${statusBadge}</div>
                         <div class="employee-detail">${person.position} · ${person.dept} · ${formattedExpense}</div>
                     </div>
                     ${isSelected ? '<i class="fas fa-check-circle" style="color: #10b981; font-size: 18px; margin-left: auto;"></i>' : ''}
@@ -2830,6 +2937,16 @@ document.addEventListener('DOMContentLoaded', async function() {
         const persons = getOvertimePersons();
         const person = persons.find(p => p.id === personId);
         if (!person) return;
+
+        // 신청자는 해제 불가
+        const applicantIdx = document.getElementById('selectedApplicantIdx')?.value || '';
+        if (String(personId) === String(applicantIdx)) {
+            const isSelected = tempSelectedOvertimePersons.some(a => String(a.id) === String(personId));
+            if (isSelected) {
+                showWarning('신청자는 야근인원에서 제외할 수 없습니다.');
+                return;
+            }
+        }
 
         // 중복 체크 - 중복이면 선택 불가
         const duplicateInfo = duplicateAttendeesInfo[personId];
