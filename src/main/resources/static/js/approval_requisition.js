@@ -620,12 +620,11 @@ document.addEventListener('DOMContentLoaded', function() {
             if (dow === 0) cls += ' sunday';
             if (dow === 6) cls += ' saturday';
             if (dateStr === selectedDateStr) cls += ' selected';
-            if (isFutureDate(d.getFullYear(), d.getMonth(), day)) cls += ' future-date';
 
             const el = document.createElement('div');
             el.className = cls;
             el.textContent = day;
-            if (!isFutureDate(d.getFullYear(), d.getMonth(), day) && !vacationDates.includes(dateStr)) {
+            if (!vacationDates.includes(dateStr)) {
                 el.addEventListener('click', () => selectCalendarDate(d.getFullYear(), d.getMonth(), day));
             }
             dateCalendarDays.appendChild(el);
@@ -639,13 +638,12 @@ document.addEventListener('DOMContentLoaded', function() {
             if (isToday(calendarYear, calendarMonth, day)) cls += ' today';
             if (dow === 0) cls += ' sunday';
             if (dow === 6) cls += ' saturday';
-            if (isFutureDate(calendarYear, calendarMonth, day)) cls += ' future-date';
             if (dateStr === selectedDateStr) cls += ' selected';
 
             const el = document.createElement('div');
             el.className = cls;
             el.textContent = day;
-            if (!isFutureDate(calendarYear, calendarMonth, day) && !vacationDates.includes(dateStr)) {
+            if (!vacationDates.includes(dateStr)) {
                 el.addEventListener('click', () => selectCalendarDate(calendarYear, calendarMonth, day));
             }
             dateCalendarDays.appendChild(el);
@@ -661,12 +659,11 @@ document.addEventListener('DOMContentLoaded', function() {
             if (dow === 0) cls += ' sunday';
             if (dow === 6) cls += ' saturday';
             if (dateStr === selectedDateStr) cls += ' selected';
-            if (isFutureDate(d.getFullYear(), d.getMonth(), day)) cls += ' future-date';
 
             const el = document.createElement('div');
             el.className = cls;
             el.textContent = day;
-            if (!isFutureDate(d.getFullYear(), d.getMonth(), day) && !vacationDates.includes(dateStr)) {
+            if (!vacationDates.includes(dateStr)) {
                 el.addEventListener('click', () => selectCalendarDate(d.getFullYear(), d.getMonth(), day));
             }
             dateCalendarDays.appendChild(el);
