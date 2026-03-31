@@ -1473,7 +1473,7 @@ div h2{
     align-items: center;
     gap: 12px;
     padding: 12px;
-    border: 1px solid #e8e8e8;
+    border: 2px solid #e8e8e8;
     border-radius: 8px;
     margin-bottom: 8px;
     cursor: pointer;
@@ -1483,11 +1483,14 @@ div h2{
 .employee-item:hover {
     border-color: #667eea;
     background: #f5f7ff;
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(102, 126, 234, 0.15);
 }
 
 .employee-item.selected {
     border-color: #667eea;
-    background: #e8f0fe;
+    background: linear-gradient(135deg, #e8f0fe 0%, #f5f7ff 100%);
+    box-shadow: 0 4px 12px rgba(102, 126, 234, 0.2);
 }
 
 .employee-item i {
@@ -1500,14 +1503,14 @@ div h2{
 }
 
 .employee-name {
-    font-size: 11.9px;
+    font-size: 14px;
     font-weight: 700;
     color: #333;
     margin-bottom: 3px;
 }
 
 .employee-detail {
-    font-size: 10.3px;
+    font-size: 12.5px;
     color: #777;
 }
 
@@ -1872,6 +1875,46 @@ div h2{
 
 .trip-person-remove i {
     font-size: 10px;
+}
+
+/* 작성자(신청자) 뱃지 */
+.author-badge {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    margin-left: 6px;
+    padding: 2px 6px;
+    background: #10b981;
+    color: white;
+    font-size: 9px;
+    font-weight: 700;
+    border-radius: 3px;
+}
+
+.trip-person-item.is-author {
+    background: #f0fdf4;
+    border-color: #86efac;
+    cursor: default;
+}
+
+.trip-person-item.is-author:hover {
+    border-color: #86efac;
+    background: #f0fdf4;
+    transform: none;
+}
+
+.cannot-remove-text {
+    padding: 4px 8px;
+    background: #f1f5f9;
+    color: #64748b;
+    border: 1px solid #e2e8f0;
+    border-radius: 4px;
+    font-size: 11px;
+    font-weight: 600;
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    pointer-events: none;
 }
 
 /* 인원별 업무내용 표시 영역 */
@@ -2452,26 +2495,37 @@ div h2{
     border-bottom-color: #333;
 }
 
-.btn-with-tooltip:hover .tooltip-text {
+.btn-with-tooltip:hover .tooltip-text,
+.label-tooltip-wrapper:hover .tooltip-text {
     visibility: visible;
     opacity: 1;
 }
 
-/* 필수 필드 에러 스타일 */
-.clickable-input.error,
-.form-input.error,
-.form-textarea.error,
-.attendee-area.error {
-    border-color: #ef5350 !important;
-    border-width: 2px !important;
+.label-tooltip-wrapper {
+    position: relative;
+    display: inline-flex;
+    align-items: center;
+    cursor: help;
+}
+
+/* 필수 필드 미입력 강조 스타일 */
+.field-empty {
+    border: 2px solid #ef4444 !important;
     background: #fef2f2 !important;
     animation: shake 0.5s ease;
 }
 
+.field-empty:focus {
+    border-color: #dc2626 !important;
+    box-shadow: 0 0 0 3px rgba(239, 68, 68, 0.1) !important;
+}
+
 @keyframes shake {
     0%, 100% { transform: translateX(0); }
-    25% { transform: translateX(-5px); }
-    75% { transform: translateX(5px); }
+    20% { transform: translateX(-4px); }
+    40% { transform: translateX(4px); }
+    60% { transform: translateX(-4px); }
+    80% { transform: translateX(4px); }
 }
 
 /* 인쇄용 스타일 */

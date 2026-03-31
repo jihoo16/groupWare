@@ -647,6 +647,23 @@
     background: #fee2e2;
 }
 
+.file-item .btn-download-file {
+    background: none;
+    border: none;
+    color: #94a3b8;
+    cursor: pointer;
+    padding: 2px 6px;
+    border-radius: 4px;
+    font-size: 12px;
+    transition: color 0.15s, background 0.15s;
+    flex-shrink: 0;
+}
+
+.file-item .btn-download-file:hover {
+    color: #3b82f6;
+    background: #dbeafe;
+}
+
 .file-item.existing-file {
     background: #eff6ff;
     border-color: #bfdbfe;
@@ -1078,32 +1095,37 @@
    유효성 검사 시각 피드백
    ======================================== */
 
-.clickable-input.error,
-.form-input.error,
-.form-textarea.error {
-    border-color: #ef5350 !important;
-    border-width: 2px !important;
+/* 필수 필드 미입력 강조 스타일 */
+.field-empty {
+    border: 2px solid #ef4444 !important;
     background: #fef2f2 !important;
     animation: shake 0.5s ease;
 }
 
-.item-table.error .item-table tbody tr {
-    border-color: #ef5350 !important;
+.field-empty:focus {
+    border-color: #dc2626 !important;
+    box-shadow: 0 0 0 3px rgba(239, 68, 68, 0.1) !important;
+}
+
+.item-table.field-empty .item-table tbody tr {
+    border-color: #ef4444 !important;
     border-width: 2px !important;
     background: #fef2f2 !important;
 }
 
-/* 항목 테이블 개별 input error */
-.item-table .item-input.error {
-    border-color: #ef5350 !important;
+/* 항목 테이블 개별 input field-empty */
+.item-table .item-input.field-empty {
+    border-color: #ef4444 !important;
     border-width: 1px !important;
     background: #fef2f2 !important;
 }
 
 @keyframes shake {
     0%, 100% { transform: translateX(0); }
-    25% { transform: translateX(-5px); }
-    75% { transform: translateX(5px); }
+    20% { transform: translateX(-4px); }
+    40% { transform: translateX(4px); }
+    60% { transform: translateX(-4px); }
+    80% { transform: translateX(4px); }
 }
 
 /* ========================================
@@ -1456,23 +1478,26 @@
     align-items: center;
     gap: 12px;
     padding: 12px;
-    border: 1px solid #e8e8e8;
+    border: 2px solid #e8e8e8;
     border-radius: 8px;
     cursor: pointer;
     transition: all 0.2s ease;
-    margin-bottom: 4px;
+    margin-bottom: 8px;
 }
 
 .employee-item:hover,
 .modal-item:hover {
     border-color: #667eea;
     background: #f5f7ff;
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(102, 126, 234, 0.15);
 }
 
 .employee-item.selected,
 .modal-item.selected {
     border-color: #667eea;
-    background: #e8f0fe;
+    background: linear-gradient(135deg, #e8f0fe 0%, #f5f7ff 100%);
+    box-shadow: 0 4px 12px rgba(102, 126, 234, 0.2);
 }
 
 .employee-info,
@@ -1482,15 +1507,15 @@
 
 .employee-name,
 .modal-item-name {
-    font-size: 13px;
-    font-weight: 600;
-    color: #1e293b;
+    font-size: 14px;
+    font-weight: 700;
+    color: #333;
 }
 
 .employee-detail,
 .modal-item-detail {
-    font-size: 12px;
-    color: #64748b;
+    font-size: 12.5px;
+    color: #777;
     margin-top: 2px;
 }
 
