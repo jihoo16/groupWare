@@ -4294,13 +4294,15 @@ document.addEventListener('DOMContentLoaded', function() {
         authorModal.classList.add('show');
         if (authorSearchInput) authorSearchInput.value = '';
 
-        // 프로젝트가 선택됐는데 팀원이 로드 안 된 경우 로드
         const projectIdxInput = document.getElementById('selectedProjectIdx');
-        if (projectIdxInput?.value && projectMembers.length === 0) {
-            await loadProjectMembers(projectIdxInput.value);
+        if (!projectIdxInput || !projectIdxInput.value) {
+            renderProjectListInAuthorModal('');
+        } else {
+            if (projectMembers.length === 0) {
+                await loadProjectMembers(projectIdxInput.value);
+            }
+            await renderAuthorList('');
         }
-
-        await renderAuthorList('');
     };
 
     window.closeAuthorModal = function() {
@@ -4412,11 +4414,12 @@ document.addEventListener('DOMContentLoaded', function() {
 
     if (authorSearchInput) {
         authorSearchInput.addEventListener('input', async function() {
-            // 프로젝트 미선택 시 프로젝트 검색, 선택 시 인원 검색
-            if (projectMembers.length === 0) {
-                renderProjectListInAuthorModal(this.value);
+            const keyword = this.value.trim();
+            const projectIdxInput = document.getElementById('selectedProjectIdx');
+            if (!projectIdxInput || !projectIdxInput.value) {
+                renderProjectListInAuthorModal(keyword);
             } else {
-                await renderAuthorList(this.value);
+                await renderAuthorList(keyword);
             }
         });
     }

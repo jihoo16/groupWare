@@ -3560,18 +3560,18 @@ document.addEventListener('DOMContentLoaded', async function() {
     window.openAuthorModal = async function() {
         if (authorModal) {
             authorModal.classList.add('show');
+            if (authorSearch) authorSearch.value = '';
 
-            // 프로젝트가 이미 선택되어 있는지 확인
             const projectIdxInput = document.getElementById('selectedProjectIdx');
-            if (projectIdxInput && projectIdxInput.value) {
-                // 선택된 프로젝트가 변경되었거나 팀원이 로드되지 않았으면 로드
+            if (!projectIdxInput || !projectIdxInput.value) {
+                renderProjectListInAuthorModal('');
+            } else {
                 const currentProjectIdx = projectIdxInput.value;
                 if (!selectedProject || String(selectedProject.idx) !== String(currentProjectIdx) || projectMembers.length === 0) {
                     await loadProjectMembers(currentProjectIdx);
                 }
+                await renderAuthorList('');
             }
-
-            await renderAuthorList('');
         }
     };
 
@@ -3594,10 +3594,16 @@ document.addEventListener('DOMContentLoaded', async function() {
         });
     }
 
-    // 작성자 검색
+    // 작성자 검색 — 프로젝트 미선택 시 프로젝트 필터
     if (authorSearchInput) {
         authorSearchInput.addEventListener('input', async function() {
-            await renderAuthorList(this.value);
+            const keyword = this.value.trim();
+            const projectIdxInput = document.getElementById('selectedProjectIdx');
+            if (!projectIdxInput || !projectIdxInput.value) {
+                renderProjectListInAuthorModal(keyword);
+            } else {
+                await renderAuthorList(keyword);
+            }
         });
     }
 
