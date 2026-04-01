@@ -995,6 +995,7 @@ public class ReceiptTripMeetingServiceImpl implements ReceiptTripMeetingService 
                 .fileSize(a.getFileSize())
                 .fileType(a.getFileType())
                 .attachmentType(a.getAttachmentType())
+                .sessionIdx(a.getSessionIdx())
                 .uploadUserIdx(a.getUploadUserIdx())
                 .deleted(a.getDeleted())
                 .createdAt(a.getCreatedAt())

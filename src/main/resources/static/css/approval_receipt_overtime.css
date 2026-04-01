@@ -2505,7 +2505,53 @@ div h2{
     position: relative;
     display: inline-flex;
     align-items: center;
+    margin-left: 4px;
     cursor: help;
+}
+
+.label-tooltip-wrapper .tooltip-icon {
+    color: #667eea;
+    font-size: 14px;
+    cursor: help;
+    transition: color 0.2s;
+}
+
+.label-tooltip-wrapper .tooltip-icon:hover {
+    color: #5a67d8;
+}
+
+.label-tooltip-wrapper .tooltip-text {
+    visibility: hidden;
+    opacity: 0;
+    position: fixed;
+    z-index: 9999;
+    background: #1e293b;
+    color: #fff;
+    font-size: 12px;
+    font-weight: 400;
+    padding: 10px 14px;
+    border-radius: 6px;
+    white-space: normal !important;
+    min-width: 250px;
+    max-width: 360px;
+    width: max-content;
+    text-align: left;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+    transition: opacity 0.2s ease;
+    pointer-events: none;
+    word-break: keep-all;
+    overflow-wrap: break-word;
+    line-height: 1.6;
+}
+
+.label-tooltip-wrapper .tooltip-text::after {
+    content: '';
+    position: absolute;
+    top: 100%;
+    left: 50%;
+    transform: translateX(-50%);
+    border: 6px solid transparent;
+    border-top-color: #1e293b;
 }
 
 /* 필수 필드 미입력 강조 스타일 */

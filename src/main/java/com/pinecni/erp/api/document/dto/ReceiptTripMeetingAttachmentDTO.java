@@ -25,6 +25,8 @@ public class ReceiptTripMeetingAttachmentDTO {
     private String fileType;
     /** RECEIPT(영수증) / DOCUMENT(공식문서) */
     private String attachmentType;
+    /** 회의 세션 PK (출장 파일이면 null) */
+    private Long sessionIdx;
     private Long uploadUserIdx;
     private Boolean deleted;
     private LocalDateTime createdAt;
