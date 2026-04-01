@@ -128,7 +128,7 @@
                 </ul>
             </li>
             -->
-            <li th:class="${(activeMenu == 'hr' or activeMenu == 'payroll' or activeMenu == 'basic-info' or activeMenu == 'manage-hierarchy' or activeMenu == 'external-person' or activeMenu == 'admin-vacation' or activeMenu == 'admin-vacation-documents' or activeMenu == 'dev-code-groups') ? 'menu-item menu-parent active' : 'menu-item menu-parent'}" data-tooltip="관리">
+            <li th:class="${(activeMenu == 'hr' or activeMenu == 'payroll' or activeMenu == 'basic-info' or activeMenu == 'manage-hierarchy' or activeMenu == 'external-person' or activeMenu == 'admin-vacation' or activeMenu == 'admin-vacation-documents' or activeMenu == 'admin-expense-documents' or activeMenu == 'dev-code-groups') ? 'menu-item menu-parent active' : 'menu-item menu-parent'}" data-tooltip="관리">
                 <a href="/external-person" class="menu-toggle-btn">
                     <i class="fas fa-cogs"></i>
                     <span class="menu-text">관리</span>
@@ -143,6 +143,11 @@
                     <li class="submenu-item" th:classappend="${activeMenu == 'admin-vacation-documents'} ? 'active' : ''" th:if="${session.isAdmin}">
                         <a href="/admin/vacation-documents">
                             <span class="submenu-text">연차신청서 관리</span>
+                        </a>
+                    </li>
+                    <li class="submenu-item" th:classappend="${activeMenu == 'admin-expense-documents'} ? 'active' : ''" th:if="${session.isAdmin}">
+                        <a href="/admin/expense-documents">
+                            <span class="submenu-text">개인경비지출 관리</span>
                         </a>
                     </li>
                     <li class="submenu-item" th:classappend="${activeMenu == 'hr'} ? 'active' : ''" th:if="${session.isAdmin}">

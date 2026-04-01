@@ -431,6 +431,19 @@ public class Controller {
         return "admin-vacation-documents";
     }
 
+    /**
+     * 관리자 전용 - 개인경비지출 관리 페이지
+     */
+    @GetMapping("/admin/expense-documents")
+    public String adminExpenseDocuments(HttpSession session) {
+        Boolean isAdmin = (Boolean) session.getAttribute("isAdmin");
+        if (isAdmin == null || !isAdmin) {
+            log.warn("관리자가 아닌 사용자의 개인경비지출 관리 접근 시도");
+            return "redirect:/nope";
+        }
+        return "admin-expense-documents";
+    }
+
     @GetMapping("/login")
     public String login() {
         return "login";
