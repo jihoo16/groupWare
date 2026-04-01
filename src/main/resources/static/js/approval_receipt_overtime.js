@@ -1,4 +1,19 @@
 // 연구비 증빙 - 야근식대 페이지 JavaScript
+
+// Label tooltip: fixed positioning (overflow 잘림 방지)
+(function() {
+    document.addEventListener('mouseenter', function(e) {
+        const wrapper = e.target.closest('.label-tooltip-wrapper');
+        if (!wrapper) return;
+        const tooltip = wrapper.querySelector('.tooltip-text');
+        if (!tooltip) return;
+        const rect = wrapper.getBoundingClientRect();
+        tooltip.style.left = rect.left + rect.width / 2 + 'px';
+        tooltip.style.top = rect.top - 10 + 'px';
+        tooltip.style.transform = 'translate(-50%, -100%)';
+    }, true);
+})();
+
 document.addEventListener('DOMContentLoaded', async function() {
     // 전역 변수
     let selectedApprovers = [];
@@ -544,8 +559,16 @@ document.addEventListener('DOMContentLoaded', async function() {
     async function handleDelete() {
         if (!editingIdx) return;
 
-        const confirmed = await showConfirm('정말로 이 야근식대를 삭제하시겠습니까?\n삭제된 데이터는 복구할 수 없습니다.');
-        if (!confirmed) return;
+        const result = await Swal.fire({
+            title: '야근식대 삭제',
+            html: '야근식대 문서를 삭제하시겠습니까?<br>이 작업은 되돌릴 수 없습니다.',
+            icon: 'warning',
+            showCancelButton: true,
+            confirmButtonText: '삭제',
+            cancelButtonText: '취소',
+            confirmButtonColor: '#ef4444'
+        });
+        if (!result.isConfirmed) return;
 
         try {
             const response = await fetch(`/api/receipt-overtimes/${editingIdx}`, {
@@ -553,7 +576,7 @@ document.addEventListener('DOMContentLoaded', async function() {
             });
 
             if (response.ok) {
-                await Swal.fire({ icon: 'success', title: '삭제 완료', text: '야근식대가 삭제되었습니다.', timer: 2000, timerProgressBar: true, showConfirmButton: true, confirmButtonText: '확인' });
+                await Swal.fire({ icon: 'success', title: '삭제 완료', timer: 1500, showConfirmButton: false });
                 popupAwareRedirect('/project/documents');
             } else {
                 const error = await response.json();

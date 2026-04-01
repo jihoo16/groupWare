@@ -1,4 +1,19 @@
 // 연구비 증빙 - 출장+회의 통합 페이지 JavaScript
+
+// Label tooltip: fixed positioning (overflow 잘림 방지)
+(function() {
+    document.addEventListener('mouseenter', function(e) {
+        const wrapper = e.target.closest('.label-tooltip-wrapper');
+        if (!wrapper) return;
+        const tooltip = wrapper.querySelector('.tooltip-text');
+        if (!tooltip) return;
+        const rect = wrapper.getBoundingClientRect();
+        tooltip.style.left = rect.left + rect.width / 2 + 'px';
+        tooltip.style.top = rect.top - 10 + 'px';
+        tooltip.style.transform = 'translate(-50%, -100%)';
+    }, true);
+})();
+
 function getTodayString() {
     return new Date().toISOString().slice(0, 10);
 }
@@ -9,6 +24,12 @@ document.addEventListener('DOMContentLoaded', function() {
     let selectedMeetingDocumentFiles = [];
     let selectedTripReceiptFiles = [];
     let selectedTripDocumentFiles = [];
+    // 기존 첨부파일 (수정 모드)
+    let existingTripReceiptAttachments = [];
+    let existingTripDocumentAttachments = [];
+    let existingMeetingReceiptAttachments = [];  // { sessionIdx, ...att }
+    let existingMeetingDocumentAttachments = []; // { sessionIdx, ...att }
+    let deletedAttachmentIds = [];
     let selectedEmployee = null;
     let projects = []; // 프로젝트 목록
     let projectCards = []; // 선택된 프로젝트의 카드 목록
@@ -1896,13 +1917,29 @@ document.addEventListener('DOMContentLoaded', function() {
         // 복명자 초기값 설정 (작성자와 동일하게)
         // updateMeetingFields에서 자동으로 복명자도 업데이트됨
 
-        // 회의 날짜·시간 변경 시 기본 작성자 재설정
+        // 회의 날짜·시간 변경 시 기본 작성자 재설정 + 1번째 회의 참석자 초기화
         const meetingDateEl = document.getElementById('common_meeting_date');
         const startTimeEl = document.getElementById('common_start_time');
         const endTimeEl = document.getElementById('common_end_time');
 
         [meetingDateEl, startTimeEl, endTimeEl].forEach(el => {
-            if (el) el.addEventListener('change', function() { setDefaultAuthor(); });
+            if (el) el.addEventListener('change', function() {
+                setDefaultAuthor();
+                // 1번째 회의 참석자 초기화 (중복 방지, 데이터 로드 중에는 스킵)
+                if (!isPopulatingForm && attendees.length > 0) {
+                    attendees = [];
+                    renderAttendeeListInTemplate();
+                    Swal.fire({
+                        icon: 'info',
+                        title: '참석자 초기화',
+                        text: '회의 일자/시간 변경으로 참석자가 초기화되었습니다.',
+                        confirmButtonText: '확인',
+                        confirmButtonColor: '#667eea',
+                        timer: 3000,
+                        timerProgressBar: true
+                    });
+                }
+            });
         });
         [startTimeEl, endTimeEl].forEach(el => {
             if (el) el.addEventListener('change', function() { updateMeetingFields(); });
@@ -2039,10 +2076,14 @@ document.addEventListener('DOMContentLoaded', function() {
         const tDocList      = document.getElementById('tripDocumentFileList');
         const tDocArea      = document.getElementById('tripDocumentUploadArea');
 
-        const updMReceiptList  = makeUpdateFileList(mReceiptList,  selectedMeetingReceiptFiles,  'removeMeetingReceiptFile');
-        const updMDocList      = makeUpdateFileList(mDocList,      selectedMeetingDocumentFiles, 'removeMeetingDocumentFile');
-        const updTReceiptList  = makeUpdateFileList(tReceiptList,  selectedTripReceiptFiles,     'removeTripReceiptFile');
-        const updTDocList      = makeUpdateFileList(tDocList,      selectedTripDocumentFiles,    'removeTripDocumentFile');
+        const updMReceiptList  = makeUpdateFileList(mReceiptList,  selectedMeetingReceiptFiles,  'removeMeetingReceiptFile',
+            () => existingMeetingReceiptAttachments.filter(a => a._sessionOrder === 0));
+        const updMDocList      = makeUpdateFileList(mDocList,      selectedMeetingDocumentFiles, 'removeMeetingDocumentFile',
+            () => existingMeetingDocumentAttachments.filter(a => a._sessionOrder === 0));
+        const updTReceiptList  = makeUpdateFileList(tReceiptList,  selectedTripReceiptFiles,     'removeTripReceiptFile',
+            () => existingTripReceiptAttachments);
+        const updTDocList      = makeUpdateFileList(tDocList,      selectedTripDocumentFiles,    'removeTripDocumentFile',
+            () => existingTripDocumentAttachments);
 
         setupUpload(mReceiptInput, mReceiptArea, selectedMeetingReceiptFiles,  updMReceiptList);
         setupUpload(mDocInput,     mDocArea,     selectedMeetingDocumentFiles, updMDocList);
@@ -2087,15 +2128,33 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     }
 
-    function makeUpdateFileList(fileList, filesArr, removeFnName) {
+    function makeUpdateFileList(fileList, filesArr, removeFnName, existingAttsGetter) {
         return function() {
             fileList.innerHTML = '';
+            // 기존 첨부파일 (수정 모드)
+            if (existingAttsGetter) {
+                const atts = existingAttsGetter();
+                atts.forEach(att => {
+                    if (deletedAttachmentIds.includes(att.idx)) return;
+                    const item = document.createElement('div');
+                    item.className = 'file-item';
+                    const sizeKB = att.fileSize ? `(${(att.fileSize / 1024).toFixed(1)} KB)` : '';
+                    item.innerHTML = `
+                        <i class="fas ${getFileIcon(att.originalFilename || '')}"></i>
+                        <span>${att.originalFilename} ${sizeKB}</span>
+                        <button class="btn-remove-file" onclick="removeExistingAttachment(${att.idx})" title="삭제"><i class="fas fa-times"></i></button>
+                    `;
+                    fileList.appendChild(item);
+                });
+            }
+            // 신규 파일
             filesArr.forEach((file, index) => {
                 const item = document.createElement('div');
                 item.className = 'file-item';
+                const badge = existingAttsGetter ? ' <span style="color:#667eea;font-size:11px;">[신규]</span>' : '';
                 item.innerHTML = `
                     <i class="fas ${getFileIcon(file.name)}"></i>
-                    <span>${file.name} (${(file.size / 1024).toFixed(1)} KB)</span>
+                    <span>${file.name} (${(file.size / 1024).toFixed(1)} KB)${badge}</span>
                     <button class="btn-remove-file" onclick="${removeFnName}(${index})"><i class="fas fa-times"></i></button>
                 `;
                 fileList.appendChild(item);
@@ -2103,6 +2162,141 @@ document.addEventListener('DOMContentLoaded', function() {
         };
     }
 
+
+    // ══════════════════════════════════════════════════════════════
+    // 기존 첨부파일 표시/삭제 (수정 모드)
+    // ══════════════════════════════════════════════════════════════
+
+    function displayExistingAttachments(attachments, meetingSessions) {
+        if (!attachments || attachments.length === 0) return;
+        deletedAttachmentIds = [];
+
+        existingTripReceiptAttachments = attachments.filter(a => a.attachmentType === 'TRIP_RECEIPT');
+        existingTripDocumentAttachments = attachments.filter(a => a.attachmentType === 'TRIP_DOCUMENT');
+        existingMeetingReceiptAttachments = attachments.filter(a => a.attachmentType === 'MEETING_RECEIPT');
+        existingMeetingDocumentAttachments = attachments.filter(a => a.attachmentType === 'MEETING_DOCUMENT');
+
+        // sessionIdx → displayOrder 매핑 (세션별 파일 구분) + 각 첨부파일에 _sessionOrder 태깅
+        const sessionOrderMap = {};
+        if (meetingSessions && meetingSessions.length > 0) {
+            meetingSessions.forEach((s, i) => {
+                if (s.sessionIdx) sessionOrderMap[s.sessionIdx] = i;
+            });
+        }
+        [...existingMeetingReceiptAttachments, ...existingMeetingDocumentAttachments].forEach(a => {
+            a._sessionOrder = (a.sessionIdx && sessionOrderMap[a.sessionIdx] !== undefined)
+                ? sessionOrderMap[a.sessionIdx] : 0;
+        });
+
+        // 출장 파일 목록 렌더
+        renderExistingFileList('tripReceiptFileList', existingTripReceiptAttachments, selectedTripReceiptFiles, 'removeTripReceiptFile');
+        renderExistingFileList('tripDocumentFileList', existingTripDocumentAttachments, selectedTripDocumentFiles, 'removeTripDocumentFile');
+
+        // 회의-0 파일 목록 렌더
+        const m0ReceiptAtts = existingMeetingReceiptAttachments.filter(a => !a.sessionIdx || sessionOrderMap[a.sessionIdx] === 0);
+        const m0DocumentAtts = existingMeetingDocumentAttachments.filter(a => !a.sessionIdx || sessionOrderMap[a.sessionIdx] === 0);
+        renderExistingFileList('meetingReceiptFileList_0', m0ReceiptAtts, selectedMeetingReceiptFiles, 'removeMeetingReceiptFile');
+        renderExistingFileList('meetingDocumentFileList_0', m0DocumentAtts, selectedMeetingDocumentFiles, 'removeMeetingDocumentFile');
+
+        // 추가 회의 파일 목록 렌더
+        extraMeetings.forEach((m, order) => {
+            const sessionOrder = order + 1;
+            const sessionIdxForOrder = Object.keys(sessionOrderMap).find(k => sessionOrderMap[k] === sessionOrder);
+            const mReceiptAtts = existingMeetingReceiptAttachments.filter(a => a.sessionIdx && String(a.sessionIdx) === String(sessionIdxForOrder));
+            const mDocumentAtts = existingMeetingDocumentAttachments.filter(a => a.sessionIdx && String(a.sessionIdx) === String(sessionIdxForOrder));
+            // 기존 파일을 extraMeeting 상태에 저장 (렌더 시 참조용)
+            m._existingReceiptAtts = mReceiptAtts;
+            m._existingDocumentAtts = mDocumentAtts;
+            renderExistingFileListForExtra(`meetingReceiptFileList_${m.idx}`, mReceiptAtts, m.receiptFiles, m.idx, 'receipt');
+            renderExistingFileListForExtra(`meetingDocumentFileList_${m.idx}`, mDocumentAtts, m.documentFiles, m.idx, 'document');
+        });
+    }
+
+    function renderExistingFileList(listElId, existingAtts, newFiles, removeFnName) {
+        const listEl = document.getElementById(listElId);
+        if (!listEl) return;
+        listEl.innerHTML = '';
+
+        // 기존 파일 (삭제 예정 제외)
+        existingAtts.forEach(att => {
+            if (deletedAttachmentIds.includes(att.idx)) return;
+            const item = document.createElement('div');
+            item.className = 'file-item';
+            const sizeKB = att.fileSize ? `(${(att.fileSize / 1024).toFixed(1)} KB)` : '';
+            item.innerHTML = `
+                <i class="fas ${getFileIcon(att.originalFilename || '')}"></i>
+                <span>${att.originalFilename} ${sizeKB}</span>
+                <button class="btn-remove-file" onclick="removeExistingAttachment(${att.idx})" title="삭제"><i class="fas fa-times"></i></button>
+            `;
+            listEl.appendChild(item);
+        });
+
+        // 신규 파일
+        newFiles.forEach((file, index) => {
+            const item = document.createElement('div');
+            item.className = 'file-item';
+            item.innerHTML = `
+                <i class="fas ${getFileIcon(file.name)}"></i>
+                <span>${file.name} (${(file.size / 1024).toFixed(1)} KB) <span style="color:#667eea;font-size:11px;">[신규]</span></span>
+                <button class="btn-remove-file" onclick="${removeFnName}(${index})" title="삭제"><i class="fas fa-times"></i></button>
+            `;
+            listEl.appendChild(item);
+        });
+    }
+
+    function renderExistingFileListForExtra(listElId, existingAtts, newFiles, meetingIdx, type) {
+        const listEl = document.getElementById(listElId);
+        if (!listEl) return;
+        listEl.innerHTML = '';
+
+        existingAtts.forEach(att => {
+            if (deletedAttachmentIds.includes(att.idx)) return;
+            const item = document.createElement('div');
+            item.className = 'file-item';
+            const sizeKB = att.fileSize ? `(${(att.fileSize / 1024).toFixed(1)} KB)` : '';
+            item.innerHTML = `
+                <i class="fas ${getFileIcon(att.originalFilename || '')}"></i>
+                <span>${att.originalFilename} ${sizeKB}</span>
+                <button class="btn-remove-file" onclick="removeExistingAttachment(${att.idx})" title="삭제"><i class="fas fa-times"></i></button>
+            `;
+            listEl.appendChild(item);
+        });
+
+        newFiles.forEach((file, index) => {
+            const item = document.createElement('div');
+            item.className = 'file-item';
+            item.innerHTML = `
+                <i class="fas ${getFileIcon(file.name)}"></i>
+                <span>${file.name} (${(file.size / 1024).toFixed(1)} KB) <span style="color:#667eea;font-size:11px;">[신규]</span></span>
+                <button class="btn-remove-file" onclick="removeExtraMeetingFile(${meetingIdx},'${type}',${index})" title="삭제"><i class="fas fa-times"></i></button>
+            `;
+            listEl.appendChild(item);
+        });
+    }
+
+    // 기존 첨부파일 삭제 (소프트 딜리트 예약)
+    window.removeExistingAttachment = function(attIdx) {
+        if (!deletedAttachmentIds.includes(attIdx)) {
+            deletedAttachmentIds.push(attIdx);
+        }
+        // 전체 파일 목록 리렌더
+        renderExistingFileList('tripReceiptFileList', existingTripReceiptAttachments, selectedTripReceiptFiles, 'removeTripReceiptFile');
+        renderExistingFileList('tripDocumentFileList', existingTripDocumentAttachments, selectedTripDocumentFiles, 'removeTripDocumentFile');
+        renderExistingFileList('meetingReceiptFileList_0',
+            existingMeetingReceiptAttachments.filter(a => a._sessionOrder === 0),
+            selectedMeetingReceiptFiles, 'removeMeetingReceiptFile');
+        renderExistingFileList('meetingDocumentFileList_0',
+            existingMeetingDocumentAttachments.filter(a => a._sessionOrder === 0),
+            selectedMeetingDocumentFiles, 'removeMeetingDocumentFile');
+        extraMeetings.forEach(m => {
+            if (m._existingReceiptAtts) {
+                renderExistingFileListForExtra(`meetingReceiptFileList_${m.idx}`, m._existingReceiptAtts, m.receiptFiles, m.idx, 'receipt');
+            }
+            if (m._existingDocumentAtts) {
+                renderExistingFileListForExtra(`meetingDocumentFileList_${m.idx}`, m._existingDocumentAtts, m.documentFiles, m.idx, 'document');
+            }
+        });
+    };
 
     // ══════════════════════════════════════════════════════════════
     // 다중 회의 상태 헬퍼
@@ -2369,6 +2563,31 @@ document.addEventListener('DOMContentLoaded', function() {
             if (el) {
                 el.addEventListener('input', validateRequiredFields);
                 el.addEventListener('change', validateRequiredFields);
+            }
+        });
+
+        // 추가 회의 일자/시간 변경 시 해당 회의 참석자 초기화
+        [`meeting_date_${idx}`, `meeting_start_time_${idx}`, `meeting_end_time_${idx}`].forEach(id => {
+            const el = document.getElementById(id);
+            if (el) {
+                el.addEventListener('change', function() {
+                    if (isPopulatingForm) return;
+                    const m = extraMeetings.find(em => em.idx === idx);
+                    if (m && m.attendees.length > 0) {
+                        m.attendees = [];
+                        renderExtraMeetingAttendees(idx);
+                        const blockNum = getMeetingBlockNum(idx);
+                        Swal.fire({
+                            icon: 'info',
+                            title: '참석자 초기화',
+                            text: `${blockNum}번째 회의 일자/시간 변경으로 참석자가 초기화되었습니다.`,
+                            confirmButtonText: '확인',
+                            confirmButtonColor: '#667eea',
+                            timer: 3000,
+                            timerProgressBar: true
+                        });
+                    }
+                });
             }
         });
 
@@ -5410,6 +5629,11 @@ document.addEventListener('DOMContentLoaded', function() {
                 }
             }
 
+            // ── 기존 첨부파일 로드 ──
+            if (data.attachments && data.attachments.length > 0) {
+                displayExistingAttachments(data.attachments, data.meetingSessions || []);
+            }
+
             resolve();
         }, 300));
         } finally {
@@ -5782,6 +6006,15 @@ document.addEventListener('DOMContentLoaded', function() {
                 meetingSessions:  buildMeetingSessionsPayload()
             };
 
+            // 삭제 예정 기존 첨부파일 순차 삭제
+            for (const attId of deletedAttachmentIds) {
+                try {
+                    await fetch(`/api/receipt-trip-meetings/attachments/${attId}`, { method: 'DELETE' });
+                } catch (e) {
+                    console.warn(`첨부파일(ID: ${attId}) 삭제 실패`, e);
+                }
+            }
+
             const formDataU = new FormData();
             formDataU.append('data', JSON.stringify(updateData));
             // 회의-0 파일 (세션 position 0 → 키 접미사 없음)
@@ -5834,8 +6067,8 @@ document.addEventListener('DOMContentLoaded', function() {
 
             const result = await Swal.fire({
                 icon: 'warning',
-                title: '삭제 확인',
-                text: '출장+회의 문서를 삭제하시겠습니까? <br> 이 작업은 되돌릴 수 없습니다.',
+                title: '출장+회의 삭제',
+                html: '출장+회의 문서를 삭제하시겠습니까?<br>이 작업은 되돌릴 수 없습니다.',
                 showCancelButton: true,
                 confirmButtonColor: '#ef4444',
                 confirmButtonText: '삭제',
@@ -5852,11 +6085,8 @@ document.addEventListener('DOMContentLoaded', function() {
                 await Swal.fire({
                     icon: 'success',
                     title: '삭제 완료',
-                    text: '삭제되었습니다. 잠시 후 목록으로 이동합니다.',
-                    timer: 2000,
-                    timerProgressBar: true,
-                    showConfirmButton: true,
-                    confirmButtonText: '확인'
+                    timer: 1500,
+                    showConfirmButton: false
                 });
                 popupAwareRedirect('/project/documents');
             } catch (e) {

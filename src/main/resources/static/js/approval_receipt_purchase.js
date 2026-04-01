@@ -1363,13 +1363,13 @@ document.addEventListener('DOMContentLoaded', async function() {
     if (deleteBtn) {
         deleteBtn.addEventListener('click', async function() {
             const confirmed = await Swal.fire({
-                title: '삭제하시겠습니까?',
-                text: '삭제된 문서는 복구할 수 없습니다.',
+                title: `${purchaseTypeLabel} 삭제`,
+                html: `${purchaseTypeLabel} 문서를 삭제하시겠습니까?<br>이 작업은 되돌릴 수 없습니다.`,
                 icon: 'warning',
                 showCancelButton: true,
                 confirmButtonText: '삭제',
                 cancelButtonText: '취소',
-                confirmButtonColor: '#dc2626'
+                confirmButtonColor: '#ef4444'
             });
             if (!confirmed.isConfirmed) return;
 
@@ -1381,8 +1381,8 @@ document.addEventListener('DOMContentLoaded', async function() {
                     await Swal.fire({
                         icon: 'success',
                         title: '삭제 완료',
-                        text: `${purchaseTypeLabel} 증빙이 삭제되었습니다.`,
-                        confirmButtonColor: '#667eea'
+                        timer: 1500,
+                        showConfirmButton: false
                     });
                     window.location.href = '/project/documents';
                 } else {

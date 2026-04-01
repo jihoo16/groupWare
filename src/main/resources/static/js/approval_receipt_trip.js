@@ -1,5 +1,19 @@
 // 연구비 증빙 - 출장 페이지 JavaScript
 
+// Label tooltip: fixed positioning (overflow 잘림 방지)
+(function() {
+    document.addEventListener('mouseenter', function(e) {
+        const wrapper = e.target.closest('.label-tooltip-wrapper');
+        if (!wrapper) return;
+        const tooltip = wrapper.querySelector('.tooltip-text');
+        if (!tooltip) return;
+        const rect = wrapper.getBoundingClientRect();
+        tooltip.style.left = rect.left + rect.width / 2 + 'px';
+        tooltip.style.top = rect.top - 10 + 'px';
+        tooltip.style.transform = 'translate(-50%, -100%)';
+    }, true);
+})();
+
 function getTodayString() {
     return new Date().toISOString().slice(0, 10);
 }
@@ -258,11 +272,11 @@ document.addEventListener('DOMContentLoaded', async function() {
         }).then(result => result.isConfirmed);
     }
 
-    function showDeleteConfirm(message = '정말 삭제하시겠습니까?') {
+    function showDeleteConfirm(itemName = '이 항목') {
         return Swal.fire({
             icon: 'warning',
-            title: '삭제 확인',
-            html: message,
+            title: `${itemName} 삭제`,
+            html: `${itemName} 문서를 삭제하시겠습니까?<br>이 작업은 되돌릴 수 없습니다.`,
             showCancelButton: true,
             confirmButtonText: '삭제',
             cancelButtonText: '취소',
@@ -2283,7 +2297,9 @@ document.addEventListener('DOMContentLoaded', async function() {
                         confirmButtonColor: '#667eea'
                     });
                     tripPersons = [];
-                    renderTripPersonList();
+                    if (typeof window.renderTripPersonListInTemplate === 'function') {
+                        window.renderTripPersonListInTemplate();
+                    }
                 }
 
                 // 날짜 변경 시 출장인원 중복 재검증
@@ -2354,7 +2370,9 @@ document.addEventListener('DOMContentLoaded', async function() {
                         confirmButtonColor: '#667eea'
                     });
                     tripPersons = [];
-                    renderTripPersonList();
+                    if (typeof window.renderTripPersonListInTemplate === 'function') {
+                        window.renderTripPersonListInTemplate();
+                    }
                 }
                 await updateTripDateRange();
             });
@@ -4304,7 +4322,7 @@ document.addEventListener('DOMContentLoaded', async function() {
                 });
 
                 if (response.ok) {
-                    await Swal.fire({ icon: 'success', title: '삭제 완료', text: '출장 정보가 삭제되었습니다.', timer: 2000, timerProgressBar: true, showConfirmButton: true, confirmButtonText: '확인' });
+                    await Swal.fire({ icon: 'success', title: '삭제 완료', timer: 1500, showConfirmButton: false });
                     popupAwareRedirect('/project/documents');
                 } else {
                     showError('출장 삭제에 실패했습니다.');

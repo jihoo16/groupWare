@@ -1,5 +1,19 @@
 // 연구비 증빙 - 회의록 페이지 JavaScript
 
+// Label tooltip: fixed positioning (overflow 잘림 방지)
+(function() {
+    document.addEventListener('mouseenter', function(e) {
+        const wrapper = e.target.closest('.label-tooltip-wrapper');
+        if (!wrapper) return;
+        const tooltip = wrapper.querySelector('.tooltip-text');
+        if (!tooltip) return;
+        const rect = wrapper.getBoundingClientRect();
+        tooltip.style.left = rect.left + rect.width / 2 + 'px';
+        tooltip.style.top = rect.top - 10 + 'px';
+        tooltip.style.transform = 'translate(-50%, -100%)';
+    }, true);
+})();
+
 // 텍스트를 5단어씩 끊어서 줄바꿈하는 헬퍼 함수 (전역 스코프)
 function formatTextWithLineBreaks(text, wordsPerLine = 5) {
     if (!text) return '';
@@ -219,12 +233,12 @@ document.addEventListener('DOMContentLoaded', async function() {
     function showDeleteConfirm(itemName) {
         return Swal.fire({
             icon: 'warning',
-            title: '삭제 확인',
-            text: `${itemName}을(를) 삭제하시겠습니까?`,
+            title: `${itemName} 삭제`,
+            html: `${itemName} 문서를 삭제하시겠습니까?<br>이 작업은 되돌릴 수 없습니다.`,
             showCancelButton: true,
             confirmButtonText: '삭제',
             cancelButtonText: '취소',
-            confirmButtonColor: '#dc2626'
+            confirmButtonColor: '#ef4444'
         }).then(result => result.isConfirmed);
     }
 
@@ -4556,6 +4570,181 @@ document.addEventListener('DOMContentLoaded', async function() {
                 return;
             }
 
+            const purposeInput = document.getElementById('common_purpose');
+            if (!purposeInput || !purposeInput.value.trim()) {
+                await showWarning('회의 목적을 입력해주세요.');
+                purposeInput?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                purposeInput?.focus();
+                return;
+            }
+
+            const amountInput = document.getElementById('common_amount');
+            if (!amountInput || !amountInput.value || parseInt(amountInput.value.replace(/,/g, '')) <= 0) {
+                await showWarning('사용 금액을 입력해주세요.');
+                amountInput?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                amountInput?.focus();
+                return;
+            }
+
+            const contentInput = document.getElementById('common_content');
+            if (!contentInput || !contentInput.value.trim()) {
+                await showWarning('주요 내용을 입력해주세요.');
+                contentInput?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                contentInput?.focus();
+                return;
+            }
+
+            const contentBytes = getByteLength(contentInput.value.trim());
+            if (contentBytes < MIN_CONTENT_BYTES) {
+                await Swal.fire({
+                    icon: 'warning',
+                    title: '주요 내용을 더 상세히 작성해주세요',
+                    html: `현재 <b>${contentBytes}bytes</b> 입력되었습니다.<br><br>
+                           회의 내용이 부실하게 작성된 경우 <b>정산 시 반려</b>될 수 있습니다.<br>
+                           논의된 내용, 결정 사항, 참석자별 발언 등을 구체적으로 작성해주세요.<br><br>
+                           <span style="color:#888;font-size:13px;">최소 ${MIN_CONTENT_BYTES}bytes 이상 입력 필요 (${MIN_CONTENT_BYTES - contentBytes}bytes 더 필요)</span>`,
+                    confirmButtonText: '다시 작성하기'
+                });
+                contentInput.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                contentInput.focus();
+                return;
+            }
+
+            // 회의 시간 범위 검증 (시작: 08:00~21:00, 종료: 10:00~22:00)
+            const startTime = startTimeInput.value;
+            const endTime = endTimeInput.value;
+            let isTimeOutOfRange = false;
+            let timeWarningMessage = '';
+
+            const startHour = parseInt(startTime.split(':')[0]);
+            const startMinute = parseInt(startTime.split(':')[1] || 0);
+            if (startHour < 8 || (startHour === 21 && startMinute > 0) || startHour > 21) {
+                isTimeOutOfRange = true;
+                timeWarningMessage += `시작 시간(${startTime})이 권장 범위(08:00~21:00)를 벗어났습니다.<br>`;
+            }
+
+            const endHour = parseInt(endTime.split(':')[0]);
+            const endMinute = parseInt(endTime.split(':')[1] || 0);
+            if (endHour < 10 || (endHour === 22 && endMinute > 0) || endHour > 22) {
+                isTimeOutOfRange = true;
+                timeWarningMessage += `종료 시간(${endTime})이 권장 범위(10:00~22:00)를 벗어났습니다.<br>`;
+            }
+
+            if (isTimeOutOfRange) {
+                const timeConfirmed = await showConfirm(
+                    timeWarningMessage + '<br>정말 이 시간으로 수정하시겠습니까?',
+                    '회의 시간 확인',
+                    {
+                        icon: 'warning',
+                        confirmText: '수정',
+                        cancelText: '취소',
+                        confirmColor: '#ff9800'
+                    }
+                );
+                if (!timeConfirmed) {
+                    return;
+                }
+            }
+
+            if (!currentAttendees || currentAttendees.length === 0) {
+                await showWarning('참석자를 1명 이상 추가해주세요.');
+                const attendeeArea = document.getElementById('attendeeArea');
+                if (attendeeArea) {
+                    attendeeArea.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                }
+                return;
+            }
+
+            const hasExternalAttendee = currentAttendees.some(a => a.type === 'external');
+            if (!hasExternalAttendee) {
+                await Swal.fire({
+                    icon: 'error',
+                    title: '외부인원 필수',
+                    html: `연구비증빙 회의록은 <b>외부인원이 1명 이상</b> 참석해야 합니다.<br><br>
+                           참석자 추가에서 <b>외부인원</b> 패널을 통해 추가해주세요.<br>
+                           <span style="color:#888;font-size:13px;">외부인원이 없는 회의는 연구비증빙 대상이 아닙니다.</span>`,
+                    confirmButtonText: '참석자 추가하기'
+                });
+                const attendeeArea = document.getElementById('attendeeArea');
+                if (attendeeArea) {
+                    attendeeArea.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                }
+                return;
+            }
+
+            // 참석자 금액 합계 검증 (빨간색 상태인지 확인)
+            const totalAmountEl = document.getElementById('attendeeTotalAmount');
+            if (totalAmountEl && amountInput) {
+                const totalAmount = currentAttendees.reduce((sum, attendee) => {
+                    return sum + (attendee.meetingExpense || 0);
+                }, 0);
+                const commonAmount = parseInt(amountInput.value.replace(/,/g, '')) || 0;
+                if (totalAmount < commonAmount) {
+                    showWarning('참석 인원을 추가해주세요.');
+                    return;
+                }
+            }
+
+            // 저장 직전 중복 참석자 최종 검증
+            const internalAttendeesForUpdate = currentAttendees.filter(a => a.type === 'internal');
+            if (internalAttendeesForUpdate.length > 0) {
+                try {
+                    const attendeeIds = internalAttendeesForUpdate.map(a => parseInt(a.id)).filter(id => !isNaN(id));
+                    if (attendeeIds.length > 0) {
+                        const duplicates = await checkDuplicateAttendees(attendeeIds);
+
+                        if (duplicates.length > 0) {
+                            // 현재 수정 중인 문서는 제외
+                            const otherDuplicates = duplicates.filter(d => {
+                                return !(d.meeting && d.meeting.idx && d.meeting.idx === currentReceiptMeetingIdx);
+                            });
+
+                            if (otherDuplicates.length > 0) {
+                                const duplicate = otherDuplicates[0];
+                                const meeting = duplicate.meeting;
+                                const meetingDate = meeting.documentDate || '';
+                                const projectName = meeting.projectName || '알 수 없는 프로젝트';
+                                const documentTypePrefix = meeting.type || 'RCM';
+                                const documentTypeName = meeting.typeName || documentTypePrefix;
+                                const dateLabel = documentTypePrefix === 'RCM' ? '회의' : '야근';
+
+                                let message = `수정할 수 없습니다.<br><br>`;
+                                message += `동일 날짜에 이미 다른 ${documentTypeName}에 참석 중인 인원이 있습니다.<br><br>`;
+                                message += `${dateLabel} 날짜: ${meetingDate}<br>`;
+
+                                if (meeting.startTime && meeting.endTime) {
+                                    const timeRange = `${meeting.startTime.substring(0, 5)} ~ ${meeting.endTime.substring(0, 5)}`;
+                                    message += `${dateLabel} 시간: ${timeRange}<br>`;
+                                }
+
+                                message += `프로젝트: <strong>[${projectName}]</strong>`;
+
+                                await showWarning(message);
+                                return;
+                            }
+                        }
+                    }
+                } catch (error) {
+                    console.error('[중복 검증 오류]', error);
+                    const confirmed = await showConfirm(
+                        `참석자 중복 검증 중 오류가 발생했습니다.<br><br>` +
+                        `오류 내용: ${error.message}<br><br>` +
+                        `중복 검증 없이 계속 진행하시겠습니까?`,
+                        '중복 검증 오류',
+                        {
+                            icon: 'warning',
+                            confirmText: '계속 진행',
+                            cancelText: '취소',
+                            confirmColor: '#ff9800'
+                        }
+                    );
+                    if (!confirmed) {
+                        return;
+                    }
+                    console.log('[수정 계속] 중복 검증 스킵하고 진행');
+                }
+            }
+
             // 활동비 초과 여부 확인 (경고만, 차단 없음)
             const projIdxForBudgetUpd = parseInt(projectIdxInput.value);
             if (projIdxForBudgetUpd) {
@@ -4739,11 +4928,8 @@ document.addEventListener('DOMContentLoaded', async function() {
                     await Swal.fire({
                         icon: 'success',
                         title: '삭제 완료',
-                        text: '회의록이 삭제되었습니다.',
                         timer: 1500,
-                        showConfirmButton: true,
-                        confirmButtonText: '확인',
-                        timerProgressBar: true
+                        showConfirmButton: false
                     });
                     popupAwareRedirect('/project/documents');
                     return;
