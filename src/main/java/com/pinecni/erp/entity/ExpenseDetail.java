@@ -7,6 +7,8 @@ import lombok.*;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.util.ArrayList;
+import java.util.List;
 
 /**
  * 지출승인서 지출 항목 Entity
@@ -79,6 +81,12 @@ public class ExpenseDetail {
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "expense_approval_idx", insertable = false, updatable = false)
     private ExpenseApproval expenseApproval;
+
+    /** 이 항목에 첨부된 영수증 목록 */
+    @JsonIgnore
+    @OneToMany(fetch = FetchType.LAZY)
+    @JoinColumn(name = "expense_detail_idx", insertable = false, updatable = false)
+    private List<ExpenseApprovalAttachment> attachments = new ArrayList<>();
 
     // ── 라이프사이클 ─────────────────────────────────────────
 

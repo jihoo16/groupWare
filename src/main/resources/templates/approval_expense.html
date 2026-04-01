@@ -85,7 +85,7 @@
                                 </div>
                                 <div class="expense-items-container" id="expenseItemsContainer">
                                     <!-- 지출 항목이 여기에 추가됩니다 -->
-                                    <div class="expense-item">
+                                    <div class="expense-item" data-item-index="0">
                                         <span class="expense-item-number">1</span>
                                         <div class="expense-item-body">
                                             <div class="form-row">
@@ -117,6 +117,16 @@
                                                         <option value="개인카드" selected>개인카드</option>
                                                         <option value="현금">현금</option>
                                                     </select>
+                                                </div>
+                                            </div>
+                                            <!-- 항목별 영수증 첨부 -->
+                                            <div class="item-receipt-row">
+                                                <div class="item-receipt-section" data-item-index="0">
+                                                    <label class="item-receipt-btn">
+                                                        <i class="fas fa-receipt"></i> 영수증 첨부
+                                                        <input type="file" class="item-receipt-input" data-item-index="0" hidden accept="image/*,.pdf" multiple>
+                                                    </label>
+                                                    <div class="item-receipt-list"></div>
                                                 </div>
                                             </div>
                                         </div>
@@ -243,35 +253,19 @@
                             <div class="section-header">
                                 <h3><i class="fas fa-paperclip"></i> 첨부파일</h3>
                             </div>
-                            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-top: 4px;">
-                                <div>
-                                    <div class="section-header">
-                                        <h4><i class="fas fa-receipt"></i> 영수증 업로드</h4>
-                                    </div>
-                                    <div class="file-upload-area" id="receiptUploadArea">
-                                        <input type="file" id="receiptInput" multiple hidden accept="image/*,.pdf">
-                                        <label for="receiptInput" class="file-upload-label">
-                                            <i class="fas fa-cloud-upload-alt"></i>
-                                            <span>파일을 선택하거나 드래그하세요</span>
-                                            <small>최대 50MB · 이미지, PDF</small>
-                                        </label>
-                                    </div>
-                                    <div class="file-list" id="receiptFileList"></div>
+                            <div style="margin-top: 4px;">
+                                <div class="section-header">
+                                    <h4><i class="fas fa-file-signature"></i> 공식문서 / 영수증 업로드</h4>
                                 </div>
-                                <div>
-                                    <div class="section-header">
-                                        <h4><i class="fas fa-file-signature"></i> 서명완료 공식문서 업로드</h4>
-                                    </div>
-                                    <div class="file-upload-area" id="signedDocUploadArea">
-                                        <input type="file" id="signedDocInput" multiple hidden accept="image/*,.pdf">
-                                        <label for="signedDocInput" class="file-upload-label">
-                                            <i class="fas fa-cloud-upload-alt"></i>
-                                            <span>파일을 선택하거나 드래그하세요</span>
-                                            <small>최대 50MB · 이미지, PDF</small>
-                                        </label>
-                                    </div>
-                                    <div class="file-list" id="signedDocFileList"></div>
+                                <div class="file-upload-area" id="signedDocUploadArea">
+                                    <input type="file" id="signedDocInput" multiple hidden accept="image/*,.pdf">
+                                    <label for="signedDocInput" class="file-upload-label">
+                                        <i class="fas fa-cloud-upload-alt"></i>
+                                        <span>파일을 선택하거나 드래그하세요</span>
+                                        <small>최대 50MB · 이미지, PDF</small>
+                                    </label>
                                 </div>
+                                <div class="file-list" id="signedDocFileList"></div>
                             </div>
                         </div>
 

@@ -117,18 +117,29 @@ document.addEventListener('DOMContentLoaded', async function () {
     // ── 상단 지출 내역 테이블 렌더링 ──────────────────────────────
     const tbody = document.getElementById('detailTableBody');
     if (details.length === 0) {
-        tbody.innerHTML = '<tr><td colspan="6" class="empty-row">지출 내역이 없습니다</td></tr>';
+        tbody.innerHTML = '<tr><td colspan="7" class="empty-row">지출 내역이 없습니다</td></tr>';
     } else {
-        tbody.innerHTML = details.map(d => `
-            <tr>
-                <td>${d.expenseDate || '-'}</td>
-                <td>${d.description || '-'}</td>
-                <td>${d.shopName || '-'}</td>
-                <td>${d.paymentMethod || '-'}</td>
-                <td style="text-align:right;">${formatAmount(d.amount)}</td>
-                <td>${d.note || ''}</td>
-            </tr>
-        `).join('');
+        tbody.innerHTML = details.map(d => {
+            const attCount = (d.attachments || []).length;
+            const receiptCell = attCount > 0
+                ? `<button class="btn-view-receipt" data-detail-idx="${d.idx}">
+                     <i class="fas fa-receipt"></i> ${attCount}건
+                   </button>`
+                : `<button class="btn-upload-receipt" data-detail-idx="${d.idx}">
+                     <i class="fas fa-cloud-upload-alt"></i> 첨부
+                   </button>`;
+            return `
+                <tr>
+                    <td>${d.expenseDate || '-'}</td>
+                    <td>${d.description || '-'}</td>
+                    <td>${d.shopName || '-'}</td>
+                    <td>${d.paymentMethod || '-'}</td>
+                    <td style="text-align:right;">${formatAmount(d.amount)}</td>
+                    <td>${d.note || ''}</td>
+                    <td class="receipt-cell">${receiptCell}</td>
+                </tr>
+            `;
+        }).join('');
     }
     document.getElementById('detailTotalAmount').textContent = '₩ ' + total.toLocaleString();
 
@@ -191,16 +202,16 @@ document.addEventListener('DOMContentLoaded', async function () {
         return 'fa-file';
     }
 
-    /** 서버에서 받아온 첨부파일 목록을 두 섹션에 렌더링 */
+    /** 서버에서 받아온 첨부파일 목록 중 문서 전체 첨부(DOCUMENT, RECEIPT)를 하단에 렌더링 */
     function renderServerAttachments(attachments) {
-        const receiptList  = document.getElementById('receiptFileList');
-        const signedList   = document.getElementById('signedDocFileList');
-        if (!receiptList || !signedList) return;
-
-        receiptList.innerHTML = '';
-        signedList.innerHTML  = '';
+        const signedList = document.getElementById('signedDocFileList');
+        if (!signedList) return;
+        signedList.innerHTML = '';
 
         (attachments || []).forEach(att => {
+            // ITEM_RECEIPT는 항목별 테이블에서 표시하므로 제외
+            if (att.attachmentType === 'ITEM_RECEIPT') return;
+
             const item = document.createElement('div');
             item.className = 'file-item';
             item.dataset.attachmentIdx = att.idx;
@@ -238,15 +249,116 @@ document.addEventListener('DOMContentLoaded', async function () {
                 }
             });
 
-            if (att.attachmentType === 'DOCUMENT') {
-                signedList.appendChild(item);
-            } else {
-                receiptList.appendChild(item);
-            }
+            signedList.appendChild(item);
         });
     }
 
     renderServerAttachments(doc.attachments);
+
+    // ── 항목별 영수증 버튼 이벤트 ─────────────────────────────────
+    let currentUploadDetailIdx = null;
+    const hiddenInput = document.getElementById('itemReceiptHiddenInput');
+
+    // 영수증 보기 버튼 (이미 첨부된 항목)
+    document.querySelectorAll('.btn-view-receipt').forEach(btn => {
+        btn.addEventListener('click', function() {
+            const detailIdx = this.dataset.detailIdx;
+            const detail = details.find(d => String(d.idx) === detailIdx);
+            if (!detail || !detail.attachments || detail.attachments.length === 0) return;
+
+            let listHtml = '<div style="text-align:left;">';
+            detail.attachments.forEach(att => {
+                listHtml += `
+                    <div style="display:flex;align-items:center;gap:8px;padding:6px 0;border-bottom:1px solid #f1f5f9;">
+                        <i class="fas ${getFileIcon(att.originalFilename)}" style="color:#667eea;"></i>
+                        <span style="flex:1;font-size:13px;">${att.originalFilename}</span>
+                        <a href="/api/approval/expense/attachments/${att.idx}/download" style="color:#667eea;font-size:12px;"><i class="fas fa-download"></i></a>
+                        <button class="swal-delete-att" data-att-idx="${att.idx}" style="background:none;border:none;color:#ef4444;cursor:pointer;font-size:12px;"><i class="fas fa-trash"></i></button>
+                    </div>
+                `;
+            });
+            listHtml += '</div>';
+
+            Swal.fire({
+                title: '항목 영수증',
+                html: listHtml,
+                showConfirmButton: false,
+                showCloseButton: true,
+                didOpen: () => {
+                    document.querySelectorAll('.swal-delete-att').forEach(delBtn => {
+                        delBtn.addEventListener('click', async function() {
+                            const attIdx = this.dataset.attIdx;
+                            const confirmResult = await Swal.fire({
+                                title: '삭제하시겠습니까?',
+                                icon: 'warning',
+                                showCancelButton: true,
+                                confirmButtonText: '삭제',
+                                cancelButtonText: '취소',
+                                confirmButtonColor: '#d33'
+                            });
+                            if (!confirmResult.isConfirmed) return;
+                            try {
+                                const res = await fetch(`/api/approval/expense/attachments/${attIdx}`, { method: 'DELETE' });
+                                if (res.ok) {
+                                    Swal.fire({ icon: 'success', title: '삭제 완료', timer: 1000, showConfirmButton: false })
+                                        .then(() => location.reload());
+                                }
+                            } catch (_) {
+                                Swal.fire({ icon: 'error', title: '삭제 실패' });
+                            }
+                        });
+                    });
+                }
+            });
+        });
+    });
+
+    // 영수증 첨부 버튼 (아직 없는 항목)
+    document.querySelectorAll('.btn-upload-receipt').forEach(btn => {
+        btn.addEventListener('click', function() {
+            currentUploadDetailIdx = this.dataset.detailIdx;
+            hiddenInput.click();
+        });
+    });
+
+    // 영수증 보기 버튼에서도 추가 업로드 가능하도록 (더블클릭 또는 우클릭 대신 보기 팝업에서 처리)
+
+    if (hiddenInput) {
+        hiddenInput.addEventListener('change', async function() {
+            if (!currentUploadDetailIdx || this.files.length === 0) return;
+
+            const validFiles = Array.from(this.files).filter(f => {
+                if (f.size > MAX_FILE_SIZE) {
+                    Swal.fire({ icon: 'warning', title: '파일 크기 초과', text: `50MB를 초과합니다: ${f.name}` });
+                    return false;
+                }
+                return true;
+            });
+
+            if (validFiles.length === 0) { this.value = ''; return; }
+
+            const formData = new FormData();
+            validFiles.forEach(f => formData.append('files', f));
+
+            try {
+                const res = await fetch(`/api/approval/expense/detail/${currentUploadDetailIdx}/attachments`, {
+                    method: 'POST',
+                    body: formData
+                });
+                if (res.ok) {
+                    Swal.fire({ icon: 'success', title: '업로드 완료', timer: 1000, showConfirmButton: false })
+                        .then(() => location.reload());
+                } else {
+                    Swal.fire({ icon: 'error', title: '업로드 실패', text: '잠시 후 다시 시도해 주세요.' });
+                }
+            } catch (_) {
+                Swal.fire({ icon: 'error', title: '업로드 실패', text: '파일 업로드 중 오류가 발생했습니다.' });
+            }
+
+            this.value = '';
+            currentUploadDetailIdx = null;
+        });
+    }
 
     /** 새 파일을 서버에 업로드하고 목록에 추가 */
     async function uploadFiles(files, attachmentType) {
@@ -310,7 +422,6 @@ document.addEventListener('DOMContentLoaded', async function () {
         });
     }
 
-    setupUpload('receiptInput',   'receiptUploadArea',   'RECEIPT');
     setupUpload('signedDocInput', 'signedDocUploadArea', 'DOCUMENT');
 
     // ── 버튼 표시 (API 200 = 본인 문서 확인됨) ───────────────────

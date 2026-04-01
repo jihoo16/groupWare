@@ -186,6 +186,42 @@ button:focus, a:focus, div:focus { outline: none !important; box-shadow: none !i
     background: #fafbff;
 }
 
+/* 영수증 셀 */
+.receipt-cell {
+    text-align: center;
+}
+
+.btn-view-receipt, .btn-upload-receipt {
+    background: none;
+    border: 1px solid;
+    border-radius: 4px;
+    padding: 3px 8px;
+    font-size: 12px;
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    white-space: nowrap;
+}
+
+.btn-view-receipt {
+    color: #059669;
+    border-color: #059669;
+}
+
+.btn-view-receipt:hover {
+    background: #ecfdf5;
+}
+
+.btn-upload-receipt {
+    color: #667eea;
+    border-color: #667eea;
+}
+
+.btn-upload-receipt:hover {
+    background: #f0f0ff;
+}
+
 .empty-row {
     text-align: center !important;
     color: #94a3b8;

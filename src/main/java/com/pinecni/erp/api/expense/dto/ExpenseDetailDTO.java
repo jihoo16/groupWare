@@ -3,6 +3,8 @@ package com.pinecni.erp.api.expense.dto;
 import lombok.*;
 
 import java.time.LocalDate;
+import java.util.ArrayList;
+import java.util.List;
 
 /**
  * 지출 항목 DTO
@@ -13,6 +15,9 @@ import java.time.LocalDate;
 @AllArgsConstructor
 @Builder
 public class ExpenseDetailDTO {
+
+    /** 항목 IDX (조회 응답용 — 상세 페이지에서 항목별 영수증 업로드 시 식별자) */
+    private Long idx;
 
     /** 지출 일자 (YYYY-MM-DD) */
     private LocalDate expenseDate;
@@ -31,4 +36,8 @@ public class ExpenseDetailDTO {
 
     /** 비고 */
     private String note;
+
+    /** 항목별 영수증 목록 (조회 응답용) */
+    @Builder.Default
+    private List<ExpenseApprovalAttachmentDTO> attachments = new ArrayList<>();
 }

@@ -5,6 +5,12 @@ document.addEventListener('DOMContentLoaded', async function() {
     let selectedEmployee = null;
     let editIdx = null; // 수정 모드일 때 문서 idx
 
+    // 첨부파일 관련 변수 (편집 모드 로드 전에 선언 필요)
+    const MAX_FILE_SIZE = 50 * 1024 * 1024; // 50MB
+    let itemReceiptFiles = { 0: [] };  // 항목별 영수증 { itemIndex: [File, ...] }
+    let signedDocFiles = [];
+    let deletedAttachmentIds = [];
+
     // DOM 요소
     const templateTreeHeaders = document.querySelectorAll('.tree-node-header[data-template]');
     const categoryNodes = document.querySelectorAll('.tree-node-header.category-node');
@@ -1192,7 +1198,14 @@ document.addEventListener('DOMContentLoaded', async function() {
 
                     const multipart = new FormData();
                     multipart.append('data', new Blob([JSON.stringify(formData)], { type: 'application/json' }));
-                    receiptFiles.forEach(f => multipart.append('receiptFiles', f));
+
+                    // 항목별 영수증: DOM 순서대로 formIdx에 맞춰 전송
+                    document.querySelectorAll('.expense-item').forEach((item, formIdx) => {
+                        const dataIdx = item.dataset.itemIndex;
+                        const files = itemReceiptFiles[dataIdx] || [];
+                        files.forEach(f => multipart.append(`itemReceiptFiles_${formIdx}`, f));
+                    });
+
                     signedDocFiles.forEach(f => multipart.append('signedDocFiles', f));
 
                     const response = await fetch(apiUrl, {
@@ -1748,6 +1761,8 @@ document.addEventListener('DOMContentLoaded', async function() {
             itemCounter++;
             const newItem = document.createElement('div');
             newItem.className = 'expense-item';
+            newItem.dataset.itemIndex = itemCounter;
+            itemReceiptFiles[itemCounter] = [];
             newItem.innerHTML = `
                 <span class="expense-item-number">${itemCounter}</span>
                 <div class="expense-item-body">
@@ -1782,12 +1797,22 @@ document.addEventListener('DOMContentLoaded', async function() {
                             </select>
                         </div>
                     </div>
+                    <div class="item-receipt-row">
+                        <div class="item-receipt-section" data-item-index="${itemCounter}">
+                            <label class="item-receipt-btn">
+                                <i class="fas fa-receipt"></i> 영수증 첨부
+                                <input type="file" class="item-receipt-input" data-item-index="${itemCounter}" hidden accept="image/*,.pdf" multiple>
+                            </label>
+                            <div class="item-receipt-list"></div>
+                        </div>
+                    </div>
                 </div>
                 <button type="button" class="btn-remove-item" onclick="removeExpenseItem(this)">
                     <i class="fas fa-times"></i>
                 </button>
             `;
             expenseItemsContainer.appendChild(newItem);
+            setupItemReceiptInput(newItem);
 
             // 이전 항목의 날짜를 새 항목에 복사
             const allItems = expenseItemsContainer.querySelectorAll('.expense-item');
@@ -1806,6 +1831,8 @@ document.addEventListener('DOMContentLoaded', async function() {
         const item = button.closest('.expense-item');
         const container = document.getElementById('expenseItemsContainer');
         if (container && container.children.length > 1) {
+            const idx = item.dataset.itemIndex;
+            if (idx !== undefined) delete itemReceiptFiles[idx];
             item.remove();
             updateItemNumbers();
             calculateTotal();
@@ -2383,6 +2410,8 @@ document.addEventListener('DOMContentLoaded', async function() {
                 details.forEach((d, i) => {
                     const div = document.createElement('div');
                     div.className = 'expense-item';
+                    div.dataset.itemIndex = i;
+                    itemReceiptFiles[i] = [];
                     div.innerHTML = `
                         <span class="expense-item-number">${i + 1}</span>
                         <div class="expense-item-body">
@@ -2417,12 +2446,22 @@ document.addEventListener('DOMContentLoaded', async function() {
                                     </select>
                                 </div>
                             </div>
+                            <div class="item-receipt-row">
+                                <div class="item-receipt-section" data-item-index="${i}">
+                                    <label class="item-receipt-btn">
+                                        <i class="fas fa-receipt"></i> 영수증 첨부
+                                        <input type="file" class="item-receipt-input" data-item-index="${i}" hidden accept="image/*,.pdf" multiple>
+                                    </label>
+                                    <div class="item-receipt-list"></div>
+                                </div>
+                            </div>
                         </div>
                         <button type="button" class="btn-remove-item" onclick="removeExpenseItem(this)">
                             <i class="fas fa-times"></i>
                         </button>
                     `;
                     container.appendChild(div);
+                    setupItemReceiptInput(div);
 
                     // 각 필드에 값 세팅 (XSS 방지를 위해 .value로 직접 세팅)
                     const dateInput   = div.querySelector('.date-input');
@@ -2438,6 +2477,11 @@ document.addEventListener('DOMContentLoaded', async function() {
                     if (pmSelect)    pmSelect.value    = d.paymentMethod  || '개인카드';
                     if (amountInput) amountInput.value = d.amount ? Number(d.amount).toLocaleString('ko-KR') : '';
                     if (noteInput)   noteInput.value   = d.note          || '';
+
+                    // 기존 항목별 영수증 렌더링
+                    if (d.attachments && d.attachments.length > 0) {
+                        renderItemServerAttachments(div, d.attachments);
+                    }
                 });
             }
 
@@ -2587,22 +2631,63 @@ document.addEventListener('DOMContentLoaded', async function() {
     setTimeout(validateRequiredFields, 300);
 
     // ============================================
-    // 첨부파일 업로드 (영수증 / 서명완료 공식문서)
+    // 첨부파일 업로드 (항목별 영수증 + 서명완료 공식문서)
     // ============================================
 
-    const MAX_FILE_SIZE = 50 * 1024 * 1024; // 50MB
+    /** 항목별 영수증 input change 이벤트 바인딩 */
+    function setupItemReceiptInput(itemEl) {
+        const input = itemEl.querySelector('.item-receipt-input');
+        if (!input) return;
+        input.addEventListener('change', function() {
+            const idx = this.dataset.itemIndex;
+            if (!itemReceiptFiles[idx]) itemReceiptFiles[idx] = [];
+            Array.from(this.files).forEach(file => {
+                if (file.size > MAX_FILE_SIZE) {
+                    showWarning(`파일 크기가 50MB를 초과합니다: ${file.name}`);
+                    return;
+                }
+                itemReceiptFiles[idx].push(file);
+            });
+            this.value = '';
+            rerenderItemReceipts(itemEl, idx);
+        });
+    }
 
-    let receiptFiles = [];
-    let signedDocFiles = [];
-    let deletedAttachmentIds = [];
+    /** 항목 내 영수증 파일 목록 렌더링 */
+    function rerenderItemReceipts(itemEl, idx) {
+        const listEl = itemEl.querySelector('.item-receipt-list');
+        if (!listEl) return;
+        listEl.innerHTML = '';
+        const files = itemReceiptFiles[idx] || [];
+        files.forEach((file, fileIdx) => {
+            const chip = document.createElement('span');
+            chip.className = 'file-chip';
+            chip.innerHTML = `
+                <i class="fas ${getFileIcon(file.name)}"></i>
+                <span class="chip-name">${file.name}</span>
+                <button type="button" class="btn-remove-chip" title="삭제"><i class="fas fa-times"></i></button>
+            `;
+            chip.querySelector('.btn-remove-chip').addEventListener('click', () => {
+                itemReceiptFiles[idx].splice(fileIdx, 1);
+                rerenderItemReceipts(itemEl, idx);
+            });
+            listEl.appendChild(chip);
+        });
 
-    /** 수정 모드 - 서버에서 받아온 기존 첨부파일을 파일 목록에 렌더링 */
+        // 서버에서 받아온 기존 영수증도 표시 (수정 모드)
+        const serverItems = listEl.querySelectorAll('.file-chip-server');
+        // 이미 렌더링된 서버 파일은 유지
+    }
+
+    /** 수정 모드 - 서버에서 받아온 기존 첨부파일을 하단에 렌더링 (DOCUMENT + RECEIPT) */
     function renderServerAttachments(attachments) {
         if (!attachments || attachments.length === 0) return;
 
         attachments.forEach(att => {
-            const listId = att.attachmentType === 'DOCUMENT' ? 'signedDocFileList' : 'receiptFileList';
-            const listEl = document.getElementById(listId);
+            // ITEM_RECEIPT는 항목별로 표시하므로 제외
+            if (att.attachmentType === 'ITEM_RECEIPT') return;
+
+            const listEl = document.getElementById('signedDocFileList');
             if (!listEl) return;
 
             const item = document.createElement('div');
@@ -2622,6 +2707,33 @@ document.addEventListener('DOMContentLoaded', async function() {
                 item.remove();
             });
             listEl.appendChild(item);
+        });
+    }
+
+    /** 수정 모드 - 항목별 기존 영수증을 해당 항목 내부에 렌더링 */
+    function renderItemServerAttachments(itemEl, detailAttachments) {
+        if (!detailAttachments || detailAttachments.length === 0) return;
+        const listEl = itemEl.querySelector('.item-receipt-list');
+        if (!listEl) return;
+
+        detailAttachments.forEach(att => {
+            const chip = document.createElement('span');
+            chip.className = 'file-chip file-chip-server';
+            chip.dataset.attachmentIdx = att.idx;
+            chip.innerHTML = `
+                <i class="fas ${getFileIcon(att.originalFilename)}"></i>
+                <span class="chip-name">${att.originalFilename}</span>
+                <button type="button" class="btn-download-chip" title="다운로드"><i class="fas fa-download"></i></button>
+                <button type="button" class="btn-remove-chip" title="삭제"><i class="fas fa-times"></i></button>
+            `;
+            chip.querySelector('.btn-download-chip').addEventListener('click', () => {
+                window.location.href = `/api/approval/expense/attachments/${att.idx}/download`;
+            });
+            chip.querySelector('.btn-remove-chip').addEventListener('click', () => {
+                deletedAttachmentIds.push(att.idx);
+                chip.remove();
+            });
+            listEl.appendChild(chip);
         });
     }
 
@@ -2694,9 +2806,11 @@ document.addEventListener('DOMContentLoaded', async function() {
         });
     }
 
-    function rerenderReceipt()   { renderUploadList('receiptFileList',   receiptFiles,   rerenderReceipt); }
     function rerenderSignedDoc() { renderUploadList('signedDocFileList', signedDocFiles, rerenderSignedDoc); }
 
-    setupUpload('receiptInput',   'receiptUploadArea',   'receiptFileList',   receiptFiles,   rerenderReceipt);
     setupUpload('signedDocInput', 'signedDocUploadArea', 'signedDocFileList', signedDocFiles, rerenderSignedDoc);
+
+    // 초기 항목(index=0)의 영수증 input 바인딩
+    const firstItem = document.querySelector('.expense-item[data-item-index="0"]');
+    if (firstItem) setupItemReceiptInput(firstItem);
 });

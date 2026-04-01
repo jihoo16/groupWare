@@ -42,4 +42,10 @@ public interface ExpenseApprovalRepository extends JpaRepository<ExpenseApproval
            "LEFT JOIN FETCH ea.expenseDetails " +
            "WHERE ea.idx = :idx AND ea.deleted = false")
     Optional<ExpenseApproval> findByIdxWithDetails(@Param("idx") Long idx);
+
+    /**
+     * 관리자용: 전체 문서 목록 (삭제 포함, 최신순)
+     */
+    @Query("SELECT ea FROM ExpenseApproval ea ORDER BY ea.createdAt DESC")
+    List<ExpenseApproval> findAllOrderByCreatedAtDesc();
 }

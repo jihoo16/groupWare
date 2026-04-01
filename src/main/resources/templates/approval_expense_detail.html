@@ -64,14 +64,17 @@
                                     <th style="width: 130px;">상호</th>
                                     <th style="width: 100px;">결제수단</th>
                                     <th style="width: 130px;">금액</th>
-                                    <th style="width: 120px;">비고</th>
+                                    <th style="width: 100px;">비고</th>
+                                    <th style="width: 100px;">영수증</th>
                                 </tr>
                             </thead>
                             <tbody id="detailTableBody">
-                                <tr><td colspan="6" class="empty-row">로딩 중...</td></tr>
+                                <tr><td colspan="7" class="empty-row">로딩 중...</td></tr>
                             </tbody>
                         </table>
                     </div>
+                    <!-- 항목별 영수증 업로드용 hidden input -->
+                    <input type="file" id="itemReceiptHiddenInput" hidden accept="image/*,.pdf" multiple>
 
                     <!-- 합계 -->
                     <div class="total-bar">
@@ -183,33 +186,17 @@
                     <!-- 첨부파일 -->
                     <div class="attachment-section" style="margin-top: 28px;">
                         <h3 class="section-title"><i class="fas fa-paperclip"></i> 첨부파일</h3>
-                        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-top: 12px;">
-                            <!-- 영수증 -->
-                            <div>
-                                <div class="attach-sub-title"><i class="fas fa-receipt"></i> 영수증</div>
-                                <div class="file-upload-area" id="receiptUploadArea">
-                                    <input type="file" id="receiptInput" multiple hidden accept="image/*,.pdf">
-                                    <label for="receiptInput" class="file-upload-label">
-                                        <i class="fas fa-cloud-upload-alt"></i>
-                                        <span>파일을 선택하거나 드래그하세요</span>
-                                        <small>최대 50MB · 이미지, PDF</small>
-                                    </label>
-                                </div>
-                                <div class="file-list" id="receiptFileList"></div>
+                        <div style="margin-top: 12px;">
+                            <div class="attach-sub-title"><i class="fas fa-file-signature"></i> 공식문서 / 영수증</div>
+                            <div class="file-upload-area" id="signedDocUploadArea">
+                                <input type="file" id="signedDocInput" multiple hidden accept="image/*,.pdf">
+                                <label for="signedDocInput" class="file-upload-label">
+                                    <i class="fas fa-cloud-upload-alt"></i>
+                                    <span>파일을 선택하거나 드래그하세요</span>
+                                    <small>최대 50MB · 이미지, PDF</small>
+                                </label>
                             </div>
-                            <!-- 서명완료 공식문서 -->
-                            <div>
-                                <div class="attach-sub-title"><i class="fas fa-file-signature"></i> 서명완료 공식문서</div>
-                                <div class="file-upload-area" id="signedDocUploadArea">
-                                    <input type="file" id="signedDocInput" multiple hidden accept="image/*,.pdf">
-                                    <label for="signedDocInput" class="file-upload-label">
-                                        <i class="fas fa-cloud-upload-alt"></i>
-                                        <span>파일을 선택하거나 드래그하세요</span>
-                                        <small>최대 50MB · 이미지, PDF</small>
-                                    </label>
-                                </div>
-                                <div class="file-list" id="signedDocFileList"></div>
-                            </div>
+                            <div class="file-list" id="signedDocFileList"></div>
                         </div>
                     </div>
 

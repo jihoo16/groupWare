@@ -35,4 +35,25 @@ public interface ExpenseApprovalAttachmentRepository extends JpaRepository<Expen
     void softDeleteByExpenseApprovalIdx(
             @Param("expenseApprovalIdx") Long expenseApprovalIdx,
             @Param("deletedUserIdx") Long deletedUserIdx);
+
+    // ── 항목별 영수증 관련 ───────────────────────────────────────
+
+    /** 특정 지출 항목의 영수증 목록 조회 */
+    List<ExpenseApprovalAttachment> findByExpenseDetailIdxAndDeletedFalseOrderByIdxAsc(Long expenseDetailIdx);
+
+    /** 특정 지출 항목의 영수증 수 (파일명 연번용) */
+    long countByExpenseDetailIdxAndDeletedFalse(Long expenseDetailIdx);
+
+    /** 문서 전체 첨부파일만 조회 (DOCUMENT 타입 등, expense_detail_idx IS NULL) */
+    List<ExpenseApprovalAttachment> findByExpenseApprovalIdxAndExpenseDetailIdxIsNullAndDeletedFalseOrderByIdxAsc(Long expenseApprovalIdx);
+
+    /** 항목 삭제→재삽입 시 기존 영수증의 expense_detail_idx를 null로 해제 */
+    @Modifying
+    @Query("""
+        UPDATE ExpenseApprovalAttachment a
+        SET a.expenseDetailIdx = null
+        WHERE a.expenseDetailIdx IN :detailIdxList
+          AND a.deleted = false
+        """)
+    void detachFromDetails(@Param("detailIdxList") List<Long> detailIdxList);
 }

@@ -44,9 +44,13 @@ public class ExpenseApprovalAttachment {
     @Column(name = "file_type", length = 100)
     private String fileType;
 
-    /** RECEIPT: 영수증, DOCUMENT: 서명완료 공식문서 */
+    /** ITEM_RECEIPT: 항목별 영수증, DOCUMENT: 서명완료 공식문서, RECEIPT: 레거시(문서 전체 영수증) */
     @Column(name = "attachment_type", length = 20)
     private String attachmentType;
+
+    /** 지출 항목 IDX (항목별 영수증일 때 세팅, 문서 전체 첨부일 때 NULL) */
+    @Column(name = "expense_detail_idx")
+    private Long expenseDetailIdx;
 
     @Column(name = "upload_user_idx")
     private Long uploadUserIdx;

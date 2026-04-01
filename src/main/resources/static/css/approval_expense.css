@@ -1409,6 +1409,92 @@ div h2{
     min-width: 0;
 }
 
+/* 항목별 영수증 첨부 */
+.item-receipt-row {
+    padding: 6px 0 2px;
+}
+
+.item-receipt-section {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex-wrap: wrap;
+}
+
+.item-receipt-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    padding: 4px 10px;
+    font-size: 12px;
+    color: #667eea;
+    border: 1px dashed #667eea;
+    border-radius: 4px;
+    cursor: pointer;
+    transition: background 0.2s;
+    white-space: nowrap;
+}
+
+.item-receipt-btn:hover {
+    background: #f0f0ff;
+}
+
+.item-receipt-list {
+    display: flex;
+    gap: 6px;
+    flex-wrap: wrap;
+}
+
+.item-receipt-list .file-chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    padding: 3px 8px;
+    font-size: 11px;
+    background: #f1f5f9;
+    border-radius: 4px;
+    color: #475569;
+    max-width: 280px;
+}
+
+.item-receipt-list .file-chip .chip-name {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    min-width: 0;
+}
+
+.item-receipt-list .file-chip .btn-remove-chip,
+.item-receipt-list .file-chip .btn-download-chip {
+    background: none;
+    border: none;
+    cursor: pointer;
+    padding: 0 2px;
+    font-size: 11px;
+    flex-shrink: 0;
+}
+
+.item-receipt-list .file-chip .btn-remove-chip {
+    color: #94a3b8;
+}
+
+.item-receipt-list .file-chip .btn-remove-chip:hover {
+    color: #ef4444;
+}
+
+.item-receipt-list .file-chip .btn-download-chip {
+    color: #667eea;
+}
+
+.item-receipt-list .file-chip .btn-download-chip:hover {
+    color: #4f46e5;
+}
+
+.item-receipt-list .file-chip-server {
+    background: #e8f4f8;
+    border: 1px solid #bde0ec;
+}
+
 /* 항목 하단 푸터 (추가 버튼 + 총합계) */
 .expense-items-footer {
     display: flex;

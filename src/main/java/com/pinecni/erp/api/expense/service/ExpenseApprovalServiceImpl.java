@@ -2,14 +2,19 @@ package com.pinecni.erp.api.expense.service;
 
 import com.pinecni.erp.api.approval.repository.ApprovalDocumentRepository;
 import com.pinecni.erp.api.approval.service.DocumentSequenceService;
+import com.pinecni.erp.api.expense.dto.AdminExpenseDocumentDTO;
 import com.pinecni.erp.api.expense.dto.ExpenseApprovalAttachmentDTO;
 import com.pinecni.erp.api.expense.dto.ExpenseApprovalCreateDTO;
 import com.pinecni.erp.api.expense.dto.ExpenseDetailDTO;
 import com.pinecni.erp.api.expense.repository.ExpenseApprovalAttachmentRepository;
+import com.pinecni.erp.api.code.repository.CodeRepository;
+import com.pinecni.erp.api.user.repository.UserRepository;
 import com.pinecni.erp.entity.ApprovalDocument;
+import com.pinecni.erp.entity.Code;
 import com.pinecni.erp.entity.ExpenseApproval;
 import com.pinecni.erp.entity.ExpenseApprovalAttachment;
 import com.pinecni.erp.entity.ExpenseDetail;
+import com.pinecni.erp.entity.User;
 import com.pinecni.erp.api.expense.repository.ExpenseApprovalRepository;
 import com.pinecni.erp.api.expense.repository.ExpenseDetailRepository;
 import lombok.RequiredArgsConstructor;
@@ -53,6 +58,8 @@ public class ExpenseApprovalServiceImpl implements ExpenseApprovalService {
     private final ApprovalDocumentRepository approvalDocumentRepository;
     private final DocumentSequenceService documentSequenceService;
     private final ExpenseApprovalAttachmentRepository attachmentRepository;
+    private final UserRepository userRepository;
+    private final CodeRepository codeRepository;
 
     @Value("${file.base.dir}")
     private String baseDir;
@@ -147,6 +154,14 @@ public class ExpenseApprovalServiceImpl implements ExpenseApprovalService {
         }
 
         validateExpenseDetails(updateDTO.getExpenseDetails());
+
+        // 기존 항목의 영수증 연결 해제 (expense_detail_idx → null)
+        List<Long> oldDetailIdxList = expenseApproval.getExpenseDetails().stream()
+                .map(ExpenseDetail::getIdx)
+                .toList();
+        if (!oldDetailIdxList.isEmpty()) {
+            attachmentRepository.detachFromDetails(oldDetailIdxList);
+        }
 
         // 기존 항목 전체 삭제 후 재삽입 (orphanRemoval)
         expenseApproval.getExpenseDetails().clear();
@@ -356,10 +371,95 @@ public class ExpenseApprovalServiceImpl implements ExpenseApprovalService {
                 .orElseThrow(() -> new IllegalArgumentException("첨부파일을 찾을 수 없습니다. idx: " + attachmentIdx));
     }
 
+    @Override
+    @Transactional
+    public List<ExpenseApprovalAttachmentDTO> saveItemAttachments(
+            Long expenseApprovalIdx, Long expenseDetailIdx,
+            MultipartFile[] files, Long uploadUserIdx) {
+        log.debug("항목별 영수증 저장 - approvalIdx: {}, detailIdx: {}, 파일 수: {}",
+                expenseApprovalIdx, expenseDetailIdx, files != null ? files.length : 0);
+
+        if (files == null || files.length == 0) return Collections.emptyList();
+
+        ExpenseApproval approval = expenseApprovalRepository.findById(expenseApprovalIdx)
+                .orElseThrow(() -> new IllegalArgumentException("지출승인서를 찾을 수 없습니다. idx: " + expenseApprovalIdx));
+
+        String year = String.valueOf(approval.getCreatedAt() != null
+                ? approval.getCreatedAt().getYear()
+                : LocalDateTime.now().getYear());
+        String relativePath = uploadPattern
+                .replace("{userId}", String.valueOf(approval.getUserIdx()))
+                .replace("{year}", year);
+        String fullUploadPath = baseDir + File.separator + relativePath.replace("/", File.separator);
+
+        try {
+            Files.createDirectories(Paths.get(fullUploadPath));
+        } catch (IOException e) {
+            throw new RuntimeException("업로드 디렉토리를 생성할 수 없습니다: " + fullUploadPath, e);
+        }
+
+        String month = approval.getCreatedAt() != null
+                ? approval.getCreatedAt().format(DateTimeFormatter.ofPattern("yyyyMM"))
+                : LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyyMM"));
+        String displayBase = "지출승인서_" + month + "_항목영수증";
+
+        long existingCount = attachmentRepository.countByExpenseDetailIdxAndDeletedFalse(expenseDetailIdx);
+
+        List<ExpenseApprovalAttachmentDTO> saved = new ArrayList<>();
+
+        for (MultipartFile file : files) {
+            if (file.isEmpty()) continue;
+            try {
+                String original = file.getOriginalFilename();
+                if (original == null) original = "unnamed";
+                String ext = original.contains(".") ? original.substring(original.lastIndexOf('.')) : "";
+
+                long seq = existingCount + saved.size() + 1;
+                String displayFilename = displayBase + "_" + seq + ext;
+
+                String timestamp = LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyyMMddHHmmss"));
+                String uuid = UUID.randomUUID().toString().substring(0, 8);
+                String storedFilename = timestamp + "_" + uuid + ext;
+
+                Files.copy(file.getInputStream(), Paths.get(fullUploadPath, storedFilename));
+
+                ExpenseApprovalAttachment attachment = ExpenseApprovalAttachment.builder()
+                        .expenseApprovalIdx(expenseApprovalIdx)
+                        .expenseDetailIdx(expenseDetailIdx)
+                        .originalFilename(displayFilename)
+                        .storedFilename(storedFilename)
+                        .filePath(relativePath)
+                        .fileSize(file.getSize())
+                        .fileType(file.getContentType())
+                        .attachmentType("ITEM_RECEIPT")
+                        .uploadUserIdx(uploadUserIdx)
+                        .deleted(false)
+                        .build();
+
+                ExpenseApprovalAttachment result = attachmentRepository.save(attachment);
+                saved.add(toAttachmentDTO(result));
+
+                log.debug("항목별 영수증 저장 완료 - detailIdx: {}, 표시명: {}", expenseDetailIdx, displayFilename);
+            } catch (IOException e) {
+                throw new RuntimeException("파일 저장 중 오류가 발생했습니다: " + file.getOriginalFilename(), e);
+            }
+        }
+        return saved;
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public List<ExpenseApprovalAttachmentDTO> getItemAttachments(Long expenseDetailIdx) {
+        return attachmentRepository
+                .findByExpenseDetailIdxAndDeletedFalseOrderByIdxAsc(expenseDetailIdx)
+                .stream().map(this::toAttachmentDTO).toList();
+    }
+
     private ExpenseApprovalAttachmentDTO toAttachmentDTO(ExpenseApprovalAttachment e) {
         return ExpenseApprovalAttachmentDTO.builder()
                 .idx(e.getIdx())
                 .expenseApprovalIdx(e.getExpenseApprovalIdx())
+                .expenseDetailIdx(e.getExpenseDetailIdx())
                 .originalFilename(e.getOriginalFilename())
                 .storedFilename(e.getStoredFilename())
                 .filePath(e.getFilePath())
@@ -371,6 +471,91 @@ public class ExpenseApprovalServiceImpl implements ExpenseApprovalService {
                 .createdAt(e.getCreatedAt())
                 .updatedAt(e.getUpdatedAt())
                 .build();
+    }
+
+    // ── 관리자 전용 ──────────────────────────────────────────────────────
+
+    @Override
+    @Transactional(readOnly = true)
+    public List<AdminExpenseDocumentDTO> getAllExpenseDocumentsForAdmin() {
+        log.info("관리자 - 전체 개인경비청구 문서 조회");
+
+        List<ExpenseApproval> all = expenseApprovalRepository.findAllOrderByCreatedAtDesc();
+
+        // 사용자 정보 일괄 조회 (N+1 방지)
+        List<Long> userIdxList = all.stream().map(ExpenseApproval::getUserIdx).distinct().toList();
+        Map<Long, User> userMap = new HashMap<>();
+        userRepository.findAllById(userIdxList).forEach(u -> userMap.put(u.getIdx(), u));
+
+        // 코드명 캐시 (부서/직급)
+        Map<String, String> codeNameCache = new HashMap<>();
+
+        return all.stream().map(ea -> {
+            User user = userMap.get(ea.getUserIdx());
+
+            String deptName = "-";
+            String posName = "-";
+            if (user != null) {
+                deptName = codeNameCache.computeIfAbsent(user.getEmpDept(),
+                        code -> codeRepository.findByCode(code).map(Code::getCodeName).orElse(code));
+                posName = codeNameCache.computeIfAbsent(user.getEmpPosition(),
+                        code -> codeRepository.findByCode(code).map(Code::getCodeName).orElse(code));
+            }
+
+            // 항목 수
+            List<ExpenseDetail> details = expenseDetailRepository
+                    .findByExpenseApprovalIdxOrderByIdxAsc(ea.getIdx());
+            int detailCount = details.size();
+
+            // 항목별 영수증 첨부 현황
+            int receiptAttachedCount = 0;
+            for (ExpenseDetail d : details) {
+                long attCount = attachmentRepository.countByExpenseDetailIdxAndDeletedFalse(d.getIdx());
+                if (attCount > 0) receiptAttachedCount++;
+            }
+
+            return AdminExpenseDocumentDTO.builder()
+                    .idx(ea.getIdx())
+                    .userIdx(ea.getUserIdx())
+                    .userName(user != null ? user.getEmpName() : "-")
+                    .userDept(user != null ? user.getEmpDept() : "-")
+                    .userDeptName(deptName)
+                    .userPosition(posName)
+                    .documentIdx(ea.getDocumentIdx())
+                    .documentNumber(ea.getDocumentNumber())
+                    .totalAmount(ea.getTotalAmount())
+                    .detailCount(detailCount)
+                    .receiptAttachedCount(receiptAttachedCount)
+                    .createdAt(ea.getCreatedAt())
+                    .updatedAt(ea.getUpdatedAt())
+                    .deleted(ea.getDeleted())
+                    .deletedAt(ea.getDeletedAt())
+                    .deletedUserIdx(ea.getDeletedUserIdx())
+                    .build();
+        }).toList();
+    }
+
+    @Override
+    @Transactional
+    public void adminDeleteExpenseApproval(Long idx, Long adminUserIdx) {
+        log.info("관리자 삭제 - idx: {}, adminUserIdx: {}", idx, adminUserIdx);
+
+        ExpenseApproval ea = expenseApprovalRepository.findById(idx)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND,
+                        "지출승인서를 찾을 수 없습니다. idx: " + idx));
+
+        ea.softDelete(adminUserIdx);
+        expenseApprovalRepository.save(ea);
+
+        if (ea.getDocumentIdx() != null) {
+            approvalDocumentRepository.findById(ea.getDocumentIdx()).ifPresent(doc -> {
+                doc.setDeletedAt(LocalDateTime.now());
+                doc.setDeletedUserIdx(adminUserIdx);
+                approvalDocumentRepository.save(doc);
+            });
+        }
+
+        attachmentRepository.softDeleteByExpenseApprovalIdx(idx, adminUserIdx);
     }
 
     // ── private helpers ────────────────────────────────────────────────────

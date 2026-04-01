@@ -1,5 +1,6 @@
 package com.pinecni.erp.api.expense.service;
 
+import com.pinecni.erp.api.expense.dto.AdminExpenseDocumentDTO;
 import com.pinecni.erp.api.expense.dto.ExpenseApprovalAttachmentDTO;
 import com.pinecni.erp.api.expense.dto.ExpenseApprovalCreateDTO;
 import com.pinecni.erp.api.expense.dto.ExpenseApprovalDTO;
@@ -54,4 +55,20 @@ public interface ExpenseApprovalService {
 
     /** 첨부파일 단건 조회 (다운로드용) */
     ExpenseApprovalAttachmentDTO getAttachmentById(Long attachmentIdx);
+
+    /** 항목별 영수증 저장 (ITEM_RECEIPT 타입) */
+    List<ExpenseApprovalAttachmentDTO> saveItemAttachments(
+            Long expenseApprovalIdx, Long expenseDetailIdx,
+            MultipartFile[] files, Long uploadUserIdx);
+
+    /** 특정 항목의 영수증 목록 조회 */
+    List<ExpenseApprovalAttachmentDTO> getItemAttachments(Long expenseDetailIdx);
+
+    // ── 관리자 전용 ────────────────────────────────────────────
+
+    /** 전체 개인경비청구 문서 목록 조회 (관리자용, 삭제 포함) */
+    List<AdminExpenseDocumentDTO> getAllExpenseDocumentsForAdmin();
+
+    /** 관리자 문서 삭제 (본인 문서 아니어도 가능) */
+    void adminDeleteExpenseApproval(Long idx, Long adminUserIdx);
 }
