@@ -1242,11 +1242,11 @@ document.addEventListener('DOMContentLoaded', async function() {
         validateRequiredFields();
 
         const valid = !document.querySelector(
-            '.form-input.error, .form-textarea.error, .item-table.error'
+            '.form-input.error, .form-textarea.error, .item-table.error, .item-desc.error, .item-payment.error'
         );
 
         if (!valid) {
-            const firstError = document.querySelector('.form-input.error, .form-textarea.error');
+            const firstError = document.querySelector('.form-input.error, .form-textarea.error, .item-desc.error, .item-payment.error');
             if (firstError) firstError.scrollIntoView({ behavior: 'smooth', block: 'center' });
             setTimeout(() => {
                 Swal.fire({ icon: 'warning', title: '입력 오류', text: '필수 항목을 모두 입력해주세요.' });
