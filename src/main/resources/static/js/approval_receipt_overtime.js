@@ -1324,6 +1324,9 @@ document.addEventListener('DOMContentLoaded', async function() {
                     return;
                 }
 
+                // 이전 신청자 ID 저장 (DOM 업데이트 전)
+                const previousApplicantId = document.getElementById('selectedApplicantIdx')?.value;
+
                 selectedApplicant = member;
 
                 // 신청자 입력 필드에 표시
@@ -1341,6 +1344,20 @@ document.addEventListener('DOMContentLoaded', async function() {
                 document.querySelectorAll('.ot-auto-applicant').forEach(field => {
                     field.textContent = member.name;
                 });
+
+                // 야근인원 업데이트: 이전 신청자 제거 후 새 신청자 추가
+                if (typeof window.addOvertimePersonsToOvertime === 'function') {
+                    const currentPersons = window.getCurrentOvertimePersons ? window.getCurrentOvertimePersons() : [];
+                    // 이전 신청자가 있으면 제거
+                    const updatedPersons = previousApplicantId
+                        ? currentPersons.filter(p => String(p.id) !== String(previousApplicantId))
+                        : [...currentPersons];
+                    // 새 신청자가 목록에 없으면 추가
+                    if (!updatedPersons.some(p => String(p.id) === String(member.id))) {
+                        updatedPersons.push(member);
+                    }
+                    window.addOvertimePersonsToOvertime(updatedPersons);
+                }
 
                 closeApplicantModal();
                 validateRequiredFields();
