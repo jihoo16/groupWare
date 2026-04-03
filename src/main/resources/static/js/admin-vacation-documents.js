@@ -227,48 +227,33 @@ document.addEventListener('DOMContentLoaded', function() {
     }
 
     /**
-     * 문서 정렬
+     * 문서 정렬 — 고정 우선순위
+     * 1) 정상 + 미승인 (신청일 오래된순 → 위)
+     * 2) 정상 + 승인완료 (신청일순)
+     * 3) 삭제된 건 (오래된 게 맨 아래)
      */
     function sortDocuments() {
         filteredDocuments.sort((a, b) => {
-            let aVal, bVal;
+            const aDeleted = a.deletedAt != null;
+            const bDeleted = b.deletedAt != null;
+            const aApproved = !!a.isApproved;
+            const bApproved = !!b.isApproved;
 
-            switch (currentSortField) {
-                case 'createdAt':
-                    aVal = a.createdAt ? new Date(a.createdAt) : new Date(0);
-                    bVal = b.createdAt ? new Date(b.createdAt) : new Date(0);
-                    break;
-                case 'userName':
-                    aVal = a.userName || '';
-                    bVal = b.userName || '';
-                    break;
-                case 'userDeptName':
-                    aVal = a.userDeptName || a.userDept || '';
-                    bVal = b.userDeptName || b.userDept || '';
-                    break;
-                case 'vacationType':
-                    aVal = a.vacationType || '';
-                    bVal = b.vacationType || '';
-                    break;
-                case 'startDate':
-                    aVal = a.startDate ? new Date(a.startDate) : new Date(0);
-                    bVal = b.startDate ? new Date(b.startDate) : new Date(0);
-                    break;
-                case 'endDate':
-                    aVal = a.endDate ? new Date(a.endDate) : new Date(0);
-                    bVal = b.endDate ? new Date(b.endDate) : new Date(0);
-                    break;
-                case 'days':
-                    aVal = parseFloat(a.days) || 0;
-                    bVal = parseFloat(b.days) || 0;
-                    break;
-                default:
-                    return 0;
+            // 그룹 우선순위: 정상+미승인=0, 정상+승인=1, 삭제=2
+            const aGroup = aDeleted ? 2 : (aApproved ? 1 : 0);
+            const bGroup = bDeleted ? 2 : (bApproved ? 1 : 0);
+
+            if (aGroup !== bGroup) return aGroup - bGroup;
+
+            const aDate = a.createdAt ? new Date(a.createdAt) : new Date(0);
+            const bDate = b.createdAt ? new Date(b.createdAt) : new Date(0);
+
+            if (aGroup === 2) {
+                // 삭제: 최신 삭제가 위, 오래된 삭제가 아래
+                return bDate - aDate;
             }
-
-            if (aVal < bVal) return currentSortOrder === 'asc' ? -1 : 1;
-            if (aVal > bVal) return currentSortOrder === 'asc' ? 1 : -1;
-            return 0;
+            // 미승인/승인: 오래된 순 (과거 → 위)
+            return aDate - bDate;
         });
     }
 

@@ -4,8 +4,10 @@ import com.pinecni.erp.api.vacation.dto.VacationUserInfoDTO;
 import com.pinecni.erp.api.vacation.dto.VacationCalculationDetailDTO;
 import com.pinecni.erp.api.vacation.dto.VacationRequestSaveDTO;
 import com.pinecni.erp.api.vacation.dto.VacationDetailDTO;
+import com.pinecni.erp.entity.User;
 
 import java.time.LocalDate;
+import java.util.List;
 
 /**
  * Vacation Service Interface
@@ -31,6 +33,12 @@ public interface VacationService {
      * @return 처리된 사용자 수
      */
     int generateAllVacationAccrualSchedules(Integer year);
+
+    /**
+     * 전체 재직 중인 사용자의 특정 연도 연차 발생 일정 생성 (사용자 목록 재활용)
+     * 스케줄러에서 findAllActive() 중복 호출을 방지하기 위한 오버로드.
+     */
+    int generateAllVacationAccrualSchedules(Integer year, List<User> activeUsers);
 
     /**
      * 특정 날짜에 발생해야 할 연차를 처리 (스케줄러용)
@@ -95,6 +103,12 @@ public interface VacationService {
     int computeAndSaveAllVacationBalances(Integer year);
 
     /**
+     * vacation_balance 전체 재계산 (사용자 목록 재활용)
+     * 스케줄러에서 findAllActive() 중복 호출을 방지하기 위한 오버로드.
+     */
+    int computeAndSaveAllVacationBalances(Integer year, List<User> activeUsers);
+
+    /**
      * 전년도 미사용 월차 이월 처리 (전체 재직자)
      * - 전년도 유효 월차 중 잔여분을 신년도 이월월차(TYPE_CARRY_OVER) 레코드로 생성
      * - 이미 처리된 사용자는 스킵 (멱등성 보장)
@@ -103,6 +117,12 @@ public interface VacationService {
      * @return 처리된 사용자 수
      */
     int performAllCarryOvers(int fromYear);
+
+    /**
+     * 전년도 미사용 월차 이월 처리 (사용자 목록 재활용)
+     * 스케줄러에서 findAllActive() 중복 호출을 방지하기 위한 오버로드.
+     */
+    int performAllCarryOvers(int fromYear, List<User> activeUsers);
 
     /**
      * 단일 사용자 월차 이월 처리 (performAllCarryOvers 내부에서 사용자별 독립 트랜잭션으로 호출)

@@ -10,6 +10,7 @@ import com.pinecni.erp.api.vacation.dto.VacationUserInfoDTO;
 import com.pinecni.erp.api.vacation.dto.VacationCalculationDetailDTO;
 import com.pinecni.erp.api.vacation.dto.VacationRequestSaveDTO;
 import com.pinecni.erp.api.vacation.dto.MonthlyLeaveExpiryDTO;
+import com.pinecni.erp.api.vacation.repository.LeaveTypeSummaryProjection;
 import com.pinecni.erp.api.vacation.repository.VacationAccrualScheduleRepository;
 import com.pinecni.erp.api.vacation.repository.VacationBalanceRepository;
 import com.pinecni.erp.api.vacation.repository.VacationRequestRepository;
@@ -319,11 +320,15 @@ public class VacationServiceImpl implements VacationService {
     }
 
     @Override
-    // @Transactional 없음 — self 프록시를 통해 사용자별 독립 트랜잭션으로 실행
     public int generateAllVacationAccrualSchedules(Integer year) {
+        return generateAllVacationAccrualSchedules(year, userRepository.findAllActive());
+    }
+
+    @Override
+    // @Transactional 없음 — self 프록시를 통해 사용자별 독립 트랜잭션으로 실행
+    public int generateAllVacationAccrualSchedules(Integer year, List<User> activeUsers) {
         log.info("[전체 연차 발생 일정 생성] year: {}", year);
 
-        List<User> activeUsers = userRepository.findAllActive();
         int count = 0;
 
         for (User user : activeUsers) {
@@ -497,12 +502,14 @@ public class VacationServiceImpl implements VacationService {
             accrualScheduleRepository.markExpiredMonthlyForUser(userIdx, year, effectiveDate);
         }
 
-        // 1. 각 타입별 발생 일수 집계 (effectiveDate까지 발생분)
-        BigDecimal annualLeaveDays    = accrualScheduleRepository.sumAnnualLeaveDays(userIdx, year, effectiveDate);
-        BigDecimal proportionalDays   = accrualScheduleRepository.sumProportionalDays(userIdx, year, effectiveDate);
-        BigDecimal compensatoryDays   = accrualScheduleRepository.sumCompensatoryDays(userIdx, year, effectiveDate);
-        // 유효 월차(만료 전) + 소멸 월차 배치 목록 (만료일 오름차순)
-        BigDecimal validMonthlyDays = accrualScheduleRepository.sumValidMonthlyDays(userIdx, year, effectiveDate);
+        // 1. 각 타입별 발생 일수 통합 집계 (단일 쿼리, effectiveDate까지 발생분)
+        LeaveTypeSummaryProjection summary = accrualScheduleRepository.sumAllLeaveTypes(userIdx, year, effectiveDate);
+        BigDecimal annualLeaveDays    = summary.getAnnualLeaveDays();
+        BigDecimal proportionalDays   = summary.getProportionalDays();
+        BigDecimal compensatoryDays   = summary.getCompensatoryDays();
+        BigDecimal validMonthlyDays   = summary.getValidMonthlyDays();
+
+        // 소멸 월차 배치 목록 (만료일 오름차순)
         List<VacationAccrualSchedule> expiredBatches = accrualScheduleRepository.findExpiredMonthlyBatches(userIdx, year, effectiveDate);
         BigDecimal expiredMonthlyDays = expiredBatches.stream()
                 .map(VacationAccrualSchedule::getDays)
@@ -510,12 +517,13 @@ public class VacationServiceImpl implements VacationService {
         // 발행된 월차 전체 = 유효 + 소멸 (이월월차는 validMonthlyDays에 포함)
         BigDecimal allMonthlyIssuedDays = validMonthlyDays.add(expiredMonthlyDays);
 
-        // 2. 사용 연차 (경조사, 기타 제외)
-        BigDecimal usedDays = calculateUsedDays(userIdx, year);
+        // 2. 연차 사용 내역 조회 (한 번만 조회하여 usedDays 계산 + FIFO 계산에 공유)
+        List<VacationRequest> yearRequests = vacationRequestRepository.findByUserIdxAndYear(userIdx, year);
+        BigDecimal usedDays = calculateUsedDaysFromList(yearRequests);
 
         // 3. 만료일 기준 FIFO: 각 배치의 만료일 이전에 실제로 사용한 일수를 배치별로 배분하여
-        //    진짜 낭비된(사용 없이 만료된) 월차만 차감.
-        BigDecimal expiredUnusedMonthlyDays = calculateExpiredUnusedByFifo(userIdx, year, expiredBatches);
+        //    진짜 낭비된(사용 없이 만료된) 월차만 차감. (인메모리 계산, DB 추가 조회 없음)
+        BigDecimal expiredUnusedMonthlyDays = calculateExpiredUnusedByFifo(yearRequests, expiredBatches);
 
         // 4. 부여일수 합계 (발행 전체: 유효 + 소멸)
         BigDecimal grantedDays = annualLeaveDays.add(allMonthlyIssuedDays)
@@ -580,11 +588,15 @@ public class VacationServiceImpl implements VacationService {
     }
 
     @Override
-    // @Transactional 없음 — self 프록시를 통해 사용자별 독립 트랜잭션으로 실행
     public int computeAndSaveAllVacationBalances(Integer year) {
+        return computeAndSaveAllVacationBalances(year, userRepository.findAllActive());
+    }
+
+    @Override
+    // @Transactional 없음 — self 프록시를 통해 사용자별 독립 트랜잭션으로 실행
+    public int computeAndSaveAllVacationBalances(Integer year, List<User> activeUsers) {
         log.info("[전체 vacation_balance 갱신] year: {}", year);
 
-        List<User> activeUsers = userRepository.findAllActive();
         int count = 0;
 
         for (User user : activeUsers) {
@@ -601,11 +613,15 @@ public class VacationServiceImpl implements VacationService {
     }
 
     @Override
-    // @Transactional 없음 — self 프록시를 통해 사용자별 독립 트랜잭션으로 실행
     public int performAllCarryOvers(int fromYear) {
+        return performAllCarryOvers(fromYear, userRepository.findAllActive());
+    }
+
+    @Override
+    // @Transactional 없음 — self 프록시를 통해 사용자별 독립 트랜잭션으로 실행
+    public int performAllCarryOvers(int fromYear, List<User> activeUsers) {
         log.info("[전체 월차 이월 처리] fromYear: {} → {}년", fromYear, fromYear + 1);
 
-        List<User> activeUsers = userRepository.findAllActive();
         int count = 0;
 
         for (User user : activeUsers) {
@@ -910,23 +926,25 @@ public class VacationServiceImpl implements VacationService {
      * 해당 연도 사용 연차 계산 (vacation_request에서 직접 집계, 경조사와 기타 제외, 삭제되지 않은 문서만)
      */
     private BigDecimal calculateUsedDays(Long userIdx, int year) {
-        // vacation_request에서 해당 연도의 연차만 집계 (삭제되지 않은 문서만, Repository 쿼리에서 이미 필터링됨)
         List<VacationRequest> vacationRequests = vacationRequestRepository.findByUserIdxAndYear(userIdx, year);
+        return calculateUsedDaysFromList(vacationRequests);
+    }
 
-        // 경조사와 기타는 연차 차감 대상이 아니므로 제외
-        BigDecimal usedDays = vacationRequests.stream()
+    /**
+     * 미리 조회된 연차 사용 내역 리스트에서 사용 일수 계산 (경조사·기타 제외).
+     * computeAndSaveVacationBalance에서 DB 조회 1회로 usedDays + FIFO 계산을 공유하기 위해 사용.
+     */
+    private BigDecimal calculateUsedDaysFromList(List<VacationRequest> vacationRequests) {
+        return vacationRequests.stream()
                 .filter(vr -> vr.getVacationType() != null)
                 .filter(vr -> !vr.getVacationType().contains("경조사") && !"기타".equals(vr.getVacationType()))
                 .map(VacationRequest::getDays)
                 .reduce(BigDecimal.ZERO, BigDecimal::add);
-
-        log.debug("[사용 연차 계산] userIdx={}, year={}, 총 연차 건수={}, 사용 연차={}일",
-                  userIdx, year, vacationRequests.size(), usedDays);
-        return usedDays;
     }
 
     /**
      * 만료일 기준 FIFO로 실제 낭비된(사용 없이 만료된) 월차 일수 계산.
+     * 미리 조회된 연차 사용 내역 리스트를 인메모리로 필터링하여 배치당 DB 쿼리를 제거.
      *
      * 배치를 만료일 오름차순으로 순회하며, 각 배치의 만료일 이전에
      * vacation_request에 기록된 사용분을 먼저 배분한다.
@@ -937,16 +955,25 @@ public class VacationServiceImpl implements VacationService {
      *     2/28 이전 사용 누계 4일(3+1) - 이미배분 3일 = 배치B에 1일 배분, 낭비 0일
      *     총 낭비 = 2일
      */
-    private BigDecimal calculateExpiredUnusedByFifo(Long userIdx, int year,
+    private BigDecimal calculateExpiredUnusedByFifo(List<VacationRequest> yearRequests,
                                                      List<VacationAccrualSchedule> expiredBatches) {
         if (expiredBatches.isEmpty()) return BigDecimal.ZERO;
+
+        // 경조사·기타 제외 필터를 미리 적용한 리스트 (sumDaysUsedOnOrBefore JPQL과 동일 조건)
+        List<VacationRequest> filtered = yearRequests.stream()
+                .filter(vr -> vr.getVacationType() != null)
+                .filter(vr -> !vr.getVacationType().contains("경조사") && !"기타".equals(vr.getVacationType()))
+                .toList();
 
         BigDecimal totalExpiredUnused = BigDecimal.ZERO;
         BigDecimal alreadyAttributed  = BigDecimal.ZERO;
 
         for (VacationAccrualSchedule batch : expiredBatches) {
-            BigDecimal usedBeforeExpiry = vacationRequestRepository
-                    .sumDaysUsedOnOrBefore(userIdx, year, batch.getExpiryDate());
+            // 인메모리 필터: startDate <= batch.expiryDate (SQL의 v.startDate <= :cutoffDate 와 동일)
+            BigDecimal usedBeforeExpiry = filtered.stream()
+                    .filter(vr -> !vr.getStartDate().isAfter(batch.getExpiryDate()))
+                    .map(VacationRequest::getDays)
+                    .reduce(BigDecimal.ZERO, BigDecimal::add);
             // 이 배치에 배분 가능한 사용량 = 만료일까지 누계 사용 - 앞 배치에 이미 배분된 양
             BigDecimal availableForBatch = usedBeforeExpiry.subtract(alreadyAttributed).max(BigDecimal.ZERO);
             BigDecimal usedFromBatch     = batch.getDays().min(availableForBatch);

@@ -1,7 +1,9 @@
 package com.pinecni.erp.api.vacation.scheduler;
 
+import com.pinecni.erp.api.user.repository.UserRepository;
 import com.pinecni.erp.api.vacation.repository.VacationAccrualScheduleRepository;
 import com.pinecni.erp.api.vacation.service.VacationService;
+import com.pinecni.erp.entity.User;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.scheduling.annotation.Scheduled;
@@ -9,6 +11,7 @@ import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDate;
+import java.util.List;
 
 /**
  * 연차 발생 / 잔액 스케줄러
@@ -33,6 +36,7 @@ public class VacationScheduler {
 
     private final VacationService vacationService;
     private final VacationAccrualScheduleRepository accrualScheduleRepository;
+    private final UserRepository userRepository;
 
     // ── 연간 작업 ──────────────────────────────────────────────────────────
 
@@ -52,9 +56,12 @@ public class VacationScheduler {
         int prevYear = currentYear - 1;
         log.info("=== [연간] accrual 일정 생성 시작 ({}년) ===", currentYear);
 
+        // 전체 활성 사용자 1회만 조회하여 모든 Step에서 재활용
+        List<User> activeUsers = userRepository.findAllActive();
+
         // Step 1: 신년도 accrual 일정 생성
         try {
-            int scheduleCount = vacationService.generateAllVacationAccrualSchedules(currentYear);
+            int scheduleCount = vacationService.generateAllVacationAccrualSchedules(currentYear, activeUsers);
             log.info("=== [연간] accrual 일정 생성 완료 - {}년, {}명 ===", currentYear, scheduleCount);
         } catch (Exception e) {
             log.error("[연간] accrual 일정 생성 실패 ({}년): {}", currentYear, e.getMessage(), e);
@@ -64,7 +71,7 @@ public class VacationScheduler {
         if (prevYear >= 2026) {
             // Step 2: 전년도 balance 재계산 (잔여일수 확정)
             try {
-                int prevBalanceCount = vacationService.computeAndSaveAllVacationBalances(prevYear);
+                int prevBalanceCount = vacationService.computeAndSaveAllVacationBalances(prevYear, activeUsers);
                 log.info("=== [연간] 전년도 balance 재계산 완료 - {}년, {}명 ===", prevYear, prevBalanceCount);
             } catch (Exception e) {
                 log.error("[연간] 전년도 balance 재계산 실패 ({}년): {}", prevYear, e.getMessage(), e);
@@ -72,7 +79,7 @@ public class VacationScheduler {
 
             // Step 3: 전년도 → 신년도 월차 이월 (이월월차 레코드 생성)
             try {
-                int carryCount = vacationService.performAllCarryOvers(prevYear);
+                int carryCount = vacationService.performAllCarryOvers(prevYear, activeUsers);
                 log.info("=== [연간] 월차 이월 처리 완료 - {}→{}년, {}명 ===", prevYear, currentYear, carryCount);
             } catch (Exception e) {
                 log.error("[연간] 월차 이월 처리 실패 ({}→{}년): {}", prevYear, currentYear, e.getMessage(), e);
@@ -80,7 +87,7 @@ public class VacationScheduler {
 
             // Step 4: 전년도 balance 재계산 (carried_over_days 반영)
             try {
-                vacationService.computeAndSaveAllVacationBalances(prevYear);
+                vacationService.computeAndSaveAllVacationBalances(prevYear, activeUsers);
                 log.info("=== [연간] 전년도 balance carried_over_days 반영 완료 - {}년 ===", prevYear);
             } catch (Exception e) {
                 log.error("[연간] 전년도 balance carried_over_days 반영 실패 ({}년): {}", prevYear, e.getMessage(), e);
@@ -91,7 +98,7 @@ public class VacationScheduler {
 
         // Step 5: 신년도 balance 초기화 (이월월차 포함)
         try {
-            int balanceCount = vacationService.computeAndSaveAllVacationBalances(currentYear);
+            int balanceCount = vacationService.computeAndSaveAllVacationBalances(currentYear, activeUsers);
             log.info("=== [연간] 신년도 balance 초기화 완료 - {}년, {}명 ===", currentYear, balanceCount);
         } catch (Exception e) {
             log.error("[연간] 신년도 balance 초기화 실패 ({}년): {}", currentYear, e.getMessage(), e);
@@ -177,10 +184,13 @@ public class VacationScheduler {
         int currentYear = LocalDate.now().getYear();
         int prevYear = currentYear - 1;
 
+        // 전체 활성 사용자 1회만 조회하여 모든 Step에서 재활용
+        List<User> activeUsers = userRepository.findAllActive();
+
         // Step 1: 당해 accrual schedule — 항상 재생성 (멱등)
         log.info("=== [초기화] accrual 일정 생성 시작 ({}년) ===", currentYear);
         try {
-            int scheduleCount = vacationService.generateAllVacationAccrualSchedules(currentYear);
+            int scheduleCount = vacationService.generateAllVacationAccrualSchedules(currentYear, activeUsers);
             log.info("=== [초기화] accrual 일정 생성 완료 - {}년, {}명 ===", currentYear, scheduleCount);
         } catch (Exception e) {
             log.error("[초기화] accrual 일정 생성 실패 ({}년): {}", currentYear, e.getMessage(), e);
@@ -191,7 +201,7 @@ public class VacationScheduler {
             // Step 2: 전년도 balance 재계산 (이월 처리 전 잔여 확정)
             log.info("=== [초기화] 전년도 balance 재계산 시작 ({}년) ===", prevYear);
             try {
-                int prevCount = vacationService.computeAndSaveAllVacationBalances(prevYear);
+                int prevCount = vacationService.computeAndSaveAllVacationBalances(prevYear, activeUsers);
                 log.info("=== [초기화] 전년도 balance 재계산 완료 - {}년, {}명 ===", prevYear, prevCount);
             } catch (Exception e) {
                 log.error("[초기화] 전년도 balance 재계산 실패 ({}년): {}", prevYear, e.getMessage(), e);
@@ -200,7 +210,7 @@ public class VacationScheduler {
             // Step 3: 전년도 → 당해 월차 이월 (멱등)
             log.info("=== [초기화] 월차 이월 처리 시작 ({}→{}년) ===", prevYear, currentYear);
             try {
-                int carryCount = vacationService.performAllCarryOvers(prevYear);
+                int carryCount = vacationService.performAllCarryOvers(prevYear, activeUsers);
                 log.info("=== [초기화] 월차 이월 처리 완료 - {}→{}년, {}명 ===", prevYear, currentYear, carryCount);
             } catch (Exception e) {
                 log.error("[초기화] 월차 이월 처리 실패 ({}→{}년): {}", prevYear, currentYear, e.getMessage(), e);
@@ -208,7 +218,7 @@ public class VacationScheduler {
 
             // Step 4: 전년도 balance 재계산 (carried_over_days 반영)
             try {
-                vacationService.computeAndSaveAllVacationBalances(prevYear);
+                vacationService.computeAndSaveAllVacationBalances(prevYear, activeUsers);
                 log.info("=== [초기화] 전년도 balance carried_over_days 반영 완료 - {}년 ===", prevYear);
             } catch (Exception e) {
                 log.error("[초기화] 전년도 balance carried_over_days 반영 실패 ({}년): {}", prevYear, e.getMessage(), e);
@@ -220,7 +230,7 @@ public class VacationScheduler {
         // Step 5: 당해 vacation_balance — 항상 UPSERT (이월월차 포함)
         log.info("=== [초기화] vacation_balance 계산 시작 ({}년) ===", currentYear);
         try {
-            int balanceCount = vacationService.computeAndSaveAllVacationBalances(currentYear);
+            int balanceCount = vacationService.computeAndSaveAllVacationBalances(currentYear, activeUsers);
             log.info("=== [초기화] vacation_balance 계산 완료 - {}년, {}명 ===", currentYear, balanceCount);
         } catch (Exception e) {
             log.error("[초기화] vacation_balance 계산 실패 ({}년): {}", currentYear, e.getMessage(), e);

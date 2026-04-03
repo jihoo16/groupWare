@@ -246,4 +246,26 @@ public interface VacationAccrualScheduleRepository extends JpaRepository<Vacatio
     int markExpiredMonthlyForUser(@Param("userIdx") Long userIdx,
                                    @Param("year") Integer year,
                                    @Param("effectiveDate") LocalDate effectiveDate);
+
+    /**
+     * 연차 타입별 발생일수 통합 집계 (단일 쿼리).
+     * 기존 sumAnnualLeaveDays + sumProportionalDays + sumCompensatoryDays + sumValidMonthlyDays 를 대체.
+     */
+    @Query(value =
+            "SELECT " +
+            "  COALESCE(SUM(CASE WHEN v.accrual_type IN ('기본연차','근속가산') " +
+            "                     AND v.is_expired = false THEN v.days ELSE 0 END), 0) AS annualLeaveDays, " +
+            "  COALESCE(SUM(CASE WHEN v.accrual_type = '비례연차' " +
+            "                     AND v.is_expired = false THEN v.days ELSE 0 END), 0) AS proportionalDays, " +
+            "  COALESCE(SUM(CASE WHEN v.accrual_type = '보상휴가' " +
+            "                     AND v.is_expired = false THEN v.days ELSE 0 END), 0) AS compensatoryDays, " +
+            "  COALESCE(SUM(CASE WHEN v.accrual_type IN ('월차','이월월차') " +
+            "                     AND v.is_expired = false " +
+            "                     AND v.expiry_date >= :today THEN v.days ELSE 0 END), 0) AS validMonthlyDays " +
+            "FROM erp.vacation_accrual_schedule v " +
+            "WHERE v.user_idx = :userIdx AND v.year = :year AND v.accrual_date <= :today",
+            nativeQuery = true)
+    LeaveTypeSummaryProjection sumAllLeaveTypes(@Param("userIdx") Long userIdx,
+                                                @Param("year") Integer year,
+                                                @Param("today") LocalDate today);
 }
