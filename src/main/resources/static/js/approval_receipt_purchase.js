@@ -7,6 +7,7 @@ document.addEventListener('DOMContentLoaded', async function() {
     let selectedReceiptFiles = [];
     let selectedDocumentFiles = [];
     let selectedEstimateFiles = [];
+    let selectedBankCopyFiles = [];
     let projects = [];
     let selectedProject = null;
     let projectCards = [];
@@ -22,6 +23,7 @@ document.addEventListener('DOMContentLoaded', async function() {
     let existingReceiptAttachments = [];
     let existingDocumentAttachments = [];
     let existingEstimateAttachments = [];
+    let existingBankCopyAttachments = [];
     let deletedAttachmentIds = [];
 
     // PURCHASE_TYPE은 Thymeleaf 인라인 스크립트로 주입됨 (layout에서)
@@ -191,9 +193,8 @@ document.addEventListener('DOMContentLoaded', async function() {
     setTodayDate();
     addItemRow(); // 첫 행 자동 추가
 
-    // 장비비일 때: 그리드 3열 전환 + 견적서 영역 표시
+    // 장비비일 때: 견적서 영역 표시
     if (purchaseType === 'equipment') {
-        if (attachmentGrid) attachmentGrid.style.gridTemplateColumns = '1fr 1fr 1fr';
         if (estimateSection) estimateSection.style.display = 'block';
     }
 
@@ -201,6 +202,7 @@ document.addEventListener('DOMContentLoaded', async function() {
     setupToggle();
     setupProjectInput();
     setupPaymentTypeChange();
+    toggleBankCopySection(); // 초기 그리드 열 수 + 통장사본 영역 설정
 
     // 수정 모드 확인
     const urlParams = new URLSearchParams(window.location.search);
@@ -299,8 +301,27 @@ document.addEventListener('DOMContentLoaded', async function() {
     // ============================================
     function setupPaymentTypeChange() {
         document.querySelectorAll('input[name="paymentType"]').forEach(radio => {
-            radio.addEventListener('change', updateOfficialDocument);
+            radio.addEventListener('change', function() {
+                updateOfficialDocument();
+                toggleBankCopySection();
+            });
         });
+    }
+
+    /** 연구비이체 선택 시 통장사본 업로드 영역 표시/숨김 + 그리드 열 수 조정 */
+    function toggleBankCopySection() {
+        const isTransfer = document.querySelector('input[name="paymentType"]:checked')?.value === 'transfer';
+        const bankCopySection = document.getElementById('bankCopySection');
+        const attachmentGrid = document.getElementById('attachmentGrid');
+
+        if (bankCopySection) bankCopySection.style.display = isTransfer ? '' : 'none';
+
+        if (attachmentGrid) {
+            let cols = 2; // 기본: 영수증 + 공식문서
+            if (purchaseType === 'equipment') cols++;  // + 견적서
+            if (isTransfer) cols++;                    // + 통장사본
+            attachmentGrid.style.gridTemplateColumns = `repeat(${cols}, 1fr)`;
+        }
     }
 
     // ============================================
@@ -426,7 +447,7 @@ document.addEventListener('DOMContentLoaded', async function() {
                 document.getElementById('selectedProjectIdx').value = proj.idx;
                 await loadProjectMembers(proj.idx);
                 await loadProjectCards(proj.idx);
-                setDefaultApplicant();
+                await setDefaultApplicant();
                 closeProjectModal();
                 updateOfficialDocument();
                 validateRequiredFields();
@@ -476,7 +497,9 @@ document.addEventListener('DOMContentLoaded', async function() {
                 projectCards = await res.json();
                 if (projectCards.length > 0) {
                     selectedCard = projectCards[0];
-                    document.getElementById('pu_card').value = selectedCard.cardName || selectedCard.cardAlias || selectedCard.cardNumber || '카드';
+                    const puCard = document.getElementById('pu_card');
+                    puCard.value = selectedCard.cardName || selectedCard.cardAlias || selectedCard.cardNumber || '카드';
+                    puCard.classList.remove('field-empty');
                     document.getElementById('selectedCardIdx').value = selectedCard.idx;
                 } else {
                     selectedCard = null;
@@ -516,7 +539,9 @@ document.addEventListener('DOMContentLoaded', async function() {
                 </div>`;
             item.addEventListener('click', function() {
                 selectedCard = card;
-                document.getElementById('pu_card').value = cardName;
+                const puCard = document.getElementById('pu_card');
+                puCard.value = cardName;
+                puCard.classList.remove('field-empty');
                 document.getElementById('selectedCardIdx').value = card.idx;
                 closeCardModal();
                 updateOfficialDocument();
@@ -582,7 +607,7 @@ document.addEventListener('DOMContentLoaded', async function() {
 
                 await loadProjectMembers(proj.idx);
                 await loadProjectCards(proj.idx);
-                setDefaultApplicant();
+                await setDefaultApplicant();
 
                 updateOfficialDocument();
                 renderCardList(projectCards);
@@ -635,27 +660,68 @@ document.addEventListener('DOMContentLoaded', async function() {
     // ============================================
     // 신청자 모달
     // ============================================
-    // 참여인력 중 밑에서 5번째 직급 default 신청자 자동 선택
-    function setDefaultApplicant() {
+    // 신청자 중복 체크 헬퍼
+    async function checkApplicantDuplicate(applicantId, date, projectIdx) {
+        try {
+            let url = `/api/receipt-common/check-duplicate?date=${date}&attendeeIdx=${applicantId}&projectIdx=${projectIdx}`;
+            if (editingIdx) {
+                const docType = purchaseType === 'equipment' ? 'EQP' : 'MAT';
+                url += `&excludeReceiptIdx=${editingIdx}&excludeDocumentType=${docType}`;
+            }
+            const response = await fetch(url);
+            if (!response.ok) return false;
+            const data = await response.json();
+            return Array.isArray(data) && data.length > 0;
+        } catch { return false; }
+    }
+
+    // 신청자 설정 공통 헬퍼
+    function applyApplicant(memberId, memberName) {
+        selectedApplicant = { idx: memberId, name: memberName };
+        document.getElementById('pu_applicant').value = memberName;
+        document.getElementById('selectedApplicantIdx').value = memberId;
+    }
+
+    // 참여인력 중 default 신청자 자동 선택
+    async function setDefaultApplicant() {
         if (!projectMembers || projectMembers.length === 0) return;
 
-        // employeePositionSortOrder 오름차순 정렬 (낮은 값 = 높은 직급)
+        // 1순위: 로그인 사용자가 프로젝트 참여인력인 경우
+        const loggedInUserIdx = window.CURRENT_USER?.idx;
+        if (loggedInUserIdx) {
+            const loggedInMember = projectMembers.find(m =>
+                String(m.employeeIdx || m.userIdx || m.idx) === String(loggedInUserIdx)
+            );
+            if (loggedInMember) {
+                const dateInput = document.getElementById('pu_approval_date');
+                const projectIdx = document.getElementById('selectedProjectIdx')?.value;
+                let available = true;
+                if (dateInput?.value && projectIdx) {
+                    const isDup = await checkApplicantDuplicate(loggedInUserIdx, dateInput.value, projectIdx);
+                    if (isDup) available = false;
+                }
+                if (available) {
+                    applyApplicant(
+                        loggedInMember.employeeIdx || loggedInMember.userIdx || loggedInMember.idx,
+                        loggedInMember.employeeName || loggedInMember.name || ''
+                    );
+                    return;
+                }
+            }
+        }
+
+        // 2순위: 밑에서 5번째 직급
         const sorted = [...projectMembers].sort((a, b) =>
             (a.employeePositionSortOrder || 999) - (b.employeePositionSortOrder || 999)
         );
-
-        // 밑에서 5번째 (5명 이하이면 가장 아래 직급)
         const targetIdx = sorted.length > 5 ? sorted.length - 5 : sorted.length - 1;
         const member = sorted[targetIdx];
         if (!member) return;
 
-        const memberName = member.employeeName || member.name || '';
-        const memberPosition = member.employeePositionName || member.position || '';
-        const memberId = member.employeeIdx || member.userIdx || member.idx;
-
-        selectedApplicant = { idx: memberId, name: memberName };
-        document.getElementById('pu_applicant').value = memberName;
-        document.getElementById('selectedApplicantIdx').value = memberId;
+        applyApplicant(
+            member.employeeIdx || member.userIdx || member.idx,
+            member.employeeName || member.name || ''
+        );
     }
 
     function getProjectMembers() {
@@ -758,7 +824,7 @@ document.addEventListener('DOMContentLoaded', async function() {
 
                 await loadProjectMembers(proj.idx);
                 await loadProjectCards(proj.idx);
-                setDefaultApplicant();
+                await setDefaultApplicant();
 
                 updateOfficialDocument();
                 renderApplicantList(getProjectMembers());
@@ -1009,6 +1075,12 @@ document.addEventListener('DOMContentLoaded', async function() {
         if (purchaseType === 'equipment') {
             setupSingleFileArea(estimateInput, estimateFileList, estimateUploadArea, selectedEstimateFiles, 'estimate');
         }
+        const bankCopyInput = document.getElementById('bankCopyInput');
+        const bankCopyFileList = document.getElementById('bankCopyFileList');
+        const bankCopyUploadArea = document.getElementById('bankCopyUploadArea');
+        if (bankCopyInput && bankCopyFileList && bankCopyUploadArea) {
+            setupSingleFileArea(bankCopyInput, bankCopyFileList, bankCopyUploadArea, selectedBankCopyFiles, 'bankCopy');
+        }
     }
 
     function setupSingleFileArea(input, listEl, area, fileArray, type) {
@@ -1041,12 +1113,15 @@ document.addEventListener('DOMContentLoaded', async function() {
 
     function renderFileList(fileArray, listEl) {
         // 기존 첨부파일도 함께 렌더링
+        const bankCopyFileList = document.getElementById('bankCopyFileList');
         let existingArr = [];
         let type = '';
         if (listEl === receiptFileList) {
             existingArr = existingReceiptAttachments; type = 'receipt';
         } else if (listEl === estimateFileList) {
             existingArr = existingEstimateAttachments; type = 'estimate';
+        } else if (listEl === bankCopyFileList) {
+            existingArr = existingBankCopyAttachments; type = 'bankCopy';
         } else if (listEl === documentFileList) {
             existingArr = existingDocumentAttachments; type = 'document';
         }
@@ -1059,6 +1134,8 @@ document.addEventListener('DOMContentLoaded', async function() {
             arr = selectedReceiptFiles; listEl = receiptFileList;
         } else if (listId === 'estimateFileList') {
             arr = selectedEstimateFiles; listEl = estimateFileList;
+        } else if (listId === 'bankCopyFileList') {
+            arr = selectedBankCopyFiles; listEl = document.getElementById('bankCopyFileList');
         } else {
             arr = selectedDocumentFiles; listEl = documentFileList;
         }
@@ -1071,6 +1148,10 @@ document.addEventListener('DOMContentLoaded', async function() {
         renderExistingFileList(existingDocumentAttachments, documentFileList, selectedDocumentFiles, 'document');
         if (purchaseType === 'equipment') {
             renderExistingFileList(existingEstimateAttachments, estimateFileList, selectedEstimateFiles, 'estimate');
+        }
+        const bankCopyFileList = document.getElementById('bankCopyFileList');
+        if (bankCopyFileList) {
+            renderExistingFileList(existingBankCopyAttachments, bankCopyFileList, selectedBankCopyFiles, 'bankCopy');
         }
     }
 
@@ -1123,6 +1204,12 @@ document.addEventListener('DOMContentLoaded', async function() {
         } else if (type === 'estimate') {
             existingEstimateAttachments = existingEstimateAttachments.filter(a => a.idx !== attachmentId);
             renderExistingFileList(existingEstimateAttachments, estimateFileList, selectedEstimateFiles, 'estimate');
+        } else if (type === 'bankCopy') {
+            existingBankCopyAttachments = existingBankCopyAttachments.filter(a => a.idx !== attachmentId);
+            const bankCopyFileList = document.getElementById('bankCopyFileList');
+            if (bankCopyFileList) {
+                renderExistingFileList(existingBankCopyAttachments, bankCopyFileList, selectedBankCopyFiles, 'bankCopy');
+            }
         }
     };
 
@@ -1229,6 +1316,9 @@ document.addEventListener('DOMContentLoaded', async function() {
         if (purchaseType === 'equipment') {
             selectedEstimateFiles.forEach(f => formData.append('estimateFiles', f));
         }
+        if (paymentType === 'transfer') {
+            selectedBankCopyFiles.forEach(f => formData.append('bankCopyFiles', f));
+        }
 
         if (isEditMode && deletedAttachmentIds.length > 0) {
             formData.append('deletedAttachmentIds', JSON.stringify(deletedAttachmentIds));
@@ -1329,6 +1419,21 @@ document.addEventListener('DOMContentLoaded', async function() {
 
             if (descEmpty || qtyEmpty || paymentEmpty) allFilled = false;
         });
+
+        // 연구비이체 선택 시 통장사본 필수
+        const isTransfer = document.querySelector('input[name="paymentType"]:checked')?.value === 'transfer';
+        const bankCopyUploadArea = document.getElementById('bankCopyUploadArea');
+        if (isTransfer) {
+            const hasBankCopy = selectedBankCopyFiles.length > 0 || existingBankCopyAttachments.length > 0;
+            if (!hasBankCopy) {
+                bankCopyUploadArea?.classList.add('field-empty');
+                allFilled = false;
+            } else {
+                bankCopyUploadArea?.classList.remove('field-empty');
+            }
+        } else {
+            bankCopyUploadArea?.classList.remove('field-empty');
+        }
 
         // 인쇄 버튼 표시/숨김
         if (printBtn) {
@@ -1468,7 +1573,9 @@ document.addEventListener('DOMContentLoaded', async function() {
             document.getElementById('selectedCardIdx').value = data.cardIdx;
             const card = projectCards.find(c => c.idx === data.cardIdx);
             if (card) {
-                document.getElementById('pu_card').value = card.cardAlias || card.cardNumber || '카드';
+                const puCard = document.getElementById('pu_card');
+                puCard.value = card.cardAlias || card.cardNumber || '카드';
+                puCard.classList.remove('field-empty');
             }
         }
 
@@ -1516,8 +1623,12 @@ document.addEventListener('DOMContentLoaded', async function() {
             existingReceiptAttachments   = data.attachments.filter(a => a.attachmentType === 'RECEIPT');
             existingDocumentAttachments  = data.attachments.filter(a => a.attachmentType === 'DOCUMENT');
             existingEstimateAttachments  = data.attachments.filter(a => a.attachmentType === 'ESTIMATE');
+            existingBankCopyAttachments  = data.attachments.filter(a => a.attachmentType === 'BANK_COPY');
             renderExistingFiles();
         }
+
+        // 연구비이체인 경우 통장사본 영역 표시
+        toggleBankCopySection();
 
         updateItemTotals();
         updateOfficialDocument();

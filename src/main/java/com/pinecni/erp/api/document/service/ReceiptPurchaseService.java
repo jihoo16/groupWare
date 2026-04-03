@@ -17,12 +17,14 @@ public interface ReceiptPurchaseService {
                                              List<MultipartFile> receiptFiles,
                                              List<MultipartFile> documentFiles,
                                              List<MultipartFile> estimateFiles,
+                                             List<MultipartFile> bankCopyFiles,
                                              Long uploadUserIdx);
     ReceiptPurchaseDTO updateReceiptPurchase(Long idx,
                                              ReceiptPurchaseCreateDTO updateDTO,
                                              List<MultipartFile> receiptFiles,
                                              List<MultipartFile> documentFiles,
                                              List<MultipartFile> estimateFiles,
+                                             List<MultipartFile> bankCopyFiles,
                                              List<Long> deletedAttachmentIds,
                                              Long uploadUserIdx);
     void deleteReceiptPurchase(Long idx, Long deletedUserIdx);
@@ -31,6 +33,7 @@ public interface ReceiptPurchaseService {
                                                       List<MultipartFile> receiptFiles,
                                                       List<MultipartFile> documentFiles,
                                                       List<MultipartFile> estimateFiles,
+                                                      List<MultipartFile> bankCopyFiles,
                                                       Long uploadUserIdx);
     ReceiptPurchaseAttachmentDTO getAttachmentById(Long attachmentIdx);
     void softDeleteAttachment(Long attachmentIdx, Long deletedUserIdx);

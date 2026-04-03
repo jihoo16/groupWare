@@ -3,6 +3,7 @@
 // Label tooltip: fixed positioning (overflow 잘림 방지)
 (function() {
     document.addEventListener('mouseenter', function(e) {
+        if (!e.target || !e.target.closest) return;
         const wrapper = e.target.closest('.label-tooltip-wrapper');
         if (!wrapper) return;
         const tooltip = wrapper.querySelector('.tooltip-text');
@@ -696,10 +697,12 @@ document.addEventListener('DOMContentLoaded', async function() {
 
                             if (commonCard) {
                                 commonCard.value = firstCard.cardName;
+                                commonCard.classList.remove('field-empty');
                             }
                             if (selectedCardIdx) {
                                 selectedCardIdx.value = firstCard.idx;
                             }
+                            console.log('[카드 자동선택] cardName:', firstCard.cardName, '| selectedCard:', !!selectedCard, '| field-empty 제거됨:', !commonCard?.classList.contains('field-empty'));
 
                         } else {
                             // 카드가 없으면 비우기
@@ -718,6 +721,7 @@ document.addEventListener('DOMContentLoaded', async function() {
                     }
 
                     closeProjectModal();
+                    validateRequiredFields();
 
                     // 카드 모달을 열어야 하는 경우, 프로젝트 모달 닫은 후 카드 모달 열기
                     if (shouldOpenCardModalAfterProject) {
@@ -836,6 +840,7 @@ document.addEventListener('DOMContentLoaded', async function() {
                     const commonCard = document.getElementById('common_card');
                     if (commonCard) {
                         commonCard.value = card.cardName;
+                        commonCard.classList.remove('field-empty');
                     }
                     const selectedCardIdx = document.getElementById('selectedCardIdx');
                     if (selectedCardIdx) {
@@ -843,6 +848,7 @@ document.addEventListener('DOMContentLoaded', async function() {
                     }
 
                     closeCardModal();
+                    validateRequiredFields();
                 });
 
                 cardList.appendChild(item);
@@ -939,6 +945,7 @@ document.addEventListener('DOMContentLoaded', async function() {
                     const commonProject = document.getElementById('common_project');
                     if (commonProject) {
                         commonProject.value = proj.projectName;
+                        commonProject.classList.remove('field-empty');
                     }
                     const selectedProjectIdx = document.getElementById('selectedProjectIdx');
                     if (selectedProjectIdx) {
@@ -967,10 +974,30 @@ document.addEventListener('DOMContentLoaded', async function() {
                     // 기본 작성자 설정
                     await setDefaultAuthor();
 
-                    // 카드 목록 로드 및 표시
+                    // 카드 목록 로드 및 자동 선택
                     await loadProjectCards(proj.idx);
+
+                    // 첫 번째 카드 자동 선택
+                    const commonCard = document.getElementById('common_card');
+                    const selectedCardIdxEl = document.getElementById('selectedCardIdx');
+                    if (projectCards && projectCards.length > 0) {
+                        const firstCard = projectCards[0];
+                        selectedCard = firstCard;
+                        if (commonCard) {
+                            commonCard.value = firstCard.cardName;
+                            commonCard.classList.remove('field-empty');
+                        }
+                        if (selectedCardIdxEl) selectedCardIdxEl.value = firstCard.idx;
+                        console.log('[카드모달→과제선택→카드 자동선택] cardName:', firstCard.cardName, '| field-empty 제거됨:', !commonCard?.classList.contains('field-empty'));
+                    } else {
+                        selectedCard = null;
+                        if (commonCard) { commonCard.value = ''; commonCard.placeholder = '클릭하여 카드 선택'; }
+                        if (selectedCardIdxEl) selectedCardIdxEl.value = '';
+                    }
+
                     renderCardList(projectCards);
                     if (cardSearch) cardSearch.value = '';
+                    validateRequiredFields();
                 });
             });
         }
@@ -2890,11 +2917,12 @@ document.addEventListener('DOMContentLoaded', async function() {
                     selectedCard = firstCard;
                     if (commonCard) {
                         commonCard.value = firstCard.cardName;
+                        commonCard.classList.remove('field-empty');
                     }
                     if (selectedCardIdx) {
                         selectedCardIdx.value = firstCard.idx;
                     }
-                    console.log('첫 번째 카드 자동 선택:', firstCard.cardName);
+                    console.log('[참석자모달→카드 자동선택] cardName:', firstCard.cardName, '| field-empty 제거됨:', !commonCard?.classList.contains('field-empty'));
                 } else {
                     // 카드가 없는 경우 초기화
                     if (commonCard) {
@@ -2906,6 +2934,7 @@ document.addEventListener('DOMContentLoaded', async function() {
                     }
                     selectedCard = null;
                 }
+                validateRequiredFields();
 
                 // 검색창 비우기
                 if (internalSearchInput) {
@@ -3560,12 +3589,14 @@ document.addEventListener('DOMContentLoaded', async function() {
         if (currentAuthorId) {
             const hasAuthor = currentAttendees.some(a => String(a.id) === String(currentAuthorId) && a.type === 'internal');
             if (!hasAuthor) {
-                // 작성자가 빠져있으면 내부 참석자 중 최저직급자(사원)로 작성자 업데이트
+                // 작성자가 빠져있으면 재선택: 1순위 로그인 사용자, 2순위 최저직급
                 const internalAttendees = currentAttendees.filter(a => a.type === 'internal');
                 if (internalAttendees.length > 0) {
-                    const sorted = sortByPosition([...internalAttendees]);
-                    // sorted[0] = 최고직급, sorted[last] = 최저직급(사원)
-                    const newAuthor = sorted[sorted.length - 1];
+                    let newAuthor = await pickLoggedInAuthor(internalAttendees);
+                    if (!newAuthor) {
+                        const sorted = sortByPosition([...internalAttendees]);
+                        newAuthor = sorted[sorted.length - 1];
+                    }
                     document.getElementById('common_author').value = newAuthor.name;
                     document.getElementById('common_author_id').value = newAuthor.id;
                     document.querySelectorAll('.auto-author').forEach(field => { field.value = newAuthor.name; });
@@ -3775,10 +3806,12 @@ document.addEventListener('DOMContentLoaded', async function() {
                     selectedCard = firstCard;
                     if (commonCard) {
                         commonCard.value = firstCard.cardName;
+                        commonCard.classList.remove('field-empty');
                     }
                     if (selectedCardIdx) {
                         selectedCardIdx.value = firstCard.idx;
                     }
+                    console.log('[작성자모달→카드 자동선택] cardName:', firstCard.cardName, '| field-empty 제거됨:', !commonCard?.classList.contains('field-empty'));
                 } else {
                     // 카드가 없는 경우 초기화
                     if (commonCard) {
@@ -3790,6 +3823,7 @@ document.addEventListener('DOMContentLoaded', async function() {
                     }
                     selectedCard = null;
                 }
+                validateRequiredFields();
 
                 // 검색창 비우기
                 if (authorSearchInput) {
@@ -4056,6 +4090,23 @@ document.addEventListener('DOMContentLoaded', async function() {
         }
     }
 
+    // 로그인 사용자 우선 작성자 선택 헬퍼 (후보 목록에서 로그인 사용자가 중복 없으면 반환)
+    async function pickLoggedInAuthor(candidates) {
+        const loggedInUserIdx = currentUser?.idx;
+        if (!loggedInUserIdx) return null;
+        const loggedIn = candidates.find(p => String(p.id) === String(loggedInUserIdx));
+        if (!loggedIn) return null;
+
+        const d  = document.getElementById('common_date')?.value;
+        const st = document.getElementById('common_start_time')?.value;
+        const et = document.getElementById('common_end_time')?.value;
+        const pi = document.getElementById('selectedProjectIdx')?.value;
+        if (!d || !st || !et || !pi) return loggedIn; // 날짜/시간 미입력 시 중복 체크 불가 → 바로 선택
+
+        const isDup = await checkSingleAttendeeDuplicate(loggedIn.id, d, st, et, pi);
+        return isDup ? null : loggedIn;
+    }
+
     // 기본 작성자 설정 (낮은 직급에서 4번째, 시간 중복 시 가장 낮은 직급자)
     async function setDefaultAuthor() {
         const attendeePersons = getAttendeePersons();
@@ -4071,8 +4122,11 @@ document.addEventListener('DOMContentLoaded', async function() {
 
         let selectedAuthor = null;
 
-        // 날짜/시간/프로젝트 정보가 있으면 중복 체크
-        if (dateInput?.value && startTimeInput?.value && endTimeInput?.value && projectIdxInput?.value) {
+        // 1순위: 로그인 사용자가 프로젝트 참여인력인 경우
+        selectedAuthor = await pickLoggedInAuthor(attendeePersons);
+
+        // 2순위 이하: 직급 기반 선택
+        if (!selectedAuthor && dateInput?.value && startTimeInput?.value && endTimeInput?.value && projectIdxInput?.value) {
             const date = dateInput.value;
             const currentStartTime = startTimeInput.value;
             const currentEndTime = endTimeInput.value;
@@ -4112,7 +4166,7 @@ document.addEventListener('DOMContentLoaded', async function() {
                     return; // 작성자 설정하지 않고 종료
                 }
             }
-        } else {
+        } else if (!selectedAuthor) {
             // 날짜/시간 정보가 없으면 기존 로직대로
             selectedAuthor = sortedPersons[3] || sortedPersons[0];
         }

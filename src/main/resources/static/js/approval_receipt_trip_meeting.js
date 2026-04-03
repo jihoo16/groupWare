@@ -398,6 +398,17 @@ document.addEventListener('DOMContentLoaded', function() {
         return s1 < e2 && s2 < e1;
     }
 
+    // 로그인 사용자 우선 작성자 선택 헬퍼 (후보 목록에서 로그인 사용자가 중복 없으면 반환)
+    async function pickLoggedInAuthor(candidates, date, startTime, endTime, projectIdx, excludeReceiptIdx, excludeDocType) {
+        const loggedInUserIdx = window.CURRENT_USER?.idx;
+        if (!loggedInUserIdx) return null;
+        const loggedIn = candidates.find(m => String(m.id) === String(loggedInUserIdx));
+        if (!loggedIn) return null;
+        if (!date || !startTime || !endTime || !projectIdx) return loggedIn;
+        const isDup = await checkAuthorDuplicate(loggedIn.id, date, startTime, endTime, projectIdx, excludeReceiptIdx, excludeDocType);
+        return isDup ? null : loggedIn;
+    }
+
     // ── 회의 참석자 중복 검증 공통 헬퍼 ──────────────────────────────
 
     /** meeting-block 순서 번호 반환 (DOM 기준) */
@@ -500,7 +511,11 @@ document.addEventListener('DOMContentLoaded', function() {
 
         let author = null;
 
-        if (dateInput?.value && startInput?.value && endInput?.value && projectIdxInput?.value) {
+        // 1순위: 로그인 사용자가 프로젝트 참여인력인 경우
+        author = await pickLoggedInAuthor(members, dateInput?.value, startInput?.value, endInput?.value, projectIdxInput?.value);
+
+        // 2순위 이하: 직급 기반 선택
+        if (!author && dateInput?.value && startInput?.value && endInput?.value && projectIdxInput?.value) {
             const date = dateInput.value;
             const startTime = startInput.value;
             const endTime = endInput.value;
@@ -528,7 +543,7 @@ document.addEventListener('DOMContentLoaded', function() {
                     return;
                 }
             }
-        } else {
+        } else if (!author) {
             author = sorted[3] || sorted[0];
         }
 
@@ -1810,14 +1825,29 @@ document.addEventListener('DOMContentLoaded', function() {
             if (authorPersonId) {
                 const isDup = await checkTripPersonConflicts(authorPersonId, projectIdx, excludeIdx);
                 if (isDup) {
-                    // 현재 작성자 겹침 → 겹치지 않는 사람으로 교체
+                    // 현재 작성자 겹침 → 재선택: 1순위 로그인 사용자, 2순위 직급 기반
                     const persons = getAuthorPersons();
-                    const sorted = sortByPositionAsc(persons);
                     let newAuthor = null;
-                    for (const p of sorted) {
-                        const dup = await checkTripPersonConflicts(p.id, projectIdx, excludeIdx);
-                        if (!dup) { newAuthor = p; break; }
+
+                    // 1순위: 로그인 사용자
+                    const loggedInUserIdx = window.CURRENT_USER?.idx;
+                    if (loggedInUserIdx) {
+                        const loggedIn = persons.find(p => String(p.id) === String(loggedInUserIdx));
+                        if (loggedIn) {
+                            const loggedInDup = await checkTripPersonConflicts(loggedIn.id, projectIdx, excludeIdx);
+                            if (!loggedInDup) newAuthor = loggedIn;
+                        }
                     }
+
+                    // 2순위: 직급 기반
+                    if (!newAuthor) {
+                        const sorted = sortByPositionAsc(persons);
+                        for (const p of sorted) {
+                            const dup = await checkTripPersonConflicts(p.id, projectIdx, excludeIdx);
+                            if (!dup) { newAuthor = p; break; }
+                        }
+                    }
+
                     authorPersonId = null;
                     const authorField = document.getElementById('common_author');
                     if (authorField) authorField.value = '';
@@ -2810,8 +2840,13 @@ document.addEventListener('DOMContentLoaded', function() {
         const projVal  = document.getElementById('selectedProjectIdx')?.value;
 
         let author = null;
-        if (dateVal && startVal && endVal && projVal) {
-            const excludeId = getUrlParameter('documentIdx') || getUrlParameter('id') || null;
+
+        // 1순위: 로그인 사용자가 출장 인원에 포함된 경우
+        const excludeId = getUrlParameter('documentIdx') || getUrlParameter('id') || null;
+        author = await pickLoggedInAuthor(members, dateVal, startVal, endVal, projVal, excludeId, 'RCTM');
+
+        // 2순위 이하: 직급 기반 선택
+        if (!author && dateVal && startVal && endVal && projVal) {
             const candidate = sorted[3] || sorted[0];
             const isDup = await checkAuthorDuplicate(candidate.id, dateVal, startVal, endVal, projVal, excludeId, 'RCTM');
             if (!isDup) {
@@ -2822,7 +2857,7 @@ document.addEventListener('DOMContentLoaded', function() {
                     if (!dup) { author = person; break; }
                 }
             }
-        } else {
+        } else if (!author) {
             author = sorted[3] || sorted[0];
         }
 
@@ -3839,7 +3874,7 @@ document.addEventListener('DOMContentLoaded', function() {
     }
 
     // 선택된 인원 확정 (기존 목록 교체)
-    window.addSelectedPersons = function() {
+    window.addSelectedPersons = async function() {
         const newPersons = [];
 
         tempTripSelectedIds.forEach(personId => {
@@ -3860,17 +3895,23 @@ document.addEventListener('DOMContentLoaded', function() {
             window.replaceTripPersons(newPersons);
         }
 
-        // 작성자가 새 목록에 없으면 최저직급자(사원)로 작성자 업데이트
+        // 작성자가 새 목록에 없으면 재선택: 1순위 로그인 사용자, 2순위 최저직급
         if (newPersons.length > 0) {
             const authorStillIn = authorPersonId && newPersons.some(p => String(p.id) === String(authorPersonId));
             if (!authorStillIn) {
-                const sorted = [...newPersons].sort((a, b) => {
-                    const codeA = positionCodes.find(pc => pc.codeName === a.position)?.code || '';
-                    const codeB = positionCodes.find(pc => pc.codeName === b.position)?.code || '';
-                    return getPositionSortOrder(codeA) - getPositionSortOrder(codeB);
-                });
-                // sorted[0] = 최고직급, sorted[last] = 최저직급(사원)
-                const newAuthor = sorted[sorted.length - 1];
+                const membersForPick = newPersons.map(p => ({
+                    id: p.id, name: p.name, dept: p.dept || '',
+                    position: p.position || '', positionCode: p.positionCode || ''
+                }));
+                const dateVal = document.getElementById('common_meeting_date')?.value;
+                const startVal = document.getElementById('common_start_time')?.value;
+                const endVal = document.getElementById('common_end_time')?.value;
+                const projVal = document.getElementById('selectedProjectIdx')?.value;
+                let newAuthor = await pickLoggedInAuthor(membersForPick, dateVal, startVal, endVal, projVal);
+                if (!newAuthor) {
+                    const sorted = sortByPositionAsc(membersForPick);
+                    newAuthor = sorted[sorted.length - 1];
+                }
                 if (newAuthor && window.setAuthorInTemplate) {
                     window.setAuthorInTemplate(newAuthor);
                 }
@@ -4272,7 +4313,11 @@ document.addEventListener('DOMContentLoaded', function() {
         requiredIds.forEach(id => {
             const el = document.getElementById(id);
             if (!el) return;
-            if (!el.value || !el.value.trim()) {
+            // 카드 필드: selectedCard 변수가 설정되어 있으면 자동 선택된 것이므로 유효
+            const isFilled = (id === 'common_card')
+                ? (selectedCard || (el.value && el.value.trim()))
+                : (el.value && el.value.trim());
+            if (!isFilled) {
                 el.classList.add('field-empty');
                 allFilled = false;
             } else {
@@ -5232,6 +5277,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 if (cardField) {
                     cardField.value = projectCards[0].cardName;
                     cardField.placeholder = '클릭하여 카드 선택';
+                    cardField.classList.remove('field-empty');
                 }
                 if (selectedCardIdxInput) selectedCardIdxInput.value = projectCards[0].idx;
             } else {
@@ -5242,10 +5288,10 @@ document.addEventListener('DOMContentLoaded', function() {
                 }
                 if (selectedCardIdxInput) selectedCardIdxInput.value = '';
             }
+            validateRequiredFields();
         });
 
         closeProjectModal();
-        setTimeout(() => validateRequiredFields(), 100);
     };
 
     // 프로젝트 모달 열기

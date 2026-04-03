@@ -281,6 +281,21 @@
                                     </div>
                                     <div class="file-list" id="estimateFileList"></div>
                                 </div>
+                                <!-- 연구비이체 전용: JS에서 paymentType=transfer일 때 표시 -->
+                                <div id="bankCopySection" style="display:none;">
+                                    <div class="section-header">
+                                        <h4><i class="fas fa-university"></i> 거래처 통장사본 <span class="required-mark">*</span></h4>
+                                    </div>
+                                    <div class="file-upload-area" id="bankCopyUploadArea">
+                                        <input type="file" id="bankCopyInput" multiple hidden>
+                                        <label for="bankCopyInput" class="file-upload-label">
+                                            <i class="fas fa-cloud-upload-alt"></i>
+                                            <span>파일을 선택하거나 드래그하세요</span>
+                                            <small>최대 10MB, 최대 5개</small>
+                                        </label>
+                                    </div>
+                                    <div class="file-list" id="bankCopyFileList"></div>
+                                </div>
                             </div>
                         </div>
 

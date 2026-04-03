@@ -296,6 +296,7 @@ document.addEventListener('DOMContentLoaded', async function() {
                             const otCard = document.getElementById('ot_card');
                             if (otCard) {
                                 otCard.value = selectedCard.cardName;
+                                otCard.classList.remove('field-empty');
                             }
                             const selectedCardIdx = document.getElementById('selectedCardIdx');
                             if (selectedCardIdx) selectedCardIdx.value = selectedCard.idx;
@@ -1232,6 +1233,24 @@ document.addEventListener('DOMContentLoaded', async function() {
                 await loadProjectCards(proj.idx);
                 await loadProjectMembers(proj.idx);
                 // expense settings는 loadProjectMembers 내에서 함께 로드됨
+
+                // 첫 번째 카드 자동 선택
+                if (projectCards && projectCards.length > 0) {
+                    selectedCard = projectCards[0];
+                    const otCard = document.getElementById('ot_card');
+                    if (otCard) {
+                        otCard.value = projectCards[0].cardName;
+                        otCard.classList.remove('field-empty');
+                    }
+                    const selectedCardIdxEl = document.getElementById('selectedCardIdx');
+                    if (selectedCardIdxEl) selectedCardIdxEl.value = projectCards[0].idx;
+                } else {
+                    selectedCard = null;
+                    const otCard = document.getElementById('ot_card');
+                    if (otCard) { otCard.value = ''; otCard.placeholder = '클릭하여 카드 선택'; }
+                    const selectedCardIdxEl = document.getElementById('selectedCardIdx');
+                    if (selectedCardIdxEl) selectedCardIdxEl.value = '';
+                }
 
                 document.querySelectorAll('.ot-auto-project').forEach(field => {
                     field.textContent = proj.projectName;

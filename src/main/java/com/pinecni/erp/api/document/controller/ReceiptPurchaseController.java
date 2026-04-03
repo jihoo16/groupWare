@@ -87,11 +87,12 @@ public class ReceiptPurchaseController {
             @RequestPart(value = "receiptFiles", required = false) List<MultipartFile> receiptFiles,
             @RequestPart(value = "documentFiles", required = false) List<MultipartFile> documentFiles,
             @RequestPart(value = "estimateFiles", required = false) List<MultipartFile> estimateFiles,
+            @RequestPart(value = "bankCopyFiles", required = false) List<MultipartFile> bankCopyFiles,
             HttpSession session) {
         try {
             ReceiptPurchaseCreateDTO dto = objectMapper.readValue(dataJson, ReceiptPurchaseCreateDTO.class);
             Long userIdx = (Long) session.getAttribute("userIdx");
-            ReceiptPurchaseDTO result = receiptPurchaseService.createReceiptPurchase(dto, receiptFiles, documentFiles, estimateFiles, userIdx);
+            ReceiptPurchaseDTO result = receiptPurchaseService.createReceiptPurchase(dto, receiptFiles, documentFiles, estimateFiles, bankCopyFiles, userIdx);
             return ResponseEntity.ok(result);
         } catch (Exception e) {
             log.error("구매품의 저장 실패", e);
@@ -112,6 +113,7 @@ public class ReceiptPurchaseController {
             @RequestPart(value = "receiptFiles", required = false) List<MultipartFile> receiptFiles,
             @RequestPart(value = "documentFiles", required = false) List<MultipartFile> documentFiles,
             @RequestPart(value = "estimateFiles", required = false) List<MultipartFile> estimateFiles,
+            @RequestPart(value = "bankCopyFiles", required = false) List<MultipartFile> bankCopyFiles,
             @RequestPart(value = "deletedAttachmentIds", required = false) String deletedIdsJson,
             HttpSession session) {
         try {
@@ -123,7 +125,7 @@ public class ReceiptPurchaseController {
             }
             Long userIdx = (Long) session.getAttribute("userIdx");
             ReceiptPurchaseDTO result = receiptPurchaseService.updateReceiptPurchase(
-                    idx, dto, receiptFiles, documentFiles, estimateFiles, deletedIds, userIdx);
+                    idx, dto, receiptFiles, documentFiles, estimateFiles, bankCopyFiles, deletedIds, userIdx);
             return ResponseEntity.ok(result);
         } catch (Exception e) {
             log.error("구매품의 수정 실패 - idx: {}", idx, e);
@@ -172,11 +174,12 @@ public class ReceiptPurchaseController {
             @RequestPart(value = "receiptFiles", required = false) List<MultipartFile> receiptFiles,
             @RequestPart(value = "documentFiles", required = false) List<MultipartFile> documentFiles,
             @RequestPart(value = "estimateFiles", required = false) List<MultipartFile> estimateFiles,
+            @RequestPart(value = "bankCopyFiles", required = false) List<MultipartFile> bankCopyFiles,
             HttpSession session) {
         try {
             Long userIdx = (Long) session.getAttribute("userIdx");
             List<ReceiptPurchaseAttachmentDTO> result = receiptPurchaseService.addAttachments(
-                    idx, receiptFiles, documentFiles, estimateFiles, userIdx);
+                    idx, receiptFiles, documentFiles, estimateFiles, bankCopyFiles, userIdx);
             return ResponseEntity.ok(result);
         } catch (Exception e) {
             log.error("첨부파일 추가 실패 - idx: {}", idx, e);

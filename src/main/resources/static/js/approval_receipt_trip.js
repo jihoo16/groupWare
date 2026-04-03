@@ -185,6 +185,7 @@ document.addEventListener('DOMContentLoaded', async function() {
             if (tripCardField) {
                 tripCardField.value = projectCards[0].cardName;
                 tripCardField.placeholder = '클릭하여 카드 선택';
+                tripCardField.classList.remove('field-empty');
             }
             if (selectedCardIdxInput) selectedCardIdxInput.value = projectCards[0].idx;
         } else {
@@ -665,7 +666,10 @@ document.addEventListener('DOMContentLoaded', async function() {
             item.addEventListener('click', function() {
                 selectedCard = card;
                 const tripCardField = document.getElementById('trip_card');
-                if (tripCardField) tripCardField.value = card.cardName;
+                if (tripCardField) {
+                    tripCardField.value = card.cardName;
+                    tripCardField.classList.remove('field-empty');
+                }
                 const selectedCardIdxInput = document.getElementById('selectedCardIdx');
                 if (selectedCardIdxInput) selectedCardIdxInput.value = card.idx;
                 closeCardModal();
@@ -1179,20 +1183,32 @@ document.addEventListener('DOMContentLoaded', async function() {
             dept: member.employeeDeptName || '부서 미지정'
         }));
 
-        const sortedPersons = sortByPosition([...allMembers]);
-        sortedPersons.reverse(); // 높은 직급부터 정렬
+        // 1순위: 로그인 사용자가 프로젝트 참여인력인 경우
+        let defaultReporter = null;
+        const loggedInUserIdx = currentUser?.idx;
+        if (loggedInUserIdx) {
+            const loggedInMember = allMembers.find(m => String(m.id) === String(loggedInUserIdx));
+            if (loggedInMember && !duplicateTripPersonsInfo[loggedInMember.id]) {
+                defaultReporter = loggedInMember;
+            }
+        }
 
-        // 중복 없는 인원만 후보로 사용, 전원 중복이면 전체에서 선택
-        const candidates = sortedPersons.filter(p => !duplicateTripPersonsInfo[p.id]);
-        const pool = candidates.length > 0 ? candidates : sortedPersons;
+        // 2순위 이하: 직급 기반 선택
+        if (!defaultReporter) {
+            const sortedPersons = sortByPosition([...allMembers]);
+            sortedPersons.reverse(); // 높은 직급부터 정렬
 
-        let defaultReporter;
-        if (pool.length >= 3) {
-            // 3명 이상이면 높은 직급순 3번째 (인덱스 2)
-            defaultReporter = pool[2];
-        } else {
-            // 3명 미만이면 가장 낮은 직급 (마지막 사람)
-            defaultReporter = pool[pool.length - 1];
+            // 중복 없는 인원만 후보로 사용, 전원 중복이면 전체에서 선택
+            const candidates = sortedPersons.filter(p => !duplicateTripPersonsInfo[p.id]);
+            const pool = candidates.length > 0 ? candidates : sortedPersons;
+
+            if (pool.length >= 3) {
+                // 3명 이상이면 높은 직급순 3번째 (인덱스 2)
+                defaultReporter = pool[2];
+            } else {
+                // 3명 미만이면 가장 낮은 직급 (마지막 사람)
+                defaultReporter = pool[pool.length - 1];
+            }
         }
 
         if (defaultReporter) {
@@ -3708,6 +3724,7 @@ document.addEventListener('DOMContentLoaded', async function() {
                     const found = projectCards.find(c => c.idx === data.cardIdx);
                     tripCardField.value = found ? found.cardName : `카드 #${data.cardIdx}`;
                 }
+                tripCardField.classList.remove('field-empty');
             }
             selectedCard = { idx: data.cardIdx, cardName: data.cardName || '' };
         }

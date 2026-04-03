@@ -115,6 +115,7 @@ public class ReceiptPurchaseServiceImpl implements ReceiptPurchaseService {
                                                      List<MultipartFile> receiptFiles,
                                                      List<MultipartFile> documentFiles,
                                                      List<MultipartFile> estimateFiles,
+                                                     List<MultipartFile> bankCopyFiles,
                                                      Long uploadUserIdx) {
         String purchaseType = dto.getPurchaseType() != null ? dto.getPurchaseType() : "material";
         CodeConstants.DocumentType docType = "material".equals(purchaseType)
@@ -161,6 +162,7 @@ public class ReceiptPurchaseServiceImpl implements ReceiptPurchaseService {
         saveFiles(saved.getIdx(), receiptFiles,  "RECEIPT",   uploadUserIdx, entity.getPurchaseType());
         saveFiles(saved.getIdx(), documentFiles, "DOCUMENT",  uploadUserIdx, entity.getPurchaseType());
         saveFiles(saved.getIdx(), estimateFiles, "ESTIMATE",  uploadUserIdx, entity.getPurchaseType());
+        saveFiles(saved.getIdx(), bankCopyFiles, "BANK_COPY", uploadUserIdx, entity.getPurchaseType());
 
         return buildDTOWithDetails(saved);
     }
@@ -172,6 +174,7 @@ public class ReceiptPurchaseServiceImpl implements ReceiptPurchaseService {
                                                      List<MultipartFile> receiptFiles,
                                                      List<MultipartFile> documentFiles,
                                                      List<MultipartFile> estimateFiles,
+                                                     List<MultipartFile> bankCopyFiles,
                                                      List<Long> deletedAttachmentIds,
                                                      Long uploadUserIdx) {
         ReceiptPurchase entity = receiptPurchaseRepository.findById(idx)
@@ -217,6 +220,7 @@ public class ReceiptPurchaseServiceImpl implements ReceiptPurchaseService {
         saveFiles(idx, receiptFiles,  "RECEIPT",  uploadUserIdx, entity.getPurchaseType());
         saveFiles(idx, documentFiles, "DOCUMENT", uploadUserIdx, entity.getPurchaseType());
         saveFiles(idx, estimateFiles, "ESTIMATE", uploadUserIdx, entity.getPurchaseType());
+        saveFiles(idx, bankCopyFiles, "BANK_COPY", uploadUserIdx, entity.getPurchaseType());
 
         return buildDTOWithDetails(entity);
     }
@@ -253,12 +257,14 @@ public class ReceiptPurchaseServiceImpl implements ReceiptPurchaseService {
                                                               List<MultipartFile> receiptFiles,
                                                               List<MultipartFile> documentFiles,
                                                               List<MultipartFile> estimateFiles,
+                                                              List<MultipartFile> bankCopyFiles,
                                                               Long uploadUserIdx) {
         ReceiptPurchase entity = receiptPurchaseRepository.findById(idx)
                 .orElseThrow(() -> new IllegalArgumentException("구매품의를 찾을 수 없습니다. idx: " + idx));
         saveFiles(idx, receiptFiles,  "RECEIPT",  uploadUserIdx, entity.getPurchaseType());
         saveFiles(idx, documentFiles, "DOCUMENT", uploadUserIdx, entity.getPurchaseType());
         saveFiles(idx, estimateFiles, "ESTIMATE", uploadUserIdx, entity.getPurchaseType());
+        saveFiles(idx, bankCopyFiles, "BANK_COPY", uploadUserIdx, entity.getPurchaseType());
         return getAttachments(idx);
     }
 
