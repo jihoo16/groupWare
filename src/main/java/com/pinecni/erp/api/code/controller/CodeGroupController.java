@@ -2,11 +2,13 @@ package com.pinecni.erp.api.code.controller;
 
 import com.pinecni.erp.api.code.service.CodeGroupService;
 import com.pinecni.erp.entity.CodeGroup;
+import jakarta.servlet.http.HttpSession;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.server.ResponseStatusException;
 
 import java.util.List;
 
@@ -21,6 +23,14 @@ import java.util.List;
 public class CodeGroupController {
 
     private final CodeGroupService codeGroupService;
+
+    /** 개발자 권한 검증 */
+    private void requireDev(HttpSession session) {
+        Boolean isDev = (Boolean) session.getAttribute("isDev");
+        if (isDev == null || !isDev) {
+            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "개발자 권한이 필요합니다.");
+        }
+    }
 
     /**
      * 그룹코드 목록 조회
@@ -65,7 +75,8 @@ public class CodeGroupController {
      * 그룹코드 생성
      */
     @PostMapping
-    public ResponseEntity<CodeGroup> createCodeGroup(@RequestBody CodeGroup codeGroup) {
+    public ResponseEntity<CodeGroup> createCodeGroup(@RequestBody CodeGroup codeGroup, HttpSession session) {
+        requireDev(session);
         log.info("그룹코드 생성 요청: groupCode={}, groupName={}",
                 codeGroup.getGroupCode(), codeGroup.getGroupName());
 
@@ -84,7 +95,9 @@ public class CodeGroupController {
     @PutMapping("/{idx}")
     public ResponseEntity<CodeGroup> updateCodeGroup(
             @PathVariable Long idx,
-            @RequestBody CodeGroup codeGroup) {
+            @RequestBody CodeGroup codeGroup,
+            HttpSession session) {
+        requireDev(session);
         log.info("그룹코드 수정 요청: idx={}", idx);
 
         try {
@@ -100,7 +113,8 @@ public class CodeGroupController {
      * 그룹코드 삭제
      */
     @DeleteMapping("/{idx}")
-    public ResponseEntity<Void> deleteCodeGroup(@PathVariable Long idx) {
+    public ResponseEntity<Void> deleteCodeGroup(@PathVariable Long idx, HttpSession session) {
+        requireDev(session);
         log.info("그룹코드 삭제 요청: idx={}", idx);
 
         try {
@@ -116,7 +130,8 @@ public class CodeGroupController {
      * 그룹코드 사용 여부 변경
      */
     @PatchMapping("/{idx}/toggle")
-    public ResponseEntity<CodeGroup> toggleCodeGroupUseYn(@PathVariable Long idx) {
+    public ResponseEntity<CodeGroup> toggleCodeGroupUseYn(@PathVariable Long idx, HttpSession session) {
+        requireDev(session);
         log.info("그룹코드 사용 여부 변경 요청: idx={}", idx);
 
         try {

@@ -579,6 +579,13 @@ public class VacationController {
                 return ResponseEntity.status(401).body(Map.of("error", "로그인이 필요합니다."));
             }
 
+            // 본인 문서인지 확인 (관리자는 별도 admin 엔드포인트 사용)
+            var document = approvalDocumentRepository.findById(documentIdx).orElse(null);
+            if (document != null && !currentUserIdx.equals(document.getDrafterUserIdx())) {
+                log.warn("[연차신청서 삭제 거부] 본인 문서가 아님: currentUserIdx={}, drafterUserIdx={}", currentUserIdx, document.getDrafterUserIdx());
+                return ResponseEntity.status(403).body(Map.of("error", "본인의 문서만 삭제할 수 있습니다."));
+            }
+
             vacationService.deleteVacation(documentIdx, currentUserIdx);
 
             return ResponseEntity.ok(Map.of("message", "삭제되었습니다."));

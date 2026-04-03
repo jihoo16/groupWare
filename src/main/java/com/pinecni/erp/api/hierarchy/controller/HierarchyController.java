@@ -3,10 +3,7 @@ package com.pinecni.erp.api.hierarchy.controller;
 import com.pinecni.erp.api.hierarchy.dto.HierarchyEmployeeDTO;
 import com.pinecni.erp.api.hierarchy.dto.HierarchyHistoryDTO;
 import com.pinecni.erp.api.hierarchy.dto.HierarchyStatsDTO;
-import com.pinecni.erp.api.hierarchy.dto.HierarchyUpdateDTO;
 import com.pinecni.erp.api.hierarchy.service.HierarchyService;
-import jakarta.servlet.http.HttpSession;
-import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.ResponseEntity;
@@ -46,26 +43,6 @@ public class HierarchyController {
     }
 
     /**
-     * 직원 보고체계 정보 업데이트
-     */
-    @PutMapping("/employees/{empIdx}")
-    public ResponseEntity<HierarchyEmployeeDTO> updateEmployeeHierarchy(
-            @PathVariable Long empIdx,
-            @Valid @RequestBody HierarchyUpdateDTO updateDTO,
-            HttpSession session) {
-        log.debug("직원 보고체계 업데이트 요청 - empIdx: {}", empIdx);
-
-        Long currentUserIdx = (Long) session.getAttribute("userIdx");
-        if (currentUserIdx == null) {
-            log.warn("로그인하지 않은 사용자의 보고체계 업데이트 시도");
-            return ResponseEntity.status(401).build();
-        }
-
-        HierarchyEmployeeDTO result = hierarchyService.updateEmployeeHierarchy(empIdx, updateDTO, currentUserIdx);
-        return ResponseEntity.ok(result);
-    }
-
-    /**
      * 직원 보고체계 변경 이력 조회
      */
     @GetMapping("/history/{empIdx}")
@@ -73,24 +50,5 @@ public class HierarchyController {
         log.debug("직원 보고체계 변경 이력 조회 요청 - empIdx: {}", empIdx);
         List<HierarchyHistoryDTO> history = hierarchyService.getEmployeeHierarchyHistory(empIdx);
         return ResponseEntity.ok(history);
-    }
-
-    /**
-     * 일괄 보고체계 업데이트
-     */
-    @PostMapping("/bulk")
-    public ResponseEntity<Void> bulkUpdateHierarchy(
-            @Valid @RequestBody List<HierarchyUpdateDTO> updateDTOs,
-            HttpSession session) {
-        log.debug("일괄 보고체계 업데이트 요청 - 대상: {}명", updateDTOs.size());
-
-        Long currentUserIdx = (Long) session.getAttribute("userIdx");
-        if (currentUserIdx == null) {
-            log.warn("로그인하지 않은 사용자의 일괄 보고체계 업데이트 시도");
-            return ResponseEntity.status(401).build();
-        }
-
-        hierarchyService.bulkUpdateHierarchy(updateDTOs, currentUserIdx);
-        return ResponseEntity.ok().build();
     }
 }

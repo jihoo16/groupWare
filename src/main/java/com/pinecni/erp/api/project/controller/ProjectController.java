@@ -366,13 +366,21 @@ public class ProjectController {
             @RequestBody BudgetAdjustmentRequestDTO dto,
             HttpSession session) {
 
+        Long userIdx = (Long) session.getAttribute("userIdx");
+        if (userIdx == null) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
+        }
+        Boolean isAdmin = (Boolean) session.getAttribute("isAdmin");
+        if (isAdmin == null || !isAdmin) {
+            return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
+        }
+
         if (dto.getReason() == null || dto.getReason().isBlank()) {
             Map<String, String> error = new HashMap<>();
             error.put("message", "보정 사유는 필수입니다.");
             return ResponseEntity.badRequest().body(error);
         }
 
-        Long userIdx = (Long) session.getAttribute("userIdx");
         projectService.saveBudgetAdjustment(projectIdx, dto, userIdx);
 
         Map<String, String> result = new HashMap<>();

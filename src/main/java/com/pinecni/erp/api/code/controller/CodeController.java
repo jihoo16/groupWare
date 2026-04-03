@@ -3,11 +3,13 @@ package com.pinecni.erp.api.code.controller;
 import com.pinecni.erp.api.code.service.CodeService;
 import com.pinecni.erp.constant.CodeConstants;
 import com.pinecni.erp.entity.Code;
+import jakarta.servlet.http.HttpSession;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.server.ResponseStatusException;
 
 import java.util.HashMap;
 import java.util.List;
@@ -24,6 +26,14 @@ import java.util.Map;
 public class CodeController {
 
     private final CodeService codeService;
+
+    /** 개발자 권한 검증 */
+    private void requireDev(HttpSession session) {
+        Boolean isDev = (Boolean) session.getAttribute("isDev");
+        if (isDev == null || !isDev) {
+            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "개발자 권한이 필요합니다.");
+        }
+    }
 
     /**
      * 그룹별 코드 목록 조회
@@ -57,7 +67,8 @@ public class CodeController {
      * 코드 생성
      */
     @PostMapping
-    public ResponseEntity<Code> createCode(@RequestBody Code code) {
+    public ResponseEntity<Code> createCode(@RequestBody Code code, HttpSession session) {
+        requireDev(session);
         log.info("코드 생성 요청: groupCode={}, code={}, codeName={}",
                 code.getGroupCode(), code.getCode(), code.getCodeName());
 
@@ -74,7 +85,8 @@ public class CodeController {
      * 코드 수정
      */
     @PutMapping("/{idx}")
-    public ResponseEntity<Code> updateCode(@PathVariable Long idx, @RequestBody Code code) {
+    public ResponseEntity<Code> updateCode(@PathVariable Long idx, @RequestBody Code code, HttpSession session) {
+        requireDev(session);
         log.info("코드 수정 요청: idx={}", idx);
 
         try {
@@ -90,7 +102,8 @@ public class CodeController {
      * 코드 삭제
      */
     @DeleteMapping("/{idx}")
-    public ResponseEntity<Void> deleteCode(@PathVariable Long idx) {
+    public ResponseEntity<Void> deleteCode(@PathVariable Long idx, HttpSession session) {
+        requireDev(session);
         log.info("코드 삭제 요청: idx={}", idx);
 
         try {
@@ -106,7 +119,8 @@ public class CodeController {
      * 코드 사용 여부 변경
      */
     @PatchMapping("/{idx}/toggle")
-    public ResponseEntity<Code> toggleCodeUseYn(@PathVariable Long idx) {
+    public ResponseEntity<Code> toggleCodeUseYn(@PathVariable Long idx, HttpSession session) {
+        requireDev(session);
         log.info("코드 사용 여부 변경 요청: idx={}", idx);
 
         try {

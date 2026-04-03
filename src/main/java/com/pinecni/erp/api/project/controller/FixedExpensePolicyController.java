@@ -96,6 +96,11 @@ public class FixedExpensePolicyController {
             log.warn("로그인하지 않은 사용자의 고정경비 정책 저장 시도");
             return ResponseEntity.status(401).build();
         }
+        Boolean isAdmin = (Boolean) session.getAttribute("isAdmin");
+        if (isAdmin == null || !isAdmin) {
+            log.warn("관리자가 아닌 사용자의 고정경비 정책 저장 시도: userIdx={}", currentUserIdx);
+            return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
+        }
 
         try {
             FixedExpensePolicyDTO policy = fixedExpensePolicyService.upsertPolicy(updateDTO, currentUserIdx);
@@ -123,6 +128,11 @@ public class FixedExpensePolicyController {
             error.put("error", "로그인이 필요합니다.");
             return ResponseEntity.status(401).body(error);
         }
+        Boolean isAdmin = (Boolean) session.getAttribute("isAdmin");
+        if (isAdmin == null || !isAdmin) {
+            log.warn("관리자가 아닌 사용자의 고정경비 정책 일괄 저장 시도: userIdx={}", currentUserIdx);
+            return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
+        }
 
         try {
             List<FixedExpensePolicyDTO> policies = fixedExpensePolicyService.upsertPolicies(updateDTOs, currentUserIdx);
@@ -144,7 +154,16 @@ public class FixedExpensePolicyController {
      * DELETE /api/fixed-expense-policies/{positionCode}
      */
     @DeleteMapping("/{positionCode}")
-    public ResponseEntity<Map<String, String>> deletePolicy(@PathVariable String positionCode) {
+    public ResponseEntity<Map<String, String>> deletePolicy(@PathVariable String positionCode, jakarta.servlet.http.HttpSession session) {
+        Long currentUserIdx = (Long) session.getAttribute("userIdx");
+        if (currentUserIdx == null) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
+        }
+        Boolean isAdmin = (Boolean) session.getAttribute("isAdmin");
+        if (isAdmin == null || !isAdmin) {
+            log.warn("관리자가 아닌 사용자의 고정경비 정책 삭제 시도: userIdx={}", currentUserIdx);
+            return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
+        }
         log.debug("DELETE /api/fixed-expense-policies/{} - deletePolicy()", positionCode);
 
         try {

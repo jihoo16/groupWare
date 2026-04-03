@@ -85,31 +85,4 @@ public class HolidayController {
         }
     }
 
-    /**
-     * 캐시 초기화 (필요시 수동 호출)
-     * POST /api/holidays/refresh
-     */
-    @PostMapping("/refresh")
-    public ResponseEntity<Map<String, Object>> refreshCache() {
-        log.info("공휴일 캐시 초기화 요청");
-
-        try {
-            // 캐시를 강제로 새로고침하려면 CacheManager를 사용해야 하지만
-            // 여기서는 단순히 재조회로 처리
-            Map<String, String> holidays = holidayService.getAllHolidays();
-
-            Map<String, Object> response = new HashMap<>();
-            response.put("success", true);
-            response.put("count", holidays.size());
-            response.put("message", "공휴일 데이터가 새로고침되었습니다.");
-
-            return ResponseEntity.ok(response);
-        } catch (Exception e) {
-            log.error("캐시 초기화 실패: {}", e.getMessage(), e);
-            Map<String, Object> errorResponse = new HashMap<>();
-            errorResponse.put("success", false);
-            errorResponse.put("message", "캐시 초기화 중 오류가 발생했습니다.");
-            return ResponseEntity.internalServerError().body(errorResponse);
-        }
-    }
 }

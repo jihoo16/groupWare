@@ -2,11 +2,13 @@ package com.pinecni.erp.api.project.controller;
 
 import com.pinecni.erp.api.project.dto.ProjectCardDTO;
 import com.pinecni.erp.api.project.service.ProjectCardService;
+import jakarta.servlet.http.HttpSession;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.server.ResponseStatusException;
 
 import java.util.HashMap;
 import java.util.List;
@@ -22,6 +24,14 @@ import java.util.Map;
 public class ProjectCardController {
 
     private final ProjectCardService projectCardService;
+
+    /** 관리자 권한 검증 */
+    private void requireAdmin(HttpSession session) {
+        Boolean isAdmin = (Boolean) session.getAttribute("isAdmin");
+        if (isAdmin == null || !isAdmin) {
+            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "관리자 권한이 필요합니다.");
+        }
+    }
 
     /**
      * 전체 연구비카드 목록 조회
@@ -76,7 +86,8 @@ public class ProjectCardController {
      * POST /api/project-cards
      */
     @PostMapping
-    public ResponseEntity<?> createCard(@RequestBody ProjectCardDTO cardDTO) {
+    public ResponseEntity<?> createCard(@RequestBody ProjectCardDTO cardDTO, HttpSession session) {
+        requireAdmin(session);
         log.debug("POST /api/project-cards - projectIdx: {}, cardCompany: {}",
                 cardDTO.getProjectIdx(), cardDTO.getCardCompany());
 
@@ -101,7 +112,8 @@ public class ProjectCardController {
      * PUT /api/project-cards/{idx}
      */
     @PutMapping("/{idx}")
-    public ResponseEntity<?> updateCard(@PathVariable Long idx, @RequestBody ProjectCardDTO cardDTO) {
+    public ResponseEntity<?> updateCard(@PathVariable Long idx, @RequestBody ProjectCardDTO cardDTO, HttpSession session) {
+        requireAdmin(session);
         log.debug("PUT /api/project-cards/{}", idx);
 
         try {
@@ -125,7 +137,8 @@ public class ProjectCardController {
      * DELETE /api/project-cards/{idx}
      */
     @DeleteMapping("/{idx}")
-    public ResponseEntity<?> deleteCard(@PathVariable Long idx) {
+    public ResponseEntity<?> deleteCard(@PathVariable Long idx, HttpSession session) {
+        requireAdmin(session);
         log.debug("DELETE /api/project-cards/{}", idx);
 
         try {

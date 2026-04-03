@@ -287,6 +287,15 @@ public class UserController {
             return ResponseEntity.status(401).build();
         }
 
+        // 본인이 아닌 경우 관리자 권한 필요
+        if (!idx.equals(updatedUserIdx)) {
+            Boolean isAdmin = (Boolean) session.getAttribute("isAdmin");
+            if (isAdmin == null || !isAdmin) {
+                log.warn("관리자가 아닌 사용자의 타인 정보 수정 시도: userIdx={}, targetIdx={}", updatedUserIdx, idx);
+                return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
+            }
+        }
+
         log.debug("PUT /api/users/{} - updateUser(), updatedUserIdx: {}", idx, updatedUserIdx);
         UserDTO user = userService.updateUser(idx, updateDTO, updatedUserIdx);
         return ResponseEntity.ok(user);
@@ -308,6 +317,13 @@ public class UserController {
             return ResponseEntity.status(401).build();
         }
 
+        // 관리자 권한 필요
+        Boolean isAdmin = (Boolean) session.getAttribute("isAdmin");
+        if (isAdmin == null || !isAdmin) {
+            log.warn("관리자가 아닌 사용자의 사용자 삭제 시도: userIdx={}, targetIdx={}", deletedUserIdx, idx);
+            return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
+        }
+
         log.debug("DELETE /api/users/{} - deleteUser(), deletedUserIdx: {}", idx, deletedUserIdx);
         userService.deleteUser(idx, deletedUserIdx);
         Map<String, String> response = new HashMap<>();
@@ -320,7 +336,18 @@ public class UserController {
      * POST /api/users/{idx}/restore
      */
     @PostMapping("/{idx}/restore")
-    public ResponseEntity<UserDTO> restoreUser(@PathVariable Long idx) {
+    public ResponseEntity<UserDTO> restoreUser(@PathVariable Long idx, HttpSession session) {
+        // 관리자 권한 필요
+        Long currentUserIdx = (Long) session.getAttribute("userIdx");
+        if (currentUserIdx == null) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
+        }
+        Boolean isAdmin = (Boolean) session.getAttribute("isAdmin");
+        if (isAdmin == null || !isAdmin) {
+            log.warn("관리자가 아닌 사용자의 사용자 복구 시도: userIdx={}, targetIdx={}", currentUserIdx, idx);
+            return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
+        }
+
         log.debug("POST /api/users/{}/restore - restoreUser()", idx);
         UserDTO user = userService.restoreUser(idx);
         return ResponseEntity.ok(user);
