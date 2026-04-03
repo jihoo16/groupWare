@@ -245,6 +245,105 @@ button:focus, a:focus, div:focus { outline: none !important; box-shadow: none !i
     margin-top: 12px;
 }
 
+/* 영수증 현황 배너 */
+.receipt-status-banner {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 12px 16px;
+    border-radius: 8px;
+    font-size: 13px;
+    font-weight: 500;
+    margin-top: 12px;
+}
+
+.receipt-status-banner.status-incomplete {
+    background: #fef3c7;
+    border: 1px solid #f59e0b;
+    color: #92400e;
+}
+
+.receipt-status-banner.status-incomplete i {
+    color: #f59e0b;
+    font-size: 16px;
+}
+
+.receipt-status-banner.status-complete {
+    background: #d1fae5;
+    border: 1px solid #10b981;
+    color: #065f46;
+}
+
+.receipt-status-banner.status-complete i {
+    color: #10b981;
+    font-size: 16px;
+}
+
+/* 정산상태 배너 */
+.settlement-status-banner {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 12px 16px;
+    border-radius: 10px;
+    font-size: 13.5px;
+    font-weight: 500;
+    margin-top: 8px;
+}
+
+.settlement-status-banner i { font-size: 16px; }
+.settlement-status-banner strong { font-weight: 700; }
+
+.st-banner-drafting     { background: #f1f5f9; border: 1px solid #cbd5e1; color: #475569; }
+.st-banner-drafting i   { color: #64748b; }
+
+.st-banner-submitted    { background: #eff6ff; border: 1px solid #93c5fd; color: #1e40af; }
+.st-banner-submitted i  { color: #2563eb; }
+
+.st-banner-confirmed    { background: #ecfdf5; border: 1px solid #6ee7b7; color: #065f46; }
+.st-banner-confirmed i  { color: #059669; }
+
+.st-banner-rejected { background: #fef2f2; border: 1px solid #fca5a5; color: #991b1b; }
+.st-banner-rejected i { color: #dc2626; }
+
+.st-reject-reason {
+    margin-top: 8px;
+    padding: 10px 14px;
+    background: #fff5f5;
+    border: 1px solid #fecaca;
+    border-radius: 8px;
+    font-size: 13px;
+    color: #b91c1c;
+    line-height: 1.6;
+}
+.st-reject-reason i { margin-right: 6px; color: #ef4444; }
+
+.st-banner-settled      { background: #f5f3ff; border: 1px solid #c4b5fd; color: #5b21b6; }
+.st-banner-settled i    { color: #7c3aed; }
+
+.btn-submit-expense {
+    margin-left: auto;
+    padding: 6px 16px;
+    background: #2563eb;
+    color: white;
+    border: none;
+    border-radius: 8px;
+    font-size: 13px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    white-space: nowrap;
+}
+
+.btn-submit-expense:hover {
+    background: #1d4ed8;
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(37, 99, 235, 0.3);
+}
+
 .total-label {
     font-size: 13px;
     font-weight: 600;
@@ -538,7 +637,52 @@ button:focus, a:focus, div:focus { outline: none !important; box-shadow: none !i
     color: #667eea;
 }
 
-.btn-print:hover { background: #667eea; color: white; }
+.btn-print:hover:not(.btn-disabled) { background: #667eea; color: white; }
+
+.btn-print.btn-disabled {
+    background: #e2e8f0;
+    border-color: #cbd5e1;
+    color: #94a3b8;
+    cursor: not-allowed;
+    position: relative;
+}
+
+.btn-print.btn-disabled:hover {
+    transform: none;
+    box-shadow: none;
+    background: #e2e8f0;
+    color: #94a3b8;
+}
+
+.btn-print.btn-disabled:hover::after {
+    content: attr(data-tooltip);
+    position: absolute;
+    top: calc(100% + 8px);
+    left: 50%;
+    transform: translateX(-50%);
+    background: #1e293b;
+    color: white;
+    padding: 8px 14px;
+    border-radius: 8px;
+    font-size: 12px;
+    font-weight: 500;
+    white-space: nowrap;
+    z-index: 100;
+    pointer-events: none;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+}
+
+.btn-print.btn-disabled:hover::before {
+    content: '';
+    position: absolute;
+    top: calc(100% + 2px);
+    left: 50%;
+    transform: translateX(-50%);
+    border: 6px solid transparent;
+    border-bottom-color: #1e293b;
+    z-index: 100;
+    pointer-events: none;
+}
 
 .btn-secondary { background: #f1f5f9; color: #475569; }
 .btn-secondary:hover { background: #e2e8f0; }
@@ -596,6 +740,8 @@ button:focus, a:focus, div:focus { outline: none !important; box-shadow: none !i
     .total-bar,
     .document-preview-toggle,
     .attachment-section,
+    .receipt-status-banner,
+    .settlement-status-banner,
     .modal,
     [class*="modal"] {
         display: none !important;

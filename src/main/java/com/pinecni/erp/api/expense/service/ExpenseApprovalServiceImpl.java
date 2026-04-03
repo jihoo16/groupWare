@@ -148,37 +148,88 @@ public class ExpenseApprovalServiceImpl implements ExpenseApprovalService {
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND,
                         "지출승인서를 찾을 수 없습니다. idx: " + idx));
 
-        // 본인 문서 검증
         if (!expenseApproval.getUserIdx().equals(loginUserIdx)) {
             throw new ResponseStatusException(HttpStatus.FORBIDDEN, "본인 문서만 수정할 수 있습니다.");
         }
 
         validateExpenseDetails(updateDTO.getExpenseDetails());
 
-        // 기존 항목의 영수증 연결 해제 (expense_detail_idx → null)
-        List<Long> oldDetailIdxList = expenseApproval.getExpenseDetails().stream()
-                .map(ExpenseDetail::getIdx)
-                .toList();
-        if (!oldDetailIdxList.isEmpty()) {
-            attachmentRepository.detachFromDetails(oldDetailIdxList);
+        // 기존 항목을 idx 오름차순으로 정렬
+        List<ExpenseDetail> existingDetails = expenseDetailRepository
+                .findByExpenseApprovalIdxOrderByIdxAsc(idx);
+        List<ExpenseDetailDTO> newDTOs = updateDTO.getExpenseDetails();
+
+        int existingSize = existingDetails.size();
+        int newSize = newDTOs.size();
+
+        // 1) 겹치는 구간: 기존 항목 업데이트 (idx 유지 → 영수증 연결 그대로)
+        for (int i = 0; i < Math.min(existingSize, newSize); i++) {
+            ExpenseDetail existing = existingDetails.get(i);
+            ExpenseDetailDTO dto = newDTOs.get(i);
+
+            // 날짜 또는 적요 변경 여부 체크 → 영수증 표시명 갱신 필요
+            boolean nameChanged = !existing.getExpenseDate().equals(dto.getExpenseDate())
+                    || !String.valueOf(existing.getDescription()).equals(String.valueOf(dto.getDescription()));
+
+            existing.setExpenseDate(dto.getExpenseDate());
+            existing.setDescription(dto.getDescription());
+            existing.setShopName(dto.getShopName());
+            existing.setPaymentMethod(dto.getPaymentMethod() != null ? dto.getPaymentMethod() : "개인카드");
+            existing.setAmount(dto.getAmount());
+            existing.setNote(dto.getNote());
+            existing.setUpdatedUserIdx(loginUserIdx);
+
+            if (nameChanged) {
+                renameItemReceiptAttachments(existing);
+            }
         }
 
-        // 기존 항목 전체 삭제 후 재삽입 (orphanRemoval)
-        expenseApproval.getExpenseDetails().clear();
-        expenseApprovalRepository.flush();
+        // 2) 새 항목이 더 많으면: 추가 삽입
+        if (newSize > existingSize) {
+            for (int i = existingSize; i < newSize; i++) {
+                ExpenseDetailDTO dto = newDTOs.get(i);
+                ExpenseDetail newDetail = ExpenseDetail.builder()
+                        .expenseApprovalIdx(idx)
+                        .expenseDate(dto.getExpenseDate())
+                        .description(dto.getDescription())
+                        .shopName(dto.getShopName())
+                        .paymentMethod(dto.getPaymentMethod() != null ? dto.getPaymentMethod() : "개인카드")
+                        .amount(dto.getAmount())
+                        .note(dto.getNote())
+                        .createdUserIdx(loginUserIdx)
+                        .updatedUserIdx(loginUserIdx)
+                        .build();
+                expenseDetailRepository.save(newDetail);
+            }
+        }
+
+        // 3) 기존 항목이 더 많으면: 초과분 삭제 + 해당 영수증 soft delete
+        if (existingSize > newSize) {
+            for (int i = newSize; i < existingSize; i++) {
+                ExpenseDetail toRemove = existingDetails.get(i);
+                // 해당 항목의 영수증 soft delete
+                List<ExpenseApprovalAttachment> itemAtts = attachmentRepository
+                        .findByExpenseDetailIdxAndDeletedFalseOrderByIdxAsc(toRemove.getIdx());
+                for (ExpenseApprovalAttachment att : itemAtts) {
+                    att.setDeleted(true);
+                    att.setDeletedAt(LocalDateTime.now());
+                    att.setDeletedUserIdx(loginUserIdx);
+                    attachmentRepository.save(att);
+                }
+                expenseDetailRepository.delete(toRemove);
+            }
+        }
 
         // total_amount 재계산
-        long totalAmount = updateDTO.getExpenseDetails().stream()
-                .mapToLong(ExpenseDetailDTO::getAmount)
-                .sum();
-
-        // 헤더 업데이트
+        long totalAmount = newDTOs.stream().mapToLong(ExpenseDetailDTO::getAmount).sum();
         expenseApproval.setTotalAmount(totalAmount);
         expenseApproval.setUpdatedUserIdx(loginUserIdx);
 
-        // 새 항목 삽입
-        List<ExpenseDetail> newDetails = buildDetails(updateDTO.getExpenseDetails(), idx, loginUserIdx);
-        expenseDetailRepository.saveAll(newDetails);
+        // 수정 시 정산상태를 '작성중'(C1001)으로 되돌림
+        expenseApproval.setSettlementStatus("C1001");
+        expenseApproval.setSettlementComment(null);
+        expenseApproval.setSettlementStatusUpdatedAt(LocalDateTime.now());
+        expenseApproval.setSettlementStatusUpdatedBy(loginUserIdx);
 
         // approval_documents 수정자 + content(금액) 업데이트
         final long finalTotalAmount = totalAmount;
@@ -191,7 +242,7 @@ public class ExpenseApprovalServiceImpl implements ExpenseApprovalService {
         }
 
         log.info("지출승인서 수정 완료 - idx: {}, 총 금액: {}, 항목 수: {}",
-                idx, totalAmount, newDetails.size());
+                idx, totalAmount, newSize);
 
         return expenseApproval;
     }
@@ -398,12 +449,15 @@ public class ExpenseApprovalServiceImpl implements ExpenseApprovalService {
             throw new RuntimeException("업로드 디렉토리를 생성할 수 없습니다: " + fullUploadPath, e);
         }
 
-        String month = approval.getCreatedAt() != null
-                ? approval.getCreatedAt().format(DateTimeFormatter.ofPattern("yyyyMM"))
-                : LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyyMM"));
-        String displayBase = "지출승인서_" + month + "_항목영수증";
+        // 항목의 날짜+적요로 표시명 생성 (예: 지출승인서_20260302_야근식대_1.pdf)
+        ExpenseDetail detail = expenseDetailRepository.findById(expenseDetailIdx)
+                .orElseThrow(() -> new IllegalArgumentException("지출 항목을 찾을 수 없습니다. idx: " + expenseDetailIdx));
+        String dateStr = detail.getExpenseDate().format(DateTimeFormatter.ofPattern("yyyyMMdd"));
+        String desc = detail.getDescription() != null ? detail.getDescription() : "영수증";
+        String displayBase = "지출승인서_" + dateStr + "_" + desc;
 
-        long existingCount = attachmentRepository.countByExpenseDetailIdxAndDeletedFalse(expenseDetailIdx);
+        long existingCount = attachmentRepository
+                .countByExpenseDetailIdxAndDeletedFalse(expenseDetailIdx);
 
         List<ExpenseApprovalAttachmentDTO> saved = new ArrayList<>();
 
@@ -514,6 +568,15 @@ public class ExpenseApprovalServiceImpl implements ExpenseApprovalService {
                 if (attCount > 0) receiptAttachedCount++;
             }
 
+            // 서명완료 공식문서 첨부 여부
+            boolean hasOfficialDocument = attachmentRepository
+                    .countByExpenseApprovalIdxAndAttachmentTypeAndDeletedFalse(ea.getIdx(), "DOCUMENT") > 0;
+
+            // 정산상태 코드 → 한글명
+            String statusCode = ea.getSettlementStatus() != null ? ea.getSettlementStatus() : "C1001";
+            CodeConstants.ExpenseSettlementStatus settlementEnum = CodeConstants.ExpenseSettlementStatus.fromCodeOrNull(statusCode);
+            String statusName = settlementEnum != null ? settlementEnum.getName() : statusCode;
+
             return AdminExpenseDocumentDTO.builder()
                     .idx(ea.getIdx())
                     .userIdx(ea.getUserIdx())
@@ -526,6 +589,12 @@ public class ExpenseApprovalServiceImpl implements ExpenseApprovalService {
                     .totalAmount(ea.getTotalAmount())
                     .detailCount(detailCount)
                     .receiptAttachedCount(receiptAttachedCount)
+                    .hasOfficialDocument(hasOfficialDocument)
+                    .settlementStatus(statusCode)
+                    .settlementStatusName(statusName)
+                    .settlementComment(ea.getSettlementComment())
+                    .settlementStatusUpdatedAt(ea.getSettlementStatusUpdatedAt())
+                    .settlementStatusUpdatedBy(ea.getSettlementStatusUpdatedBy())
                     .createdAt(ea.getCreatedAt())
                     .updatedAt(ea.getUpdatedAt())
                     .deleted(ea.getDeleted())
@@ -558,6 +627,80 @@ public class ExpenseApprovalServiceImpl implements ExpenseApprovalService {
         attachmentRepository.softDeleteByExpenseApprovalIdx(idx, adminUserIdx);
     }
 
+    @Override
+    @Transactional
+    public void updateSettlementStatus(Long idx, String statusCode, String comment, Long adminUserIdx) {
+        log.info("정산상태 변경 - idx: {}, status: {}, admin: {}", idx, statusCode, adminUserIdx);
+
+        // 코드 유효성 검증
+        CodeConstants.ExpenseSettlementStatus status = CodeConstants.ExpenseSettlementStatus.fromCodeOrNull(statusCode);
+        if (status == null) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "유효하지 않은 정산상태 코드: " + statusCode);
+        }
+
+        ExpenseApproval ea = expenseApprovalRepository.findById(idx)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND,
+                        "지출승인서를 찾을 수 없습니다. idx: " + idx));
+
+        ea.setSettlementStatus(statusCode);
+        ea.setSettlementComment(comment);
+        ea.setSettlementStatusUpdatedAt(LocalDateTime.now());
+        ea.setSettlementStatusUpdatedBy(adminUserIdx);
+        expenseApprovalRepository.save(ea);
+    }
+
+    @Override
+    @Transactional
+    public int batchUpdateSettlementStatus(List<Long> idxList, String statusCode, String comment, Long adminUserIdx) {
+        log.info("정산상태 일괄 변경 - count: {}, status: {}, admin: {}", idxList.size(), statusCode, adminUserIdx);
+
+        CodeConstants.ExpenseSettlementStatus status = CodeConstants.ExpenseSettlementStatus.fromCodeOrNull(statusCode);
+        if (status == null) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "유효하지 않은 정산상태 코드: " + statusCode);
+        }
+
+        LocalDateTime now = LocalDateTime.now();
+        int updated = 0;
+        for (Long idx : idxList) {
+            expenseApprovalRepository.findById(idx).ifPresent(ea -> {
+                ea.setSettlementStatus(statusCode);
+                ea.setSettlementComment(comment);
+                ea.setSettlementStatusUpdatedAt(now);
+                ea.setSettlementStatusUpdatedBy(adminUserIdx);
+                expenseApprovalRepository.save(ea);
+            });
+            updated++;
+        }
+        return updated;
+    }
+
+    @Override
+    @Transactional
+    public void submitExpenseApproval(Long idx, Long userIdx) {
+        log.info("사용자 제출 - idx: {}, user: {}", idx, userIdx);
+
+        ExpenseApproval ea = expenseApprovalRepository.findById(idx)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND,
+                        "지출승인서를 찾을 수 없습니다. idx: " + idx));
+
+        if (!ea.getUserIdx().equals(userIdx)) {
+            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "본인 문서만 제출할 수 있습니다.");
+        }
+
+        String current = ea.getSettlementStatus() != null ? ea.getSettlementStatus() : "C1001";
+        // 작성중(C1001) 또는 반려(C1004)일 때만 제출 가능
+        if (!"C1001".equals(current) && !"C1004".equals(current)) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST,
+                    "현재 상태에서는 제출할 수 없습니다. (현재: " + current + ")");
+        }
+
+        ea.setSettlementStatus("C1002"); // 제출완료
+        ea.setSettlementComment(null);   // 기존 미흡 사유 초기화
+        ea.setSettlementStatusUpdatedAt(LocalDateTime.now());
+        ea.setSettlementStatusUpdatedBy(userIdx);
+        expenseApprovalRepository.save(ea);
+    }
+
     // ── private helpers ────────────────────────────────────────────────────
 
     private void validateExpenseDetails(List<ExpenseDetailDTO> details) {
@@ -569,6 +712,24 @@ public class ExpenseApprovalServiceImpl implements ExpenseApprovalService {
                 throw new ResponseStatusException(HttpStatus.BAD_REQUEST,
                         "결제수단은 '개인카드' 또는 '현금'만 허용됩니다. 입력값: " + d.getPaymentMethod());
             }
+        }
+    }
+
+    /** 항목의 날짜/적요가 변경되었을 때 해당 항목의 ITEM_RECEIPT 표시명을 일괄 갱신 */
+    private void renameItemReceiptAttachments(ExpenseDetail detail) {
+        List<ExpenseApprovalAttachment> atts = attachmentRepository
+                .findByExpenseDetailIdxAndDeletedFalseOrderByIdxAsc(detail.getIdx());
+        if (atts.isEmpty()) return;
+
+        String dateStr = detail.getExpenseDate().format(DateTimeFormatter.ofPattern("yyyyMMdd"));
+        String desc = detail.getDescription() != null ? detail.getDescription() : "영수증";
+        String displayBase = "지출승인서_" + dateStr + "_" + desc;
+
+        for (int i = 0; i < atts.size(); i++) {
+            ExpenseApprovalAttachment att = atts.get(i);
+            String oldName = att.getOriginalFilename();
+            String ext = oldName.contains(".") ? oldName.substring(oldName.lastIndexOf('.')) : "";
+            att.setOriginalFilename(displayBase + "_" + (i + 1) + ext);
         }
     }
 

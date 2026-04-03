@@ -474,6 +474,14 @@ div[title]:hover::after {
     color: white;
 }
 
+/* 첨부파일 누락 행 배경 */
+.doc-row.row-missing-attachment {
+    background-color: #fff8f0 !important;
+}
+.doc-row.row-missing-attachment:hover {
+    background-color: #fff3e6 !important;
+}
+
 /* 첨부파일 누락 경고 뱃지 */
 .btn-icon.btn-attach.missing-all,
 .btn-icon.btn-attach.missing-partial,
@@ -513,6 +521,22 @@ div[title]:hover::after {
     0%, 100% { opacity: 1; }
     50% { opacity: 0.4; }
 }
+
+/* 문서 상태 뱃지 (문서함 목록) */
+.doc-status-badge {
+    display: inline-block;
+    padding: 3px 10px;
+    border-radius: 10px;
+    font-size: 11px;
+    font-weight: 600;
+    white-space: nowrap;
+}
+
+.settlement-drafting     { background: #f1f5f9; color: #64748b; }
+.settlement-submitted    { background: #eff6ff; color: #2563eb; }
+.settlement-confirmed    { background: #ecfdf5; color: #059669; }
+.settlement-rejected     { background: #fef2f2; color: #dc2626; }
+.settlement-settled      { background: #f5f3ff; color: #7c3aed; }
 
 /* 상태 뱃지 */
 .status-badge {

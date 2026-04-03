@@ -65,6 +65,23 @@ public class ExpenseApproval {
     @Column(name = "updated_user_idx")
     private Long updatedUserIdx;
 
+    /** 경비정산상태 (C10 코드: C1001=작성중, C1002=제출완료, C1003=제출확인, C1004=반려, C1005=정산완료) */
+    @Builder.Default
+    @Column(name = "settlement_status", length = 10)
+    private String settlementStatus = "C1001";
+
+    /** 관리부 코멘트 (반려 사유 등) */
+    @Column(name = "settlement_comment", columnDefinition = "TEXT")
+    private String settlementComment;
+
+    /** 정산상태 변경일시 */
+    @Column(name = "settlement_status_updated_at")
+    private LocalDateTime settlementStatusUpdatedAt;
+
+    /** 정산상태 변경자 (FK → user.idx) */
+    @Column(name = "settlement_status_updated_by")
+    private Long settlementStatusUpdatedBy;
+
     /** soft delete */
     @Builder.Default
     @Column(name = "deleted", nullable = false)

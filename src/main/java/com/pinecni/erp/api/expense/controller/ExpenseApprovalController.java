@@ -12,6 +12,7 @@ import com.pinecni.erp.entity.ExpenseApproval;
 import com.pinecni.erp.entity.ExpenseApprovalAttachment;
 import com.pinecni.erp.entity.ExpenseDetail;
 import com.pinecni.erp.api.expense.service.ExpenseApprovalService;
+import com.pinecni.erp.constant.CodeConstants;
 import jakarta.servlet.http.HttpSession;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -130,7 +131,10 @@ public class ExpenseApprovalController {
         ExpenseApproval expenseApproval = expenseApprovalService.getExpenseApprovalWithDetails(idx);
 
         if (!expenseApproval.getUserIdx().equals(loginUserIdx)) {
-            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "본인 문서만 조회할 수 있습니다.");
+            Boolean isAdmin = (Boolean) session.getAttribute("isAdmin");
+            if (isAdmin == null || !isAdmin) {
+                throw new ResponseStatusException(HttpStatus.FORBIDDEN, "본인 문서만 조회할 수 있습니다.");
+            }
         }
 
         List<ExpenseApprovalAttachmentDTO> attachments = expenseApprovalService.getAttachments(idx);
@@ -342,6 +346,28 @@ public class ExpenseApprovalController {
         return ResponseEntity.ok(result);
     }
 
+    /**
+     * 사용자별 지출승인서 정산상태 조회
+     * GET /api/approval/expense/settlement-status
+     * 반환: { "idx": { "status": "C1001", "statusName": "작성중", "comment": "..." }, ... }
+     */
+    @GetMapping("/settlement-status")
+    public ResponseEntity<?> getSettlementStatus(HttpSession session) {
+        Long loginUserIdx = getLoginUserIdx(session);
+        List<ExpenseApproval> approvals = expenseApprovalService.getExpenseApprovalsByUser(loginUserIdx);
+        Map<String, Map<String, String>> result = new HashMap<>();
+        for (ExpenseApproval ea : approvals) {
+            String code = ea.getSettlementStatus() != null ? ea.getSettlementStatus() : "C1001";
+            CodeConstants.ExpenseSettlementStatus st = CodeConstants.ExpenseSettlementStatus.fromCodeOrNull(code);
+            Map<String, String> info = new HashMap<>();
+            info.put("status", code);
+            info.put("statusName", st != null ? st.getName() : code);
+            info.put("comment", ea.getSettlementComment() != null ? ea.getSettlementComment() : "");
+            result.put(String.valueOf(ea.getIdx()), info);
+        }
+        return ResponseEntity.ok(result);
+    }
+
     // ── 관리자 전용 API ──────────────────────────────────────────────────
 
     /**
@@ -374,6 +400,68 @@ public class ExpenseApprovalController {
         return ResponseEntity.ok(Map.of("message", "삭제되었습니다."));
     }
 
+    /**
+     * 관리자 - 정산상태 변경
+     * PUT /api/approval/expense/admin/documents/{idx}/status
+     * Body: { "statusCode": "C1003", "comment": "영수증 2건 누락" }
+     */
+    @PutMapping("/admin/documents/{idx}/status")
+    public ResponseEntity<?> updateSettlementStatus(
+            @PathVariable Long idx,
+            @RequestBody Map<String, String> body,
+            HttpSession session) {
+        Boolean isAdmin = (Boolean) session.getAttribute("isAdmin");
+        if (isAdmin == null || !isAdmin) {
+            return ResponseEntity.status(HttpStatus.FORBIDDEN).body(Map.of("error", "관리자 권한이 필요합니다."));
+        }
+        Long adminUserIdx = (Long) session.getAttribute("userIdx");
+        String statusCode = body.get("statusCode");
+        String comment = body.get("comment");
+        expenseApprovalService.updateSettlementStatus(idx, statusCode, comment, adminUserIdx);
+        return ResponseEntity.ok(Map.of("message", "정산상태가 변경되었습니다."));
+    }
+
+    /**
+     * 관리자 - 정산상태 일괄 변경
+     * PUT /api/approval/expense/admin/documents/batch-status
+     * Body: { "idxList": [1,2,3], "statusCode": "C1003", "comment": "" }
+     */
+    @PutMapping("/admin/documents/batch-status")
+    public ResponseEntity<?> batchUpdateSettlementStatus(
+            @RequestBody Map<String, Object> body,
+            HttpSession session) {
+        Boolean isAdmin = (Boolean) session.getAttribute("isAdmin");
+        if (isAdmin == null || !isAdmin) {
+            return ResponseEntity.status(HttpStatus.FORBIDDEN).body(Map.of("error", "관리자 권한이 필요합니다."));
+        }
+        Long adminUserIdx = (Long) session.getAttribute("userIdx");
+
+        @SuppressWarnings("unchecked")
+        List<Number> rawList = (List<Number>) body.get("idxList");
+        if (rawList == null || rawList.isEmpty()) {
+            return ResponseEntity.badRequest().body(Map.of("error", "변경할 문서를 선택해주세요."));
+        }
+        List<Long> idxList = rawList.stream().map(Number::longValue).toList();
+        String statusCode = (String) body.get("statusCode");
+        String comment = (String) body.get("comment");
+
+        int count = expenseApprovalService.batchUpdateSettlementStatus(idxList, statusCode, comment, adminUserIdx);
+        return ResponseEntity.ok(Map.of("message", count + "건의 정산상태가 변경되었습니다.", "count", count));
+    }
+
+    /**
+     * 사용자 - 개인경비청구 제출 (작성중/반려 → 제출완료)
+     * PUT /api/approval/expense/{idx}/submit
+     */
+    @PutMapping("/{idx}/submit")
+    public ResponseEntity<?> submitExpenseApproval(
+            @PathVariable Long idx,
+            HttpSession session) {
+        Long loginUserIdx = getLoginUserIdx(session);
+        expenseApprovalService.submitExpenseApproval(idx, loginUserIdx);
+        return ResponseEntity.ok(Map.of("message", "제출되었습니다."));
+    }
+
     // ── private helpers ────────────────────────────────────────────────────
 
     private Long getLoginUserIdx(HttpSession session) {
@@ -391,6 +479,9 @@ public class ExpenseApprovalController {
                         .collect(Collectors.toList())
                 : List.of();
 
+        String statusCode = entity.getSettlementStatus() != null ? entity.getSettlementStatus() : "C1001";
+        CodeConstants.ExpenseSettlementStatus settlementEnum = CodeConstants.ExpenseSettlementStatus.fromCodeOrNull(statusCode);
+
         return ExpenseApprovalDTO.builder()
                 .idx(entity.getIdx())
                 .userIdx(entity.getUserIdx())
@@ -399,6 +490,11 @@ public class ExpenseApprovalController {
                 .documentNumber(entity.getDocumentNumber())
                 .expenseDetails(detailDTOs)
                 .attachments(attachments != null ? attachments : List.of())
+                .settlementStatus(statusCode)
+                .settlementStatusName(settlementEnum != null ? settlementEnum.getName() : statusCode)
+                .settlementComment(entity.getSettlementComment())
+                .settlementStatusUpdatedAt(entity.getSettlementStatusUpdatedAt())
+                .settlementStatusUpdatedBy(entity.getSettlementStatusUpdatedBy())
                 .createdAt(entity.getCreatedAt())
                 .updatedAt(entity.getUpdatedAt())
                 .createdUserIdx(entity.getCreatedUserIdx())

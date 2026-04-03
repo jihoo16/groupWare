@@ -72,8 +72,7 @@ document.addEventListener('DOMContentLoaded', async function () {
         const res = await fetch(`/api/approval/expense/${idx}`);
         if (res.status === 401) { window.location.href = '/login'; return; }
         if (res.status === 403) {
-            Swal.fire({ icon: 'warning', title: '접근 불가', text: '본인 문서만 조회할 수 있습니다.' })
-                .then(() => history.back());
+            window.location.href = '/error/403';
             return;
         }
         if (res.status === 404) {
@@ -219,7 +218,7 @@ document.addEventListener('DOMContentLoaded', async function () {
                 <i class="fas ${getFileIcon(att.originalFilename)}"></i>
                 <span>${att.originalFilename} <small style="color:#94a3b8;">(${(att.fileSize / 1024).toFixed(1)} KB)</small></span>
                 <button type="button" class="btn-download-file" title="다운로드"><i class="fas fa-download"></i></button>
-                <button type="button" class="btn-remove-file" title="삭제"><i class="fas fa-times"></i></button>
+                ${isReadOnly ? '' : '<button type="button" class="btn-remove-file" title="삭제"><i class="fas fa-times"></i></button>'}
             `;
 
             item.querySelector('.btn-download-file').addEventListener('click', () => {
@@ -273,7 +272,7 @@ document.addEventListener('DOMContentLoaded', async function () {
                         <i class="fas ${getFileIcon(att.originalFilename)}" style="color:#667eea;"></i>
                         <span style="flex:1;font-size:13px;">${att.originalFilename}</span>
                         <a href="/api/approval/expense/attachments/${att.idx}/download" style="color:#667eea;font-size:12px;"><i class="fas fa-download"></i></a>
-                        <button class="swal-delete-att" data-att-idx="${att.idx}" style="background:none;border:none;color:#ef4444;cursor:pointer;font-size:12px;"><i class="fas fa-trash"></i></button>
+                        ${isReadOnly ? '' : `<button class="swal-delete-att" data-att-idx="${att.idx}" style="background:none;border:none;color:#ef4444;cursor:pointer;font-size:12px;"><i class="fas fa-trash"></i></button>`}
                     </div>
                 `;
             });
@@ -315,10 +314,14 @@ document.addEventListener('DOMContentLoaded', async function () {
 
     // 영수증 첨부 버튼 (아직 없는 항목)
     document.querySelectorAll('.btn-upload-receipt').forEach(btn => {
-        btn.addEventListener('click', function() {
-            currentUploadDetailIdx = this.dataset.detailIdx;
-            hiddenInput.click();
-        });
+        if (isReadOnly) {
+            btn.style.display = 'none';
+        } else {
+            btn.addEventListener('click', function() {
+                currentUploadDetailIdx = this.dataset.detailIdx;
+                hiddenInput.click();
+            });
+        }
     });
 
     // 영수증 보기 버튼에서도 추가 업로드 가능하도록 (더블클릭 또는 우클릭 대신 보기 팝업에서 처리)
@@ -422,21 +425,114 @@ document.addEventListener('DOMContentLoaded', async function () {
         });
     }
 
-    setupUpload('signedDocInput', 'signedDocUploadArea', 'DOCUMENT');
+    if (!isReadOnly) {
+        setupUpload('signedDocInput', 'signedDocUploadArea', 'DOCUMENT');
+    } else {
+        // 읽기 전용: 업로드 영역 숨김
+        const uploadArea = document.getElementById('signedDocUploadArea');
+        if (uploadArea) uploadArea.style.display = 'none';
+    }
+
+    // ── 영수증/공식문서 첨부 현황 계산 ──────────────────────────────
+    const totalItems = details.length;
+    const itemsWithReceipt = details.filter(d => (d.attachments || []).length > 0).length;
+    const hasOfficialDoc = (doc.attachments || []).some(a => a.attachmentType === 'DOCUMENT');
+    const allReceiptsComplete = totalItems > 0 && itemsWithReceipt >= totalItems;
+    const canPrint = allReceiptsComplete;
+
+    // ── 영수증 현황 배너 ─────────────────────────────────────────
+    const banner = document.getElementById('receiptStatusBanner');
+    if (banner && totalItems > 0) {
+        banner.style.display = '';
+        if (canPrint) {
+            banner.className = 'receipt-status-banner status-complete';
+            banner.innerHTML = `
+                <i class="fas fa-check-circle"></i>
+                <span>영수증 ${itemsWithReceipt}/${totalItems}건 첨부 완료 — 인쇄할 수 있습니다</span>`;
+        } else {
+            banner.className = 'receipt-status-banner status-incomplete';
+            banner.innerHTML = `
+                <i class="fas fa-exclamation-triangle"></i>
+                <span>영수증 ${totalItems - itemsWithReceipt}건 미첨부 — 모든 항목에 영수증을 첨부해야 인쇄할 수 있습니다</span>`;
+        }
+    }
+
+    // ── 정산상태 배너 ──────────────────────────────────────────────
+    const stCode = doc.settlementStatus || 'C1001';
+    const settlementBanner = document.getElementById('settlementStatusBanner');
+    if (settlementBanner) {
+        const stName = doc.settlementStatusName || '작성중';
+        const stComment = doc.settlementComment || '';
+        const stStyles = {
+            C1001: { cls: 'st-banner-drafting',      icon: 'fas fa-pen' },
+            C1002: { cls: 'st-banner-submitted',     icon: 'fas fa-paper-plane' },
+            C1003: { cls: 'st-banner-confirmed',     icon: 'fas fa-check-circle' },
+            C1004: { cls: 'st-banner-rejected',  icon: 'fas fa-exclamation-circle' },
+            C1005: { cls: 'st-banner-settled',        icon: 'fas fa-coins' },
+        };
+        const style = stStyles[stCode] || stStyles['C1001'];
+        settlementBanner.className = `settlement-status-banner ${style.cls}`;
+
+        let html = `<i class="${style.icon}"></i><span>정산상태: <strong>${stName}</strong></span>`;
+        if (stCode === 'C1004' && stComment) {
+            html += `<div class="st-reject-reason"><i class="fas fa-comment-dots"></i> <strong>반려 사유:</strong> ${stComment}</div>`;
+        }
+        settlementBanner.innerHTML = html;
+        settlementBanner.style.display = '';
+    }
+
+    // 작성중(C1001), 반려(C1004)만 편집 가능 — 나머지(제출완료/제출확인/정산완료)는 읽기 전용
+    const isReadOnly = (stCode !== 'C1001' && stCode !== 'C1004');
 
     // ── 버튼 표시 (API 200 = 본인 문서 확인됨) ───────────────────
-    if (printBtn)  printBtn.style.display  = '';
-    if (editBtn)   editBtn.style.display   = '';
-    if (deleteBtn) deleteBtn.style.display = '';
-
-    // ── 인쇄 ──────────────────────────────────────────────────────
     if (printBtn) {
-        printBtn.addEventListener('click', function () {
+        printBtn.style.display = '';
+        if (canPrint) {
+            printBtn.disabled = false;
+            printBtn.classList.remove('btn-disabled');
+            printBtn.removeAttribute('data-tooltip');
+        } else {
+            printBtn.disabled = true;
+            printBtn.classList.add('btn-disabled');
+            printBtn.setAttribute('data-tooltip', '모든 항목에 영수증(문서/이미지)이 첨부되어야 인쇄할 수 있습니다');
+        }
+    }
+    if (editBtn)   editBtn.style.display   = isReadOnly ? 'none' : '';
+    if (deleteBtn) deleteBtn.style.display = isReadOnly ? 'none' : '';
+
+    // ── 인쇄 (인쇄 후 자동 제출) ─────────────────────────────────
+    if (printBtn) {
+        printBtn.addEventListener('click', async function () {
+            if (this.disabled) return;
+
+            // 작성중/반려 → 인쇄 시 제출완료로 전환됨을 사전 안내
+            if (stCode === 'C1001' || stCode === 'C1004') {
+                const confirm = await Swal.fire({
+                    icon: 'info',
+                    title: '인쇄 및 제출',
+                    html: '인쇄하면 문서가 <strong>제출완료</strong> 상태로 전환되며,<br>이후 내용 수정이 불가합니다.<br><br><small style="color:#64748b;">수정이 필요한 경우 관리부에서 반려 처리 후 가능합니다.</small>',
+                    showCancelButton: true,
+                    confirmButtonText: '인쇄하기',
+                    cancelButtonText: '취소',
+                });
+                if (!confirm.isConfirmed) return;
+            }
+
             if (formWrapper && formWrapper.classList.contains('collapsed')) {
                 formWrapper.classList.remove('collapsed');
                 if (toggleBtn) toggleBtn.classList.add('active');
             }
-            setTimeout(() => window.print(), 300);
+            setTimeout(() => {
+                window.print();
+                // 인쇄 후 작성중/반려이면 자동으로 제출완료로 전환
+                if (stCode === 'C1001' || stCode === 'C1004') {
+                    fetch(`/api/approval/expense/${idx}/submit`, { method: 'PUT' })
+                        .then(res => {
+                            if (res.ok) location.reload();
+                        })
+                        .catch(() => {});
+                }
+            }, 300);
         });
     }
 

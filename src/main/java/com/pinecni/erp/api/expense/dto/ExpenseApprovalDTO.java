@@ -48,6 +48,21 @@ public class ExpenseApprovalDTO {
 
     private Long updatedUserIdx;
 
+    /** 경비정산상태 코드 (C1001~C1005) */
+    private String settlementStatus;
+
+    /** 경비정산상태 한글명 */
+    private String settlementStatusName;
+
+    /** 관리부 코멘트 (반려 사유 등) */
+    private String settlementComment;
+
+    /** 정산상태 변경일시 */
+    private LocalDateTime settlementStatusUpdatedAt;
+
+    /** 정산상태 변경자 user idx */
+    private Long settlementStatusUpdatedBy;
+
     /** soft delete 여부 */
     private Boolean deleted;
 

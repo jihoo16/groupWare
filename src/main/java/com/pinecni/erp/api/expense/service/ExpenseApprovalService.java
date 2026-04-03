@@ -71,4 +71,13 @@ public interface ExpenseApprovalService {
 
     /** 관리자 문서 삭제 (본인 문서 아니어도 가능) */
     void adminDeleteExpenseApproval(Long idx, Long adminUserIdx);
+
+    /** 관리자 - 정산상태 변경 (단건) */
+    void updateSettlementStatus(Long idx, String statusCode, String comment, Long adminUserIdx);
+
+    /** 관리자 - 정산상태 일괄 변경 */
+    int batchUpdateSettlementStatus(List<Long> idxList, String statusCode, String comment, Long adminUserIdx);
+
+    /** 사용자 - 제출 (작성중/반려 → 제출완료) */
+    void submitExpenseApproval(Long idx, Long userIdx);
 }

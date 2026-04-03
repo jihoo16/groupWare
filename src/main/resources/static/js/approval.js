@@ -897,6 +897,15 @@ document.addEventListener('DOMContentLoaded', function() {
         return iconMap[documentType] || 'fa-file-alt';
     }
 
+    // 문서 상태 뱃지 스타일 매핑
+    const DOC_STATUS_STYLES = {
+        C1001: 'settlement-drafting',
+        C1002: 'settlement-submitted',
+        C1003: 'settlement-confirmed',
+        C1004: 'settlement-rejected',
+        C1005: 'settlement-settled',
+    };
+
     // 모든 문서를 합쳐서 렌더링 (approval_documents 기반)
     function renderAllDocuments() {
         const tbody = documentList.querySelector('tbody');
@@ -940,6 +949,13 @@ document.addEventListener('DOMContentLoaded', function() {
                 ? `<button class="btn-icon btn-attach btn-expense-attach" data-id="${docId}" title="첨부파일"><i class="fas fa-paperclip"></i></button>`
                 : '';
 
+            // 상태 뱃지 (statusCode가 있는 문서만)
+            let statusBadge = '-';
+            if (doc.statusCode && doc.statusName) {
+                const stCls = DOC_STATUS_STYLES[doc.statusCode] || '';
+                statusBadge = `<span class="doc-status-badge ${stCls}">${doc.statusName}</span>`;
+            }
+
             tr.innerHTML = `
                 <td>
                     <span class="doc-type">
@@ -948,9 +964,9 @@ document.addEventListener('DOMContentLoaded', function() {
                     </span>
                 </td>
                 <td class="doc-title-cell">
-                    <div class="title-wrap">${doc.title}</div>
-                    <div class="desc-wrap">${truncateText(doc.content, 100)}</div>
+                    <div class="title-wrap">${truncateText(doc.title, 40)}</div>
                 </td>
+                <td style="text-align:center;">${statusBadge}</td>
                 <td>${doc.drafterName || '-'}</td>
                 <td>${doc.drafterDeptName || '-'}</td>
                 <td>${formattedDate}</td>
@@ -991,6 +1007,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 }
             });
         } catch (_) {}
+
     }
 
     // 페이지 로드 시 approval_documents 통합 조회

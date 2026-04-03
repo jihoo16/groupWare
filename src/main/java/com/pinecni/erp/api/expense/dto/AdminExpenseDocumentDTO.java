@@ -36,6 +36,25 @@ public class AdminExpenseDocumentDTO {
     /** 항목별 영수증 첨부 현황 (영수증 있는 항목 수 / 전체 항목 수) */
     private int receiptAttachedCount;
 
+    /** 서명완료 공식문서 첨부 여부 */
+    @Builder.Default
+    private boolean hasOfficialDocument = false;
+
+    /** 경비정산상태 코드 (C1001~C1005) */
+    private String settlementStatus;
+
+    /** 경비정산상태 한글명 */
+    private String settlementStatusName;
+
+    /** 관리부 코멘트 (반려 사유 등) */
+    private String settlementComment;
+
+    /** 정산상태 변경일시 */
+    private LocalDateTime settlementStatusUpdatedAt;
+
+    /** 정산상태 변경자 user idx */
+    private Long settlementStatusUpdatedBy;
+
     /** 지출 항목 목록 (상세 조회 시) */
     @Builder.Default
     private List<ExpenseDetailDTO> expenseDetails = new ArrayList<>();

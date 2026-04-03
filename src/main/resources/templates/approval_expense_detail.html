@@ -82,6 +82,12 @@
                         <span class="total-amount" id="detailTotalAmount">₩ 0</span>
                     </div>
 
+                    <!-- 영수증 첨부 현황 배너 -->
+                    <div class="receipt-status-banner" id="receiptStatusBanner" style="display:none;"></div>
+
+                    <!-- 정산상태 배너 -->
+                    <div class="settlement-status-banner" id="settlementStatusBanner" style="display:none;"></div>
+
                     <!-- 공식 문서 미리보기 토글 -->
                     <div class="document-preview-toggle">
                         <button class="toggle-btn" id="documentFormToggle">
@@ -187,7 +193,7 @@
                     <div class="attachment-section" style="margin-top: 28px;">
                         <h3 class="section-title"><i class="fas fa-paperclip"></i> 첨부파일</h3>
                         <div style="margin-top: 12px;">
-                            <div class="attach-sub-title"><i class="fas fa-file-signature"></i> 공식문서 / 영수증</div>
+                            <div class="attach-sub-title"><i class="fas fa-file-signature"></i> 공식문서 첨부</div>
                             <div class="file-upload-area" id="signedDocUploadArea">
                                 <input type="file" id="signedDocInput" multiple hidden accept="image/*,.pdf">
                                 <label for="signedDocInput" class="file-upload-label">

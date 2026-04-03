@@ -23,7 +23,8 @@ public class CodeConstants {
         WORK_TYPE("C06", "근무형태", 6),
         EMPLOYMENT_STATUS("C07", "재직상태", 7),
         RANK("C08", "직위", 8),
-        TEAM_TYPE("C09", "팀유형", 9);
+        TEAM_TYPE("C09", "팀유형", 9),
+        EXPENSE_SETTLEMENT_STATUS("C10", "경비정산상태", 10);
 
         private final String code;
         private final String name;
@@ -503,6 +504,52 @@ public class CodeConstants {
                 }
             }
             throw new IllegalArgumentException("Unknown team type code: " + code);
+        }
+    }
+
+    /**
+     * 경비정산상태 코드 (C10)
+     * 개인경비청구 관리부 정산 처리 상태
+     *
+     * 흐름: 작성중 → 제출완료 → 제출확인 / 반려 → (보완 후 재제출) → 정산완료
+     */
+    public enum ExpenseSettlementStatus {
+        DRAFTING     ("C1001", "작성중",   "DRAFTING",      1),
+        SUBMITTED    ("C1002", "제출완료", "SUBMITTED",      2),
+        CONFIRMED    ("C1003", "제출확인", "CONFIRMED",      3),
+        REJECTED     ("C1004", "반려",     "REJECTED",       4),
+        SETTLED      ("C1005", "정산완료", "SETTLED",        5);
+
+        private final String code;
+        private final String name;
+        private final String nameEn;
+        private final int sortOrder;
+
+        ExpenseSettlementStatus(String code, String name, String nameEn, int sortOrder) {
+            this.code = code;
+            this.name = name;
+            this.nameEn = nameEn;
+            this.sortOrder = sortOrder;
+        }
+
+        public String getCode() { return code; }
+        public String getName() { return name; }
+        public String getNameEn() { return nameEn; }
+        public int getSortOrder() { return sortOrder; }
+
+        public static ExpenseSettlementStatus fromCode(String code) {
+            for (ExpenseSettlementStatus status : values()) {
+                if (status.code.equals(code)) return status;
+            }
+            throw new IllegalArgumentException("Unknown expense settlement status code: " + code);
+        }
+
+        public static ExpenseSettlementStatus fromCodeOrNull(String code) {
+            if (code == null) return null;
+            for (ExpenseSettlementStatus status : values()) {
+                if (status.code.equals(code)) return status;
+            }
+            return null;
         }
     }
 }

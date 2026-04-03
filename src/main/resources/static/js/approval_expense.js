@@ -2559,12 +2559,23 @@ document.addEventListener('DOMContentLoaded', async function() {
 
         if (!hasCompleteItem) allFilled = false;
 
+        // 영수증 첨부 검증 — 각 항목에 영수증이 1개 이상 있어야 함
+        let allReceiptsAttached = true;
+        expenseItems.forEach(item => {
+            const idx = item.dataset.itemIndex;
+            const newFiles = (itemReceiptFiles[idx] || []).length;
+            const serverFiles = item.querySelectorAll('.file-chip-server').length;
+            if (newFiles + serverFiles === 0) allReceiptsAttached = false;
+        });
 
-        // 인쇄 버튼 노출 제어 (저장 버튼은 상시 표시)
-        if (printBtnEl) {
-            printBtnEl.style.display = allFilled ? 'inline-flex' : 'none';
-        }
-        // 인쇄 버튼이 보일 때는 저장 버튼 툴팁 숨김
+        // 공식문서 첨부 검증
+        const hasOfficialDoc = signedDocFiles.length > 0
+            || document.querySelectorAll('#signedDocFileList .file-chip-server').length > 0;
+
+        const canPrint = allFilled && allReceiptsAttached && hasOfficialDoc;
+
+        // 인쇄 버튼 — 작성/수정 페이지에서는 항상 disabled (HTML에서 세팅됨)
+        // 저장 버튼 툴팁
         const tooltipEl = document.getElementById('submitHoverTooltip');
         if (tooltipEl) {
             tooltipEl.style.display = allFilled ? 'none' : '';
@@ -2596,16 +2607,11 @@ document.addEventListener('DOMContentLoaded', async function() {
         validateRequiredFields();
     };
 
-    // 인쇄 버튼
+    // 인쇄 버튼 — 작성/수정 페이지에서는 비활성 (상세 페이지에서만 인쇄 가능)
     const printBtn = document.getElementById('printBtn');
     if (printBtn) {
         printBtn.addEventListener('click', function() {
-            // 미리보기가 닫혀있으면 열고 인쇄
-            if (documentFormWrapper && documentFormWrapper.classList.contains('collapsed')) {
-                documentFormWrapper.classList.remove('collapsed');
-                if (documentFormToggle) documentFormToggle.classList.add('active');
-            }
-            setTimeout(() => window.print(), 200);
+            if (this.disabled) return;
         });
     }
 
@@ -2650,14 +2656,18 @@ document.addEventListener('DOMContentLoaded', async function() {
             });
             this.value = '';
             rerenderItemReceipts(itemEl, idx);
+            validateRequiredFields();
         });
     }
 
-    /** 항목 내 영수증 파일 목록 렌더링 */
+    /** 항목 내 영수증 파일 목록 렌더링 (서버 기존 파일 보존) */
     function rerenderItemReceipts(itemEl, idx) {
         const listEl = itemEl.querySelector('.item-receipt-list');
         if (!listEl) return;
-        listEl.innerHTML = '';
+
+        // 서버에서 받아온 기존 영수증(.file-chip-server)은 보존, 새 파일 칩만 제거
+        listEl.querySelectorAll('.file-chip:not(.file-chip-server)').forEach(el => el.remove());
+
         const files = itemReceiptFiles[idx] || [];
         files.forEach((file, fileIdx) => {
             const chip = document.createElement('span');
@@ -2670,13 +2680,10 @@ document.addEventListener('DOMContentLoaded', async function() {
             chip.querySelector('.btn-remove-chip').addEventListener('click', () => {
                 itemReceiptFiles[idx].splice(fileIdx, 1);
                 rerenderItemReceipts(itemEl, idx);
+                validateRequiredFields();
             });
             listEl.appendChild(chip);
         });
-
-        // 서버에서 받아온 기존 영수증도 표시 (수정 모드)
-        const serverItems = listEl.querySelectorAll('.file-chip-server');
-        // 이미 렌더링된 서버 파일은 유지
     }
 
     /** 수정 모드 - 서버에서 받아온 기존 첨부파일을 하단에 렌더링 (DOCUMENT + RECEIPT) */
@@ -2705,6 +2712,7 @@ document.addEventListener('DOMContentLoaded', async function() {
             item.querySelector('.btn-remove-file').addEventListener('click', () => {
                 deletedAttachmentIds.push(att.idx);
                 item.remove();
+                validateRequiredFields();
             });
             listEl.appendChild(item);
         });
@@ -2732,6 +2740,7 @@ document.addEventListener('DOMContentLoaded', async function() {
             chip.querySelector('.btn-remove-chip').addEventListener('click', () => {
                 deletedAttachmentIds.push(att.idx);
                 chip.remove();
+                validateRequiredFields();
             });
             listEl.appendChild(chip);
         });
@@ -2758,6 +2767,7 @@ document.addEventListener('DOMContentLoaded', async function() {
                 filesArr.push(file);
             });
             rerender();
+            validateRequiredFields();
         }
 
         inputEl.addEventListener('change', function() {
@@ -2801,6 +2811,7 @@ document.addEventListener('DOMContentLoaded', async function() {
             item.querySelector('.btn-remove-file').addEventListener('click', () => {
                 filesArr.splice(index, 1);
                 rerender();
+                validateRequiredFields();
             });
             listEl.appendChild(item);
         });
