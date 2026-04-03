@@ -373,6 +373,16 @@ public class Controller {
         return "basic-info";
     }
 
+    @GetMapping("/basic-info/code-detail")
+    public String codeDetail(HttpSession session) {
+        Boolean isDev = (Boolean) session.getAttribute("isDev");
+        if (isDev == null || !isDev) {
+            log.warn("개발자가 아닌 사용자의 상세코드 관리 접근 시도");
+            return "redirect:/nope";
+        }
+        return "code-detail";
+    }
+
     @GetMapping("/dev/code-groups")
     public String devCodeGroups(HttpSession session) {
         Boolean isDev = (Boolean) session.getAttribute("isDev");
