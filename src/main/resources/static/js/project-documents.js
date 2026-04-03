@@ -652,10 +652,45 @@ let text;
         return `<span class="title-text" title="${text}">${text}</span>`;
     }
 
+    // 연구비증빙 첨부파일 누락 시 행 배경 클래스 반환
+    function getRowMissingClass(doc) {
+        const receiptTypes = ['C0403', 'C0404', 'C0405', 'C0406', 'C0407', 'C0408'];
+        if (!receiptTypes.includes(doc.documentType)) return '';
+
+        const atts = doc.attachments || [];
+        const isTripMeeting = doc.documentType === 'C0405';
+        const isPurchase = doc.documentType === 'C0407' || doc.documentType === 'C0408';
+        const isEquipment = doc.documentType === 'C0408';
+
+        let checks;
+        if (isTripMeeting) {
+            checks = [
+                atts.some(a => a.attachmentType === 'MEETING_RECEIPT'),
+                atts.some(a => a.attachmentType === 'MEETING_DOCUMENT'),
+                atts.some(a => a.attachmentType === 'TRIP_RECEIPT'),
+                atts.some(a => a.attachmentType === 'TRIP_DOCUMENT'),
+            ];
+        } else if (isPurchase) {
+            checks = [
+                atts.some(a => a.attachmentType === 'RECEIPT'),
+                atts.some(a => a.attachmentType === 'DOCUMENT'),
+            ];
+            if (isEquipment) checks.push(atts.some(a => a.attachmentType === 'ESTIMATE'));
+        } else {
+            checks = [
+                atts.some(a => a.attachmentType !== 'DOCUMENT'),
+                atts.some(a => a.attachmentType === 'DOCUMENT'),
+            ];
+        }
+
+        const filled = checks.filter(Boolean).length;
+        return filled < checks.length ? ' row-missing-attachment' : '';
+    }
+
     // 문서 행 생성
     function createDocumentRow(doc, keyword = '') {
         const tr = document.createElement('tr');
-        tr.className = 'doc-row';
+        tr.className = 'doc-row' + getRowMissingClass(doc);
         tr.setAttribute('data-category', getCategoryFromDocumentType(doc.documentType));
         tr.setAttribute('data-created-at', doc.createdAt);
         tr.setAttribute('data-event-date', doc.eventDate || doc.createdAt);
