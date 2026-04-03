@@ -302,6 +302,10 @@ public class ApprovalDocumentServiceImpl implements ApprovalDocumentService {
         } else if (CodeConstants.DocumentType.EXPENSE_APPROVAL.getCode().equals(documentType)) {
             expenseApprovalRepository.findByDocumentIdx(document.getIdx()).ifPresent(expense -> {
                 dto.setSourceDocumentId(expense.getIdx());
+                String stCode = expense.getSettlementStatus() != null ? expense.getSettlementStatus() : "C1001";
+                CodeConstants.ExpenseSettlementStatus st = CodeConstants.ExpenseSettlementStatus.fromCodeOrNull(stCode);
+                dto.setStatusCode(stCode);
+                dto.setStatusName(st != null ? st.getName() : stCode);
             });
         } else if (CodeConstants.DocumentType.EXPENSE_REQUEST.getCode().equals(documentType)) {
             expenseRequisitionRepository.findByDocumentIdxAndIsDeletedFalse(document.getIdx()).ifPresent(requisition -> {
