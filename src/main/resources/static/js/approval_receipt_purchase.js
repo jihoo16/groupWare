@@ -1240,19 +1240,63 @@ document.addEventListener('DOMContentLoaded', async function() {
     function validateForm() {
         validateRequiredFields();
 
-        const valid = !document.querySelector(
-            '.form-input.error, .form-textarea.error, .item-table.error, .item-desc.error, .item-payment.error'
-        );
-
-        if (!valid) {
-            const firstError = document.querySelector('.form-input.error, .form-textarea.error, .item-desc.error, .item-payment.error');
-            if (firstError) firstError.scrollIntoView({ behavior: 'smooth', block: 'center' });
-            setTimeout(() => {
-                Swal.fire({ icon: 'warning', title: '입력 오류', text: '필수 항목을 모두 입력해주세요.' });
-            }, 150);
+        // 과제명
+        if (!document.getElementById('selectedProjectIdx').value) {
+            document.getElementById('pu_project')?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            Swal.fire({ icon: 'warning', title: '과제명을 선택해주세요', text: '과제명은 필수 입력 항목입니다.' });
+            return false;
         }
 
-        return valid;
+        // 사용카드
+        if (!document.getElementById('selectedCardIdx').value) {
+            document.getElementById('pu_card')?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            Swal.fire({ icon: 'warning', title: '사용카드를 선택해주세요', text: '사용카드는 필수 입력 항목입니다.' });
+            return false;
+        }
+
+        // 신청자
+        if (!document.getElementById('selectedApplicantIdx').value) {
+            document.getElementById('pu_applicant')?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            Swal.fire({ icon: 'warning', title: '신청자를 선택해주세요', text: '신청자는 필수 입력 항목입니다.' });
+            return false;
+        }
+
+        // 품의 내용
+        const contentInput = document.getElementById('pu_content');
+        if (!contentInput?.value?.trim()) {
+            contentInput?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            Swal.fire({ icon: 'warning', title: '품의 내용을 입력해주세요', text: '품의 내용은 필수 입력 항목입니다.' });
+            return false;
+        }
+
+        // 품의 내역서 행 존재 여부
+        const rows = itemTableBody.querySelectorAll('tr');
+        if (rows.length === 0) {
+            itemTableBody.closest('.item-table-wrapper')?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            Swal.fire({ icon: 'warning', title: '품의 내역을 입력해주세요', text: '항목 추가 버튼을 눌러 내역을 입력해주세요.' });
+            return false;
+        }
+
+        // 적요 (각 행의 item-desc)
+        for (const tr of rows) {
+            const descEl = tr.querySelector('.item-desc');
+            if (!descEl?.value?.trim()) {
+                descEl?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                Swal.fire({ icon: 'warning', title: '적요를 입력해주세요', text: '품의 내역서의 적요는 필수 입력 항목입니다.' });
+                return false;
+            }
+        }
+
+        // 총 결제금액 (행별 item-payment 합산이 0이면 오류)
+        const totalPaymentEl = document.getElementById('totalPaymentAmount');
+        const totalPayment = parseNumber(totalPaymentEl?.textContent);
+        if (!totalPayment || totalPayment <= 0) {
+            totalPaymentEl?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            Swal.fire({ icon: 'warning', title: '총 결제금액을 입력해주세요', text: '품의 내역서에 결제금액을 입력해주세요.' });
+            return false;
+        }
+
+        return true;
     }
 
     // ============================================
