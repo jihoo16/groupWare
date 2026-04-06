@@ -1298,7 +1298,7 @@ document.addEventListener('DOMContentLoaded', async function() {
     function validateForm() {
         validateRequiredFields();
 
-        // 1) .error 클래스 검증
+        // 1) .error 클래스 검증 (레거시 catch-all)
         const hasError = document.querySelector(
             '.form-input.error, .form-textarea.error, .item-table.error, .item-desc.error, .item-payment.error'
         );
@@ -1311,7 +1311,55 @@ document.addEventListener('DOMContentLoaded', async function() {
             return false;
         }
 
-        // 2) 필수 필드 비어있는지 검증 (위→아래 순서로 첫 번째 빈 필드에 포커스)
+        // 2) 필드별 개별 검증 (위→아래 순서, 사용자 친화 메시지)
+        // 과제명
+        if (!document.getElementById('selectedProjectIdx').value) {
+            document.getElementById('pu_project')?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            Swal.fire({ icon: 'warning', title: '과제명을 선택해주세요', text: '과제명은 필수 입력 항목입니다.' });
+            return false;
+        }
+
+        // 사용카드
+        if (!document.getElementById('selectedCardIdx').value) {
+            document.getElementById('pu_card')?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            Swal.fire({ icon: 'warning', title: '사용카드를 선택해주세요', text: '사용카드는 필수 입력 항목입니다.' });
+            return false;
+        }
+
+        // 신청자
+        if (!document.getElementById('selectedApplicantIdx').value) {
+            document.getElementById('pu_applicant')?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            Swal.fire({ icon: 'warning', title: '신청자를 선택해주세요', text: '신청자는 필수 입력 항목입니다.' });
+            return false;
+        }
+
+        // 품의 내용
+        const contentInput = document.getElementById('pu_content');
+        if (!contentInput?.value?.trim()) {
+            contentInput?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            Swal.fire({ icon: 'warning', title: '품의 내용을 입력해주세요', text: '품의 내용은 필수 입력 항목입니다.' });
+            return false;
+        }
+
+        // 품의 내역서 행 존재 여부
+        const rows = itemTableBody.querySelectorAll('tr');
+        if (rows.length === 0) {
+            itemTableBody.closest('.item-table-wrapper')?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            Swal.fire({ icon: 'warning', title: '품의 내역을 입력해주세요', text: '항목 추가 버튼을 눌러 내역을 입력해주세요.' });
+            return false;
+        }
+
+        // 적요 (각 행의 item-desc)
+        for (const tr of rows) {
+            const descEl = tr.querySelector('.item-desc');
+            if (!descEl?.value?.trim()) {
+                descEl?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                Swal.fire({ icon: 'warning', title: '적요를 입력해주세요', text: '품의 내역서의 적요는 필수 입력 항목입니다.' });
+                return false;
+            }
+        }
+
+        // 3) 남은 필수 필드(.field-empty) 검증 - 품의일자·수량 등 상기 개별 검증에서 누락된 항목 대응
         const firstEmpty = document.querySelector(
             '.form-input.field-empty, .form-textarea.field-empty, .item-desc.field-empty, .item-qty.field-empty, .item-payment.field-empty'
         );
@@ -1323,7 +1371,16 @@ document.addEventListener('DOMContentLoaded', async function() {
             return false;
         }
 
-        // 3) 연구비이체 선택 시 통장사본 필수 검증 (가장 하단이므로 마지막에 체크)
+        // 총 결제금액 (행별 item-payment 합산이 0이면 오류)
+        const totalPaymentEl = document.getElementById('totalPaymentAmount');
+        const totalPayment = parseNumber(totalPaymentEl?.textContent);
+        if (!totalPayment || totalPayment <= 0) {
+            totalPaymentEl?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            Swal.fire({ icon: 'warning', title: '총 결제금액을 입력해주세요', text: '품의 내역서에 결제금액을 입력해주세요.' });
+            return false;
+        }
+
+        // 4) 연구비이체 선택 시 통장사본 필수 검증 (가장 하단이므로 마지막에 체크)
         const isTransfer = document.querySelector('input[name="paymentType"]:checked')?.value === 'transfer';
         if (isTransfer) {
             const hasBankCopy = selectedBankCopyFiles.length > 0 || existingBankCopyAttachments.length > 0;

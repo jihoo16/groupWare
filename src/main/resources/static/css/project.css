@@ -2276,6 +2276,7 @@ body:has(.project-form-footer) .main-content {
     padding: 24px;
     padding-bottom: 0;
     overflow-x: auto;
+    margin-bottom: 50px;
 }
 
 .project-table {
