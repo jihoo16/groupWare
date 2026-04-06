@@ -297,6 +297,7 @@ public class ApprovalDocumentServiceImpl implements ApprovalDocumentService {
                     purposeText = purchase.getDocumentTitle();
                 }
                 dto.setPurpose(purposeText);
+                dto.setPaymentType(purchase.getPaymentType());
                 dto.setAttachments(buildPurchaseAttachments(purchase.getIdx()));
             });
         } else if (CodeConstants.DocumentType.EXPENSE_APPROVAL.getCode().equals(documentType)) {
@@ -786,6 +787,7 @@ public class ApprovalDocumentServiceImpl implements ApprovalDocumentService {
                 .amount(purchase.getTotalAmount())
                 .projectIdx(purchase.getProjectIdx())
                 .eventDate(purchase.getApprovalDate())
+                .paymentType(purchase.getPaymentType())
                 .build();
 
         String purposeText = purchase.getDocumentContent();

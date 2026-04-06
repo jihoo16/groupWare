@@ -43,4 +43,5 @@ public class ApprovalDocumentDTO {
     private List<Long> meetingSessionIds;            // 출장+회의 세션 PK 목록 (displayOrder 오름차순)
     private String statusCode;                       // 상태 코드 (지출승인서: C1001~C1005 등)
     private String statusName;                       // 상태 한글명
+    private String paymentType;                      // 지급종류 (재료비/장비비: card, transfer)
 }

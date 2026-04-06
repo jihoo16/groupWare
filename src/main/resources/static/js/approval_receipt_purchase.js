@@ -132,9 +132,7 @@ document.addEventListener('DOMContentLoaded', async function() {
 
         paymentEl.addEventListener('input', function() {
             this.value = formatNumberInput(this.value);
-            this.classList.toggle('field-empty', parseNumber(this.value) <= 0);
             recalcFromPayment();
-            validateRequiredFields();
         });
 
         taxtypeEl.addEventListener('change', function() {
@@ -145,7 +143,6 @@ document.addEventListener('DOMContentLoaded', async function() {
         supplyEl.addEventListener('input', function() {
             this.value = formatNumberInput(this.value);
             recalcFromSupply();
-            updateOfficialDocument();
         });
 
         // 세액 — 값 있을 때만 편집 가능, 공급가액 = 결제금액 - 세액
@@ -155,12 +152,8 @@ document.addEventListener('DOMContentLoaded', async function() {
             const tax     = parseNumber(this.value);
             supplyEl.value = (payment - tax) >= 0 ? (payment - tax).toLocaleString() : '0';
             updateItemTotals();
-            updateOfficialDocument();
         });
-        tr.querySelector('.item-qty').addEventListener('input', function() {
-            this.classList.toggle('field-empty', !this.value || parseInt(this.value) <= 0);
-            updateItemTotals();
-        });
+        tr.querySelector('.item-qty').addEventListener('input', updateItemTotals);
         const dateInput = tr.querySelector('.item-date');
         const approvalDate = document.getElementById('pu_approval_date').value || '';
         dateInput.value = approvalDate;
@@ -169,11 +162,7 @@ document.addEventListener('DOMContentLoaded', async function() {
         dateInput.addEventListener('click', function() {
             try { this.showPicker(); } catch(e) {}
         });
-        tr.querySelector('.item-desc').addEventListener('input', function() {
-            this.classList.toggle('field-empty', !this.value.trim());
-            updateOfficialDocument();
-            validateRequiredFields();
-        });
+        tr.querySelector('.item-desc').addEventListener('input', updateOfficialDocument);
         tr.querySelector('.item-remark').addEventListener('input', updateOfficialDocument);
         itemTableBody.appendChild(tr);
         updateItemTotals();
@@ -183,8 +172,6 @@ document.addEventListener('DOMContentLoaded', async function() {
         const tr = btn.closest('tr');
         tr.remove();
         updateItemTotals();
-        updateOfficialDocument();
-        validateRequiredFields();
     };
 
     // ============================================
@@ -201,12 +188,20 @@ document.addEventListener('DOMContentLoaded', async function() {
     setupFileUpload();
     setupToggle();
     setupProjectInput();
-    setupPaymentTypeChange();
-    toggleBankCopySection(); // 초기 그리드 열 수 + 통장사본 영역 설정
 
     // 수정 모드 확인
     const urlParams = new URLSearchParams(window.location.search);
     const documentIdx = urlParams.get('documentIdx');
+
+    // 신규 작성 모드: 지급종류 기본값을 '연구비카드'로 강제 설정 (BFCache 복원 방지)
+    if (!documentIdx) {
+        const defaultCardRadio = document.querySelector('input[name="paymentType"][value="card"]');
+        if (defaultCardRadio) defaultCardRadio.checked = true;
+    }
+
+    setupPaymentTypeChange();
+    toggleBankCopySection(); // 초기 그리드 열 수 + 통장사본 영역 설정
+
     if (documentIdx) {
         isEditMode = true;
         editingIdx = documentIdx;
@@ -215,11 +210,6 @@ document.addEventListener('DOMContentLoaded', async function() {
 
     // 데이터 로드
     await Promise.all([loadEmployees(), loadMyProjects()]);
-
-    // 신규 작성 모드: 초기 필수 필드 강조
-    if (!documentIdx) {
-        validateRequiredFields();
-    }
 
     // ============================================
     // 오늘 날짜 기본값
@@ -450,7 +440,6 @@ document.addEventListener('DOMContentLoaded', async function() {
                 await setDefaultApplicant();
                 closeProjectModal();
                 updateOfficialDocument();
-                validateRequiredFields();
             });
             projectListEl.appendChild(item);
         });
@@ -499,7 +488,6 @@ document.addEventListener('DOMContentLoaded', async function() {
                     selectedCard = projectCards[0];
                     const puCard = document.getElementById('pu_card');
                     puCard.value = selectedCard.cardName || selectedCard.cardAlias || selectedCard.cardNumber || '카드';
-                    puCard.classList.remove('field-empty');
                     document.getElementById('selectedCardIdx').value = selectedCard.idx;
                 } else {
                     selectedCard = null;
@@ -541,11 +529,9 @@ document.addEventListener('DOMContentLoaded', async function() {
                 selectedCard = card;
                 const puCard = document.getElementById('pu_card');
                 puCard.value = cardName;
-                puCard.classList.remove('field-empty');
                 document.getElementById('selectedCardIdx').value = card.idx;
                 closeCardModal();
                 updateOfficialDocument();
-                validateRequiredFields();
             });
             container.appendChild(item);
         });
@@ -613,7 +599,6 @@ document.addEventListener('DOMContentLoaded', async function() {
                 renderCardList(projectCards);
                 const cardSearchEl = document.getElementById('cardSearch');
                 if (cardSearchEl) cardSearchEl.value = '';
-                validateRequiredFields();
             });
         });
     }
@@ -762,7 +747,6 @@ document.addEventListener('DOMContentLoaded', async function() {
                 document.getElementById('selectedApplicantIdx').value = member.id;
                 closeApplicantModal();
                 updateOfficialDocument();
-                validateRequiredFields();
             });
             container.appendChild(item);
         });
@@ -830,7 +814,6 @@ document.addEventListener('DOMContentLoaded', async function() {
                 renderApplicantList(getProjectMembers());
                 const applicantSearchEl = document.getElementById('applicantSearch');
                 if (applicantSearchEl) applicantSearchEl.value = '';
-                validateRequiredFields();
             });
         });
     }
@@ -905,7 +888,6 @@ document.addEventListener('DOMContentLoaded', async function() {
         document.getElementById('pu_amount').value = totalPayment > 0 ? totalPayment.toLocaleString() + '원' : '';
 
         updateOfficialDocument();
-        if (typeof validateRequiredFields === 'function') validateRequiredFields();
     }
 
     function collectItems() {
@@ -984,8 +966,8 @@ document.addEventListener('DOMContentLoaded', async function() {
         // 품의 내역서 공식문서 테이블 업데이트
         updateDocItemTable();
 
-        // 인쇄 버튼 표시 여부
-        checkPrintButton();
+        // 인쇄 버튼 표시 여부 (필수필드 검증과 동일한 로직 사용)
+        validateRequiredFields();
     }
 
     function updateDocItemTable() {
@@ -1041,20 +1023,6 @@ document.addEventListener('DOMContentLoaded', async function() {
         if (!dateStr) return '';
         const d = new Date(dateStr);
         return `${d.getFullYear()}/${String(d.getMonth() + 1).padStart(2, '0')}/${String(d.getDate()).padStart(2, '0')}`;
-    }
-
-    function checkPrintButton() {
-        const hasProject = !!document.getElementById('selectedProjectIdx').value;
-        const hasApplicant = !!document.getElementById('selectedApplicantIdx').value;
-        const hasDate = !!document.getElementById('pu_approval_date').value;
-        const hasContent = !!document.getElementById('pu_content').value.trim();
-        const hasItems = collectItems().length > 0;
-
-        if (hasProject && hasApplicant && hasDate && hasContent && hasItems) {
-            printBtn.style.display = 'flex';
-        } else {
-            printBtn.style.display = 'none';
-        }
     }
 
     // 폼 입력 change/input 이벤트 → 공식문서 업데이트
@@ -1330,19 +1298,46 @@ document.addEventListener('DOMContentLoaded', async function() {
     function validateForm() {
         validateRequiredFields();
 
-        const valid = !document.querySelector(
+        // 1) .error 클래스 검증
+        const hasError = document.querySelector(
             '.form-input.error, .form-textarea.error, .item-table.error, .item-desc.error, .item-payment.error'
         );
-
-        if (!valid) {
+        if (hasError) {
             const firstError = document.querySelector('.form-input.error, .form-textarea.error, .item-desc.error, .item-payment.error');
             if (firstError) firstError.scrollIntoView({ behavior: 'smooth', block: 'center' });
             setTimeout(() => {
                 Swal.fire({ icon: 'warning', title: '입력 오류', text: '필수 항목을 모두 입력해주세요.' });
             }, 150);
+            return false;
         }
 
-        return valid;
+        // 2) 필수 필드 비어있는지 검증 (위→아래 순서로 첫 번째 빈 필드에 포커스)
+        const firstEmpty = document.querySelector(
+            '.form-input.field-empty, .form-textarea.field-empty, .item-desc.field-empty, .item-qty.field-empty, .item-payment.field-empty'
+        );
+        if (firstEmpty) {
+            firstEmpty.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            setTimeout(() => {
+                Swal.fire({ icon: 'warning', title: '입력 오류', text: '필수 항목을 모두 입력해주세요.' });
+            }, 150);
+            return false;
+        }
+
+        // 3) 연구비이체 선택 시 통장사본 필수 검증 (가장 하단이므로 마지막에 체크)
+        const isTransfer = document.querySelector('input[name="paymentType"]:checked')?.value === 'transfer';
+        if (isTransfer) {
+            const hasBankCopy = selectedBankCopyFiles.length > 0 || existingBankCopyAttachments.length > 0;
+            if (!hasBankCopy) {
+                const bankCopyArea = document.getElementById('bankCopyUploadArea');
+                if (bankCopyArea) bankCopyArea.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                setTimeout(() => {
+                    Swal.fire({ icon: 'warning', title: '통장사본 필요', text: '연구비이체 시 거래처 통장사본을 첨부해주세요.' });
+                }, 150);
+                return false;
+            }
+        }
+
+        return true;
     }
 
     // ============================================
@@ -1440,15 +1435,6 @@ document.addEventListener('DOMContentLoaded', async function() {
             printBtn.style.display = allFilled ? 'inline-flex' : 'none';
         }
     }
-
-    // 필수 입력 필드 - 입력/변경 시 실시간 검증
-    ['pu_approval_date', 'pu_content'].forEach(id => {
-        const el = document.getElementById(id);
-        if (el) {
-            el.addEventListener('input', validateRequiredFields);
-            el.addEventListener('change', validateRequiredFields);
-        }
-    });
 
     // 품의일자 변경 시 모든 항목 날짜의 max 갱신
     document.getElementById('pu_approval_date')?.addEventListener('change', function() {
@@ -1575,7 +1561,6 @@ document.addEventListener('DOMContentLoaded', async function() {
             if (card) {
                 const puCard = document.getElementById('pu_card');
                 puCard.value = card.cardAlias || card.cardNumber || '카드';
-                puCard.classList.remove('field-empty');
             }
         }
 
@@ -1673,13 +1658,8 @@ document.addEventListener('DOMContentLoaded', async function() {
     }
 
 
-    // 초기 공식문서 업데이트
+    // 초기 공식문서 업데이트 (내부에서 validateRequiredFields 호출되어 필수 필드 강조까지 처리)
     updateOfficialDocument();
-
-    // 신규 작성 시 필수 필드 빨간색 표시
-    if (!isEditMode) {
-        validateRequiredFields();
-    }
 
     // ============================================
     // 템플릿 사이드바 접기/펼치기

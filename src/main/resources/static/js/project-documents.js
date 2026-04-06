@@ -676,6 +676,7 @@ let text;
                 atts.some(a => a.attachmentType === 'DOCUMENT'),
             ];
             if (isEquipment) checks.push(atts.some(a => a.attachmentType === 'ESTIMATE'));
+            if (doc.paymentType === 'transfer') checks.push(atts.some(a => a.attachmentType === 'BANK_COPY'));
         } else {
             checks = [
                 atts.some(a => a.attachmentType !== 'DOCUMENT'),
@@ -893,6 +894,7 @@ let text;
     let pendingReceiptFiles = [];          // 저장 전 추가할 영수증 파일 (RCM/RCT/RCO/Purchase)
     let pendingDocumentFiles = [];         // 저장 전 추가할 공식문서 파일 (RCM/RCT/RCO/Purchase)
     let pendingEstimateFiles = [];         // 저장 전 추가할 견적서 파일 (장비비 전용)
+    let pendingBankCopyFiles = [];         // 저장 전 추가할 통장사본 파일 (연구비이체 전용)
     let pendingMeetingReceiptFilesBySession  = []; // RCTM 전용: [[s0 파일들], [s1 파일들], ...]
     let pendingMeetingDocumentFilesBySession = []; // RCTM 전용: [[s0 파일들], [s1 파일들], ...]
     let pendingTripReceiptFiles  = [];             // RCTM 출장 전용
@@ -971,6 +973,7 @@ let text;
             .att-badge-receipt { background: #fef9c3; color: #a16207; }
             .att-badge-document { background: #eff6ff; color: #1d4ed8; }
             .att-badge-estimate { background: #f0fdf4; color: #15803d; }
+            .att-badge-bank { background: #faf5ff; color: #7c3aed; }
             .att-existing-list { margin-bottom: 10px; }
             .att-file-row {
                 display: flex;
@@ -1136,6 +1139,7 @@ let text;
         if (attachmentModalEl) attachmentModalEl.style.display = 'none';
         pendingReceiptFiles = [];
         pendingDocumentFiles = [];
+        pendingBankCopyFiles = [];
         pendingMeetingReceiptFilesBySession  = [];
         pendingMeetingDocumentFilesBySession = [];
         pendingTripReceiptFiles  = [];
@@ -1147,6 +1151,7 @@ let text;
         pendingReceiptFiles = [];
         pendingDocumentFiles = [];
         pendingEstimateFiles = [];
+        pendingBankCopyFiles = [];
         // 세션 수만큼 빈 배열 준비 (renderModalContent에서 setupDropZone이 참조)
         const sessionCount = (doc.meetingSessionCount || 1);
         pendingMeetingReceiptFilesBySession  = Array.from({ length: sessionCount }, () => []);
@@ -1247,6 +1252,7 @@ let text;
             setupDropZone('dzTripReceipt',  'inputTripReceipt',  'pendingTripReceipt',  pendingTripReceiptFiles);
             setupDropZone('dzTripDocument', 'inputTripDocument', 'pendingTripDocument', pendingTripDocumentFiles);
         } else if (isPurchase) {
+            const isTransfer = doc.paymentType === 'transfer';
             const withDownloadUrl = (attachments) => attachments.map(a => ({
                 ...a,
                 downloadUrl: `/api/receipt-purchases/attachments/${a.idx}/download`
@@ -1255,12 +1261,16 @@ let text;
             const existingReceipt   = withDownloadUrl((doc.attachments || []).filter(a => a.attachmentType === 'RECEIPT'));
             const existingDocument  = withDownloadUrl((doc.attachments || []).filter(a => a.attachmentType === 'DOCUMENT'));
             const existingEstimate  = withDownloadUrl((doc.attachments || []).filter(a => a.attachmentType === 'ESTIMATE'));
+            const existingBankCopy  = withDownloadUrl((doc.attachments || []).filter(a => a.attachmentType === 'BANK_COPY'));
 
             let bodyHtml =
                 buildSection('sectionReceipt',  'att-badge-receipt',  'fas fa-receipt',       receiptLabel, existingReceipt,  'dzReceipt',  'inputReceipt',  'pendingReceipt') +
                 buildSection('sectionDocument', 'att-badge-document', 'fas fa-file-alt',      '공식문서',    existingDocument, 'dzDocument', 'inputDocument', 'pendingDocument');
             if (isEquipment) {
                 bodyHtml += buildSection('sectionEstimate', 'att-badge-estimate', 'fas fa-file-invoice', '견적서', existingEstimate, 'dzEstimate', 'inputEstimate', 'pendingEstimate');
+            }
+            if (isTransfer) {
+                bodyHtml += buildSection('sectionBankCopy', 'att-badge-bank', 'fas fa-university', '거래처 통장사본', existingBankCopy, 'dzBankCopy', 'inputBankCopy', 'pendingBankCopy');
             }
 
             document.getElementById('modalBody').innerHTML = bodyHtml;
@@ -1269,6 +1279,9 @@ let text;
             setupDropZone('dzDocument', 'inputDocument', 'pendingDocument', pendingDocumentFiles);
             if (isEquipment) {
                 setupDropZone('dzEstimate', 'inputEstimate', 'pendingEstimate', pendingEstimateFiles);
+            }
+            if (isTransfer) {
+                setupDropZone('dzBankCopy', 'inputBankCopy', 'pendingBankCopy', pendingBankCopyFiles);
             }
         } else {
             const existingReceipt  = (doc.attachments || []).filter(a => a.attachmentType !== 'DOCUMENT');
@@ -1371,7 +1384,7 @@ let text;
                pendingMeetingDocumentFilesBySession.some(arr => arr.length > 0) ||
                pendingTripReceiptFiles.length || pendingTripDocumentFiles.length)
             : isPurchase
-                ? (pendingReceiptFiles.length || pendingDocumentFiles.length || pendingEstimateFiles.length)
+                ? (pendingReceiptFiles.length || pendingDocumentFiles.length || pendingEstimateFiles.length || pendingBankCopyFiles.length)
                 : (pendingReceiptFiles.length || pendingDocumentFiles.length);
 
         if (!pendingDeleteIds.length && !hasNewFiles) {
@@ -1438,13 +1451,14 @@ let text;
                         throw new Error(err.error || '파일 업로드에 실패했습니다.');
                     }
                 }
-            } else if (isPurchase && (pendingReceiptFiles.length || pendingDocumentFiles.length || pendingEstimateFiles.length)) {
+            } else if (isPurchase && (pendingReceiptFiles.length || pendingDocumentFiles.length || pendingEstimateFiles.length || pendingBankCopyFiles.length)) {
                 const formData = new FormData();
                 pendingReceiptFiles.forEach(f  => formData.append('receiptFiles',  f));
                 pendingDocumentFiles.forEach(f => formData.append('documentFiles', f));
                 if (isEquipment) {
                     pendingEstimateFiles.forEach(f => formData.append('estimateFiles', f));
                 }
+                pendingBankCopyFiles.forEach(f => formData.append('bankCopyFiles', f));
 
                 const res = await fetch(uploadUrl, { method: 'POST', body: formData });
                 if (!res.ok) {
