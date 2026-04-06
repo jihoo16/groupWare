@@ -101,9 +101,7 @@ public class Controller {
 
     @GetMapping("/hr")
     public String hr(HttpSession session) {
-        // 관리자 권한 확인
-        Boolean isAdmin = (Boolean) session.getAttribute("isAdmin");
-        if (isAdmin == null || !isAdmin) {
+        if (!AuthorizationUtil.isAdminOrHigher(session)) {
             log.warn("관리자가 아닌 사용자의 사용자관리 접근 시도");
             return "redirect:/nope";
         }
@@ -169,7 +167,7 @@ public class Controller {
     public String approvalVacationDetail(@RequestParam Long documentIdx, HttpSession session, Model model) {
         // 세션에서 현재 로그인한 사용자 IDX 조회
         Long currentUserIdx = (Long) session.getAttribute("userIdx");
-        Boolean isAdmin = (Boolean) session.getAttribute("isAdmin");
+        boolean isAdmin = AuthorizationUtil.isAdminOrHigher(session);
 
         // 문서 조회
         ApprovalDocument document = approvalDocumentRepository.findById(documentIdx)
@@ -180,7 +178,7 @@ public class Controller {
 
         // 삭제된 문서 체크: 관리자가 아니면 삭제된 문서는 볼 수 없음
         if (document != null && document.getDeletedAt() != null) {
-            if (isAdmin == null || !isAdmin) {
+            if (!isAdmin) {
                 throw new com.pinecni.erp.exception.UnauthorizedException("삭제된 문서는 관리자만 조회할 수 있습니다.");
             }
             // 관리자가 삭제된 문서를 조회하는 경우 - 삭제 정보 전달
@@ -322,8 +320,7 @@ public class Controller {
 
     @GetMapping("/project/card")
     public String projectCard(HttpSession session) {
-        Boolean isAdmin = (Boolean) session.getAttribute("isAdmin");
-        if (isAdmin == null || !isAdmin) {
+        if (!AuthorizationUtil.isAdminOrHigher(session)) {
             log.warn("관리자가 아닌 사용자의 연구비카드 관리 접근 시도");
             return "redirect:/nope";
         }
@@ -365,8 +362,7 @@ public class Controller {
 
     @GetMapping("/basic-info")
     public String basicInfo(HttpSession session) {
-        Boolean isAdmin = (Boolean) session.getAttribute("isAdmin");
-        if (isAdmin == null || !isAdmin) {
+        if (!AuthorizationUtil.isAdminOrHigher(session)) {
             log.warn("관리자가 아닌 사용자의 기초정보관리 접근 시도");
             return "redirect:/nope";
         }
@@ -375,8 +371,7 @@ public class Controller {
 
     @GetMapping("/basic-info/code-detail")
     public String codeDetail(HttpSession session) {
-        Boolean isDev = (Boolean) session.getAttribute("isDev");
-        if (isDev == null || !isDev) {
+        if (!AuthorizationUtil.isDeveloperOnly(session)) {
             log.warn("개발자가 아닌 사용자의 상세코드 관리 접근 시도");
             return "redirect:/nope";
         }
@@ -385,8 +380,7 @@ public class Controller {
 
     @GetMapping("/dev/code-groups")
     public String devCodeGroups(HttpSession session) {
-        Boolean isDev = (Boolean) session.getAttribute("isDev");
-        if (isDev == null || !isDev) {
+        if (!AuthorizationUtil.isDeveloperOnly(session)) {
             log.warn("개발자가 아닌 사용자의 그룹코드 설정 접근 시도");
             return "redirect:/nope";
         }
@@ -395,9 +389,7 @@ public class Controller {
 
     @GetMapping("/manage-hierarchy")
     public String manageHierarchy(HttpSession session) {
-        // 관리자 권한 확인
-        Boolean isAdmin = (Boolean) session.getAttribute("isAdmin");
-        if (isAdmin == null || !isAdmin) {
+        if (!AuthorizationUtil.isAdminOrHigher(session)) {
             log.warn("관리자가 아닌 사용자의 보고체계 관리 접근 시도");
             return "redirect:/nope";
         }
@@ -416,9 +408,7 @@ public class Controller {
      */
     @GetMapping("/admin/vacation-management")
     public String adminVacationManagement(HttpSession session) {
-        // 관리자 권한 확인
-        Boolean isAdmin = (Boolean) session.getAttribute("isAdmin");
-        if (isAdmin == null || !isAdmin) {
+        if (!AuthorizationUtil.isAdminOrHigher(session)) {
             log.warn("관리자가 아닌 사용자의 전체 연차관리 접근 시도");
             return "redirect:/nope";
         }
@@ -427,14 +417,10 @@ public class Controller {
 
     /**
      * 관리자 전용 - 연차신청서 관리 페이지
-     * - 관리자만 접근 가능
-     * - 전체 직원의 연차신청서 목록 조회 및 관리
      */
     @GetMapping("/admin/vacation-documents")
     public String adminVacationDocuments(HttpSession session) {
-        // 관리자 권한 확인
-        Boolean isAdmin = (Boolean) session.getAttribute("isAdmin");
-        if (isAdmin == null || !isAdmin) {
+        if (!AuthorizationUtil.isAdminOrHigher(session)) {
             log.warn("관리자가 아닌 사용자의 연차신청서 관리 접근 시도");
             return "redirect:/nope";
         }
@@ -446,8 +432,7 @@ public class Controller {
      */
     @GetMapping("/admin/expense-documents")
     public String adminExpenseDocuments(HttpSession session) {
-        Boolean isAdmin = (Boolean) session.getAttribute("isAdmin");
-        if (isAdmin == null || !isAdmin) {
+        if (!AuthorizationUtil.isAdminOrHigher(session)) {
             log.warn("관리자가 아닌 사용자의 개인경비지출 관리 접근 시도");
             return "redirect:/nope";
         }

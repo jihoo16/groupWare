@@ -3,6 +3,7 @@ package com.pinecni.erp.api.code.controller;
 import com.pinecni.erp.api.code.service.CodeService;
 import com.pinecni.erp.constant.CodeConstants;
 import com.pinecni.erp.entity.Code;
+import com.pinecni.erp.util.AuthorizationUtil;
 import jakarta.servlet.http.HttpSession;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -29,8 +30,7 @@ public class CodeController {
 
     /** 개발자 권한 검증 */
     private void requireDev(HttpSession session) {
-        Boolean isDev = (Boolean) session.getAttribute("isDev");
-        if (isDev == null || !isDev) {
+        if (!AuthorizationUtil.isDeveloperOnly(session)) {
             throw new ResponseStatusException(HttpStatus.FORBIDDEN, "개발자 권한이 필요합니다.");
         }
     }

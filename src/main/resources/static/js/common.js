@@ -130,10 +130,16 @@ document.addEventListener('DOMContentLoaded', function() {
             userNameEl.textContent = user.empName;
         }
 
-        // 사용자 역할 업데이트 (is_admin 기준)
+        // 사용자 역할 업데이트 (userRoleCode 기준)
         const userRoleEl = document.querySelector('.user-role');
         if (userRoleEl) {
-            userRoleEl.textContent = user.isAdmin ? '관리자' : '사용자';
+            const roleLabels = {
+                'C1101': '개발자',
+                'C1102': '관리자',
+                'C1103': '역량 열람자',
+                'C1104': '사용자'
+            };
+            userRoleEl.textContent = roleLabels[user.userRoleCode] || '사용자';
         }
 
         console.log('현재 로그인 사용자:', user.empName, '(idx:', user.idx, ')');

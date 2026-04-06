@@ -3719,7 +3719,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 damDangApprover.style.color = '#333';
             }
 
-            // 대표이사 조회 (회사 전체 고정 - isAdmin=true인 사용자)
+            // 대표이사 조회 (회사 전체 고정)
             const ceoResponse = await fetch('/api/users/ceo');
             const ceoApprover = document.getElementById('ceoName');
             if (ceoResponse.ok) {

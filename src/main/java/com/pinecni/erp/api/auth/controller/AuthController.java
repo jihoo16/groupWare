@@ -47,8 +47,7 @@ public class AuthController {
         session.setAttribute("empId", response.getEmpId());
         session.setAttribute("userIdx", response.getIdx());
         session.setAttribute("empName", response.getEmpName());
-        session.setAttribute("isAdmin", response.getIsAdmin());
-        session.setAttribute("isDev", response.getIsDev());
+        session.setAttribute("userRoleCode", response.getUserRoleCode());
         session.setAttribute("isFirstLogin", response.getIsFirstLogin()); // 최초 로그인 플래그
 
         // 로그인 유지 여부에 따라 세션 만료 시간 및 쿠키 설정

@@ -6,6 +6,8 @@ import com.pinecni.erp.api.project.mapper.FixedExpensePolicyMapper;
 import com.pinecni.erp.api.project.repository.FixedExpensePolicyRepository;
 import com.pinecni.erp.api.project.service.FixedExpensePolicyService;
 import com.pinecni.erp.entity.FixedExpensePolicy;
+import com.pinecni.erp.util.AuthorizationUtil;
+import jakarta.servlet.http.HttpSession;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
@@ -96,8 +98,7 @@ public class FixedExpensePolicyController {
             log.warn("로그인하지 않은 사용자의 고정경비 정책 저장 시도");
             return ResponseEntity.status(401).build();
         }
-        Boolean isAdmin = (Boolean) session.getAttribute("isAdmin");
-        if (isAdmin == null || !isAdmin) {
+        if (!AuthorizationUtil.isAdminOrHigher(session)) {
             log.warn("관리자가 아닌 사용자의 고정경비 정책 저장 시도: userIdx={}", currentUserIdx);
             return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
         }
@@ -128,8 +129,7 @@ public class FixedExpensePolicyController {
             error.put("error", "로그인이 필요합니다.");
             return ResponseEntity.status(401).body(error);
         }
-        Boolean isAdmin = (Boolean) session.getAttribute("isAdmin");
-        if (isAdmin == null || !isAdmin) {
+        if (!AuthorizationUtil.isAdminOrHigher(session)) {
             log.warn("관리자가 아닌 사용자의 고정경비 정책 일괄 저장 시도: userIdx={}", currentUserIdx);
             return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
         }
@@ -159,8 +159,7 @@ public class FixedExpensePolicyController {
         if (currentUserIdx == null) {
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
         }
-        Boolean isAdmin = (Boolean) session.getAttribute("isAdmin");
-        if (isAdmin == null || !isAdmin) {
+        if (!AuthorizationUtil.isAdminOrHigher(session)) {
             log.warn("관리자가 아닌 사용자의 고정경비 정책 삭제 시도: userIdx={}", currentUserIdx);
             return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
         }

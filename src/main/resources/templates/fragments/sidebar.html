@@ -66,7 +66,7 @@
                             <span class="submenu-text">신규 프로젝트</span>
                         </a>
                     </li>
-                    <li class="submenu-item" th:classappend="${activeMenu == 'project-card'} ? 'active' : ''" th:if="${session.isAdmin}">
+                    <li class="submenu-item" th:classappend="${activeMenu == 'project-card'} ? 'active' : ''" th:if="${session.userRoleCode == 'C1101' or session.userRoleCode == 'C1102'}">
                         <a href="/project/card">
                             <span class="submenu-text">연구비카드 관리</span>
                         </a>
@@ -135,27 +135,27 @@
                     <i class="fas fa-chevron-down menu-arrow"></i>
                 </a>
                 <ul class="submenu">
-                    <li class="submenu-item" th:classappend="${activeMenu == 'admin-vacation'} ? 'active' : ''" th:if="${session.isAdmin}">
+                    <li class="submenu-item" th:classappend="${activeMenu == 'admin-vacation'} ? 'active' : ''" th:if="${session.userRoleCode == 'C1101' or session.userRoleCode == 'C1102'}">
                         <a href="/admin/vacation-management">
                             <span class="submenu-text">전체 연차관리</span>
                         </a>
                     </li>
-                    <li class="submenu-item" th:classappend="${activeMenu == 'admin-vacation-documents'} ? 'active' : ''" th:if="${session.isAdmin}">
+                    <li class="submenu-item" th:classappend="${activeMenu == 'admin-vacation-documents'} ? 'active' : ''" th:if="${session.userRoleCode == 'C1101' or session.userRoleCode == 'C1102'}">
                         <a href="/admin/vacation-documents">
                             <span class="submenu-text">연차신청서 관리</span>
                         </a>
                     </li>
-                    <li class="submenu-item" th:classappend="${activeMenu == 'admin-expense-documents'} ? 'active' : ''" th:if="${session.isAdmin}">
+                    <li class="submenu-item" th:classappend="${activeMenu == 'admin-expense-documents'} ? 'active' : ''" th:if="${session.userRoleCode == 'C1101' or session.userRoleCode == 'C1102'}">
                         <a href="/admin/expense-documents">
                             <span class="submenu-text">개인경비지출 관리</span>
                         </a>
                     </li>
-                    <li class="submenu-item" th:classappend="${activeMenu == 'hr'} ? 'active' : ''" th:if="${session.isAdmin}">
+                    <li class="submenu-item" th:classappend="${activeMenu == 'hr'} ? 'active' : ''" th:if="${session.userRoleCode == 'C1101' or session.userRoleCode == 'C1102'}">
                         <a href="/hr">
                             <span class="submenu-text">사용자 관리</span>
                         </a>
                     </li>
-                    <li class="submenu-item" th:classappend="${activeMenu == 'manage-hierarchy'} ? 'active' : ''" th:if="${session.isAdmin}">
+                    <li class="submenu-item" th:classappend="${activeMenu == 'manage-hierarchy'} ? 'active' : ''" th:if="${session.userRoleCode == 'C1101' or session.userRoleCode == 'C1102'}">
                         <a href="/manage-hierarchy">
                             <span class="submenu-text">보고체계 관리</span>
                         </a>
@@ -167,7 +167,7 @@
                         </a>
                     </li>
                     -->
-                    <li class="submenu-item" th:classappend="${activeMenu == 'basic-info'} ? 'active' : ''" th:if="${session.isAdmin}">
+                    <li class="submenu-item" th:classappend="${activeMenu == 'basic-info'} ? 'active' : ''" th:if="${session.userRoleCode == 'C1101' or session.userRoleCode == 'C1102'}">
                         <a href="/basic-info">
                             <span class="submenu-text">기초정보관리</span>
                         </a>
@@ -177,7 +177,7 @@
                             <span class="submenu-text">외부인원 관리</span>
                         </a>
                     </li>
-                    <li class="submenu-item" th:classappend="${activeMenu == 'dev-code-groups'} ? 'active' : ''" th:if="${session.isDev}">
+                    <li class="submenu-item" th:classappend="${activeMenu == 'dev-code-groups'} ? 'active' : ''" th:if="${session.userRoleCode == 'C1101'}">
                         <a href="/dev/code-groups">
                             <span class="submenu-text">그룹코드 설정</span>
                         </a>

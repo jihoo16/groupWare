@@ -13,6 +13,7 @@ import com.pinecni.erp.entity.ExpenseApprovalAttachment;
 import com.pinecni.erp.entity.ExpenseDetail;
 import com.pinecni.erp.api.expense.service.ExpenseApprovalService;
 import com.pinecni.erp.constant.CodeConstants;
+import com.pinecni.erp.util.AuthorizationUtil;
 import jakarta.servlet.http.HttpSession;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -131,8 +132,7 @@ public class ExpenseApprovalController {
         ExpenseApproval expenseApproval = expenseApprovalService.getExpenseApprovalWithDetails(idx);
 
         if (!expenseApproval.getUserIdx().equals(loginUserIdx)) {
-            Boolean isAdmin = (Boolean) session.getAttribute("isAdmin");
-            if (isAdmin == null || !isAdmin) {
+            if (!AuthorizationUtil.isAdminOrHigher(session)) {
                 throw new ResponseStatusException(HttpStatus.FORBIDDEN, "본인 문서만 조회할 수 있습니다.");
             }
         }
@@ -376,8 +376,7 @@ public class ExpenseApprovalController {
      */
     @GetMapping("/admin/documents")
     public ResponseEntity<?> getAdminDocuments(HttpSession session) {
-        Boolean isAdmin = (Boolean) session.getAttribute("isAdmin");
-        if (isAdmin == null || !isAdmin) {
+        if (!AuthorizationUtil.isAdminOrHigher(session)) {
             return ResponseEntity.status(HttpStatus.FORBIDDEN).body(Map.of("error", "관리자 권한이 필요합니다."));
         }
         return ResponseEntity.ok(expenseApprovalService.getAllExpenseDocumentsForAdmin());
@@ -391,8 +390,7 @@ public class ExpenseApprovalController {
     public ResponseEntity<?> adminDeleteDocument(
             @PathVariable Long idx,
             HttpSession session) {
-        Boolean isAdmin = (Boolean) session.getAttribute("isAdmin");
-        if (isAdmin == null || !isAdmin) {
+        if (!AuthorizationUtil.isAdminOrHigher(session)) {
             return ResponseEntity.status(HttpStatus.FORBIDDEN).body(Map.of("error", "관리자 권한이 필요합니다."));
         }
         Long adminUserIdx = (Long) session.getAttribute("userIdx");
@@ -410,8 +408,7 @@ public class ExpenseApprovalController {
             @PathVariable Long idx,
             @RequestBody Map<String, String> body,
             HttpSession session) {
-        Boolean isAdmin = (Boolean) session.getAttribute("isAdmin");
-        if (isAdmin == null || !isAdmin) {
+        if (!AuthorizationUtil.isAdminOrHigher(session)) {
             return ResponseEntity.status(HttpStatus.FORBIDDEN).body(Map.of("error", "관리자 권한이 필요합니다."));
         }
         Long adminUserIdx = (Long) session.getAttribute("userIdx");
@@ -430,8 +427,7 @@ public class ExpenseApprovalController {
     public ResponseEntity<?> batchUpdateSettlementStatus(
             @RequestBody Map<String, Object> body,
             HttpSession session) {
-        Boolean isAdmin = (Boolean) session.getAttribute("isAdmin");
-        if (isAdmin == null || !isAdmin) {
+        if (!AuthorizationUtil.isAdminOrHigher(session)) {
             return ResponseEntity.status(HttpStatus.FORBIDDEN).body(Map.of("error", "관리자 권한이 필요합니다."));
         }
         Long adminUserIdx = (Long) session.getAttribute("userIdx");

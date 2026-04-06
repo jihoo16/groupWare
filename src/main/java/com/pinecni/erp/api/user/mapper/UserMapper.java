@@ -48,7 +48,7 @@ public class UserMapper {
                 .profilePhotoPath(user.getProfilePhotoPath())
                 .memo(user.getMemo())
                 .lastLoginDate(user.getLastLoginDate())
-                .isAdmin(user.getIsAdmin())
+                .userRoleCode(user.getUserRoleCode())
                 .createdAt(user.getCreatedAt())
                 .createdUserIdx(user.getCreatedUserIdx())
                 .updatedAt(user.getUpdatedAt())
@@ -140,7 +140,7 @@ public class UserMapper {
                 .password(hashedPassword)     // 해시값 저장
                 .passwordHash(salt)            // salt 저장
                 .memo(dto.getMemo())
-                .isAdmin(dto.getIsAdmin() != null ? dto.getIsAdmin() : false)
+                .userRoleCode(dto.getUserRoleCode() != null ? dto.getUserRoleCode() : "C1104")
                 .signatureImage(new byte[0]) // 기본값, 추후 업로드 처리
                 .build();
 
@@ -212,8 +212,8 @@ public class UserMapper {
             user.setPassword(hashedPassword);     // 해시값 저장
             user.setPasswordHash(salt);            // salt 저장
         }
-        if (dto.getIsAdmin() != null) {
-            user.setIsAdmin(dto.getIsAdmin());
+        if (dto.getUserRoleCode() != null) {
+            user.setUserRoleCode(dto.getUserRoleCode());
         }
 
         user.setUpdatedAt(LocalDateTime.now());

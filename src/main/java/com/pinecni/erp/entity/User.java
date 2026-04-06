@@ -16,7 +16,8 @@ import java.time.LocalDateTime;
         @Index(name = "idx_user_emp_dept", columnList = "emp_dept"),
         @Index(name = "idx_user_emp_position", columnList = "emp_position"),
         @Index(name = "idx_user_emp_status", columnList = "emp_status"),
-        @Index(name = "idx_user_deleted_at", columnList = "deleted_at")
+        @Index(name = "idx_user_deleted_at", columnList = "deleted_at"),
+        @Index(name = "idx_user_role_code", columnList = "user_role_code")
 })
 @Getter
 @Setter
@@ -102,11 +103,8 @@ public class User extends BaseEntity {
     @Column(name = "last_login_date")
     private LocalDateTime lastLoginDate;
 
-    @Column(name = "is_admin", nullable = false)
-    private Boolean isAdmin = false;
-
-    @Column(name = "is_dev", nullable = false)
-    private Boolean isDev = false;
+    @Column(name = "user_role_code", nullable = false, length = 10)
+    private String userRoleCode = "C1104";
 
     // 보고체계 관리
     @Column(name = "manager_idx")

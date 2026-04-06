@@ -68,7 +68,7 @@
     // 수정 권한 확인 함수
     async function checkEditPermission(projectId) {
         const currentUserIdx = window.CURRENT_USER?.idx || null;
-        const isAdmin = window.CURRENT_USER?.isAdmin || false;
+        const isAdmin = ['C1101', 'C1102'].includes(window.CURRENT_USER?.userRoleCode);
 
         if (isAdmin) return true;
 

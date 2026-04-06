@@ -64,5 +64,6 @@ public class UserUpdateDTO {
 
     private String profilePhotoPath;
 
-    private Boolean isAdmin;
+    @Size(max = 10, message = "권한 코드는 최대 10자입니다")
+    private String userRoleCode;
 }

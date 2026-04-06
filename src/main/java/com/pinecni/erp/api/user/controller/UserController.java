@@ -5,6 +5,7 @@ import com.pinecni.erp.api.user.dto.UserDTO;
 import com.pinecni.erp.api.user.dto.UserSimpleDTO;
 import com.pinecni.erp.api.user.dto.UserUpdateDTO;
 import com.pinecni.erp.api.user.service.UserService;
+import com.pinecni.erp.util.AuthorizationUtil;
 import jakarta.servlet.http.HttpSession;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -289,8 +290,7 @@ public class UserController {
 
         // 본인이 아닌 경우 관리자 권한 필요
         if (!idx.equals(updatedUserIdx)) {
-            Boolean isAdmin = (Boolean) session.getAttribute("isAdmin");
-            if (isAdmin == null || !isAdmin) {
+            if (!AuthorizationUtil.isAdminOrHigher(session)) {
                 log.warn("관리자가 아닌 사용자의 타인 정보 수정 시도: userIdx={}, targetIdx={}", updatedUserIdx, idx);
                 return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
             }
@@ -318,8 +318,7 @@ public class UserController {
         }
 
         // 관리자 권한 필요
-        Boolean isAdmin = (Boolean) session.getAttribute("isAdmin");
-        if (isAdmin == null || !isAdmin) {
+        if (!AuthorizationUtil.isAdminOrHigher(session)) {
             log.warn("관리자가 아닌 사용자의 사용자 삭제 시도: userIdx={}, targetIdx={}", deletedUserIdx, idx);
             return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
         }
@@ -342,8 +341,7 @@ public class UserController {
         if (currentUserIdx == null) {
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
         }
-        Boolean isAdmin = (Boolean) session.getAttribute("isAdmin");
-        if (isAdmin == null || !isAdmin) {
+        if (!AuthorizationUtil.isAdminOrHigher(session)) {
             log.warn("관리자가 아닌 사용자의 사용자 복구 시도: userIdx={}, targetIdx={}", currentUserIdx, idx);
             return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
         }

@@ -2,6 +2,7 @@ package com.pinecni.erp.api.project.controller;
 
 import com.pinecni.erp.api.project.dto.ProjectCardDTO;
 import com.pinecni.erp.api.project.service.ProjectCardService;
+import com.pinecni.erp.util.AuthorizationUtil;
 import jakarta.servlet.http.HttpSession;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -27,8 +28,7 @@ public class ProjectCardController {
 
     /** 관리자 권한 검증 */
     private void requireAdmin(HttpSession session) {
-        Boolean isAdmin = (Boolean) session.getAttribute("isAdmin");
-        if (isAdmin == null || !isAdmin) {
+        if (!AuthorizationUtil.isAdminOrHigher(session)) {
             throw new ResponseStatusException(HttpStatus.FORBIDDEN, "관리자 권한이 필요합니다.");
         }
     }

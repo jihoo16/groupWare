@@ -74,5 +74,6 @@ public class UserCreateDTO {
 
     private String memo;
 
-    private Boolean isAdmin = false;
+    @Size(max = 10, message = "권한 코드는 최대 10자입니다")
+    private String userRoleCode;
 }

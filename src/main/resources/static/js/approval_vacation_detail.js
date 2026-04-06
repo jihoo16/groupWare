@@ -64,7 +64,7 @@ function displayDocumentInfo(data) {
 
     // 작성자 확인 후 삭제 버튼 생성
     const currentUserIdx = window.CURRENT_USER ? window.CURRENT_USER.idx : null;
-    const isAdmin = window.CURRENT_USER && window.CURRENT_USER.isAdmin === true;
+    const isAdmin = window.CURRENT_USER && ['C1101', 'C1102'].includes(window.CURRENT_USER.userRoleCode);
     console.log('[삭제 버튼 표시 조건 확인]');
     console.log('- 현재 로그인 사용자 idx:', currentUserIdx);
     console.log('- 관리자 여부:', isAdmin);
@@ -133,7 +133,7 @@ function createDeleteButton(documentIdx, periods, isApproved) {
         const isVacationExpired = checkIfVacationExpired(periods);
 
         // 관리자 여부 확인
-        const isAdmin = window.CURRENT_USER && window.CURRENT_USER.isAdmin === true;
+        const isAdmin = window.CURRENT_USER && ['C1101', 'C1102'].includes(window.CURRENT_USER.userRoleCode);
 
         if (isApproved) {
             // 승인된 문서 - 비활성화 (관리자 포함 모두)

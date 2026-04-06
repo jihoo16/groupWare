@@ -9,6 +9,7 @@ import com.pinecni.erp.api.project.dto.ProjectCardDTO;
 import com.pinecni.erp.api.project.repository.ProjectMemberRepository;
 import com.pinecni.erp.api.project.dto.ProjectExpenseSettingDTO;
 import com.pinecni.erp.api.project.service.ProjectService;
+import com.pinecni.erp.util.AuthorizationUtil;
 import jakarta.servlet.http.HttpSession;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -149,7 +150,6 @@ public class ProjectController {
 
         // 세션에서 로그인한 사용자 정보 가져오기
         Long currentUserIdx = (Long) session.getAttribute("userIdx");
-        Boolean isAdmin = (Boolean) session.getAttribute("isAdmin");
 
         if (currentUserIdx == null) {
             Map<String, String> error = new HashMap<>();
@@ -158,7 +158,7 @@ public class ProjectController {
         }
 
         // 관리자가 아닌 경우 역할 기반 권한 검증
-        if (!Boolean.TRUE.equals(isAdmin)) {
+        if (!AuthorizationUtil.isAdminOrHigher(session)) {
             boolean hasEditPermission = projectMemberRepository
                     .existsByProjectIdxAndEmployeeIdxAndRoleIn(idx, currentUserIdx, List.of("PI", "PRACTITIONER"));
 
@@ -194,7 +194,6 @@ public class ProjectController {
 
         // 세션에서 로그인한 사용자 정보 가져오기
         Long currentUserIdx = (Long) session.getAttribute("userIdx");
-        Boolean isAdmin = (Boolean) session.getAttribute("isAdmin");
 
         if (currentUserIdx == null) {
             Map<String, String> error = new HashMap<>();
@@ -203,7 +202,7 @@ public class ProjectController {
         }
 
         // 관리자가 아닌 경우 PI 또는 PRACTITIONER 역할만 삭제 허용
-        if (!Boolean.TRUE.equals(isAdmin)) {
+        if (!AuthorizationUtil.isAdminOrHigher(session)) {
             boolean hasDeletePermission = projectMemberRepository
                     .existsByProjectIdxAndEmployeeIdxAndRoleIn(idx, currentUserIdx, List.of("PI", "PRACTITIONER"));
 
@@ -370,8 +369,7 @@ public class ProjectController {
         if (userIdx == null) {
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
         }
-        Boolean isAdmin = (Boolean) session.getAttribute("isAdmin");
-        if (isAdmin == null || !isAdmin) {
+        if (!AuthorizationUtil.isAdminOrHigher(session)) {
             return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
         }
 

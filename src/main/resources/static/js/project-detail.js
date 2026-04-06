@@ -216,7 +216,7 @@ function checkAndShowParticipantButtons(projectMembers, currentUserIdx) {
     const createWeeklyReportBtn = document.getElementById('createWeeklyReportBtn');
     const editBtn = document.getElementById('editBtn');
     const deleteBtn = document.getElementById('deleteBtn');
-    const isAdmin = window.CURRENT_USER?.isAdmin || false;
+    const isAdmin = ['C1101', 'C1102'].includes(window.CURRENT_USER?.userRoleCode);
 
     // 로그인하지 않은 경우 모든 버튼 숨김
     if (!currentUserIdx) {

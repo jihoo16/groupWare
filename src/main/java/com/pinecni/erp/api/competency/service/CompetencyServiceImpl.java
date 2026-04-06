@@ -2,6 +2,7 @@ package com.pinecni.erp.api.competency.service;
 
 import com.pinecni.erp.api.competency.dto.*;
 import com.pinecni.erp.api.competency.repository.*;
+import com.pinecni.erp.api.user.UserRole;
 import com.pinecni.erp.api.user.repository.UserRepository;
 import com.pinecni.erp.entity.*;
 import lombok.RequiredArgsConstructor;
@@ -31,10 +32,10 @@ public class CompetencyServiceImpl implements CompetencyService {
     // 공통 검증 헬퍼
     // =========================================================
 
-    /** 관리자 여부 확인 */
+    /** 관리자(ADMIN) 이상 여부 확인 */
     private boolean isAdmin(Long userIdx) {
         return userRepository.findById(userIdx)
-                .map(u -> Boolean.TRUE.equals(u.getIsAdmin()) || Boolean.TRUE.equals(u.getIsDev()))
+                .map(u -> UserRole.fromCode(u.getUserRoleCode()).isAtLeast(UserRole.ADMIN))
                 .orElse(false);
     }
 

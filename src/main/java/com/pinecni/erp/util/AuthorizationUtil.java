@@ -1,16 +1,57 @@
 package com.pinecni.erp.util;
 
+import com.pinecni.erp.api.user.UserRole;
 import com.pinecni.erp.entity.ApprovalDocument;
 import com.pinecni.erp.exception.UnauthorizedException;
+import jakarta.servlet.http.HttpSession;
 import lombok.extern.slf4j.Slf4j;
 
 /**
  * 권한 체크를 위한 공통 유틸리티 클래스
- * - 문서 작성자 확인
- * - 세션 사용자 확인
  */
 @Slf4j
 public class AuthorizationUtil {
+
+    /** 세션에서 userRoleCode 를 읽어 UserRole 로 변환 */
+    public static UserRole getCurrentRole(HttpSession session) {
+        if (session == null) {
+            return UserRole.USER;
+        }
+        Object roleCode = session.getAttribute("userRoleCode");
+        if (roleCode instanceof String) {
+            return UserRole.fromCode((String) roleCode);
+        }
+        return UserRole.USER;
+    }
+
+    public static boolean hasRoleAtLeast(HttpSession session, UserRole minimum) {
+        return getCurrentRole(session).isAtLeast(minimum);
+    }
+
+    public static boolean isAdminOrHigher(HttpSession session) {
+        return hasRoleAtLeast(session, UserRole.ADMIN);
+    }
+
+    public static boolean isDeveloperOnly(HttpSession session) {
+        return getCurrentRole(session) == UserRole.DEVELOPER;
+    }
+
+    public static boolean canViewCompetency(HttpSession session) {
+        return hasRoleAtLeast(session, UserRole.COMPETENCY_VIEWER);
+    }
+
+    public static void requireAdmin(HttpSession session) {
+        if (!isAdminOrHigher(session)) {
+            throw new UnauthorizedException("관리자만 접근할 수 있습니다.");
+        }
+    }
+
+    public static void requireDeveloper(HttpSession session) {
+        if (!isDeveloperOnly(session)) {
+            throw new UnauthorizedException("개발자만 접근할 수 있습니다.");
+        }
+    }
+
 
     /**
      * 현재 사용자가 문서의 작성자인지 확인

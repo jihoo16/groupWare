@@ -20,6 +20,7 @@ import com.pinecni.erp.api.approval.repository.ApprovalDocumentRepository;
 import com.pinecni.erp.api.user.repository.UserRepository;
 import com.pinecni.erp.api.code.repository.CodeRepository;
 import com.pinecni.erp.constant.CodeConstants;
+import com.pinecni.erp.util.AuthorizationUtil;
 import jakarta.servlet.http.HttpSession;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -613,8 +614,7 @@ public class VacationController {
             HttpSession session) {
 
         // 관리자 권한 확인
-        Boolean isAdmin = (Boolean) session.getAttribute("isAdmin");
-        if (isAdmin == null || !isAdmin) {
+        if (!AuthorizationUtil.isAdminOrHigher(session)) {
             log.warn("관리자가 아닌 사용자의 전체 연차 현황 조회 시도");
             return ResponseEntity.status(403).body(Map.of("error", "관리자 권한이 필요합니다."));
         }
@@ -692,8 +692,7 @@ public class VacationController {
             HttpSession session) {
 
         // 관리자 권한 확인
-        Boolean isAdmin = (Boolean) session.getAttribute("isAdmin");
-        if (isAdmin == null || !isAdmin) {
+        if (!AuthorizationUtil.isAdminOrHigher(session)) {
             log.warn("관리자가 아닌 사용자의 전체 연차신청서 조회 시도");
             return ResponseEntity.status(403).body(Map.of("error", "관리자 권한이 필요합니다."));
         }
@@ -773,8 +772,7 @@ public class VacationController {
             @RequestParam(defaultValue = "true") boolean approve,
             HttpSession session) {
 
-        Boolean isAdmin = (Boolean) session.getAttribute("isAdmin");
-        if (isAdmin == null || !isAdmin) {
+        if (!AuthorizationUtil.isAdminOrHigher(session)) {
             log.warn("관리자가 아닌 사용자의 연차 승인 시도");
             return ResponseEntity.status(403).body(Map.of("error", "관리자 권한이 필요합니다."));
         }
@@ -816,8 +814,7 @@ public class VacationController {
             HttpSession session) {
 
         // 관리자 권한 확인
-        Boolean isAdmin = (Boolean) session.getAttribute("isAdmin");
-        if (isAdmin == null || !isAdmin) {
+        if (!AuthorizationUtil.isAdminOrHigher(session)) {
             log.warn("관리자가 아닌 사용자의 연차신청서 삭제 시도");
             return ResponseEntity.status(403).body(Map.of("error", "관리자 권한이 필요합니다."));
         }
