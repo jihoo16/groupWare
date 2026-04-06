@@ -20,11 +20,18 @@ import com.pinecni.erp.entity.User;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 
+import com.pinecni.erp.entity.Code;
 import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.temporal.ChronoUnit;
+import java.util.Collections;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
+import java.util.Objects;
+import java.util.Optional;
+import java.util.Set;
 import java.util.stream.Collectors;
 
 /**
@@ -89,69 +96,90 @@ public class ProjectMapper {
     /**
      * Entity → DTO 변환
      * 프로젝트 조회 시 사용 (단건 조회용)
+     * N+1 방지: 연관 데이터를 배치 조회 후 Map으로 처리
      */
     public ProjectDTO toDTO(Project entity) {
         if (entity == null) {
             return null;
         }
 
-        // 연계 프로젝트 목록 조회 및 변환
-        List<ProjectRelationDTO> relations = projectRelationRepository
-                .findBySourceProjectIdx(entity.getIdx())
-                .stream()
-                .map(this::toRelationDTO)
-                .collect(Collectors.toList());
+        // ── 1. 연계 프로젝트 목록 조회 (1 query) ──────────────────
+        List<ProjectRelation> relations = projectRelationRepository.findBySourceProjectIdx(entity.getIdx());
 
-        // 팀원 목록 조회 및 변환 (직급 순으로 정렬)
-        List<ProjectMemberDTO> members = projectMemberRepository
-                .findByProjectIdx(entity.getIdx())
-                .stream()
+        // ── 2. 연계 대상 프로젝트 배치 조회 (1 query) ─────────────
+        List<Long> targetIdxList = relations.stream()
+                .map(ProjectRelation::getTargetProjectIdx)
+                .filter(Objects::nonNull)
+                .distinct()
+                .collect(Collectors.toList());
+        Map<Long, Project> targetProjectMap = targetIdxList.isEmpty()
+                ? Collections.emptyMap()
+                : projectRepository.findAllById(targetIdxList).stream()
+                        .collect(Collectors.toMap(Project::getIdx, p -> p));
+
+        // ── 3. 팀원 목록 조회 (1 query) ───────────────────────────
+        List<ProjectMember> memberEntities = projectMemberRepository.findByProjectIdx(entity.getIdx());
+
+        // ── 4. User 배치 조회: 팀원 + 현재/연계 프로젝트 매니저 (1 query) ──
+        Set<Long> userIdxSet = memberEntities.stream()
                 .filter(ProjectMember::getIsActive)
-                .map(this::toMemberDTO)
-                .sorted((m1, m2) -> {
-                    // 직급 순서로 정렬 (대표 > 상무 > 이사 > 부장 > 차장 > 과장 > 대리 > 사원)
-                    int order1 = getPositionOrder(m1.getEmployeePositionName());
-                    int order2 = getPositionOrder(m2.getEmployeePositionName());
-                    return Integer.compare(order1, order2);
-                })
-                .collect(Collectors.toList());
+                .map(ProjectMember::getEmployeeIdx)
+                .filter(Objects::nonNull)
+                .collect(Collectors.toCollection(HashSet::new));
+        if (entity.getProjectManagerIdx() != null) {
+            userIdxSet.add(entity.getProjectManagerIdx());
+        }
+        targetProjectMap.values().forEach(tp -> {
+            if (tp.getProjectManagerIdx() != null) {
+                userIdxSet.add(tp.getProjectManagerIdx());
+            }
+        });
+        Map<Long, User> userMap = userIdxSet.isEmpty()
+                ? Collections.emptyMap()
+                : userRepository.findAllById(userIdxSet).stream()
+                        .collect(Collectors.toMap(User::getIdx, u -> u));
 
-        // 직급별 경비 설정 목록 조회 및 변환
+        // ── 5. 코드 배치 조회 (2 queries) ─────────────────────────
+        Map<String, String> deptCodeMap = codeRepository.findByGroupCode("C01").stream()
+                .collect(Collectors.toMap(Code::getCode, Code::getCodeName, (a, b) -> a));
+        List<Code> positionCodes = codeRepository.findByGroupCode("C02");
+        Map<String, String> positionNameMap = positionCodes.stream()
+                .collect(Collectors.toMap(Code::getCode, Code::getCodeName, (a, b) -> a));
+        Map<String, Integer> positionSortMap = positionCodes.stream()
+                .collect(Collectors.toMap(Code::getCode, Code::getSortOrder, (a, b) -> a));
+
+        // ── 6. 경비 설정 (1 query) ────────────────────────────────
         List<ProjectExpenseSettingDTO> expenseSettings = projectExpenseSettingRepository
-                .findByProjectIdx(entity.getIdx())
-                .stream()
+                .findByProjectIdx(entity.getIdx()).stream()
                 .map(this::toExpenseSettingDTO)
                 .collect(Collectors.toList());
 
-        // 활동비 사용액 조회 (회의비, 출장비, 야근식대, 출장+회의 집행 금액 합계 - 삭제 제외)
+        // ── 7. 사용액 집계 (6 queries) ────────────────────────────
         BigDecimal meetingUsed = receiptMeetingRepository.sumAmountByProjectIdx(entity.getIdx());
         BigDecimal tripUsed = receiptTripRepository.sumAmountByProjectIdx(entity.getIdx());
         BigDecimal overtimeUsed = receiptOvertimeRepository.sumAmountByProjectIdx(entity.getIdx());
         BigDecimal tripMeetingUsedTotal = receiptTripMeetingRepository.sumTripFeeByProjectIdx(entity.getIdx());
         BigDecimal activityUsed = meetingUsed.add(tripUsed).add(overtimeUsed).add(tripMeetingUsedTotal);
-
-        // 활동비 세부 내역
-        // - receipt_meeting 에는 RCM 문서만 저장됨
-        // - receipt_trip 에는 RCT 문서만 저장됨
-        // - receipt_trip_meeting 에는 RCTM 문서만 저장됨
-        // prefix 기반 쿼리 불필요 - 위에서 계산된 값 재사용
-        BigDecimal meetingOnly = meetingUsed;
-        BigDecimal tripOnly = tripUsed;
-        BigDecimal tripMeetingUsed = tripMeetingUsedTotal;
-
-        // 장비비 사용액
         BigDecimal equipmentUsed = receiptPurchaseRepository.sumAmountByProjectIdxAndPurchaseType(entity.getIdx(), "equipment");
-
-        // 재료비 사용액
         BigDecimal materialUsed = receiptPurchaseRepository.sumAmountByProjectIdxAndPurchaseType(entity.getIdx(), "material");
 
-        // 프로젝트 관리자 이름 조회 (LAZY 로딩 문제 해결)
-        String projectManagerName = null;
-        if (entity.getProjectManagerIdx() != null) {
-            projectManagerName = userRepository.findById(entity.getProjectManagerIdx())
-                    .map(User::getEmpName)
-                    .orElse(null);
-        }
+        // ── 변환 ──────────────────────────────────────────────────
+        List<ProjectRelationDTO> relationDTOs = relations.stream()
+                .map(r -> toRelationDTO(r, targetProjectMap, userMap))
+                .collect(Collectors.toList());
+
+        List<ProjectMemberDTO> members = memberEntities.stream()
+                .filter(ProjectMember::getIsActive)
+                .map(m -> toMemberDTO(m, userMap, deptCodeMap, positionNameMap, positionSortMap))
+                .sorted((m1, m2) -> Integer.compare(
+                        getPositionOrder(m1.getEmployeePositionName()),
+                        getPositionOrder(m2.getEmployeePositionName())))
+                .collect(Collectors.toList());
+
+        String projectManagerName = entity.getProjectManagerIdx() != null
+                ? Optional.ofNullable(userMap.get(entity.getProjectManagerIdx()))
+                        .map(User::getEmpName).orElse(null)
+                : null;
 
         return ProjectDTO.builder()
                 .idx(entity.getIdx())
@@ -171,9 +199,9 @@ public class ProjectMapper {
                 .materialBudget(entity.getMaterialBudget())
                 .progressRate(entity.getProgressRate())
                 .activityUsed(activityUsed)
-                .meetingUsed(meetingOnly)
-                .tripUsed(tripOnly)
-                .tripMeetingUsed(tripMeetingUsed)
+                .meetingUsed(meetingUsed)
+                .tripUsed(tripUsed)
+                .tripMeetingUsed(tripMeetingUsedTotal)
                 .overtimeUsed(overtimeUsed)
                 .equipmentUsed(equipmentUsed)
                 .materialUsed(materialUsed)
@@ -182,7 +210,7 @@ public class ProjectMapper {
                 .materialAdjustment(entity.getMaterialBudgetAdjustment() != null ? entity.getMaterialBudgetAdjustment() : BigDecimal.ZERO)
                 .memberCount(members.size())
                 .progress(calculateProgress(entity))
-                .projectRelations(relations)
+                .projectRelations(relationDTOs)
                 .projectMembers(members)
                 .projectExpenseSettings(expenseSettings)
                 .createdAt(entity.getCreatedAt())
@@ -292,109 +320,61 @@ public class ProjectMapper {
 
     /**
      * ProjectRelation Entity → ProjectRelationDTO 변환
+     * 배치 조회된 Map을 사용해 DB 호출 없이 처리
      */
-    private ProjectRelationDTO toRelationDTO(ProjectRelation relation) {
+    private ProjectRelationDTO toRelationDTO(ProjectRelation relation,
+                                              Map<Long, Project> targetProjectMap,
+                                              Map<Long, User> userMap) {
         if (relation == null) {
             return null;
+        }
+
+        Project target = relation.getTargetProjectIdx() != null
+                ? targetProjectMap.get(relation.getTargetProjectIdx())
+                : null;
+
+        String targetManagerName = null;
+        if (target != null && target.getProjectManagerIdx() != null) {
+            User manager = userMap.get(target.getProjectManagerIdx());
+            targetManagerName = manager != null ? manager.getEmpName() : null;
+        }
+
+        String targetPeriod = null;
+        if (target != null && target.getStartDate() != null && target.getEndDate() != null) {
+            targetPeriod = target.getStartDate() + " ~ " + target.getEndDate();
         }
 
         return ProjectRelationDTO.builder()
                 .idx(relation.getIdx())
                 .sourceProjectIdx(relation.getSourceProjectIdx())
                 .targetProjectIdx(relation.getTargetProjectIdx())
-                .targetProjectName(getTargetProjectName(relation.getTargetProjectIdx()))
-                .targetProjectStatus(getTargetProjectStaus(relation.getTargetProjectIdx()))
-                .targetProjectManager(getTargetProjectManager(relation.getTargetProjectIdx()))
-                .targetPeriod(getTargetProjectPeriod(relation.getTargetProjectIdx()))
-                .targetTotalPeriodStart(getTargetTotalPeriodStart(relation.getTargetProjectIdx()))
-                .targetTotalPeriodEnd(getTargetTotalPeriodEnd(relation.getTargetProjectIdx()))
+                .targetProjectName(target != null ? target.getProjectName() : null)
+                .targetProjectStatus(target != null ? target.getProjectStatus() : null)
+                .targetProjectManager(targetManagerName)
+                .targetPeriod(targetPeriod)
+                .targetTotalPeriodStart(target != null && target.getTotalPeriodStart() != null
+                        ? target.getTotalPeriodStart().toString() : null)
+                .targetTotalPeriodEnd(target != null && target.getTotalPeriodEnd() != null
+                        ? target.getTotalPeriodEnd().toString() : null)
                 .createdAt(relation.getCreatedAt())
                 .createdUserIdx(relation.getCreatedUserIdx())
                 .build();
     }
 
     /**
-     * 대상 프로젝트명 조회
-     */
-    private String getTargetProjectName(Long targetProjectIdx) {
-        if (targetProjectIdx == null) {
-            return null;
-        }
-        return projectRepository.findById(targetProjectIdx)
-                .map(Project::getProjectName)
-                .orElse(null);
-    }
-    /**
-     * 대상 프로젝트 상태 조회
-     */
-    private String getTargetProjectStaus(Long targetProjectIdx) {
-        if (targetProjectIdx == null) {
-            return null;
-        }
-        return projectRepository.findById(targetProjectIdx)
-                .map(Project::getProjectStatus)
-                .orElse(null);
-    }
-    /**
-     * 대상 프로젝트 매니저 이름 조회
-     */
-    private String getTargetProjectManager(Long targetProjectIdx) {
-        if (targetProjectIdx == null) {
-            return null;
-        }
-        return projectRepository.findById(targetProjectIdx)
-                .map(Project::getProjectManager)
-                .map(User::getEmpName)
-                .orElse(null);
-    }
-
-    /**
-     * 대상 프로젝트 기간 조회 (시작일 ~ 종료일)
-     */
-    private String getTargetProjectPeriod(Long targetProjectIdx) {
-        if (targetProjectIdx == null) {
-            return null;
-        }
-        return projectRepository.findById(targetProjectIdx)
-                .map(project -> {
-                    if (project.getStartDate() != null && project.getEndDate() != null) {
-                        return project.getStartDate() + " ~ " + project.getEndDate();
-                    }
-                    return null;
-                })
-                .orElse(null);
-    }
-
-    /**
-     * 대상 프로젝트 총 기간 시작일 조회
-     */
-    private String getTargetTotalPeriodStart(Long targetProjectIdx) {
-        if (targetProjectIdx == null) return null;
-        return projectRepository.findById(targetProjectIdx)
-                .map(project -> project.getTotalPeriodStart() != null ? project.getTotalPeriodStart().toString() : null)
-                .orElse(null);
-    }
-
-    /**
-     * 대상 프로젝트 총 기간 종료일 조회
-     */
-    private String getTargetTotalPeriodEnd(Long targetProjectIdx) {
-        if (targetProjectIdx == null) return null;
-        return projectRepository.findById(targetProjectIdx)
-                .map(project -> project.getTotalPeriodEnd() != null ? project.getTotalPeriodEnd().toString() : null)
-                .orElse(null);
-    }
-
-    /**
      * ProjectMember Entity → ProjectMemberDTO 변환
+     * 배치 조회된 Map을 사용해 DB 호출 없이 처리
      */
-    private ProjectMemberDTO toMemberDTO(ProjectMember member) {
+    private ProjectMemberDTO toMemberDTO(ProjectMember member,
+                                          Map<Long, User> userMap,
+                                          Map<String, String> deptCodeMap,
+                                          Map<String, String> positionNameMap,
+                                          Map<String, Integer> positionSortMap) {
         if (member == null) {
             return null;
         }
 
-        // 직원 정보 조회
-        User employee = userRepository.findById(member.getEmployeeIdx()).orElse(null);
+        User employee = member.getEmployeeIdx() != null ? userMap.get(member.getEmployeeIdx()) : null;
 
         ProjectMemberDTO dto = ProjectMemberDTO.builder()
                 .idx(member.getIdx())
@@ -410,20 +390,15 @@ public class ProjectMapper {
                 .employeeName(employee != null ? employee.getEmpName() : null)
                 .build();
 
-        // 부서명 조회 (코드 → 명칭)
-        if (employee != null && employee.getEmpDept() != null) {
-            codeRepository.findByGroupCodeAndCode("C01", employee.getEmpDept())
-                    .ifPresent(code -> dto.setEmployeeDeptName(code.getCodeName()));
-        }
-
-        // 직급 코드 및 직급명, 정렬 순서 조회
-        if (employee != null && employee.getEmpPosition() != null) {
-            dto.setEmployeePositionCode(employee.getEmpPosition());
-            codeRepository.findByGroupCodeAndCode("C02", employee.getEmpPosition())
-                    .ifPresent(code -> {
-                        dto.setEmployeePositionName(code.getCodeName());
-                        dto.setEmployeePositionSortOrder(code.getSortOrder());
-                    });
+        if (employee != null) {
+            if (employee.getEmpDept() != null) {
+                dto.setEmployeeDeptName(deptCodeMap.get(employee.getEmpDept()));
+            }
+            if (employee.getEmpPosition() != null) {
+                dto.setEmployeePositionCode(employee.getEmpPosition());
+                dto.setEmployeePositionName(positionNameMap.get(employee.getEmpPosition()));
+                dto.setEmployeePositionSortOrder(positionSortMap.get(employee.getEmpPosition()));
+            }
         }
 
         return dto;
