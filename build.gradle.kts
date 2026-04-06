@@ -53,7 +53,6 @@ dependencies {
     implementation(libs.io.micrometer.context.propagation)
     implementation(libs.io.opentelemetry.opentelemetry.exporter.otlp)
     implementation(libs.io.micrometer.micrometer.registry.prometheus)
-    implementation(libs.io.micrometer.micrometer.registry.otlp)
     implementation(libs.otel.log4j.context.data)
 
 
