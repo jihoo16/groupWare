@@ -151,7 +151,7 @@ document.addEventListener('DOMContentLoaded', function() {
                         </div>
                     </div>
                     <div class="research-card-actions">
-                        <button class="btn btn-sm btn-secondary" onclick="editCard(${card.idx})" ${isProjectDeleted ? 'disabled title="삭제된 프로젝트의 카드는 수정할 수 없습니다"' : ''}>
+                        <button class="btn btn-sm btn-secondary" onclick="editCard(${card.idx})" ${isProjectDeleted ? 'disabled data-tip="삭제된 프로젝트의 카드는 수정할 수 없습니다"' : ''}>
                             <i class="fas fa-edit"></i> 수정
                         </button>
                         <button class="btn btn-sm btn-delete" onclick="deleteCard(${card.idx})">

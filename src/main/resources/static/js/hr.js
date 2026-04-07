@@ -263,13 +263,13 @@ function createEmployeeRow(user) {
             <td>${user.empJoinDate || '-'}</td>
             <td><span class="status-badge ${statusClass}">${user.empStatus || '-'}</span></td>
             <td>
-                <button class="btn-icon btn-view" data-idx="${user.idx}" title="상세정보">
+                <button class="btn-icon btn-view" data-idx="${user.idx}" data-tip="상세정보">
                     <i class="fas fa-eye"></i>
                 </button>
-                <button class="btn-icon btn-edit" data-idx="${user.idx}" title="수정">
+                <button class="btn-icon btn-edit" data-idx="${user.idx}" data-tip="수정">
                     <i class="fas fa-edit"></i>
                 </button>
-                <button class="btn-icon btn-delete" data-idx="${user.idx}" title="삭제">
+                <button class="btn-icon btn-delete" data-idx="${user.idx}" data-tip="삭제">
                     <i class="fas fa-trash"></i>
                 </button>
             </td>

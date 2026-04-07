@@ -811,15 +811,6 @@ div[title]:hover::after {
     color: #667eea;
 }
 
-/* 검색 하이라이트 */
-.search-highlight {
-    background: #ffeb3b;
-    color: #333;
-    font-weight: 600;
-    padding: 2px 0;
-    border-radius: 2px;
-}
-
 /* 기간 필터 래퍼 */
 .period-filter-wrapper {
     position: relative;
@@ -1276,36 +1267,3 @@ div[title]:hover::after {
     cursor: help;
 }
 
-.project-name-tooltip {
-    visibility: hidden;
-    opacity: 0;
-    position: absolute;
-    bottom: calc(100% + 8px);
-    left: 50%;
-    transform: translateX(-50%);
-    background: #1f2937;
-    color: white;
-    padding: 8px 12px;
-    border-radius: 6px;
-    font-size: 13px;
-    white-space: nowrap;
-    z-index: 1000;
-    pointer-events: none;
-    transition: opacity 0.2s ease, visibility 0.2s ease;
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
-}
-
-.project-name-tooltip::after {
-    content: '';
-    position: absolute;
-    top: 100%;
-    left: 50%;
-    transform: translateX(-50%);
-    border: 6px solid transparent;
-    border-top-color: #1f2937;
-}
-
-.project-name-wrapper:hover .project-name-tooltip {
-    visibility: visible;
-    opacity: 1;
-}

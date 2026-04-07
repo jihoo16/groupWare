@@ -230,28 +230,6 @@
     display: inline-flex;
 }
 
-/* fixed 커스텀 툴팁 (JS로 생성, overflow 잘림 방지) */
-.fixed-tooltip {
-    position: fixed;
-    background: #1e293b;
-    color: white;
-    padding: 8px 14px;
-    border-radius: 8px;
-    font-size: 11px;
-    font-weight: 500;
-    white-space: pre-line;
-    text-align: center;
-    z-index: 99999;
-    pointer-events: none;
-    box-shadow: 0 4px 12px rgba(0,0,0,0.2);
-    animation: tooltipFadeIn 0.15s ease;
-}
-
-@keyframes tooltipFadeIn {
-    from { opacity: 0; }
-    to { opacity: 1; }
-}
-
 /* 체크박스 */
 .documents-table th input[type="checkbox"],
 .documents-table td input[type="checkbox"] {
@@ -354,14 +332,6 @@
 .documents-table {
     width: 100%;
     border-collapse: collapse;
-}
-
-.documents-table mark.highlight-text {
-    background-color: #fff3cd;
-    color: #856404;
-    padding: 2px 4px;
-    border-radius: 3px;
-    font-weight: 600;
 }
 
 #documentsTableBody td {
@@ -519,34 +489,6 @@
 .btn-delete.disabled:hover {
     background: #9ca3af;
     transform: none;
-}
-
-.btn-delete.disabled[data-tooltip]:hover::before {
-    content: attr(data-tooltip);
-    position: absolute;
-    bottom: calc(100% + 8px);
-    left: 50%;
-    transform: translateX(-50%);
-    background: #1e293b;
-    color: white;
-    padding: 8px 12px;
-    border-radius: 6px;
-    font-size: 12px;
-    font-weight: 500;
-    white-space: nowrap;
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
-    z-index: 1000;
-}
-
-.btn-delete.disabled[data-tooltip]:hover::after {
-    content: '';
-    position: absolute;
-    bottom: calc(100% + 2px);
-    left: 50%;
-    transform: translateX(-50%);
-    border: 6px solid transparent;
-    border-top-color: #1e293b;
-    z-index: 1000;
 }
 
 /* 페이지네이션 */

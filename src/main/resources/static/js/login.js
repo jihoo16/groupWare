@@ -352,12 +352,12 @@ document.addEventListener('DOMContentLoaded', function() {
                 // 서버가 정상 응답
                 healthCheckBtn.classList.remove('checking', 'unhealthy');
                 healthCheckBtn.classList.add('healthy');
-                healthCheckBtn.title = `서버 정상 (응답시간: ${responseTime}ms)`;
+                healthCheckBtn.dataset.tip = `서버 정상 (응답시간: ${responseTime}ms)`;
             } else {
                 // 서버가 에러 응답
                 healthCheckBtn.classList.remove('checking', 'healthy');
                 healthCheckBtn.classList.add('unhealthy');
-                healthCheckBtn.title = `서버 오류 (HTTP ${response.status})`;
+                healthCheckBtn.dataset.tip = `서버 오류 (HTTP ${response.status})`;
             }
         } catch (error) {
             // 네트워크 오류 또는 타임아웃
@@ -365,9 +365,9 @@ document.addEventListener('DOMContentLoaded', function() {
             healthCheckBtn.classList.add('unhealthy');
 
             if (error.name === 'AbortError') {
-                healthCheckBtn.title = '서버 응답 없음 (타임아웃)';
+                healthCheckBtn.dataset.tip = '서버 응답 없음 (타임아웃)';
             } else {
-                healthCheckBtn.title = '서버 연결 실패';
+                healthCheckBtn.dataset.tip = '서버 연결 실패';
             }
         } finally {
             isChecking = false;

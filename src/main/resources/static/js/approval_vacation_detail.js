@@ -122,9 +122,6 @@ function showApprovalStatusBanner(isApproved) {
 function createDeleteButton(documentIdx, periods, isApproved) {
     const headerButtons = document.getElementById('headerButtons');
     if (headerButtons && !document.getElementById('deleteBtn')) {
-        const deleteWrapper = document.createElement('div');
-        deleteWrapper.className = 'button-with-tooltip';
-
         const deleteBtn = document.createElement('button');
         deleteBtn.id = 'deleteBtn';
         deleteBtn.innerHTML = '<i class="fas fa-trash"></i> 삭제';
@@ -143,17 +140,7 @@ function createDeleteButton(documentIdx, periods, isApproved) {
             deleteBtn.style.opacity = '0.5';
             deleteBtn.style.backgroundColor = '#999';
             deleteBtn.style.borderColor = '#999';
-
-            const tooltip = document.createElement('div');
-            tooltip.className = 'tooltip-text';
-            tooltip.innerHTML = `
-                <i class="fas fa-exclamation-triangle"></i>
-                승인된 문서는 삭제 불가합니다.<br>
-                관리부에 문의해주세요.
-            `;
-
-            deleteWrapper.appendChild(deleteBtn);
-            deleteWrapper.appendChild(tooltip);
+            deleteBtn.dataset.tip = '⚠️ 승인된 문서는 삭제 불가합니다.\n관리부에 문의해주세요.';
         } else if (isVacationExpired && !isAdmin) {
             // 휴가일이 지났지만 관리자가 아닌 경우 - 비활성화
             deleteBtn.className = 'btn-danger disabled';
@@ -162,46 +149,23 @@ function createDeleteButton(documentIdx, periods, isApproved) {
             deleteBtn.style.opacity = '0.5';
             deleteBtn.style.backgroundColor = '#999';
             deleteBtn.style.borderColor = '#999';
-
-            const tooltip = document.createElement('div');
-            tooltip.className = 'tooltip-text';
-            tooltip.innerHTML = `
-                <i class="fas fa-exclamation-triangle"></i>
-                휴가 날짜가 지난 경우 삭제가 불가능합니다.<br>
-                관리부에 문의해주세요.
-            `;
-
-            deleteWrapper.appendChild(deleteBtn);
-            deleteWrapper.appendChild(tooltip);
+            deleteBtn.dataset.tip = '⚠️ 휴가 날짜가 지난 경우 삭제가 불가능합니다.\n관리부에 문의해주세요.';
         } else {
             // 휴가일이 지나지 않았거나 관리자인 경우 - 정상 삭제 가능
             deleteBtn.className = 'btn-danger';
             deleteBtn.addEventListener('click', () => deleteDocument(documentIdx));
 
-            const tooltip = document.createElement('div');
-            tooltip.className = 'tooltip-text';
-
             if (isAdmin && isVacationExpired) {
                 // 관리자가 만료된 휴가를 삭제하는 경우
-                tooltip.innerHTML = `
-                    <i class="fas fa-shield-alt"></i>
-                    관리자 권한으로 삭제가 가능합니다.
-                `;
+                deleteBtn.dataset.tip = '🛡️ 관리자 권한으로 삭제가 가능합니다.';
             } else {
                 // 일반적인 경우
-                tooltip.innerHTML = `
-                    <i class="fas fa-info-circle"></i>
-                    연차신청서는 PDF로 자동 생성되므로 수정이 불가능합니다.<br>
-                    문서를 삭제하고 새로 작성해주세요.
-                `;
+                deleteBtn.dataset.tip = 'ℹ️ 연차신청서는 PDF로 자동 생성되므로 수정이 불가능합니다.\n문서를 삭제하고 새로 작성해주세요.';
             }
-
-            deleteWrapper.appendChild(deleteBtn);
-            deleteWrapper.appendChild(tooltip);
         }
 
         // 돌아가기 버튼 앞에 삽입
-        headerButtons.insertBefore(deleteWrapper, headerButtons.firstChild);
+        headerButtons.insertBefore(deleteBtn, headerButtons.firstChild);
         console.log('작성자이므로 삭제 버튼을 생성합니다.');
     }
 }

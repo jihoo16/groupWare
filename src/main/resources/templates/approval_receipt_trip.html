@@ -20,10 +20,10 @@
                     <i class="fas fa-print"></i>
                     인쇄
                 </button>
-                <button class="btn-primary btn-with-tooltip" id="submitBtn">
+                <button class="btn-primary" id="submitBtn"
+                        data-tip="💡 모든 필수값을 채우면 좌측에 인쇄 버튼이 나타납니다">
                     <i class="fas fa-save"></i>
                     저장
-                    <span class="tooltip-text">💡 모든 필수값을 채우면 좌측에 인쇄 버튼이 나타납니다</span>
                 </button>
                 <button class="btn-primary" id="updateBtn" style="display:none;">
                     <i class="fas fa-edit"></i>
@@ -84,11 +84,9 @@
                                 <div class="form-group full-width">
                                         <label for="trip_reporter">
                                             <i class="fas fa-user-edit"></i> 작성자
-                                            <span class="info-tooltip info-tooltip-top">
-                                                <i class="fas fa-info-circle"
-                                                   style="margin-left: 6px; cursor: help; font-size: 0.9em;"></i>
-                                                <span class="tooltip-text">작성자는 출장인원 중 선택 가능합니다</span>
-                                            </span>
+                                            <i class="fas fa-info-circle"
+                                               style="margin-left: 6px; cursor: help; font-size: 0.9em;"
+                                               data-tip="작성자는 출장인원 중 선택 가능합니다"></i>
                                         </label>
                                         <input type="text" id="trip_reporter" class="form-input clickable-input" placeholder="작성자명">
                                 </div>
@@ -106,10 +104,8 @@
                                         <label for="trip_date">
                                             <i class="fas fa-calendar-day"></i> 출장기간
                                             <span class="required-mark">*</span>
-                                            <span class="label-tooltip-wrapper" style="margin-left: 4px;">
-                                                <i class="fas fa-info-circle" style="color: #94a3b8; font-size: 12px; cursor: help;"></i>
-                                                <span class="tooltip-text">⚠️ 날짜/기간 변경 시 중복 방지를 위해 출장인원이 초기화됩니다</span>
-                                            </span>
+                                            <i class="fas fa-info-circle" style="color: #94a3b8; font-size: 12px; cursor: help; margin-left: 4px;"
+                                               data-tip="⚠️ 날짜/기간 변경 시 중복 방지를 위해 출장인원이 초기화됩니다"></i>
                                         </label>
                                         <div style="display: flex; gap: 8px; align-items: center;">
                                             <input type="date" id="trip_date" class="form-input" style="flex: 1; min-width: 0;">
@@ -578,74 +574,11 @@
     </div>
 </div>
 
-<!-- 커스텀 툴팁 스타일 -->
-<style>
-.info-tooltip {
-    position: relative;
-    display: inline-block;
-}
-
-.info-tooltip .tooltip-text {
-    visibility: hidden;
-    background-color: #1e293b;
-    color: #fff;
-    text-align: center;
-    border-radius: 6px;
-    padding: 10px 16px;
-    position: absolute;
-    z-index: 1000;
-    left: 65%;
-    margin-top: 5px;
-    transform: translateX(-50%);
-    white-space: nowrap;
-    opacity: 0;
-    transition: opacity 0.3s;
-    font-size: 0.9em;
-    font-weight: normal;
-    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
-}
-
-.info-tooltip .tooltip-text::after {
-    content: "";
-    position: absolute;
-    bottom: 100%;
-    left: 50%;
-    transform: translateX(-50%);
-    border-width: 5px;
-    border-style: solid;
-    border-color: transparent transparent #1e293b transparent;
-}
-
-.info-tooltip:hover .tooltip-text {
-    visibility: visible;
-    opacity: 1;
-}
-
-/* 위쪽으로 표시되는 툴팁 */
-.info-tooltip-top .tooltip-text {
-    bottom: 150%;
-    top: auto;
-    left: 50%;
-    margin-top: 0;
-}
-
-.info-tooltip-top .tooltip-text::after {
-    content: "";
-    position: absolute;
-    top: 100%;
-    bottom: auto;
-    left: 50%;
-    transform: translateX(-50%);
-    border-width: 5px;
-    border-style: solid;
-    border-color: #1e293b transparent transparent transparent;
-}
-</style>
-
 <!-- jsPDF 라이브러리 -->
 <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 
+<script th:src="@{/js/search-utils.js}"></script>
 <script th:src="@{/js/approval_receipt_trip.js}"></script>
 </body>
 </html>

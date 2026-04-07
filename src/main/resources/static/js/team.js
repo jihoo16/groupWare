@@ -244,10 +244,10 @@ document.addEventListener('DOMContentLoaded', function() {
                             <i class="fas fa-eye"></i> 상세보기
                         </button>
                         <div class="team-card-actions">
-                            <button class="btn-icon edit-btn" data-team-idx="${team.idx}" title="수정">
+                            <button class="btn-icon edit-btn" data-team-idx="${team.idx}" data-tip="수정">
                                 <i class="fas fa-edit"></i>
                             </button>
-                            <button class="btn-icon danger delete-btn" data-team-idx="${team.idx}" title="삭제">
+                            <button class="btn-icon danger delete-btn" data-team-idx="${team.idx}" data-tip="삭제">
                                 <i class="fas fa-trash"></i>
                             </button>
                         </div>
@@ -297,10 +297,10 @@ document.addEventListener('DOMContentLoaded', function() {
                         <td><span class="status-badge ${team.isActive === 'Y' ? 'active' : 'inactive'}">${team.isActive === 'Y' ? '활성' : '비활성'}</span></td>
                         <td>
                             <div class="team-table-actions">
-                                <button class="btn-icon edit-btn" data-team-idx="${team.idx}" title="수정">
+                                <button class="btn-icon edit-btn" data-team-idx="${team.idx}" data-tip="수정">
                                     <i class="fas fa-edit"></i>
                                 </button>
-                                <button class="btn-icon danger delete-btn" data-team-idx="${team.idx}" title="삭제">
+                                <button class="btn-icon danger delete-btn" data-team-idx="${team.idx}" data-tip="삭제">
                                 <i class="fas fa-trash"></i>
                             </button>
                         </div>

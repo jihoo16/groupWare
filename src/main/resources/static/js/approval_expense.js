@@ -2675,7 +2675,7 @@ document.addEventListener('DOMContentLoaded', async function() {
             chip.innerHTML = `
                 <i class="fas ${getFileIcon(file.name)}"></i>
                 <span class="chip-name">${file.name}</span>
-                <button type="button" class="btn-remove-chip" title="삭제"><i class="fas fa-times"></i></button>
+                <button type="button" class="btn-remove-chip" data-tip="삭제"><i class="fas fa-times"></i></button>
             `;
             chip.querySelector('.btn-remove-chip').addEventListener('click', () => {
                 itemReceiptFiles[idx].splice(fileIdx, 1);
@@ -2703,8 +2703,8 @@ document.addEventListener('DOMContentLoaded', async function() {
             item.innerHTML = `
                 <i class="fas ${getFileIcon(att.originalFilename)}"></i>
                 <span>${att.originalFilename} <small style="color:#94a3b8;">(${(att.fileSize / 1024).toFixed(1)} KB)</small></span>
-                <button type="button" class="btn-download-file" title="다운로드" style="background:none;border:none;cursor:pointer;color:#667eea;padding:3px 6px;font-size:13px;"><i class="fas fa-download"></i></button>
-                <button type="button" class="btn-remove-file" title="삭제"><i class="fas fa-times"></i></button>
+                <button type="button" class="btn-download-file" data-tip="다운로드" style="background:none;border:none;cursor:pointer;color:#667eea;padding:3px 6px;font-size:13px;"><i class="fas fa-download"></i></button>
+                <button type="button" class="btn-remove-file" data-tip="삭제"><i class="fas fa-times"></i></button>
             `;
             item.querySelector('.btn-download-file').addEventListener('click', () => {
                 window.location.href = `/api/approval/expense/attachments/${att.idx}/download`;
@@ -2731,8 +2731,8 @@ document.addEventListener('DOMContentLoaded', async function() {
             chip.innerHTML = `
                 <i class="fas ${getFileIcon(att.originalFilename)}"></i>
                 <span class="chip-name">${att.originalFilename}</span>
-                <button type="button" class="btn-download-chip" title="다운로드"><i class="fas fa-download"></i></button>
-                <button type="button" class="btn-remove-chip" title="삭제"><i class="fas fa-times"></i></button>
+                <button type="button" class="btn-download-chip" data-tip="다운로드"><i class="fas fa-download"></i></button>
+                <button type="button" class="btn-remove-chip" data-tip="삭제"><i class="fas fa-times"></i></button>
             `;
             chip.querySelector('.btn-download-chip').addEventListener('click', () => {
                 window.location.href = `/api/approval/expense/attachments/${att.idx}/download`;
@@ -2806,7 +2806,7 @@ document.addEventListener('DOMContentLoaded', async function() {
             item.innerHTML = `
                 <i class="fas ${getFileIcon(file.name)}"></i>
                 <span>${file.name} <small style="color:#94a3b8;">(${(file.size / 1024).toFixed(1)} KB)</small></span>
-                <button type="button" class="btn-remove-file" title="삭제"><i class="fas fa-times"></i></button>
+                <button type="button" class="btn-remove-file" data-tip="삭제"><i class="fas fa-times"></i></button>
             `;
             item.querySelector('.btn-remove-file').addEventListener('click', () => {
                 filesArr.splice(index, 1);

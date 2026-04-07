@@ -1,6 +1,11 @@
 // 연구비 증빙 - 재료비/장비비 페이지 JavaScript
 document.addEventListener('DOMContentLoaded', async function() {
 
+    // 검색 유틸리티 (공통, XSS 방지를 위해 escapeHtml 옵션 사용)
+    const searchUtils = new SearchUtils();
+    const matchesSearch = (text, keyword) => searchUtils.matchesSearch(text, keyword);
+    const highlightText = (text, keyword) => searchUtils.highlightText(text, keyword, { escapeHtml: true });
+
     // ============================================
     // 전역 변수
     // ============================================
@@ -77,7 +82,7 @@ document.addEventListener('DOMContentLoaded', async function() {
                 </select>
             </td>
             <td><input type="text" class="item-input item-remark" placeholder="비고"></td>
-            <td><button type="button" class="btn-remove-row" onclick="removeItemRow(this)" title="행 삭제">
+            <td><button type="button" class="btn-remove-row" onclick="removeItemRow(this)" data-tip="행 삭제">
                 <i class="fas fa-times"></i>
             </button></td>
         `;
@@ -317,35 +322,6 @@ document.addEventListener('DOMContentLoaded', async function() {
     // ============================================
     // 프로젝트 모달 (초성 검색 + 연도 필터)
     // ============================================
-    const CHO_HANGUL = ['ㄱ','ㄲ','ㄴ','ㄷ','ㄸ','ㄹ','ㅁ','ㅂ','ㅃ','ㅅ','ㅆ','ㅇ','ㅈ','ㅉ','ㅊ','ㅋ','ㅌ','ㅍ','ㅎ'];
-
-    function getChosung(str) {
-        let result = '';
-        for (let i = 0; i < str.length; i++) {
-            const code = str.charCodeAt(i) - 44032;
-            if (code > -1 && code < 11172) result += CHO_HANGUL[Math.floor(code / 588)];
-            else result += str.charAt(i);
-        }
-        return result;
-    }
-
-    function matchesSearch(text, keyword) {
-        if (!text || !keyword) return true;
-        const lowerText = text.toLowerCase();
-        const lowerKeyword = keyword.toLowerCase();
-        if (lowerText.includes(lowerKeyword)) return true;
-        return getChosung(text).includes(keyword);
-    }
-
-    function highlightText(text, keyword) {
-        if (!keyword || !text) return escapeHtml(text);
-        if (text.toLowerCase().includes(keyword.toLowerCase())) {
-            const regex = new RegExp(`(${keyword.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')})`, 'gi');
-            return escapeHtml(text).replace(regex, '<mark class="search-highlight">$1</mark>');
-        }
-        return escapeHtml(text);
-    }
-
     let selectedYear = new Date().getFullYear();
     let currentSearchKeyword = '';
     const projectListEl = document.getElementById('projectList');
@@ -1742,23 +1718,4 @@ document.addEventListener('DOMContentLoaded', async function() {
         });
     });
 
-    // ============================================
-    // 테이블 헤더 플로팅 툴팁
-    // ============================================
-    const floatingTooltip = document.getElementById('th-floating-tooltip');
-    document.querySelectorAll('.th-tooltip').forEach(th => {
-        const text = th.querySelector('.th-tooltip-text')?.textContent?.trim();
-        if (!text || !floatingTooltip) return;
-        th.addEventListener('mouseenter', function(e) {
-            floatingTooltip.textContent = text;
-            floatingTooltip.style.display = 'block';
-        });
-        th.addEventListener('mousemove', function(e) {
-            floatingTooltip.style.left = e.clientX + 'px';
-            floatingTooltip.style.top = (e.clientY - 36) + 'px';
-        });
-        th.addEventListener('mouseleave', function() {
-            floatingTooltip.style.display = 'none';
-        });
-    });
 });

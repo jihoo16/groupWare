@@ -1649,15 +1649,6 @@ input.auto-datetime {
     color: #94a3b8;
 }
 
-/* 검색 하이라이트 */
-.search-highlight {
-    background: #ffeb3b;
-    color: #333;
-    font-weight: 600;
-    padding: 2px 0;
-    border-radius: 2px;
-}
-
 /* 빈 상태 메시지 */
 .modal-empty-state {
     display: flex;
@@ -2411,15 +2402,6 @@ input.auto-datetime {
     pointer-events: none;
 }
 
-/* 검색 하이라이트 */
-.highlight {
-    background: #fef08a;
-    color: #854d0e;
-    font-weight: 600;
-    padding: 0 2px;
-    border-radius: 2px;
-}
-
 .badge-added {
     display: inline-block;
     padding: 2px 8px;
@@ -2575,104 +2557,6 @@ input.auto-datetime {
 
 .btn-print i {
     font-size: 16px;
-}
-
-/* 툴팁 버튼 스타일 */
-.btn-with-tooltip {
-    position: relative;
-}
-
-.tooltip-text {
-    visibility: hidden;
-    opacity: 0;
-    position: absolute;
-    top: 110%;
-    left: 50%;
-    transform: translateX(-50%);
-    background: #333;
-    color: white;
-    padding: 12px 16px;
-    border-radius: 8px;
-    font-size: 13px;
-    line-height: 1.5;
-    white-space: nowrap;
-    z-index: 1000;
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
-    transition: opacity 0.3s, visibility 0.3s;
-    pointer-events: none;
-}
-
-.tooltip-text::after {
-    content: '';
-    position: absolute;
-    bottom: 100%;
-    left: 50%;
-    transform: translateX(-50%);
-    border: 8px solid transparent;
-    border-bottom-color: #333;
-}
-
-.btn-with-tooltip:hover .tooltip-text {
-    visibility: visible;
-    opacity: 1;
-}
-
-/* 라벨 툴팁 스타일 */
-.label-tooltip-wrapper {
-    position: relative;
-    display: inline-flex;
-    align-items: center;
-    margin-left: 4px;
-}
-
-.label-tooltip-wrapper .tooltip-icon {
-    color: #667eea;
-    font-size: 14px;
-    cursor: help;
-    transition: color 0.2s;
-}
-
-.label-tooltip-wrapper .tooltip-icon:hover {
-    color: #5a67d8;
-}
-
-.label-tooltip-wrapper .tooltip-text {
-    visibility: hidden;
-    opacity: 0;
-    position: fixed;
-    z-index: 9999;
-    background: #1e293b;
-    color: #fff;
-    font-size: 12px;
-    font-weight: 400;
-    padding: 10px 14px;
-    border-radius: 6px;
-    white-space: normal !important;
-    min-width: 250px;
-    max-width: 360px;
-    width: max-content;
-    text-align: left;
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
-    transition: opacity 0.2s ease;
-    pointer-events: none;
-    word-break: keep-all;
-    overflow-wrap: break-word;
-    line-height: 1.6;
-}
-
-.label-tooltip-wrapper .tooltip-text::after {
-    content: '';
-    position: absolute;
-    top: 100%;
-    left: 50%;
-    transform: translateX(-50%);
-    border: 6px solid transparent;
-    border-top-color: #1e293b;
-}
-
-.label-tooltip-wrapper:hover .tooltip-text {
-    visibility: visible;
-    opacity: 1;
 }
 
 /* 필수 필드 미입력 강조 스타일 */

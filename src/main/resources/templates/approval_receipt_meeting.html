@@ -20,10 +20,10 @@
                         <i class="fas fa-print"></i>
                         인쇄
                     </button>
-                    <button class="btn-primary btn-with-tooltip" id="saveBtn">
+                    <button class="btn-primary" id="saveBtn"
+                            data-tip="💡 모든 필수값을 채우면 좌측에 인쇄 버튼이 나타납니다">
                         <i class="fas fa-save"></i>
                         저장
-                        <span class="tooltip-text">💡 모든 필수값을 채우면 좌측에 인쇄 버튼이 나타납니다</span>
                     </button>
                     <button class="btn-primary" id="updateBtn" style="display: none;">
                         <i class="fas fa-edit"></i>
@@ -88,10 +88,8 @@
                                         <label for="common_date">
                                             <i class="fas fa-calendar-day"></i> 회의 일자
                                             <span class="required-mark">*</span>
-                                            <span class="label-tooltip-wrapper">
-                                                <i class="fas fa-info-circle" style="color: #94a3b8; font-size: 12px; cursor: help;"></i>
-                                                <span class="tooltip-text">⚠️ 일자 변경 시 중복 방지를 위해 참석자 목록이 초기화됩니다</span>
-                                            </span>
+                                            <i class="fas fa-info-circle" style="color: #94a3b8; font-size: 12px; cursor: help; margin-left: 4px;"
+                                               data-tip="⚠️ 일자 변경 시 중복 방지를 위해 참석자 목록이 초기화됩니다"></i>
                                         </label>
                                         <input type="date" id="common_date" class="form-input">
                                     </div>
@@ -103,10 +101,8 @@
                                         <label for="common_start_time">
                                             <i class="fas fa-clock"></i> 시작 시간
                                             <span class="required-mark">*</span>
-                                            <span class="label-tooltip-wrapper">
-                                                <i class="fas fa-info-circle" style="color: #94a3b8; font-size: 12px; cursor: help;"></i>
-                                                <span class="tooltip-text">⚠️ 시간 변경 시 중복 방지를 위해 참석자 목록이 초기화됩니다</span>
-                                            </span>
+                                            <i class="fas fa-info-circle" style="color: #94a3b8; font-size: 12px; cursor: help; margin-left: 4px;"
+                                               data-tip="⚠️ 시간 변경 시 중복 방지를 위해 참석자 목록이 초기화됩니다"></i>
                                         </label>
                                         <input type="time" id="common_start_time" class="form-input" value="10:00" min="06:00">
                                     </div>
@@ -114,10 +110,8 @@
                                         <label for="common_end_time">
                                             <i class="fas fa-clock"></i> 종료 시간
                                             <span class="required-mark">*</span>
-                                            <span class="label-tooltip-wrapper">
-                                                <i class="fas fa-info-circle" style="color: #94a3b8; font-size: 12px; cursor: help;"></i>
-                                                <span class="tooltip-text">⚠️ 시간 변경 시 중복 방지를 위해 참석자 목록이 초기화됩니다</span>
-                                            </span>
+                                            <i class="fas fa-info-circle" style="color: #94a3b8; font-size: 12px; cursor: help; margin-left: 4px;"
+                                               data-tip="⚠️ 시간 변경 시 중복 방지를 위해 참석자 목록이 초기화됩니다"></i>
                                         </label>
                                         <input type="time" id="common_end_time" class="form-input" value="14:00" min="11:00" max="23:59">
                                     </div>
@@ -644,6 +638,7 @@
         </div>
     </div>
 
+    <script th:src="@{/js/search-utils.js}"></script>
     <script th:src="@{/js/approval_receipt_meeting.js}"></script>
 </body>
 </html>

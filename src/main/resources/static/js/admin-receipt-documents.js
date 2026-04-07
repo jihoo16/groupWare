@@ -404,7 +404,7 @@ document.addEventListener('DOMContentLoaded', function() {
             const iconClass = getSlotIcon(slot.match);
             const titleSuffix = has ? ` · 클릭하여 다운로드 (${matched.length}개)` : ' (누락)';
             const dataAttr = has ? `data-doc-idx="${doc.idx}" data-slot-idx="${i}"` : '';
-            return `<span class="att-icon ${cls}" ${dataAttr} title="${escapeHtml(slot.label)}${titleSuffix}"><i class="${iconClass}"></i></span>`;
+            return `<span class="att-icon ${cls}" ${dataAttr} data-tip="${escapeHtml(slot.label)}${titleSuffix}"><i class="${iconClass}"></i></span>`;
         }).join('')}</div>`;
 
         const fileCount = (doc.attachments || []).length;
@@ -413,7 +413,7 @@ document.addEventListener('DOMContentLoaded', function() {
         return `
             <tr class="${rowClass}">
                 <td>${typeBadge}</td>
-                <td><span title="${escapeHtml(doc.projectName || '')}">${escapeHtml(doc.projectName || '-')}</span></td>
+                <td><span data-tip="${escapeHtml(doc.projectName || '')}">${escapeHtml(doc.projectName || '-')}</span></td>
                 <td>${cardHtml}</td>
                 <td>${escapeHtml(doc.drafterName || '-')}</td>
                 <td>${dateStr}</td>
@@ -422,10 +422,10 @@ document.addEventListener('DOMContentLoaded', function() {
                 <td>${attHtml}</td>
                 <td>
                     <div class="row-actions">
-                        <button class="btn-row btn-detail" data-doc-idx="${doc.idx}" title="상세 보기">
+                        <button class="btn-row btn-detail" data-doc-idx="${doc.idx}" data-tip="상세 보기">
                             <i class="fas fa-eye"></i>
                         </button>
-                        <button class="btn-row btn-download" data-doc-idx="${doc.idx}" title="모든 첨부 다운로드 (${fileCount}개)" ${downloadDisabled}>
+                        <button class="btn-row btn-download" data-doc-idx="${doc.idx}" data-tip="모든 첨부 다운로드 (${fileCount}개)" ${downloadDisabled}>
                             <i class="fas fa-download"></i> ${fileCount}
                         </button>
                     </div>

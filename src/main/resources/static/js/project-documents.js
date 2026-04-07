@@ -649,7 +649,7 @@ let text;
             text = doc.title || '-';
         }
 
-        return `<span class="title-text" title="${text}">${text}</span>`;
+        return `<span class="title-text" data-tip="${text}">${text}</span>`;
     }
 
     // 연구비증빙 첨부파일 누락 시 행 배경 클래스 반환
@@ -722,9 +722,8 @@ let text;
             const highlightedProject = keyword ? searchUtils.highlightText(displayName, keyword) : displayName;
 
             projectCell.innerHTML = `
-                <span class="project-name-wrapper">
+                <span class="project-name-wrapper" data-tip="${projectName}">
                     ${highlightedProject}
-                    <span class="project-name-tooltip">${projectName}</span>
                 </span>
             `;
         } else {
@@ -821,13 +820,13 @@ let text;
         }
 
         actionCell.innerHTML = `
-            ${isReceiptType ? `<button class="btn-icon attachment-modal-btn${missingCls}" title="${missingTitle}" style="margin: 0 2px; display: inline-block;">
+            ${isReceiptType ? `<button class="btn-icon attachment-modal-btn${missingCls}" data-tip="${missingTitle}" style="margin: 0 2px; display: inline-block;">
                 <i class="fas fa-paperclip"></i>
             </button>` : ''}
-            ${isWeeklyReport ? `<button class="btn-icon weekly-pdf-btn" title="PDF 다운로드" style="margin: 0 2px; display: inline-block;">
+            ${isWeeklyReport ? `<button class="btn-icon weekly-pdf-btn" data-tip="PDF 다운로드" style="margin: 0 2px; display: inline-block;">
                 <i class="fas fa-paperclip"></i>
             </button>` : ''}
-            <button class="btn-icon view-btn" title="상세보기" style="margin: 0 2px; display: inline-block;">
+            <button class="btn-icon view-btn" data-tip="상세보기" style="margin: 0 2px; display: inline-block;">
                 <i class="fas fa-eye"></i>
             </button>
         `;
@@ -1184,11 +1183,11 @@ let text;
         function buildExistingRow(a) {
             const safe = a.originalFilename.replace(/"/g, '&quot;');
             return `
-                <div class="att-file-row modal-download-row" data-url="${a.downloadUrl}" data-filename="${safe}" data-att-id="${a.idx}" title="클릭하여 다운로드">
+                <div class="att-file-row modal-download-row" data-url="${a.downloadUrl}" data-filename="${safe}" data-att-id="${a.idx}" data-tip="클릭하여 다운로드">
                     <i class="fas fa-file att-file-icon"></i>
                     <span class="att-file-name">${safe}</span>
                     <i class="fas fa-download" style="color:#93c5fd; font-size:12px; margin-left:auto; flex-shrink:0;"></i>
-                    <button class="att-del-btn" data-att-id="${a.idx}" title="삭제">&times;</button>
+                    <button class="att-del-btn" data-att-id="${a.idx}" data-tip="삭제">&times;</button>
                 </div>`;
         }
 
@@ -1357,8 +1356,8 @@ let text;
         container.innerHTML = fileArray.map((f, i) => `
             <div class="att-pending-item">
                 <i class="fas fa-check-circle"></i>
-                <span title="${f.name}">${f.name}</span>
-                <button class="att-pending-remove" data-index="${i}" title="제거">&times;</button>
+                <span data-tip="${f.name}">${f.name}</span>
+                <button class="att-pending-remove" data-index="${i}" data-tip="제거">&times;</button>
             </div>`).join('');
         container.querySelectorAll('.att-pending-remove').forEach(btn => {
             btn.addEventListener('click', () => {

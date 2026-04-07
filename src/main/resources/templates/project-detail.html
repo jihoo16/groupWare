@@ -133,7 +133,7 @@
                             <tr>
                                 <th>사용액</th>
                                 <td>
-                                    <span class="clickable-amount" id="activityUsedLabel" title="클릭하여 세부 내역 보기">
+                                    <span class="clickable-amount" id="activityUsedLabel" data-tip="클릭하여 세부 내역 보기">
                                         <span id="activityUsed"></span>
                                         <i class="fas fa-search-plus" style="font-size: 11px; color: #4361ee; margin-left: 4px;"></i>
                                     </span>
@@ -151,15 +151,15 @@
                                 <th>잔여금액</th>
                                 <td>
                                     <span id="activityRemaining" class="budget-remaining"></span>
-                                    <i class="fas fa-pencil-alt btn-adj-pencil" id="activityAdjBtn" title="보정값 관리"></i>
+                                    <i class="fas fa-pencil-alt btn-adj-pencil" id="activityAdjBtn" data-tip="보정값 관리"></i>
                                 </td>
                                 <td>
                                     <span id="equipmentRemaining" class="budget-remaining"></span>
-                                    <i class="fas fa-pencil-alt btn-adj-pencil" id="equipmentAdjBtn" title="보정값 관리"></i>
+                                    <i class="fas fa-pencil-alt btn-adj-pencil" id="equipmentAdjBtn" data-tip="보정값 관리"></i>
                                 </td>
                                 <td>
                                     <span id="materialRemaining" class="budget-remaining"></span>
-                                    <i class="fas fa-pencil-alt btn-adj-pencil" id="materialAdjBtn" title="보정값 관리"></i>
+                                    <i class="fas fa-pencil-alt btn-adj-pencil" id="materialAdjBtn" data-tip="보정값 관리"></i>
                                 </td>
                             </tr>
                         </tbody>
@@ -304,7 +304,7 @@
     </main>
 
     <!-- 상단으로 이동 버튼 -->
-    <button class="scroll-to-top" id="scrollToTopBtn" title="상단으로 이동">
+    <button class="scroll-to-top" id="scrollToTopBtn" data-tip="상단으로 이동">
         <i class="fas fa-chevron-up"></i>
     </button>
 </div>
@@ -314,7 +314,7 @@
     <div class="iframe-modal">
         <div class="iframe-modal-header">
             <span class="iframe-modal-title" id="iframeModalTitle">문서 보기</span>
-            <button type="button" class="iframe-modal-close" id="iframeModalClose" title="닫기">
+            <button type="button" class="iframe-modal-close" id="iframeModalClose" data-tip="닫기">
                 <i class="fas fa-times"></i>
             </button>
         </div>

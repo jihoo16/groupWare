@@ -2,9 +2,6 @@
 <html lang="ko" xmlns:th="http://www.thymeleaf.org">
 <head th:replace="~{fragments/layout :: head(${purchaseType == 'equipment'} ? '연구비 증빙 - 장비비' : '연구비 증빙 - 재료비', '/css/approval_receipt_purchase.css')}"></head>
 <body>
-<!-- 테이블 헤더 플로팅 툴팁 -->
-<div id="th-floating-tooltip"></div>
-
 <!-- 로딩 오버레이 -->
 <div th:replace="~{fragments/loading-overlay :: overlay}"></div>
 
@@ -61,10 +58,10 @@
                     <i class="fas fa-trash"></i>
                     삭제하기
                 </button>
-                <button class="btn-primary btn-with-tooltip" id="submitBtn">
+                <button class="btn-primary" id="submitBtn"
+                        data-tip="💡 모든 필수값을 채우면 좌측에 인쇄 버튼이 나타납니다">
                     <i class="fas fa-save"></i>
                     저장
-                    <span class="tooltip-text">💡 모든 필수값을 채우면 좌측에 인쇄 버튼이 나타납니다</span>
                 </button>
                 <button class="btn-secondary" onclick="history.back()">
                     <i class="fas fa-arrow-left"></i>
@@ -181,13 +178,13 @@
                                             <th>적요</th>
                                             <th style="width: 77px;">수량</th>
                                             <th style="width: 155px;">
-                                                총 결제금액 <span class="th-tooltip"><i class="fas fa-question-circle"></i><span class="th-tooltip-text">VAT 합산금액</span></span>
+                                                총 결제금액 <i class="fas fa-question-circle" style="color: #94a3b8; font-size: 12px; cursor: help; margin-left: 4px;" data-tip="VAT 합산금액"></i>
                                             </th>
                                             <th style="width: 155px;">
-                                                공급가액 <span class="th-tooltip"><i class="fas fa-question-circle"></i><span class="th-tooltip-text">세금계산서 기준</span></span>
+                                                공급가액 <i class="fas fa-question-circle" style="color: #94a3b8; font-size: 12px; cursor: help; margin-left: 4px;" data-tip="세금계산서 기준"></i>
                                             </th>
                                             <th style="width: 140px;">
-                                                세액 <span class="th-tooltip"><i class="fas fa-question-circle"></i><span class="th-tooltip-text">세금계산서 기준</span></span>
+                                                세액 <i class="fas fa-question-circle" style="color: #94a3b8; font-size: 12px; cursor: help; margin-left: 4px;" data-tip="세금계산서 기준"></i>
                                             </th>
                                             <th style="width: 112px;">과세구분</th>
                                             <th style="width: 140px;">비고</th>
@@ -463,6 +460,7 @@
     </div>
 </div>
 
+<script th:src="@{/js/search-utils.js}"></script>
 <script th:src="@{/js/approval_receipt_purchase.js}"></script>
 </body>
 </html>

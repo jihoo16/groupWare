@@ -168,7 +168,7 @@ document.addEventListener('DOMContentLoaded', function() {
             // 내가 참여한 프로젝트인지 확인
             const isMyProject = myProjectIds.includes(project.idx);
             const myProjectClass = isMyProject ? ' my-project-card' : '';
-            const myProjectIcon = isMyProject ? '<i class="fas fa-user-check my-project-icon" title="내가 참여한 프로젝트"></i>' : '';
+            const myProjectIcon = isMyProject ? '<i class="fas fa-user-check my-project-icon" data-tip="내가 참여한 프로젝트"></i>' : '';
 
             return `
             <div class="project-card${myProjectClass}" data-project-name="${project.projectName}" data-project-id="${project.idx}">
@@ -519,7 +519,7 @@ document.addEventListener('DOMContentLoaded', function() {
                     row.classList.add('my-project');
                 }
 
-                const myProjectIcon = isMyProject ? '<i class="fas fa-user-check my-project-icon" title="내가 참여한 프로젝트"></i>' : '';
+                const myProjectIcon = isMyProject ? '<i class="fas fa-user-check my-project-icon" data-tip="내가 참여한 프로젝트"></i>' : '';
 
                 // 하이라이트 적용
                 const projectName = currentSearchKeyword ?

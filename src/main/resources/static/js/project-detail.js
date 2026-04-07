@@ -414,7 +414,7 @@ function displayRelatedProjects(projects) {
         <div class="related-project-item"
              onclick="goToRelatedProject(${project.targetProjectIdx})"
              style="cursor: pointer;"
-             title="클릭하여 프로젝트로 이동">
+             data-tip="클릭하여 프로젝트로 이동">
             <i class="fas fa-link"></i>
             <span class="project-title">${project.targetProjectName || '프로젝트명 없음'}</span>
             <span class="project-period">| 기간 : ${project.targetPeriod || '-'}</span>

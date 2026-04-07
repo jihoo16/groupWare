@@ -1,4 +1,9 @@
 document.addEventListener('DOMContentLoaded', function() {
+    // 검색 유틸리티 (공통)
+    const searchUtils = new SearchUtils();
+    const matchesKoreanSearch = (text, searchTerm) => searchUtils.matchesSearch(text, searchTerm);
+    const highlightText = (text, searchTerm) => searchUtils.highlightText(text, searchTerm, 'highlight-text');
+
     let allDocuments = [];
     let filteredDocuments = [];
     let currentPage = 1;
@@ -69,99 +74,6 @@ document.addEventListener('DOMContentLoaded', function() {
             option.textContent = `${year}년`;
             yearFilter.appendChild(option);
         });
-    }
-
-    /**
-     * 한글 초성 추출
-     */
-    function getKoreanInitials(text) {
-        const initials = ['ㄱ', 'ㄲ', 'ㄴ', 'ㄷ', 'ㄸ', 'ㄹ', 'ㅁ', 'ㅂ', 'ㅃ', 'ㅅ', 'ㅆ', 'ㅇ', 'ㅈ', 'ㅉ', 'ㅊ', 'ㅋ', 'ㅌ', 'ㅍ', 'ㅎ'];
-        let result = '';
-
-        for (let char of text) {
-            const code = char.charCodeAt(0);
-            if (code >= 0xAC00 && code <= 0xD7A3) {
-                // 한글 유니코드 범위
-                const initialIndex = Math.floor((code - 0xAC00) / 588);
-                result += initials[initialIndex];
-            } else {
-                result += char;
-            }
-        }
-
-        return result;
-    }
-
-    /**
-     * 초성 검색 매칭
-     */
-    function matchesKoreanSearch(text, searchTerm) {
-        if (!text || !searchTerm) return true;
-
-        const lowerText = text.toLowerCase();
-        const lowerSearch = searchTerm.toLowerCase();
-
-        // 일반 검색 (포함 여부)
-        if (lowerText.includes(lowerSearch)) {
-            return true;
-        }
-
-        // 초성 검색
-        const initials = getKoreanInitials(text);
-        if (initials.includes(searchTerm)) {
-            return true;
-        }
-
-        return false;
-    }
-
-    /**
-     * 텍스트 하이라이트
-     */
-    function highlightText(text, searchTerm) {
-        if (!text || !searchTerm) return text;
-
-        // 일반 검색 하이라이트
-        const regex = new RegExp(`(${searchTerm})`, 'gi');
-        let highlighted = text.replace(regex, '<mark class="highlight-text">$1</mark>');
-
-        // 초성 검색인 경우 해당 글자 하이라이트
-        if (!regex.test(text)) {
-            const initials = ['ㄱ', 'ㄲ', 'ㄴ', 'ㄷ', 'ㄸ', 'ㄹ', 'ㅁ', 'ㅂ', 'ㅃ', 'ㅅ', 'ㅆ', 'ㅇ', 'ㅈ', 'ㅉ', 'ㅊ', 'ㅋ', 'ㅌ', 'ㅍ', 'ㅎ'];
-            let result = '';
-            let searchIndex = 0;
-
-            for (let char of text) {
-                if (searchIndex >= searchTerm.length) {
-                    result += char;
-                    continue;
-                }
-
-                const code = char.charCodeAt(0);
-                if (code >= 0xAC00 && code <= 0xD7A3) {
-                    const initialIndex = Math.floor((code - 0xAC00) / 588);
-                    const initial = initials[initialIndex];
-
-                    if (initial === searchTerm[searchIndex]) {
-                        result += `<mark class="highlight-text">${char}</mark>`;
-                        searchIndex++;
-                    } else {
-                        result += char;
-                    }
-                } else {
-                    if (char.toLowerCase() === searchTerm[searchIndex].toLowerCase()) {
-                        result += `<mark class="highlight-text">${char}</mark>`;
-                        searchIndex++;
-                    } else {
-                        result += char;
-                    }
-                }
-            }
-
-            highlighted = result;
-        }
-
-        return highlighted;
     }
 
     /**
@@ -370,7 +282,7 @@ document.addEventListener('DOMContentLoaded', function() {
                                     }
                                     <button class="btn-delete ${isDeleted ? 'disabled' : ''}"
                                             onclick="${isDeleted ? 'return false;' : `deleteDocument(${doc.documentIdx}, '${doc.userName}')`}"
-                                            ${isDeleted ? 'disabled data-tooltip="이미 삭제된 문서입니다."' : ''}>
+                                            ${isDeleted ? 'disabled data-tip="이미 삭제된 문서입니다."' : ''}>
                                         <i class="fas fa-trash"></i>
                                         삭제
                                     </button>

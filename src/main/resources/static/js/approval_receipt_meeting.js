@@ -1,20 +1,5 @@
 // 연구비 증빙 - 회의록 페이지 JavaScript
 
-// Label tooltip: fixed positioning (overflow 잘림 방지)
-(function() {
-    document.addEventListener('mouseenter', function(e) {
-        if (!e.target || !e.target.closest) return;
-        const wrapper = e.target.closest('.label-tooltip-wrapper');
-        if (!wrapper) return;
-        const tooltip = wrapper.querySelector('.tooltip-text');
-        if (!tooltip) return;
-        const rect = wrapper.getBoundingClientRect();
-        tooltip.style.left = rect.left + rect.width / 2 + 'px';
-        tooltip.style.top = rect.top - 10 + 'px';
-        tooltip.style.transform = 'translate(-50%, -100%)';
-    }, true);
-})();
-
 // 텍스트를 5단어씩 끊어서 줄바꿈하는 헬퍼 함수 (전역 스코프)
 function formatTextWithLineBreaks(text, wordsPerLine = 5) {
     if (!text) return '';
@@ -43,6 +28,9 @@ function getDocumentTypeName(typeCode) {
 }
 
 document.addEventListener('DOMContentLoaded', async function() {
+    // 검색 유틸리티 (공통)
+    const searchUtils = new SearchUtils();
+
     // 전역 변수
     let selectedReceiptFiles = [];
     let selectedDocumentFiles = [];
@@ -477,62 +465,9 @@ document.addEventListener('DOMContentLoaded', async function() {
         const projectSearch = document.getElementById('projectSearch');
         const projectList = document.getElementById('projectList');
 
-        // 초성 검색 유틸리티
-        const CHO_HANGUL = ['ㄱ', 'ㄲ', 'ㄴ', 'ㄷ', 'ㄸ', 'ㄹ', 'ㅁ', 'ㅂ', 'ㅃ', 'ㅅ', 'ㅆ', 'ㅇ', 'ㅈ', 'ㅉ', 'ㅊ', 'ㅋ', 'ㅌ', 'ㅍ', 'ㅎ'];
-
-        function getChosung(str) {
-            let result = '';
-            for (let i = 0; i < str.length; i++) {
-                const code = str.charCodeAt(i) - 44032;
-                if (code > -1 && code < 11172) {
-                    result += CHO_HANGUL[Math.floor(code / 588)];
-                } else {
-                    result += str.charAt(i);
-                }
-            }
-            return result;
-        }
-
-        function matchesSearch(text, keyword) {
-            if (!text || !keyword) return true;
-            const lowerText = text.toLowerCase();
-            const lowerKeyword = keyword.toLowerCase();
-            if (lowerText.includes(lowerKeyword)) return true;
-            const chosung = getChosung(text);
-            return chosung.includes(keyword);
-        }
-
-        function highlightText(text, keyword) {
-            if (!text || !keyword) return text;
-            const lowerText = text.toLowerCase();
-            const lowerKeyword = keyword.toLowerCase();
-            if (lowerText.includes(lowerKeyword)) {
-                const regex = new RegExp(`(${keyword.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')})`, 'gi');
-                return text.replace(regex, '<mark class="search-highlight">$1</mark>');
-            }
-            const chosung = getChosung(text);
-            if (chosung.includes(keyword)) {
-                let result = '';
-                let keywordIndex = 0;
-                for (let i = 0; i < text.length; i++) {
-                    const char = text[i];
-                    const code = text.charCodeAt(i) - 44032;
-                    if (code > -1 && code < 11172) {
-                        const cho = CHO_HANGUL[Math.floor(code / 588)];
-                        if (keywordIndex < keyword.length && cho === keyword[keywordIndex]) {
-                            result += `<mark class="search-highlight">${char}</mark>`;
-                            keywordIndex++;
-                        } else {
-                            result += char;
-                        }
-                    } else {
-                        result += char;
-                    }
-                }
-                return result;
-            }
-            return text;
-        }
+        // 검색 유틸리티 (공통 - 외부 searchUtils 인스턴스 사용)
+        const matchesSearch = (text, keyword) => searchUtils.matchesSearch(text, keyword);
+        const highlightText = (text, keyword) => searchUtils.highlightText(text, keyword);
 
         // ── 프로젝트 연도 필터 ──────────────────────────────────────
         let selectedYear = null;
@@ -2223,10 +2158,10 @@ document.addEventListener('DOMContentLoaded', async function() {
             item.innerHTML = `
                 <i class="fas ${getFileIcon(att.originalFilename)}"></i>
                 <span>${att.originalFilename} ${fileSizeKB}</span>
-                <button class="btn-download-file" onclick="downloadAttachment(${att.idx}, '${att.originalFilename}')" title="다운로드">
+                <button class="btn-download-file" onclick="downloadAttachment(${att.idx}, '${att.originalFilename}')" data-tip="다운로드">
                     <i class="fas fa-download"></i>
                 </button>
-                <button class="btn-remove-file" onclick="removeExistingAttachment(${att.idx})" title="삭제">
+                <button class="btn-remove-file" onclick="removeExistingAttachment(${att.idx})" data-tip="삭제">
                     <i class="fas fa-times"></i>
                 </button>
             `;
@@ -2240,7 +2175,7 @@ document.addEventListener('DOMContentLoaded', async function() {
             item.innerHTML = `
                 <i class="fas ${getFileIcon(file.name)}"></i>
                 <span>${file.name} (${(file.size / 1024).toFixed(1)} KB) <span style="color: #667eea; font-size: 11px;">[신규]</span></span>
-                <button class="btn-remove-file" onclick="removeReceiptFile(${index})" title="삭제">
+                <button class="btn-remove-file" onclick="removeReceiptFile(${index})" data-tip="삭제">
                     <i class="fas fa-times"></i>
                 </button>
             `;
@@ -2267,10 +2202,10 @@ document.addEventListener('DOMContentLoaded', async function() {
             item.innerHTML = `
                 <i class="fas ${getFileIcon(att.originalFilename)}"></i>
                 <span>${att.originalFilename} ${fileSizeKB}</span>
-                <button class="btn-download-file" onclick="downloadAttachment(${att.idx}, '${att.originalFilename}')" title="다운로드">
+                <button class="btn-download-file" onclick="downloadAttachment(${att.idx}, '${att.originalFilename}')" data-tip="다운로드">
                     <i class="fas fa-download"></i>
                 </button>
-                <button class="btn-remove-file" onclick="removeExistingAttachment(${att.idx})" title="삭제">
+                <button class="btn-remove-file" onclick="removeExistingAttachment(${att.idx})" data-tip="삭제">
                     <i class="fas fa-times"></i>
                 </button>
             `;
@@ -2284,7 +2219,7 @@ document.addEventListener('DOMContentLoaded', async function() {
             item.innerHTML = `
                 <i class="fas ${getFileIcon(file.name)}"></i>
                 <span>${file.name} (${(file.size / 1024).toFixed(1)} KB) <span style="color: #667eea; font-size: 11px;">[신규]</span></span>
-                <button class="btn-remove-file" onclick="removeDocumentFile(${index})" title="삭제">
+                <button class="btn-remove-file" onclick="removeDocumentFile(${index})" data-tip="삭제">
                     <i class="fas fa-times"></i>
                 </button>
             `;
@@ -2732,36 +2667,10 @@ document.addEventListener('DOMContentLoaded', async function() {
     // 임시 선택된 참석자 배열
     let tempSelectedAttendees = [];
 
-    // 초성 검색 유틸리티
-    const CHO_HANGUL = ['ㄱ', 'ㄲ', 'ㄴ', 'ㄷ', 'ㄸ', 'ㄹ', 'ㅁ', 'ㅂ', 'ㅃ', 'ㅅ', 'ㅆ', 'ㅇ', 'ㅈ', 'ㅉ', 'ㅊ', 'ㅋ', 'ㅌ', 'ㅍ', 'ㅎ'];
-
-    function getChosung(str) {
-        let result = '';
-        for (let i = 0; i < str.length; i++) {
-            const code = str.charCodeAt(i) - 44032;
-            if (code > -1 && code < 11172) {
-                result += CHO_HANGUL[Math.floor(code / 588)];
-            }
-        }
-        return result;
-    }
-
-    function highlightText(text, keyword) {
-        if (!keyword) return text;
-        const regex = new RegExp(`(${keyword})`, 'gi');
-        return text.replace(regex, '<span class="highlight">$1</span>');
-    }
-
-    function matchesSearch(text, keyword) {
-        if (!keyword) return true;
-        const lowerText = text.toLowerCase();
-        const lowerKeyword = keyword.toLowerCase();
-        // 일반 검색
-        if (lowerText.includes(lowerKeyword)) return true;
-        // 초성 검색
-        const chosung = getChosung(text);
-        return chosung.includes(keyword);
-    }
+    // 검색 유틸리티 (공통 - 외부 searchUtils 인스턴스 사용)
+    // 이 영역은 .highlight CSS 클래스를 사용 (참석자/프로젝트 카드 모달)
+    const matchesSearch = (text, keyword) => searchUtils.matchesSearch(text, keyword);
+    const highlightText = (text, keyword) => searchUtils.highlightText(text, keyword, 'highlight');
 
     // 참석자 목록 데이터 (프로젝트 팀원에서 가져옴)
     function getAttendeePersons() {
@@ -2990,7 +2899,7 @@ document.addEventListener('DOMContentLoaded', async function() {
                     ? `${isDuplicate.startTime}~${isDuplicate.endTime}`
                     : '';
                 const tooltipText = `${projectName} 프로젝트 회의 (${timeRange})`;
-                duplicateBadge = `<span style="background: #fee2e2; color: #991b1b; padding: 2px 8px; border-radius: 4px; font-size: 11px; margin-left: 8px; white-space: nowrap;" title="${tooltipText}"><i class="fas fa-ban"></i> 시간 중복</span>`;
+                duplicateBadge = `<span style="background: #fee2e2; color: #991b1b; padding: 2px 8px; border-radius: 4px; font-size: 11px; margin-left: 8px; white-space: nowrap;" data-tip="${tooltipText}"><i class="fas fa-ban"></i> 시간 중복</span>`;
             }
 
             const isLocked = isAuthor || isDuplicate;
@@ -3053,7 +2962,7 @@ document.addEventListener('DOMContentLoaded', async function() {
                     ? `${isDuplicate.startTime}~${isDuplicate.endTime}`
                     : '';
                 const tooltipText = `${projectName} 프로젝트 회의 (${timeRange})`;
-                duplicateBadge = `<span style="background: #fee2e2; color: #991b1b; padding: 2px 8px; border-radius: 4px; font-size: 11px; margin-left: 8px; white-space: nowrap;" title="${tooltipText}"><i class="fas fa-ban"></i> 시간 중복</span>`;
+                duplicateBadge = `<span style="background: #fee2e2; color: #991b1b; padding: 2px 8px; border-radius: 4px; font-size: 11px; margin-left: 8px; white-space: nowrap;" data-tip="${tooltipText}"><i class="fas fa-ban"></i> 시간 중복</span>`;
             }
 
             const disabledStyle = isDuplicate ? 'opacity: 0.5; cursor: not-allowed; pointer-events: none;' : '';
@@ -3939,7 +3848,7 @@ document.addEventListener('DOMContentLoaded', async function() {
                 const projectName = isDuplicate.projectName;
                 const timeRange = `${isDuplicate.startTime}~${isDuplicate.endTime}`;
                 const tooltipText = `${projectName} 프로젝트 회의 (${timeRange})`;
-                duplicateBadge = `<span style="background: #fee2e2; color: #991b1b; padding: 2px 8px; border-radius: 4px; font-size: 11px; margin-left: 8px; white-space: nowrap;" title="${tooltipText}"><i class="fas fa-exclamation-triangle"></i> 시간 중복</span>`;
+                duplicateBadge = `<span style="background: #fee2e2; color: #991b1b; padding: 2px 8px; border-radius: 4px; font-size: 11px; margin-left: 8px; white-space: nowrap;" data-tip="${tooltipText}"><i class="fas fa-exclamation-triangle"></i> 시간 중복</span>`;
             }
 
             return `

@@ -1,26 +1,9 @@
 document.addEventListener('DOMContentLoaded', function() {
 
-    // ── 커스텀 fixed 툴팁 (overflow 잘림 방지) ──────────────────
-    (function() {
-        let tip = null;
-        document.addEventListener('mouseover', function(e) {
-            const icon = e.target.closest('.check-disabled-icon');
-            if (!icon) return;
-            tip = document.createElement('div');
-            tip.className = 'fixed-tooltip';
-            tip.textContent = '영수증 또는 공식문서 누락으로\n선택할 수 없습니다';
-            document.body.appendChild(tip);
-            const rect = icon.getBoundingClientRect();
-            tip.style.top = (rect.top - tip.offsetHeight - 8) + 'px';
-            tip.style.left = (rect.left + rect.width / 2 - tip.offsetWidth / 2) + 'px';
-        });
-        document.addEventListener('mouseout', function(e) {
-            const icon = e.target.closest('.check-disabled-icon');
-            if (!icon || !tip) return;
-            tip.remove();
-            tip = null;
-        });
-    })();
+    // 검색 유틸리티 (공통)
+    const searchUtils = new SearchUtils();
+    const matchesKoreanSearch = (text, searchTerm) => searchUtils.matchesSearch(text, searchTerm);
+    const highlightText = (text, searchTerm) => searchUtils.highlightText(text, searchTerm, 'highlight-text');
 
     let allDocuments = [];
     let filteredDocuments = [];
@@ -77,58 +60,6 @@ document.addEventListener('DOMContentLoaded', function() {
             option.textContent = `${year}년`;
             yearFilter.appendChild(option);
         });
-    }
-
-    // ── 한글 초성 검색 ────────────────────────────────────────
-
-    function getKoreanInitials(text) {
-        const initials = ['ㄱ','ㄲ','ㄴ','ㄷ','ㄸ','ㄹ','ㅁ','ㅂ','ㅃ','ㅅ','ㅆ','ㅇ','ㅈ','ㅉ','ㅊ','ㅋ','ㅌ','ㅍ','ㅎ'];
-        let result = '';
-        for (let char of text) {
-            const code = char.charCodeAt(0);
-            if (code >= 0xAC00 && code <= 0xD7A3) {
-                result += initials[Math.floor((code - 0xAC00) / 588)];
-            } else {
-                result += char;
-            }
-        }
-        return result;
-    }
-
-    function matchesKoreanSearch(text, searchTerm) {
-        if (!text || !searchTerm) return true;
-        if (text.toLowerCase().includes(searchTerm.toLowerCase())) return true;
-        if (getKoreanInitials(text).includes(searchTerm)) return true;
-        return false;
-    }
-
-    function highlightText(text, searchTerm) {
-        if (!text || !searchTerm) return text;
-        const regex = new RegExp(`(${searchTerm.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')})`, 'gi');
-        if (regex.test(text)) {
-            return text.replace(regex, '<mark class="highlight-text">$1</mark>');
-        }
-        // 초성 검색 하이라이트
-        const initials = ['ㄱ','ㄲ','ㄴ','ㄷ','ㄸ','ㄹ','ㅁ','ㅂ','ㅃ','ㅅ','ㅆ','ㅇ','ㅈ','ㅉ','ㅊ','ㅋ','ㅌ','ㅍ','ㅎ'];
-        let result = '';
-        let searchIndex = 0;
-        for (let char of text) {
-            if (searchIndex >= searchTerm.length) { result += char; continue; }
-            const code = char.charCodeAt(0);
-            if (code >= 0xAC00 && code <= 0xD7A3) {
-                const initial = initials[Math.floor((code - 0xAC00) / 588)];
-                if (initial === searchTerm[searchIndex]) {
-                    result += `<mark class="highlight-text">${char}</mark>`;
-                    searchIndex++;
-                } else { result += char; }
-            } else {
-                if (char.toLowerCase() === searchTerm[searchIndex].toLowerCase()) {
-                    result += `<mark class="highlight-text">${char}</mark>`;
-                    searchIndex++;
-                } else { result += char; }
-            }
-        }
-        return result;
     }
 
     // ── 정산월 계산 (14일 기준) ─────────────────────────────────
@@ -192,7 +123,7 @@ document.addEventListener('DOMContentLoaded', function() {
                     ${badges.map(b => `
                         <button class="settlement-badge ${selectedSettlementMonth === b.key ? 'active' : ''}"
                                 onclick="selectSettlementMonth('${b.key}')"
-                                title="${b.range}">
+                                data-tip="${b.range}">
                             ${b.label} <span class="settlement-count">${b.count}</span>
                         </button>
                     `).join('')}
@@ -400,7 +331,7 @@ document.addEventListener('DOMContentLoaded', function() {
                             <td onclick="event.stopPropagation();">
                                 <div class="check-cell">
                                     <input type="checkbox" class="row-check" value="${doc.idx}" onchange="updateBatchUI()" ${(isDeleted || !allComplete) ? 'disabled' : ''}>
-                                    ${(!isDeleted && !allComplete) ? '<span class="check-disabled-icon"><i class="fas fa-exclamation-circle"></i></span>' : ''}
+                                    ${(!isDeleted && !allComplete) ? '<span class="check-disabled-icon" data-tip="영수증 또는 공식문서 누락으로\n선택할 수 없습니다"><i class="fas fa-exclamation-circle"></i></span>' : ''}
                                 </div>
                             </td>
                             <td>${formatDateTime(doc.createdAt)}</td>
@@ -419,7 +350,7 @@ document.addEventListener('DOMContentLoaded', function() {
                                     </button>
                                     <button class="btn-delete ${isDeleted ? 'disabled' : ''}"
                                             onclick="${isDeleted ? 'return false;' : `deleteDocument(${doc.idx}, '${doc.userName}')`}"
-                                            ${isDeleted ? 'disabled data-tooltip="이미 삭제된 문서입니다."' : ''}>
+                                            ${isDeleted ? 'disabled data-tip="이미 삭제된 문서입니다."' : ''}>
                                         <i class="fas fa-trash"></i> 삭제
                                     </button>
                                 </div>
@@ -806,7 +737,7 @@ document.addEventListener('DOMContentLoaded', function() {
                         <tbody>${data.expenseDetails.map(d => {
                             const hasFiles = d.attachments && d.attachments.length > 0;
                             const fileList = hasFiles
-                                ? d.attachments.map(a => `<a href="/api/approval/expense/attachments/${a.idx}/download" class="file-link" onclick="event.stopPropagation();" target="_blank" title="${a.originalFilename}"><i class="fas fa-paperclip"></i> ${truncateFilename(a.originalFilename, 20)}</a>`).join('')
+                                ? d.attachments.map(a => `<a href="/api/approval/expense/attachments/${a.idx}/download" class="file-link" onclick="event.stopPropagation();" target="_blank" data-tip="${a.originalFilename}"><i class="fas fa-paperclip"></i> ${truncateFilename(a.originalFilename, 20)}</a>`).join('')
                                 : '<span class="no-file"><i class="fas fa-times-circle"></i> 미첨부</span>';
                             const statusClass = hasFiles ? 'file-ok' : 'file-missing';
                             return `<tr>

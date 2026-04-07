@@ -110,15 +110,6 @@
     border-collapse: collapse;
 }
 
-/* 검색 하이라이트 */
-.documents-table mark.highlight-text {
-    background-color: #fff3cd;
-    color: #856404;
-    padding: 2px 4px;
-    border-radius: 3px;
-    font-weight: 600;
-}
-
 /* 테이블 바디 텍스트 가운데 정렬 */
 #documentsTableBody td {
     text-align: center;
@@ -352,52 +343,6 @@
 .btn-delete.disabled:hover {
     background: #9ca3af;
     transform: none;
-}
-
-/* 커스텀 툴팁 */
-.btn-delete.disabled[data-tooltip] {
-    position: relative;
-}
-
-.btn-delete.disabled[data-tooltip]:hover::before {
-    content: attr(data-tooltip);
-    position: absolute;
-    bottom: calc(100% + 8px);
-    left: 50%;
-    transform: translateX(-50%);
-    background: #1e293b;
-    color: white;
-    padding: 8px 12px;
-    border-radius: 6px;
-    font-size: 12px;
-    font-weight: 500;
-    white-space: nowrap;
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
-    z-index: 1000;
-    animation: tooltipFadeIn 0.2s ease;
-}
-
-.btn-delete.disabled[data-tooltip]:hover::after {
-    content: '';
-    position: absolute;
-    bottom: calc(100% + 2px);
-    left: 50%;
-    transform: translateX(-50%);
-    border: 6px solid transparent;
-    border-top-color: #1e293b;
-    z-index: 1000;
-    animation: tooltipFadeIn 0.2s ease;
-}
-
-@keyframes tooltipFadeIn {
-    from {
-        opacity: 0;
-        transform: translateX(-50%) translateY(4px);
-    }
-    to {
-        opacity: 1;
-        transform: translateX(-50%) translateY(0);
-    }
 }
 
 /* 빈 상태 */

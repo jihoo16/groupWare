@@ -654,36 +654,6 @@ button:focus, a:focus, div:focus { outline: none !important; box-shadow: none !i
     color: #94a3b8;
 }
 
-.btn-print.btn-disabled:hover::after {
-    content: attr(data-tooltip);
-    position: absolute;
-    top: calc(100% + 8px);
-    left: 50%;
-    transform: translateX(-50%);
-    background: #1e293b;
-    color: white;
-    padding: 8px 14px;
-    border-radius: 8px;
-    font-size: 12px;
-    font-weight: 500;
-    white-space: nowrap;
-    z-index: 100;
-    pointer-events: none;
-    box-shadow: 0 4px 12px rgba(0,0,0,0.15);
-}
-
-.btn-print.btn-disabled:hover::before {
-    content: '';
-    position: absolute;
-    top: calc(100% + 2px);
-    left: 50%;
-    transform: translateX(-50%);
-    border: 6px solid transparent;
-    border-bottom-color: #1e293b;
-    z-index: 100;
-    pointer-events: none;
-}
-
 .btn-secondary { background: #f1f5f9; color: #475569; }
 .btn-secondary:hover { background: #e2e8f0; }
 

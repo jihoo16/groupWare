@@ -22,15 +22,15 @@
         <div class="card-header card-header-sticky">
             <h2>현재 진행중인 프로젝트 <span id="currentProjectCount" class="project-count"></span></h2>
             <div class="header-controls">
-                <button class="my-project-toggle-btn active" id="myProjectToggleBtn" title="내 프로젝트만 보기">
+                <button class="my-project-toggle-btn active" id="myProjectToggleBtn" data-tip="내 프로젝트만 보기">
                     <i class="fas fa-user"></i>
                     <span>내 프로젝트</span>
                 </button>
                 <div class="view-toggle-buttons">
-                    <button class="view-toggle-btn active" id="cardViewBtn" title="카드형">
+                    <button class="view-toggle-btn active" id="cardViewBtn" data-tip="카드형">
                         <i class="fas fa-th-large"></i>
                     </button>
-                    <button class="view-toggle-btn" id="listViewBtn" title="리스트형">
+                    <button class="view-toggle-btn" id="listViewBtn" data-tip="리스트형">
                         <i class="fas fa-list"></i>
                     </button>
                 </div>
@@ -100,17 +100,17 @@
 
             <!-- 페이지네이션 -->
             <div class="pagination-container">
-                <button class="pagination-btn" id="firstPageBtn" title="처음">
+                <button class="pagination-btn" id="firstPageBtn" data-tip="처음">
                     <i class="fas fa-angle-double-left"></i>
                 </button>
-                <button class="pagination-btn" id="prevPageBtn" title="이전">
+                <button class="pagination-btn" id="prevPageBtn" data-tip="이전">
                     <i class="fas fa-angle-left"></i>
                 </button>
                 <div class="pagination-numbers" id="paginationNumbers"></div>
-                <button class="pagination-btn" id="nextPageBtn" title="다음">
+                <button class="pagination-btn" id="nextPageBtn" data-tip="다음">
                     <i class="fas fa-angle-right"></i>
                 </button>
-                <button class="pagination-btn" id="lastPageBtn" title="마지막">
+                <button class="pagination-btn" id="lastPageBtn" data-tip="마지막">
                     <i class="fas fa-angle-double-right"></i>
                 </button>
                 <div class="pagination-info">

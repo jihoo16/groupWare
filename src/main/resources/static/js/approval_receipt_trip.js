@@ -1,19 +1,5 @@
 // 연구비 증빙 - 출장 페이지 JavaScript
 
-// Label tooltip: fixed positioning (overflow 잘림 방지)
-(function() {
-    document.addEventListener('mouseenter', function(e) {
-        const wrapper = e.target.closest('.label-tooltip-wrapper');
-        if (!wrapper) return;
-        const tooltip = wrapper.querySelector('.tooltip-text');
-        if (!tooltip) return;
-        const rect = wrapper.getBoundingClientRect();
-        tooltip.style.left = rect.left + rect.width / 2 + 'px';
-        tooltip.style.top = rect.top - 10 + 'px';
-        tooltip.style.transform = 'translate(-50%, -100%)';
-    }, true);
-})();
-
 function getTodayString() {
     return new Date().toISOString().slice(0, 10);
 }
@@ -293,70 +279,10 @@ document.addEventListener('DOMContentLoaded', async function() {
     const projectSearch = document.getElementById('projectSearch');
     const projectList = document.getElementById('projectList');
 
-    // 초성 검색 유틸리티
-    const CHO_HANGUL = ['ㄱ', 'ㄲ', 'ㄴ', 'ㄷ', 'ㄸ', 'ㄹ', 'ㅁ', 'ㅂ', 'ㅃ', 'ㅅ', 'ㅆ', 'ㅇ', 'ㅈ', 'ㅉ', 'ㅊ', 'ㅋ', 'ㅌ', 'ㅍ', 'ㅎ'];
-
-    function getChosung(str) {
-        let result = '';
-        for (let i = 0; i < str.length; i++) {
-            const code = str.charCodeAt(i) - 44032;
-            if (code > -1 && code < 11172) {
-                result += CHO_HANGUL[Math.floor(code / 588)];
-            }
-        }
-        return result;
-    }
-
-    function matchesSearch(text, keyword) {
-        if (!keyword) return true;
-        const lowerText = text.toLowerCase();
-        const lowerKeyword = keyword.toLowerCase();
-
-        // 일반 검색
-        if (lowerText.includes(lowerKeyword)) return true;
-
-        // 초성 검색
-        const chosung = getChosung(text);
-        return chosung.includes(lowerKeyword);
-    }
-
-    // 하이라이트 처리 함수
-    function highlightText(text, keyword) {
-        if (!text || !keyword) return text;
-        const lowerText = text.toLowerCase();
-        const lowerKeyword = keyword.toLowerCase();
-
-        // 일반 문자열 매칭
-        if (lowerText.includes(lowerKeyword)) {
-            const regex = new RegExp(`(${keyword.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')})`, 'gi');
-            return text.replace(regex, '<mark class="search-highlight">$1</mark>');
-        }
-
-        // 초성 매칭
-        const chosung = getChosung(text);
-        if (chosung.includes(keyword)) {
-            let result = '';
-            let keywordIndex = 0;
-            for (let i = 0; i < text.length; i++) {
-                const char = text[i];
-                const code = text.charCodeAt(i) - 44032;
-                if (code > -1 && code < 11172) {
-                    const cho = CHO_HANGUL[Math.floor(code / 588)];
-                    if (keywordIndex < keyword.length && cho === keyword[keywordIndex]) {
-                        result += `<mark class="search-highlight">${char}</mark>`;
-                        keywordIndex++;
-                    } else {
-                        result += char;
-                    }
-                } else {
-                    result += char;
-                }
-            }
-            return result;
-        }
-
-        return text;
-    }
+    // 검색 유틸리티 (공통)
+    const searchUtils = new SearchUtils();
+    const matchesSearch = (text, keyword) => searchUtils.matchesSearch(text, keyword);
+    const highlightText = (text, keyword) => searchUtils.highlightText(text, keyword);
 
     // 프로젝트 목록 렌더링
     function renderProjectList(projectsToShow, keyword = '') {
@@ -971,7 +897,7 @@ document.addEventListener('DOMContentLoaded', async function() {
                     tooltipText += ` (${isDuplicate.startTime} ~ ${isDuplicate.endTime})`;
                 }
                 tooltipText += '이 있습니다.';
-                duplicateBadge = `<span style="background: #fee2e2; color: #991b1b; padding: 2px 8px; border-radius: 4px; font-size: 11px; margin-left: 8px; white-space: nowrap;" title="${tooltipText}"><i class="fas fa-exclamation-triangle"></i> 시간 중복</span>`;
+                duplicateBadge = `<span style="background: #fee2e2; color: #991b1b; padding: 2px 8px; border-radius: 4px; font-size: 11px; margin-left: 8px; white-space: nowrap;" data-tip="${tooltipText}"><i class="fas fa-exclamation-triangle"></i> 시간 중복</span>`;
             }
 
             return `
@@ -1594,7 +1520,7 @@ document.addEventListener('DOMContentLoaded', async function() {
                         tooltipText += '이 있습니다.';
 
                         duplicateWarning = `<i class="fas fa-exclamation-triangle duplicate-warning"
-                                              title="${tooltipText}"
+                                              data-tip="${tooltipText}"
                                               style="color: #f59e0b; margin-left: 8px; cursor: help;"></i>`;
                     }
 
@@ -1948,10 +1874,8 @@ document.addEventListener('DOMContentLoaded', async function() {
             guideRow.innerHTML = `
                 <td style="text-align: center; font-weight: 600; color: #1e40af; padding: 10px;">
                     1일 기준 인원 금액
-                    <span class="info-tooltip info-tooltip-top" style="margin-left: 8px;">
-                        <i class="fas fa-info-circle" style="color: #64748b; cursor: help; font-size: 0.9em;"></i>
-                        <span class="tooltip-text">선택한 출장인원 기준으로 산정된 1일당 최대 사용가능 비용입니다</span>
-                    </span>
+                    <i class="fas fa-info-circle" style="color: #64748b; cursor: help; font-size: 0.9em; margin-left: 8px;"
+                       data-tip="선택한 출장인원 기준으로 산정된 1일당 최대 사용가능 비용입니다"></i>
                 </td>
                 <td style="text-align: center; color: #1e40af; font-weight: 600;">
                     ${transportGuide.toLocaleString()}원
@@ -2636,10 +2560,10 @@ document.addEventListener('DOMContentLoaded', async function() {
             item.innerHTML = `
                 <i class="fas ${getFileIcon(att.originalFilename)}"></i>
                 <span>${att.originalFilename}</span>
-                <button class="btn-download-file" onclick="downloadExistingAttachment(${att.idx}, '${att.originalFilename.replace(/'/g, "\\'")}')" title="다운로드">
+                <button class="btn-download-file" onclick="downloadExistingAttachment(${att.idx}, '${att.originalFilename.replace(/'/g, "\\'")}')" data-tip="다운로드">
                     <i class="fas fa-download"></i>
                 </button>
-                <button class="btn-remove-file" onclick="removeExistingAttachment(${att.idx})" title="삭제">
+                <button class="btn-remove-file" onclick="removeExistingAttachment(${att.idx})" data-tip="삭제">
                     <i class="fas fa-times"></i>
                 </button>
             `;
@@ -2670,10 +2594,10 @@ document.addEventListener('DOMContentLoaded', async function() {
             item.innerHTML = `
                 <i class="fas ${getFileIcon(att.originalFilename)}"></i>
                 <span>${att.originalFilename}</span>
-                <button class="btn-download-file" onclick="downloadExistingAttachment(${att.idx}, '${att.originalFilename.replace(/'/g, "\\'")}')" title="다운로드">
+                <button class="btn-download-file" onclick="downloadExistingAttachment(${att.idx}, '${att.originalFilename.replace(/'/g, "\\'")}')" data-tip="다운로드">
                     <i class="fas fa-download"></i>
                 </button>
-                <button class="btn-remove-file" onclick="removeExistingAttachment(${att.idx})" title="삭제">
+                <button class="btn-remove-file" onclick="removeExistingAttachment(${att.idx})" data-tip="삭제">
                     <i class="fas fa-times"></i>
                 </button>
             `;
@@ -3444,7 +3368,7 @@ document.addEventListener('DOMContentLoaded', async function() {
                 tooltipText += '이 있어 선택할 수 없습니다.';
 
                 duplicateWarning = `<i class="fas fa-exclamation-triangle"
-                                      title="${tooltipText}"
+                                      data-tip="${tooltipText}"
                                       style="color: #f59e0b; margin-left: 6px; cursor: help;"></i>`;
             }
 

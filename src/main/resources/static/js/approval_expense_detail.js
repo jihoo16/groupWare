@@ -217,8 +217,8 @@ document.addEventListener('DOMContentLoaded', async function () {
             item.innerHTML = `
                 <i class="fas ${getFileIcon(att.originalFilename)}"></i>
                 <span>${att.originalFilename} <small style="color:#94a3b8;">(${(att.fileSize / 1024).toFixed(1)} KB)</small></span>
-                <button type="button" class="btn-download-file" title="다운로드"><i class="fas fa-download"></i></button>
-                ${isReadOnly ? '' : '<button type="button" class="btn-remove-file" title="삭제"><i class="fas fa-times"></i></button>'}
+                <button type="button" class="btn-download-file" data-tip="다운로드"><i class="fas fa-download"></i></button>
+                ${isReadOnly ? '' : '<button type="button" class="btn-remove-file" data-tip="삭제"><i class="fas fa-times"></i></button>'}
             `;
 
             item.querySelector('.btn-download-file').addEventListener('click', () => {
@@ -490,11 +490,11 @@ document.addEventListener('DOMContentLoaded', async function () {
         if (canPrint) {
             printBtn.disabled = false;
             printBtn.classList.remove('btn-disabled');
-            printBtn.removeAttribute('data-tooltip');
+            printBtn.removeAttribute('data-tip');
         } else {
             printBtn.disabled = true;
             printBtn.classList.add('btn-disabled');
-            printBtn.setAttribute('data-tooltip', '모든 항목에 영수증(문서/이미지)이 첨부되어야 인쇄할 수 있습니다');
+            printBtn.setAttribute('data-tip', '모든 항목에 영수증(문서/이미지)이 첨부되어야 인쇄할 수 있습니다');
         }
     }
     if (editBtn)   editBtn.style.display   = isReadOnly ? 'none' : '';

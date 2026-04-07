@@ -47,10 +47,10 @@
                         <i class="fas fa-trash"></i>
                         삭제하기
                     </button>
-                    <button class="btn-primary btn-with-tooltip" id="submitBtn">
+                    <button class="btn-primary" id="submitBtn"
+                            data-tip="💡 모든 필수값을 채우면 좌측에 인쇄 버튼이 나타납니다">
                         <i class="fas fa-save"></i>
                         저장
-                        <span class="tooltip-text">💡 모든 필수값을 채우면 좌측에 인쇄 버튼이 나타납니다</span>
                     </button>
                     <button class="btn-secondary" onclick="history.back()">
                         <i class="fas fa-arrow-left"></i>
@@ -109,10 +109,8 @@
                                         <label for="ot_approval_date">
                                             <i class="fas fa-calendar-day"></i> 품의일자
                                             <span class="required-mark">*</span>
-                                            <span class="label-tooltip-wrapper" style="margin-left: 4px;">
-                                                <i class="fas fa-info-circle" style="color: #94a3b8; font-size: 12px; cursor: help;"></i>
-                                                <span class="tooltip-text">⚠️ 날짜 변경 시 중복 방지를 위해 야근인원이 초기화됩니다</span>
-                                            </span>
+                                            <i class="fas fa-info-circle" style="color: #94a3b8; font-size: 12px; cursor: help; margin-left: 4px;"
+                                               data-tip="⚠️ 날짜 변경 시 중복 방지를 위해 야근인원이 초기화됩니다"></i>
                                         </label>
                                         <input type="date" id="ot_approval_date" class="form-input">
                                     </div>
@@ -123,10 +121,8 @@
                                             <label for="ot_start_time">
                                                 <i class="fas fa-clock"></i> 시작 시간
                                                 <span class="required-mark">*</span>
-                                                <span class="label-tooltip-wrapper" style="margin-left: 4px;">
-                                                    <i class="fas fa-info-circle" style="color: #94a3b8; font-size: 12px; cursor: help;"></i>
-                                                    <span class="tooltip-text">⚠️ 시간 변경 시 중복 방지를 위해 야근인원이 초기화됩니다</span>
-                                                </span>
+                                                <i class="fas fa-info-circle" style="color: #94a3b8; font-size: 12px; cursor: help; margin-left: 4px;"
+                                                   data-tip="⚠️ 시간 변경 시 중복 방지를 위해 야근인원이 초기화됩니다"></i>
                                             </label>
                                             <input type="time" id="ot_start_time" class="form-input" value="18:00">
                                         </div>
@@ -134,10 +130,8 @@
                                             <label for="ot_end_time">
                                                 <i class="fas fa-clock"></i> 종료 시간
                                                 <span class="required-mark">*</span>
-                                                <span class="label-tooltip-wrapper" style="margin-left: 4px;">
-                                                    <i class="fas fa-info-circle" style="color: #94a3b8; font-size: 12px; cursor: help;"></i>
-                                                    <span class="tooltip-text">⚠️ 시간 변경 시 중복 방지를 위해 야근인원이 초기화됩니다</span>
-                                                </span>
+                                                <i class="fas fa-info-circle" style="color: #94a3b8; font-size: 12px; cursor: help; margin-left: 4px;"
+                                                   data-tip="⚠️ 시간 변경 시 중복 방지를 위해 야근인원이 초기화됩니다"></i>
                                             </label>
                                             <input type="time" id="ot_end_time" class="form-input" value="21:00">
                                         </div>
@@ -596,6 +590,7 @@
         </div>
     </div>
 
+    <script th:src="@{/js/search-utils.js}"></script>
     <script th:src="@{/js/approval_receipt_overtime.js}"></script>
 </body>
 </html>
