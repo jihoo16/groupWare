@@ -1,5 +1,8 @@
 // 일정관리 페이지 스크립트
 document.addEventListener('DOMContentLoaded', function() {
+    // 검색 유틸리티 (공통)
+    const searchUtils = new SearchUtils();
+
     // 전역 변수 CURRENT_USER 사용 (layout.html에서 주입됨)
     if (!window.CURRENT_USER || !window.CURRENT_USER.idx) {
         console.warn('세션 정보가 없습니다.');
@@ -625,7 +628,7 @@ document.addEventListener('DOMContentLoaded', function() {
                     scheduleClasses.push('time-dot');
                     const timeMatch = schedule.time.match(/(\d{2}:\d{2})/);
                     const startTime = timeMatch ? timeMatch[1] : '';
-                    timeSchedulesHTML += `<div class="schedule-item ${scheduleClasses.join(' ')}" data-schedule-id="${schedule.id}" data-group-id="${schedule.groupId}" title="${startTime} ${schedule.title}">
+                    timeSchedulesHTML += `<div class="schedule-item ${scheduleClasses.join(' ')}" data-schedule-id="${schedule.id}" data-group-id="${schedule.groupId}" data-tip="${startTime} ${schedule.title}">
                         <span class="dot-time">${startTime}</span>
                         <span class="dot-title">${schedule.title}</span>
                     </div>`;
@@ -1247,48 +1250,6 @@ document.addEventListener('DOMContentLoaded', function() {
     let filteredEmployees = [];
     let selectedDropdownIndex = -1;
 
-    // 한글 초성 검색 헬퍼 함수
-    const CHO_HANGUL = ['ㄱ','ㄲ','ㄴ','ㄷ','ㄸ','ㄹ','ㅁ','ㅂ','ㅃ','ㅅ','ㅆ','ㅇ','ㅈ','ㅉ','ㅊ','ㅋ','ㅌ','ㅍ','ㅎ'];
-
-    function isHangul(char) {
-        const code = char.charCodeAt(0);
-        return code >= 0xAC00 && code <= 0xD7A3;
-    }
-
-    function isChosung(char) {
-        return CHO_HANGUL.includes(char);
-    }
-
-    function getChosung(str) {
-        let result = '';
-        for (let i = 0; i < str.length; i++) {
-            const char = str[i];
-            if (isHangul(char)) {
-                const code = char.charCodeAt(0) - 0xAC00;
-                const chosungIndex = Math.floor(code / 588); // 588 = 21 * 28
-                result += CHO_HANGUL[chosungIndex];
-            } else {
-                result += char;
-            }
-        }
-        return result;
-    }
-
-    function matchesChosung(text, search) {
-        const textChosung = getChosung(text);
-        return textChosung.includes(search);
-    }
-
-    function isAllChosung(str) {
-        for (let i = 0; i < str.length; i++) {
-            const char = str[i];
-            if (!isChosung(char) && char !== ' ') {
-                return false;
-            }
-        }
-        return str.trim().length > 0;
-    }
-
     // 직원 드롭다운 표시
     function showEmployeeDropdown(searchText) {
         if (!employeeDropdown) {
@@ -1302,12 +1263,11 @@ document.addEventListener('DOMContentLoaded', function() {
             return;
         }
 
-        // 검색어로 필터링 (이름, 부서, 직급 + 초성 검색)
+        // 검색어로 필터링 (이름, 부서, 직급 + 초성 검색 — SearchUtils 공통)
         filteredEmployees = allEmployees.filter(emp => {
             const name = emp.empName || '';
             const dept = emp.empDeptName || '';
             const position = emp.empPositionName || '';
-            const searchLower = searchText.toLowerCase();
 
             // 이미 추가된 내부 직원은 제외
             const isAlreadyAdded = selectedParticipants.some(p => p.id === emp.idx);
@@ -1315,17 +1275,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 return false;
             }
 
-            // 초성 검색인 경우
-            if (isAllChosung(searchText)) {
-                return matchesChosung(name, searchText) ||
-                       matchesChosung(dept, searchText) ||
-                       matchesChosung(position, searchText);
-            }
-
-            // 일반 검색
-            return name.toLowerCase().includes(searchLower) ||
-                   dept.toLowerCase().includes(searchLower) ||
-                   position.toLowerCase().includes(searchLower);
+            return searchUtils.matchesAny(searchText, name, dept, position);
         }).slice(0, 10); // 최대 10개
 
         if (filteredEmployees.length === 0) {

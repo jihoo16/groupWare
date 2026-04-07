@@ -71,54 +71,105 @@ class SearchUtils {
      * 검색어에 매칭되는 부분을 하이라이트 처리
      * @param {string} text - 하이라이트할 텍스트
      * @param {string} keyword - 검색어
-     * @param {string} highlightClass - 하이라이트 CSS 클래스 (기본값: 'search-highlight')
+     * @param {string|object} optionsOrClass - CSS 클래스명(문자열, 하위호환) 또는 옵션 객체
+     * @param {string} [optionsOrClass.highlightClass='search-highlight'] - 하이라이트 CSS 클래스
+     * @param {boolean} [optionsOrClass.escapeHtml=false] - HTML 이스케이프 여부 (XSS 방지)
      * @returns {string} 하이라이트가 적용된 HTML 문자열
      *
      * @example
+     * // 기본 사용 (하위호환)
      * highlightText('프로젝트', 'ㅍㅈ')
      * // '<mark class="search-highlight">프</mark>로<mark class="search-highlight">젝</mark>트'
+     *
+     * @example
+     * // 커스텀 클래스 (하위호환 - 문자열 형태)
+     * highlightText('홍길동', '홍', 'highlight-text')
+     *
+     * @example
+     * // XSS 방지 옵션 사용
+     * highlightText('<script>alert(1)</script>', 'alert', { escapeHtml: true })
+     * // '&lt;script&gt;<mark class="search-highlight">alert</mark>(1)&lt;/script&gt;'
      */
-    highlightText(text, keyword, highlightClass = 'search-highlight') {
-        if (!text || !keyword) return text;
+    highlightText(text, keyword, optionsOrClass = {}) {
+        // 하위호환: 3번째 인자가 문자열이면 highlightClass로 사용
+        const options = typeof optionsOrClass === 'string'
+            ? { highlightClass: optionsOrClass }
+            : (optionsOrClass || {});
+        const highlightClass = options.highlightClass || 'search-highlight';
+        const shouldEscape = options.escapeHtml === true;
+        const esc = shouldEscape ? (s) => this.escapeHtml(s) : (s) => s;
 
-        const lowerText = text.toLowerCase();
+        if (text == null) return '';
+        const original = String(text);
+        if (!keyword) return esc(original);
+
+        const lowerText = original.toLowerCase();
         const lowerKeyword = keyword.toLowerCase();
 
-        // 1. 일반 텍스트 매칭
+        // 1. 일반 텍스트 매칭 (대소문자 무시)
         if (lowerText.includes(lowerKeyword)) {
-            // 대소문자 구분 없이 매칭
+            if (shouldEscape) {
+                // 이스케이프 모드: 원본에서 매치 위치 찾고, 각 구간을 escape 후 mark 삽입
+                const re = new RegExp(this.escapeRegExp(keyword), 'gi');
+                let result = '';
+                let lastEnd = 0;
+                let m;
+                while ((m = re.exec(original)) !== null) {
+                    result += this.escapeHtml(original.substring(lastEnd, m.index));
+                    result += `<mark class="${highlightClass}">${this.escapeHtml(m[0])}</mark>`;
+                    lastEnd = m.index + m[0].length;
+                    if (m.index === re.lastIndex) re.lastIndex++; // zero-width safe
+                }
+                result += this.escapeHtml(original.substring(lastEnd));
+                return result;
+            }
             const regex = new RegExp(`(${this.escapeRegExp(keyword)})`, 'gi');
-            return text.replace(regex, `<mark class="${highlightClass}">$1</mark>`);
+            return original.replace(regex, `<mark class="${highlightClass}">$1</mark>`);
         }
 
         // 2. 초성 매칭
-        const chosung = this.getChosung(text);
+        const chosung = this.getChosung(original);
         if (chosung.includes(keyword)) {
             let result = '';
             let keywordIndex = 0;
 
-            for (let i = 0; i < text.length; i++) {
-                const char = text[i];
-                const code = text.charCodeAt(i) - 44032;
+            for (let i = 0; i < original.length; i++) {
+                const char = original[i];
+                const code = original.charCodeAt(i) - 44032;
 
                 if (code > -1 && code < 11172) {
                     // 한글인 경우
                     const cho = this.CHO_HANGUL[Math.floor(code / 588)];
                     if (keywordIndex < keyword.length && cho === keyword[keywordIndex]) {
-                        result += `<mark class="${highlightClass}">${char}</mark>`;
+                        result += `<mark class="${highlightClass}">${esc(char)}</mark>`;
                         keywordIndex++;
                     } else {
-                        result += char;
+                        result += esc(char);
                     }
                 } else {
                     // 한글이 아닌 경우
-                    result += char;
+                    result += esc(char);
                 }
             }
             return result;
         }
 
-        return text;
+        return esc(original);
+    }
+
+    /**
+     * HTML 특수문자 이스케이프 (XSS 방지)
+     * @param {string} str - 이스케이프할 문자열
+     * @returns {string} 이스케이프된 문자열
+     */
+    escapeHtml(str) {
+        if (str == null) return '';
+        return String(str)
+            .replace(/&/g, '&amp;')
+            .replace(/</g, '&lt;')
+            .replace(/>/g, '&gt;')
+            .replace(/"/g, '&quot;')
+            .replace(/'/g, '&#39;');
     }
 
     /**

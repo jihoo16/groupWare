@@ -1,6 +1,11 @@
 // 관리자 전체 연차관리 페이지 JavaScript
 
 document.addEventListener('DOMContentLoaded', function() {
+    // 검색 유틸리티 (공통)
+    const searchUtils = new SearchUtils();
+    const matchChosung = (text, keyword) => searchUtils.matchesSearch(text, keyword);
+    const highlightText = (text, keyword) => searchUtils.highlightText(text, keyword, 'highlight-text');
+
     // DOM 요소
     const searchInput = document.getElementById('searchInput');
     const departmentFilter = document.getElementById('departmentFilter');
@@ -290,20 +295,6 @@ document.addEventListener('DOMContentLoaded', function() {
     // 검색 / 필터 / 정렬
     // ────────────────────────────────────────────────────────────
 
-    function getChosung(str) {
-        const CHOSUNG = ['ㄱ','ㄲ','ㄴ','ㄷ','ㄸ','ㄹ','ㅁ','ㅂ','ㅃ','ㅅ','ㅆ','ㅇ','ㅈ','ㅉ','ㅊ','ㅋ','ㅌ','ㅍ','ㅎ'];
-        let r = '';
-        for (let i = 0; i < str.length; i++) {
-            const c = str.charCodeAt(i) - 0xAC00;
-            r += (c > -1 && c < 11172) ? CHOSUNG[Math.floor(c / 588)] : str[i];
-        }
-        return r;
-    }
-
-    function matchChosung(str, search) {
-        return getChosung(str.toLowerCase()).includes(search);
-    }
-
     function handleSort(field) {
         if (currentSortField === field) {
             currentSortOrder = currentSortOrder === 'asc' ? 'desc' : 'asc';
@@ -370,18 +361,12 @@ document.addEventListener('DOMContentLoaded', function() {
 
     function filterData() {
         const searchTerm    = searchInput.value.trim();
-        const searchLower   = searchTerm.toLowerCase();
         const deptValue     = departmentFilter.value;
         const sortValue     = sortFilter.value;
 
         filteredEmployees = allEmployees.filter(emp => {
             const matchSearch = !searchTerm ||
-                emp.name.toLowerCase().includes(searchLower) ||
-                emp.department.toLowerCase().includes(searchLower) ||
-                emp.position.toLowerCase().includes(searchLower) ||
-                matchChosung(emp.name, searchLower) ||
-                matchChosung(emp.department, searchLower) ||
-                matchChosung(emp.position, searchLower);
+                searchUtils.matchesAny(searchTerm, emp.name, emp.department, emp.position);
 
             return matchSearch && (!deptValue || emp.department === deptValue);
         });
@@ -402,17 +387,6 @@ document.addEventListener('DOMContentLoaded', function() {
     // ────────────────────────────────────────────────────────────
     // 렌더링
     // ────────────────────────────────────────────────────────────
-
-    function highlightText(text, searchTerm) {
-        if (!searchTerm || !text) return text;
-        const lower = searchTerm.toLowerCase();
-        if (text.toLowerCase().includes(lower)) {
-            const regex = new RegExp(`(${searchTerm.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')})`, 'gi');
-            return text.replace(regex, '<mark class="highlight-text">$1</mark>');
-        }
-        if (matchChosung(text, lower)) return `<mark class="highlight-text">${text}</mark>`;
-        return text;
-    }
 
     // breakdown 열 TD (0이면 회색 -)
     function bkdCell(val, extraClass = '') {

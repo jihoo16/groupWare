@@ -1,5 +1,10 @@
 // 주간업무보고 작성 페이지 JavaScript
 document.addEventListener('DOMContentLoaded', function() {
+    // 검색 유틸리티 (공통)
+    const searchUtils = new SearchUtils();
+    const matchesSearch = (text, keyword) => searchUtils.matchesSearch(text, keyword);
+    const highlightText = (text, keyword) => searchUtils.highlightText(text, keyword);
+
     // 전역 변수
     const currentUserIdx = window.CURRENT_USER?.idx || null;
     const currentUserName = window.CURRENT_USER?.empName || '';
@@ -250,48 +255,6 @@ document.addEventListener('DOMContentLoaded', function() {
         projectInput.classList.add('required-missing');
     }
 
-    // 텍스트 하이라이트 함수
-    function highlightText(text, keyword) {
-        if (!text || !keyword) return text;
-
-        const lowerText = text.toLowerCase();
-        const lowerKeyword = keyword.toLowerCase();
-
-        // 일반 텍스트 매칭
-        if (lowerText.includes(lowerKeyword)) {
-            const regex = new RegExp(`(${keyword})`, 'gi');
-            return text.replace(regex, '<mark class="search-highlight">$1</mark>');
-        }
-
-        // 초성 매칭
-        const chosung = getChosung(text);
-        if (chosung.includes(keyword)) {
-            let result = '';
-            let chosungIndex = 0;
-            let keywordIndex = 0;
-
-            for (let i = 0; i < text.length; i++) {
-                const char = text[i];
-                const code = text.charCodeAt(i) - 44032;
-
-                if (code > -1 && code < 11172) {
-                    const cho = CHO_HANGUL[Math.floor(code / 588)];
-                    if (keywordIndex < keyword.length && cho === keyword[keywordIndex]) {
-                        result += `<mark class="search-highlight">${char}</mark>`;
-                        keywordIndex++;
-                    } else {
-                        result += char;
-                    }
-                } else {
-                    result += char;
-                }
-            }
-            return result;
-        }
-
-        return text;
-    }
-
     // 프로젝트 목록 렌더링
     function renderProjectList(list, keyword = '') {
         if (!projectList) return;
@@ -366,38 +329,6 @@ document.addEventListener('DOMContentLoaded', function() {
 
             projectList.appendChild(item);
         });
-    }
-
-    // ============================================
-    // 초성 검색 유틸리티
-    // ============================================
-    const CHO_HANGUL = ['ㄱ', 'ㄲ', 'ㄴ', 'ㄷ', 'ㄸ', 'ㄹ', 'ㅁ', 'ㅂ', 'ㅃ', 'ㅅ', 'ㅆ', 'ㅇ', 'ㅈ', 'ㅉ', 'ㅊ', 'ㅋ', 'ㅌ', 'ㅍ', 'ㅎ'];
-
-    function getChosung(str) {
-        let result = '';
-        for (let i = 0; i < str.length; i++) {
-            const code = str.charCodeAt(i) - 44032;
-            if (code > -1 && code < 11172) {
-                result += CHO_HANGUL[Math.floor(code / 588)];
-            } else {
-                result += str.charAt(i);
-            }
-        }
-        return result;
-    }
-
-    function matchesSearch(text, keyword) {
-        if (!text || !keyword) return true;
-
-        const lowerText = text.toLowerCase();
-        const lowerKeyword = keyword.toLowerCase();
-
-        // 일반 검색
-        if (lowerText.includes(lowerKeyword)) return true;
-
-        // 초성 검색
-        const chosung = getChosung(text);
-        return chosung.includes(keyword);
     }
 
     // 프로젝트 검색

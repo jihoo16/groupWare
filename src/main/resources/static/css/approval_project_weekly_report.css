@@ -1397,15 +1397,6 @@ div:focus {
     color: #64748b;
 }
 
-/* 검색 하이라이트 */
-.search-highlight {
-    background: #ffeb3b;
-    color: #333;
-    font-weight: 600;
-    padding: 2px 0;
-    border-radius: 2px;
-}
-
 /* 빈 상태 메시지 */
 .modal-empty-state {
     display: flex;

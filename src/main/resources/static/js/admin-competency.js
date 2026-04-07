@@ -1,6 +1,9 @@
 // 역량관리 (관리자/담당자 공용) 페이지 JavaScript
 
 document.addEventListener('DOMContentLoaded', function () {
+    // ─── 공통 검색 유틸 (초성 검색 + 하이라이트) ─────────────
+    const searchUtils = new SearchUtils();
+
     // ─── DOM 요소 ─────────────────────────────────────────────
     const searchInput = document.getElementById('searchInput');
     const departmentFilter = document.getElementById('departmentFilter');
@@ -120,13 +123,13 @@ document.addEventListener('DOMContentLoaded', function () {
 
     // ─── 필터 & 정렬 ─────────────────────────────────────────
     function filterAndRender() {
-        const keyword = searchInput.value.trim().toLowerCase();
+        const keyword = searchInput.value.trim();
         const dept = departmentFilter.value;
 
         filteredEmployees = allEmployees.filter(e => {
             const matchKeyword = !keyword ||
-                (e.empName || '').toLowerCase().includes(keyword) ||
-                (e.empId || '').toLowerCase().includes(keyword);
+                searchUtils.matchesSearch(e.empName || '', keyword) ||
+                searchUtils.matchesSearch(e.empId || '', keyword);
             const matchDept = !dept || e.empDeptName === dept;
             return matchKeyword && matchDept;
         });
@@ -170,11 +173,12 @@ document.addEventListener('DOMContentLoaded', function () {
         }
         noData.style.display = 'none';
 
+        const keyword = searchInput.value.trim();
         tableBody.innerHTML = filteredEmployees.map((emp, idx) => `
             <tr data-user-idx="${emp.userIdx}">
                 <td>${idx + 1}</td>
-                <td>${escapeHtml(emp.empId || '')}</td>
-                <td>${escapeHtml(emp.empName || '')}</td>
+                <td>${searchUtils.highlightText(emp.empId || '', keyword)}</td>
+                <td>${searchUtils.highlightText(emp.empName || '', keyword)}</td>
                 <td>${escapeHtml(emp.empDeptName || '-')}</td>
                 <td>${escapeHtml(emp.empPositionName || '-')}</td>
                 <td>${renderRoleBadge(emp.userRoleCode)}</td>
@@ -563,13 +567,22 @@ document.addEventListener('DOMContentLoaded', function () {
     }
 
     function renderRoleMgmtTable() {
-        const keyword = (document.getElementById('roleMgmtSearchInput').value || '').trim().toLowerCase();
+        const keyword = (document.getElementById('roleMgmtSearchInput').value || '').trim();
         const tbody = document.getElementById('roleMgmtTableBody');
 
         const filtered = allEmployees.filter(e => {
             if (!keyword) return true;
-            return (e.empName || '').toLowerCase().includes(keyword) ||
-                   (e.empId || '').toLowerCase().includes(keyword);
+            return searchUtils.matchesSearch(e.empName || '', keyword) ||
+                   searchUtils.matchesSearch(e.empId || '', keyword);
+        });
+
+        // 직급순 정렬: empPosition 코드 오름차순(C0201=대표이사가 가장 위), 동순위는 이름순
+        filtered.sort((a, b) => {
+            const pa = a.empPosition || 'ZZZZZ';
+            const pb = b.empPosition || 'ZZZZZ';
+            const cmp = pa.localeCompare(pb);
+            if (cmp !== 0) return cmp;
+            return (a.empName || '').localeCompare(b.empName || '', 'ko');
         });
 
         if (filtered.length === 0) {
@@ -582,14 +595,14 @@ document.addEventListener('DOMContentLoaded', function () {
             const isViewer = e.userRoleCode === 'C1103';
             return `
                 <tr>
-                    <td>${escapeHtml(e.empId || '')}</td>
-                    <td>${escapeHtml(e.empName || '')}</td>
+                    <td>${searchUtils.highlightText(e.empId || '', keyword)}</td>
+                    <td>${searchUtils.highlightText(e.empName || '', keyword)}</td>
                     <td>${escapeHtml(e.empDeptName || '-')}</td>
                     <td>${escapeHtml(e.empPositionName || '-')}</td>
                     <td>${renderRoleBadge(e.userRoleCode)}</td>
                     <td>
                         ${isLocked
-                            ? '<i class="fas fa-lock lock-icon" title="관리자/개발자는 변경 불가"></i>'
+                            ? '<i class="fas fa-lock lock-icon" data-tip="관리자/개발자는 변경 불가"></i>'
                             : `<label class="toggle-switch"><input type="checkbox" data-user-idx="${e.userIdx}" ${isViewer ? 'checked' : ''}><span class="slider"></span></label>`}
                     </td>
                 </tr>
@@ -662,12 +675,12 @@ document.addEventListener('DOMContentLoaded', function () {
     }
 
     function getBulkFilteredEmployees() {
-        const keyword = (document.getElementById('bulkSearchInput').value || '').trim().toLowerCase();
+        const keyword = (document.getElementById('bulkSearchInput').value || '').trim();
         const dept = document.getElementById('bulkDeptFilter').value;
         return allEmployees.filter(e => {
             const matchKeyword = !keyword ||
-                (e.empName || '').toLowerCase().includes(keyword) ||
-                (e.empId || '').toLowerCase().includes(keyword);
+                searchUtils.matchesSearch(e.empName || '', keyword) ||
+                searchUtils.matchesSearch(e.empId || '', keyword);
             const matchDept = !dept || e.empDeptName === dept;
             return matchKeyword && matchDept;
         });
@@ -683,14 +696,15 @@ document.addEventListener('DOMContentLoaded', function () {
             return;
         }
 
+        const keyword = (document.getElementById('bulkSearchInput').value || '').trim();
         list.innerHTML = filtered.map(e => {
             const checked = bulkSelectedUserIdxSet.has(e.userIdx) ? 'checked' : '';
             return `
                 <label class="bulk-employee-row">
                     <input type="checkbox" value="${e.userIdx}" ${checked}>
                     <span class="bulk-row-info">
-                        <span class="bulk-emp-id">${escapeHtml(e.empId || '')}</span>
-                        <span class="bulk-emp-name">${escapeHtml(e.empName || '')}</span>
+                        <span class="bulk-emp-id">${searchUtils.highlightText(e.empId || '', keyword)}</span>
+                        <span class="bulk-emp-name">${searchUtils.highlightText(e.empName || '', keyword)}</span>
                         <span class="bulk-emp-dept">${escapeHtml(e.empDeptName || '-')}</span>
                         <span class="bulk-emp-pos">${escapeHtml(e.empPositionName || '-')}</span>
                     </span>
