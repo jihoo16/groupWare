@@ -26,6 +26,7 @@ import com.pinecni.erp.entity.*;
 import com.pinecni.erp.api.document.repository.ExpenseRequisitionRepository;
 import com.pinecni.erp.api.document.repository.ReceiptPurchaseAttachmentRepository;
 import com.pinecni.erp.api.expense.repository.ExpenseApprovalRepository;
+import com.pinecni.erp.api.vacation.repository.VacationRequestRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -72,6 +73,7 @@ public class ApprovalDocumentServiceImpl implements ApprovalDocumentService {
     private final ReceiptTripMeetingAttachmentRepository receiptTripMeetingAttachmentRepository;
     private final ExpenseApprovalRepository expenseApprovalRepository;
     private final ExpenseRequisitionRepository expenseRequisitionRepository;
+    private final VacationRequestRepository vacationRequestRepository;
     private final ReceiptAttendeeRepository receiptAttendeeRepository;
     private final ReceiptPurchaseAttachmentRepository receiptPurchaseAttachmentRepository;
 
@@ -323,11 +325,22 @@ public class ApprovalDocumentServiceImpl implements ApprovalDocumentService {
                 CodeConstants.ExpenseSettlementStatus st = CodeConstants.ExpenseSettlementStatus.fromCodeOrNull(stCode);
                 dto.setStatusCode(stCode);
                 dto.setStatusName(st != null ? st.getName() : stCode);
+                dto.setStatusComment(expense.getSettlementComment());
             });
         } else if (CodeConstants.DocumentType.EXPENSE_REQUEST.getCode().equals(documentType)) {
             expenseRequisitionRepository.findByDocumentIdxAndIsDeletedFalse(document.getIdx()).ifPresent(requisition -> {
                 dto.setSourceDocumentId(requisition.getIdx());
             });
+        } else if (CodeConstants.DocumentType.VACATION.getCode().equals(documentType)) {
+            // 연차신청서: VacationRequest.isApproved 기반으로 단순 2단계 상태(대기/승인) 표시
+            // - 한 문서에 여러 기간이 묶일 수 있으나 isApproved는 문서 단위로 일괄 처리되므로 첫 행 기준
+            List<VacationRequest> requests = vacationRequestRepository.findByDocumentIdx(document.getIdx());
+            if (!requests.isEmpty()) {
+                VacationRequest first = requests.get(0);
+                boolean approved = Boolean.TRUE.equals(first.getIsApproved());
+                dto.setStatusCode(approved ? "APPROVED" : "PENDING");
+                dto.setStatusName(approved ? "승인" : "대기");
+            }
         }
         // 다른 문서 타입들도 필요시 추가
         // else if ("월간업무보고".equals(documentType)) { ... }

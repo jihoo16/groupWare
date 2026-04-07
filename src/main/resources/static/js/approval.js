@@ -627,8 +627,8 @@ document.addEventListener('DOMContentLoaded', function() {
         container.innerHTML = fileArray.map((f, i) => `
             <div class="exp-att-pending-item">
                 <i class="fas fa-check-circle"></i>
-                <span title="${f.name}">${f.name}</span>
-                <button class="exp-att-pending-remove" data-index="${i}" title="제거">&times;</button>
+                <span data-tip="${f.name}">${f.name}</span>
+                <button class="exp-att-pending-remove" data-index="${i}" data-tip="제거">&times;</button>
             </div>`).join('');
         container.querySelectorAll('.exp-att-pending-remove').forEach(btn => {
             btn.addEventListener('click', () => {
@@ -644,11 +644,11 @@ document.addEventListener('DOMContentLoaded', function() {
             : existingFiles.map(a => {
                 const safe = (a.originalFilename || '').replace(/"/g, '&quot;');
                 return `
-                    <div class="exp-att-file-row" data-att-id="${a.idx}" data-url="/api/approval/expense/attachments/${a.idx}/download" data-filename="${safe}" title="클릭하여 다운로드">
+                    <div class="exp-att-file-row" data-att-id="${a.idx}" data-url="/api/approval/expense/attachments/${a.idx}/download" data-filename="${safe}" data-tip="클릭하여 다운로드">
                         <i class="fas fa-file exp-file-icon"></i>
                         <span class="exp-file-name">${safe}</span>
                         <i class="fas fa-download" style="color:#93c5fd;font-size:12px;margin-left:auto;flex-shrink:0;"></i>
-                        <button class="exp-att-del-btn" data-att-id="${a.idx}" title="삭제">&times;</button>
+                        <button class="exp-att-del-btn" data-att-id="${a.idx}" data-tip="삭제">&times;</button>
                     </div>`;
             }).join('');
         return `
@@ -904,7 +904,144 @@ document.addEventListener('DOMContentLoaded', function() {
         C1003: 'settlement-confirmed',
         C1004: 'settlement-rejected',
         C1005: 'settlement-settled',
+        // 연차신청서
+        PENDING:  'settlement-submitted',
+        APPROVED: 'settlement-settled',
     };
+
+    // 상태 안내 문구 (개인경비청구)
+    const EXPENSE_STATUS_GUIDE = {
+        C1001: { icon: 'fas fa-pen',           color: '#6b7280', title: '작성중',    desc: '아직 제출 전 상태입니다. 작성을 완료한 뒤 제출해 주세요.' },
+        C1002: { icon: 'fas fa-paper-plane',   color: '#2563eb', title: '제출완료',  desc: '제출이 완료되었습니다. 관리자 확인을 기다리고 있습니다.' },
+        C1003: { icon: 'fas fa-clipboard-check', color: '#7c3aed', title: '제출확인', desc: '관리자가 문서 확인을 완료했습니다. 정산 처리를 기다리고 있습니다.' },
+        C1004: { icon: 'fas fa-times-circle',  color: '#dc2626', title: '반려',      desc: '관리자가 문서를 반려했습니다. 아래 사유를 확인해 주세요.' },
+        C1005: { icon: 'fas fa-check-circle',  color: '#16a34a', title: '정산완료',  desc: '정산이 모두 완료되었습니다.' },
+    };
+
+    // 상태 안내 문구 (연차신청서)
+    const VACATION_STATUS_GUIDE = {
+        PENDING:  { icon: 'fas fa-hourglass-half', color: '#2563eb', title: '승인대기', desc: '관리자가 문서를 확인 중입니다. 승인을 기다리고 있어요.' },
+        APPROVED: { icon: 'fas fa-check-circle',   color: '#16a34a', title: '승인 완료', desc: '연차 신청이 승인 완료되었습니다.' },
+    };
+
+    // HTML escape (안전 출력)
+    function escapeHtmlSafe(str) {
+        if (str == null) return '';
+        return String(str)
+            .replace(/&/g, '&amp;')
+            .replace(/</g, '&lt;')
+            .replace(/>/g, '&gt;')
+            .replace(/"/g, '&quot;')
+            .replace(/'/g, '&#39;');
+    }
+
+    // ============================================
+    // 상태 안내 모달 (프로젝트 공용 모달 패턴)
+    // ============================================
+
+    let statusInfoModal = null;
+
+    function getStatusInfoModal() {
+        if (statusInfoModal) return statusInfoModal;
+
+        // 키프레임 스타일 1회 주입
+        if (!document.getElementById('statusInfoModalStyle')) {
+            const style = document.createElement('style');
+            style.id = 'statusInfoModalStyle';
+            style.textContent = `
+                @keyframes statusInfoIn {
+                    from { opacity: 0; transform: translateY(-12px) scale(0.97); }
+                    to   { opacity: 1; transform: translateY(0) scale(1); }
+                }
+                #statusInfoModal .si-modal-inner { animation: statusInfoIn .2s ease; }
+                #statusInfoModal .si-close-btn:hover { background:#f3f4f6; color:#374151; }
+                #statusInfoModal .si-confirm-btn:hover { background:#6d28d9; }
+            `;
+            document.head.appendChild(style);
+        }
+
+        const el = document.createElement('div');
+        el.id = 'statusInfoModal';
+        el.style.cssText = 'position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(15,23,42,0.45);display:none;align-items:center;justify-content:center;z-index:10000;backdrop-filter:blur(2px);';
+        el.innerHTML = `
+            <div class="si-modal-inner" style="background:#fff;border-radius:14px;width:440px;max-width:92vw;display:flex;flex-direction:column;box-shadow:0 24px 64px rgba(0,0,0,0.28);overflow:hidden;">
+                <div style="padding:18px 22px 16px;border-bottom:1px solid #f0f0f0;display:flex;align-items:center;justify-content:space-between;">
+                    <h3 style="margin:0;font-size:15px;font-weight:700;color:#1e293b;display:flex;align-items:center;gap:8px;">
+                        <i class="fas fa-info-circle" style="color:#7c3aed;font-size:14px;"></i> 문서 상태
+                    </h3>
+                    <button class="si-close-btn" id="statusInfoCloseBtn" style="background:none;border:none;font-size:18px;color:#94a3b8;cursor:pointer;width:30px;height:30px;border-radius:6px;display:flex;align-items:center;justify-content:center;transition:background .15s,color .15s;">
+                        <i class="fas fa-times"></i>
+                    </button>
+                </div>
+                <div id="statusInfoBody" style="padding:24px 22px 20px;"></div>
+                <div style="display:flex;justify-content:flex-end;padding:14px 22px;border-top:1px solid #f0f0f0;">
+                    <button class="si-confirm-btn" id="statusInfoConfirmBtn" style="padding:8px 22px;background:#7c3aed;color:#fff;border:none;border-radius:8px;cursor:pointer;font-size:13px;font-weight:600;transition:background .12s;">확인</button>
+                </div>
+            </div>
+        `;
+        document.body.appendChild(el);
+
+        el.addEventListener('click', function(e) {
+            if (e.target === el) closeStatusInfoModal();
+        });
+        el.querySelector('#statusInfoCloseBtn').addEventListener('click', closeStatusInfoModal);
+        el.querySelector('#statusInfoConfirmBtn').addEventListener('click', closeStatusInfoModal);
+
+        statusInfoModal = el;
+        return el;
+    }
+
+    function closeStatusInfoModal() {
+        if (statusInfoModal) statusInfoModal.style.display = 'none';
+    }
+
+    // 상태 뱃지 클릭 → 안내 모달
+    function openStatusInfoModal(category, statusCode, statusComment) {
+        const guide = (category === 'vacation' ? VACATION_STATUS_GUIDE : EXPENSE_STATUS_GUIDE)[statusCode];
+        if (!guide) return;
+
+        const modal = getStatusInfoModal();
+        const showComment = (category === 'expense' && statusCode === 'C1004' && statusComment && statusComment.trim());
+        const commentBlock = showComment
+            ? `<div style="margin-top:18px;padding:14px 16px;background:#fef2f2;border:1px solid #fecaca;border-radius:10px;text-align:left;">
+                   <div style="font-size:12px;font-weight:700;color:#b91c1c;margin-bottom:6px;display:flex;align-items:center;gap:6px;">
+                       <i class="fas fa-comment-dots"></i> 반려 사유
+                   </div>
+                   <div style="font-size:13px;color:#7f1d1d;line-height:1.6;white-space:pre-wrap;">${escapeHtmlSafe(statusComment)}</div>
+               </div>`
+            : '';
+
+        const body = modal.querySelector('#statusInfoBody');
+        body.innerHTML = `
+            <div style="text-align:center;">
+                <div style="display:inline-flex;align-items:center;justify-content:center;width:64px;height:64px;border-radius:50%;background:${guide.color}1a;margin-bottom:14px;">
+                    <i class="${guide.icon}" style="font-size:28px;color:${guide.color};"></i>
+                </div>
+                <h2 style="margin:0 0 8px;font-size:17px;font-weight:700;color:#1e293b;">${guide.title}</h2>
+                <p style="margin:0;font-size:13px;color:#64748b;line-height:1.65;">${guide.desc}</p>
+            </div>
+            ${commentBlock}
+        `;
+        modal.style.display = 'flex';
+    }
+
+    // 상태 뱃지 클릭 이벤트 (이벤트 위임)
+    document.addEventListener('click', function(e) {
+        const badge = e.target.closest('.doc-status-badge[data-clickable="true"]');
+        if (!badge) return;
+        e.stopPropagation();
+        const category = badge.getAttribute('data-category');
+        const code = badge.getAttribute('data-status-code');
+        const comment = badge.getAttribute('data-status-comment') || '';
+        openStatusInfoModal(category, code, comment);
+    });
+
+    // ESC 키로 닫기
+    document.addEventListener('keydown', function(e) {
+        if (e.key === 'Escape' && statusInfoModal && statusInfoModal.style.display === 'flex') {
+            closeStatusInfoModal();
+        }
+    });
 
     // 모든 문서를 합쳐서 렌더링 (approval_documents 기반)
     function renderAllDocuments() {
@@ -944,16 +1081,24 @@ document.addEventListener('DOMContentLoaded', function() {
 
             const docId = doc.sourceDocumentId || doc.idx;
             const attachBtn = (category === 'vacation')
-                ? `<button class="btn-icon btn-attach btn-pdf-download" data-id="${docId}" title="PDF 다운로드"><i class="fas fa-paperclip"></i></button>`
+                ? `<button class="btn-icon btn-attach btn-pdf-download" data-id="${docId}" data-tip="PDF 다운로드"><i class="fas fa-paperclip"></i></button>`
                 : (category === 'expense')
-                ? `<button class="btn-icon btn-attach btn-expense-attach" data-id="${docId}" title="첨부파일"><i class="fas fa-paperclip"></i></button>`
+                ? `<button class="btn-icon btn-attach btn-expense-attach" data-id="${docId}" data-tip="첨부파일"><i class="fas fa-paperclip"></i></button>`
                 : '';
 
-            // 상태 뱃지 (statusCode가 있는 문서만)
+            // 상태 뱃지 (statusCode가 있는 문서만 — 개인경비청구/연차신청서)
+            // 클릭 시 안내 모달 표시 (read-only)
             let statusBadge = '-';
             if (doc.statusCode && doc.statusName) {
                 const stCls = DOC_STATUS_STYLES[doc.statusCode] || '';
-                statusBadge = `<span class="doc-status-badge ${stCls}">${doc.statusName}</span>`;
+                const safeComment = (doc.statusComment || '').replace(/"/g, '&quot;');
+                statusBadge = `<span class="doc-status-badge ${stCls}"
+                    data-clickable="true"
+                    data-category="${category}"
+                    data-status-code="${doc.statusCode}"
+                    data-status-comment="${safeComment}"
+                    style="cursor:pointer;"
+                    data-tip="클릭하여 상세 보기">${doc.statusName}</span>`;
             }
 
             tr.innerHTML = `
@@ -1000,10 +1145,10 @@ document.addEventListener('DOMContentLoaded', function() {
                 const status = statusMap[id];
                 if (status === 'all') {
                     btn.classList.add('missing-all');
-                    btn.title = '첨부파일 전체 누락';
+                    btn.dataset.tip = '첨부파일 전체 누락';
                 } else if (status === 'partial') {
                     btn.classList.add('missing-partial');
-                    btn.title = '첨부파일 일부 누락';
+                    btn.dataset.tip = '첨부파일 일부 누락';
                 }
             });
         } catch (_) {}

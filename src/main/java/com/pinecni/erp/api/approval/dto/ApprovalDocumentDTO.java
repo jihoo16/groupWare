@@ -41,8 +41,9 @@ public class ApprovalDocumentDTO {
     private List<AttachmentSummaryDTO> attachments;  // 첨부파일 요약 (회의록/야근식대/RCTM 전용)
     private Integer meetingSessionCount;             // 출장+회의 세션 수
     private List<Long> meetingSessionIds;            // 출장+회의 세션 PK 목록 (displayOrder 오름차순)
-    private String statusCode;                       // 상태 코드 (지출승인서: C1001~C1005 등)
+    private String statusCode;                       // 상태 코드 (지출승인서: C1001~C1005 등, 연차: PENDING/APPROVED)
     private String statusName;                       // 상태 한글명
+    private String statusComment;                    // 상태 코멘트 (반려 사유 등)
     private String paymentType;                      // 지급종류 (재료비/장비비: card, transfer)
     private Long cardIdx;                            // 카드 IDX (관리자 연구비증빙 페이지용)
     private String cardCompany;                      // 카드사명 (관리자 연구비증빙 페이지용)
