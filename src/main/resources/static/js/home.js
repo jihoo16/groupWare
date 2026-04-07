@@ -528,7 +528,7 @@ const MENU_ITEMS = [
     },
     {
         category: '전자 문서', label: '개인경비 청구서', url: '/approval/expense', icon: 'fa-receipt',
-        keywords: ['개인경비','경비청구','개인경비청구','교통비','식비청구','경비','개인비용','청구서','경비신청']
+        keywords: ['개인경비','경비청구','개인경비청구','교통비','식비청구','경비','개인비용','청구서','경비신청','영수증','receipt','개인경비처리']
     },
     {
         category: '전자 문서', label: '구매요청서', url: '/approval/receipt-purchase', icon: 'fa-shopping-cart',
@@ -541,19 +541,19 @@ const MENU_ITEMS = [
     },
     {
         category: '프로젝트 문서함', label: '회의비 증빙', url: '/approval/receipt-meeting', icon: 'fa-users',
-        keywords: ['회의비','회의록','연구비회의','회의비청구','회의증빙','회의비신청','회의','회의비신청서']
+        keywords: ['회의비','회의록','연구비회의','회의비청구','회의증빙','회의비신청','회의','회의비신청서','영수증','receipt','연구비증빙']
     },
     {
         category: '프로젝트 문서함', label: '단독 출장 증빙', url: '/approval/receipt-trip', icon: 'fa-plane',
-        keywords: ['출장','출장비','출장증빙','단독출장','출장신청','출장비청구','출장비증빙','연구비출장','출장신청서']
+        keywords: ['출장','출장비','출장증빙','단독출장','출장신청','출장비청구','출장비증빙','연구비출장','출장신청서','영수증','receipt','연구비증빙']
     },
     {
         category: '프로젝트 문서함', label: '출장+회의 증빙', url: '/approval/receipt-trip-meeting', icon: 'fa-plane-arrival',
-        keywords: ['출장회의','출장+회의','출장및회의','출장회의증빙','출장+회의증빙','출장회의신청']
+        keywords: ['출장회의','출장+회의','출장및회의','출장회의증빙','출장+회의증빙','출장회의신청','영수증','receipt','연구비증빙']
     },
     {
         category: '프로젝트 문서함', label: '야근식대 증빙', url: '/approval/receipt-overtime', icon: 'fa-moon',
-        keywords: ['야근','야근식대','저녁식사','야근비','시간외','야근식비','초과근무식대','야근식대청구','야근신청']
+        keywords: ['야근','야근식대','저녁식사','야근비','시간외','야근식비','초과근무식대','야근식대청구','야근신청','영수증','receipt','연구비증빙']
     },
     // ── 프로젝트 관리 ──
     {
@@ -589,6 +589,14 @@ const MENU_ITEMS = [
     {
         category: '관리', label: '연차신청서 관리', url: '/admin/vacation-documents', icon: 'fa-file-alt',
         keywords: ['연차신청관리','연차문서관리','휴가관리','연차문서']
+    },
+    {
+        category: '관리', label: '개인경비지출 관리', url: '/admin/expense-documents', icon: 'fa-receipt',
+        keywords: ['개인경비','경비지출','개인경비지출','경비관리','경비처리','개인경비처리','경비문서','지출관리','영수증','receipt']
+    },
+    {
+        category: '관리', label: '연구비증빙관리', url: '/admin/receipt-documents', icon: 'fa-folder-open',
+        keywords: ['연구비','연구비증빙','연구비관리','증빙관리','증빙문서','연구비증빙관리','연구비처리','영수증','receipt']
     },
     {
         category: '관리', label: '사용자 관리', url: '/hr', icon: 'fa-users',
@@ -628,7 +636,7 @@ function searchMenuItems(query) {
         })
         .filter(x => x.score > 0)
         .sort((a, b) => b.score - a.score)
-        .slice(0, 7)
+        .slice(0, 10)
         .map(x => x.item);
 }
 
