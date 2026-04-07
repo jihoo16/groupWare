@@ -439,6 +439,18 @@ public class Controller {
         return "admin-expense-documents";
     }
 
+    /**
+     * 역량관리 페이지 - 관리자(C1101/C1102) 및 역량 열람자(C1103) 접근 가능
+     */
+    @GetMapping("/admin/competency-management")
+    public String adminCompetencyManagement(HttpSession session) {
+        if (!AuthorizationUtil.canViewCompetency(session)) {
+            log.warn("역량 열람 권한이 없는 사용자의 역량관리 페이지 접근 시도");
+            return "redirect:/nope";
+        }
+        return "admin-competency";
+    }
+
     @GetMapping("/login")
     public String login() {
         return "login";

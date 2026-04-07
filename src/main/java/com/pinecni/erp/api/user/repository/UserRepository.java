@@ -1,5 +1,6 @@
 package com.pinecni.erp.api.user.repository;
 
+import com.pinecni.erp.api.competency.dto.UserCompetencyOverviewDTO;
 import com.pinecni.erp.entity.User;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
@@ -130,5 +131,32 @@ public interface UserRepository extends JpaRepository<User, Long> {
      */
     @Query("SELECT u FROM User u WHERE u.empDept = :empDept AND u.empPosition = :empPosition AND u.deletedAt IS NULL")
     Optional<User> findActiveByEmpDeptAndEmpPosition(String empDept, String empPosition);
+
+    // ========================================
+    // 역량관리 열람 페이지용
+    // ========================================
+
+    /**
+     * 직원 목록 + 역량 4종 건수 요약 (역량관리 열람 페이지 / 엑셀 export 공용)
+     * 개발자 계정(C1101) 제외. 부서/직급명은 Service에서 후처리.
+     * @SQLRestriction이 역량 테이블에 is_deleted=false 자동 적용됨.
+     */
+    @Query("""
+        SELECT new com.pinecni.erp.api.competency.dto.UserCompetencyOverviewDTO(
+            u.idx, u.empId, u.empName,
+            u.empDept, null,
+            u.empPosition, null,
+            u.userRoleCode,
+            (SELECT COUNT(s) FROM UserSchool      s WHERE s.userIdx = u.idx),
+            (SELECT COUNT(c) FROM UserCertificate c WHERE c.userIdx = u.idx),
+            (SELECT COUNT(r) FROM UserCareer      r WHERE r.userIdx = u.idx),
+            (SELECT COUNT(t) FROM UserTraining    t WHERE t.userIdx = u.idx)
+        )
+        FROM User u
+        WHERE u.deletedAt IS NULL
+          AND u.userRoleCode <> 'C1101'
+        ORDER BY u.empDept, u.empPosition, u.empName
+        """)
+    List<UserCompetencyOverviewDTO> findAllWithCompetencyOverview();
 
 }

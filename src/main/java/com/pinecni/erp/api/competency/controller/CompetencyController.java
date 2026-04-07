@@ -2,7 +2,9 @@ package com.pinecni.erp.api.competency.controller;
 
 import com.pinecni.erp.api.competency.dto.*;
 import com.pinecni.erp.api.competency.service.CompetencyService;
+import com.pinecni.erp.util.AuthorizationUtil;
 import jakarta.servlet.http.HttpSession;
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
@@ -42,9 +44,9 @@ public class CompetencyController {
     public ResponseEntity<List<UserSchoolDTO>> getSchools(
             @RequestParam Long userIdx,
             HttpSession session) {
-        getSessionUserIdx(session); // 로그인 확인
+        Long requestingUserIdx = getSessionUserIdx(session);
         log.debug("GET /api/competency/schools?userIdx={}", userIdx);
-        return ResponseEntity.ok(competencyService.getSchools(userIdx));
+        return ResponseEntity.ok(competencyService.getSchools(userIdx, requestingUserIdx));
     }
 
     /** POST /api/competency/schools */
@@ -90,9 +92,9 @@ public class CompetencyController {
     public ResponseEntity<List<UserCertificateDTO>> getCertificates(
             @RequestParam Long userIdx,
             HttpSession session) {
-        getSessionUserIdx(session);
+        Long requestingUserIdx = getSessionUserIdx(session);
         log.debug("GET /api/competency/certificates?userIdx={}", userIdx);
-        return ResponseEntity.ok(competencyService.getCertificates(userIdx));
+        return ResponseEntity.ok(competencyService.getCertificates(userIdx, requestingUserIdx));
     }
 
     /** POST /api/competency/certificates */
@@ -138,9 +140,9 @@ public class CompetencyController {
     public ResponseEntity<List<UserCareerDTO>> getCareers(
             @RequestParam Long userIdx,
             HttpSession session) {
-        getSessionUserIdx(session);
+        Long requestingUserIdx = getSessionUserIdx(session);
         log.debug("GET /api/competency/careers?userIdx={}", userIdx);
-        return ResponseEntity.ok(competencyService.getCareers(userIdx));
+        return ResponseEntity.ok(competencyService.getCareers(userIdx, requestingUserIdx));
     }
 
     /** POST /api/competency/careers */
@@ -186,9 +188,9 @@ public class CompetencyController {
     public ResponseEntity<List<UserTrainingDTO>> getTrainings(
             @RequestParam Long userIdx,
             HttpSession session) {
-        getSessionUserIdx(session);
+        Long requestingUserIdx = getSessionUserIdx(session);
         log.debug("GET /api/competency/trainings?userIdx={}", userIdx);
-        return ResponseEntity.ok(competencyService.getTrainings(userIdx));
+        return ResponseEntity.ok(competencyService.getTrainings(userIdx, requestingUserIdx));
     }
 
     /** POST /api/competency/trainings */
@@ -223,6 +225,67 @@ public class CompetencyController {
         log.debug("DELETE /api/competency/trainings/{} - requesting={}", idx, requestingUserIdx);
         competencyService.deleteTraining(idx, requestingUserIdx);
         return ResponseEntity.ok(Map.of("message", "교육이수가 삭제되었습니다."));
+    }
+
+    // =========================================================
+    // 담당자(역량 열람자) 권한 관리 (관리자 전용)
+    // =========================================================
+
+    /** POST /api/competency/viewer-role/{userIdx} — C1104 → C1103 승격 */
+    @PostMapping("/viewer-role/{userIdx}")
+    public ResponseEntity<Map<String, String>> grantCompetencyViewerRole(
+            @PathVariable Long userIdx,
+            HttpSession session) {
+        Long adminIdx = getSessionUserIdx(session);
+        log.debug("POST /api/competency/viewer-role/{} - by adminIdx={}", userIdx, adminIdx);
+        competencyService.grantCompetencyViewerRole(userIdx, adminIdx);
+        return ResponseEntity.ok(Map.of("message", "역량 열람자 권한이 부여되었습니다."));
+    }
+
+    /** DELETE /api/competency/viewer-role/{userIdx} — C1103 → C1104 강등 */
+    @DeleteMapping("/viewer-role/{userIdx}")
+    public ResponseEntity<Map<String, String>> revokeCompetencyViewerRole(
+            @PathVariable Long userIdx,
+            HttpSession session) {
+        Long adminIdx = getSessionUserIdx(session);
+        log.debug("DELETE /api/competency/viewer-role/{} - by adminIdx={}", userIdx, adminIdx);
+        competencyService.revokeCompetencyViewerRole(userIdx, adminIdx);
+        return ResponseEntity.ok(Map.of("message", "역량 열람자 권한이 해제되었습니다."));
+    }
+
+    // =========================================================
+    // 역량관리 열람 페이지용
+    // =========================================================
+
+    /** GET /api/competency/overview — 직원 역량 요약 목록 */
+    @GetMapping("/overview")
+    public ResponseEntity<List<UserCompetencyOverviewDTO>> getCompetencyOverview(HttpSession session) {
+        Long requestingUserIdx = getSessionUserIdx(session);
+        log.debug("GET /api/competency/overview - by userIdx={}", requestingUserIdx);
+        return ResponseEntity.ok(competencyService.getCompetencyOverview(requestingUserIdx));
+    }
+
+    /** GET /api/competency/export-data — 엑셀 export용 통합 데이터 */
+    @GetMapping("/export-data")
+    public ResponseEntity<CompetencyExportDataDTO> getCompetencyExportData(HttpSession session) {
+        Long requestingUserIdx = getSessionUserIdx(session);
+        log.debug("GET /api/competency/export-data - by userIdx={}", requestingUserIdx);
+        return ResponseEntity.ok(competencyService.getCompetencyExportData(requestingUserIdx));
+    }
+
+    // =========================================================
+    // 법정교육 일괄 등록 (관리자 전용)
+    // =========================================================
+
+    /** POST /api/competency/trainings/bulk — 법정교육 일괄 등록 */
+    @PostMapping("/trainings/bulk")
+    public ResponseEntity<BulkTrainingResultDTO> bulkCreateTraining(
+            @Valid @RequestBody BulkTrainingRequestDTO dto,
+            HttpSession session) {
+        Long adminIdx = getSessionUserIdx(session);
+        log.debug("POST /api/competency/trainings/bulk - by adminIdx={}, targetCount={}",
+                adminIdx, dto.getTargetUserIdxList().size());
+        return ResponseEntity.ok(competencyService.bulkCreateTraining(dto, adminIdx));
     }
 
     // =========================================================
