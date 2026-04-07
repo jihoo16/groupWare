@@ -440,6 +440,21 @@ public class Controller {
     }
 
     /**
+     * 관리자 전용 - 연구비증빙 관리 페이지
+     * - 카드사용일자 기준 월별 조회
+     * - 과제별/카드별 필터링
+     * - 첨부파일 일괄 다운로드(개별 파일 순차 다운로드)
+     */
+    @GetMapping("/admin/receipt-documents")
+    public String adminReceiptDocuments(HttpSession session) {
+        if (!AuthorizationUtil.isAdminOrHigher(session)) {
+            log.warn("관리자가 아닌 사용자의 연구비증빙 관리 접근 시도");
+            return "redirect:/nope";
+        }
+        return "admin-receipt-documents";
+    }
+
+    /**
      * 역량관리 페이지 - 관리자(C1101/C1102) 및 역량 열람자(C1103) 접근 가능
      */
     @GetMapping("/admin/competency-management")

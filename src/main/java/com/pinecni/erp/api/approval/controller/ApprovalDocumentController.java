@@ -2,12 +2,14 @@ package com.pinecni.erp.api.approval.controller;
 
 import com.pinecni.erp.api.approval.dto.ApprovalDocumentDTO;
 import com.pinecni.erp.api.approval.service.ApprovalDocumentService;
+import com.pinecni.erp.util.AuthorizationUtil;
 import jakarta.servlet.http.HttpSession;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import java.time.LocalDate;
 import java.util.List;
 
 /**
@@ -122,6 +124,39 @@ public class ApprovalDocumentController {
         }
 
         log.debug("프로젝트별 조회 완료 - projectIdx: {}, 총 {}건", projectIdx, documents.size());
+        return ResponseEntity.ok(documents);
+    }
+
+    /**
+     * [관리자 전용] 연구비증빙 6종 문서 월별 조회
+     * - year/month 필터 (기본: 이번 달)
+     * - 카드사용일자 내림차순 정렬
+     * - 카드 정보 + 카드사용일자 포함
+     * @param year 연도 (선택, 기본: 현재 연도)
+     * @param month 월 (선택, 기본: 현재 월)
+     * @param session HTTP 세션 (권한 체크용)
+     * @return 연구비증빙 문서 목록
+     */
+    @GetMapping("/admin/receipts")
+    public ResponseEntity<List<ApprovalDocumentDTO>> getAdminReceiptDocuments(
+            @RequestParam(required = false) Integer year,
+            @RequestParam(required = false) Integer month,
+            HttpSession session) {
+
+        if (!AuthorizationUtil.isAdminOrHigher(session)) {
+            log.warn("권한 없는 사용자의 관리자 연구비증빙 조회 시도");
+            return ResponseEntity.status(403).build();
+        }
+
+        LocalDate today = LocalDate.now();
+        int y = year != null ? year : today.getYear();
+        int m = month != null ? month : today.getMonthValue();
+
+        log.debug("GET /api/approval/documents/admin/receipts - year: {}, month: {}", y, m);
+
+        List<ApprovalDocumentDTO> documents = approvalDocumentService.getAdminReceiptDocuments(y, m);
+
+        log.debug("[관리자 연구비증빙 조회] 완료 - {}/{} 총 {}건", y, m, documents.size());
         return ResponseEntity.ok(documents);
     }
 }

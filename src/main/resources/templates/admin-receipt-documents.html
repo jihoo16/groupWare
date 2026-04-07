@@ -1,0 +1,146 @@
+<!DOCTYPE html>
+<html lang="ko" xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{fragments/layout :: head('관리자 - 연구비증빙관리', '/css/admin-receipt-documents.css')}"></head>
+<body>
+<div class="container">
+    <!-- 좌측 네비게이션 바 -->
+    <div th:replace="~{fragments/sidebar :: sidebar('admin-receipt-documents')}"></div>
+
+    <!-- 메인 콘텐츠 영역 -->
+    <main class="main-content">
+        <header class="header">
+            <div class="header-left">
+                <h1 class="page-title"><i class="fas fa-receipt"></i> 연구비증빙관리</h1>
+            </div>
+            <div class="header-right">
+                <button class="btn-refresh" id="refreshBtn" title="새로고침">
+                    <i class="fas fa-sync-alt"></i>
+                </button>
+            </div>
+        </header>
+
+        <div class="content-area">
+            <!-- 통계 요약 -->
+            <div class="stats-section" id="statsSection">
+                <div class="stat-card">
+                    <div class="stat-icon"><i class="fas fa-file-alt"></i></div>
+                    <div class="stat-info">
+                        <span class="stat-label">총 건수</span>
+                        <span class="stat-value" id="statTotal">0건</span>
+                    </div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-icon"><i class="fas fa-won-sign"></i></div>
+                    <div class="stat-info">
+                        <span class="stat-label">총 금액</span>
+                        <span class="stat-value" id="statAmount">0원</span>
+                    </div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-icon"><i class="fas fa-check-circle"></i></div>
+                    <div class="stat-info">
+                        <span class="stat-label">첨부 완료</span>
+                        <span class="stat-value" id="statComplete">0건</span>
+                    </div>
+                </div>
+                <div class="stat-card stat-card-warning">
+                    <div class="stat-icon"><i class="fas fa-exclamation-triangle"></i></div>
+                    <div class="stat-info">
+                        <span class="stat-label">첨부 누락</span>
+                        <span class="stat-value" id="statMissing">0건</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 필터 영역 -->
+            <div class="filter-section">
+                <div class="filter-group">
+                    <label><i class="fas fa-calendar-alt"></i> 조회 월</label>
+                    <div class="month-controls">
+                        <button class="btn-month-nav" id="prevMonthBtn" title="이전 달"><i class="fas fa-chevron-left"></i></button>
+                        <input type="month" id="monthInput" class="filter-select month-input">
+                        <button class="btn-month-nav" id="nextMonthBtn" title="다음 달"><i class="fas fa-chevron-right"></i></button>
+                    </div>
+                </div>
+
+                <div class="filter-group">
+                    <label><i class="fas fa-folder-open"></i> 과제</label>
+                    <select id="projectFilter" class="filter-select">
+                        <option value="all">전체</option>
+                    </select>
+                </div>
+
+                <div class="filter-group">
+                    <label><i class="fas fa-credit-card"></i> 카드</label>
+                    <select id="cardFilter" class="filter-select">
+                        <option value="all">전체</option>
+                    </select>
+                </div>
+
+                <div class="filter-group">
+                    <label><i class="fas fa-tags"></i> 문서 종류</label>
+                    <select id="typeFilter" class="filter-select">
+                        <option value="all">전체</option>
+                        <option value="C0407">재료비</option>
+                        <option value="C0408">장비비</option>
+                        <option value="C0403">야근식대</option>
+                        <option value="C0404">단독출장</option>
+                        <option value="C0405">출장+회의</option>
+                        <option value="C0406">회의록</option>
+                    </select>
+                </div>
+
+                <div class="filter-group">
+                    <label><i class="fas fa-paperclip"></i> 첨부 상태</label>
+                    <select id="attachmentFilter" class="filter-select">
+                        <option value="all">전체</option>
+                        <option value="complete">완료</option>
+                        <option value="missing">누락</option>
+                    </select>
+                </div>
+
+                <div class="filter-group">
+                    <label><i class="fas fa-search"></i> 검색</label>
+                    <input type="text" id="searchInput" class="search-input" placeholder="과제명·카드·작성자·내용 (초성 가능)">
+                </div>
+            </div>
+
+            <!-- 문서 목록 (테이블) -->
+            <div class="documents-table-wrapper">
+                <table class="documents-table" id="documentsTable">
+                    <thead>
+                        <tr>
+                            <th class="col-type">종류</th>
+                            <th class="col-project">과제명</th>
+                            <th class="col-card">카드</th>
+                            <th class="col-author">작성자</th>
+                            <th class="col-date">카드사용일</th>
+                            <th class="col-amount">금액</th>
+                            <th class="col-payment">지급</th>
+                            <th class="col-attachments">첨부</th>
+                            <th class="col-actions">관리</th>
+                        </tr>
+                    </thead>
+                    <tbody id="documentsTableBody">
+                        <tr class="loading-row">
+                            <td colspan="9">
+                                <div class="loading-spinner">
+                                    <i class="fas fa-spinner fa-spin"></i>
+                                    <p>데이터를 불러오는 중...</p>
+                                </div>
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+
+            <!-- 페이징 -->
+            <div class="pagination-wrapper" id="paginationWrapper"></div>
+        </div>
+    </main>
+</div>
+
+<script th:src="@{/js/search-utils.js}"></script>
+<script th:src="@{/js/admin-receipt-documents.js}"></script>
+</body>
+</html>

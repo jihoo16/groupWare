@@ -60,4 +60,14 @@ public interface ApprovalDocumentService {
      * @return 필터링된 문서 목록
      */
     List<ApprovalDocumentDTO> getDocumentsByProjectAndTypes(Long projectIdx, String[] documentTypes);
+
+    /**
+     * [관리자 전용] 연구비증빙 6종 문서 월별 조회
+     * - 카드사용일자 기준으로 해당 년/월에 속하는 문서만
+     * - 카드사용일자 내림차순 정렬
+     * @param year 연도
+     * @param month 월 (1~12)
+     * @return 연구비증빙 문서 목록 (카드 정보 포함)
+     */
+    List<ApprovalDocumentDTO> getAdminReceiptDocuments(int year, int month);
 }

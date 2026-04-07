@@ -12,6 +12,7 @@ import com.pinecni.erp.api.document.repository.MeetingMinutesRepository;
 import com.pinecni.erp.api.document.repository.WeeklyReportRepository;
 import com.pinecni.erp.api.document.repository.ReceiptOvertimeRepository;
 import com.pinecni.erp.api.document.repository.ReceiptPurchaseRepository;
+import com.pinecni.erp.api.document.repository.ReceiptPurchaseItemRepository;
 import com.pinecni.erp.api.project.repository.ProjectCardRepository;
 import com.pinecni.erp.api.project.repository.ProjectRepository;
 import com.pinecni.erp.api.project.repository.ReceiptMeetingRepository;
@@ -38,6 +39,8 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Comparator;
 import java.util.List;
+import java.util.Objects;
+import java.util.Set;
 import java.util.stream.Collectors;
 
 /**
@@ -59,6 +62,7 @@ public class ApprovalDocumentServiceImpl implements ApprovalDocumentService {
     private final ReceiptTripMeetingRepository receiptTripMeetingRepository;
     private final ReceiptOvertimeRepository receiptOvertimeRepository;
     private final ReceiptPurchaseRepository receiptPurchaseRepository;
+    private final ReceiptPurchaseItemRepository receiptPurchaseItemRepository;
     private final ProjectCardRepository projectCardRepository;
     private final ProjectRepository projectRepository;
     private final ReceiptMeetingAttachmentRepository receiptMeetingAttachmentRepository;
@@ -225,6 +229,8 @@ public class ApprovalDocumentServiceImpl implements ApprovalDocumentService {
                     });
                 }
                 dto.setEventDate(receiptMeeting.getMeetingDate());
+                dto.setCardUsageDate(receiptMeeting.getMeetingDate());
+                enrichWithCardInfo(dto, receiptMeeting.getCardIdx());
                 dto.setPurpose(receiptMeeting.getPurpose());
                 dto.setAmount(receiptMeeting.getAmount());
                 dto.setParticipantNames(buildParticipantNames(receiptMeeting.getIdx(), "RCM"));
@@ -241,6 +247,8 @@ public class ApprovalDocumentServiceImpl implements ApprovalDocumentService {
                     });
                 }
                 dto.setEventDate(receiptTrip.getTripDate());
+                dto.setCardUsageDate(receiptTrip.getTripDate());
+                enrichWithCardInfo(dto, receiptTrip.getCardIdx());
                 dto.setLocation(receiptTrip.getLocation());
                 dto.setAmount(receiptTrip.getTotalFee());
                 dto.setParticipantNames(buildParticipantNames(receiptTrip.getIdx(), "RCT"));
@@ -256,10 +264,13 @@ public class ApprovalDocumentServiceImpl implements ApprovalDocumentService {
                     });
                 }
                 dto.setEventDate(rtm.getTripDate());
+                dto.setCardUsageDate(rtm.getTripDate());
+                enrichWithCardInfo(dto, rtm.getCardIdx());
                 dto.setLocation(rtm.getLocation());
                 dto.setPurpose(rtm.getPurpose());
                 dto.setAmount(rtm.getTotalFee());
                 dto.setParticipantNames(buildParticipantNames(rtm.getIdx(), "RCTM"));
+                dto.setAttachments(buildRctmAttachments(rtm.getIdx()));
             });
         } else if (CodeConstants.DocumentType.RECEIPT_OVERTIME.getCode().equals(documentType)) {
             // 연구비증빙 야근식대의 원본 문서 ID 및 프로젝트 정보 조회
@@ -272,6 +283,8 @@ public class ApprovalDocumentServiceImpl implements ApprovalDocumentService {
                     }
                 }
                 dto.setEventDate(receiptOvertime.getOvertimeDate());
+                dto.setCardUsageDate(receiptOvertime.getOvertimeDate());
+                enrichWithCardInfo(dto, receiptOvertime.getCardIdx());
                 dto.setAmount(receiptOvertime.getTotalAmount());
                 dto.setParticipantNames(buildParticipantNames(receiptOvertime.getIdx(), "RCO"));
                 dto.setAttachments(buildOvertimeAttachments(receiptOvertime.getIdx()));
@@ -292,6 +305,9 @@ public class ApprovalDocumentServiceImpl implements ApprovalDocumentService {
                 if (purchase.getApprovalDate() != null) {
                     dto.setEventDate(purchase.getApprovalDate());
                 }
+                // 카드사용일자: item 중 가장 최근 itemDate (없으면 approvalDate fallback)
+                dto.setCardUsageDate(computePurchaseCardUsageDate(purchase.getIdx(), purchase.getApprovalDate()));
+                enrichWithCardInfo(dto, purchase.getCardIdx());
                 String purposeText = purchase.getDocumentContent();
                 if (purposeText == null || purposeText.isBlank()) {
                     purposeText = purchase.getDocumentTitle();
@@ -907,5 +923,72 @@ public class ApprovalDocumentServiceImpl implements ApprovalDocumentService {
                 })
                 .filter(name -> name != null && !name.isBlank())
                 .collect(Collectors.joining(", "));
+    }
+
+    // ============================================================
+    // 관리자 연구비증빙 페이지 전용 헬퍼 / 조회
+    // ============================================================
+
+    /**
+     * cardIdx로 ProjectCard를 조회해서 DTO에 카드 정보를 채운다.
+     */
+    private void enrichWithCardInfo(ApprovalDocumentDTO dto, Long cardIdx) {
+        if (cardIdx == null) return;
+        dto.setCardIdx(cardIdx);
+        projectCardRepository.findById(cardIdx).ifPresent(card -> {
+            dto.setCardCompany(card.getCardCompany());
+            dto.setCardLastDigits(card.getCardLastDigits());
+            dto.setCardNickname(card.getCardNickname());
+        });
+    }
+
+    /**
+     * 재료비/장비비 한 문서의 대표 카드사용일자.
+     * - 각 item의 itemDate 중 가장 최근(MAX) 값을 사용
+     * - 모든 item의 itemDate가 null이면 approvalDate(품의일자)로 fallback
+     */
+    private LocalDate computePurchaseCardUsageDate(Long purchaseIdx, LocalDate fallback) {
+        if (purchaseIdx == null) return fallback;
+        return receiptPurchaseItemRepository.findByReceiptPurchaseIdxOrderBySortOrderAsc(purchaseIdx).stream()
+                .map(ReceiptPurchaseItem::getItemDate)
+                .filter(Objects::nonNull)
+                .max(LocalDate::compareTo)
+                .orElse(fallback);
+    }
+
+    /**
+     * [관리자 전용] 연구비증빙 6종 문서 조회.
+     * - year/month 기준으로 카드사용일자가 해당 월에 속하는 문서만 반환
+     * - 카드사용일자 내림차순 정렬
+     */
+    @Override
+    public List<ApprovalDocumentDTO> getAdminReceiptDocuments(int year, int month) {
+        log.debug("[관리자 연구비증빙 조회] year: {}, month: {}", year, month);
+
+        Set<String> receiptTypes = Set.of(
+                CodeConstants.DocumentType.RECEIPT_OVERTIME.getCode(),
+                CodeConstants.DocumentType.RECEIPT_TRIP.getCode(),
+                CodeConstants.DocumentType.RECEIPT_TRIP_MEETING.getCode(),
+                CodeConstants.DocumentType.RECEIPT_MEETING.getCode(),
+                CodeConstants.DocumentType.RECEIPT_MATERIAL.getCode(),
+                CodeConstants.DocumentType.RECEIPT_EQUIPMENT.getCode()
+        );
+
+        List<ApprovalDocument> documents = approvalDocumentRepository.findProjectDocuments();
+        List<ApprovalDocumentDTO> result = documents.stream()
+                .map(this::convertToDTO)
+                .filter(dto -> dto.getSourceDocumentId() != null)
+                .filter(dto -> receiptTypes.contains(dto.getDocumentType()))
+                .filter(dto -> {
+                    LocalDate d = dto.getCardUsageDate();
+                    if (d == null) return false;
+                    return d.getYear() == year && d.getMonthValue() == month;
+                })
+                .sorted(Comparator.comparing(ApprovalDocumentDTO::getCardUsageDate,
+                        Comparator.nullsLast(Comparator.reverseOrder())))
+                .collect(Collectors.toList());
+
+        log.debug("[관리자 연구비증빙 조회] 완료 - 총 {}건", result.size());
+        return result;
     }
 }

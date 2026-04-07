@@ -44,4 +44,9 @@ public class ApprovalDocumentDTO {
     private String statusCode;                       // 상태 코드 (지출승인서: C1001~C1005 등)
     private String statusName;                       // 상태 한글명
     private String paymentType;                      // 지급종류 (재료비/장비비: card, transfer)
+    private Long cardIdx;                            // 카드 IDX (관리자 연구비증빙 페이지용)
+    private String cardCompany;                      // 카드사명 (관리자 연구비증빙 페이지용)
+    private String cardLastDigits;                   // 카드 뒷4자리 (관리자 연구비증빙 페이지용)
+    private String cardNickname;                     // 카드 별칭 (관리자 연구비증빙 페이지용)
+    private LocalDate cardUsageDate;                 // 카드사용일자 (관리자 연구비증빙 페이지 정렬용)
 }
