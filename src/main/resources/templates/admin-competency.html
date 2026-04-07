@@ -1,0 +1,369 @@
+<!DOCTYPE html>
+<html lang="ko" xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{fragments/layout :: head('ERP 시스템 - 역량관리', '/css/admin-competency.css')}"></head>
+<body>
+    <div class="container">
+        <!-- 좌측 네비게이션 바 -->
+        <div th:replace="~{fragments/sidebar :: sidebar('admin-competency')}"></div>
+
+        <!-- 메인 콘텐츠 영역 -->
+        <main class="main-content">
+            <header class="header">
+                <div class="header-left">
+                    <h1 class="page-title">
+                        <i class="fas fa-user-graduate"></i>
+                        역량관리
+                    </h1>
+                    <p class="page-subtitle">전체 직원의 학력·자격증·경력·교육 현황을 조회합니다</p>
+                </div>
+                <div class="header-right">
+                    <div class="header-filters">
+                        <select id="departmentFilter" class="filter-select">
+                            <option value="">전체 부서</option>
+                        </select>
+                        <div class="search-box">
+                            <i class="fas fa-search"></i>
+                            <input type="text" id="searchInput" placeholder="이름, 사번으로 검색...">
+                        </div>
+                    </div>
+                </div>
+            </header>
+
+            <div class="admin-competency-content">
+
+                <!-- 액션 버튼 바 -->
+                <div class="action-bar">
+                    <div class="action-left">
+                        <button class="btn-export" id="exportExcelBtn">
+                            <i class="fas fa-file-excel"></i>
+                            전체 엑셀 다운로드
+                        </button>
+                    </div>
+                    <div class="action-right"
+                         th:if="${session.userRoleCode == 'C1101' or session.userRoleCode == 'C1102'}">
+                        <button class="btn-primary" id="openRoleMgmtBtn">
+                            <i class="fas fa-user-shield"></i>
+                            역량 열람 권한 관리
+                        </button>
+                        <button class="btn-primary" id="openBulkTrainingBtn">
+                            <i class="fas fa-book-open"></i>
+                            법정교육 일괄등록
+                        </button>
+                    </div>
+                </div>
+
+                <!-- 통계 카드 -->
+                <div class="stats-cards">
+                    <div class="stat-card">
+                        <div class="stat-icon blue">
+                            <i class="fas fa-users"></i>
+                        </div>
+                        <div class="stat-content">
+                            <h3>전체 직원</h3>
+                            <p class="stat-number" id="totalEmployees">-</p>
+                        </div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-icon green">
+                            <i class="fas fa-graduation-cap"></i>
+                        </div>
+                        <div class="stat-content">
+                            <h3>총 학력</h3>
+                            <p class="stat-number" id="totalSchools">-</p>
+                        </div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-icon orange">
+                            <i class="fas fa-certificate"></i>
+                        </div>
+                        <div class="stat-content">
+                            <h3>총 자격증</h3>
+                            <p class="stat-number" id="totalCertificates">-</p>
+                        </div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-icon purple">
+                            <i class="fas fa-briefcase"></i>
+                        </div>
+                        <div class="stat-content">
+                            <h3>총 업계경력</h3>
+                            <p class="stat-number" id="totalCareers">-</p>
+                        </div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-icon teal">
+                            <i class="fas fa-book-open"></i>
+                        </div>
+                        <div class="stat-content">
+                            <h3>총 교육이수</h3>
+                            <p class="stat-number" id="totalTrainings">-</p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 역량 현황 테이블 -->
+                <div class="table-container">
+                    <table class="competency-table">
+                        <thead>
+                            <tr>
+                                <th>번호</th>
+                                <th class="sortable" data-sort="empId">
+                                    사번 <i class="fas fa-sort sort-icon"></i>
+                                </th>
+                                <th class="sortable" data-sort="empName">
+                                    이름 <i class="fas fa-sort sort-icon"></i>
+                                </th>
+                                <th class="sortable" data-sort="empDeptName">
+                                    부서 <i class="fas fa-sort sort-icon"></i>
+                                </th>
+                                <th class="sortable" data-sort="empPositionName">
+                                    직급 <i class="fas fa-sort sort-icon"></i>
+                                </th>
+                                <th>권한</th>
+                                <th class="sortable" data-sort="schoolCount">
+                                    학력 <i class="fas fa-sort sort-icon"></i>
+                                </th>
+                                <th class="sortable" data-sort="certificateCount">
+                                    자격증 <i class="fas fa-sort sort-icon"></i>
+                                </th>
+                                <th class="sortable" data-sort="careerCount">
+                                    경력 <i class="fas fa-sort sort-icon"></i>
+                                </th>
+                                <th class="sortable" data-sort="trainingCount">
+                                    교육 <i class="fas fa-sort sort-icon"></i>
+                                </th>
+                                <th>상세</th>
+                            </tr>
+                        </thead>
+                        <tbody id="competencyTableBody">
+                            <!-- JavaScript로 동적 생성 -->
+                        </tbody>
+                    </table>
+                </div>
+
+                <!-- 로딩 스피너 -->
+                <div class="loading-spinner" id="loadingSpinner" style="display: none;">
+                    <i class="fas fa-spinner fa-spin"></i>
+                    <p>데이터를 불러오는 중...</p>
+                </div>
+
+                <!-- 데이터 없음 -->
+                <div class="no-data" id="noData" style="display: none;">
+                    <i class="fas fa-inbox"></i>
+                    <p>표시할 데이터가 없습니다</p>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <!-- =====================================================
+         직원 역량 상세보기 모달 (읽기전용)
+         ===================================================== -->
+    <div class="modal" id="detailModal">
+        <div class="modal-content modal-large">
+            <div class="modal-header">
+                <h2 class="modal-title" id="detailModalTitle">
+                    <i class="fas fa-user-graduate"></i>
+                    역량 상세
+                </h2>
+                <button class="modal-close" id="closeDetailModal">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            <div class="modal-body">
+                <!-- 직원 기본 정보 -->
+                <div class="employee-info">
+                    <div class="info-row">
+                        <span class="info-label">사번</span>
+                        <span class="info-value" id="detailEmpId">-</span>
+                    </div>
+                    <div class="info-row">
+                        <span class="info-label">이름</span>
+                        <span class="info-value" id="detailEmpName">-</span>
+                    </div>
+                    <div class="info-row">
+                        <span class="info-label">부서</span>
+                        <span class="info-value" id="detailEmpDept">-</span>
+                    </div>
+                    <div class="info-row">
+                        <span class="info-label">직급</span>
+                        <span class="info-value" id="detailEmpPosition">-</span>
+                    </div>
+                </div>
+
+                <!-- 학력 -->
+                <div class="competency-detail-section">
+                    <h3><i class="fas fa-graduation-cap"></i> 학력 (<span id="schoolCountBadge">0</span>건)</h3>
+                    <div class="detail-list" id="detailSchoolList">
+                        <!-- 동적 생성 -->
+                    </div>
+                </div>
+
+                <!-- 자격증 -->
+                <div class="competency-detail-section">
+                    <h3><i class="fas fa-certificate"></i> 자격증 (<span id="certificateCountBadge">0</span>건)</h3>
+                    <div class="detail-list" id="detailCertificateList">
+                        <!-- 동적 생성 -->
+                    </div>
+                </div>
+
+                <!-- 업계경력 -->
+                <div class="competency-detail-section">
+                    <h3><i class="fas fa-briefcase"></i> 업계경력 (<span id="careerCountBadge">0</span>건)</h3>
+                    <div class="detail-list" id="detailCareerList">
+                        <!-- 동적 생성 -->
+                    </div>
+                </div>
+
+                <!-- 교육이수 -->
+                <div class="competency-detail-section">
+                    <h3><i class="fas fa-book-open"></i> 교육이수 (<span id="trainingCountBadge">0</span>건)</h3>
+                    <div class="detail-list" id="detailTrainingList">
+                        <!-- 동적 생성 -->
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn-secondary" id="closeDetailModalBtn">닫기</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- =====================================================
+         역량 열람 권한 관리 모달 (관리자 전용)
+         ===================================================== -->
+    <div class="modal" id="roleMgmtModal"
+         th:if="${session.userRoleCode == 'C1101' or session.userRoleCode == 'C1102'}">
+        <div class="modal-content modal-large">
+            <div class="modal-header">
+                <h2 class="modal-title">
+                    <i class="fas fa-user-shield"></i>
+                    역량 열람 권한 관리
+                </h2>
+                <button class="modal-close" id="closeRoleMgmtModal">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            <div class="modal-body">
+                <div class="role-mgmt-notice">
+                    <i class="fas fa-info-circle"></i>
+                    <div>
+                        <p>역량 열람자 권한을 가진 사용자는 역량관리 페이지를 열람할 수 있습니다.</p>
+                        <p><strong>관리자/개발자는 이미 권한이 있으므로 이 목록에서는 수정할 수 없습니다.</strong></p>
+                    </div>
+                </div>
+
+                <div class="role-mgmt-filter">
+                    <div class="search-box">
+                        <i class="fas fa-search"></i>
+                        <input type="text" id="roleMgmtSearchInput" placeholder="이름/사번 검색...">
+                    </div>
+                </div>
+
+                <div class="table-container">
+                    <table class="role-mgmt-table">
+                        <thead>
+                            <tr>
+                                <th>사번</th>
+                                <th>이름</th>
+                                <th>부서</th>
+                                <th>직급</th>
+                                <th>현재 권한</th>
+                                <th>역량 열람자</th>
+                            </tr>
+                        </thead>
+                        <tbody id="roleMgmtTableBody">
+                            <!-- 동적 생성 -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn-secondary" id="closeRoleMgmtModalBtn">닫기</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- =====================================================
+         법정교육 일괄 등록 모달 (관리자 전용)
+         ===================================================== -->
+    <div class="modal" id="bulkTrainingModal"
+         th:if="${session.userRoleCode == 'C1101' or session.userRoleCode == 'C1102'}">
+        <div class="modal-content modal-large">
+            <div class="modal-header">
+                <h2 class="modal-title">
+                    <i class="fas fa-book-open"></i>
+                    법정교육 일괄 등록
+                </h2>
+                <button class="modal-close" id="closeBulkTrainingModal">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            <div class="modal-body">
+                <!-- 교육 정보 -->
+                <div class="bulk-form-section">
+                    <h3>교육 정보</h3>
+                    <div class="form-row">
+                        <div class="form-group span-2">
+                            <label>교육명 <span class="required-mark">*</span></label>
+                            <input type="text" id="bulkTrainingName" class="form-input" placeholder="예) 산업안전보건교육">
+                        </div>
+                        <div class="form-group">
+                            <label>이수일 <span class="required-mark">*</span></label>
+                            <input type="date" id="bulkCompletionDate" class="form-input">
+                        </div>
+                    </div>
+                    <div class="form-row">
+                        <div class="form-group full-width">
+                            <label>교육기관 <span class="required-mark">*</span></label>
+                            <input type="text" id="bulkTrainingOrgName" class="form-input" placeholder="예) 대한산업안전협회">
+                        </div>
+                    </div>
+                    <div class="form-row">
+                        <div class="form-group full-width">
+                            <label>비고</label>
+                            <textarea id="bulkNotes" class="form-textarea" rows="2" placeholder="2026년 상반기 정기교육"></textarea>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 대상 직원 선택 -->
+                <div class="bulk-form-section">
+                    <h3>대상 직원 선택 (<span id="bulkSelectedCount">0</span>명 선택됨 / 전체 <span id="bulkTotalCount">0</span>명)</h3>
+                    <div class="bulk-employee-filter">
+                        <div class="search-box">
+                            <i class="fas fa-search"></i>
+                            <input type="text" id="bulkSearchInput" placeholder="이름/사번 검색...">
+                        </div>
+                        <select id="bulkDeptFilter" class="filter-select">
+                            <option value="">전체 부서</option>
+                        </select>
+                        <label class="checkbox-label">
+                            <input type="checkbox" id="bulkSelectAllCheckbox">
+                            필터링된 결과 전체 선택
+                        </label>
+                    </div>
+                    <div class="bulk-employee-list" id="bulkEmployeeList">
+                        <!-- 동적 생성 -->
+                    </div>
+                </div>
+
+                <div class="bulk-notice">
+                    <i class="fas fa-exclamation-triangle"></i>
+                    동일 직원에게 같은 교육명/기관/이수일이 이미 등록되어 있으면 해당 직원은 자동으로 스킵됩니다.
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn-secondary" id="cancelBulkTrainingBtn">취소</button>
+                <button class="btn-primary" id="submitBulkTrainingBtn">
+                    <i class="fas fa-save"></i>
+                    일괄 등록
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.sheetjs.com/xlsx-latest/package/dist/xlsx.full.min.js"></script>
+    <script th:src="@{/js/admin-competency.js}"></script>
+</body>
+</html>

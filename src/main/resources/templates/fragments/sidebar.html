@@ -128,7 +128,7 @@
                 </ul>
             </li>
             -->
-            <li th:class="${(activeMenu == 'hr' or activeMenu == 'payroll' or activeMenu == 'basic-info' or activeMenu == 'manage-hierarchy' or activeMenu == 'external-person' or activeMenu == 'admin-vacation' or activeMenu == 'admin-vacation-documents' or activeMenu == 'admin-expense-documents' or activeMenu == 'dev-code-groups') ? 'menu-item menu-parent active' : 'menu-item menu-parent'}" data-tooltip="관리">
+            <li th:class="${(activeMenu == 'hr' or activeMenu == 'payroll' or activeMenu == 'basic-info' or activeMenu == 'manage-hierarchy' or activeMenu == 'external-person' or activeMenu == 'admin-vacation' or activeMenu == 'admin-vacation-documents' or activeMenu == 'admin-expense-documents' or activeMenu == 'admin-competency' or activeMenu == 'dev-code-groups') ? 'menu-item menu-parent active' : 'menu-item menu-parent'}" data-tooltip="관리">
                 <a href="/external-person" class="menu-toggle-btn">
                     <i class="fas fa-cogs"></i>
                     <span class="menu-text">관리</span>
@@ -158,6 +158,11 @@
                     <li class="submenu-item" th:classappend="${activeMenu == 'manage-hierarchy'} ? 'active' : ''" th:if="${session.userRoleCode == 'C1101' or session.userRoleCode == 'C1102'}">
                         <a href="/manage-hierarchy">
                             <span class="submenu-text">보고체계 관리</span>
+                        </a>
+                    </li>
+                    <li class="submenu-item" th:classappend="${activeMenu == 'admin-competency'} ? 'active' : ''" th:if="${session.userRoleCode == 'C1101' or session.userRoleCode == 'C1102' or session.userRoleCode == 'C1103'}">
+                        <a href="/admin/competency-management">
+                            <span class="submenu-text">역량관리</span>
                         </a>
                     </li>
                     <!-- 근태 관리 - 추후 구현 예정
