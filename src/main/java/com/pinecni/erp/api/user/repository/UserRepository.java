@@ -155,7 +155,7 @@ public interface UserRepository extends JpaRepository<User, Long> {
         FROM User u
         WHERE u.deletedAt IS NULL
           AND u.userRoleCode <> 'C1101'
-        ORDER BY u.empDept, u.empPosition, u.empName
+        ORDER BY u.empPosition ASC, u.empJoinDate ASC
         """)
     List<UserCompetencyOverviewDTO> findAllWithCompetencyOverview();
 

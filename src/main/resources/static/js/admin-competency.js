@@ -33,7 +33,9 @@ document.addEventListener('DOMContentLoaded', function () {
     // ─── 전역 상태 ─────────────────────────────────────────────
     let allEmployees = [];
     let filteredEmployees = [];
-    let currentSortField = 'empId';
+    // 초기값 null → 백엔드가 내려준 순서(직급순 → 입사순) 유지.
+    // 사용자가 컬럼 헤더를 클릭하면 해당 필드로 단일 정렬 시작.
+    let currentSortField = null;
     let currentSortOrder = 'asc';
 
     // ─── 초기화 ─────────────────────────────────────────────
@@ -151,9 +153,12 @@ document.addEventListener('DOMContentLoaded', function () {
 
     function sortFilteredEmployees() {
         if (!currentSortField) return;
+        // 직급 컬럼은 한글명(가나다)이 아닌 직급 코드(C0201=대표이사 …)로 정렬해야
+        // "직급순"의 의미가 맞으므로, empPositionName 대신 empPosition 코드를 비교.
+        const compareField = currentSortField === 'empPositionName' ? 'empPosition' : currentSortField;
         filteredEmployees.sort((a, b) => {
-            const va = a[currentSortField];
-            const vb = b[currentSortField];
+            const va = a[compareField];
+            const vb = b[compareField];
             if (va == null && vb == null) return 0;
             if (va == null) return 1;
             if (vb == null) return -1;

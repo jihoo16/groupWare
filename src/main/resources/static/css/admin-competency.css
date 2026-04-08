@@ -211,7 +211,9 @@
     background: white;
     border-radius: 10px;
     box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
-    overflow: hidden;
+    max-height: 530px; /* 헤더(42px) + 12행(약 40px씩) = 약 522px */
+    overflow-y: auto;
+    overflow-x: auto;
     margin-top: 12px;
 }
 
@@ -228,6 +230,9 @@
     text-align: center;
     border-bottom: 2px solid #e8ecf3;
     white-space: nowrap;
+    position: sticky;
+    top: 0;
+    z-index: 1;
 }
 .competency-table tbody td {
     padding: 10px;
