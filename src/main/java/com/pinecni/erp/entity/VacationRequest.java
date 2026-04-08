@@ -96,6 +96,12 @@ public class VacationRequest {
     @Column(name = "approved_user_idx")
     private Long approvedUserIdx;
 
+    // 관리자 대리 등록 여부
+    // - true: 관리자가 출장/외근 직군의 종이/구두 신청을 사후 기록한 건
+    // - 등록 시 자동 승인 + 캘린더 일정 생성됨
+    @Column(name = "is_proxy_request", nullable = false)
+    private Boolean isProxyRequest = false;
+
     // 관계 매핑
     @JsonIgnore
     @ManyToOne(fetch = FetchType.LAZY)

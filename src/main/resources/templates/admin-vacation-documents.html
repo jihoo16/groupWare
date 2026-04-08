@@ -13,11 +13,100 @@
                 <h1 class="page-title"><i class="fas fa-file-invoice"></i> 연차신청서 관리</h1>
             </div>
             <div class="header-right">
+                <button class="btn-proxy-add" id="openProxyModalBtn" data-tip="관리자 권한으로 사용자 연차를 직접 등록 (자동 승인 + 캘린더 등록)">
+                    <i class="fas fa-user-shield"></i>
+                    관리자 권한 연차 등록
+                </button>
                 <button class="btn-refresh" id="refreshBtn" data-tip="새로고침">
                     <i class="fas fa-sync-alt"></i>
                 </button>
             </div>
         </header>
+
+        <!-- 관리자 권한 연차 등록 모달 -->
+        <div class="proxy-modal" id="proxyModal">
+            <div class="proxy-modal-content">
+                <div class="proxy-modal-header">
+                    <h2><i class="fas fa-user-shield"></i> 관리자 권한 연차 등록</h2>
+                    <button class="proxy-modal-close" id="closeProxyModalBtn" data-tip="닫기">
+                        <i class="fas fa-times"></i>
+                    </button>
+                </div>
+                <div class="proxy-modal-body">
+                    <div class="proxy-info-banner">
+                        <i class="fas fa-info-circle"></i>
+                        <span>관리자 권한으로 연차소진을 기록합니다.
+                            <br> 등록 즉시 <strong>자동 승인 + 캘린더 등록</strong>됩니다.</span>
+                    </div>
+
+                    <div class="proxy-form-group">
+                        <label><i class="fas fa-user"></i> 대상 사용자 <span class="required">*</span></label>
+                        <input type="text" id="proxyUserSearchInput" class="proxy-input" placeholder="이름 검색 (초성 검색 가능)" autocomplete="off">
+                        <div class="proxy-user-dropdown" id="proxyUserDropdown"></div>
+                        <div class="proxy-selected-user" id="proxySelectedUser" style="display: none;">
+                            <i class="fas fa-check-circle"></i>
+                            <span id="proxySelectedUserText"></span>
+                            <button type="button" class="proxy-clear-user" id="proxyClearUserBtn"><i class="fas fa-times"></i></button>
+                        </div>
+                    </div>
+
+                    <div class="proxy-form-group">
+                        <label><i class="fas fa-tag"></i> 연차 유형 <span class="required">*</span></label>
+                        <select id="proxyVacationType" class="proxy-input">
+                            <option value="연차">연차 (1일)</option>
+                            <option value="반차(오전)">반차(오전) (0.5일)</option>
+                            <option value="반차(오후)">반차(오후) (0.5일)</option>
+                        </select>
+                    </div>
+
+                    <div class="proxy-form-group">
+                        <label>
+                            <i class="fas fa-calendar-alt"></i> 날짜 선택 <span class="required">*</span>
+                            <span class="proxy-cal-hint" id="proxyCalHint">먼저 사용자를 선택해주세요</span>
+                        </label>
+                        <div class="proxy-calendar" id="proxyCalendar">
+                            <div class="proxy-cal-header">
+                                <button type="button" class="proxy-cal-nav" id="proxyCalPrev"><i class="fas fa-chevron-left"></i></button>
+                                <div class="proxy-cal-title" id="proxyCalTitle">-</div>
+                                <button type="button" class="proxy-cal-nav" id="proxyCalNext"><i class="fas fa-chevron-right"></i></button>
+                            </div>
+                            <div class="proxy-cal-weekdays">
+                                <div class="proxy-cal-weekday sun">일</div>
+                                <div class="proxy-cal-weekday">월</div>
+                                <div class="proxy-cal-weekday">화</div>
+                                <div class="proxy-cal-weekday">수</div>
+                                <div class="proxy-cal-weekday">목</div>
+                                <div class="proxy-cal-weekday">금</div>
+                                <div class="proxy-cal-weekday sat">토</div>
+                            </div>
+                            <div class="proxy-cal-grid" id="proxyCalGrid"></div>
+                            <div class="proxy-cal-legend">
+                                <span class="proxy-legend-item"><span class="legend-dot legend-requested"></span>이미 신청됨</span>
+                                <span class="proxy-legend-item"><span class="legend-dot legend-holiday"></span>공휴일</span>
+                                <span class="proxy-legend-item"><span class="legend-dot legend-selected"></span>선택</span>
+                            </div>
+                        </div>
+                        <div class="proxy-cal-summary">
+                            <div class="proxy-cal-range" id="proxyCalRange">날짜 미선택</div>
+                            <div class="proxy-cal-days">
+                                <strong id="proxyDaysDisplay">0</strong>일
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="proxy-form-group">
+                        <label><i class="fas fa-comment-alt"></i> 사유 <span class="required">*</span></label>
+                        <textarea id="proxyReason" class="proxy-input" rows="3" placeholder="예) 연차 사용, 출장 중 구두 신청, 종이 신청서 사내 보관">연차 사용</textarea>
+                    </div>
+                </div>
+                <div class="proxy-modal-footer">
+                    <button type="button" class="proxy-btn-cancel" id="proxyCancelBtn">취소</button>
+                    <button type="button" class="proxy-btn-submit" id="proxySubmitBtn">
+                        <i class="fas fa-save"></i> 등록 (자동 승인)
+                    </button>
+                </div>
+            </div>
+        </div>
 
         <div class="content-area">
             <!-- 필터 영역 -->

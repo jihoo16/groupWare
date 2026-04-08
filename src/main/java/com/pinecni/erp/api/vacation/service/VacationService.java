@@ -3,6 +3,7 @@ package com.pinecni.erp.api.vacation.service;
 import com.pinecni.erp.api.vacation.dto.VacationUserInfoDTO;
 import com.pinecni.erp.api.vacation.dto.VacationCalculationDetailDTO;
 import com.pinecni.erp.api.vacation.dto.VacationRequestSaveDTO;
+import com.pinecni.erp.api.vacation.dto.AdminProxyVacationRequestDTO;
 import com.pinecni.erp.api.vacation.dto.VacationDetailDTO;
 import com.pinecni.erp.entity.User;
 
@@ -71,6 +72,20 @@ public interface VacationService {
      * @return 생성된 문서 IDX
      */
     Long saveVacationRequest(Long userIdx, VacationRequestSaveDTO saveDTO);
+
+    /**
+     * 관리자 대리 연차 신청
+     * - 출장/외근 직군의 종이/구두 신청을 관리자가 사후 기록할 때 사용
+     * - 등록 즉시 자동 승인 + 캘린더 일정 생성
+     * - is_proxy_request=true, created_user_idx=관리자, user_idx=대상자
+     * - 마이너스 연차 자동 허용 (사후 기록이므로 잔여 부족 케이스 대응)
+     * - PDF는 서버사이드 템플릿 렌더링으로 자동 생성
+     *
+     * @param adminUserIdx 관리자 IDX (현재 로그인 사용자)
+     * @param dto          대리 신청 정보 (대상자, 유형, 기간, 사유)
+     * @return 생성된 문서 IDX
+     */
+    Long saveProxyVacationRequest(Long adminUserIdx, AdminProxyVacationRequestDTO dto);
 
     /**
      * 연차신청서 상세 조회

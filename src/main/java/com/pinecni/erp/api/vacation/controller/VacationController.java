@@ -5,6 +5,7 @@ import com.pinecni.erp.api.vacation.dto.VacationCalculationDetailDTO;
 import com.pinecni.erp.api.vacation.dto.VacationRequestSaveDTO;
 import com.pinecni.erp.api.vacation.dto.VacationDetailDTO;
 import com.pinecni.erp.api.vacation.dto.AdminVacationDocumentDTO;
+import com.pinecni.erp.api.vacation.dto.AdminProxyVacationRequestDTO;
 import com.pinecni.erp.api.vacation.service.VacationService;
 import com.pinecni.erp.entity.VacationRequest;
 import com.pinecni.erp.entity.VacationAccrualSchedule;
@@ -744,6 +745,7 @@ public class VacationController {
                                 .isApproved(vr.getIsApproved() != null ? vr.getIsApproved() : false)
                                 .approvedAt(vr.getApprovedAt())
                                 .approvedUserIdx(vr.getApprovedUserIdx())
+                                .isProxyRequest(vr.getIsProxyRequest() != null ? vr.getIsProxyRequest() : false)
                                 .build();
                     })
                     .filter(Objects::nonNull)
@@ -839,6 +841,58 @@ public class VacationController {
         } catch (Exception e) {
             log.error("[관리자 연차신청서 삭제 실패] documentIdx: {}, error: {}", documentIdx, e.getMessage(), e);
             return ResponseEntity.internalServerError().body(Map.of("error", "삭제 처리 중 오류가 발생했습니다."));
+        }
+    }
+
+    /**
+     * 관리자 전용 - 대리 연차 신청 API
+     * - 출장/외근 직군이 종이/구두로 신청한 건을 관리자가 사후 기록
+     * - 등록 즉시 자동 승인 + 캘린더 일정 생성됨
+     * - is_proxy_request=true 로 표시되어 목록에서 배지로 식별 가능
+     *
+     * @param dto     대리 신청 정보 (대상자, 유형, 기간, 사유)
+     * @param session HTTP 세션 (관리자 권한 검증 + adminUserIdx 추출용)
+     * @return 처리 결과 (생성된 documentIdx)
+     */
+    @PostMapping("/admin/proxy-request")
+    public ResponseEntity<?> createProxyVacationRequest(
+            @RequestBody AdminProxyVacationRequestDTO dto,
+            HttpSession session) {
+
+        if (!AuthorizationUtil.isAdminOrHigher(session)) {
+            log.warn("관리자가 아닌 사용자의 대리 연차 신청 시도");
+            return ResponseEntity.status(403).body(Map.of("error", "관리자 권한이 필요합니다."));
+        }
+
+        Long adminUserIdx = (Long) session.getAttribute("userIdx");
+        if (adminUserIdx == null) {
+            return ResponseEntity.status(401).body(Map.of("error", "로그인이 필요합니다."));
+        }
+
+        log.info("[대리 연차 신청 요청] adminUserIdx: {}, targetUserIdx: {}, type: {}, {} ~ {}",
+                adminUserIdx, dto.getTargetUserIdx(), dto.getVacationType(), dto.getStartDate(), dto.getEndDate());
+
+        try {
+            Long documentIdx = vacationService.saveProxyVacationRequest(adminUserIdx, dto);
+
+            Map<String, Object> response = new HashMap<>();
+            response.put("success", true);
+            response.put("documentIdx", documentIdx);
+            response.put("message", "관리자 권한 연차 등록이 완료되었습니다.");
+
+            return ResponseEntity.ok(response);
+        } catch (IllegalArgumentException | IllegalStateException e) {
+            log.error("[대리 연차 신청 실패 - 검증 오류] error: {}", e.getMessage());
+            Map<String, Object> errorResponse = new HashMap<>();
+            errorResponse.put("success", false);
+            errorResponse.put("message", e.getMessage());
+            return ResponseEntity.badRequest().body(errorResponse);
+        } catch (Exception e) {
+            log.error("[대리 연차 신청 실패 - 시스템 오류] error: {}", e.getMessage(), e);
+            Map<String, Object> errorResponse = new HashMap<>();
+            errorResponse.put("success", false);
+            errorResponse.put("message", "관리자 권한 연차 등록 중 오류가 발생했습니다.\n잠시 후 다시 시도해주세요.");
+            return ResponseEntity.status(500).body(errorResponse);
         }
     }
 

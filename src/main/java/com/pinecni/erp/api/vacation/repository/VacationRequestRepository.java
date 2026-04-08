@@ -134,4 +134,18 @@ public interface VacationRequestRepository extends JpaRepository<VacationRequest
                                     @Param("isApproved") Boolean isApproved,
                                     @Param("approvedAt") LocalDateTime approvedAt,
                                     @Param("approvedUserIdx") Long approvedUserIdx);
+
+    /**
+     * 문서 IDX에 해당하는 모든 연차 신청 행을 관리자 대리 등록 건으로 표시
+     * - is_proxy_request=true
+     * - created_user_idx, updated_user_idx 를 관리자 IDX 로 덮어씀 (감사 추적)
+     */
+    @Modifying
+    @Query("UPDATE VacationRequest v SET " +
+            "v.isProxyRequest = true, " +
+            "v.createdUserIdx = :adminUserIdx, " +
+            "v.updatedUserIdx = :adminUserIdx " +
+            "WHERE v.documentIdx = :documentIdx")
+    int markAsProxyByDocumentIdx(@Param("documentIdx") Long documentIdx,
+                                 @Param("adminUserIdx") Long adminUserIdx);
 }

@@ -52,6 +52,7 @@ public class VacationServiceImpl implements VacationService {
     private final CalendarParticipantRepository calendarParticipantRepository;
     private final com.pinecni.erp.api.calendar.service.HolidayService holidayService;
     private final PdfGenerationService pdfGenerationService;
+    private final com.pinecni.erp.api.user.service.UserService userService;
 
     /**
      * self-proxy: 배치 메서드에서 각 사용자를 독립 트랜잭션으로 실행하기 위해 사용.
@@ -1235,6 +1236,7 @@ public class VacationServiceImpl implements VacationService {
                     .specialApprovalReason(saveDTO.getSpecialApprovalReason())
                     .etcCal(etcCal)
                     .isApproved(false)   // 신청 시점엔 항상 미승인 상태
+                    .isProxyRequest(false)  // 일반 신청은 false (대리 신청은 saveProxyVacationRequest 에서 UPDATE)
                     .applyDate(LocalDate.now())
                     .createdUserIdx(userIdx)
                     .updatedUserIdx(userIdx)
@@ -1343,6 +1345,218 @@ public class VacationServiceImpl implements VacationService {
             log.error("[연차 신청 실패 - 시스템 오류] userIdx: {}, error: {}", userIdx, e.getMessage(), e);
             throw new RuntimeException("연차 신청서 저장 중 오류가 발생했습니다.\n잠시 후 다시 시도하거나 관리자에게 문의해주세요.", e);
         }
+    }
+
+    @Override
+    @Transactional
+    public Long saveProxyVacationRequest(Long adminUserIdx,
+                                         com.pinecni.erp.api.vacation.dto.AdminProxyVacationRequestDTO dto) {
+        log.info("[관리자 대리 연차 신청] adminUserIdx: {}, targetUserIdx: {}, type: {}, {} ~ {}",
+                adminUserIdx, dto.getTargetUserIdx(), dto.getVacationType(), dto.getStartDate(), dto.getEndDate());
+
+        // 1. 입력값 기본 검증
+        if (dto.getTargetUserIdx() == null) {
+            throw new IllegalArgumentException("대상 사용자를 선택해주세요.");
+        }
+        if (dto.getVacationType() == null || dto.getVacationType().isBlank()) {
+            throw new IllegalArgumentException("연차 유형을 선택해주세요.");
+        }
+        if (dto.getStartDate() == null || dto.getEndDate() == null) {
+            throw new IllegalArgumentException("시작일과 종료일을 입력해주세요.");
+        }
+        if (dto.getEndDate().isBefore(dto.getStartDate())) {
+            throw new IllegalArgumentException("종료일은 시작일 이후여야 합니다.");
+        }
+        if (dto.getDays() == null || dto.getDays().compareTo(BigDecimal.ZERO) <= 0) {
+            throw new IllegalArgumentException("일수가 올바르지 않습니다.");
+        }
+        if (dto.getReason() == null || dto.getReason().isBlank()) {
+            throw new IllegalArgumentException("사유는 필수입니다.");
+        }
+
+        // 반차는 시작일=종료일 이어야 함
+        if (dto.getVacationType().contains("반차") && !dto.getStartDate().equals(dto.getEndDate())) {
+            throw new IllegalArgumentException("반차는 단일 날짜만 가능합니다.");
+        }
+
+        Long targetUserIdx = dto.getTargetUserIdx();
+        User targetUser = userRepository.findById(targetUserIdx)
+                .orElseThrow(() -> new IllegalArgumentException("대상 사용자를 찾을 수 없습니다: " + targetUserIdx));
+
+        // 2. 기존 saveVacationRequest 호출용 DTO 구성 (검증/잔여계산/문서생성/행 저장 재사용)
+        //    - allowMinusVacation=true: 사후 기록이라 잔여 부족해도 통과
+        //    - specialApprovalReason: 자동 채움
+        //    - renderedHtml/Css 없음 → PDF는 saveVacationRequest 내부에서 스킵됨
+        VacationRequestSaveDTO.VacationPeriod period = VacationRequestSaveDTO.VacationPeriod.builder()
+                .vacationType(dto.getVacationType())
+                .startDate(dto.getStartDate())
+                .endDate(dto.getEndDate())
+                .days(dto.getDays())
+                .build();
+
+        // 사유는 위에서 필수 검증을 통과했으므로 그대로 사용
+        String reason = dto.getReason().trim();
+
+        VacationRequestSaveDTO innerDto = VacationRequestSaveDTO.builder()
+                .reason(reason)
+                .allowMinusVacation(true)
+                .specialApprovalReason("관리자 권한 등록 (잔여 부족 시 마이너스 연차 자동 허용)")
+                .periods(List.of(period))
+                .etcAddToCalendar(true)
+                .build();
+
+        Long documentIdx = saveVacationRequest(targetUserIdx, innerDto);
+        log.info("[대리 신청 - 내부 saveVacationRequest 완료] documentIdx: {}", documentIdx);
+
+        // 3. 대리 등록 메타데이터 갱신 (is_proxy_request, created_user_idx)
+        int marked = vacationRequestRepository.markAsProxyByDocumentIdx(documentIdx, adminUserIdx);
+        log.info("[대리 신청 - 행 메타데이터 갱신] documentIdx: {}, 갱신 행 수: {}", documentIdx, marked);
+
+        // ApprovalDocument 의 createdUserIdx/updatedUserIdx 도 관리자로 덮어씀 (감사 추적)
+        ApprovalDocument document = approvalDocumentRepository.findById(documentIdx)
+                .orElseThrow(() -> new IllegalStateException("대리 신청 직후 문서 조회 실패: " + documentIdx));
+        document.setCreatedUserIdx(adminUserIdx);
+        document.setUpdatedUserIdx(adminUserIdx);
+        approvalDocumentRepository.save(document);
+
+        // 4. 서버사이드 PDF 생성 (Thymeleaf 템플릿 + iText/Flying Saucer)
+        try {
+            log.info("[대리 신청 - 서버사이드 PDF 생성 시작] documentIdx: {}", documentIdx);
+
+            // 부서/직급 코드명 조회
+            String deptName = targetUser.getEmpDept() == null ? "" :
+                    codeRepository.findByGroupCodeAndCode(CodeConstants.GroupCode.DEPARTMENT.getCode(), targetUser.getEmpDept())
+                            .map(Code::getCodeName).orElse(targetUser.getEmpDept());
+            String positionName = targetUser.getEmpPosition() == null ? "" :
+                    codeRepository.findByGroupCodeAndCode(CodeConstants.GroupCode.POSITION.getCode(), targetUser.getEmpPosition())
+                            .map(Code::getCodeName).orElse(targetUser.getEmpPosition());
+
+            // 결재라인: 부서장 / 대표이사 이름 조회
+            String deptManagerName = "-";
+            try {
+                com.pinecni.erp.api.user.dto.UserSimpleDTO director = userService.getDeptDirector(targetUserIdx);
+                if (director != null && director.getEmpName() != null) {
+                    deptManagerName = director.getEmpName();
+                }
+            } catch (Exception ex) {
+                log.warn("[관리자 권한 등록 - 부서장 조회 실패] targetUserIdx: {}, error: {}", targetUserIdx, ex.getMessage());
+            }
+            String ceoName = "-";
+            try {
+                com.pinecni.erp.api.user.dto.UserSimpleDTO ceo = userService.getCeo();
+                if (ceo != null && ceo.getEmpName() != null) {
+                    ceoName = ceo.getEmpName();
+                }
+            } catch (Exception ex) {
+                log.warn("[관리자 권한 등록 - 대표이사 조회 실패] error: {}", ex.getMessage());
+            }
+
+            // 신청인 이름 (footer 띄어쓰기 표시용)
+            String applicantName = targetUser.getEmpName() != null ? targetUser.getEmpName() : "";
+            String applicantSpaced = applicantName.isEmpty() ? "" :
+                    String.join(" ", applicantName.split(""));
+
+            Map<String, Object> pdfData = new HashMap<>();
+            pdfData.put("applicant", applicantName);
+            pdfData.put("applicantSpaced", applicantSpaced);
+            pdfData.put("department", deptName);
+            pdfData.put("position", positionName);
+            pdfData.put("reason", reason);
+            pdfData.put("address", targetUser.getEmpAddress() != null ? targetUser.getEmpAddress() : "");
+            pdfData.put("birthDate", targetUser.getEmpBirth() != null
+                    ? targetUser.getEmpBirth().format(DateTimeFormatter.ofPattern("yyyy년 MM월 dd일"))
+                    : "");
+            pdfData.put("contact", targetUser.getEmpPhone() != null ? targetUser.getEmpPhone() : "");
+            pdfData.put("applyDate", LocalDate.now().format(DateTimeFormatter.ofPattern("yyyy년 MM월 dd일")));
+            pdfData.put("deptManagerName", deptManagerName);
+            pdfData.put("ceoName", ceoName);
+
+            // 휴가 기간 표시 텍스트 (화면과 동일한 형식)
+            // 형식: "2026년 04월 08일 (수) ~ 2026년 04월 10일 (금) 연차 3일"
+            String displayLine = buildVacationDisplayLine(
+                    dto.getVacationType(), dto.getStartDate(), dto.getEndDate(), dto.getDays());
+
+            Map<String, Object> periodMap = new HashMap<>();
+            periodMap.put("type", dto.getVacationType());
+            periodMap.put("startDate", dto.getStartDate().toString());
+            periodMap.put("endDate", dto.getEndDate().toString());
+            periodMap.put("days", dto.getDays().toString());
+            periodMap.put("displayText", displayLine);
+            pdfData.put("periods", List.of(periodMap));
+            pdfData.put("totalDaysText", "총 연차 " + stripTrailingZero(dto.getDays()) + "일");
+
+            byte[] pdfBytes = pdfGenerationService.generateVacationPdfWithData(pdfData);
+
+            String firstStartDate = dto.getStartDate().toString().replace("-", "");
+            String year = String.valueOf(dto.getStartDate().getYear());
+            String userIdentifier = (targetUser.getEmpId() != null && !targetUser.getEmpId().isEmpty())
+                    ? targetUser.getEmpId() : String.valueOf(targetUserIdx);
+            String baseFileName = String.format("%s_vacation.pdf", firstStartDate);
+
+            String savePath = pdfGenerationService.saveVacationPdf(pdfBytes, baseFileName, year, userIdentifier);
+            String actualFileName = new java.io.File(savePath).getName();
+
+            VacationOfficialPdf officialPdf = VacationOfficialPdf.builder()
+                    .documentIdx(documentIdx)
+                    .filePath(savePath)
+                    .fileName(actualFileName)
+                    .fileSize((long) pdfBytes.length)
+                    .createdUserIdx(adminUserIdx)
+                    .build();
+            vacationOfficialPdfRepository.save(officialPdf);
+
+            log.info("[대리 신청 - PDF 저장 완료] documentIdx: {}, fileName: {}", documentIdx, actualFileName);
+        } catch (Exception e) {
+            // PDF 실패는 전체 롤백하지 않음 (요청은 유지)
+            log.error("[대리 신청 - PDF 생성 실패] documentIdx: {}, error: {}", documentIdx, e.getMessage(), e);
+        }
+
+        // 5. 자동 승인 + 캘린더 일정 생성 (기존 승인 흐름 재사용)
+        try {
+            approveVacation(documentIdx, adminUserIdx, true);
+            log.info("[대리 신청 - 자동 승인 + 캘린더 등록 완료] documentIdx: {}", documentIdx);
+        } catch (Exception e) {
+            log.error("[대리 신청 - 자동 승인 실패] documentIdx: {}, error: {}", documentIdx, e.getMessage(), e);
+            throw new RuntimeException("대리 신청은 저장되었으나 자동 승인 처리 중 오류가 발생했습니다. 목록에서 수동 승인해주세요.", e);
+        }
+
+        return documentIdx;
+    }
+
+    /**
+     * 휴가 기간 표시 라인 생성 — 화면 vacation_period_display 와 동일 형식
+     * 예) "2026년 04월 08일 (수) ~ 2026년 04월 10일 (금) 연차 3일"
+     *     "2026년 04월 08일 (수) 오전반차 0.5일"
+     */
+    private String buildVacationDisplayLine(String vacationType, LocalDate startDate, LocalDate endDate, BigDecimal days) {
+        DateTimeFormatter dateFmt = DateTimeFormatter.ofPattern("yyyy년 MM월 dd일");
+        String[] dowKor = {"일", "월", "화", "수", "목", "금", "토"};
+
+        String startStr = startDate.format(dateFmt) + " (" + dowKor[startDate.getDayOfWeek().getValue() % 7] + ")";
+        String endStr = endDate.format(dateFmt) + " (" + dowKor[endDate.getDayOfWeek().getValue() % 7] + ")";
+        boolean isSingle = startDate.equals(endDate);
+        String dateDisplay = isSingle ? startStr : startStr + " ~ " + endStr;
+
+        // 반차 표기 변환: "반차(오전)" → "오전반차"
+        String displayType;
+        if (vacationType != null && vacationType.contains("반차(오전)")) {
+            displayType = "오전반차";
+        } else if (vacationType != null && vacationType.contains("반차(오후)")) {
+            displayType = "오후반차";
+        } else {
+            displayType = "연차";
+        }
+
+        return dateDisplay + " " + displayType + " " + stripTrailingZero(days) + "일";
+    }
+
+    /**
+     * BigDecimal 표시 — 정수면 정수로, 소수면 그대로
+     * 예: 3.0 → "3", 0.5 → "0.5"
+     */
+    private String stripTrailingZero(BigDecimal value) {
+        if (value == null) return "0";
+        return value.stripTrailingZeros().toPlainString();
     }
 
     /**

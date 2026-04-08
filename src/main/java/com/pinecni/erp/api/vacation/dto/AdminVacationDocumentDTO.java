@@ -42,4 +42,7 @@ public class AdminVacationDocumentDTO {
     private Boolean isApproved;
     private LocalDateTime approvedAt;
     private Long approvedUserIdx;
+
+    // 관리자 대리 등록 여부 (목록 배지 표시용)
+    private Boolean isProxyRequest;
 }

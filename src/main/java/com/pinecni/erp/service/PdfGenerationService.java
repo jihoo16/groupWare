@@ -78,6 +78,9 @@ public class PdfGenerationService {
         context.setVariable("applyDate", pdfData.getOrDefault("applyDate", LocalDate.now().format(DateTimeFormatter.ofPattern("yyyy년 MM월 dd일"))));
         context.setVariable("deptManagerName", pdfData.getOrDefault("deptManagerName", "-"));
         context.setVariable("ceoName", pdfData.getOrDefault("ceoName", "-"));
+        context.setVariable("applicantSpaced", pdfData.getOrDefault("applicantSpaced",
+                pdfData.getOrDefault("applicant", "")));
+        context.setVariable("totalDaysText", pdfData.getOrDefault("totalDaysText", ""));
 
         // 휴가 기간 데이터 포맷팅
         @SuppressWarnings("unchecked")
@@ -91,6 +94,7 @@ public class PdfGenerationService {
             String startDate = (String) period.get("startDate");
             String endDate = (String) period.get("endDate");
             Object daysObj = period.get("days");
+            Object displayObj = period.get("displayText");
 
             // 날짜 포맷팅
             if (startDate != null && startDate.matches("\\d{4}-\\d{2}-\\d{2}")) {
@@ -104,6 +108,7 @@ public class PdfGenerationService {
             formattedPeriod.put("startDate", startDate != null ? startDate : "");
             formattedPeriod.put("endDate", endDate != null ? endDate : "");
             formattedPeriod.put("days", daysObj != null ? daysObj.toString() : "0");
+            formattedPeriod.put("displayText", displayObj != null ? displayObj.toString() : "");
 
             formattedPeriods.add(formattedPeriod);
         }
