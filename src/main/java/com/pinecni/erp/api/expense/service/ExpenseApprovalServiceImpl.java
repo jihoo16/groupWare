@@ -226,8 +226,8 @@ public class ExpenseApprovalServiceImpl implements ExpenseApprovalService {
         expenseApproval.setUpdatedUserIdx(loginUserIdx);
 
         // 수정 시 정산상태를 '작성중'(C1001)으로 되돌림
+        // (반려 사유는 의도적으로 보존 — 사용자가 어떤 사유로 반려됐는지 계속 확인 가능)
         expenseApproval.setSettlementStatus("C1001");
-        expenseApproval.setSettlementComment(null);
         expenseApproval.setSettlementStatusUpdatedAt(LocalDateTime.now());
         expenseApproval.setSettlementStatusUpdatedBy(loginUserIdx);
 
@@ -642,10 +642,7 @@ public class ExpenseApprovalServiceImpl implements ExpenseApprovalService {
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND,
                         "지출승인서를 찾을 수 없습니다. idx: " + idx));
 
-        ea.setSettlementStatus(statusCode);
-        ea.setSettlementComment(comment);
-        ea.setSettlementStatusUpdatedAt(LocalDateTime.now());
-        ea.setSettlementStatusUpdatedBy(adminUserIdx);
+        applySettlementStatusChange(ea, statusCode, comment, adminUserIdx, LocalDateTime.now());
         expenseApprovalRepository.save(ea);
     }
 
@@ -663,15 +660,53 @@ public class ExpenseApprovalServiceImpl implements ExpenseApprovalService {
         int updated = 0;
         for (Long idx : idxList) {
             expenseApprovalRepository.findById(idx).ifPresent(ea -> {
-                ea.setSettlementStatus(statusCode);
-                ea.setSettlementComment(comment);
-                ea.setSettlementStatusUpdatedAt(now);
-                ea.setSettlementStatusUpdatedBy(adminUserIdx);
+                applySettlementStatusChange(ea, statusCode, comment, adminUserIdx, now);
                 expenseApprovalRepository.save(ea);
             });
             updated++;
         }
         return updated;
+    }
+
+    /** 반려된 공식문서 첨부의 표시명 prefix — 사용자가 새로 업로드한 사인본과 시각적으로 구분하기 위함 */
+    private static final String REJECTED_FILENAME_PREFIX = "[반려] ";
+
+    /**
+     * 정산상태 전이 공통 로직.
+     *
+     * - 반려(C1004) 전이: 새 반려 사유로 settlementComment 를 그냥 덮어쓴다 (이전 사유 보존 안 함).
+     *   동시에 해당 문서의 DOCUMENT 타입 첨부(서명완료 공식문서)들의 표시명에 "[반려]" prefix 를 붙여
+     *   사용자가 새 사인본을 업로드해도 옛 반려본과 구분할 수 있게 한다.
+     * - 비반려 전이: 기존 settlementComment 를 그대로 보존하여
+     *   사용자가 수정·재제출하거나 관리자가 후속 단계로 진행해도 가장 최근 반려 사유가 계속 노출되도록 한다.
+     */
+    private void applySettlementStatusChange(ExpenseApproval ea, String statusCode, String comment,
+                                             Long adminUserIdx, LocalDateTime when) {
+        ea.setSettlementStatus(statusCode);
+        if ("C1004".equals(statusCode)) {
+            ea.setSettlementComment(comment);
+            markOfficialDocumentsAsRejected(ea.getIdx(), adminUserIdx);
+        }
+        // 비반려 전이는 기존 코멘트 유지 — 의도적으로 setSettlementComment 호출하지 않음
+        ea.setSettlementStatusUpdatedAt(when);
+        ea.setSettlementStatusUpdatedBy(adminUserIdx);
+    }
+
+    /**
+     * 반려 처리 시 해당 지출승인서의 모든 DOCUMENT 타입 첨부의 표시명 앞에 "[반려] " prefix 를 붙인다.
+     * 이미 prefix 가 붙어 있는 파일은 건드리지 않으므로 두 번 이상 반려되어도 중복 prefix 가 생기지 않는다.
+     */
+    private void markOfficialDocumentsAsRejected(Long expenseApprovalIdx, Long adminUserIdx) {
+        List<ExpenseApprovalAttachment> attachments = attachmentRepository
+                .findByExpenseApprovalIdxAndExpenseDetailIdxIsNullAndDeletedFalseOrderByIdxAsc(expenseApprovalIdx);
+        for (ExpenseApprovalAttachment att : attachments) {
+            if (!"DOCUMENT".equals(att.getAttachmentType())) continue;
+            String name = att.getOriginalFilename();
+            if (name == null || name.startsWith(REJECTED_FILENAME_PREFIX)) continue;
+            att.setOriginalFilename(REJECTED_FILENAME_PREFIX + name);
+            attachmentRepository.save(att);
+            log.debug("반려 처리 — 공식문서 표시명 변경: idx={}, newName={}", att.getIdx(), att.getOriginalFilename());
+        }
     }
 
     @Override
@@ -695,7 +730,7 @@ public class ExpenseApprovalServiceImpl implements ExpenseApprovalService {
         }
 
         ea.setSettlementStatus("C1002"); // 제출완료
-        ea.setSettlementComment(null);   // 기존 미흡 사유 초기화
+        // 반려 사유(settlementComment)는 의도적으로 보존 — 관리자가 이전 반려 이력을 추적할 수 있도록 함
         ea.setSettlementStatusUpdatedAt(LocalDateTime.now());
         ea.setSettlementStatusUpdatedBy(userIdx);
         expenseApprovalRepository.save(ea);

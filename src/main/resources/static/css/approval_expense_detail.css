@@ -318,6 +318,26 @@ button:focus, a:focus, div:focus { outline: none !important; box-shadow: none !i
 }
 .st-reject-reason i { margin-right: 6px; color: #ef4444; }
 
+.btn-edit-rejected {
+    margin-left: auto;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 8px 16px;
+    background: #dc2626;
+    color: #ffffff;
+    border: none;
+    border-radius: 8px;
+    font-size: 13px;
+    font-weight: 600;
+    cursor: pointer;
+    white-space: nowrap;
+    transition: background 0.15s ease, transform 0.15s ease;
+}
+.btn-edit-rejected:hover { background: #b91c1c; }
+.btn-edit-rejected:active { transform: translateY(1px); }
+.btn-edit-rejected i { color: #ffffff; font-size: 12px; margin: 0; }
+
 .st-banner-settled      { background: #f5f3ff; border: 1px solid #c4b5fd; color: #5b21b6; }
 .st-banner-settled i    { color: #7c3aed; }
 

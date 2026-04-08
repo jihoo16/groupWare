@@ -88,6 +88,12 @@ document.addEventListener('DOMContentLoaded', async function () {
         return;
     }
 
+    // ── 정산상태 + 편집가능 여부 ───────────────────────────────────
+    // 작성중(C1001), 반려(C1004)만 편집 가능 — 나머지(제출완료/제출확인/정산완료)는 읽기 전용.
+    // 아래 렌더링/업로드/버튼 로직이 모두 isReadOnly를 참조하므로 doc 로드 직후에 선언해야 한다.
+    const stCode = doc.settlementStatus || 'C1001';
+    const isReadOnly = (stCode !== 'C1001' && stCode !== 'C1004');
+
     // ── 작성자 정보 로드 ──────────────────────────────────────────
     let drafter = null;
     try {
@@ -458,7 +464,6 @@ document.addEventListener('DOMContentLoaded', async function () {
     }
 
     // ── 정산상태 배너 ──────────────────────────────────────────────
-    const stCode = doc.settlementStatus || 'C1001';
     const settlementBanner = document.getElementById('settlementStatusBanner');
     if (settlementBanner) {
         const stName = doc.settlementStatusName || '작성중';
@@ -477,12 +482,22 @@ document.addEventListener('DOMContentLoaded', async function () {
         if (stCode === 'C1004' && stComment) {
             html += `<div class="st-reject-reason"><i class="fas fa-comment-dots"></i> <strong>반려 사유:</strong> ${stComment}</div>`;
         }
+        // 반려 상태일 때 — 상세보기를 거치지 않고 바로 수정 페이지로 이동하는 버튼
+        if (stCode === 'C1004') {
+            html += `<button type="button" id="btnEditRejected" class="btn-edit-rejected">
+                        <i class="fas fa-pen"></i> 수정하러 가기
+                     </button>`;
+        }
         settlementBanner.innerHTML = html;
         settlementBanner.style.display = '';
-    }
 
-    // 작성중(C1001), 반려(C1004)만 편집 가능 — 나머지(제출완료/제출확인/정산완료)는 읽기 전용
-    const isReadOnly = (stCode !== 'C1001' && stCode !== 'C1004');
+        const editRejectedBtn = document.getElementById('btnEditRejected');
+        if (editRejectedBtn) {
+            editRejectedBtn.addEventListener('click', () => {
+                window.location.href = `/approval/expense?idx=${idx}`;
+            });
+        }
+    }
 
     // ── 버튼 표시 (API 200 = 본인 문서 확인됨) ───────────────────
     if (printBtn) {
@@ -524,13 +539,35 @@ document.addEventListener('DOMContentLoaded', async function () {
             }
             setTimeout(() => {
                 window.print();
-                // 인쇄 후 작성중/반려이면 자동으로 제출완료로 전환
+                // 인쇄 후 작성중/반려이면 자동으로 제출완료로 전환 + 사용자에게 명시적으로 알림
                 if (stCode === 'C1001' || stCode === 'C1004') {
                     fetch(`/api/approval/expense/${idx}/submit`, { method: 'PUT' })
-                        .then(res => {
-                            if (res.ok) location.reload();
+                        .then(async res => {
+                            if (res.ok) {
+                                const fromLabel = stCode === 'C1004' ? '반려' : '작성중';
+                                await Swal.fire({
+                                    icon: 'success',
+                                    title: '제출완료 상태로 변경되었습니다',
+                                    html: `정산상태: <strong>${fromLabel}</strong> → <strong style="color:#2563eb;">제출완료</strong><br><small style="color:#64748b;">출력한 종이 문서에 사인을 받아 관리부에 제출해주세요.</small>`,
+                                    confirmButtonText: '확인',
+                                    confirmButtonColor: '#2563eb',
+                                });
+                                location.reload();
+                            } else {
+                                Swal.fire({
+                                    icon: 'error',
+                                    title: '상태 변경 실패',
+                                    text: '인쇄는 완료되었지만 상태 전환에 실패했습니다. 새로고침 후 다시 시도해주세요.',
+                                });
+                            }
                         })
-                        .catch(() => {});
+                        .catch(() => {
+                            Swal.fire({
+                                icon: 'error',
+                                title: '상태 변경 실패',
+                                text: '서버 통신 오류로 상태가 변경되지 않았습니다.',
+                            });
+                        });
                 }
             }, 300);
         });
@@ -547,8 +584,8 @@ document.addEventListener('DOMContentLoaded', async function () {
     if (deleteBtn) {
         deleteBtn.addEventListener('click', async function () {
             const result = await Swal.fire({
-                title: '삭제하시겠습니까?',
-                text: '삭제된 문서는 복구할 수 없습니다.',
+                title: '문서를 삭제하시겠습니까?',
+                html: '삭제된 문서는 <strong>복구할 수 없습니다.</strong><br><small style="color:#64748b;">결재함 목록에서도 사라집니다.</small>',
                 icon: 'warning',
                 showCancelButton: true,
                 confirmButtonText: '삭제',
@@ -560,7 +597,13 @@ document.addEventListener('DOMContentLoaded', async function () {
             try {
                 const res = await fetch(`/api/approval/expense/${idx}`, { method: 'DELETE' });
                 if (res.status === 204) {
-                    await Swal.fire({ icon: 'success', title: '삭제 완료', timer: 1200, showConfirmButton: false });
+                    await Swal.fire({
+                        icon: 'success',
+                        title: '문서가 삭제되었습니다',
+                        text: '결재함으로 이동합니다.',
+                        timer: 1500,
+                        showConfirmButton: false,
+                    });
                     window.location.href = '/approval';
                 } else {
                     throw new Error();

@@ -687,6 +687,48 @@
 .file-modal-table .file-ok { color: #059669; }
 .file-modal-table .file-missing { color: #ea580c; }
 
+/* 항목별 영수증 셀 — 클립 아이콘들이 가로로 정렬되며 줄바꿈 방지 */
+.file-modal-table td.receipt-cell {
+    white-space: nowrap;
+}
+
+/* 영수증 클립 아이콘 버튼 (첨부 / 미첨부 공용) */
+.receipt-clip-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 28px;
+    height: 28px;
+    margin: 0 2px;
+    border-radius: 6px;
+    border: none;
+    background: transparent;
+    font-size: 14px;
+    transition: background 0.15s, transform 0.15s;
+    vertical-align: middle;
+}
+
+.receipt-clip-btn.attached {
+    color: #2563eb;
+    cursor: pointer;
+}
+.receipt-clip-btn.attached:hover {
+    background: #eff6ff;
+    transform: scale(1.08);
+}
+.receipt-clip-btn.attached:active {
+    transform: scale(0.95);
+}
+
+.receipt-clip-btn.missing {
+    color: #dc2626;
+    cursor: not-allowed;
+    opacity: 0.85;
+}
+.receipt-clip-btn.missing:hover {
+    background: #fef2f2;
+}
+
 .file-link {
     display: inline-flex;
     align-items: center;
@@ -698,6 +740,11 @@
     border-radius: 6px;
     transition: background 0.15s;
     margin: 2px 0;
+    /* button 태그로도 사용하기 위해 기본 스타일 리셋 */
+    background: transparent;
+    border: none;
+    font-family: inherit;
+    cursor: pointer;
 }
 
 .file-link:hover { background: #eef2ff; text-decoration: underline; }
@@ -728,6 +775,12 @@
     text-decoration: none;
     color: inherit;
     transition: all 0.2s;
+    /* button 태그로도 사용하기 위해 기본 스타일 리셋 */
+    width: 100%;
+    text-align: left;
+    font-family: inherit;
+    font-size: inherit;
+    cursor: pointer;
 }
 
 .file-modal-item:hover {

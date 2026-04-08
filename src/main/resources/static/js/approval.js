@@ -638,29 +638,45 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     }
 
-    function buildExpenseSection(sectionId, badgeClass, iconClass, label, existingFiles, dzId, inputId, pendingListId) {
+    function buildExpenseSection(sectionId, badgeClass, iconClass, label, existingFiles, dzId, inputId, pendingListId, options = {}) {
+        const readonly = options.readonly === true;
+        const readonlyNotice = options.readonlyNotice || '';
+
         const existingHtml = existingFiles.length === 0
             ? `<p class="exp-att-empty">업로드된 파일이 없습니다.</p>`
             : existingFiles.map(a => {
                 const safe = (a.originalFilename || '').replace(/"/g, '&quot;');
+                const delBtn = readonly ? '' : `<button class="exp-att-del-btn" data-att-id="${a.idx}" data-tip="삭제">&times;</button>`;
                 return `
                     <div class="exp-att-file-row" data-att-id="${a.idx}" data-url="/api/approval/expense/attachments/${a.idx}/download" data-filename="${safe}" data-tip="클릭하여 다운로드">
                         <i class="fas fa-file exp-file-icon"></i>
                         <span class="exp-file-name">${safe}</span>
                         <i class="fas fa-download" style="color:#93c5fd;font-size:12px;margin-left:auto;flex-shrink:0;"></i>
-                        <button class="exp-att-del-btn" data-att-id="${a.idx}" data-tip="삭제">&times;</button>
+                        ${delBtn}
                     </div>`;
             }).join('');
-        return `
-            <div class="exp-att-section" id="${sectionId}">
-                <div class="exp-att-badge ${badgeClass}"><i class="${iconClass}"></i> ${label}</div>
-                <div class="exp-att-existing">${existingHtml}</div>
+
+        const dropZone = readonly ? '' : `
                 <div class="exp-att-drop" id="${dzId}">
                     <input type="file" id="${inputId}" multiple>
                     <div class="exp-drop-icon"><i class="fas fa-cloud-upload-alt"></i></div>
                     <div class="exp-drop-text"><strong>드래그하여 파일 추가</strong><br>또는 클릭하여 선택</div>
                 </div>
-                <div class="exp-att-pending" id="${pendingListId}"></div>
+                <div class="exp-att-pending" id="${pendingListId}"></div>`;
+
+        const noticeBlock = readonly && readonlyNotice
+            ? `<div style="display:flex;align-items:flex-start;gap:8px;padding:10px 12px;background:#eff6ff;border:1px solid #bfdbfe;border-radius:8px;margin-bottom:11px;font-size:12px;color:#1e40af;line-height:1.55;">
+                   <i class="fas fa-info-circle" style="margin-top:2px;flex-shrink:0;"></i>
+                   <span>${readonlyNotice}</span>
+               </div>`
+            : '';
+
+        return `
+            <div class="exp-att-section" id="${sectionId}">
+                <div class="exp-att-badge ${badgeClass}"><i class="${iconClass}"></i> ${label}</div>
+                ${noticeBlock}
+                <div class="exp-att-existing">${existingHtml}</div>
+                ${dropZone}
             </div>`;
     }
 
@@ -695,10 +711,12 @@ document.addEventListener('DOMContentLoaded', function() {
         const docFiles      = attachments.filter(a => a.attachmentType === 'DOCUMENT');
 
         document.getElementById('expModalBody').innerHTML =
-            buildExpenseSection('expSecReceipt',  'exp-badge-receipt',  'fas fa-receipt',  '영수증',          receiptFiles, 'expDzReceipt',  'expInputReceipt',  'expPendingReceipt') +
+            buildExpenseSection('expSecReceipt',  'exp-badge-receipt',  'fas fa-receipt',  '항목별 영수증',     receiptFiles, 'expDzReceipt',  'expInputReceipt',  'expPendingReceipt', {
+                readonly: true,
+                readonlyNotice: '항목별 영수증은 다운로드만 가능합니다. 추가/수정/삭제는 <strong>상세보기 페이지</strong>에서 항목별로 진행해 주세요.'
+            }) +
             buildExpenseSection('expSecDocument', 'exp-badge-document', 'fas fa-file-alt', '서명완료 공식문서', docFiles,     'expDzDocument', 'expInputDocument', 'expPendingDocument');
 
-        expenseSetupDropZone('expDzReceipt',  'expInputReceipt',  'expPendingReceipt',  expensePendingReceipt);
         expenseSetupDropZone('expDzDocument', 'expInputDocument', 'expPendingDocument', expensePendingDocument);
 
         // 기존 파일 클릭 → 다운로드
@@ -1143,12 +1161,15 @@ document.addEventListener('DOMContentLoaded', function() {
             document.querySelectorAll('.btn-expense-attach').forEach(btn => {
                 const id = btn.getAttribute('data-id');
                 const status = statusMap[id];
+                const row = btn.closest('.doc-row');
                 if (status === 'all') {
                     btn.classList.add('missing-all');
                     btn.dataset.tip = '첨부파일 전체 누락';
+                    if (row) row.classList.add('row-missing-attachment');
                 } else if (status === 'partial') {
                     btn.classList.add('missing-partial');
                     btn.dataset.tip = '첨부파일 일부 누락';
+                    if (row) row.classList.add('row-missing-attachment');
                 }
             });
         } catch (_) {}

@@ -579,6 +579,20 @@ document.addEventListener('DOMContentLoaded', function() {
                </div>`
             : '';
 
+        // 가장 최근 반려 사유 노출 (관리부가 이력 추적용으로 참고)
+        // - 현재 상태가 반려(C1004)면 "현재 반려 사유"로, 그 외 상태면 "최근 반려 사유"로 표시
+        // - 새 반려가 발생하면 그냥 덮어쓰기 — 별도 이력 보존 없음
+        const escapeHtml = (s) => String(s)
+            .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+            .replace(/"/g, '&quot;').replace(/'/g, '&#39;');
+        const latestLabel = currentStatus === 'C1004' ? '현재 반려 사유' : '최근 반려 사유';
+        const currentRejectBlock = (doc.settlementComment && doc.settlementComment.trim())
+            ? `<div style="margin-top:12px;padding:10px 14px;background:#fef2f2;border:1px solid #fecaca;border-radius:8px;font-size:13px;color:#b91c1c;line-height:1.6;">
+                    <i class="fas fa-comment-dots" style="margin-right:6px;color:#ef4444;"></i>
+                    <strong>${latestLabel}:</strong> ${escapeHtml(doc.settlementComment)}
+               </div>`
+            : '';
+
         const result = await Swal.fire({
             title: '정산상태 변경',
             html: `
@@ -586,7 +600,8 @@ document.addEventListener('DOMContentLoaded', function() {
                     <p style="margin-bottom:14px;color:#475569;font-size:14px;">
                         <strong>${userName}</strong> 님 · 현재 <span style="color:#2563eb;font-weight:600;">${currentName}</span>
                     </p>
-                    <label style="font-size:13px;font-weight:600;color:#334155;display:block;margin-bottom:6px;">변경할 상태</label>
+                    ${currentRejectBlock}
+                    <label style="font-size:13px;font-weight:600;color:#334155;display:block;margin-top:14px;margin-bottom:6px;">변경할 상태</label>
                     <select id="swalStatusSelect" style="display:block;width:100%;padding:10px 12px;border:1px solid #e2e8f0;border-radius:8px;font-size:14px;box-sizing:border-box;">
                         ${options}
                     </select>
@@ -719,6 +734,9 @@ document.addEventListener('DOMContentLoaded', function() {
 
     // ── 파일 정보 모달 ─────────────────────────────────────────
 
+    // 모달 안에서 파일을 클릭하면 미리보기를 띄우기 위해, 현재 모달의 파일 메타를 임시 저장
+    let currentModalFiles = [];
+
     window.showFileModal = async function(idx, type) {
         try {
             const response = await fetch(`/api/approval/expense/${idx}`);
@@ -726,26 +744,45 @@ document.addEventListener('DOMContentLoaded', function() {
             const data = await response.json();
 
             let title, body;
+            currentModalFiles = [];
 
             if (type === 'receipt') {
                 title = '<i class="fas fa-receipt"></i> 항목별 영수증 현황';
                 if (!data.expenseDetails || data.expenseDetails.length === 0) {
                     body = '<div class="file-modal-empty"><i class="fas fa-inbox"></i><p>지출 항목이 없습니다.</p></div>';
                 } else {
+                    // 모든 항목 첨부를 한 배열로 평탄화 — 모달 안에서 전후 네비게이션 가능
+                    data.expenseDetails.forEach(d => {
+                        (d.attachments || []).forEach(a => {
+                            currentModalFiles.push({
+                                url: `/api/approval/expense/attachments/${a.idx}/download`,
+                                filename: a.originalFilename,
+                            });
+                        });
+                    });
+
+                    // 속성값에 들어갈 파일명 escape (data-tip 등)
+                    const escAttr = (s) => String(s || '')
+                        .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+                        .replace(/"/g, '&quot;').replace(/'/g, '&#39;');
+
                     body = `<table class="file-modal-table">
                         <thead><tr><th>지출일</th><th>적요</th><th>상호</th><th>금액</th><th>영수증</th></tr></thead>
                         <tbody>${data.expenseDetails.map(d => {
                             const hasFiles = d.attachments && d.attachments.length > 0;
                             const fileList = hasFiles
-                                ? d.attachments.map(a => `<a href="/api/approval/expense/attachments/${a.idx}/download" class="file-link" onclick="event.stopPropagation();" target="_blank" data-tip="${a.originalFilename}"><i class="fas fa-paperclip"></i> ${truncateFilename(a.originalFilename, 20)}</a>`).join('')
-                                : '<span class="no-file"><i class="fas fa-times-circle"></i> 미첨부</span>';
-                            const statusClass = hasFiles ? 'file-ok' : 'file-missing';
+                                ? d.attachments.map(a => {
+                                    const flatIdx = currentModalFiles.findIndex(f => f.filename === a.originalFilename
+                                        && f.url === `/api/approval/expense/attachments/${a.idx}/download`);
+                                    return `<button type="button" class="receipt-clip-btn attached file-preview-trigger" data-preview-idx="${flatIdx}" data-tip="${escAttr(a.originalFilename)}" aria-label="${escAttr(a.originalFilename)}"><i class="fas fa-paperclip"></i></button>`;
+                                }).join('')
+                                : '<span class="receipt-clip-btn missing" data-tip="미첨부" aria-label="영수증 미첨부"><i class="fas fa-paperclip"></i></span>';
                             return `<tr>
                                 <td>${d.expenseDate || '-'}</td>
                                 <td>${d.description || '-'}</td>
                                 <td>${d.shopName || '-'}</td>
                                 <td style="text-align:right;font-variant-numeric:tabular-nums;">${formatAmount(d.amount)}</td>
-                                <td class="${statusClass}">${fileList}</td>
+                                <td class="receipt-cell">${fileList}</td>
                             </tr>`;
                         }).join('')}</tbody>
                     </table>`;
@@ -756,20 +793,44 @@ document.addEventListener('DOMContentLoaded', function() {
                 if (docFiles.length === 0) {
                     body = '<div class="file-modal-empty"><i class="fas fa-file-excel"></i><p>공식문서가 첨부되지 않았습니다.</p></div>';
                 } else {
-                    body = `<div class="file-modal-list">${docFiles.map(a => `
-                        <a href="/api/approval/expense/attachments/${a.idx}/download" class="file-modal-item" target="_blank" onclick="event.stopPropagation();">
+                    docFiles.forEach(a => {
+                        currentModalFiles.push({
+                            url: `/api/approval/expense/attachments/${a.idx}/download`,
+                            filename: a.originalFilename,
+                        });
+                    });
+
+                    body = `<div class="file-modal-list">${docFiles.map((a, i) => `
+                        <button type="button" class="file-modal-item file-preview-trigger" data-preview-idx="${i}">
                             <div class="file-icon"><i class="${getFileIcon(a.originalFilename)}"></i></div>
                             <div class="file-info">
                                 <span class="file-name">${a.originalFilename}</span>
                                 <span class="file-size">${formatFileSize(a.fileSize)}</span>
                             </div>
-                            <i class="fas fa-download file-download-icon"></i>
-                        </a>
+                            <i class="fas fa-eye file-download-icon"></i>
+                        </button>
                     `).join('')}</div>`;
                 }
             }
 
             openFileModal(title, body);
+
+            // 미리보기 트리거 바인딩
+            const modalBody = document.getElementById('fileModalBody');
+            if (modalBody) {
+                modalBody.querySelectorAll('.file-preview-trigger').forEach(btn => {
+                    btn.addEventListener('click', (e) => {
+                        e.stopPropagation();
+                        const previewIdx = parseInt(btn.dataset.previewIdx, 10);
+                        if (Number.isNaN(previewIdx) || previewIdx < 0) return;
+                        if (typeof window.openFilePreview !== 'function') {
+                            console.error('file-preview-modal.js 가 로드되지 않았습니다.');
+                            return;
+                        }
+                        window.openFilePreview(currentModalFiles, previewIdx);
+                    });
+                });
+            }
         } catch (error) {
             console.error('파일 정보 조회 오류:', error);
             Swal.fire({ icon: 'error', title: '조회 실패', text: '파일 정보를 불러올 수 없습니다.' });

@@ -4,6 +4,7 @@ document.addEventListener('DOMContentLoaded', async function() {
     let selectedApprovers = [];
     let selectedEmployee = null;
     let editIdx = null; // 수정 모드일 때 문서 idx
+    let editPriorStatus = null; // 수정 진입 시점의 정산상태 (저장 후 안내 메시지에 사용)
 
     // 첨부파일 관련 변수 (편집 모드 로드 전에 선언 필요)
     const MAX_FILE_SIZE = 50 * 1024 * 1024; // 50MB
@@ -1220,7 +1221,25 @@ document.addEventListener('DOMContentLoaded', async function() {
                     const result = await response.json();
                     console.log('지출승인서 저장 완료:', result);
 
-                    await showSuccess('저장이 완료되었습니다.');
+                    // 상태에 따른 안내 메시지 분기
+                    let successHtml;
+                    if (!editIdx) {
+                        successHtml = '문서가 저장되었습니다.<br>정산상태: <strong style="color:#475569;">작성중</strong><br><small style="color:#64748b;">상세 페이지에서 인쇄하면 제출완료 상태로 전환됩니다.</small>';
+                    } else if (editPriorStatus === 'C1004') {
+                        successHtml = '수정이 완료되었습니다.<br>정산상태: <strong style="color:#dc2626;">반려</strong> → <strong style="color:#475569;">작성중</strong><br><small style="color:#64748b;">다시 인쇄하여 사인을 받아 제출해주세요.</small>';
+                    } else if (editPriorStatus && editPriorStatus !== 'C1001') {
+                        successHtml = `수정이 완료되었습니다.<br>정산상태가 <strong style="color:#475569;">작성중</strong>으로 복귀되었습니다.<br><small style="color:#64748b;">다시 인쇄해야 제출완료 상태가 됩니다.</small>`;
+                    } else {
+                        successHtml = '수정이 완료되었습니다.<br>정산상태: <strong style="color:#475569;">작성중</strong>';
+                    }
+
+                    await Swal.fire({
+                        icon: 'success',
+                        title: editIdx ? '수정 완료' : '저장 완료',
+                        html: successHtml,
+                        confirmButtonText: '확인',
+                        confirmButtonColor: '#28a745',
+                    });
                     if (editIdx) {
                         window.location.href = `/approval/expense/detail?idx=${editIdx}`;
                     } else {
@@ -2396,6 +2415,8 @@ document.addEventListener('DOMContentLoaded', async function() {
             if (!res.ok) throw new Error();
 
             const doc = await res.json();
+            // 저장 직후 안내에 사용 (반려→수정 흐름인지 식별)
+            editPriorStatus = doc.settlementStatus || 'C1001';
 
             // 지출 내역 오름차순 정렬
             const details = (doc.expenseDetails || []).slice().sort(
