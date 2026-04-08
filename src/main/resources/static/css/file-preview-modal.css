@@ -96,6 +96,37 @@
     color: #0f172a;
 }
 
+/* ── 메타 정보 바 (지출일/적요/금액 등 검증용 비교 데이터) ── */
+.file-preview-meta {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px 18px;
+    padding: 12px 20px;
+    background: #fffbeb;
+    border-bottom: 1px solid #fde68a;
+    font-size: 13px;
+    flex-shrink: 0;
+}
+.file-preview-meta-item {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+}
+.file-preview-meta-label {
+    color: #92400e;
+    font-weight: 500;
+    font-size: 12px;
+}
+.file-preview-meta-label::after {
+    content: ':';
+    margin-left: 1px;
+}
+.file-preview-meta-value {
+    color: #0f172a;
+    font-weight: 700;
+    font-variant-numeric: tabular-nums;
+}
+
 /* ── 본문 ───────────────────────────────────── */
 .file-preview-body {
     flex: 1;

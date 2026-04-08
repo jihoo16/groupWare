@@ -752,11 +752,19 @@ document.addEventListener('DOMContentLoaded', function() {
                     body = '<div class="file-modal-empty"><i class="fas fa-inbox"></i><p>지출 항목이 없습니다.</p></div>';
                 } else {
                     // 모든 항목 첨부를 한 배열로 평탄화 — 모달 안에서 전후 네비게이션 가능
+                    // 각 영수증에는 해당 지출 항목의 메타정보(지출일/적요/금액)를 같이 첨부 →
+                    // 미리보기 모달에서 실제 영수증 이미지와 신청 내용을 한 화면에서 비교 가능
                     data.expenseDetails.forEach(d => {
+                        const detailMeta = [
+                            { label: '지출일', value: d.expenseDate || '-' },
+                            { label: '적요',   value: d.description || '-' },
+                            { label: '금액',   value: formatAmount(d.amount) },
+                        ];
                         (d.attachments || []).forEach(a => {
                             currentModalFiles.push({
                                 url: `/api/approval/expense/attachments/${a.idx}/download`,
                                 filename: a.originalFilename,
+                                meta: detailMeta,
                             });
                         });
                     });

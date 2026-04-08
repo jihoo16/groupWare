@@ -4,7 +4,16 @@
  * 사용:
  *   window.openFilePreview([
  *       { url: '/api/.../download/123', filename: 'invoice.pdf' },
- *       { url: '/api/.../download/124', filename: 'receipt.jpg' }
+ *       {
+ *           url: '/api/.../download/124',
+ *           filename: 'receipt.jpg',
+ *           // (선택) 파일과 함께 보여줄 메타정보 — 검증용 비교 데이터
+ *           meta: [
+ *               { label: '지출일', value: '2026-04-01' },
+ *               { label: '적요',   value: '야근식대' },
+ *               { label: '금액',   value: '12,000원' }
+ *           ]
+ *       }
  *   ], 0);
  *
  * - PDF / 이미지(jpg, png, gif, webp, bmp, svg) 는 모달 안에서 렌더링
@@ -89,6 +98,7 @@
                         <i class="fas fa-times"></i>
                     </button>
                 </div>
+                <div class="file-preview-meta" style="display:none;"></div>
                 <div class="file-preview-body">
                     <button type="button" class="file-preview-nav file-preview-prev" aria-label="이전 파일">
                         <i class="fas fa-chevron-left"></i>
@@ -146,6 +156,21 @@
         overlay.querySelector('.file-preview-filename').textContent = f.filename || '파일';
         const counter = overlay.querySelector('.file-preview-counter');
         counter.textContent = currentFiles.length > 1 ? `(${currentIndex + 1} / ${currentFiles.length})` : '';
+
+        // 메타 정보 (지출일/적요/금액 등 검증용 비교 데이터) 렌더링
+        const metaEl = overlay.querySelector('.file-preview-meta');
+        if (Array.isArray(f.meta) && f.meta.length > 0) {
+            metaEl.innerHTML = f.meta.map(m => `
+                <div class="file-preview-meta-item">
+                    <span class="file-preview-meta-label">${escapeHtml(m.label)}</span>
+                    <span class="file-preview-meta-value">${escapeHtml(m.value)}</span>
+                </div>
+            `).join('');
+            metaEl.style.display = '';
+        } else {
+            metaEl.innerHTML = '';
+            metaEl.style.display = 'none';
+        }
 
         const showNav = currentFiles.length > 1;
         overlay.querySelector('.file-preview-prev').style.display = showNav ? '' : 'none';
