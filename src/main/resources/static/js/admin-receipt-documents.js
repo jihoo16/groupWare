@@ -345,7 +345,8 @@ document.addEventListener('DOMContentLoaded', function() {
             });
         });
 
-        // 첨부 아이콘 클릭 → 해당 종류의 파일 다운로드
+        // 첨부 아이콘 클릭 → 해당 종류의 파일을 미리보기 모달로 표시
+        // (다운로드는 모달 안의 다운로드 버튼으로, 또는 행의 전체 다운로드 버튼으로 가능)
         tableBody.querySelectorAll('.att-icon.clickable').forEach(icon => {
             icon.addEventListener('click', async (e) => {
                 e.stopPropagation();
@@ -357,7 +358,19 @@ document.addEventListener('DOMContentLoaded', function() {
                 const slot = slots[slotIdx];
                 if (!slot) return;
                 const files = getAttachmentsForSlot(doc, slot);
-                await downloadFiles(files, icon);
+                if (!files || files.length === 0) {
+                    Swal.fire({ icon: 'info', title: '첨부파일 없음', text: '미리보기할 파일이 없습니다.' });
+                    return;
+                }
+                if (typeof window.openFilePreview !== 'function') {
+                    console.error('file-preview-modal.js 가 로드되지 않았습니다.');
+                    await downloadFiles(files, icon);
+                    return;
+                }
+                const previewFiles = files
+                    .filter(f => f.downloadUrl)
+                    .map(f => ({ url: f.downloadUrl, filename: f.originalFilename }));
+                window.openFilePreview(previewFiles, 0);
             });
         });
 
