@@ -292,6 +292,9 @@ public class ExpenseApprovalController {
     /**
      * 항목별 영수증 업로드 (상세 페이지에서 직접)
      * POST /api/approval/expense/detail/{detailIdx}/attachments
+     *
+     * 본인 또는 관리자(이상)만 가능. 관리자가 호출하는 경우는 관리자 페이지에서
+     * 직원이 누락한 영수증을 대리 업로드하는 시나리오.
      */
     @PostMapping(value = "/detail/{detailIdx}/attachments", consumes = {"multipart/form-data"})
     public ResponseEntity<?> addItemAttachments(
@@ -305,7 +308,8 @@ public class ExpenseApprovalController {
                     .orElseThrow(() -> new IllegalArgumentException("지출 항목을 찾을 수 없습니다. idx: " + detailIdx));
 
             ExpenseApproval approval = expenseApprovalService.getExpenseApprovalWithDetails(detail.getExpenseApprovalIdx());
-            if (!approval.getUserIdx().equals(loginUserIdx)) {
+            // 본인이 아닌 경우 — 관리자 권한이 있어야 통과 (대리 업로드)
+            if (!approval.getUserIdx().equals(loginUserIdx) && !AuthorizationUtil.isAdminOrHigher(session)) {
                 return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
             }
 

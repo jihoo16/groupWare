@@ -1368,7 +1368,13 @@ div h2{
     border: 1px solid #e2e8f0;
     border-radius: 8px;
     padding: 10px 12px;
-    transition: border-color 0.2s;
+    transition: border-color 0.2s, background-color 0.2s;
+}
+
+/* 클립보드 paste 활성 항목 — 연한 배경색 (§7-1) */
+.expense-item.paste-active {
+    background-color: rgba(102, 126, 234, 0.06) !important;
+    border-color: #c7d2fe;
 }
 
 .expense-item:hover {
@@ -1448,13 +1454,19 @@ div h2{
 .item-receipt-list .file-chip {
     display: inline-flex;
     align-items: center;
-    gap: 4px;
-    padding: 3px 8px;
+    gap: 6px;
+    padding: 4px 8px 4px 4px;
     font-size: 11px;
     background: #f1f5f9;
-    border-radius: 4px;
+    border-radius: 6px;
     color: #475569;
     max-width: 280px;
+}
+
+/* 썸네일이 들어간 칩은 약간 더 큰 패딩 */
+.item-receipt-list .file-chip img.file-chip-thumb {
+    width: 40px;
+    height: 40px;
 }
 
 .item-receipt-list .file-chip .chip-name {

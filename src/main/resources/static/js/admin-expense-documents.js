@@ -774,7 +774,14 @@ document.addEventListener('DOMContentLoaded', function() {
                         .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
                         .replace(/"/g, '&quot;').replace(/'/g, '&#39;');
 
-                    body = `<table class="file-modal-table">
+                    // 관리자 업로드 안내
+                    const guide = `<div class="admin-upload-guide">
+                        <i class="fas fa-circle-info"></i>
+                        직원이 누락한 영수증을 관리자 권한으로 첨부할 수 있습니다 — 행 클릭 후 <kbd>Ctrl+V</kbd>, drag&drop, 또는
+                        <i class="fas fa-plus-circle"></i> 버튼.
+                    </div>`;
+
+                    body = guide + `<table class="file-modal-table">
                         <thead><tr><th>지출일</th><th>적요</th><th>상호</th><th>금액</th><th>영수증</th></tr></thead>
                         <tbody>${data.expenseDetails.map(d => {
                             const hasFiles = d.attachments && d.attachments.length > 0;
@@ -785,15 +792,21 @@ document.addEventListener('DOMContentLoaded', function() {
                                     return `<button type="button" class="receipt-clip-btn attached file-preview-trigger" data-preview-idx="${flatIdx}" data-tip="${escAttr(a.originalFilename)}" aria-label="${escAttr(a.originalFilename)}"><i class="fas fa-paperclip"></i></button>`;
                                 }).join('')
                                 : '<span class="receipt-clip-btn missing" data-tip="미첨부" aria-label="영수증 미첨부"><i class="fas fa-paperclip"></i></span>';
-                            return `<tr>
+                            // 관리자 대리 업로드 버튼 — 첨부 유무 무관 항상 노출
+                            const adminAddBtn = `<button type="button" class="admin-upload-btn" data-detail-idx="${d.idx}" data-tip="영수증 관리자 업로드"><i class="fas fa-plus-circle"></i></button>`;
+                            return `<tr class="receipt-detail-row" data-detail-idx="${d.idx}">
                                 <td>${d.expenseDate || '-'}</td>
                                 <td>${d.description || '-'}</td>
                                 <td>${d.shopName || '-'}</td>
                                 <td style="text-align:right;font-variant-numeric:tabular-nums;">${formatAmount(d.amount)}</td>
-                                <td class="receipt-cell">${fileList}</td>
+                                <td class="receipt-cell">${fileList}${adminAddBtn}</td>
                             </tr>`;
                         }).join('')}</tbody>
-                    </table>`;
+                    </table>
+                    <input type="file" id="adminReceiptHiddenInput" multiple hidden accept="image/*,.pdf">`;
+
+                    // 모달 컨텍스트 메타 저장 (paste 핸들러가 참조)
+                    currentReceiptModalDocIdx = idx;
                 }
             } else {
                 title = '<i class="fas fa-file-signature"></i> 서명완료 공식문서';
@@ -838,12 +851,178 @@ document.addEventListener('DOMContentLoaded', function() {
                         window.openFilePreview(currentModalFiles, previewIdx);
                     });
                 });
+
+                // 관리자 대리 업로드 — 영수증 모달에만 적용
+                if (type === 'receipt') {
+                    setupAdminReceiptUpload(modalBody, idx);
+                }
             }
         } catch (error) {
             console.error('파일 정보 조회 오류:', error);
             Swal.fire({ icon: 'error', title: '조회 실패', text: '파일 정보를 불러올 수 없습니다.' });
         }
     };
+
+    // ============================================
+    // 관리자 대리 영수증 업로드 (모달 안에서)
+    // 파일 탐색기 / drag&drop / 클립보드 paste 3가지 모두 지원
+    // ============================================
+    let currentReceiptModalDocIdx = null;
+    let activeAdminUploadRow = null;
+    let _adminPasteRegistered = false;
+
+    function setActiveAdminUploadRow(rowEl) {
+        if (!rowEl) return;
+        document.querySelectorAll('.receipt-detail-row.paste-active').forEach(el => {
+            el.classList.remove('paste-active');
+        });
+        rowEl.classList.add('paste-active');
+        activeAdminUploadRow = rowEl;
+    }
+
+    /** detail row에 영수증 파일 즉시 업로드 (관리자 대리) */
+    async function uploadAdminReceiptFiles(detailIdx, fileList) {
+        if (!detailIdx || !fileList || fileList.length === 0) return;
+        const validFiles = Array.from(fileList).filter(f => {
+            if (f.size > 50 * 1024 * 1024) {
+                Swal.fire({ icon: 'warning', title: '파일 크기 초과', text: `50MB를 초과합니다: ${f.name}` });
+                return false;
+            }
+            return true;
+        });
+        if (validFiles.length === 0) return;
+
+        const formData = new FormData();
+        validFiles.forEach(f => formData.append('files', f));
+
+        try {
+            const res = await fetch(`/api/approval/expense/detail/${detailIdx}/attachments`, {
+                method: 'POST',
+                body: formData,
+            });
+            if (res.ok) {
+                if (typeof window.showToast === 'function') {
+                    window.showToast(`영수증 ${validFiles.length}개 관리자 업로드 완료`, 'success');
+                }
+                // 모달 새로고침: 같은 문서로 모달 다시 열기 + 백그라운드 리스트도 새로고침
+                const docIdx = currentReceiptModalDocIdx;
+                if (docIdx) {
+                    await window.showFileModal(docIdx, 'receipt');
+                }
+                loadDocuments();
+            } else {
+                const errBody = await res.json().catch(() => ({}));
+                Swal.fire({ icon: 'error', title: '업로드 실패', text: errBody.error || '권한 또는 서버 오류' });
+            }
+        } catch (err) {
+            console.error('관리자 대리 업로드 실패:', err);
+            Swal.fire({ icon: 'error', title: '업로드 실패', text: '네트워크 오류가 발생했습니다.' });
+        }
+    }
+
+    function setupAdminReceiptUpload(modalBody, docIdx) {
+        currentReceiptModalDocIdx = docIdx;
+        activeAdminUploadRow = null;
+
+        const rows = modalBody.querySelectorAll('.receipt-detail-row');
+
+        // 1. 행 클릭 → 활성 row 전환
+        rows.forEach(row => {
+            row.addEventListener('click', function(e) {
+                // 미리보기 버튼/+ 버튼 클릭은 활성 전환만 (이벤트 진행은 막지 않음)
+                setActiveAdminUploadRow(this);
+            });
+
+            // 2. drag & drop — 각 row에 핸들러
+            row.addEventListener('dragover', function(e) {
+                e.preventDefault();
+                row.classList.add('drag-over');
+            });
+            row.addEventListener('dragleave', function(e) {
+                if (!row.contains(e.relatedTarget)) row.classList.remove('drag-over');
+            });
+            row.addEventListener('drop', function(e) {
+                e.preventDefault();
+                row.classList.remove('drag-over');
+                const detailIdx = row.dataset.detailIdx;
+                if (!detailIdx) return;
+                uploadAdminReceiptFiles(detailIdx, e.dataTransfer.files);
+            });
+        });
+
+        // 첫 행 기본 활성
+        if (rows.length > 0) setActiveAdminUploadRow(rows[0]);
+
+        // 3. + 버튼 → hidden file input click (활성 row의 detailIdx 사용)
+        const hiddenInput = modalBody.querySelector('#adminReceiptHiddenInput');
+        modalBody.querySelectorAll('.admin-upload-btn').forEach(btn => {
+            btn.addEventListener('click', function(e) {
+                e.stopPropagation();
+                const row = this.closest('.receipt-detail-row');
+                if (row) setActiveAdminUploadRow(row);
+                if (hiddenInput) hiddenInput.click();
+            });
+        });
+        if (hiddenInput) {
+            hiddenInput.addEventListener('change', function() {
+                if (!activeAdminUploadRow || this.files.length === 0) return;
+                const detailIdx = activeAdminUploadRow.dataset.detailIdx;
+                uploadAdminReceiptFiles(detailIdx, this.files);
+                this.value = '';
+            });
+        }
+
+        // 4. 클립보드 paste — 페이지 전체에서 한 번만 등록
+        if (_adminPasteRegistered) return;
+        if (typeof window.setupClipboardImagePaste !== 'function') return;
+        _adminPasteRegistered = true;
+
+        // batch 디바운스: 같은 paste 이벤트 내 여러 이미지를 한 번에 업로드
+        let pasteBuffer = [];
+        let pasteTimer = null;
+        let pasteTargetIdx = null;
+
+        function flushPasteBuffer() {
+            pasteTimer = null;
+            if (!pasteTargetIdx || pasteBuffer.length === 0) {
+                pasteBuffer = [];
+                pasteTargetIdx = null;
+                return;
+            }
+            const dt = new DataTransfer();
+            pasteBuffer.forEach(f => dt.items.add(f));
+            const idx2 = pasteTargetIdx;
+            pasteBuffer = [];
+            pasteTargetIdx = null;
+            uploadAdminReceiptFiles(idx2, dt.files);
+        }
+
+        window.setupClipboardImagePaste({
+            resolveTarget: () => {
+                // 모달이 열려 있을 때만 활성 (아니면 일반 paste 통과)
+                const overlay = document.getElementById('fileModalOverlay');
+                if (!overlay || !overlay.classList.contains('active')) return null;
+                if (!activeAdminUploadRow || !document.body.contains(activeAdminUploadRow)) return null;
+                const detailIdx = activeAdminUploadRow.dataset.detailIdx;
+                if (!detailIdx) return null;
+                return {
+                    addFile: (file) => {
+                        if (file.size > 50 * 1024 * 1024) {
+                            Swal.fire({ icon: 'warning', title: '파일 크기 초과', text: `50MB를 초과합니다: ${file.name}` });
+                            return false;
+                        }
+                        pasteTargetIdx = detailIdx;
+                        pasteBuffer.push(file);
+                        if (pasteTimer === null) {
+                            pasteTimer = setTimeout(flushPasteBuffer, 0);
+                        }
+                        return true;
+                    },
+                    label: '영수증 (관리자 업로드)',
+                };
+            },
+        });
+    }
 
     function openFileModal(title, body) {
         let overlay = document.getElementById('fileModalOverlay');

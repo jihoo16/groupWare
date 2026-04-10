@@ -134,7 +134,7 @@ document.addEventListener('DOMContentLoaded', async function () {
                      <i class="fas fa-cloud-upload-alt"></i> 첨부
                    </button>`;
             return `
-                <tr>
+                <tr class="detail-row" data-detail-idx="${d.idx}">
                     <td>${d.expenseDate || '-'}</td>
                     <td>${d.description || '-'}</td>
                     <td>${d.shopName || '-'}</td>
@@ -211,6 +211,7 @@ document.addEventListener('DOMContentLoaded', async function () {
     function renderServerAttachments(attachments) {
         const signedList = document.getElementById('signedDocFileList');
         if (!signedList) return;
+        if (typeof window.revokeChipThumbs === 'function') window.revokeChipThumbs(signedList);
         signedList.innerHTML = '';
 
         (attachments || []).forEach(att => {
@@ -226,6 +227,9 @@ document.addEventListener('DOMContentLoaded', async function () {
                 <button type="button" class="btn-download-file" data-tip="다운로드"><i class="fas fa-download"></i></button>
                 ${isReadOnly ? '' : '<button type="button" class="btn-remove-file" data-tip="삭제"><i class="fas fa-times"></i></button>'}
             `;
+            if (typeof window.attachThumbToFileItem === 'function') {
+                window.attachThumbToFileItem(item, `/api/approval/expense/attachments/${att.idx}/download`, att.originalFilename);
+            }
 
             item.querySelector('.btn-download-file').addEventListener('click', () => {
                 window.location.href = `/api/approval/expense/attachments/${att.idx}/download`;
@@ -265,6 +269,9 @@ document.addEventListener('DOMContentLoaded', async function () {
     const hiddenInput = document.getElementById('itemReceiptHiddenInput');
 
     // 영수증 보기 버튼 (이미 첨부된 항목)
+    function isImageName(name) {
+        return /\.(png|jpe?g|gif|webp|bmp|svg)$/i.test(name || '');
+    }
     document.querySelectorAll('.btn-view-receipt').forEach(btn => {
         btn.addEventListener('click', function() {
             const detailIdx = this.dataset.detailIdx;
@@ -273,11 +280,16 @@ document.addEventListener('DOMContentLoaded', async function () {
 
             let listHtml = '<div style="text-align:left;">';
             detail.attachments.forEach(att => {
+                const downloadUrl = `/api/approval/expense/attachments/${att.idx}/download`;
+                const isImg = isImageName(att.originalFilename);
+                const thumbHtml = isImg
+                    ? `<img src="${downloadUrl}" alt="${att.originalFilename}" class="swal-receipt-thumb" data-att-url="${downloadUrl}" data-att-name="${att.originalFilename}" style="width:48px;height:48px;object-fit:cover;border:1px solid #d1d5db;border-radius:4px;cursor:zoom-in;flex-shrink:0;">`
+                    : `<i class="fas ${getFileIcon(att.originalFilename)}" style="color:#667eea;width:48px;text-align:center;font-size:24px;"></i>`;
                 listHtml += `
-                    <div style="display:flex;align-items:center;gap:8px;padding:6px 0;border-bottom:1px solid #f1f5f9;">
-                        <i class="fas ${getFileIcon(att.originalFilename)}" style="color:#667eea;"></i>
-                        <span style="flex:1;font-size:13px;">${att.originalFilename}</span>
-                        <a href="/api/approval/expense/attachments/${att.idx}/download" style="color:#667eea;font-size:12px;"><i class="fas fa-download"></i></a>
+                    <div style="display:flex;align-items:center;gap:8px;padding:8px 0;border-bottom:1px solid #f1f5f9;">
+                        ${thumbHtml}
+                        <span style="flex:1;font-size:13px;word-break:break-all;">${att.originalFilename}</span>
+                        <a href="${downloadUrl}" style="color:#667eea;font-size:12px;"><i class="fas fa-download"></i></a>
                         ${isReadOnly ? '' : `<button class="swal-delete-att" data-att-idx="${att.idx}" style="background:none;border:none;color:#ef4444;cursor:pointer;font-size:12px;"><i class="fas fa-trash"></i></button>`}
                     </div>
                 `;
@@ -290,6 +302,18 @@ document.addEventListener('DOMContentLoaded', async function () {
                 showConfirmButton: false,
                 showCloseButton: true,
                 didOpen: () => {
+                    // 썸네일 클릭 시 file-preview-modal로 큰 미리보기
+                    const thumbList = Array.from(document.querySelectorAll('.swal-receipt-thumb'));
+                    const previewFiles = thumbList.map(t => ({ url: t.dataset.attUrl, filename: t.dataset.attName }));
+                    thumbList.forEach((thumb, i) => {
+                        thumb.addEventListener('click', function(e) {
+                            e.stopPropagation();
+                            if (typeof window.openFilePreview === 'function') {
+                                window.openFilePreview(previewFiles, i);
+                            }
+                        });
+                    });
+
                     document.querySelectorAll('.swal-delete-att').forEach(delBtn => {
                         delBtn.addEventListener('click', async function() {
                             const attIdx = this.dataset.attIdx;
@@ -332,41 +356,141 @@ document.addEventListener('DOMContentLoaded', async function () {
 
     // 영수증 보기 버튼에서도 추가 업로드 가능하도록 (더블클릭 또는 우클릭 대신 보기 팝업에서 처리)
 
+    /** detail row에 영수증 파일 즉시 업로드 (file picker / drag&drop / paste 공유) */
+    async function uploadDetailReceipts(detailIdx, fileList) {
+        if (!detailIdx || !fileList || fileList.length === 0) return;
+
+        const validFiles = Array.from(fileList).filter(f => {
+            if (f.size > MAX_FILE_SIZE) {
+                Swal.fire({ icon: 'warning', title: '파일 크기 초과', text: `50MB를 초과합니다: ${f.name}` });
+                return false;
+            }
+            return true;
+        });
+        if (validFiles.length === 0) return;
+
+        const formData = new FormData();
+        validFiles.forEach(f => formData.append('files', f));
+
+        try {
+            const res = await fetch(`/api/approval/expense/detail/${detailIdx}/attachments`, {
+                method: 'POST',
+                body: formData
+            });
+            if (res.ok) {
+                Swal.fire({ icon: 'success', title: '업로드 완료', timer: 1000, showConfirmButton: false })
+                    .then(() => location.reload());
+            } else {
+                Swal.fire({ icon: 'error', title: '업로드 실패', text: '잠시 후 다시 시도해 주세요.' });
+            }
+        } catch (_) {
+            Swal.fire({ icon: 'error', title: '업로드 실패', text: '파일 업로드 중 오류가 발생했습니다.' });
+        }
+    }
+
     if (hiddenInput) {
         hiddenInput.addEventListener('change', async function() {
-            if (!currentUploadDetailIdx || this.files.length === 0) return;
-
-            const validFiles = Array.from(this.files).filter(f => {
-                if (f.size > MAX_FILE_SIZE) {
-                    Swal.fire({ icon: 'warning', title: '파일 크기 초과', text: `50MB를 초과합니다: ${f.name}` });
-                    return false;
-                }
-                return true;
-            });
-
-            if (validFiles.length === 0) { this.value = ''; return; }
-
-            const formData = new FormData();
-            validFiles.forEach(f => formData.append('files', f));
-
-            try {
-                const res = await fetch(`/api/approval/expense/detail/${currentUploadDetailIdx}/attachments`, {
-                    method: 'POST',
-                    body: formData
-                });
-                if (res.ok) {
-                    Swal.fire({ icon: 'success', title: '업로드 완료', timer: 1000, showConfirmButton: false })
-                        .then(() => location.reload());
-                } else {
-                    Swal.fire({ icon: 'error', title: '업로드 실패', text: '잠시 후 다시 시도해 주세요.' });
-                }
-            } catch (_) {
-                Swal.fire({ icon: 'error', title: '업로드 실패', text: '파일 업로드 중 오류가 발생했습니다.' });
-            }
-
+            const targetIdx = currentUploadDetailIdx;
+            if (!targetIdx || this.files.length === 0) return;
+            await uploadDetailReceipts(targetIdx, this.files);
             this.value = '';
             currentUploadDetailIdx = null;
         });
+    }
+
+    // ============================================
+    // 활성 detail row 추적 + drag&drop + 클립보드 paste (패턴 A-2)
+    // ============================================
+    if (!isReadOnly) {
+        let activeDetailRow = null;
+
+        function setActiveDetailRow(rowEl) {
+            if (!rowEl || activeDetailRow === rowEl) return;
+            document.querySelectorAll('.detail-row.paste-active').forEach(el => {
+                el.classList.remove('paste-active');
+            });
+            rowEl.classList.add('paste-active');
+            activeDetailRow = rowEl;
+        }
+
+        // 클릭으로 활성 row 전환
+        document.querySelectorAll('.detail-row').forEach(row => {
+            row.addEventListener('click', function() {
+                setActiveDetailRow(this);
+            });
+
+            // drag & drop — 각 row에 직접 핸들러 등록
+            row.addEventListener('dragover', function(e) {
+                e.preventDefault();
+                row.classList.add('drag-over');
+            });
+            row.addEventListener('dragleave', function(e) {
+                if (!row.contains(e.relatedTarget)) row.classList.remove('drag-over');
+            });
+            row.addEventListener('drop', async function(e) {
+                e.preventDefault();
+                row.classList.remove('drag-over');
+                const detailIdx = row.dataset.detailIdx;
+                if (!detailIdx) return;
+                await uploadDetailReceipts(detailIdx, e.dataTransfer.files);
+            });
+        });
+
+        // 첫 row 기본 활성
+        const firstRow = document.querySelector('.detail-row');
+        if (firstRow) setActiveDetailRow(firstRow);
+
+        // 클립보드 paste — 활성 row에 즉시 업로드
+        // 즉시 업로드 패턴 + reload 부작용이 있어, 한 paste 이벤트의 여러 파일을
+        // 마이크로태스크 큐에 모아서 한 번에 업로드한다
+        if (typeof window.setupClipboardImagePaste === 'function') {
+            let pasteBuffer = [];
+            let pasteTimer = null;
+            let pasteTargetIdx = null;
+
+            function flushPasteBuffer() {
+                pasteTimer = null;
+                if (!pasteTargetIdx || pasteBuffer.length === 0) {
+                    pasteBuffer = [];
+                    pasteTargetIdx = null;
+                    return;
+                }
+                const dt = new DataTransfer();
+                pasteBuffer.forEach(f => dt.items.add(f));
+                const idx = pasteTargetIdx;
+                pasteBuffer = [];
+                pasteTargetIdx = null;
+                uploadDetailReceipts(idx, dt.files);
+            }
+
+            window.setupClipboardImagePaste({
+                resolveTarget: () => {
+                    if (!activeDetailRow || !document.body.contains(activeDetailRow)) {
+                        const fallback = document.querySelector('.detail-row');
+                        if (fallback) setActiveDetailRow(fallback);
+                        else return null;
+                    }
+                    const detailIdx = activeDetailRow.dataset.detailIdx;
+                    if (!detailIdx) return null;
+                    return {
+                        addFile: (file) => {
+                            if (file.size > MAX_FILE_SIZE) {
+                                Swal.fire({ icon: 'warning', title: '파일 크기 초과', text: `50MB를 초과합니다: ${file.name}` });
+                                return false;
+                            }
+                            pasteTargetIdx = detailIdx;
+                            pasteBuffer.push(file);
+                            // 같은 paste 이벤트 내 모든 addFile 호출을 하나의 fetch로 묶음
+                            if (pasteTimer === null) {
+                                pasteTimer = setTimeout(flushPasteBuffer, 0);
+                            }
+                            return true;
+                        },
+                        label: '영수증',
+                    };
+                },
+            });
+        }
     }
 
     /** 새 파일을 서버에 업로드하고 목록에 추가 */

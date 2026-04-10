@@ -1840,6 +1840,9 @@ document.addEventListener('DOMContentLoaded', async function() {
             const newDateInput = newItem.querySelector('.date-input');
             if (newDateInput) setDateInput(newDateInput, prevDate);
 
+            // 새 항목을 활성으로 — 다음 paste 흐름 자동 연결
+            if (typeof setActiveExpenseItem === 'function') setActiveExpenseItem(newItem);
+
             updateItemNumbers();
             updatePreview();
         });
@@ -1852,7 +1855,13 @@ document.addEventListener('DOMContentLoaded', async function() {
         if (container && container.children.length > 1) {
             const idx = item.dataset.itemIndex;
             if (idx !== undefined) delete itemReceiptFiles[idx];
+            // 활성 항목이었으면 다른 항목으로 이전
+            const wasActive = (typeof activeExpenseItem !== 'undefined') && activeExpenseItem === item;
             item.remove();
+            if (wasActive) {
+                const next = container.querySelector('.expense-item');
+                if (next && typeof setActiveExpenseItem === 'function') setActiveExpenseItem(next);
+            }
             updateItemNumbers();
             calculateTotal();
             updatePreview();
@@ -2515,6 +2524,12 @@ document.addEventListener('DOMContentLoaded', async function() {
             // 기존 첨부파일 렌더링
             renderServerAttachments(doc.attachments || []);
 
+            // 수정 모드 렌더 후 첫 항목 활성화 (paste 흐름 자동 연결)
+            const firstItemAfterRender = document.querySelector('.expense-item');
+            if (firstItemAfterRender && typeof setActiveExpenseItem === 'function') {
+                setActiveExpenseItem(firstItemAfterRender);
+            }
+
         } catch (e) {
             showError('문서를 불러오는 데 실패했습니다.');
         }
@@ -2661,24 +2676,121 @@ document.addEventListener('DOMContentLoaded', async function() {
     // 첨부파일 업로드 (항목별 영수증 + 서명완료 공식문서)
     // ============================================
 
-    /** 항목별 영수증 input change 이벤트 바인딩 */
+    /** 항목별 영수증 input change 이벤트 바인딩 + drag&drop */
     function setupItemReceiptInput(itemEl) {
         const input = itemEl.querySelector('.item-receipt-input');
         if (!input) return;
+
+        // 단일 파일 추가 헬퍼 (change/drop/paste 모두 공유)
+        function addFileToItem(file, idx) {
+            if (file.size > MAX_FILE_SIZE) {
+                showWarning(`파일 크기가 50MB를 초과합니다: ${file.name}`);
+                return false;
+            }
+            if (!itemReceiptFiles[idx]) itemReceiptFiles[idx] = [];
+            itemReceiptFiles[idx].push(file);
+            return true;
+        }
+
         input.addEventListener('change', function() {
             const idx = this.dataset.itemIndex;
-            if (!itemReceiptFiles[idx]) itemReceiptFiles[idx] = [];
-            Array.from(this.files).forEach(file => {
-                if (file.size > MAX_FILE_SIZE) {
-                    showWarning(`파일 크기가 50MB를 초과합니다: ${file.name}`);
-                    return;
-                }
-                itemReceiptFiles[idx].push(file);
-            });
+            Array.from(this.files).forEach(file => addFileToItem(file, idx));
             this.value = '';
             rerenderItemReceipts(itemEl, idx);
             validateRequiredFields();
         });
+
+        // drag & drop — 기존에는 빠져 있던 입력 방식 (§3.5 / §7-2)
+        const section = itemEl.querySelector('.item-receipt-section');
+        if (section) {
+            section.addEventListener('dragover', function(e) {
+                e.preventDefault();
+                section.classList.add('drag-over');
+            });
+            section.addEventListener('dragleave', function(e) {
+                if (!section.contains(e.relatedTarget)) {
+                    section.classList.remove('drag-over');
+                }
+            });
+            section.addEventListener('drop', function(e) {
+                e.preventDefault();
+                section.classList.remove('drag-over');
+                const idx = section.dataset.itemIndex;
+                Array.from(e.dataTransfer.files).forEach(file => addFileToItem(file, idx));
+                rerenderItemReceipts(itemEl, idx);
+                validateRequiredFields();
+            });
+        }
+    }
+
+    // ============================================
+    // 클립보드 이미지 붙여넣기 (패턴 A-1)
+    // 활성 항목 추적 — 가장 최근 클릭/포커스된 .expense-item
+    // ============================================
+    let activeExpenseItem = null;
+
+    function setActiveExpenseItem(itemEl) {
+        if (!itemEl) return;
+        if (activeExpenseItem === itemEl) return;
+        // 모든 항목에서 .paste-active 제거 후 현재만 추가
+        document.querySelectorAll('.expense-item.paste-active').forEach(el => {
+            el.classList.remove('paste-active');
+        });
+        itemEl.classList.add('paste-active');
+        activeExpenseItem = itemEl;
+    }
+
+    function setupExpenseItemPasteTracking() {
+        const container = document.getElementById('expenseItemsContainer');
+        if (!container) return;
+
+        // 클릭/포커스로 활성 항목 전환
+        container.addEventListener('focusin', function(e) {
+            const item = e.target.closest('.expense-item');
+            if (item) setActiveExpenseItem(item);
+        });
+        container.addEventListener('click', function(e) {
+            const item = e.target.closest('.expense-item');
+            if (item) setActiveExpenseItem(item);
+        });
+
+        // 페이지 진입 시 첫 항목 기본 활성
+        const firstItem = container.querySelector('.expense-item');
+        if (firstItem) setActiveExpenseItem(firstItem);
+
+        // paste 핸들러 등록
+        if (typeof window.setupClipboardImagePaste === 'function') {
+            window.setupClipboardImagePaste({
+                resolveTarget: () => {
+                    if (!activeExpenseItem || !document.body.contains(activeExpenseItem)) {
+                        // 활성 항목이 사라졌으면 첫 항목으로 폴백
+                        const first = container.querySelector('.expense-item');
+                        if (first) setActiveExpenseItem(first);
+                        else return null;
+                    }
+                    const idx = activeExpenseItem.dataset.itemIndex;
+                    const itemNumber = activeExpenseItem.querySelector('.expense-item-number')?.textContent || '';
+                    return {
+                        addFile: (file) => {
+                            if (file.size > MAX_FILE_SIZE) {
+                                showWarning(`파일 크기가 50MB를 초과합니다: ${file.name}`);
+                                return false;
+                            }
+                            if (!itemReceiptFiles[idx]) itemReceiptFiles[idx] = [];
+                            itemReceiptFiles[idx].push(file);
+                            rerenderItemReceipts(activeExpenseItem, idx);
+                            validateRequiredFields();
+                            // flash
+                            activeExpenseItem.classList.remove('paste-flash');
+                            void activeExpenseItem.offsetWidth;
+                            activeExpenseItem.classList.add('paste-flash');
+                            return true;
+                        },
+                        label: `지출 항목 ${itemNumber}`,
+                    };
+                },
+            });
+        }
     }
 
     /** 항목 내 영수증 파일 목록 렌더링 (서버 기존 파일 보존) */
@@ -2686,23 +2798,46 @@ document.addEventListener('DOMContentLoaded', async function() {
         const listEl = itemEl.querySelector('.item-receipt-list');
         if (!listEl) return;
 
-        // 서버에서 받아온 기존 영수증(.file-chip-server)은 보존, 새 파일 칩만 제거
-        listEl.querySelectorAll('.file-chip:not(.file-chip-server)').forEach(el => el.remove());
+        // 재렌더 직전 — 새 파일 칩의 blob URL 정리 (서버 칩은 건드리지 않음)
+        listEl.querySelectorAll('.file-chip:not(.file-chip-server)').forEach(el => {
+            if (typeof window.revokeChipThumbs === 'function') window.revokeChipThumbs(el);
+            el.remove();
+        });
 
         const files = itemReceiptFiles[idx] || [];
         files.forEach((file, fileIdx) => {
             const chip = document.createElement('span');
             chip.className = 'file-chip';
-            chip.innerHTML = `
-                <i class="fas ${getFileIcon(file.name)}"></i>
-                <span class="chip-name">${file.name}</span>
-                <button type="button" class="btn-remove-chip" data-tip="삭제"><i class="fas fa-times"></i></button>
-            `;
-            chip.querySelector('.btn-remove-chip').addEventListener('click', () => {
+
+            // 이미지면 썸네일, 아니면 기존 아이콘
+            const thumb = (typeof window.createImageThumbFromFile === 'function')
+                ? window.createImageThumbFromFile(file) : null;
+            if (thumb) {
+                chip.appendChild(thumb);
+            } else {
+                const icon = document.createElement('i');
+                icon.className = `fas ${getFileIcon(file.name)}`;
+                chip.appendChild(icon);
+            }
+
+            const nameSpan = document.createElement('span');
+            nameSpan.className = 'chip-name';
+            nameSpan.textContent = file.name;
+            chip.appendChild(nameSpan);
+
+            const removeBtn = document.createElement('button');
+            removeBtn.type = 'button';
+            removeBtn.className = 'btn-remove-chip';
+            removeBtn.dataset.tip = '삭제';
+            removeBtn.innerHTML = '<i class="fas fa-times"></i>';
+            removeBtn.addEventListener('click', () => {
+                if (typeof window.revokeChipThumbs === 'function') window.revokeChipThumbs(chip);
                 itemReceiptFiles[idx].splice(fileIdx, 1);
                 rerenderItemReceipts(itemEl, idx);
                 validateRequiredFields();
             });
+            chip.appendChild(removeBtn);
+
             listEl.appendChild(chip);
         });
     }
@@ -2749,20 +2884,47 @@ document.addEventListener('DOMContentLoaded', async function() {
             const chip = document.createElement('span');
             chip.className = 'file-chip file-chip-server';
             chip.dataset.attachmentIdx = att.idx;
-            chip.innerHTML = `
-                <i class="fas ${getFileIcon(att.originalFilename)}"></i>
-                <span class="chip-name">${att.originalFilename}</span>
-                <button type="button" class="btn-download-chip" data-tip="다운로드"><i class="fas fa-download"></i></button>
-                <button type="button" class="btn-remove-chip" data-tip="삭제"><i class="fas fa-times"></i></button>
-            `;
-            chip.querySelector('.btn-download-chip').addEventListener('click', () => {
-                window.location.href = `/api/approval/expense/attachments/${att.idx}/download`;
+
+            const downloadUrl = `/api/approval/expense/attachments/${att.idx}/download`;
+
+            // 이미지면 썸네일, 아니면 기존 아이콘
+            const thumb = (typeof window.createImageThumbFromUrl === 'function')
+                ? window.createImageThumbFromUrl(downloadUrl, att.originalFilename) : null;
+            if (thumb) {
+                chip.appendChild(thumb);
+            } else {
+                const icon = document.createElement('i');
+                icon.className = `fas ${getFileIcon(att.originalFilename)}`;
+                chip.appendChild(icon);
+            }
+
+            const nameSpan = document.createElement('span');
+            nameSpan.className = 'chip-name';
+            nameSpan.textContent = att.originalFilename;
+            chip.appendChild(nameSpan);
+
+            const downloadBtn = document.createElement('button');
+            downloadBtn.type = 'button';
+            downloadBtn.className = 'btn-download-chip';
+            downloadBtn.dataset.tip = '다운로드';
+            downloadBtn.innerHTML = '<i class="fas fa-download"></i>';
+            downloadBtn.addEventListener('click', () => {
+                window.location.href = downloadUrl;
             });
-            chip.querySelector('.btn-remove-chip').addEventListener('click', () => {
+            chip.appendChild(downloadBtn);
+
+            const removeBtn = document.createElement('button');
+            removeBtn.type = 'button';
+            removeBtn.className = 'btn-remove-chip';
+            removeBtn.dataset.tip = '삭제';
+            removeBtn.innerHTML = '<i class="fas fa-times"></i>';
+            removeBtn.addEventListener('click', () => {
                 deletedAttachmentIds.push(att.idx);
                 chip.remove();
                 validateRequiredFields();
             });
+            chip.appendChild(removeBtn);
+
             listEl.appendChild(chip);
         });
     }
@@ -2845,4 +3007,7 @@ document.addEventListener('DOMContentLoaded', async function() {
     // 초기 항목(index=0)의 영수증 input 바인딩
     const firstItem = document.querySelector('.expense-item[data-item-index="0"]');
     if (firstItem) setupItemReceiptInput(firstItem);
+
+    // 클립보드 paste 활성 항목 추적 + 핸들러 등록
+    setupExpenseItemPasteTracking();
 });

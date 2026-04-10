@@ -25,7 +25,7 @@
                     <span class="menu-text">일정관리</span>
                 </a>
             </li>
-            <li th:class="${(activeMenu == 'approval' or activeMenu == 'vacation' or activeMenu == 'approval-write') ? 'menu-item menu-parent active' : 'menu-item menu-parent'}" data-tooltip="전자 문서">
+            <li th:class="${(activeMenu == 'approval' or activeMenu == 'vacation' or activeMenu == 'approval-write' or activeMenu == 'approval-expense') ? 'menu-item menu-parent active' : 'menu-item menu-parent'}" data-tooltip="전자 문서">
                 <a href="/approval" class="menu-toggle-btn">
                     <i class="fas fa-file-signature"></i>
                     <span class="menu-text">전자 문서</span>
@@ -45,6 +45,11 @@
                     <li class="submenu-item" th:classappend="${activeMenu == 'approval-write'} ? 'active' : ''">
                         <a href="/approval/write">
                             <span class="submenu-text">문서 작성</span>
+                        </a>
+                    </li>
+                    <li class="submenu-item" th:classappend="${activeMenu == 'approval-expense'} ? 'active' : ''">
+                        <a href="/approval/expense">
+                            <span class="submenu-text">개인경비청구</span>
                         </a>
                     </li>
                 </ul>
@@ -73,7 +78,7 @@
                     </li>
                 </ul>
             </li>
-            <li th:class="${(activeMenu == 'project-documents' or activeMenu == 'project-weekly-report' or activeMenu == 'receipt-meeting' or activeMenu == 'receipt-trip' or activeMenu == 'receipt-trip-meeting' or activeMenu == 'receipt-overtime') ? 'menu-item menu-parent active' : 'menu-item menu-parent'}" data-tooltip="프로젝트 문서함">
+            <li th:class="${(activeMenu == 'project-documents' or activeMenu == 'project-weekly-report' or activeMenu == 'receipt-meeting' or activeMenu == 'receipt-trip' or activeMenu == 'receipt-trip-meeting' or activeMenu == 'receipt-overtime' or activeMenu == 'receipt-purchase-material' or activeMenu == 'receipt-purchase-equipment') ? 'menu-item menu-parent active' : 'menu-item menu-parent'}" data-tooltip="프로젝트 문서함">
                 <a href="/project/documents" class="menu-toggle-btn">
                     <i class="fas fa-folder-open"></i>
                     <span class="menu-text">프로젝트 문서함</span>
@@ -103,6 +108,16 @@
                     <li class="submenu-item" th:classappend="${activeMenu == 'receipt-overtime'} ? 'active' : ''">
                         <a href="/approval/receipt-overtime">
                             <span class="submenu-text">야근식대 증빙</span>
+                        </a>
+                    </li>
+                    <li class="submenu-item" th:classappend="${activeMenu == 'receipt-purchase-material'} ? 'active' : ''">
+                        <a href="/approval/receipt-purchase?type=material">
+                            <span class="submenu-text">재료비 증빙</span>
+                        </a>
+                    </li>
+                    <li class="submenu-item" th:classappend="${activeMenu == 'receipt-purchase-equipment'} ? 'active' : ''">
+                        <a href="/approval/receipt-purchase?type=equipment">
+                            <span class="submenu-text">장비비 증빙</span>
                         </a>
                     </li>
                 </ul>
