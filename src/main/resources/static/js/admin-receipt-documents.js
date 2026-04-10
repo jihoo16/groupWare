@@ -568,8 +568,7 @@ document.addEventListener('DOMContentLoaded', function() {
     function openDocumentDetail(doc) {
         const url = buildDetailUrl(doc);
         if (url) {
-            // noopener: 새 탭에서 window.opener가 없으므로 popup-mode(사이드바 숨김) 미적용
-            window.open(url, '_blank', 'noopener');
+            window.location.href = url;
         }
     }
 
