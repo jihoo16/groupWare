@@ -112,7 +112,7 @@
                     </div>
                 </div>
 
-                <!-- 관리자 전용 -->
+                <!-- 관리자 전용 (C1101 관리자 / C1102 개발자) -->
                 <div class="shortcut-section admin-section" th:if="${session.userRoleCode == 'C1101' or session.userRoleCode == 'C1102'}">
                     <h3 class="shortcut-title"><i class="fas fa-gear"></i> 관리</h3>
                     <div class="shortcut-grid">
@@ -127,6 +127,21 @@
                         <a href="/project/documents" class="shortcut-card">
                             <div class="shortcut-icon"><i class="fas fa-folder-open"></i></div>
                             <span class="shortcut-label">연구비증빙 관리</span>
+                        </a>
+                        <a href="/admin/competency-management" class="shortcut-card">
+                            <div class="shortcut-icon"><i class="fas fa-user-graduate"></i></div>
+                            <span class="shortcut-label">역량관리</span>
+                        </a>
+                    </div>
+                </div>
+
+                <!-- 역량열람자 전용 (C1103) — 관리자가 아닌 경우에만 표시 -->
+                <div class="shortcut-section admin-section" th:if="${session.userRoleCode == 'C1103'}">
+                    <h3 class="shortcut-title"><i class="fas fa-gear"></i> 관리</h3>
+                    <div class="shortcut-grid">
+                        <a href="/admin/competency-management" class="shortcut-card">
+                            <div class="shortcut-icon"><i class="fas fa-user-graduate"></i></div>
+                            <span class="shortcut-label">역량관리</span>
                         </a>
                     </div>
                 </div>
