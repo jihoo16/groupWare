@@ -134,7 +134,7 @@ document.addEventListener('DOMContentLoaded', async function () {
                      <i class="fas fa-cloud-upload-alt"></i> 첨부
                    </button>`;
             return `
-                <tr class="detail-row" data-detail-idx="${d.idx}">
+                <tr class="expense-detail-row" data-detail-idx="${d.idx}">
                     <td>${d.expenseDate || '-'}</td>
                     <td>${d.description || '-'}</td>
                     <td>${d.shopName || '-'}</td>
@@ -406,7 +406,7 @@ document.addEventListener('DOMContentLoaded', async function () {
 
         function setActiveDetailRow(rowEl) {
             if (!rowEl || activeDetailRow === rowEl) return;
-            document.querySelectorAll('.detail-row.paste-active').forEach(el => {
+            document.querySelectorAll('.expense-detail-row.paste-active').forEach(el => {
                 el.classList.remove('paste-active');
             });
             rowEl.classList.add('paste-active');
@@ -414,7 +414,7 @@ document.addEventListener('DOMContentLoaded', async function () {
         }
 
         // 클릭으로 활성 row 전환
-        document.querySelectorAll('.detail-row').forEach(row => {
+        document.querySelectorAll('.expense-detail-row').forEach(row => {
             row.addEventListener('click', function() {
                 setActiveDetailRow(this);
             });
@@ -437,7 +437,7 @@ document.addEventListener('DOMContentLoaded', async function () {
         });
 
         // 첫 row 기본 활성
-        const firstRow = document.querySelector('.detail-row');
+        const firstRow = document.querySelector('.expense-detail-row');
         if (firstRow) setActiveDetailRow(firstRow);
 
         // 클립보드 paste — 활성 row에 즉시 업로드
@@ -466,7 +466,7 @@ document.addEventListener('DOMContentLoaded', async function () {
             window.setupClipboardImagePaste({
                 resolveTarget: () => {
                     if (!activeDetailRow || !document.body.contains(activeDetailRow)) {
-                        const fallback = document.querySelector('.detail-row');
+                        const fallback = document.querySelector('.expense-detail-row');
                         if (fallback) setActiveDetailRow(fallback);
                         else return null;
                     }

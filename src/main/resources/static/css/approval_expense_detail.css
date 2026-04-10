@@ -985,16 +985,16 @@ button:focus, a:focus, div:focus { outline: none !important; box-shadow: none !i
 }
 
 /* 클립보드 paste 활성 row + drag-over (§3.5 / §7-1) */
-.detail-row {
+.expense-detail-row {
     transition: background-color 0.15s ease;
     cursor: pointer;
 }
 
-.detail-row.paste-active {
+.expense-detail-row.paste-active {
     background-color: rgba(102, 126, 234, 0.06) !important;
 }
 
-.detail-row.drag-over {
+.expense-detail-row.drag-over {
     background-color: rgba(102, 126, 234, 0.10) !important;
     outline: 2px dashed #667eea;
     outline-offset: -2px;
