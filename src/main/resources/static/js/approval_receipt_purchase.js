@@ -1232,6 +1232,14 @@ document.addEventListener('DOMContentLoaded', async function() {
             });
         }
 
+        // paste 힌트 뱃지 — 3개 슬롯 각각에 주입
+        if (typeof window.ensurePasteHint === 'function') {
+            ['receiptUploadArea', 'estimateUploadArea', 'bankCopyUploadArea'].forEach(id => {
+                const el = document.getElementById(id);
+                if (el) window.ensurePasteHint(el, { text: '여기에 Ctrl+V 붙여넣기' });
+            });
+        }
+
         // 페이지 진입 시 영수증 기본 활성
         setActivePurchaseSlot('receipt');
 

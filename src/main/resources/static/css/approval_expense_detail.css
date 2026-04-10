@@ -118,6 +118,13 @@ button:focus, a:focus, div:focus { outline: none !important; box-shadow: none !i
     word-break: break-all;
 }
 
+/* 정산상태 인라인 뱃지 */
+.info-value.st-inline-drafting   { color: #475569; }
+.info-value.st-inline-submitted  { color: #1e40af; }
+.info-value.st-inline-confirmed  { color: #065f46; }
+.info-value.st-inline-rejected   { color: #991b1b; }
+.info-value.st-inline-settled    { color: #5b21b6; }
+
 /* ==========================================
    지출 내역 테이블
    ========================================== */
@@ -990,12 +997,36 @@ button:focus, a:focus, div:focus { outline: none !important; box-shadow: none !i
     cursor: pointer;
 }
 
-.expense-detail-row.paste-active {
-    background-color: rgba(102, 126, 234, 0.06) !important;
-}
+/* .paste-active 공통 스타일은 common-clipboard-paste.css 에서 처리 */
 
 .expense-detail-row.drag-over {
-    background-color: rgba(102, 126, 234, 0.10) !important;
+    background-color: rgba(102, 126, 234, 0.16) !important;
     outline: 2px dashed #667eea;
     outline-offset: -2px;
+}
+
+/* receipt-cell 안에 버튼과 paste-hint 뱃지가 수직으로 쌓이도록 */
+.detail-table td.receipt-cell {
+    text-align: center;
+    vertical-align: middle;
+    white-space: normal;
+}
+.detail-table td.receipt-cell .paste-hint {
+    display: inline-flex;
+    margin-top: 4px;
+    font-size: 10px;
+    padding: 2px 6px;
+    /* 버튼 다음 줄로 강제 분리 */
+    width: fit-content;
+    margin-left: auto;
+    margin-right: auto;
+}
+/* 버튼과 paste-hint 사이 줄바꿈 — 버튼을 한 줄 차지로 */
+.detail-table td.receipt-cell .btn-view-receipt,
+.detail-table td.receipt-cell .btn-upload-receipt {
+    display: inline-flex;
+    margin-bottom: 0;
+}
+.detail-table td.receipt-cell .paste-hint {
+    display: flex;
 }

@@ -257,6 +257,75 @@
     };
 
     // ============================================
+    // 3.5. paste 안내 뱃지 / 배너 자동 주입 헬퍼
+    // ============================================
+
+    /**
+     * 요소에 "📋 Ctrl+V" 안내 뱃지를 주입한다.
+     * 뱃지는 활성 상태(.paste-active)인 요소에서만 CSS로 표시된다.
+     * 이미 뱃지가 있으면 no-op.
+     *
+     * @param {HTMLElement} targetEl - 뱃지를 넣을 컨테이너
+     * @param {Object} [options]
+     * @param {string} [options.text='여기에 Ctrl+V 붙여넣기'] - 표시 텍스트
+     * @param {'prepend'|'append'} [options.position='prepend'] - 내부 위치
+     * @returns {HTMLElement|null} 생성된 뱃지 element
+     */
+    window.ensurePasteHint = function (targetEl, options) {
+        if (!targetEl) return null;
+        // 중복 방지
+        const existing = targetEl.querySelector(':scope > .paste-hint');
+        if (existing) return existing;
+
+        const opt = options || {};
+        const text = opt.text || '여기에 Ctrl+V 붙여넣기';
+        const position = opt.position === 'append' ? 'append' : 'prepend';
+
+        const hint = document.createElement('span');
+        hint.className = 'paste-hint';
+        hint.textContent = text;
+
+        if (position === 'append') {
+            targetEl.appendChild(hint);
+        } else {
+            targetEl.insertBefore(hint, targetEl.firstChild);
+        }
+        return hint;
+    };
+
+    /**
+     * paste 기능 상단 안내 배너를 섹션에 한 번만 주입한다.
+     * "📋 영수증 이미지는 [항목] 선택 후 Ctrl+V로 붙여넣을 수 있어요"
+     * 이미 있으면 no-op.
+     *
+     * @param {HTMLElement} containerEl - 배너를 넣을 부모 노드 (보통 섹션 헤더 아래)
+     * @param {Object} [options]
+     * @param {string} [options.text] - 커스텀 메시지 (HTML 허용, <kbd> 등)
+     * @param {'prepend'|'append'} [options.position='prepend']
+     */
+    window.ensurePasteInfoBanner = function (containerEl, options) {
+        if (!containerEl) return null;
+        const existing = containerEl.querySelector(':scope > .paste-info-banner');
+        if (existing) return existing;
+
+        const opt = options || {};
+        const html = opt.text ||
+            '영수증 이미지는 <b>원하는 항목을 클릭해 선택</b>한 뒤 <kbd>Ctrl</kbd>+<kbd>V</kbd> 로 바로 붙여넣을 수 있어요.';
+        const position = opt.position === 'append' ? 'append' : 'prepend';
+
+        const banner = document.createElement('div');
+        banner.className = 'paste-info-banner';
+        banner.innerHTML = html;
+
+        if (position === 'append') {
+            containerEl.appendChild(banner);
+        } else {
+            containerEl.insertBefore(banner, containerEl.firstChild);
+        }
+        return banner;
+    };
+
+    // ============================================
     // 4. 페이지 unload 안전망
     // ============================================
     window.addEventListener('beforeunload', function () {

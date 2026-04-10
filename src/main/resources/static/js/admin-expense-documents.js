@@ -932,6 +932,11 @@ document.addEventListener('DOMContentLoaded', function() {
                 // 미리보기 버튼/+ 버튼 클릭은 활성 전환만 (이벤트 진행은 막지 않음)
                 setActiveAdminUploadRow(this);
             });
+            // paste 안내 뱃지 (활성 row에서만 CSS로 표시)
+            const rcell = row.querySelector('td:last-child') || row.querySelector('td');
+            if (rcell && typeof window.ensurePasteHint === 'function') {
+                window.ensurePasteHint(rcell, { text: 'Ctrl+V', position: 'append' });
+            }
 
             // 2. drag & drop — 각 row에 핸들러
             row.addEventListener('dragover', function(e) {

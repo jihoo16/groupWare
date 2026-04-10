@@ -1371,11 +1371,7 @@ div h2{
     transition: border-color 0.2s, background-color 0.2s;
 }
 
-/* 클립보드 paste 활성 항목 — 연한 배경색 (§7-1) */
-.expense-item.paste-active {
-    background-color: rgba(102, 126, 234, 0.06) !important;
-    border-color: #c7d2fe;
-}
+/* 클립보드 paste 활성 항목 스타일은 common-clipboard-paste.css 에서 처리 */
 
 .expense-item:hover {
     border-color: #c4b5fd;

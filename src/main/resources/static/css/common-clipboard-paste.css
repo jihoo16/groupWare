@@ -29,24 +29,40 @@ img.file-chip-thumb:hover {
 }
 
 /* --------------------------------------------
- * 2. 활성 슬롯 — 연한 배경색
- *    .file-upload-area.paste-active 또는
- *    .expense-item.paste-active 에 적용
+ * 2. 활성 슬롯 — 명시적 강조
+ *    .file-upload-area.paste-active,
+ *    .expense-item.paste-active,
+ *    .expense-detail-row.paste-active 등에 적용
  * ----------------------------------------- */
 .paste-active {
-    background-color: rgba(102, 126, 234, 0.06) !important;
-    transition: background-color 0.15s ease;
+    background-color: rgba(102, 126, 234, 0.12) !important;
+    transition: background-color 0.15s ease, box-shadow 0.15s ease, border-color 0.15s ease;
 }
 
 .file-upload-area.paste-active {
     border-color: #667eea !important;
+    box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.18);
+}
+
+/* expense-item: 왼쪽에 강조 세로 바 + 파란 테두리 */
+.expense-item.paste-active {
+    border-color: #667eea !important;
+    box-shadow: inset 4px 0 0 #667eea, 0 0 0 2px rgba(102, 126, 234, 0.15);
+}
+
+/* table row 용 (expense-detail-row 등): 셀 좌측 파란 라인 */
+tr.paste-active > td:first-child {
+    box-shadow: inset 4px 0 0 #667eea;
+}
+tr.paste-active {
+    background-color: rgba(102, 126, 234, 0.12) !important;
 }
 
 /* --------------------------------------------
  * 3. drag-over 시각 피드백
  * ----------------------------------------- */
 .drag-over {
-    background-color: rgba(102, 126, 234, 0.10) !important;
+    background-color: rgba(102, 126, 234, 0.16) !important;
     border-color: #667eea !important;
     transition: background-color 0.1s ease;
 }
@@ -55,7 +71,7 @@ img.file-chip-thumb:hover {
  * 4. flash 애니메이션 (붙여넣기 직후 컨펌)
  * ----------------------------------------- */
 @keyframes paste-flash {
-    0%   { background-color: rgba(102, 126, 234, 0.25); }
+    0%   { background-color: rgba(102, 126, 234, 0.35); }
     100% { background-color: transparent; }
 }
 
@@ -64,19 +80,27 @@ img.file-chip-thumb:hover {
 }
 
 /* --------------------------------------------
- * 5. paste 안내 힌트 텍스트 / 배지
+ * 5. paste 안내 뱃지 (.paste-hint)
+ *    각 paste-capable 슬롯에 항상 보이는 작은 안내
  * ----------------------------------------- */
 .paste-hint {
-    display: inline-flex;
+    /* 기본 숨김 — 활성(.paste-active) 슬롯에서만 표시 */
+    display: none;
     align-items: center;
     gap: 4px;
     font-size: 11px;
-    color: #6b7280;
-    margin-left: 6px;
-    padding: 2px 6px;
-    background: #f3f4f6;
+    color: white;
+    padding: 3px 8px;
+    background: #667eea;
+    border: 1px solid #667eea;
     border-radius: 10px;
-    font-weight: 500;
+    font-weight: 600;
+    white-space: nowrap;
+    user-select: none;
+    vertical-align: middle;
+    line-height: 1.2;
+    box-shadow: 0 1px 4px rgba(102, 126, 234, 0.35);
+    transition: all 0.15s ease;
 }
 
 .paste-hint::before {
@@ -84,7 +108,47 @@ img.file-chip-thumb:hover {
     font-size: 11px;
 }
 
-.paste-active .paste-hint {
-    background: #667eea;
-    color: white;
+/* 활성 슬롯에서만 뱃지 노출 */
+.paste-active .paste-hint,
+.paste-active > td .paste-hint {
+    display: inline-flex;
+}
+
+/* --------------------------------------------
+ * 6. paste 기능 상단 안내 배너 (.paste-info-banner)
+ *    섹션 상단에 한 번만 노출 — 기능 존재 자체를 알림
+ * ----------------------------------------- */
+.paste-info-banner {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 8px 12px;
+    margin: 0 0 10px 0;
+    background: linear-gradient(90deg, #eef2ff 0%, #f5f3ff 100%);
+    border: 1px solid #c7d2fe;
+    border-left: 4px solid #667eea;
+    border-radius: 6px;
+    font-size: 12.5px;
+    color: #4338ca;
+    line-height: 1.4;
+}
+
+.paste-info-banner::before {
+    content: '📋';
+    font-size: 14px;
+    flex-shrink: 0;
+}
+
+.paste-info-banner kbd {
+    display: inline-block;
+    padding: 1px 6px;
+    margin: 0 1px;
+    background: #ffffff;
+    border: 1px solid #c7d2fe;
+    border-bottom-width: 2px;
+    border-radius: 4px;
+    font-family: ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+    font-size: 11px;
+    color: #4338ca;
+    font-weight: 600;
 }

@@ -2431,6 +2431,12 @@ document.addEventListener('DOMContentLoaded', async function() {
     setupUpload(documentInput, documentUploadArea, selectedDocumentFiles, updateDocumentFileList);
 
     // 클립보드 이미지 붙여넣기 — 영수증 슬롯에만 적용
+    if (receiptUploadArea) {
+        receiptUploadArea.classList.add('paste-active');
+        if (typeof window.ensurePasteHint === 'function') {
+            window.ensurePasteHint(receiptUploadArea, { text: '여기에 Ctrl+V 붙여넣기' });
+        }
+    }
     if (typeof window.setupClipboardImagePaste === 'function') {
         window.setupClipboardImagePaste({
             resolveTarget: () => ({

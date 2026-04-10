@@ -1,5 +1,25 @@
 /* 관리자 연구비증빙관리 페이지 스타일 */
 
+.btn-refresh {
+    background: white;
+    border: 2px solid #e2e8f0;
+    color: #475569;
+    padding: 8px 14px;
+    border-radius: 8px;
+    font-size: 14px;
+    cursor: pointer;
+    transition: all 0.2s;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.btn-refresh:hover {
+    border-color: #667eea;
+    color: #667eea;
+    transform: translateY(-2px);
+}
+
 .content-area {
     padding: 20px;
 }

@@ -1413,6 +1413,11 @@ document.addEventListener('DOMContentLoaded', async function() {
                     // 실제 visible 요소에 파일 업로드 이벤트 재등록
                     if (receiptInput && receiptUploadArea) {
                         setupUpload(receiptInput, receiptUploadArea, selectedReceiptFiles, updateReceiptFileList);
+                        // paste 활성 표시 + 뱃지 (항상 단일 슬롯이므로 상시 활성)
+                        receiptUploadArea.classList.add('paste-active');
+                        if (typeof window.ensurePasteHint === 'function') {
+                            window.ensurePasteHint(receiptUploadArea, { text: '여기에 Ctrl+V 붙여넣기' });
+                        }
                     }
                     if (documentInput && documentUploadArea) {
                         setupUpload(documentInput, documentUploadArea, selectedDocumentFiles, updateDocumentFileList);

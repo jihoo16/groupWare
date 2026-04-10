@@ -818,6 +818,10 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     });
 
+    // 클립보드 paste 상태 변수 — loadTemplate → setupTripAutoFill 에서 사용하므로 먼저 선언
+    let activeReceiptBlock = { kind: 'trip', idx: null };
+    let _pasteRegistered = false;
+
     // 템플릿 로드
     function loadTemplate(templateKey) {
         const templateElement = document.getElementById('template-' + templateKey);
@@ -6449,9 +6453,8 @@ document.addEventListener('DOMContentLoaded', function() {
     // ============================================
     // 클립보드 이미지 붙여넣기 (패턴 C — 멀티 블록)
     // 활성 블록: 출장 영수증 OR 회의 영수증 (idx 0/1+)
+    // (activeReceiptBlock, _pasteRegistered 는 loadTemplate보다 앞에서 선언됨)
     // ============================================
-    let activeReceiptBlock = { kind: 'trip', idx: null };
-    let _pasteRegistered = false;
 
     function setActiveReceiptBlock(kind, idx) {
         // 모든 paste 가능 영역에서 .paste-active 제거
@@ -6493,6 +6496,10 @@ document.addEventListener('DOMContentLoaded', function() {
         if (!area || area._pasteWired) return;
         area._pasteWired = true;
         area.addEventListener('click', () => setActiveReceiptBlock(kind, idx));
+        // paste 안내 뱃지 주입 (활성 슬롯에서만 CSS로 표시)
+        if (typeof window.ensurePasteHint === 'function') {
+            window.ensurePasteHint(area, { text: '여기에 Ctrl+V 붙여넣기' });
+        }
     }
 
     function setupReceiptPasteForTripMeeting() {

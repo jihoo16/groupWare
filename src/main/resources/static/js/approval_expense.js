@@ -2380,6 +2380,10 @@ document.addEventListener('DOMContentLoaded', async function() {
     updatePreview();
     calculateTotal();
 
+    // 클립보드 paste 활성 항목 추적용 상태
+    // (수정 모드 렌더 직후 setActiveExpenseItem 을 호출해야 하므로 edit 블록보다 먼저 선언)
+    let activeExpenseItem = null;
+
     // ============================================
     // 수정 모드: URL ?idx= 파라미터가 있으면 기존 데이터 로드
     // ============================================
@@ -2421,7 +2425,7 @@ document.addEventListener('DOMContentLoaded', async function() {
                 history.back();
                 return;
             }
-            if (!res.ok) throw new Error();
+            if (!res.ok) throw new Error(`API ${res.status}`);
 
             const doc = await res.json();
             // 저장 직후 안내에 사용 (반려→수정 흐름인지 식별)
@@ -2531,6 +2535,7 @@ document.addEventListener('DOMContentLoaded', async function() {
             }
 
         } catch (e) {
+            console.error('[expense-edit] load failed:', e);
             showError('문서를 불러오는 데 실패했습니다.');
         }
     }
@@ -2703,6 +2708,19 @@ document.addEventListener('DOMContentLoaded', async function() {
         // drag & drop — 기존에는 빠져 있던 입력 방식 (§3.5 / §7-2)
         const section = itemEl.querySelector('.item-receipt-section');
         if (section) {
+            // paste 안내 뱃지 — 활성 항목에서만 표시 (CSS 제어)
+            if (typeof window.ensurePasteHint === 'function') {
+                const hint = window.ensurePasteHint(section, {
+                    text: '여기에 Ctrl+V 붙여넣기',
+                    position: 'prepend',
+                });
+                // 영수증 첨부 버튼 다음 자리로 재배치
+                const btn = section.querySelector(':scope > .item-receipt-btn');
+                if (hint && btn && btn.parentElement === section) {
+                    section.insertBefore(hint, btn.nextSibling);
+                }
+            }
+
             section.addEventListener('dragover', function(e) {
                 e.preventDefault();
                 section.classList.add('drag-over');
@@ -2726,8 +2744,8 @@ document.addEventListener('DOMContentLoaded', async function() {
     // ============================================
     // 클립보드 이미지 붙여넣기 (패턴 A-1)
     // 활성 항목 추적 — 가장 최근 클릭/포커스된 .expense-item
+    // (activeExpenseItem 변수는 파일 상단에서 선언됨)
     // ============================================
-    let activeExpenseItem = null;
 
     function setActiveExpenseItem(itemEl) {
         if (!itemEl) return;
@@ -3007,6 +3025,18 @@ document.addEventListener('DOMContentLoaded', async function() {
     // 초기 항목(index=0)의 영수증 input 바인딩
     const firstItem = document.querySelector('.expense-item[data-item-index="0"]');
     if (firstItem) setupItemReceiptInput(firstItem);
+
+    // paste 기능 안내 배너 — 지출 내역 섹션 상단에 한 번만 주입
+    const _itemsContainer = document.getElementById('expenseItemsContainer');
+    if (_itemsContainer && _itemsContainer.parentElement && typeof window.ensurePasteInfoBanner === 'function') {
+        const banner = window.ensurePasteInfoBanner(_itemsContainer.parentElement, {
+            text: '영수증 이미지는 <b>원하는 항목을 클릭해 선택</b>한 뒤 <kbd>Ctrl</kbd>+<kbd>V</kbd> 로 바로 붙여넣을 수 있어요. (드래그&드롭, 파일선택도 가능)',
+        });
+        // .section-header 바로 뒤, items-container 바로 앞으로 이동
+        if (banner && banner.parentElement === _itemsContainer.parentElement) {
+            _itemsContainer.parentElement.insertBefore(banner, _itemsContainer);
+        }
+    }
 
     // 클립보드 paste 활성 항목 추적 + 핸들러 등록
     setupExpenseItemPasteTracking();

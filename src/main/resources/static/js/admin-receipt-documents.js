@@ -568,21 +568,22 @@ document.addEventListener('DOMContentLoaded', function() {
     function openDocumentDetail(doc) {
         const url = buildDetailUrl(doc);
         if (url) {
-            window.open(url, '_blank');
+            // noopener: 새 탭에서 window.opener가 없으므로 popup-mode(사이드바 숨김) 미적용
+            window.open(url, '_blank', 'noopener');
         }
     }
 
     function buildDetailUrl(doc) {
         const t = doc.documentType;
-        const id = doc.sourceDocumentId;
+        const id = doc.idx;  // approval_documents.idx (by-document API가 기대하는 값)
         if (!id) return null;
         switch (t) {
-            case 'C0403': return `/approval/receipt-overtime/write?documentIdx=${id}`;
-            case 'C0404': return `/approval/receipt-trip/write?documentIdx=${id}`;
-            case 'C0405': return `/approval/receipt-trip-meeting/write?documentIdx=${id}`;
-            case 'C0406': return `/approval/receipt-meeting/write?documentIdx=${id}`;
-            case 'C0407': return `/approval/receipt-purchase/write?type=material&documentIdx=${id}`;
-            case 'C0408': return `/approval/receipt-purchase/write?type=equipment&documentIdx=${id}`;
+            case 'C0403': return `/approval/receipt-overtime?documentIdx=${id}`;
+            case 'C0404': return `/approval/receipt-trip?documentIdx=${id}`;
+            case 'C0405': return `/approval/receipt-trip-meeting?documentIdx=${id}`;
+            case 'C0406': return `/approval/receipt-meeting?documentIdx=${id}`;
+            case 'C0407': return `/approval/receipt-purchase?type=material&documentIdx=${id}`;
+            case 'C0408': return `/approval/receipt-purchase?type=equipment&documentIdx=${id}`;
             default: return null;
         }
     }

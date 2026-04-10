@@ -113,6 +113,21 @@ document.addEventListener('DOMContentLoaded', async function () {
     document.getElementById('detailName').textContent = drafterName;
     document.getElementById('detailDate').textContent = dateStr;
 
+    // 기본정보 → 정산상태 인라인 뱃지
+    const stNameMap = {
+        C1001: { label: '작성중',   cls: 'st-inline-drafting' },
+        C1002: { label: '제출됨',   cls: 'st-inline-submitted' },
+        C1003: { label: '확인됨',   cls: 'st-inline-confirmed' },
+        C1004: { label: '반려',     cls: 'st-inline-rejected' },
+        C1005: { label: '정산완료', cls: 'st-inline-settled' },
+    };
+    const stInfo = stNameMap[stCode] || stNameMap['C1001'];
+    const stEl = document.getElementById('detailSettlementStatus');
+    if (stEl) {
+        stEl.textContent = doc.settlementStatusName || stInfo.label;
+        stEl.classList.add(stInfo.cls);
+    }
+
     // ── 지출 내역 정렬 ────────────────────────────────────────────
     const details = (doc.expenseDetails || []).sort(
         (a, b) => new Date(a.expenseDate) - new Date(b.expenseDate)
@@ -419,6 +434,15 @@ document.addEventListener('DOMContentLoaded', async function () {
                 setActiveDetailRow(this);
             });
 
+            // paste 안내 뱃지 — 활성 row에서만 표시 (CSS 제어)
+            const receiptCell = row.querySelector('td.receipt-cell');
+            if (receiptCell && typeof window.ensurePasteHint === 'function') {
+                window.ensurePasteHint(receiptCell, {
+                    text: '여기에 Ctrl+V',
+                    position: 'append',
+                });
+            }
+
             // drag & drop — 각 row에 직접 핸들러 등록
             row.addEventListener('dragover', function(e) {
                 e.preventDefault();
@@ -439,6 +463,20 @@ document.addEventListener('DOMContentLoaded', async function () {
         // 첫 row 기본 활성
         const firstRow = document.querySelector('.expense-detail-row');
         if (firstRow) setActiveDetailRow(firstRow);
+
+        // 섹션 상단 paste 기능 안내 배너 (한 번만)
+        if (typeof window.ensurePasteInfoBanner === 'function') {
+            const tableWrapper = document.querySelector('.table-wrapper');
+            if (tableWrapper && tableWrapper.parentElement) {
+                const banner = window.ensurePasteInfoBanner(tableWrapper.parentElement, {
+                    text: '영수증을 바로 추가하려면 <b>행을 클릭해 선택</b>한 뒤 <kbd>Ctrl</kbd>+<kbd>V</kbd> 로 이미지를 붙여넣으세요. (드래그&드롭도 가능)',
+                });
+                // table-wrapper 바로 앞으로 이동
+                if (banner && banner.parentElement === tableWrapper.parentElement) {
+                    tableWrapper.parentElement.insertBefore(banner, tableWrapper);
+                }
+            }
+        }
 
         // 클립보드 paste — 활성 row에 즉시 업로드
         // 즉시 업로드 패턴 + reload 부작용이 있어, 한 paste 이벤트의 여러 파일을
