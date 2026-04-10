@@ -200,3 +200,15 @@
     0% { transform: rotate(0deg); }
     100% { transform: rotate(360deg); }
 }
+
+/* ============================================================
+   SweetAlert2 z-index — 모든 모달/오버레이보다 위에 표시
+   프로젝트 모달 z-index: .modal { 9999 }, .common-modal { ~ }
+   SweetAlert2 default: 1060 → 학력/자격증 모달에 가려지는 문제 해결
+   ============================================================ */
+.swal2-container {
+    z-index: 100000 !important;
+}
+.swal2-popup {
+    z-index: 100001 !important;
+}

@@ -10,6 +10,7 @@
     <link rel="stylesheet" th:href="@{/css/common-modal.css}">
     <link rel="stylesheet" th:href="@{/css/tooltip.css}">
     <link rel="stylesheet" th:href="@{/css/file-preview-modal.css}">
+    <link rel="stylesheet" th:href="@{/css/common-clipboard-paste.css}">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <!-- 추가 CSS -->
     <th:block th:if="${additionalCss != null}">
@@ -60,6 +61,7 @@
     <script th:src="@{/js/common.js}" defer></script>
     <script th:src="@{/js/tooltip.js}" defer></script>
     <script th:src="@{/js/file-preview-modal.js}" defer></script>
+    <script th:src="@{/js/common-clipboard-paste.js}" defer></script>
     <!-- common-modal.js 제거: SweetAlert2 기반 common-alert.js 사용 -->
 </head>
 </html>
