@@ -1,6 +1,7 @@
 package com.pinecni.erp.api.document.service;
 
 import com.pinecni.erp.api.document.dto.ReceiptMeetingAttachmentDTO;
+import com.pinecni.erp.api.document.dto.ReceiptMeetingAttendeeDTO;
 import com.pinecni.erp.api.document.dto.ReceiptMeetingCreateDTO;
 import com.pinecni.erp.api.document.dto.ReceiptMeetingDTO;
 import com.pinecni.erp.api.document.dto.ReceiptMeetingUpdateDTO;
@@ -10,6 +11,7 @@ import com.pinecni.erp.api.project.repository.ReceiptMeetingAttachmentRepository
 import com.pinecni.erp.api.project.repository.ReceiptMeetingRepository;
 import com.pinecni.erp.api.project.repository.ProjectRepository;
 import com.pinecni.erp.api.project.repository.ProjectCardRepository;
+import com.pinecni.erp.api.project.service.ProjectMemberValidationService;
 import com.pinecni.erp.api.approval.repository.ApprovalDocumentRepository;
 import com.pinecni.erp.api.approval.service.DocumentSequenceService;
 import com.pinecni.erp.constant.CodeConstants;
@@ -56,6 +58,7 @@ public class ReceiptMeetingServiceImpl implements ReceiptMeetingService {
     private final DocumentSequenceService documentSequenceService;
     private final ProjectRepository projectRepository;
     private final ProjectCardRepository projectCardRepository;
+    private final ProjectMemberValidationService projectMemberValidationService;
 
     @Value("${file.base.dir}")
     private String baseDir;
@@ -127,6 +130,14 @@ public class ReceiptMeetingServiceImpl implements ReceiptMeetingService {
     @Transactional
     public ReceiptMeetingDTO createReceiptMeeting(ReceiptMeetingCreateDTO createDTO, Long currentUserIdx) {
         log.debug("회의록 생성 - projectIdx: {}, authorIdx: {}, currentUserIdx: {}", createDTO.getProjectIdx(), createDTO.getAuthorIdx(), currentUserIdx);
+
+        // 0. 참여기간 검증 — 작성자 + 내부 참석자가 회의 날짜에 활성 참여 중이어야 함
+        // (try 블록 밖에서 호출하여 ParticipationPeriodException 메시지가 RuntimeException 래핑에 묻히지 않도록 함)
+        projectMemberValidationService.validateActiveOn(
+                createDTO.getProjectIdx(),
+                mergeAuthorAndAttendees(createDTO.getAuthorIdx(), createDTO.getAttendees()),
+                createDTO.getMeetingDate()
+        );
 
         try {
             // 1. 참석자 중복 검증 (저장 전 필수)
@@ -233,7 +244,14 @@ public class ReceiptMeetingServiceImpl implements ReceiptMeetingService {
         ReceiptMeeting entity = receiptMeetingRepository.findById(idx)
                 .orElseThrow(() -> new IllegalArgumentException("회의록을 찾을 수 없습니다. idx: " + idx));
 
-        // 2. 참석자 중복 검증 (수정 전 필수)
+        // 2. 참여기간 검증 — 작성자 + 내부 참석자가 회의 날짜에 활성 참여 중이어야 함
+        projectMemberValidationService.validateActiveOn(
+                updateDTO.getProjectIdx(),
+                mergeAuthorAndAttendees(updateDTO.getAuthorIdx(), updateDTO.getAttendees()),
+                updateDTO.getMeetingDate()
+        );
+
+        // 3. 참석자 중복 검증 (수정 전 필수)
         validateAttendeeDuplicates(
                 updateDTO.getMeetingDate(),
                 updateDTO.getStartTime(),
@@ -761,5 +779,32 @@ public class ReceiptMeetingServiceImpl implements ReceiptMeetingService {
         }
 
         log.debug("참석자 중복 검증 완료 - 중복 없음");
+    }
+
+    /**
+     * 참석자 DTO 리스트에서 내부 사용자 IDX 만 추출 (참여기간 검증용).
+     * 외부 인원(isExternal=true)은 ProjectMember 가 아니므로 제외한다.
+     */
+    private List<Long> extractInternalUserIdxList(List<ReceiptMeetingAttendeeDTO> attendees) {
+        if (attendees == null || attendees.isEmpty()) {
+            return Collections.emptyList();
+        }
+        return attendees.stream()
+                .filter(a -> !Boolean.TRUE.equals(a.getIsExternal()))
+                .map(ReceiptMeetingAttendeeDTO::getUserIdx)
+                .filter(Objects::nonNull)
+                .collect(Collectors.toList());
+    }
+
+    /**
+     * 작성자 IDX + 내부 참석자 IDX 를 합쳐 단일 검증 리스트로 반환.
+     * 작성자도 본 프로젝트의 활성 참여연구원이어야 한다.
+     */
+    private List<Long> mergeAuthorAndAttendees(Long authorIdx, List<ReceiptMeetingAttendeeDTO> attendees) {
+        List<Long> result = new ArrayList<>(extractInternalUserIdxList(attendees));
+        if (authorIdx != null) {
+            result.add(authorIdx);
+        }
+        return result;
     }
 }

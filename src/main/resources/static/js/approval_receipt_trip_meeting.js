@@ -165,6 +165,209 @@ document.addEventListener('DOMContentLoaded', function() {
 
     // 프로젝트 참여인원 로드 (프로젝트 이름도 캐싱하여 populateForm 에서 사용)
     let loadedProjectName = ''; // loadProjectMembers 에서 얻은 프로젝트 이름 캐시
+    // ============================================
+    // 참여기간 검증 헬퍼
+    // - 출장 인원: 출장 전 기간 [tripDate, tripDate + duration] 활성
+    // - 회의 참석자: 해당 회의 날짜 단일 활성
+    // ============================================
+
+    function isMemberActiveOnDate(member, dateStr) {
+        if (!dateStr) return true;
+        if (!member || !member.participationStartDate) return false;
+        if (member.participationStartDate > dateStr) return false;
+        const end = member.participationEndDate;
+        if (end && end < dateStr) return false;
+        return true;
+    }
+
+    function isMemberActiveDuringRange(member, startDateStr, endDateStr) {
+        if (!startDateStr || !endDateStr) return true;
+        if (!member || !member.participationStartDate) return false;
+        if (member.participationStartDate > startDateStr) return false;
+        const end = member.participationEndDate;
+        if (end && end < endDateStr) return false;
+        return true;
+    }
+
+    function formatMemberPeriod(member) {
+        if (!member) return '';
+        const s = member.participationStartDate || '?';
+        const e = member.participationEndDate || '종료 미정';
+        return `${s} ~ ${e}`;
+    }
+
+    function buildInactiveMemberHtml(member, dateLabel, dateValue, roleContext) {
+        const name = member.name || member.employeeName || '(이름 없음)';
+        const period = formatMemberPeriod(member);
+        return `
+            <div style="text-align:left; line-height:1.6;">
+                <p style="margin-bottom:12px;">
+                    <strong>${name}</strong> 님은
+                    <strong>${dateValue}</strong> 에 본 프로젝트의 활성 참여연구원이 아닙니다.
+                </p>
+                <div style="background:#f1f5f9; padding:10px 14px; border-radius:6px; font-size:13px;">
+                    <div>· ${dateLabel}: <strong>${dateValue}</strong></div>
+                    <div>· ${name} 님 참여기간: <strong>${period}</strong></div>
+                </div>
+                <p style="margin-top:14px; margin-bottom:6px; font-weight:600;">다음 중 하나를 진행해주세요:</p>
+                <ol style="margin:0; padding-left:20px; font-size:13px;">
+                    <li>다른 ${roleContext}를 선택</li>
+                    <li>${dateLabel}을 ${name} 님의 참여기간 내로 변경</li>
+                    <li>프로젝트 관리에서 ${name} 님의 참여기간을 연장 (관리자 권한 필요)</li>
+                </ol>
+            </div>
+        `;
+    }
+
+    async function showInactiveMemberAlert(member, dateLabel, dateValue, roleContext) {
+        return Swal.fire({
+            icon: 'warning',
+            title: '참여기간 외 인원',
+            html: buildInactiveMemberHtml(member, dateLabel, dateValue, roleContext),
+            confirmButtonText: '확인',
+            width: 540
+        });
+    }
+
+    /**
+     * RTM 통합 재검증.
+     * - 출장 작성자 + 출장 인원 → 출장 전 기간
+     * - 회의별 작성자 + 회의별 참석자 → 해당 회의 날짜
+     * 비활성이 발견되면 사용자에게 한 번에 안내 + confirm 후 자동 정리.
+     *
+     * 호출 시점:
+     *  - 수정 모드 진입 직후 (populateForm 마지막)
+     *  - common_date / common_duration 변경
+     *  - common_meeting_date / meeting_date_{idx} 변경
+     */
+    async function revalidateRtmAgainstDates() {
+        if (!projectMembers || projectMembers.length === 0) return;
+
+        const memberByIdx = new Map();
+        getAuthorPersons().forEach(p => memberByIdx.set(String(p.id), p));
+
+        const inactive = []; // {id, name, role, period, scope: 'trip' | 'meeting-{idx}'}
+
+        // 1) 출장 작성자 + 출장 인원 — 출장 기간
+        const tripRange = getCurrentTripRange();
+        if (tripRange.start) {
+            // 출장 작성자
+            if (authorPersonId) {
+                const m = memberByIdx.get(String(authorPersonId));
+                if (m && !isMemberActiveDuringRange(m, tripRange.start, tripRange.end)) {
+                    inactive.push({ id: authorPersonId, name: m.name, role: '출장 작성자', period: formatMemberPeriod(m), scope: 'trip' });
+                }
+            }
+            // 출장 인원
+            if (Array.isArray(tripPersons)) {
+                tripPersons.forEach(p => {
+                    const m = memberByIdx.get(String(p.id));
+                    if (m && !isMemberActiveDuringRange(m, tripRange.start, tripRange.end)) {
+                        inactive.push({ id: p.id, name: m.name, role: '출장 인원', period: formatMemberPeriod(m), scope: 'trip' });
+                    }
+                });
+            }
+        }
+
+        // 2) 회의별 작성자 + 참석자 — 회의 날짜
+        // meeting-0 (기본)
+        const m0Date = getMeetingDateForIdx(0);
+        if (m0Date) {
+            if (meetingAuthorPersonId) {
+                const m = memberByIdx.get(String(meetingAuthorPersonId));
+                if (m && !isMemberActiveOnDate(m, m0Date)) {
+                    inactive.push({ id: meetingAuthorPersonId, name: m.name, role: '회의 작성자 (회의 1)', period: formatMemberPeriod(m), scope: 'meeting-0' });
+                }
+            }
+            (attendees || []).forEach(a => {
+                if (a.isExternal === true) return;
+                const m = memberByIdx.get(String(a.id));
+                if (m && !isMemberActiveOnDate(m, m0Date)) {
+                    inactive.push({ id: a.id, name: m.name, role: '회의 참석자 (회의 1)', period: formatMemberPeriod(m), scope: 'meeting-0' });
+                }
+            });
+        }
+
+        // extra meetings
+        if (Array.isArray(extraMeetings)) {
+            extraMeetings.forEach((mtg, i) => {
+                const mDate = getMeetingDateForIdx(mtg.idx);
+                if (!mDate) return;
+                const meetingLabel = `회의 ${i + 2}`;
+                if (mtg.authorPersonId) {
+                    const m = memberByIdx.get(String(mtg.authorPersonId));
+                    if (m && !isMemberActiveOnDate(m, mDate)) {
+                        inactive.push({ id: mtg.authorPersonId, name: m.name, role: `회의 작성자 (${meetingLabel})`, period: formatMemberPeriod(m), scope: `meeting-${mtg.idx}` });
+                    }
+                }
+                (mtg.attendees || []).forEach(a => {
+                    if (a.isExternal === true) return;
+                    const m = memberByIdx.get(String(a.id));
+                    if (m && !isMemberActiveOnDate(m, mDate)) {
+                        inactive.push({ id: a.id, name: m.name, role: `회의 참석자 (${meetingLabel})`, period: formatMemberPeriod(m), scope: `meeting-${mtg.idx}` });
+                    }
+                });
+            });
+        }
+
+        if (inactive.length === 0) return;
+
+        const list = inactive
+            .map(i => `<li><strong>${i.name}</strong> <span style="color:#64748b;">(${i.role})</span> — 참여기간: ${i.period}</li>`)
+            .join('');
+        await Swal.fire({
+            icon: 'warning',
+            title: '참여기간 외 인원',
+            html: `
+                <div style="text-align:left; line-height:1.6; max-height:50vh; overflow-y:auto;">
+                    <p>현재 입력된 출장 기간 또는 회의 날짜에 본 프로젝트 참여 중이 아닌 인원이 있습니다:</p>
+                    <ul style="margin:8px 0 12px 16px;">${list}</ul>
+                    <p style="margin-top:10px; font-weight:600;">다음 중 하나를 진행해주세요:</p>
+                    <ol style="margin:0; padding-left:20px; font-size:13px;">
+                        <li>해당 인원을 직접 제거하거나 다른 인원으로 교체</li>
+                        <li>출장/회의 날짜를 해당 인원의 참여기간 내로 변경</li>
+                        <li>프로젝트 관리에서 해당 인원의 참여기간을 연장 (관리자 권한)</li>
+                    </ol>
+                    <p style="margin-top:10px; color:#dc2626; font-size:12px;">
+                        ⚠ 이 상태로 저장 시도하면 서버에서 거부됩니다.
+                    </p>
+                </div>
+            `,
+            confirmButtonText: '확인',
+            width: 600
+        });
+    }
+
+    /**
+     * 현재 입력된 common_date / common_duration 으로 출장 기간 [start, end] 계산.
+     * duration 은 박 수 (0=당일).
+     */
+    function getCurrentTripRange() {
+        const startDateStr = document.getElementById('common_date')?.value || '';
+        if (!startDateStr) return { start: null, end: null };
+        const nights = parseInt(document.getElementById('common_duration')?.value || '0', 10);
+        if (isNaN(nights) || nights < 0) return { start: startDateStr, end: startDateStr };
+        const startDate = new Date(startDateStr + 'T00:00:00');
+        const endDate = new Date(startDate.getTime());
+        endDate.setDate(endDate.getDate() + nights);
+        const yyyy = endDate.getFullYear();
+        const mm = String(endDate.getMonth() + 1).padStart(2, '0');
+        const dd = String(endDate.getDate()).padStart(2, '0');
+        return { start: startDateStr, end: `${yyyy}-${mm}-${dd}` };
+    }
+
+    /**
+     * 회의 idx 에 해당하는 회의 날짜 input ID:
+     * - meeting-0 (기본): common_meeting_date
+     * - extra meetings (idx >= 1): meeting_date_{idx}
+     */
+    function getMeetingDateForIdx(meetingIdx) {
+        if (meetingIdx === 0 || meetingIdx === undefined || meetingIdx === null) {
+            return document.getElementById('common_meeting_date')?.value || '';
+        }
+        return document.getElementById(`meeting_date_${meetingIdx}`)?.value || '';
+    }
+
     async function loadProjectMembers(projectIdx) {
         if (!projectIdx) { projectMembers = []; loadedProjectName = ''; return; }
         try {
@@ -1905,6 +2108,8 @@ document.addEventListener('DOMContentLoaded', function() {
                 prevDateValue = this.value;
                 await updateTripDateRange();
                 updateMeetingFields();
+                // 출장 날짜 변경 시 참여기간 재검증 (출장 작성자/인원 + 회의별)
+                if (!isPopulatingForm) await revalidateRtmAgainstDates();
             });
             commonDate.addEventListener('click', function() {
                 if (this.showPicker) { try { this.showPicker(); } catch(e) {} }
@@ -1918,6 +2123,8 @@ document.addEventListener('DOMContentLoaded', function() {
                 if (!ok) return;
                 prevDurationValue = this.value;
                 await updateTripDateRange();
+                // 기간 변경 시 참여기간 재검증
+                if (!isPopulatingForm) await revalidateRtmAgainstDates();
             });
         }
 
@@ -1942,7 +2149,7 @@ document.addEventListener('DOMContentLoaded', function() {
         const endTimeEl = document.getElementById('common_end_time');
 
         [meetingDateEl, startTimeEl, endTimeEl].forEach(el => {
-            if (el) el.addEventListener('change', function() {
+            if (el) el.addEventListener('change', async function() {
                 setDefaultAuthor();
                 // 1번째 회의 참석자 초기화 (중복 방지, 데이터 로드 중에는 스킵)
                 if (!isPopulatingForm && attendees.length > 0) {
@@ -1957,6 +2164,10 @@ document.addEventListener('DOMContentLoaded', function() {
                         timer: 3000,
                         timerProgressBar: true
                     });
+                }
+                // 회의 날짜 변경 시 참여기간 재검증 (회의 작성자/참석자)
+                if (!isPopulatingForm && el === meetingDateEl) {
+                    await revalidateRtmAgainstDates();
                 }
             });
         });
@@ -2113,6 +2324,11 @@ document.addEventListener('DOMContentLoaded', function() {
         window.removeMeetingDocumentFile = function(i) { selectedMeetingDocumentFiles.splice(i, 1); updMDocList(); };
         window.removeTripReceiptFile     = function(i) { selectedTripReceiptFiles.splice(i, 1);     updTReceiptList(); };
         window.removeTripDocumentFile    = function(i) { selectedTripDocumentFiles.splice(i, 1);    updTDocList(); };
+
+        // 클립보드 paste 활성 블록 초기화 (트립 영수증을 기본 활성으로)
+        if (typeof setupReceiptPasteForTripMeeting === 'function') {
+            setupReceiptPasteForTripMeeting();
+        }
     }
 
     // 파일 아이콘 헬퍼
@@ -2127,13 +2343,17 @@ document.addEventListener('DOMContentLoaded', function() {
     // 업로드 영역 공통 셋업
     function setupUpload(input, area, filesArr, updateFn) {
         function processFiles(files) {
+            const before = filesArr.length;
             Array.from(files).forEach(file => {
                 if (filesArr.length >= 5) { showWarning('최대 5개까지만 첨부 가능합니다.'); return; }
                 if (file.size > 10 * 1024 * 1024) { showWarning('파일 크기는 10MB를 초과할 수 없습니다.'); return; }
                 filesArr.push(file);
             });
             updateFn();
+            return filesArr.length - before;
         }
+        // 클립보드 paste에서 area를 통해 processFiles를 재사용할 수 있도록 expando로 저장
+        if (area) area._processPasteFiles = processFiles;
         input.addEventListener('change', function(e) { processFiles(e.target.files); input.value = ''; });
         area.addEventListener('dragover', function(e) { e.preventDefault(); area.style.borderColor = '#667eea'; area.style.background = '#f5f7ff'; });
         area.addEventListener('dragleave', function(e) { if (!area.contains(e.relatedTarget)) { area.style.borderColor = '#ddd'; area.style.background = 'white'; } });
@@ -2149,6 +2369,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
     function makeUpdateFileList(fileList, filesArr, removeFnName, existingAttsGetter) {
         return function() {
+            if (typeof window.revokeChipThumbs === 'function') window.revokeChipThumbs(fileList);
             fileList.innerHTML = '';
             // 기존 첨부파일 (수정 모드)
             if (existingAttsGetter) {
@@ -2163,6 +2384,9 @@ document.addEventListener('DOMContentLoaded', function() {
                         <span>${att.originalFilename} ${sizeKB}</span>
                         <button class="btn-remove-file" onclick="removeExistingAttachment(${att.idx})" data-tip="삭제"><i class="fas fa-times"></i></button>
                     `;
+                    if (typeof window.attachThumbToFileItem === 'function') {
+                        window.attachThumbToFileItem(item, `/api/receipt-trip-meetings/attachments/${att.idx}/download`, att.originalFilename);
+                    }
                     fileList.appendChild(item);
                 });
             }
@@ -2176,6 +2400,9 @@ document.addEventListener('DOMContentLoaded', function() {
                     <span>${file.name} (${(file.size / 1024).toFixed(1)} KB)${badge}</span>
                     <button class="btn-remove-file" onclick="${removeFnName}(${index})"><i class="fas fa-times"></i></button>
                 `;
+                if (typeof window.attachThumbToFileItem === 'function') {
+                    window.attachThumbToFileItem(item, file);
+                }
                 fileList.appendChild(item);
             });
         };
@@ -2234,6 +2461,7 @@ document.addEventListener('DOMContentLoaded', function() {
     function renderExistingFileList(listElId, existingAtts, newFiles, removeFnName) {
         const listEl = document.getElementById(listElId);
         if (!listEl) return;
+        if (typeof window.revokeChipThumbs === 'function') window.revokeChipThumbs(listEl);
         listEl.innerHTML = '';
 
         // 기존 파일 (삭제 예정 제외)
@@ -2247,6 +2475,9 @@ document.addEventListener('DOMContentLoaded', function() {
                 <span>${att.originalFilename} ${sizeKB}</span>
                 <button class="btn-remove-file" onclick="removeExistingAttachment(${att.idx})" data-tip="삭제"><i class="fas fa-times"></i></button>
             `;
+            if (typeof window.attachThumbToFileItem === 'function') {
+                window.attachThumbToFileItem(item, `/api/receipt-trip-meetings/attachments/${att.idx}/download`, att.originalFilename);
+            }
             listEl.appendChild(item);
         });
 
@@ -2259,6 +2490,9 @@ document.addEventListener('DOMContentLoaded', function() {
                 <span>${file.name} (${(file.size / 1024).toFixed(1)} KB) <span style="color:#667eea;font-size:11px;">[신규]</span></span>
                 <button class="btn-remove-file" onclick="${removeFnName}(${index})" data-tip="삭제"><i class="fas fa-times"></i></button>
             `;
+            if (typeof window.attachThumbToFileItem === 'function') {
+                window.attachThumbToFileItem(item, file);
+            }
             listEl.appendChild(item);
         });
     }
@@ -2266,6 +2500,7 @@ document.addEventListener('DOMContentLoaded', function() {
     function renderExistingFileListForExtra(listElId, existingAtts, newFiles, meetingIdx, type) {
         const listEl = document.getElementById(listElId);
         if (!listEl) return;
+        if (typeof window.revokeChipThumbs === 'function') window.revokeChipThumbs(listEl);
         listEl.innerHTML = '';
 
         existingAtts.forEach(att => {
@@ -2278,6 +2513,9 @@ document.addEventListener('DOMContentLoaded', function() {
                 <span>${att.originalFilename} ${sizeKB}</span>
                 <button class="btn-remove-file" onclick="removeExistingAttachment(${att.idx})" data-tip="삭제"><i class="fas fa-times"></i></button>
             `;
+            if (typeof window.attachThumbToFileItem === 'function') {
+                window.attachThumbToFileItem(item, `/api/receipt-trip-meetings/attachments/${att.idx}/download`, att.originalFilename);
+            }
             listEl.appendChild(item);
         });
 
@@ -2289,6 +2527,9 @@ document.addEventListener('DOMContentLoaded', function() {
                 <span>${file.name} (${(file.size / 1024).toFixed(1)} KB) <span style="color:#667eea;font-size:11px;">[신규]</span></span>
                 <button class="btn-remove-file" onclick="removeExtraMeetingFile(${meetingIdx},'${type}',${index})" data-tip="삭제"><i class="fas fa-times"></i></button>
             `;
+            if (typeof window.attachThumbToFileItem === 'function') {
+                window.attachThumbToFileItem(item, file);
+            }
             listEl.appendChild(item);
         });
     }
@@ -2524,7 +2765,7 @@ document.addEventListener('DOMContentLoaded', function() {
             <div class="file-upload-area" id="meetingReceiptUploadArea_${idx}">
                 <input type="file" id="meetingReceiptInput_${idx}" multiple hidden>
                 <label for="meetingReceiptInput_${idx}" class="file-upload-label">
-                    <i class="fas fa-cloud-upload-alt"></i><span>파일을 선택하거나 드래그하세요</span><small>최대 10MB, 최대 5개</small>
+                    <i class="fas fa-cloud-upload-alt"></i><span>파일을 선택하거나 드래그하세요</span><small>최대 10MB, 최대 5개 · 클릭 후 📋 Ctrl+V 가능</small>
                 </label>
             </div>
             <div class="file-list" id="meetingReceiptFileList_${idx}"></div>
@@ -2570,6 +2811,11 @@ document.addEventListener('DOMContentLoaded', function() {
         setupUpload(receiptInput, receiptArea, mtgState.receiptFiles, updateReceiptList);
         setupUpload(docInput, docArea, mtgState.documentFiles, updateDocList);
 
+        // 새 회의 영수증 영역에 paste click wiring + 새 회의를 활성으로
+        if (typeof window.__rtmRefreshPasteWiring === 'function') {
+            window.__rtmRefreshPasteWiring();
+        }
+
         // 문서 미리보기 블록 추가
         addMeetingDocBlock(idx);
 
@@ -2585,11 +2831,11 @@ document.addEventListener('DOMContentLoaded', function() {
             }
         });
 
-        // 추가 회의 일자/시간 변경 시 해당 회의 참석자 초기화
+        // 추가 회의 일자/시간 변경 시 해당 회의 참석자 초기화 + 참여기간 재검증
         [`meeting_date_${idx}`, `meeting_start_time_${idx}`, `meeting_end_time_${idx}`].forEach(id => {
             const el = document.getElementById(id);
             if (el) {
-                el.addEventListener('change', function() {
+                el.addEventListener('change', async function() {
                     if (isPopulatingForm) return;
                     const m = extraMeetings.find(em => em.idx === idx);
                     if (m && m.attendees.length > 0) {
@@ -2605,6 +2851,10 @@ document.addEventListener('DOMContentLoaded', function() {
                             timer: 3000,
                             timerProgressBar: true
                         });
+                    }
+                    // 회의 날짜 변경 시 참여기간 재검증 (특히 회의 작성자 검사)
+                    if (id === `meeting_date_${idx}`) {
+                        await revalidateRtmAgainstDates();
                     }
                 });
             }
@@ -2750,6 +3000,10 @@ document.addEventListener('DOMContentLoaded', function() {
         if (pos !== -1) extraMeetings.splice(pos, 1);
         // 남은 블록 뱃지 재번호
         renumberMeetingBadges();
+        // 활성 블록이 사라졌으면 출장으로 폴백
+        if (typeof window.__rtmRefreshPasteWiring === 'function') {
+            window.__rtmRefreshPasteWiring();
+        }
     };
 
     // 회의 블록 뱃지를 DOM 순서 기준으로 재번호 매기기 + 첨부/문서 블록 순서도 동기화
@@ -3768,10 +4022,12 @@ document.addEventListener('DOMContentLoaded', function() {
         const paired = filtered.map((p, i) => ({ person: p, isDup: dupResults[i] }));
         paired.sort((a, b) => (a.isDup ? 1 : 0) - (b.isDup ? 1 : 0));
 
+        const tripRange = getCurrentTripRange();
         tripPersonList2El.innerHTML = paired.map(({ person, isDup }) => {
             const isSelected = tempTripSelectedIds.has(String(person.id));
             const isAuthor = String(person.id) === String(authorPersonId);
-            const isLocked = isAuthor || isDup;
+            const isInactive = tripRange.start && !isMemberActiveDuringRange(person, tripRange.start, tripRange.end);
+            const isLocked = isAuthor || isDup || isInactive;
             const { meal, daily } = getPersonExpense(person);
             const expenseRow = (meal || daily)
                 ? `<div class="employee-expense-row">일비 ${daily.toLocaleString()}원 · 식비 ${meal.toLocaleString()}원</div>`
@@ -3780,15 +4036,20 @@ document.addEventListener('DOMContentLoaded', function() {
             const dupBadge = isDup
                 ? `<span style="background: #fee2e2; color: #991b1b; padding: 2px 8px; border-radius: 4px; font-size: 11px; margin-left: 8px; white-space: nowrap;"><i class="fas fa-exclamation-triangle"></i> 기간 겹침</span>`
                 : '';
+            let inactiveBadge = '';
+            if (isInactive) {
+                const tip = `참여기간: ${formatMemberPeriod(person)}`;
+                inactiveBadge = `<span style="background:#e5e7eb; color:#4b5563; padding:2px 8px; border-radius:4px; font-size:11px; margin-left:8px; white-space:nowrap;" data-tip="${tip}"><i class="fas fa-calendar-times"></i> 참여기간 외</span>`;
+            }
             const disabledStyle = isLocked ? 'opacity: 0.6; cursor: not-allowed;' : '';
             const onclickAttr = isLocked ? '' : `onclick="selectTripPerson(${person.id})"`;
             const checkIcon = isAuthor
                 ? '<i class="fas fa-check-circle" style="color:#94a3b8; font-size:18px; margin-left:auto; flex-shrink:0;"></i>'
                 : (isSelected ? '<i class="fas fa-check-circle" style="color:#10b981; font-size:18px; margin-left:auto; flex-shrink:0;"></i>' : '');
             return `
-            <div class="employee-item${isSelected ? ' selected' : ''}" data-id="${person.id}" data-dup="${isDup}" ${onclickAttr} style="${disabledStyle}">
+            <div class="employee-item${isSelected ? ' selected' : ''}" data-id="${person.id}" data-dup="${isDup}" data-inactive="${isInactive}" ${onclickAttr} style="${disabledStyle}">
                 <div class="employee-info">
-                    <div class="employee-name">${searchUtils.highlightText(person.name, searchText)}${authorBadge}${dupBadge}</div>
+                    <div class="employee-name">${searchUtils.highlightText(person.name, searchText)}${authorBadge}${inactiveBadge}${dupBadge}</div>
                     <div class="employee-detail">${searchUtils.highlightText(person.position, searchText)} · ${searchUtils.highlightText(person.dept, searchText)}</div>
                     ${expenseRow}
                 </div>
@@ -3799,10 +4060,11 @@ document.addEventListener('DOMContentLoaded', function() {
         updateTripPersonModalSummary();
     }
 
-    // 출장 인원 선택 (토글) - 기간 겹침 인원 선택 불가
-    window.selectTripPerson = function(personId) {
+    // 출장 인원 선택 (토글) - 기간 겹침 / 참여기간 외 인원 선택 불가
+    window.selectTripPerson = async function(personId) {
         const item = document.querySelector(`#tripPersonList2 .employee-item[data-id="${personId}"]`);
         if (item?.getAttribute('data-dup') === 'true') return; // 겹침 인원 차단
+        if (item?.getAttribute('data-inactive') === 'true') return; // 참여기간 외 차단
 
         const id = String(personId);
 
@@ -3812,6 +4074,17 @@ document.addEventListener('DOMContentLoaded', function() {
         if (tempTripSelectedIds.has(id)) {
             tempTripSelectedIds.delete(id);
         } else {
+            // 참여기간 검증 (백업)
+            const tripRange = getCurrentTripRange();
+            if (!tripRange.start) {
+                await showWarning('출장 시작일을 먼저 입력해주세요.');
+                return;
+            }
+            const person = getAuthorPersons().find(p => String(p.id) === id);
+            if (person && !isMemberActiveDuringRange(person, tripRange.start, tripRange.end)) {
+                await showInactiveMemberAlert(person, '출장 기간', `${tripRange.start} ~ ${tripRange.end}`, '출장 인원');
+                return;
+            }
             tempTripSelectedIds.add(id);
         }
         // 현재 검색어 유지하며 재렌더링
@@ -3969,25 +4242,38 @@ document.addEventListener('DOMContentLoaded', function() {
 
         let totalMeeting = 0;
         const mtgAuthorId = String(currentMeetingIdx === 0 ? meetingAuthorPersonId : (extraMeetings.find(m => m.idx === currentMeetingIdx)?.authorPersonId || ''));
+        const meetingDateStr = getMeetingDateForIdx(currentMeetingIdx);
+        // 참여기간 검증을 위해 projectMembers 를 employeeIdx 키로 매핑
+        const memberByIdx = new Map();
+        getAuthorPersons().forEach(p => memberByIdx.set(String(p.id), p));
+
         summaryEl.innerHTML = persons.map(person => {
             const meeting = getPersonMeetingExpense(person);
             const isChecked = tempInternalAttendeeIds.has(String(person.id));
             const isMtgAuthor = String(person.id) === mtgAuthorId;
+            const memberSrc = memberByIdx.get(String(person.id));
+            const isInactive = meetingDateStr && memberSrc && !isMemberActiveOnDate(memberSrc, meetingDateStr);
             if (isChecked) totalMeeting += meeting;
             const expenseText = meeting > 0 ? `회의비 ${meeting.toLocaleString()}원` : '회의비 미설정';
             const authorBadge = isMtgAuthor ? '<span style="background:#e0e7ff; color:#4338ca; padding:2px 8px; border-radius:4px; font-size:11px; margin-left:8px; white-space:nowrap;"><i class="fas fa-user-check"></i> 작성자</span>' : '';
+            let inactiveBadge = '';
+            if (isInactive) {
+                const tip = `참여기간: ${formatMemberPeriod(memberSrc)}`;
+                inactiveBadge = `<span style="background:#e5e7eb; color:#4b5563; padding:2px 8px; border-radius:4px; font-size:11px; margin-left:8px; white-space:nowrap;" data-tip="${tip}"><i class="fas fa-calendar-times"></i> 참여기간 외</span>`;
+            }
+            const isLocked = isMtgAuthor || isInactive;
             const checkIcon = isMtgAuthor
                 ? `<i class="fas fa-check-circle" style="color:#94a3b8; font-size:18px; flex-shrink:0;"></i>`
                 : (isChecked
                     ? `<i class="fas fa-check-circle" style="color:#10b981; font-size:18px; flex-shrink:0;"></i>`
                     : `<i class="far fa-circle" style="color:#d1d5db; font-size:18px; flex-shrink:0;"></i>`);
-            const onclickAttr = isMtgAuthor ? '' : `onclick="selectInternalAttendee('${person.id}')"`;
-            const lockedStyle = isMtgAuthor ? 'opacity: 0.6; cursor: not-allowed;' : 'cursor:pointer;';
+            const onclickAttr = isLocked ? '' : `onclick="selectInternalAttendee('${person.id}')"`;
+            const lockedStyle = isLocked ? 'opacity: 0.6; cursor: not-allowed;' : 'cursor:pointer;';
             return `
             <div class="employee-item${isChecked ? ' selected' : ''}" ${onclickAttr} style="${lockedStyle}">
                 <i class="far fa-user"></i>
                 <div class="employee-info">
-                    <div class="employee-name">${person.name}${authorBadge}</div>
+                    <div class="employee-name">${person.name}${authorBadge}${inactiveBadge}</div>
                     <div class="employee-detail">${person.position} · ${person.dept}</div>
                 </div>
                 <div style="display:flex; flex-direction:column; align-items:flex-end; gap:4px; margin-left:auto;">
@@ -4003,7 +4289,7 @@ document.addEventListener('DOMContentLoaded', function() {
     }
 
     // 내부인원 선택 토글
-    window.selectInternalAttendee = function(personId) {
+    window.selectInternalAttendee = async function(personId) {
         const id = String(personId);
 
         // 작성자는 렌더링에서 클릭 차단됨 (안전장치)
@@ -4013,6 +4299,17 @@ document.addEventListener('DOMContentLoaded', function() {
         if (tempInternalAttendeeIds.has(id)) {
             tempInternalAttendeeIds.delete(id);
         } else {
+            // 참여기간 검증 — 회의 날짜 기준
+            const meetingDateStr = getMeetingDateForIdx(currentMeetingIdx);
+            if (!meetingDateStr) {
+                await showWarning('회의 날짜를 먼저 입력해주세요.');
+                return;
+            }
+            const memberSrc = getAuthorPersons().find(p => String(p.id) === id);
+            if (memberSrc && !isMemberActiveOnDate(memberSrc, meetingDateStr)) {
+                await showInactiveMemberAlert(memberSrc, '회의 날짜', meetingDateStr, '회의 참석자');
+                return;
+            }
             tempInternalAttendeeIds.add(id);
         }
         renderAttendeeInternalSummary();
@@ -4557,7 +4854,9 @@ document.addEventListener('DOMContentLoaded', function() {
             name: m.employeeName || m.name,
             dept: m.employeeDeptName || m.dept || '',
             position: m.employeePositionName || m.position || '',
-            positionCode: m.employeePositionCode || m.positionCode || ''
+            positionCode: m.employeePositionCode || m.positionCode || '',
+            participationStartDate: m.participationStartDate || null,
+            participationEndDate: m.participationEndDate || null
         }));
     }
 
@@ -4604,13 +4903,27 @@ document.addEventListener('DOMContentLoaded', function() {
         }
 
         const currentVal = document.getElementById('common_meeting_author')?.value?.split(' (')[0];
+        // 회의 작성자는 해당 회의 날짜에 활성이어야 함
+        const meetingDateStr = getMeetingDateForIdx(currentMeetingIdx);
+        const memberByIdx = new Map();
+        getAuthorPersons().forEach(p => memberByIdx.set(String(p.id), p));
+
         meetingAuthorList.innerHTML = filtered.map(p => {
             const isSelected = currentVal && currentVal === p.name;
+            const memberSrc = memberByIdx.get(String(p.id));
+            const isInactive = meetingDateStr && memberSrc && !isMemberActiveOnDate(memberSrc, meetingDateStr);
+            let inactiveBadge = '';
+            if (isInactive) {
+                const tip = `참여기간: ${formatMemberPeriod(memberSrc)}`;
+                inactiveBadge = `<span style="background:#e5e7eb; color:#4b5563; padding:2px 8px; border-radius:4px; font-size:11px; margin-left:8px; white-space:nowrap;" data-tip="${tip}"><i class="fas fa-calendar-times"></i> 참여기간 외</span>`;
+            }
+            const lockedStyle = isInactive ? 'opacity:0.55; cursor:not-allowed;' : '';
+            const onclickAttr = isInactive ? '' : `onclick="selectMeetingAuthor('${p.id}', '${p.name}', '${p.dept || ''}', '${p.position || ''}')"`;
             return `
-                <div class="employee-item${isSelected ? ' selected' : ''}" onclick="selectMeetingAuthor('${p.id}', '${p.name}', '${p.dept || ''}', '${p.position || ''}')">
+                <div class="employee-item${isSelected ? ' selected' : ''}" data-id="${p.id}" data-inactive="${isInactive}" ${onclickAttr} style="${lockedStyle}">
                     <i class="far fa-user"></i>
                     <div class="employee-info">
-                        <div class="employee-name">${p.name}${isSelected ? ' <i class="fas fa-check" style="color:#667eea; margin-left:4px;"></i>' : ''}</div>
+                        <div class="employee-name">${p.name}${inactiveBadge}${isSelected ? ' <i class="fas fa-check" style="color:#667eea; margin-left:4px;"></i>' : ''}</div>
                         <div class="employee-detail">${p.position || ''} · ${p.dept || ''}</div>
                     </div>
                 </div>`;
@@ -4645,7 +4958,19 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     }
 
-    window.selectMeetingAuthor = function(id, name, dept, position) {
+    window.selectMeetingAuthor = async function(id, name, dept, position) {
+        // 참여기간 검증 — 해당 회의 날짜에 활성이어야 함
+        const meetingDateStr = getMeetingDateForIdx(currentMeetingIdx);
+        if (!meetingDateStr) {
+            await showWarning('회의 날짜를 먼저 입력해주세요.');
+            return;
+        }
+        const memberSrc = getAuthorPersons().find(p => String(p.id) === String(id));
+        if (memberSrc && !isMemberActiveOnDate(memberSrc, meetingDateStr)) {
+            await showInactiveMemberAlert(memberSrc, '회의 날짜', meetingDateStr, '회의 작성자');
+            return;
+        }
+
         const oldAuthorId = getMtgAuthorId(currentMeetingIdx);
         setMtgAuthorId(currentMeetingIdx, id ? String(id) : null);
         const authorFieldId = currentMeetingIdx === 0 ? 'common_meeting_author' : `meeting_author_${currentMeetingIdx}`;
@@ -4794,6 +5119,9 @@ document.addEventListener('DOMContentLoaded', function() {
         const paired = filteredPersons.map((p, i) => ({ person: p, isDup: dupResults[i] }));
         paired.sort((a, b) => (a.isDup ? 1 : 0) - (b.isDup ? 1 : 0));
 
+        // 출장 작성자는 출장 전 기간 활성이어야 함
+        const tripRange = getCurrentTripRange();
+
         authorListEl.innerHTML = paired.map(({ person, isDup }) => {
             const isSelected = authorPersonId && String(person.id) === String(authorPersonId);
             const selectedClass = isSelected ? 'selected' : '';
@@ -4815,12 +5143,23 @@ document.addEventListener('DOMContentLoaded', function() {
             const dupBadge = isDup
                 ? `<span style="background: #fee2e2; color: #991b1b; padding: 2px 8px; border-radius: 4px; font-size: 11px; margin-left: 8px; white-space: nowrap;"><i class="fas fa-exclamation-triangle"></i> 시간 중복</span>`
                 : '';
-            const disabledStyle = isDup ? 'opacity: 0.6; cursor: not-allowed;' : '';
+
+            // 참여기간 외 검증 (출장 전 기간 활성)
+            const isInactive = tripRange.start && !isMemberActiveDuringRange(person, tripRange.start, tripRange.end);
+            let inactiveBadge = '';
+            if (isInactive) {
+                const tip = `참여기간: ${formatMemberPeriod(person)}`;
+                inactiveBadge = `<span style="background:#e5e7eb; color:#4b5563; padding:2px 8px; border-radius:4px; font-size:11px; margin-left:8px; white-space:nowrap;" data-tip="${tip}"><i class="fas fa-calendar-times"></i> 참여기간 외</span>`;
+            }
+
+            const isLocked = isDup || isInactive;
+            const disabledStyle = isLocked ? 'opacity: 0.6; cursor: not-allowed;' : '';
+            const onclickAttr = isLocked ? '' : `onclick="selectAuthor(${person.id})"`;
 
             return `
-                <div class="employee-item ${selectedClass}" data-id="${person.id}" data-dup="${isDup}" onclick="selectAuthor(${person.id})" style="${disabledStyle}">
+                <div class="employee-item ${selectedClass}" data-id="${person.id}" data-dup="${isDup}" data-inactive="${isInactive}" ${onclickAttr} style="${disabledStyle}">
                     <div class="employee-info">
-                        <div class="employee-name">${person.name}${tripBadge}${meetingBadge}${dupBadge}</div>
+                        <div class="employee-name">${person.name}${tripBadge}${meetingBadge}${inactiveBadge}${dupBadge}</div>
                         <div class="employee-details">${person.dept} · ${person.position}</div>
                     </div>
                     ${checkIcon}
@@ -4829,12 +5168,24 @@ document.addEventListener('DOMContentLoaded', function() {
         }).join('');
     }
 
-    window.selectAuthor = function(personId) {
+    window.selectAuthor = async function(personId) {
         const item = document.querySelector(`#authorList .employee-item[data-id="${personId}"]`);
         if (item?.getAttribute('data-dup') === 'true') return; // 시간 중복 인원 차단
+        if (item?.getAttribute('data-inactive') === 'true') return; // 참여기간 외 차단
 
         const person = getAuthorPersons().find(p => String(p.id) === String(personId));
         if (!person) return;
+
+        // 참여기간 검증 (출장 전 기간) — 백업
+        const tripRange = getCurrentTripRange();
+        if (!tripRange.start) {
+            await showWarning('출장 시작일을 먼저 입력해주세요.');
+            return;
+        }
+        if (!isMemberActiveDuringRange(person, tripRange.start, tripRange.end)) {
+            await showInactiveMemberAlert(person, '출장 기간', `${tripRange.start} ~ ${tripRange.end}`, '작성자');
+            return;
+        }
 
         if (window.setAuthorInTemplate) window.setAuthorInTemplate(person);
         closeAuthorModal();
@@ -5615,6 +5966,12 @@ document.addEventListener('DOMContentLoaded', function() {
             // isPopulatingForm 해제 후 검증 및 출장 내용 갱신
             if (typeof validateRequiredFields === 'function') validateRequiredFields();
             if (window.updateTripResult) window.updateTripResult();
+            // 수정 모드 진입 즉시 — 출장/회의 작성자 + 참석자가 모든 날짜에 활성인지 재검증
+            try {
+                await revalidateRtmAgainstDates();
+            } catch (e) {
+                console.warn('[populateForm] RTM 참여기간 재검증 오류:', e);
+            }
         }
     }
 
@@ -6088,4 +6445,116 @@ document.addEventListener('DOMContentLoaded', function() {
             requisitionDateInput.value = getTodayString();
         }
     }
+
+    // ============================================
+    // 클립보드 이미지 붙여넣기 (패턴 C — 멀티 블록)
+    // 활성 블록: 출장 영수증 OR 회의 영수증 (idx 0/1+)
+    // ============================================
+    let activeReceiptBlock = { kind: 'trip', idx: null };
+    let _pasteRegistered = false;
+
+    function setActiveReceiptBlock(kind, idx) {
+        // 모든 paste 가능 영역에서 .paste-active 제거
+        document.querySelectorAll('.file-upload-area.paste-active').forEach(el => {
+            el.classList.remove('paste-active');
+        });
+        let area = null;
+        if (kind === 'trip') {
+            area = document.getElementById('tripReceiptUploadArea');
+        } else if (kind === 'meeting') {
+            area = document.getElementById(`meetingReceiptUploadArea_${idx}`);
+        }
+        if (!area) return;
+        area.classList.add('paste-active');
+        activeReceiptBlock = { kind, idx };
+    }
+
+    function getActiveReceiptArea() {
+        if (activeReceiptBlock.kind === 'trip') {
+            return document.getElementById('tripReceiptUploadArea');
+        }
+        if (activeReceiptBlock.kind === 'meeting') {
+            return document.getElementById(`meetingReceiptUploadArea_${activeReceiptBlock.idx}`);
+        }
+        return null;
+    }
+
+    function getActiveReceiptLabel() {
+        if (activeReceiptBlock.kind === 'trip') return '출장 영수증';
+        if (activeReceiptBlock.kind === 'meeting') {
+            const blockNum = activeReceiptBlock.idx === 0 ? 1 :
+                (typeof getMeetingBlockNum === 'function' ? getMeetingBlockNum(activeReceiptBlock.idx) : activeReceiptBlock.idx + 1);
+            return `${blockNum}번째 회의 영수증`;
+        }
+        return '영수증';
+    }
+
+    function wireReceiptAreaClick(area, kind, idx) {
+        if (!area || area._pasteWired) return;
+        area._pasteWired = true;
+        area.addEventListener('click', () => setActiveReceiptBlock(kind, idx));
+    }
+
+    function setupReceiptPasteForTripMeeting() {
+        // 출장 영수증 영역
+        wireReceiptAreaClick(document.getElementById('tripReceiptUploadArea'), 'trip', null);
+        // 회의-0 영수증 영역
+        wireReceiptAreaClick(document.getElementById('meetingReceiptUploadArea_0'), 'meeting', 0);
+        // 추가 회의 영역들
+        extraMeetings.forEach(m => {
+            wireReceiptAreaClick(document.getElementById(`meetingReceiptUploadArea_${m.idx}`), 'meeting', m.idx);
+        });
+
+        // 출장 영수증을 기본 활성 (페이지 진입/템플릿 로드 시)
+        if (!activeReceiptBlock || !getActiveReceiptArea()) {
+            setActiveReceiptBlock('trip', null);
+        } else {
+            // 활성 블록 area가 사라지지 않은 경우 — 클래스만 다시 부착
+            setActiveReceiptBlock(activeReceiptBlock.kind, activeReceiptBlock.idx);
+        }
+
+        // paste 핸들러는 한 번만 등록
+        if (_pasteRegistered) return;
+        if (typeof window.setupClipboardImagePaste !== 'function') return;
+        _pasteRegistered = true;
+
+        window.setupClipboardImagePaste({
+            resolveTarget: () => {
+                let area = getActiveReceiptArea();
+                if (!area) {
+                    // 폴백: 출장 → 회의-0
+                    setActiveReceiptBlock('trip', null);
+                    area = getActiveReceiptArea();
+                    if (!area) {
+                        setActiveReceiptBlock('meeting', 0);
+                        area = getActiveReceiptArea();
+                    }
+                    if (!area) return null;
+                }
+                if (typeof area._processPasteFiles !== 'function') return null;
+                const label = getActiveReceiptLabel();
+                return {
+                    addFile: (file) => {
+                        const added = area._processPasteFiles([file]);
+                        if (added > 0) {
+                            area.classList.remove('paste-flash');
+                            void area.offsetWidth;
+                            area.classList.add('paste-flash');
+                            return true;
+                        }
+                        return false;
+                    },
+                    label,
+                };
+            },
+        });
+    }
+
+    // 회의 추가/삭제 시 click 리스너 재배선 + 활성 블록 보정
+    // (addMeetingBlock / removeMeetingBlock 흐름과 연결)
+    window.__rtmRefreshPasteWiring = function() {
+        if (typeof setupReceiptPasteForTripMeeting === 'function') {
+            setupReceiptPasteForTripMeeting();
+        }
+    };
 });

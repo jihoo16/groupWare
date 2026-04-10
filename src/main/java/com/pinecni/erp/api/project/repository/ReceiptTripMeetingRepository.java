@@ -48,4 +48,16 @@ public interface ReceiptTripMeetingRepository extends JpaRepository<ReceiptTripM
            "FROM ReceiptTripMeeting rtm " +
            "WHERE rtm.projectIdx = :projectIdx AND rtm.deleted = false")
     BigDecimal sumTripFeeByProjectIdx(@Param("projectIdx") Long projectIdx);
+
+    /**
+     * 참여기간 검증용 — 작성자(drafter)가 본 프로젝트 내에서 작성한 모든 활성 출장+회의 조회.
+     * (출장 기간 = tripDate ~ tripDate + duration 까지 검사 — 메모리에서 처리)
+     */
+    @Query("SELECT rtm FROM ReceiptTripMeeting rtm " +
+           "WHERE rtm.drafterUserIdx = :authorIdx " +
+           "AND rtm.projectIdx = :projectIdx " +
+           "AND rtm.deleted = false")
+    List<ReceiptTripMeeting> findActiveByAuthorAndProject(
+            @Param("authorIdx") Long authorIdx,
+            @Param("projectIdx") Long projectIdx);
 }

@@ -384,4 +384,85 @@ public interface ReceiptAttendeeRepository extends JpaRepository<ReceiptAttendee
             @Param("excludeReceiptIdx") Long excludeReceiptIdx,
             @Param("excludeDocumentTypePrefix") String excludeDocumentTypePrefix
     );
+
+    // ==============================================
+    // 참여기간 검증용 — Orphan 조회 (프로젝트 멤버 기간 단축 시 사용)
+    // ==============================================
+
+    /**
+     * 특정 프로젝트 멤버의 새 참여기간 [newStart, newEnd] 밖에 위치한
+     * 기존 참석자 레코드 조회 (orphan 검출용).
+     *
+     * - 외부 인원(isExternal = true)은 검증 대상이 아니므로 제외
+     * - newEnd 가 NULL 이면 종료일 무한대로 간주 (시작일 이전만 체크)
+     *
+     * 구현 노트:
+     *   PostgreSQL 은 prepared statement 의 untyped 파라미터를 IS NOT NULL 만으로
+     *   추론할 수 없어 단일 쿼리로 두 케이스를 표현하면 "could not determine data type"
+     *   에러가 발생한다. 따라서 newEnd 유무에 따라 두 쿼리를 분기한다.
+     *
+     * @param projectIdx  프로젝트 IDX
+     * @param employeeIdx 멤버(직원) IDX
+     * @param newStart    새 참여 시작일 (NOT NULL)
+     * @param newEnd      새 참여 종료일 (NULL = 무한)
+     * @return 새 기간 밖에 위치한 참석자 레코드 목록
+     */
+    default List<ReceiptAttendee> findOrphanedByMemberPeriod(
+            Long projectIdx, Long employeeIdx, LocalDate newStart, LocalDate newEnd) {
+        if (newEnd == null) {
+            return findOrphanedByMemberPeriodOpenEnded(projectIdx, employeeIdx, newStart);
+        }
+        return findOrphanedByMemberPeriodBoundedEnd(projectIdx, employeeIdx, newStart, newEnd);
+    }
+
+    @Query("""
+        SELECT ra
+        FROM ReceiptAttendee ra
+        WHERE ra.projectIdx = :projectIdx
+          AND ra.userIdx = :employeeIdx
+          AND ra.isExternal = false
+          AND ra.isDeleted = false
+          AND ra.documentDate < :newStart
+        ORDER BY ra.documentDate
+        """)
+    List<ReceiptAttendee> findOrphanedByMemberPeriodOpenEnded(
+            @Param("projectIdx") Long projectIdx,
+            @Param("employeeIdx") Long employeeIdx,
+            @Param("newStart") LocalDate newStart
+    );
+
+    @Query("""
+        SELECT ra
+        FROM ReceiptAttendee ra
+        WHERE ra.projectIdx = :projectIdx
+          AND ra.userIdx = :employeeIdx
+          AND ra.isExternal = false
+          AND ra.isDeleted = false
+          AND (ra.documentDate < :newStart OR ra.documentDate > :newEnd)
+        ORDER BY ra.documentDate
+        """)
+    List<ReceiptAttendee> findOrphanedByMemberPeriodBoundedEnd(
+            @Param("projectIdx") Long projectIdx,
+            @Param("employeeIdx") Long employeeIdx,
+            @Param("newStart") LocalDate newStart,
+            @Param("newEnd") LocalDate newEnd
+    );
+
+    /**
+     * 특정 프로젝트의 내부 사용자 참석 레코드 전체 조회 (외부 인원 제외).
+     * 멤버 비활성화(삭제) 시 — 해당 사용자의 모든 attendee 가 orphan 후보가 된다.
+     */
+    @Query("""
+        SELECT ra
+        FROM ReceiptAttendee ra
+        WHERE ra.projectIdx = :projectIdx
+          AND ra.userIdx = :employeeIdx
+          AND ra.isExternal = false
+          AND ra.isDeleted = false
+        ORDER BY ra.documentDate
+        """)
+    List<ReceiptAttendee> findInternalByProjectAndUser(
+            @Param("projectIdx") Long projectIdx,
+            @Param("employeeIdx") Long employeeIdx
+    );
 }

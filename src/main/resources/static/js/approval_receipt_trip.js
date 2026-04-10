@@ -110,6 +110,125 @@ document.addEventListener('DOMContentLoaded', async function() {
     }
 
     // 프로젝트 팀원 목록 로드
+    // ============================================
+    // 참여기간 검증 헬퍼 (출장은 기간 검증 — 전 기간 활성)
+    // ============================================
+
+    /**
+     * 멤버가 출장 전 기간 [startDateStr, endDateStr] 동안 모두 활성인지 검사한다.
+     * - startDateStr 또는 endDateStr 가 비어있으면 true (날짜 미입력은 별도 검증)
+     * - participationEndDate 가 null 이면 종료 미정 (무한)
+     */
+    function isMemberActiveDuringRange(member, startDateStr, endDateStr) {
+        if (!startDateStr || !endDateStr) return true;
+        if (!member || !member.participationStartDate) return false;
+        if (member.participationStartDate > startDateStr) return false;
+        const end = member.participationEndDate;
+        if (end && end < endDateStr) return false;
+        return true;
+    }
+
+    /** 멤버 참여기간을 사용자 표시용 문자열로 포맷 */
+    function formatMemberPeriod(member) {
+        if (!member) return '';
+        const s = member.participationStartDate || '?';
+        const e = member.participationEndDate || '종료 미정';
+        return `${s} ~ ${e}`;
+    }
+
+    /**
+     * 비활성 인원 안내 — 단일 날짜 또는 기간 케이스 모두 처리.
+     * 무엇이 잘못되었는지 + 다음 액션 안내.
+     */
+    function buildInactiveMemberHtml(member, dateLabel, dateValue, roleContext) {
+        const name = member.name || member.employeeName || '(이름 없음)';
+        const period = formatMemberPeriod(member);
+        return `
+            <div style="text-align:left; line-height:1.6;">
+                <p style="margin-bottom:12px;">
+                    <strong>${name}</strong> 님은
+                    <strong>${dateValue}</strong> 에 본 프로젝트의 활성 참여연구원이 아닙니다.
+                </p>
+                <div style="background:#f1f5f9; padding:10px 14px; border-radius:6px; font-size:13px;">
+                    <div>· ${dateLabel}: <strong>${dateValue}</strong></div>
+                    <div>· ${name} 님 참여기간: <strong>${period}</strong></div>
+                </div>
+                <p style="margin-top:14px; margin-bottom:6px; font-weight:600;">다음 중 하나를 진행해주세요:</p>
+                <ol style="margin:0; padding-left:20px; font-size:13px;">
+                    <li>다른 ${roleContext}를 선택</li>
+                    <li>${dateLabel}을 ${name} 님의 참여기간 내로 변경</li>
+                    <li>프로젝트 관리에서 ${name} 님의 참여기간을 연장 (관리자 권한 필요)</li>
+                </ol>
+            </div>
+        `;
+    }
+
+    async function showInactiveMemberAlert(member, dateLabel, dateValue, roleContext) {
+        return Swal.fire({
+            icon: 'warning',
+            title: '참여기간 외 인원',
+            html: buildInactiveMemberHtml(member, dateLabel, dateValue, roleContext),
+            confirmButtonText: '확인',
+            width: 540
+        });
+    }
+
+    /**
+     * 출장 기간(trip_date / trip_duration) 변경 또는 수정 모드 진입 시
+     * 현재 선택된 작성자(reporter) 가 출장 전 기간에 활성인지 재검증.
+     * 비활성이면 사용자 안내 + 작성자 필드 비움.
+     */
+    async function revalidateReporterAgainstTripRange() {
+        const tripRange = getCurrentTripRange();
+        if (!tripRange.start) return;
+        const reporterEl = document.getElementById('trip_reporter');
+        if (!reporterEl) return;
+        const reporterId = reporterEl.getAttribute('data-reporter-id');
+        if (!reporterId) return;
+        if (!projectMembers || projectMembers.length === 0) return;
+
+        const memberRaw = projectMembers.find(m => String(m.employeeIdx) === String(reporterId));
+        if (!memberRaw) return;
+
+        const memberObj = {
+            name: memberRaw.employeeName,
+            participationStartDate: memberRaw.participationStartDate || null,
+            participationEndDate: memberRaw.participationEndDate || null
+        };
+        if (isMemberActiveDuringRange(memberObj, tripRange.start, tripRange.end)) return;
+
+        // 비활성 — 안내 + 작성자 필드 비움
+        await showInactiveMemberAlert(memberObj, '출장 기간', `${tripRange.start} ~ ${tripRange.end}`, '작성자');
+        reporterEl.value = '';
+        reporterEl.setAttribute('data-reporter-id', '');
+        document.querySelectorAll('.trip-auto-reporter').forEach(field => {
+            field.textContent = '';
+        });
+    }
+
+    /**
+     * 현재 입력된 trip_date 와 trip_duration 으로 출장 기간을 [start, end] 로 계산.
+     * - duration 은 박 수 (0=당일)
+     * - 출장 종료일 = tripDate + duration
+     * - 둘 중 하나라도 비어있으면 [null, null] 반환
+     */
+    function getCurrentTripRange() {
+        const dateInput = document.getElementById('trip_date');
+        const durationInput = document.getElementById('trip_duration');
+        const startDateStr = dateInput?.value || '';
+        if (!startDateStr) return { start: null, end: null };
+        const nights = parseInt(durationInput?.value || '0', 10);
+        if (isNaN(nights) || nights < 0) return { start: startDateStr, end: startDateStr };
+        // YYYY-MM-DD 문자열 산술: Date 객체 사용
+        const startDate = new Date(startDateStr + 'T00:00:00');
+        const endDate = new Date(startDate.getTime());
+        endDate.setDate(endDate.getDate() + nights);
+        const yyyy = endDate.getFullYear();
+        const mm = String(endDate.getMonth() + 1).padStart(2, '0');
+        const dd = String(endDate.getDate()).padStart(2, '0');
+        return { start: startDateStr, end: `${yyyy}-${mm}-${dd}` };
+    }
+
     async function loadProjectMembers(projectIdx) {
         if (!projectIdx) {
             projectMembers = [];
@@ -848,7 +967,9 @@ document.addEventListener('DOMContentLoaded', async function() {
                 name: member.employeeName,
                 position: member.employeePositionName || '직급 미지정',
                 positionCode: member.employeePositionCode || '',
-                dept: member.employeeDeptName || '부서 미지정'
+                dept: member.employeeDeptName || '부서 미지정',
+                participationStartDate: member.participationStartDate || null,
+                participationEndDate: member.participationEndDate || null
             }));
         }
 
@@ -874,6 +995,8 @@ document.addEventListener('DOMContentLoaded', async function() {
 
         // 현재 선택된 작성자 ID
         const currentReporterId = tripReporter ? tripReporter.getAttribute('data-reporter-id') : null;
+        // 출장 기간 (작성자 참여기간 검증용)
+        const tripRange = getCurrentTripRange();
 
         reporterList.innerHTML = filtered.map(person => {
             const isSelected = String(person.id) === String(currentReporterId);
@@ -900,10 +1023,20 @@ document.addEventListener('DOMContentLoaded', async function() {
                 duplicateBadge = `<span style="background: #fee2e2; color: #991b1b; padding: 2px 8px; border-radius: 4px; font-size: 11px; margin-left: 8px; white-space: nowrap;" data-tip="${tooltipText}"><i class="fas fa-exclamation-triangle"></i> 시간 중복</span>`;
             }
 
+            // 참여기간 외 검증
+            const isInactive = tripRange.start && !isMemberActiveDuringRange(person, tripRange.start, tripRange.end);
+            let inactiveBadge = '';
+            if (isInactive) {
+                const tip = `참여기간: ${formatMemberPeriod(person)}`;
+                inactiveBadge = `<span style="background:#e5e7eb; color:#4b5563; padding:2px 8px; border-radius:4px; font-size:11px; margin-left:8px; white-space:nowrap;" data-tip="${tip}"><i class="fas fa-calendar-times"></i> 참여기간 외</span>`;
+            }
+            const lockedStyle = isInactive ? 'opacity:0.55; cursor:not-allowed;' : '';
+            const onclickAttr = isInactive ? '' : `onclick="selectReporter(${person.id}, '${person.name.replace(/'/g, "\\'")}', '${(person.position || '').replace(/'/g, "\\'")}', '${(person.dept || '').replace(/'/g, "\\'")}', '${(person.positionCode || '').replace(/'/g, "\\'")}')"`;
+
             return `
-                <div class="employee-item ${selectedClass}" onclick="selectReporter(${person.id}, '${person.name.replace(/'/g, "\\'")}', '${(person.position || '').replace(/'/g, "\\'")}', '${(person.dept || '').replace(/'/g, "\\'")}', '${(person.positionCode || '').replace(/'/g, "\\'")}')">
+                <div class="employee-item ${selectedClass}" data-id="${person.id}" data-inactive="${isInactive}" ${onclickAttr} style="${lockedStyle}">
                     <div class="employee-info">
-                        <div class="employee-name">${person.name}${attendeeBadge}${duplicateBadge}</div>
+                        <div class="employee-name">${person.name}${attendeeBadge}${inactiveBadge}${duplicateBadge}</div>
                         <div class="employee-details">${person.dept} · ${person.position}</div>
                     </div>
                     ${checkIcon}
@@ -926,6 +1059,27 @@ document.addEventListener('DOMContentLoaded', async function() {
 
     // 작성자 선택
     window.selectReporter = async function(reporterId, reporterName, position, dept, positionCode) {
+        // 참여기간 검증 — 출장 전 기간 활성이어야 함
+        const tripRange = getCurrentTripRange();
+        if (!tripRange.start) {
+            await Swal.fire({ icon: 'warning', title: '출장 시작일을 먼저 입력해주세요.' });
+            return;
+        }
+        const reporterMember = (projectMembers || []).find(m => String(m.employeeIdx) === String(reporterId));
+        if (reporterMember) {
+            const memberObj = {
+                name: reporterName,
+                participationStartDate: reporterMember.participationStartDate,
+                participationEndDate: reporterMember.participationEndDate
+            };
+            if (!isMemberActiveDuringRange(memberObj, tripRange.start, tripRange.end)) {
+                const dateLabel = '출장 기간';
+                const dateValue = `${tripRange.start} ~ ${tripRange.end}`;
+                await showInactiveMemberAlert(memberObj, dateLabel, dateValue, '작성자');
+                return;
+            }
+        }
+
         // 중복 출장 경고
         const dupInfo = duplicateTripPersonsInfo[reporterId];
         if (dupInfo) {
@@ -2245,6 +2399,9 @@ document.addEventListener('DOMContentLoaded', async function() {
                 // 날짜 변경 시 출장인원 중복 재검증
                 await window.recheckTripPersons();
 
+                // 날짜 변경 시 작성자(reporter) 참여기간 재검증
+                await revalidateReporterAgainstTripRange();
+
                 // 프로젝트가 선택된 경우, 선택 가능한 인원이 있는지 확인
                 const selectedProjectIdx = document.getElementById('selectedProjectIdx');
                 if (selectedProjectIdx && selectedProjectIdx.value && projectMembers && projectMembers.length > 0) {
@@ -2315,6 +2472,8 @@ document.addEventListener('DOMContentLoaded', async function() {
                     }
                 }
                 await updateTripDateRange();
+                // 기간 변경 시 작성자(reporter) 재검증
+                await revalidateReporterAgainstTripRange();
             });
         } else {
         }
@@ -2551,6 +2710,7 @@ document.addEventListener('DOMContentLoaded', async function() {
     function updateReceiptFileList() {
         const listEl = documentForm.querySelector('#receiptFileList');
         if (!listEl) return;
+        if (typeof window.revokeChipThumbs === 'function') window.revokeChipThumbs(listEl);
         listEl.innerHTML = '';
         // 기존 RECEIPT 파일 표시 (삭제 예정 제외)
         existingReceiptAttachments.forEach(att => {
@@ -2567,6 +2727,9 @@ document.addEventListener('DOMContentLoaded', async function() {
                     <i class="fas fa-times"></i>
                 </button>
             `;
+            if (typeof window.attachThumbToFileItem === 'function') {
+                window.attachThumbToFileItem(item, `/api/receipt-trips/attachments/${att.idx}/download`, att.originalFilename);
+            }
             listEl.appendChild(item);
         });
         // 새로 선택한 영수증 파일 표시
@@ -2578,6 +2741,9 @@ document.addEventListener('DOMContentLoaded', async function() {
                 <span>${file.name} (${(file.size / 1024).toFixed(1)} KB)</span>
                 <button class="btn-remove-file" onclick="removeReceiptFile(${index})"><i class="fas fa-times"></i></button>
             `;
+            if (typeof window.attachThumbToFileItem === 'function') {
+                window.attachThumbToFileItem(item, file);
+            }
             listEl.appendChild(item);
         });
     }
@@ -2617,6 +2783,36 @@ document.addEventListener('DOMContentLoaded', async function() {
     }
 
     // setupUpload은 loadTemplate 내 setTimeout에서 실제 DOM 요소 할당 후 호출됨
+
+    // 클립보드 이미지 붙여넣기 — 영수증 슬롯에만 적용
+    // 출장 화면은 템플릿이 동적 로드되므로 receiptUploadArea를 paste 시점에 동적으로 조회
+    if (typeof window.setupClipboardImagePaste === 'function') {
+        window.setupClipboardImagePaste({
+            resolveTarget: () => {
+                const area = document.getElementById('receiptUploadArea');
+                if (!area) return null;  // 템플릿 미로드 상태 — 활성 슬롯 없음
+                return {
+                    addFile: (file) => {
+                        if (selectedReceiptFiles.length >= 5) {
+                            showWarning('최대 5개까지만 첨부 가능합니다.');
+                            return false;
+                        }
+                        if (file.size > 10 * 1024 * 1024) {
+                            showWarning('파일 크기는 10MB를 초과할 수 없습니다.');
+                            return false;
+                        }
+                        selectedReceiptFiles.push(file);
+                        updateReceiptFileList();
+                        area.classList.remove('paste-flash');
+                        void area.offsetWidth;
+                        area.classList.add('paste-flash');
+                        return true;
+                    },
+                    label: '영수증',
+                };
+            },
+        });
+    }
 
     window.removeReceiptFile = function(index) { selectedReceiptFiles.splice(index, 1); updateReceiptFileList(); };
     window.removeDocumentFile = function(index) { selectedDocumentFiles.splice(index, 1); updateDocumentFileList(); };
@@ -3196,7 +3392,9 @@ document.addEventListener('DOMContentLoaded', async function() {
                 dept: member.employeeDeptName || '부서 미지정',
                 tripExpense: tripExpense,
                 mealExpense: mealExpense,
-                isDefaultExpense: isDefault
+                isDefaultExpense: isDefault,
+                participationStartDate: member.participationStartDate || null,
+                participationEndDate: member.participationEndDate || null
             };
         });
     }
@@ -3327,6 +3525,7 @@ document.addEventListener('DOMContentLoaded', async function() {
         }
 
         const reporterId = tripReporter?.getAttribute('data-reporter-id') || '';
+        const tripRange = getCurrentTripRange();
         tripPersonList2El.innerHTML = filtered.map(person => {
             // tempTripSelectedIds 기반으로 선택 상태 확인
             const isSelected = tempTripSelectedIds.has(String(person.id));
@@ -3335,12 +3534,22 @@ document.addEventListener('DOMContentLoaded', async function() {
             // 중복 검증 결과 확인 (회의/야근/출장)
             const isDuplicate = duplicateTripPersonsInfo[person.id];
 
-            const isLocked = isReporter || isDuplicate;
+            // 출장 기간 외 검증 (전 기간 활성이어야 함)
+            const isInactive = tripRange.start && !isMemberActiveDuringRange(person, tripRange.start, tripRange.end);
+
+            const isLocked = isReporter || isDuplicate || isInactive;
             const disabledClass = isLocked ? ' disabled' : '';
             const selectedClass = isSelected ? ' added' : '';
 
             const onclickAttr = isLocked ? '' : `onclick="selectTripPerson(${person.id})"`;
             const disabledStyle = isLocked ? 'opacity: 0.6; cursor: not-allowed;' : '';
+
+            // 참여기간 외 뱃지
+            let inactiveBadge = '';
+            if (isInactive) {
+                const tip = `참여기간: ${formatMemberPeriod(person)}`;
+                inactiveBadge = `<span style="background:#e5e7eb; color:#4b5563; padding:2px 8px; border-radius:4px; font-size:11px; margin-left:8px; white-space:nowrap;" data-tip="${tip}"><i class="fas fa-calendar-times"></i> 참여기간 외</span>`;
+            }
 
             // 하이라이트 적용
             const highlightedName = highlightText(person.name, searchText);
@@ -3387,7 +3596,7 @@ document.addEventListener('DOMContentLoaded', async function() {
             return `
             <div class="employee-item${selectedClass}${disabledClass}" data-id="${person.id}" ${onclickAttr} style="${disabledStyle}">
                 <div class="employee-info">
-                    <div class="employee-name">${highlightedName}${isReporter ? '<span style="background:#e0e7ff; color:#4338ca; padding:2px 8px; border-radius:4px; font-size:11px; margin-left:8px; white-space:nowrap;"><i class="fas fa-user-check"></i> 작성자</span>' : ''}${duplicateWarning}</div>
+                    <div class="employee-name">${highlightedName}${isReporter ? '<span style="background:#e0e7ff; color:#4338ca; padding:2px 8px; border-radius:4px; font-size:11px; margin-left:8px; white-space:nowrap;"><i class="fas fa-user-check"></i> 작성자</span>' : ''}${inactiveBadge}${duplicateWarning}</div>
                     <div class="employee-detail">${highlightedPosition} · ${highlightedDept}</div>
                 </div>
                 ${rightContent}
@@ -3432,7 +3641,7 @@ document.addEventListener('DOMContentLoaded', async function() {
     }
 
     // 출장인원 선택 (토글)
-    window.selectTripPerson = function(personId) {
+    window.selectTripPerson = async function(personId) {
         const item = document.querySelector(`#tripPersonList2 .employee-item[data-id="${personId}"]`);
         if (item?.classList.contains('disabled')) return;
 
@@ -3445,6 +3654,18 @@ document.addEventListener('DOMContentLoaded', async function() {
         if (tempTripSelectedIds.has(id)) {
             tempTripSelectedIds.delete(id);
         } else {
+            // 참여기간 검증 — 출장 전 기간 활성이어야 함
+            const tripRange = getCurrentTripRange();
+            if (!tripRange.start) {
+                await Swal.fire({ icon: 'warning', title: '출장 시작일을 먼저 입력해주세요.' });
+                return;
+            }
+            const tripPersonsList = getTripPersons();
+            const person = tripPersonsList.find(p => String(p.id) === id);
+            if (person && !isMemberActiveDuringRange(person, tripRange.start, tripRange.end)) {
+                await showInactiveMemberAlert(person, '출장 기간', `${tripRange.start} ~ ${tripRange.end}`, '인원');
+                return;
+            }
             tempTripSelectedIds.add(id);
         }
         renderTripPersonList2(tripPersonSearchInput?.value || '');
@@ -3700,7 +3921,7 @@ document.addEventListener('DOMContentLoaded', async function() {
         }
 
         // 모든 input 이벤트 트리거하여 자동 채우기 활성화
-        setTimeout(() => {
+        setTimeout(async () => {
             // 날짜 자동 채우기
             if (tripDate) {
                 tripDate.dispatchEvent(new Event('change'));
@@ -3783,6 +4004,13 @@ document.addEventListener('DOMContentLoaded', async function() {
 
             // 데이터 로드 완료 — 이후 updateTripResult는 textarea도 갱신
             isLoadingTripData = false;
+
+            // 수정 모드 진입 즉시 검증 — 작성자가 출장 기간에 활성인지
+            try {
+                await revalidateReporterAgainstTripRange();
+            } catch (e) {
+                console.warn('[populateForm] reporter 재검증 오류:', e);
+            }
 
         }, 200);
 

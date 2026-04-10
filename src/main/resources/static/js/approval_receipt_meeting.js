@@ -129,6 +129,165 @@ document.addEventListener('DOMContentLoaded', async function() {
         }
     }
 
+    // ============================================
+    // 참여기간 검증 헬퍼 (회의록은 단일 날짜 검증)
+    // ============================================
+
+    /**
+     * 멤버의 참여기간 [participationStartDate, participationEndDate] 가
+     * 주어진 날짜를 포함하는지 검사한다.
+     * - dateStr 이 비어있으면 true (날짜 미입력은 별도 검증)
+     * - participationEndDate 가 null 이면 종료 미정 (무한)
+     */
+    function isMemberActiveOnDate(member, dateStr) {
+        if (!dateStr) return true;
+        if (!member || !member.participationStartDate) return false;
+        const date = dateStr;
+        const start = member.participationStartDate;
+        if (start > date) return false;
+        const end = member.participationEndDate;
+        if (end && end < date) return false;
+        return true;
+    }
+
+    /**
+     * 멤버의 참여기간을 사용자에게 보여줄 한 줄 문자열로 포맷.
+     */
+    function formatMemberPeriod(member) {
+        if (!member) return '';
+        const s = member.participationStartDate || '?';
+        const e = member.participationEndDate || '종료 미정';
+        return `${s} ~ ${e}`;
+    }
+
+    /**
+     * 비활성 인원 안내 메시지 — 무엇이 잘못되었는지 + 다음에 어떤 액션을 취해야 하는지 명시.
+     *
+     * @param {object} member       비활성 멤버 (name, participationStartDate, participationEndDate)
+     * @param {string} dateLabel    날짜 필드 한글 라벨 (예: "회의 날짜")
+     * @param {string} dateValue    실제 날짜 문자열
+     * @param {string} roleContext  사용자 역할 ("작성자" / "참석자" 등)
+     */
+    function buildInactiveMemberHtml(member, dateLabel, dateValue, roleContext) {
+        const name = member.name || member.employeeName || '(이름 없음)';
+        const period = formatMemberPeriod(member);
+        return `
+            <div style="text-align:left; line-height:1.6;">
+                <p style="margin-bottom:12px;">
+                    <strong>${name}</strong> 님은
+                    <strong>${dateValue}</strong> 에 본 프로젝트의 활성 참여연구원이 아닙니다.
+                </p>
+                <div style="background:#f1f5f9; padding:10px 14px; border-radius:6px; font-size:13px;">
+                    <div>· ${dateLabel}: <strong>${dateValue}</strong></div>
+                    <div>· ${name} 님 참여기간: <strong>${period}</strong></div>
+                </div>
+                <p style="margin-top:14px; margin-bottom:6px; font-weight:600;">다음 중 하나를 진행해주세요:</p>
+                <ol style="margin:0; padding-left:20px; font-size:13px;">
+                    <li>다른 ${roleContext}를 선택</li>
+                    <li>${dateLabel}을 ${name} 님의 참여기간 내로 변경</li>
+                    <li>프로젝트 관리에서 ${name} 님의 참여기간을 연장 (관리자 권한 필요)</li>
+                </ol>
+            </div>
+        `;
+    }
+
+    async function showInactiveMemberAlert(member, dateLabel, dateValue, roleContext) {
+        return Swal.fire({
+            icon: 'warning',
+            title: '참여기간 외 인원',
+            html: buildInactiveMemberHtml(member, dateLabel, dateValue, roleContext),
+            confirmButtonText: '확인',
+            width: 540
+        });
+    }
+
+    /**
+     * 회의 날짜 변경 시 이미 선택된 참석자 + 작성자 재검증.
+     * - currentAttendees 중 internal 타입 + 작성자 검사
+     * - 새 날짜에 비활성인 사람이 있으면 SweetAlert 안내 + 자동 제거
+     */
+    async function revalidateAttendeesAgainstMeetingDate() {
+        const meetingDateStr = document.getElementById('common_date')?.value || '';
+        if (!meetingDateStr) return;
+        if (!projectMembers || projectMembers.length === 0) return;
+
+        const memberByEmployeeIdx = new Map();
+        projectMembers.forEach(m => {
+            memberByEmployeeIdx.set(String(m.employeeIdx), m);
+        });
+
+        const inactive = [];
+        const inactiveIds = new Set();
+
+        // 1) 참석자 검사
+        if (Array.isArray(currentAttendees)) {
+            currentAttendees.forEach(a => {
+                if (a.type !== 'internal') return;
+                const m = memberByEmployeeIdx.get(String(a.id));
+                if (!m) return;
+                if (!isMemberActiveOnDate(m, meetingDateStr)) {
+                    inactive.push({ id: a.id, name: a.name, role: '참석자', period: formatMemberPeriod(m) });
+                    inactiveIds.add(String(a.id));
+                }
+            });
+        }
+
+        // 2) 작성자 검사
+        const currentAuthorId = document.getElementById('common_author_id')?.value || '';
+        if (currentAuthorId) {
+            const authorMember = memberByEmployeeIdx.get(String(currentAuthorId));
+            if (authorMember && !isMemberActiveOnDate(authorMember, meetingDateStr)) {
+                const authorName = document.getElementById('common_author')?.value || authorMember.employeeName;
+                inactive.push({ id: currentAuthorId, name: authorName, role: '작성자', period: formatMemberPeriod(authorMember) });
+            }
+        }
+
+        if (inactive.length === 0) return;
+
+        const list = inactive
+            .map(i => `<li><strong>${i.name}</strong> <span style="color:#64748b;">(${i.role})</span> — 참여기간: ${i.period}</li>`)
+            .join('');
+        const result = await Swal.fire({
+            icon: 'warning',
+            title: '참여기간 외 인원',
+            html: `
+                <div style="text-align:left; line-height:1.6;">
+                    <p>변경된 회의 날짜 <strong>${meetingDateStr}</strong> 에 본 프로젝트 참여 중이 아닌 인원이 있습니다:</p>
+                    <ul style="margin:8px 0 12px 16px;">${list}</ul>
+                    <p style="margin-top:10px; font-weight:600;">다음 중 하나를 진행해주세요:</p>
+                    <ol style="margin:0; padding-left:20px; font-size:13px;">
+                        <li>위 인원을 자동 제거 ("제거" 버튼 클릭)</li>
+                        <li>회의 날짜를 되돌리기 ("되돌리기" 버튼 클릭)</li>
+                        <li>제거 후 작성자가 사라지면 다른 작성자를 새로 선택</li>
+                    </ol>
+                </div>
+            `,
+            showCancelButton: true,
+            confirmButtonText: '제거',
+            cancelButtonText: '되돌리기',
+            width: 540
+        });
+
+        if (result.isConfirmed) {
+            // 비활성 참석자 제거
+            currentAttendees = currentAttendees.filter(a => !(a.type === 'internal' && inactiveIds.has(String(a.id))));
+            // 작성자가 비활성이었다면 작성자 필드도 비움
+            if (currentAuthorId && inactive.some(i => String(i.id) === String(currentAuthorId) && i.role === '작성자')) {
+                const authorInput = document.getElementById('common_author');
+                const authorIdInput = document.getElementById('common_author_id');
+                if (authorInput) authorInput.value = '';
+                if (authorIdInput) authorIdInput.value = '';
+            }
+            if (typeof window.renderAttendeeListInTemplate === 'function') {
+                window.renderAttendeeListInTemplate();
+            }
+        } else {
+            // 날짜 되돌리기 — 사용자가 직접 다시 입력하도록 비움
+            const dateInput = document.getElementById('common_date');
+            if (dateInput) dateInput.value = '';
+        }
+    }
+
     // 프로젝트 팀원 목록 로드
     async function loadProjectMembers(projectIdx) {
         if (!projectIdx) {
@@ -350,6 +509,13 @@ document.addEventListener('DOMContentLoaded', async function() {
         if (commonProject) {
             commonProject.addEventListener('click', function() {
                 openProjectModal();
+            });
+        }
+
+        // 회의 날짜 변경 시 — 이미 선택된 참석자 중 비활성이 된 사람 자동 제거 안내
+        if (commonDate) {
+            commonDate.addEventListener('change', async function() {
+                await revalidateAttendeesAgainstMeetingDate();
             });
         }
 
@@ -1217,6 +1383,8 @@ document.addEventListener('DOMContentLoaded', async function() {
         }
 
         // 참석자 목록 렌더링 함수 (모달 방식)
+        // 외부 헬퍼(revalidateAttendeesAgainstMeetingDate)에서 호출 가능하도록 window 에도 노출
+        window.renderAttendeeListInTemplate = renderAttendeeListInTemplate;
         function renderAttendeeListInTemplate() {
             if (!attendeeList) return;
 
@@ -2147,6 +2315,8 @@ document.addEventListener('DOMContentLoaded', async function() {
 
     function updateReceiptFileList() {
         if (!receiptFileList) return;
+        // 재렌더 전 blob URL 정리
+        if (typeof window.revokeChipThumbs === 'function') window.revokeChipThumbs(receiptFileList);
         receiptFileList.innerHTML = '';
 
         // 1. 기존 영수증 파일 표시 (삭제 예정 제외)
@@ -2165,6 +2335,10 @@ document.addEventListener('DOMContentLoaded', async function() {
                     <i class="fas fa-times"></i>
                 </button>
             `;
+            // 이미지면 첫 아이콘을 썸네일로 교체
+            if (typeof window.attachThumbToFileItem === 'function') {
+                window.attachThumbToFileItem(item, `/api/receipt-meetings/attachments/${att.idx}/download`, att.originalFilename);
+            }
             receiptFileList.appendChild(item);
         });
 
@@ -2179,6 +2353,9 @@ document.addEventListener('DOMContentLoaded', async function() {
                     <i class="fas fa-times"></i>
                 </button>
             `;
+            if (typeof window.attachThumbToFileItem === 'function') {
+                window.attachThumbToFileItem(item, file);
+            }
             receiptFileList.appendChild(item);
         });
 
@@ -2235,6 +2412,33 @@ document.addEventListener('DOMContentLoaded', async function() {
 
     setupUpload(receiptInput, receiptUploadArea, selectedReceiptFiles, updateReceiptFileList);
     setupUpload(documentInput, documentUploadArea, selectedDocumentFiles, updateDocumentFileList);
+
+    // 클립보드 이미지 붙여넣기 — 영수증 슬롯에만 적용
+    if (typeof window.setupClipboardImagePaste === 'function') {
+        window.setupClipboardImagePaste({
+            resolveTarget: () => ({
+                addFile: (file) => {
+                    if (selectedReceiptFiles.length >= 5) {
+                        showWarning('최대 5개까지만 첨부 가능합니다.');
+                        return false;
+                    }
+                    if (file.size > 10 * 1024 * 1024) {
+                        showWarning('파일 크기는 10MB를 초과할 수 없습니다.');
+                        return false;
+                    }
+                    selectedReceiptFiles.push(file);
+                    updateReceiptFileList();
+                    if (receiptUploadArea) {
+                        receiptUploadArea.classList.remove('paste-flash');
+                        void receiptUploadArea.offsetWidth;
+                        receiptUploadArea.classList.add('paste-flash');
+                    }
+                    return true;
+                },
+                label: '영수증',
+            }),
+        });
+    }
 
     window.removeReceiptFile = function(index) { selectedReceiptFiles.splice(index, 1); updateReceiptFileList(); };
     window.removeDocumentFile = function(index) { selectedDocumentFiles.splice(index, 1); updateDocumentFileList(); };
@@ -2706,7 +2910,9 @@ document.addEventListener('DOMContentLoaded', async function() {
                 position: positionName,
                 dept: member.employeeDeptName || '-',
                 meetingExpense: meetingExpense,
-                type: 'internal'
+                type: 'internal',
+                participationStartDate: member.participationStartDate || null,
+                participationEndDate: member.participationEndDate || null
             };
         });
     }
@@ -2878,11 +3084,13 @@ document.addEventListener('DOMContentLoaded', async function() {
         }
 
         const currentAuthorId = document.getElementById('common_author_id')?.value || '';
+        const meetingDateStr = document.getElementById('common_date')?.value || '';
         internalListEl.innerHTML = filtered.map(person => {
             const isSelected = tempSelectedAttendees.some(a => String(a.id) === String(person.id) && a.type === 'internal');
             const isAuthor = String(person.id) === String(currentAuthorId);
             const formattedExpense = person.meetingExpense ? person.meetingExpense.toLocaleString('ko-KR') + '원' : '-';
             const isDuplicate = duplicateAttendeesInfo[person.id];
+            const isInactive = !isMemberActiveOnDate(person, meetingDateStr);
 
             const highlightedName = highlightText(person.name, searchText);
             const highlightedDept = highlightText(person.dept, searchText);
@@ -2890,6 +3098,13 @@ document.addEventListener('DOMContentLoaded', async function() {
 
             // 작성자 뱃지
             const authorBadge = isAuthor ? '<span style="background:#e0e7ff; color:#4338ca; padding:2px 8px; border-radius:4px; font-size:11px; margin-left:8px; white-space:nowrap;"><i class="fas fa-user-check"></i> 작성자</span>' : '';
+
+            // 참여기간 외 뱃지 (회색)
+            let inactiveBadge = '';
+            if (isInactive && meetingDateStr) {
+                const tip = `참여기간: ${formatMemberPeriod(person)}`;
+                inactiveBadge = `<span style="background:#e5e7eb; color:#4b5563; padding:2px 8px; border-radius:4px; font-size:11px; margin-left:8px; white-space:nowrap;" data-tip="${tip}"><i class="fas fa-calendar-times"></i> 참여기간 외</span>`;
+            }
 
             // 중복 참석자 뱃지
             let duplicateBadge = '';
@@ -2902,7 +3117,7 @@ document.addEventListener('DOMContentLoaded', async function() {
                 duplicateBadge = `<span style="background: #fee2e2; color: #991b1b; padding: 2px 8px; border-radius: 4px; font-size: 11px; margin-left: 8px; white-space: nowrap;" data-tip="${tooltipText}"><i class="fas fa-ban"></i> 시간 중복</span>`;
             }
 
-            const isLocked = isAuthor || isDuplicate;
+            const isLocked = isAuthor || isDuplicate || isInactive;
             const lockedStyle = isLocked ? 'opacity: 0.6; cursor: not-allowed;' : '';
             const onclickAttr = isLocked ? '' : `onclick="toggleInternalAttendee(${person.id})"`;
             const checkIcon = isAuthor
@@ -2916,7 +3131,7 @@ document.addEventListener('DOMContentLoaded', async function() {
                      style="${lockedStyle}"
                      ${onclickAttr}>
                     <div class="employee-info">
-                        <div class="employee-name">${highlightedName}${authorBadge}${duplicateBadge}</div>
+                        <div class="employee-name">${highlightedName}${authorBadge}${inactiveBadge}${duplicateBadge}</div>
                         <div class="employee-details">${highlightedPosition} · ${highlightedDept} · ${formattedExpense}</div>
                     </div>
                     ${checkIcon}
@@ -2999,6 +3214,16 @@ document.addEventListener('DOMContentLoaded', async function() {
             // 선택 해제
             tempSelectedAttendees.splice(index, 1);
         } else {
+            // 참여기간 검증 — 회의 날짜 기준 활성 멤버만 선택 가능
+            const meetingDateStr = document.getElementById('common_date')?.value || '';
+            if (!meetingDateStr) {
+                await showWarning('회의 날짜를 먼저 입력해주세요.');
+                return;
+            }
+            if (!isMemberActiveOnDate(person, meetingDateStr)) {
+                await showInactiveMemberAlert(person, '회의 날짜', meetingDateStr, '참석자');
+                return;
+            }
             // 선택 시 중복 체크 - 중복이면 선택 불가
             const isDuplicate = duplicateAttendeesInfo[personId];
             if (isDuplicate) {
@@ -3781,6 +4006,9 @@ document.addEventListener('DOMContentLoaded', async function() {
         // 현재 선택된 작성자 ID 가져오기
         const currentAuthorId = document.getElementById('common_author_id')?.value;
 
+        // 회의 날짜 기준 참여기간 검증용
+        const meetingDateForAuthor = document.getElementById('common_date')?.value || '';
+
         // 시간 중복 체크를 위한 정보 수집
         const dateInput = document.getElementById('common_date');
         const startTimeInput = document.getElementById('common_start_time');
@@ -3851,10 +4079,22 @@ document.addEventListener('DOMContentLoaded', async function() {
                 duplicateBadge = `<span style="background: #fee2e2; color: #991b1b; padding: 2px 8px; border-radius: 4px; font-size: 11px; margin-left: 8px; white-space: nowrap;" data-tip="${tooltipText}"><i class="fas fa-exclamation-triangle"></i> 시간 중복</span>`;
             }
 
+            // 참여기간 외 검증 (회의 날짜 기준)
+            const isInactive = !isMemberActiveOnDate(person, meetingDateForAuthor);
+            let inactiveBadge = '';
+            if (isInactive && meetingDateForAuthor) {
+                const tip = `참여기간: ${formatMemberPeriod(person)}`;
+                inactiveBadge = `<span style="background:#e5e7eb; color:#4b5563; padding:2px 8px; border-radius:4px; font-size:11px; margin-left:8px; white-space:nowrap;" data-tip="${tip}"><i class="fas fa-calendar-times"></i> 참여기간 외</span>`;
+            }
+
+            const isLocked = isInactive;
+            const lockedStyle = isLocked ? 'opacity:0.55; cursor:not-allowed;' : '';
+            const onclickAttr = isLocked ? '' : `onclick="selectAuthor(${person.id})"`;
+
             return `
-                <div class="employee-item ${selectedClass}" data-id="${person.id}" data-has-conflict="${isDuplicate ? 'true' : 'false'}" onclick="selectAuthor(${person.id})">
+                <div class="employee-item ${selectedClass}" data-id="${person.id}" data-has-conflict="${isDuplicate ? 'true' : 'false'}" data-inactive="${isInactive}" ${onclickAttr} style="${lockedStyle}">
                     <div class="employee-info">
-                        <div class="employee-name">${person.name}${attendeeBadge}${duplicateBadge}</div>
+                        <div class="employee-name">${person.name}${attendeeBadge}${inactiveBadge}${duplicateBadge}</div>
                         <div class="employee-details">${person.dept} · ${person.position}</div>
                     </div>
                     ${checkIcon}
@@ -3869,6 +4109,17 @@ document.addEventListener('DOMContentLoaded', async function() {
         const person = attendeePersons.find(p => p.id === personId);
 
         if (person) {
+            // 참여기간 검증 — 회의 날짜에 활성이어야 함
+            const meetingDateStr = document.getElementById('common_date')?.value || '';
+            if (!meetingDateStr) {
+                await showWarning('회의 날짜를 먼저 입력해주세요.');
+                return;
+            }
+            if (!isMemberActiveOnDate(person, meetingDateStr)) {
+                await showInactiveMemberAlert(person, '회의 날짜', meetingDateStr, '작성자');
+                return;
+            }
+
             // 시간 중복 체크
             const dateInput = document.getElementById('common_date');
             const startTimeInput = document.getElementById('common_start_time');
@@ -4470,9 +4721,16 @@ document.addEventListener('DOMContentLoaded', async function() {
             console.log('[loadExistingData] setTimeout 완료');
 
             // 플래그 해제는 모든 이벤트 처리가 끝난 후
-            setTimeout(() => {
+            setTimeout(async () => {
                 isLoadingExistingData = false;
                 console.log('[populateForm] 완료 - 기존 데이터 로딩 플래그 OFF');
+                // 수정 모드 진입 즉시 검증 — 작성자/참석자가 현재 회의 날짜에 활성인지
+                // (멤버 기간이 변경되어 비활성이 되었을 수 있음)
+                try {
+                    await revalidateAttendeesAgainstMeetingDate();
+                } catch (e) {
+                    console.warn('[populateForm] 참여기간 재검증 오류:', e);
+                }
             }, 200);
         }, 100);
 

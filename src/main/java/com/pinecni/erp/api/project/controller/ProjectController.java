@@ -4,19 +4,26 @@ import com.pinecni.erp.api.project.dto.BudgetAdjustmentRequestDTO;
 import com.pinecni.erp.api.project.dto.ProjectCreateDTO;
 import com.pinecni.erp.api.project.dto.ProjectDTO;
 import com.pinecni.erp.api.project.dto.ProjectFilterDTO;
+import com.pinecni.erp.api.project.dto.ProjectMemberDTO;
 import com.pinecni.erp.api.project.dto.ProjectUpdateDTO;
 import com.pinecni.erp.api.project.dto.ProjectCardDTO;
+import com.pinecni.erp.api.project.mapper.ProjectMapper;
 import com.pinecni.erp.api.project.repository.ProjectMemberRepository;
 import com.pinecni.erp.api.project.dto.ProjectExpenseSettingDTO;
 import com.pinecni.erp.api.project.service.ProjectService;
+import com.pinecni.erp.entity.ProjectMember;
+import com.pinecni.erp.exception.ParticipationConflictDTO;
+import com.pinecni.erp.exception.ParticipationPeriodException;
 import com.pinecni.erp.util.AuthorizationUtil;
 import jakarta.servlet.http.HttpSession;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import java.time.LocalDate;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -32,6 +39,7 @@ public class ProjectController {
 
     private final ProjectService projectService;
     private final ProjectMemberRepository projectMemberRepository;
+    private final ProjectMapper projectMapper;
 
     /**
      * 전체 프로젝트 목록 조회
@@ -175,6 +183,14 @@ public class ProjectController {
         try {
             ProjectDTO project = projectService.updateProject(idx, updateDTO, currentUserIdx);
             return ResponseEntity.ok(project);
+        } catch (ParticipationPeriodException e) {
+            log.warn("프로젝트 수정 실패 - 참여기간 충돌: {}", e.getMessage());
+            Map<String, Object> body = new HashMap<>();
+            body.put("error", e.getMessage());
+            body.put("code", e.getCode());
+            List<ParticipationConflictDTO> conflicts = e.getConflicts();
+            body.put("conflicts", conflicts != null ? conflicts : List.of());
+            return ResponseEntity.status(HttpStatus.CONFLICT).body(body);
         } catch (IllegalArgumentException e) {
             log.error("프로젝트 수정 실패: {}", e.getMessage());
             return ResponseEntity.notFound().build();
@@ -261,6 +277,62 @@ public class ProjectController {
             log.error("프로젝트 참여인원 조회 실패: {}", e.getMessage());
             Map<String, String> error = new HashMap<>();
             error.put("error", "프로젝트 참여인원을 조회할 수 없습니다.");
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(error);
+        }
+    }
+
+    /**
+     * 프로젝트 활성 참여인원 조회 (참여기간 검증용)
+     *
+     * 호출 형태:
+     * - GET /api/projects/{idx}/members/active?date=2025-03-15
+     *   → 해당 날짜에 활성인 멤버만 반환 (회의록/야근식대 등 단일 날짜 문서)
+     *
+     * - GET /api/projects/{idx}/members/active?startDate=2025-03-15&endDate=2025-03-17
+     *   → 해당 기간 [startDate, endDate] 전 구간에 활성인 멤버만 반환 (출장 등)
+     *
+     * 응답 정책:
+     * - 비활성 멤버는 응답에서 제외 (프론트에서 회색 표시 + 사유 노출이 필요한 경우는
+     *   기존 GET /api/projects/{idx}/members 와 함께 사용해 두 리스트를 비교)
+     *
+     * 호환성: 두 파라미터 모두 누락이면 400.
+     */
+    @GetMapping("/{idx}/members/active")
+    public ResponseEntity<?> getActiveProjectMembers(
+            @PathVariable Long idx,
+            @RequestParam(required = false)
+            @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate date,
+            @RequestParam(required = false)
+            @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate startDate,
+            @RequestParam(required = false)
+            @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate endDate) {
+        log.debug("GET /api/projects/{}/members/active - date: {}, startDate: {}, endDate: {}",
+                idx, date, startDate, endDate);
+
+        try {
+            List<ProjectMember> activeMembers;
+            if (date != null) {
+                activeMembers = projectMemberRepository.findActiveByProjectIdxAndDate(idx, date);
+            } else if (startDate != null && endDate != null) {
+                if (endDate.isBefore(startDate)) {
+                    Map<String, String> error = new HashMap<>();
+                    error.put("error", "endDate 가 startDate 보다 빠를 수 없습니다.");
+                    return ResponseEntity.badRequest().body(error);
+                }
+                activeMembers = projectMemberRepository
+                        .findActiveByProjectIdxAndDateRange(idx, startDate, endDate);
+            } else {
+                Map<String, String> error = new HashMap<>();
+                error.put("error", "date 또는 (startDate, endDate) 파라미터가 필요합니다.");
+                return ResponseEntity.badRequest().body(error);
+            }
+
+            List<ProjectMemberDTO> dtos = projectMapper.mapMembersOnly(activeMembers);
+            return ResponseEntity.ok(dtos);
+        } catch (Exception e) {
+            log.error("프로젝트 활성 참여인원 조회 실패: {}", e.getMessage(), e);
+            Map<String, String> error = new HashMap<>();
+            error.put("error", "프로젝트 활성 참여인원을 조회할 수 없습니다.");
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(error);
         }
     }

@@ -1,6 +1,7 @@
 package com.pinecni.erp.api.project.service;
 
 import com.pinecni.erp.api.code.repository.CodeRepository;
+import com.pinecni.erp.api.document.repository.ReceiptAttendeeRepository;
 import com.pinecni.erp.api.project.dto.*;
 import com.pinecni.erp.api.project.dto.ProjectCardDTO;
 import com.pinecni.erp.api.project.mapper.ProjectMapper;
@@ -14,22 +15,39 @@ import com.pinecni.erp.api.project.repository.ProjectRepository;
 import com.pinecni.erp.api.project.repository.ProjectCardRepository;
 import com.pinecni.erp.api.project.repository.ReceiptMeetingRepository;
 import com.pinecni.erp.api.project.repository.ReceiptTripMeetingRepository;
+import com.pinecni.erp.api.project.repository.ReceiptTripMeetingSessionRepository;
 import com.pinecni.erp.api.project.repository.ReceiptTripRepository;
+import com.pinecni.erp.api.user.repository.UserRepository;
 import com.pinecni.erp.entity.Project;
 import com.pinecni.erp.entity.ProjectBudgetAdjustment;
 import com.pinecni.erp.entity.ProjectExpenseSetting;
 import com.pinecni.erp.entity.ProjectMember;
 import com.pinecni.erp.entity.ProjectRelation;
 import com.pinecni.erp.entity.ProjectCard;
+import com.pinecni.erp.entity.ReceiptAttendee;
+import com.pinecni.erp.entity.ReceiptMeeting;
+import com.pinecni.erp.entity.ReceiptOvertime;
+import com.pinecni.erp.entity.ReceiptPurchase;
+import com.pinecni.erp.entity.ReceiptTrip;
+import com.pinecni.erp.entity.ReceiptTripMeeting;
+import com.pinecni.erp.entity.ReceiptTripMeetingSession;
+import com.pinecni.erp.entity.User;
+import com.pinecni.erp.exception.ParticipationConflictDTO;
+import com.pinecni.erp.exception.ParticipationPeriodException;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
+import java.time.LocalDate;
+import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
+import java.util.Set;
 import java.util.stream.Collectors;
 
 /**
@@ -55,6 +73,9 @@ public class ProjectServiceImpl implements ProjectService {
     private final ReceiptOvertimeRepository receiptOvertimeRepository;
     private final ReceiptPurchaseRepository receiptPurchaseRepository;
     private final ReceiptTripMeetingRepository receiptTripMeetingRepository;
+    private final ReceiptTripMeetingSessionRepository receiptTripMeetingSessionRepository;
+    private final ReceiptAttendeeRepository receiptAttendeeRepository;
+    private final UserRepository userRepository;
 
     @Override
     public List<ProjectDTO> getAllProjects() {
@@ -355,6 +376,9 @@ public class ProjectServiceImpl implements ProjectService {
         // 팀원 업데이트
         if (updateDTO.getProjectMembers() != null) {
             log.debug("Updating {} project members for project idx={}", updateDTO.getProjectMembers().size(), idx);
+
+            // 0. 참여기간 변경 사전 검사 — 기존 문서가 새 기간 밖으로 밀려나면 차단
+            validateMemberPeriodChangesAgainstDocuments(idx, updateDTO.getProjectMembers());
 
             // 1. 기존 활성 팀원 목록 조회
             List<ProjectMember> existingMembers = projectMemberRepository.findByProjectIdx(idx);
@@ -736,5 +760,235 @@ public class ProjectServiceImpl implements ProjectService {
             default:
                 return "ACTIVE";
         }
+    }
+
+    // ══════════════════════════════════════════════════════════════
+    // 참여기간 변경 사전 검사 (orphan 문서 차단)
+    // ══════════════════════════════════════════════════════════════
+
+    /**
+     * 프로젝트 멤버의 참여기간 변경을 사전 검사한다.
+     *
+     * 차단 케이스:
+     * 1) 기존 활성 멤버의 기간이 단축되어, 이미 작성된 ReceiptAttendee 의 documentDate 가
+     *    새 기간 [newStart, newEnd] 밖으로 벗어나는 경우
+     * 2) 기존 활성 멤버가 DTO 에서 빠져 비활성화되는데, 그 멤버에게 등록된 attendee 가 있는 경우
+     *    (모든 attendee 가 orphan 이 됨)
+     *
+     * 외부 참석자(isExternal=true)는 ProjectMember 와 무관하므로 검증 대상이 아니다.
+     */
+    private void validateMemberPeriodChangesAgainstDocuments(
+            Long projectIdx, List<ProjectMemberCreateDTO> dtoMembers) {
+        if (dtoMembers == null) {
+            return;
+        }
+
+        List<ProjectMember> existingMembers = projectMemberRepository.findByProjectIdx(projectIdx);
+        if (existingMembers.isEmpty()) {
+            return; // 신규 멤버만 추가되는 경우 — 영향 없음
+        }
+
+        Set<Long> dtoEmployeeIdxSet = dtoMembers.stream()
+                .map(ProjectMemberCreateDTO::getEmployeeIdx)
+                .filter(Objects::nonNull)
+                .collect(Collectors.toCollection(HashSet::new));
+
+        // DTO 의 employeeIdx → 새 기간 매핑
+        Map<Long, ProjectMemberCreateDTO> dtoByEmployee = new HashMap<>();
+        for (ProjectMemberCreateDTO m : dtoMembers) {
+            if (m.getEmployeeIdx() != null) {
+                dtoByEmployee.put(m.getEmployeeIdx(), m);
+            }
+        }
+
+        List<ParticipationConflictDTO> conflicts = new ArrayList<>();
+
+        for (ProjectMember existing : existingMembers) {
+            if (!Boolean.TRUE.equals(existing.getIsActive())) {
+                continue; // 이미 비활성인 멤버는 검사 대상 아님
+            }
+
+            Long employeeIdx = existing.getEmployeeIdx();
+            if (employeeIdx == null) continue;
+
+            ProjectMemberCreateDTO dtoMember = dtoByEmployee.get(employeeIdx);
+
+            LocalDate newStart;
+            LocalDate newEnd;
+            if (dtoMember == null) {
+                // 케이스 2 — 비활성화: 모든 기존 문서가 orphan
+                // 새 기간을 [LocalDate.MAX, LocalDate.MAX] 처럼 처리하면 모두 새 기간 밖이 되므로
+                // 메모리 검사에서 newStart=null 케이스로 간주 — addAuthorConflictsForRecords 에서 모두 orphan 처리
+                newStart = null;
+                newEnd = null;
+
+                // (1) 참석자 기반: 이 멤버의 모든 attendee 가 orphan
+                List<ReceiptAttendee> all = receiptAttendeeRepository
+                        .findInternalByProjectAndUser(projectIdx, employeeIdx);
+                addConflicts(conflicts, all, employeeIdx, null, null);
+            } else {
+                // 케이스 1 — 기간 변경: 새 기간 밖 attendee 검사
+                newStart = dtoMember.getParticipationStartDate();
+                newEnd = dtoMember.getParticipationEndDate();
+                if (newStart == null) {
+                    // 기간 시작이 누락이면 검증 스킵 (다른 검증에서 거부될 것)
+                    continue;
+                }
+                // (1) 참석자 기반: 새 기간 밖 attendee
+                List<ReceiptAttendee> orphans = receiptAttendeeRepository
+                        .findOrphanedByMemberPeriod(projectIdx, employeeIdx, newStart, newEnd);
+                addConflicts(conflicts, orphans, employeeIdx, newStart, newEnd);
+            }
+
+            // (2) 작성자 기반 검사 — 6개 receipt 테이블에서 본 멤버가 작성자인 기록 검사
+            collectAuthorOrphans(conflicts, projectIdx, employeeIdx, newStart, newEnd);
+        }
+
+        if (!conflicts.isEmpty()) {
+            throw new ParticipationPeriodException(
+                    "ORPHAN_DOCUMENT",
+                    buildOrphanMessage(conflicts),
+                    conflicts);
+        }
+    }
+
+    /**
+     * 6개 receipt 테이블에서 employeeIdx 가 작성자인 기록을 조회하고,
+     * 새 기간 [newStart, newEnd] 밖에 있으면 conflict 에 추가한다.
+     *
+     * - newStart == null 이면 멤버 비활성화 케이스 — 모든 기록이 orphan
+     * - 출장 / 출장+회의 는 종료일 = tripDate + duration 까지 검사
+     * - 출장+회의 회의 세션은 별도로 회의 작성자 + meetingDate 검사
+     */
+    private void collectAuthorOrphans(List<ParticipationConflictDTO> conflicts,
+                                      Long projectIdx,
+                                      Long employeeIdx,
+                                      LocalDate newStart,
+                                      LocalDate newEnd) {
+        String userName = resolveUserName(employeeIdx);
+
+        // 1) 회의록 (RCM)
+        for (ReceiptMeeting rm : receiptMeetingRepository.findActiveByAuthorAndProject(employeeIdx, projectIdx)) {
+            if (isOutsideRange(rm.getMeetingDate(), null, newStart, newEnd)) {
+                conflicts.add(buildAuthorConflict(employeeIdx, userName, newStart, newEnd,
+                        "RCM", rm.getIdx(), rm.getMeetingDate()));
+            }
+        }
+
+        // 2) 출장 (RCT) — tripDate + duration 까지 검사
+        for (ReceiptTrip rt : receiptTripRepository.findActiveByAuthorAndProject(employeeIdx, projectIdx)) {
+            LocalDate startD = rt.getTripDate();
+            LocalDate endD = startD != null ? startD.plusDays(rt.getDuration() != null ? rt.getDuration() : 0) : null;
+            if (isOutsideRange(startD, endD, newStart, newEnd)) {
+                conflicts.add(buildAuthorConflict(employeeIdx, userName, newStart, newEnd,
+                        "RCT", rt.getIdx(), startD));
+            }
+        }
+
+        // 3) 야근식대 (RCO)
+        for (ReceiptOvertime ro : receiptOvertimeRepository.findActiveByAuthorAndProject(employeeIdx, projectIdx)) {
+            if (isOutsideRange(ro.getOvertimeDate(), null, newStart, newEnd)) {
+                conflicts.add(buildAuthorConflict(employeeIdx, userName, newStart, newEnd,
+                        "RCO", ro.getIdx(), ro.getOvertimeDate()));
+            }
+        }
+
+        // 4) 출장+회의 (RCTM) — drafter 기준, tripDate + duration 까지 검사
+        for (ReceiptTripMeeting rtm : receiptTripMeetingRepository.findActiveByAuthorAndProject(employeeIdx, projectIdx)) {
+            LocalDate startD = rtm.getTripDate();
+            LocalDate endD = startD != null ? startD.plusDays(rtm.getDuration() != null ? rtm.getDuration() : 0) : null;
+            if (isOutsideRange(startD, endD, newStart, newEnd)) {
+                conflicts.add(buildAuthorConflict(employeeIdx, userName, newStart, newEnd,
+                        "RCTM", rtm.getIdx(), startD));
+            }
+        }
+
+        // 5) 출장+회의 회의 세션 (RCTM session) — 회의 작성자 기준, meetingDate
+        for (ReceiptTripMeetingSession s : receiptTripMeetingSessionRepository.findActiveByAuthorAndProject(employeeIdx, projectIdx)) {
+            if (isOutsideRange(s.getMeetingDate(), null, newStart, newEnd)) {
+                conflicts.add(buildAuthorConflict(employeeIdx, userName, newStart, newEnd,
+                        "RCTM", s.getReceiptTripMeetingIdx(), s.getMeetingDate()));
+            }
+        }
+
+        // 6) 구매(재료비/장비비, RCP)
+        for (ReceiptPurchase rp : receiptPurchaseRepository.findActiveByAuthorAndProject(employeeIdx, projectIdx)) {
+            if (isOutsideRange(rp.getApprovalDate(), null, newStart, newEnd)) {
+                conflicts.add(buildAuthorConflict(employeeIdx, userName, newStart, newEnd,
+                        "RCP", rp.getIdx(), rp.getApprovalDate()));
+            }
+        }
+    }
+
+    /**
+     * 문서의 [docStart, docEnd] (docEnd 가 null 이면 단일 날짜) 가 새 기간 [newStart, newEnd] 밖에 있는지.
+     * - newStart == null 인 경우: 비활성화 케이스 — 무조건 orphan (true)
+     * - docEnd == null 인 경우: 단일 날짜 — docStart 만 검사
+     * - newEnd == null 인 경우: 새 기간 종료 미정 (무한)
+     */
+    private boolean isOutsideRange(LocalDate docStart, LocalDate docEnd,
+                                    LocalDate newStart, LocalDate newEnd) {
+        if (newStart == null) return true;
+        if (docStart == null) return false;
+        if (docStart.isBefore(newStart)) return true;
+        LocalDate effectiveDocEnd = docEnd != null ? docEnd : docStart;
+        if (newEnd != null && effectiveDocEnd.isAfter(newEnd)) return true;
+        return false;
+    }
+
+    private ParticipationConflictDTO buildAuthorConflict(Long employeeIdx, String userName,
+                                                         LocalDate newStart, LocalDate newEnd,
+                                                         String docTypePrefix, Long receiptIdx,
+                                                         LocalDate documentDate) {
+        return ParticipationConflictDTO.builder()
+                .userIdx(employeeIdx)
+                .userName(userName)
+                .periodStart(newStart)
+                .periodEnd(newEnd)
+                .documentTypePrefix(docTypePrefix)
+                .receiptIdx(receiptIdx)
+                .documentDate(documentDate)
+                .build();
+    }
+
+    private void addConflicts(List<ParticipationConflictDTO> conflicts,
+                              List<ReceiptAttendee> records,
+                              Long employeeIdx,
+                              LocalDate newStart,
+                              LocalDate newEnd) {
+        if (records == null || records.isEmpty()) return;
+        String userName = resolveUserName(employeeIdx);
+        for (ReceiptAttendee ra : records) {
+            conflicts.add(ParticipationConflictDTO.builder()
+                    .userIdx(employeeIdx)
+                    .userName(userName)
+                    .periodStart(newStart)
+                    .periodEnd(newEnd)
+                    .documentTypePrefix(ra.getDocumentTypePrefix())
+                    .receiptIdx(ra.getReceiptIdx())
+                    .documentDate(ra.getDocumentDate())
+                    .build());
+        }
+    }
+
+    private String resolveUserName(Long userIdx) {
+        if (userIdx == null) return null;
+        return userRepository.findById(userIdx)
+                .map(User::getEmpName)
+                .orElse("(알 수 없음, IDX=" + userIdx + ")");
+    }
+
+    private String buildOrphanMessage(List<ParticipationConflictDTO> conflicts) {
+        // 사용자별로 그룹핑해서 첫 줄에 요약, 그 뒤 상세 행
+        Map<String, Long> countByName = conflicts.stream()
+                .collect(Collectors.groupingBy(
+                        c -> c.getUserName() != null ? c.getUserName() : "(알 수 없음)",
+                        Collectors.counting()));
+        StringBuilder sb = new StringBuilder();
+        sb.append("참여기간을 변경할 수 없습니다. 새 기간 밖에 위치한 기존 문서가 있습니다:\n");
+        countByName.forEach((name, count) ->
+                sb.append("- ").append(name).append(": ").append(count).append("건\n"));
+        sb.append("해당 문서를 먼저 수정하거나 삭제해야 멤버 기간을 변경할 수 있습니다.");
+        return sb.toString();
     }
 }

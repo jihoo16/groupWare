@@ -6,6 +6,7 @@ import com.pinecni.erp.api.document.dto.*;
 import com.pinecni.erp.api.document.repository.ReceiptAttendeeRepository;
 import com.pinecni.erp.api.project.repository.*;
 import com.pinecni.erp.api.project.repository.ReceiptTripMeetingSessionRepository;
+import com.pinecni.erp.api.project.service.ProjectMemberValidationService;
 import com.pinecni.erp.api.user.repository.UserRepository;
 import com.pinecni.erp.constant.CodeConstants;
 import com.pinecni.erp.entity.*;
@@ -56,6 +57,7 @@ public class ReceiptTripMeetingServiceImpl implements ReceiptTripMeetingService 
     private final DocumentSequenceService documentSequenceService;
     private final ProjectCardRepository projectCardRepository;
     private final UserRepository userRepository;
+    private final ProjectMemberValidationService projectMemberValidationService;
 
     @Value("${file.base.dir}")
     private String baseDir;
@@ -76,6 +78,9 @@ public class ReceiptTripMeetingServiceImpl implements ReceiptTripMeetingService 
             Long currentUserIdx) {
 
         log.debug("출장+회의 통합 저장 - projectIdx: {}, drafterUserIdx: {}", dto.getProjectIdx(), dto.getDrafterUserIdx());
+
+        // ── 0. 참여기간 검증 — 출장 인원(전 기간) + 회의별 참석자(회의 날짜) ──
+        validateRtmParticipationPeriod(dto);
 
         // ── 1. 문서 번호 생성 ──────────────────────────────────────────
         String documentNo = documentSequenceService.generateDocumentNumber(DOC_TYPE.getCode(), DOC_TYPE.getPrefix(), currentUserIdx);
@@ -279,6 +284,9 @@ public class ReceiptTripMeetingServiceImpl implements ReceiptTripMeetingService 
         if (Boolean.TRUE.equals(entity.getDeleted())) {
             throw new IllegalArgumentException("삭제된 출장+회의입니다. idx: " + idx);
         }
+
+        // 0. 참여기간 검증 — 출장 인원(전 기간) + 회의별 참석자(회의 날짜)
+        validateRtmParticipationPeriod(updateDTO);
 
         // 1. 일별 비용 합계 재계산
         List<ReceiptTripMeetingDailyExpenseDTO> dailyList =
@@ -1049,5 +1057,67 @@ public class ReceiptTripMeetingServiceImpl implements ReceiptTripMeetingService 
                 attachmentRepository.save(att);
             }
         });
+    }
+
+    /**
+     * 출장+회의 참여기간 검증.
+     *
+     * 1) 출장 인원 (`tripAttendees`) + 출장 작성자(drafterUserIdx)
+     *    - 출장 기간 = [tripDate, tripDate + duration] (duration 은 박 수, 0=당일)
+     *    - 전 기간 활성이어야 함 (한 명이라도 비활성이면 차단)
+     *
+     * 2) 회의 세션 (`meetingSessions[*]`) — 각 세션마다
+     *    - 회의 참석자(외부인 제외) + 해당 회의 작성자(meetingDrafterUserIdx)
+     *    - 각 세션의 meetingDate 단일 날짜에 활성이어야 함
+     */
+    private void validateRtmParticipationPeriod(ReceiptTripMeetingCreateDTO dto) {
+        Long projectIdx = dto.getProjectIdx();
+        if (projectIdx == null) return;
+
+        // 1) 출장 인원 + 출장 작성자
+        if (dto.getTripDate() != null) {
+            List<Long> tripUserIdxList = new ArrayList<>();
+            if (dto.getTripAttendees() != null) {
+                dto.getTripAttendees().stream()
+                        .map(ReceiptTripAttendeeDTO::getUserIdx)
+                        .filter(Objects::nonNull)
+                        .forEach(tripUserIdxList::add);
+            }
+            if (dto.getDrafterUserIdx() != null) {
+                tripUserIdxList.add(dto.getDrafterUserIdx());
+            }
+            if (!tripUserIdxList.isEmpty()) {
+                int nights = dto.getDuration() != null ? dto.getDuration() : 0;
+                LocalDate tripStart = dto.getTripDate();
+                LocalDate tripEnd = tripStart.plusDays(nights);
+                if (tripEnd.isEqual(tripStart)) {
+                    projectMemberValidationService.validateActiveOn(projectIdx, tripUserIdxList, tripStart);
+                } else {
+                    projectMemberValidationService.validateActiveDuring(projectIdx, tripUserIdxList, tripStart, tripEnd);
+                }
+            }
+        }
+
+        // 2) 회의 세션별 + 회의 작성자
+        if (dto.getMeetingSessions() != null) {
+            for (MeetingSessionDTO session : dto.getMeetingSessions()) {
+                if (session == null || session.getMeetingDate() == null) continue;
+
+                List<Long> meetingUserIdxList = new ArrayList<>();
+                if (session.getMeetingAttendees() != null) {
+                    session.getMeetingAttendees().stream()
+                            .filter(a -> !Boolean.TRUE.equals(a.getIsExternal()))
+                            .map(ReceiptMeetingAttendeeDTO::getUserIdx)
+                            .filter(Objects::nonNull)
+                            .forEach(meetingUserIdxList::add);
+                }
+                if (session.getMeetingDrafterUserIdx() != null) {
+                    meetingUserIdxList.add(session.getMeetingDrafterUserIdx());
+                }
+                if (!meetingUserIdxList.isEmpty()) {
+                    projectMemberValidationService.validateActiveOn(projectIdx, meetingUserIdxList, session.getMeetingDate());
+                }
+            }
+        }
     }
 }

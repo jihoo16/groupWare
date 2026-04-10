@@ -88,4 +88,17 @@ public interface ReceiptTripRepository extends JpaRepository<ReceiptTrip, Long> 
             "LEFT JOIN FETCH rt.approvalDocument " +
             "WHERE rt.documentIdx = :documentIdx AND rt.deleted = false")
     Optional<ReceiptTrip> findByDocumentIdx(@Param("documentIdx") Long documentIdx);
+
+    /**
+     * 참여기간 검증용 — 작성자가 본 프로젝트 내에서 작성한 모든 활성 출장 조회.
+     * 멤버 기간 단축 시 orphan 사전 검사에서 사용.
+     * (출장은 박 수 = duration, 종료일 = tripDate + duration 까지 검사 필요 — 메모리에서 처리)
+     */
+    @Query("SELECT rt FROM ReceiptTrip rt " +
+            "WHERE rt.drafterUserIdx = :authorIdx " +
+            "AND rt.projectIdx = :projectIdx " +
+            "AND rt.deleted = false")
+    List<ReceiptTrip> findActiveByAuthorAndProject(
+            @Param("authorIdx") Long authorIdx,
+            @Param("projectIdx") Long projectIdx);
 }

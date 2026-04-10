@@ -3,6 +3,7 @@ package com.pinecni.erp.api.document.service;
 import com.pinecni.erp.api.approval.repository.ApprovalDocumentRepository;
 import com.pinecni.erp.api.approval.service.DocumentSequenceService;
 import com.pinecni.erp.api.document.dto.ReceiptTripAttachmentDTO;
+import com.pinecni.erp.api.document.dto.ReceiptTripAttendeeDTO;
 import com.pinecni.erp.api.document.dto.ReceiptTripCreateDTO;
 import com.pinecni.erp.api.document.dto.ReceiptTripDailyExpenseDTO;
 import com.pinecni.erp.api.document.dto.ReceiptTripDTO;
@@ -13,6 +14,7 @@ import com.pinecni.erp.api.document.repository.ReceiptTripAttachmentRepository;
 import com.pinecni.erp.api.project.repository.ProjectCardRepository;
 import com.pinecni.erp.api.project.repository.ReceiptTripDailyExpenseRepository;
 import com.pinecni.erp.api.project.repository.ReceiptTripRepository;
+import com.pinecni.erp.api.project.service.ProjectMemberValidationService;
 import com.pinecni.erp.constant.CodeConstants;
 import com.pinecni.erp.entity.*;
 import lombok.RequiredArgsConstructor;
@@ -28,6 +30,7 @@ import java.math.BigDecimal;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.*;
@@ -49,6 +52,7 @@ public class ReceiptTripServiceImpl implements ReceiptTripService {
     private final DocumentSequenceService documentSequenceService;
     private final ProjectCardRepository projectCardRepository;
     private final ReceiptTripMapper mapper;
+    private final ProjectMemberValidationService projectMemberValidationService;
 
     @Value("${file.base.dir}")
     private String baseDir;
@@ -131,6 +135,15 @@ public class ReceiptTripServiceImpl implements ReceiptTripService {
     public ReceiptTripDTO createReceiptTrip(ReceiptTripCreateDTO createDTO, Long currentUserIdx) {
         log.debug("출장 생성 - projectIdx: {}, drafterUserIdx: {}, currentUserIdx: {}",
                 createDTO.getProjectIdx(), createDTO.getDrafterUserIdx(), currentUserIdx);
+
+        // 0. 참여기간 검증 — 작성자(drafter) + 출장 인원이 출장 전 기간에 모두 활성이어야 함
+        validateTripParticipationPeriod(
+                createDTO.getProjectIdx(),
+                createDTO.getTripDate(),
+                createDTO.getDuration(),
+                createDTO.getAttendees(),
+                createDTO.getDrafterUserIdx()
+        );
 
         try {
             // 1. 문서번호 생성
@@ -221,6 +234,15 @@ public class ReceiptTripServiceImpl implements ReceiptTripService {
         if (Boolean.TRUE.equals(entity.getDeleted())) {
             throw new IllegalArgumentException("삭제된 출장입니다. idx: " + idx);
         }
+
+        // 참여기간 검증 — 작성자(drafter) + 출장 인원이 출장 전 기간에 모두 활성이어야 함
+        validateTripParticipationPeriod(
+                updateDTO.getProjectIdx() != null ? updateDTO.getProjectIdx() : entity.getProjectIdx(),
+                updateDTO.getTripDate() != null ? updateDTO.getTripDate() : entity.getTripDate(),
+                updateDTO.getDuration() != null ? updateDTO.getDuration() : entity.getDuration(),
+                updateDTO.getAttendees(),
+                updateDTO.getDrafterUserIdx() != null ? updateDTO.getDrafterUserIdx() : entity.getDrafterUserIdx()
+        );
 
         mapper.updateEntity(entity, updateDTO);
 
@@ -524,5 +546,42 @@ public class ReceiptTripServiceImpl implements ReceiptTripService {
         return value != null ? value : BigDecimal.ZERO;
     }
 
+    /**
+     * 출장 참여기간 검증.
+     * - duration 은 박 수 (0=당일). 출장 일수 = duration + 1, 출장 종료일 = tripDate + duration.
+     * - 출장 참석자는 항상 내부인 (DTO 에 isExternal 필드 없음)
+     * - 작성자(drafter) + 출장 참석자가 출장 전 기간에 활성이어야 함
+     */
+    private void validateTripParticipationPeriod(Long projectIdx,
+                                                 LocalDate tripDate,
+                                                 Integer duration,
+                                                 List<ReceiptTripAttendeeDTO> attendees,
+                                                 Long drafterUserIdx) {
+        if (projectIdx == null || tripDate == null) {
+            return;
+        }
 
+        List<Long> userIdxList = new ArrayList<>();
+        if (attendees != null) {
+            attendees.stream()
+                    .map(ReceiptTripAttendeeDTO::getUserIdx)
+                    .filter(Objects::nonNull)
+                    .forEach(userIdxList::add);
+        }
+        if (drafterUserIdx != null) {
+            userIdxList.add(drafterUserIdx);
+        }
+        if (userIdxList.isEmpty()) {
+            return;
+        }
+
+        int nights = duration != null ? duration : 0;
+        LocalDate endDate = tripDate.plusDays(nights);
+
+        if (endDate.isEqual(tripDate)) {
+            projectMemberValidationService.validateActiveOn(projectIdx, userIdxList, tripDate);
+        } else {
+            projectMemberValidationService.validateActiveDuring(projectIdx, userIdxList, tripDate, endDate);
+        }
+    }
 }

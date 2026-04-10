@@ -76,4 +76,15 @@ public interface ReceiptMeetingRepository extends JpaRepository<ReceiptMeeting, 
             "WHERE rm.documentIdx = :documentIdx")
     Optional<ReceiptMeeting> findByDocumentIdx(@Param("documentIdx") Long documentIdx);
 
+    /**
+     * 참여기간 검증용 — 작성자가 본 프로젝트 내에서 작성한 모든 활성 회의록 조회.
+     * 멤버 기간 단축 시 orphan 사전 검사에서 사용.
+     */
+    @Query("SELECT rm FROM ReceiptMeeting rm " +
+            "WHERE rm.authorIdx = :authorIdx " +
+            "AND rm.projectIdx = :projectIdx " +
+            "AND rm.isDeleted = false")
+    List<ReceiptMeeting> findActiveByAuthorAndProject(
+            @Param("authorIdx") Long authorIdx,
+            @Param("projectIdx") Long projectIdx);
 }

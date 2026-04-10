@@ -44,4 +44,15 @@ public interface ReceiptOvertimeRepository extends JpaRepository<ReceiptOvertime
      * ApprovalDocument IDX로 야근식대 조회
      */
     Optional<ReceiptOvertime> findByDocumentIdx(Long documentIdx);
+
+    /**
+     * 참여기간 검증용 — 작성자가 본 프로젝트 내에서 작성한 모든 활성 야근식대 조회.
+     */
+    @Query("SELECT ro FROM ReceiptOvertime ro " +
+            "WHERE ro.authorIdx = :authorIdx " +
+            "AND ro.projectIdx = :projectIdx " +
+            "AND ro.isDeleted = false")
+    List<ReceiptOvertime> findActiveByAuthorAndProject(
+            @Param("authorIdx") Long authorIdx,
+            @Param("projectIdx") Long projectIdx);
 }

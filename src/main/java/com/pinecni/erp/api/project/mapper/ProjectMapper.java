@@ -365,6 +365,45 @@ public class ProjectMapper {
      * ProjectMember Entity → ProjectMemberDTO 변환
      * 배치 조회된 Map을 사용해 DB 호출 없이 처리
      */
+    /**
+     * 멤버 엔티티 리스트를 DTO 리스트로 변환 (가벼운 변환 — 예산/관계 등 미포함)
+     *
+     * 참여기간 검증용 엔드포인트(/members/active)처럼 멤버 정보만 필요한 경우 사용한다.
+     * - User, Code 배치 조회만 수행 (4 queries 수준)
+     * - 직급 정렬 순서로 정렬
+     */
+    public List<ProjectMemberDTO> mapMembersOnly(List<ProjectMember> memberEntities) {
+        if (memberEntities == null || memberEntities.isEmpty()) {
+            return Collections.emptyList();
+        }
+
+        // User 배치 조회
+        Set<Long> userIdxSet = memberEntities.stream()
+                .map(ProjectMember::getEmployeeIdx)
+                .filter(Objects::nonNull)
+                .collect(Collectors.toCollection(HashSet::new));
+        Map<Long, User> userMap = userIdxSet.isEmpty()
+                ? Collections.emptyMap()
+                : userRepository.findAllById(userIdxSet).stream()
+                        .collect(Collectors.toMap(User::getIdx, u -> u));
+
+        // Code 배치 조회
+        Map<String, String> deptCodeMap = codeRepository.findByGroupCode("C01").stream()
+                .collect(Collectors.toMap(Code::getCode, Code::getCodeName, (a, b) -> a));
+        List<Code> positionCodes = codeRepository.findByGroupCode("C02");
+        Map<String, String> positionNameMap = positionCodes.stream()
+                .collect(Collectors.toMap(Code::getCode, Code::getCodeName, (a, b) -> a));
+        Map<String, Integer> positionSortMap = positionCodes.stream()
+                .collect(Collectors.toMap(Code::getCode, Code::getSortOrder, (a, b) -> a));
+
+        return memberEntities.stream()
+                .map(m -> toMemberDTO(m, userMap, deptCodeMap, positionNameMap, positionSortMap))
+                .sorted((m1, m2) -> Integer.compare(
+                        getPositionOrder(m1.getEmployeePositionName()),
+                        getPositionOrder(m2.getEmployeePositionName())))
+                .collect(Collectors.toList());
+    }
+
     private ProjectMemberDTO toMemberDTO(ProjectMember member,
                                           Map<Long, User> userMap,
                                           Map<String, String> deptCodeMap,

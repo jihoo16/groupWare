@@ -11,6 +11,7 @@ import com.pinecni.erp.api.document.repository.ReceiptPurchaseAttachmentReposito
 import com.pinecni.erp.api.document.repository.ReceiptPurchaseItemRepository;
 import com.pinecni.erp.api.document.repository.ReceiptPurchaseRepository;
 import com.pinecni.erp.api.project.repository.ProjectCardRepository;
+import com.pinecni.erp.api.project.service.ProjectMemberValidationService;
 import com.pinecni.erp.constant.CodeConstants;
 import com.pinecni.erp.entity.ApprovalDocument;
 import com.pinecni.erp.entity.ReceiptPurchase;
@@ -50,6 +51,7 @@ public class ReceiptPurchaseServiceImpl implements ReceiptPurchaseService {
     private final ApprovalDocumentRepository approvalDocumentRepository;
     private final DocumentSequenceService documentSequenceService;
     private final ProjectCardRepository projectCardRepository;
+    private final ProjectMemberValidationService projectMemberValidationService;
 
     @Value("${file.base.dir}")
     private String baseDir;
@@ -117,6 +119,15 @@ public class ReceiptPurchaseServiceImpl implements ReceiptPurchaseService {
                                                      List<MultipartFile> estimateFiles,
                                                      List<MultipartFile> bankCopyFiles,
                                                      Long uploadUserIdx) {
+        // 0. 참여기간 검증 — 작성자가 지출일에 본 프로젝트의 활성 참여연구원이어야 함
+        if (dto.getAuthorIdx() != null) {
+            projectMemberValidationService.validateActiveOn(
+                    dto.getProjectIdx(),
+                    Collections.singletonList(dto.getAuthorIdx()),
+                    dto.getApprovalDate()
+            );
+        }
+
         String purchaseType = dto.getPurchaseType() != null ? dto.getPurchaseType() : "material";
         CodeConstants.DocumentType docType = "material".equals(purchaseType)
                 ? CodeConstants.DocumentType.RECEIPT_MATERIAL
@@ -177,6 +188,15 @@ public class ReceiptPurchaseServiceImpl implements ReceiptPurchaseService {
                                                      List<MultipartFile> bankCopyFiles,
                                                      List<Long> deletedAttachmentIds,
                                                      Long uploadUserIdx) {
+        // 0. 참여기간 검증 — 작성자가 지출일에 본 프로젝트의 활성 참여연구원이어야 함
+        if (dto.getAuthorIdx() != null) {
+            projectMemberValidationService.validateActiveOn(
+                    dto.getProjectIdx(),
+                    Collections.singletonList(dto.getAuthorIdx()),
+                    dto.getApprovalDate()
+            );
+        }
+
         ReceiptPurchase entity = receiptPurchaseRepository.findById(idx)
                 .orElseThrow(() -> new IllegalArgumentException("구매품의를 찾을 수 없습니다. idx: " + idx));
 

@@ -12,6 +12,7 @@ import com.pinecni.erp.api.document.repository.ReceiptAttendeeRepository;
 import com.pinecni.erp.api.document.repository.ReceiptOvertimeRepository;
 import com.pinecni.erp.api.project.repository.ProjectCardRepository;
 import com.pinecni.erp.api.project.repository.ProjectRepository;
+import com.pinecni.erp.api.project.service.ProjectMemberValidationService;
 import com.pinecni.erp.api.user.repository.UserRepository;
 import com.pinecni.erp.constant.CodeConstants;
 import com.pinecni.erp.entity.*;
@@ -58,6 +59,7 @@ public class ReceiptOvertimeServiceImpl implements ReceiptOvertimeService {
     private final ProjectRepository projectRepository;
     private final ProjectCardRepository projectCardRepository;
     private final UserRepository userRepository;
+    private final ProjectMemberValidationService projectMemberValidationService;
 
     private static final CodeConstants.DocumentType DOC_TYPE = CodeConstants.DocumentType.RECEIPT_OVERTIME;
 
@@ -176,6 +178,13 @@ public class ReceiptOvertimeServiceImpl implements ReceiptOvertimeService {
     @Transactional
     public ReceiptOvertimeDTO createReceiptOvertime(ReceiptOvertimeCreateDTO createDTO, Long currentUserIdx) {
         log.debug("야근식대 생성 - projectIdx: {}, authorIdx: {}, currentUserIdx: {}", createDTO.getProjectIdx(), createDTO.getAuthorIdx(), currentUserIdx);
+
+        // 0. 참여기간 검증 — 작성자 + 모든 참석자가 야근일에 활성 참여 중이어야 함
+        projectMemberValidationService.validateActiveOn(
+                createDTO.getProjectIdx(),
+                mergeAuthorAndAttendees(createDTO.getAuthorIdx(), createDTO.getAttendees()),
+                createDTO.getOvertimeDate()
+        );
 
         try {
             // 1. 프로젝트 조회
@@ -318,6 +327,13 @@ public class ReceiptOvertimeServiceImpl implements ReceiptOvertimeService {
     @Transactional
     public ReceiptOvertimeDTO updateReceiptOvertime(Long idx, ReceiptOvertimeCreateDTO updateDTO, Long currentUserIdx) {
         log.debug("야근식대 수정 - idx: {}, currentUserIdx: {}", idx, currentUserIdx);
+
+        // 0. 참여기간 검증 — 작성자 + 참석자
+        projectMemberValidationService.validateActiveOn(
+                updateDTO.getProjectIdx(),
+                mergeAuthorAndAttendees(updateDTO.getAuthorIdx(), updateDTO.getAttendees()),
+                updateDTO.getOvertimeDate()
+        );
 
         try {
             // 1. 기존 야근식대 조회
@@ -654,5 +670,30 @@ public class ReceiptOvertimeServiceImpl implements ReceiptOvertimeService {
             }
         }
         log.debug("첨부파일 파일명 갱신 완료 - receiptOvertimeIdx: {}", overtime.getIdx());
+    }
+
+    /**
+     * 야근식대 참석자 DTO 리스트에서 내부 사용자 IDX 만 추출.
+     * 야근식대 참석자는 외부 인원 개념이 없으므로 모두 내부인이다.
+     */
+    private List<Long> extractInternalUserIdxList(List<ReceiptOvertimeAttendeeDTO> attendees) {
+        if (attendees == null || attendees.isEmpty()) {
+            return Collections.emptyList();
+        }
+        return attendees.stream()
+                .map(ReceiptOvertimeAttendeeDTO::getUserIdx)
+                .filter(java.util.Objects::nonNull)
+                .collect(Collectors.toList());
+    }
+
+    /**
+     * 작성자 + 내부 참석자 IDX 를 합쳐 단일 검증 리스트로 반환.
+     */
+    private List<Long> mergeAuthorAndAttendees(Long authorIdx, List<ReceiptOvertimeAttendeeDTO> attendees) {
+        List<Long> result = new ArrayList<>(extractInternalUserIdxList(attendees));
+        if (authorIdx != null) {
+            result.add(authorIdx);
+        }
+        return result;
     }
 }

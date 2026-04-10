@@ -100,6 +100,148 @@ document.addEventListener('DOMContentLoaded', async function() {
     // ============================================
     // 프로젝트 참여인원 및 경비 설정 로드
     // ============================================
+    // ============================================
+    // 참여기간 검증 헬퍼 (야근식대는 단일 날짜 검증)
+    // ============================================
+
+    function isMemberActiveOnDate(member, dateStr) {
+        if (!dateStr) return true;
+        if (!member || !member.participationStartDate) return false;
+        if (member.participationStartDate > dateStr) return false;
+        const end = member.participationEndDate;
+        if (end && end < dateStr) return false;
+        return true;
+    }
+
+    function formatMemberPeriod(member) {
+        if (!member) return '';
+        const s = member.participationStartDate || '?';
+        const e = member.participationEndDate || '종료 미정';
+        return `${s} ~ ${e}`;
+    }
+
+    function buildInactiveMemberHtml(member, dateLabel, dateValue, roleContext) {
+        const name = member.name || member.employeeName || '(이름 없음)';
+        const period = formatMemberPeriod(member);
+        return `
+            <div style="text-align:left; line-height:1.6;">
+                <p style="margin-bottom:12px;">
+                    <strong>${name}</strong> 님은
+                    <strong>${dateValue}</strong> 에 본 프로젝트의 활성 참여연구원이 아닙니다.
+                </p>
+                <div style="background:#f1f5f9; padding:10px 14px; border-radius:6px; font-size:13px;">
+                    <div>· ${dateLabel}: <strong>${dateValue}</strong></div>
+                    <div>· ${name} 님 참여기간: <strong>${period}</strong></div>
+                </div>
+                <p style="margin-top:14px; margin-bottom:6px; font-weight:600;">다음 중 하나를 진행해주세요:</p>
+                <ol style="margin:0; padding-left:20px; font-size:13px;">
+                    <li>다른 ${roleContext}를 선택</li>
+                    <li>${dateLabel}을 ${name} 님의 참여기간 내로 변경</li>
+                    <li>프로젝트 관리에서 ${name} 님의 참여기간을 연장 (관리자 권한 필요)</li>
+                </ol>
+            </div>
+        `;
+    }
+
+    async function showInactiveMemberAlert(member, dateLabel, dateValue, roleContext) {
+        return Swal.fire({
+            icon: 'warning',
+            title: '참여기간 외 인원',
+            html: buildInactiveMemberHtml(member, dateLabel, dateValue, roleContext),
+            confirmButtonText: '확인',
+            width: 540
+        });
+    }
+
+    /**
+     * 야근 날짜(ot_approval_date) 변경 또는 수정 모드 진입 시
+     * 신청자 + 야근 인원이 새 날짜에 활성인지 재검증.
+     * 비활성이 발견되면 사용자에게 안내 + confirm 후 자동 제거/필드 비움.
+     */
+    async function revalidateOvertimeAgainstDate() {
+        const overtimeDateStr = document.getElementById('ot_approval_date')?.value || '';
+        if (!overtimeDateStr) return;
+        if (!projectMembers || projectMembers.length === 0) return;
+
+        const memberByEmployeeIdx = new Map();
+        projectMembers.forEach(m => {
+            memberByEmployeeIdx.set(String(m.employeeIdx), m);
+        });
+
+        const inactive = [];
+        const inactiveIds = new Set();
+
+        // 1) 신청자 검사
+        const applicantId = document.getElementById('selectedApplicantIdx')?.value || '';
+        if (applicantId) {
+            const m = memberByEmployeeIdx.get(String(applicantId));
+            if (m && !isMemberActiveOnDate(m, overtimeDateStr)) {
+                const name = document.getElementById('ot_applicant')?.value || m.employeeName;
+                inactive.push({ id: applicantId, name, role: '신청자', period: formatMemberPeriod(m) });
+            }
+        }
+
+        // 2) 현재 야근 인원 검사
+        const currentPersons = (typeof window.getCurrentOvertimePersons === 'function')
+            ? window.getCurrentOvertimePersons() : [];
+        if (Array.isArray(currentPersons)) {
+            currentPersons.forEach(p => {
+                const m = memberByEmployeeIdx.get(String(p.id));
+                if (!m) return;
+                if (!isMemberActiveOnDate(m, overtimeDateStr)) {
+                    inactive.push({ id: p.id, name: p.name, role: '야근 인원', period: formatMemberPeriod(m) });
+                    inactiveIds.add(String(p.id));
+                }
+            });
+        }
+
+        if (inactive.length === 0) return;
+
+        const list = inactive
+            .map(i => `<li><strong>${i.name}</strong> <span style="color:#64748b;">(${i.role})</span> — 참여기간: ${i.period}</li>`)
+            .join('');
+        const result = await Swal.fire({
+            icon: 'warning',
+            title: '참여기간 외 인원',
+            html: `
+                <div style="text-align:left; line-height:1.6;">
+                    <p>야근 날짜 <strong>${overtimeDateStr}</strong> 에 본 프로젝트 참여 중이 아닌 인원이 있습니다:</p>
+                    <ul style="margin:8px 0 12px 16px;">${list}</ul>
+                    <p style="margin-top:10px; font-weight:600;">다음 중 하나를 진행해주세요:</p>
+                    <ol style="margin:0; padding-left:20px; font-size:13px;">
+                        <li>위 인원을 자동 제거 ("제거" 버튼)</li>
+                        <li>야근 날짜를 되돌리기 ("되돌리기" 버튼)</li>
+                        <li>제거 후 신청자가 사라지면 다른 신청자를 새로 선택</li>
+                    </ol>
+                </div>
+            `,
+            showCancelButton: true,
+            confirmButtonText: '제거',
+            cancelButtonText: '되돌리기',
+            width: 540
+        });
+
+        if (result.isConfirmed) {
+            // 신청자 비활성이면 필드 비움
+            if (applicantId && inactive.some(i => String(i.id) === String(applicantId) && i.role === '신청자')) {
+                selectedApplicant = null;
+                const otApplicantEl = document.getElementById('ot_applicant');
+                const selectedApplicantIdxEl = document.getElementById('selectedApplicantIdx');
+                if (otApplicantEl) otApplicantEl.value = '';
+                if (selectedApplicantIdxEl) selectedApplicantIdxEl.value = '';
+            }
+            // 야근 인원 중 비활성 제거
+            if (inactiveIds.size > 0 && typeof window.addOvertimePersonsToOvertime === 'function') {
+                const updated = currentPersons.filter(p => !inactiveIds.has(String(p.id)));
+                window.addOvertimePersonsToOvertime(updated);
+            }
+        } else {
+            // 날짜 되돌리기
+            const dateInput = document.getElementById('ot_approval_date');
+            if (dateInput) dateInput.value = '';
+        }
+    }
+
     async function loadProjectMembers(projectIdx) {
         if (!projectIdx) {
             projectMembers = [];
@@ -156,7 +298,9 @@ document.addEventListener('DOMContentLoaded', async function() {
                 name: member.employeeName,
                 position: positionName,
                 dept: member.employeeDeptName || '-',
-                overtimeExpense: overtimeExpense
+                overtimeExpense: overtimeExpense,
+                participationStartDate: member.participationStartDate || null,
+                participationEndDate: member.participationEndDate || null
             };
         });
     }
@@ -481,9 +625,15 @@ document.addEventListener('DOMContentLoaded', async function() {
             }
 
             // 수정 모드에서 필수 필드 검증 실행 (인쇄 버튼 표시)
-            setTimeout(() => {
+            setTimeout(async () => {
                 window._otLoadingData = false;
                 validateRequiredFields();
+                // 수정 모드 진입 즉시 — 신청자/야근 인원이 야근 날짜에 활성인지 재검증
+                try {
+                    await revalidateOvertimeAgainstDate();
+                } catch (e) {
+                    console.warn('[loadExistingData] 참여기간 재검증 오류:', e);
+                }
             }, 500);
 
             // 로딩 오버레이 숨김
@@ -1232,6 +1382,8 @@ document.addEventListener('DOMContentLoaded', async function() {
             return;
         }
 
+        const overtimeDateForApplicant = document.getElementById('ot_approval_date')?.value || '';
+
         list.forEach(member => {
             const item = document.createElement('div');
             item.className = 'employee-item';
@@ -1243,7 +1395,10 @@ document.addEventListener('DOMContentLoaded', async function() {
             const duplicateInfo = duplicateAttendeesInfo[member.id];
             const isDuplicate = duplicateInfo?.hasDuplicate;
 
-            if (isDuplicate) {
+            // 참여기간 검증 (야근일 기준)
+            const isInactive = !isMemberActiveOnDate(member, overtimeDateForApplicant);
+
+            if (isDuplicate || isInactive) {
                 item.classList.add('duplicate-disabled');
                 item.style.cssText = 'opacity: 0.6; cursor: not-allowed;';
             }
@@ -1258,21 +1413,38 @@ document.addEventListener('DOMContentLoaded', async function() {
                 duplicateBadge = `<span style="background: #fee2e2; color: #991b1b; padding: 2px 8px; border-radius: 4px; font-size: 11px; margin-left: 8px; white-space: nowrap;" data-tip="${docInfo}"><i class="fas fa-ban"></i> 시간 중복</span>`;
             }
 
+            // 참여기간 외 뱃지
+            let inactiveBadge = '';
+            if (isInactive && overtimeDateForApplicant) {
+                const tip = `참여기간: ${formatMemberPeriod(member)}`;
+                inactiveBadge = `<span style="background:#e5e7eb; color:#4b5563; padding:2px 8px; border-radius:4px; font-size:11px; margin-left:8px; white-space:nowrap;" data-tip="${tip}"><i class="fas fa-calendar-times"></i> 참여기간 외</span>`;
+            }
+
             const isSelected = selectedApplicant && selectedApplicant.id === member.id;
             item.innerHTML = `
                 <div class="employee-info">
-                    <div class="employee-name"><i class="fas fa-user" style="margin-right:6px; color:#667eea;"></i>${highlightedName}${duplicateBadge}</div>
+                    <div class="employee-name"><i class="fas fa-user" style="margin-right:6px; color:#667eea;"></i>${highlightedName}${inactiveBadge}${duplicateBadge}</div>
                     <div class="employee-detail">${member.dept || '-'} · ${member.position || '-'}</div>
                 </div>
                 ${isSelected ? '<i class="fas fa-check-circle" style="color: #10b981; font-size: 18px; margin-left: auto;"></i>' : ''}
             `;
 
-            item.addEventListener('click', function() {
+            item.addEventListener('click', async function() {
                 // 중복인 경우 선택 불가
                 if (isDuplicate) {
                     const docs = duplicateInfo.documents || [];
                     const docInfo = docs.map(d => `${d.typeName} (${d.startTime}~${d.endTime})`).join('<br>');
                     showWarning(`${member.name}님은 이미 다른 문서에 등록되어 있습니다.<br><br>${docInfo}`);
+                    return;
+                }
+
+                // 참여기간 외 차단
+                if (isInactive) {
+                    if (!overtimeDateForApplicant) {
+                        showWarning('야근 날짜를 먼저 입력해주세요.');
+                        return;
+                    }
+                    await showInactiveMemberAlert(member, '야근 날짜', overtimeDateForApplicant, '신청자');
                     return;
                 }
 
@@ -1960,6 +2132,10 @@ document.addEventListener('DOMContentLoaded', async function() {
 
         if (otApprovalDate) {
             otApprovalDate.addEventListener('change', clearOvertimePersonsOnChange);
+            // 야근 날짜 변경 시 신청자/야근 인원 참여기간 재검증
+            otApprovalDate.addEventListener('change', async function() {
+                await revalidateOvertimeAgainstDate();
+            });
         }
         if (otStartTime) {
             otStartTime.addEventListener('change', clearOvertimePersonsOnChange);
@@ -2155,6 +2331,7 @@ document.addEventListener('DOMContentLoaded', async function() {
     function updateReceiptFileList() {
         if (!receiptFileList) return;
 
+        if (typeof window.revokeChipThumbs === 'function') window.revokeChipThumbs(receiptFileList);
         receiptFileList.innerHTML = '';
 
         // 1. 기존 파일 표시 (삭제 예정인 파일 제외)
@@ -2174,6 +2351,9 @@ document.addEventListener('DOMContentLoaded', async function() {
                     <i class="fas fa-times"></i>
                 </button>
             `;
+            if (typeof window.attachThumbToFileItem === 'function') {
+                window.attachThumbToFileItem(item, `/api/receipt-overtimes/attachments/${att.idx}/download`, att.originalFilename);
+            }
             receiptFileList.appendChild(item);
         });
 
@@ -2188,6 +2368,9 @@ document.addEventListener('DOMContentLoaded', async function() {
                     <i class="fas fa-times"></i>
                 </button>
             `;
+            if (typeof window.attachThumbToFileItem === 'function') {
+                window.attachThumbToFileItem(item, file);
+            }
             receiptFileList.appendChild(item);
         });
 
@@ -2246,6 +2429,33 @@ document.addEventListener('DOMContentLoaded', async function() {
 
     setupUpload(receiptInput, receiptUploadArea, selectedReceiptFiles, updateReceiptFileList);
     setupUpload(documentInput, documentUploadArea, selectedDocumentFiles, updateDocumentFileList);
+
+    // 클립보드 이미지 붙여넣기 — 영수증 슬롯에만 적용
+    if (typeof window.setupClipboardImagePaste === 'function') {
+        window.setupClipboardImagePaste({
+            resolveTarget: () => ({
+                addFile: (file) => {
+                    if (selectedReceiptFiles.length >= 5) {
+                        showWarning('최대 5개까지만 첨부 가능합니다.');
+                        return false;
+                    }
+                    if (file.size > 10 * 1024 * 1024) {
+                        showWarning('파일 크기는 10MB를 초과할 수 없습니다.');
+                        return false;
+                    }
+                    selectedReceiptFiles.push(file);
+                    updateReceiptFileList();
+                    if (receiptUploadArea) {
+                        receiptUploadArea.classList.remove('paste-flash');
+                        void receiptUploadArea.offsetWidth;
+                        receiptUploadArea.classList.add('paste-flash');
+                    }
+                    return true;
+                },
+                label: '영수증',
+            }),
+        });
+    }
 
     window.removeReceiptFile = function(index) { selectedReceiptFiles.splice(index, 1); updateReceiptFileList(); };
     window.removeDocumentFile = function(index) { selectedDocumentFiles.splice(index, 1); updateDocumentFileList(); };
@@ -2914,6 +3124,7 @@ document.addEventListener('DOMContentLoaded', async function() {
         }
 
         const applicantIdx = document.getElementById('selectedApplicantIdx')?.value || '';
+        const overtimeDateStr = document.getElementById('ot_approval_date')?.value || '';
         overtimePersonList2El.innerHTML = filtered.map(person => {
             const isSelected = tempSelectedOvertimePersons.some(a => String(a.id) === String(person.id));
             const isApplicant = String(person.id) === String(applicantIdx);
@@ -2922,6 +3133,10 @@ document.addEventListener('DOMContentLoaded', async function() {
             // 중복 체크
             const duplicateInfo = duplicateAttendeesInfo[person.id];
             const isDuplicate = duplicateInfo?.hasDuplicate;
+
+            // 참여기간 검증 (야근일 기준)
+            const isInactive = !isMemberActiveOnDate(person, overtimeDateStr);
+
             let statusBadge = '';
             if (isApplicant) {
                 statusBadge = `<span style="background: #e0e7ff; color: #4338ca; padding: 2px 8px; border-radius: 4px; font-size: 11px; margin-left: 8px; white-space: nowrap;"><i class="fas fa-user-check"></i> 신청자</span>`;
@@ -2932,7 +3147,14 @@ document.addEventListener('DOMContentLoaded', async function() {
                 statusBadge = `<span style="background: #fee2e2; color: #991b1b; padding: 2px 8px; border-radius: 4px; font-size: 11px; margin-left: 8px; white-space: nowrap;" data-tip="${tooltipText}"><i class="fas fa-ban"></i> 시간 중복</span>`;
             }
 
-            const isLocked = isApplicant || (isDuplicate && !isApplicant);
+            // 참여기간 외 뱃지
+            let inactiveBadge = '';
+            if (isInactive && overtimeDateStr) {
+                const tip = `참여기간: ${formatMemberPeriod(person)}`;
+                inactiveBadge = `<span style="background:#e5e7eb; color:#4b5563; padding:2px 8px; border-radius:4px; font-size:11px; margin-left:8px; white-space:nowrap;" data-tip="${tip}"><i class="fas fa-calendar-times"></i> 참여기간 외</span>`;
+            }
+
+            const isLocked = isApplicant || (isDuplicate && !isApplicant) || isInactive;
             const onclickAttr = isLocked ? '' : `onclick="toggleOvertimePerson(${person.id})"`;
             const lockedStyle = isLocked ? 'opacity: 0.6; cursor: not-allowed;' : '';
             const checkIcon = isApplicant
@@ -2945,7 +3167,7 @@ document.addEventListener('DOMContentLoaded', async function() {
                      ${onclickAttr}
                      style="${lockedStyle}">
                     <div class="employee-info">
-                        <div class="employee-name">${person.name}${statusBadge}</div>
+                        <div class="employee-name">${person.name}${statusBadge}${inactiveBadge}</div>
                         <div class="employee-detail">${person.position} · ${person.dept} · ${formattedExpense}</div>
                     </div>
                     ${checkIcon}
@@ -2955,7 +3177,7 @@ document.addEventListener('DOMContentLoaded', async function() {
     }
 
     // 인원 선택 토글
-    window.toggleOvertimePerson = function(personId) {
+    window.toggleOvertimePerson = async function(personId) {
         const persons = getOvertimePersons();
         const person = persons.find(p => p.id === personId);
         if (!person) return;
@@ -2970,6 +3192,17 @@ document.addEventListener('DOMContentLoaded', async function() {
             const docs = duplicateInfo.documents || [];
             const docInfo = docs.map(d => `${d.typeName} (${d.startTime}~${d.endTime})`).join('<br>');
             showWarning(`${person.name}님은 이미 다른 문서에 등록되어 있습니다.<br><br>${docInfo}`);
+            return;
+        }
+
+        // 참여기간 검증
+        const overtimeDateStr = document.getElementById('ot_approval_date')?.value || '';
+        if (!overtimeDateStr) {
+            showWarning('야근 날짜를 먼저 입력해주세요.');
+            return;
+        }
+        if (!isMemberActiveOnDate(person, overtimeDateStr)) {
+            await showInactiveMemberAlert(person, '야근 날짜', overtimeDateStr, '인원');
             return;
         }
 

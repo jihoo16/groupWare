@@ -30,4 +30,15 @@ public interface ReceiptPurchaseRepository extends JpaRepository<ReceiptPurchase
     List<ReceiptPurchase> findAllByOrderByApprovalDateDesc();
 
     Optional<ReceiptPurchase> findByDocumentIdx(Long documentIdx);
+
+    /**
+     * 참여기간 검증용 — 작성자가 본 프로젝트 내에서 작성한 모든 활성 구매(재료비/장비비) 조회.
+     * @SQLRestriction("is_deleted = false") 가 자동 적용된다.
+     */
+    @Query("SELECT rp FROM ReceiptPurchase rp " +
+            "WHERE rp.authorIdx = :authorIdx " +
+            "AND rp.projectIdx = :projectIdx")
+    List<ReceiptPurchase> findActiveByAuthorAndProject(
+            @Param("authorIdx") Long authorIdx,
+            @Param("projectIdx") Long projectIdx);
 }

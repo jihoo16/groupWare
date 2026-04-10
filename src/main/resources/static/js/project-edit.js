@@ -1499,6 +1499,13 @@
                 return;
             }
 
+            // 409 Conflict — 참여기간 변경으로 기존 문서가 새 기간 밖이 됨
+            if (response.status === 409) {
+                const errorData = await response.json();
+                await showParticipationConflict(errorData);
+                return;
+            }
+
             if (!response.ok) {
                 throw new Error('프로젝트 수정에 실패했습니다.');
             }
@@ -1525,6 +1532,80 @@
             console.error('Error updating project:', error);
             await showError('프로젝트 수정 중 오류가 발생했습니다.');
         }
+    }
+
+    /**
+     * 참여기간 충돌 안내 — 백엔드가 반환한 conflicts 리스트를 사용자에게 표시.
+     * "무엇이 잘못되었는지 + 다음에 어떤 액션을 취해야 하는지" 명시.
+     *
+     * 응답 형식 (ProjectController.updateProject 의 ParticipationPeriodException 핸들러):
+     * { error, code, conflicts: [{ userIdx, userName, periodStart, periodEnd,
+     *                              documentTypePrefix, receiptIdx, documentDate }] }
+     */
+    async function showParticipationConflict(errorData) {
+        const conflicts = Array.isArray(errorData?.conflicts) ? errorData.conflicts : [];
+
+        // 사용자별로 그룹핑
+        const grouped = {};
+        conflicts.forEach(c => {
+            const key = c.userName || `(IDX=${c.userIdx})`;
+            if (!grouped[key]) grouped[key] = [];
+            grouped[key].push(c);
+        });
+
+        // 문서 타입 → 한글 라벨
+        const typeLabel = {
+            'RCM':  '회의록',
+            'RCT':  '출장',
+            'RCO':  '야근식대',
+            'RCTM': '출장+회의',
+            'RCP':  '재료비/장비비'
+        };
+
+        const detail = Object.entries(grouped).map(([name, list]) => {
+            // 사용자별 새 참여기간 표시
+            const first = list[0] || {};
+            const newStart = first.periodStart || null;
+            const newEnd = first.periodEnd || null;
+            const newPeriodLabel = (newStart || newEnd)
+                ? `(새 기간: <strong>${newStart || '?'} ~ ${newEnd || '종료 미정'}</strong>)`
+                : `(<strong>비활성화</strong> 처리 — 모든 문서가 충돌)`;
+
+            const items = list.map(c => {
+                const type = typeLabel[c.documentTypePrefix] || c.documentTypePrefix || '문서';
+                const date = c.documentDate || '?';
+                return `<li>${type} · 작성일 <strong>${date}</strong></li>`;
+            }).join('');
+            return `
+                <li style="margin-bottom:10px;">
+                    <strong>${name}</strong> ${newPeriodLabel}
+                    <div style="color:#64748b; font-size:12px; margin-top:2px;">아래 ${list.length}건의 기존 문서가 새 기간 밖에 있습니다:</div>
+                    <ul style="margin:4px 0 4px 16px;">${items}</ul>
+                </li>`;
+        }).join('');
+
+        await Swal.fire({
+            icon: 'error',
+            title: '참여기간을 변경할 수 없습니다',
+            html: `
+                <div style="text-align:left; line-height:1.6; max-height:60vh; overflow-y:auto;">
+                    <p style="margin-bottom:12px;">
+                        변경하려는 새 참여기간 밖에 위치한 <strong>기존 문서</strong>가 있어 저장이 차단되었습니다.
+                    </p>
+                    <ul style="margin:0 0 12px; padding-left:20px;">${detail}</ul>
+                    <div style="background:#fef3c7; padding:12px 14px; border-radius:6px; font-size:13px;">
+                        <div style="font-weight:600; margin-bottom:6px;">다음 중 하나를 진행해주세요:</div>
+                        <ol style="margin:0; padding-left:18px;">
+                            <li>위 문서들을 <strong>먼저 삭제하거나 수정</strong>한 후 멤버 기간 변경 재시도</li>
+                            <li>해당 인원의 새 참여기간을 <strong>위 문서 날짜를 모두 포함하도록</strong> 다시 설정</li>
+                            <li>해당 인원을 <strong>비활성화하지 말고</strong> 기간만 그대로 두기</li>
+                        </ol>
+                    </div>
+                </div>
+            `,
+            confirmButtonText: '확인',
+            width: 680
+        });
     }
 
     // SweetAlert2 경고 + 모달이 완전히 닫힌 후 포커스 이동

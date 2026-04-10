@@ -191,6 +191,7 @@ document.addEventListener('DOMContentLoaded', async function() {
     }
 
     setupFileUpload();
+    setupClipboardPasteForPurchase();
     setupToggle();
     setupProjectInput();
 
@@ -260,6 +261,91 @@ document.addEventListener('DOMContentLoaded', async function() {
         } catch (e) {
             console.error('프로젝트 로드 오류:', e);
         }
+    }
+
+    // ============================================
+    // 참여기간 검증 헬퍼 (재료비/장비비 — 단일 날짜 검증)
+    // ============================================
+
+    function isMemberActiveOnDate(member, dateStr) {
+        if (!dateStr) return true;
+        if (!member || !member.participationStartDate) return false;
+        if (member.participationStartDate > dateStr) return false;
+        const end = member.participationEndDate;
+        if (end && end < dateStr) return false;
+        return true;
+    }
+
+    function formatMemberPeriod(member) {
+        if (!member) return '';
+        const s = member.participationStartDate || '?';
+        const e = member.participationEndDate || '종료 미정';
+        return `${s} ~ ${e}`;
+    }
+
+    function buildInactiveMemberHtml(member, dateLabel, dateValue, roleContext) {
+        const name = member.name || member.employeeName || '(이름 없음)';
+        const period = formatMemberPeriod(member);
+        return `
+            <div style="text-align:left; line-height:1.6;">
+                <p style="margin-bottom:12px;">
+                    <strong>${name}</strong> 님은
+                    <strong>${dateValue}</strong> 에 본 프로젝트의 활성 참여연구원이 아닙니다.
+                </p>
+                <div style="background:#f1f5f9; padding:10px 14px; border-radius:6px; font-size:13px;">
+                    <div>· ${dateLabel}: <strong>${dateValue}</strong></div>
+                    <div>· ${name} 님 참여기간: <strong>${period}</strong></div>
+                </div>
+                <p style="margin-top:14px; margin-bottom:6px; font-weight:600;">다음 중 하나를 진행해주세요:</p>
+                <ol style="margin:0; padding-left:20px; font-size:13px;">
+                    <li>다른 ${roleContext}를 선택</li>
+                    <li>${dateLabel}을 ${name} 님의 참여기간 내로 변경</li>
+                    <li>프로젝트 관리에서 ${name} 님의 참여기간을 연장 (관리자 권한 필요)</li>
+                </ol>
+            </div>
+        `;
+    }
+
+    async function showInactiveMemberAlert(member, dateLabel, dateValue, roleContext) {
+        return Swal.fire({
+            icon: 'warning',
+            title: '참여기간 외 인원',
+            html: buildInactiveMemberHtml(member, dateLabel, dateValue, roleContext),
+            confirmButtonText: '확인',
+            width: 540
+        });
+    }
+
+    /**
+     * 지출일 변경 시 현재 선택된 작성자(신청자) 가 새 날짜에 활성인지 재검증.
+     * 비활성이 되었으면 사용자 안내 + 작성자 필드 비움.
+     */
+    async function revalidateApplicantAgainstApprovalDate() {
+        const approvalDateStr = document.getElementById('pu_approval_date')?.value || '';
+        if (!approvalDateStr) return;
+        const currentApplicantIdx = document.getElementById('selectedApplicantIdx')?.value || '';
+        if (!currentApplicantIdx) return;
+        if (!projectMembers || projectMembers.length === 0) return;
+
+        const memberRaw = projectMembers.find(m =>
+            String(m.employeeIdx || m.userIdx || m.idx) === String(currentApplicantIdx)
+        );
+        if (!memberRaw) return;
+
+        const memberObj = {
+            name: memberRaw.employeeName || memberRaw.name || '',
+            participationStartDate: memberRaw.participationStartDate || null,
+            participationEndDate: memberRaw.participationEndDate || null
+        };
+        if (isMemberActiveOnDate(memberObj, approvalDateStr)) return;
+
+        // 비활성 — 안내 후 작성자 필드 비움
+        await showInactiveMemberAlert(memberObj, '지출일', approvalDateStr, '작성자');
+        selectedApplicant = null;
+        const applicantInput = document.getElementById('pu_applicant');
+        const applicantIdxInput = document.getElementById('selectedApplicantIdx');
+        if (applicantInput) applicantInput.value = '';
+        if (applicantIdxInput) applicantIdxInput.value = '';
     }
 
     // ============================================
@@ -692,7 +778,9 @@ document.addEventListener('DOMContentLoaded', async function() {
                 id: m.employeeIdx || m.userIdx || m.idx,
                 name: m.employeeName || m.userName || m.empName || m.name,
                 dept: m.employeeDeptName || m.dept || m.empDept || '',
-                position: m.employeePositionName || m.position || m.empPosition || ''
+                position: m.employeePositionName || m.position || m.empPosition || '',
+                participationStartDate: m.participationStartDate || null,
+                participationEndDate: m.participationEndDate || null
             }));
         }
         return employees;
@@ -706,18 +794,42 @@ document.addEventListener('DOMContentLoaded', async function() {
             container.innerHTML = `<div class="modal-empty-state"><i class="fas fa-user"></i><p>${keyword ? '검색 결과가 없습니다' : '프로젝트 참여인원이 없습니다'}</p></div>`;
             return;
         }
+        const approvalDateStr = document.getElementById('pu_approval_date')?.value || '';
         list.forEach(member => {
             const item = document.createElement('div');
             item.className = 'employee-item';
             const isSelected = selectedApplicant && selectedApplicant.idx === member.id;
             if (isSelected) item.classList.add('selected');
+
+            // 참여기간 검증 (지출일 기준)
+            const isInactive = !isMemberActiveOnDate(member, approvalDateStr);
+            let inactiveBadge = '';
+            if (isInactive && approvalDateStr) {
+                const tip = `참여기간: ${formatMemberPeriod(member)}`;
+                inactiveBadge = `<span style="background:#e5e7eb; color:#4b5563; padding:2px 8px; border-radius:4px; font-size:11px; margin-left:8px; white-space:nowrap;" data-tip="${tip}"><i class="fas fa-calendar-times"></i> 참여기간 외</span>`;
+            }
+            if (isInactive) {
+                item.classList.add('duplicate-disabled');
+                item.style.cssText = 'opacity:0.6; cursor:not-allowed;';
+            }
+
             item.innerHTML = `
                 <div class="employee-info">
-                    <div class="employee-name"><i class="fas fa-user" style="margin-right:6px;color:#667eea;"></i>${escapeHtml(member.name)}</div>
+                    <div class="employee-name"><i class="fas fa-user" style="margin-right:6px;color:#667eea;"></i>${escapeHtml(member.name)}${inactiveBadge}</div>
                     <div class="employee-detail">${escapeHtml(member.dept || '')} · ${escapeHtml(member.position || '')}</div>
                 </div>
                 ${isSelected ? '<i class="fas fa-check-circle" style="color: #10b981; font-size: 18px; margin-left: auto;"></i>' : ''}`;
-            item.addEventListener('click', function() {
+
+            item.addEventListener('click', async function() {
+                // 참여기간 검증
+                if (!approvalDateStr) {
+                    await Swal.fire({ icon: 'warning', title: '지출일을 먼저 입력해주세요.' });
+                    return;
+                }
+                if (isInactive) {
+                    await showInactiveMemberAlert(member, '지출일', approvalDateStr, '작성자');
+                    return;
+                }
                 selectedApplicant = { idx: member.id, name: member.name };
                 document.getElementById('pu_applicant').value = member.name;
                 document.getElementById('selectedApplicantIdx').value = member.id;
@@ -1042,6 +1154,112 @@ document.addEventListener('DOMContentLoaded', async function() {
         });
     }
 
+    // ============================================
+    // 클립보드 이미지 붙여넣기 (패턴 D — 다중 슬롯 활성 추적)
+    // 영수증/견적서/통장사본 3개 슬롯 paste 가능, 영수증이 기본 활성
+    // 공식문서는 paste 비대상 (PDF/HWP)
+    // ============================================
+    let activePurchaseSlot = 'receipt';
+
+    function getPasteSlots() {
+        // 슬롯 정의 — 가시 상태인 슬롯만 반환
+        const slots = {
+            receipt: {
+                area: document.getElementById('receiptUploadArea'),
+                list: receiptFileList,
+                files: selectedReceiptFiles,
+                label: '영수증',
+            },
+        };
+        if (purchaseType === 'equipment') {
+            const estArea = document.getElementById('estimateUploadArea');
+            if (estArea && estArea.offsetParent !== null) {
+                slots.estimate = {
+                    area: estArea,
+                    list: estimateFileList,
+                    files: selectedEstimateFiles,
+                    label: '견적서',
+                };
+            }
+        }
+        const bankArea = document.getElementById('bankCopyUploadArea');
+        const bankList = document.getElementById('bankCopyFileList');
+        if (bankArea && bankArea.offsetParent !== null && bankList) {
+            slots.bankCopy = {
+                area: bankArea,
+                list: bankList,
+                files: selectedBankCopyFiles,
+                label: '거래처 통장사본',
+            };
+        }
+        return slots;
+    }
+
+    function setActivePurchaseSlot(slotKey) {
+        const slots = getPasteSlots();
+        if (!slots[slotKey]) return;
+        activePurchaseSlot = slotKey;
+        // 모든 paste 가능 슬롯에서 .paste-active 제거 후 현재 슬롯에만 추가
+        ['receipt', 'estimate', 'bankCopy'].forEach(k => {
+            const a = document.getElementById(
+                k === 'receipt' ? 'receiptUploadArea' :
+                k === 'estimate' ? 'estimateUploadArea' :
+                'bankCopyUploadArea'
+            );
+            if (a) a.classList.remove('paste-active');
+        });
+        slots[slotKey].area.classList.add('paste-active');
+    }
+
+    function setupClipboardPasteForPurchase() {
+        // 활성 슬롯 전환 click 리스너
+        const wireSlot = (key, areaId) => {
+            const area = document.getElementById(areaId);
+            if (!area) return;
+            area.addEventListener('click', () => setActivePurchaseSlot(key));
+        };
+        wireSlot('receipt', 'receiptUploadArea');
+        wireSlot('estimate', 'estimateUploadArea');
+        wireSlot('bankCopy', 'bankCopyUploadArea');
+
+        // 공식문서 영역 click → 안내 토스트 (활성 변경 X) — §7-3 매번 표시
+        const docArea = document.getElementById('documentUploadArea');
+        if (docArea) {
+            docArea.addEventListener('click', () => {
+                if (typeof window.showToast === 'function') {
+                    window.showToast('공식문서는 이미지 붙여넣기 대상이 아닙니다. PDF/HWP는 파일 선택으로 업로드하세요.', 'info');
+                }
+            });
+        }
+
+        // 페이지 진입 시 영수증 기본 활성
+        setActivePurchaseSlot('receipt');
+
+        if (typeof window.setupClipboardImagePaste !== 'function') return;
+
+        window.setupClipboardImagePaste({
+            resolveTarget: () => {
+                const slots = getPasteSlots();
+                const slot = slots[activePurchaseSlot] || slots.receipt;
+                if (!slot) return null;
+                return {
+                    addFile: (file) => {
+                        const before = slot.files.length;
+                        addFileToList(file, slot.files, slot.list);
+                        const added = slot.files.length > before;
+                        if (added) {
+                            slot.area.classList.remove('paste-flash');
+                            void slot.area.offsetWidth;
+                            slot.area.classList.add('paste-flash');
+                        }
+                        return added;
+                    },
+                    label: slot.label,
+                };
+            },
+        });
+    }
+
     function addFileToList(file, fileArray, listEl) {
         if (file.size > 10 * 1024 * 1024) {
             Swal.fire({ icon: 'warning', title: '파일 크기 초과', text: '10MB 이하의 파일만 업로드 가능합니다.' });
@@ -1100,6 +1318,7 @@ document.addEventListener('DOMContentLoaded', async function() {
     }
 
     function renderExistingFileList(existingArr, listEl, newArr, type) {
+        if (typeof window.revokeChipThumbs === 'function') window.revokeChipThumbs(listEl);
         listEl.innerHTML = '';
         existingArr.forEach(a => {
             const item = document.createElement('div');
@@ -1114,6 +1333,9 @@ document.addEventListener('DOMContentLoaded', async function() {
                 <button class="btn-download-file" onclick="downloadPurchaseAttachment(${a.idx})"><i class="fas fa-download"></i></button>
                 <button class="btn-remove-file" onclick="removeExistingFile(${a.idx}, '${type}')"><i class="fas fa-times"></i></button>
             `;
+            if (typeof window.attachThumbToFileItem === 'function') {
+                window.attachThumbToFileItem(item, `/api/receipt-purchases/attachments/${a.idx}/download`, a.originalFilename);
+            }
             listEl.appendChild(item);
         });
         newArr.forEach((f, i) => {
@@ -1127,6 +1349,9 @@ document.addEventListener('DOMContentLoaded', async function() {
                 <span class="file-size">${formatFileSize(f.size)}</span>
                 <button class="btn-remove-file" onclick="removeNewFile(${i}, '${listEl.id}')"><i class="fas fa-times"></i></button>
             `;
+            if (typeof window.attachThumbToFileItem === 'function') {
+                window.attachThumbToFileItem(item, f);
+            }
             listEl.appendChild(item);
         });
     }
@@ -1469,9 +1694,11 @@ document.addEventListener('DOMContentLoaded', async function() {
         }
     }
 
-    // 품의일자 변경 시 모든 항목 날짜의 max 갱신
-    document.getElementById('pu_approval_date')?.addEventListener('change', function() {
+    // 품의일자 변경 시 모든 항목 날짜의 max 갱신 + 작성자 참여기간 재검증
+    document.getElementById('pu_approval_date')?.addEventListener('change', async function() {
         const newMax = this.value || '';
+        // 작성자 참여기간 재검증
+        await revalidateApplicantAgainstApprovalDate();
         itemTableBody.querySelectorAll('.item-date').forEach(dateEl => {
             dateEl.max = newMax;
             // 이미 입력된 날짜가 품의일자보다 미래이면 품의일자로 보정
@@ -1651,6 +1878,13 @@ document.addEventListener('DOMContentLoaded', async function() {
         updateItemTotals();
         updateOfficialDocument();
         updateButtonsForEditMode();
+
+        // 수정 모드 진입 즉시 — 작성자가 현재 지출일에 활성인지 재검증
+        try {
+            await revalidateApplicantAgainstApprovalDate();
+        } catch (e) {
+            console.warn('[populateForm] 작성자 참여기간 재검증 오류:', e);
+        }
     }
 
     function updateButtonsForEditMode() {
