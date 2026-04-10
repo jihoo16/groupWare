@@ -99,14 +99,14 @@ function loadRemainingVacation() {
         .then(data => {
             const remainingElement = document.getElementById('remainingVacation');
             if (remainingElement && data.remainingDays !== undefined) {
-                remainingElement.innerHTML = `${data.remainingDays}<span>일</span>`;
+                remainingElement.innerHTML = `${data.remainingDays}<em>일</em>`;
             }
         })
         .catch(error => {
             console.error('잔여 연차 로드 오류:', error);
             const remainingElement = document.getElementById('remainingVacation');
             if (remainingElement) {
-                remainingElement.innerHTML = `-<span>일</span>`;
+                remainingElement.innerHTML = `-<em>일</em>`;
             }
         });
 }
@@ -126,14 +126,14 @@ function loadTodaySchedule() {
             const countElement = document.getElementById('todayScheduleCount');
             if (countElement) {
                 const events = data.events || [];
-                countElement.innerHTML = `${events.length}<span>건</span>`;
+                countElement.innerHTML = `${events.length}<em>건</em>`;
             }
         })
         .catch(error => {
             console.error('오늘 일정 로드 오류:', error);
             const countElement = document.getElementById('todayScheduleCount');
             if (countElement) {
-                countElement.innerHTML = `-<span>건</span>`;
+                countElement.innerHTML = `-<em>건</em>`;
             }
         });
 }
@@ -165,14 +165,14 @@ function loadPendingApprovals() {
                     !PROJECT_DOCUMENT_TYPES.includes(doc.documentType)
                 );
                 const totalCount = approvalDocs.length || 0;
-                countElement.innerHTML = `${totalCount}<span>건</span>`;
+                countElement.innerHTML = `${totalCount}<em>건</em>`;
             }
         })
         .catch(error => {
             console.error('전자 문서 로드 오류:', error);
             const countElement = document.getElementById('pendingApprovalCount');
             if (countElement) {
-                countElement.innerHTML = `-<span>건</span>`;
+                countElement.innerHTML = `-<em>건</em>`;
             }
         });
 }
@@ -191,14 +191,14 @@ function loadProjectDocuments() {
             const countElement = document.getElementById('projectDocCount');
             if (countElement) {
                 const totalCount = data.length || 0;
-                countElement.innerHTML = `${totalCount}<span>건</span>`;
+                countElement.innerHTML = `${totalCount}<em>건</em>`;
             }
         })
         .catch(error => {
             console.error('프로젝트 문서 로드 오류:', error);
             const countElement = document.getElementById('projectDocCount');
             if (countElement) {
-                countElement.innerHTML = `-<span>건</span>`;
+                countElement.innerHTML = `-<em>건</em>`;
             }
         });
 }
