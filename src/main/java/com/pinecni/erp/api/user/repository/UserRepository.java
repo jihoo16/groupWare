@@ -150,7 +150,9 @@ public interface UserRepository extends JpaRepository<User, Long> {
             (SELECT COUNT(s) FROM UserSchool      s WHERE s.userIdx = u.idx),
             (SELECT COUNT(c) FROM UserCertificate c WHERE c.userIdx = u.idx),
             (SELECT COUNT(r) FROM UserCareer      r WHERE r.userIdx = u.idx),
-            (SELECT COUNT(t) FROM UserTraining    t WHERE t.userIdx = u.idx)
+            (SELECT COUNT(t) FROM UserTraining    t WHERE t.userIdx = u.idx),
+            u.militaryStatus, null,
+            u.militaryEnlistDate, u.militaryDischargeDate
         )
         FROM User u
         WHERE u.deletedAt IS NULL

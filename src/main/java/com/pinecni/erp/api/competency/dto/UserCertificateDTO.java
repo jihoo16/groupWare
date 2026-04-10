@@ -3,10 +3,13 @@ package com.pinecni.erp.api.competency.dto;
 import com.pinecni.erp.entity.UserCertificate;
 import lombok.Builder;
 import lombok.Getter;
+import lombok.Setter;
 
 import java.time.LocalDate;
+import java.util.List;
 
 @Getter
+@Setter
 @Builder
 public class UserCertificateDTO {
 
@@ -17,6 +20,7 @@ public class UserCertificateDTO {
     private LocalDate issuedDate;
     private Boolean isExpired;
     private String notes;
+    private List<AttachmentSummaryDTO> attachments;
 
     public static UserCertificateDTO from(UserCertificate entity) {
         return UserCertificateDTO.builder()

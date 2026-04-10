@@ -227,14 +227,16 @@ document.addEventListener('DOMContentLoaded', function () {
         document.getElementById('careerCountBadge').textContent = emp.careerCount || 0;
         document.getElementById('trainingCountBadge').textContent = emp.trainingCount || 0;
 
-        // 역량 4종 병렬 조회
+        // 역량 4종 + 병적사항 병렬 조회
         try {
-            const [schools, certs, careers, trainings] = await Promise.all([
+            const [schools, certs, careers, trainings, military] = await Promise.all([
                 fetchJson(`/api/competency/schools?userIdx=${userIdx}`),
                 fetchJson(`/api/competency/certificates?userIdx=${userIdx}`),
                 fetchJson(`/api/competency/careers?userIdx=${userIdx}`),
-                fetchJson(`/api/competency/trainings?userIdx=${userIdx}`)
+                fetchJson(`/api/competency/trainings?userIdx=${userIdx}`),
+                fetchJson(`/api/competency/military/${userIdx}`)
             ]);
+            renderMilitaryService(military);
             renderSchoolList(schools);
             renderCertificateList(certs);
             renderCareerList(careers);
@@ -246,6 +248,34 @@ document.addEventListener('DOMContentLoaded', function () {
         }
 
         openModal(detailModal);
+    }
+
+    function renderMilitaryService(dto) {
+        const list = document.getElementById('detailMilitaryService');
+        if (!list) return;
+
+        if (!dto || !dto.militaryStatus) {
+            list.innerHTML = '<div class="empty-row">등록된 병적사항이 없습니다.</div>';
+            return;
+        }
+
+        const label = escapeHtml(dto.militaryStatusLabel || dto.militaryStatus);
+        const enlist = dto.militaryEnlistDate ? escapeHtml(dto.militaryEnlistDate) : '-';
+        const discharge = dto.militaryDischargeDate ? escapeHtml(dto.militaryDischargeDate) : '-';
+        const showDates = dto.militaryStatus === 'C1201' || dto.militaryStatus === 'C1204';
+
+        list.innerHTML = `
+            <div class="detail-item">
+                <div class="detail-item-main">
+                    <strong>${label}</strong>
+                </div>
+                ${showDates ? `
+                <div class="detail-item-sub">
+                    입대: ${enlist} · 전역: ${discharge}
+                </div>` : ''}
+                ${dto.militaryNotes ? `<div class="detail-item-desc">비고: ${escapeHtml(dto.militaryNotes)}</div>` : ''}
+            </div>
+        `;
     }
 
     function renderSchoolList(items) {
@@ -264,13 +294,16 @@ document.addEventListener('DOMContentLoaded', function () {
                     <strong>${escapeHtml(s.schoolName)}</strong>
                     ${s.majorName ? ` · ${escapeHtml(s.majorName)}` : ''}
                     <span class="chip">${degreeLabel[s.degreeType] || s.degreeType || '-'}</span>
+                    ${s.isStemMajor ? '<span class="chip chip-stem">이공계</span>' : ''}
                 </div>
                 <div class="detail-item-sub">
                     졸업: ${formatDate(s.graduationDate)}
                     ${s.notes ? ` · ${escapeHtml(s.notes)}` : ''}
                 </div>
+                ${renderAttachmentChips('school', s.attachments)}
             </div>
         `).join('');
+        bindAttachmentPreview(list);
     }
 
     function renderCertificateList(items) {
@@ -290,8 +323,39 @@ document.addEventListener('DOMContentLoaded', function () {
                     취득: ${formatDate(c.issuedDate)}
                     ${c.notes ? ` · ${escapeHtml(c.notes)}` : ''}
                 </div>
+                ${renderAttachmentChips('certificate', c.attachments)}
             </div>
         `).join('');
+        bindAttachmentPreview(list);
+    }
+
+    function renderAttachmentChips(kind, attachments) {
+        if (!attachments || attachments.length === 0) return '';
+        const baseUrl = kind === 'school'
+            ? '/api/competency/schools/attachments'
+            : '/api/competency/certificates/attachments';
+        const chips = attachments.map(a => `
+            <button type="button" class="attachment-chip-readonly"
+                    data-idx="${a.idx}"
+                    data-name="${escapeHtml(a.originalFilename)}"
+                    data-url="${baseUrl}/${a.idx}/download">
+                <i class="fas fa-paperclip"></i>
+                <span>${escapeHtml(a.originalFilename)}</span>
+            </button>
+        `).join('');
+        return `<div class="detail-item-attachments">${chips}</div>`;
+    }
+
+    function bindAttachmentPreview(scopeEl) {
+        scopeEl.querySelectorAll('.attachment-chip-readonly').forEach(btn => {
+            btn.addEventListener('click', () => {
+                const url = btn.getAttribute('data-url');
+                const name = btn.getAttribute('data-name');
+                if (window.openFilePreview) {
+                    window.openFilePreview([{ url, filename: name }], 0);
+                }
+            });
+        });
     }
 
     function renderCareerList(items) {
@@ -415,7 +479,7 @@ document.addEventListener('DOMContentLoaded', function () {
             };
 
             // ─── Sheet 1: 직원별 종합 (모든 상세 내역) ───
-            const detailHeaders = ['번호', '사번', '이름', '부서', '직급', '권한', '학력', '자격증', '업계경력', '교육이수'];
+            const detailHeaders = ['번호', '사번', '이름', '부서', '직급', '권한', '병역구분', '입대일', '전역일', '학력', '자격증', '업계경력', '교육이수'];
             const detailRows = [detailHeaders].concat(
                 data.users.map((u, i) => {
                     const schoolText = (schoolsByUser.get(u.userIdx) || []).map(formatSchool).join('\n') || '-';
@@ -429,6 +493,9 @@ document.addEventListener('DOMContentLoaded', function () {
                         u.empDeptName || '',
                         u.empPositionName || '',
                         roleCodeToName(u.userRoleCode),
+                        u.militaryStatusLabel || '',
+                        u.militaryEnlistDate || '',
+                        u.militaryDischargeDate || '',
                         schoolText,
                         certText,
                         careerText,
@@ -444,6 +511,9 @@ document.addEventListener('DOMContentLoaded', function () {
                 { wch: 16 }, // 부서
                 { wch: 12 }, // 직급
                 { wch: 12 }, // 권한
+                { wch: 12 }, // 병역구분
+                { wch: 12 }, // 입대일
+                { wch: 12 }, // 전역일
                 { wch: 50 }, // 학력
                 { wch: 55 }, // 자격증
                 { wch: 60 }, // 업계경력
@@ -474,20 +544,21 @@ document.addEventListener('DOMContentLoaded', function () {
             XLSX.utils.book_append_sheet(wb, wsDetail, '직원별 종합');
 
             // Sheet 2: 학력
-            const schoolRows = [['사번', '이름', '학교명', '전공', '학위', '졸업일', '비고']].concat(
+            const schoolRows = [['사번', '이름', '학교명', '전공', '학위', '이공계여부', '졸업일', '비고']].concat(
                 data.schools.map(s => [
                     lookupEmpId(s.userIdx),
                     lookupEmpName(s.userIdx),
                     s.schoolName || '',
                     s.majorName || '',
                     degreeLabel[s.degreeType] || s.degreeType || '',
+                    s.isStemMajor ? 'Y' : 'N',
                     s.graduationDate || '',
                     s.notes || ''
                 ])
             );
             const wsSchool = XLSX.utils.aoa_to_sheet(schoolRows);
             wsSchool['!cols'] = [
-                { wch: 10 }, { wch: 10 }, { wch: 22 }, { wch: 20 }, { wch: 10 }, { wch: 12 }, { wch: 30 }
+                { wch: 10 }, { wch: 10 }, { wch: 22 }, { wch: 20 }, { wch: 10 }, { wch: 10 }, { wch: 12 }, { wch: 30 }
             ];
             XLSX.utils.book_append_sheet(wb, wsSchool, '학력');
 

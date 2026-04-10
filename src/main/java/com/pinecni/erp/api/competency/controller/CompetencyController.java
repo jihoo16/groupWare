@@ -7,11 +7,16 @@ import jakarta.servlet.http.HttpSession;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.multipart.MultipartFile;
 import org.springframework.web.server.ResponseStatusException;
 
+import java.net.URLEncoder;
+import java.nio.charset.StandardCharsets;
 import java.util.List;
 import java.util.Map;
 
@@ -225,6 +230,116 @@ public class CompetencyController {
         log.debug("DELETE /api/competency/trainings/{} - requesting={}", idx, requestingUserIdx);
         competencyService.deleteTraining(idx, requestingUserIdx);
         return ResponseEntity.ok(Map.of("message", "교육이수가 삭제되었습니다."));
+    }
+
+    // =========================================================
+    // 병적사항 (본인 입력만 허용)
+    // =========================================================
+
+    /** GET /api/competency/military/{userIdx} */
+    @GetMapping("/military/{userIdx}")
+    public ResponseEntity<UserMilitaryServiceDTO> getMilitaryService(
+            @PathVariable Long userIdx,
+            HttpSession session) {
+        Long requestingUserIdx = getSessionUserIdx(session);
+        log.debug("GET /api/competency/military/{} - requesting={}", userIdx, requestingUserIdx);
+        return ResponseEntity.ok(competencyService.getMilitaryService(userIdx, requestingUserIdx));
+    }
+
+    /** PUT /api/competency/military/{userIdx} — 본인만 수정 가능 */
+    @PutMapping("/military/{userIdx}")
+    public ResponseEntity<UserMilitaryServiceDTO> updateMilitaryService(
+            @PathVariable Long userIdx,
+            @RequestBody UserMilitaryServiceDTO dto,
+            HttpSession session) {
+        Long requestingUserIdx = getSessionUserIdx(session);
+        log.debug("PUT /api/competency/military/{} - requesting={}", userIdx, requestingUserIdx);
+        return ResponseEntity.ok(competencyService.updateMilitaryService(userIdx, dto, requestingUserIdx));
+    }
+
+    // =========================================================
+    // 학력/자격증 첨부파일
+    // =========================================================
+
+    /** POST /api/competency/schools/{schoolIdx}/attachments — 본인만 업로드 */
+    @PostMapping("/schools/{schoolIdx}/attachments")
+    public ResponseEntity<AttachmentSummaryDTO> uploadSchoolAttachment(
+            @PathVariable Long schoolIdx,
+            @RequestParam("file") MultipartFile file,
+            HttpSession session) {
+        Long requestingUserIdx = getSessionUserIdx(session);
+        log.debug("POST /api/competency/schools/{}/attachments - by userIdx={}, file={}",
+                schoolIdx, requestingUserIdx, file.getOriginalFilename());
+        return ResponseEntity.status(HttpStatus.CREATED)
+                .body(competencyService.uploadSchoolAttachment(schoolIdx, file, requestingUserIdx));
+    }
+
+    /** DELETE /api/competency/schools/attachments/{attachmentIdx} — 본인만 삭제 */
+    @DeleteMapping("/schools/attachments/{attachmentIdx}")
+    public ResponseEntity<Map<String, String>> deleteSchoolAttachment(
+            @PathVariable Long attachmentIdx,
+            HttpSession session) {
+        Long requestingUserIdx = getSessionUserIdx(session);
+        log.debug("DELETE /api/competency/schools/attachments/{} - by userIdx={}", attachmentIdx, requestingUserIdx);
+        competencyService.deleteSchoolAttachment(attachmentIdx, requestingUserIdx);
+        return ResponseEntity.ok(Map.of("message", "첨부파일이 삭제되었습니다."));
+    }
+
+    /** GET /api/competency/schools/attachments/{attachmentIdx}/download — 본인 또는 역량열람자 이상 */
+    @GetMapping("/schools/attachments/{attachmentIdx}/download")
+    public ResponseEntity<org.springframework.core.io.Resource> downloadSchoolAttachment(
+            @PathVariable Long attachmentIdx,
+            HttpSession session) {
+        Long requestingUserIdx = getSessionUserIdx(session);
+        log.debug("GET /api/competency/schools/attachments/{}/download - by userIdx={}", attachmentIdx, requestingUserIdx);
+        AttachmentDownloadDTO dto = competencyService.downloadSchoolAttachment(attachmentIdx, requestingUserIdx);
+        return buildDownloadResponse(dto);
+    }
+
+    /** POST /api/competency/certificates/{certificateIdx}/attachments — 본인만 업로드 */
+    @PostMapping("/certificates/{certificateIdx}/attachments")
+    public ResponseEntity<AttachmentSummaryDTO> uploadCertificateAttachment(
+            @PathVariable Long certificateIdx,
+            @RequestParam("file") MultipartFile file,
+            HttpSession session) {
+        Long requestingUserIdx = getSessionUserIdx(session);
+        log.debug("POST /api/competency/certificates/{}/attachments - by userIdx={}, file={}",
+                certificateIdx, requestingUserIdx, file.getOriginalFilename());
+        return ResponseEntity.status(HttpStatus.CREATED)
+                .body(competencyService.uploadCertificateAttachment(certificateIdx, file, requestingUserIdx));
+    }
+
+    /** DELETE /api/competency/certificates/attachments/{attachmentIdx} — 본인만 삭제 */
+    @DeleteMapping("/certificates/attachments/{attachmentIdx}")
+    public ResponseEntity<Map<String, String>> deleteCertificateAttachment(
+            @PathVariable Long attachmentIdx,
+            HttpSession session) {
+        Long requestingUserIdx = getSessionUserIdx(session);
+        log.debug("DELETE /api/competency/certificates/attachments/{} - by userIdx={}", attachmentIdx, requestingUserIdx);
+        competencyService.deleteCertificateAttachment(attachmentIdx, requestingUserIdx);
+        return ResponseEntity.ok(Map.of("message", "첨부파일이 삭제되었습니다."));
+    }
+
+    /** GET /api/competency/certificates/attachments/{attachmentIdx}/download — 본인 또는 역량열람자 이상 */
+    @GetMapping("/certificates/attachments/{attachmentIdx}/download")
+    public ResponseEntity<org.springframework.core.io.Resource> downloadCertificateAttachment(
+            @PathVariable Long attachmentIdx,
+            HttpSession session) {
+        Long requestingUserIdx = getSessionUserIdx(session);
+        log.debug("GET /api/competency/certificates/attachments/{}/download - by userIdx={}", attachmentIdx, requestingUserIdx);
+        AttachmentDownloadDTO dto = competencyService.downloadCertificateAttachment(attachmentIdx, requestingUserIdx);
+        return buildDownloadResponse(dto);
+    }
+
+    /** 다운로드 응답 헤더 빌더 — 한글 파일명 RFC 5987 인코딩 */
+    private ResponseEntity<org.springframework.core.io.Resource> buildDownloadResponse(AttachmentDownloadDTO dto) {
+        String encoded = URLEncoder.encode(dto.getOriginalFilename(), StandardCharsets.UTF_8)
+                .replace("+", "%20");
+        String contentDisposition = "attachment; filename=\"" + encoded + "\"; filename*=UTF-8''" + encoded;
+        return ResponseEntity.ok()
+                .contentType(MediaType.parseMediaType(dto.getContentType()))
+                .header(HttpHeaders.CONTENT_DISPOSITION, contentDisposition)
+                .body(dto.getResource());
     }
 
     // =========================================================

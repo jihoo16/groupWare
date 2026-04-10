@@ -1,6 +1,8 @@
 package com.pinecni.erp.api.competency.service;
 
 import com.pinecni.erp.api.competency.dto.*;
+import org.springframework.core.io.Resource;
+import org.springframework.web.multipart.MultipartFile;
 
 import java.util.List;
 
@@ -33,6 +35,20 @@ public interface CompetencyService {
     // ── 담당자(역량 열람자) 권한 관리 (관리자 전용) ───────────────────────
     void grantCompetencyViewerRole(Long targetUserIdx, Long adminIdx);
     void revokeCompetencyViewerRole(Long targetUserIdx, Long adminIdx);
+
+    // ── 병적사항 (본인 입력만 허용) ───────────────────────────────────────
+    UserMilitaryServiceDTO getMilitaryService(Long userIdx, Long requestingUserIdx);
+    UserMilitaryServiceDTO updateMilitaryService(Long userIdx, UserMilitaryServiceDTO dto, Long requestingUserIdx);
+
+    // ── 학력 첨부파일 ────────────────────────────────────────────────────
+    AttachmentSummaryDTO uploadSchoolAttachment(Long schoolIdx, MultipartFile file, Long requestingUserIdx);
+    void                 deleteSchoolAttachment(Long attachmentIdx, Long requestingUserIdx);
+    AttachmentDownloadDTO downloadSchoolAttachment(Long attachmentIdx, Long requestingUserIdx);
+
+    // ── 자격증 첨부파일 ──────────────────────────────────────────────────
+    AttachmentSummaryDTO uploadCertificateAttachment(Long certificateIdx, MultipartFile file, Long requestingUserIdx);
+    void                 deleteCertificateAttachment(Long attachmentIdx, Long requestingUserIdx);
+    AttachmentDownloadDTO downloadCertificateAttachment(Long attachmentIdx, Long requestingUserIdx);
 
     // ── 역량관리 열람 페이지용 ─────────────────────────────────────────────
     List<UserCompetencyOverviewDTO> getCompetencyOverview(Long requestingUserIdx);

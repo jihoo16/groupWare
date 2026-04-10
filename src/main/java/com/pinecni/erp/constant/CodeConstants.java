@@ -24,7 +24,8 @@ public class CodeConstants {
         EMPLOYMENT_STATUS("C07", "재직상태", 7),
         RANK("C08", "직위", 8),
         TEAM_TYPE("C09", "팀유형", 9),
-        EXPENSE_SETTLEMENT_STATUS("C10", "경비정산상태", 10);
+        EXPENSE_SETTLEMENT_STATUS("C10", "경비정산상태", 10),
+        MILITARY_STATUS("C12", "병역상태", 12);
 
         private final String code;
         private final String name;
@@ -550,6 +551,57 @@ public class CodeConstants {
                 if (status.code.equals(code)) return status;
             }
             return null;
+        }
+    }
+
+    /**
+     * 병역상태 코드 (C12)
+     * 본인 입력만 허용 — settings 화면에서 본인이 자신의 병적사항을 등록/수정
+     *
+     * COMPLETED / SPECIAL_DONE 인 경우에만 입대일/전역일 입력 가능
+     */
+    public enum MilitaryStatus {
+        COMPLETED   ("C1201", "병역필",      "COMPLETED",    1),
+        EXEMPT      ("C1202", "면제",        "EXEMPT",       2),
+        SPECIAL     ("C1203", "병역특례",    "SPECIAL",      3),
+        SPECIAL_DONE("C1204", "특례필",      "SPECIAL_DONE", 4),
+        NONE        ("C1205", "해당사항없음", "NONE",         5);
+
+        private final String code;
+        private final String name;
+        private final String nameEn;
+        private final int sortOrder;
+
+        MilitaryStatus(String code, String name, String nameEn, int sortOrder) {
+            this.code = code;
+            this.name = name;
+            this.nameEn = nameEn;
+            this.sortOrder = sortOrder;
+        }
+
+        public String getCode() { return code; }
+        public String getName() { return name; }
+        public String getNameEn() { return nameEn; }
+        public int getSortOrder() { return sortOrder; }
+
+        public static MilitaryStatus fromCode(String code) {
+            for (MilitaryStatus status : values()) {
+                if (status.code.equals(code)) return status;
+            }
+            throw new IllegalArgumentException("Unknown military status code: " + code);
+        }
+
+        public static MilitaryStatus fromCodeOrNull(String code) {
+            if (code == null) return null;
+            for (MilitaryStatus status : values()) {
+                if (status.code.equals(code)) return status;
+            }
+            return null;
+        }
+
+        /** 입대일/전역일 입력이 가능한 상태인지 확인 (병역필 / 특례필) */
+        public boolean allowsServiceDates() {
+            return this == COMPLETED || this == SPECIAL_DONE;
         }
     }
 }

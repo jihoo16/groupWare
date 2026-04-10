@@ -120,6 +120,22 @@ public class User extends BaseEntity {
     @Column(name = "manager_start_date")
     private LocalDate managerStartDate;
 
+    // 병적사항 (본인 입력만 허용)
+    /** 병역상태 코드값 (CodeConstants.MilitaryStatus, code_group=C12) */
+    @Column(name = "military_status", length = 10)
+    private String militaryStatus;
+
+    /** 입대일 (YYYY 또는 YYYY-MM 또는 YYYY-MM-DD — 부분 입력 허용) */
+    @Column(name = "military_enlist_date", length = 10)
+    private String militaryEnlistDate;
+
+    /** 전역일 (YYYY 또는 YYYY-MM 또는 YYYY-MM-DD — 부분 입력 허용) */
+    @Column(name = "military_discharge_date", length = 10)
+    private String militaryDischargeDate;
+
+    @Column(name = "military_notes", columnDefinition = "TEXT")
+    private String militaryNotes;
+
     // Soft delete
     @Column(name = "deleted_at")
     private LocalDateTime deletedAt;

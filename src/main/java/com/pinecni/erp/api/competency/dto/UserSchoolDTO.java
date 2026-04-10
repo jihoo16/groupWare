@@ -3,10 +3,13 @@ package com.pinecni.erp.api.competency.dto;
 import com.pinecni.erp.entity.UserSchool;
 import lombok.Builder;
 import lombok.Getter;
+import lombok.Setter;
 
 import java.time.LocalDate;
+import java.util.List;
 
 @Getter
+@Setter
 @Builder
 public class UserSchoolDTO {
 
@@ -17,6 +20,8 @@ public class UserSchoolDTO {
     private String degreeType;
     private LocalDate graduationDate;
     private String notes;
+    private Boolean isStemMajor;
+    private List<AttachmentSummaryDTO> attachments;
 
     public static UserSchoolDTO from(UserSchool entity) {
         return UserSchoolDTO.builder()
@@ -27,6 +32,7 @@ public class UserSchoolDTO {
                 .degreeType(entity.getDegreeType())
                 .graduationDate(entity.getGraduationDate())
                 .notes(entity.getNotes())
+                .isStemMajor(entity.getIsStemMajor())
                 .build();
     }
 }

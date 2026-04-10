@@ -461,6 +461,41 @@
     border-radius: 0;
 }
 
+/* 필수 입력 누락 — 학력 0건 등 강조 */
+.empty-message.empty-required {
+    background: #fff7ed;
+    color: #9a3412;
+    border-top: 2px solid #fb923c;
+    border-bottom: 2px solid #fb923c;
+    font-weight: 600;
+}
+
+.empty-message.empty-required strong {
+    color: #c2410c;
+}
+
+/* 부모 .competency-section 자체에도 좌측 강조 + 헤더 색 변환 */
+.competency-section.required-empty .competency-header h4 {
+    color: #c2410c;
+}
+
+.competency-section.required-empty .competency-header h4 .required-mark {
+    color: #ea580c;
+    font-weight: 800;
+}
+
+.competency-section.required-empty .competency-header h4::after {
+    content: ' — 미입력';
+    font-size: 12px;
+    font-weight: 600;
+    color: #ea580c;
+    margin-left: 8px;
+    padding: 2px 8px;
+    background: #ffedd5;
+    border: 1px solid #fb923c;
+    border-radius: 10px;
+}
+
 /* 역량 항목 - 문서 형태로 넓게 */
 .competency-item {
     display: flex;
@@ -1282,6 +1317,9 @@
     font-size: 14px;
     transition: border-color 0.2s ease;
     box-sizing: border-box;
+    min-height: 60px;
+    line-height: 1.5;
+    resize: vertical;
 }
 
 .modal-body .form-row .form-group .form-input:focus,
@@ -1334,4 +1372,561 @@
     background: #f5f5f5;
     color: #999;
     cursor: not-allowed;
+}
+
+/* ============================================================
+   역량관리 목록 — 새 layout (v2)
+   학력/자격증/경력/교육 모두 동일 구조
+   - .item-main 안에서 세로 스택
+       1) 메인 라인 (학교명/자격증명 + 칩들)
+       2) detail 라인 (학위·전공·졸업일 등 한 줄)
+       3) 첨부 칩들 (학력/자격증만)
+       4) 비고
+   - 우측에 actions (수정/삭제)
+   ============================================================ */
+
+.competency-item-v2 {
+    align-items: flex-start !important;
+}
+
+.competency-item-v2 .item-main {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;   /* 자식 stretch 방지 — 칩이 가로로 늘어나지 않음 */
+    gap: 6px;
+    min-width: 0;
+}
+
+.competency-item-v2 .item-main-line {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 8px;
+}
+
+.competency-item-v2 .item-main-line strong {
+    font-size: 15px;
+    font-weight: 600;
+    color: #333;
+}
+
+.competency-item-v2 .item-detail-line {
+    font-size: 13px;
+    color: #666;
+    line-height: 1.4;
+}
+
+.competency-item-v2 .item-actions {
+    align-self: center;
+    flex-shrink: 0;
+    margin-left: 16px;
+}
+
+/* 메인 라인 내 칩 — 항상 컨텐츠 너비만큼만 (stretch 방지) */
+.competency-item-v2 .chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    padding: 2px 10px;
+    border-radius: 12px;
+    font-size: 11px;
+    font-weight: 600;
+    line-height: 1.6;
+    width: auto;
+    flex: 0 0 auto;
+    white-space: nowrap;
+    margin: 0;
+}
+
+.competency-item-v2 .chip-stem    { background: #ede9fe; color: #5b21b6; border: 1px solid #ddd6fe; }
+.competency-item-v2 .chip-now     { background: #d1fae5; color: #065f46; border: 1px solid #a7f3d0; }
+.competency-item-v2 .chip-industry{ background: #e0e7ff; color: #1e3a8a; border: 1px solid #c7d2fe; }
+.competency-item-v2 .chip-expired { background: #fee2e2; color: #991b1b; border: 1px solid #fecaca; }
+
+/* 첨부 인라인 칩 — 학력/자격증 행 아래, 클릭 시 미리보기 */
+.competency-item-v2 .item-attachments-inline {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    margin-top: 2px;
+}
+
+.competency-item-v2 .attachment-inline-chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 5px 12px;
+    background: #e0f2fe;
+    color: #075985;
+    border: 1px solid #bae6fd;
+    border-radius: 14px;
+    font-size: 12px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: background 0.15s, border-color 0.15s, color 0.15s, transform 0.1s;
+    max-width: 280px;
+}
+
+.competency-item-v2 .attachment-inline-chip:hover {
+    background: #bae6fd;
+    border-color: #0284c7;
+    color: #0c4a6e;
+}
+
+.competency-item-v2 .attachment-inline-chip:active {
+    transform: scale(0.97);
+}
+
+.competency-item-v2 .attachment-inline-chip i {
+    font-size: 10px;
+    flex-shrink: 0;
+}
+
+.competency-item-v2 .attachment-inline-chip span {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+/* 비고 (한 줄 말줄임 + 좌측 보더) */
+.competency-item-v2 .item-notes {
+    font-size: 12px;
+    color: #6b7280;
+    background: #f9fafb;
+    border-left: 3px solid #e5e7eb;
+    padding: 6px 10px;
+    border-radius: 0 4px 4px 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    max-width: 100%;
+    align-self: stretch;
+    box-sizing: border-box;
+}
+
+/* ============================================================
+   카드 편집 상태 표시 (병적사항 — clean / dirty)
+   카드 자체는 다른 settings-card 와 100% 동일하게 두고, 상태는 헤더 뱃지로만 구분
+   ============================================================ */
+
+/* 카드 헤더 — 제목 + 상태 뱃지 한 줄
+   다른 카드 .card-title 의 border-bottom 을 row 컨테이너로 옮겨 가로 전체로 그어지게 함 */
+.card-title-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    margin-bottom: 32px;
+    padding-bottom: 16px;
+    border-bottom: 3px solid #1a237e;
+}
+
+.card-title-row .card-title {
+    margin: 0;
+    padding-bottom: 0;
+    border-bottom: none;
+}
+
+/* 상태 뱃지 — 아이콘은 JS 가 innerHTML 로 직접 넣음 (CSS pseudo 추가 X) */
+.edit-state-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 4px 11px;
+    border-radius: 12px;
+    font-size: 12px;
+    font-weight: 600;
+    transition: background 0.2s, color 0.2s, border-color 0.2s;
+}
+
+.edit-state-card[data-state="clean"] .edit-state-badge {
+    background: #f1f5f9;
+    color: #475569;
+    border: 1px solid #e2e8f0;
+}
+
+/* dirty (필수 — 저장 필요) 상태는 주황으로 강조 */
+.edit-state-card[data-state="dirty"] .edit-state-badge {
+    background: #ffedd5;
+    color: #9a3412;
+    border: 1px solid #fb923c;
+}
+
+/* 저장 버튼 — disabled 상태만 처리 (다른 카드 버튼과 일관) */
+.edit-state-card .btn-update-profile:disabled {
+    background: #e5e7eb !important;
+    color: #9ca3af !important;
+    cursor: not-allowed !important;
+    box-shadow: none !important;
+    transform: none !important;
+}
+
+/* ============================================================
+   경력 모달 — "현재 재직중" 체크박스 (파인씨앤아이 안내)
+   ============================================================ */
+
+.checkbox-group.is-now-checkbox {
+    align-items: flex-start;
+    gap: 8px;
+}
+
+.checkbox-group.is-now-checkbox label {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    cursor: pointer;
+    line-height: 1.3;
+}
+
+.is-now-title {
+    font-size: 13px;
+    font-weight: 600;
+    color: #374151;
+}
+
+.is-now-title em {
+    font-style: normal;
+    color: #2563eb;
+    font-weight: 700;
+    margin-left: 2px;
+}
+
+.is-now-hint {
+    font-size: 11px;
+    color: #6b7280;
+}
+
+/* ============================================================
+   이공계 여부 체크박스 카드 (학력 모달)
+   ============================================================ */
+
+.stem-checkbox-card {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 12px 16px;
+    background: #f9fafb;
+    border: 1.5px solid #e5e7eb;
+    border-radius: 10px;
+    cursor: pointer;
+    transition: background 0.18s, border-color 0.18s, box-shadow 0.18s;
+    user-select: none;
+}
+
+/* 명시도 강화 — .modal-body .form-row .form-group label (display:block, padding:0) 을 덮어쓰기 위함 */
+.modal-body .form-row .form-group label.stem-checkbox-card {
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    gap: 12px;
+    padding: 12px 16px;
+    width: auto;
+}
+
+.stem-checkbox-card:hover {
+    background: #f3f4f6;
+    border-color: #c7d2fe;
+}
+
+.stem-checkbox-card input[type="checkbox"] {
+    appearance: none;
+    -webkit-appearance: none;
+    width: 22px;
+    height: 22px;
+    border: 2px solid #cbd5e1;
+    border-radius: 5px;
+    background: #fff;
+    cursor: pointer;
+    flex-shrink: 0;
+    position: relative;
+    transition: all 0.18s;
+    margin: 0;
+}
+
+.stem-checkbox-card input[type="checkbox"]:hover {
+    border-color: #8b5cf6;
+}
+
+.stem-checkbox-card input[type="checkbox"]:checked {
+    background: #7c3aed;
+    border-color: #7c3aed;
+}
+
+.stem-checkbox-card input[type="checkbox"]:checked::after {
+    content: '';
+    position: absolute;
+    left: 6px;
+    top: 2px;
+    width: 6px;
+    height: 11px;
+    border: solid #fff;
+    border-width: 0 2.5px 2.5px 0;
+    transform: rotate(45deg);
+}
+
+.stem-checkbox-content {
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    gap: 10px;
+    flex: 1;
+    flex-wrap: wrap;
+}
+
+.stem-checkbox-title {
+    font-size: 14px;
+    font-weight: 600;
+    color: #374151;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    white-space: nowrap;
+}
+
+.stem-checkbox-title i {
+    color: #94a3b8;
+    transition: color 0.18s;
+}
+
+.stem-checkbox-hint {
+    font-size: 12px;
+    color: #6b7280;
+    white-space: nowrap;
+}
+
+.stem-checkbox-hint::before {
+    content: '— ';
+    color: #cbd5e1;
+    margin-right: 2px;
+}
+
+/* 체크된 상태 — 카드 전체가 보라색 톤으로 강조 (admin-competency 의 .chip-stem 과 통일) */
+.stem-checkbox-card:has(input[type="checkbox"]:checked) {
+    background: #ede9fe;
+    border-color: #7c3aed;
+    box-shadow: 0 2px 6px -1px rgba(124, 58, 237, 0.18);
+}
+
+.stem-checkbox-card:has(input[type="checkbox"]:checked) .stem-checkbox-title {
+    color: #5b21b6;
+}
+
+.stem-checkbox-card:has(input[type="checkbox"]:checked) .stem-checkbox-title i {
+    color: #7c3aed;
+}
+
+.stem-checkbox-card:has(input[type="checkbox"]:checked) .stem-checkbox-hint {
+    color: #6d28d9;
+}
+
+/* ============================================================
+   학력/자격증 첨부파일 UI (settings 본인 입력)
+   ============================================================ */
+
+.attachment-pii-notice {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    background: #fef3c7;
+    border: 1px solid #fcd34d;
+    border-radius: 6px;
+    padding: 8px 12px;
+    color: #92400e;
+    font-size: 13px;
+    margin-top: 6px;
+}
+.attachment-pii-notice i { flex-shrink: 0; }
+
+.attachment-list {
+    list-style: none;
+    padding: 0;
+    margin: 10px 0 4px;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+}
+
+.attachment-list .attachment-empty {
+    color: #999;
+    font-size: 13px;
+    padding: 6px 0;
+}
+
+.attachment-list .attachment-empty.attachment-empty-required {
+    color: #9a3412;
+    background: #fff7ed;
+    border: 1px dashed #fb923c;
+    border-radius: 6px;
+    padding: 10px 14px;
+    font-weight: 600;
+    width: 100%;
+    box-sizing: border-box;
+}
+
+.attachment-chip {
+    display: inline-flex;
+    align-items: center;
+    background: #f3f4f6;
+    border: 1px solid #e5e7eb;
+    border-radius: 14px;
+    padding: 0;
+    overflow: hidden;
+}
+
+/* 첨부 파일 칩 — 푸른 톤 (PII 노란 안내문과 색 충돌 방지) */
+.attachment-chip.attachment-pending {
+    background: #dbeafe;
+    border-color: #93c5fd;
+}
+.attachment-chip.attachment-pending .attachment-preview-btn {
+    color: #1e40af;
+}
+.attachment-chip.attachment-pending .attachment-size {
+    color: #2563eb;
+}
+
+/* 저장된 첨부도 동일한 푸른 톤 (수정 모드 일관성) */
+.attachment-chip:not(.attachment-pending) {
+    background: #dbeafe;
+    border-color: #93c5fd;
+}
+.attachment-chip:not(.attachment-pending) .attachment-preview-btn {
+    color: #1e40af;
+}
+.attachment-chip:not(.attachment-pending) .attachment-preview-btn:hover {
+    background: #bfdbfe;
+    color: #1e3a8a;
+}
+.attachment-chip:not(.attachment-pending) .attachment-size {
+    color: #2563eb;
+}
+
+.attachment-preview-btn {
+    background: none;
+    border: none;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 6px 10px 6px 12px;
+    cursor: pointer;
+    font-size: 12px;
+    color: #374151;
+}
+.attachment-preview-btn:hover {
+    background: #e0e7ff;
+    color: #3730a3;
+}
+.attachment-size {
+    color: #6b7280;
+    font-size: 11px;
+    margin-left: 4px;
+}
+
+.attachment-delete-btn {
+    background: none;
+    border: none;
+    border-left: 1px solid #e5e7eb;
+    padding: 6px 10px;
+    cursor: pointer;
+    color: #9ca3af;
+    font-size: 11px;
+}
+.attachment-delete-btn:hover {
+    color: #dc2626;
+    background: #fee2e2;
+}
+
+.attachment-hint {
+    display: block;
+    color: #6b7280;
+    font-size: 11px;
+    margin-top: 4px;
+}
+
+/* ============================================================
+   파일 드롭존 (학력/자격증 첨부 — 드래그앤드롭 + 클릭 선택)
+   ============================================================ */
+
+.file-dropzone {
+    display: flex !important;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    padding: 22px 16px;
+    margin-top: 8px;
+    background: #f9fafb;
+    border: 2px dashed #cbd5e1;
+    border-radius: 10px;
+    cursor: pointer;
+    transition: background 0.18s, border-color 0.18s, transform 0.12s;
+    text-align: center;
+    width: auto !important;
+}
+
+.file-dropzone:hover {
+    background: #f1f5f9;
+    border-color: #6366f1;
+}
+
+.file-dropzone.dragover {
+    background: #e0e7ff;
+    border-color: #4f46e5;
+    border-style: solid;
+    transform: scale(1.01);
+}
+
+.file-dropzone i {
+    font-size: 28px;
+    color: #94a3b8;
+    transition: color 0.18s;
+    margin: 0 !important;
+}
+
+.file-dropzone:hover i,
+.file-dropzone.dragover i {
+    color: #4f46e5;
+}
+
+.file-dropzone p {
+    margin: 0;
+    font-size: 13px;
+    color: #475569;
+    font-weight: 500;
+}
+
+.file-dropzone strong {
+    color: #4f46e5;
+    font-weight: 700;
+}
+
+.file-dropzone small {
+    font-size: 11px;
+    color: #94a3b8;
+}
+
+/* 명시도 강화 — .modal-body .form-row .form-group label (display:block, padding:0, border:none) 덮어쓰기 */
+.modal-body .form-row .form-group label.file-dropzone {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 22px 16px;
+    border: 2px dashed #cbd5e1;
+    border-radius: 10px;
+    width: auto;
+    margin-top: 8px;
+    text-align: center;
+}
+
+.modal-body .form-row .form-group label.file-dropzone:hover {
+    background: #f1f5f9;
+    border-color: #6366f1;
+}
+
+.modal-body .form-row .form-group label.file-dropzone.dragover {
+    background: #e0e7ff;
+    border-color: #4f46e5;
+    border-style: solid;
 }

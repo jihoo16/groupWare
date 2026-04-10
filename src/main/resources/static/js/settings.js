@@ -592,17 +592,46 @@ function initCompetencyManagement() {
 
     if (isNowCheckbox) {
         isNowCheckbox.addEventListener('change', function() {
+            const careerCategoryInput   = document.getElementById('careerCategory');
+            const isIndustryCheckbox    = document.getElementById('isIndustryExperience');
+
             if (this.checked) {
                 careerEndDateInput.value    = '';
                 careerEndDateInput.disabled = true;
+                // "현재 재직중 = (주) 파인씨앤아이" — 관련 필드 자동 입력 (덮어쓰기)
+                if (currentUserJoinDate && careerStartDateInput) {
+                    careerStartDateInput.value = currentUserJoinDate;
+                    careerStartDateInput.classList.remove('error');
+                }
+                if (careerCategoryInput) {
+                    careerCategoryInput.value = '(주) 파인씨앤아이';
+                    careerCategoryInput.classList.remove('error');
+                }
+                if (isIndustryCheckbox) {
+                    isIndustryCheckbox.checked = true;
+                }
             } else {
+                // 체크 해제 — 다른 경력 입력을 위해 자동 채워졌던 필드 모두 원복
                 careerEndDateInput.disabled = false;
+                if (careerStartDateInput) careerStartDateInput.value = '';
+                if (careerCategoryInput)  careerCategoryInput.value  = '';
+                if (isIndustryCheckbox)   isIndustryCheckbox.checked = false;
             }
             updateCareerPeriodDisplay();
         });
     }
     if (careerStartDateInput) careerStartDateInput.addEventListener('change', updateCareerPeriodDisplay);
     if (careerEndDateInput)   careerEndDateInput.addEventListener('change',   updateCareerPeriodDisplay);
+
+    // 모든 date input — 입력 영역 아무데나 클릭하면 캘린더 picker 열기
+    // (기본 동작은 우측 작은 아이콘 클릭해야 열림. UX 개선)
+    document.querySelectorAll('input[type="date"]').forEach(input => {
+        input.addEventListener('click', () => {
+            if (typeof input.showPicker === 'function') {
+                try { input.showPicker(); } catch (e) { /* 사용자 상호작용 외 호출 시 무시 */ }
+            }
+        });
+    });
 }
 
 // ============================================================
@@ -622,6 +651,9 @@ function openCompetencyModal(type, item) {
         resetModalFields(type);
     }
 
+    // 첨부파일 영역 — 학력/자격증만 적용. 수정 모드(item 있음)에서만 표시.
+    setupAttachmentSection(type, item);
+
     if (modal) {
         modal.style.display = 'flex';
         modal.classList.add('show');
@@ -635,6 +667,8 @@ function closeCompetencyModal(type) {
         modal.classList.remove('show');
         modal.style.display = 'none';
     }
+    // 신규 모드 pending 파일 정리 (취소/닫기 시 메모리에 남지 않도록)
+    if (pendingAttachments[type]) pendingAttachments[type] = [];
     resetModalFields(type);
 }
 
@@ -647,9 +681,10 @@ function resetModalFields(type) {
         case 'education':
             document.getElementById('schoolIdx').value        = '';
             document.getElementById('schoolName').value       = '';
-            document.getElementById('degreeType').value       = '';
+            document.getElementById('degreeType').value       = 'BACHELOR'; // 기본값: 학사
             document.getElementById('majorName').value        = '';
             document.getElementById('graduationDate').value   = '';
+            document.getElementById('schoolIsStemMajor').checked = false;
             document.getElementById('schoolNotes').value      = '';
             document.getElementById('schoolName').classList.remove('error');
             document.getElementById('degreeType').classList.remove('error');
@@ -700,6 +735,7 @@ function fillModalFields(type, item) {
             document.getElementById('degreeType').value      = item.degreeType || '';
             document.getElementById('majorName').value       = item.majorName || '';
             document.getElementById('graduationDate').value  = item.graduationDate || '';
+            document.getElementById('schoolIsStemMajor').checked = !!item.isStemMajor;
             document.getElementById('schoolNotes').value     = item.notes || '';
             break;
         case 'certificate':
@@ -800,6 +836,28 @@ async function saveCompetency(type) {
     const url     = isEdit ? `${cfg.apiPath}/${idxVal}` : `${cfg.apiPath}?userIdx=${currentUserIdx}`;
     const method  = isEdit ? 'PUT' : 'POST';
 
+    // 학력/자격증은 첨부파일 1개 이상 필수
+    if (type === 'education' || type === 'certificate') {
+        if (!isEdit) {
+            // 신규 — pending 파일이 1개 이상 있어야 함
+            if ((pendingAttachments[type] || []).length === 0) {
+                const label = type === 'education' ? '졸업증명서' : '자격증 사본';
+                await showWarning(`${label} 등 첨부파일을 1개 이상 등록해 주세요.`);
+                return;
+            }
+        } else {
+            // 수정 — 모달 안 첨부 칩이 1개 이상 있어야 함
+            const aCfg = ATTACHMENT_CONFIG[type];
+            const list = document.getElementById(aCfg.listId);
+            const count = list ? list.querySelectorAll('.attachment-chip').length : 0;
+            if (count === 0) {
+                const label = type === 'education' ? '졸업증명서' : '자격증 사본';
+                await showWarning(`${label} 등 첨부파일을 1개 이상 등록해 주세요.`);
+                return;
+            }
+        }
+    }
+
     try {
         const res = await fetch(url, {
             method,
@@ -815,6 +873,47 @@ async function saveCompetency(type) {
             const data = await res.json().catch(() => ({}));
             await showError(data.error || '저장에 실패했습니다.');
             return;
+        }
+
+        // 신규 등록(학력/자격증)인 경우 — pending 첨부 파일을 일괄 업로드 후 모달 닫기
+        if (!isEdit && (type === 'education' || type === 'certificate')) {
+            const created = await res.json().catch(() => null);
+            if (created && created.idx) {
+                const aCfg = ATTACHMENT_CONFIG[type];
+                const pending = (pendingAttachments[type] || []).slice();
+                let upFail = 0;
+
+                for (const file of pending) {
+                    try {
+                        const formData = new FormData();
+                        formData.append('file', file);
+                        const upRes = await fetch(aCfg.uploadUrl(created.idx), {
+                            method: 'POST',
+                            body: formData
+                        });
+                        if (!upRes.ok) {
+                            upFail++;
+                            console.error(`[첨부] ${file.name} 업로드 실패`, upRes.status);
+                        }
+                    } catch (e) {
+                        upFail++;
+                        console.error(`[첨부] ${file.name} 업로드 오류`, e);
+                    }
+                }
+
+                pendingAttachments[type] = [];
+                closeCompetencyModal(type);
+                await loadCompetency(type);
+
+                if (upFail > 0) {
+                    await showWarning(`저장은 완료되었으나 ${upFail}개 첨부파일 업로드에 실패했습니다.`);
+                } else if (pending.length > 0) {
+                    await showSuccess(`저장되었습니다. (첨부 ${pending.length}개 포함)`);
+                } else {
+                    await showSuccess('저장되었습니다.');
+                }
+                return;
+            }
         }
 
         closeCompetencyModal(type);
@@ -879,6 +978,7 @@ function buildPayload(type) {
                 degreeType,
                 majorName:      document.getElementById('majorName').value.trim() || null,
                 graduationDate: document.getElementById('graduationDate').value   || null,
+                isStemMajor:    document.getElementById('schoolIsStemMajor').checked,
                 notes:          document.getElementById('schoolNotes').value.trim() || null
             };
         }
@@ -969,63 +1069,132 @@ function renderCompetencyList(type, items) {
     const listContainer = document.getElementById(cfg.listId);
     if (!listContainer) return;
 
+    // 첨부 갱신 시 다시 찾을 수 있도록 마지막 데이터 캐시
+    listContainer._lastItems = items || [];
+
+    // 학력은 필수 — 0건이면 부모 섹션에 강조 클래스 추가
+    if (type === 'education') {
+        const section = listContainer.closest('.competency-section');
+        if (section) {
+            const isEmpty = !items || items.length === 0;
+            section.classList.toggle('required-empty', isEmpty);
+        }
+    }
+
     if (!items || items.length === 0) {
-        listContainer.innerHTML = '<div class="empty-message">등록된 항목이 없습니다.</div>';
+        const emptyMsg = type === 'education'
+            ? '<div class="empty-message empty-required">⚠ 학력은 필수 입력 사항입니다. 위의 <strong>+ 추가</strong> 버튼으로 등록해 주세요.</div>'
+            : '<div class="empty-message">등록된 항목이 없습니다.</div>';
+        listContainer.innerHTML = emptyMsg;
         return;
     }
 
     listContainer.innerHTML = items.map(item => {
         let mainHTML = '';
-        let detailHTML = '';
-        let periodHTML = '';
+        let detailParts = [];   // detail + period 를 한 줄로 합침
+        let attachmentsHTML = '';
+
+        const notesHTML = item.notes
+            ? `<div class="item-notes" title="${escapeAttr(item.notes)}">📝 ${escapeAttr(item.notes)}</div>`
+            : '';
 
         switch(type) {
-            case 'education':
-                mainHTML   = `<strong>${item.schoolName}</strong>`;
-                detailHTML = [DEGREE_TYPE_LABEL[item.degreeType] || item.degreeType, item.majorName].filter(Boolean).join(' · ');
-                periodHTML = item.graduationDate ? `졸업 ${formatDate(item.graduationDate)}` : '';
+            case 'education': {
+                mainHTML = `<strong>${escapeAttr(item.schoolName)}</strong>`
+                         + (item.isStemMajor ? '<span class="chip chip-stem">이공계</span>' : '');
+                const degree = DEGREE_TYPE_LABEL[item.degreeType] || item.degreeType;
+                if (degree) detailParts.push(escapeAttr(degree));
+                if (item.majorName) detailParts.push(escapeAttr(item.majorName));
+                if (item.graduationDate) detailParts.push(`졸업 ${formatDate(item.graduationDate)}`);
+                attachmentsHTML = renderInlineAttachmentChips('school', item.attachments);
                 break;
-            case 'certificate':
-                mainHTML   = `<strong>${item.certificateName}</strong>`;
-                detailHTML = item.issuingOrgName || '';
-                periodHTML = `취득 ${formatDate(item.issuedDate)}`
-                           + (item.isExpired ? ' <span class="badge-expired">만료</span>' : '');
+            }
+            case 'certificate': {
+                mainHTML = `<strong>${escapeAttr(item.certificateName)}</strong>`
+                         + (item.isExpired ? '<span class="chip chip-expired">만료</span>' : '');
+                if (item.issuingOrgName) detailParts.push(escapeAttr(item.issuingOrgName));
+                if (item.issuedDate) detailParts.push(`취득 ${formatDate(item.issuedDate)}`);
+                attachmentsHTML = renderInlineAttachmentChips('certificate', item.attachments);
                 break;
-            case 'career':
-                mainHTML   = `<strong>${item.careerCategory}</strong>`
-                           + (item.isIndustryExperience ? ' <span class="badge-industry">업계경력</span>' : '');
-                detailHTML = item.careerSummary || '';
-                periodHTML = `${formatDate(item.careerStartDate)} ~ ${item.isNow ? '현재' : formatDate(item.careerEndDate)}`
-                           + (item.careerPeriodYears || item.careerPeriodMonths
-                               ? ` · ${item.careerPeriodYears > 0 ? item.careerPeriodYears + '년 ' : ''}${item.careerPeriodMonths > 0 ? item.careerPeriodMonths + '개월' : ''}`
-                               : '');
+            }
+            case 'career': {
+                mainHTML = `<strong>${escapeAttr(item.careerCategory)}</strong>`
+                         + (item.isIndustryExperience ? '<span class="chip chip-industry">업계경력</span>' : '')
+                         + (item.isNow ? '<span class="chip chip-now">재직중</span>' : '');
+                if (item.careerSummary) detailParts.push(escapeAttr(item.careerSummary));
+                const period = `${formatDate(item.careerStartDate)} ~ ${item.isNow ? '현재' : formatDate(item.careerEndDate)}`;
+                const yearsMonths = (item.careerPeriodYears || item.careerPeriodMonths)
+                    ? ` (${item.careerPeriodYears > 0 ? item.careerPeriodYears + '년 ' : ''}${item.careerPeriodMonths > 0 ? item.careerPeriodMonths + '개월' : ''})`
+                    : '';
+                detailParts.push(period + yearsMonths);
                 break;
-            case 'training':
-                mainHTML   = `<strong>${item.trainingName}</strong>`;
-                detailHTML = item.trainingOrgName || '';
-                periodHTML = `이수 ${formatDate(item.completionDate)}`;
+            }
+            case 'training': {
+                mainHTML = `<strong>${escapeAttr(item.trainingName)}</strong>`;
+                if (item.trainingOrgName) detailParts.push(escapeAttr(item.trainingOrgName));
+                if (item.completionDate) detailParts.push(`이수 ${formatDate(item.completionDate)}`);
                 break;
+            }
         }
 
+        const detailLine = detailParts.length > 0
+            ? `<div class="item-detail-line">${detailParts.join(' · ')}</div>`
+            : '';
+
+        const itemJson = JSON.stringify(item).replace(/"/g, '&quot;');
+
         return `
-        <div class="competency-item">
-            <div class="item-content">
-                <div class="item-main">
-                    ${mainHTML}
-                    ${detailHTML ? `<span class="item-detail">${detailHTML}</span>` : ''}
-                </div>
-                ${periodHTML ? `<div class="item-period">${periodHTML}</div>` : ''}
+        <div class="competency-item competency-item-v2">
+            <div class="item-main">
+                <div class="item-main-line">${mainHTML}</div>
+                ${detailLine}
+                ${attachmentsHTML}
+                ${notesHTML}
             </div>
             <div class="item-actions">
-                <button class="btn-icon btn-edit"   onclick="openCompetencyModal('${type}', ${JSON.stringify(item).replace(/"/g, '&quot;')})">
+                <button class="btn-icon btn-edit"   onclick="openCompetencyModal('${type}', ${itemJson})" title="수정">
                     <i class="fas fa-edit"></i>
                 </button>
-                <button class="btn-icon btn-delete" onclick="deleteCompetency('${type}', ${item.idx})">
+                <button class="btn-icon btn-delete" onclick="deleteCompetency('${type}', ${item.idx})" title="삭제">
                     <i class="fas fa-trash"></i>
                 </button>
             </div>
         </div>`;
     }).join('');
+
+    // 첨부 칩 클릭 → 미리보기 모달 (event delegation, 한 번만 등록)
+    if (!listContainer._attachmentBound) {
+        listContainer.addEventListener('click', e => {
+            const chip = e.target.closest('.attachment-inline-chip');
+            if (!chip) return;
+            e.preventDefault();
+            e.stopPropagation();
+            const url  = chip.getAttribute('data-url');
+            const name = chip.getAttribute('data-name');
+            if (window.openFilePreview) {
+                window.openFilePreview([{ url, filename: name }], 0);
+            }
+        });
+        listContainer._attachmentBound = true;
+    }
+}
+
+/** 학력/자격증 행 아래에 첨부 칩들을 풀어서 출력 (클릭 시 미리보기) */
+function renderInlineAttachmentChips(kind, attachments) {
+    if (!attachments || attachments.length === 0) return '';
+    const baseUrl = kind === 'school'
+        ? '/api/competency/schools/attachments'
+        : '/api/competency/certificates/attachments';
+    const chips = attachments.map(a => `
+        <button type="button" class="attachment-inline-chip"
+                data-url="${baseUrl}/${a.idx}/download"
+                data-name="${escapeAttr(a.originalFilename)}"
+                title="클릭해서 미리보기">
+            <i class="fas fa-paperclip"></i>
+            <span>${escapeAttr(a.originalFilename)}</span>
+        </button>
+    `).join('');
+    return `<div class="item-attachments-inline">${chips}</div>`;
 }
 
 // 역량 데이터 저장 (localStorage 제거 — API 사용으로 대체)
@@ -1218,7 +1387,13 @@ async function loadCurrentUserProfile() {
 
         // 역량관리 — 현재 사용자 idx 저장 후 목록 로드
         currentUserIdx = user.idx;
+        currentUserGender = user.empGender || null;
+        currentUserJoinDate = user.empJoinDate || null;
+        currentUserName = user.empName || null;
         loadAllCompetencies();
+
+        // 병적사항 — 코드 옵션 로드 후 현재 값 로드
+        initMilitaryService();
 
         // 폼 필드에 데이터 채우기
         const userNameDiv = document.getElementById('userName');
@@ -1243,5 +1418,583 @@ async function loadCurrentUserProfile() {
     } catch (error) {
         console.error('사용자 정보 로드 오류:', error);
         await showError('사용자 정보를 불러오는데 오류가 발생했습니다.');
+    }
+}
+
+// ============================================================
+// 병적사항 (본인 입력만 가능)
+// ============================================================
+
+/** 입대일/전역일 입력이 가능한 코드값 — 병역필(C1201) / 특례필(C1204) */
+const MILITARY_DATE_ALLOWED_CODES = ['C1201', 'C1204'];
+
+/** 부분 날짜 정규식 — YYYY / YYYY-MM / YYYY-MM-DD */
+const PARTIAL_DATE_REGEX = /^\d{4}(-\d{2}(-\d{2})?)?$/;
+
+/** 성별별 병역구분 기본값 — 미설정 사용자에게 자동 적용 */
+const MILITARY_DEFAULT_BY_GENDER = {
+    '남': 'C1201', // 병역필
+    '여': 'C1205'  // 해당사항없음
+};
+
+/** 현재 사용자의 성별 (loadCurrentUserProfile 에서 채워짐) */
+let currentUserGender = null;
+
+/** 현재 사용자의 입사일 (loadCurrentUserProfile 에서 채워짐) — 경력 "현재 재직중" 체크 시 시작일 자동 입력용 */
+let currentUserJoinDate = null;
+
+/** 현재 사용자의 이름 (loadCurrentUserProfile 에서 채워짐) — 첨부파일 자동 명명용 */
+let currentUserName = null;
+
+async function initMilitaryService() {
+    if (!currentUserIdx) return;
+
+    // 1) 코드 옵션 로드
+    await loadMilitaryStatusOptions();
+
+    // 2) 병역구분 변경 시 입대일/전역일 토글 + dirty 표시
+    const statusSelect = document.getElementById('militaryStatus');
+    if (statusSelect) {
+        statusSelect.addEventListener('change', () => {
+            toggleMilitaryDateRows();
+            markMilitaryDirty();
+        });
+    }
+
+    // 3) 저장 버튼
+    const saveBtn = document.getElementById('saveMilitaryBtn');
+    if (saveBtn) {
+        saveBtn.addEventListener('click', saveMilitaryService);
+    }
+
+    // 4) 입력 필드 변경 감지 → dirty 표시
+    ['militaryEnlistDate', 'militaryDischargeDate', 'militaryNotes'].forEach(id => {
+        const el = document.getElementById(id);
+        if (el) el.addEventListener('input', markMilitaryDirty);
+    });
+
+    // 5) 현재 값 로드
+    await loadMilitaryService();
+}
+
+/** 카드 상태를 dirty(수정 중)로 전환 */
+function markMilitaryDirty() {
+    const card   = document.getElementById('militaryServiceCard');
+    const badge  = document.getElementById('militaryStateBadge');
+    const saveBtn = document.getElementById('saveMilitaryBtn');
+    if (!card) return;
+
+    if (card.getAttribute('data-state') === 'dirty') return; // 이미 dirty
+    card.setAttribute('data-state', 'dirty');
+    if (badge) badge.innerHTML = '<i class="fas fa-pencil-alt"></i> 수정 중 — 저장 필요';
+    if (saveBtn) saveBtn.disabled = false;
+}
+
+/** 카드 상태를 clean(저장됨)으로 전환 */
+function markMilitaryClean() {
+    const card   = document.getElementById('militaryServiceCard');
+    const badge  = document.getElementById('militaryStateBadge');
+    const saveBtn = document.getElementById('saveMilitaryBtn');
+    if (!card) return;
+
+    card.setAttribute('data-state', 'clean');
+    if (badge) badge.innerHTML = '<i class="fas fa-check-circle"></i> 저장됨';
+    if (saveBtn) saveBtn.disabled = true;
+}
+
+async function loadMilitaryStatusOptions() {
+    try {
+        const res = await fetch('/api/codes?groupCode=C12&activeOnly=true');
+        if (!res.ok) throw new Error('코드 조회 실패');
+        const codes = await res.json();
+
+        const select = document.getElementById('militaryStatus');
+        if (!select) return;
+
+        // 기존 옵션 제거 (placeholder 제외)
+        while (select.options.length > 1) select.remove(1);
+
+        codes.forEach(c => {
+            const opt = document.createElement('option');
+            opt.value = c.code;
+            opt.textContent = c.codeName;
+            select.appendChild(opt);
+        });
+    } catch (e) {
+        console.error('[병적사항] 코드 로드 실패', e);
+    }
+}
+
+async function loadMilitaryService() {
+    try {
+        const res = await fetch(`/api/competency/military/${currentUserIdx}`);
+        if (!res.ok) {
+            console.error('[병적사항] 조회 실패', res.status);
+            return;
+        }
+        const dto = await res.json();
+
+        // DB에 저장된 값이 있으면 그대로 — clean 상태
+        // 비어있으면 성별별 기본값을 화면에만 채우고 — dirty 상태로 (사용자가 저장 버튼을 눌러야 DB 반영)
+        const hasSavedValue = !!dto.militaryStatus;
+        const initialStatus = dto.militaryStatus
+            || MILITARY_DEFAULT_BY_GENDER[currentUserGender]
+            || '';
+
+        document.getElementById('militaryStatus').value         = initialStatus;
+        document.getElementById('militaryEnlistDate').value     = dto.militaryEnlistDate || '';
+        document.getElementById('militaryDischargeDate').value  = dto.militaryDischargeDate || '';
+        document.getElementById('militaryNotes').value          = dto.militaryNotes || '';
+
+        toggleMilitaryDateRows();
+
+        if (hasSavedValue) {
+            markMilitaryClean();
+        } else if (initialStatus) {
+            // 성별 기본값이 자동 채워졌지만 아직 DB에 저장되지 않은 상태
+            markMilitaryDirty();
+        } else {
+            markMilitaryClean();
+        }
+    } catch (e) {
+        console.error('[병적사항] 조회 오류', e);
+    }
+}
+
+function toggleMilitaryDateRows() {
+    const status = document.getElementById('militaryStatus').value;
+    const allowed = MILITARY_DATE_ALLOWED_CODES.includes(status);
+
+    const enlistRow    = document.getElementById('militaryEnlistRow');
+    const dischargeRow = document.getElementById('militaryDischargeRow');
+    const notesRow     = document.getElementById('militaryNotesRow');
+
+    if (enlistRow)    enlistRow.style.display    = allowed ? '' : 'none';
+    if (dischargeRow) dischargeRow.style.display = allowed ? '' : 'none';
+
+    // 입대일/전역일 비활성 상태에서는 값도 비움
+    if (!allowed) {
+        document.getElementById('militaryEnlistDate').value    = '';
+        document.getElementById('militaryDischargeDate').value = '';
+    }
+
+    // 비고는 "해당사항없음(C1205)" 일 때는 적을 게 없으므로 숨김 + 값 비움
+    const showNotes = status !== 'C1205';
+    if (notesRow) notesRow.style.display = showNotes ? '' : 'none';
+    if (!showNotes) {
+        document.getElementById('militaryNotes').value = '';
+    }
+}
+
+// ============================================================
+// 학력/자격증 첨부파일 (본인만 업로드/삭제, 미리보기)
+//
+// 신규 등록 모드: 파일을 메모리(pendingAttachments)에 보관 → 학력/자격증 저장 후 idx 받아 일괄 업로드
+// 수정 모드:     파일 선택 시 즉시 업로드 (idx 가 이미 있음)
+// ============================================================
+
+const ATTACHMENT_CONFIG = {
+    education: {
+        sectionId: 'schoolAttachmentSection',
+        listId:    'schoolAttachmentList',
+        inputId:   'schoolAttachmentInput',
+        idxFieldId:'schoolIdx',
+        uploadUrl: idx => `/api/competency/schools/${idx}/attachments`,
+        deleteUrl: aIdx => `/api/competency/schools/attachments/${aIdx}`,
+        downloadUrl: aIdx => `/api/competency/schools/attachments/${aIdx}/download`
+    },
+    certificate: {
+        sectionId: 'certificateAttachmentSection',
+        listId:    'certificateAttachmentList',
+        inputId:   'certificateAttachmentInput',
+        idxFieldId:'certificateIdx',
+        uploadUrl: idx => `/api/competency/certificates/${idx}/attachments`,
+        deleteUrl: aIdx => `/api/competency/certificates/attachments/${aIdx}`,
+        downloadUrl: aIdx => `/api/competency/certificates/attachments/${aIdx}/download`
+    }
+};
+
+/** 신규 등록 모드에서 임시 보관할 파일들 (학력/자격증 저장 후 일괄 업로드) */
+const pendingAttachments = { education: [], certificate: [] };
+
+function setupAttachmentSection(type, item) {
+    const cfg = ATTACHMENT_CONFIG[type];
+    if (!cfg) return; // 경력/교육은 첨부 없음
+
+    const section = document.getElementById(cfg.sectionId);
+    const list    = document.getElementById(cfg.listId);
+    const input   = document.getElementById(cfg.inputId);
+    if (!section || !list || !input) return;
+
+    section.style.display = '';
+
+    // 이전 change 핸들러 제거를 위해 input 노드 교체
+    const newInput = input.cloneNode(true);
+    input.parentNode.replaceChild(newInput, input);
+
+    // 드롭존(파일 선택 + 드래그앤드롭) 활성화
+    const dropzone = section.querySelector('.file-dropzone');
+    setupDropzone(dropzone, newInput);
+
+    if (!item || !item.idx) {
+        // 신규 등록 모드 — 메모리 보관, 저장 시 일괄 업로드
+        pendingAttachments[type] = [];
+        renderPendingAttachmentList(type);
+        newInput.addEventListener('change', () => addPendingAttachments(type, newInput));
+    } else {
+        // 수정 모드 — 즉시 업로드
+        renderAttachmentList(type, item.attachments || []);
+        newInput.addEventListener('change', () => uploadAttachments(type, item.idx, newInput));
+    }
+}
+
+/** 드롭존 — 드래그앤드롭으로 input.files 채우고 change 이벤트 트리거 */
+function setupDropzone(dropzoneEl, inputEl) {
+    if (!dropzoneEl || !inputEl) return;
+
+    ['dragenter', 'dragover'].forEach(evt => {
+        dropzoneEl.addEventListener(evt, e => {
+            e.preventDefault();
+            e.stopPropagation();
+            dropzoneEl.classList.add('dragover');
+        });
+    });
+
+    ['dragleave', 'dragend'].forEach(evt => {
+        dropzoneEl.addEventListener(evt, e => {
+            e.preventDefault();
+            e.stopPropagation();
+            dropzoneEl.classList.remove('dragover');
+        });
+    });
+
+    dropzoneEl.addEventListener('drop', e => {
+        e.preventDefault();
+        e.stopPropagation();
+        dropzoneEl.classList.remove('dragover');
+
+        const files = e.dataTransfer && e.dataTransfer.files;
+        if (!files || files.length === 0) return;
+
+        // input.files 에 직접 set (DataTransfer 우회)
+        const dt = new DataTransfer();
+        Array.from(files).forEach(f => dt.items.add(f));
+        inputEl.files = dt.files;
+
+        // 기존 change 핸들러 (addPendingAttachments / uploadAttachments) 호출
+        inputEl.dispatchEvent(new Event('change', { bubbles: true }));
+    });
+}
+
+/** 신규 모드: 파일 input 변경 시 메모리에 누적 (자동 명명 적용) */
+function addPendingAttachments(type, inputEl) {
+    const files = Array.from(inputEl.files || []);
+    let added = 0;
+    files.forEach(f => {
+        if (f.size > 50 * 1024 * 1024) {
+            showWarning(`${f.name}: 50MB를 초과합니다.`);
+            return;
+        }
+        const seq = pendingAttachments[type].length + 1;
+        const renamed = renameAttachmentFile(type, f, seq);
+        pendingAttachments[type].push(renamed);
+        added++;
+    });
+    inputEl.value = '';
+    if (added > 0) renderPendingAttachmentList(type);
+}
+
+/**
+ * 첨부파일 이름 자동 생성
+ *  - 학력:   "{학교명}_{본인이름}_졸업증명서[_N].{ext}"
+ *  - 자격증: "{자격증명}_{본인이름}_자격증사본[_N].{ext}"
+ *
+ * 필수 정보(학교명/자격증명/본인이름)가 비어있으면 원본 파일명 유지.
+ */
+function renameAttachmentFile(type, file, sequenceNum) {
+    if (!file || !currentUserName) return file;
+
+    let prefix = '';
+    let label  = '';
+    if (type === 'education') {
+        prefix = (document.getElementById('schoolName')?.value || '').trim();
+        label  = '졸업증명서';
+    } else if (type === 'certificate') {
+        prefix = (document.getElementById('certificateName')?.value || '').trim();
+        label  = '자격증사본';
+    } else {
+        return file; // 다른 타입은 적용 안 함
+    }
+
+    if (!prefix) return file; // 학교명/자격증명 미입력 시 원본 유지
+
+    // 파일시스템에 안전하지 않은 문자 제거 (윈도우 + 리눅스 공통 금지문자)
+    const sanitize = s => s.replace(/[\\/:*?"<>|\s]+/g, '');
+    const safePrefix = sanitize(prefix);
+    const safeName   = sanitize(currentUserName);
+
+    // 확장자 추출
+    const dot = file.name.lastIndexOf('.');
+    const ext = dot >= 0 ? file.name.substring(dot + 1).toLowerCase() : '';
+
+    const seqSuffix = sequenceNum > 1 ? `_${sequenceNum}` : '';
+    const newName = ext
+        ? `${safePrefix}_${safeName}_${label}${seqSuffix}.${ext}`
+        : `${safePrefix}_${safeName}_${label}${seqSuffix}`;
+
+    // File 객체로 wrap (File 생성자 미지원 환경 대비 try)
+    try {
+        return new File([file], newName, { type: file.type, lastModified: file.lastModified });
+    } catch (e) {
+        // 일부 구형 브라우저에서 File 생성자 실패 시 원본 반환
+        console.warn('[첨부] 파일명 변경 실패, 원본 사용', e);
+        return file;
+    }
+}
+
+/** 신규 모드: 메모리 보관 파일 칩 렌더링 */
+function renderPendingAttachmentList(type) {
+    const cfg = ATTACHMENT_CONFIG[type];
+    const list = document.getElementById(cfg.listId);
+    if (!list) return;
+
+    const files = pendingAttachments[type] || [];
+
+    if (files.length === 0) {
+        list.innerHTML = '<li class="attachment-empty attachment-empty-required">⚠ 필수 — 위의 파일 선택 버튼으로 1개 이상 첨부해 주세요. 저장 시 함께 업로드됩니다.</li>';
+        return;
+    }
+
+    list.innerHTML = files.map((f, i) => `
+        <li class="attachment-chip attachment-pending">
+            <span class="attachment-preview-btn" style="cursor:default;">
+                <i class="fas fa-paperclip"></i>
+                <span>${escapeAttr(f.name)}</span>
+                <span class="attachment-size">${formatFileSize(f.size)}</span>
+            </span>
+            <button type="button" class="attachment-delete-btn" data-pending-idx="${i}" title="삭제">
+                <i class="fas fa-times"></i>
+            </button>
+        </li>
+    `).join('');
+
+    list.querySelectorAll('.attachment-delete-btn').forEach(btn => {
+        btn.addEventListener('click', () => {
+            const pendingIdx = Number(btn.getAttribute('data-pending-idx'));
+            pendingAttachments[type].splice(pendingIdx, 1);
+            renderPendingAttachmentList(type);
+        });
+    });
+}
+
+function renderAttachmentList(type, attachments) {
+    const cfg = ATTACHMENT_CONFIG[type];
+    const list = document.getElementById(cfg.listId);
+    if (!list) return;
+
+    if (!attachments || attachments.length === 0) {
+        const msg = (type === 'education' || type === 'certificate')
+            ? '<li class="attachment-empty attachment-empty-required">⚠ 필수 — 첨부파일이 없습니다. 위의 파일 선택 버튼으로 1개 이상 등록해 주세요.</li>'
+            : '<li class="attachment-empty">첨부된 파일이 없습니다.</li>';
+        list.innerHTML = msg;
+        return;
+    }
+
+    list.innerHTML = attachments.map(a => `
+        <li class="attachment-chip">
+            <button type="button" class="attachment-preview-btn" data-idx="${a.idx}" data-name="${escapeAttr(a.originalFilename)}">
+                <i class="fas fa-file"></i>
+                <span>${escapeAttr(a.originalFilename)}</span>
+                <span class="attachment-size">${formatFileSize(a.fileSize)}</span>
+            </button>
+            <button type="button" class="attachment-delete-btn" data-idx="${a.idx}" title="삭제">
+                <i class="fas fa-times"></i>
+            </button>
+        </li>
+    `).join('');
+
+    // 미리보기 버튼
+    list.querySelectorAll('.attachment-preview-btn').forEach(btn => {
+        btn.addEventListener('click', () => {
+            const aIdx = btn.getAttribute('data-idx');
+            const name = btn.getAttribute('data-name');
+            if (window.openFilePreview) {
+                window.openFilePreview([{ url: cfg.downloadUrl(aIdx), filename: name }], 0);
+            }
+        });
+    });
+
+    // 삭제 버튼
+    list.querySelectorAll('.attachment-delete-btn').forEach(btn => {
+        btn.addEventListener('click', () => deleteAttachment(type, btn.getAttribute('data-idx')));
+    });
+}
+
+async function uploadAttachments(type, parentIdx, inputEl) {
+    const cfg = ATTACHMENT_CONFIG[type];
+    const files = Array.from(inputEl.files || []);
+    if (files.length === 0) return;
+
+    // 현재 모달의 기존 첨부 개수 다음 번호부터 sequence 부여 (수정 모드)
+    const list = document.getElementById(cfg.listId);
+    const existingCount = list ? list.querySelectorAll('.attachment-chip').length : 0;
+
+    let success = 0;
+    let i = 0;
+    for (const file of files) {
+        i++;
+        if (file.size > 50 * 1024 * 1024) {
+            await showWarning(`${file.name}: 50MB를 초과합니다.`);
+            continue;
+        }
+        try {
+            const renamed = renameAttachmentFile(type, file, existingCount + i);
+            const formData = new FormData();
+            formData.append('file', renamed);
+            const res = await fetch(cfg.uploadUrl(parentIdx), { method: 'POST', body: formData });
+            if (res.status === 403) {
+                await showWarning('본인만 업로드할 수 있습니다.');
+                break;
+            }
+            if (!res.ok) {
+                const data = await res.json().catch(() => ({}));
+                await showError(data.error || `${file.name}: 업로드 실패`);
+                continue;
+            }
+            success++;
+        } catch (e) {
+            console.error('[첨부] 업로드 오류', e);
+            await showError(`${file.name}: 업로드 중 오류가 발생했습니다.`);
+        }
+    }
+
+    inputEl.value = '';
+
+    if (success > 0) {
+        // 목록 다시 로드해서 최신 attachments 로 렌더링
+        await loadCompetency(type);
+        const refreshed = findCompetencyItemByIdx(type, parentIdx);
+        if (refreshed) renderAttachmentList(type, refreshed.attachments || []);
+    }
+}
+
+async function deleteAttachment(type, attachmentIdx) {
+    const cfg = ATTACHMENT_CONFIG[type];
+
+    // 학력/자격증 첨부는 필수 — 마지막 1개는 삭제 막기
+    if (type === 'education' || type === 'certificate') {
+        const list = document.getElementById(cfg.listId);
+        const count = list ? list.querySelectorAll('.attachment-chip').length : 0;
+        if (count <= 1) {
+            await showWarning('첨부파일은 최소 1개 이상 등록되어 있어야 합니다. 새 파일을 추가한 후 삭제해 주세요.');
+            return;
+        }
+    }
+
+    const confirmed = await showDeleteConfirm('이 첨부파일을 삭제하시겠습니까?');
+    if (!confirmed) return;
+
+    try {
+        const res = await fetch(cfg.deleteUrl(attachmentIdx), { method: 'DELETE' });
+        if (res.status === 403) {
+            await showWarning('본인만 삭제할 수 있습니다.');
+            return;
+        }
+        if (!res.ok) {
+            await showError('삭제에 실패했습니다.');
+            return;
+        }
+
+        // 목록 다시 로드
+        const idxField = document.getElementById(cfg.idxFieldId);
+        const parentIdx = idxField ? Number(idxField.value) : null;
+        await loadCompetency(type);
+        if (parentIdx) {
+            const refreshed = findCompetencyItemByIdx(type, parentIdx);
+            if (refreshed) renderAttachmentList(type, refreshed.attachments || []);
+        }
+        await showSuccess('첨부파일이 삭제되었습니다.');
+    } catch (e) {
+        console.error('[첨부] 삭제 오류', e);
+        await showError('삭제 중 오류가 발생했습니다.');
+    }
+}
+
+function findCompetencyItemByIdx(type, idx) {
+    const cfg = COMPETENCY_CONFIG[type];
+    const listEl = document.getElementById(cfg.listId);
+    if (!listEl || !listEl._lastItems) return null;
+    return (listEl._lastItems || []).find(i => Number(i.idx) === Number(idx));
+}
+
+function formatFileSize(bytes) {
+    if (bytes == null) return '';
+    if (bytes < 1024) return bytes + ' B';
+    if (bytes < 1024 * 1024) return (bytes / 1024).toFixed(1) + ' KB';
+    return (bytes / 1024 / 1024).toFixed(1) + ' MB';
+}
+
+function escapeAttr(s) {
+    return String(s == null ? '' : s)
+        .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;').replace(/'/g, '&#39;');
+}
+
+async function saveMilitaryService() {
+    if (!currentUserIdx) return;
+
+    const status        = document.getElementById('militaryStatus').value;
+    const enlistDate    = document.getElementById('militaryEnlistDate').value.trim();
+    const dischargeDate = document.getElementById('militaryDischargeDate').value.trim();
+    const notes         = document.getElementById('militaryNotes').value.trim();
+
+    // 1) 부분 날짜 형식 검증
+    if (enlistDate && !PARTIAL_DATE_REGEX.test(enlistDate)) {
+        await showWarning('입대일은 YYYY, YYYY-MM, YYYY-MM-DD 형식으로 입력해주세요.');
+        return;
+    }
+    if (dischargeDate && !PARTIAL_DATE_REGEX.test(dischargeDate)) {
+        await showWarning('전역일은 YYYY, YYYY-MM, YYYY-MM-DD 형식으로 입력해주세요.');
+        return;
+    }
+
+    // 2) 두 날짜 모두 같은 정밀도일 때 enlist <= discharge 비교
+    if (enlistDate && dischargeDate && enlistDate.length === dischargeDate.length) {
+        if (enlistDate > dischargeDate) {
+            await showWarning('전역일은 입대일보다 빠를 수 없습니다.');
+            return;
+        }
+    }
+
+    const payload = {
+        militaryStatus:         status || null,
+        militaryEnlistDate:     enlistDate || null,
+        militaryDischargeDate:  dischargeDate || null,
+        militaryNotes:          notes || null
+    };
+
+    try {
+        const res = await fetch(`/api/competency/military/${currentUserIdx}`, {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(payload)
+        });
+
+        if (res.status === 403) {
+            await showWarning('병적사항은 본인만 수정할 수 있습니다.');
+            return;
+        }
+
+        if (!res.ok) {
+            const data = await res.json().catch(() => ({}));
+            await showError(data.error || '병적사항 저장에 실패했습니다.');
+            return;
+        }
+
+        markMilitaryClean();
+        await showSuccess('병적사항이 저장되었습니다.');
+    } catch (e) {
+        console.error('[병적사항] 저장 오류', e);
+        await showError('병적사항 저장 중 오류가 발생했습니다.');
     }
 }

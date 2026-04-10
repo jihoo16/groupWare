@@ -50,6 +50,11 @@ public class UserSchool extends BaseEntity {
     @Column(name = "notes", columnDefinition = "TEXT")
     private String notes;
 
+    /** 이공계 학위 여부 (체크박스, 본인 판단) */
+    @Builder.Default
+    @Column(name = "is_stem_major", nullable = false)
+    private Boolean isStemMajor = false;
+
     @Builder.Default
     @Column(name = "is_deleted", nullable = false)
     private Boolean isDeleted = false;
