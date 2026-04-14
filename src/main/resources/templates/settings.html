@@ -107,7 +107,7 @@
                             <i class="fas fa-info-circle"></i>
                             <div>
                                 <strong>안내</strong>
-                                <p>병적사항은 본인만 입력/수정할 수 있습니다. 정확한 일자를 모를 경우 <b>연도만(YYYY)</b> 또는 <b>연-월(YYYY-MM)</b>로 입력 가능합니다.</p>
+                                <p>병적사항은 본인만 입력/수정할 수 있습니다. 입대/전역 시점은 <b>연-월(YYYY-MM)</b> 단위로 입력합니다.</p>
                             </div>
                         </div>
                         <div class="profile-form">
@@ -118,18 +118,12 @@
                                 </select>
                             </div>
                             <div class="form-group" id="militaryEnlistRow" style="display:none;">
-                                <label>입대일</label>
-                                <input type="text" id="militaryEnlistDate" class="form-input"
-                                       placeholder="YYYY 또는 YYYY-MM 또는 YYYY-MM-DD"
-                                       maxlength="10"
-                                       pattern="\d{4}(-\d{2}(-\d{2})?)?">
+                                <label>입대 월</label>
+                                <input type="month" id="militaryEnlistDate" class="form-input">
                             </div>
                             <div class="form-group" id="militaryDischargeRow" style="display:none;">
-                                <label>전역일</label>
-                                <input type="text" id="militaryDischargeDate" class="form-input"
-                                       placeholder="YYYY 또는 YYYY-MM 또는 YYYY-MM-DD"
-                                       maxlength="10"
-                                       pattern="\d{4}(-\d{2}(-\d{2})?)?">
+                                <label>전역 월</label>
+                                <input type="month" id="militaryDischargeDate" class="form-input">
                             </div>
                             <div class="form-group" id="militaryNotesRow">
                                 <label>비고</label>
@@ -545,8 +539,8 @@
                         <input type="text" id="majorName" class="form-input" placeholder="컴퓨터공학과">
                     </div>
                     <div class="form-group">
-                        <label>졸업일자</label>
-                        <input type="date" id="graduationDate" class="form-input">
+                        <label>졸업 월</label>
+                        <input type="month" id="graduationDate" class="form-input">
                     </div>
                 </div>
                 <div class="form-row">

@@ -751,10 +751,11 @@ function fillModalFields(type, item) {
     switch(type) {
         case 'education':
             document.getElementById('schoolIdx').value       = item.idx || '';
+            // graduationDate 는 month input — LocalDate(YYYY-MM-DD) → YYYY-MM 로 자르기
             document.getElementById('schoolName').value      = item.schoolName || '';
             document.getElementById('degreeType').value      = item.degreeType || '';
             document.getElementById('majorName').value       = item.majorName || '';
-            document.getElementById('graduationDate').value  = item.graduationDate || '';
+            document.getElementById('graduationDate').value  = item.graduationDate ? String(item.graduationDate).substring(0, 7) : '';
             document.getElementById('schoolIsStemMajor').checked = !!item.isStemMajor;
             document.getElementById('schoolNotes').value     = item.notes || '';
             break;
@@ -994,11 +995,13 @@ function buildPayload(type) {
                 document.getElementById('degreeType').classList.add('error');
                 showWarning('학위구분을 선택해주세요.'); return null;
             }
+            // graduationDate: month input 값(YYYY-MM) → 백엔드 LocalDate 용 YYYY-MM-01 로 변환
+            const graduationMonth = document.getElementById('graduationDate').value;
             return {
                 schoolName,
                 degreeType,
                 majorName:      document.getElementById('majorName').value.trim() || null,
-                graduationDate: document.getElementById('graduationDate').value   || null,
+                graduationDate: graduationMonth ? `${graduationMonth}-01` : null,
                 isStemMajor:    document.getElementById('schoolIsStemMajor').checked,
                 notes:          document.getElementById('schoolNotes').value.trim() || null
             };
@@ -1458,6 +1461,23 @@ const MILITARY_DATE_ALLOWED_CODES = ['C1201', 'C1204'];
 /** 부분 날짜 정규식 — YYYY / YYYY-MM / YYYY-MM-DD */
 const PARTIAL_DATE_REGEX = /^\d{4}(-\d{2}(-\d{2})?)?$/;
 
+/**
+ * 병적사항 저장값(과거 YYYY / YYYY-MM / YYYY-MM-DD 혼용)을
+ * month input 이 허용하는 YYYY-MM 형태로 정규화.
+ *   YYYY        → YYYY-01  (월 정보 없던 과거 데이터는 1월로 임시 고정)
+ *   YYYY-MM     → 그대로
+ *   YYYY-MM-DD  → 앞 7자리만 사용
+ *   그 외        → ''
+ */
+function toMonthValue(v) {
+    if (!v) return '';
+    const s = String(v).trim();
+    if (/^\d{4}$/.test(s))            return `${s}-01`;
+    if (/^\d{4}-\d{2}$/.test(s))      return s;
+    if (/^\d{4}-\d{2}-\d{2}/.test(s)) return s.substring(0, 7);
+    return '';
+}
+
 /** 성별별 병역구분 기본값 — 미설정 사용자에게 자동 적용 */
 const MILITARY_DEFAULT_BY_GENDER = {
     '남': 'C1201', // 병역필
@@ -1568,9 +1588,11 @@ async function loadMilitaryService() {
             || MILITARY_DEFAULT_BY_GENDER[currentUserGender]
             || '';
 
+        // militaryEnlistDate/DischargeDate 는 month input — 과거에 YYYY, YYYY-MM, YYYY-MM-DD
+        // 혼용 저장되었을 수 있으므로 YYYY-MM 형태로 정규화해서 채움.
         document.getElementById('militaryStatus').value         = initialStatus;
-        document.getElementById('militaryEnlistDate').value     = dto.militaryEnlistDate || '';
-        document.getElementById('militaryDischargeDate').value  = dto.militaryDischargeDate || '';
+        document.getElementById('militaryEnlistDate').value     = toMonthValue(dto.militaryEnlistDate);
+        document.getElementById('militaryDischargeDate').value  = toMonthValue(dto.militaryDischargeDate);
         document.getElementById('militaryNotes').value          = dto.militaryNotes || '';
 
         toggleMilitaryDateRows();
@@ -1975,20 +1997,20 @@ async function saveMilitaryService() {
     const dischargeDate = document.getElementById('militaryDischargeDate').value.trim();
     const notes         = document.getElementById('militaryNotes').value.trim();
 
-    // 1) 부분 날짜 형식 검증
+    // 1) 날짜 형식 검증 (month input 이므로 YYYY-MM 만 유효 — 과거 데이터 호환 위해 regex 유지)
     if (enlistDate && !PARTIAL_DATE_REGEX.test(enlistDate)) {
-        await showWarning('입대일은 YYYY, YYYY-MM, YYYY-MM-DD 형식으로 입력해주세요.');
+        await showWarning('입대 월은 YYYY-MM 형식으로 입력해주세요.');
         return;
     }
     if (dischargeDate && !PARTIAL_DATE_REGEX.test(dischargeDate)) {
-        await showWarning('전역일은 YYYY, YYYY-MM, YYYY-MM-DD 형식으로 입력해주세요.');
+        await showWarning('전역 월은 YYYY-MM 형식으로 입력해주세요.');
         return;
     }
 
-    // 2) 두 날짜 모두 같은 정밀도일 때 enlist <= discharge 비교
+    // 2) 두 날짜 모두 있으면 enlist <= discharge 비교 (문자열 비교 — YYYY-MM 기준 정렬 가능)
     if (enlistDate && dischargeDate && enlistDate.length === dischargeDate.length) {
         if (enlistDate > dischargeDate) {
-            await showWarning('전역일은 입대일보다 빠를 수 없습니다.');
+            await showWarning('전역 월은 입대 월보다 빠를 수 없습니다.');
             return;
         }
     }
