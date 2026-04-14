@@ -201,6 +201,17 @@
                                             <i class="fas fa-list-ul"></i> 금주 주요 업무
                                             <span class="required-mark">*</span>
                                         </label>
+                                        <!-- 이전주 차주계획 배너 (프로젝트+주간 선택 후 이전주 계획이 있을 때 표시) -->
+                                        <div id="prevWeekPlanBanner" class="prev-week-plan-banner" style="display:none;">
+                                            <i class="fas fa-lightbulb"></i>
+                                            <div class="prev-week-plan-banner-text">
+                                                <strong>지난주 차주 계획:</strong>
+                                                <span id="prevWeekPlanPreview"></span>
+                                            </div>
+                                            <button type="button" id="prevWeekPlanViewBtn" class="btn-prev-week-plan">
+                                                <i class="fas fa-plus"></i> 추가
+                                            </button>
+                                        </div>
                                         <textarea id="weeklyTasks" class="form-textarea" rows="4" placeholder="이번 주 수행한 주요 업무 (필수)" required></textarea>
                                     </div>
 

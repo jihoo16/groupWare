@@ -2,6 +2,100 @@
    주간업무보고서 스타일
    ============================================ */
 
+/* 이전주 차주계획 배너 */
+.prev-week-plan-banner {
+    display: flex;
+    align-items: flex-start;
+    gap: 10px;
+    background: linear-gradient(135deg, #fff8e1, #fffde7);
+    border: 1px solid #ffe082;
+    border-left: 4px solid #ffc107;
+    border-radius: 6px;
+    padding: 10px 14px;
+    margin-bottom: 8px;
+    font-size: 13px;
+    color: #5d4037;
+}
+
+.prev-week-plan-banner > .fas {
+    color: #ffc107;
+    font-size: 15px;
+    margin-top: 2px;
+    flex-shrink: 0;
+}
+
+.prev-week-plan-banner-text {
+    flex: 1;
+    line-height: 1.5;
+}
+
+.prev-week-plan-banner-text strong {
+    color: #e65100;
+    margin-right: 4px;
+}
+
+.btn-prev-week-plan {
+    flex-shrink: 0;
+    background: #ffc107;
+    color: #333;
+    border: none;
+    border-radius: 4px;
+    padding: 5px 12px;
+    font-size: 12px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: background 0.2s;
+    white-space: nowrap;
+}
+
+.btn-prev-week-plan:hover {
+    background: #ffb300;
+}
+
+/* 이전주 차주계획 모달 */
+.prev-week-plan-modal-period {
+    font-size: 13px;
+    color: #666;
+    margin-bottom: 12px;
+}
+
+.prev-week-plan-modal-period .fas {
+    color: #667eea;
+    margin-right: 4px;
+}
+
+.prev-week-plan-modal-content {
+    background: #f8fafc;
+    border: 1px solid #e2e8f0;
+    border-radius: 6px;
+    padding: 14px;
+    margin-bottom: 10px;
+    max-height: 300px;
+    overflow-y: auto;
+}
+
+.prev-week-plan-text {
+    font-family: inherit;
+    font-size: 13px;
+    color: #333;
+    line-height: 1.7;
+    white-space: pre-wrap;
+    word-break: break-word;
+    margin: 0;
+}
+
+.prev-week-plan-modal-hint {
+    font-size: 12px;
+    color: #999;
+    margin: 0;
+}
+
+.prev-week-plan-modal-hint .fas {
+    color: #667eea;
+    margin-right: 4px;
+}
+
+
 /* 문서 작성 레이아웃 */
 .write-container {
     padding: 20px 20px 10px 20px;
@@ -1962,3 +2056,4 @@ div:focus {
     font-size: 13px;
     text-align: center;
 }
+

@@ -76,13 +76,4 @@ public class WeeklyReportCreateDTO {
      */
     private java.math.BigDecimal inputProgressRate;
 
-    /**
-     * 렌더링된 HTML (PDF 생성용)
-     */
-    private String renderedHtml;
-
-    /**
-     * 렌더링된 CSS (PDF 생성용)
-     */
-    private String renderedCss;
 }

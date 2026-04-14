@@ -16,15 +16,7 @@
                     <h1 class="page-title"><i class="fas fa-calendar-week"></i> 프로젝트 주간업무보고 상세</h1>
                 </div>
                 <div class="header-right" id="headerButtons">
-                    <!-- 삭제 버튼은 작성자인 경우에만 동적으로 생성됨 -->
-                    <button class="btn-download-official" id="headerDownloadBtn" disabled>
-                        <i class="fas fa-file-pdf"></i>
-                        공식문서 다운로드
-                    </button>
-                    <button class="btn-outline" id="headerPrintBtn" disabled>
-                        <i class="fas fa-print"></i>
-                        인쇄
-                    </button>
+                    <!-- 수정/삭제 버튼은 작성자인 경우에만 동적으로 생성됨 -->
                     <button class="btn-secondary" onclick="history.back()">
                         <i class="fas fa-arrow-left"></i>
                         돌아가기
@@ -98,12 +90,6 @@
                         <h3 class="section-title">기타</h3>
                         <div class="content-box">
                             <p id="remarks" class="content-text"></p>
-                        </div>
-
-                        <!-- 공식 PDF -->
-                        <h3 class="section-title">공식 PDF</h3>
-                        <div id="officialPdfList" class="attachments-list">
-                            <p style="color: #999; font-size: 13px;">생성된 공식 PDF가 없습니다.</p>
                         </div>
 
                         <!-- 첨부파일 -->

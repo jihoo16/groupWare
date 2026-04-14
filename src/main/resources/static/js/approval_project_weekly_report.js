@@ -324,6 +324,11 @@ document.addEventListener('DOMContentLoaded', function() {
                 // 결재자 자동 설정: 프로젝트 책임자
                 await autoSetApprovers(selectedProject);
 
+                // 주간 선택된 경우 이전주 차주계획 체크
+                if (selectedWeekDates.length > 0) {
+                    checkPrevWeekPlan();
+                }
+
                 closeProjectModal();
             });
 
@@ -629,16 +634,18 @@ document.addEventListener('DOMContentLoaded', function() {
         dayEl.textContent = day;
 
         if (dateStr) {
-            // 미래 날짜인지 확인
-            const date = new Date(dateStr);
+            // 다음 주 말(일요일)까지 선택 허용 (string 비교로 타임존 버그 방지)
             const today = new Date();
-            today.setHours(0, 0, 0, 0); // 시간 정보 제거
+            const todayDay = today.getDay(); // 0=일, 1=월, ..., 6=토
+            const daysUntilNextWeekEnd = todayDay === 0 ? 13 : (7 - todayDay) + 7;
+            const nextWeekEnd = new Date(today);
+            nextWeekEnd.setDate(today.getDate() + daysUntilNextWeekEnd);
+            const nextWeekEndStr = formatDate(nextWeekEnd);
 
-            if (date > today) {
-                // 미래 날짜는 비활성화
+            if (dateStr > nextWeekEndStr) {
+                // 다음 주 이후는 비활성화
                 dayEl.classList.add('future-disabled');
             } else {
-                // 현재 또는 과거 날짜만 클릭 가능
                 dayEl.addEventListener('click', () => selectWeek(dateStr));
             }
         }
@@ -648,16 +655,20 @@ document.addEventListener('DOMContentLoaded', function() {
 
     // 주 선택 (클릭한 날짜가 속한 주의 평일들을 자동 선택)
     function selectWeek(dateStr) {
-        const clickedDate = new Date(dateStr);
+        // 다음 주 말까지만 허용 (string 비교로 타임존 버그 방지)
         const today = new Date();
-        today.setHours(0, 0, 0, 0);
+        const todayDay = today.getDay();
+        const daysUntilNextWeekEnd = todayDay === 0 ? 13 : (7 - todayDay) + 7;
+        const nextWeekEnd = new Date(today);
+        nextWeekEnd.setDate(today.getDate() + daysUntilNextWeekEnd);
+        const nextWeekEndStr = formatDate(nextWeekEnd);
 
-        // 미래 날짜는 선택 불가
-        if (clickedDate > today) {
-            showWarning('미래의 주간보고서는 작성할 수 없습니다.\n현재 또는 과거 날짜를 선택해주세요.');
+        if (dateStr > nextWeekEndStr) {
+            showWarning('다음 주를 초과하는 주간보고서는 작성할 수 없습니다.');
             return;
         }
 
+        const clickedDate = new Date(dateStr.replace(/-/g, '/'));
         selectedWeekDates = getWeekdaysInWeek(clickedDate);
 
         // hidden input에 시작일과 종료일 저장
@@ -680,6 +691,11 @@ document.addEventListener('DOMContentLoaded', function() {
         }
 
         renderCalendar();
+
+        // 이전주 차주계획 체크 (프로젝트가 선택된 경우)
+        if (selectedProject) {
+            checkPrevWeekPlan();
+        }
     }
 
     // 월 네비게이션
@@ -1667,6 +1683,7 @@ document.addEventListener('DOMContentLoaded', function() {
             // 주간 달성률
             if (data.weeklyAchievementRate !== null && weeklyAchievementRateInput) {
                 weeklyAchievementRateInput.value = data.weeklyAchievementRate;
+                updateAchievementDisplay(data.weeklyAchievementRate);
             }
 
             // 입력 필드 채우기
@@ -1709,53 +1726,6 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     }
 
-
-    // ============================================
-    // 렌더링된 HTML/CSS 수집 함수 (PDF 생성용)
-    // ============================================
-    function captureRenderedDocument() {
-        // 문서 양식 영역의 HTML 가져오기
-        const documentForm = document.querySelector('.document-form');
-        if (!documentForm) {
-            console.error('문서 양식을 찾을 수 없습니다.');
-            return { html: '', css: '' };
-        }
-
-        // HTML 복사 및 정리
-        const clonedForm = documentForm.cloneNode(true);
-
-        // 불필요한 요소 제거 (편집 관련 요소 등)
-        clonedForm.querySelectorAll('button, input[type="button"]').forEach(el => el.remove());
-
-        const documentHtml = clonedForm.outerHTML;
-
-        // CSS 수집 (approval_project_weekly_report.css만)
-        let collectedCss = '';
-        try {
-            // 페이지의 모든 스타일시트 순회
-            Array.from(document.styleSheets).forEach(sheet => {
-                try {
-                    // approval_project_weekly_report.css 파일만 선택
-                    if (sheet.href && sheet.href.includes('approval_project_weekly_report.css')) {
-                        const rules = Array.from(sheet.cssRules || sheet.rules);
-                        rules.forEach(rule => {
-                            collectedCss += rule.cssText + '\n';
-                        });
-                    }
-                } catch (e) {
-                    // CORS 에러 등으로 접근 불가능한 스타일시트는 무시
-                    console.warn('스타일시트 접근 불가:', sheet.href, e);
-                }
-            });
-        } catch (error) {
-            console.error('CSS 수집 중 오류:', error);
-        }
-
-        return {
-            html: documentHtml,
-            css: collectedCss
-        };
-    }
 
     // ============================================
     // 폼 제출
@@ -1863,33 +1833,16 @@ document.addEventListener('DOMContentLoaded', function() {
             const editingReportId = urlParams.get('id');
             const isEditMode = !!editingReportId;
 
-            // 신규 작성 모드일 경우 PDF 저장 경고 표시
-            if (!isEditMode) {
-                const confirmResult = await Swal.fire({
-                    icon: 'warning',
-                    title: '프로젝트 주간업무보고 저장',
-                    html: '보고서는 <strong>PDF 파일로 저장</strong>되며,<br>저장 후에는 <strong>문서 내용을 수정할 수 없습니다.</strong><br><br>수정을 원하실 경우 삭제 후 재생성해야 합니다.<br><br>저장하시겠습니까?',
-                    showCancelButton: true,
-                    confirmButtonText: '저장',
-                    cancelButtonText: '취소',
-                    confirmButtonColor: '#3085d6',
-                    cancelButtonColor: '#d33'
-                });
-
-                if (!confirmResult.isConfirmed) {
-                    return;
-                }
-            } else {
-                // 수정 모드일 경우 기존 확인 메시지
-                const saveConfirmed = await showSaveConfirm('프로젝트 주간업무보고를 수정하시겠습니까?');
-                if (!saveConfirmed) {
-                    return;
-                }
+            const saveConfirmed = await showSaveConfirm(
+                isEditMode ? '프로젝트 주간업무보고를 수정하시겠습니까?' : '프로젝트 주간업무보고를 저장하시겠습니까?'
+            );
+            if (!saveConfirmed) {
+                return;
             }
 
             // 로딩 스피너 표시
             Swal.fire({
-                title: 'PDF 생성 중...',
+                title: '저장 중...',
                 html: '보고서를 저장하고 있습니다.<br>잠시만 기다려주세요.',
                 allowOutsideClick: false,
                 allowEscapeKey: false,
@@ -1906,9 +1859,6 @@ document.addEventListener('DOMContentLoaded', function() {
                 // 참조자 이름 목록을 쉼표로 구분된 문자열로 변환
                 const referenceNamesStr = selectedReferences.map(r => r.name).join(', ');
 
-                // 렌더링된 문서 HTML/CSS 캡처 (PDF 생성용)
-                const { html, css } = captureRenderedDocument();
-
                 const requestData = {
                     userIdx: currentUserIdx,
                     projectIdx: projectIdx,
@@ -1921,9 +1871,7 @@ document.addEventListener('DOMContentLoaded', function() {
                     remarks: remarksVal,
                     referenceNames: referenceNamesStr,
                     weeklyAchievementRate: achievementRate,
-                    inputProgressRate: inputProgressRateValue,
-                    renderedHtml: html,
-                    renderedCss: css
+                    inputProgressRate: inputProgressRateValue
                 };
 
                 console.log('전송 데이터:', requestData);
@@ -2003,6 +1951,96 @@ document.addEventListener('DOMContentLoaded', function() {
                 showError('저장 중 오류가 발생했습니다: ' + error.message);
             }
         });
+    }
+
+    // ============================================
+    // 이전주 차주계획 불러오기
+    // ============================================
+    let prevWeekPlanData = null; // 이전주 보고서 데이터 캐시
+
+    // 이전주 월요일 날짜 문자열 계산 (YYYY.MM.DD 형식)
+    function getPrevWeekMondayDisplay(currentWeekMondayStr) {
+        const parts = currentWeekMondayStr.split('-');
+        const monday = new Date(parseInt(parts[0]), parseInt(parts[1]) - 1, parseInt(parts[2]));
+        monday.setDate(monday.getDate() - 7);
+        const y = monday.getFullYear();
+        const m = String(monday.getMonth() + 1).padStart(2, '0');
+        const d = String(monday.getDate()).padStart(2, '0');
+        return `${y}.${m}.${d}`;
+    }
+
+    // 이전주 차주계획 체크 (프로젝트 + 주간 모두 선택된 경우 호출)
+    async function checkPrevWeekPlan() {
+        const banner = document.getElementById('prevWeekPlanBanner');
+        if (!banner) return;
+
+        if (!selectedWeekDates || selectedWeekDates.length === 0 || !selectedProject) {
+            banner.style.display = 'none';
+            return;
+        }
+
+        const prevWeekMonday = getPrevWeekMondayDisplay(selectedWeekDates[0]);
+
+        try {
+            const response = await fetch(`/api/document/weekly-report/project/${selectedProject.idx}/prev-week?weekStart=${encodeURIComponent(prevWeekMonday)}`);
+
+            if (response.status === 204 || !response.ok) {
+                prevWeekPlanData = null;
+                banner.style.display = 'none';
+                return;
+            }
+
+            const data = await response.json();
+
+            if (!data.nextWeekPlan || data.nextWeekPlan.trim() === '') {
+                prevWeekPlanData = null;
+                banner.style.display = 'none';
+                return;
+            }
+
+            prevWeekPlanData = data;
+
+            // 배너 미리보기 업데이트
+            const preview = document.getElementById('prevWeekPlanPreview');
+            if (preview) {
+                const previewText = data.nextWeekPlan.length > 80
+                    ? data.nextWeekPlan.substring(0, 80) + '...'
+                    : data.nextWeekPlan;
+                preview.textContent = previewText;
+            }
+
+            banner.style.display = 'flex';
+
+        } catch (error) {
+            console.error('이전주 차주계획 조회 오류:', error);
+            banner.style.display = 'none';
+        }
+    }
+
+    // 이전주 차주계획을 금주 주요업무에 추가
+    window.applyPrevWeekPlan = function() {
+        if (!prevWeekPlanData || !prevWeekPlanData.nextWeekPlan) return;
+
+        const plan = prevWeekPlanData.nextWeekPlan.trim();
+        const current = weeklyTasks ? weeklyTasks.value.trim() : '';
+
+        if (weeklyTasks) {
+            weeklyTasks.value = current === '' ? plan : current + '\n\n' + plan;
+        }
+
+        // 미리보기 업데이트
+        const autoTasks = document.querySelector('.auto-tasks');
+        if (autoTasks && weeklyTasks) autoTasks.textContent = weeklyTasks.value || '-';
+
+        // 배너 숨김 (한번 적용 후)
+        const banner = document.getElementById('prevWeekPlanBanner');
+        if (banner) banner.style.display = 'none';
+    };
+
+    // 배너의 "추가" 버튼
+    const prevWeekPlanViewBtn = document.getElementById('prevWeekPlanViewBtn');
+    if (prevWeekPlanViewBtn) {
+        prevWeekPlanViewBtn.addEventListener('click', applyPrevWeekPlan);
     }
 
     // ============================================
