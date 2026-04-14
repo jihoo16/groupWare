@@ -38,8 +38,10 @@ import java.time.LocalDateTime;
 import java.time.ZoneId;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.Comparator;
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 import java.util.stream.Collectors;
@@ -84,8 +86,15 @@ public class ApprovalDocumentServiceImpl implements ApprovalDocumentService {
         // is_project = false인 일반 전자결재 문서만 조회
         List<ApprovalDocument> documents = approvalDocumentRepository.findGeneralDocuments();
 
+        // 배치 로딩: 사용자/부서코드 N+1 쿼리 방지
+        Map<Long, User> userMap = batchLoadUsers(documents.stream()
+                .map(ApprovalDocument::getCreatedUserIdx)
+                .filter(Objects::nonNull)
+                .collect(Collectors.toSet()));
+        Map<String, String> deptCodeNameMap = loadDeptCodeNameMap();
+
         List<ApprovalDocumentDTO> result = documents.stream()
-                .map(this::convertToDTO)
+                .map(doc -> convertToDTO(doc, userMap, deptCodeNameMap))
                 .filter(dto -> {
                     // 원본 문서가 존재하는 것만 포함 (sourceDocumentId가 null이 아닌 경우)
                     // 원본 문서가 삭제된 경우를 필터링
@@ -115,8 +124,15 @@ public class ApprovalDocumentServiceImpl implements ApprovalDocumentService {
         // is_project = true인 프로젝트 문서만 조회
         List<ApprovalDocument> documents = approvalDocumentRepository.findProjectDocuments();
 
+        // 배치 로딩: 사용자/부서코드 N+1 쿼리 방지
+        Map<Long, User> userMap = batchLoadUsers(documents.stream()
+                .map(ApprovalDocument::getCreatedUserIdx)
+                .filter(Objects::nonNull)
+                .collect(Collectors.toSet()));
+        Map<String, String> deptCodeNameMap = loadDeptCodeNameMap();
+
         List<ApprovalDocumentDTO> result = documents.stream()
-                .map(this::convertToDTO)
+                .map(doc -> convertToDTO(doc, userMap, deptCodeNameMap))
                 // 원본 문서가 삭제된 경우 sourceDocumentId가 null이 되므로 제외
                 .filter(dto -> dto.getSourceDocumentId() != null)
                 .collect(Collectors.toList());
@@ -967,6 +983,191 @@ public class ApprovalDocumentServiceImpl implements ApprovalDocumentService {
                 .filter(Objects::nonNull)
                 .max(LocalDate::compareTo)
                 .orElse(fallback);
+    }
+
+    /**
+     * 사용자 IDX 목록을 배치로 로딩하여 Map 반환 (N+1 방지용)
+     */
+    private Map<Long, User> batchLoadUsers(Set<Long> userIdxs) {
+        if (userIdxs.isEmpty()) return Collections.emptyMap();
+        return userRepository.findAllById(userIdxs).stream()
+                .collect(Collectors.toMap(User::getIdx, u -> u));
+    }
+
+    /**
+     * 부서 코드 → 부서명 Map 반환 (N+1 방지용)
+     */
+    private Map<String, String> loadDeptCodeNameMap() {
+        return codeRepository.findByGroupCode(CodeConstants.GroupCode.DEPARTMENT.getCode()).stream()
+                .collect(Collectors.toMap(Code::getCode, Code::getCodeName, (a, b) -> a));
+    }
+
+    /**
+     * Entity → DTO 변환 (배치 로딩된 사용자/부서코드 Map 활용 — N+1 최적화)
+     */
+    private ApprovalDocumentDTO convertToDTO(ApprovalDocument document, Map<Long, User> userMap, Map<String, String> deptCodeNameMap) {
+        String docTypeCode = document.getDocumentType();
+        CodeConstants.DocumentType docTypeEnum = CodeConstants.DocumentType.fromCodeOrNull(docTypeCode);
+        String docTypeName = docTypeEnum != null ? docTypeEnum.getName() : docTypeCode;
+
+        ApprovalDocumentDTO dto = ApprovalDocumentDTO.builder()
+                .idx(document.getIdx())
+                .documentNo(document.getDocumentNo())
+                .title(document.getTitle())
+                .documentType(docTypeCode)
+                .documentTypeName(docTypeName)
+                .drafterUserIdx(document.getDrafterUserIdx())
+                .content(document.getContent())
+                .createdAt(document.getCreatedAt())
+                .updatedAt(document.getUpdatedAt())
+                .build();
+
+        // 작성자 정보: Map에서 조회 (DB 쿼리 없음)
+        if (document.getCreatedUserIdx() != null) {
+            User user = userMap.get(document.getCreatedUserIdx());
+            if (user != null) {
+                dto.setDrafterName(user.getEmpName());
+                dto.setDrafterDept(user.getEmpDept());
+                if (user.getEmpDept() != null) {
+                    dto.setDrafterDeptName(deptCodeNameMap.get(user.getEmpDept()));
+                }
+            } else {
+                log.error("!!! 사용자 정보 없음 - createdUserIdx: {}", document.getCreatedUserIdx());
+            }
+        } else {
+            log.error("!!! createdUserIdx가 null - 문서 IDX: {}", document.getIdx());
+        }
+
+        // 원본 문서 ID 조회 및 설정 (타입별 단건 쿼리 유지)
+        String documentType = document.getDocumentType();
+        if (CodeConstants.DocumentType.WEEKLY_REPORT.getCode().equals(documentType) || CodeConstants.DocumentType.PROJECT_WEEKLY_REPORT.getCode().equals(documentType)) {
+            weeklyReportRepository.findByDocumentIdx(document.getIdx()).ifPresent(weeklyReport -> {
+                dto.setSourceDocumentId(weeklyReport.getId());
+                if (weeklyReport.getProjectIdx() != null) {
+                    dto.setProjectIdx(weeklyReport.getProjectIdx());
+                    projectRepository.findById(weeklyReport.getProjectIdx()).ifPresent(project -> {
+                        dto.setProjectName(project.getProjectName());
+                    });
+                }
+            });
+        } else if (CodeConstants.DocumentType.RECEIPT_MEETING.getCode().equals(documentType)) {
+            receiptMeetingRepository.findByDocumentIdx(document.getIdx()).ifPresent(receiptMeeting -> {
+                dto.setSourceDocumentId(receiptMeeting.getIdx());
+                if (receiptMeeting.getProjectIdx() != null) {
+                    dto.setProjectIdx(receiptMeeting.getProjectIdx());
+                    projectRepository.findById(receiptMeeting.getProjectIdx()).ifPresent(project -> {
+                        dto.setProjectName(project.getProjectName());
+                    });
+                }
+                dto.setEventDate(receiptMeeting.getMeetingDate());
+                dto.setCardUsageDate(receiptMeeting.getMeetingDate());
+                enrichWithCardInfo(dto, receiptMeeting.getCardIdx());
+                dto.setPurpose(receiptMeeting.getPurpose());
+                dto.setAmount(receiptMeeting.getAmount());
+                dto.setParticipantNames(buildParticipantNames(receiptMeeting.getIdx(), "RCM"));
+                dto.setAttachments(buildMeetingAttachments(receiptMeeting.getIdx()));
+            });
+        } else if (CodeConstants.DocumentType.RECEIPT_TRIP.getCode().equals(documentType)) {
+            receiptTripRepository.findByDocumentIdx(document.getIdx()).ifPresent(receiptTrip -> {
+                dto.setSourceDocumentId(receiptTrip.getIdx());
+                if (receiptTrip.getProjectIdx() != null) {
+                    dto.setProjectIdx(receiptTrip.getProjectIdx());
+                    projectRepository.findById(receiptTrip.getProjectIdx()).ifPresent(project -> {
+                        dto.setProjectName(project.getProjectName());
+                    });
+                }
+                dto.setEventDate(receiptTrip.getTripDate());
+                dto.setCardUsageDate(receiptTrip.getTripDate());
+                enrichWithCardInfo(dto, receiptTrip.getCardIdx());
+                dto.setLocation(receiptTrip.getLocation());
+                dto.setAmount(receiptTrip.getTotalFee());
+                dto.setParticipantNames(buildParticipantNames(receiptTrip.getIdx(), "RCT"));
+                dto.setAttachments(buildTripAttachments(receiptTrip.getIdx()));
+            });
+        } else if (CodeConstants.DocumentType.RECEIPT_TRIP_MEETING.getCode().equals(documentType)) {
+            receiptTripMeetingRepository.findByDocumentIdx(document.getIdx()).ifPresent(rtm -> {
+                dto.setSourceDocumentId(rtm.getIdx());
+                if (rtm.getProjectIdx() != null) {
+                    dto.setProjectIdx(rtm.getProjectIdx());
+                    projectRepository.findById(rtm.getProjectIdx()).ifPresent(project -> {
+                        dto.setProjectName(project.getProjectName());
+                    });
+                }
+                dto.setEventDate(rtm.getTripDate());
+                dto.setCardUsageDate(rtm.getTripDate());
+                enrichWithCardInfo(dto, rtm.getCardIdx());
+                dto.setLocation(rtm.getLocation());
+                dto.setPurpose(rtm.getPurpose());
+                dto.setAmount(rtm.getTotalFee());
+                dto.setParticipantNames(buildParticipantNames(rtm.getIdx(), "RCTM"));
+                dto.setAttachments(buildRctmAttachments(rtm.getIdx()));
+            });
+        } else if (CodeConstants.DocumentType.RECEIPT_OVERTIME.getCode().equals(documentType)) {
+            receiptOvertimeRepository.findByDocumentIdx(document.getIdx()).ifPresent(receiptOvertime -> {
+                dto.setSourceDocumentId(receiptOvertime.getIdx());
+                if (receiptOvertime.getProjectIdx() != null) {
+                    dto.setProjectIdx(receiptOvertime.getProjectIdx());
+                    if (receiptOvertime.getProject() != null) {
+                        dto.setProjectName(receiptOvertime.getProject().getProjectName());
+                    }
+                }
+                dto.setEventDate(receiptOvertime.getOvertimeDate());
+                dto.setCardUsageDate(receiptOvertime.getOvertimeDate());
+                enrichWithCardInfo(dto, receiptOvertime.getCardIdx());
+                dto.setAmount(receiptOvertime.getTotalAmount());
+                dto.setParticipantNames(buildParticipantNames(receiptOvertime.getIdx(), "RCO"));
+                dto.setAttachments(buildOvertimeAttachments(receiptOvertime.getIdx()));
+            });
+        } else if (CodeConstants.DocumentType.RECEIPT_MATERIAL.getCode().equals(documentType) || CodeConstants.DocumentType.RECEIPT_EQUIPMENT.getCode().equals(documentType)) {
+            receiptPurchaseRepository.findByDocumentIdx(document.getIdx()).ifPresent(purchase -> {
+                dto.setSourceDocumentId(purchase.getIdx());
+                dto.setAmount(purchase.getTotalAmount());
+                String formattedAmount = purchase.getTotalAmount() != null && purchase.getTotalAmount().compareTo(BigDecimal.ZERO) != 0
+                        ? String.format("%,d", purchase.getTotalAmount().longValue()) + "원" : "0원";
+                dto.setTitle(docTypeName + " - " + formattedAmount);
+                if (purchase.getProjectIdx() != null) {
+                    dto.setProjectIdx(purchase.getProjectIdx());
+                    projectRepository.findById(purchase.getProjectIdx()).ifPresent(project -> {
+                        dto.setProjectName(project.getProjectName());
+                    });
+                }
+                if (purchase.getApprovalDate() != null) {
+                    dto.setEventDate(purchase.getApprovalDate());
+                }
+                dto.setCardUsageDate(computePurchaseCardUsageDate(purchase.getIdx(), purchase.getApprovalDate()));
+                enrichWithCardInfo(dto, purchase.getCardIdx());
+                String purposeText = purchase.getDocumentContent();
+                if (purposeText == null || purposeText.isBlank()) {
+                    purposeText = purchase.getDocumentTitle();
+                }
+                dto.setPurpose(purposeText);
+                dto.setPaymentType(purchase.getPaymentType());
+                dto.setAttachments(buildPurchaseAttachments(purchase.getIdx()));
+            });
+        } else if (CodeConstants.DocumentType.EXPENSE_APPROVAL.getCode().equals(documentType)) {
+            expenseApprovalRepository.findByDocumentIdx(document.getIdx()).ifPresent(expense -> {
+                dto.setSourceDocumentId(expense.getIdx());
+                String stCode = expense.getSettlementStatus() != null ? expense.getSettlementStatus() : "C1001";
+                CodeConstants.ExpenseSettlementStatus st = CodeConstants.ExpenseSettlementStatus.fromCodeOrNull(stCode);
+                dto.setStatusCode(stCode);
+                dto.setStatusName(st != null ? st.getName() : stCode);
+                dto.setStatusComment(expense.getSettlementComment());
+            });
+        } else if (CodeConstants.DocumentType.EXPENSE_REQUEST.getCode().equals(documentType)) {
+            expenseRequisitionRepository.findByDocumentIdxAndIsDeletedFalse(document.getIdx()).ifPresent(requisition -> {
+                dto.setSourceDocumentId(requisition.getIdx());
+            });
+        } else if (CodeConstants.DocumentType.VACATION.getCode().equals(documentType)) {
+            List<VacationRequest> requests = vacationRequestRepository.findByDocumentIdx(document.getIdx());
+            if (!requests.isEmpty()) {
+                VacationRequest first = requests.get(0);
+                boolean approved = Boolean.TRUE.equals(first.getIsApproved());
+                dto.setStatusCode(approved ? "APPROVED" : "PENDING");
+                dto.setStatusName(approved ? "승인" : "대기");
+            }
+        }
+
+        return dto;
     }
 
     /**
