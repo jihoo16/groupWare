@@ -5,6 +5,7 @@ import com.pinecni.erp.constant.CodeConstants;
 import com.pinecni.erp.entity.Code;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.cache.annotation.CacheEvict;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -59,6 +60,7 @@ public class CodeService {
      * 코드 생성
      */
     @Transactional
+    @CacheEvict(value = "codes", allEntries = true)
     public Code createCode(Code code) {
         log.info("코드 생성: groupCode={}, code={}, codeName={}",
                 code.getGroupCode(), code.getCode(), code.getCodeName());
@@ -85,6 +87,7 @@ public class CodeService {
      * 코드 수정
      */
     @Transactional
+    @CacheEvict(value = "codes", allEntries = true)
     public Code updateCode(Long idx, Code updatedCode) {
         log.info("코드 수정: idx={}", idx);
 
@@ -105,6 +108,7 @@ public class CodeService {
      * 코드 삭제
      */
     @Transactional
+    @CacheEvict(value = "codes", allEntries = true)
     public void deleteCode(Long idx) {
         log.info("코드 삭제: idx={}", idx);
 
@@ -118,6 +122,7 @@ public class CodeService {
      * 코드 사용 여부 변경
      */
     @Transactional
+    @CacheEvict(value = "codes", allEntries = true)
     public Code toggleCodeUseYn(Long idx) {
         log.info("코드 사용 여부 변경: idx={}", idx);
 

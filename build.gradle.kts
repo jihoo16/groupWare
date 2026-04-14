@@ -35,6 +35,7 @@ dependencies {
     implementation(libs.org.springframework.boot.spring.boot.starter.data.jpa)
     implementation(libs.org.springframework.boot.spring.boot.starter.validation)
     implementation(libs.org.springframework.boot.spring.boot.starter.actuator)
+    implementation(libs.org.springframework.boot.spring.boot.starter.cache)
     implementation(libs.org.projectlombok.lombok)
     annotationProcessor(libs.org.projectlombok.lombok)
     implementation(libs.com.fasterxml.jackson.datatype.jackson.datatype.jsr310)

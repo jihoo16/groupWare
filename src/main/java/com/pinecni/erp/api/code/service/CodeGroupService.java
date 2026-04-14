@@ -4,6 +4,7 @@ import com.pinecni.erp.api.code.repository.CodeGroupRepository;
 import com.pinecni.erp.entity.CodeGroup;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.cache.annotation.CacheEvict;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -58,6 +59,7 @@ public class CodeGroupService {
      * 그룹코드 생성
      */
     @Transactional
+    @CacheEvict(value = "codeGroups", allEntries = true)
     public CodeGroup createCodeGroup(CodeGroup codeGroup) {
         log.info("그룹코드 생성: groupCode={}, groupName={}",
                 codeGroup.getGroupCode(), codeGroup.getGroupName());
@@ -83,6 +85,7 @@ public class CodeGroupService {
      * 그룹코드 수정
      */
     @Transactional
+    @CacheEvict(value = "codeGroups", allEntries = true)
     public CodeGroup updateCodeGroup(Long idx, CodeGroup updatedCodeGroup) {
         log.info("그룹코드 수정: idx={}", idx);
 
@@ -103,6 +106,7 @@ public class CodeGroupService {
      * 그룹코드 삭제
      */
     @Transactional
+    @CacheEvict(value = "codeGroups", allEntries = true)
     public void deleteCodeGroup(Long idx) {
         log.info("그룹코드 삭제: idx={}", idx);
 
@@ -116,6 +120,7 @@ public class CodeGroupService {
      * 그룹코드 사용 여부 변경
      */
     @Transactional
+    @CacheEvict(value = "codeGroups", allEntries = true)
     public CodeGroup toggleCodeGroupUseYn(Long idx) {
         log.info("그룹코드 사용 여부 변경: idx={}", idx);
 
