@@ -31,6 +31,9 @@ document.addEventListener('DOMContentLoaded', async function() {
     let existingBankCopyAttachments = [];
     let deletedAttachmentIds = [];
 
+    // 클립보드 paste 활성 슬롯 (setupClipboardPasteForPurchase 초기 호출보다 먼저 선언 필요)
+    let activePurchaseSlot = 'receipt';
+
     // PURCHASE_TYPE은 Thymeleaf 인라인 스크립트로 주입됨 (layout에서)
     // 없을 경우 URL 파라미터에서 읽기
     const purchaseType = (typeof PURCHASE_TYPE !== 'undefined' ? PURCHASE_TYPE : null)
@@ -1159,7 +1162,6 @@ document.addEventListener('DOMContentLoaded', async function() {
     // 영수증/견적서/통장사본 3개 슬롯 paste 가능, 영수증이 기본 활성
     // 공식문서는 paste 비대상 (PDF/HWP)
     // ============================================
-    let activePurchaseSlot = 'receipt';
 
     function getPasteSlots() {
         // 슬롯 정의 — 가시 상태인 슬롯만 반환
