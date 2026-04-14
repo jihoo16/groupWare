@@ -24,15 +24,6 @@ document.addEventListener('DOMContentLoaded', function() {
     window.showPageLoadingOverlay();
     loadReportData(documentIdx);
 
-    // 수정 버튼 이벤트
-    const editReportBtn = document.getElementById('editReportBtn');
-    if (editReportBtn) {
-        editReportBtn.addEventListener('click', function() {
-            // 수정 페이지로 이동 (데이터를 query parameter로 전달)
-            window.location.href = `/approval/project-weekly-report?documentIdx=${documentIdx}`;
-        });
-    }
-
     // 삭제 버튼 이벤트
     const deleteReportBtn = document.getElementById('deleteReportBtn');
     if (deleteReportBtn) {
@@ -136,9 +127,11 @@ function displayReportData(data, documentIdx) {
     const currentUserIdx = window.CURRENT_USER ? window.CURRENT_USER.idx : null;
 
     if (data.userIdx && currentUserIdx && data.userIdx === currentUserIdx) {
-        // 작성자이면 삭제 버튼 동적 생성
+        // 작성자이면 수정/삭제 버튼 동적 생성
         const headerButtons = document.getElementById('headerButtons');
         if (headerButtons) {
+            const backBtn = headerButtons.querySelector('button');
+
             const deleteBtn = document.createElement('button');
             deleteBtn.className = 'btn-danger';
             deleteBtn.id = 'deleteReportBtn';
@@ -147,192 +140,27 @@ function displayReportData(data, documentIdx) {
                 deleteReport(documentIdx);
             });
 
-            // 돌아가기 버튼 앞에 삽입
-            headerButtons.insertBefore(deleteBtn, headerButtons.firstChild);
-            console.log('작성자이므로 삭제 버튼을 생성합니다.');
+            const editBtn = document.createElement('button');
+            editBtn.className = 'btn-primary';
+            editBtn.id = 'editReportBtn';
+            editBtn.innerHTML = '<i class="fas fa-edit"></i> 수정';
+            editBtn.addEventListener('click', function() {
+                window.location.href = `/approval/project-weekly-report?id=${data.id}`;
+            });
+
+            // 돌아가기 버튼 앞에 수정 → 삭제 순으로 삽입
+            headerButtons.insertBefore(deleteBtn, backBtn);
+            headerButtons.insertBefore(editBtn, deleteBtn);
+            console.log('작성자이므로 수정/삭제 버튼을 생성합니다.');
         }
     } else {
-        console.log('작성자가 아니므로 삭제 버튼을 생성하지 않습니다.');
-    }
-
-    // 공식 PDF 로드
-    if (data.documentIdx) {
-        loadOfficialPdfs(data.documentIdx);
+        console.log('작성자가 아니므로 수정/삭제 버튼을 생성하지 않습니다.');
     }
 
     // 첨부파일 로드
     if (data.documentIdx) {
         loadAttachedFiles(data.documentIdx);
     }
-}
-
-// 공식 PDF 목록 로드
-// 최신 공식 PDF 정보 저장
-let latestOfficialPdf = null;
-
-async function loadOfficialPdfs(documentIdx) {
-    if (!documentIdx) {
-        console.log('documentIdx가 없어 공식 PDF를 로드하지 않습니다.');
-        return;
-    }
-
-    try {
-        const response = await fetch(`/api/document/weekly-report/official-pdf/${documentIdx}`);
-
-        if (!response.ok) {
-            console.error('공식 PDF 목록 조회 실패');
-            return;
-        }
-
-        const pdfFiles = await response.json();
-
-        const officialPdfList = document.getElementById('officialPdfList');
-        if (!officialPdfList) {
-            return;
-        }
-
-        if (!pdfFiles || pdfFiles.length === 0) {
-            officialPdfList.innerHTML = '<p style="color: #999; font-size: 13px;">생성된 공식 PDF가 없습니다.</p>';
-            // 헤더 다운로드 버튼 비활성화
-            updateHeaderDownloadButton(null);
-            return;
-        }
-
-        // 최신 PDF 찾기 (createdAt이 가장 최근인 것)
-        latestOfficialPdf = pdfFiles.reduce((latest, current) => {
-            return new Date(current.createdAt) > new Date(latest.createdAt) ? current : latest;
-        });
-
-        // 헤더 다운로드 버튼 활성화
-        updateHeaderDownloadButton(latestOfficialPdf);
-
-        // PDF 파일 목록 HTML 생성
-        let pdfHTML = '';
-        pdfFiles.forEach(pdf => {
-            const fileSizeKB = (pdf.fileSize / 1024).toFixed(1);
-            const createdAt = new Date(pdf.createdAt).toLocaleString('ko-KR');
-
-            pdfHTML += `
-                <div class="file-item" data-file-idx="${pdf.idx}" data-filename="${pdf.fileName}">
-                    <i class="fas fa-file-pdf" style="color: #e74c3c;"></i>
-                    <span>${pdf.fileName} (${fileSizeKB} KB) - 생성일시: ${createdAt}</span>
-                    <button class="btn-download-file" onclick="event.stopPropagation(); downloadOfficialPdf(${pdf.idx}, '${pdf.fileName}')">
-                        <i class="fas fa-download"></i>
-                    </button>
-                </div>
-            `;
-        });
-
-        officialPdfList.innerHTML = pdfHTML;
-        console.log(`${pdfFiles.length}개의 공식 PDF를 표시했습니다.`);
-
-        // PDF 항목 클릭 이벤트 추가
-        officialPdfList.querySelectorAll('.file-item').forEach(item => {
-            item.addEventListener('click', function() {
-                const fileIdx = this.getAttribute('data-file-idx');
-                const filename = this.getAttribute('data-filename');
-                downloadOfficialPdf(parseInt(fileIdx), filename);
-            });
-        });
-
-    } catch (error) {
-        console.error('공식 PDF 로드 오류:', error);
-    }
-}
-
-// 공식 PDF 다운로드
-async function downloadOfficialPdf(fileIdx, fileName) {
-    try {
-        const response = await fetch(`/api/document/weekly-report/download/${fileIdx}`);
-
-        if (!response.ok) {
-            if (response.status === 404) {
-                showError(`❌ PDF 파일을 찾을 수 없습니다.\n\n파일: ${fileName}\n\n 파일이 삭제되었거나 저장 위치가 변경되었을 수 있습니다.\n 관리자에게 문의해주세요.`);
-            } else {
-                showError(`❌ PDF 다운로드 중 오류가 발생했습니다.\n\n파일: ${fileName}\n\n잠시 후 다시 시도해주세요.`);
-            }
-            console.error('PDF 다운로드 실패:', response.status, response.statusText);
-            return;
-        }
-
-        // 파일 다운로드
-        const blob = await response.blob();
-        const url = window.URL.createObjectURL(blob);
-        const a = document.createElement('a');
-        a.href = url;
-        a.download = fileName;
-        document.body.appendChild(a);
-        a.click();
-        window.URL.revokeObjectURL(url);
-        document.body.removeChild(a);
-
-        console.log('공식 PDF 다운로드 성공:', fileName);
-
-    } catch (error) {
-        console.error('공식 PDF 다운로드 오류:', error);
-        showError(`❌ PDF 다운로드 중 오류가 발생했습니다.\n\n파일: ${fileName}\n\n네트워크 연결을 확인하거나 관리자에게 문의해주세요.`);
-    }
-}
-
-// 헤더 다운로드/인쇄 버튼 업데이트
-function updateHeaderDownloadButton(pdfInfo) {
-    const headerDownloadBtn = document.getElementById('headerDownloadBtn');
-    if (headerDownloadBtn) {
-        if (pdfInfo) {
-            headerDownloadBtn.disabled = false;
-            headerDownloadBtn.onclick = () => downloadOfficialPdf(pdfInfo.idx, pdfInfo.fileName);
-        } else {
-            headerDownloadBtn.disabled = true;
-            headerDownloadBtn.onclick = null;
-        }
-    }
-
-    const headerPrintBtn = document.getElementById('headerPrintBtn');
-    if (headerPrintBtn) {
-        if (pdfInfo) {
-            headerPrintBtn.disabled = false;
-            headerPrintBtn.onclick = () => printPdf(`/api/document/weekly-report/download/${pdfInfo.idx}`, headerPrintBtn);
-        } else {
-            headerPrintBtn.disabled = true;
-            headerPrintBtn.onclick = null;
-        }
-    }
-}
-
-// PDF 인쇄 함수
-function printPdf(downloadUrl, btn) {
-    if (btn) {
-        btn.disabled = true;
-        btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> 준비 중...';
-    }
-    fetch(downloadUrl)
-        .then(res => {
-            if (!res.ok) throw new Error('파일 조회 실패');
-            return res.blob();
-        })
-        .then(blob => {
-            const blobUrl = URL.createObjectURL(blob);
-            const printWindow = window.open(blobUrl, '_blank');
-            if (printWindow) {
-                setTimeout(() => {
-                    try { printWindow.print(); } catch (e) {}
-                    setTimeout(() => URL.revokeObjectURL(blobUrl), 60000);
-                }, 1000);
-            } else {
-                showError('팝업이 차단되어 있습니다. 팝업 허용 후 다시 시도해주세요.');
-                URL.revokeObjectURL(blobUrl);
-            }
-        })
-        .catch(e => {
-            console.error('인쇄 중 오류:', e);
-            showError('인쇄 중 오류가 발생했습니다.');
-        })
-        .finally(() => {
-            if (btn) {
-                btn.disabled = false;
-                btn.innerHTML = '<i class="fas fa-print"></i> 인쇄';
-            }
-        });
 }
 
 // 첨부파일 목록 로드

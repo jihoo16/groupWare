@@ -66,4 +66,12 @@ public interface WeeklyReportService {
      * @param documentIdx 결재 문서 IDX
      */
     void deleteWeeklyReportByDocumentIdx(Long documentIdx);
+
+    /**
+     * 이전 주 주간업무보고 조회 (지난주 차주계획 불러오기용)
+     * @param projectIdx 프로젝트 IDX
+     * @param prevWeekStartPattern 이전 주 시작일 패턴 (예: "2026.04.06")
+     * @return 이전 주 주간업무보고 DTO, 없으면 null
+     */
+    WeeklyReportDTO getPrevWeekReport(Long projectIdx, String prevWeekStartPattern);
 }

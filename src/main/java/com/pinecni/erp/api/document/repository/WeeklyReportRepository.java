@@ -63,4 +63,11 @@ public interface WeeklyReportRepository extends JpaRepository<WeeklyReport, Long
      */
     @Query("SELECT w FROM WeeklyReport w LEFT JOIN FETCH w.project WHERE w.projectIdx = :projectIdx")
     List<WeeklyReport> findByProjectIdxWithProject(Long projectIdx);
+
+    /**
+     * 프로젝트 + 보고기간 시작일 패턴으로 조회 (이전주 차주계획 조회용)
+     * weekStartPattern: "YYYY.MM.DD" 형식 (예: "2026.04.06")
+     */
+    @Query("SELECT w FROM WeeklyReport w WHERE w.projectIdx = :projectIdx AND w.reportPeriod LIKE CONCAT(:weekStartPattern, '%') ORDER BY w.createdAt DESC")
+    List<WeeklyReport> findByProjectIdxAndReportPeriodStartsWith(Long projectIdx, String weekStartPattern);
 }
