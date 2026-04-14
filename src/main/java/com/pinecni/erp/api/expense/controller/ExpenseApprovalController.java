@@ -132,8 +132,7 @@ public class ExpenseApprovalController {
         ExpenseApproval expenseApproval = expenseApprovalService.getExpenseApprovalWithDetails(idx);
 
         if (!expenseApproval.getUserIdx().equals(loginUserIdx)) {
-            // 관리자/개발자/대표는 타인 문서 조회 가능 (대표는 관리자 페이지에서 상세 열람)
-            if (!AuthorizationUtil.isExecutiveOrHigher(session)) {
+            if (!AuthorizationUtil.isAdminOrHigher(session)) {
                 throw new ResponseStatusException(HttpStatus.FORBIDDEN, "본인 문서만 조회할 수 있습니다.");
             }
         }
@@ -378,29 +377,13 @@ public class ExpenseApprovalController {
     /**
      * 관리자 - 전체 개인경비청구 문서 목록 조회
      * GET /api/approval/expense/admin/documents
-     *
-     * 대표(EXECUTIVE)는 아래 조건을 모두 만족하는 "완료된" 문서만 조회 가능:
-     *   - 삭제되지 않음
-     *   - 지출 항목 1개 이상
-     *   - 모든 항목에 영수증 첨부됨 (receiptAttachedCount >= detailCount)
-     *   - 공식 문서 첨부됨 (hasOfficialDocument)
      */
     @GetMapping("/admin/documents")
     public ResponseEntity<?> getAdminDocuments(HttpSession session) {
-        if (!AuthorizationUtil.isExecutiveOrHigher(session)) {
-            return ResponseEntity.status(HttpStatus.FORBIDDEN).body(Map.of("error", "접근 권한이 없습니다."));
+        if (!AuthorizationUtil.isAdminOrHigher(session)) {
+            return ResponseEntity.status(HttpStatus.FORBIDDEN).body(Map.of("error", "관리자 권한이 필요합니다."));
         }
-        List<AdminExpenseDocumentDTO> documents = expenseApprovalService.getAllExpenseDocumentsForAdmin();
-
-        if (AuthorizationUtil.isExecutiveOnly(session)) {
-            documents = documents.stream()
-                    .filter(d -> !Boolean.TRUE.equals(d.getDeleted()))
-                    .filter(d -> d.getDetailCount() > 0)
-                    .filter(d -> d.getReceiptAttachedCount() >= d.getDetailCount())
-                    .filter(d -> d.isHasOfficialDocument())
-                    .collect(Collectors.toList());
-        }
-        return ResponseEntity.ok(documents);
+        return ResponseEntity.ok(expenseApprovalService.getAllExpenseDocumentsForAdmin());
     }
 
     /**

@@ -435,9 +435,10 @@ public class Controller {
      */
     @GetMapping("/admin/expense-documents")
     public String adminExpenseDocuments(HttpSession session) {
-        // 대표(EXECUTIVE)도 읽기 전용으로 접근 — 영수증/공식문서 완료 건만 노출 (API에서 필터링)
-        if (!AuthorizationUtil.isExecutiveOrHigher(session)) {
-            log.warn("권한 없는 사용자의 개인경비지출 관리 접근 시도");
+        // 개인경비는 "작성 도구 모드" 로 전환된 이후 완료 개념이 사라져 대표에게는
+        // 노출하지 않음 — 관리자/개발자만 접근 가능.
+        if (!AuthorizationUtil.isAdminOrHigher(session)) {
+            log.warn("관리자가 아닌 사용자의 개인경비지출 관리 접근 시도");
             return "redirect:/nope";
         }
         return "admin-expense-documents";
