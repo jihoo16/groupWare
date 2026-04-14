@@ -155,17 +155,17 @@
                             <span class="submenu-text">전체 연차관리</span>
                         </a>
                     </li>
-                    <li class="submenu-item" th:classappend="${activeMenu == 'admin-vacation-documents'} ? 'active' : ''" th:if="${session.userRoleCode == 'C1101' or session.userRoleCode == 'C1102'}">
+                    <li class="submenu-item" th:classappend="${activeMenu == 'admin-vacation-documents'} ? 'active' : ''" th:if="${session.userRoleCode == 'C1101' or session.userRoleCode == 'C1102' or session.userRoleCode == 'C1105'}">
                         <a href="/admin/vacation-documents">
                             <span class="submenu-text">연차신청서 관리</span>
                         </a>
                     </li>
-                    <li class="submenu-item" th:classappend="${activeMenu == 'admin-expense-documents'} ? 'active' : ''" th:if="${session.userRoleCode == 'C1101' or session.userRoleCode == 'C1102'}">
+                    <li class="submenu-item" th:classappend="${activeMenu == 'admin-expense-documents'} ? 'active' : ''" th:if="${session.userRoleCode == 'C1101' or session.userRoleCode == 'C1102' or session.userRoleCode == 'C1105'}">
                         <a href="/admin/expense-documents">
                             <span class="submenu-text">개인경비지출 관리</span>
                         </a>
                     </li>
-                    <li class="submenu-item" th:classappend="${activeMenu == 'admin-receipt-documents'} ? 'active' : ''" th:if="${session.userRoleCode == 'C1101' or session.userRoleCode == 'C1102'}">
+                    <li class="submenu-item" th:classappend="${activeMenu == 'admin-receipt-documents'} ? 'active' : ''" th:if="${session.userRoleCode == 'C1101' or session.userRoleCode == 'C1102' or session.userRoleCode == 'C1105'}">
                         <a href="/admin/receipt-documents">
                             <span class="submenu-text">연구비증빙관리</span>
                         </a>

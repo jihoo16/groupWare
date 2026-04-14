@@ -132,7 +132,8 @@ public class ExpenseApprovalController {
         ExpenseApproval expenseApproval = expenseApprovalService.getExpenseApprovalWithDetails(idx);
 
         if (!expenseApproval.getUserIdx().equals(loginUserIdx)) {
-            if (!AuthorizationUtil.isAdminOrHigher(session)) {
+            // 관리자/개발자/대표는 타인 문서 조회 가능 (대표는 관리자 페이지에서 상세 열람)
+            if (!AuthorizationUtil.isExecutiveOrHigher(session)) {
                 throw new ResponseStatusException(HttpStatus.FORBIDDEN, "본인 문서만 조회할 수 있습니다.");
             }
         }
