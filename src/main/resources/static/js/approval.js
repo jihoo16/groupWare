@@ -927,13 +927,13 @@ document.addEventListener('DOMContentLoaded', function() {
         APPROVED: 'settlement-settled',
     };
 
-    // 상태 안내 문구 (개인경비청구)
+    // 상태 안내 문구 (개인경비청구 — 작성 도구 모드)
     const EXPENSE_STATUS_GUIDE = {
-        C1001: { icon: 'fas fa-pen',           color: '#6b7280', title: '작성중',    desc: '아직 제출 전 상태입니다. 작성을 완료한 뒤 제출해 주세요.' },
-        C1002: { icon: 'fas fa-paper-plane',   color: '#2563eb', title: '제출완료',  desc: '제출이 완료되었습니다. 관리자 확인을 기다리고 있습니다.' },
-        C1003: { icon: 'fas fa-clipboard-check', color: '#7c3aed', title: '제출확인', desc: '관리자가 문서 확인을 완료했습니다. 정산 처리를 기다리고 있습니다.' },
-        C1004: { icon: 'fas fa-times-circle',  color: '#dc2626', title: '반려',      desc: '관리자가 문서를 반려했습니다. 아래 사유를 확인해 주세요.' },
-        C1005: { icon: 'fas fa-check-circle',  color: '#16a34a', title: '정산완료',  desc: '정산이 모두 완료되었습니다.' },
+        C1001: { icon: 'fas fa-pen',             color: '#6b7280', title: '작성됨',    desc: '작성된 개인경비 문서입니다. 인쇄 후 사인을 받아 관리부에 제출해주세요.' },
+        C1002: { icon: 'fas fa-paper-plane',     color: '#2563eb', title: '제출됨',    desc: '과거 워크플로우로 제출된 문서입니다.' },
+        C1003: { icon: 'fas fa-clipboard-check', color: '#7c3aed', title: '확인됨',    desc: '과거 워크플로우로 확인 처리된 문서입니다.' },
+        C1004: { icon: 'fas fa-times-circle',    color: '#dc2626', title: '반려',      desc: '과거 워크플로우로 반려된 문서입니다.' },
+        C1005: { icon: 'fas fa-check-circle',    color: '#16a34a', title: '정산완료',  desc: '과거 워크플로우로 정산 처리된 문서입니다.' },
     };
 
     // 상태 안내 문구 (연차신청서)
@@ -1148,32 +1148,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
         filterDocuments();
 
-        // 지출승인서 공식문서 미첨부 표시
-        markExpenseMissingDocuments();
-    }
-
-    async function markExpenseMissingDocuments() {
-        try {
-            const res = await fetch('/api/approval/expense/attachment-status');
-            if (!res.ok) return;
-            const statusMap = await res.json(); // { "123": "all" | "partial" | "ok" }
-
-            document.querySelectorAll('.btn-expense-attach').forEach(btn => {
-                const id = btn.getAttribute('data-id');
-                const status = statusMap[id];
-                const row = btn.closest('.doc-row');
-                if (status === 'all') {
-                    btn.classList.add('missing-all');
-                    btn.dataset.tip = '첨부파일 전체 누락';
-                    if (row) row.classList.add('row-missing-attachment');
-                } else if (status === 'partial') {
-                    btn.classList.add('missing-partial');
-                    btn.dataset.tip = '첨부파일 일부 누락';
-                    if (row) row.classList.add('row-missing-attachment');
-                }
-            });
-        } catch (_) {}
-
+        // 개인경비청구는 작성 도구 모드 — 누락 강조 표시 없음
     }
 
     // 페이지 로드 시 approval_documents 통합 조회

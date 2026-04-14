@@ -733,9 +733,6 @@
  * 관리자 대리 영수증 업로드
  * ============================================ */
 .admin-upload-guide {
-    display: flex;
-    align-items: center;
-    gap: 8px;
     padding: 10px 14px;
     margin-bottom: 12px;
     background: #eff6ff;
@@ -743,22 +740,34 @@
     border-radius: 6px;
     color: #1e40af;
     font-size: 13px;
-    line-height: 1.5;
+    line-height: 1.6;
+}
+.admin-upload-guide-line {
+    display: block;
+}
+.admin-upload-guide-line.sub {
+    margin-top: 2px;
+    padding-left: 20px; /* 첫 줄 아이콘 너비만큼 들여쓰기 */
+    color: #334b91;
+    font-size: 12.5px;
 }
 .admin-upload-guide i {
     color: #2563eb;
     font-size: 14px;
-    flex-shrink: 0;
+    margin-right: 4px;
+    vertical-align: -1px;
 }
 .admin-upload-guide kbd {
     display: inline-block;
     padding: 1px 6px;
+    margin: 0 2px;
     background: white;
     border: 1px solid #c7d2fe;
     border-radius: 4px;
     font-family: ui-monospace, SFMono-Regular, monospace;
     font-size: 11px;
     color: #1e3a8a;
+    vertical-align: baseline;
 }
 
 /* + 대리 업로드 버튼 */

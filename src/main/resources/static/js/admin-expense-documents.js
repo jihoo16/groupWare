@@ -17,7 +17,6 @@ document.addEventListener('DOMContentLoaded', function() {
     const userSearchInput = document.getElementById('userSearchInput');
     const statusFilter = document.getElementById('statusFilter');
     const yearFilter = document.getElementById('yearFilter');
-    const receiptFilter = document.getElementById('receiptFilter');
     const searchInput = document.getElementById('searchInput');
     const refreshBtn = document.getElementById('refreshBtn');
     const documentsList = document.getElementById('documentsList');
@@ -30,7 +29,6 @@ document.addEventListener('DOMContentLoaded', function() {
     userSearchInput.addEventListener('input', applyFilters);
     statusFilter.addEventListener('change', applyFilters);
     yearFilter.addEventListener('change', () => { selectedSettlementMonth = null; applyFilters(); });
-    receiptFilter.addEventListener('change', applyFilters);
     searchInput.addEventListener('input', applyFilters);
 
     async function loadDocuments() {
@@ -48,9 +46,10 @@ document.addEventListener('DOMContentLoaded', function() {
     }
 
     function populateYearFilter() {
+        // 정산연도 기준 — getSettlementMonth('YYYY-MM') 의 YYYY
         const years = [...new Set(allDocuments.map(doc => {
-            if (doc.createdAt) return new Date(doc.createdAt).getFullYear();
-            return null;
+            const sm = getSettlementMonth(doc.createdAt);
+            return sm ? parseInt(sm.split('-')[0]) : null;
         }))].filter(Boolean).sort((a, b) => b - a);
 
         yearFilter.innerHTML = '<option value="">전체</option>';
@@ -80,25 +79,57 @@ document.addEventListener('DOMContentLoaded', function() {
         // 정산월 M → 전월 14일 ~ 당월 13일
         const prev = new Date(year, month - 2, 14);
         const end = new Date(year, month - 1, 13, 23, 59, 59);
+        const currentYear = new Date().getFullYear();
+        // 현재 연도가 아니면 '25.12월 형식으로 연도 노출
+        const label = (year === currentYear)
+            ? `${month}월`
+            : `'${String(year).slice(-2)}.${month}월`;
+        // 기간 툴팁: 연도 경계를 정확히 표현
+        const rangeText =
+            `${prev.getFullYear()}.${prev.getMonth() + 1}/14` +
+            ` ~ ${end.getFullYear()}.${end.getMonth() + 1}/13`;
         return {
             start: prev,
             end: end,
-            label: `${month}월`,
-            range: `${prev.getMonth() + 1}/14 ~ ${end.getMonth() + 1}/13`
+            label,
+            range: rangeText
         };
     }
 
-    /** 현재 연도 필터에 맞는 정산월 뱃지 목록 계산 */
+    /**
+     * 정산월 뱃지 목록 계산 (정산연도 기준)
+     * - 연도 필터 선택: 해당 연도의 정산월만
+     * - 연도 필터 미선택(전체): 오늘 기준 최근 6개월만 (롤링 윈도우)
+     */
     function getMonthBadges() {
         const selectedYear = yearFilter.value;
-        const docs = selectedYear
-            ? allDocuments.filter(d => d.createdAt && new Date(d.createdAt).getFullYear() === parseInt(selectedYear))
-            : allDocuments;
+
+        // 최근 6개월 키 집합 계산 (오늘의 정산월부터 5개월 과거까지)
+        const recentKeys = new Set();
+        if (!selectedYear) {
+            const todayKey = getSettlementMonth(new Date().toISOString());
+            if (todayKey) {
+                const [ty, tm] = todayKey.split('-').map(Number);
+                for (let i = 0; i < 6; i++) {
+                    const d = new Date(ty, tm - 1 - i, 1);
+                    const key = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
+                    recentKeys.add(key);
+                }
+            }
+        }
 
         const monthMap = {};
-        docs.filter(doc => !doc.deleted).forEach(doc => {
+        allDocuments.filter(doc => !doc.deleted).forEach(doc => {
             const sm = getSettlementMonth(doc.createdAt);
             if (!sm) return;
+            const smYear = sm.split('-')[0];
+
+            if (selectedYear) {
+                if (smYear !== selectedYear) return;
+            } else {
+                if (!recentKeys.has(sm)) return;
+            }
+
             if (!monthMap[sm]) monthMap[sm] = 0;
             monthMap[sm]++;
         });
@@ -142,7 +173,6 @@ document.addEventListener('DOMContentLoaded', function() {
         const userSearch = userSearchInput.value.trim();
         const selectedStatus = statusFilter.value;
         const selectedYear = yearFilter.value;
-        const selectedReceipt = receiptFilter.value;
         const searchTerm = searchInput.value.trim();
 
         filteredDocuments = allDocuments.filter(doc => {
@@ -151,22 +181,15 @@ document.addEventListener('DOMContentLoaded', function() {
             if (selectedStatus === 'active' && doc.deleted) return false;
             if (selectedStatus === 'deleted' && !doc.deleted) return false;
 
+            // 정산연도 / 정산월 필터 (createdAt 이 아니라 정산월 기준)
+            const docSettlementMonth = getSettlementMonth(doc.createdAt);
             if (selectedYear) {
-                const docYear = doc.createdAt ? new Date(doc.createdAt).getFullYear() : null;
-                if (docYear !== parseInt(selectedYear)) return false;
+                const docSettlementYear = docSettlementMonth ? docSettlementMonth.split('-')[0] : null;
+                if (docSettlementYear !== selectedYear) return false;
             }
-
-            // 정산월 필터
             if (selectedSettlementMonth) {
-                const docMonth = getSettlementMonth(doc.createdAt);
-                if (docMonth !== selectedSettlementMonth) return false;
+                if (docSettlementMonth !== selectedSettlementMonth) return false;
             }
-
-            const receiptDone = doc.detailCount > 0 && doc.receiptAttachedCount >= doc.detailCount;
-            if (selectedReceipt === 'allComplete' && !(receiptDone && doc.hasOfficialDocument)) return false;
-            if (selectedReceipt === 'complete' && !receiptDone) return false;
-            if (selectedReceipt === 'incomplete' && receiptDone) return false;
-            if (selectedReceipt === 'noDocument' && doc.hasOfficialDocument) return false;
 
             if (searchTerm) {
                 const searchable = [doc.userDeptName, doc.userDept, doc.documentNumber].filter(Boolean).join(' ').toLowerCase();
@@ -182,41 +205,15 @@ document.addEventListener('DOMContentLoaded', function() {
     }
 
     /**
-     * 문서 정렬 — 고정 우선순위
-     * 1) 첨부 완료 + 제출완료 (오래된순 → 위)
-     * 2) 제출완료 + 파일 누락 (오래된순 → 위)
-     * 3) 작성중 (최신순 → 위)
-     * 4) 그 외 상태 (제출확인/반려/정산완료 등, 최신순)
-     * 5) 삭제된 건 (최신순)
+     * 문서 정렬 — 삭제 건은 뒤로, 나머지는 최신순
      */
     function sortDocuments() {
         filteredDocuments.sort((a, b) => {
-            const aGroup = getExpenseSortGroup(a);
-            const bGroup = getExpenseSortGroup(b);
-
-            if (aGroup !== bGroup) return aGroup - bGroup;
-
+            if (!!a.deleted !== !!b.deleted) return a.deleted ? 1 : -1;
             const aDate = a.createdAt ? new Date(a.createdAt) : new Date(0);
             const bDate = b.createdAt ? new Date(b.createdAt) : new Date(0);
-
-            // 그룹 1,2: 오래된순 (과거 → 위)
-            if (aGroup <= 2) return aDate - bDate;
-            // 그룹 3,4,5: 최신순
             return bDate - aDate;
         });
-    }
-
-    function getExpenseSortGroup(doc) {
-        if (doc.deleted) return 5;
-        const st = doc.settlementStatus || 'C1001';
-        const complete = doc.detailCount > 0
-            && doc.receiptAttachedCount >= doc.detailCount
-            && doc.hasOfficialDocument;
-
-        if (st === 'C1002' && complete) return 1;  // 제출완료 + 첨부완료
-        if (st === 'C1002' && !complete) return 2;  // 제출완료 + 누락
-        if (st === 'C1001') return 3;                // 작성중
-        return 4;                                     // 제출확인/반려/정산완료
     }
 
     window.changeSortOrder = function(field) {
@@ -257,32 +254,11 @@ document.addEventListener('DOMContentLoaded', function() {
                 </div>
             </div>
             ${renderMonthBadges()}
-            <div class="batch-action-bar" id="batchActionBar">
-                <div class="batch-left">
-                    <input type="checkbox" id="checkAll" onchange="toggleCheckAll(this)">
-                    <span class="batch-selected-count" id="batchSelectedCount">전체 선택</span>
-                    <span class="batch-notice"><i class="fas fa-lock"></i> 필수문서 누락 시 선택 불가</span>
-                </div>
-                <div class="batch-right" id="batchControls">
-                    <span class="batch-hint" id="batchHint"><i class="fas fa-info-circle"></i> 체크박스로 문서를 선택하세요</span>
-                    <select id="batchStatusSelect" class="batch-status-select" disabled>
-                        <option value="">변경할 상태 선택</option>
-                        <option value="C1002">제출완료</option>
-                        <option value="C1003">제출확인</option>
-                        <option value="C1004">반려</option>
-                        <option value="C1005">정산완료</option>
-                    </select>
-                    <button class="btn-batch-apply" onclick="applyBatchStatus()" disabled id="batchApplyBtn">
-                        <i class="fas fa-check-double"></i> 일괄 적용
-                    </button>
-                </div>
-            </div>
             <table class="documents-table">
                 <thead>
                     <tr>
-                        <th style="width:40px;"></th>
                         <th class="sortable" onclick="changeSortOrder('createdAt')">
-                            신청일 ${getSortIcon('createdAt')}
+                            작성일 ${getSortIcon('createdAt')}
                         </th>
                         <th class="sortable" onclick="changeSortOrder('userName')">
                             사용자 ${getSortIcon('userName')}
@@ -295,54 +271,29 @@ document.addEventListener('DOMContentLoaded', function() {
                             합계금액 ${getSortIcon('totalAmount')}
                         </th>
                         <th>영수증</th>
-                        <th>공식문서</th>
-                        <th>정산상태</th>
                         <th>관리</th>
                     </tr>
                 </thead>
                 <tbody id="documentsTableBody">
                     ${currentDocuments.map(doc => {
                         const isDeleted = doc.deleted;
-                        const receiptComplete = doc.detailCount > 0 && doc.receiptAttachedCount >= doc.detailCount;
-                        const allComplete = receiptComplete && doc.hasOfficialDocument;
-                        const rowClass = isDeleted ? 'class="deleted-row"'
-                            : !allComplete ? 'class="incomplete-row"' : '';
+                        const rowClass = isDeleted ? 'class="deleted-row"' : '';
                         const userName = userSearch ? highlightText(doc.userName || '-', userSearch) : (doc.userName || '-');
 
-                        let receiptStatus;
-                        if (doc.detailCount === 0) {
-                            receiptStatus = '<span class="badge badge-neutral">항목 없음</span>';
-                        } else if (receiptComplete) {
-                            receiptStatus = `<span class="badge badge-complete">${doc.receiptAttachedCount}/${doc.detailCount} 완료</span>`;
-                        } else {
-                            receiptStatus = `<span class="badge badge-incomplete">${doc.receiptAttachedCount}/${doc.detailCount} 일부 누락</span>`;
-                        }
-
-                        const docStatus = doc.hasOfficialDocument
-                            ? '<span class="badge badge-complete">업로드 완료</span>'
-                            : '<span class="badge badge-incomplete">누락</span>';
-
-                        const stCode = doc.settlementStatus || 'C1001';
-                        const stName = doc.settlementStatusName || '작성중';
-                        const stBadge = renderSettlementBadge(stCode, stName);
+                        // 첨부 개수 표시 (완료/누락 판정 없음 — 작성 도구 모드)
+                        const attachCount = doc.receiptAttachedCount || 0;
+                        const receiptStatus = attachCount > 0
+                            ? `<span class="badge badge-neutral">${attachCount}건</span>`
+                            : `<span class="badge badge-neutral">-</span>`;
 
                         return `
                         <tr ${rowClass} onclick="viewDocument(${doc.idx})" style="cursor: pointer;">
-                            <td onclick="event.stopPropagation();">
-                                <div class="check-cell">
-                                    <input type="checkbox" class="row-check" value="${doc.idx}" onchange="updateBatchUI()" ${(isDeleted || !allComplete) ? 'disabled' : ''}>
-                                    ${(!isDeleted && !allComplete) ? '<span class="check-disabled-icon" data-tip="영수증 또는 공식문서 누락으로\n선택할 수 없습니다"><i class="fas fa-exclamation-circle"></i></span>' : ''}
-                                </div>
-                            </td>
                             <td>${formatDateTime(doc.createdAt)}</td>
                             <td><strong>${userName}</strong><br><small style="color:#94a3b8;">${doc.userPosition || ''}</small></td>
                             <td>${doc.userDeptName || doc.userDept || '-'}</td>
                             <td><code style="font-size:12px;">${doc.documentNumber || '-'}</code></td>
                             <td style="text-align:right;font-weight:600;font-variant-numeric:tabular-nums;">${formatAmount(doc.totalAmount)}</td>
                             <td style="text-align:center;" onclick="event.stopPropagation(); showFileModal(${doc.idx}, 'receipt')" class="badge-cell">${receiptStatus}</td>
-                            <td style="text-align:center;" onclick="event.stopPropagation(); showFileModal(${doc.idx}, 'document')" class="badge-cell">${docStatus}</td>
-                            <td style="text-align:center;" onclick="event.stopPropagation(); showStatusChangeModal(${doc.idx}, '${stCode}', '${doc.userName}')"
-                                class="badge-cell">${stBadge}</td>
                             <td onclick="event.stopPropagation()">
                                 <div class="action-buttons">
                                     <button class="btn-view" onclick="viewDocument(${doc.idx})">
@@ -364,296 +315,6 @@ document.addEventListener('DOMContentLoaded', function() {
 
         documentsList.innerHTML = table;
     }
-
-    // ── 정산상태 뱃지 ────────────────────────────────────────────
-
-    const SETTLEMENT_STYLES = {
-        C1001: { label: '작성중',   cls: 'st-drafting' },
-        C1002: { label: '제출완료', cls: 'st-submitted' },
-        C1003: { label: '제출확인', cls: 'st-confirmed' },
-        C1004: { label: '반려', cls: 'st-rejected' },
-        C1005: { label: '정산완료', cls: 'st-settled' },
-    };
-
-    function renderSettlementBadge(code, name) {
-        const style = SETTLEMENT_STYLES[code] || { cls: 'st-drafting' };
-        return `<span class="badge settlement-badge ${style.cls}">${name || style.label}</span>`;
-    }
-
-    // ── 체크박스 / 일괄 변경 ─────────────────────────────────────
-
-    window.toggleCheckAll = function(el) {
-        document.querySelectorAll('.row-check:not(:disabled)').forEach(cb => { cb.checked = el.checked; });
-        updateBatchUI();
-    };
-
-    window.updateBatchUI = function() {
-        const checked = document.querySelectorAll('.row-check:checked');
-        const countEl = document.getElementById('batchSelectedCount');
-        const hint = document.getElementById('batchHint');
-        const select = document.getElementById('batchStatusSelect');
-        const applyBtn = document.getElementById('batchApplyBtn');
-
-        if (checked.length > 0) {
-            countEl.textContent = `${checked.length}건 선택`;
-            countEl.classList.add('has-selection');
-            if (hint) hint.style.display = 'none';
-            select.disabled = false;
-            applyBtn.disabled = false;
-        } else {
-            countEl.textContent = '전체 선택';
-            countEl.classList.remove('has-selection');
-            if (hint) hint.style.display = '';
-            select.disabled = true;
-            select.value = '';
-            applyBtn.disabled = true;
-        }
-    };
-
-    window.applyBatchStatus = async function() {
-        const select = document.getElementById('batchStatusSelect');
-        const statusCode = select.value;
-        if (!statusCode) {
-            Swal.fire({ icon: 'warning', title: '변경할 상태를 선택해주세요.' });
-            return;
-        }
-
-        const checked = document.querySelectorAll('.row-check:checked');
-        const idxList = Array.from(checked).map(cb => parseInt(cb.value));
-
-        // 전이 규칙에 따라 변경 가능한 문서만 필터링
-        const targetList = idxList.filter(id => {
-            const doc = allDocuments.find(d => d.idx === id);
-            return doc && canTransition(doc, statusCode);
-        });
-
-        if (targetList.length === 0) {
-            Swal.fire({
-                icon: 'warning',
-                title: '변경 불가',
-                text: `선택한 문서 중 "${SETTLEMENT_STYLES[statusCode]?.label}"(으)로 변경 가능한 문서가 없습니다.`,
-            });
-            return;
-        }
-
-        const statusName = SETTLEMENT_STYLES[statusCode]?.label || statusCode;
-        const skippedCount = idxList.length - targetList.length;
-        const skippedMsg = skippedCount > 0 ? `\n(변경 불가 ${skippedCount}건 제외)` : '';
-
-        let comment = '';
-        if (statusCode === 'C1004') {
-            const result = await Swal.fire({
-                title: '반려 사유 입력',
-                html: `<p style="margin-bottom:8px;color:#475569;font-size:14px;">${targetList.length}건 → "${statusName}"${skippedMsg ? '<br><small style="color:#ef4444;">' + skippedMsg.trim() + '</small>' : ''}</p>`,
-                input: 'textarea',
-                inputPlaceholder: '반려 사유를 입력해주세요...',
-                showCancelButton: true,
-                confirmButtonText: '적용',
-                cancelButtonText: '취소',
-                inputValidator: (value) => { if (!value) return '반려 사유를 입력해주세요.'; }
-            });
-            if (!result.isConfirmed) return;
-            comment = result.value;
-        } else {
-            const confirmed = await Swal.fire({
-                title: `${targetList.length}건 → "${statusName}"`,
-                text: `선택한 문서의 정산상태를 변경합니다.${skippedMsg}`,
-                icon: 'question',
-                showCancelButton: true,
-                confirmButtonText: '변경',
-                cancelButtonText: '취소'
-            });
-            if (!confirmed.isConfirmed) return;
-        }
-
-        try {
-            const response = await fetch('/api/approval/expense/admin/documents/batch-status', {
-                method: 'PUT',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ idxList: targetList, statusCode, comment })
-            });
-            if (!response.ok) {
-                const err = await response.json();
-                throw new Error(err.error || '일괄 변경 실패');
-            }
-            const data = await response.json();
-            await Swal.fire({ icon: 'success', title: '변경 완료', text: data.message, timer: 1500, showConfirmButton: false });
-            loadDocuments();
-        } catch (error) {
-            console.error('일괄 변경 오류:', error);
-            Swal.fire({ icon: 'error', title: '변경 실패', text: error.message });
-        }
-    };
-
-    // ── 단건 상태 변경 모달 ──────────────────────────────────────
-
-    /** 문서 첨부 완전성 체크 */
-    function isDocumentComplete(doc) {
-        const receiptComplete = doc.detailCount > 0 && doc.receiptAttachedCount >= doc.detailCount;
-        return receiptComplete && doc.hasOfficialDocument;
-    }
-
-    function getMissingReasons(doc) {
-        const reasons = [];
-        if (doc.detailCount === 0) {
-            reasons.push('지출 항목 없음');
-        } else if (doc.receiptAttachedCount < doc.detailCount) {
-            reasons.push(`영수증 ${doc.detailCount - doc.receiptAttachedCount}건 미첨부`);
-        }
-        if (!doc.hasOfficialDocument) reasons.push('공식문서 미첨부');
-        return reasons;
-    }
-
-    /** 현재 상태에서 변경 가능한 상태 목록 반환 */
-    function getAvailableTransitions(currentStatus, doc) {
-        const complete = isDocumentComplete(doc);
-
-        switch (currentStatus) {
-            case 'C1002': // 제출완료
-                return [
-                    { code: 'C1003', label: '제출확인', disabled: !complete },
-                    { code: 'C1004', label: '반려' },
-                    { code: 'C1005', label: '정산완료', disabled: !complete },
-                ];
-            case 'C1003': // 제출확인
-                return [
-                    { code: 'C1002', label: '제출완료' },
-                    { code: 'C1004', label: '반려' },
-                    { code: 'C1005', label: '정산완료' },
-                ];
-            case 'C1004': // 반려
-                return [
-                    { code: 'C1003', label: '제출확인', disabled: !complete },
-                    { code: 'C1005', label: '정산완료', disabled: !complete },
-                ];
-            case 'C1005': // 정산완료
-                return [
-                    { code: 'C1003', label: '제출확인' },
-                    { code: 'C1004', label: '반려' },
-                ];
-            default: // C1001 작성중
-                return [];
-        }
-    }
-
-    /** 특정 문서가 대상 상태로 전이 가능한지 확인 */
-    function canTransition(doc, targetStatus) {
-        const transitions = getAvailableTransitions(doc.settlementStatus, doc);
-        const match = transitions.find(t => t.code === targetStatus);
-        return match && !match.disabled;
-    }
-
-    window.showStatusChangeModal = async function(idx, currentStatus, userName) {
-        const currentName = SETTLEMENT_STYLES[currentStatus]?.label || currentStatus;
-        const doc = allDocuments.find(d => d.idx === idx);
-        const transitions = getAvailableTransitions(currentStatus, doc);
-
-        // 변경 가능한 상태가 없으면 안내만
-        if (transitions.length === 0) {
-            Swal.fire({
-                icon: 'info',
-                title: `현재: ${currentName}`,
-                text: '"작성중" 상태는 사용자가 제출해야 변경할 수 있습니다.',
-            });
-            return;
-        }
-
-        // 첫 번째 enabled 항목을 기본 선택
-        const firstEnabled = transitions.find(t => !t.disabled);
-        const options = transitions.map(t => {
-            const selected = (firstEnabled && t.code === firstEnabled.code) ? 'selected' : '';
-            const disabled = t.disabled ? 'disabled' : '';
-            return `<option value="${t.code}" ${selected} ${disabled}>${t.label}</option>`;
-        }).join('');
-
-        // 첨부파일 누락 안내 메시지
-        const complete = isDocumentComplete(doc);
-        const missingNotice = !complete
-            ? `<div id="swalMissingNotice" style="margin-top:12px;padding:10px 14px;background:#fffbeb;border:1px solid #fde68a;border-radius:8px;font-size:13px;color:#92400e;">
-                    <i class="fas fa-exclamation-triangle" style="margin-right:6px;color:#f59e0b;"></i>
-                    <strong>첨부파일 미비로 일부 상태를 선택할 수 없습니다.</strong>
-                    <ul style="margin:6px 0 0 18px;padding:0;line-height:1.8;">
-                        ${getMissingReasons(doc).map(r => `<li>${r}</li>`).join('')}
-                    </ul>
-                    <p style="margin:6px 0 0;font-size:12px;color:#a16207;">위 항목 보완 후 "제출확인" 또는 "정산완료"로 변경할 수 있습니다.</p>
-               </div>`
-            : '';
-
-        // 가장 최근 반려 사유 노출 (관리부가 이력 추적용으로 참고)
-        // - 현재 상태가 반려(C1004)면 "현재 반려 사유"로, 그 외 상태면 "최근 반려 사유"로 표시
-        // - 새 반려가 발생하면 그냥 덮어쓰기 — 별도 이력 보존 없음
-        const escapeHtml = (s) => String(s)
-            .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
-            .replace(/"/g, '&quot;').replace(/'/g, '&#39;');
-        const latestLabel = currentStatus === 'C1004' ? '현재 반려 사유' : '최근 반려 사유';
-        const currentRejectBlock = (doc.settlementComment && doc.settlementComment.trim())
-            ? `<div style="margin-top:12px;padding:10px 14px;background:#fef2f2;border:1px solid #fecaca;border-radius:8px;font-size:13px;color:#b91c1c;line-height:1.6;">
-                    <i class="fas fa-comment-dots" style="margin-right:6px;color:#ef4444;"></i>
-                    <strong>${latestLabel}:</strong> ${escapeHtml(doc.settlementComment)}
-               </div>`
-            : '';
-
-        const result = await Swal.fire({
-            title: '정산상태 변경',
-            html: `
-                <div style="text-align:left;">
-                    <p style="margin-bottom:14px;color:#475569;font-size:14px;">
-                        <strong>${userName}</strong> 님 · 현재 <span style="color:#2563eb;font-weight:600;">${currentName}</span>
-                    </p>
-                    ${currentRejectBlock}
-                    <label style="font-size:13px;font-weight:600;color:#334155;display:block;margin-top:14px;margin-bottom:6px;">변경할 상태</label>
-                    <select id="swalStatusSelect" style="display:block;width:100%;padding:10px 12px;border:1px solid #e2e8f0;border-radius:8px;font-size:14px;box-sizing:border-box;">
-                        ${options}
-                    </select>
-                    ${missingNotice}
-                    <div id="swalCommentWrap" style="display:none;margin-top:14px;">
-                        <label style="font-size:13px;font-weight:600;color:#334155;display:block;margin-bottom:6px;">반려 사유 <span style="color:#ef4444;">*</span></label>
-                        <textarea id="swalStatusComment" placeholder="반려 사유를 입력해주세요..."
-                            style="display:block;width:100%;padding:10px 12px;border:1px solid #e2e8f0;border-radius:8px;font-size:13px;min-height:80px;resize:vertical;box-sizing:border-box;"></textarea>
-                    </div>
-                </div>
-            `,
-            showCancelButton: true,
-            confirmButtonText: '변경',
-            cancelButtonText: '취소',
-            didOpen: () => {
-                const sel = document.getElementById('swalStatusSelect');
-                const wrap = document.getElementById('swalCommentWrap');
-                const updateCommentVisibility = () => { wrap.style.display = sel.value === 'C1004' ? '' : 'none'; };
-                sel.addEventListener('change', updateCommentVisibility);
-                updateCommentVisibility(); // 초기값 체크
-            },
-            preConfirm: () => {
-                const code = document.getElementById('swalStatusSelect').value;
-                if (!code) { Swal.showValidationMessage('상태를 선택해주세요.'); return false; }
-                const comment = (document.getElementById('swalStatusComment')?.value || '').trim();
-                if (code === 'C1004' && !comment) {
-                    Swal.showValidationMessage('반려 사유를 입력해주세요.');
-                    return false;
-                }
-                return { statusCode: code, comment: code === 'C1004' ? comment : '' };
-            }
-        });
-
-        if (!result.isConfirmed) return;
-
-        try {
-            const response = await fetch(`/api/approval/expense/admin/documents/${idx}/status`, {
-                method: 'PUT',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(result.value)
-            });
-            if (!response.ok) {
-                const err = await response.json();
-                throw new Error(err.error || '상태 변경 실패');
-            }
-            await Swal.fire({ icon: 'success', title: '변경 완료', timer: 1200, showConfirmButton: false });
-            loadDocuments();
-        } catch (error) {
-            console.error('상태 변경 오류:', error);
-            Swal.fire({ icon: 'error', title: '변경 실패', text: error.message });
-        }
-    };
 
     // ── 페이지네이션 ─────────────────────────────────────────
 
@@ -775,11 +436,16 @@ document.addEventListener('DOMContentLoaded', function() {
                         .replace(/"/g, '&quot;').replace(/'/g, '&#39;');
 
                     // 관리자 업로드 안내
-                    const guide = `<div class="admin-upload-guide">
-                        <i class="fas fa-circle-info"></i>
-                        직원이 누락한 영수증을 관리자 권한으로 첨부할 수 있습니다 — 행 클릭 후 <kbd>Ctrl+V</kbd>, drag&drop, 또는
-                        <i class="fas fa-plus-circle"></i> 버튼.
-                    </div>`;
+                    const guide = `<div class="admin-upload-guide">` +
+                        `<div class="admin-upload-guide-line">` +
+                            `<i class="fas fa-circle-info"></i>` +
+                            `직원이 누락한 영수증을 관리자 권한으로 첨부할 수 있습니다.` +
+                        `</div>` +
+                        `<div class="admin-upload-guide-line sub">` +
+                            `행 클릭 후 <kbd>Ctrl</kbd>+<kbd>V</kbd>, 드래그&드롭, 또는 ` +
+                            `<i class="fas fa-plus-circle"></i> 버튼을 사용하세요.` +
+                        `</div>` +
+                    `</div>`;
 
                     body = guide + `<table class="file-modal-table">
                         <thead><tr><th>지출일</th><th>적요</th><th>상호</th><th>금액</th><th>영수증</th></tr></thead>

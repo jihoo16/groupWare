@@ -13,13 +13,11 @@
                     <h1 class="page-title"><i class="fas fa-won-sign"></i> 문서 작성 > 개인경비청구</h1>
                 </div>
                 <div class="header-right">
-                    <button class="btn-print btn-lg btn-disabled" id="printBtn" disabled
-                            data-tip="저장 후 상세 페이지에서 인쇄할 수 있습니다">
+                    <button class="btn-print btn-lg" id="printBtn">
                         <i class="fas fa-print"></i>
                         인쇄하기
                     </button>
-                    <button class="btn-primary btn-lg" id="submitBtn"
-                            data-tip="💡 모든 필수값을 채우면 좌측에 인쇄하기 버튼이 나타납니다">
+                    <button class="btn-primary btn-lg" id="submitBtn">
                         <i class="fas fa-paper-plane"></i>
                         저장
                     </button>
@@ -86,8 +84,8 @@
                                 </div>
                                 <div class="expense-items-container" id="expenseItemsContainer">
                                     <!-- 지출 항목이 여기에 추가됩니다 -->
-                                    <div class="expense-item" data-item-index="0">
-                                        <span class="expense-item-number">1</span>
+                                    <div class="expense-item" data-item-index="0" draggable="true">
+                                        <span class="expense-item-number" title="드래그하여 순서 변경"><i class="fas fa-grip-vertical drag-handle-icon"></i><span class="item-num-text">1</span></span>
                                         <div class="expense-item-body">
                                             <div class="form-row">
                                                 <div class="form-group" style="flex: 0 0 180px;">

@@ -4,7 +4,6 @@ document.addEventListener('DOMContentLoaded', async function() {
     let selectedApprovers = [];
     let selectedEmployee = null;
     let editIdx = null; // 수정 모드일 때 문서 idx
-    let editPriorStatus = null; // 수정 진입 시점의 정산상태 (저장 후 안내 메시지에 사용)
 
     // 첨부파일 관련 변수 (편집 모드 로드 전에 선언 필요)
     const MAX_FILE_SIZE = 50 * 1024 * 1024; // 50MB
@@ -1221,22 +1220,10 @@ document.addEventListener('DOMContentLoaded', async function() {
                     const result = await response.json();
                     console.log('지출승인서 저장 완료:', result);
 
-                    // 상태에 따른 안내 메시지 분기
-                    let successHtml;
-                    if (!editIdx) {
-                        successHtml = '문서가 저장되었습니다.<br>정산상태: <strong style="color:#475569;">작성중</strong><br><small style="color:#64748b;">상세 페이지에서 인쇄하면 제출완료 상태로 전환됩니다.</small>';
-                    } else if (editPriorStatus === 'C1004') {
-                        successHtml = '수정이 완료되었습니다.<br>정산상태: <strong style="color:#dc2626;">반려</strong> → <strong style="color:#475569;">작성중</strong><br><small style="color:#64748b;">다시 인쇄하여 사인을 받아 제출해주세요.</small>';
-                    } else if (editPriorStatus && editPriorStatus !== 'C1001') {
-                        successHtml = `수정이 완료되었습니다.<br>정산상태가 <strong style="color:#475569;">작성중</strong>으로 복귀되었습니다.<br><small style="color:#64748b;">다시 인쇄해야 제출완료 상태가 됩니다.</small>`;
-                    } else {
-                        successHtml = '수정이 완료되었습니다.<br>정산상태: <strong style="color:#475569;">작성중</strong>';
-                    }
-
                     await Swal.fire({
                         icon: 'success',
                         title: editIdx ? '수정 완료' : '저장 완료',
-                        html: successHtml,
+                        text: editIdx ? '문서가 수정되었습니다.' : '문서가 저장되었습니다.',
                         confirmButtonText: '확인',
                         confirmButtonColor: '#28a745',
                     });
@@ -1780,10 +1767,11 @@ document.addEventListener('DOMContentLoaded', async function() {
             itemCounter++;
             const newItem = document.createElement('div');
             newItem.className = 'expense-item';
+            newItem.draggable = true;
             newItem.dataset.itemIndex = itemCounter;
             itemReceiptFiles[itemCounter] = [];
             newItem.innerHTML = `
-                <span class="expense-item-number">${itemCounter}</span>
+                <span class="expense-item-number" title="드래그하여 순서 변경"><i class="fas fa-grip-vertical drag-handle-icon"></i><span class="item-num-text">${itemCounter}</span></span>
                 <div class="expense-item-body">
                     <div class="form-row">
                         <div class="form-group" style="flex: 0 0 180px;">
@@ -1873,9 +1861,9 @@ document.addEventListener('DOMContentLoaded', async function() {
     function updateItemNumbers() {
         const items = document.querySelectorAll('.expense-item');
         items.forEach((item, index) => {
-            const numberSpan = item.querySelector('.expense-item-number');
-            if (numberSpan) {
-                numberSpan.textContent = index + 1;
+            const numText = item.querySelector('.item-num-text');
+            if (numText) {
+                numText.textContent = index + 1;
             }
         });
         itemCounter = items.length;
@@ -2398,9 +2386,9 @@ document.addEventListener('DOMContentLoaded', async function() {
                 const periodData = await periodRes.json();
                 if (periodData.exists) {
                     await Swal.fire({
-                        icon: 'warning',
-                        title: '이번 달 작성중인 개인경비청구가 있습니다',
-                        html: `기간 <b>${periodData.periodStart} ~ ${periodData.periodEnd}</b> 내<br>작성된 개인경비청구가 이미 존재합니다.<br>해당 문서로 이동합니다.`,
+                        icon: 'info',
+                        title: '이번 달 개인경비 문서가 이미 있습니다',
+                        html: `기간 <b>${periodData.periodStart} ~ ${periodData.periodEnd}</b> 내<br>이미 작성된 문서가 있어 해당 문서로 이동합니다.<br><small style="color:#64748b;">개인경비는 월 1건으로 관리됩니다.</small>`,
                         confirmButtonText: '확인'
                     });
                     window.location.href = `/approval/expense?idx=${periodData.documentIdx}`;
@@ -2428,8 +2416,6 @@ document.addEventListener('DOMContentLoaded', async function() {
             if (!res.ok) throw new Error(`API ${res.status}`);
 
             const doc = await res.json();
-            // 저장 직후 안내에 사용 (반려→수정 흐름인지 식별)
-            editPriorStatus = doc.settlementStatus || 'C1001';
 
             // 지출 내역 오름차순 정렬
             const details = (doc.expenseDetails || []).slice().sort(
@@ -2444,10 +2430,11 @@ document.addEventListener('DOMContentLoaded', async function() {
                 details.forEach((d, i) => {
                     const div = document.createElement('div');
                     div.className = 'expense-item';
+                    div.draggable = true;
                     div.dataset.itemIndex = i;
                     itemReceiptFiles[i] = [];
                     div.innerHTML = `
-                        <span class="expense-item-number">${i + 1}</span>
+                        <span class="expense-item-number" title="드래그하여 순서 변경"><i class="fas fa-grip-vertical drag-handle-icon"></i><span class="item-num-text">${i + 1}</span></span>
                         <div class="expense-item-body">
                             <div class="form-row">
                                 <div class="form-group" style="flex: 0 0 180px;">
@@ -2541,16 +2528,17 @@ document.addEventListener('DOMContentLoaded', async function() {
     }
 
     // ============================================
-    // 필수 필드 검증 + 인쇄 버튼 노출 제어
+    // 필수 필드 검증 (빨간 테두리 표시용)
     // ============================================
 
-    const printBtnEl = document.getElementById('printBtn');
-
     // 필수 필드 전체 검증 — 빨간 테두리 부여 및 allFilled 반환
+    // 저장 로직(validateForm)과 동일한 정책:
+    //  - 완전히 빈 항목은 무시 (빨간 테두리 안 붙임)
+    //  - 일부라도 입력된 항목은 4개 필드(날짜/적요/상호/금액) 모두 필수
+    //  - 최소 1개의 완전한 항목 필요
     function validateRequiredFields() {
         let allFilled = true;
 
-        // 지출 항목 — 각 항목의 날짜·적요·상호·금액 필수
         const expenseItems = document.querySelectorAll('.expense-item');
         let hasCompleteItem = false;
 
@@ -2565,33 +2553,19 @@ document.addEventListener('DOMContentLoaded', async function() {
             const shopFilled   = !!(shopInput?.value?.trim());
             const amountFilled = !!amountInput?.value;
 
-            if (!dateFilled) {
-                dateInput?.classList.add('field-empty');
-                allFilled = false;
-            } else {
-                dateInput?.classList.remove('field-empty');
+            const isFullyEmpty = !dateFilled && !descFilled && !shopFilled && !amountFilled;
+
+            if (isFullyEmpty) {
+                // 완전히 빈 항목: 빨간 테두리 지우고 건너뛰기
+                [dateInput, descInput, shopInput, amountInput].forEach(el => el?.classList.remove('field-empty'));
+                return;
             }
 
-            if (!descFilled) {
-                descInput?.classList.add('field-empty');
-                allFilled = false;
-            } else {
-                descInput?.classList.remove('field-empty');
-            }
-
-            if (!shopFilled) {
-                shopInput?.classList.add('field-empty');
-                allFilled = false;
-            } else {
-                shopInput?.classList.remove('field-empty');
-            }
-
-            if (!amountFilled) {
-                amountInput?.classList.add('field-empty');
-                allFilled = false;
-            } else {
-                amountInput?.classList.remove('field-empty');
-            }
+            // 일부 입력된 항목: 빈 필드마다 빨간 테두리
+            if (!dateFilled)   { dateInput?.classList.add('field-empty');   allFilled = false; } else dateInput?.classList.remove('field-empty');
+            if (!descFilled)   { descInput?.classList.add('field-empty');   allFilled = false; } else descInput?.classList.remove('field-empty');
+            if (!shopFilled)   { shopInput?.classList.add('field-empty');   allFilled = false; } else shopInput?.classList.remove('field-empty');
+            if (!amountFilled) { amountInput?.classList.add('field-empty'); allFilled = false; } else amountInput?.classList.remove('field-empty');
 
             if (dateFilled && descFilled && shopFilled && amountFilled) {
                 hasCompleteItem = true;
@@ -2600,27 +2574,8 @@ document.addEventListener('DOMContentLoaded', async function() {
 
         if (!hasCompleteItem) allFilled = false;
 
-        // 영수증 첨부 검증 — 각 항목에 영수증이 1개 이상 있어야 함
-        let allReceiptsAttached = true;
-        expenseItems.forEach(item => {
-            const idx = item.dataset.itemIndex;
-            const newFiles = (itemReceiptFiles[idx] || []).length;
-            const serverFiles = item.querySelectorAll('.file-chip-server').length;
-            if (newFiles + serverFiles === 0) allReceiptsAttached = false;
-        });
-
-        // 공식문서 첨부 검증
-        const hasOfficialDoc = signedDocFiles.length > 0
-            || document.querySelectorAll('#signedDocFileList .file-chip-server').length > 0;
-
-        const canPrint = allFilled && allReceiptsAttached && hasOfficialDoc;
-
-        // 인쇄 버튼 — 작성/수정 페이지에서는 항상 disabled (HTML에서 세팅됨)
-        // 저장 버튼 툴팁
-        const tooltipEl = document.getElementById('submitHoverTooltip');
-        if (tooltipEl) {
-            tooltipEl.style.display = allFilled ? 'none' : '';
-        }
+        // 영수증·공식문서 첨부는 선택사항 (인쇄 도구 모드)
+        // 인쇄 버튼은 작성/수정 페이지에서 항상 disabled (HTML에서 세팅됨, 상세 페이지에서만 인쇄)
 
         return allFilled;
     }
@@ -2648,14 +2603,6 @@ document.addEventListener('DOMContentLoaded', async function() {
         validateRequiredFields();
     };
 
-    // 인쇄 버튼 — 작성/수정 페이지에서는 비활성 (상세 페이지에서만 인쇄 가능)
-    const printBtn = document.getElementById('printBtn');
-    if (printBtn) {
-        printBtn.addEventListener('click', function() {
-            if (this.disabled) return;
-        });
-    }
-
     // 저장 버튼 — validateRequiredFields 재검증 후 진행
     const submitBtnHeader = document.getElementById('submitBtn');
     if (submitBtnHeader) {
@@ -2663,15 +2610,65 @@ document.addEventListener('DOMContentLoaded', async function() {
             const isValid = validateRequiredFields();
             if (!isValid) {
                 e.stopImmediatePropagation();
-                showWarning('필수값을 모두 입력해주세요.<br>필수값은 빨간 테두리로 표시 됩니다.');
-                // 화면 상단부터 첫 번째 빈 필드로 스크롤
                 const firstEmpty = document.querySelector('.field-empty');
                 if (firstEmpty) {
+                    showWarning('빨간 테두리로 표시된 빈 칸을 모두 채워주세요.');
                     firstEmpty.scrollIntoView({ behavior: 'smooth', block: 'center' });
                     firstEmpty.focus({ preventScroll: true });
+                } else {
+                    showWarning('지출 항목을 먼저 입력해주세요.');
+                    const firstDate = document.querySelector('.expense-item .date-input');
+                    if (firstDate) {
+                        firstDate.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                        firstDate.focus({ preventScroll: true });
+                    }
                 }
             }
         }, true); // capture phase — 기존 핸들러보다 먼저 실행
+    }
+
+    // 인쇄 버튼 — 월 1건 제출 안내 후 window.print()
+    const printBtnHeader = document.getElementById('printBtn');
+    if (printBtnHeader) {
+        printBtnHeader.addEventListener('click', async function() {
+            // 검증
+            if (!validateRequiredFields()) {
+                const firstEmpty = document.querySelector('.field-empty');
+                if (firstEmpty) {
+                    // 일부 빈 칸 존재
+                    showWarning('인쇄하기 전에 빨간 테두리로 표시된 빈 칸을 모두 채워주세요.');
+                    firstEmpty.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                    firstEmpty.focus({ preventScroll: true });
+                } else {
+                    // 모든 항목이 빈 상태
+                    showWarning('지출 항목을 먼저 입력해주세요.');
+                    const firstDate = document.querySelector('.expense-item .date-input');
+                    if (firstDate) {
+                        firstDate.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                        firstDate.focus({ preventScroll: true });
+                    }
+                }
+                return;
+            }
+
+            const confirmed = await Swal.fire({
+                icon: 'info',
+                title: '인쇄 전 확인',
+                html: '개인경비는 <strong>한 달에 한 번만</strong> 제출 가능합니다.<br>인쇄한 문서에 사인을 받아 관리부에 제출해주세요.',
+                showCancelButton: true,
+                confirmButtonText: '인쇄하기',
+                cancelButtonText: '취소',
+                confirmButtonColor: '#2563eb',
+            });
+            if (!confirmed.isConfirmed) return;
+
+            // 미리보기 접혀있으면 펼친 뒤 인쇄
+            if (documentFormWrapper && documentFormWrapper.classList.contains('collapsed')) {
+                documentFormWrapper.classList.remove('collapsed');
+                if (documentFormToggle) documentFormToggle.classList.add('active');
+            }
+            setTimeout(() => { window.print(); }, 300);
+        });
     }
 
     // 페이지 로드 시 초기 검증
@@ -2787,7 +2784,7 @@ document.addEventListener('DOMContentLoaded', async function() {
                         else return null;
                     }
                     const idx = activeExpenseItem.dataset.itemIndex;
-                    const itemNumber = activeExpenseItem.querySelector('.expense-item-number')?.textContent || '';
+                    const itemNumber = activeExpenseItem.querySelector('.item-num-text')?.textContent || '';
                     return {
                         addFile: (file) => {
                             if (file.size > MAX_FILE_SIZE) {
@@ -3022,9 +3019,11 @@ document.addEventListener('DOMContentLoaded', async function() {
 
     setupUpload('signedDocInput', 'signedDocUploadArea', 'signedDocFileList', signedDocFiles, rerenderSignedDoc);
 
-    // 초기 항목(index=0)의 영수증 input 바인딩
-    const firstItem = document.querySelector('.expense-item[data-item-index="0"]');
-    if (firstItem) setupItemReceiptInput(firstItem);
+    // 초기 항목(index=0)의 영수증 input 바인딩 (수정 모드에서는 이미 설정됨)
+    if (!editIdx) {
+        const firstItem = document.querySelector('.expense-item[data-item-index="0"]');
+        if (firstItem) setupItemReceiptInput(firstItem);
+    }
 
     // paste 기능 안내 배너 — 지출 내역 섹션 상단에 한 번만 주입
     const _itemsContainer = document.getElementById('expenseItemsContainer');
@@ -3037,6 +3036,77 @@ document.addEventListener('DOMContentLoaded', async function() {
             _itemsContainer.parentElement.insertBefore(banner, _itemsContainer);
         }
     }
+
+    // ===========================
+    // 지출 항목 Drag & Drop 순서 변경
+    // ===========================
+    (function initExpenseItemDragDrop() {
+        const container = document.getElementById('expenseItemsContainer');
+        if (!container) return;
+
+        let dragItem = null;
+        let handleClicked = false;
+
+        // 드래그 핸들(.expense-item-number)에서만 드래그 허용
+        container.addEventListener('mousedown', function(e) {
+            const handle = e.target.closest('.expense-item-number');
+            handleClicked = !!handle;
+        });
+
+        container.addEventListener('dragstart', function(e) {
+            const item = e.target.closest('.expense-item');
+            if (!item || !handleClicked) {
+                e.preventDefault();
+                return;
+            }
+            dragItem = item;
+            item.classList.add('dragging');
+            e.dataTransfer.effectAllowed = 'move';
+            e.dataTransfer.setData('text/plain', ''); // Firefox 호환
+        });
+
+        container.addEventListener('dragover', function(e) {
+            // 항목 순서 변경 중이 아니면(= 파일 드래그 등) 개입하지 않음
+            if (!dragItem) return;
+            e.preventDefault();
+            e.dataTransfer.dropEffect = 'move';
+
+            const afterElement = getDragAfterElement(container, e.clientY);
+            if (afterElement) {
+                container.insertBefore(dragItem, afterElement);
+            } else {
+                container.appendChild(dragItem);
+            }
+        });
+
+        container.addEventListener('drop', function(e) {
+            // 항목 순서 변경 drop만 처리, 파일 drop은 하위 핸들러에 위임
+            if (!dragItem) return;
+            e.preventDefault();
+        });
+
+        container.addEventListener('dragend', function(e) {
+            if (dragItem) {
+                dragItem.classList.remove('dragging');
+                dragItem = null;
+                handleClicked = false;
+                updateItemNumbers();
+                updatePreview();
+            }
+        });
+
+        function getDragAfterElement(container, y) {
+            const items = [...container.querySelectorAll('.expense-item:not(.dragging)')];
+            return items.reduce((closest, child) => {
+                const box = child.getBoundingClientRect();
+                const offset = y - box.top - box.height / 2;
+                if (offset < 0 && offset > closest.offset) {
+                    return { offset, element: child };
+                }
+                return closest;
+            }, { offset: Number.NEGATIVE_INFINITY }).element || null;
+        }
+    })();
 
     // 클립보드 paste 활성 항목 추적 + 핸들러 등록
     setupExpenseItemPasteTracking();

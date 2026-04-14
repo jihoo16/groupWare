@@ -88,11 +88,9 @@ document.addEventListener('DOMContentLoaded', async function () {
         return;
     }
 
-    // ── 정산상태 + 편집가능 여부 ───────────────────────────────────
-    // 작성중(C1001), 반려(C1004)만 편집 가능 — 나머지(제출완료/제출확인/정산완료)는 읽기 전용.
-    // 아래 렌더링/업로드/버튼 로직이 모두 isReadOnly를 참조하므로 doc 로드 직후에 선언해야 한다.
-    const stCode = doc.settlementStatus || 'C1001';
-    const isReadOnly = (stCode !== 'C1001' && stCode !== 'C1004');
+    // ── 편집가능 여부 ───────────────────────────────────────────
+    // 작성 도구 모드 — 항상 편집/삭제 가능
+    const isReadOnly = false;
 
     // ── 작성자 정보 로드 ──────────────────────────────────────────
     let drafter = null;
@@ -113,20 +111,7 @@ document.addEventListener('DOMContentLoaded', async function () {
     document.getElementById('detailName').textContent = drafterName;
     document.getElementById('detailDate').textContent = dateStr;
 
-    // 기본정보 → 정산상태 인라인 뱃지
-    const stNameMap = {
-        C1001: { label: '작성중',   cls: 'st-inline-drafting' },
-        C1002: { label: '제출됨',   cls: 'st-inline-submitted' },
-        C1003: { label: '확인됨',   cls: 'st-inline-confirmed' },
-        C1004: { label: '반려',     cls: 'st-inline-rejected' },
-        C1005: { label: '정산완료', cls: 'st-inline-settled' },
-    };
-    const stInfo = stNameMap[stCode] || stNameMap['C1001'];
-    const stEl = document.getElementById('detailSettlementStatus');
-    if (stEl) {
-        stEl.textContent = doc.settlementStatusName || stInfo.label;
-        stEl.classList.add(stInfo.cls);
-    }
+    // (정산상태 인라인 뱃지 제거됨 — 작성 도구 모드)
 
     // ── 지출 내역 정렬 ────────────────────────────────────────────
     const details = (doc.expenseDetails || []).sort(
@@ -606,94 +591,51 @@ document.addEventListener('DOMContentLoaded', async function () {
     const itemsWithReceipt = details.filter(d => (d.attachments || []).length > 0).length;
     const hasOfficialDoc = (doc.attachments || []).some(a => a.attachmentType === 'DOCUMENT');
     const allReceiptsComplete = totalItems > 0 && itemsWithReceipt >= totalItems;
-    const canPrint = allReceiptsComplete;
+    const canPrint = totalItems > 0; // 영수증 없이도 인쇄 가능
 
     // ── 영수증 현황 배너 ─────────────────────────────────────────
     const banner = document.getElementById('receiptStatusBanner');
     if (banner && totalItems > 0) {
         banner.style.display = '';
-        if (canPrint) {
+        if (allReceiptsComplete) {
             banner.className = 'receipt-status-banner status-complete';
             banner.innerHTML = `
                 <i class="fas fa-check-circle"></i>
-                <span>영수증 ${itemsWithReceipt}/${totalItems}건 첨부 완료 — 인쇄할 수 있습니다</span>`;
+                <span>영수증 ${itemsWithReceipt}/${totalItems}건 첨부 완료</span>`;
         } else {
             banner.className = 'receipt-status-banner status-incomplete';
             banner.innerHTML = `
-                <i class="fas fa-exclamation-triangle"></i>
-                <span>영수증 ${totalItems - itemsWithReceipt}건 미첨부 — 모든 항목에 영수증을 첨부해야 인쇄할 수 있습니다</span>`;
-        }
-    }
-
-    // ── 정산상태 배너 ──────────────────────────────────────────────
-    const settlementBanner = document.getElementById('settlementStatusBanner');
-    if (settlementBanner) {
-        const stName = doc.settlementStatusName || '작성중';
-        const stComment = doc.settlementComment || '';
-        const stStyles = {
-            C1001: { cls: 'st-banner-drafting',      icon: 'fas fa-pen' },
-            C1002: { cls: 'st-banner-submitted',     icon: 'fas fa-paper-plane' },
-            C1003: { cls: 'st-banner-confirmed',     icon: 'fas fa-check-circle' },
-            C1004: { cls: 'st-banner-rejected',  icon: 'fas fa-exclamation-circle' },
-            C1005: { cls: 'st-banner-settled',        icon: 'fas fa-coins' },
-        };
-        const style = stStyles[stCode] || stStyles['C1001'];
-        settlementBanner.className = `settlement-status-banner ${style.cls}`;
-
-        let html = `<i class="${style.icon}"></i><span>정산상태: <strong>${stName}</strong></span>`;
-        if (stCode === 'C1004' && stComment) {
-            html += `<div class="st-reject-reason"><i class="fas fa-comment-dots"></i> <strong>반려 사유:</strong> ${stComment}</div>`;
-        }
-        // 반려 상태일 때 — 상세보기를 거치지 않고 바로 수정 페이지로 이동하는 버튼
-        if (stCode === 'C1004') {
-            html += `<button type="button" id="btnEditRejected" class="btn-edit-rejected">
-                        <i class="fas fa-pen"></i> 수정하러 가기
-                     </button>`;
-        }
-        settlementBanner.innerHTML = html;
-        settlementBanner.style.display = '';
-
-        const editRejectedBtn = document.getElementById('btnEditRejected');
-        if (editRejectedBtn) {
-            editRejectedBtn.addEventListener('click', () => {
-                window.location.href = `/approval/expense?idx=${idx}`;
-            });
+                <i class="fas fa-info-circle"></i>
+                <span>영수증 ${itemsWithReceipt}/${totalItems}건 첨부 (${totalItems - itemsWithReceipt}건 미첨부)</span>`;
         }
     }
 
     // ── 버튼 표시 (API 200 = 본인 문서 확인됨) ───────────────────
     if (printBtn) {
         printBtn.style.display = '';
-        if (canPrint) {
-            printBtn.disabled = false;
-            printBtn.classList.remove('btn-disabled');
-            printBtn.removeAttribute('data-tip');
-        } else {
-            printBtn.disabled = true;
-            printBtn.classList.add('btn-disabled');
-            printBtn.setAttribute('data-tip', '모든 항목에 영수증(문서/이미지)이 첨부되어야 인쇄할 수 있습니다');
-        }
+        printBtn.disabled = false;
+        printBtn.classList.remove('btn-disabled');
+        printBtn.removeAttribute('data-tip');
     }
     if (editBtn)   editBtn.style.display   = isReadOnly ? 'none' : '';
     if (deleteBtn) deleteBtn.style.display = isReadOnly ? 'none' : '';
 
-    // ── 인쇄 (인쇄 후 자동 제출) ─────────────────────────────────
+    // ── 인쇄 ─────────────────────────────────────────────────────
     if (printBtn) {
         printBtn.addEventListener('click', async function () {
             if (this.disabled) return;
 
-            // 작성중/반려 → 인쇄 시 제출완료로 전환됨을 사전 안내
-            if (stCode === 'C1001' || stCode === 'C1004') {
-                const confirm = await Swal.fire({
-                    icon: 'info',
-                    title: '인쇄 및 제출',
-                    html: '인쇄하면 문서가 <strong>제출완료</strong> 상태로 전환되며,<br>이후 내용 수정이 불가합니다.<br><br><small style="color:#64748b;">수정이 필요한 경우 관리부에서 반려 처리 후 가능합니다.</small>',
-                    showCancelButton: true,
-                    confirmButtonText: '인쇄하기',
-                    cancelButtonText: '취소',
-                });
-                if (!confirm.isConfirmed) return;
-            }
+            // 월 1건 제출 안내
+            const confirmed = await Swal.fire({
+                icon: 'info',
+                title: '인쇄 전 확인',
+                html: '개인경비는 <strong>한 달에 한 번만</strong> 제출 가능합니다.<br>인쇄한 문서에 사인을 받아 관리부에 제출해주세요.',
+                showCancelButton: true,
+                confirmButtonText: '인쇄하기',
+                cancelButtonText: '취소',
+                confirmButtonColor: '#2563eb',
+            });
+            if (!confirmed.isConfirmed) return;
 
             if (formWrapper && formWrapper.classList.contains('collapsed')) {
                 formWrapper.classList.remove('collapsed');
@@ -701,36 +643,6 @@ document.addEventListener('DOMContentLoaded', async function () {
             }
             setTimeout(() => {
                 window.print();
-                // 인쇄 후 작성중/반려이면 자동으로 제출완료로 전환 + 사용자에게 명시적으로 알림
-                if (stCode === 'C1001' || stCode === 'C1004') {
-                    fetch(`/api/approval/expense/${idx}/submit`, { method: 'PUT' })
-                        .then(async res => {
-                            if (res.ok) {
-                                const fromLabel = stCode === 'C1004' ? '반려' : '작성중';
-                                await Swal.fire({
-                                    icon: 'success',
-                                    title: '제출완료 상태로 변경되었습니다',
-                                    html: `정산상태: <strong>${fromLabel}</strong> → <strong style="color:#2563eb;">제출완료</strong><br><small style="color:#64748b;">출력한 종이 문서에 사인을 받아 관리부에 제출해주세요.</small>`,
-                                    confirmButtonText: '확인',
-                                    confirmButtonColor: '#2563eb',
-                                });
-                                location.reload();
-                            } else {
-                                Swal.fire({
-                                    icon: 'error',
-                                    title: '상태 변경 실패',
-                                    text: '인쇄는 완료되었지만 상태 전환에 실패했습니다. 새로고침 후 다시 시도해주세요.',
-                                });
-                            }
-                        })
-                        .catch(() => {
-                            Swal.fire({
-                                icon: 'error',
-                                title: '상태 변경 실패',
-                                text: '서버 통신 오류로 상태가 변경되지 않았습니다.',
-                            });
-                        });
-                }
             }, 300);
         });
     }
@@ -747,7 +659,7 @@ document.addEventListener('DOMContentLoaded', async function () {
         deleteBtn.addEventListener('click', async function () {
             const result = await Swal.fire({
                 title: '문서를 삭제하시겠습니까?',
-                html: '삭제된 문서는 <strong>복구할 수 없습니다.</strong><br><small style="color:#64748b;">결재함 목록에서도 사라집니다.</small>',
+                html: '삭제된 문서는 <strong>복구할 수 없습니다.</strong>',
                 icon: 'warning',
                 showCancelButton: true,
                 confirmButtonText: '삭제',
@@ -762,7 +674,7 @@ document.addEventListener('DOMContentLoaded', async function () {
                     await Swal.fire({
                         icon: 'success',
                         title: '문서가 삭제되었습니다',
-                        text: '결재함으로 이동합니다.',
+                        text: '문서 목록으로 이동합니다.',
                         timer: 1500,
                         showConfirmButton: false,
                     });
