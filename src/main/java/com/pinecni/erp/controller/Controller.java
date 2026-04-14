@@ -168,15 +168,17 @@ public class Controller {
         // 세션에서 현재 로그인한 사용자 IDX 조회
         Long currentUserIdx = (Long) session.getAttribute("userIdx");
         boolean isAdmin = AuthorizationUtil.isAdminOrHigher(session);
+        // 대표(EXECUTIVE) 도 타인 문서 열람 허용 — 삭제 문서는 관리자 전용 유지
+        boolean canBypassOwner = AuthorizationUtil.isExecutiveOrHigher(session);
 
         // 문서 조회
         ApprovalDocument document = approvalDocumentRepository.findById(documentIdx)
                 .orElse(null);
 
-        // 권한 체크: 관리자이거나 작성자가 아니면 UnauthorizedException 발생 -> 404 페이지로 리다이렉트
-        AuthorizationUtil.validateDocumentOwner(currentUserIdx, document, isAdmin);
+        // 권한 체크: 관리자/대표이거나 작성자가 아니면 UnauthorizedException
+        AuthorizationUtil.validateDocumentOwner(currentUserIdx, document, canBypassOwner);
 
-        // 삭제된 문서 체크: 관리자가 아니면 삭제된 문서는 볼 수 없음
+        // 삭제된 문서 체크: 관리자가 아니면 삭제된 문서는 볼 수 없음 (대표 포함)
         if (document != null && document.getDeletedAt() != null) {
             if (!isAdmin) {
                 throw new com.pinecni.erp.exception.UnauthorizedException("삭제된 문서는 관리자만 조회할 수 있습니다.");
