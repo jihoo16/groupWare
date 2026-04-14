@@ -145,15 +145,24 @@ document.addEventListener('DOMContentLoaded', function() {
 
         // 대표(EXECUTIVE) — 관리자 페이지 읽기 전용 모드
         // body 클래스 + 수정/승인/삭제 UI 일괄 숨김 (백엔드에서도 차단됨)
+        //
+        // 숨김 대상 (CRUD 버튼) — 각 관리자 화면에서 실제로 쓰이는 클래스:
+        //   연차: .btn-approve(승인) / .btn-revoke(승인철회) / .btn-delete / .btn-proxy-add(연차등록)
+        //   경비: .btn-delete / .admin-upload-btn(대리업로드) / .admin-upload-guide(안내)
+        //        .item-receipt-btn(항목 영수증 첨부) / .btn-remove-attachment
+        //   공통: .btn-status-change / .batch-action-bar / [data-action="mutation"]
         if (user.userRoleCode === 'C1105') {
             document.body.classList.add('role-executive');
             const style = document.createElement('style');
             style.dataset.roleExecutive = 'true';
             style.textContent = `
                 body.role-executive .btn-approve,
+                body.role-executive .btn-revoke,
                 body.role-executive .btn-delete,
+                body.role-executive .btn-proxy-add,
                 body.role-executive .btn-status-change,
                 body.role-executive .batch-action-bar,
+                body.role-executive .admin-upload-btn,
                 body.role-executive .admin-upload-guide,
                 body.role-executive .item-receipt-btn,
                 body.role-executive .btn-remove-attachment,
