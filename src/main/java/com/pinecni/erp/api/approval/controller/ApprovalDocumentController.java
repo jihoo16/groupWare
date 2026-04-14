@@ -143,7 +143,8 @@ public class ApprovalDocumentController {
             @RequestParam(required = false) Integer month,
             HttpSession session) {
 
-        if (!AuthorizationUtil.isAdminOrHigher(session)) {
+        // 대표(EXECUTIVE)도 읽기 전용으로 접근 가능
+        if (!AuthorizationUtil.isExecutiveOrHigher(session)) {
             log.warn("권한 없는 사용자의 관리자 연구비증빙 조회 시도");
             return ResponseEntity.status(403).build();
         }
@@ -155,6 +156,9 @@ public class ApprovalDocumentController {
         log.debug("GET /api/approval/documents/admin/receipts - year: {}, month: {}", y, m);
 
         List<ApprovalDocumentDTO> documents = approvalDocumentService.getAdminReceiptDocuments(y, m);
+
+        // 대표(EXECUTIVE) 필터 — 연구비증빙은 별도 제출/승인 워크플로우가 없고
+        // 서비스 레벨에서 이미 삭제 제외됨. 추가 필터 기준(예: documentStatus) 이 필요하면 여기에 보강.
 
         log.debug("[관리자 연구비증빙 조회] 완료 - {}/{} 총 {}건", y, m, documents.size());
         return ResponseEntity.ok(documents);

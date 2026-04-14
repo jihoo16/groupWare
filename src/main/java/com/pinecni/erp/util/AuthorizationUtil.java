@@ -32,6 +32,22 @@ public class AuthorizationUtil {
         return hasRoleAtLeast(session, UserRole.ADMIN);
     }
 
+    /**
+     * 대표(EXECUTIVE) 이상 권한 여부 — 관리자 페이지 읽기 전용 접근 허용 판정에 사용.
+     * EXECUTIVE, ADMIN, DEVELOPER 모두 true.
+     */
+    public static boolean isExecutiveOrHigher(HttpSession session) {
+        return hasRoleAtLeast(session, UserRole.EXECUTIVE);
+    }
+
+    /**
+     * 현재 사용자가 정확히 대표(EXECUTIVE) 인지 — 완료된 데이터만 노출하는 필터 분기에 사용.
+     * ADMIN/DEVELOPER 는 false (기존 전체 조회 그대로).
+     */
+    public static boolean isExecutiveOnly(HttpSession session) {
+        return getCurrentRole(session) == UserRole.EXECUTIVE;
+    }
+
     public static boolean isDeveloperOnly(HttpSession session) {
         return getCurrentRole(session) == UserRole.DEVELOPER;
     }

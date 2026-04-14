@@ -420,8 +420,9 @@ public class Controller {
      */
     @GetMapping("/admin/vacation-documents")
     public String adminVacationDocuments(HttpSession session) {
-        if (!AuthorizationUtil.isAdminOrHigher(session)) {
-            log.warn("관리자가 아닌 사용자의 연차신청서 관리 접근 시도");
+        // 대표(EXECUTIVE)도 읽기 전용으로 접근 — 완료된 승인 건만 노출 (API에서 필터링)
+        if (!AuthorizationUtil.isExecutiveOrHigher(session)) {
+            log.warn("권한 없는 사용자의 연차신청서 관리 접근 시도");
             return "redirect:/nope";
         }
         return "admin-vacation-documents";
@@ -432,8 +433,9 @@ public class Controller {
      */
     @GetMapping("/admin/expense-documents")
     public String adminExpenseDocuments(HttpSession session) {
-        if (!AuthorizationUtil.isAdminOrHigher(session)) {
-            log.warn("관리자가 아닌 사용자의 개인경비지출 관리 접근 시도");
+        // 대표(EXECUTIVE)도 읽기 전용으로 접근 — 영수증/공식문서 완료 건만 노출 (API에서 필터링)
+        if (!AuthorizationUtil.isExecutiveOrHigher(session)) {
+            log.warn("권한 없는 사용자의 개인경비지출 관리 접근 시도");
             return "redirect:/nope";
         }
         return "admin-expense-documents";
@@ -447,8 +449,9 @@ public class Controller {
      */
     @GetMapping("/admin/receipt-documents")
     public String adminReceiptDocuments(HttpSession session) {
-        if (!AuthorizationUtil.isAdminOrHigher(session)) {
-            log.warn("관리자가 아닌 사용자의 연구비증빙 관리 접근 시도");
+        // 대표(EXECUTIVE)도 읽기 전용으로 접근 — 삭제 제외 건만 노출 (API에서 필터링)
+        if (!AuthorizationUtil.isExecutiveOrHigher(session)) {
+            log.warn("권한 없는 사용자의 연구비증빙 관리 접근 시도");
             return "redirect:/nope";
         }
         return "admin-receipt-documents";

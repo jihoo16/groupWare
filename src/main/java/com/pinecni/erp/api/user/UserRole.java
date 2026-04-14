@@ -3,18 +3,21 @@ package com.pinecni.erp.api.user;
 /**
  * 사용자 권한 코드 Enum
  *
- * <p>DB: erp.code 테이블의 group_code = 'C11' 그룹에 해당하는 4개 코드값과 매핑.
+ * <p>DB: erp.code 테이블의 group_code = 'C11' 그룹과 매핑.
  * <ul>
  *   <li>C1101 = DEVELOPER (최상위)</li>
- *   <li>C1102 = ADMIN</li>
+ *   <li>C1102 = ADMIN (관리자)</li>
+ *   <li>C1105 = EXECUTIVE (대표 — 읽기 전용, 완료된 데이터만 열람)</li>
  *   <li>C1103 = COMPETENCY_VIEWER (역량 열람자 / 담당자)</li>
  *   <li>C1104 = USER (일반 사용자, 기본값)</li>
  * </ul>
  *
- * <p><strong>주의:</strong> 코드 번호(C11<b>01</b>~C11<b>04</b>)는 상위 권한이 작은 숫자부터,
- * level 값은 상위 권한이 큰 숫자(DEVELOPER=4)입니다. 두 값의 방향이 반대이므로
+ * <p><strong>주의:</strong> 코드 번호와 level 은 방향이 다릅니다.
  * 권한 비교는 반드시 {@link #isAtLeast(UserRole)} 또는 {@link #getLevel()} 을
  * 사용해야 하며, {@link #getCode()} 로 얻은 문자열로 크기 비교하면 안 됩니다.
+ *
+ * <p>EXECUTIVE 는 ADMIN 보다 낮고 COMPETENCY_VIEWER 보다 높습니다
+ * ({@code isAdminOrHigher()} 에는 걸리지 않으므로 mutation API 자동 차단됨).
  *
  * <p>사용 예:
  * <pre>
@@ -26,10 +29,13 @@ package com.pinecni.erp.api.user;
 public enum UserRole {
 
     /** 개발자 — 최상위 권한, 그룹코드 설정 등 개발자 전용 메뉴 접근 가능 */
-    DEVELOPER        ("C1101", 4),
+    DEVELOPER        ("C1101", 5),
 
     /** 관리자 — 사용자/연차/경비/보고체계/기초정보 관리 */
-    ADMIN            ("C1102", 3),
+    ADMIN            ("C1102", 4),
+
+    /** 대표 — 관리자 페이지 읽기 전용, 완료된 데이터만 열람 가능 */
+    EXECUTIVE        ("C1105", 3),
 
     /** 역량 열람자 (담당자) — 전체 직원 역량 정보 읽기 전용 열람 */
     COMPETENCY_VIEWER("C1103", 2),

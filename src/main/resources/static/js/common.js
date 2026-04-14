@@ -136,10 +136,32 @@ document.addEventListener('DOMContentLoaded', function() {
             const roleLabels = {
                 'C1101': '개발자',
                 'C1102': '관리자',
+                'C1105': '대표',
                 'C1103': '역량 열람자',
                 'C1104': '사용자'
             };
             userRoleEl.textContent = roleLabels[user.userRoleCode] || '사용자';
+        }
+
+        // 대표(EXECUTIVE) — 관리자 페이지 읽기 전용 모드
+        // body 클래스 + 수정/승인/삭제 UI 일괄 숨김 (백엔드에서도 차단됨)
+        if (user.userRoleCode === 'C1105') {
+            document.body.classList.add('role-executive');
+            const style = document.createElement('style');
+            style.dataset.roleExecutive = 'true';
+            style.textContent = `
+                body.role-executive .btn-approve,
+                body.role-executive .btn-delete,
+                body.role-executive .btn-status-change,
+                body.role-executive .batch-action-bar,
+                body.role-executive .admin-upload-guide,
+                body.role-executive .item-receipt-btn,
+                body.role-executive .btn-remove-attachment,
+                body.role-executive [data-action="mutation"] {
+                    display: none !important;
+                }
+            `;
+            document.head.appendChild(style);
         }
 
         console.log('현재 로그인 사용자:', user.empName, '(idx:', user.idx, ')');

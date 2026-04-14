@@ -692,10 +692,10 @@ public class VacationController {
             @RequestParam(required = false) Long userIdx,
             HttpSession session) {
 
-        // 관리자 권한 확인
-        if (!AuthorizationUtil.isAdminOrHigher(session)) {
-            log.warn("관리자가 아닌 사용자의 전체 연차신청서 조회 시도");
-            return ResponseEntity.status(403).body(Map.of("error", "관리자 권한이 필요합니다."));
+        // 대표(EXECUTIVE)도 읽기 전용으로 접근 가능 — 아래에서 승인 건만 필터링
+        if (!AuthorizationUtil.isExecutiveOrHigher(session)) {
+            log.warn("권한 없는 사용자의 전체 연차신청서 조회 시도");
+            return ResponseEntity.status(403).body(Map.of("error", "접근 권한이 없습니다."));
         }
 
         try {
@@ -750,6 +750,14 @@ public class VacationController {
                     })
                     .filter(Objects::nonNull)
                     .collect(Collectors.toList());
+
+            // 대표(EXECUTIVE)는 승인 완료된 연차만 노출 (삭제 제외 + isApproved=true)
+            if (AuthorizationUtil.isExecutiveOnly(session)) {
+                documentList = documentList.stream()
+                        .filter(d -> d.getDeletedAt() == null)
+                        .filter(d -> Boolean.TRUE.equals(d.getIsApproved()))
+                        .collect(Collectors.toList());
+            }
 
             log.info("전체 연차신청서 조회 완료 - 총 {}건", documentList.size());
             return ResponseEntity.ok(documentList);
