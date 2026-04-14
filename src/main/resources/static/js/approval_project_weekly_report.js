@@ -242,7 +242,7 @@ document.addEventListener('DOMContentLoaded', function() {
             autoProject.textContent = project.projectName;
         }
 
-        // 결재자 자동 설정: 프로젝트 책임자 & 대표이사
+        // 결재자 자동 설정: 프로젝트 책임자
         await autoSetApprovers(project);
     }
 
@@ -321,7 +321,7 @@ document.addEventListener('DOMContentLoaded', function() {
                     autoProject.textContent = selectedProject.projectName;
                 }
 
-                // 결재자 자동 설정: 프로젝트 책임자 & 대표이사
+                // 결재자 자동 설정: 프로젝트 책임자
                 await autoSetApprovers(selectedProject);
 
                 closeProjectModal();
@@ -396,7 +396,7 @@ document.addEventListener('DOMContentLoaded', function() {
             autoProject.textContent = selectedProject.projectName;
         }
 
-        // 결재자 자동 설정: 프로젝트 책임자 & 대표이사
+        // 결재자 자동 설정: 프로젝트 책임자
         await autoSetApprovers(selectedProject);
 
         closeProjectModal();
@@ -425,8 +425,7 @@ document.addEventListener('DOMContentLoaded', function() {
                         dept: currentUser.empDeptName || '',
                         position: currentUser.empPositionName || '',
                         isCurrentUser: true,  // 본인 플래그
-                        isProjectManager: false,
-                        isCEO: false
+                        isProjectManager: false
                     });
                 }
             } else {
@@ -445,31 +444,11 @@ document.addEventListener('DOMContentLoaded', function() {
                         dept: manager.empDeptName || '',
                         position: manager.empPositionName || '',
                         isCurrentUser: false,
-                        isProjectManager: true,  // 연구책임자 플래그
-                        isCEO: false
+                        isProjectManager: true  // 연구책임자 플래그
                     });
                 }
             } else {
                 console.error('2. 연구책임자 오류: project.projectManagerIdx가 없습니다.');
-            }
-
-            // 3. 대표이사 추가
-            const ceoSortOrder = getCeoSortOrder();
-            console.log('3. 대표이사 검색 - ceoSortOrder:', ceoSortOrder);
-            const ceo = employees.find(emp => emp.empPositionSortOrder === ceoSortOrder);
-            console.log('3. 대표이사 결과:', ceo ? ceo.empName : '없음');
-            if (ceo) {
-                selectedApprovers.push({
-                    idx: ceo.idx,
-                    name: ceo.empName,
-                    dept: ceo.empDeptName || '',
-                    position: ceo.empPositionName || '',
-                    isCurrentUser: false,
-                    isProjectManager: false,
-                    isCEO: true  // 대표이사 플래그
-                });
-            } else {
-                console.error('3. 대표이사 오류: empPositionSortOrder=' + ceoSortOrder + '인 사용자가 없습니다.');
             }
 
             console.log('최종 결재자 목록:', selectedApprovers);
@@ -1030,11 +1009,6 @@ document.addEventListener('DOMContentLoaded', function() {
     const selectedApproverCount = document.getElementById('selectedApproverCount');
     const clearSelectedApproversBtn = document.getElementById('clearSelectedApproversBtn');
 
-    // 대표이사 sortOrder 반환 (대표이사 = 1)
-    function getCeoSortOrder() {
-        return 1;
-    }
-
     // 모달 닫기
     function closeApproverModalFunc() {
         if (approverSelectionModal) {
@@ -1072,12 +1046,11 @@ document.addEventListener('DOMContentLoaded', function() {
             return;
         }
 
-        // 결재자(본인, 연구책임자, 대표이사) 제외
+        // 결재자(본인, 연구책임자) 제외
         const filteredList = list.filter(emp => {
             const isCurrentUser = emp.idx === currentUserIdx;
             const isProjectManager = selectedProject && emp.idx === selectedProject.projectManagerIdx;
-            const isCEO = emp.empPositionSortOrder === getCeoSortOrder();
-            return !isCurrentUser && !isProjectManager && !isCEO;
+            return !isCurrentUser && !isProjectManager;
         });
 
         if (filteredList.length === 0) {
