@@ -640,9 +640,10 @@ function initCompetencyManagement() {
     if (careerStartDateInput) careerStartDateInput.addEventListener('change', updateCareerPeriodDisplay);
     if (careerEndDateInput)   careerEndDateInput.addEventListener('change',   updateCareerPeriodDisplay);
 
-    // 모든 date input — 입력 영역 아무데나 클릭하면 캘린더 picker 열기
+    // 모든 date / month input — 입력 영역 아무데나 클릭하면 picker 열기
     // (기본 동작은 우측 작은 아이콘 클릭해야 열림. UX 개선)
-    document.querySelectorAll('input[type="date"]').forEach(input => {
+    // 대상: 학력 졸업일, 자격증 취득일, 경력 시작/종료 월, 교육 수료일
+    document.querySelectorAll('input[type="date"], input[type="month"]').forEach(input => {
         input.addEventListener('click', () => {
             if (typeof input.showPicker === 'function') {
                 try { input.showPicker(); } catch (e) { /* 사용자 상호작용 외 호출 시 무시 */ }

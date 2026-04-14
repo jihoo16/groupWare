@@ -926,4 +926,13 @@ document.addEventListener('DOMContentLoaded', function () {
         if (!res.ok) throw new Error(`HTTP ${res.status}`);
         return res.json();
     }
+
+    // 모든 date / month input — 입력 영역 아무데나 클릭하면 picker 열기 (UX 개선)
+    document.querySelectorAll('input[type="date"], input[type="month"]').forEach(input => {
+        input.addEventListener('click', () => {
+            if (typeof input.showPicker === 'function') {
+                try { input.showPicker(); } catch (e) { /* 사용자 상호작용 외 호출 시 무시 */ }
+            }
+        });
+    });
 });
