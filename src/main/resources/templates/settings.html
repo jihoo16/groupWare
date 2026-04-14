@@ -688,8 +688,8 @@
                 <input type="hidden" id="careerIdx">
                 <div class="form-row">
                     <div class="form-group span-2">
-                        <label>경력분야 <span class="required-mark">*</span></label>
-                        <input type="text" id="careerCategory" class="form-input" placeholder="소프트웨어 개발 - (주) 파인씨앤아이">
+                        <label>회사명 <span class="required-mark">*</span></label>
+                        <input type="text" id="careerCategory" class="form-input" placeholder="예) (주) 파인씨앤아이">
                     </div>
                     <div class="form-group">
                         <div class="checkbox-group">
@@ -700,19 +700,19 @@
                 </div>
                 <div class="form-row">
                     <div class="form-group">
-                        <label>시작일 <span class="required-mark">*</span></label>
-                        <input type="date" id="careerStartDate" class="form-input">
+                        <label>시작 월 <span class="required-mark">*</span></label>
+                        <input type="month" id="careerStartDate" class="form-input">
                     </div>
                     <div class="form-group">
-                        <label>종료일</label>
-                        <input type="date" id="careerEndDate" class="form-input">
+                        <label>종료 월</label>
+                        <input type="month" id="careerEndDate" class="form-input">
                     </div>
                     <div class="form-group">
                         <div class="checkbox-group is-now-checkbox">
                             <input type="checkbox" id="isNow">
                             <label for="isNow">
                                 <span class="is-now-title">현재 재직중 <em>(주) 파인씨앤아이</em></span>
-                                <span class="is-now-hint">체크 시 시작일이 입사일로 자동 입력됩니다</span>
+                                <span class="is-now-hint">체크 시 시작 월이 입사월로 자동 입력됩니다</span>
                             </label>
                         </div>
                     </div>
@@ -722,14 +722,14 @@
                         <label>경력기간 (자동 계산)</label>
                         <div class="career-period-display">
                             <div class="career-period-box" id="careerPeriodDisplay">-</div>
-                            <span class="career-period-label">날짜 입력 시 자동 계산됩니다</span>
+                            <span class="career-period-label">시작/종료 월 입력 시 자동 계산됩니다</span>
                         </div>
                     </div>
                 </div>
                 <div class="form-row">
                     <div class="form-group full-width">
-                        <label>경력 요약</label>
-                        <textarea id="careerSummary" class="form-textarea" rows="3" placeholder="Java Spring-boot 기반 RESTAPI 개발"></textarea>
+                        <label>경력 내용 <span class="required-mark">*</span></label>
+                        <textarea id="careerSummary" class="form-textarea" rows="3" placeholder="예) Java Spring-boot 기반 REST API 개발"></textarea>
                     </div>
                 </div>
                 <div class="form-row">

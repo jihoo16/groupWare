@@ -615,8 +615,9 @@ function initCompetencyManagement() {
                 careerEndDateInput.value    = '';
                 careerEndDateInput.disabled = true;
                 // "현재 재직중 = (주) 파인씨앤아이" — 관련 필드 자동 입력 (덮어쓰기)
+                // careerStartDate 는 month input 이므로 YYYY-MM 형식으로 변환
                 if (currentUserJoinDate && careerStartDateInput) {
-                    careerStartDateInput.value = currentUserJoinDate;
+                    careerStartDateInput.value = String(currentUserJoinDate).substring(0, 7);
                     careerStartDateInput.classList.remove('error');
                 }
                 if (careerCategoryInput) {
@@ -729,6 +730,8 @@ function resetModalFields(type) {
             document.getElementById('careerNotes').value         = '';
             document.getElementById('careerCategory').classList.remove('error');
             document.getElementById('careerStartDate').classList.remove('error');
+            document.getElementById('careerEndDate').classList.remove('error');
+            document.getElementById('careerSummary').classList.remove('error');
             break;
         case 'training':
             document.getElementById('trainingIdx').value        = '';
@@ -763,16 +766,17 @@ function fillModalFields(type, item) {
             document.getElementById('certificateNotes').value = item.notes || '';
             break;
         case 'career':
+            // careerStartDate / careerEndDate 는 month input — LocalDate(YYYY-MM-DD) → YYYY-MM 로 자르기
             document.getElementById('careerIdx').value              = item.idx || '';
             document.getElementById('careerCategory').value         = item.careerCategory || '';
             document.getElementById('isIndustryExperience').checked = item.isIndustryExperience || false;
-            document.getElementById('careerStartDate').value        = item.careerStartDate || '';
+            document.getElementById('careerStartDate').value        = item.careerStartDate ? String(item.careerStartDate).substring(0, 7) : '';
             document.getElementById('isNow').checked                = item.isNow || false;
             if (item.isNow) {
                 document.getElementById('careerEndDate').value    = '';
                 document.getElementById('careerEndDate').disabled = true;
             } else {
-                document.getElementById('careerEndDate').value    = item.careerEndDate || '';
+                document.getElementById('careerEndDate').value    = item.careerEndDate ? String(item.careerEndDate).substring(0, 7) : '';
                 document.getElementById('careerEndDate').disabled = false;
             }
             document.getElementById('careerSummary').value = item.careerSummary || '';
@@ -1023,28 +1027,34 @@ function buildPayload(type) {
             };
         }
         case 'career': {
+            // month input 값(YYYY-MM) → 백엔드 LocalDate 용 YYYY-MM-01 로 변환해 전송
             const careerCategory  = document.getElementById('careerCategory').value.trim();
-            const careerStartDate = document.getElementById('careerStartDate').value;
-            const isNow           = document.getElementById('isNow').checked;
-            const careerEndDate   = document.getElementById('careerEndDate').value;
+            const careerStartMonth = document.getElementById('careerStartDate').value;  // YYYY-MM
+            const isNow            = document.getElementById('isNow').checked;
+            const careerEndMonth   = document.getElementById('careerEndDate').value;    // YYYY-MM
+            const careerSummary    = document.getElementById('careerSummary').value.trim();
             if (!careerCategory) {
                 document.getElementById('careerCategory').classList.add('error');
-                showWarning('경력분야를 입력해주세요.'); return null;
+                showWarning('회사명을 입력해주세요.'); return null;
             }
-            if (!careerStartDate) {
+            if (!careerStartMonth) {
                 document.getElementById('careerStartDate').classList.add('error');
-                showWarning('시작일을 입력해주세요.'); return null;
+                showWarning('시작 월을 입력해주세요.'); return null;
             }
-            if (!isNow && !careerEndDate) {
+            if (!isNow && !careerEndMonth) {
                 document.getElementById('careerEndDate').classList.add('error');
-                showWarning('종료일을 입력하거나 현재 재직중을 체크해주세요.'); return null;
+                showWarning('종료 월을 입력하거나 현재 재직중을 체크해주세요.'); return null;
+            }
+            if (!careerSummary) {
+                document.getElementById('careerSummary').classList.add('error');
+                showWarning('경력 내용을 입력해주세요.'); return null;
             }
             return {
                 careerCategory,
                 isIndustryExperience: document.getElementById('isIndustryExperience').checked,
-                careerSummary:        document.getElementById('careerSummary').value.trim() || null,
-                careerStartDate,
-                careerEndDate:        isNow ? null : careerEndDate,
+                careerSummary,
+                careerStartDate:      careerStartMonth ? `${careerStartMonth}-01` : null,
+                careerEndDate:        (isNow || !careerEndMonth) ? null : `${careerEndMonth}-01`,
                 isNow,
                 notes:                document.getElementById('careerNotes').value.trim() || null
             };
