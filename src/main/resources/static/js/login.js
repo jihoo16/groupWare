@@ -282,6 +282,20 @@ document.addEventListener('DOMContentLoaded', function() {
 
 
     // ===========================
+    // Caps Lock Detection
+    // ===========================
+    const capslockWarning = document.getElementById('capslockWarning');
+
+    function updateCapsLockState(e) {
+        if (capslockWarning) {
+            capslockWarning.classList.toggle('show', e.getModifierState('CapsLock'));
+        }
+    }
+
+    passwordInput.addEventListener('keydown', updateCapsLockState);
+    passwordInput.addEventListener('keyup', updateCapsLockState);
+
+    // ===========================
     // Enter Key Support
     // ===========================
     usernameInput.addEventListener('keypress', (e) => {

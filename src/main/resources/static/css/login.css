@@ -313,6 +313,24 @@ body {
     min-height: 18px;
 }
 
+.capslock-warning {
+    display: none;
+    align-items: center;
+    gap: 6px;
+    color: #d97706;
+    font-size: 13px;
+    font-weight: 500;
+    margin-top: 6px;
+}
+
+.capslock-warning.show {
+    display: flex;
+}
+
+.capslock-warning i {
+    font-size: 12px;
+}
+
 .password-input-wrapper {
     position: relative;
 }

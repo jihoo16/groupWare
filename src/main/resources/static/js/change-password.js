@@ -131,6 +131,24 @@ document.addEventListener('DOMContentLoaded', async function() {
     setupPasswordToggle(toggleConfirmPassword, confirmPasswordInput);
 
     // ===========================
+    // Caps Lock Detection
+    // ===========================
+    const capslockWarning = document.getElementById('capslockWarning');
+
+    function updateCapsLockState(e) {
+        if (capslockWarning) {
+            capslockWarning.classList.toggle('show', e.getModifierState('CapsLock'));
+        }
+    }
+
+    [currentPasswordInput, newPasswordInput, confirmPasswordInput].forEach(input => {
+        if (input) {
+            input.addEventListener('keydown', updateCapsLockState);
+            input.addEventListener('keyup', updateCapsLockState);
+        }
+    });
+
+    // ===========================
     // 페이지 이탈 방지
     // ===========================
     window.addEventListener('beforeunload', (e) => {
