@@ -677,8 +677,25 @@ document.addEventListener('DOMContentLoaded', function() {
 
     async function setDefaultAuthor() {
         if (isPopulatingForm) return; // 데이터 로드 중에는 자동 설정 차단
-        if (authorPersonId) return;   // 이미 작성자가 설정된 경우 덮어쓰지 않음
         if (projectMembers.length === 0) return;
+
+        const date = document.getElementById('common_meeting_date')?.value;
+        const startTime = document.getElementById('common_start_time')?.value;
+        const endTime = document.getElementById('common_end_time')?.value;
+        const projectIdx = document.getElementById('selectedProjectIdx')?.value;
+        const startInput = document.getElementById('common_start_time');
+
+        // 중복 검증에 필요한 값이 아직 없으면 작성자 자동 설정 안 함
+        // (date/time/project이 채워지는 시점에 다시 호출되어야 함)
+        if (!date || !startTime || !endTime || !projectIdx) return;
+
+        // 이미 작성자가 설정된 경우: 현재 조건 하에서 여전히 유효한지 재검증
+        if (authorPersonId) {
+            const stillDup = await checkAuthorDuplicate(authorPersonId, date, startTime, endTime, projectIdx);
+            if (!stillDup) return; // 유효 → 그대로 유지
+            // 중복이면 초기화 후 재선택 로직으로 진행
+            authorPersonId = null;
+        }
 
         const members = projectMembers.map(m => ({
             id: m.employeeIdx || m.id,
@@ -688,24 +705,15 @@ document.addEventListener('DOMContentLoaded', function() {
             positionCode: m.employeePositionCode || m.positionCode || ''
         }));
 
-        const date = document.getElementById('common_meeting_date')?.value;
-        const startTime = document.getElementById('common_start_time')?.value;
-        const endTime = document.getElementById('common_end_time')?.value;
-        const projectIdx = document.getElementById('selectedProjectIdx')?.value;
-        const startInput = document.getElementById('common_start_time');
-
         const { author, allBlocked } = await ReceiptCommon.pickDefaultAuthor({
             candidates: members,
             getPositionOrder: (m) => getPositionSortOrder(m.positionCode),
             loggedInUserIdx: window.CURRENT_USER?.idx,
-            duplicateProbe: async (cand) => {
-                if (!date || !startTime || !endTime || !projectIdx) return false;
-                return await checkAuthorDuplicate(cand.id, date, startTime, endTime, projectIdx);
-            },
+            duplicateProbe: async (cand) => await checkAuthorDuplicate(cand.id, date, startTime, endTime, projectIdx),
             rankStrategy: 'ascStep4'
         });
 
-        if (allBlocked && date && startTime && endTime && projectIdx) {
+        if (allBlocked) {
             await Swal.fire({
                 icon: 'warning',
                 title: '시간 중복',
@@ -2089,6 +2097,8 @@ document.addEventListener('DOMContentLoaded', function() {
                 updateMeetingFields();
                 // 출장 날짜 변경 시 참여기간 재검증 (출장 작성자/인원 + 회의별)
                 if (!isPopulatingForm) await revalidateRtmAgainstDates();
+                // meeting_date가 프로그램적으로 채워졌을 수 있으므로 작성자 재검증
+                if (!isPopulatingForm) await setDefaultAuthor();
             });
             commonDate.addEventListener('click', function() {
                 if (this.showPicker) { try { this.showPicker(); } catch(e) {} }
@@ -2104,6 +2114,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 await updateTripDateRange();
                 // 기간 변경 시 참여기간 재검증
                 if (!isPopulatingForm) await revalidateRtmAgainstDates();
+                if (!isPopulatingForm) await setDefaultAuthor();
             });
         }
 
