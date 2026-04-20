@@ -153,33 +153,38 @@ document.addEventListener('DOMContentLoaded', function() {
     }
 
     /**
-     * 문서 정렬 — 고정 우선순위
-     * 1) 정상 + 미승인 (신청일 오래된순 → 위)
-     * 2) 정상 + 승인완료 (신청일순)
-     * 3) 삭제된 건 (오래된 게 맨 아래)
+     * 문서 정렬 — 그룹 우선순위 유지 + 그룹 내부는 사용자 선택 컬럼/방향으로 정렬
+     * 그룹: 1) 정상 + 미승인, 2) 정상 + 승인완료, 3) 삭제된 건
      */
     function sortDocuments() {
-        filteredDocuments.sort((a, b) => {
-            const aDeleted = a.deletedAt != null;
-            const bDeleted = b.deletedAt != null;
-            const aApproved = !!a.isApproved;
-            const bApproved = !!b.isApproved;
+        const dateFields = new Set(['createdAt', 'startDate', 'endDate']);
+        const numberFields = new Set(['days']);
 
-            // 그룹 우선순위: 정상+미승인=0, 정상+승인=1, 삭제=2
-            const aGroup = aDeleted ? 2 : (aApproved ? 1 : 0);
-            const bGroup = bDeleted ? 2 : (bApproved ? 1 : 0);
+        const compareByField = (a, b) => {
+            const aVal = a[currentSortField];
+            const bVal = b[currentSortField];
+            const aNull = aVal == null;
+            const bNull = bVal == null;
+            if (aNull && bNull) return 0;
+            if (aNull) return 1;
+            if (bNull) return -1;
 
-            if (aGroup !== bGroup) return aGroup - bGroup;
-
-            const aDate = a.createdAt ? new Date(a.createdAt) : new Date(0);
-            const bDate = b.createdAt ? new Date(b.createdAt) : new Date(0);
-
-            if (aGroup === 2) {
-                // 삭제: 최신 삭제가 위, 오래된 삭제가 아래
-                return bDate - aDate;
+            let diff;
+            if (dateFields.has(currentSortField)) {
+                diff = new Date(aVal) - new Date(bVal);
+            } else if (numberFields.has(currentSortField)) {
+                diff = Number(aVal) - Number(bVal);
+            } else {
+                diff = String(aVal).localeCompare(String(bVal), 'ko');
             }
-            // 미승인/승인: 오래된 순 (과거 → 위)
-            return aDate - bDate;
+            return currentSortOrder === 'asc' ? diff : -diff;
+        };
+
+        filteredDocuments.sort((a, b) => {
+            const aGroup = a.deletedAt != null ? 2 : (a.isApproved ? 1 : 0);
+            const bGroup = b.deletedAt != null ? 2 : (b.isApproved ? 1 : 0);
+            if (aGroup !== bGroup) return aGroup - bGroup;
+            return compareByField(a, b);
         });
     }
 
