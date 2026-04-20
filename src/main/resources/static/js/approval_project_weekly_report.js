@@ -84,7 +84,6 @@ document.addEventListener('DOMContentLoaded', function() {
     }
 
     // 입력 필드
-    const weeklyTasks = document.getElementById('weeklyTasks');
     const achievements = document.getElementById('achievements');
     const issues = document.getElementById('issues');
     const nextWeekPlan = document.getElementById('nextWeekPlan');
@@ -977,13 +976,6 @@ document.addEventListener('DOMContentLoaded', function() {
     // ============================================
     // 업무 내용 입력 시 미리보기 자동 업데이트
     // ============================================
-    if (weeklyTasks) {
-        weeklyTasks.addEventListener('input', function() {
-            const autoTasks = document.querySelector('.auto-tasks');
-            if (autoTasks) autoTasks.textContent = this.value || '-';
-        });
-    }
-
     if (achievements) {
         achievements.addEventListener('input', function() {
             const autoAchievements = document.querySelector('.auto-achievements');
@@ -1155,10 +1147,7 @@ document.addEventListener('DOMContentLoaded', function() {
         }
 
         // 금주 주요 업무
-        const autoTasks = document.querySelector('.auto-tasks');
-        if (autoTasks && weeklyTasks) {
-            autoTasks.textContent = weeklyTasks.value || '-';
-        }
+        updateTaskPreview();
 
         // 주요 성과
         const autoAchievements = document.querySelector('.auto-achievements');
@@ -1370,6 +1359,97 @@ document.addEventListener('DOMContentLoaded', function() {
             this.classList.toggle('active');
         });
     }
+
+    // ============================================
+    // 금주 주요업무 다중 항목 관리
+    // ============================================
+    function addTaskItem(value = '') {
+        const list = document.getElementById('mainTasksList');
+        if (!list) return;
+
+        const item = document.createElement('div');
+        item.className = 'main-task-item';
+        item.innerHTML = `
+            <span class="task-number">1</span>
+            <textarea class="form-textarea main-task-input" rows="2" placeholder="업무 내용 입력"></textarea>
+            <button type="button" class="btn-remove-task" title="항목 삭제">
+                <i class="fas fa-minus"></i>
+            </button>
+        `;
+        item.querySelector('.main-task-input').value = value;
+        item.querySelector('.main-task-input').addEventListener('input', updateTaskPreview);
+        item.querySelector('.btn-remove-task').addEventListener('click', function() {
+            removeTaskItem(item);
+        });
+        list.appendChild(item);
+        updateTaskNumbers();
+        updateTaskPreview();
+    }
+
+    function removeTaskItem(item) {
+        const list = document.getElementById('mainTasksList');
+        if (!list || list.children.length <= 1) {
+            // 마지막 항목은 삭제 대신 초기화
+            const input = item.querySelector('.main-task-input');
+            if (input) { input.value = ''; updateTaskPreview(); }
+            return;
+        }
+        item.remove();
+        updateTaskNumbers();
+        updateTaskPreview();
+    }
+
+    function updateTaskNumbers() {
+        const items = document.querySelectorAll('.main-task-item');
+        items.forEach((item, i) => {
+            const num = item.querySelector('.task-number');
+            if (num) num.textContent = i + 1;
+        });
+    }
+
+    function getMainTasksArray() {
+        return Array.from(document.querySelectorAll('.main-task-input'))
+            .map(inp => inp.value.trim())
+            .filter(v => v !== '');
+    }
+
+    function getMainTasksValue() {
+        const arr = getMainTasksArray();
+        if (arr.length === 0) return '';
+        return arr.length === 1 ? arr[0] : JSON.stringify(arr);
+    }
+
+    function setMainTasksFromValue(value) {
+        const list = document.getElementById('mainTasksList');
+        if (!list) return;
+        list.innerHTML = '';
+        if (!value) { addTaskItem(''); return; }
+        try {
+            const arr = JSON.parse(value);
+            if (Array.isArray(arr) && arr.length > 0) {
+                arr.forEach(v => addTaskItem(v));
+                return;
+            }
+        } catch (e) {}
+        addTaskItem(value);
+    }
+
+    function updateTaskPreview() {
+        const arr = getMainTasksArray();
+        const autoTasks = document.querySelector('.auto-tasks');
+        if (!autoTasks) return;
+        if (arr.length === 0) { autoTasks.textContent = '-'; return; }
+        autoTasks.textContent = arr.length === 1 ? arr[0] : arr.map((t, i) => `${i + 1}. ${t}`).join('\n');
+    }
+
+    // 항목 추가 버튼
+    const addTaskBtn = document.getElementById('addTaskBtn');
+    if (addTaskBtn) {
+        addTaskBtn.addEventListener('click', () => addTaskItem(''));
+    }
+
+    // 초기 항목 1개 생성
+    addTaskItem('');
 
     // ============================================
     // 파일 업로드
@@ -1687,7 +1767,7 @@ document.addEventListener('DOMContentLoaded', function() {
             }
 
             // 입력 필드 채우기
-            if (weeklyTasks) weeklyTasks.value = data.mainTasks || '';
+            setMainTasksFromValue(data.mainTasks || '');
             if (achievements) achievements.value = data.achievements || '';
             if (issues) issues.value = data.issues || '';
             if (nextWeekPlan) nextWeekPlan.value = data.nextWeekPlan || '';
@@ -1733,7 +1813,7 @@ document.addEventListener('DOMContentLoaded', function() {
     if (submitBtn) {
         submitBtn.addEventListener('click', async function() {
             const reportPeriod = reportPeriodDisplay?.textContent || '';
-            const mainTasks = weeklyTasks?.value || '';
+            const mainTasks = getMainTasksValue();
             const achievementsVal = achievements?.value || '';
             const issuesVal = issues?.value || '';
             const nextWeekPlanVal = nextWeekPlan?.value || '';
@@ -1759,13 +1839,12 @@ document.addEventListener('DOMContentLoaded', function() {
 
             if (!mainTasks.trim()) {
                 showError('필수 입력 항목\n\n금주 주요 업무를 입력해주세요.');
-                // 포커스 이동
-                weeklyTasks.focus();
-                // 필드 강조
-                weeklyTasks.style.border = '2px solid #ef5350';
-                setTimeout(() => {
-                    weeklyTasks.style.border = '';
-                }, 2000);
+                const firstInput = document.querySelector('.main-task-input');
+                if (firstInput) {
+                    firstInput.focus();
+                    firstInput.style.border = '2px solid #ef5350';
+                    setTimeout(() => { firstInput.style.border = ''; }, 2000);
+                }
                 return;
             }
 
@@ -2022,17 +2101,16 @@ document.addEventListener('DOMContentLoaded', function() {
         if (!prevWeekPlanData || !prevWeekPlanData.nextWeekPlan) return;
 
         const plan = prevWeekPlanData.nextWeekPlan.trim();
-        const current = weeklyTasks ? weeklyTasks.value.trim() : '';
-
-        if (weeklyTasks) {
-            weeklyTasks.value = current === '' ? plan : current + '\n\n' + plan;
+        // 마지막 항목이 비어있으면 채우고, 아니면 새 항목 추가
+        const inputs = document.querySelectorAll('.main-task-input');
+        const last = inputs[inputs.length - 1];
+        if (last && last.value.trim() === '') {
+            last.value = plan;
+            updateTaskPreview();
+        } else {
+            addTaskItem(plan);
         }
 
-        // 미리보기 업데이트
-        const autoTasks = document.querySelector('.auto-tasks');
-        if (autoTasks && weeklyTasks) autoTasks.textContent = weeklyTasks.value || '-';
-
-        // 배너 숨김 (한번 적용 후)
         const banner = document.getElementById('prevWeekPlanBanner');
         if (banner) banner.style.display = 'none';
     };
