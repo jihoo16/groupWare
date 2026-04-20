@@ -417,17 +417,18 @@
                                         <th class="approval-header">대 표</th>
                                     </tr>
                                     <tr>
-                                        <td class="approval-sign-cell" data-role="담당" data-approver-id="">
+                                        <td class="approval-sign-cell" data-role="담당" data-approver-id="" data-slot="C1602">
                                             <div class="sign-area">
                                                 <span class="sign-placeholder"></span>
                                             </div>
                                         </td>
-                                        <td class="approval-sign-cell" data-role="부서장" data-approver-id="">
+                                        <td class="approval-sign-cell" data-role="부서장" data-approver-id="" data-slot="C1604">
                                             <div class="sign-area">
                                                 <span class="sign-placeholder"></span>
                                             </div>
                                         </td>
-                                        <td class="approval-sign-cell" data-role="대표이사" data-approver-id="">
+                                        <!-- 대표이사는 오프라인 수기 서명만 (전자서명 대상 아님) -->
+                                        <td class="approval-sign-cell signature-offline" data-role="대표이사" data-approver-id="">
                                             <div class="sign-area">
                                                 <span class="sign-placeholder"></span>
                                             </div>
@@ -518,7 +519,7 @@
                                     <span id="apply_date_text"></span>
                                     <input type="date" id="apply_date" style="display: none;">
                                 </div>
-                                <div class="footer-signature">
+                                <div class="footer-signature" data-slot="C1602">
                                     <span class="signature-label">신청인</span>
                                     <span class="signature-name" id="applicant_name_footer">홍 길 동</span>
                                     <span class="signature-seal">(서명 또는 인)</span>
@@ -556,6 +557,9 @@
         </div>
     </div>
 </div>
+
+<!-- 전자서명 QR 모달 프래그먼트 -->
+<div th:replace="~{fragments/signature-modal :: signature-modal}"></div>
 
 <script th:src="@{/js/approval_vacation.js}"></script>
 </body>

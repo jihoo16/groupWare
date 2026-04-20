@@ -1,0 +1,120 @@
+<!DOCTYPE html>
+<html lang="ko" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="format-detection" content="telephone=no">
+    <title>파인씨앤아이 전자서명</title>
+    <link rel="icon" type="image/svg+xml" th:href="@{/favicon.svg}">
+    <link rel="stylesheet" th:href="@{/css/signature.css}">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/sweetalert2@11/dist/sweetalert2.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    <!-- Signature Pad -->
+    <script src="https://cdn.jsdelivr.net/npm/signature_pad@4.2.0/dist/signature_pad.umd.min.js"></script>
+</head>
+<body>
+    <!-- 세션 토큰 주입 -->
+    <script th:inline="javascript">
+        window.SESSION_TOKEN = /*[[${sessionToken}]]*/ '';
+    </script>
+
+    <div class="sig-app">
+        <header class="sig-header">
+            <h1>파인씨앤아이 전자서명</h1>
+        </header>
+
+        <!-- 로딩 상태 -->
+        <div id="sig-loading" class="sig-state">
+            <i class="fas fa-spinner fa-spin"></i>
+            <p>세션 정보를 불러오는 중…</p>
+        </div>
+
+        <!-- 에러 상태 -->
+        <div id="sig-error" class="sig-state" style="display:none;">
+            <i class="fas fa-exclamation-circle error-icon"></i>
+            <h2 id="sig-error-title">오류가 발생했습니다</h2>
+            <p id="sig-error-message"></p>
+        </div>
+
+        <!-- 문서 정보 (모든 단계 공통) -->
+        <section class="sig-doc-info" id="sig-doc-info" style="display:none;">
+            <div class="doc-row">
+                <span class="doc-label">문서번호</span>
+                <span class="doc-value" id="doc-no">-</span>
+            </div>
+            <div class="doc-row">
+                <span class="doc-label">문서제목</span>
+                <span class="doc-value" id="doc-title">-</span>
+            </div>
+            <div class="doc-row">
+                <span class="doc-label">서명위치</span>
+                <span class="doc-value" id="slot-label">-</span>
+            </div>
+            <div class="doc-row">
+                <span class="doc-label">서명자</span>
+                <span class="doc-value" id="signer-name">-</span>
+                <span class="verified-badge" id="verified-badge" style="display:none;">
+                    <i class="fas fa-check-circle"></i> 본인 확인 완료
+                </span>
+            </div>
+            <div class="countdown-box">
+                <i class="fas fa-clock"></i>
+                남은 시간: <span id="countdown-timer">--:--</span>
+            </div>
+        </section>
+
+        <!-- STEP 1: 사번 인증 -->
+        <section class="sig-step" id="step-verify" style="display:none;">
+            <div class="step-body">
+                <p class="step-desc">본인 확인을 위해 사번을 입력해주세요.</p>
+                <input type="text"
+                       id="emp-id-input"
+                       class="emp-id-field"
+                       placeholder="사번 입력"
+                       autocomplete="off"
+                       inputmode="text"
+                       autocapitalize="none"
+                       spellcheck="false">
+                <button class="primary-btn" id="verify-btn">
+                    <i class="fas fa-check"></i> 확인
+                </button>
+                <p class="fail-notice" id="verify-fail-notice" style="display:none;"></p>
+                <p class="hint">※ 5회 실패 시 서명 세션이 만료됩니다.</p>
+            </div>
+        </section>
+
+        <!-- STEP 2: 손서명 -->
+        <section class="sig-step" id="step-sign" style="display:none;">
+            <div class="step-body">
+                <div class="canvas-wrapper">
+                    <canvas id="signature-canvas"></canvas>
+                    <div class="canvas-placeholder" id="canvas-placeholder">
+                        터치로 서명해주세요
+                    </div>
+                </div>
+                <div class="sign-actions">
+                    <button class="secondary-btn" id="clear-btn">
+                        <i class="fas fa-eraser"></i> 다시 쓰기
+                    </button>
+                    <button class="primary-btn" id="submit-btn">
+                        <i class="fas fa-paper-plane"></i> 제출
+                    </button>
+                </div>
+                <p class="hint">※ 가로 모드로 전환하면 더 편리합니다.</p>
+            </div>
+        </section>
+
+        <!-- STEP 3: 완료 -->
+        <section class="sig-step" id="step-complete" style="display:none;">
+            <div class="complete-body">
+                <i class="fas fa-check-circle success-icon"></i>
+                <h2>서명이 완료되었습니다</h2>
+                <p>이 창을 닫고 PC로 돌아가셔도 됩니다.</p>
+            </div>
+        </section>
+    </div>
+
+    <script th:src="@{/js/signature.js}"></script>
+</body>
+</html>

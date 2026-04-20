@@ -38,7 +38,15 @@ public class WebMvcConfig implements WebMvcConfigurer {
                         "/images/**",       // 이미지 정적 리소스
                         "/favicon.ico",     // 파비콘
                         "/favicon.svg",     // 파비콘 SVG
-                        "/error"            // 에러 페이지
+                        "/error",           // 에러 페이지
+                        // ===== 전자서명 모바일 페이지 (QR 스캔 후 토큰 기반 접근) =====
+                        "/sign/**",                                  // 모바일 서명 페이지
+                        "/api/signature/session/*/scan",             // QR 스캔 확인
+                        "/api/signature/session/*/verify",           // 사번 2차 인증
+                        "/api/signature/session/*/submit",           // 서명 제출
+                        "/api/signature/session/*/status",           // 세션 상태 폴링 (fallback)
+                        "/api/signature/session/by-token/**",        // 토큰 기반 세션 정보 조회
+                        "/ws/signature/**"                           // WebSocket 엔드포인트
                 )
                 .order(1);
 
@@ -56,7 +64,15 @@ public class WebMvcConfig implements WebMvcConfigurer {
                         "/fonts/**",        // 폰트 정적 리소스
                         "/favicon.ico",     // 파비콘
                         "/favicon.svg",     // 파비콘 SVG
-                        "/error"            // 에러 페이지
+                        "/error",           // 에러 페이지
+                        // ===== 전자서명 모바일 페이지 =====
+                        "/sign/**",
+                        "/api/signature/session/*/scan",
+                        "/api/signature/session/*/verify",
+                        "/api/signature/session/*/submit",
+                        "/api/signature/session/*/status",
+                        "/api/signature/session/by-token/**",
+                        "/ws/signature/**"
                 )
                 .order(2);
 

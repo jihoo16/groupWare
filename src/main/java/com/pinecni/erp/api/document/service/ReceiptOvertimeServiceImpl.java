@@ -13,6 +13,7 @@ import com.pinecni.erp.api.document.repository.ReceiptOvertimeRepository;
 import com.pinecni.erp.api.project.repository.ProjectCardRepository;
 import com.pinecni.erp.api.project.repository.ProjectRepository;
 import com.pinecni.erp.api.project.service.ProjectMemberValidationService;
+import com.pinecni.erp.api.signature.service.SignatureService;
 import com.pinecni.erp.api.user.repository.UserRepository;
 import com.pinecni.erp.constant.CodeConstants;
 import com.pinecni.erp.entity.*;
@@ -39,6 +40,7 @@ import java.util.Comparator;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.UUID;
 import java.util.stream.Collectors;
 
@@ -60,6 +62,7 @@ public class ReceiptOvertimeServiceImpl implements ReceiptOvertimeService {
     private final ProjectCardRepository projectCardRepository;
     private final UserRepository userRepository;
     private final ProjectMemberValidationService projectMemberValidationService;
+    private final SignatureService signatureService;
 
     private static final CodeConstants.DocumentType DOC_TYPE = CodeConstants.DocumentType.RECEIPT_OVERTIME;
 
@@ -220,6 +223,7 @@ public class ReceiptOvertimeServiceImpl implements ReceiptOvertimeService {
                     .isProject(true)
                     .drafterUserIdx(createDTO.getAuthorIdx())
                     .content(createDTO.getDocumentContent())
+                    .status(CodeConstants.DocumentStatus.DRAFTED.getCode())
                     .createdUserIdx(currentUserIdx)
                     .updatedUserIdx(currentUserIdx)
                     .build();
@@ -278,6 +282,25 @@ public class ReceiptOvertimeServiceImpl implements ReceiptOvertimeService {
             List<ReceiptAttendee> savedAttendees = attendeeRepository.findByReceiptOvertimeIdx(entity.getIdx());
 
             log.info("야근식대 생성 완료 - idx: {}", entity.getIdx());
+
+            // 전자서명 요청 자동 생성
+            try {
+                // 참석자 userIdx 수집 (야근식대는 전원 내부인)
+                List<Long> attendeeUserIdxList = null;
+                if (createDTO.getAttendees() != null && !createDTO.getAttendees().isEmpty()) {
+                    attendeeUserIdxList = createDTO.getAttendees().stream()
+                            .map(ReceiptOvertimeAttendeeDTO::getUserIdx)
+                            .filter(Objects::nonNull)
+                            .collect(Collectors.toList());
+                }
+                signatureService.requestSignaturesForDocument(savedDocument.getIdx(), currentUserIdx,
+                        createDTO.getProjectIdx(), attendeeUserIdxList);
+                savedDocument.setStatus(CodeConstants.DocumentStatus.SIGN_PENDING.getCode());
+                approvalDocumentRepository.save(savedDocument);
+            } catch (Exception e) {
+                log.error("[서명 요청 생성 실패] documentIdx: {}, error: {}", savedDocument.getIdx(), e.getMessage());
+            }
+
             return mapper.toDTOWithDetails(entity, convertAttendeesToDTO(savedAttendees), Collections.emptyList());
 
         } catch (Exception e) {
@@ -339,6 +362,8 @@ public class ReceiptOvertimeServiceImpl implements ReceiptOvertimeService {
             // 1. 기존 야근식대 조회
             ReceiptOvertime entity = receiptOvertimeRepository.findById(idx)
                     .orElseThrow(() -> new IllegalArgumentException("야근식대를 찾을 수 없습니다. idx: " + idx));
+
+            // 연구비증빙은 수정요청 대응을 위해 서명 후에도 수정 가능 (서명은 유지)
 
             // 2. 프로젝트 변경 시 프로젝트 조회
             if (updateDTO.getProjectIdx() != null && !updateDTO.getProjectIdx().equals(entity.getProjectIdx())) {
@@ -446,6 +471,12 @@ public class ReceiptOvertimeServiceImpl implements ReceiptOvertimeService {
 
         ReceiptOvertime entity = receiptOvertimeRepository.findById(idx)
                 .orElseThrow(() -> new IllegalArgumentException("야근식대를 찾을 수 없습니다. idx: " + idx));
+
+        // 전자서명 게이트
+        if (entity.getDocumentIdx() != null
+                && signatureService.hasAnySignatureCaptured(entity.getDocumentIdx())) {
+            throw new IllegalStateException("전자서명이 진행된 문서는 삭제할 수 없습니다.");
+        }
 
         LocalDateTime now = LocalDateTime.now(ZoneId.of("Asia/Seoul"));
         Long deletedBy = currentUserIdx != null ? currentUserIdx : entity.getAuthorIdx();

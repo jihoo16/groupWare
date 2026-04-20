@@ -538,6 +538,15 @@ div[title]:hover::after {
 .settlement-rejected     { background: #fef2f2; color: #dc2626; }
 .settlement-settled      { background: #f5f3ff; color: #7c3aed; }
 
+/* 문서상태 뱃지 (C05 코드) */
+.doc-status-drafted       { background: #f1f5f9; color: #64748b; }
+.doc-status-pending       { background: #fff7ed; color: #ea580c; }
+.doc-status-approved      { background: #ecfdf5; color: #059669; }
+.doc-status-rejected      { background: #fef2f2; color: #dc2626; }
+.doc-status-sign-pending  { background: #fff7ed; color: #ea580c; }
+.doc-status-sign-progress { background: #eff6ff; color: #2563eb; }
+.doc-status-sign-complete { background: #f5f3ff; color: #7c3aed; }
+
 /* 상태 뱃지 */
 .status-badge {
     padding: 6px 12px;

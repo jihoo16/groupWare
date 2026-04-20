@@ -322,9 +322,9 @@
                                                 <td class="doc-approval-head">대표이사</td>
                                             </tr>
                                             <tr>
-                                                <td class="doc-approval-sign pu-signature-applicant"></td>
-                                                <td class="doc-approval-sign pu-signature-manager"></td>
-                                                <td class="doc-approval-sign pu-signature-ceo"></td>
+                                                <td class="doc-approval-sign pu-signature-applicant" data-slot="C1602"><div class="sign-area"><span class="sign-placeholder"></span></div></td>
+                                                <td class="doc-approval-sign pu-signature-manager" data-slot="C1603"><div class="sign-area"><span class="sign-placeholder"></span></div></td>
+                                                <td class="doc-approval-sign pu-signature-ceo signature-offline"><div class="sign-area"><span class="sign-placeholder"></span></div></td>
                                             </tr>
                                         </table>
                                     </div>
@@ -459,6 +459,9 @@
         </div>
     </div>
 </div>
+
+<!-- 전자서명 QR 모달 프래그먼트 -->
+<div th:replace="~{fragments/signature-modal :: signature-modal}"></div>
 
 <script th:src="@{/js/search-utils.js}"></script>
 <script th:src="@{/js/approval_receipt_purchase.js}"></script>

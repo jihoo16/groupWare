@@ -139,18 +139,26 @@ document.addEventListener('DOMContentLoaded', function() {
                 const result = await response.json();
                 console.log('회의록 저장 성공:', result);
 
-                // 3초 후 자동으로 목록으로 이동
-                await Swal.fire({
-                    icon: 'success',
-                    title: '저장 완료',
-                    text: '회의록이 저장되었습니다.',
-                    timer: 3000,
-                    timerProgressBar: true,
-                    showConfirmButton: false,
-                    allowOutsideClick: false
-                });
+                if (window.SignatureRender) {
+                    SignatureRender.afterSave({
+                        documentIdx: result.documentIdx,
+                        redirectUrl: '/approval',
+                        successMessage: '회의록이 저장되었습니다.'
+                    });
+                } else {
+                    // 3초 후 자동으로 목록으로 이동
+                    await Swal.fire({
+                        icon: 'success',
+                        title: '저장 완료',
+                        text: '회의록이 저장되었습니다.',
+                        timer: 3000,
+                        timerProgressBar: true,
+                        showConfirmButton: false,
+                        allowOutsideClick: false
+                    });
 
-                window.location.href = '/approval';
+                    window.location.href = '/approval';
+                }
             } else {
                 const errorText = await response.text();
                 console.error('회의록 저장 실패:', errorText);

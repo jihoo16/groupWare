@@ -465,4 +465,7 @@ public interface ReceiptAttendeeRepository extends JpaRepository<ReceiptAttendee
             @Param("projectIdx") Long projectIdx,
             @Param("employeeIdx") Long employeeIdx
     );
+
+    List<ReceiptAttendee> findByReceiptIdxAndDocumentTypePrefixAndIsExternalFalse(
+            Long receiptIdx, String documentTypePrefix);
 }

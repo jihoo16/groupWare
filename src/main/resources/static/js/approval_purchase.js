@@ -1153,9 +1153,18 @@ document.addEventListener('DOMContentLoaded', function() {
         }
 
         if (await showConfirm('결재를 요청하시겠습니까?')) {
-            await showSuccess('결재 요청이 완료되었습니다.');
-            // 실제로는 API 호출 후 목록으로 이동
-            window.location.href = '/approval';
+            // TODO: 실제 API 호출 후 result에서 documentIdx 사용
+            const result = {}; // API 응답으로 대체 예정
+            if (window.SignatureRender) {
+                SignatureRender.afterSave({
+                    documentIdx: result.documentIdx || result.idx,
+                    redirectUrl: '/approval',
+                    successMessage: '결재 요청이 완료되었습니다.'
+                });
+            } else {
+                await showSuccess('결재 요청이 완료되었습니다.');
+                window.location.href = '/approval';
+            }
         }
     });
 

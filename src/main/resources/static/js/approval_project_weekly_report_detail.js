@@ -48,6 +48,9 @@ async function loadReportData(documentIdx) {
         // 데이터 화면에 표시
         displayReportData(data, documentIdx);
 
+        // 전자서명 현황 로드
+        if (window.SignatureRender) SignatureRender.load(documentIdx);
+
         // 로딩 오버레이 숨김
         window.hidePageLoadingOverlay();
     } catch (error) {

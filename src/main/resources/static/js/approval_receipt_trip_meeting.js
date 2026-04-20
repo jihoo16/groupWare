@@ -1246,11 +1246,12 @@ document.addEventListener('DOMContentLoaded', function() {
                 sigBody.innerHTML = sortedAll.map(attendee => {
                     const type = attendee.isExternal ? '외부' : '내부';
                     const dept = attendee.isExternal ? (attendee.dept || '') : '파인씨앤아이';
+                    const sigAttr = !attendee.isExternal && attendee.idx ? ` data-slot="C1601" data-signer-idx="${attendee.idx}"` : '';
                     return `<tr style="height: 50px;">
                         <td style="text-align: center;">${type}</td>
                         <td style="text-align: center;">${dept}</td>
                         <td style="text-align: center;">${attendee.name}</td>
-                        <td></td>
+                        <td${sigAttr}></td>
                     </tr>`;
                 }).join('');
                 adjustAttendeeLayout(sortedAll.length);
@@ -3568,16 +3569,25 @@ document.addEventListener('DOMContentLoaded', function() {
                     const err = await response.json().catch(() => ({}));
                     throw new Error(err.error || '저장에 실패했습니다.');
                 }
-                await Swal.fire({
-                    icon: 'success',
-                    title: '저장 완료',
-                    text: '저장이 완료되었습니다.',
-                    timer: 1500,
-                    timerProgressBar: true,
-                    showConfirmButton: true,
-                    confirmButtonText: '확인'
-                });
-                popupAwareRedirect('/project/documents');
+                const result = await response.json();
+                if (window.SignatureRender) {
+                    SignatureRender.afterSave({
+                        documentIdx: result.documentIdx,
+                        redirectUrl: '/project/documents',
+                        successMessage: '저장이 완료되었습니다.'
+                    });
+                } else {
+                    await Swal.fire({
+                        icon: 'success',
+                        title: '저장 완료',
+                        text: '저장이 완료되었습니다.',
+                        timer: 1500,
+                        timerProgressBar: true,
+                        showConfirmButton: true,
+                        confirmButtonText: '확인'
+                    });
+                    popupAwareRedirect('/project/documents');
+                }
             } catch (e) {
                 showWarning('저장 중 오류가 발생했습니다.\n' + e.message);
             }
@@ -5650,6 +5660,12 @@ document.addEventListener('DOMContentLoaded', function() {
             const deleteBtnEl = document.getElementById('deleteBtn');
             if (deleteBtnEl) deleteBtnEl.style.display = 'inline-flex';
             window.hidePageLoadingOverlay();
+
+            // 전자서명 현황 로드
+            const sigDocIdx = getUrlParameter('documentIdx') || getUrlParameter('id');
+            if (window.SignatureRender && sigDocIdx) {
+                SignatureRender.load(sigDocIdx);
+            }
         } catch (error) {
             console.error('데이터 로드 오류:', error);
             showError('데이터를 불러오는데 실패했습니다.');

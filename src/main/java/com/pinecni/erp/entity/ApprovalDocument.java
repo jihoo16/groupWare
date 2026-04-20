@@ -78,6 +78,13 @@ public class ApprovalDocument extends BaseEntity {
     private String content;
 
     /**
+     * 문서 처리 상태 (C05 코드)
+     * C0501=작성완료, C0506=서명대기, C0507=서명진행중, C0508=서명완료, C0504=승인, C0505=반려
+     */
+    @Column(name = "status", length = 10)
+    private String status;
+
+    /**
      * 삭제일시 (Soft Delete)
      */
     @Column(name = "deleted_at")

@@ -16,6 +16,10 @@
     <th:block th:if="${additionalCss != null}">
         <link rel="stylesheet" th:href="@{${additionalCss}}">
     </th:block>
+
+    <!-- 전자서명 디버그 시각화 (개발 환경 전용, signature.debug.enabled=true일 때만) -->
+    <link th:if="${@environment.getProperty('signature.debug.enabled') == 'true'}"
+          rel="stylesheet" th:href="@{/css/signature-debug.css}">
     <!-- jQuery -->
     <script src="https://code.jquery.com/jquery-3.7.1.min.js" defer></script>
 

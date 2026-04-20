@@ -21,6 +21,7 @@ import com.pinecni.erp.entity.ReceiptAttendee;
 import com.pinecni.erp.entity.ApprovalDocument;
 import com.pinecni.erp.entity.Project;
 import com.pinecni.erp.entity.ProjectCard;
+import com.pinecni.erp.api.signature.service.SignatureService;
 import com.pinecni.erp.service.PdfGenerationService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -59,6 +60,7 @@ public class ReceiptMeetingServiceImpl implements ReceiptMeetingService {
     private final ProjectRepository projectRepository;
     private final ProjectCardRepository projectCardRepository;
     private final ProjectMemberValidationService projectMemberValidationService;
+    private final SignatureService signatureService;
 
     @Value("${file.base.dir}")
     private String baseDir;
@@ -195,6 +197,7 @@ public class ReceiptMeetingServiceImpl implements ReceiptMeetingService {
                     .isProject(true)  // 프로젝트 문서로 표시
                     .drafterUserIdx(createDTO.getAuthorIdx())
                     .content(createDTO.getContent())
+                    .status(CodeConstants.DocumentStatus.DRAFTED.getCode())
                     .createdUserIdx(currentUserIdx)
                     .updatedUserIdx(currentUserIdx)
                     .build();
@@ -226,6 +229,26 @@ public class ReceiptMeetingServiceImpl implements ReceiptMeetingService {
             loadAttendees(savedEntity); // 통합 테이블에서 참석자 로드
 
             log.info("회의록 생성 완료 - idx: {}, documentNo: {}", savedEntity.getIdx(), documentNo);
+
+            // 전자서명 요청 자동 생성
+            try {
+                // 내부 참석자 userIdx 수집 (외부인 제외)
+                List<Long> attendeeUserIdxList = null;
+                if (createDTO.getAttendees() != null && !createDTO.getAttendees().isEmpty()) {
+                    attendeeUserIdxList = createDTO.getAttendees().stream()
+                            .filter(a -> !Boolean.TRUE.equals(a.getIsExternal()))
+                            .map(ReceiptMeetingAttendeeDTO::getUserIdx)
+                            .filter(Objects::nonNull)
+                            .collect(Collectors.toList());
+                }
+                signatureService.requestSignaturesForDocument(savedDocument.getIdx(), currentUserIdx,
+                        createDTO.getProjectIdx(), attendeeUserIdxList);
+                savedDocument.setStatus(CodeConstants.DocumentStatus.SIGN_PENDING.getCode());
+                approvalDocumentRepository.save(savedDocument);
+            } catch (Exception e) {
+                log.error("[서명 요청 생성 실패] documentIdx: {}, error: {}", savedDocument.getIdx(), e.getMessage());
+            }
+
             return mapper.toDTO(savedEntity);
 
         } catch (Exception e) {
@@ -243,6 +266,8 @@ public class ReceiptMeetingServiceImpl implements ReceiptMeetingService {
         // 1. 기존 회의록 조회
         ReceiptMeeting entity = receiptMeetingRepository.findById(idx)
                 .orElseThrow(() -> new IllegalArgumentException("회의록을 찾을 수 없습니다. idx: " + idx));
+
+        // 연구비증빙은 수정요청 대응을 위해 서명 후에도 수정 가능 (서명은 유지)
 
         // 2. 참여기간 검증 — 작성자 + 내부 참석자가 회의 날짜에 활성 참여 중이어야 함
         projectMemberValidationService.validateActiveOn(
@@ -361,6 +386,12 @@ public class ReceiptMeetingServiceImpl implements ReceiptMeetingService {
 
         ReceiptMeeting entity = receiptMeetingRepository.findById(idx)
                 .orElseThrow(() -> new IllegalArgumentException("회의록을 찾을 수 없습니다. idx: " + idx));
+
+        // 전자서명 게이트
+        if (entity.getDocumentIdx() != null
+                && signatureService.hasAnySignatureCaptured(entity.getDocumentIdx())) {
+            throw new IllegalStateException("전자서명이 진행된 문서는 삭제할 수 없습니다.");
+        }
 
         LocalDateTime now = LocalDateTime.now();
 

@@ -639,6 +639,11 @@ document.addEventListener('DOMContentLoaded', async function() {
             // 로딩 오버레이 숨김
             window.hidePageLoadingOverlay();
 
+            // 전자서명 현황 로드
+            if (window.SignatureRender && documentIdx) {
+                SignatureRender.load(documentIdx);
+            }
+
         } catch (error) {
             console.error('기존 데이터 로드 실패:', error);
             showError('야근식대 데이터를 불러오는데 실패했습니다.');
@@ -1974,12 +1979,13 @@ document.addEventListener('DOMContentLoaded', async function() {
             for (let i = 0; i < rowCount; i++) {
                 const person = i < overtimePersons.length ? overtimePersons[i] : null;
                 const personTask = person ? ((person.task !== null && person.task !== undefined && person.task !== '') ? person.task : globalTask) : '';
+                const sigAttr = person && person.idx ? ` data-slot="C1601" data-signer-idx="${person.idx}"` : '';
                 html += `<tr class="ot-person-row">
                     <td style="text-align: center;">${i + 1}</td>
                     <td style="text-align: center;">${person ? (person.name || '') : '&nbsp;'}</td>
                     <td style="text-align: center;">${person ? timeRange : '&nbsp;'}</td>
                     <td style="text-align: center;">${person ? personTask : '&nbsp;'}</td>
-                    <td style="text-align: center;">&nbsp;</td>
+                    <td style="text-align: center;"${sigAttr}>&nbsp;</td>
                     <td style="text-align: center;">&nbsp;</td>
                 </tr>`;
             }
@@ -2775,10 +2781,18 @@ document.addEventListener('DOMContentLoaded', async function() {
                     const successMessage = isEditMode
                         ? '야근식대가 수정되었습니다.'
                         : '야근식대가 저장되었습니다.';
-                    showSuccess(successMessage);
-                    setTimeout(() => {
-                        popupAwareRedirect('/project/documents');
-                    }, 2000);
+                    if (window.SignatureRender && !isEditMode) {
+                        SignatureRender.afterSave({
+                            documentIdx: result.documentIdx,
+                            redirectUrl: '/project/documents',
+                            successMessage: '야근식대가 저장되었습니다.'
+                        });
+                    } else {
+                        showSuccess(successMessage);
+                        setTimeout(() => {
+                            popupAwareRedirect('/project/documents');
+                        }, 2000);
+                    }
                 } else {
                     const error = await response.json();
                     showError(error.error || '저장 중 오류가 발생했습니다.');

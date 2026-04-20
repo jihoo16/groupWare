@@ -17,7 +17,6 @@ import com.pinecni.erp.api.vacation.repository.VacationRequestRepository;
 import com.pinecni.erp.api.vacation.repository.VacationOfficialPdfRepository;
 import com.pinecni.erp.constant.CodeConstants;
 import com.pinecni.erp.entity.*;
-import com.pinecni.erp.service.PdfGenerationService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -51,8 +50,8 @@ public class VacationServiceImpl implements VacationService {
     private final CalendarEventRepository calendarEventRepository;
     private final CalendarParticipantRepository calendarParticipantRepository;
     private final com.pinecni.erp.api.calendar.service.HolidayService holidayService;
-    private final PdfGenerationService pdfGenerationService;
     private final com.pinecni.erp.api.user.service.UserService userService;
+    private final com.pinecni.erp.api.signature.service.SignatureService signatureService;
 
     /**
      * self-proxy: 배치 메서드에서 각 사용자를 독립 트랜잭션으로 실행하기 위해 사용.
@@ -1206,6 +1205,7 @@ public class VacationServiceImpl implements VacationService {
                 .documentNo(documentNo)
                 .title(title)
                 .documentType(CodeConstants.DocumentType.VACATION.getCode())
+                .status(CodeConstants.DocumentStatus.DRAFTED.getCode())
                 .drafterUserIdx(userIdx)
                 .isProject(false)
                 .content(saveDTO.getReason())
@@ -1263,75 +1263,9 @@ public class VacationServiceImpl implements VacationService {
             // balance 갱신 실패는 연차 신청 롤백 없음 (스케줄러 00:10에 자동 보정)
         }
 
-        // 12. PDF 파일 생성 및 저장
-        try {
-            log.info("[PDF 생성 시작] documentIdx: {}", savedDocument.getIdx());
-
-            // 프론트엔드에서 렌더링된 HTML/CSS로 PDF 생성
-            String renderedHtml = saveDTO.getRenderedHtml();
-            String renderedCss = saveDTO.getRenderedCss();
-
-            if (renderedHtml == null || renderedHtml.isEmpty()) {
-                log.warn("[PDF 생성 스킵] 렌더링된 HTML이 없습니다. documentIdx: {}", savedDocument.getIdx());
-                throw new IllegalArgumentException("렌더링된 HTML이 없습니다.");
-            }
-
-            // HTML 전체 문서 구성
-            String fullHtml = "<!DOCTYPE html>\n" +
-                    "<html>\n" +
-                    "<head>\n" +
-                    "    <meta charset=\"UTF-8\">\n" +
-                    "    <style>\n" +
-                    "        * { box-sizing: border-box; margin: 0; padding: 0; }\n" +
-                    "        body { font-family: 'Malgun Gothic', '맑은 고딕', sans-serif; margin: 1.5cm; background: white; }\n" +
-                    (renderedCss != null ? renderedCss : "") +
-                    "\n" +
-                    "        /* PDF 전용 글자 크기 조정 */\n" +
-                    "        .document-form * { font-size: 10px !important; }\n" +
-                    "        .document-form th, .document-form td { font-size: 10px !important; padding: 8px 12px !important; }\n" +
-                    "        .doc-title { font-size: 22px !important; }\n" +
-                    "        .approval-header { font-size: 9px !important; width: 80px !important; padding: 5px 10px !important; }\n" +
-                    "        .approval-sign-cell { width: 80px !important; height: 80px !important; padding: 3px !important; }\n" +
-                    "        .approval-name-cell { font-size: 9px !important; padding: 6px 5px !important; }\n" +
-                    "    </style>\n" +
-                    "</head>\n" +
-                    "<body>\n" +
-                    renderedHtml +
-                    "</body>\n" +
-                    "</html>";
-
-            // PDF 생성: Playwright로 HTML을 PDF로 변환
-            byte[] pdfBytes = pdfGenerationService.generatePdfFromRenderedHtml(fullHtml);
-
-            // 파일명 생성: {yyyymmdd}_vacation.pdf (중복 시 saveVacationPdf 내부에서 _1, _2 연번 처리)
-            String firstStartDate = saveDTO.getPeriods().get(0).getStartDate().toString().replace("-", "");
-            String year = saveDTO.getPeriods().get(0).getStartDate().toString().substring(0, 4);
-            String userIdentifier = user.getEmpId() != null && !user.getEmpId().isEmpty() ? user.getEmpId() : String.valueOf(userIdx);
-            String baseFileName = String.format("%s_vacation.pdf", firstStartDate);
-
-            // PDF 서버에 저장 (중복 시 내부에서 연번 부여)
-            String savePath = pdfGenerationService.saveVacationPdf(pdfBytes, baseFileName, year, userIdentifier);
-            log.info("[PDF 저장 완료] path: {}", savePath);
-
-            // 실제 저장된 파일명 추출 (중복 처리로 연번이 붙었을 수 있음)
-            String actualFileName = new java.io.File(savePath).getName();
-
-            // DB에 파일 정보 저장
-            VacationOfficialPdf officialPdf = VacationOfficialPdf.builder()
-                    .documentIdx(savedDocument.getIdx())
-                    .filePath(savePath)
-                    .fileName(actualFileName)
-                    .fileSize((long) pdfBytes.length)
-                    .createdUserIdx(userIdx)
-                    .build();
-
-            vacationOfficialPdfRepository.save(officialPdf);
-            log.info("[PDF 파일 정보 DB 저장 완료] fileIdx: {}, documentIdx: {}", officialPdf.getIdx(), savedDocument.getIdx());
-
-        } catch (Exception e) {
-            log.error("[PDF 생성 실패] documentIdx: {}, error: {}", savedDocument.getIdx(), e.getMessage(), e);
-            // PDF 생성 실패는 전체 트랜잭션을 롤백하지 않음 (연차 신청은 유지)
-        }
+            // 12. 전자서명 도입 후 — 저장 시점에는 PDF를 생성하지 않음
+            //     - 카테고리 A(연차) 최종본은 전자서명 완료 + 대표이사 수기 서명 후 스캔 업로드로 생성
+            //     - 과거 자동 PDF 생성 로직은 제거됨 (기존 VacationOfficialPdf 조회/다운로드는 유지)
 
             log.info("[연차 신청서 저장 완료] documentIdx: {}, total periods: {}", savedDocument.getIdx(), saveDTO.getPeriods().size());
             return savedDocument.getIdx();
@@ -1386,7 +1320,6 @@ public class VacationServiceImpl implements VacationService {
         // 2. 기존 saveVacationRequest 호출용 DTO 구성 (검증/잔여계산/문서생성/행 저장 재사용)
         //    - allowMinusVacation=true: 사후 기록이라 잔여 부족해도 통과
         //    - specialApprovalReason: 자동 채움
-        //    - renderedHtml/Css 없음 → PDF는 saveVacationRequest 내부에서 스킵됨
         VacationRequestSaveDTO.VacationPeriod period = VacationRequestSaveDTO.VacationPeriod.builder()
                 .vacationType(dto.getVacationType())
                 .startDate(dto.getStartDate())
@@ -1419,97 +1352,8 @@ public class VacationServiceImpl implements VacationService {
         document.setUpdatedUserIdx(adminUserIdx);
         approvalDocumentRepository.save(document);
 
-        // 4. 서버사이드 PDF 생성 (Thymeleaf 템플릿 + iText/Flying Saucer)
-        try {
-            log.info("[대리 신청 - 서버사이드 PDF 생성 시작] documentIdx: {}", documentIdx);
-
-            // 부서/직급 코드명 조회
-            String deptName = targetUser.getEmpDept() == null ? "" :
-                    codeRepository.findByGroupCodeAndCode(CodeConstants.GroupCode.DEPARTMENT.getCode(), targetUser.getEmpDept())
-                            .map(Code::getCodeName).orElse(targetUser.getEmpDept());
-            String positionName = targetUser.getEmpPosition() == null ? "" :
-                    codeRepository.findByGroupCodeAndCode(CodeConstants.GroupCode.POSITION.getCode(), targetUser.getEmpPosition())
-                            .map(Code::getCodeName).orElse(targetUser.getEmpPosition());
-
-            // 결재라인: 부서장 / 대표이사 이름 조회
-            String deptManagerName = "-";
-            try {
-                com.pinecni.erp.api.user.dto.UserSimpleDTO director = userService.getDeptDirector(targetUserIdx);
-                if (director != null && director.getEmpName() != null) {
-                    deptManagerName = director.getEmpName();
-                }
-            } catch (Exception ex) {
-                log.warn("[관리자 권한 등록 - 부서장 조회 실패] targetUserIdx: {}, error: {}", targetUserIdx, ex.getMessage());
-            }
-            String ceoName = "-";
-            try {
-                com.pinecni.erp.api.user.dto.UserSimpleDTO ceo = userService.getCeo();
-                if (ceo != null && ceo.getEmpName() != null) {
-                    ceoName = ceo.getEmpName();
-                }
-            } catch (Exception ex) {
-                log.warn("[관리자 권한 등록 - 대표이사 조회 실패] error: {}", ex.getMessage());
-            }
-
-            // 신청인 이름 (footer 띄어쓰기 표시용)
-            String applicantName = targetUser.getEmpName() != null ? targetUser.getEmpName() : "";
-            String applicantSpaced = applicantName.isEmpty() ? "" :
-                    String.join(" ", applicantName.split(""));
-
-            Map<String, Object> pdfData = new HashMap<>();
-            pdfData.put("applicant", applicantName);
-            pdfData.put("applicantSpaced", applicantSpaced);
-            pdfData.put("department", deptName);
-            pdfData.put("position", positionName);
-            pdfData.put("reason", reason);
-            pdfData.put("address", targetUser.getEmpAddress() != null ? targetUser.getEmpAddress() : "");
-            pdfData.put("birthDate", targetUser.getEmpBirth() != null
-                    ? targetUser.getEmpBirth().format(DateTimeFormatter.ofPattern("yyyy년 MM월 dd일"))
-                    : "");
-            pdfData.put("contact", targetUser.getEmpPhone() != null ? targetUser.getEmpPhone() : "");
-            pdfData.put("applyDate", LocalDate.now().format(DateTimeFormatter.ofPattern("yyyy년 MM월 dd일")));
-            pdfData.put("deptManagerName", deptManagerName);
-            pdfData.put("ceoName", ceoName);
-
-            // 휴가 기간 표시 텍스트 (화면과 동일한 형식)
-            // 형식: "2026년 04월 08일 (수) ~ 2026년 04월 10일 (금) 연차 3일"
-            String displayLine = buildVacationDisplayLine(
-                    dto.getVacationType(), dto.getStartDate(), dto.getEndDate(), dto.getDays());
-
-            Map<String, Object> periodMap = new HashMap<>();
-            periodMap.put("type", dto.getVacationType());
-            periodMap.put("startDate", dto.getStartDate().toString());
-            periodMap.put("endDate", dto.getEndDate().toString());
-            periodMap.put("days", dto.getDays().toString());
-            periodMap.put("displayText", displayLine);
-            pdfData.put("periods", List.of(periodMap));
-            pdfData.put("totalDaysText", "총 연차 " + stripTrailingZero(dto.getDays()) + "일");
-
-            byte[] pdfBytes = pdfGenerationService.generateVacationPdfWithData(pdfData);
-
-            String firstStartDate = dto.getStartDate().toString().replace("-", "");
-            String year = String.valueOf(dto.getStartDate().getYear());
-            String userIdentifier = (targetUser.getEmpId() != null && !targetUser.getEmpId().isEmpty())
-                    ? targetUser.getEmpId() : String.valueOf(targetUserIdx);
-            String baseFileName = String.format("%s_vacation.pdf", firstStartDate);
-
-            String savePath = pdfGenerationService.saveVacationPdf(pdfBytes, baseFileName, year, userIdentifier);
-            String actualFileName = new java.io.File(savePath).getName();
-
-            VacationOfficialPdf officialPdf = VacationOfficialPdf.builder()
-                    .documentIdx(documentIdx)
-                    .filePath(savePath)
-                    .fileName(actualFileName)
-                    .fileSize((long) pdfBytes.length)
-                    .createdUserIdx(adminUserIdx)
-                    .build();
-            vacationOfficialPdfRepository.save(officialPdf);
-
-            log.info("[대리 신청 - PDF 저장 완료] documentIdx: {}, fileName: {}", documentIdx, actualFileName);
-        } catch (Exception e) {
-            // PDF 실패는 전체 롤백하지 않음 (요청은 유지)
-            log.error("[대리 신청 - PDF 생성 실패] documentIdx: {}, error: {}", documentIdx, e.getMessage(), e);
-        }
+        // 4. 전자서명 도입 후 — 대리 신청도 저장 시점에 PDF를 생성하지 않음
+        //    대리 신청(관리자 생성)은 아래 5단계에서 바로 자동 승인 처리됨 (예외 플로우)
 
         // 5. 자동 승인 + 캘린더 일정 생성 (기존 승인 흐름 재사용)
         try {
@@ -1524,45 +1368,18 @@ public class VacationServiceImpl implements VacationService {
     }
 
     /**
-     * 휴가 기간 표시 라인 생성 — 화면 vacation_period_display 와 동일 형식
-     * 예) "2026년 04월 08일 (수) ~ 2026년 04월 10일 (금) 연차 3일"
-     *     "2026년 04월 08일 (수) 오전반차 0.5일"
-     */
-    private String buildVacationDisplayLine(String vacationType, LocalDate startDate, LocalDate endDate, BigDecimal days) {
-        DateTimeFormatter dateFmt = DateTimeFormatter.ofPattern("yyyy년 MM월 dd일");
-        String[] dowKor = {"일", "월", "화", "수", "목", "금", "토"};
-
-        String startStr = startDate.format(dateFmt) + " (" + dowKor[startDate.getDayOfWeek().getValue() % 7] + ")";
-        String endStr = endDate.format(dateFmt) + " (" + dowKor[endDate.getDayOfWeek().getValue() % 7] + ")";
-        boolean isSingle = startDate.equals(endDate);
-        String dateDisplay = isSingle ? startStr : startStr + " ~ " + endStr;
-
-        // 반차 표기 변환: "반차(오전)" → "오전반차"
-        String displayType;
-        if (vacationType != null && vacationType.contains("반차(오전)")) {
-            displayType = "오전반차";
-        } else if (vacationType != null && vacationType.contains("반차(오후)")) {
-            displayType = "오후반차";
-        } else {
-            displayType = "연차";
-        }
-
-        return dateDisplay + " " + displayType + " " + stripTrailingZero(days) + "일";
-    }
-
-    /**
-     * BigDecimal 표시 — 정수면 정수로, 소수면 그대로
-     * 예: 3.0 → "3", 0.5 → "0.5"
-     */
-    private String stripTrailingZero(BigDecimal value) {
-        if (value == null) return "0";
-        return value.stripTrailingZeros().toPlainString();
-    }
-
-    /**
      * 관리자 승인 시 VacationRequest 엔티티로 캘린더 일정 생성
      * - 승인 실패해도 승인 처리 자체는 롤백되지 않도록 예외를 삼킴
      */
+    private String resolveDocumentStatusName(String statusCode) {
+        if (statusCode == null) return CodeConstants.DocumentStatus.DRAFTED.getName();
+        try {
+            return CodeConstants.DocumentStatus.fromCode(statusCode).getName();
+        } catch (IllegalArgumentException e) {
+            return statusCode;
+        }
+    }
+
     private void createCalendarEventForVacationRequest(VacationRequest vr, User user) {
         try {
             log.info("[캘린더 일정 생성 시작] userIdx: {}, documentIdx: {}, vacationType: {}, startDate: {}, endDate: {}",
@@ -1934,6 +1751,7 @@ public class VacationServiceImpl implements VacationService {
                 .userIdx(drafter.getIdx())
                 .name(drafter.getEmpName())
                 .position(positionName)
+                .role("담당")
                 .build());
 
         // 8-2. 부서장 (기안자의 보고체계 상위보고자)
@@ -1948,6 +1766,7 @@ public class VacationServiceImpl implements VacationService {
                         .userIdx(manager.getIdx())
                         .name(manager.getEmpName())
                         .position(managerPositionName)
+                        .role("부서장")
                         .build());
             }
         }
@@ -1964,6 +1783,7 @@ public class VacationServiceImpl implements VacationService {
                     .userIdx(ceo.getIdx())
                     .name(ceo.getEmpName())
                     .position(ceoPositionName)
+                    .role("대표이사")
                     .build());
         } else {
             log.warn("대표이사(Position.CEO={})를 찾을 수 없습니다. documentIdx: {}", CodeConstants.Position.CEO.getCode(), documentIdx);
@@ -1980,13 +1800,22 @@ public class VacationServiceImpl implements VacationService {
                 .documentIdx(documentIdx)
                 .documentNo(document.getDocumentNo())
                 .applyDate(vacationRequests.getFirst().getApplyDate())
-                .drafterUserIdx(document.getDrafterUserIdx())  // 작성자 사용자 idx 추가
+                .drafterUserIdx(document.getDrafterUserIdx())
                 .drafterName(drafter.getEmpName())
+                .drafterNameSpaced(drafter.getEmpName() != null
+                        ? String.join(" ", drafter.getEmpName().split("")) : "")
                 .drafterDept(deptName)
                 .drafterPosition(positionName)
+                .drafterAddress(drafter.getEmpAddress() != null ? drafter.getEmpAddress() : "")
+                .drafterBirthDate(drafter.getEmpBirth() != null
+                        ? drafter.getEmpBirth().format(java.time.format.DateTimeFormatter.ofPattern("yyyy년 MM월 dd일")) : "")
+                .drafterPhone(drafter.getEmpPhone() != null ? drafter.getEmpPhone() : "")
                 .remainingDays(remainingDays)
                 .reason(reason)
                 .isApproved(isApproved != null ? isApproved : false)
+                .statusCode(document.getStatus() != null ? document.getStatus()
+                        : CodeConstants.DocumentStatus.DRAFTED.getCode())
+                .statusName(resolveDocumentStatusName(document.getStatus()))
                 .periods(periods)
                 .approvers(approvers)
                 .attachments(attachments)
@@ -2000,8 +1829,8 @@ public class VacationServiceImpl implements VacationService {
 
     @Override
     @Transactional
-    public void deleteVacation(Long documentIdx, Long currentUserIdx) {
-        log.info("[연차신청서 삭제 시작] documentIdx: {}, currentUserIdx: {}", documentIdx, currentUserIdx);
+    public void deleteVacation(Long documentIdx, Long currentUserIdx, boolean isAdmin) {
+        log.info("[연차신청서 삭제 시작] documentIdx: {}, currentUserIdx: {}, isAdmin: {}", documentIdx, currentUserIdx, isAdmin);
 
         // 1. ApprovalDocument 조회
         ApprovalDocument document = approvalDocumentRepository.findById(documentIdx)
@@ -2010,6 +1839,11 @@ public class VacationServiceImpl implements VacationService {
         // 2. Soft delete 확인
         if (document.getDeletedAt() != null) {
             throw new IllegalStateException("이미 삭제된 문서입니다.");
+        }
+
+        // 2-1. 전자서명 게이트: 관리자가 아닌 경우에만 차단
+        if (!isAdmin && signatureService.hasAnySignatureCaptured(documentIdx)) {
+            throw new IllegalStateException("전자서명이 진행된 문서는 삭제할 수 없습니다.\n삭제가 필요하면 관리부에 문의해주세요.");
         }
 
         // 3. ApprovalDocument soft delete
@@ -2078,8 +1912,14 @@ public class VacationServiceImpl implements VacationService {
         int updatedCount = vacationRequestRepository.updateApprovalByDocumentIdx(
                 documentIdx, approve, approvedAt, resolvedApproverIdx);
 
-        log.info("[연차 DB 상태 업데이트 완료] documentIdx: {}, approve: {}, 업데이트된 행 수: {}",
-                documentIdx, approve, updatedCount);
+        // 3-1. 문서 상태 전이 (C05 코드)
+        document.setStatus(approve
+                ? CodeConstants.DocumentStatus.APPROVED.getCode()
+                : CodeConstants.DocumentStatus.REJECTED.getCode());
+        approvalDocumentRepository.save(document);
+
+        log.info("[연차 DB 상태 업데이트 완료] documentIdx: {}, approve: {}, 업데이트된 행 수: {}, 문서상태: {}",
+                documentIdx, approve, updatedCount, document.getStatus());
 
         // 4. 캘린더 일정 처리
         Long vacationUserIdx = vacationRequests.get(0).getUserIdx();

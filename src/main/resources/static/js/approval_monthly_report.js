@@ -120,8 +120,16 @@ document.addEventListener('DOMContentLoaded', async function() {
             if (response.ok) {
                 const result = await response.json();
                 console.log('월간업무보고 저장 성공:', result);
-                await showSuccess('월간업무보고가 등록되었습니다.');
-                window.location.href = '/approval';
+                if (window.SignatureRender) {
+                    SignatureRender.afterSave({
+                        documentIdx: result.documentIdx || result.idx,
+                        redirectUrl: '/approval',
+                        successMessage: '월간업무보고가 등록되었습니다.'
+                    });
+                } else {
+                    await showSuccess('월간업무보고가 등록되었습니다.');
+                    window.location.href = '/approval';
+                }
             } else {
                 const errorText = await response.text();
                 console.error('월간업무보고 저장 실패:', errorText);

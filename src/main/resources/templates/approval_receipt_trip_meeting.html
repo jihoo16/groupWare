@@ -465,8 +465,8 @@
                                                     <td class="doc-approval-head">연구책임자</td>
                                                 </tr>
                                                 <tr>
-                                                    <td class="doc-approval-sign"></td>
-                                                    <td class="doc-approval-sign"></td>
+                                                    <td class="doc-approval-sign" data-slot="C1602"><div class="sign-area"><span class="sign-placeholder"></span></div></td>
+                                                    <td class="doc-approval-sign" data-slot="C1603"><div class="sign-area"><span class="sign-placeholder"></span></div></td>
                                                 </tr>
                                             </table>
                                         </div>
@@ -554,8 +554,8 @@
                                                     <td class="doc-approval-head">연구책임자</td>
                                                 </tr>
                                                 <tr id="reportApprovalSignRow">
-                                                    <td class="doc-approval-sign"></td>
-                                                    <td class="doc-approval-sign"></td>
+                                                    <td class="doc-approval-sign" data-slot="C1602"><div class="sign-area"><span class="sign-placeholder"></span></div></td>
+                                                    <td class="doc-approval-sign" data-slot="C1603"><div class="sign-area"><span class="sign-placeholder"></span></div></td>
                                                 </tr>
                                             </table>
                                         </div>
@@ -985,5 +985,8 @@
 
 <script th:src="@{/js/search-utils.js}"></script>
 <script th:src="@{/js/approval_receipt_trip_meeting.js}"></script>
+
+<!-- 전자서명 QR 모달 프래그먼트 -->
+<div th:replace="~{fragments/signature-modal :: signature-modal}"></div>
 </body>
 </html>

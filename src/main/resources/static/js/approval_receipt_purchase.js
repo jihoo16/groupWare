@@ -1445,14 +1445,22 @@ document.addEventListener('DOMContentLoaded', async function() {
             if (res.ok) {
                 const data = await res.json();
                 hideLoading();
-                await Swal.fire({
-                    icon: 'success',
-                    title: isEditMode ? '수정 완료' : '저장 완료',
-                    text: `${purchaseTypeLabel} 증빙이 ${isEditMode ? '수정' : '저장'}되었습니다.`,
-                    confirmButtonColor: '#667eea'
-                });
+                if (window.SignatureRender && !isEditMode) {
+                    SignatureRender.afterSave({
+                        documentIdx: data.documentIdx || data.idx,
+                        redirectUrl: '/project/documents',
+                        successMessage: `${purchaseTypeLabel} 증빙이 저장되었습니다.`
+                    });
+                } else {
+                    await Swal.fire({
+                        icon: 'success',
+                        title: isEditMode ? '수정 완료' : '저장 완료',
+                        text: `${purchaseTypeLabel} 증빙이 ${isEditMode ? '수정' : '저장'}되었습니다.`,
+                        confirmButtonColor: '#667eea'
+                    });
 
-                window.location.href = '/project/documents';
+                    window.location.href = '/project/documents';
+                }
             } else {
                 hideLoading();
                 const err = await res.json().catch(() => ({}));
@@ -1790,6 +1798,11 @@ document.addEventListener('DOMContentLoaded', async function() {
             if (overlay) {
                 overlay.style.opacity = '0';
                 setTimeout(() => { overlay.style.display = 'none'; }, 300);
+            }
+
+            // 전자서명 현황 로드
+            if (window.SignatureRender && idx) {
+                SignatureRender.load(idx);
             }
         } catch (e) {
             console.error('문서 로드 오류:', e);

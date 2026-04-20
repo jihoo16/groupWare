@@ -2824,19 +2824,27 @@ document.addEventListener('DOMContentLoaded', async function() {
                     const result = await response.json();
 
                     hideLoading();
-                    await Swal.fire({
-                        icon: 'success',
-                        title: '저장 완료',
-                        text: '회의록이 저장되었습니다.',
-                        timer: 3000,
-                        timerProgressBar: true,
-                        showConfirmButton: true,
-                        confirmButtonText: '확인',
-                        allowOutsideClick: false
-                    });
+                    if (window.SignatureRender) {
+                        SignatureRender.afterSave({
+                            documentIdx: result.documentIdx || result.idx,
+                            redirectUrl: '/project/documents',
+                            successMessage: '회의록이 저장되었습니다.'
+                        });
+                    } else {
+                        await Swal.fire({
+                            icon: 'success',
+                            title: '저장 완료',
+                            text: '회의록이 저장되었습니다.',
+                            timer: 3000,
+                            timerProgressBar: true,
+                            showConfirmButton: true,
+                            confirmButtonText: '확인',
+                            allowOutsideClick: false
+                        });
 
-                    // 저장 후 목록 페이지로 이동
-                    popupAwareRedirect('/project/documents');
+                        // 저장 후 목록 페이지로 이동
+                        popupAwareRedirect('/project/documents');
+                    }
                 } else {
                     let errorMessage = '회의록 저장에 실패했습니다.';
                     try {
@@ -4533,6 +4541,12 @@ document.addEventListener('DOMContentLoaded', async function() {
 
             // 로딩 오버레이 제거
             window.hidePageLoadingOverlay();
+
+            // 전자서명 현황 로드
+            const sigDocIdx = getUrlParameter('documentIdx') || getUrlParameter('id');
+            if (window.SignatureRender && sigDocIdx) {
+                SignatureRender.load(sigDocIdx);
+            }
 
             return data;
         } catch (error) {

@@ -9,6 +9,7 @@ import com.pinecni.erp.api.user.repository.UserRepository;
 import com.pinecni.erp.api.code.repository.CodeRepository;
 import com.pinecni.erp.api.approval.repository.ApprovalDocumentRepository;
 import com.pinecni.erp.api.approval.service.DocumentSequenceService;
+import com.pinecni.erp.api.signature.service.SignatureService;
 import com.pinecni.erp.constant.CodeConstants;
 import com.pinecni.erp.entity.MonthlyReport;
 import com.pinecni.erp.entity.ApprovalDocument;
@@ -37,6 +38,7 @@ public class MonthlyReportServiceImpl implements MonthlyReportService {
     private final CodeRepository codeRepository;
     private final ApprovalDocumentRepository approvalDocumentRepository;
     private final DocumentSequenceService documentSequenceService;
+    private final SignatureService signatureService;
 
     @Override
     @Transactional
@@ -68,6 +70,7 @@ public class MonthlyReportServiceImpl implements MonthlyReportService {
                 .documentNo(documentNo)
                 .title(title)
                 .documentType(CodeConstants.DocumentType.MONTHLY_REPORT.getCode())
+                .status(CodeConstants.DocumentStatus.DRAFTED.getCode())
                 .drafterUserIdx(createDTO.getUserIdx())
                 .content(createDTO.getMainTasks())
                 .createdUserIdx(createDTO.getUserIdx())
@@ -85,6 +88,15 @@ public class MonthlyReportServiceImpl implements MonthlyReportService {
         MonthlyReport saved = monthlyReportRepository.save(monthlyReport);
         log.debug("monthlyReport created successfully - id: {}, documentIdx: {}",
                   saved.getId(), saved.getDocumentIdx());
+
+            // 전자서명 요청 자동 생성
+            try {
+                signatureService.requestSignaturesForDocument(savedDocument.getIdx(), createDTO.getUserIdx());
+                savedDocument.setStatus(CodeConstants.DocumentStatus.SIGN_PENDING.getCode());
+                approvalDocumentRepository.save(savedDocument);
+            } catch (Exception e) {
+                log.error("[서명 요청 생성 실패] documentIdx: {}, error: {}", savedDocument.getIdx(), e.getMessage());
+            }
 
             // Entity → DTO 변환
             MonthlyReportDTO dto = monthlyReportMapper.toDTO(saved);
@@ -165,6 +177,11 @@ public class MonthlyReportServiceImpl implements MonthlyReportService {
         MonthlyReport report = monthlyReportRepository.findById(id)
                 .orElseThrow(() -> new RuntimeException("월간업무보고를 찾을 수 없습니다. ID: " + id));
 
+        // 전자서명 게이트
+        if (report.getDocumentIdx() != null && signatureService.hasAnySignatureCaptured(report.getDocumentIdx())) {
+            throw new IllegalStateException("전자서명이 진행된 문서는 수정할 수 없습니다.");
+        }
+
         // UpdateDTO로 Entity 업데이트
         monthlyReportMapper.updateEntity(report, updateDTO, updatedUserIdx);
 
@@ -193,9 +210,13 @@ public class MonthlyReportServiceImpl implements MonthlyReportService {
     public void deleteMonthlyReport(Long id) {
         log.debug("deleteMonthlyReport() called - id: {}", id);
 
-        // 존재 여부 확인
-        if (!monthlyReportRepository.existsById(id)) {
-            throw new RuntimeException("월간업무보고를 찾을 수 없습니다. ID: " + id);
+        MonthlyReport report = monthlyReportRepository.findById(id)
+                .orElseThrow(() -> new RuntimeException("월간업무보고를 찾을 수 없습니다. ID: " + id));
+
+        // 전자서명 게이트
+        if (report.getDocumentIdx() != null
+                && signatureService.hasAnySignatureCaptured(report.getDocumentIdx())) {
+            throw new IllegalStateException("전자서명이 진행된 문서는 삭제할 수 없습니다.");
         }
 
         monthlyReportRepository.deleteById(id);
