@@ -488,7 +488,7 @@ document.addEventListener('DOMContentLoaded', async function() {
 
         // 프로젝트 변경 시 중복 검증 먼저 실행 후 작성자 설정 (중복 인원 제외)
         await window.checkAllTripPersonsForDuplicates();
-        setDefaultReporter();
+        await setDefaultReporter();
 
         // 날짜가 선택된 경우, 선택 가능한 인원이 있는지 확인
         const dateInput = document.getElementById('trip_date');
@@ -1030,11 +1030,12 @@ document.addEventListener('DOMContentLoaded', async function() {
                 const tip = `참여기간: ${formatMemberPeriod(person)}`;
                 inactiveBadge = `<span style="background:#e5e7eb; color:#4b5563; padding:2px 8px; border-radius:4px; font-size:11px; margin-left:8px; white-space:nowrap;" data-tip="${tip}"><i class="fas fa-calendar-times"></i> 참여기간 외</span>`;
             }
-            const lockedStyle = isInactive ? 'opacity:0.55; cursor:not-allowed;' : '';
-            const onclickAttr = isInactive ? '' : `onclick="selectReporter(${person.id}, '${person.name.replace(/'/g, "\\'")}', '${(person.position || '').replace(/'/g, "\\'")}', '${(person.dept || '').replace(/'/g, "\\'")}', '${(person.positionCode || '').replace(/'/g, "\\'")}')"`;
+            const isLocked = isInactive || !!isDuplicate;
+            const lockedStyle = isLocked ? 'opacity:0.55; cursor:not-allowed;' : '';
+            const onclickAttr = isLocked ? '' : `onclick="selectReporter(${person.id}, '${person.name.replace(/'/g, "\\'")}', '${(person.position || '').replace(/'/g, "\\'")}', '${(person.dept || '').replace(/'/g, "\\'")}', '${(person.positionCode || '').replace(/'/g, "\\'")}')"`;
 
             return `
-                <div class="employee-item ${selectedClass}" data-id="${person.id}" data-inactive="${isInactive}" ${onclickAttr} style="${lockedStyle}">
+                <div class="employee-item ${selectedClass}" data-id="${person.id}" data-inactive="${isInactive}" data-dup="${isDuplicate ? 'true' : 'false'}" ${onclickAttr} style="${lockedStyle}">
                     <div class="employee-info">
                         <div class="employee-name">${person.name}${attendeeBadge}${inactiveBadge}${duplicateBadge}</div>
                         <div class="employee-details">${person.dept} · ${person.position}</div>
@@ -1080,26 +1081,17 @@ document.addEventListener('DOMContentLoaded', async function() {
             }
         }
 
-        // 중복 출장 경고
+        // 중복 출장 차단 — 시간 중복된 인원은 작성자 선택 불가 (UI에서도 disabled 처리됨)
         const dupInfo = duplicateTripPersonsInfo[reporterId];
         if (dupInfo) {
-            let detailText = `이미 ${dupInfo.date}에 <strong>[${dupInfo.projectName}]</strong> 프로젝트 ${dupInfo.type}`;
-            if (dupInfo.startTime && dupInfo.endTime) {
-                detailText += ` (${dupInfo.startTime} ~ ${dupInfo.endTime})`;
-            }
-            detailText += '이 있습니다.';
-
-            const result = await Swal.fire({
-                icon: 'warning',
-                title: '출장 중복 경고',
-                html: `<strong>${reporterName}</strong>님은 해당 날짜에 출장 일정이 중복됩니다.<br><br>${detailText}<br><br>그래도 작성자로 선택하시겠습니까?`,
-                showCancelButton: true,
-                confirmButtonText: '계속 진행',
-                cancelButtonText: '취소',
-                confirmButtonColor: '#ff9800'
+            await ReceiptCommon.showTimeConflictBlock({
+                personName: reporterName,
+                projectName: dupInfo.projectName,
+                startTime: dupInfo.startTime,
+                endTime: dupInfo.endTime,
+                type: dupInfo.type
             });
-
-            if (!result.isConfirmed) return;
+            return;
         }
 
         // 이전 작성자를 출장인원에서 제거 (새 작성자와 다른 경우)
@@ -1229,7 +1221,7 @@ document.addEventListener('DOMContentLoaded', async function() {
     }
 
     // 기본 작성자 설정 (출장인원 중 가장 낮은 직급)
-    function setDefaultReporter() {
+    async function setDefaultReporter() {
         // 이미 작성자가 설정되어 있고, 출장인원에 포함되어 있으며, 중복이 없는 경우 변경하지 않음
         const existingReporter = document.getElementById('trip_reporter');
         const existingReporterId = existingReporter ? existingReporter.getAttribute('data-reporter-id') : null;
@@ -1263,33 +1255,22 @@ document.addEventListener('DOMContentLoaded', async function() {
             dept: member.employeeDeptName || '부서 미지정'
         }));
 
-        // 1순위: 로그인 사용자가 프로젝트 참여인력인 경우
-        let defaultReporter = null;
-        const loggedInUserIdx = currentUser?.idx;
-        if (loggedInUserIdx) {
-            const loggedInMember = allMembers.find(m => String(m.id) === String(loggedInUserIdx));
-            if (loggedInMember && !duplicateTripPersonsInfo[loggedInMember.id]) {
-                defaultReporter = loggedInMember;
-            }
-        }
+        // 공통 모듈로 기본 작성자 선택 (1순위 로그인 사용자, 2순위 직급 기반)
+        // rank 전략: 원래 코드는 "낮은 직급 정렬 후 reverse → 높은 직급 3번째(index 2) or 마지막"
+        //   → 공통 모듈의 sortedAsc(낮은 직급→높은 직급) 기준으로 뒤에서 3번째 or 첫 번째
+        const rankStrategy = (sortedAsc) => {
+            const pool = sortedAsc;
+            if (pool.length >= 3) return pool[pool.length - 3];
+            return pool[0]; // 3명 미만이면 가장 낮은 직급
+        };
 
-        // 2순위 이하: 직급 기반 선택
-        if (!defaultReporter) {
-            const sortedPersons = sortByPosition([...allMembers]);
-            sortedPersons.reverse(); // 높은 직급부터 정렬
-
-            // 중복 없는 인원만 후보로 사용, 전원 중복이면 전체에서 선택
-            const candidates = sortedPersons.filter(p => !duplicateTripPersonsInfo[p.id]);
-            const pool = candidates.length > 0 ? candidates : sortedPersons;
-
-            if (pool.length >= 3) {
-                // 3명 이상이면 높은 직급순 3번째 (인덱스 2)
-                defaultReporter = pool[2];
-            } else {
-                // 3명 미만이면 가장 낮은 직급 (마지막 사람)
-                defaultReporter = pool[pool.length - 1];
-            }
-        }
+        const { author: defaultReporter } = await ReceiptCommon.pickDefaultAuthor({
+            candidates: allMembers,
+            getPositionOrder: (m) => authorPositionOrder[m.position] || 999,
+            loggedInUserIdx: currentUser?.idx,
+            duplicateMap: duplicateTripPersonsInfo,
+            rankStrategy
+        });
 
         if (defaultReporter) {
             const tripReporter = document.getElementById('trip_reporter');
@@ -1771,7 +1752,7 @@ document.addEventListener('DOMContentLoaded', async function() {
             });
             renderTripPersonListInTemplate();
             // 작성자 자동 설정 (출장인원 중 가장 낮은 직급)
-            setDefaultReporter();
+            await setDefaultReporter();
             // 중복 검증 실행
             await window.checkAllTripPersonsForDuplicates();
         };
@@ -1780,70 +1761,40 @@ document.addEventListener('DOMContentLoaded', async function() {
         window.checkAllTripPersonsForDuplicates = async function() {
             duplicateTripPersonsInfo = {}; // 초기화
 
-            const dateInput = document.getElementById('trip_date');
-            const projectIdxInput = document.getElementById('selectedProjectIdx');
+            const date = document.getElementById('trip_date')?.value;
+            const projectIdx = document.getElementById('selectedProjectIdx')?.value;
+            if (!date || !projectIdx) return;
 
-            if (!dateInput || !dateInput.value) {
-                return; // 날짜가 없으면 검증 스킵
-            }
-
-            if (!projectIdxInput || !projectIdxInput.value) {
-                return; // 프로젝트가 없으면 검증 스킵
-            }
-
-            const date = dateInput.value;
-            const projectIdx = projectIdxInput.value;
-
-            // 현재 추가된 출장인원 + 프로젝트 팀원 모두 체크 (모달용)
             const tripPersons = getTripPersons();
-            const allPersonIds = tripPersons
+            const personIds = tripPersons
                 .map(p => parseInt(p.id))
                 .filter(id => !isNaN(id) && id > 0);
-
-            // 각 출장인원에 대해 중복 체크 (회의, 야근, 출장)
-            for (const personId of allPersonIds) {
-                try {
-                    let duplicateFound = false;
-                    let duplicateInfo = null;
-
-                    // 통합 중복 체크 (회의, 야근, 출장 모두 한 번에)
-                    try {
-                        // 수정 모드이면 자기 자신 문서 제외 (receipt_trip.idx 사용)
-                        const excludeParams = currentReceiptTripIdx
-                            ? `&excludeReceiptIdx=${currentReceiptTripIdx}&excludeDocumentType=RCT`
-                            : '';
-                        const response = await fetch(`/api/receipt-common/check-duplicate?date=${date}&attendeeIdx=${personId}&projectIdx=${projectIdx}${excludeParams}`);
-                        if (response.ok) {
-                            const contentType = response.headers.get('content-type');
-                            if (contentType && contentType.includes('application/json')) {
-                                const duplicates = await response.json();
-                                if (Array.isArray(duplicates) && duplicates.length > 0) {
-                                    const duplicate = duplicates[0];
-                                    duplicateInfo = {
-                                        date: duplicate.documentDate,
-                                        projectName: duplicate.projectName,
-                                        type: duplicate.typeName || duplicate.type,
-                                        startTime: duplicate.startTime ? duplicate.startTime.substring(0, 5) : '',
-                                        endTime: duplicate.endTime ? duplicate.endTime.substring(0, 5) : ''
-                                    };
-                                    duplicateFound = true;
-                                }
-                            }
-                        }
-                    } catch (e) {
-                        console.warn(`중복 체크 실패 (personId: ${personId}):`, e.message);
-                    }
-
-                    // 중복 정보 저장
-                    if (duplicateFound && duplicateInfo) {
-                        duplicateTripPersonsInfo[personId] = duplicateInfo;
-                    }
-                } catch (error) {
-                    console.error(`중복 검증 오류 (personId: ${personId}):`, error);
-                }
+            if (personIds.length === 0) {
+                renderTripPersonListInTemplate();
+                return;
             }
 
-            // UI 업데이트
+            const scan = await ReceiptCommon.scanDuplicatesForPersons({
+                persons: personIds.map(id => ({ id })),
+                date,
+                projectIdx,
+                excludeReceiptIdx: currentReceiptTripIdx || undefined,
+                excludeDocumentType: currentReceiptTripIdx ? 'RCT' : undefined
+            });
+
+            Object.keys(scan).forEach(id => {
+                const info = scan[id];
+                if (info) {
+                    duplicateTripPersonsInfo[id] = {
+                        date: info.date,
+                        projectName: info.projectName,
+                        type: info.type,
+                        startTime: info.startTime,
+                        endTime: info.endTime
+                    };
+                }
+            });
+
             renderTripPersonListInTemplate();
         }
 
@@ -1855,7 +1806,7 @@ document.addEventListener('DOMContentLoaded', async function() {
             try {
                 await window.checkAllTripPersonsForDuplicates();
                 // 날짜 변경 후 작성자가 중복이면 다른 인원으로 재설정
-                setDefaultReporter();
+                await setDefaultReporter();
             } catch (error) {
                 console.error('중복 검증 재실행 오류:', error);
             }
@@ -3715,7 +3666,7 @@ document.addEventListener('DOMContentLoaded', async function() {
         const currentReporterId = tripReporter ? tripReporter.getAttribute('data-reporter-id') : null;
         const reporterStillIn = currentReporterId && newPersons.some(p => String(p.id) === String(currentReporterId));
         if (!reporterStillIn) {
-            setDefaultReporter();
+            await setDefaultReporter();
         }
 
         // 중복 검증
