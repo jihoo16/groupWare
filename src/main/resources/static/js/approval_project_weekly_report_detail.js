@@ -96,7 +96,7 @@ function displayReportData(data, documentIdx) {
     // 금주 주요 업무
     const mainTasksEl = document.getElementById('mainTasks');
     if (mainTasksEl) {
-        mainTasksEl.textContent = data.mainTasks || '-';
+        renderMainTasks(mainTasksEl, data.mainTasks);
     }
 
     // 주요 성과
@@ -123,38 +123,11 @@ function displayReportData(data, documentIdx) {
         remarksEl.textContent = data.remarks || '-';
     }
 
-    // 작성자와 현재 사용자 비교 - 작성자일 때만 삭제 버튼 생성
+    // 프로젝트 멤버 여부 확인 후 수정/삭제 버튼 표시
     const currentUserIdx = window.CURRENT_USER ? window.CURRENT_USER.idx : null;
 
-    if (data.userIdx && currentUserIdx && data.userIdx === currentUserIdx) {
-        // 작성자이면 수정/삭제 버튼 동적 생성
-        const headerButtons = document.getElementById('headerButtons');
-        if (headerButtons) {
-            const backBtn = headerButtons.querySelector('button');
-
-            const deleteBtn = document.createElement('button');
-            deleteBtn.className = 'btn-danger';
-            deleteBtn.id = 'deleteReportBtn';
-            deleteBtn.innerHTML = '<i class="fas fa-trash"></i> 삭제';
-            deleteBtn.addEventListener('click', function() {
-                deleteReport(documentIdx);
-            });
-
-            const editBtn = document.createElement('button');
-            editBtn.className = 'btn-primary';
-            editBtn.id = 'editReportBtn';
-            editBtn.innerHTML = '<i class="fas fa-edit"></i> 수정';
-            editBtn.addEventListener('click', function() {
-                window.location.href = `/approval/project-weekly-report?id=${data.id}`;
-            });
-
-            // 돌아가기 버튼 앞에 수정 → 삭제 순으로 삽입
-            headerButtons.insertBefore(deleteBtn, backBtn);
-            headerButtons.insertBefore(editBtn, deleteBtn);
-            console.log('작성자이므로 수정/삭제 버튼을 생성합니다.');
-        }
-    } else {
-        console.log('작성자가 아니므로 수정/삭제 버튼을 생성하지 않습니다.');
+    if (currentUserIdx && data.projectIdx) {
+        checkProjectMemberAndShowButtons(data.projectIdx, data.id, documentIdx, currentUserIdx);
     }
 
     // 첨부파일 로드
@@ -263,6 +236,52 @@ async function downloadFile(fileIdx, originalFilename) {
     }
 }
 
+// 프로젝트 멤버 여부 확인 후 수정/삭제 버튼 생성
+async function checkProjectMemberAndShowButtons(projectIdx, reportId, documentIdx, currentUserIdx) {
+    try {
+        const response = await fetch(`/api/projects/${projectIdx}/members`);
+        if (!response.ok) {
+            console.warn('프로젝트 멤버 조회 실패:', response.status);
+            return;
+        }
+
+        const members = await response.json();
+        const isMember = members.some(m => Number(m.employeeIdx) === Number(currentUserIdx));
+
+        if (!isMember) {
+            console.log('프로젝트 멤버가 아니므로 수정/삭제 버튼을 표시하지 않습니다.');
+            return;
+        }
+
+        const headerButtons = document.getElementById('headerButtons');
+        if (!headerButtons) return;
+
+        const backBtn = headerButtons.querySelector('button');
+
+        const deleteBtn = document.createElement('button');
+        deleteBtn.className = 'btn-danger';
+        deleteBtn.id = 'deleteReportBtn';
+        deleteBtn.innerHTML = '<i class="fas fa-trash"></i> 삭제';
+        deleteBtn.addEventListener('click', function() {
+            deleteReport(documentIdx);
+        });
+
+        const editBtn = document.createElement('button');
+        editBtn.className = 'btn-primary';
+        editBtn.id = 'editReportBtn';
+        editBtn.innerHTML = '<i class="fas fa-edit"></i> 수정';
+        editBtn.addEventListener('click', function() {
+            window.location.href = `/approval/project-weekly-report?id=${reportId}`;
+        });
+
+        headerButtons.insertBefore(deleteBtn, backBtn);
+        headerButtons.insertBefore(editBtn, deleteBtn);
+        console.log('프로젝트 멤버이므로 수정/삭제 버튼을 생성합니다.');
+    } catch (error) {
+        console.error('프로젝트 멤버 확인 오류:', error);
+    }
+}
+
 // 보고서 삭제
 async function deleteReport(documentIdx) {
     const confirmed = await showDeleteConfirm('이 보고서를 삭제하시겠습니까?');
@@ -300,6 +319,41 @@ function formatDateWithDay(dateStr) {
     } catch (error) {
         return dateStr;
     }
+}
+
+// 금주 주요업무를 항목별 분리 박스로 렌더링
+function renderMainTasks(container, value) {
+    container.innerHTML = '';
+
+    let items = [];
+    if (value) {
+        try {
+            const arr = JSON.parse(value);
+            if (Array.isArray(arr) && arr.length > 0) items = arr;
+        } catch (e) {}
+        if (items.length === 0) items = [value];
+    }
+
+    if (items.length === 0) {
+        container.textContent = '-';
+        return;
+    }
+
+    if (items.length === 1) {
+        container.textContent = items[0];
+        return;
+    }
+
+    items.forEach((text, i) => {
+        const row = document.createElement('div');
+        row.className = 'main-task-detail-item';
+        row.innerHTML = `<span class="task-detail-number">${i + 1}</span><span class="task-detail-text">${escapeHtml(text)}</span>`;
+        container.appendChild(row);
+    });
+}
+
+function escapeHtml(str) {
+    return str.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
 }
 
 // 보고 기간에 요일 추가 (예: 2024-01-01 ~ 2024-01-07 → 2024-01-01 (월) ~ 2024-01-07 (일))
