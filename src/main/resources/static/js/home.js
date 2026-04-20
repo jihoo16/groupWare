@@ -111,6 +111,9 @@ function loadRemainingVacation() {
         });
 }
 
+// 캘린더에 노출되는 정상 이벤트 타입 (calendar.js의 activeTypeFilters와 동일)
+const VALID_CALENDAR_EVENT_TYPES = ['business', 'meeting-room', 'leave', 'etc'];
+
 // 오늘 일정 로드 함수
 function loadTodaySchedule() {
     const today = new Date().toISOString().split('T')[0];
@@ -125,7 +128,7 @@ function loadTodaySchedule() {
         .then(data => {
             const countElement = document.getElementById('todayScheduleCount');
             if (countElement) {
-                const events = data.events || [];
+                const events = (data.events || []).filter(e => VALID_CALENDAR_EVENT_TYPES.includes(e.eventType));
                 countElement.innerHTML = `${events.length}<em>건</em>`;
             }
         })
@@ -226,7 +229,7 @@ function loadWeeklySchedule() {
             const listElement = document.getElementById('weeklyScheduleList');
             if (!listElement) return;
 
-            let events = data.events || [];
+            let events = (data.events || []).filter(e => VALID_CALENDAR_EVENT_TYPES.includes(e.eventType));
 
             if (events.length === 0) {
                 listElement.innerHTML = `
