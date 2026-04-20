@@ -570,22 +570,14 @@ document.addEventListener('DOMContentLoaded', function() {
         );
     }
 
+    // 작성자 중복 검증 (공통 모듈 래퍼)
     async function checkAuthorDuplicate(empIdx, date, startTime, endTime, projectIdx, excludeReceiptIdx, excludeDocumentType, isExternal) {
-        try {
-            let url = `/api/receipt-common/check-duplicate?date=${date}&attendeeIdx=${empIdx}&projectIdx=${projectIdx}&startTime=${startTime}&endTime=${endTime}`;
-            if (excludeReceiptIdx) url += `&excludeReceiptIdx=${excludeReceiptIdx}&excludeDocumentType=${excludeDocumentType || 'RCTM'}`;
-            if (isExternal) url += `&isExternal=true`;
-            const response = await fetch(url);
-            if (!response.ok) return false;
-            const data = await response.json();
-            if (!Array.isArray(data) || data.length === 0) return false;
-            for (const doc of data) {
-                const s = doc.startTime?.substring(0, 5);
-                const e = doc.endTime?.substring(0, 5);
-                if (s && e && isTimeOverlap(s, e, startTime, endTime)) return true;
-            }
-            return false;
-        } catch { return false; }
+        return await ReceiptCommon.hasDuplicate({
+            date, attendeeIdx: empIdx, projectIdx, startTime, endTime,
+            excludeReceiptIdx: excludeReceiptIdx || undefined,
+            excludeDocumentType: excludeReceiptIdx ? (excludeDocumentType || 'RCTM') : undefined,
+            isExternal: !!isExternal
+        });
     }
 
     function isTimeOverlap(s1, e1, s2, e2) {
@@ -696,49 +688,32 @@ document.addEventListener('DOMContentLoaded', function() {
             positionCode: m.employeePositionCode || m.positionCode || ''
         }));
 
-        const sorted = sortByPositionAsc(members);
-
-        const dateInput = document.getElementById('common_meeting_date');
+        const date = document.getElementById('common_meeting_date')?.value;
+        const startTime = document.getElementById('common_start_time')?.value;
+        const endTime = document.getElementById('common_end_time')?.value;
+        const projectIdx = document.getElementById('selectedProjectIdx')?.value;
         const startInput = document.getElementById('common_start_time');
-        const endInput = document.getElementById('common_end_time');
-        const projectIdxInput = document.getElementById('selectedProjectIdx');
 
-        let author = null;
+        const { author, allBlocked } = await ReceiptCommon.pickDefaultAuthor({
+            candidates: members,
+            getPositionOrder: (m) => getPositionSortOrder(m.positionCode),
+            loggedInUserIdx: window.CURRENT_USER?.idx,
+            duplicateProbe: async (cand) => {
+                if (!date || !startTime || !endTime || !projectIdx) return false;
+                return await checkAuthorDuplicate(cand.id, date, startTime, endTime, projectIdx);
+            },
+            rankStrategy: 'ascStep4'
+        });
 
-        // 1순위: 로그인 사용자가 프로젝트 참여인력인 경우
-        author = await pickLoggedInAuthor(members, dateInput?.value, startInput?.value, endInput?.value, projectIdxInput?.value);
-
-        // 2순위 이하: 직급 기반 선택
-        if (!author && dateInput?.value && startInput?.value && endInput?.value && projectIdxInput?.value) {
-            const date = dateInput.value;
-            const startTime = startInput.value;
-            const endTime = endInput.value;
-            const projectIdx = projectIdxInput.value;
-
-            // 낮은 직급에서 4번째가 기본 후보
-            const candidate = sorted[3] || sorted[0];
-            const isDup = await checkAuthorDuplicate(candidate.id, date, startTime, endTime, projectIdx);
-
-            if (!isDup) {
-                author = candidate;
-            } else {
-                for (const person of sorted) {
-                    const dup = await checkAuthorDuplicate(person.id, date, startTime, endTime, projectIdx);
-                    if (!dup) { author = person; break; }
-                }
-                if (!author) {
-                    await Swal.fire({
-                        icon: 'warning',
-                        title: '시간 중복',
-                        html: `선택하신 시간대(<strong>${startTime} ~ ${endTime}</strong>)에<br>참여 가능한 프로젝트 멤버가 없습니다.<br><br>회의 시간을 변경해주세요.`,
-                        confirmButtonText: '확인'
-                    });
-                    if (startInput) startInput.focus();
-                    return;
-                }
-            }
-        } else if (!author) {
-            author = sorted[3] || sorted[0];
+        if (allBlocked && date && startTime && endTime && projectIdx) {
+            await Swal.fire({
+                icon: 'warning',
+                title: '시간 중복',
+                html: `선택하신 시간대(<strong>${startTime} ~ ${endTime}</strong>)에<br>참여 가능한 프로젝트 멤버가 없습니다.<br><br>회의 시간을 변경해주세요.`,
+                confirmButtonText: '확인'
+            });
+            if (startInput) startInput.focus();
+            return;
         }
 
         if (author && window.setAuthorInTemplate) {
@@ -3079,34 +3054,22 @@ document.addEventListener('DOMContentLoaded', function() {
             position: p.position || '',
             positionCode: p.positionCode || ''
         }));
-        const sorted = sortByPositionAsc(members);
-
         const dateVal  = document.getElementById(`meeting_date_${idx}`)?.value;
         const startVal = document.getElementById(`meeting_start_time_${idx}`)?.value;
         const endVal   = document.getElementById(`meeting_end_time_${idx}`)?.value;
         const projVal  = document.getElementById('selectedProjectIdx')?.value;
-
-        let author = null;
-
-        // 1순위: 로그인 사용자가 출장 인원에 포함된 경우
         const excludeId = getUrlParameter('documentIdx') || getUrlParameter('id') || null;
-        author = await pickLoggedInAuthor(members, dateVal, startVal, endVal, projVal, excludeId, 'RCTM');
 
-        // 2순위 이하: 직급 기반 선택
-        if (!author && dateVal && startVal && endVal && projVal) {
-            const candidate = sorted[3] || sorted[0];
-            const isDup = await checkAuthorDuplicate(candidate.id, dateVal, startVal, endVal, projVal, excludeId, 'RCTM');
-            if (!isDup) {
-                author = candidate;
-            } else {
-                for (const person of sorted) {
-                    const dup = await checkAuthorDuplicate(person.id, dateVal, startVal, endVal, projVal, excludeId, 'RCTM');
-                    if (!dup) { author = person; break; }
-                }
-            }
-        } else if (!author) {
-            author = sorted[3] || sorted[0];
-        }
+        const { author } = await ReceiptCommon.pickDefaultAuthor({
+            candidates: members,
+            getPositionOrder: (m) => getPositionSortOrder(m.positionCode),
+            loggedInUserIdx: window.CURRENT_USER?.idx,
+            duplicateProbe: async (cand) => {
+                if (!dateVal || !startVal || !endVal || !projVal) return false;
+                return await checkAuthorDuplicate(cand.id, dateVal, startVal, endVal, projVal, excludeId, 'RCTM');
+            },
+            rankStrategy: 'ascStep4'
+        });
 
         if (author) {
             mtgState.authorPersonId = author.id;
@@ -3884,31 +3847,18 @@ document.addEventListener('DOMContentLoaded', function() {
     // 출장인원 모달 내 임시 선택 상태 (검색 시 초기화 방지)
     let tempTripSelectedIds = new Set();
 
-    // 출장 기간의 모든 날짜에 대해 중복 여부 확인
+    // 출장 기간의 모든 날짜에 대해 중복 여부 확인 (공통 모듈 래퍼)
     async function checkTripPersonConflicts(empIdx, projectIdx, excludeIdx) {
         const startDateVal = document.getElementById('common_date')?.value;
-        if (!startDateVal || !projectIdx) return false;
         const duration = parseInt(document.getElementById('common_duration')?.value || '0');
-        const dates = [];
-        for (let i = 0; i <= duration; i++) {
-            const d = new Date(startDateVal);
-            d.setDate(d.getDate() + i);
-            const yyyy = d.getFullYear();
-            const mm = String(d.getMonth() + 1).padStart(2, '0');
-            const dd = String(d.getDate()).padStart(2, '0');
-            dates.push(`${yyyy}-${mm}-${dd}`);
-        }
-        const results = await Promise.all(dates.map(async date => {
-            try {
-                let url = `/api/receipt-common/check-duplicate?date=${date}&attendeeIdx=${empIdx}&projectIdx=${projectIdx}`;
-                if (excludeIdx) url += `&excludeReceiptIdx=${excludeIdx}&excludeDocumentType=RCTM`;
-                const res = await fetch(url);
-                if (!res.ok) return false;
-                const data = await res.json();
-                return Array.isArray(data) && data.length > 0;
-            } catch { return false; }
-        }));
-        return results.some(r => r);
+        return await ReceiptCommon.hasAnyDuplicateOverDateRange({
+            empIdx,
+            projectIdx,
+            startDate: startDateVal,
+            durationDays: duration + 1, // 출장 시작일 포함
+            excludeReceiptIdx: excludeIdx || undefined,
+            excludeDocumentType: excludeIdx ? 'RCTM' : undefined
+        });
     }
 
     // 출장인원 모달 - 프로젝트 미선택 시 프로젝트 목록 렌더링
