@@ -251,6 +251,11 @@ public class ReceiptMeetingController {
             Map<String, String> error = new HashMap<>();
             error.put("error", e.getMessage());
             return ResponseEntity.status(HttpStatus.NOT_FOUND).body(error);
+        } catch (IllegalStateException e) {
+            log.warn("회의록 삭제 차단: {}", e.getMessage());
+            Map<String, String> error = new HashMap<>();
+            error.put("error", e.getMessage());
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(error);
         } catch (Exception e) {
             log.error("회의록 삭제 중 오류 발생: {}", e.getMessage(), e);
             Map<String, String> error = new HashMap<>();

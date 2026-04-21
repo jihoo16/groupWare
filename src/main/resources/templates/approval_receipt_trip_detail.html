@@ -1,0 +1,222 @@
+<!DOCTYPE html>
+<html lang="ko" xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{fragments/layout :: head('연구비증빙 출장 상세', '/css/approval_receipt_trip.css')}"></head>
+<body class="detail-view">
+<!-- 로딩 오버레이 -->
+<div th:replace="~{fragments/loading-overlay :: overlay}"></div>
+
+<div class="container">
+    <!-- 좌측 네비게이션 바 -->
+    <div th:replace="~{fragments/sidebar :: sidebar('project')}"></div>
+
+    <!-- 메인 콘텐츠 영역 -->
+    <main class="main-content">
+        <header class="header no-print">
+            <div class="header-left">
+                <h1 class="page-title"><i class="fas fa-file-alt"></i> 연구비증빙 출장 상세</h1>
+            </div>
+            <div class="header-right">
+                <button class="btn-print btn-lg" id="printBtn" style="display:none;">
+                    <i class="fas fa-print"></i>
+                    인쇄하기
+                </button>
+                <button class="btn-primary btn-lg" id="editBtn" style="display:none;">
+                    <i class="fas fa-edit"></i>
+                    수정
+                </button>
+                <button class="btn-danger btn-lg" id="deleteBtn" style="display:none;">
+                    <i class="fas fa-trash"></i>
+                    삭제
+                </button>
+                <button class="btn-secondary btn-lg" onclick="history.back()">
+                    <i class="fas fa-arrow-left"></i>
+                    돌아가기
+                </button>
+            </div>
+        </header>
+
+        <div class="write-container">
+            <div class="editor-area" style="max-width: 1000px; margin: 0 auto;">
+                <div class="document-form" id="documentFormContent">
+
+                    <!-- 출장품의서 -->
+                    <div id="tripProposalFormDiv" style="background: white; border: 2px solid #e0e0e0; border-radius: 8px; padding: 30px; margin: 0 auto 30px; max-width: 881px">
+
+                        <!-- 결재란 -->
+                        <div style="display: flex; justify-content: flex-end; margin-bottom: 15px;">
+                            <table class="doc-approval-table">
+                                <tr>
+                                    <td class="doc-approval-head">신청자</td>
+                                    <td class="doc-approval-head">연구책임자</td>
+                                </tr>
+                                <tr>
+                                    <td class="doc-approval-sign" data-slot="C1602"><div class="sign-area"><span class="sign-placeholder"></span></div></td>
+                                    <td class="doc-approval-sign" data-slot="C1603"><div class="sign-area"><span class="sign-placeholder"></span></div></td>
+                                </tr>
+                            </table>
+                        </div>
+
+                        <h2 class="doc-title">출 장 품 의 서</h2>
+
+                        <div style="margin-bottom: 10px; text-align: left;">
+                            <span>작성일 : <span id="doc_write_date"></span></span>
+                        </div>
+
+                        <table class="form-table" style="margin-top: 20px;">
+                            <tr>
+                                <th style="width: 15%;">과제명</th>
+                                <td colspan="5" style="padding: 10px;">
+                                    <span id="doc_project"></span>
+                                </td>
+                            </tr>
+                            <tr>
+                                <th colspan="3" style="text-align: center;">출장인원</th>
+                                <th style="width: 12%;">출장지</th>
+                                <th style="width: 15%;">출장기간</th>
+                                <th>출장목적</th>
+                            </tr>
+                            <tr>
+                                <th style="width: 12%;">부서명</th>
+                                <th style="width: 12%;">직 위</th>
+                                <th style="width: 12%;">성 명</th>
+                                <td id="proposalLocationCell" rowspan="2" style="text-align: center; vertical-align: middle;">
+                                    <span id="doc_location"></span></td>
+                                <td id="proposalDateCell" rowspan="2" style="text-align: center; vertical-align: middle;">
+                                    <span id="doc_date_range"></span></td>
+                                <td id="proposalPurposeCell" rowspan="2"
+                                    style="text-align: center; padding: 10px; vertical-align: middle;">
+                                    <span id="doc_purpose"></span></td>
+                            </tr>
+                            <tbody id="proposalPersonBody">
+                            <!-- 출장인원 행: JS에서 동적 생성 -->
+                            </tbody>
+                            <tr>
+                                <th colspan="6"
+                                    style="background: #f0f0f0; padding: 15px; text-align: center;">소 요 경 비 내 역(원)
+                                </th>
+                            </tr>
+                            <tr>
+                                <th>일 시</th>
+                                <th>교통비</th>
+                                <th>숙박비</th>
+                                <th>식비</th>
+                                <th>기타(일비)</th>
+                                <th>계</th>
+                            </tr>
+                            <tbody id="proposalExpenseBody">
+                            <!-- 동적 생성 -->
+                            </tbody>
+                            <tr>
+                                <th style="height: 45px">합 계</th>
+                                <td colspan="5" style="text-align: center;"><span id="doc_request_amount">0</span> 원</td>
+                            </tr>
+                            <tr>
+                                <th style="height: 45px">특이사항</th>
+                                <td colspan="5" style="padding: 8px 10px; text-align: center">출장과 관련하여
+                                    국내출장여비 지급기준(실비)에 따라 일부 변경될 수 있습니다.
+                                </td>
+                            </tr>
+                            <tr>
+                                <th style="height: 45px">결재</th>
+                                <td colspan="5" style="padding: 8px 10px; text-align: center">연구비카드로 결제</td>
+                            </tr>
+                        </table>
+                    </div>
+
+                    <!-- 출장복명서 -->
+                    <div id="tripReportFormDiv" style="background: white; border: 2px solid #e0e0e0; border-radius: 8px; padding: 30px; max-width: 881px; margin: 0 auto 30px">
+
+                        <!-- 결재란 -->
+                        <div style="display: flex; justify-content: flex-end; margin-bottom: 15px;">
+                            <table class="doc-approval-table">
+                                <tr>
+                                    <td class="doc-approval-head">신청자</td>
+                                    <td class="doc-approval-head">연구책임자</td>
+                                </tr>
+                                <tr>
+                                    <td class="doc-approval-sign" data-slot="C1602"><div class="sign-area"><span class="sign-placeholder"></span></div></td>
+                                    <td class="doc-approval-sign" data-slot="C1603"><div class="sign-area"><span class="sign-placeholder"></span></div></td>
+                                </tr>
+                            </table>
+                        </div>
+
+                        <h2 class="doc-title" style="margin-bottom: 20px;">출 장 복 명 서</h2>
+
+                        <table class="form-table" style="margin-top: 20px;">
+                            <tr>
+                                <th style="width: 15%;">과 제 명</th>
+                                <td colspan="3" style="padding: 10px;">
+                                    <span id="doc_project2"></span>
+                                </td>
+                                <th style="width: 18%; white-space: nowrap;">연구책임자명</th>
+                                <td style="text-align: center;"><span id="doc_pi"></span></td>
+                            </tr>
+                            <tr>
+                                <th>복 명 일 자</th>
+                                <td colspan="5" style="text-align: center;">
+                                    <span id="doc_report_date"></span>
+                                </td>
+                            </tr>
+                            <tr>
+                                <th>복 명 자</th>
+                                <td colspan="5" style="text-align: center;"><span id="doc_reporter"></span></td>
+                            </tr>
+                            <tr>
+                                <th>출 장 기 간</th>
+                                <td colspan="5" style="text-align: center;"><span id="doc_date_range2"></span></td>
+                            </tr>
+                            <tr>
+                                <th>출 장 지</th>
+                                <td colspan="5" style="text-align: center;"><span id="doc_location2"></span></td>
+                            </tr>
+                            <tr>
+                                <th style="height: auto; min-height: 60px;">출장내용<br>및 결과</th>
+                                <td colspan="5"
+                                    style="text-align: left; vertical-align: middle; padding: 10px;">
+                                    <span id="doc_result" style="display: block; text-align: left; white-space: pre-wrap;"></span></td>
+                            </tr>
+                        </table>
+
+                        <!-- 출장비 정산 내역서 -->
+                        <table class="form-table" style="margin-top: 30px;">
+                            <colgroup>
+                                <col style="width: 50px;">
+                                <col style="width: 50px;">
+                                <col style="width: 65px;">
+                                <col style="width: 55px;">
+                                <col style="width: 55px;">
+                                <col style="width: 70px;">
+                            </colgroup>
+                            <tr>
+                                <th colspan="6"
+                                    style="background: #f0f0f0; padding: 10px; text-align: center;">출장비 정산 내역서
+                                </th>
+                            </tr>
+                            <tr>
+                                <th colspan="2">출장신청금액</th>
+                                <td style="text-align: center;"><span id="doc_request_amount2"></span></td>
+                                <th colspan="2" style="white-space: nowrap;">실집행금액</th>
+                                <td style="text-align: center;"><span id="doc_total_amount"></span></td>
+                            </tr>
+                            <tbody id="reportExpenseBody">
+                            <!-- 동적 생성 -->
+                            </tbody>
+                            <tr>
+                                <th colspan="2">차 액</th>
+                                <td style="text-align: center; padding: 8px;"><span id="doc_difference">0</span> 원</td>
+                                <td colspan="3" style="padding: 8px; text-align: center;">연구비 카드로 결재 (차액 결재 없음)</td>
+                            </tr>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </main>
+</div>
+
+<!-- 전자서명 QR 모달 프래그먼트 -->
+<div th:replace="~{fragments/signature-modal :: signature-modal}"></div>
+
+<script th:src="@{/js/approval_receipt_trip_detail.js}"></script>
+</body>
+</html>

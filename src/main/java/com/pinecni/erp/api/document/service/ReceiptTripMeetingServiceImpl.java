@@ -95,7 +95,7 @@ public class ReceiptTripMeetingServiceImpl implements ReceiptTripMeetingService 
                 .title(buildTitle(dto))
                 .documentType(DOC_TYPE.getCode())
                 .isProject(true)
-                .drafterUserIdx(dto.getDrafterUserIdx())
+                .drafterUserIdx(dto.getDrafterUserIdx() != null ? dto.getDrafterUserIdx() : currentUserIdx)
                 .content(dto.getTripContent())
                 .status(CodeConstants.DocumentStatus.DRAFTED.getCode())
                 .createdUserIdx(currentUserIdx)

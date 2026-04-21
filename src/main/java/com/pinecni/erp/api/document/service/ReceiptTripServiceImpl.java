@@ -164,7 +164,7 @@ public class ReceiptTripServiceImpl implements ReceiptTripService {
                     .title(title)
                     .documentType(DOC_TYPE.getCode())
                     .isProject(true)
-                    .drafterUserIdx(createDTO.getDrafterUserIdx())
+                    .drafterUserIdx(createDTO.getDrafterUserIdx() != null ? createDTO.getDrafterUserIdx() : currentUserIdx)
                     .content(createDTO.getContent())
                     .status(CodeConstants.DocumentStatus.DRAFTED.getCode())
                     .createdUserIdx(currentUserIdx)

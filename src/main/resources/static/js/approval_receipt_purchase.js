@@ -1800,9 +1800,9 @@ document.addEventListener('DOMContentLoaded', async function() {
                 setTimeout(() => { overlay.style.display = 'none'; }, 300);
             }
 
-            // 전자서명 현황 로드
-            if (window.SignatureRender && idx) {
-                SignatureRender.load(idx);
+            // 전자서명 현황 로드 (approval_documents.idx 기준)
+            if (window.SignatureRender && data.documentIdx) {
+                SignatureRender.load(data.documentIdx);
             }
         } catch (e) {
             console.error('문서 로드 오류:', e);

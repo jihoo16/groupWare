@@ -333,6 +333,18 @@
 }
 
 /* ============================================================
+ * 상세보기 페이지 공통 스타일 (body.detail-view)
+ * ============================================================ */
+.detail-view .document-form {
+    border: none;
+}
+
+.detail-view .document-form-wrapper {
+    border: none;
+    box-shadow: none;
+}
+
+/* ============================================================
  * 서명 셀 상태 스타일 (모든 문서 공통)
  * .approval-sign-cell + .doc-approval-sign 양쪽 대응
  * ============================================================ */
@@ -408,6 +420,20 @@
     max-height: 100%;
     object-fit: contain;
     display: block;
+}
+
+/* 참석자 테이블 등 행 높이가 고정된 셀 — 서명 이미지를 행 높이에 맞춰 가운데 배치 */
+td[data-slot] .sign-area {
+    height: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+td[data-slot] .sign-image {
+    max-height: 40px;
+    width: auto;
+    margin: 0 auto;
 }
 
 /* 인쇄 시 서명 UI 처리 (모든 문서 공통) */

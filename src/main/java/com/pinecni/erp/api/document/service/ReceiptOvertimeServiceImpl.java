@@ -221,7 +221,7 @@ public class ReceiptOvertimeServiceImpl implements ReceiptOvertimeService {
                     .title(title)
                     .documentType(DOC_TYPE.getCode())
                     .isProject(true)
-                    .drafterUserIdx(createDTO.getAuthorIdx())
+                    .drafterUserIdx(createDTO.getAuthorIdx() != null ? createDTO.getAuthorIdx() : currentUserIdx)
                     .content(createDTO.getDocumentContent())
                     .status(CodeConstants.DocumentStatus.DRAFTED.getCode())
                     .createdUserIdx(currentUserIdx)

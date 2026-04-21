@@ -195,7 +195,7 @@ public class ReceiptMeetingServiceImpl implements ReceiptMeetingService {
                     .title(title)
                     .documentType(CodeConstants.DocumentType.RECEIPT_MEETING.getCode())
                     .isProject(true)  // 프로젝트 문서로 표시
-                    .drafterUserIdx(createDTO.getAuthorIdx())
+                    .drafterUserIdx(createDTO.getAuthorIdx() != null ? createDTO.getAuthorIdx() : currentUserIdx)
                     .content(createDTO.getContent())
                     .status(CodeConstants.DocumentStatus.DRAFTED.getCode())
                     .createdUserIdx(currentUserIdx)

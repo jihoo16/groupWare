@@ -134,18 +134,24 @@ public class SignatureServiceImpl implements SignatureService {
             List<DocumentSignature> rows = entry.getValue();
             if (rows.size() < 2) continue;
 
-            // order 오름차순 정렬 후 가장 높은 order를 상위로, 나머지를 linked 처리
+            // order 오름차순 정렬 → 가장 낮은 order를 메인(직접 서명)으로, 나머지를 linked 처리
+            // 같은 사람이 order 1(담당) + order 2(연구책임자) 양쪽에 있으면
+            // order 1에서 한 번 서명 → order 2는 자동 반영
             rows.sort((a, b) -> Integer.compare(a.getSignatureOrder(), b.getSignatureOrder()));
-            DocumentSignature topRow = rows.get(rows.size() - 1);  // 가장 높은 order
+            DocumentSignature mainRow = rows.get(0);  // 가장 낮은 order = 먼저 서명
 
-            for (int i = 0; i < rows.size() - 1; i++) {
-                DocumentSignature lower = rows.get(i);
-                ApprovalLineTemplate lowerTemplate = templateMap.get(lower.getSignatureSlot());
-                if (lowerTemplate != null && Boolean.TRUE.equals(lowerTemplate.getIsAutoLinked())) {
-                    lower.setLinkedSignatureIdx(topRow.getIdx());
-                    documentSignatureRepository.save(lower);
-                    log.info("연동 서명 설정: lowerIdx={} → topIdx={} (signer={})",
-                            lower.getIdx(), topRow.getIdx(), entry.getKey());
+            for (int i = 1; i < rows.size(); i++) {
+                DocumentSignature later = rows.get(i);
+                ApprovalLineTemplate laterTemplate = templateMap.get(later.getSignatureSlot());
+                // auto_linked 여부는 나중 슬롯 OR 먼저 슬롯 중 하나라도 TRUE면 연동
+                ApprovalLineTemplate mainTemplate = templateMap.get(mainRow.getSignatureSlot());
+                boolean shouldLink = (laterTemplate != null && Boolean.TRUE.equals(laterTemplate.getIsAutoLinked()))
+                        || (mainTemplate != null && Boolean.TRUE.equals(mainTemplate.getIsAutoLinked()));
+                if (shouldLink) {
+                    later.setLinkedSignatureIdx(mainRow.getIdx());
+                    documentSignatureRepository.save(later);
+                    log.info("연동 서명 설정: laterIdx={} → mainIdx={} (signer={})",
+                            later.getIdx(), mainRow.getIdx(), entry.getKey());
                 }
             }
         }
@@ -184,6 +190,7 @@ public class SignatureServiceImpl implements SignatureService {
 
         switch (role) {
             case "DRAFTER":
+                // 문서의 공식 작성자 (drafterUserIdx) 기준 — 서명칸에 이름이 표시되는 사람
                 if (document.getDrafterUserIdx() != null) {
                     return List.of(document.getDrafterUserIdx());
                 }

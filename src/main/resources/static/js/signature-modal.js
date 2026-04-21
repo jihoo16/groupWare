@@ -78,9 +78,10 @@
                 .then((data) => _onSessionCreated(data))
                 .catch((err) => {
                     const msg = err.message || '다시 시도해주세요.';
-                    const title = msg.includes('서명칸') || msg.includes('차례') || msg.includes('완료된')
-                        ? '서명 안내' : 'QR 생성 실패';
-                    _showErrorState(title, msg);
+                    const isGuide = msg.includes('서명칸') || msg.includes('차례')
+                        || msg.includes('완료된') || msg.includes('연동')
+                        || msg.includes('대상자') || msg.includes('서명 순서');
+                    _showErrorState(isGuide ? '서명 안내' : 'QR 생성 실패', msg);
                 });
         },
 

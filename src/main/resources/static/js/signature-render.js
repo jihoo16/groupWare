@@ -30,8 +30,17 @@
     }
 
     function render(documentIdx, signatures) {
+        // 1. 참석자(C1601) — signer별로 매칭 (data-signer-idx 기준)
+        const attendeeSigs = signatures.filter(s => s.signatureSlot === 'C1601');
+        attendeeSigs.forEach(sig => {
+            const cells = document.querySelectorAll(
+                `[data-slot="C1601"][data-signer-idx="${sig.signerUserIdx}"]`);
+            cells.forEach(cell => applyToCell(cell, sig, documentIdx));
+        });
+
+        // 2. 나머지 슬롯 — 슬롯당 대표 1개 (기존 로직)
         const bySlot = new Map();
-        signatures.forEach(s => {
+        signatures.filter(s => s.signatureSlot !== 'C1601').forEach(s => {
             const prev = bySlot.get(s.signatureSlot);
             if (!prev) {
                 bySlot.set(s.signatureSlot, s);
@@ -107,43 +116,78 @@
      * @param {string} opts.redirectUrl - 서명 완료/취소 후 이동할 URL
      * @param {string} [opts.successMessage] - 저장 성공 메시지
      */
-    function afterSave(opts) {
+    async function afterSave(opts) {
         const docIdx = opts.documentIdx;
-        const slot = opts.signatureSlot || 'C1602';
         const redirectUrl = opts.redirectUrl || '/approval';
         const msg = opts.successMessage || '문서가 저장되었습니다.';
 
         if (!docIdx || !window.SignatureModal) {
-            if (window.Swal) {
-                Swal.fire({ icon: 'success', title: '저장 완료', text: msg, timer: 2000, showConfirmButton: true });
-            }
-            setTimeout(() => { window.location.href = redirectUrl; }, 2000);
+            showSaveSuccess(msg, redirectUrl);
             return;
         }
 
-        if (window.Swal) Swal.close();
+        // 서명 현황 조회 → 본인이 서명 가능한 슬롯이 있는지 확인
+        try {
+            const resp = await fetch(`/api/signature/document/${docIdx}`);
+            if (!resp.ok) {
+                showSaveSuccess(msg, redirectUrl);
+                return;
+            }
+            const signatures = await resp.json();
+            const mySlot = signatures.find(s => s.canSign && !s.linkedSignatureIdx);
 
-        SignatureModal.open({
-            documentIdx: docIdx,
-            signatureSlot: slot,
-            onComplete: () => {},
-            onClose: (ev) => {
-                if (ev.completed) {
-                    window.location.href = redirectUrl;
+            if (!mySlot) {
+                // 본인이 서명 가능한 슬롯이 없는 이유 분석
+                const myLinked = signatures.find(s =>
+                    s.signerUserIdx && s.linkedSignatureIdx
+                    && window.CURRENT_USER && s.signerUserIdx === window.CURRENT_USER.idx);
+                const myWaiting = signatures.find(s =>
+                    s.signerUserIdx && !s.linkedSignatureIdx && !s.canSign && s.requestedAt === null
+                    && window.CURRENT_USER && s.signerUserIdx === window.CURRENT_USER.idx);
+
+                let guide = '';
+                if (myLinked) {
+                    guide = '\n본인 서명칸은 다른 결재란과 연동되어 있어,\n해당 단계에서 자동으로 서명됩니다.';
+                } else if (myWaiting) {
+                    guide = '\n이전 단계 서명이 완료되면 본인 서명 차례가 됩니다.';
                 } else {
-                    if (window.Swal) {
-                        Swal.fire({
-                            icon: 'info',
-                            title: '저장 완료',
-                            html: msg + '<br>상세 페이지에서 서명을 진행할 수 있습니다.',
-                            confirmButtonText: '확인'
-                        }).then(() => { window.location.href = redirectUrl; });
-                    } else {
+                    guide = '\n서명 대상자에게 서명 요청이 전달되었습니다.';
+                }
+                showSaveSuccess(msg + guide, redirectUrl);
+                return;
+            }
+
+            // 본인 서명 가능 → QR 모달 오픈
+            if (window.Swal) Swal.close();
+            SignatureModal.open({
+                documentIdx: docIdx,
+                signatureSlot: mySlot.signatureSlot,
+                onComplete: () => {},
+                onClose: (ev) => {
+                    if (ev.completed) {
                         window.location.href = redirectUrl;
+                    } else {
+                        showSaveSuccess(msg + '\n상세 페이지에서 서명을 진행할 수 있습니다.', redirectUrl);
                     }
                 }
-            }
-        });
+            });
+        } catch (e) {
+            console.error('[SignatureRender] afterSave 오류', e);
+            showSaveSuccess(msg, redirectUrl);
+        }
+    }
+
+    function showSaveSuccess(msg, redirectUrl) {
+        if (window.Swal) {
+            Swal.fire({
+                icon: 'success',
+                title: '저장 완료',
+                html: (msg || '').replace(/\n/g, '<br>'),
+                confirmButtonText: '확인'
+            }).then(() => { window.location.href = redirectUrl; });
+        } else {
+            setTimeout(() => { window.location.href = redirectUrl; }, 2000);
+        }
     }
 
     window.SignatureRender = { load: load, afterSave: afterSave };

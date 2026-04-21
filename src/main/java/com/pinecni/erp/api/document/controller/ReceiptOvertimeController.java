@@ -228,13 +228,16 @@ public class ReceiptOvertimeController {
             return ResponseEntity.ok(response);
         } catch (IllegalArgumentException e) {
             log.error("야근식대 삭제 실패: {}", e.getMessage());
-
             Map<String, String> error = new HashMap<>();
             error.put("error", e.getMessage());
             return ResponseEntity.status(HttpStatus.NOT_FOUND).body(error);
+        } catch (IllegalStateException e) {
+            log.warn("야근식대 삭제 차단: {}", e.getMessage());
+            Map<String, String> error = new HashMap<>();
+            error.put("error", e.getMessage());
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(error);
         } catch (Exception e) {
             log.error("야근식대 삭제 중 오류 발생: {}", e.getMessage(), e);
-
             Map<String, String> error = new HashMap<>();
             error.put("error", "서버 오류가 발생했습니다.");
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(error);
