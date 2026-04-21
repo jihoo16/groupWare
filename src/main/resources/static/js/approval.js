@@ -922,9 +922,14 @@ document.addEventListener('DOMContentLoaded', function() {
         C1003: 'settlement-confirmed',
         C1004: 'settlement-rejected',
         C1005: 'settlement-settled',
-        // 연차신청서
-        PENDING:  'settlement-submitted',
-        APPROVED: 'settlement-settled',
+        // 연차신청서 (C05 문서상태 코드)
+        C0501: 'doc-status-drafted',
+        C0502: 'doc-status-pending',
+        C0504: 'doc-status-approved',
+        C0505: 'doc-status-rejected',
+        C0506: 'doc-status-sign-pending',
+        C0507: 'doc-status-sign-progress',
+        C0508: 'doc-status-sign-complete',
     };
 
     // 상태 안내 문구 (개인경비청구 — 작성 도구 모드)
@@ -936,10 +941,14 @@ document.addEventListener('DOMContentLoaded', function() {
         C1005: { icon: 'fas fa-check-circle',    color: '#16a34a', title: '정산완료',  desc: '과거 워크플로우로 정산 처리된 문서입니다.' },
     };
 
-    // 상태 안내 문구 (연차신청서)
+    // 상태 안내 문구 (연차신청서 — C05 코드)
     const VACATION_STATUS_GUIDE = {
-        PENDING:  { icon: 'fas fa-hourglass-half', color: '#2563eb', title: '승인대기', desc: '관리자가 문서를 확인 중입니다. 승인을 기다리고 있어요.' },
-        APPROVED: { icon: 'fas fa-check-circle',   color: '#16a34a', title: '승인 완료', desc: '연차 신청이 승인 완료되었습니다.' },
+        C0501: { icon: 'fas fa-pen',             color: '#6b7280', title: '작성완료',     desc: '문서가 저장되었습니다. 전자서명을 진행해주세요.' },
+        C0506: { icon: 'fas fa-signature',       color: '#ea580c', title: '서명대기',     desc: '전자서명이 요청되었습니다. 서명을 진행해주세요.' },
+        C0507: { icon: 'fas fa-pen-nib',         color: '#2563eb', title: '서명진행중',   desc: '일부 서명이 완료되었습니다. 나머지 결재자의 서명을 기다리고 있습니다.' },
+        C0508: { icon: 'fas fa-file-signature',  color: '#7c3aed', title: '서명완료',     desc: '전자서명이 모두 완료되었습니다. 인쇄 후 대표이사 서면 결재를 받아주세요.' },
+        C0504: { icon: 'fas fa-check-circle',    color: '#16a34a', title: '승인',         desc: '연차 신청이 승인 완료되었습니다.' },
+        C0505: { icon: 'fas fa-times-circle',    color: '#dc2626', title: '반려',         desc: '연차 신청이 반려되었습니다.' },
     };
 
     // HTML escape (안전 출력)
@@ -1105,7 +1114,6 @@ document.addEventListener('DOMContentLoaded', function() {
                 : '';
 
             // 상태 뱃지 (statusCode가 있는 문서만 — 개인경비청구/연차신청서)
-            // 클릭 시 안내 모달 표시 (read-only)
             let statusBadge = '-';
             if (doc.statusCode && doc.statusName) {
                 const stCls = DOC_STATUS_STYLES[doc.statusCode] || '';
@@ -1118,6 +1126,7 @@ document.addEventListener('DOMContentLoaded', function() {
                     style="cursor:pointer;"
                     data-tip="클릭하여 상세 보기">${doc.statusName}</span>`;
             }
+
 
             tr.innerHTML = `
                 <td>

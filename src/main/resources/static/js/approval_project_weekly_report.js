@@ -2013,11 +2013,19 @@ document.addEventListener('DOMContentLoaded', function() {
                         console.log('파일 삭제 완료');
                     }
 
-                    const successMessage = isEditMode ?
-                        '프로젝트 주간업무보고가 수정되었습니다.' :
-                        '프로젝트 주간업무보고가 저장되었습니다.';
-                    await showSuccess(successMessage);
-                    popupAwareRedirect('/project/documents');
+                    if (window.SignatureRender && !isEditMode) {
+                        SignatureRender.afterSave({
+                            documentIdx: responseData.documentIdx || responseData.idx,
+                            redirectUrl: '/project/documents',
+                            successMessage: '프로젝트 주간업무보고가 저장되었습니다.'
+                        });
+                    } else {
+                        const successMessage = isEditMode ?
+                            '프로젝트 주간업무보고가 수정되었습니다.' :
+                            '프로젝트 주간업무보고가 저장되었습니다.';
+                        await showSuccess(successMessage);
+                        popupAwareRedirect('/project/documents');
+                    }
                 } else {
                     Swal.close();
                     const error = await response.text();

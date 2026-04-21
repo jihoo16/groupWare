@@ -316,8 +316,8 @@
                                                 <td class="doc-approval-head">연구책임자</td>
                                             </tr>
                                             <tr>
-                                                <td class="doc-approval-sign ot-signature-applicant"></td>
-                                                <td class="doc-approval-sign ot-signature-manager"></td>
+                                                <td class="doc-approval-sign ot-signature-applicant" data-slot="C1602"><div class="sign-area"><span class="sign-placeholder"></span></div></td>
+                                                <td class="doc-approval-sign ot-signature-manager" data-slot="C1603"><div class="sign-area"><span class="sign-placeholder"></span></div></td>
                                             </tr>
                                         </table>
                                     </div>
@@ -441,8 +441,8 @@
                                         <span class="ot-auto-date-full"></span>
                                     </div>
 
-                                    <div style="text-align: right; font-size: 14px;">
-                                        <p style="margin: 5px 0; font-weight: 500">연구책임자 : <span class="ot-auto-manager" style=" min-width: 80px; border-bottom: 1px solid #000; padding-bottom: 2px;"></span> (인)</p>
+                                    <div class="footer-signature" style="text-align: right; font-size: 14px;" data-slot="C1603">
+                                        <p style="margin: 5px 0; font-weight: 500">연구책임자 : <span class="ot-auto-manager" style=" min-width: 80px; border-bottom: 1px solid #000; padding-bottom: 2px;"></span> <span class="signature-seal">(인)</span></p>
                                     </div>
                                 </div>
 
@@ -591,7 +591,9 @@
     </div>
 
     <script th:src="@{/js/search-utils.js}"></script>
-    <script th:src="@{/js/common/receipt-common.js}"></script>
     <script th:src="@{/js/approval_receipt_overtime.js}"></script>
+
+    <!-- 전자서명 QR 모달 프래그먼트 -->
+    <div th:replace="~{fragments/signature-modal :: signature-modal}"></div>
 </body>
 </html>

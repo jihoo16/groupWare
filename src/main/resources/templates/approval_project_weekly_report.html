@@ -275,12 +275,12 @@
                                             <th class="approval-header">연구책임자</th>
                                         </tr>
                                         <tr>
-                                            <td class="approval-sign-cell" data-role="담당" data-approver-id="">
+                                            <td class="approval-sign-cell" data-role="담당" data-approver-id="" data-slot="C1602">
                                                 <div class="sign-area">
                                                     <span class="sign-placeholder">결재</span>
                                                 </div>
                                             </td>
-                                            <td class="approval-sign-cell" data-role="연구책임자" data-approver-id="">
+                                            <td class="approval-sign-cell" data-role="연구책임자" data-approver-id="" data-slot="C1603">
                                                 <div class="sign-area">
                                                     <span class="sign-placeholder">결재</span>
                                                 </div>
@@ -411,5 +411,8 @@
     <script th:src="@{/js/constants.js}"></script>
     <script th:src="@{/js/search-utils.js}"></script>
     <script th:src="@{/js/approval_project_weekly_report.js}"></script>
+
+    <!-- 전자서명 QR 모달 프래그먼트 -->
+    <div th:replace="~{fragments/signature-modal :: signature-modal}"></div>
 </body>
 </html>

@@ -1,0 +1,183 @@
+<!DOCTYPE html>
+<html lang="ko" xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{fragments/layout :: head('연구비증빙 야근식대 상세', '/css/approval_receipt_overtime.css')}"></head>
+<body class="detail-view">
+<!-- 로딩 오버레이 -->
+<div th:replace="~{fragments/loading-overlay :: overlay}"></div>
+
+<div class="container">
+    <!-- 좌측 네비게이션 바 -->
+    <div th:replace="~{fragments/sidebar :: sidebar('project')}"></div>
+
+    <!-- 메인 콘텐츠 영역 -->
+    <main class="main-content">
+        <header class="header no-print">
+            <div class="header-left">
+                <h1 class="page-title"><i class="fas fa-file-alt"></i> 연구비증빙 야근식대 상세</h1>
+            </div>
+            <div class="header-right">
+                <button class="btn-print btn-lg" id="printBtn" style="display:none;">
+                    <i class="fas fa-print"></i>
+                    인쇄하기
+                </button>
+                <button class="btn-primary btn-lg" id="editBtn" style="display:none;">
+                    <i class="fas fa-edit"></i>
+                    수정
+                </button>
+                <button class="btn-danger btn-lg" id="deleteBtn" style="display:none;">
+                    <i class="fas fa-trash"></i>
+                    삭제
+                </button>
+                <button class="btn-secondary btn-lg" onclick="history.back()">
+                    <i class="fas fa-arrow-left"></i>
+                    돌아가기
+                </button>
+            </div>
+        </header>
+
+        <div class="write-container">
+            <div class="editor-area" style="max-width: 1000px; margin: 0 auto;">
+                <div class="document-form" id="documentFormContent">
+
+                    <!-- 품의서 -->
+                    <div style="background: white; border: 2px solid #e0e0e0; border-radius: 8px; padding: 30px; margin: 0 auto 30px; max-width: 881px">
+
+                        <!-- 결재란 -->
+                        <div style="display: flex; justify-content: flex-end; margin-bottom: 15px;">
+                            <table class="doc-approval-table">
+                                <tr>
+                                    <td class="doc-approval-head">신청자</td>
+                                    <td class="doc-approval-head">연구책임자</td>
+                                </tr>
+                                <tr>
+                                    <td class="doc-approval-sign" data-slot="C1602"><div class="sign-area"><span class="sign-placeholder"></span></div></td>
+                                    <td class="doc-approval-sign" data-slot="C1603"><div class="sign-area"><span class="sign-placeholder"></span></div></td>
+                                </tr>
+                            </table>
+                        </div>
+
+                        <h2 class="doc-title" style="font-size: 30px; font-weight: bold;">품 의 서</h2>
+
+                        <table class="form-table" style="margin-top: 20px;">
+                            <tr>
+                                <th style="width: 15%;">과제명</th>
+                                <td style="padding: 10px; text-align: center;"><span id="doc_project"></span></td>
+                                <th style="width: 15%;">연구책임자명</th>
+                                <td style="padding: 10px; text-align: center;"><span id="doc_manager"></span></td>
+                            </tr>
+                            <tr>
+                                <th>품의일자</th>
+                                <td colspan="3" style="text-align: center;"><span id="doc_approval_date"></span></td>
+                            </tr>
+                            <tr>
+                                <th>신청자</th>
+                                <td colspan="3" style="text-align: center;"><span id="doc_applicant"></span> 연구원</td>
+                            </tr>
+                            <tr>
+                                <th>품의명</th>
+                                <td colspan="3" style="text-align: center;"><span id="doc_title">야근 식대</span></td>
+                            </tr>
+                            <tr>
+                                <th>지급종류</th>
+                                <td colspan="3" style="text-align: center;">
+                                    연구비카드(<span id="doc_payment_card"></span>) / 연구비이체(<span id="doc_payment_transfer"></span>)
+                                </td>
+                            </tr>
+                            <tr>
+                                <th style="height: 200px;">품의 내용</th>
+                                <td colspan="3" style="text-align: left; padding: 10px; white-space: pre-wrap; height: 200px;"><span id="doc_content"></span></td>
+                            </tr>
+                            <tr>
+                                <th colspan="4" style="background: #f0f0f0; padding: 15px; text-align: center;">품의 내역서</th>
+                            </tr>
+                            <tr>
+                                <th>날짜</th>
+                                <th colspan="2">적요</th>
+                                <th>공급대가</th>
+                            </tr>
+                            <tr>
+                                <td style="text-align: center;"><span id="doc_date_slash"></span></td>
+                                <td colspan="2" style="text-align: center;"><span id="doc_desc">야근 식대</span></td>
+                                <td style="text-align: center;"><span id="doc_amount"></span></td>
+                            </tr>
+                            <tr><td></td><td colspan="2"></td><td></td></tr>
+                            <tr><td></td><td colspan="2"></td><td></td></tr>
+                            <tr><td></td><td colspan="2"></td><td></td></tr>
+                            <tr>
+                                <td colspan="3" style="text-align: center; font-weight: bold;">계</td>
+                                <td style="text-align: center;"><span id="doc_amount_total"></span></td>
+                            </tr>
+                        </table>
+                    </div>
+
+                    <!-- 야근 및 특근 신청서 -->
+                    <div style="background: white; border: 2px solid #e0e0e0; border-radius: 8px; padding: 30px; max-width: 881px; margin: 0 auto 30px">
+                        <h2 class="doc-title" style="font-size: 30px; font-weight: bold;">야근 및 특근 신청서</h2>
+
+                        <div style="margin-bottom: 20px;">
+                            <h3 style="font-size: 16px; margin-bottom: 10px;">□ 과제 정보</h3>
+                            <table class="form-table">
+                                <tr>
+                                    <th style="width: 13%;">연구기관명<br>(부서명)</th>
+                                    <td style="text-align: center;">파인씨앤아이<br>- 기업 부설 연구소</td>
+                                    <th style="width: 13%;">연구책임자</th>
+                                    <td style="text-align: center;"><span id="doc_manager2"></span></td>
+                                </tr>
+                                <tr>
+                                    <th>과 제 명</th>
+                                    <td style="text-align: center; padding: 10px;"><span id="doc_project2"></span></td>
+                                    <th>야근 및 특근 일자</th>
+                                    <td style="text-align: center;"><span id="doc_date"></span></td>
+                                </tr>
+                            </table>
+                        </div>
+
+                        <div style="margin-bottom: 20px;">
+                            <h3 style="font-size: 16px; margin-bottom: 10px;">□ 신청내역</h3>
+                            <table class="form-table">
+                                <thead>
+                                    <tr>
+                                        <th style="width: 8%;">연번</th>
+                                        <th style="width: 12%;">성명</th>
+                                        <th style="width: 15%;">시간</th>
+                                        <th>업무 내용</th>
+                                        <th style="width: 12%;">본인 서명</th>
+                                        <th style="width: 10%;">비 고</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="otPersonTableBody">
+                                </tbody>
+                            </table>
+                        </div>
+
+                        <div style="margin-bottom: 20px;">
+                            <h3 style="font-size: 16px; margin-bottom: 10px;">□ 실집행 금액</h3>
+                            <table class="form-table">
+                                <tr>
+                                    <th style="width: 20%; text-align: center; background: #f5f5f5;">실집행 금액</th>
+                                    <td style="text-align: center;"><span id="doc_actual_amount"></span></td>
+                                </tr>
+                            </table>
+                        </div>
+
+                        <div style="text-align: center; margin: 30px 0; font-size: 14px; font-weight: 500">
+                            <span id="doc_date_full"></span>
+                        </div>
+
+                        <div class="footer-signature" style="text-align: right; font-size: 14px;" data-slot="C1603">
+                            <p style="margin: 5px 0; font-weight: 500">연구책임자 : <span id="doc_manager3" style="min-width: 80px; border-bottom: 1px solid #000; padding-bottom: 2px;"></span> <span class="signature-seal">(인)</span></p>
+                        </div>
+                    </div>
+
+                </div>
+            </div>
+        </div>
+    </main>
+</div>
+
+<!-- 전자서명 QR 모달 프래그먼트 -->
+<div th:replace="~{fragments/signature-modal :: signature-modal}"></div>
+
+<script th:src="@{/js/approval_receipt_overtime_detail.js}"></script>
+</body>
+</html>

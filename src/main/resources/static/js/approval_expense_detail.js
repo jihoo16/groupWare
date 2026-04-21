@@ -264,6 +264,9 @@ document.addEventListener('DOMContentLoaded', async function () {
 
     renderServerAttachments(doc.attachments);
 
+    // 전자서명 현황 로드
+    if (window.SignatureRender && doc.documentIdx) SignatureRender.load(doc.documentIdx);
+
     // ── 항목별 영수증 버튼 이벤트 ─────────────────────────────────
     let currentUploadDetailIdx = null;
     const hiddenInput = document.getElementById('itemReceiptHiddenInput');

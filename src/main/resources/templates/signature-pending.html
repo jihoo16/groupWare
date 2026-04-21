@@ -1,0 +1,141 @@
+<!DOCTYPE html>
+<html lang="ko" xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{fragments/layout :: head('서명 관리', '/css/signature-pending.css')}"></head>
+<body>
+<div th:replace="~{fragments/loading-overlay :: overlay}"></div>
+<div class="container">
+    <div th:replace="~{fragments/sidebar :: sidebar('signature')}"></div>
+
+    <main class="main-content">
+        <header class="header">
+            <div class="header-left">
+                <h1 class="page-title"><i class="fas fa-pen-nib"></i> 서명 관리</h1>
+            </div>
+            <div class="header-right"></div>
+        </header>
+
+        <div class="content-area">
+            <!-- 통계 요약 -->
+            <div class="quick-stats">
+                <div class="stat-card stat-pending" id="statPendingCard" style="cursor:pointer;">
+                    <div class="stat-icon icon-indigo">
+                        <i class="fas fa-clock"></i>
+                    </div>
+                    <div class="stat-content">
+                        <span class="stat-label">서명 대기</span>
+                        <span class="stat-number" id="statPending">0<em>건</em></span>
+                    </div>
+                </div>
+                <div class="stat-card stat-completed" id="statCompletedCard" style="cursor:pointer;">
+                    <div class="stat-icon icon-purple">
+                        <i class="fas fa-check"></i>
+                    </div>
+                    <div class="stat-content">
+                        <span class="stat-label">서명 완료</span>
+                        <span class="stat-number" id="statCompleted">0<em>건</em></span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 필터 영역 -->
+            <div class="filter-section">
+                <div class="filter-group" style="flex:1;">
+                    <label><i class="fas fa-tags"></i> 문서 종류</label>
+                    <div class="type-chips" id="typeChips">
+                        <button class="type-chip active" data-type="all">전체</button>
+                        <button class="type-chip" data-type="C0413">연차</button>
+                        <button class="type-chip" data-type="C0401">개인경비</button>
+                        <button class="type-chip" data-type="C0402">지출품의</button>
+                        <button class="type-chip" data-type="C0403">야근식대</button>
+                        <button class="type-chip" data-type="C0404">출장</button>
+                        <button class="type-chip" data-type="C0405">출장+회의</button>
+                        <button class="type-chip" data-type="C0406">회의록</button>
+                        <button class="type-chip" data-type="C0407">재료비</button>
+                        <button class="type-chip" data-type="C0408">장비비</button>
+                        <button class="type-chip" data-type="C0410">주간보고</button>
+                        <button class="type-chip" data-type="C0411">월간보고</button>
+                        <button class="type-chip" data-type="C0412">회의록(일반)</button>
+                    </div>
+                </div>
+                <div class="filter-group">
+                    <label><i class="fas fa-search"></i> 검색</label>
+                    <input type="text" id="searchInput" class="search-input" placeholder="제목·요청자 검색 (초성 가능)">
+                </div>
+            </div>
+
+            <!-- 탭 -->
+            <div class="sig-tabs">
+                <button class="sig-tab active" data-tab="pending">
+                    서명 대기 <span class="sig-tab-badge" id="tabPendingCount"></span>
+                </button>
+                <button class="sig-tab" data-tab="completed">
+                    서명 이력
+                </button>
+            </div>
+
+            <!-- 대기 탭 -->
+            <div id="tabPendingContent">
+                <div class="sig-empty" id="emptyPending" style="display:none;">
+                    <i class="fas fa-check-circle" style="color:#10b981;"></i>
+                    <h3>서명 대기 문서가 없습니다</h3>
+                    <p>현재 서명이 필요한 문서가 없습니다.</p>
+                </div>
+
+                <div class="bulk-actions" id="bulkActions" style="display:none;">
+                    <button class="bulk-sign-btn" id="bulkSignBtn" style="display:none;">
+                        <i class="fas fa-pen-nib"></i> 일괄 서명 (<span id="selectedCount">0</span>건)
+                    </button>
+                </div>
+
+                <div class="documents-table-wrapper" id="pendingTableWrapper" style="display:none;">
+                    <table class="documents-table" id="pendingTable">
+                        <thead>
+                            <tr>
+                                <th style="width:5%;"><input type="checkbox" id="selectAllHeader"></th>
+                                <th style="width:14%; cursor:pointer;" data-sort="documentTypeName">문서 유형 <i class="fas fa-sort sort-icon"></i></th>
+                                <th style="cursor:pointer;" data-sort="documentTitle">문서 제목 <i class="fas fa-sort sort-icon"></i></th>
+                                <th style="width:11%; cursor:pointer;" data-sort="signatureSlotLabel">서명 위치 <i class="fas fa-sort sort-icon"></i></th>
+                                <th style="width:10%; cursor:pointer;" data-sort="drafterName">요청자 <i class="fas fa-sort sort-icon"></i></th>
+                                <th style="width:13%; cursor:pointer;" data-sort="requestedAt">요청 일시 <i class="fas fa-sort sort-icon"></i></th>
+                                <th style="width:6%;">이동</th>
+                            </tr>
+                        </thead>
+                        <tbody id="pendingTableBody"></tbody>
+                    </table>
+                </div>
+                <div class="pagination-wrapper" id="pendingPagination"></div>
+            </div>
+
+            <!-- 이력 탭 -->
+            <div id="tabCompletedContent" style="display:none;">
+                <div class="sig-empty" id="emptyCompleted" style="display:none;">
+                    <i class="fas fa-file-signature" style="color:#cbd5e1;"></i>
+                    <h3>서명 이력이 없습니다</h3>
+                </div>
+
+                <div class="documents-table-wrapper" id="completedTableWrapper" style="display:none;">
+                    <table class="documents-table" id="completedTable">
+                        <thead>
+                            <tr>
+                                <th style="width:14%; cursor:pointer;" data-sort="documentTypeName" data-tab="completed">문서 유형 <i class="fas fa-sort sort-icon"></i></th>
+                                <th style="cursor:pointer;" data-sort="documentTitle" data-tab="completed">문서 제목 <i class="fas fa-sort sort-icon"></i></th>
+                                <th style="width:11%; cursor:pointer;" data-sort="signatureSlotLabel" data-tab="completed">서명 위치 <i class="fas fa-sort sort-icon"></i></th>
+                                <th style="width:10%; cursor:pointer;" data-sort="drafterName" data-tab="completed">요청자 <i class="fas fa-sort sort-icon"></i></th>
+                                <th style="width:13%; cursor:pointer;" data-sort="signedAt" data-tab="completed">서명 일시 <i class="fas fa-sort sort-icon"></i></th>
+                                <th style="width:6%;">이동</th>
+                            </tr>
+                        </thead>
+                        <tbody id="completedTableBody"></tbody>
+                    </table>
+                </div>
+                <div class="pagination-wrapper" id="completedPagination"></div>
+            </div>
+        </div>
+    </main>
+</div>
+
+<div th:replace="~{fragments/signature-modal :: signature-modal}"></div>
+<script th:src="@{/js/search-utils.js}"></script>
+<script th:src="@{/js/signature-pending.js}"></script>
+</body>
+</html>

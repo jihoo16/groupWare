@@ -2,6 +2,7 @@ package com.pinecni.erp.api.expense.service;
 
 import com.pinecni.erp.api.approval.repository.ApprovalDocumentRepository;
 import com.pinecni.erp.api.approval.service.DocumentSequenceService;
+import com.pinecni.erp.api.signature.service.SignatureService;
 import com.pinecni.erp.api.expense.dto.AdminExpenseDocumentDTO;
 import com.pinecni.erp.api.expense.dto.ExpenseApprovalAttachmentDTO;
 import com.pinecni.erp.api.expense.dto.ExpenseApprovalCreateDTO;
@@ -60,6 +61,7 @@ public class ExpenseApprovalServiceImpl implements ExpenseApprovalService {
     private final ExpenseApprovalAttachmentRepository attachmentRepository;
     private final UserRepository userRepository;
     private final CodeRepository codeRepository;
+    private final SignatureService signatureService;
 
     @Value("${file.base.dir}")
     private String baseDir;
@@ -95,6 +97,7 @@ public class ExpenseApprovalServiceImpl implements ExpenseApprovalService {
                 .documentType(DOC_TYPE.getCode())
                 .content("총 지출금액: ₩" + String.format("%,d", totalAmount))
                 .isProject(false)
+                .status(CodeConstants.DocumentStatus.DRAFTED.getCode())
                 .drafterUserIdx(loginUserIdx)
                 .createdUserIdx(loginUserIdx)
                 .updatedUserIdx(loginUserIdx)
@@ -120,6 +123,15 @@ public class ExpenseApprovalServiceImpl implements ExpenseApprovalService {
 
         log.info("지출승인서 생성 완료 - idx: {}, documentNo: {}, 총 금액: {}, 항목 수: {}",
                 expenseApproval.getIdx(), documentNo, totalAmount, details.size());
+
+        // 전자서명 요청 자동 생성
+        try {
+            signatureService.requestSignaturesForDocument(doc.getIdx(), loginUserIdx);
+            doc.setStatus(CodeConstants.DocumentStatus.SIGN_PENDING.getCode());
+            approvalDocumentRepository.save(doc);
+        } catch (Exception e) {
+            log.error("[서명 요청 생성 실패] documentIdx: {}, error: {}", doc.getIdx(), e.getMessage());
+        }
 
         return expenseApproval;
     }
@@ -147,6 +159,11 @@ public class ExpenseApprovalServiceImpl implements ExpenseApprovalService {
         ExpenseApproval expenseApproval = expenseApprovalRepository.findByIdxWithDetails(idx)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND,
                         "지출승인서를 찾을 수 없습니다. idx: " + idx));
+
+        // 전자서명 게이트
+        if (expenseApproval.getDocumentIdx() != null && signatureService.hasAnySignatureCaptured(expenseApproval.getDocumentIdx())) {
+            throw new IllegalStateException("전자서명이 진행된 문서는 수정할 수 없습니다.");
+        }
 
         if (!expenseApproval.getUserIdx().equals(loginUserIdx)) {
             throw new ResponseStatusException(HttpStatus.FORBIDDEN, "본인 문서만 수정할 수 있습니다.");
@@ -263,6 +280,12 @@ public class ExpenseApprovalServiceImpl implements ExpenseApprovalService {
         // 본인 문서 검증
         if (!expenseApproval.getUserIdx().equals(loginUserIdx)) {
             throw new ResponseStatusException(HttpStatus.FORBIDDEN, "본인 문서만 삭제할 수 있습니다.");
+        }
+
+        // 전자서명 게이트
+        if (expenseApproval.getDocumentIdx() != null
+                && signatureService.hasAnySignatureCaptured(expenseApproval.getDocumentIdx())) {
+            throw new IllegalStateException("전자서명이 진행된 문서는 삭제할 수 없습니다.");
         }
 
         // soft delete

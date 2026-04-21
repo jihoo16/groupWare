@@ -826,15 +826,15 @@ let text;
             ${isWeeklyReport ? `<button class="btn-icon weekly-pdf-btn" data-tip="PDF 다운로드" style="margin: 0 2px; display: inline-block;">
                 <i class="fas fa-paperclip"></i>
             </button>` : ''}
-            <button class="btn-icon view-btn" data-tip="상세보기" style="margin: 0 2px; display: inline-block;">
-                <i class="fas fa-eye"></i>
+            <button class="btn-icon edit-btn" data-tip="수정" style="margin: 0 2px; display: inline-block;">
+                <i class="fas fa-pen"></i>
             </button>
         `;
         tr.appendChild(actionCell);
 
-        // 상세보기 버튼 이벤트
-        const viewBtn = actionCell.querySelector('.view-btn');
-        viewBtn.addEventListener('click', () => viewDocument(doc));
+        // 수정 버튼 이벤트
+        const editBtn = actionCell.querySelector('.edit-btn');
+        editBtn.addEventListener('click', () => editDocument(doc));
 
         // 첨부파일 모달 버튼 이벤트
         if (isReceiptType) {
@@ -857,32 +857,51 @@ let text;
 
     // 문서 상세보기
     function viewDocument(doc) {
-        // 문서 타입에 따라 다른 상세 페이지로 이동
-        const urls = {
-            'C0410': '/approval/project-weekly-report/detail',  // 프로젝트 주간업무보고
-            'C0406': '/approval/receipt-meeting',               // 연구비증빙-회의록
-            'C0404': '/approval/receipt-trip',                  // 단독출장
-            'C0405': '/approval/receipt-trip-meeting',          // 출장+회의
-            'C0403': '/approval/receipt-overtime',              // 야근식대
-            'C0407': '/approval/receipt-purchase?type=material',// 재료비
-            'C0408': '/approval/receipt-purchase?type=equipment'// 장비비
+        // 문서 타입에 따라 상세보기 페이지로 이동 (읽기 전용)
+        const detailUrls = {
+            'C0410': '/approval/project-weekly-report/detail',
+            'C0406': '/approval/receipt-meeting/detail',
+            'C0404': '/approval/receipt-trip/detail',
+            'C0405': '/approval/receipt-trip-meeting/detail',
+            'C0403': '/approval/receipt-overtime/detail',
+            'C0407': '/approval/receipt-purchase/detail',
+            'C0408': '/approval/receipt-purchase/detail'
         };
 
-        const url = urls[doc.documentType];
+        const url = detailUrls[doc.documentType];
         if (url) {
-            // 출장+회의는 receiptTripMeeting.idx(sourceDocumentId)를 ?id= 파라미터로 전달
-            const isTripMeetingType = doc.documentType === 'C0405';
-            // 재료비/장비비는 receipt_purchase.idx(sourceDocumentId)를 documentIdx로 전달
-            const isPurchaseType = doc.documentType === 'C0407' || doc.documentType === 'C0408';
-            if (isTripMeetingType) {
-                window.location.href = `${url}?id=${doc.sourceDocumentId}`;
-            } else if (isPurchaseType) {
-                window.location.href = `${url}&documentIdx=${doc.sourceDocumentId}`;
-            } else {
-                window.location.href = `${url}?documentIdx=${doc.idx}`;
-            }
+            window.location.href = `${url}?documentIdx=${doc.idx}`;
         } else {
             showWarning('해당 문서 타입의 상세 페이지가 구현되지 않았습니다.');
+        }
+    }
+
+    function editDocument(doc) {
+        // 문서 타입에 따라 수정 페이지로 이동
+        const editUrls = {
+            'C0410': '/approval/project-weekly-report',
+            'C0406': '/approval/receipt-meeting',
+            'C0404': '/approval/receipt-trip',
+            'C0405': '/approval/receipt-trip-meeting',
+            'C0403': '/approval/receipt-overtime',
+            'C0407': '/approval/receipt-purchase?type=material',
+            'C0408': '/approval/receipt-purchase?type=equipment'
+        };
+
+        const url = editUrls[doc.documentType];
+        if (!url) return;
+
+        const isTripMeetingType = doc.documentType === 'C0405';
+        const isPurchaseType = doc.documentType === 'C0407' || doc.documentType === 'C0408';
+        const isWeeklyReport = doc.documentType === 'C0410';
+        if (isTripMeetingType) {
+            window.location.href = `${url}?id=${doc.sourceDocumentId}`;
+        } else if (isPurchaseType) {
+            window.location.href = `${url}&documentIdx=${doc.sourceDocumentId}`;
+        } else if (isWeeklyReport) {
+            window.location.href = `${url}?id=${doc.sourceDocumentId}`;
+        } else {
+            window.location.href = `${url}?documentIdx=${doc.idx}`;
         }
     }
 

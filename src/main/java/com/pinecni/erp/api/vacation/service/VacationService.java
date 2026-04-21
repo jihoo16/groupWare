@@ -152,8 +152,9 @@ public interface VacationService {
      * 연차신청서 삭제 (soft delete + 캘린더 일정 삭제)
      * @param documentIdx 문서 IDX (approval_documents의 idx)
      * @param currentUserIdx 삭제 요청자 사용자 IDX
+     * @param isAdmin 관리자 여부 (true면 서명 게이트 우회)
      */
-    void deleteVacation(Long documentIdx, Long currentUserIdx);
+    void deleteVacation(Long documentIdx, Long currentUserIdx, boolean isAdmin);
 
     /**
      * 관리자 연차 신청서 승인 / 승인 취소

@@ -27,6 +27,7 @@ public class MonthlyReportMapper {
 
         return MonthlyReportDTO.builder()
                 .id(entity.getId())
+                .documentIdx(entity.getDocumentIdx())
                 .userIdx(entity.getUserIdx())
                 .userName(null)  // TODO: User 테이블 JOIN하여 이름 조회
                 .userDept(null)  // TODO: User 테이블 JOIN하여 부서 조회

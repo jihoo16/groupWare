@@ -38,17 +38,17 @@
                                         <th class="approval-header">대표이사</th>
                                     </tr>
                                     <tr>
-                                        <td class="approval-sign-cell">
+                                        <td class="approval-sign-cell" data-slot="C1602">
                                             <div class="sign-area">
                                                 <span class="sign-placeholder">결재</span>
                                             </div>
                                         </td>
-                                        <td class="approval-sign-cell">
+                                        <td class="approval-sign-cell" data-slot="C1603">
                                             <div class="sign-area">
                                                 <span class="sign-placeholder">결재</span>
                                             </div>
                                         </td>
-                                        <td class="approval-sign-cell">
+                                        <td class="approval-sign-cell signature-offline">
                                             <div class="sign-area">
                                                 <span class="sign-placeholder">결재</span>
                                             </div>
@@ -135,5 +135,8 @@
     </div>
 
     <script th:src="@{/js/approval_general.js}"></script>
+
+    <!-- 전자서명 QR 모달 프래그먼트 -->
+    <div th:replace="~{fragments/signature-modal :: signature-modal}"></div>
 </body>
 </html>

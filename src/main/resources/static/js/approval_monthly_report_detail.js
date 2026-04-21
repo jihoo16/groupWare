@@ -85,6 +85,9 @@ document.addEventListener('DOMContentLoaded', function() {
             displayReportDetail(report);
             originalData = { ...report }; // 원본 데이터 저장
 
+            // 전자서명 현황 로드
+            if (window.SignatureRender && report.documentIdx) SignatureRender.load(report.documentIdx);
+
             // 로딩 오버레이 숨김
             window.hidePageLoadingOverlay();
         } catch (error) {

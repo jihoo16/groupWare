@@ -1,0 +1,300 @@
+/* ============================================================
+ * 모바일 서명 페이지 전용 스타일
+ * - 세션 인증 없이 접근되는 독립 레이아웃 (사이드바·헤더 없음)
+ * - 터치 최적화, 가로/세로 모드 대응
+ * ============================================================ */
+
+* {
+    box-sizing: border-box;
+    -webkit-tap-highlight-color: transparent;
+}
+
+html, body {
+    margin: 0;
+    padding: 0;
+    width: 100%;
+    min-height: 100vh;
+    background: #f5f7fa;
+    font-family: 'Noto Sans KR', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    color: #222;
+    overflow-x: hidden;
+}
+
+.sig-app {
+    max-width: 640px;
+    margin: 0 auto;
+    padding: 16px;
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+}
+
+/* 헤더 */
+.sig-header {
+    text-align: center;
+    padding: 20px 0 16px;
+    border-bottom: 2px solid #1565c0;
+}
+.sig-header h1 {
+    margin: 0;
+    font-size: 20px;
+    font-weight: 700;
+    color: #1565c0;
+    letter-spacing: -0.5px;
+}
+
+/* 로딩/에러 공통 */
+.sig-state {
+    text-align: center;
+    padding: 60px 20px;
+    color: #666;
+}
+.sig-state i {
+    font-size: 48px;
+    color: #1565c0;
+    margin-bottom: 16px;
+}
+.sig-state .error-icon {
+    color: #d32f2f;
+}
+.sig-state h2 {
+    font-size: 18px;
+    margin: 8px 0;
+    color: #333;
+}
+.sig-state p {
+    font-size: 14px;
+    margin: 4px 0;
+}
+
+/* 문서 정보 영역 */
+.sig-doc-info {
+    background: #fff;
+    border-radius: 8px;
+    padding: 16px;
+    margin: 16px 0;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.06);
+}
+.doc-row {
+    display: flex;
+    align-items: center;
+    padding: 6px 0;
+    font-size: 14px;
+    border-bottom: 1px solid #f0f0f0;
+}
+.doc-row:last-of-type {
+    border-bottom: none;
+}
+.doc-label {
+    width: 80px;
+    color: #666;
+    font-weight: 500;
+    flex-shrink: 0;
+}
+.doc-value {
+    flex: 1;
+    color: #222;
+    font-weight: 500;
+    word-break: break-all;
+}
+.verified-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    padding: 2px 8px;
+    background: #e8f5e9;
+    color: #2e7d32;
+    border-radius: 12px;
+    font-size: 11px;
+    font-weight: 600;
+    margin-left: 8px;
+}
+
+/* 카운트다운 */
+.countdown-box {
+    margin-top: 12px;
+    padding: 10px;
+    background: #fff3cd;
+    border-radius: 6px;
+    text-align: center;
+    color: #8b6914;
+    font-weight: 600;
+    font-size: 14px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+}
+.countdown-box.expired {
+    background: #ffebee;
+    color: #c62828;
+}
+.countdown-box i {
+    font-size: 14px;
+}
+
+/* STEP 공통 */
+.sig-step {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+}
+.step-body {
+    background: #fff;
+    border-radius: 8px;
+    padding: 20px;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.06);
+}
+.step-desc {
+    font-size: 15px;
+    color: #333;
+    margin: 0 0 16px;
+    font-weight: 500;
+}
+.hint {
+    font-size: 12px;
+    color: #888;
+    margin: 12px 0 0;
+    text-align: center;
+}
+
+/* 사번 입력 */
+.emp-id-field {
+    width: 100%;
+    padding: 14px 16px;
+    font-size: 18px;
+    border: 2px solid #ddd;
+    border-radius: 6px;
+    box-sizing: border-box;
+    margin-bottom: 12px;
+    text-align: center;
+    letter-spacing: 1px;
+}
+.emp-id-field:focus {
+    outline: none;
+    border-color: #1565c0;
+}
+.fail-notice {
+    margin: 10px 0;
+    padding: 10px;
+    background: #ffebee;
+    color: #c62828;
+    border-radius: 6px;
+    text-align: center;
+    font-size: 14px;
+    font-weight: 600;
+}
+
+/* 버튼 */
+.primary-btn, .secondary-btn {
+    width: 100%;
+    padding: 14px;
+    font-size: 16px;
+    font-weight: 600;
+    border: none;
+    border-radius: 6px;
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    transition: background 0.15s;
+}
+.primary-btn {
+    background: #1565c0;
+    color: #fff;
+}
+.primary-btn:hover {
+    background: #0d47a1;
+}
+.primary-btn:disabled {
+    background: #ccc;
+    cursor: not-allowed;
+}
+.secondary-btn {
+    background: #f0f0f0;
+    color: #555;
+}
+.secondary-btn:hover {
+    background: #e0e0e0;
+}
+
+/* 서명 캔버스 */
+.canvas-wrapper {
+    position: relative;
+    width: 100%;
+    height: 260px;
+    border: 2px dashed #bbb;
+    border-radius: 8px;
+    background: #fafafa;
+    overflow: hidden;
+    margin-bottom: 12px;
+}
+#signature-canvas {
+    width: 100%;
+    height: 100%;
+    display: block;
+    touch-action: none;
+}
+.canvas-placeholder {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    color: #bbb;
+    font-size: 16px;
+    pointer-events: none;
+    user-select: none;
+}
+.canvas-wrapper.drawn .canvas-placeholder {
+    display: none;
+}
+
+/* 서명 액션 버튼 가로 배치 */
+.sign-actions {
+    display: grid;
+    grid-template-columns: 1fr 2fr;
+    gap: 8px;
+}
+
+/* 완료 화면 */
+.complete-body {
+    text-align: center;
+    padding: 40px 20px;
+    background: #fff;
+    border-radius: 8px;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.06);
+}
+.complete-body .success-icon {
+    font-size: 72px;
+    color: #2e7d32;
+    margin-bottom: 16px;
+}
+.complete-body h2 {
+    font-size: 20px;
+    margin: 8px 0;
+    color: #2e7d32;
+}
+.complete-body p {
+    color: #666;
+    margin: 4px 0;
+}
+
+/* 가로 모드: 캔버스 높이 확장 */
+@media (orientation: landscape) and (max-height: 500px) {
+    .sig-header {
+        padding: 8px 0;
+    }
+    .sig-header h1 {
+        font-size: 16px;
+    }
+    .canvas-wrapper {
+        height: 200px;
+    }
+    .sig-app {
+        padding: 8px;
+    }
+    .step-body, .sig-doc-info {
+        padding: 12px;
+    }
+}

@@ -269,6 +269,9 @@ document.addEventListener('DOMContentLoaded', function() {
             currentReport = report; // 전역 변수에 저장
             renderWeeklyReportDetail(report);
 
+            // 전자서명 현황 로드
+            if (window.SignatureRender && report.documentIdx) SignatureRender.load(report.documentIdx);
+
             // 로딩 오버레이 숨김
             window.hidePageLoadingOverlay();
         } catch (error) {

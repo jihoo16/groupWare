@@ -21,57 +21,148 @@
     padding: 40px;
 }
 
-/* 문서 양식 */
+/* 문서 양식 — 작성 페이지(approval_vacation.css)와 동일 */
 .document-form {
-    max-width: 900px;
-    margin: 0 auto;
+    background: white;
+    padding: 0;
 }
 
 .doc-title {
     text-align: center;
-    font-size: 28px;
+    font-size: 20.5px;
     font-weight: 700;
-    color: #1a1a1a;
-    margin: 30px 0;
-    letter-spacing: 8px;
+    color: #333;
+    margin: 0 0 15px 0;
+    padding-bottom: 15px;
+    border-bottom: 3px double #333;
 }
 
 /* 결재라인 */
 .approval-line-box {
-    float: right;
-    margin-bottom: 20px;
-    border: 2px solid #333;
+    display: flex;
+    justify-content: flex-end;
+    margin-bottom: 25px;
 }
 
 .approval-line-table {
     border-collapse: collapse;
-    background: white;
+    border: 2px solid #333;
 }
 
 .approval-line-table th,
 .approval-line-table td {
     border: 1px solid #333;
     text-align: center;
-    min-width: 80px;
+    padding: 0;
+    vertical-align: middle;
 }
 
 .approval-header {
-    padding: 8px 12px;
     font-size: 12px;
-    font-weight: 600;
-    background: #f8f9fa;
-}
-
-.approval-sign-cell {
-    padding: 4px;
-    height: 70px;
+    font-weight: 700;
+    color: #333;
+    background: #f0f0f0;
+    padding: 6px 12px;
     width: 110px;
 }
 
+.approval-sign-cell {
+    height: 70px;
+    width: 110px;
+    padding: 4px;
+    position: relative;
+    background: white;
+}
+
+.approval-sign-cell.can-sign {
+    cursor: pointer;
+    border: 2px dashed #1565c0;
+    background: #e3f2fd;
+    transition: background 0.15s, border-color 0.15s;
+    animation: sig-pulse 2s ease-in-out infinite;
+}
+
+@keyframes sig-pulse {
+    0%, 100% { border-color: #1565c0; }
+    50% { border-color: #90caf9; }
+}
+
+.approval-sign-cell.can-sign .sign-area {
+    flex-direction: column;
+    gap: 2px;
+}
+
+.approval-sign-cell.can-sign .sign-area::after {
+    content: '서명하기';
+    font-size: 11px;
+    font-weight: 600;
+    color: #1565c0;
+}
+
+.approval-sign-cell.can-sign .sign-placeholder {
+    display: none;
+}
+
+.approval-sign-cell.can-sign:hover {
+    background: #bbdefb;
+    border-color: #0d47a1;
+}
+
+.approval-sign-cell.signed {
+    background: #fff;
+}
+
+.approval-sign-cell.waiting .sign-area {
+    flex-direction: column;
+    gap: 2px;
+}
+
+.approval-sign-cell.waiting .sign-area::after {
+    content: '서명 대기';
+    font-size: 10px;
+    color: #aaa;
+}
+
+.approval-sign-cell.waiting .sign-placeholder {
+    display: none;
+}
+
+.approval-sign-cell.signature-offline .sign-area {
+    flex-direction: column;
+    gap: 2px;
+}
+
+.approval-sign-cell.signature-offline .sign-area::after {
+    content: '서면 결재';
+    font-size: 10px;
+    color: #999;
+}
+
+.approval-sign-cell.signature-offline .sign-placeholder {
+    display: none;
+}
+
+.sign-placeholder {
+    font-size: 11px;
+    color: #999;
+    user-select: none;
+}
+
+.approval-sign-cell.signed .sign-placeholder {
+    display: none;
+}
+
+.sign-image {
+    max-width: 100%;
+    max-height: 100%;
+    object-fit: contain;
+    display: block;
+}
+
 .sign-area {
+    width: 100%;
     height: 100%;
     display: flex;
-    flex-direction: column;
     align-items: center;
     justify-content: center;
     position: relative;
@@ -113,38 +204,43 @@
 }
 
 .approval-name-cell {
-    padding: 8px 12px;
-    font-size: 13px;
-    font-weight: 500;
+    font-size: 11px;
+    padding: 4px 6px;
+    background: white;
+    color: #333;
 }
 
 .approver-name {
     display: block;
 }
 
-/* 폼 테이블 */
+/* 폼 테이블 — 작성 페이지와 동일 */
 .form-table {
     width: 100%;
     border-collapse: collapse;
-    margin: 20px 0;
-    clear: both;
+    border: 1px solid #333;
+    margin-bottom: 20px;
+    table-layout: fixed;
 }
 
 .form-table th,
 .form-table td {
-    border: 1px solid #ddd;
-    padding: 12px 15px;
+    border: 1px solid #333;
+    padding: 4px 12px;
+    font-size: 11px;
+    vertical-align: middle;
 }
 
 .form-table th {
-    background: #f8f9fa;
-    font-weight: 600;
-    text-align: left;
-    width: 15%;
+    background: #f5f5f5;
+    font-weight: 700;
+    color: #333;
+    text-align: center;
+    width: 120px;
 }
 
 .form-table td {
-    background: white;
+    color: #555;
 }
 
 .form-table input[type="text"],
@@ -491,5 +587,209 @@
     to {
         opacity: 1;
         transform: translateY(0);
+    }
+}
+
+/* ============================================================
+ * 공식문서 양식 스타일
+ * ============================================================ */
+.form-table .readonly-text {
+    display: block;
+    padding: 4px 12px;
+    font-size: 11px;
+    color: #555;
+    text-align: center;
+    line-height: 1.4;
+    white-space: pre-line;
+    word-wrap: break-word;
+    word-break: break-word;
+    overflow-wrap: break-word;
+    min-height: 16px;
+}
+
+.form-table #reason {
+    display: block !important;
+    min-height: 60px !important;
+    max-height: none !important;
+    overflow: visible !important;
+    padding: 12px 16px !important;
+    text-align: left !important;
+}
+
+.document-footer {
+    margin-top: 30px;
+    padding: 20px 0;
+}
+
+.footer-text {
+    text-align: center;
+    font-size: 14px;
+    font-weight: 500;
+    color: #333;
+    margin: 0 0 30px 0;
+    line-height: 1.6;
+}
+
+.footer-date {
+    text-align: center;
+    font-size: 14px;
+    font-weight: 600;
+    color: #333;
+    margin-bottom: 40px;
+}
+
+.footer-signature {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 20px;
+    font-size: 14px;
+    color: #333;
+}
+
+.signature-label {
+    font-weight: 600;
+}
+
+.signature-name {
+    font-weight: 700;
+    font-size: 16px;
+    letter-spacing: 0.3em;
+    min-width: 100px;
+    text-align: center;
+}
+
+.signature-seal {
+    font-weight: 500;
+    color: #666;
+}
+
+.vacation-period-line {
+    padding: 6px 0;
+    font-size: 13px;
+    color: #333;
+}
+
+.vacation-period-total {
+    padding: 10px 0 4px;
+    font-size: 14px;
+    font-weight: 600;
+    color: #1565c0;
+}
+
+/* ============================================================
+ * 인쇄 스타일 — 작성 페이지(approval_vacation.css)와 동일 기준
+ * ============================================================ */
+@media print {
+    @page {
+        size: A4;
+        margin: 10mm;
+    }
+
+    /* 인쇄 시 숨길 요소 */
+    .no-print,
+    .sidebar,
+    .header,
+    .sig-modal,
+    #attachmentsSection,
+    .deleted-document-banner,
+    [class*="modal"] {
+        display: none !important;
+    }
+
+    /* 모든 컨테이너 리셋 */
+    .container,
+    .main-content,
+    .write-container,
+    .editor-area,
+    .document-form {
+        all: unset !important;
+        display: block !important;
+        width: 100% !important;
+        max-width: none !important;
+        overflow: visible !important;
+        position: static !important;
+        float: none !important;
+        clear: both !important;
+    }
+
+    html, body {
+        margin: 0 !important;
+        padding: 0 !important;
+        height: auto !important;
+        overflow: visible !important;
+        background: #fff !important;
+    }
+
+    /* 인쇄 시 숨길 추가 요소 */
+    .approval-status-banner {
+        display: none !important;
+    }
+
+    /* 결재란 우측 정렬 */
+    .approval-line-box {
+        display: flex !important;
+        justify-content: flex-end !important;
+        margin-bottom: 25px !important;
+    }
+
+    /* 결재란 배경색 */
+    .approval-header {
+        background-color: #f0f0f0 !important;
+        -webkit-print-color-adjust: exact;
+        print-color-adjust: exact;
+    }
+
+    .approval-line-table {
+        border-collapse: collapse !important;
+    }
+
+    .approval-line-table th,
+    .approval-line-table td {
+        -webkit-print-color-adjust: exact;
+        print-color-adjust: exact;
+    }
+
+    /* 서명 셀 — can-sign/waiting UI 제거, 테두리 통일 */
+    .approval-sign-cell.can-sign {
+        border: 1px solid #333 !important;
+        background: white !important;
+        animation: none !important;
+    }
+    .approval-sign-cell.can-sign .sign-area::after {
+        display: none !important;
+    }
+    .approval-sign-cell.waiting {
+        background: white !important;
+    }
+    .approval-sign-cell.waiting .sign-area::after {
+        display: none !important;
+    }
+
+    .sign-image {
+        max-width: 100px;
+        max-height: 60px;
+    }
+
+    /* 본문 테이블 */
+    .form-table {
+        width: 100% !important;
+        border-collapse: collapse !important;
+    }
+
+    .form-table th, .form-table td {
+        border: 1px solid #333 !important;
+        -webkit-print-color-adjust: exact;
+        print-color-adjust: exact;
+    }
+
+    .form-table th {
+        background-color: #f5f5f5 !important;
+        -webkit-print-color-adjust: exact;
+        print-color-adjust: exact;
+    }
+
+    .doc-title {
+        font-size: 24px !important;
     }
 }

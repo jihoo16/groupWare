@@ -12,6 +12,7 @@ import com.pinecni.erp.api.document.repository.ReceiptPurchaseItemRepository;
 import com.pinecni.erp.api.document.repository.ReceiptPurchaseRepository;
 import com.pinecni.erp.api.project.repository.ProjectCardRepository;
 import com.pinecni.erp.api.project.service.ProjectMemberValidationService;
+import com.pinecni.erp.api.signature.service.SignatureService;
 import com.pinecni.erp.constant.CodeConstants;
 import com.pinecni.erp.entity.ApprovalDocument;
 import com.pinecni.erp.entity.ReceiptPurchase;
@@ -52,6 +53,7 @@ public class ReceiptPurchaseServiceImpl implements ReceiptPurchaseService {
     private final DocumentSequenceService documentSequenceService;
     private final ProjectCardRepository projectCardRepository;
     private final ProjectMemberValidationService projectMemberValidationService;
+    private final SignatureService signatureService;
 
     @Value("${file.base.dir}")
     private String baseDir;
@@ -143,6 +145,7 @@ public class ReceiptPurchaseServiceImpl implements ReceiptPurchaseService {
                 .documentType(docType.getCode())
                 .isProject(true)
                 .content(dto.getDocumentContent())
+                .status(CodeConstants.DocumentStatus.DRAFTED.getCode())
                 .drafterUserIdx(uploadUserIdx)
                 .createdUserIdx(uploadUserIdx)
                 .updatedUserIdx(uploadUserIdx)
@@ -175,6 +178,16 @@ public class ReceiptPurchaseServiceImpl implements ReceiptPurchaseService {
         saveFiles(saved.getIdx(), estimateFiles, "ESTIMATE",  uploadUserIdx, entity.getPurchaseType());
         saveFiles(saved.getIdx(), bankCopyFiles, "BANK_COPY", uploadUserIdx, entity.getPurchaseType());
 
+        // 전자서명 요청 자동 생성
+        try {
+            signatureService.requestSignaturesForDocument(approvalDoc.getIdx(), uploadUserIdx,
+                    dto.getProjectIdx(), null);
+            approvalDoc.setStatus(CodeConstants.DocumentStatus.SIGN_PENDING.getCode());
+            approvalDocumentRepository.save(approvalDoc);
+        } catch (Exception e) {
+            log.error("[서명 요청 생성 실패] documentIdx: {}, error: {}", approvalDoc.getIdx(), e.getMessage());
+        }
+
         return buildDTOWithDetails(saved);
     }
 
@@ -199,6 +212,8 @@ public class ReceiptPurchaseServiceImpl implements ReceiptPurchaseService {
 
         ReceiptPurchase entity = receiptPurchaseRepository.findById(idx)
                 .orElseThrow(() -> new IllegalArgumentException("구매품의를 찾을 수 없습니다. idx: " + idx));
+
+        // 연구비증빙은 수정요청 대응을 위해 서명 후에도 수정 가능 (서명은 유지)
 
         entity.setProjectIdx(dto.getProjectIdx());
         entity.setCardIdx(dto.getCardIdx());
@@ -250,6 +265,13 @@ public class ReceiptPurchaseServiceImpl implements ReceiptPurchaseService {
     public void deleteReceiptPurchase(Long idx, Long deletedUserIdx) {
         ReceiptPurchase entity = receiptPurchaseRepository.findById(idx)
                 .orElseThrow(() -> new IllegalArgumentException("구매품의를 찾을 수 없습니다. idx: " + idx));
+
+        // 전자서명 게이트
+        if (entity.getDocumentIdx() != null
+                && signatureService.hasAnySignatureCaptured(entity.getDocumentIdx())) {
+            throw new IllegalStateException("전자서명이 진행된 문서는 삭제할 수 없습니다.");
+        }
+
         entity.setIsDeleted(true);
         entity.setDeletedAt(LocalDateTime.now());
         entity.setDeletedUserIdx(deletedUserIdx);

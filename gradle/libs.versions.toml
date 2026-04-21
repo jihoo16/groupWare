@@ -25,6 +25,8 @@ io-micrometer-context-propagation = "1.2.0"
 io-opentelemetry-bom = "1.58.0"
 io-opentelemetry-instrumentation = "2.24.0"
 io-opentelemetry-instrumentation-alpha = "2.24.0-alpha"
+com-google-zxing = "3.5.3"
+org-springframework-boot-spring-boot-starter-websocket = "3.5.6"
 
 [libraries]
 com-fasterxml-jackson-datatype-jackson-datatype-jsr310 = { module = "com.fasterxml.jackson.datatype:jackson-datatype-jsr310", version.ref = "com-fasterxml-jackson-datatype-jackson-datatype-jsr310" }
@@ -60,3 +62,10 @@ io-opentelemetry-opentelemetry-exporter-otlp = { module = "io.opentelemetry:open
 io-micrometer-micrometer-registry-prometheus = { module = "io.micrometer:micrometer-registry-prometheus" }
 io-micrometer-micrometer-registry-otlp = { module = "io.micrometer:micrometer-registry-otlp" }
 otel-log4j-context-data = { module = "io.opentelemetry.instrumentation:opentelemetry-log4j-context-data-2.17-autoconfigure", version.ref = "io-opentelemetry-instrumentation-alpha" }
+
+# 전자서명 QR 코드 생성 (ZXing)
+com-google-zxing-core = { module = "com.google.zxing:core", version.ref = "com-google-zxing" }
+com-google-zxing-javase = { module = "com.google.zxing:javase", version.ref = "com-google-zxing" }
+
+# 전자서명 실시간 알림 (WebSocket + STOMP)
+org-springframework-boot-spring-boot-starter-websocket = { module = "org.springframework.boot:spring-boot-starter-websocket", version.ref = "org-springframework-boot-spring-boot-starter-websocket" }

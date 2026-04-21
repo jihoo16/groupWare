@@ -1220,17 +1220,25 @@ document.addEventListener('DOMContentLoaded', async function() {
                     const result = await response.json();
                     console.log('지출승인서 저장 완료:', result);
 
-                    await Swal.fire({
-                        icon: 'success',
-                        title: editIdx ? '수정 완료' : '저장 완료',
-                        text: editIdx ? '문서가 수정되었습니다.' : '문서가 저장되었습니다.',
-                        confirmButtonText: '확인',
-                        confirmButtonColor: '#28a745',
-                    });
-                    if (editIdx) {
-                        window.location.href = `/approval/expense/detail?idx=${editIdx}`;
+                    if (window.SignatureRender && !editIdx) {
+                        SignatureRender.afterSave({
+                            documentIdx: result.documentIdx || result.idx,
+                            redirectUrl: '/approval',
+                            successMessage: '문서가 저장되었습니다.'
+                        });
                     } else {
-                        window.location.href = '/approval';
+                        await Swal.fire({
+                            icon: 'success',
+                            title: editIdx ? '수정 완료' : '저장 완료',
+                            text: editIdx ? '문서가 수정되었습니다.' : '문서가 저장되었습니다.',
+                            confirmButtonText: '확인',
+                            confirmButtonColor: '#28a745',
+                        });
+                        if (editIdx) {
+                            window.location.href = `/approval/expense/detail?idx=${editIdx}`;
+                        } else {
+                            window.location.href = '/approval';
+                        }
                     }
                 } catch (error) {
                     console.error('저장 중 오류 발생:', error);

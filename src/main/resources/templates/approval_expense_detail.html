@@ -115,9 +115,9 @@
                                             <td class="doc-approval-head">대 표</td>
                                         </tr>
                                         <tr>
-                                            <td class="doc-approval-sign"></td>
-                                            <td class="doc-approval-sign"></td>
-                                            <td class="doc-approval-sign"></td>
+                                            <td class="doc-approval-sign" data-slot="C1602"><div class="sign-area"><span class="sign-placeholder"></span></div></td>
+                                            <td class="doc-approval-sign" data-slot="C1604"><div class="sign-area"><span class="sign-placeholder"></span></div></td>
+                                            <td class="doc-approval-sign signature-offline"><div class="sign-area"><span class="sign-placeholder"></span></div></td>
                                         </tr>
                                     </table>
                                 </div>
@@ -207,6 +207,9 @@
             </div><!-- /write-container -->
         </main>
     </div>
+
+    <!-- 전자서명 QR 모달 프래그먼트 -->
+    <div th:replace="~{fragments/signature-modal :: signature-modal}"></div>
 
     <script th:src="@{/js/approval_expense_detail.js}"></script>
 </body>

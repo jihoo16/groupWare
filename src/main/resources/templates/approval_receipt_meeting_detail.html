@@ -1,0 +1,226 @@
+<!DOCTYPE html>
+<html lang="ko" xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{fragments/layout :: head('연구비증빙 회의록 상세', '/css/approval_receipt_meeting.css')}"></head>
+<body class="detail-view">
+<!-- 로딩 오버레이 -->
+<div th:replace="~{fragments/loading-overlay :: overlay}"></div>
+
+<div class="container">
+    <!-- 좌측 네비게이션 바 -->
+    <div th:replace="~{fragments/sidebar :: sidebar('project')}"></div>
+
+    <!-- 메인 콘텐츠 영역 -->
+    <main class="main-content">
+        <header class="header no-print">
+            <div class="header-left">
+                <h1 class="page-title"><i class="fas fa-file-alt"></i> 연구비증빙 회의록 상세</h1>
+            </div>
+            <div class="header-right">
+                <button class="btn-print btn-lg" id="printBtn" style="display:none;">
+                    <i class="fas fa-print"></i>
+                    인쇄하기
+                </button>
+                <button class="btn-primary btn-lg" id="editBtn" style="display:none;">
+                    <i class="fas fa-edit"></i>
+                    수정
+                </button>
+                <button class="btn-danger btn-lg" id="deleteBtn" style="display:none;">
+                    <i class="fas fa-trash"></i>
+                    삭제
+                </button>
+                <button class="btn-secondary btn-lg" onclick="history.back()">
+                    <i class="fas fa-arrow-left"></i>
+                    돌아가기
+                </button>
+            </div>
+        </header>
+
+        <div class="write-container">
+            <div class="editor-area" style="max-width: 1000px; margin: 0 auto;">
+                <!-- 공식 문서 양식 -->
+                <div class="document-form" id="documentFormContent">
+
+                    <!-- 회의 품의서 -->
+                    <div style="background: white; border: 2px solid #e0e0e0; border-radius: 8px; padding: 30px; margin: 0 auto 30px; max-width: 881px; page-break-after: always; break-after: page;">
+
+                        <!-- 결재란 -->
+                        <div style="display: flex; justify-content: flex-end; margin-bottom: 15px;">
+                            <table class="doc-approval-table">
+                                <tr>
+                                    <td class="doc-approval-head">신청자</td>
+                                    <td class="doc-approval-head">연구책임자</td>
+                                </tr>
+                                <tr>
+                                    <td class="doc-approval-sign" data-slot="C1602"><div class="sign-area"><span class="sign-placeholder"></span></div></td>
+                                    <td class="doc-approval-sign" data-slot="C1603"><div class="sign-area"><span class="sign-placeholder"></span></div></td>
+                                </tr>
+                            </table>
+                        </div>
+
+                        <h2 class="doc-title">회 의 품 의 서</h2>
+
+                        <div style="text-align: left; margin-bottom: 20px; font-size: 14px; clear: both;">
+                            작성일 : <span id="proposal_date"></span>
+                        </div>
+                        <table class="form-table">
+                            <colgroup>
+                                <col style="width: 12%;">
+                                <col style="width: 18%;">
+                                <col style="width: 12%;">
+                                <col style="width: 10%;">
+                                <col style="width: 22%;">
+                                <col style="width: 10%;">
+                                <col style="width: 16%;">
+                            </colgroup>
+                            <tr>
+                                <th style="white-space: nowrap;">사업명</th>
+                                <td colspan="6"><span id="doc_project" style="display:block; padding:8px;"></span></td>
+                            </tr>
+                            <tr>
+                                <th colspan="3">참석인원</th>
+                                <th style="white-space: nowrap;">장소</th>
+                                <td style="padding: 10px 8px;"><span id="doc_location" style="font-size: 13px; line-height: 1.6;"></span></td>
+                                <th style="white-space: nowrap; font-size: 11px;">회의일시</th>
+                                <td style="padding: 10px 8px; text-align: center;"><span id="doc_datetime_proposal" style="font-size: 12px; line-height: 1.5; white-space: pre-line;"></span></td>
+                            </tr>
+                            <tr>
+                                <th>내외구분</th>
+                                <th>소속</th>
+                                <th>성명</th>
+                                <th rowspan="6">회의 목적</th>
+                                <td colspan="3" rowspan="6" style="vertical-align: middle; text-align: center; padding: 10px;">
+                                    <div id="doc_purpose" style="width: 100%; padding: 10px; font-size: 16px; line-height: 1.6; word-break: keep-all; word-wrap: break-word;"></div>
+                                </td>
+                            </tr>
+                            <tbody id="proposalAttendeeBody">
+                            <!-- 참석자 행 동적 생성 -->
+                            </tbody>
+                            <tr class="attendee-row"><td colspan="3">&nbsp;</td></tr>
+                            <tr class="attendee-row"><td colspan="3">&nbsp;</td></tr>
+                            <tr class="attendee-row"><td colspan="3">&nbsp;</td></tr>
+                            <tr class="attendee-row"><td colspan="3">&nbsp;</td></tr>
+                            <tr class="attendee-row"><td colspan="3">&nbsp;</td></tr>
+                            <tr>
+                                <th colspan="7" style="background: #f0f0f0; padding: 15px;">소요 비용 예상 내역 (원)</th>
+                            </tr>
+                            <tr>
+                                <th>일시</th>
+                                <th colspan="6">집행 예정 금액</th>
+                            </tr>
+                            <tr>
+                                <td style="text-align: center; height: 80px; padding-left: 5px"><span id="doc_datetime_display" style="display: block; padding: 8px; font-size: 12px;"></span></td>
+                                <td colspan="6" style="text-align: center; height: 80px"><span id="doc_amount_display" style="display: block; padding: 8px;"></span></td>
+                            </tr>
+                            <tr>
+                                <th style="height: 60px">특이사항</th>
+                                <td colspan="6" style="padding: 8px;"><span id="doc_notes" style="display:block; padding:8px;"></span></td>
+                            </tr>
+                            <tr>
+                                <th>결제</th>
+                                <td colspan="6" style="padding: 8px;">연구비카드로 결제</td>
+                            </tr>
+                        </table>
+                    </div>
+
+                    <!-- 회의록 -->
+                    <div style="background: white; border: 2px solid #e0e0e0; border-radius: 8px; padding: 30px; max-width: 881px; margin: 0 auto 30px; page-break-after: always; break-after: page;">
+                        <h2 class="doc-title" style="margin: 0">회 의 록</h2>
+                        <span id="doc_number_proposal" style="font-size: 14px; display: block; margin: 20px 0 5px"></span>
+                        <table class="form-table">
+                            <colgroup>
+                                <col style="width: 15%;">
+                                <col style="width: 45%;">
+                                <col style="width: 10%;">
+                                <col style="width: 30%;">
+                            </colgroup>
+                            <tr>
+                                <th style="height: 80px">사업명</th>
+                                <td><span id="doc_project2" style="display:block; padding:8px; text-align:center;"></span></td>
+                                <th style="white-space: nowrap; font-size: 11px;">작성자</th>
+                                <td><span id="doc_author" style="display:block; padding:8px; text-align:center;"></span></td>
+                            </tr>
+                            <tr>
+                                <th style="height: 80px">일시</th>
+                                <td><span id="doc_datetime" style="display:block; padding:8px; text-align:center; font-size: 12px; line-height: 1.5; white-space: pre-line;"></span></td>
+                                <th>장소</th>
+                                <td><span id="doc_location2" style="display:block; padding:8px; text-align:center;"></span></td>
+                            </tr>
+                            <tr>
+                                <th>참여자<br>(참여기관)</th>
+                                <td colspan="3" id="doc_all_attendees" style="padding: 10px; height: 80px; white-space: pre-wrap;"></td>
+                            </tr>
+                            <tr>
+                                <th colspan="4" style="background: #f0f0f0; padding: 15px;">내용</th>
+                            </tr>
+                            <tr>
+                                <th style="vertical-align: middle;">주제</th>
+                                <td colspan="3" id="doc_subject" style="padding: 10px; text-align: center; font-size: 18px; vertical-align: middle;"></td>
+                            </tr>
+                            <tr>
+                                <th style="padding-top: 15px;">주요 내용</th>
+                                <td colspan="3" id="doc_content" style="padding: 10px; height: 510px; text-align: left; white-space: pre-wrap; min-height: 600px; line-height: 2.5; font-size: 18px"></td>
+                            </tr>
+                            <tr>
+                                <th>비고</th>
+                                <td colspan="3" style="padding: 10px;"><span id="doc_minutes_notes" style="display:block; padding:8px;"></span></td>
+                            </tr>
+                        </table>
+                    </div>
+
+                    <!-- 참석자 명단 -->
+                    <div style="background: white; border: 2px solid #e0e0e0; border-radius: 8px; padding: 30px; margin: 0 auto 30px; max-width: 881px; page-break-inside: avoid;">
+                        <h2 class="doc-title" style="margin: 0">참 석 자 명 단</h2>
+                        <span id="doc_number_attendee" style="font-size: 14px; display: block; margin: 20px 0 5px"></span>
+                        <table class="form-table">
+                            <colgroup>
+                                <col style="width: 15%;">
+                                <col style="width: 55%;">
+                                <col style="width: 10%;">
+                                <col style="width: 20%;">
+                            </colgroup>
+                            <tr>
+                                <th style="height: 80px">사업명</th>
+                                <td><span id="doc_project3" style="display:block; padding:8px; text-align:center;"></span></td>
+                                <th style="white-space: nowrap; font-size: 11px;">작성자</th>
+                                <td><span id="doc_author2" style="display:block; padding:8px; text-align:center;"></span></td>
+                            </tr>
+                            <tr>
+                                <th style="height: 80px">일시</th>
+                                <td><span id="doc_datetime2" style="display:block; padding:8px; text-align:center; font-size: 12px; line-height: 1.5; white-space: pre-line;"></span></td>
+                                <th>장소</th>
+                                <td><span id="doc_location3" style="display:block; padding:8px; text-align:center;"></span></td>
+                            </tr>
+                        </table>
+                        <table class="form-table" id="attendee-signature-table" style="margin-top: 20px;">
+                            <colgroup>
+                                <col style="width: 10%;">
+                                <col style="width: 30%;">
+                                <col style="width: 35%;">
+                                <col style="width: 25%;">
+                            </colgroup>
+                            <thead>
+                                <tr style="height: 70px">
+                                    <th>구분</th>
+                                    <th>소속</th>
+                                    <th>성명</th>
+                                    <th>서명</th>
+                                </tr>
+                            </thead>
+                            <tbody id="attendee-signature-tbody">
+                                <!-- 참석자 행은 JavaScript에서 동적으로 생성됨 -->
+                            </tbody>
+                        </table>
+                    </div>
+
+                </div>
+            </div>
+        </div>
+    </main>
+</div>
+
+<!-- 전자서명 QR 모달 프래그먼트 -->
+<div th:replace="~{fragments/signature-modal :: signature-modal}"></div>
+
+<script th:src="@{/js/approval_receipt_meeting_detail.js}"></script>
+</body>
+</html>

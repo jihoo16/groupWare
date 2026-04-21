@@ -9,6 +9,7 @@ import com.pinecni.erp.api.user.repository.UserRepository;
 import com.pinecni.erp.api.code.repository.CodeRepository;
 import com.pinecni.erp.api.approval.repository.ApprovalDocumentRepository;
 import com.pinecni.erp.api.approval.service.DocumentSequenceService;
+import com.pinecni.erp.api.signature.service.SignatureService;
 import com.pinecni.erp.constant.CodeConstants;
 import com.pinecni.erp.entity.MeetingsMinutes;
 import com.pinecni.erp.entity.User;
@@ -33,6 +34,7 @@ public class MeetingMinutesServiceImpl implements MeetingMinutesService {
     private final CodeRepository codeRepository;
     private final ApprovalDocumentRepository approvalDocumentRepository;
     private final DocumentSequenceService documentSequenceService;
+    private final SignatureService signatureService;
     @Override
     @Transactional
     public MeetingMinutesDTO createMeetingMinute(MeetingMinutesCreateDTO createDTO) {
@@ -62,6 +64,7 @@ public class MeetingMinutesServiceImpl implements MeetingMinutesService {
                 .documentNo(documentNo)
                 .title(title)
                 .documentType(CodeConstants.DocumentType.MEETING_MINUTES.getCode())
+                .status(CodeConstants.DocumentStatus.DRAFTED.getCode())
                 .drafterUserIdx(createDTO.getUserIdx())
                 .content(createDTO.getContent())
                 .createdUserIdx(createDTO.getUserIdx())
@@ -79,6 +82,15 @@ public class MeetingMinutesServiceImpl implements MeetingMinutesService {
             MeetingsMinutes saved = meetingMinutesRepository.save(meetingMinute);
             log.debug("MeetingsMinutes created successfully - id: {}, documentIdx: {}",
                       saved.getId(), saved.getDocumentIdx());
+
+            // 전자서명 요청 자동 생성
+            try {
+                signatureService.requestSignaturesForDocument(savedDocument.getIdx(), createDTO.getUserIdx());
+                savedDocument.setStatus(CodeConstants.DocumentStatus.SIGN_PENDING.getCode());
+                approvalDocumentRepository.save(savedDocument);
+            } catch (Exception e) {
+                log.error("[서명 요청 생성 실패] documentIdx: {}, error: {}", savedDocument.getIdx(), e.getMessage());
+            }
 
             return meetingMinutesMapper.toDTO(saved);
 
@@ -143,6 +155,11 @@ public class MeetingMinutesServiceImpl implements MeetingMinutesService {
         MeetingsMinutes meeting = meetingMinutesRepository.findById(id)
                 .orElseThrow(() -> new RuntimeException("회의록을 찾을 수 없습니다. ID: " + id));
 
+        // 전자서명 게이트
+        if (meeting.getDocumentIdx() != null && signatureService.hasAnySignatureCaptured(meeting.getDocumentIdx())) {
+            throw new IllegalStateException("전자서명이 진행된 문서는 수정할 수 없습니다.");
+        }
+
         // UpdateDTO로 Entity 업데이트
         meetingMinutesMapper.updateEntity(meeting, updateDTO, updatedUserIdx);
 
@@ -159,9 +176,13 @@ public class MeetingMinutesServiceImpl implements MeetingMinutesService {
     public void deleteMeetingMinutes(Long id) {
         log.debug("deleteMeetingMinutes() called - id: {}", id);
 
-        // 존재 여부 확인
-        if (!meetingMinutesRepository.existsById(id)) {
-            throw new RuntimeException("회의록을 찾을 수 없습니다. ID: " + id);
+        MeetingsMinutes meeting = meetingMinutesRepository.findById(id)
+                .orElseThrow(() -> new RuntimeException("회의록을 찾을 수 없습니다. ID: " + id));
+
+        // 전자서명 게이트
+        if (meeting.getDocumentIdx() != null
+                && signatureService.hasAnySignatureCaptured(meeting.getDocumentIdx())) {
+            throw new IllegalStateException("전자서명이 진행된 문서는 삭제할 수 없습니다.");
         }
 
         meetingMinutesRepository.deleteById(id);

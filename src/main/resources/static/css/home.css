@@ -828,6 +828,14 @@ html.popup-mode .main-content {
     margin-left: 3px;
 }
 
+.stat-card.has-pending {
+    border-left: 3px solid #4f46e5;
+}
+
+.stat-card.has-pending .stat-number {
+    color: #4f46e5;
+}
+
 /* ── 바로가기 섹션 ── */
 .shortcut-row {
     display: grid;

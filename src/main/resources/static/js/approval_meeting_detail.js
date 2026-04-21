@@ -300,6 +300,9 @@ document.addEventListener('DOMContentLoaded', function() {
             currentMeeting = meeting; // 전역 변수에 저장
             renderMeetingDetail(meeting);
 
+            // 전자서명 현황 로드
+            if (window.SignatureRender && meeting.documentIdx) SignatureRender.load(meeting.documentIdx);
+
             // 로딩 오버레이 숨김
             window.hidePageLoadingOverlay();
         } catch (error) {

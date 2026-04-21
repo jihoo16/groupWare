@@ -25,6 +25,7 @@ public class MeetingMinutesMapper {
         }
         return MeetingMinutesDTO.builder()
                 .idx(entity.getId())
+                .documentIdx(entity.getDocumentIdx())
                 .userIdx(entity.getUserIdx())
                 .projectIdx(entity.getProjectIdx())
                 .projectName(entity.getProjectName())

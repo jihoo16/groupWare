@@ -56,6 +56,13 @@ dependencies {
     implementation(libs.io.micrometer.micrometer.registry.prometheus)
     implementation(libs.otel.log4j.context.data)
 
+    // 전자서명 QR 코드 생성
+    implementation(libs.com.google.zxing.core)
+    implementation(libs.com.google.zxing.javase)
+
+    // 전자서명 실시간 알림 (WebSocket + STOMP)
+    implementation(libs.org.springframework.boot.spring.boot.starter.websocket)
+
 
 
     testRuntimeOnly(libs.com.h2database.h2)

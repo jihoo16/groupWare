@@ -47,6 +47,12 @@ public class FirstLoginInterceptor implements HandlerInterceptor {
      * 최초 로그인 상태에서 허용되는 경로 체크
      */
     private boolean isAllowedPath(String requestURI) {
+        // 전자서명 관련 경로 (모바일 QR 스캔 — 세션 인증 불필요)
+        if (requestURI.startsWith("/sign/") || requestURI.startsWith("/api/signature/session/")
+                || requestURI.startsWith("/ws/signature")) {
+            return true;
+        }
+
         // 최초 설정 페이지는 허용
         if (requestURI.equals("/first-setting")) {
             return true;

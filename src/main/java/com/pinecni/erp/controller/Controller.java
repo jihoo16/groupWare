@@ -153,6 +153,38 @@ public class Controller {
         return "approval_receipt_purchase";
     }
 
+    // 서명 대기 페이지
+    @GetMapping("/signature/pending")
+    public String signaturePending() {
+        return "signature-pending";
+    }
+
+    // 연구비증빙 상세보기
+    @GetMapping("/approval/receipt-meeting/detail")
+    public String approvalReceiptMeetingDetail() {
+        return "approval_receipt_meeting_detail";
+    }
+
+    @GetMapping("/approval/receipt-overtime/detail")
+    public String approvalReceiptOvertimeDetail() {
+        return "approval_receipt_overtime_detail";
+    }
+
+    @GetMapping("/approval/receipt-trip/detail")
+    public String approvalReceiptTripDetail() {
+        return "approval_receipt_trip_detail";
+    }
+
+    @GetMapping("/approval/receipt-trip-meeting/detail")
+    public String approvalReceiptTripMeetingDetail() {
+        return "approval_receipt_trip_meeting_detail";
+    }
+
+    @GetMapping("/approval/receipt-purchase/detail")
+    public String approvalReceiptPurchaseDetail() {
+        return "approval_receipt_purchase_detail";
+    }
+
     // 인사
     @GetMapping("/approval/vacation")
     public String approvalVacation() {

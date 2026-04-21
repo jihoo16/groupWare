@@ -25,7 +25,14 @@ public class CodeConstants {
         RANK("C08", "직위", 8),
         TEAM_TYPE("C09", "팀유형", 9),
         EXPENSE_SETTLEMENT_STATUS("C10", "경비정산상태", 10),
-        MILITARY_STATUS("C12", "병역상태", 12);
+        // C11 = UserRole (UserRole.java에서 관리)
+        MILITARY_STATUS("C12", "병역상태", 12),
+        SIGNATURE_SESSION_STATUS("C13", "서명세션상태", 13),
+        DOCUMENT_SIGNATURE_STATUS("C14", "문서서명상태", 14),
+        // C15는 사용하지 않음 (approval_documents 요약 컬럼 미사용, document_signatures 집계로 대체)
+        SIGNATURE_SLOT("C16", "서명위치", 16),
+        AUDIT_TARGET_TYPE("C17", "감사로그대상유형", 17),
+        AUDIT_ACTION("C18", "감사로그행위", 18);
 
         private final String code;
         private final String name;
@@ -276,11 +283,14 @@ public class CodeConstants {
      * 문서상태 코드 (C05)
      */
     public enum DocumentStatus {
-        COMPLETED("C0501", "작성완료", "COMPLETED", 1),
+        DRAFTED("C0501", "작성완료", "DRAFTED", 1),
         PENDING("C0502", "대기", "PENDING", 2),
         APPROVAL_REQUESTED("C0503", "승인요청", "APPROVAL_REQUESTED", 3),
         APPROVED("C0504", "승인", "APPROVED", 4),
-        REJECTED("C0505", "반려", "REJECTED", 5);
+        REJECTED("C0505", "반려", "REJECTED", 5),
+        SIGN_PENDING("C0506", "서명대기", "SIGN_PENDING", 6),
+        SIGN_IN_PROGRESS("C0507", "서명진행중", "SIGN_IN_PROGRESS", 7),
+        SIGN_COMPLETE("C0508", "서명완료", "SIGN_COMPLETE", 8);
 
         private final String code;
         private final String name;
@@ -602,6 +612,229 @@ public class CodeConstants {
         /** 입대일/전역일 입력이 가능한 상태인지 확인 (병역필 / 특례필) */
         public boolean allowsServiceDates() {
             return this == COMPLETED || this == SPECIAL_DONE;
+        }
+    }
+
+    /**
+     * 서명세션상태 코드 (C13)
+     * QR 기반 전자서명 세션의 진행 상태
+     * 흐름: QR생성 → 스캔완료 → 본인인증완료 → 서명완료
+     *       (어느 단계에서든 시간 초과 → 만료 / 사용자 취소 → 취소)
+     */
+    public enum SignatureSessionStatus {
+        QR_CREATED("C1301", "QR생성",      "QR_CREATED", 1),
+        SCANNED   ("C1302", "스캔완료",     "SCANNED",    2),
+        VERIFIED  ("C1303", "본인인증완료", "VERIFIED",    3),
+        COMPLETED ("C1304", "서명완료",     "COMPLETED",  4),
+        EXPIRED   ("C1305", "만료",        "EXPIRED",    5),
+        CANCELLED ("C1306", "취소",        "CANCELLED",  6);
+
+        private final String code;
+        private final String name;
+        private final String nameEn;
+        private final int sortOrder;
+
+        SignatureSessionStatus(String code, String name, String nameEn, int sortOrder) {
+            this.code = code;
+            this.name = name;
+            this.nameEn = nameEn;
+            this.sortOrder = sortOrder;
+        }
+
+        public String getCode() { return code; }
+        public String getName() { return name; }
+        public String getNameEn() { return nameEn; }
+        public int getSortOrder() { return sortOrder; }
+
+        public static SignatureSessionStatus fromCode(String code) {
+            for (SignatureSessionStatus status : values()) {
+                if (status.code.equals(code)) return status;
+            }
+            throw new IllegalArgumentException("Unknown signature session status code: " + code);
+        }
+
+        public static SignatureSessionStatus fromCodeOrNull(String code) {
+            if (code == null) return null;
+            for (SignatureSessionStatus status : values()) {
+                if (status.code.equals(code)) return status;
+            }
+            return null;
+        }
+
+        /** 종료 상태 여부 (더 이상 상태 전이 불가) */
+        public boolean isTerminal() {
+            return this == COMPLETED || this == EXPIRED || this == CANCELLED;
+        }
+    }
+
+    /**
+     * 문서서명상태 코드 (C14)
+     * 문서별 개별 서명 슬롯의 처리 상태
+     */
+    public enum DocumentSignatureStatus {
+        PENDING  ("C1401", "서명대기", "PENDING",   1),
+        COMPLETED("C1402", "서명완료", "COMPLETED", 2),
+        SKIPPED  ("C1403", "건너뜀",   "SKIPPED",   3);
+
+        private final String code;
+        private final String name;
+        private final String nameEn;
+        private final int sortOrder;
+
+        DocumentSignatureStatus(String code, String name, String nameEn, int sortOrder) {
+            this.code = code;
+            this.name = name;
+            this.nameEn = nameEn;
+            this.sortOrder = sortOrder;
+        }
+
+        public String getCode() { return code; }
+        public String getName() { return name; }
+        public String getNameEn() { return nameEn; }
+        public int getSortOrder() { return sortOrder; }
+
+        public static DocumentSignatureStatus fromCode(String code) {
+            for (DocumentSignatureStatus status : values()) {
+                if (status.code.equals(code)) return status;
+            }
+            throw new IllegalArgumentException("Unknown document signature status code: " + code);
+        }
+
+        public static DocumentSignatureStatus fromCodeOrNull(String code) {
+            if (code == null) return null;
+            for (DocumentSignatureStatus status : values()) {
+                if (status.code.equals(code)) return status;
+            }
+            return null;
+        }
+
+        /** 완료 상태 여부 (C1402 또는 C1403) - 순차 서명 단계 완료 체크용 */
+        public boolean isDone() {
+            return this == COMPLETED || this == SKIPPED;
+        }
+    }
+
+    /**
+     * 서명위치 코드 (C16)
+     * document_signatures.signature_slot 및 approval_line_templates.signature_slot 매핑
+     * HTML의 data-slot 속성과 동일 값
+     */
+    public enum SignatureSlot {
+        ATTENDEE    ("C1601", "참석자",    "ATTENDEE",     1),
+        DRAFTER     ("C1602", "담당",     "DRAFTER",      2),
+        PROJECT_LEAD("C1603", "연구책임자", "PROJECT_LEAD", 3),
+        DEPT_HEAD   ("C1604", "부서장",    "DEPT_HEAD",    4),
+        CEO         ("C1605", "대표이사",  "CEO",          5);
+
+        private final String code;
+        private final String name;
+        private final String nameEn;
+        private final int sortOrder;
+
+        SignatureSlot(String code, String name, String nameEn, int sortOrder) {
+            this.code = code;
+            this.name = name;
+            this.nameEn = nameEn;
+            this.sortOrder = sortOrder;
+        }
+
+        public String getCode() { return code; }
+        public String getName() { return name; }
+        public String getNameEn() { return nameEn; }
+        public int getSortOrder() { return sortOrder; }
+
+        public static SignatureSlot fromCode(String code) {
+            for (SignatureSlot slot : values()) {
+                if (slot.code.equals(code)) return slot;
+            }
+            throw new IllegalArgumentException("Unknown signature slot code: " + code);
+        }
+
+        public static SignatureSlot fromCodeOrNull(String code) {
+            if (code == null) return null;
+            for (SignatureSlot slot : values()) {
+                if (slot.code.equals(code)) return slot;
+            }
+            return null;
+        }
+    }
+
+    /**
+     * 감사로그 대상유형 코드 (C17)
+     * audit_logs.target_type 매핑
+     */
+    public enum AuditTargetType {
+        DOCUMENT         ("C1701", "문서",     "DOCUMENT",          1),
+        SIGNATURE        ("C1702", "서명",     "SIGNATURE",         2),
+        SIGNATURE_SESSION("C1703", "서명세션", "SIGNATURE_SESSION", 3),
+        USER             ("C1704", "사용자",   "USER",              4),
+        FILE             ("C1705", "파일",     "FILE",              5);
+
+        private final String code;
+        private final String name;
+        private final String nameEn;
+        private final int sortOrder;
+
+        AuditTargetType(String code, String name, String nameEn, int sortOrder) {
+            this.code = code;
+            this.name = name;
+            this.nameEn = nameEn;
+            this.sortOrder = sortOrder;
+        }
+
+        public String getCode() { return code; }
+        public String getName() { return name; }
+        public String getNameEn() { return nameEn; }
+        public int getSortOrder() { return sortOrder; }
+
+        public static AuditTargetType fromCode(String code) {
+            for (AuditTargetType type : values()) {
+                if (type.code.equals(code)) return type;
+            }
+            throw new IllegalArgumentException("Unknown audit target type code: " + code);
+        }
+    }
+
+    /**
+     * 감사로그 행위 코드 (C18)
+     * audit_logs.action 매핑
+     */
+    public enum AuditAction {
+        CREATE           ("C1801", "생성",      "CREATE",             1),
+        UPDATE           ("C1802", "수정",      "UPDATE",             2),
+        DELETE           ("C1803", "삭제",      "DELETE",             3),
+        SIGN             ("C1804", "서명",      "SIGN",               4),
+        REQUEST_SIGNATURE("C1805", "서명요청",  "REQUEST_SIGNATURE",  5),
+        QR_GENERATE      ("C1806", "QR생성",    "QR_GENERATE",        6),
+        QR_SCAN          ("C1807", "QR스캔",    "QR_SCAN",            7),
+        QR_VERIFY        ("C1808", "본인인증",  "QR_VERIFY",          8),
+        SIGNATURE_SUBMIT ("C1809", "서명제출",  "SIGNATURE_SUBMIT",   9),
+        VIEW             ("C1810", "조회",      "VIEW",              10),
+        DOWNLOAD         ("C1811", "다운로드",  "DOWNLOAD",          11),
+        UPLOAD           ("C1812", "업로드",    "UPLOAD",            12);
+
+        private final String code;
+        private final String name;
+        private final String nameEn;
+        private final int sortOrder;
+
+        AuditAction(String code, String name, String nameEn, int sortOrder) {
+            this.code = code;
+            this.name = name;
+            this.nameEn = nameEn;
+            this.sortOrder = sortOrder;
+        }
+
+        public String getCode() { return code; }
+        public String getName() { return name; }
+        public String getNameEn() { return nameEn; }
+        public int getSortOrder() { return sortOrder; }
+
+        public static AuditAction fromCode(String code) {
+            for (AuditAction action : values()) {
+                if (action.code.equals(code)) return action;
+            }
+            throw new IllegalArgumentException("Unknown audit action code: " + code);
         }
     }
 }

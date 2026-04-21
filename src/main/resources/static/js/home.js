@@ -40,8 +40,8 @@ document.addEventListener('DOMContentLoaded', function() {
     // 오늘 일정 데이터 로드
     loadTodaySchedule();
 
-    // 전자 문서 건수 로드
-    loadPendingApprovals();
+    // 서명 대기 건수 로드
+    loadPendingSignatures();
 
     // 프로젝트 문서 건수 로드
     loadProjectDocuments();
@@ -68,11 +68,11 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     }
 
-    // 전자 문서 카드 클릭 이벤트
-    const approvalCard = document.getElementById('approvalCard');
-    if (approvalCard) {
-        approvalCard.addEventListener('click', function() {
-            window.location.href = '/approval';
+    // 서명 대기 카드 클릭 이벤트
+    const signatureCard = document.getElementById('signatureCard');
+    if (signatureCard) {
+        signatureCard.addEventListener('click', function() {
+            window.location.href = '/signature/pending';
         });
     }
 
@@ -141,42 +141,29 @@ function loadTodaySchedule() {
         });
 }
 
-// 전자 문서 건수 로드 함수
-function loadPendingApprovals() {
-    const PROJECT_DOCUMENT_TYPES = [
-        'C0403', // 야근식대
-        'C0404', // 단독출장
-        'C0405', // 출장+회의
-        'C0406', // 연구비증빙-회의록
-        'C0407', // 재료비
-        'C0408', // 장비비
-        'C0410'  // 프로젝트 주간업무보고
-    ];
-
-    fetch('/api/approval/documents')
+// 서명 대기 건수 로드 함수
+function loadPendingSignatures() {
+    fetch('/api/signature/pending-count')
         .then(response => {
-            if (!response.ok) {
-                throw new Error('전자 문서 로드 실패');
-            }
+            if (!response.ok) throw new Error('서명 대기 건수 로드 실패');
             return response.json();
         })
         .then(data => {
-            const countElement = document.getElementById('pendingApprovalCount');
-            if (countElement) {
-                // 프로젝트 문서 제외
-                const approvalDocs = data.filter(doc =>
-                    !PROJECT_DOCUMENT_TYPES.includes(doc.documentType)
-                );
-                const totalCount = approvalDocs.length || 0;
-                countElement.innerHTML = `${totalCount}<em>건</em>`;
+            const el = document.getElementById('pendingSignatureCount');
+            if (el) {
+                const count = data.count || 0;
+                el.innerHTML = `${count}<em>건</em>`;
+                // 대기 건수가 있으면 카드 강조
+                if (count > 0) {
+                    const card = document.getElementById('signatureCard');
+                    if (card) card.classList.add('has-pending');
+                }
             }
         })
         .catch(error => {
-            console.error('전자 문서 로드 오류:', error);
-            const countElement = document.getElementById('pendingApprovalCount');
-            if (countElement) {
-                countElement.innerHTML = `-<em>건</em>`;
-            }
+            console.error('서명 대기 건수 로드 오류:', error);
+            const el = document.getElementById('pendingSignatureCount');
+            if (el) el.innerHTML = `-<em>건</em>`;
         });
 }
 

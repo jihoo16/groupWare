@@ -17,6 +17,11 @@ public class MeetingMinutesDTO {
     private Long idx;
 
     /**
+     * 전자결재 문서 IDX (approval_documents 테이블 참조)
+     */
+    private Long documentIdx;
+
+    /**
      * 작성자 IDX
      */
     private Long userIdx;
