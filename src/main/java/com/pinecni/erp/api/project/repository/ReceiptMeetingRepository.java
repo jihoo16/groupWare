@@ -38,7 +38,7 @@ public interface ReceiptMeetingRepository extends JpaRepository<ReceiptMeeting, 
      */
     @Query("SELECT rm FROM ReceiptMeeting rm " +
             "LEFT JOIN FETCH rm.approvalDocument " +
-            "WHERE rm.projectIdx = :projectIdx " +
+            "WHERE rm.projectIdx = :projectIdx AND rm.isDeleted = false " +
             "ORDER BY rm.meetingDate DESC")
     List<ReceiptMeeting> findByProjectIdxOrderByMeetingDateDesc(@Param("projectIdx") Long projectIdx);
 
@@ -47,7 +47,7 @@ public interface ReceiptMeetingRepository extends JpaRepository<ReceiptMeeting, 
      */
     @Query("SELECT rm FROM ReceiptMeeting rm " +
             "LEFT JOIN FETCH rm.approvalDocument " +
-            "WHERE rm.authorIdx = :authorIdx " +
+            "WHERE rm.authorIdx = :authorIdx AND rm.isDeleted = false " +
             "ORDER BY rm.meetingDate DESC")
     List<ReceiptMeeting> findByAuthorIdxOrderByMeetingDateDesc(@Param("authorIdx") Long authorIdx);
 
@@ -65,6 +65,7 @@ public interface ReceiptMeetingRepository extends JpaRepository<ReceiptMeeting, 
      */
     @Query("SELECT rm FROM ReceiptMeeting rm " +
             "LEFT JOIN FETCH rm.approvalDocument " +
+            "WHERE rm.isDeleted = false " +
             "ORDER BY rm.meetingDate DESC")
     List<ReceiptMeeting> findAllByOrderByMeetingDateDesc();
 

@@ -3474,202 +3474,81 @@ document.addEventListener('DOMContentLoaded', async function() {
     async function checkAllAttendeesForDuplicates() {
         duplicateAttendeesInfo = {}; // 초기화
 
-        const dateInput = document.getElementById('common_date');
-        const startTimeInput = document.getElementById('common_start_time');
-        const endTimeInput = document.getElementById('common_end_time');
-        const projectIdxInput = document.getElementById('selectedProjectIdx');
+        const date = document.getElementById('common_date')?.value;
+        const startTime = document.getElementById('common_start_time')?.value;
+        const endTime = document.getElementById('common_end_time')?.value;
+        const projectIdx = document.getElementById('selectedProjectIdx')?.value;
 
-        if (!dateInput || !dateInput.value) {
-            return; // 날짜가 없으면 검증 스킵
-        }
-
-        if (!startTimeInput || !startTimeInput.value || !endTimeInput || !endTimeInput.value) {
-            return; // 시간이 없으면 검증 스킵
-        }
-
-        if (!projectIdxInput || !projectIdxInput.value) {
-            return; // 프로젝트가 없으면 검증 스킵
-        }
+        if (!date || !startTime || !endTime || !projectIdx) return;
 
         const attendeePersons = getAttendeePersons();
-        if (!attendeePersons || attendeePersons.length === 0) {
-            return;
-        }
+        if (!attendeePersons || attendeePersons.length === 0) return;
 
-        const date = dateInput.value;
-        const currentStartTime = startTimeInput.value; // HH:mm 형식
-        const currentEndTime = endTimeInput.value; // HH:mm 형식
-        const projectIdx = projectIdxInput.value;
-
-        // 수정 모드일 때 현재 회의록 idx (결재문서 idx와 다름 - data.idx)
-        const receiptMeetingId = currentReceiptMeetingIdx;
-
-        // 모든 내부 참석자 ID 수집
-        const internalAttendeeIds = attendeePersons
+        const internalIds = attendeePersons
             .map(p => parseInt(p.id))
             .filter(id => !isNaN(id) && id > 0);
-
-        // 모든 외부 참석자 ID 수집
-        const externalAttendeeIds = (allExternalPersons || [])
+        const externalIds = (allExternalPersons || [])
             .map(p => parseInt(p.idx))
             .filter(id => !isNaN(id) && id > 0);
+        const allPersons = [
+            ...internalIds.map(id => ({ id })),
+            ...externalIds.map(id => ({ id, isExternal: true }))
+        ];
 
-        // 모든 참석자 ID 합치기
-        const allAttendeeIds = [...internalAttendeeIds, ...externalAttendeeIds];
-
-        // 각 참석자에 대해 중복 체크 (같은 프로젝트 내에서)
-        for (const attendeeId of allAttendeeIds) {
-            try {
-                // 수정 모드일 때 현재 문서 제외 (회의록 타입)
-                let url = `/api/receipt-common/check-duplicate?date=${date}&attendeeIdx=${attendeeId}&projectIdx=${projectIdx}&startTime=${currentStartTime}&endTime=${currentEndTime}`;
-                if (receiptMeetingId) {
-                    url += `&excludeReceiptIdx=${receiptMeetingId}&excludeDocumentType=RCM`;
-                }
-
-                const response = await fetch(url);
-                if (response.ok) {
-                    const data = await response.json();
-                    if (Array.isArray(data) && data.length > 0) {
-                        // 중복된 회의가 있는지 확인 - 시간대 겹침 체크
-                        for (const meeting of data) {
-                            const meetingStartTime = meeting.startTime; // HH:mm:ss 형식
-                            const meetingEndTime = meeting.endTime; // HH:mm:ss 형식
-
-                            if (meetingStartTime && meetingEndTime) {
-                                // HH:mm:ss를 HH:mm으로 변환 (초 제거)
-                                const existingStart = meetingStartTime.substring(0, 5);
-                                const existingEnd = meetingEndTime.substring(0, 5);
-
-                                // 시간대가 겹치는지 확인
-                                if (isTimeOverlap(existingStart, existingEnd, currentStartTime, currentEndTime)) {
-                                    duplicateAttendeesInfo[attendeeId] = {
-                                        meetingDate: meeting.meetingDate,
-                                        projectName: meeting.projectName,
-                                        startTime: existingStart,
-                                        endTime: existingEnd
-                                    };
-                                    break; // 하나라도 겹치면 중복으로 표시
-                                }
-                            }
-                        }
-                    }
-                }
-            } catch (error) {
-                console.error(`중복 검증 오류 (attendeeId: ${attendeeId}):`, error);
-            }
-        }
-    }
-
-    // 중복 참석자 검증 함수
-    async function checkDuplicateAttendees(attendeeIds) {
-        const dateInput = document.getElementById('common_date');
-        const startTimeInput = document.getElementById('common_start_time');
-        const endTimeInput = document.getElementById('common_end_time');
-        const projectIdxInput = document.getElementById('selectedProjectIdx');
-
-        if (!dateInput || !dateInput.value) {
-            return []; // 날짜가 없으면 검증 스킵
-        }
-
-        if (!startTimeInput || !startTimeInput.value || !endTimeInput || !endTimeInput.value) {
-            return []; // 시간이 없으면 검증 스킵
-        }
-
-        if (!projectIdxInput || !projectIdxInput.value) {
-            return []; // 프로젝트가 없으면 검증 스킵
-        }
-
-        const date = dateInput.value; // yyyy-MM-dd 형식
-        const currentStartTime = startTimeInput.value; // HH:mm 형식
-        const currentEndTime = endTimeInput.value; // HH:mm 형식
-        const projectIdx = projectIdxInput.value;
-        const duplicates = [];
-
-        // NaN 필터링 및 유효성 검증
-        const validAttendeeIds = attendeeIds.filter(id => {
-            const isValid = !isNaN(id) && id !== null && id !== undefined && id > 0;
-            if (!isValid) {
-                console.warn('유효하지 않은 attendeeId 발견:', id);
-            }
-            return isValid;
+        const scan = await ReceiptCommon.scanDuplicatesForPersons({
+            persons: allPersons,
+            date,
+            projectIdx,
+            startTime,
+            endTime,
+            excludeReceiptIdx: currentReceiptMeetingIdx || undefined,
+            excludeDocumentType: currentReceiptMeetingIdx ? 'RCM' : undefined
         });
 
-        if (validAttendeeIds.length === 0) {
-            console.warn('유효한 attendeeId가 없습니다.');
-            return [];
-        }
-
-        for (const attendeeId of validAttendeeIds) {
-            try {
-                let url = `/api/receipt-common/check-duplicate?date=${date}&attendeeIdx=${attendeeId}&projectIdx=${projectIdx}&startTime=${currentStartTime}&endTime=${currentEndTime}`;
-                if (currentReceiptMeetingIdx) {
-                    url += `&excludeReceiptIdx=${currentReceiptMeetingIdx}&excludeDocumentType=RCM`;
-                }
-                const response = await fetch(url);
-
-                // Content-Type 확인
-                const contentType = response.headers.get('content-type');
-
-                if (!response.ok) {
-                    // 서버 에러 응답 처리
-                    let errorMessage = `중복 검증 API 실패 (상태: ${response.status})`;
-
-                    if (contentType && contentType.includes('application/json')) {
-                        const errorData = await response.json().catch(() => ({}));
-                        errorMessage = errorData.error || errorMessage;
-                    } else {
-                        const errorText = await response.text();
-                        console.error('서버 응답 (HTML):', errorText.substring(0, 200));
-                        errorMessage = '서버 오류가 발생했습니다. 관리자에게 문의하세요.';
-                    }
-
-                    console.error(`중복 검증 API 실패 (attendeeId: ${attendeeId}):`, errorMessage);
-                    throw new Error(errorMessage);
-                }
-
-                // JSON 응답인지 확인
-                if (!contentType || !contentType.includes('application/json')) {
-                    const responseText = await response.text();
-                    console.error('예상치 못한 응답 형식:', contentType, responseText.substring(0, 200));
-                    throw new Error('서버에서 잘못된 응답을 반환했습니다. 잠시 후 다시 시도해 주세요.');
-                }
-
-                const data = await response.json();
-
-                // 응답이 배열인지 확인하고 시간대 겹침 체크
-                if (Array.isArray(data) && data.length > 0) {
-                    // 시간대가 겹치는 회의가 있는지 확인
-                    for (const meeting of data) {
-                        const meetingStartTime = meeting.startTime;
-                        const meetingEndTime = meeting.endTime;
-
-                        if (meetingStartTime && meetingEndTime) {
-                            // HH:mm:ss를 HH:mm으로 변환 (초 제거)
-                            const existingStart = meetingStartTime.substring(0, 5);
-                            const existingEnd = meetingEndTime.substring(0, 5);
-
-                            // 시간대가 겹치는지 확인
-                            if (isTimeOverlap(existingStart, existingEnd, currentStartTime, currentEndTime)) {
-                                duplicates.push({
-                                    attendeeId: attendeeId,
-                                    meeting: meeting
-                                });
-                                break; // 하나라도 겹치면 중복으로 처리
-                            }
-                        }
-                    }
-                }
-            } catch (error) {
-                console.error(`중복 검증 중 오류 (attendeeId: ${attendeeId}):`, error);
-                // 참석자 이름 찾기
-                const attendee = currentAttendees.find(a => a.id === attendeeId) ||
-                                tempSelectedAttendees.find(a => parseInt(a.id) === attendeeId);
-                const attendeeName = attendee ? attendee.name : `ID ${attendeeId}`;
-                // 검증 실패 시 에러를 throw하여 상위에서 처리
-                throw new Error(`참석자 중복 검증 실패 (참석자: ${attendeeName}, 오류: ${error.message})`);
+        Object.keys(scan).forEach(id => {
+            const info = scan[id];
+            if (info) {
+                duplicateAttendeesInfo[id] = {
+                    meetingDate: info.raw?.meetingDate || info.date,
+                    projectName: info.projectName,
+                    startTime: info.startTime,
+                    endTime: info.endTime
+                };
             }
-        }
+        });
+    }
 
+    // 중복 참석자 검증 함수 (저장 시 최종 검증)
+    async function checkDuplicateAttendees(attendeeIds) {
+        const date = document.getElementById('common_date')?.value;
+        const startTime = document.getElementById('common_start_time')?.value;
+        const endTime = document.getElementById('common_end_time')?.value;
+        const projectIdx = document.getElementById('selectedProjectIdx')?.value;
+
+        if (!date || !startTime || !endTime || !projectIdx) return [];
+
+        const validAttendeeIds = attendeeIds.filter(id =>
+            !isNaN(id) && id !== null && id !== undefined && id > 0
+        );
+        if (validAttendeeIds.length === 0) return [];
+
+        const scan = await ReceiptCommon.scanDuplicatesForPersons({
+            persons: validAttendeeIds.map(id => ({ id })),
+            date,
+            projectIdx,
+            startTime,
+            endTime,
+            excludeReceiptIdx: currentReceiptMeetingIdx || undefined,
+            excludeDocumentType: currentReceiptMeetingIdx ? 'RCM' : undefined
+        });
+
+        const duplicates = [];
+        validAttendeeIds.forEach(attendeeId => {
+            const info = scan[attendeeId];
+            if (info) {
+                duplicates.push({ attendeeId, meeting: info.raw });
+            }
+        });
         return duplicates;
     }
 
@@ -3740,15 +3619,32 @@ document.addEventListener('DOMContentLoaded', async function() {
                 // 작성자가 빠져있으면 재선택: 1순위 로그인 사용자, 2순위 최저직급
                 const internalAttendees = currentAttendees.filter(a => a.type === 'internal');
                 if (internalAttendees.length > 0) {
-                    let newAuthor = await pickLoggedInAuthor(internalAttendees);
-                    if (!newAuthor) {
-                        const sorted = sortByPosition([...internalAttendees]);
-                        newAuthor = sorted[sorted.length - 1];
+                    const date = document.getElementById('common_date')?.value;
+                    const startTime = document.getElementById('common_start_time')?.value;
+                    const endTime = document.getElementById('common_end_time')?.value;
+                    const projectIdx = document.getElementById('selectedProjectIdx')?.value;
+
+                    const { author: newAuthor } = await ReceiptCommon.pickDefaultAuthor({
+                        candidates: internalAttendees,
+                        getPositionOrder: (m) => getPositionSortOrder(m.position),
+                        loggedInUserIdx: currentUser?.idx,
+                        duplicateProbe: async (cand) => {
+                            if (!date || !startTime || !endTime || !projectIdx) return false;
+                            return await ReceiptCommon.hasDuplicate({
+                                date, attendeeIdx: cand.id, projectIdx, startTime, endTime,
+                                excludeReceiptIdx: currentReceiptMeetingIdx || undefined,
+                                excludeDocumentType: currentReceiptMeetingIdx ? 'RCM' : undefined
+                            });
+                        },
+                        // 빠진 작성자 대체 재선택: 후보 중 최고직급(내림차순 끝)
+                        rankStrategy: (sortedAsc) => sortedAsc[sortedAsc.length - 1]
+                    });
+                    if (newAuthor) {
+                        document.getElementById('common_author').value = newAuthor.name;
+                        document.getElementById('common_author_id').value = newAuthor.id;
+                        document.querySelectorAll('.auto-author').forEach(field => { field.value = newAuthor.name; });
+                        document.querySelectorAll('.auto-reporter').forEach(el => { el.textContent = newAuthor.name; });
                     }
-                    document.getElementById('common_author').value = newAuthor.name;
-                    document.getElementById('common_author_id').value = newAuthor.id;
-                    document.querySelectorAll('.auto-author').forEach(field => { field.value = newAuthor.name; });
-                    document.querySelectorAll('.auto-reporter').forEach(el => { el.textContent = newAuthor.name; });
                 }
             }
         }
@@ -4023,53 +3919,33 @@ document.addEventListener('DOMContentLoaded', async function() {
         // 회의 날짜 기준 참여기간 검증용
         const meetingDateForAuthor = document.getElementById('common_date')?.value || '';
 
-        // 시간 중복 체크를 위한 정보 수집
-        const dateInput = document.getElementById('common_date');
-        const startTimeInput = document.getElementById('common_start_time');
-        const endTimeInput = document.getElementById('common_end_time');
-        const projectIdxInput = document.getElementById('selectedProjectIdx');
+        // 시간 중복 정보 수집 (공통 모듈 사용)
+        const date = document.getElementById('common_date')?.value;
+        const startTime = document.getElementById('common_start_time')?.value;
+        const endTime = document.getElementById('common_end_time')?.value;
+        const projectIdx = document.getElementById('selectedProjectIdx')?.value;
 
-        const hasTimeInfo = dateInput?.value && startTimeInput?.value && endTimeInput?.value && projectIdxInput?.value;
-
-        // 시간 중복 정보 수집
-        const duplicateInfo = {};
-        if (hasTimeInfo) {
-            const date = dateInput.value;
-            const currentStartTime = startTimeInput.value;
-            const currentEndTime = endTimeInput.value;
-            const projectIdx = projectIdxInput.value;
-
-            for (const person of filteredPersons) {
-                try {
-                    let url = `/api/receipt-common/check-duplicate?date=${date}&attendeeIdx=${person.id}&projectIdx=${projectIdx}&startTime=${currentStartTime}&endTime=${currentEndTime}`;
-                    if (currentReceiptMeetingIdx) {
-                        url += `&excludeReceiptIdx=${currentReceiptMeetingIdx}&excludeDocumentType=RCM`;
-                    }
-                    const response = await fetch(url);
-                    if (response.ok) {
-                        const data = await response.json();
-                        if (Array.isArray(data) && data.length > 0) {
-                            for (const meeting of data) {
-                                const meetingStartTime = meeting.startTime?.substring(0, 5);
-                                const meetingEndTime = meeting.endTime?.substring(0, 5);
-
-                                if (meetingStartTime && meetingEndTime) {
-                                    if (isTimeOverlap(meetingStartTime, meetingEndTime, currentStartTime, currentEndTime)) {
-                                        duplicateInfo[person.id] = {
-                                            projectName: meeting.projectName || '알 수 없는 프로젝트',
-                                            startTime: meetingStartTime,
-                                            endTime: meetingEndTime
-                                        };
-                                        break;
-                                    }
-                                }
-                            }
-                        }
-                    }
-                } catch (error) {
-                    console.error(`작성자 중복 체크 오류 (${person.name}):`, error);
+        let duplicateInfo = {};
+        if (date && startTime && endTime && projectIdx) {
+            const scan = await ReceiptCommon.scanDuplicatesForPersons({
+                persons: filteredPersons.map(p => ({ id: p.id })),
+                date,
+                projectIdx,
+                startTime,
+                endTime,
+                excludeReceiptIdx: currentReceiptMeetingIdx || undefined,
+                excludeDocumentType: currentReceiptMeetingIdx ? 'RCM' : undefined
+            });
+            Object.keys(scan).forEach(id => {
+                const info = scan[id];
+                if (info) {
+                    duplicateInfo[id] = {
+                        projectName: info.projectName || '알 수 없는 프로젝트',
+                        startTime: info.startTime,
+                        endTime: info.endTime
+                    };
                 }
-            }
+            });
         }
 
         authorListEl.innerHTML = filteredPersons.map(person => {
@@ -4101,7 +3977,7 @@ document.addEventListener('DOMContentLoaded', async function() {
                 inactiveBadge = `<span style="background:#e5e7eb; color:#4b5563; padding:2px 8px; border-radius:4px; font-size:11px; margin-left:8px; white-space:nowrap;" data-tip="${tip}"><i class="fas fa-calendar-times"></i> 참여기간 외</span>`;
             }
 
-            const isLocked = isInactive;
+            const isLocked = isInactive || !!isDuplicate;
             const lockedStyle = isLocked ? 'opacity:0.55; cursor:not-allowed;' : '';
             const onclickAttr = isLocked ? '' : `onclick="selectAuthor(${person.id})"`;
 
@@ -4134,61 +4010,32 @@ document.addEventListener('DOMContentLoaded', async function() {
                 return;
             }
 
-            // 시간 중복 체크
-            const dateInput = document.getElementById('common_date');
-            const startTimeInput = document.getElementById('common_start_time');
-            const endTimeInput = document.getElementById('common_end_time');
-            const projectIdxInput = document.getElementById('selectedProjectIdx');
+            // 시간 중복 체크 — 중복이면 선택 불가 (안전장치: UI에서 이미 disabled 처리됨)
+            const date = document.getElementById('common_date')?.value;
+            const startTime = document.getElementById('common_start_time')?.value;
+            const endTime = document.getElementById('common_end_time')?.value;
+            const projectIdx = document.getElementById('selectedProjectIdx')?.value;
 
-            if (dateInput?.value && startTimeInput?.value && endTimeInput?.value && projectIdxInput?.value) {
-                const date = dateInput.value;
-                const currentStartTime = startTimeInput.value;
-                const currentEndTime = endTimeInput.value;
-                const projectIdx = projectIdxInput.value;
-
-                try {
-                    let url = `/api/receipt-common/check-duplicate?date=${date}&attendeeIdx=${personId}&projectIdx=${projectIdx}&startTime=${currentStartTime}&endTime=${currentEndTime}`;
-                    if (currentReceiptMeetingIdx) {
-                        url += `&excludeReceiptIdx=${currentReceiptMeetingIdx}&excludeDocumentType=RCM`;
-                    }
-                    const response = await fetch(url);
-                    if (response.ok) {
-                        const data = await response.json();
-                        if (Array.isArray(data) && data.length > 0) {
-                            for (const meeting of data) {
-                                const meetingStartTime = meeting.startTime?.substring(0, 5);
-                                const meetingEndTime = meeting.endTime?.substring(0, 5);
-
-                                if (meetingStartTime && meetingEndTime) {
-                                    if (isTimeOverlap(meetingStartTime, meetingEndTime, currentStartTime, currentEndTime)) {
-                                        // 중복이 있으면 경고 표시
-                                        const projectName = meeting.projectName || '알 수 없는 프로젝트';
-                                        const timeRange = `${meetingStartTime} ~ ${meetingEndTime}`;
-
-                                        const result = await Swal.fire({
-                                            icon: 'warning',
-                                            title: '시간 중복 경고',
-                                            html: `<strong>${person.name}</strong>님은 해당 시간대에<br>이미 다른 회의에 참석 중입니다.<br><br>` +
-                                                  `회의 시간: ${timeRange}<br>` +
-                                                  `프로젝트: <strong>[${projectName}]</strong><br><br>` +
-                                                  `그래도 작성자로 선택하시겠습니까?`,
-                                            showCancelButton: true,
-                                            confirmButtonText: '계속 진행',
-                                            cancelButtonText: '취소',
-                                            confirmButtonColor: '#ff9800'
-                                        });
-
-                                        if (!result.isConfirmed) {
-                                            return; // 취소하면 작성자 선택 중단
-                                        }
-                                        break;
-                                    }
-                                }
-                            }
-                        }
-                    }
-                } catch (error) {
-                    console.error('작성자 중복 체크 오류:', error);
+            if (date && startTime && endTime && projectIdx) {
+                const docs = await ReceiptCommon.fetchDuplicateDocs({
+                    date,
+                    attendeeIdx: personId,
+                    projectIdx,
+                    startTime,
+                    endTime,
+                    excludeReceiptIdx: currentReceiptMeetingIdx || undefined,
+                    excludeDocumentType: currentReceiptMeetingIdx ? 'RCM' : undefined
+                });
+                if (docs.length > 0) {
+                    const m = docs[0];
+                    await ReceiptCommon.showTimeConflictBlock({
+                        personName: person.name,
+                        projectName: m.projectName,
+                        startTime: ReceiptCommon.trimHHmm(m.startTime),
+                        endTime: ReceiptCommon.trimHHmm(m.endTime),
+                        type: m.typeName || m.type
+                    });
+                    return;
                 }
             }
 
@@ -4233,116 +4080,49 @@ document.addEventListener('DOMContentLoaded', async function() {
         }
     };
 
-    // 단일 참석자 시간 중복 체크 헬퍼 함수
-    async function checkSingleAttendeeDuplicate(attendeeId, date, startTime, endTime, projectIdx) {
-        try {
-            let url = `/api/receipt-common/check-duplicate?date=${date}&attendeeIdx=${attendeeId}&projectIdx=${projectIdx}&startTime=${startTime}&endTime=${endTime}`;
-            if (currentReceiptMeetingIdx) {
-                url += `&excludeReceiptIdx=${currentReceiptMeetingIdx}&excludeDocumentType=RCM`;
-            }
-            const response = await fetch(url);
-            if (response.ok) {
-                const data = await response.json();
-                if (Array.isArray(data) && data.length > 0) {
-                    // 시간대 겹침 체크
-                    for (const meeting of data) {
-                        const meetingStartTime = meeting.startTime?.substring(0, 5); // HH:mm
-                        const meetingEndTime = meeting.endTime?.substring(0, 5); // HH:mm
-
-                        if (meetingStartTime && meetingEndTime) {
-                            if (isTimeOverlap(meetingStartTime, meetingEndTime, startTime, endTime)) {
-                                return true; // 중복
-                            }
-                        }
-                    }
-                }
-            }
-            return false; // 중복 아님
-        } catch (error) {
-            console.error('단일 참석자 중복 체크 오류:', error);
-            return false; // 에러 시 중복 아닌 것으로 처리
-        }
-    }
-
-    // 로그인 사용자 우선 작성자 선택 헬퍼 (후보 목록에서 로그인 사용자가 중복 없으면 반환)
-    async function pickLoggedInAuthor(candidates) {
-        const loggedInUserIdx = currentUser?.idx;
-        if (!loggedInUserIdx) return null;
-        const loggedIn = candidates.find(p => String(p.id) === String(loggedInUserIdx));
-        if (!loggedIn) return null;
-
-        const d  = document.getElementById('common_date')?.value;
-        const st = document.getElementById('common_start_time')?.value;
-        const et = document.getElementById('common_end_time')?.value;
-        const pi = document.getElementById('selectedProjectIdx')?.value;
-        if (!d || !st || !et || !pi) return loggedIn; // 날짜/시간 미입력 시 중복 체크 불가 → 바로 선택
-
-        const isDup = await checkSingleAttendeeDuplicate(loggedIn.id, d, st, et, pi);
-        return isDup ? null : loggedIn;
-    }
-
-    // 기본 작성자 설정 (낮은 직급에서 4번째, 시간 중복 시 가장 낮은 직급자)
+    // 기본 작성자 설정 (로그인 사용자 1순위 → 낮은 직급 4번째 fallback)
     async function setDefaultAuthor() {
         const attendeePersons = getAttendeePersons();
         if (attendeePersons.length === 0) return;
 
-        const sortedPersons = sortByPosition([...attendeePersons]);
-
-        // 날짜, 시간, 프로젝트 정보 가져오기
-        const dateInput = document.getElementById('common_date');
+        const date = document.getElementById('common_date')?.value;
+        const startTime = document.getElementById('common_start_time')?.value;
+        const endTime = document.getElementById('common_end_time')?.value;
+        const projectIdx = document.getElementById('selectedProjectIdx')?.value;
         const startTimeInput = document.getElementById('common_start_time');
-        const endTimeInput = document.getElementById('common_end_time');
-        const projectIdxInput = document.getElementById('selectedProjectIdx');
 
-        let selectedAuthor = null;
+        // 중복 판정 probe (날짜/시간 미입력 시 항상 false)
+        const duplicateProbe = async (cand) => {
+            if (!date || !startTime || !endTime || !projectIdx) return false;
+            return await ReceiptCommon.hasDuplicate({
+                date,
+                attendeeIdx: cand.id,
+                projectIdx,
+                startTime,
+                endTime,
+                excludeReceiptIdx: currentReceiptMeetingIdx || undefined,
+                excludeDocumentType: currentReceiptMeetingIdx ? 'RCM' : undefined
+            });
+        };
 
-        // 1순위: 로그인 사용자가 프로젝트 참여인력인 경우
-        selectedAuthor = await pickLoggedInAuthor(attendeePersons);
+        const { author: selectedAuthor, allBlocked } = await ReceiptCommon.pickDefaultAuthor({
+            candidates: attendeePersons,
+            getPositionOrder: (m) => getPositionSortOrder(m.position),
+            loggedInUserIdx: currentUser?.idx,
+            duplicateProbe,
+            rankStrategy: 'ascStep4'
+        });
 
-        // 2순위 이하: 직급 기반 선택
-        if (!selectedAuthor && dateInput?.value && startTimeInput?.value && endTimeInput?.value && projectIdxInput?.value) {
-            const date = dateInput.value;
-            const currentStartTime = startTimeInput.value;
-            const currentEndTime = endTimeInput.value;
-            const projectIdx = projectIdxInput.value;
-
-            // 기본 작성자 후보 (낮은 직급에서 4번째, 없으면 가장 낮은 직급)
-            const defaultCandidate = sortedPersons[3] || sortedPersons[0];
-
-            // 기본 후보가 중복인지 체크
-            const isDuplicate = await checkSingleAttendeeDuplicate(defaultCandidate.id, date, currentStartTime, currentEndTime, projectIdx);
-
-            if (!isDuplicate) {
-                selectedAuthor = defaultCandidate;
-            } else {
-                // 중복이면 가장 낮은 직급부터 차례로 체크
-                for (const person of sortedPersons) {
-                    const personDuplicate = await checkSingleAttendeeDuplicate(person.id, date, currentStartTime, currentEndTime, projectIdx);
-                    if (!personDuplicate) {
-                        selectedAuthor = person;
-                        break;
-                    }
-                }
-
-                // 선택 가능한 멤버가 없으면 경고
-                if (!selectedAuthor) {
-                    await Swal.fire({
-                        icon: 'warning',
-                        title: '시간 중복',
-                        html: `선택하신 시간대(<strong>${currentStartTime} ~ ${currentEndTime}</strong>)에<br>참석 가능한 프로젝트 멤버가 없습니다.<br><br>회의 시간을 변경해주세요.`,
-                        confirmButtonText: '확인'
-                    });
-
-                    // 시작 시간 필드에 포커스
-                    if (startTimeInput) {
-                        startTimeInput.focus();
-                    }
-                    return; // 작성자 설정하지 않고 종료
-                }
-            }
-        } else if (!selectedAuthor) {
-            // 날짜/시간 정보가 없으면 기존 로직대로
-            selectedAuthor = sortedPersons[3] || sortedPersons[0];
+        // 날짜/시간이 모두 있는데 전원 중복이면 경고 후 중단 (기존 UX 유지)
+        if (allBlocked && date && startTime && endTime && projectIdx) {
+            await Swal.fire({
+                icon: 'warning',
+                title: '시간 중복',
+                html: `선택하신 시간대(<strong>${startTime} ~ ${endTime}</strong>)에<br>참석 가능한 프로젝트 멤버가 없습니다.<br><br>회의 시간을 변경해주세요.`,
+                confirmButtonText: '확인'
+            });
+            if (startTimeInput) startTimeInput.focus();
+            return;
         }
 
         if (selectedAuthor) {

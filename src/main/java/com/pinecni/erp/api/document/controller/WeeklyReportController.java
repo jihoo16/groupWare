@@ -4,6 +4,7 @@ import com.pinecni.erp.api.document.dto.WeeklyReportCreateDTO;
 import com.pinecni.erp.api.document.dto.WeeklyReportDTO;
 import com.pinecni.erp.api.document.dto.WeeklyReportUpdateDTO;
 import com.pinecni.erp.api.document.service.WeeklyReportService;
+import com.pinecni.erp.api.project.repository.ProjectMemberRepository;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -12,6 +13,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
+import java.util.Map;
 
 /**
  * 주간업무보고 REST API Controller
@@ -23,6 +25,7 @@ import java.util.List;
 public class WeeklyReportController {
 
     private final WeeklyReportService weeklyReportService;
+    private final ProjectMemberRepository projectMemberRepository;
 
     /**
      * 주간업무보고 생성
@@ -59,16 +62,27 @@ public class WeeklyReportController {
      * PUT /api/document/weekly-report/{id}
      */
     @PutMapping("/{id}")
-    public ResponseEntity<WeeklyReportDTO> updateWeeklyReport(
+    public ResponseEntity<?> updateWeeklyReport(
             @PathVariable Long id,
             @Valid @RequestBody WeeklyReportUpdateDTO updateDTO,
             jakarta.servlet.http.HttpSession session) {
         log.debug("PUT /api/document/weekly-report/{} - updateWeeklyReport()", id);
 
-        // 세션에서 로그인한 사용자 IDX 가져오기
         Long updatedUserIdx = (Long) session.getAttribute("userIdx");
         if (updatedUserIdx == null) {
-            updatedUserIdx = 1L; // 기본값 (로그인 안된 경우)
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
+                    .body(Map.of("error", "로그인이 필요합니다."));
+        }
+
+        // 프로젝트 멤버 여부 확인
+        if (updateDTO.getProjectIdx() != null) {
+            boolean isMember = projectMemberRepository.existsByProjectIdxAndEmployeeIdx(
+                    updateDTO.getProjectIdx(), updatedUserIdx);
+            if (!isMember) {
+                log.warn("주간보고 수정 권한 없음 - reportId: {}, userIdx: {}", id, updatedUserIdx);
+                return ResponseEntity.status(HttpStatus.FORBIDDEN)
+                        .body(Map.of("error", "프로젝트 멤버만 수정할 수 있습니다."));
+            }
         }
 
         log.debug("Updated by userIdx: {}", updatedUserIdx);

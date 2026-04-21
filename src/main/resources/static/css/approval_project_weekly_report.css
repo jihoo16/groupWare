@@ -52,6 +52,79 @@
     background: #ffb300;
 }
 
+/* 금주 주요업무 다중 항목 */
+.main-tasks-list {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    margin-bottom: 8px;
+}
+
+.main-task-item {
+    display: flex;
+    align-items: flex-start;
+    gap: 8px;
+}
+
+.task-number {
+    flex-shrink: 0;
+    width: 24px;
+    height: 24px;
+    margin-top: 8px;
+    background: #667eea;
+    color: #fff;
+    border-radius: 50%;
+    font-size: 12px;
+    font-weight: 700;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.main-task-item .form-textarea {
+    flex: 1;
+    resize: vertical;
+}
+
+.btn-remove-task {
+    flex-shrink: 0;
+    margin-top: 8px;
+    width: 28px;
+    height: 28px;
+    background: #fee2e2;
+    color: #ef4444;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: background 0.2s;
+}
+
+.btn-remove-task:hover {
+    background: #fca5a5;
+}
+
+.btn-add-task {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 6px 14px;
+    background: #f0f4ff;
+    color: #667eea;
+    border: 1px dashed #667eea;
+    border-radius: 6px;
+    font-size: 13px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: background 0.2s;
+}
+
+.btn-add-task:hover {
+    background: #e0e7ff;
+}
+
 /* 이전주 차주계획 모달 */
 .prev-week-plan-modal-period {
     font-size: 13px;

@@ -1437,9 +1437,14 @@ document.addEventListener('DOMContentLoaded', async function() {
             item.addEventListener('click', async function() {
                 // 중복인 경우 선택 불가
                 if (isDuplicate) {
-                    const docs = duplicateInfo.documents || [];
-                    const docInfo = docs.map(d => `${d.typeName} (${d.startTime}~${d.endTime})`).join('<br>');
-                    showWarning(`${member.name}님은 이미 다른 문서에 등록되어 있습니다.<br><br>${docInfo}`);
+                    const first = (duplicateInfo.documents || [])[0] || {};
+                    await ReceiptCommon.showTimeConflictBlock({
+                        personName: member.name,
+                        projectName: first.projectName,
+                        startTime: ReceiptCommon.trimHHmm(first.startTime),
+                        endTime: ReceiptCommon.trimHHmm(first.endTime),
+                        type: first.typeName || first.type
+                    });
                     return;
                 }
 
@@ -3209,9 +3214,14 @@ document.addEventListener('DOMContentLoaded', async function() {
         // 중복 체크 - 중복이면 선택 불가
         const duplicateInfo = duplicateAttendeesInfo[personId];
         if (duplicateInfo?.hasDuplicate) {
-            const docs = duplicateInfo.documents || [];
-            const docInfo = docs.map(d => `${d.typeName} (${d.startTime}~${d.endTime})`).join('<br>');
-            showWarning(`${person.name}님은 이미 다른 문서에 등록되어 있습니다.<br><br>${docInfo}`);
+            const first = (duplicateInfo.documents || [])[0] || {};
+            await ReceiptCommon.showTimeConflictBlock({
+                personName: person.name,
+                projectName: first.projectName,
+                startTime: ReceiptCommon.trimHHmm(first.startTime),
+                endTime: ReceiptCommon.trimHHmm(first.endTime),
+                type: first.typeName || first.type
+            });
             return;
         }
 
@@ -3339,42 +3349,25 @@ document.addEventListener('DOMContentLoaded', async function() {
      * @returns {Array} 중복 문서 목록
      */
     async function checkDuplicateForAttendee(attendeeId) {
-        const dateInput = document.getElementById('ot_approval_date');
-        const startTimeInput = document.getElementById('ot_start_time');
-        const endTimeInput = document.getElementById('ot_end_time');
-        const projectIdxInput = document.getElementById('selectedProjectIdx');
+        const date = document.getElementById('ot_approval_date')?.value;
+        const startTime = document.getElementById('ot_start_time')?.value;
+        const endTime = document.getElementById('ot_end_time')?.value;
+        const projectIdx = document.getElementById('selectedProjectIdx')?.value;
 
-        const date = dateInput?.value;
-        const startTime = startTimeInput?.value;
-        const endTime = endTimeInput?.value;
-        const projectIdx = projectIdxInput?.value;
-
-        // 필수값 체크 (카드는 필수 아님 - 프로젝트와 시간으로만 체크)
         if (!date || !projectIdx) {
             console.log('[중복 검증] 필수값 누락 - date:', date, 'projectIdx:', projectIdx);
             return [];
         }
 
-        try {
-            let url = `/api/receipt-common/check-duplicate?date=${date}&attendeeIdx=${attendeeId}&projectIdx=${projectIdx}`;
-            if (startTime) url += `&startTime=${startTime}`;
-            if (endTime) url += `&endTime=${endTime}`;
-            // 수정 모드일 때 자기 자신 제외
-            if (isEditMode && editingIdx) {
-                url += `&excludeReceiptIdx=${editingIdx}&excludeDocumentType=RCO`;
-            }
-
-            const response = await fetch(url);
-            if (response.ok) {
-                return await response.json();
-            } else {
-                console.error('[중복 검증] API 오류:', response.status);
-                return [];
-            }
-        } catch (error) {
-            console.error('[중복 검증] 네트워크 오류:', error);
-            return [];
-        }
+        return await ReceiptCommon.fetchDuplicateDocs({
+            date,
+            attendeeIdx: attendeeId,
+            projectIdx,
+            startTime: startTime || undefined,
+            endTime: endTime || undefined,
+            excludeReceiptIdx: (isEditMode && editingIdx) ? editingIdx : undefined,
+            excludeDocumentType: (isEditMode && editingIdx) ? 'RCO' : undefined
+        });
     }
 
     /**
@@ -3383,39 +3376,36 @@ document.addEventListener('DOMContentLoaded', async function() {
     async function loadDuplicateInfoForAllPersons() {
         duplicateAttendeesInfo = {}; // 초기화
 
-        const dateInput = document.getElementById('ot_approval_date');
-        const projectIdxInput = document.getElementById('selectedProjectIdx');
+        const date = document.getElementById('ot_approval_date')?.value;
+        const startTime = document.getElementById('ot_start_time')?.value;
+        const endTime = document.getElementById('ot_end_time')?.value;
+        const projectIdx = document.getElementById('selectedProjectIdx')?.value;
 
-        const date = dateInput?.value;
-        const projectIdx = projectIdxInput?.value;
-
-        // 필수값 체크 (카드는 필수 아님 - 프로젝트와 시간으로만 체크)
         if (!date || !projectIdx) {
             console.log('[중복 검증] 모달 열기 시 필수값 누락 - date:', date, 'projectIdx:', projectIdx);
             return;
         }
 
         const persons = getOvertimePersons();
-        console.log(`[중복 검증] ${persons.length}명 참석자 검증 시작`);
+        const scan = await ReceiptCommon.scanDuplicatesForPersons({
+            persons: persons.map(p => ({ id: p.id })),
+            date,
+            projectIdx,
+            startTime: startTime || undefined,
+            endTime: endTime || undefined,
+            excludeReceiptIdx: (isEditMode && editingIdx) ? editingIdx : undefined,
+            excludeDocumentType: (isEditMode && editingIdx) ? 'RCO' : undefined
+        });
 
-        // 각 참석자에 대해 중복 체크
-        for (const person of persons) {
-            try {
-                const duplicates = await checkDuplicateForAttendee(person.id);
-                if (duplicates && duplicates.length > 0) {
-                    // 시간대 겹침이 있는 경우
-                    duplicateAttendeesInfo[person.id] = {
-                        hasDuplicate: true,
-                        documents: duplicates
-                    };
-                    console.log(`[중복 발견] ${person.name}: ${duplicates.length}건`);
-                }
-            } catch (error) {
-                console.error(`[중복 검증 오류] ${person.name}:`, error);
+        Object.keys(scan).forEach(id => {
+            const info = scan[id];
+            if (info) {
+                duplicateAttendeesInfo[id] = {
+                    hasDuplicate: true,
+                    documents: info.allDocs || [info.raw]
+                };
             }
-        }
-
-        console.log('[중복 검증 완료] 중복 정보:', duplicateAttendeesInfo);
+        });
     }
 
     /**
@@ -3423,21 +3413,36 @@ document.addEventListener('DOMContentLoaded', async function() {
      * @returns {Array} 중복된 참석자 목록
      */
     async function checkDuplicateBeforeSave(attendeeIds) {
-        const duplicates = [];
+        const date = document.getElementById('ot_approval_date')?.value;
+        const startTime = document.getElementById('ot_start_time')?.value;
+        const endTime = document.getElementById('ot_end_time')?.value;
+        const projectIdx = document.getElementById('selectedProjectIdx')?.value;
 
-        for (const attendeeId of attendeeIds) {
-            const results = await checkDuplicateForAttendee(attendeeId);
-            if (results && results.length > 0) {
-                const persons = getOvertimePersons();
+        if (!date || !projectIdx || attendeeIds.length === 0) return [];
+
+        const scan = await ReceiptCommon.scanDuplicatesForPersons({
+            persons: attendeeIds.map(id => ({ id })),
+            date,
+            projectIdx,
+            startTime: startTime || undefined,
+            endTime: endTime || undefined,
+            excludeReceiptIdx: (isEditMode && editingIdx) ? editingIdx : undefined,
+            excludeDocumentType: (isEditMode && editingIdx) ? 'RCO' : undefined
+        });
+
+        const persons = getOvertimePersons();
+        const duplicates = [];
+        attendeeIds.forEach(attendeeId => {
+            const info = scan[attendeeId];
+            if (info) {
                 const person = persons.find(p => String(p.id) === String(attendeeId));
                 duplicates.push({
                     attendeeId,
                     attendeeName: person?.name || '알 수 없음',
-                    documents: results
+                    documents: info.allDocs || [info.raw]
                 });
             }
-        }
-
+        });
         return duplicates;
     }
 
