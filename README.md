@@ -1,6 +1,6 @@
 # API Layer Architecture Guide
 
-이 문서는 ERP 프로젝트의 API/Service 계층 아키텍처와 개발 가이드를 설명합니다.
+이 문서는 GROUPWARE 프로젝트의 API/Service 계층 아키텍처와 개발 가이드를 설명합니다.
 
 ## 목차
 1. [아키텍처 개요](#아키텍처-개요)
