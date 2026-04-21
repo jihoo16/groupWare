@@ -71,7 +71,6 @@
     margin: 0;
 }
 
-
 .btn-refresh {
     padding: 10px 20px;
     background: white;
@@ -609,22 +608,6 @@
     gap: 12px;
     padding: 16px 24px;
     border-top: 2px solid #e0e0e0;
-}
-
-.btn-secondary {
-    background: #6c757d;
-    color: white;
-    border: none;
-    padding: 10px 24px;
-    border-radius: 6px;
-    font-size: 13px;
-    font-weight: 600;
-    cursor: pointer;
-    transition: all 0.3s ease;
-}
-
-.btn-secondary:hover {
-    background: #5a6268;
 }
 
 /* ── 연도탭 행 (탭 + 엑셀 버튼) ─────────────────────────── */

@@ -265,20 +265,6 @@
     box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
 }
 
-.section-header {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    margin-bottom: 25px;
-}
-
-.section-header h2 {
-    font-size: 18.4px;
-    font-weight: 600;
-    color: #333;
-    margin: 0;
-}
-
 .filter-group {
     display: flex;
     gap: 10px;
@@ -389,52 +375,6 @@
 }
 
 /* 버튼 스타일 */
-.btn-primary {
-    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-    color: white;
-    border: none;
-    padding: 12px 24px;
-    border-radius: 8px;
-    font-size: 12.9px;
-    font-weight: 500;
-    cursor: pointer;
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    transition: all 0.3s ease;
-}
-
-.btn-primary:hover {
-    transform: translateY(-2px);
-    box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
-}
-
-.btn-primary:disabled {
-    background: #ccc;
-    cursor: not-allowed;
-    opacity: 0.6;
-}
-
-.btn-primary:disabled:hover {
-    transform: none;
-    box-shadow: none;
-}
-
-.btn-secondary {
-    background: #f5f7fa;
-    color: #666;
-    border: 1px solid #ddd;
-    padding: 12px 24px;
-    border-radius: 8px;
-    font-size: 12.9px;
-    font-weight: 500;
-    cursor: pointer;
-    transition: all 0.3s ease;
-}
-
-.btn-secondary:hover {
-    background: #e0e0e0;
-}
 
 /* 모달 스타일 */
 .modal {
@@ -1326,12 +1266,6 @@
 @media (max-width: 652px) {
     .leave-summary {
         grid-template-columns: 1fr;
-    }
-
-    .section-header {
-        flex-direction: column;
-        align-items: flex-start;
-        gap: 15px;
     }
 
     .filter-group {

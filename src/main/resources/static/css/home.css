@@ -35,10 +35,6 @@ html.popup-mode .main-content {
     margin-left: 0;
 }
 
-html.popup-mode .btn-secondary[onclick="history.back()"] {
-    display: none !important;
-}
-
 /* 사이드바 스타일 */
 .sidebar {
     width: 60px;
@@ -752,55 +748,6 @@ html.popup-mode .btn-secondary[onclick="history.back()"] {
 }
 
 /* 버튼 스타일 */
-.btn-primary {
-    padding: 12px 24px;
-    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-    color: white;
-    border: none;
-    border-radius: 8px;
-    font-size: 12.9px;
-    font-weight: 600;
-    cursor: pointer;
-    transition: all 0.3s ease;
-    display: inline-flex;
-    align-items: center;
-    gap: 8px;
-}
-
-.btn-primary:hover {
-    transform: translateY(-2px);
-    box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
-}
-
-.btn-primary i {
-    font-size: 12.9px;
-}
-
-.btn-secondary {
-    padding: 12px 24px;
-    background: #f5f7fa;
-    color: #555;
-    border: 1px solid #e0e0e0;
-    border-radius: 8px;
-    font-size: 12.9px;
-    font-weight: 600;
-    cursor: pointer;
-    transition: all 0.3s ease;
-    display: inline-flex;
-    align-items: center;
-    gap: 8px;
-}
-
-.btn-secondary:hover {
-    background: #e3f2fd;
-    color: #1976d2;
-    border-color: #1976d2;
-    transform: translateY(-2px);
-}
-
-.btn-secondary i {
-    font-size: 12.9px;
-}
 
 /* ==========================================
    대시보드 영역

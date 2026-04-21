@@ -242,46 +242,6 @@ div:focus {
 }
 
 /* 섹션 공통 스타일 */
-.section-header {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    margin-bottom: 15px;
-}
-
-.section-header h4 {
-    font-size: 13.5px;
-    font-weight: 700;
-    color: #333;
-    margin: 0;
-    display: flex;
-    align-items: center;
-    gap: 8px;
-}
-
-.section-header h4 i {
-    color: #667eea;
-}
-
-.btn-add {
-    padding: 8px 16px;
-    background: #667eea;
-    color: white;
-    border: none;
-    border-radius: 6px;
-    font-size: 11px;
-    font-weight: 600;
-    cursor: pointer;
-    display: flex;
-    align-items: center;
-    gap: 6px;
-    transition: all 0.2s ease;
-}
-
-.btn-add:hover {
-    background: #5568d3;
-    transform: translateY(-1px);
-}
 
 /* 문서 양식 */
 .document-form {
@@ -514,51 +474,6 @@ div h2{
     padding-top: 10px;
 }
 
-.btn-lg {
-    padding: 14px 28px;
-    font-size: 12.7px;
-    font-weight: 600;
-    border-radius: 8px;
-    cursor: pointer;
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    transition: all 0.3s ease;
-    border: none;
-}
-
-.btn-primary {
-    background: linear-gradient(135deg, #4361ee, #3a51d4);
-    color: white;
-}
-
-.btn-primary:hover {
-    background: linear-gradient(135deg, #3a51d4, #2f44c0);
-    box-shadow: 0 4px 12px rgba(67, 97, 238, 0.3);
-    transform: translateY(-2px);
-}
-
-.btn-secondary {
-    background: #f1f5f9;
-    border: none;
-    color: #475569;
-}
-
-.btn-secondary:hover {
-    background: #e2e8f0;
-}
-
-.btn-sm {
-    padding: 7px 14px;
-    font-size: 13px;
-}
-
-.btn-danger:hover {
-    background: #c82333;
-    transform: translateY(-2px);
-    box-shadow: 0 4px 12px rgba(220, 53, 69, 0.4);
-}
-
 .project-form-footer {
     position: fixed;
     bottom: 0;
@@ -573,17 +488,6 @@ div h2{
     gap: 16px;
     z-index: 50;
     transition: left 0.3s ease;
-}
-
-.btn-outline {
-    background: white;
-    color: #667eea;
-    border: 2px solid #667eea;
-}
-
-.btn-outline:hover {
-    background: #667eea;
-    color: white;
 }
 
 /* 모달 */
