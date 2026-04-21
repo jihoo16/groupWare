@@ -30,7 +30,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
     // 페이징 관련 변수
     let currentPage = 1;
-    const itemsPerPage = 10;
+    const itemsPerPage = 9; // 프로젝트 문서 행당 내용이 많아 높이가 큰 편이므로 9건씩
     let filteredRows = []; // 필터링된 행들
 
     // 프로젝트 관련 문서 타입 정의
