@@ -10,15 +10,17 @@
 <div th:replace="~{fragments/sidebar :: sidebar('basic-info')}"></div>
 
 <main class="main-content">
-    <div class="header">
-        <div>
-            <h1 id="page-title">상세코드 관리</h1>
+    <header class="header">
+        <div class="header-left">
+            <h1 class="page-title" id="page-title">상세코드 관리</h1>
             <p class="subtitle" id="page-subtitle">그룹코드의 하위 코드를 관리합니다</p>
         </div>
-        <button class="btn-back" onclick="history.back()">
-            <i class="fas fa-arrow-left"></i> 돌아가기
-        </button>
-    </div>
+        <div class="header-right">
+            <button class="btn-back" onclick="history.back()">
+                <i class="fas fa-arrow-left"></i> 돌아가기
+            </button>
+        </div>
+    </header>
 
     <div class="code-detail-wrapper">
         <div class="section-header">
