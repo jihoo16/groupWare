@@ -23,7 +23,7 @@ public class HealthCheckController {
         Map<String, Object> response = new HashMap<>();
         response.put("status", "UP");
         response.put("timestamp", LocalDateTime.now());
-        response.put("application", "ERP System");
+        response.put("application", "GROUPWARE System");
         response.put("version", "1.0.0");
 
         return ResponseEntity.status(HttpStatus.OK).body(response);

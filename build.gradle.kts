@@ -66,7 +66,7 @@ dependencies {
 
 group = "com.pinecni"
 version = "0.0.1-SNAPSHOT"
-description = "erp"
+description = "groupware"
 java.sourceCompatibility = JavaVersion.VERSION_21
 
 tasks.withType<JavaCompile>() {
