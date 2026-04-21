@@ -387,4 +387,144 @@ public class SignatureServiceImpl implements SignatureService {
         }
         return result;
     }
+
+    // ============================================================
+    // 홈 대시보드 위젯
+    // ============================================================
+
+    @Override
+    public long countPendingForUser(Long userIdx) {
+        return documentSignatureRepository.countPendingBySignerUserIdx(userIdx);
+    }
+
+    @Override
+    public List<Map<String, Object>> getPendingListForUser(Long userIdx) {
+        List<DocumentSignature> rows = documentSignatureRepository
+                .findPendingBySignerUserIdx(userIdx);
+
+        List<Map<String, Object>> result = new ArrayList<>();
+        for (DocumentSignature ds : rows) {
+            ApprovalDocument doc = approvalDocumentRepository.findById(ds.getDocumentIdx()).orElse(null);
+            if (doc == null || doc.getDeletedAt() != null) continue;
+
+            String slotLabel = codeRepository.findByCode(ds.getSignatureSlot())
+                    .map(Code::getCodeName).orElse(ds.getSignatureSlot());
+            String docTypeName = codeRepository.findByCode(doc.getDocumentType())
+                    .map(Code::getCodeName).orElse(doc.getDocumentType());
+
+            String drafterName = "";
+            if (doc.getDrafterUserIdx() != null) {
+                drafterName = userRepository.findById(doc.getDrafterUserIdx())
+                        .map(User::getEmpName).orElse("");
+            }
+
+            Map<String, Object> item = new HashMap<>();
+            item.put("documentSignatureIdx", ds.getIdx());
+            item.put("documentIdx", ds.getDocumentIdx());
+            item.put("documentNo", doc.getDocumentNo());
+            item.put("documentTitle", doc.getTitle());
+            item.put("documentType", doc.getDocumentType());
+            item.put("documentTypeName", docTypeName);
+            item.put("signatureSlot", ds.getSignatureSlot());
+            item.put("signatureSlotLabel", slotLabel);
+            item.put("drafterName", drafterName);
+            item.put("requestedAt", ds.getRequestedAt());
+            result.add(item);
+        }
+        return result;
+    }
+
+    @Override
+    public List<Map<String, Object>> getCompletedListForUser(Long userIdx) {
+        List<DocumentSignature> rows = documentSignatureRepository
+                .findCompletedBySignerUserIdx(userIdx);
+
+        List<Map<String, Object>> result = new ArrayList<>();
+        for (DocumentSignature ds : rows) {
+            ApprovalDocument doc = approvalDocumentRepository.findById(ds.getDocumentIdx()).orElse(null);
+            if (doc == null) continue;
+
+            String slotLabel = codeRepository.findByCode(ds.getSignatureSlot())
+                    .map(Code::getCodeName).orElse(ds.getSignatureSlot());
+            String docTypeName = codeRepository.findByCode(doc.getDocumentType())
+                    .map(Code::getCodeName).orElse(doc.getDocumentType());
+
+            String drafterName = "";
+            if (doc.getDrafterUserIdx() != null) {
+                drafterName = userRepository.findById(doc.getDrafterUserIdx())
+                        .map(User::getEmpName).orElse("");
+            }
+
+            Map<String, Object> item = new HashMap<>();
+            item.put("documentIdx", ds.getDocumentIdx());
+            item.put("documentNo", doc.getDocumentNo());
+            item.put("documentTitle", doc.getTitle());
+            item.put("documentType", doc.getDocumentType());
+            item.put("documentTypeName", docTypeName);
+            item.put("signatureSlot", ds.getSignatureSlot());
+            item.put("signatureSlotLabel", slotLabel);
+            item.put("drafterName", drafterName);
+            item.put("signedAt", ds.getSignedAt());
+            result.add(item);
+        }
+        return result;
+    }
+
+    // ============================================================
+    // 일괄 서명
+    // ============================================================
+
+    @Override
+    @Transactional
+    public int bulkApplySignature(Long userIdx, List<Long> documentSignatureIdxList, String signatureImageBase64) {
+        byte[] imageBytes;
+        try {
+            String base64Data = signatureImageBase64.contains(",")
+                    ? signatureImageBase64.substring(signatureImageBase64.indexOf(",") + 1)
+                    : signatureImageBase64;
+            imageBytes = Base64.getDecoder().decode(base64Data);
+        } catch (Exception e) {
+            throw new IllegalArgumentException("서명 이미지 디코딩 실패");
+        }
+
+        LocalDateTime now = LocalDateTime.now();
+        int applied = 0;
+
+        for (Long dsIdx : documentSignatureIdxList) {
+            DocumentSignature ds = documentSignatureRepository.findById(dsIdx).orElse(null);
+            if (ds == null) continue;
+
+            // 본인 서명칸만 처리
+            if (!ds.getSignerUserIdx().equals(userIdx)) continue;
+            // 이미 완료된 건 스킵
+            if (!CodeConstants.DocumentSignatureStatus.PENDING.getCode().equals(ds.getStatus())) continue;
+            // linked 슬롯 스킵
+            if (ds.getLinkedSignatureIdx() != null) continue;
+            // 차례 도래 확인
+            if (ds.getRequestedAt() == null) continue;
+
+            // 서명 적용
+            ds.setStatus(CodeConstants.DocumentSignatureStatus.COMPLETED.getCode());
+            ds.setSignatureImage(imageBytes);
+            ds.setSignedAt(now);
+            documentSignatureRepository.save(ds);
+
+            // 연동 서명 자동 완료
+            List<DocumentSignature> linkedRows = documentSignatureRepository.findByLinkedSignatureIdx(ds.getIdx());
+            for (DocumentSignature linked : linkedRows) {
+                linked.setStatus(CodeConstants.DocumentSignatureStatus.COMPLETED.getCode());
+                linked.setSignatureImage(imageBytes);
+                linked.setSignedAt(now);
+                documentSignatureRepository.save(linked);
+            }
+
+            // 순차 서명 전진
+            advanceToNextOrder(ds.getDocumentIdx(), ds.getSignatureOrder());
+
+            applied++;
+            log.info("일괄 서명 적용: dsIdx={}, documentIdx={}, slot={}", dsIdx, ds.getDocumentIdx(), ds.getSignatureSlot());
+        }
+
+        return applied;
+    }
 }

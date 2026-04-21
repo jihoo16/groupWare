@@ -3,6 +3,7 @@ package com.pinecni.erp.api.signature.service;
 import com.pinecni.erp.api.signature.dto.DocumentSignatureResponse;
 
 import java.util.List;
+import java.util.Map;
 
 /**
  * 서명 관리 서비스 — 순차 서명·연동 서명·제출 게이트
@@ -81,4 +82,25 @@ public interface SignatureService {
      * @return 순번 오름차순 서명 현황 목록
      */
     List<DocumentSignatureResponse> getDocumentSignatures(Long documentIdx, Long loginUserIdx);
+
+    /**
+     * 사용자의 서명 대기 건수 (홈 위젯 배지용)
+     */
+    long countPendingForUser(Long userIdx);
+
+    /**
+     * 사용자의 서명 대기 목록
+     */
+    List<Map<String, Object>> getPendingListForUser(Long userIdx);
+
+    /**
+     * 사용자의 서명 완료 이력
+     */
+    List<Map<String, Object>> getCompletedListForUser(Long userIdx);
+
+    /**
+     * 일괄 서명 적용 — 동일 서명 이미지를 여러 문서에 적용
+     * @return 적용된 건수
+     */
+    int bulkApplySignature(Long userIdx, List<Long> documentSignatureIdxList, String signatureImageBase64);
 }

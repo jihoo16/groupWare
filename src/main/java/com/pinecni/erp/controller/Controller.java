@@ -153,6 +153,12 @@ public class Controller {
         return "approval_receipt_purchase";
     }
 
+    // 서명 대기 페이지
+    @GetMapping("/signature/pending")
+    public String signaturePending() {
+        return "signature-pending";
+    }
+
     // 연구비증빙 상세보기
     @GetMapping("/approval/receipt-meeting/detail")
     public String approvalReceiptMeetingDetail() {

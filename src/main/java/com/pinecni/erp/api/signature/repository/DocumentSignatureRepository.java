@@ -76,6 +76,28 @@ public interface DocumentSignatureRepository extends JpaRepository<DocumentSigna
     long countPendingBySignerUserIdx(@Param("userIdx") Long userIdx);
 
     /**
+     * 사용자의 서명 대기 목록 (홈 위젯용)
+     * - 차례 도래 + 미서명 + linked 아님
+     */
+    @Query("SELECT ds FROM DocumentSignature ds " +
+           "WHERE ds.signerUserIdx = :userIdx " +
+           "AND ds.status = 'C1401' " +
+           "AND ds.requestedAt IS NOT NULL " +
+           "AND ds.linkedSignatureIdx IS NULL " +
+           "ORDER BY ds.requestedAt DESC")
+    List<DocumentSignature> findPendingBySignerUserIdx(@Param("userIdx") Long userIdx);
+
+    /**
+     * 사용자의 서명 완료 이력 (최근 순)
+     */
+    @Query("SELECT ds FROM DocumentSignature ds " +
+           "WHERE ds.signerUserIdx = :userIdx " +
+           "AND ds.status = 'C1402' " +
+           "AND ds.linkedSignatureIdx IS NULL " +
+           "ORDER BY ds.signedAt DESC")
+    List<DocumentSignature> findCompletedBySignerUserIdx(@Param("userIdx") Long userIdx);
+
+    /**
      * 여러 문서의 서명 현황 배치 조회 (목록 페이지용)
      * - linked 제외, 문서별 총 행수 / 서명완료 행수 반환
      * @return Object[]{documentIdx(Long), totalCount(Long), signedCount(Long)}
