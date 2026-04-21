@@ -232,26 +232,6 @@ div:focus {
 
 /* 섹션 공통 스타일은 1187줄 이후 참조 */
 
-.btn-add {
-    padding: 8px 16px;
-    background: #667eea;
-    color: white;
-    border: none;
-    border-radius: 6px;
-    font-size: 11px;
-    font-weight: 600;
-    cursor: pointer;
-    display: flex;
-    align-items: center;
-    gap: 6px;
-    transition: all 0.2s ease;
-}
-
-.btn-add:hover {
-    background: #5568d3;
-    transform: translateY(-1px);
-}
-
 /* 문서 양식 */
 .document-form {
     background: white;
@@ -463,61 +443,6 @@ div h2{
 
 .file-item .btn-remove-file:hover {
     color: #d32f2f;
-}
-
-.btn-lg {
-    padding: 14px 28px;
-    font-size: 12.7px;
-    font-weight: 600;
-    border-radius: 8px;
-    cursor: pointer;
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    transition: all 0.3s ease;
-    border: none;
-}
-
-.btn-primary {
-    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-    color: white;
-}
-
-.btn-primary:hover {
-    transform: translateY(-2px);
-    box-shadow: 0 6px 20px rgba(102, 126, 234, 0.4);
-}
-
-.btn-secondary {
-    background: #f1f5f9;
-    border: none;
-    color: #475569;
-}
-
-.btn-secondary:hover {
-    background: #e2e8f0;
-}
-
-.btn-danger {
-    background: #ef5350;
-    color: white;
-}
-
-.btn-danger:hover {
-    background: #e53935;
-    transform: translateY(-2px);
-    box-shadow: 0 4px 12px rgba(239, 83, 80, 0.4);
-}
-
-.btn-outline {
-    background: white;
-    color: #667eea;
-    border: 2px solid #667eea;
-}
-
-.btn-outline:hover {
-    background: #667eea;
-    color: white;
 }
 
 /* 모달 */
@@ -1237,32 +1162,6 @@ div h2{
     background: white;
 }
 
-.section-header {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    margin-bottom: 16px;
-    padding-bottom: 10px;
-    border-bottom: 2px solid #f0f0f0;
-}
-
-.section-header h3,
-.section-header h4 {
-    font-size: 14px;
-    font-weight: 700;
-    color: #1a1a1a;
-    margin: 0;
-    display: flex;
-    align-items: center;
-    gap: 8px;
-}
-
-.section-header h3 i,
-.section-header h4 i {
-    font-size: 15px;
-    color: #667eea;
-}
-
 /* 폼 그리드 */
 .form-grid {
     display: grid;
@@ -1772,69 +1671,6 @@ div h2{
     color: #9a3412;
     font-size: 12px;
 }
-.btn-primary,
-.btn-secondary,
-.btn-outline {
-    padding: 12px 24px;
-    border-radius: 8px;
-    font-size: 14px;
-    font-weight: 600;
-    cursor: pointer;
-    transition: all 0.2s;
-    display: inline-flex;
-    align-items: center;
-    gap: 8px;
-    border: none;
-}
-
-.btn-lg {
-    padding: 14px 28px;
-    font-size: 15px;
-}
-
-.btn-primary {
-    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-    color: white;
-    box-shadow: 0 4px 12px rgba(102, 126, 234, 0.3);
-}
-
-.btn-primary:hover {
-    transform: translateY(-2px);
-    box-shadow: 0 6px 16px rgba(102, 126, 234, 0.4);
-}
-
-.btn-secondary {
-    background: #f1f5f9;
-    border: none;
-    color: #475569;
-}
-
-.btn-secondary:hover {
-    background: #e2e8f0;
-}
-
-.btn-danger {
-    background: #ef5350;
-    color: white;
-}
-
-.btn-danger:hover {
-    background: #e53935;
-    transform: translateY(-2px);
-    box-shadow: 0 4px 12px rgba(239, 83, 80, 0.4);
-}
-
-.btn-outline {
-    background: white;
-    border: 2px solid #e2e8f0;
-    color: #475569;
-}
-
-.btn-outline:hover {
-    background: #667eea;
-    border-color: #667eea;
-    color: white;
-}
 
 /* ============================================
    날짜 선택기 (Date Picker) 스타일
@@ -2200,37 +2036,6 @@ div h2{
 /* ============================================
    인쇄 버튼
    ============================================ */
-.btn-print {
-    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-    color: white;
-    border: none;
-    border-radius: 8px;
-    font-weight: 600;
-    cursor: pointer;
-    display: inline-flex;
-    align-items: center;
-    gap: 8px;
-    transition: all 0.2s;
-    box-shadow: 0 4px 12px rgba(102, 126, 234, 0.3);
-}
-
-.btn-print:hover:not(.btn-disabled) {
-    transform: translateY(-2px);
-    box-shadow: 0 6px 16px rgba(102, 126, 234, 0.4);
-}
-
-.btn-print.btn-disabled {
-    background: #e2e8f0;
-    border-color: #cbd5e1;
-    color: #94a3b8;
-    cursor: not-allowed;
-    position: relative;
-}
-
-.btn-print.btn-disabled:hover {
-    transform: none;
-    box-shadow: none;
-}
 
 /* ============================================
    필수 입력 마크

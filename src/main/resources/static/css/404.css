@@ -97,20 +97,6 @@ body {
     margin-bottom: 20px;
 }
 
-.btn-home,
-.btn-back {
-    padding: 14px 30px;
-    border: none;
-    border-radius: 8px;
-    font-size: 16px;
-    font-weight: 600;
-    cursor: pointer;
-    display: inline-flex;
-    align-items: center;
-    gap: 8px;
-    transition: all 0.3s ease;
-}
-
 .btn-home {
     background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
     color: white;
@@ -120,19 +106,6 @@ body {
 .btn-home:hover {
     transform: translateY(-2px);
     box-shadow: 0 6px 16px rgba(102, 126, 234, 0.5);
-}
-
-.btn-back {
-    background: #f5f7fa;
-    color: #555;
-    border: 2px solid #e0e0e0;
-}
-
-.btn-back:hover {
-    background: #e3f2fd;
-    color: #1976d2;
-    border-color: #1976d2;
-    transform: translateY(-2px);
 }
 
 /* 반응형 디자인 */
@@ -198,8 +171,4 @@ body {
         flex-direction: column;
     }
 
-    .btn-home,
-    .btn-back {
-        width: 100%;
-    }
 }

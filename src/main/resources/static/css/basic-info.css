@@ -59,62 +59,6 @@
 /* ===========================
    Section Header
    =========================== */
-.section-header {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    margin-bottom: 20px;
-}
-
-.section-header h2 {
-    font-size: 18px;
-    font-weight: 600;
-    color: #111827;
-    margin: 0;
-}
-
-.btn-add {
-    padding: 10px 20px;
-    background: linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%);
-    color: white;
-    border: none;
-    border-radius: 8px;
-    font-size: 14px;
-    font-weight: 500;
-    cursor: pointer;
-    transition: all 0.3s ease;
-    box-shadow: 0 2px 4px rgba(37, 99, 235, 0.2);
-}
-
-.btn-add:hover {
-    transform: translateY(-2px);
-    box-shadow: 0 4px 8px rgba(37, 99, 235, 0.3);
-}
-
-.btn-add i {
-    margin-right: 6px;
-}
-
-.btn-back {
-    padding: 10px 20px;
-    background: #f3f4f6;
-    color: #6b7280;
-    border: none;
-    border-radius: 8px;
-    font-size: 14px;
-    font-weight: 500;
-    cursor: pointer;
-    transition: all 0.3s ease;
-}
-
-.btn-back:hover {
-    background: #e5e7eb;
-    transform: translateY(-2px);
-}
-
-.btn-back i {
-    margin-right: 6px;
-}
 
 /* ===========================
    Table Container
@@ -209,36 +153,6 @@
 /* ===========================
    Table Buttons
    =========================== */
-.btn-sm {
-    padding: 6px 12px;
-    border: none;
-    border-radius: 6px;
-    font-size: 13px;
-    font-weight: 500;
-    cursor: pointer;
-    transition: all 0.2s ease;
-    margin-right: 6px;
-}
-
-.btn-edit {
-    background: #eff6ff;
-    color: #2563eb;
-}
-
-.btn-edit:hover {
-    background: #dbeafe;
-    transform: translateY(-1px);
-}
-
-.btn-delete {
-    background: #fef2f2;
-    color: #dc2626;
-}
-
-.btn-delete:hover {
-    background: #fee2e2;
-    transform: translateY(-1px);
-}
 
 .btn-detail {
     background: #f3f4f6;
@@ -308,18 +222,6 @@
     gap: 10px;
 }
 
-.btn-upload,
-.btn-save,
-.btn-reset {
-    padding: 10px 20px;
-    border: none;
-    border-radius: 8px;
-    font-size: 14px;
-    font-weight: 500;
-    cursor: pointer;
-    transition: all 0.3s ease;
-}
-
 .btn-upload {
     background: linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%);
     color: white;
@@ -340,16 +242,6 @@
 .btn-save:hover {
     transform: translateY(-2px);
     box-shadow: 0 4px 8px rgba(5, 150, 105, 0.3);
-}
-
-.btn-reset {
-    background: #f3f4f6;
-    color: #6b7280;
-}
-
-.btn-reset:hover {
-    background: #e5e7eb;
-    transform: translateY(-2px);
 }
 
 .logo-usage {
@@ -510,28 +402,6 @@
     box-shadow: 0 4px 8px rgba(37, 99, 235, 0.3);
 }
 
-.btn-cancel {
-    padding: 12px 30px;
-    background: #f3f4f6;
-    color: #6b7280;
-    border: none;
-    border-radius: 8px;
-    font-size: 15px;
-    font-weight: 500;
-    cursor: pointer;
-    transition: all 0.3s ease;
-}
-
-.btn-cancel:hover {
-    background: #e5e7eb;
-    transform: translateY(-2px);
-}
-
-.btn-save-all i,
-.btn-cancel i {
-    margin-right: 6px;
-}
-
 /* ===========================
    Modal Styles
    =========================== */
@@ -627,41 +497,6 @@
     padding: 20px 24px;
     border-top: 2px solid #f3f4f6;
     flex-shrink: 0;
-}
-
-.btn-confirm {
-    padding: 10px 24px;
-    background: linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%);
-    color: white;
-    border: none;
-    border-radius: 8px;
-    font-size: 14px;
-    font-weight: 500;
-    cursor: pointer;
-    transition: all 0.3s ease;
-    box-shadow: 0 2px 4px rgba(37, 99, 235, 0.2);
-}
-
-.btn-confirm:hover {
-    transform: translateY(-2px);
-    box-shadow: 0 4px 8px rgba(37, 99, 235, 0.3);
-}
-
-.modal-footer .btn-cancel {
-    padding: 10px 24px;
-    background: #f3f4f6;
-    color: #6b7280;
-    border: none;
-    border-radius: 8px;
-    font-size: 14px;
-    font-weight: 500;
-    cursor: pointer;
-    transition: all 0.3s ease;
-}
-
-.modal-footer .btn-cancel:hover {
-    background: #e5e7eb;
-    transform: translateY(-2px);
 }
 
 /* ===========================
@@ -882,15 +717,6 @@
 }
 
 @media (max-width: 768px) {
-    .section-header {
-        flex-direction: column;
-        align-items: flex-start;
-        gap: 12px;
-    }
-
-    .btn-add {
-        width: 100%;
-    }
 
     .table-container {
         overflow-x: auto;
@@ -900,20 +726,10 @@
         flex-direction: column;
     }
 
-    .btn-upload,
-    .btn-save,
-    .btn-reset {
-        width: 100%;
-    }
-
     .form-actions {
         flex-direction: column-reverse;
     }
 
-    .btn-save-all,
-    .btn-cancel {
-        width: 100%;
-    }
 }
 
 /* ===========================

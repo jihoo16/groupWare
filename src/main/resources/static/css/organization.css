@@ -503,27 +503,6 @@ button:focus,
     font-size: 14.7px;
 }
 
-.btn-primary {
-    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-    color: white;
-}
-
-.btn-primary:hover {
-    transform: translateY(-2px);
-    box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
-}
-
-.btn-secondary {
-    background: #f5f7fa;
-    color: #555;
-}
-
-.btn-secondary:hover {
-    background: #e3f2fd;
-    color: #1976d2;
-    transform: translateY(-2px);
-}
-
 /* 스크롤바 커스터마이징 - 호버 시에만 표시 */
 .org-tree::-webkit-scrollbar,
 .detail-body::-webkit-scrollbar,

@@ -53,26 +53,6 @@ button:focus, a:focus, div:focus { outline: none !important; box-shadow: none !i
    섹션 타이틀
    ========================================== */
 
-.section-title {
-    font-size: 14px;
-    font-weight: 700;
-    color: #334155;
-    margin: 32px 0 14px;
-    padding: 0 0 0 12px;
-    border-left: 4px solid #667eea;
-    display: flex;
-    align-items: center;
-    gap: 7px;
-    line-height: 1.4;
-}
-
-.section-title i {
-    color: #667eea;
-    font-size: 14px;
-}
-
-.section-title:first-of-type { margin-top: 0; }
-
 /* ==========================================
    기본 정보 그리드
    ========================================== */
@@ -473,48 +453,6 @@ button:focus, a:focus, div:focus { outline: none !important; box-shadow: none !i
    헤더 버튼
    ========================================== */
 
-.btn-primary, .btn-secondary, .btn-print, .btn-danger {
-    padding: 12px 24px;
-    border: none;
-    border-radius: 8px;
-    font-size: 14px;
-    font-weight: 600;
-    cursor: pointer;
-    display: inline-flex;
-    align-items: center;
-    gap: 8px;
-    transition: all 0.2s;
-}
-
-.btn-primary {
-    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-    color: white;
-    box-shadow: 0 4px 12px rgba(102, 126, 234, 0.3);
-}
-
-.btn-primary:hover {
-    transform: translateY(-2px);
-    box-shadow: 0 6px 16px rgba(102, 126, 234, 0.4);
-}
-
-.btn-print {
-    background: white;
-    border: 2px solid #667eea;
-    color: #667eea;
-}
-
-.btn-print:hover { background: #667eea; color: white; }
-
-.btn-secondary { background: #f1f5f9; color: #475569; }
-.btn-secondary:hover { background: #e2e8f0; }
-
-.btn-danger { background: #ef4444; color: white; }
-.btn-danger:hover {
-    background: #dc2626;
-    transform: translateY(-2px);
-    box-shadow: 0 4px 12px rgba(239, 68, 68, 0.35);
-}
-
 /* ==========================================
    인쇄
    ========================================== */
@@ -526,22 +464,6 @@ button:focus, a:focus, div:focus { outline: none !important; box-shadow: none !i
     }
 
     /* 인쇄 시 숨길 요소 */
-    .sidebar,
-    .header,
-    .template-sidebar,
-    .doc-title,
-    .section-title,
-    .info-grid,
-    .content-box,
-    .table-wrapper,
-    .total-bar,
-    .meta-grid,
-    .document-preview-toggle,
-    .attachment-section,
-    .modal,
-    [class*="modal"] {
-        display: none !important;
-    }
 
     /* 모든 컨테이너 all:unset */
     .container,

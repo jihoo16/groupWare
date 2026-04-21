@@ -110,12 +110,6 @@
     border-bottom: 1px solid #e9ecef;
 }
 
-.section-title {
-    font-size: 18px;
-    font-weight: 600;
-    color: #1a1a1a;
-}
-
 .view-toggle {
     display: flex;
     gap: 4px;
@@ -609,40 +603,6 @@
 .btn:disabled {
     opacity: 0.6;
     cursor: not-allowed;
-}
-
-.btn-primary {
-    background: linear-gradient(135deg, #4361ee, #3a51d4);
-    color: white;
-}
-
-.btn-primary:hover:not(:disabled) {
-    transform: translateY(-2px);
-    box-shadow: 0 6px 20px rgba(67, 97, 238, 0.4);
-}
-
-.btn-secondary {
-    background: #e0e0e0;
-    color: #555;
-}
-
-.btn-secondary:hover:not(:disabled) {
-    background: #d0d0d0;
-}
-
-.btn-danger {
-    background: #dc3545;
-    color: white;
-}
-
-.btn-danger:hover:not(:disabled) {
-    background: #c82333;
-    box-shadow: 0 4px 12px rgba(220, 53, 69, 0.3);
-}
-
-.btn-sm {
-    padding: 8px 16px;
-    font-size: 13px;
 }
 
 /* 팀이 없을 때 표시되는 empty row */

@@ -81,14 +81,6 @@
 }
 
 /* 섹션 타이틀 */
-.section-title {
-    font-size: 16px;
-    font-weight: 600;
-    color: #333;
-    margin: 30px 0 15px;
-    padding-left: 10px;
-    border-left: 4px solid #667eea;
-}
 
 /* 진행률 표시 */
 .progress-container {
@@ -249,10 +241,6 @@
     margin-bottom: 0;
 }
 
-.section-title-with-count .section-title {
-    margin-bottom: 0;
-}
-
 .member-count-badge {
     display: inline-flex;
     align-items: center;
@@ -363,10 +351,6 @@
     display: flex;
     align-items: center;
     gap: 12px;
-}
-
-.section-title-toggle .section-title {
-    margin-bottom: 0;
 }
 
 .btn-section-toggle {
@@ -539,52 +523,6 @@
     border-top: 1px solid #e0e0e0;
 }
 
-.btn-primary,
-.btn-secondary,
-.btn-danger {
-    padding: 12px 30px;
-    border: none;
-    border-radius: 8px;
-    font-size: 14px;
-    font-weight: 600;
-    cursor: pointer;
-    transition: all 0.3s;
-    display: inline-flex;
-    align-items: center;
-    gap: 8px;
-}
-
-.btn-primary {
-    background: #667eea;
-    color: white;
-}
-
-.btn-primary:hover {
-    background: #5568d3;
-    transform: translateY(-2px);
-    box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
-}
-
-.btn-secondary {
-    background: #f0f0f0;
-    color: #666;
-}
-
-.btn-secondary:hover {
-    background: #e0e0e0;
-}
-
-.btn-danger {
-    background: #ef5350;
-    color: white;
-}
-
-.btn-danger:hover {
-    background: #e53935;
-    transform: translateY(-2px);
-    box-shadow: 0 4px 12px rgba(239, 83, 80, 0.4);
-}
-
 /* 반응형 */
 @media (max-width: 768px) {
     .editor-area {
@@ -602,13 +540,6 @@
 
     .action-buttons {
         flex-direction: column;
-    }
-
-    .btn-primary,
-    .btn-secondary,
-    .btn-danger {
-        width: 100%;
-        justify-content: center;
     }
 
     .team-table,
