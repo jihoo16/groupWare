@@ -321,6 +321,15 @@ function formatDateWithDay(dateStr) {
     }
 }
 
+// 돌아가기: iframe 안이면 부모에서 모달 닫기, 아니면 브라우저 뒤로가기
+function goBack() {
+    if (window.parent !== window && typeof window.parent.closeIframeModal === 'function') {
+        window.parent.closeIframeModal();
+    } else {
+        history.back();
+    }
+}
+
 // 금주 주요업무를 항목별 분리 박스로 렌더링
 function renderMainTasks(container, value) {
     container.innerHTML = '';

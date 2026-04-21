@@ -875,17 +875,23 @@ async function goToDocument(documentType, sourceDocumentId) {
  */
 function openIframeModal(url, title) {
     const overlay = document.getElementById('iframeModalOverlay');
-    const iframe = document.getElementById('iframeModalContent');
     const titleEl = document.getElementById('iframeModalTitle');
     const loading = document.getElementById('iframeLoading');
 
     titleEl.textContent = title || '문서 보기';
     loading.classList.remove('hidden');
-    iframe.src = url;
 
-    iframe.onload = function () {
+    // 기존 iframe을 새 요소로 교체해 부모 history에 항목이 쌓이지 않도록 함
+    const oldIframe = document.getElementById('iframeModalContent');
+    const newIframe = document.createElement('iframe');
+    newIframe.id = 'iframeModalContent';
+    newIframe.frameBorder = '0';
+    if (oldIframe.className) newIframe.className = oldIframe.className;
+    newIframe.onload = function () {
         loading.classList.add('hidden');
     };
+    oldIframe.parentNode.replaceChild(newIframe, oldIframe);
+    newIframe.src = url;
 
     overlay.classList.add('show');
     document.body.style.overflow = 'hidden';
@@ -899,8 +905,14 @@ function closeIframeModal() {
     const iframe = document.getElementById('iframeModalContent');
 
     overlay.classList.remove('show');
-    iframe.src = '';
     document.body.style.overflow = '';
+
+    // src='' 대신 새 요소로 교체해 부모 history 오염 방지
+    const newIframe = document.createElement('iframe');
+    newIframe.id = 'iframeModalContent';
+    newIframe.frameBorder = '0';
+    if (iframe.className) newIframe.className = iframe.className;
+    iframe.parentNode.replaceChild(newIframe, iframe);
 }
 
 // iframe 모달 닫기 이벤트 바인딩
