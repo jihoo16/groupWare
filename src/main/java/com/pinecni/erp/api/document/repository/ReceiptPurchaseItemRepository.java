@@ -10,4 +10,7 @@ import java.util.List;
 public interface ReceiptPurchaseItemRepository extends JpaRepository<ReceiptPurchaseItem, Long> {
     List<ReceiptPurchaseItem> findByReceiptPurchaseIdxOrderBySortOrderAsc(Long receiptPurchaseIdx);
     void deleteByReceiptPurchaseIdx(Long receiptPurchaseIdx);
+
+    @org.springframework.data.jpa.repository.Query("SELECT i FROM ReceiptPurchaseItem i WHERE i.receiptPurchaseIdx IN :idxs ORDER BY i.receiptPurchaseIdx ASC, i.sortOrder ASC")
+    List<ReceiptPurchaseItem> findByReceiptPurchaseIdxIn(@org.springframework.data.repository.query.Param("idxs") List<Long> receiptPurchaseIdxs);
 }

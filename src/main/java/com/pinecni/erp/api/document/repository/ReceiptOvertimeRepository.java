@@ -55,4 +55,7 @@ public interface ReceiptOvertimeRepository extends JpaRepository<ReceiptOvertime
     List<ReceiptOvertime> findActiveByAuthorAndProject(
             @Param("authorIdx") Long authorIdx,
             @Param("projectIdx") Long projectIdx);
+
+    @Query("SELECT ro FROM ReceiptOvertime ro WHERE ro.documentIdx IN :documentIdxs")
+    List<ReceiptOvertime> findByDocumentIdxIn(@Param("documentIdxs") List<Long> documentIdxs);
 }

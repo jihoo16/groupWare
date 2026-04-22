@@ -41,4 +41,7 @@ public interface ReceiptPurchaseRepository extends JpaRepository<ReceiptPurchase
     List<ReceiptPurchase> findActiveByAuthorAndProject(
             @Param("authorIdx") Long authorIdx,
             @Param("projectIdx") Long projectIdx);
+
+    @Query("SELECT rp FROM ReceiptPurchase rp WHERE rp.documentIdx IN :documentIdxs")
+    List<ReceiptPurchase> findByDocumentIdxIn(@Param("documentIdxs") List<Long> documentIdxs);
 }

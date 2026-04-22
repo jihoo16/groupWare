@@ -15,6 +15,9 @@ public interface ReceiptTripMeetingSessionRepository extends JpaRepository<Recei
 
     void deleteByReceiptTripMeetingIdx(Long receiptTripMeetingIdx);
 
+    @Query("SELECT s FROM ReceiptTripMeetingSession s WHERE s.receiptTripMeetingIdx IN :rtmIdxs ORDER BY s.receiptTripMeetingIdx ASC, s.displayOrder ASC")
+    List<ReceiptTripMeetingSession> findByReceiptTripMeetingIdxIn(@Param("rtmIdxs") List<Long> rtmIdxs);
+
     /**
      * 참여기간 검증용 — 회의 작성자가 본 프로젝트 내에서 작성한 모든 활성 회의 세션 조회.
      * receipt_trip_meeting 과 join 해서 projectIdx 매칭.

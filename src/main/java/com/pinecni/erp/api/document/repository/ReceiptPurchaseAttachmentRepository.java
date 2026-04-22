@@ -11,4 +11,5 @@ public interface ReceiptPurchaseAttachmentRepository extends JpaRepository<Recei
     List<ReceiptPurchaseAttachment> findByReceiptPurchaseIdxAndDeletedFalseOrderByIdxAsc(Long receiptPurchaseIdx);
     long countByReceiptPurchaseIdxAndAttachmentTypeAndDeletedFalse(Long receiptPurchaseIdx, String attachmentType);
     void deleteByReceiptPurchaseIdx(Long receiptPurchaseIdx);
+    List<ReceiptPurchaseAttachment> findByReceiptPurchaseIdxInAndDeletedFalseOrderByIdxAsc(List<Long> receiptPurchaseIdxs);
 }

@@ -187,6 +187,21 @@ public interface ReceiptAttendeeRepository extends JpaRepository<ReceiptAttendee
             @Param("documentTypePrefix") String documentTypePrefix
     );
 
+    @Query("""
+        SELECT ra, u, ep
+        FROM ReceiptAttendee ra
+        LEFT JOIN User u ON ra.userIdx = u.idx AND ra.isExternal = false
+        LEFT JOIN ExternalPerson ep ON ra.userIdx = ep.idx AND ra.isExternal = true
+        WHERE ra.receiptIdx IN :receiptIdxs
+          AND ra.documentTypePrefix = :documentTypePrefix
+          AND ra.isDeleted = false
+        ORDER BY ra.receiptIdx, ra.displayOrder
+        """)
+    List<Object[]> findAttendeesWithAllPersonInfoBatch(
+            @Param("receiptIdxs") List<Long> receiptIdxs,
+            @Param("documentTypePrefix") String documentTypePrefix
+    );
+
     /**
      * 특정 사용자의 특정 날짜 참석 내역 조회 (시간 겹침 체크용)
      * @param userIdx 사용자 IDX

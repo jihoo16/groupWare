@@ -60,4 +60,8 @@ public interface ReceiptTripMeetingRepository extends JpaRepository<ReceiptTripM
     List<ReceiptTripMeeting> findActiveByAuthorAndProject(
             @Param("authorIdx") Long authorIdx,
             @Param("projectIdx") Long projectIdx);
+
+    @Query("SELECT rtm FROM ReceiptTripMeeting rtm " +
+           "WHERE rtm.documentIdx IN :documentIdxs")
+    List<ReceiptTripMeeting> findByDocumentIdxIn(@Param("documentIdxs") List<Long> documentIdxs);
 }

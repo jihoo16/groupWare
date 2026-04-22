@@ -25,6 +25,8 @@ public interface ReceiptTripMeetingAttachmentRepository extends JpaRepository<Re
      */
     long countByReceiptTripMeetingIdxAndAttachmentTypeAndDeletedFalse(Long receiptTripMeetingIdx, String attachmentType);
 
+    List<ReceiptTripMeetingAttachment> findByReceiptTripMeetingIdxInAndDeletedFalseOrderByIdxAsc(List<Long> receiptTripMeetingIdxs);
+
     /**
      * 출장+회의 IDX로 첨부파일 전체 목록 (삭제 포함)
      */
