@@ -390,7 +390,7 @@ public class SignatureSessionServiceImpl implements SignatureSessionService {
         mainRow.setSignatureImage(imageBytes);
         mainRow.setSignedAt(now);
         mainRow.setSignatureSessionIdx(session.getIdx());
-        documentSignatureRepository.save(mainRow);
+        documentSignatureRepository.saveAndFlush(mainRow);
         completedIdxList.add(mainRow.getIdx());
         log.info("서명 완료: documentIdx={}, slot={}, signerUserIdx={}",
                 documentIdx, mainRow.getSignatureSlot(), signerUserIdx);
@@ -403,7 +403,7 @@ public class SignatureSessionServiceImpl implements SignatureSessionService {
             linked.setSignatureImage(imageBytes);
             linked.setSignedAt(now);
             linked.setSignatureSessionIdx(session.getIdx());
-            documentSignatureRepository.save(linked);
+            documentSignatureRepository.saveAndFlush(linked);
             completedIdxList.add(linked.getIdx());
             log.info("연동 서명 자동 완료: linkedIdx={}, slot={}",
                     linked.getIdx(), linked.getSignatureSlot());

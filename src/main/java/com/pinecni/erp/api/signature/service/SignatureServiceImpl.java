@@ -254,12 +254,18 @@ public class SignatureServiceImpl implements SignatureService {
         List<DocumentSignature> currentOrderRows = documentSignatureRepository
                 .findByDocumentIdxAndSignatureOrderExcludingLinked(documentIdx, currentOrder);
 
+        log.info("advanceToNextOrder 시작: documentIdx={}, order={}, rows={}",
+                documentIdx, currentOrder, currentOrderRows.size());
+        for (DocumentSignature ds : currentOrderRows) {
+            log.info("  → dsIdx={}, signerUserIdx={}, status={}", ds.getIdx(), ds.getSignerUserIdx(), ds.getStatus());
+        }
+
         boolean allDone = currentOrderRows.stream().allMatch(ds ->
                 CodeConstants.DocumentSignatureStatus.COMPLETED.getCode().equals(ds.getStatus())
                         || CodeConstants.DocumentSignatureStatus.SKIPPED.getCode().equals(ds.getStatus()));
 
         if (!allDone) {
-            log.debug("현재 단계 미완료로 전진 중단: documentIdx={}, order={}", documentIdx, currentOrder);
+            log.warn("현재 단계 미완료로 전진 중단: documentIdx={}, order={}", documentIdx, currentOrder);
             return;
         }
 
@@ -308,9 +314,10 @@ public class SignatureServiceImpl implements SignatureService {
 
     private void updateDocumentStatus(Long documentIdx, String statusCode) {
         approvalDocumentRepository.findById(documentIdx).ifPresent(doc -> {
+            String prev = doc.getStatus();
             doc.setStatus(statusCode);
-            approvalDocumentRepository.save(doc);
-            log.debug("문서 상태 전이: documentIdx={}, status={}", documentIdx, statusCode);
+            approvalDocumentRepository.saveAndFlush(doc);
+            log.info("문서 상태 전이: documentIdx={}, {} → {}", documentIdx, prev, statusCode);
         });
     }
 
@@ -552,7 +559,7 @@ public class SignatureServiceImpl implements SignatureService {
             ds.setStatus(CodeConstants.DocumentSignatureStatus.COMPLETED.getCode());
             ds.setSignatureImage(imageBytes);
             ds.setSignedAt(now);
-            documentSignatureRepository.save(ds);
+            documentSignatureRepository.saveAndFlush(ds);
 
             // 연동 서명 자동 완료
             List<DocumentSignature> linkedRows = documentSignatureRepository.findByLinkedSignatureIdx(ds.getIdx());
@@ -560,7 +567,7 @@ public class SignatureServiceImpl implements SignatureService {
                 linked.setStatus(CodeConstants.DocumentSignatureStatus.COMPLETED.getCode());
                 linked.setSignatureImage(imageBytes);
                 linked.setSignedAt(now);
-                documentSignatureRepository.save(linked);
+                documentSignatureRepository.saveAndFlush(linked);
             }
 
             // 순차 서명 전진
