@@ -3,6 +3,7 @@ package com.pinecni.erp.api.document.repository;
 import com.pinecni.erp.entity.WeeklyReport;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
 import java.util.List;
@@ -70,4 +71,7 @@ public interface WeeklyReportRepository extends JpaRepository<WeeklyReport, Long
      */
     @Query("SELECT w FROM WeeklyReport w WHERE w.projectIdx = :projectIdx AND w.reportPeriod LIKE CONCAT(:weekStartPattern, '%') ORDER BY w.createdAt DESC")
     List<WeeklyReport> findByProjectIdxAndReportPeriodStartsWith(Long projectIdx, String weekStartPattern);
+
+    @Query("SELECT w FROM WeeklyReport w LEFT JOIN FETCH w.project WHERE w.documentIdx IN :documentIdxs")
+    List<WeeklyReport> findByDocumentIdxIn(@Param("documentIdxs") List<Long> documentIdxs);
 }

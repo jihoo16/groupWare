@@ -101,4 +101,10 @@ public interface ReceiptTripRepository extends JpaRepository<ReceiptTrip, Long> 
     List<ReceiptTrip> findActiveByAuthorAndProject(
             @Param("authorIdx") Long authorIdx,
             @Param("projectIdx") Long projectIdx);
+
+    @Query("SELECT rt FROM ReceiptTrip rt " +
+            "LEFT JOIN FETCH rt.approvalDocument " +
+            "LEFT JOIN FETCH rt.project " +
+            "WHERE rt.documentIdx IN :documentIdxs AND rt.deleted = false")
+    List<ReceiptTrip> findByDocumentIdxIn(@Param("documentIdxs") List<Long> documentIdxs);
 }

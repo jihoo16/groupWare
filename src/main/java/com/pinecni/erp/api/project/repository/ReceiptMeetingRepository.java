@@ -88,4 +88,11 @@ public interface ReceiptMeetingRepository extends JpaRepository<ReceiptMeeting, 
     List<ReceiptMeeting> findActiveByAuthorAndProject(
             @Param("authorIdx") Long authorIdx,
             @Param("projectIdx") Long projectIdx);
+
+    @Query("SELECT rm FROM ReceiptMeeting rm " +
+            "LEFT JOIN FETCH rm.approvalDocument " +
+            "LEFT JOIN FETCH rm.project " +
+            "LEFT JOIN FETCH rm.projectCard " +
+            "WHERE rm.documentIdx IN :documentIdxs")
+    List<ReceiptMeeting> findByDocumentIdxIn(@Param("documentIdxs") List<Long> documentIdxs);
 }

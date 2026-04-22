@@ -41,6 +41,8 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.Comparator;
+import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -117,31 +119,411 @@ public class ApprovalDocumentServiceImpl implements ApprovalDocumentService {
     }
 
     /**
-     * 프로젝트 문서 전체 조회 (is_project = true)
-     * @return 프로젝트 문서 목록
+     * 프로젝트 문서 전체 조회 (is_project = true) — 배치 로딩으로 N+1 최적화
      */
     public List<ApprovalDocumentDTO> getAllProjectDocuments() {
         log.debug("[프로젝트 문서 전체 조회] 시작");
 
-        // is_project = true인 프로젝트 문서만 조회
         List<ApprovalDocument> documents = approvalDocumentRepository.findProjectDocuments();
+        if (documents.isEmpty()) {
+            log.debug("[프로젝트 문서 전체 조회] 완료 - 총 0건");
+            return Collections.emptyList();
+        }
 
-        // 배치 로딩: 사용자/부서코드 N+1 쿼리 방지
-        Map<Long, User> userMap = batchLoadUsers(documents.stream()
-                .map(ApprovalDocument::getCreatedUserIdx)
-                .filter(Objects::nonNull)
-                .collect(Collectors.toSet()));
-        Map<String, String> deptCodeNameMap = loadDeptCodeNameMap();
+        ProjectBatchContext ctx = buildProjectBatchContext(documents);
 
         List<ApprovalDocumentDTO> result = documents.stream()
-                .map(doc -> convertToDTO(doc, userMap, deptCodeNameMap))
-                // 원본 문서가 삭제된 경우 sourceDocumentId가 null이 되므로 제외
+                .map(doc -> convertProjectDocumentToDTO(doc, ctx))
                 .filter(dto -> dto.getSourceDocumentId() != null)
                 .collect(Collectors.toList());
 
         log.debug("[프로젝트 문서 전체 조회] 완료 - 총 {}건", result.size());
         return result;
     }
+
+    private ProjectBatchContext buildProjectBatchContext(List<ApprovalDocument> documents) {
+        Map<Long, User> userMap = batchLoadUsers(documents.stream()
+                .map(ApprovalDocument::getCreatedUserIdx)
+                .filter(Objects::nonNull)
+                .collect(Collectors.toSet()));
+        Map<String, String> deptCodeNameMap = loadDeptCodeNameMap();
+
+        // 타입별 documentIdx 분류
+        Map<String, List<Long>> byType = documents.stream()
+                .collect(Collectors.groupingBy(ApprovalDocument::getDocumentType,
+                        Collectors.mapping(ApprovalDocument::getIdx, Collectors.toList())));
+
+        // 주간보고
+        List<Long> weeklyDocIdxs = new ArrayList<>();
+        weeklyDocIdxs.addAll(byType.getOrDefault(CodeConstants.DocumentType.WEEKLY_REPORT.getCode(), List.of()));
+        weeklyDocIdxs.addAll(byType.getOrDefault(CodeConstants.DocumentType.PROJECT_WEEKLY_REPORT.getCode(), List.of()));
+        Map<Long, WeeklyReport> weeklyReportMap = weeklyDocIdxs.isEmpty() ? Collections.emptyMap() :
+                weeklyReportRepository.findByDocumentIdxIn(weeklyDocIdxs).stream()
+                        .collect(Collectors.toMap(WeeklyReport::getDocumentIdx, r -> r));
+
+        // 회의록
+        List<Long> meetingDocIdxs = byType.getOrDefault(CodeConstants.DocumentType.RECEIPT_MEETING.getCode(), List.of());
+        Map<Long, ReceiptMeeting> receiptMeetingMap = meetingDocIdxs.isEmpty() ? Collections.emptyMap() :
+                receiptMeetingRepository.findByDocumentIdxIn(meetingDocIdxs).stream()
+                        .collect(Collectors.toMap(ReceiptMeeting::getDocumentIdx, r -> r));
+
+        // 단독출장
+        List<Long> tripDocIdxs = byType.getOrDefault(CodeConstants.DocumentType.RECEIPT_TRIP.getCode(), List.of());
+        Map<Long, ReceiptTrip> receiptTripMap = tripDocIdxs.isEmpty() ? Collections.emptyMap() :
+                receiptTripRepository.findByDocumentIdxIn(tripDocIdxs).stream()
+                        .collect(Collectors.toMap(ReceiptTrip::getDocumentIdx, r -> r));
+
+        // 출장+회의
+        List<Long> rtmDocIdxs = byType.getOrDefault(CodeConstants.DocumentType.RECEIPT_TRIP_MEETING.getCode(), List.of());
+        Map<Long, ReceiptTripMeeting> receiptTripMeetingMap = rtmDocIdxs.isEmpty() ? Collections.emptyMap() :
+                receiptTripMeetingRepository.findByDocumentIdxIn(rtmDocIdxs).stream()
+                        .collect(Collectors.toMap(ReceiptTripMeeting::getDocumentIdx, r -> r));
+
+        // 야근식대
+        List<Long> overtimeDocIdxs = byType.getOrDefault(CodeConstants.DocumentType.RECEIPT_OVERTIME.getCode(), List.of());
+        Map<Long, ReceiptOvertime> receiptOvertimeMap = overtimeDocIdxs.isEmpty() ? Collections.emptyMap() :
+                receiptOvertimeRepository.findByDocumentIdxIn(overtimeDocIdxs).stream()
+                        .collect(Collectors.toMap(ReceiptOvertime::getDocumentIdx, r -> r));
+
+        // 재료비/장비비
+        List<Long> purchaseDocIdxs = new ArrayList<>();
+        purchaseDocIdxs.addAll(byType.getOrDefault(CodeConstants.DocumentType.RECEIPT_MATERIAL.getCode(), List.of()));
+        purchaseDocIdxs.addAll(byType.getOrDefault(CodeConstants.DocumentType.RECEIPT_EQUIPMENT.getCode(), List.of()));
+        Map<Long, ReceiptPurchase> receiptPurchaseMap = purchaseDocIdxs.isEmpty() ? Collections.emptyMap() :
+                receiptPurchaseRepository.findByDocumentIdxIn(purchaseDocIdxs).stream()
+                        .collect(Collectors.toMap(ReceiptPurchase::getDocumentIdx, r -> r));
+
+        // 프로젝트 배치 로딩
+        Set<Long> projectIdxs = new HashSet<>();
+        weeklyReportMap.values().forEach(r -> { if (r.getProjectIdx() != null) projectIdxs.add(r.getProjectIdx()); });
+        receiptMeetingMap.values().forEach(r -> { if (r.getProjectIdx() != null) projectIdxs.add(r.getProjectIdx()); });
+        receiptTripMap.values().forEach(r -> { if (r.getProjectIdx() != null) projectIdxs.add(r.getProjectIdx()); });
+        receiptTripMeetingMap.values().forEach(r -> { if (r.getProjectIdx() != null) projectIdxs.add(r.getProjectIdx()); });
+        receiptOvertimeMap.values().forEach(r -> { if (r.getProjectIdx() != null) projectIdxs.add(r.getProjectIdx()); });
+        receiptPurchaseMap.values().forEach(r -> { if (r.getProjectIdx() != null) projectIdxs.add(r.getProjectIdx()); });
+        Map<Long, Project> projectMap = projectIdxs.isEmpty() ? Collections.emptyMap() :
+                projectRepository.findAllById(projectIdxs).stream()
+                        .collect(Collectors.toMap(Project::getIdx, p -> p));
+
+        // 카드 배치 로딩
+        Set<Long> cardIdxs = new HashSet<>();
+        receiptMeetingMap.values().forEach(r -> { if (r.getCardIdx() != null) cardIdxs.add(r.getCardIdx()); });
+        receiptTripMap.values().forEach(r -> { if (r.getCardIdx() != null) cardIdxs.add(r.getCardIdx()); });
+        receiptTripMeetingMap.values().forEach(r -> { if (r.getCardIdx() != null) cardIdxs.add(r.getCardIdx()); });
+        receiptOvertimeMap.values().forEach(r -> { if (r.getCardIdx() != null) cardIdxs.add(r.getCardIdx()); });
+        receiptPurchaseMap.values().forEach(r -> { if (r.getCardIdx() != null) cardIdxs.add(r.getCardIdx()); });
+        Map<Long, ProjectCard> cardMap = cardIdxs.isEmpty() ? Collections.emptyMap() :
+                projectCardRepository.findAllById(cardIdxs).stream()
+                        .collect(Collectors.toMap(ProjectCard::getIdx, c -> c));
+
+        // 참석자 배치 로딩
+        List<Long> meetingIdxs = receiptMeetingMap.values().stream().map(ReceiptMeeting::getIdx).collect(Collectors.toList());
+        List<Long> tripIdxs = receiptTripMap.values().stream().map(ReceiptTrip::getIdx).collect(Collectors.toList());
+        List<Long> overtimeIdxs = receiptOvertimeMap.values().stream().map(ReceiptOvertime::getIdx).collect(Collectors.toList());
+        List<Long> rtmIdxs = receiptTripMeetingMap.values().stream().map(ReceiptTripMeeting::getIdx).collect(Collectors.toList());
+
+        Map<Long, String> meetingParticipantNames = buildBatchParticipantNamesMap(meetingIdxs, "RCM");
+        Map<Long, String> tripParticipantNames = buildBatchParticipantNamesMap(tripIdxs, "RCT");
+        Map<Long, String> overtimeParticipantNames = buildBatchParticipantNamesMap(overtimeIdxs, "RCO");
+        Map<Long, String> rctmParticipantNames = buildBatchParticipantNamesMap(rtmIdxs, "RCTM");
+
+        // 첨부파일 배치 로딩
+        Map<Long, List<AttachmentSummaryDTO>> meetingAttachmentMap = buildBatchMeetingAttachmentsMap(meetingIdxs);
+        Map<Long, List<AttachmentSummaryDTO>> tripAttachmentMap = buildBatchTripAttachmentsMap(tripIdxs);
+        Map<Long, List<AttachmentSummaryDTO>> overtimeAttachmentMap = buildBatchOvertimeAttachmentsMap(overtimeIdxs);
+        Map<Long, List<AttachmentSummaryDTO>> rctmAttachmentMap = buildBatchRctmAttachmentsMap(rtmIdxs);
+        List<Long> purchaseIdxs = receiptPurchaseMap.values().stream().map(ReceiptPurchase::getIdx).collect(Collectors.toList());
+        Map<Long, List<AttachmentSummaryDTO>> purchaseAttachmentMap = buildBatchPurchaseAttachmentsMap(purchaseIdxs);
+
+        // 재료비/장비비 카드사용일자 배치 계산
+        Map<Long, LocalDate> purchaseCardUsageDateMap = buildBatchPurchaseCardUsageDateMap(purchaseIdxs);
+
+        return new ProjectBatchContext(userMap, deptCodeNameMap,
+                weeklyReportMap, receiptMeetingMap, receiptTripMap, receiptTripMeetingMap, receiptOvertimeMap, receiptPurchaseMap,
+                projectMap, cardMap,
+                meetingParticipantNames, tripParticipantNames, overtimeParticipantNames, rctmParticipantNames,
+                meetingAttachmentMap, tripAttachmentMap, overtimeAttachmentMap, rctmAttachmentMap, purchaseAttachmentMap,
+                purchaseCardUsageDateMap);
+    }
+
+    private ApprovalDocumentDTO convertProjectDocumentToDTO(ApprovalDocument document, ProjectBatchContext ctx) {
+        String docTypeCode = document.getDocumentType();
+        CodeConstants.DocumentType docTypeEnum = CodeConstants.DocumentType.fromCodeOrNull(docTypeCode);
+        String docTypeName = docTypeEnum != null ? docTypeEnum.getName() : docTypeCode;
+
+        ApprovalDocumentDTO dto = ApprovalDocumentDTO.builder()
+                .idx(document.getIdx())
+                .documentNo(document.getDocumentNo())
+                .title(document.getTitle())
+                .documentType(docTypeCode)
+                .documentTypeName(docTypeName)
+                .drafterUserIdx(document.getDrafterUserIdx())
+                .content(document.getContent())
+                .createdAt(document.getCreatedAt())
+                .updatedAt(document.getUpdatedAt())
+                .build();
+
+        if (document.getCreatedUserIdx() != null) {
+            User user = ctx.userMap().get(document.getCreatedUserIdx());
+            if (user != null) {
+                dto.setDrafterName(user.getEmpName());
+                dto.setDrafterDept(user.getEmpDept());
+                if (user.getEmpDept() != null) {
+                    dto.setDrafterDeptName(ctx.deptCodeNameMap().get(user.getEmpDept()));
+                }
+            }
+        }
+
+        if (CodeConstants.DocumentType.WEEKLY_REPORT.getCode().equals(docTypeCode) ||
+                CodeConstants.DocumentType.PROJECT_WEEKLY_REPORT.getCode().equals(docTypeCode)) {
+            WeeklyReport wr = ctx.weeklyReportMap().get(document.getIdx());
+            if (wr != null) {
+                dto.setSourceDocumentId(wr.getId());
+                if (wr.getProjectIdx() != null) {
+                    dto.setProjectIdx(wr.getProjectIdx());
+                    Project project = ctx.projectMap().get(wr.getProjectIdx());
+                    if (project != null) dto.setProjectName(project.getProjectName());
+                }
+            }
+        } else if (CodeConstants.DocumentType.RECEIPT_MEETING.getCode().equals(docTypeCode)) {
+            ReceiptMeeting rm = ctx.receiptMeetingMap().get(document.getIdx());
+            if (rm != null) {
+                dto.setSourceDocumentId(rm.getIdx());
+                if (rm.getProjectIdx() != null) {
+                    dto.setProjectIdx(rm.getProjectIdx());
+                    Project project = ctx.projectMap().get(rm.getProjectIdx());
+                    if (project != null) dto.setProjectName(project.getProjectName());
+                }
+                dto.setEventDate(rm.getMeetingDate());
+                dto.setCardUsageDate(rm.getMeetingDate());
+                enrichWithCardInfoFromMap(dto, rm.getCardIdx(), ctx.cardMap());
+                dto.setPurpose(rm.getPurpose());
+                dto.setAmount(rm.getAmount());
+                dto.setParticipantNames(ctx.meetingParticipantNames().get(rm.getIdx()));
+                dto.setAttachments(ctx.meetingAttachmentMap().getOrDefault(rm.getIdx(), Collections.emptyList()));
+            }
+        } else if (CodeConstants.DocumentType.RECEIPT_TRIP.getCode().equals(docTypeCode)) {
+            ReceiptTrip rt = ctx.receiptTripMap().get(document.getIdx());
+            if (rt != null) {
+                dto.setSourceDocumentId(rt.getIdx());
+                if (rt.getProjectIdx() != null) {
+                    dto.setProjectIdx(rt.getProjectIdx());
+                    Project project = ctx.projectMap().get(rt.getProjectIdx());
+                    if (project != null) dto.setProjectName(project.getProjectName());
+                }
+                dto.setEventDate(rt.getTripDate());
+                dto.setCardUsageDate(rt.getTripDate());
+                enrichWithCardInfoFromMap(dto, rt.getCardIdx(), ctx.cardMap());
+                dto.setLocation(rt.getLocation());
+                dto.setAmount(rt.getTotalFee());
+                dto.setParticipantNames(ctx.tripParticipantNames().get(rt.getIdx()));
+                dto.setAttachments(ctx.tripAttachmentMap().getOrDefault(rt.getIdx(), Collections.emptyList()));
+            }
+        } else if (CodeConstants.DocumentType.RECEIPT_TRIP_MEETING.getCode().equals(docTypeCode)) {
+            ReceiptTripMeeting rtm = ctx.receiptTripMeetingMap().get(document.getIdx());
+            if (rtm != null) {
+                dto.setSourceDocumentId(rtm.getIdx());
+                if (rtm.getProjectIdx() != null) {
+                    dto.setProjectIdx(rtm.getProjectIdx());
+                    Project project = ctx.projectMap().get(rtm.getProjectIdx());
+                    if (project != null) dto.setProjectName(project.getProjectName());
+                }
+                dto.setEventDate(rtm.getTripDate());
+                dto.setCardUsageDate(rtm.getTripDate());
+                enrichWithCardInfoFromMap(dto, rtm.getCardIdx(), ctx.cardMap());
+                dto.setLocation(rtm.getLocation());
+                dto.setPurpose(rtm.getPurpose());
+                dto.setAmount(rtm.getTotalFee());
+                dto.setParticipantNames(ctx.rctmParticipantNames().get(rtm.getIdx()));
+                dto.setAttachments(ctx.rctmAttachmentMap().getOrDefault(rtm.getIdx(), Collections.emptyList()));
+            }
+        } else if (CodeConstants.DocumentType.RECEIPT_OVERTIME.getCode().equals(docTypeCode)) {
+            ReceiptOvertime ro = ctx.receiptOvertimeMap().get(document.getIdx());
+            if (ro != null) {
+                dto.setSourceDocumentId(ro.getIdx());
+                if (ro.getProjectIdx() != null) {
+                    dto.setProjectIdx(ro.getProjectIdx());
+                    Project project = ctx.projectMap().get(ro.getProjectIdx());
+                    if (project != null) dto.setProjectName(project.getProjectName());
+                }
+                dto.setEventDate(ro.getOvertimeDate());
+                dto.setCardUsageDate(ro.getOvertimeDate());
+                enrichWithCardInfoFromMap(dto, ro.getCardIdx(), ctx.cardMap());
+                dto.setAmount(ro.getTotalAmount());
+                dto.setParticipantNames(ctx.overtimeParticipantNames().get(ro.getIdx()));
+                dto.setAttachments(ctx.overtimeAttachmentMap().getOrDefault(ro.getIdx(), Collections.emptyList()));
+            }
+        } else if (CodeConstants.DocumentType.RECEIPT_MATERIAL.getCode().equals(docTypeCode) ||
+                   CodeConstants.DocumentType.RECEIPT_EQUIPMENT.getCode().equals(docTypeCode)) {
+            ReceiptPurchase rp = ctx.receiptPurchaseMap().get(document.getIdx());
+            if (rp != null) {
+                dto.setSourceDocumentId(rp.getIdx());
+                dto.setAmount(rp.getTotalAmount());
+                String formattedAmount = rp.getTotalAmount() != null && rp.getTotalAmount().compareTo(BigDecimal.ZERO) != 0
+                        ? String.format("%,d", rp.getTotalAmount().longValue()) + "원" : "0원";
+                dto.setTitle(docTypeName + " - " + formattedAmount);
+                if (rp.getProjectIdx() != null) {
+                    dto.setProjectIdx(rp.getProjectIdx());
+                    Project project = ctx.projectMap().get(rp.getProjectIdx());
+                    if (project != null) dto.setProjectName(project.getProjectName());
+                }
+                if (rp.getApprovalDate() != null) {
+                    dto.setEventDate(rp.getApprovalDate());
+                }
+                dto.setCardUsageDate(ctx.purchaseCardUsageDateMap().getOrDefault(rp.getIdx(), rp.getApprovalDate()));
+                enrichWithCardInfoFromMap(dto, rp.getCardIdx(), ctx.cardMap());
+                String purposeText = rp.getDocumentContent();
+                if (purposeText == null || purposeText.isBlank()) {
+                    purposeText = rp.getDocumentTitle();
+                }
+                dto.setPurpose(purposeText);
+                dto.setPaymentType(rp.getPaymentType());
+                dto.setAttachments(ctx.purchaseAttachmentMap().getOrDefault(rp.getIdx(), Collections.emptyList()));
+            }
+        }
+
+        return dto;
+    }
+
+    private void enrichWithCardInfoFromMap(ApprovalDocumentDTO dto, Long cardIdx, Map<Long, ProjectCard> cardMap) {
+        if (cardIdx == null) return;
+        dto.setCardIdx(cardIdx);
+        ProjectCard card = cardMap.get(cardIdx);
+        if (card != null) {
+            dto.setCardCompany(card.getCardCompany());
+            dto.setCardLastDigits(card.getCardLastDigits());
+            dto.setCardNickname(card.getCardNickname());
+        }
+    }
+
+    private Map<Long, String> buildBatchParticipantNamesMap(List<Long> receiptIdxs, String prefix) {
+        if (receiptIdxs.isEmpty()) return Collections.emptyMap();
+        List<Object[]> rows = receiptAttendeeRepository.findAttendeesWithAllPersonInfoBatch(receiptIdxs, prefix);
+        Map<Long, List<String>> namesByIdx = new HashMap<>();
+        for (Object[] row : rows) {
+            ReceiptAttendee attendee = (ReceiptAttendee) row[0];
+            User user = (User) row[1];
+            ExternalPerson ep = (ExternalPerson) row[2];
+            String name;
+            if (Boolean.TRUE.equals(attendee.getIsExternal()) && ep != null) {
+                name = ep.getName();
+            } else if (user != null) {
+                name = user.getEmpName();
+            } else {
+                name = null;
+            }
+            if (name != null && !name.isBlank()) {
+                namesByIdx.computeIfAbsent(attendee.getReceiptIdx(), k -> new ArrayList<>()).add(name);
+            }
+        }
+        return namesByIdx.entrySet().stream()
+                .collect(Collectors.toMap(Map.Entry::getKey, e -> String.join(", ", e.getValue())));
+    }
+
+    private Map<Long, List<AttachmentSummaryDTO>> buildBatchMeetingAttachmentsMap(List<Long> meetingIdxs) {
+        if (meetingIdxs.isEmpty()) return Collections.emptyMap();
+        Map<Long, List<AttachmentSummaryDTO>> result = new HashMap<>();
+        receiptMeetingAttachmentRepository.findByReceiptMeetingIdxIn(meetingIdxs).forEach(a ->
+                result.computeIfAbsent(a.getReceiptMeetingIdx(), k -> new ArrayList<>()).add(
+                        AttachmentSummaryDTO.builder()
+                                .idx(a.getIdx())
+                                .originalFilename(a.getOriginalFilename())
+                                .attachmentType(a.getAttachmentType())
+                                .downloadUrl("/api/receipt-meetings/attachments/" + a.getIdx() + "/download")
+                                .build()));
+        return result;
+    }
+
+    private Map<Long, List<AttachmentSummaryDTO>> buildBatchTripAttachmentsMap(List<Long> tripIdxs) {
+        if (tripIdxs.isEmpty()) return Collections.emptyMap();
+        Map<Long, List<AttachmentSummaryDTO>> result = new HashMap<>();
+        receiptTripAttachmentRepository.findByReceiptTripIdxInAndDeletedFalseOrderByIdxAsc(tripIdxs).forEach(a ->
+                result.computeIfAbsent(a.getReceiptTripIdx(), k -> new ArrayList<>()).add(
+                        AttachmentSummaryDTO.builder()
+                                .idx(a.getIdx())
+                                .originalFilename(a.getOriginalFilename())
+                                .attachmentType(a.getAttachmentType())
+                                .downloadUrl("/api/receipt-trips/attachments/" + a.getIdx() + "/download")
+                                .build()));
+        return result;
+    }
+
+    private Map<Long, List<AttachmentSummaryDTO>> buildBatchOvertimeAttachmentsMap(List<Long> overtimeIdxs) {
+        if (overtimeIdxs.isEmpty()) return Collections.emptyMap();
+        Map<Long, List<AttachmentSummaryDTO>> result = new HashMap<>();
+        receiptOvertimeAttachmentRepository.findByReceiptOvertimeIdxInAndDeletedFalseOrderByIdxAsc(overtimeIdxs).forEach(a ->
+                result.computeIfAbsent(a.getReceiptOvertimeIdx(), k -> new ArrayList<>()).add(
+                        AttachmentSummaryDTO.builder()
+                                .idx(a.getIdx())
+                                .originalFilename(a.getOriginalFilename())
+                                .attachmentType(a.getAttachmentType())
+                                .downloadUrl("/api/receipt-overtimes/attachments/" + a.getIdx() + "/download")
+                                .build()));
+        return result;
+    }
+
+    private Map<Long, List<AttachmentSummaryDTO>> buildBatchRctmAttachmentsMap(List<Long> rtmIdxs) {
+        if (rtmIdxs.isEmpty()) return Collections.emptyMap();
+        Map<Long, List<AttachmentSummaryDTO>> result = new HashMap<>();
+        receiptTripMeetingAttachmentRepository.findByReceiptTripMeetingIdxInAndDeletedFalseOrderByIdxAsc(rtmIdxs).forEach(a ->
+                result.computeIfAbsent(a.getReceiptTripMeetingIdx(), k -> new ArrayList<>()).add(
+                        AttachmentSummaryDTO.builder()
+                                .idx(a.getIdx())
+                                .originalFilename(a.getOriginalFilename())
+                                .attachmentType(a.getAttachmentType())
+                                .sessionIdx(a.getSessionIdx())
+                                .downloadUrl("/api/receipt-trip-meetings/attachments/" + a.getIdx() + "/download")
+                                .build()));
+        return result;
+    }
+
+    private Map<Long, List<AttachmentSummaryDTO>> buildBatchPurchaseAttachmentsMap(List<Long> purchaseIdxs) {
+        if (purchaseIdxs.isEmpty()) return Collections.emptyMap();
+        Map<Long, List<AttachmentSummaryDTO>> result = new HashMap<>();
+        receiptPurchaseAttachmentRepository.findByReceiptPurchaseIdxInAndDeletedFalseOrderByIdxAsc(purchaseIdxs).forEach(a ->
+                result.computeIfAbsent(a.getReceiptPurchaseIdx(), k -> new ArrayList<>()).add(
+                        AttachmentSummaryDTO.builder()
+                                .idx(a.getIdx())
+                                .originalFilename(a.getOriginalFilename())
+                                .attachmentType(a.getAttachmentType())
+                                .downloadUrl("/api/receipt-purchases/attachments/" + a.getIdx() + "/download")
+                                .build()));
+        return result;
+    }
+
+    private Map<Long, LocalDate> buildBatchPurchaseCardUsageDateMap(List<Long> purchaseIdxs) {
+        if (purchaseIdxs.isEmpty()) return Collections.emptyMap();
+        Map<Long, LocalDate> result = new HashMap<>();
+        receiptPurchaseItemRepository.findByReceiptPurchaseIdxIn(purchaseIdxs).stream()
+                .filter(i -> i.getItemDate() != null)
+                .collect(Collectors.groupingBy(ReceiptPurchaseItem::getReceiptPurchaseIdx,
+                        Collectors.mapping(ReceiptPurchaseItem::getItemDate, Collectors.maxBy(LocalDate::compareTo))))
+                .forEach((idx, maxDate) -> maxDate.ifPresent(d -> result.put(idx, d)));
+        return result;
+    }
+
+    private record ProjectBatchContext(
+            Map<Long, User> userMap,
+            Map<String, String> deptCodeNameMap,
+            Map<Long, WeeklyReport> weeklyReportMap,
+            Map<Long, ReceiptMeeting> receiptMeetingMap,
+            Map<Long, ReceiptTrip> receiptTripMap,
+            Map<Long, ReceiptTripMeeting> receiptTripMeetingMap,
+            Map<Long, ReceiptOvertime> receiptOvertimeMap,
+            Map<Long, ReceiptPurchase> receiptPurchaseMap,
+            Map<Long, Project> projectMap,
+            Map<Long, ProjectCard> cardMap,
+            Map<Long, String> meetingParticipantNames,
+            Map<Long, String> tripParticipantNames,
+            Map<Long, String> overtimeParticipantNames,
+            Map<Long, String> rctmParticipantNames,
+            Map<Long, List<AttachmentSummaryDTO>> meetingAttachmentMap,
+            Map<Long, List<AttachmentSummaryDTO>> tripAttachmentMap,
+            Map<Long, List<AttachmentSummaryDTO>> overtimeAttachmentMap,
+            Map<Long, List<AttachmentSummaryDTO>> rctmAttachmentMap,
+            Map<Long, List<AttachmentSummaryDTO>> purchaseAttachmentMap,
+            Map<Long, LocalDate> purchaseCardUsageDateMap
+    ) {}
 
     @Override
     public List<ApprovalDocumentDTO> getDocumentsByType(String documentType) {

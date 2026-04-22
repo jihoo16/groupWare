@@ -32,6 +32,8 @@ public interface ReceiptOvertimeAttachmentRepository extends JpaRepository<Recei
     long countByReceiptOvertimeIdxAndAttachmentTypeAndDeletedFalse(
             Long receiptOvertimeIdx, String attachmentType);
 
+    List<ReceiptOvertimeAttachment> findByReceiptOvertimeIdxInAndDeletedFalseOrderByIdxAsc(List<Long> receiptOvertimeIdxs);
+
     /**
      * 야근식대의 모든 첨부파일 소프트 딜리트
      */

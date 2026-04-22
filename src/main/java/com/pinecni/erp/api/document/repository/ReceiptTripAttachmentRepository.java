@@ -26,6 +26,8 @@ public interface ReceiptTripAttachmentRepository extends JpaRepository<ReceiptTr
      */
     long countByReceiptTripIdxAndAttachmentTypeAndDeletedFalse(Long receiptTripIdx, String attachmentType);
 
+    List<ReceiptTripAttachment> findByReceiptTripIdxInAndDeletedFalseOrderByIdxAsc(List<Long> receiptTripIdxs);
+
     /**
      * 출장별 첨부파일 전체 목록 (삭제 포함, 파일명 변경 등 내부 처리용)
      */
