@@ -2,6 +2,7 @@ package com.pinecni.erp.api.document.service;
 
 import com.pinecni.erp.api.approval.repository.ApprovalDocumentRepository;
 import com.pinecni.erp.api.approval.service.DocumentSequenceService;
+import com.pinecni.erp.api.signature.service.SignatureService;
 import com.pinecni.erp.api.document.dto.ExpenseRequisitionCreateDTO;
 import com.pinecni.erp.api.document.dto.ExpenseRequisitionDTO;
 import com.pinecni.erp.api.document.dto.ExpenseRequisitionItemDTO;
@@ -43,6 +44,7 @@ public class ExpenseRequisitionServiceImpl implements ExpenseRequisitionService 
     private final DocumentSequenceService documentSequenceService;
     private final UserRepository userRepository;
     private final CodeRepository codeRepository;
+    private final SignatureService signatureService;
 
     // ── CREATE ───────────────────────────────────────────────────────────────
 
@@ -65,6 +67,7 @@ public class ExpenseRequisitionServiceImpl implements ExpenseRequisitionService 
                 .documentNo(documentNo)
                 .title(DOC_TYPE.getName())
                 .documentType(DOC_TYPE.getCode())
+                .status(CodeConstants.DocumentStatus.DRAFTED.getCode())
                 .content((dto.getContent() != null && !dto.getContent().isBlank()
                         ? dto.getContent() + " | " : "")
                         + "신청금액: ₩" + String.format("%,d", totalAmount.longValue()))
@@ -96,6 +99,15 @@ public class ExpenseRequisitionServiceImpl implements ExpenseRequisitionService 
 
         log.info("지출품의서 생성 완료 - idx: {}, documentNo: {}, 총금액: {}, 항목수: {}",
                 requisition.getIdx(), documentNo, totalAmount, items.size());
+
+        // 전자서명 요청 자동 생성
+        try {
+            signatureService.requestSignaturesForDocument(doc.getIdx(), userIdx);
+            doc.setStatus(CodeConstants.DocumentStatus.SIGN_PENDING.getCode());
+            approvalDocumentRepository.save(doc);
+        } catch (Exception e) {
+            log.error("[서명 요청 생성 실패] documentIdx: {}, error: {}", doc.getIdx(), e.getMessage());
+        }
 
         return toDTO(requisition, items, userIdx);
     }
@@ -137,6 +149,11 @@ public class ExpenseRequisitionServiceImpl implements ExpenseRequisitionService 
         ExpenseRequisition requisition = requisitionRepository.findByIdxWithItems(idx)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND,
                         "지출품의서를 찾을 수 없습니다. idx: " + idx));
+
+        // 전자서명 게이트
+        if (requisition.getDocumentIdx() != null && signatureService.hasAnySignatureCaptured(requisition.getDocumentIdx())) {
+            throw new IllegalStateException("전자서명이 진행된 문서는 수정할 수 없습니다.");
+        }
 
         if (!requisition.getAuthorIdx().equals(userIdx)) {
             throw new ResponseStatusException(HttpStatus.FORBIDDEN, "본인 문서만 수정할 수 있습니다.");
@@ -198,6 +215,12 @@ public class ExpenseRequisitionServiceImpl implements ExpenseRequisitionService 
 
         if (!requisition.getAuthorIdx().equals(userIdx)) {
             throw new ResponseStatusException(HttpStatus.FORBIDDEN, "본인 문서만 삭제할 수 있습니다.");
+        }
+
+        // 전자서명 게이트
+        if (requisition.getDocumentIdx() != null
+                && signatureService.hasAnySignatureCaptured(requisition.getDocumentIdx())) {
+            throw new IllegalStateException("전자서명이 진행된 문서는 삭제할 수 없습니다.");
         }
 
         requisition.softDelete(userIdx);

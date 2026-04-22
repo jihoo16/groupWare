@@ -452,8 +452,16 @@ document.addEventListener('DOMContentLoaded', function() {
             }
 
             const data = await res.json();
-            await showSuccess('저장이 완료되었습니다.');
-            window.location.href = '/approval';
+            if (window.SignatureRender && !isEdit) {
+                SignatureRender.afterSave({
+                    documentIdx: data.documentIdx || data.idx,
+                    redirectUrl: '/approval',
+                    successMessage: '저장이 완료되었습니다.'
+                });
+            } else {
+                await showSuccess('저장이 완료되었습니다.');
+                window.location.href = '/approval';
+            }
         } catch (e) {
             showError(e.message || '저장 중 오류가 발생했습니다. 다시 시도해주세요.');
         }

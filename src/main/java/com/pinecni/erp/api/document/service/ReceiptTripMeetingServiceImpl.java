@@ -7,6 +7,7 @@ import com.pinecni.erp.api.document.repository.ReceiptAttendeeRepository;
 import com.pinecni.erp.api.project.repository.*;
 import com.pinecni.erp.api.project.repository.ReceiptTripMeetingSessionRepository;
 import com.pinecni.erp.api.project.service.ProjectMemberValidationService;
+import com.pinecni.erp.api.signature.service.SignatureService;
 import com.pinecni.erp.api.user.repository.UserRepository;
 import com.pinecni.erp.constant.CodeConstants;
 import com.pinecni.erp.entity.*;
@@ -58,6 +59,7 @@ public class ReceiptTripMeetingServiceImpl implements ReceiptTripMeetingService 
     private final ProjectCardRepository projectCardRepository;
     private final UserRepository userRepository;
     private final ProjectMemberValidationService projectMemberValidationService;
+    private final SignatureService signatureService;
 
     @Value("${file.base.dir}")
     private String baseDir;
@@ -93,8 +95,9 @@ public class ReceiptTripMeetingServiceImpl implements ReceiptTripMeetingService 
                 .title(buildTitle(dto))
                 .documentType(DOC_TYPE.getCode())
                 .isProject(true)
-                .drafterUserIdx(dto.getDrafterUserIdx())
+                .drafterUserIdx(dto.getDrafterUserIdx() != null ? dto.getDrafterUserIdx() : currentUserIdx)
                 .content(dto.getTripContent())
+                .status(CodeConstants.DocumentStatus.DRAFTED.getCode())
                 .createdUserIdx(currentUserIdx)
                 .updatedUserIdx(currentUserIdx)
                 .build();
@@ -203,6 +206,28 @@ public class ReceiptTripMeetingServiceImpl implements ReceiptTripMeetingService 
 
         log.info("출장+회의 통합 저장 완료 - rtmIdx: {}, documentNo: {}", rtmIdx, documentNo);
 
+        // 전자서명 요청 자동 생성
+        try {
+            // 회의 세션 내부 참석자 userIdx 수집 (외부인 제외)
+            List<Long> attendeeUserIdxList = null;
+            if (dto.getMeetingSessions() != null && !dto.getMeetingSessions().isEmpty()) {
+                attendeeUserIdxList = dto.getMeetingSessions().stream()
+                        .filter(s -> s.getMeetingAttendees() != null)
+                        .flatMap(s -> s.getMeetingAttendees().stream())
+                        .filter(a -> !Boolean.TRUE.equals(a.getIsExternal()))
+                        .map(ReceiptMeetingAttendeeDTO::getUserIdx)
+                        .filter(Objects::nonNull)
+                        .distinct()
+                        .collect(Collectors.toList());
+            }
+            signatureService.requestSignaturesForDocument(documentIdx, currentUserIdx,
+                    dto.getProjectIdx(), attendeeUserIdxList);
+            savedDocument.setStatus(CodeConstants.DocumentStatus.SIGN_PENDING.getCode());
+            approvalDocumentRepository.save(savedDocument);
+        } catch (Exception e) {
+            log.error("[서명 요청 생성 실패] documentIdx: {}, error: {}", documentIdx, e.getMessage());
+        }
+
         return ReceiptTripMeetingResponseDTO.builder()
                 .receiptTripMeetingIdx(rtmIdx)
                 .documentIdx(documentIdx)
@@ -284,6 +309,8 @@ public class ReceiptTripMeetingServiceImpl implements ReceiptTripMeetingService 
         if (Boolean.TRUE.equals(entity.getDeleted())) {
             throw new IllegalArgumentException("삭제된 출장+회의입니다. idx: " + idx);
         }
+
+        // 연구비증빙은 수정요청 대응을 위해 서명 후에도 수정 가능 (서명은 유지)
 
         // 0. 참여기간 검증 — 출장 인원(전 기간) + 회의별 참석자(회의 날짜)
         validateRtmParticipationPeriod(updateDTO);
@@ -445,6 +472,12 @@ public class ReceiptTripMeetingServiceImpl implements ReceiptTripMeetingService 
 
         ReceiptTripMeeting entity = receiptTripMeetingRepository.findById(idx)
                 .orElseThrow(() -> new IllegalArgumentException("출장+회의 정보를 찾을 수 없습니다. idx: " + idx));
+
+        // 전자서명 게이트
+        if (entity.getDocumentIdx() != null
+                && signatureService.hasAnySignatureCaptured(entity.getDocumentIdx())) {
+            throw new IllegalStateException("전자서명이 진행된 문서는 삭제할 수 없습니다.");
+        }
 
         LocalDateTime now = LocalDateTime.now();
 

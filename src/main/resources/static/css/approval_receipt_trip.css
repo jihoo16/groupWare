@@ -243,63 +243,6 @@ div:focus {
 }
 
 /* 섹션 공통 스타일 */
-.section-header {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    margin-bottom: 16px;
-    padding-bottom: 10px;
-    border-bottom: 2px solid #f0f0f0;
-}
-
-.section-header h3 {
-    font-size: 14px;
-    font-weight: 700;
-    color: #1a1a1a;
-    margin: 0;
-    display: flex;
-    align-items: center;
-    gap: 8px;
-}
-
-.section-header h3 i {
-    font-size: 15px;
-    color: #667eea;
-}
-
-.section-header h4 {
-    font-size: 13.5px;
-    font-weight: 700;
-    color: #333;
-    margin: 0;
-    display: flex;
-    align-items: center;
-    gap: 8px;
-}
-
-.section-header h4 i {
-    color: #667eea;
-}
-
-.btn-add {
-    padding: 8px 16px;
-    background: #667eea;
-    color: white;
-    border: none;
-    border-radius: 6px;
-    font-size: 11px;
-    font-weight: 600;
-    cursor: pointer;
-    display: flex;
-    align-items: center;
-    gap: 6px;
-    transition: all 0.2s ease;
-}
-
-.btn-add:hover {
-    background: #5568d3;
-    transform: translateY(-1px);
-}
 
 /* 결재선 섹션 */
 .approval-line-section {
@@ -1381,26 +1324,6 @@ input.auto-datetime {
     gap: 8px;
 }
 
-.btn-primary {
-    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-    color: white;
-}
-
-.btn-primary:hover {
-    transform: translateY(-2px);
-    box-shadow: 0 6px 20px rgba(102, 126, 234, 0.4);
-}
-
-.btn-secondary {
-    background: #f1f5f9;
-    border: none;
-    color: #475569;
-}
-
-.btn-secondary:hover {
-    background: #e2e8f0;
-}
-
 .btn-success {
     background: linear-gradient(135deg, #10b981 0%, #059669 100%);
     color: white;
@@ -1410,48 +1333,6 @@ input.auto-datetime {
 .btn-success:hover {
     transform: translateY(-2px);
     box-shadow: 0 6px 20px rgba(16, 185, 129, 0.4);
-}
-
-
-.btn-danger {
-    background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);
-    color: white;
-    border: none;
-}
-
-.btn-danger:hover {
-    transform: translateY(-2px);
-    box-shadow: 0 6px 20px rgba(239, 68, 68, 0.4);
-    background: linear-gradient(135deg, #dc2626 0%, #b91c1c 100%);
-}
-
-.btn-outline,
-.header-right .btn-outline {
-    background: white;
-    color: #667eea;
-    border: 2px solid #667eea;
-    padding: 12px 24px;
-    border-radius: 8px;
-    font-size: 14px;
-    font-weight: 600;
-    cursor: pointer;
-    display: inline-flex;
-    align-items: center;
-    gap: 8px;
-    transition: all 0.3s;
-}
-
-.btn-outline:hover:not(:disabled),
-.header-right .btn-outline:hover:not(:disabled) {
-    background: #667eea;
-    color: white;
-}
-
-.btn-outline:disabled {
-    border-color: #cbd5e1;
-    color: #94a3b8;
-    cursor: not-allowed;
-    opacity: 0.6;
 }
 
 /* 클릭 가능한 readonly input (프로젝트 선택) */
@@ -2108,7 +1989,6 @@ input.auto-datetime {
         max-height: 200px;
     }
 
-
     .form-table th {
         width: 100px;
         font-size: 11px;
@@ -2512,29 +2392,6 @@ input.auto-datetime {
 }
 
 /* 인쇄 버튼 스타일 */
-.btn-print {
-    padding: 10px 20px;
-    background: linear-gradient(135deg, #10b981 0%, #059669 100%);
-    color: white;
-    border: none;
-    border-radius: 8px;
-    font-size: 14px;
-    font-weight: 600;
-    cursor: pointer;
-    transition: all 0.3s;
-    display: inline-flex;
-    align-items: center;
-    gap: 8px;
-}
-
-.btn-print:hover {
-    transform: translateY(-2px);
-    box-shadow: 0 4px 12px rgba(16, 185, 129, 0.3);
-}
-
-.btn-print i {
-    font-size: 16px;
-}
 
 /* 출장인원 수 뱃지 */
 .attendee-count-badge {

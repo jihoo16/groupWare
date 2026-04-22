@@ -1,0 +1,128 @@
+<!DOCTYPE html>
+<html lang="ko" xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{fragments/layout :: head('연구비증빙 구매품의 상세', '/css/approval_receipt_purchase.css')}"></head>
+<body class="detail-view">
+<!-- 로딩 오버레이 -->
+<div th:replace="~{fragments/loading-overlay :: overlay}"></div>
+
+<div class="container">
+    <!-- 좌측 네비게이션 바 -->
+    <div th:replace="~{fragments/sidebar :: sidebar('project')}"></div>
+
+    <!-- 메인 콘텐츠 영역 -->
+    <main class="main-content">
+        <header class="header no-print">
+            <div class="header-left">
+                <h1 class="page-title"><i class="fas fa-file-alt"></i> 연구비증빙 구매품의 상세</h1>
+            </div>
+            <div class="header-right">
+                <button class="btn-print btn-lg" id="printBtn" style="display:none;">
+                    <i class="fas fa-print"></i>
+                    인쇄하기
+                </button>
+                <button class="btn-primary btn-lg" id="editBtn" style="display:none;">
+                    <i class="fas fa-edit"></i>
+                    수정
+                </button>
+                <button class="btn-danger btn-lg" id="deleteBtn" style="display:none;">
+                    <i class="fas fa-trash"></i>
+                    삭제
+                </button>
+                <button class="btn-secondary btn-lg" onclick="history.back()">
+                    <i class="fas fa-arrow-left"></i>
+                    돌아가기
+                </button>
+            </div>
+        </header>
+
+        <div class="write-container">
+            <div class="editor-area" style="max-width: 1000px; margin: 0 auto;">
+                <div class="document-form" id="documentFormContent">
+
+                    <!-- 품의서 -->
+                    <div style="background: white; border: 2px solid #e0e0e0; border-radius: 8px; padding: 30px; margin: 0 auto 30px; max-width: 881px;">
+
+                        <!-- 결재란 -->
+                        <div style="display: flex; justify-content: flex-end; margin-bottom: 15px;">
+                            <table class="doc-approval-table">
+                                <tr>
+                                    <td class="doc-approval-head">신청자</td>
+                                    <td class="doc-approval-head">연구책임자</td>
+                                    <td class="doc-approval-head">대표이사</td>
+                                </tr>
+                                <tr>
+                                    <td class="doc-approval-sign" data-slot="C1602"><div class="sign-area"><span class="sign-placeholder"></span></div></td>
+                                    <td class="doc-approval-sign" data-slot="C1603"><div class="sign-area"><span class="sign-placeholder"></span></div></td>
+                                    <td class="doc-approval-sign signature-offline"><div class="sign-area"><span class="sign-placeholder"></span></div></td>
+                                </tr>
+                            </table>
+                        </div>
+
+                        <h2 class="doc-title" style="font-size: 30px; font-weight: bold; letter-spacing: 8px;">품 의 서</h2>
+
+                        <table class="form-table" style="margin-top: 20px;">
+                            <tr>
+                                <th style="width: 13%;">과 제 명</th>
+                                <td colspan="4" style="padding: 10px;"><span id="doc_project"></span></td>
+                                <th style="width: 10%;">연구책임자명</th>
+                                <td style="width: 10%; padding: 10px; text-align: center;"><span id="doc_manager"></span></td>
+                            </tr>
+                            <tr>
+                                <th>품의일자</th>
+                                <td colspan="6" style="text-align: center;"><span id="doc_approval_date"></span></td>
+                            </tr>
+                            <tr>
+                                <th>신 청 자</th>
+                                <td colspan="6" style="text-align: center;"><span id="doc_applicant"></span></td>
+                            </tr>
+                            <tr>
+                                <th>품 의 명</th>
+                                <td colspan="6" style="text-align: center;"><span id="doc_title"></span></td>
+                            </tr>
+                            <tr>
+                                <th>지급종류</th>
+                                <td colspan="6" style="text-align: center;">
+                                    연구비카드(<span id="doc_payment_card"></span>) / 연구비이체(<span id="doc_payment_transfer"></span>)
+                                </td>
+                            </tr>
+                            <tr>
+                                <th style="height: 180px; vertical-align: top; padding-top: 12px;">품의 내용</th>
+                                <td colspan="6" style="text-align: left; padding: 12px; white-space: pre-wrap; height: 180px; vertical-align: top;"><span id="doc_content"></span></td>
+                            </tr>
+                            <tr>
+                                <th colspan="7" style="background: #f0f0f0; padding: 12px; text-align: center;">품의 내역서</th>
+                            </tr>
+                            <tr>
+                                <th style="text-align: center;">날짜</th>
+                                <th style="text-align: center;">적요</th>
+                                <th style="text-align: center; width: 50px;">수량</th>
+                                <th style="text-align: center; width: 100px;">공급가액</th>
+                                <th style="text-align: center; width: 80px;">세액</th>
+                                <th style="text-align: center; width: 100px;">합계</th>
+                                <th style="text-align: center; width: 80px;">비고</th>
+                            </tr>
+                            <tbody id="docItemTableBody">
+                            <!-- 동적으로 채워지는 내역서 행 -->
+                            </tbody>
+                            <tr>
+                                <td colspan="3" style="text-align: center; font-weight: bold; background: #f9f9f9;">계</td>
+                                <td style="text-align: right; font-weight: bold; padding-right: 8px;"><span id="doc_total_supply"></span></td>
+                                <td style="text-align: right; font-weight: bold; padding-right: 8px;"><span id="doc_total_tax"></span></td>
+                                <td style="text-align: right; font-weight: bold; padding-right: 8px;"><span id="doc_total_payment"></span></td>
+                                <td></td>
+                            </tr>
+                        </table>
+                    </div>
+
+                </div>
+            </div>
+        </div>
+    </main>
+</div>
+
+<!-- 전자서명 QR 모달 프래그먼트 -->
+<div th:replace="~{fragments/signature-modal :: signature-modal}"></div>
+
+<script th:src="@{/js/approval_receipt_purchase_detail.js}"></script>
+</body>
+</html>

@@ -147,10 +147,15 @@ public class ReceiptPurchaseController {
             Map<String, String> resp = new HashMap<>();
             resp.put("message", "삭제되었습니다.");
             return ResponseEntity.ok(resp);
+        } catch (IllegalStateException e) {
+            log.warn("구매품의 삭제 차단: {}", e.getMessage());
+            Map<String, String> error = new HashMap<>();
+            error.put("error", e.getMessage());
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(error);
         } catch (Exception e) {
             log.error("구매품의 삭제 실패 - idx: {}", idx, e);
             Map<String, String> error = new HashMap<>();
-            error.put("message", "삭제에 실패했습니다: " + e.getMessage());
+            error.put("error", "삭제에 실패했습니다: " + e.getMessage());
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(error);
         }
     }

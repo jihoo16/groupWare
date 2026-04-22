@@ -167,6 +167,9 @@ document.addEventListener('DOMContentLoaded', async function () {
     document.getElementById('previewDocDateTop').textContent = dateStr;
     document.getElementById('previewApplicant').textContent = doc.authorName || '-';
 
+    // 전자서명 현황 로드
+    if (window.SignatureRender && doc.documentIdx) SignatureRender.load(doc.documentIdx);
+
     // ── 버튼 표시 (API 200 = 본인 문서 확인됨) ───────────────────
     if (printBtn)  printBtn.style.display  = '';
     if (editBtn)   editBtn.style.display   = '';

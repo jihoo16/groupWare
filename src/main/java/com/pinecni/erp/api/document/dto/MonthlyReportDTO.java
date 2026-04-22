@@ -23,6 +23,11 @@ public class MonthlyReportDTO {
     private Long id;
 
     /**
+     * 전자결재 문서 IDX (approval_documents 테이블 참조)
+     */
+    private Long documentIdx;
+
+    /**
      * 보고자 IDX
      */
     private Long userIdx;

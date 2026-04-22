@@ -1,0 +1,146 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<!--
+    전자서명 QR 모달 프래그먼트
+    - 모든 결재 문서 상세/작성 페이지에서 include
+    - PC에서 서명칸 클릭 시 표시
+    - SockJS + STOMP로 서명 완료 실시간 수신
+
+    사용 예:
+    <div th:replace="~{fragments/signature-modal :: signature-modal}"></div>
+
+    JS 전역 API (signature-modal.js에서 제공):
+    - SignatureModal.open({ documentIdx, signatureSlot, onComplete })
+    - SignatureModal.close()
+-->
+<body>
+
+<!-- ============================================================
+     signature-modal 프래그먼트
+============================================================ -->
+<div th:fragment="signature-modal">
+
+    <!-- SockJS + STOMP (결재 문서 페이지에서 필요 시 자동 로드) -->
+    <script src="https://cdn.jsdelivr.net/npm/sockjs-client@1.6.1/dist/sockjs.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/stompjs@2.3.3/lib/stomp.min.js"></script>
+
+    <!-- QR 모달 CSS -->
+    <link rel="stylesheet" th:href="@{/css/signature-modal.css}">
+
+    <!-- 모달 DOM -->
+    <div id="signatureModal" class="sig-modal" role="dialog" aria-modal="true" aria-hidden="true">
+        <div class="sig-modal-backdrop" data-close="true"></div>
+
+        <div class="sig-modal-content">
+            <!-- 헤더 -->
+            <div class="sig-modal-header">
+                <h3>
+                    <i class="fas fa-qrcode"></i>
+                    전자서명
+                </h3>
+                <button type="button" class="sig-modal-close" data-close="true" aria-label="닫기">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+
+            <!-- 바디 -->
+            <div class="sig-modal-body">
+
+                <!-- (A) 로딩 상태 -->
+                <div class="sig-modal-state sig-loading">
+                    <i class="fas fa-spinner fa-spin"></i>
+                    <p>QR 코드를 생성 중입니다…</p>
+                </div>
+
+                <!-- (B) QR 표시 상태 -->
+                <div class="sig-modal-state sig-qr" style="display:none;">
+                    <div class="sig-info-box">
+                        <div class="sig-info-row">
+                            <span class="sig-info-label">문서</span>
+                            <span class="sig-info-value" id="sig-modal-doc-title">-</span>
+                        </div>
+                        <div class="sig-info-row">
+                            <span class="sig-info-label">서명 위치</span>
+                            <span class="sig-info-value" id="sig-modal-slot-label">-</span>
+                        </div>
+                        <div class="sig-info-row">
+                            <span class="sig-info-label">서명자</span>
+                            <span class="sig-info-value" id="sig-modal-signer-name">-</span>
+                        </div>
+                    </div>
+
+                    <div class="sig-qr-wrap">
+                        <img id="sig-modal-qr-image" class="sig-qr-image" src="" alt="QR 코드">
+                        <div class="sig-qr-overlay" id="sig-modal-qr-overlay" style="display:none;">
+                            <div class="sig-qr-overlay-content">
+                                <i class="fas fa-exclamation-triangle"></i>
+                                <p>만료되었습니다</p>
+                                <button type="button" class="sig-btn-regenerate" id="sig-modal-regenerate-btn">
+                                    <i class="fas fa-sync-alt"></i> QR 재생성
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="sig-countdown">
+                        <i class="fas fa-clock"></i>
+                        남은 시간: <span id="sig-modal-countdown">--:--</span>
+                    </div>
+
+                    <p class="sig-guide">
+                        <i class="fas fa-mobile-alt"></i>
+                        휴대폰 카메라로 QR 코드를 스캔하여 서명해주세요
+                    </p>
+
+                    <div class="sig-progress" id="sig-modal-progress">
+                        <span class="sig-progress-step active" data-step="qr">
+                            <i class="fas fa-qrcode"></i> QR 생성
+                        </span>
+                        <span class="sig-progress-arrow">→</span>
+                        <span class="sig-progress-step" data-step="scanned">
+                            <i class="fas fa-camera"></i> 스캔
+                        </span>
+                        <span class="sig-progress-arrow">→</span>
+                        <span class="sig-progress-step" data-step="verified">
+                            <i class="fas fa-id-card"></i> 본인확인
+                        </span>
+                        <span class="sig-progress-arrow">→</span>
+                        <span class="sig-progress-step" data-step="completed">
+                            <i class="fas fa-check"></i> 서명완료
+                        </span>
+                    </div>
+                </div>
+
+                <!-- (C) 완료 상태 -->
+                <div class="sig-modal-state sig-done" style="display:none;">
+                    <i class="fas fa-check-circle sig-done-icon"></i>
+                    <h4>서명이 완료되었습니다</h4>
+                    <p>문서에 서명이 반영되었습니다.</p>
+                </div>
+
+                <!-- (D) 에러 상태 -->
+                <div class="sig-modal-state sig-error" style="display:none;">
+                    <i class="fas fa-exclamation-circle sig-error-icon"></i>
+                    <h4 id="sig-modal-error-title">오류</h4>
+                    <p id="sig-modal-error-message"></p>
+                    <p style="margin-top:12px; font-size:13px; color:#666;">
+                        모달을 닫고 상세 페이지에서 다시 시도할 수 있습니다.
+                    </p>
+                </div>
+
+            </div>
+
+            <!-- 푸터 -->
+            <div class="sig-modal-footer">
+                <button type="button" class="sig-btn-secondary" data-close="true">닫기</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- QR 모달 JS + 서명 렌더 공통 모듈 -->
+    <script th:src="@{/js/signature-modal.js}"></script>
+    <script th:src="@{/js/signature-render.js}"></script>
+</div>
+
+</body>
+</html>

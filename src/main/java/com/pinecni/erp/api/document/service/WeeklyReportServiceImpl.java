@@ -10,6 +10,7 @@ import com.pinecni.erp.api.code.repository.CodeRepository;
 import com.pinecni.erp.api.project.repository.ProjectRepository;
 import com.pinecni.erp.api.approval.repository.ApprovalDocumentRepository;
 import com.pinecni.erp.api.approval.service.DocumentSequenceService;
+import com.pinecni.erp.api.signature.service.SignatureService;
 import com.pinecni.erp.constant.CodeConstants;
 import com.pinecni.erp.entity.WeeklyReport;
 import com.pinecni.erp.entity.ApprovalDocument;
@@ -39,6 +40,7 @@ public class WeeklyReportServiceImpl implements WeeklyReportService {
     private final ProjectRepository projectRepository;
     private final ApprovalDocumentRepository approvalDocumentRepository;
     private final DocumentSequenceService documentSequenceService;
+    private final SignatureService signatureService;
 
     @Override
     @Transactional
@@ -91,6 +93,7 @@ public class WeeklyReportServiceImpl implements WeeklyReportService {
                     .documentNo(documentNo)
                     .title(title)
                     .documentType(docType.getCode())
+                    .status(CodeConstants.DocumentStatus.DRAFTED.getCode())
                     .isProject(isProjectReport)
                     .drafterUserIdx(createDTO.getUserIdx())
                     .content(createDTO.getMainTasks())
@@ -109,6 +112,16 @@ public class WeeklyReportServiceImpl implements WeeklyReportService {
             WeeklyReport saved = weeklyReportRepository.save(weeklyReport);
             log.debug("WeeklyReport created successfully - id: {}, documentIdx: {}",
                       saved.getId(), saved.getDocumentIdx());
+
+            // 전자서명 요청 자동 생성
+            try {
+                signatureService.requestSignaturesForDocument(savedDocument.getIdx(), createDTO.getUserIdx(),
+                        createDTO.getProjectIdx(), null);
+                savedDocument.setStatus(CodeConstants.DocumentStatus.SIGN_PENDING.getCode());
+                approvalDocumentRepository.save(savedDocument);
+            } catch (Exception e) {
+                log.error("[서명 요청 생성 실패] documentIdx: {}, error: {}", savedDocument.getIdx(), e.getMessage());
+            }
 
             // Entity → DTO 변환
             WeeklyReportDTO dto = weeklyReportMapper.toDTO(saved);
@@ -207,6 +220,11 @@ public class WeeklyReportServiceImpl implements WeeklyReportService {
         WeeklyReport report = weeklyReportRepository.findById(id)
                 .orElseThrow(() -> new RuntimeException("주간업무보고를 찾을 수 없습니다. ID: " + id));
 
+        // 전자서명 게이트
+        if (report.getDocumentIdx() != null && signatureService.hasAnySignatureCaptured(report.getDocumentIdx())) {
+            throw new IllegalStateException("전자서명이 진행된 문서는 수정할 수 없습니다.");
+        }
+
         // UpdateDTO로 Entity 업데이트
         weeklyReportMapper.updateEntity(report, updateDTO, updatedUserIdx);
 
@@ -279,6 +297,12 @@ public class WeeklyReportServiceImpl implements WeeklyReportService {
         // WeeklyReport 조회 (documentIdx 가져오기 위함)
         WeeklyReport report = weeklyReportRepository.findById(id)
                 .orElseThrow(() -> new RuntimeException("주간업무보고를 찾을 수 없습니다. ID: " + id));
+
+        // 전자서명 게이트
+        if (report.getDocumentIdx() != null
+                && signatureService.hasAnySignatureCaptured(report.getDocumentIdx())) {
+            throw new IllegalStateException("전자서명이 진행된 문서는 삭제할 수 없습니다.");
+        }
 
         // 연결된 ApprovalDocument 소프트 딜리트 (deletedAt, deletedUserIdx 설정)
         if (report.getDocumentIdx() != null) {
@@ -372,6 +396,11 @@ public class WeeklyReportServiceImpl implements WeeklyReportService {
         // WeeklyReport 조회
         WeeklyReport report = weeklyReportRepository.findByDocumentIdx(documentIdx)
                 .orElseThrow(() -> new RuntimeException("주간업무보고를 찾을 수 없습니다. DocumentIdx: " + documentIdx));
+
+        // 전자서명 게이트
+        if (signatureService.hasAnySignatureCaptured(documentIdx)) {
+            throw new IllegalStateException("전자서명이 진행된 문서는 삭제할 수 없습니다.");
+        }
 
         // 연결된 ApprovalDocument 소프트 딜리트 (deletedAt, deletedUserIdx 설정)
         approvalDocumentRepository.findById(documentIdx).ifPresent(approvalDocument -> {

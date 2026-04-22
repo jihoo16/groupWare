@@ -1,6 +1,6 @@
 <!DOCTYPE html>
 <html lang="ko" xmlns:th="http://www.thymeleaf.org">
-<head th:replace="~{fragments/layout :: head('ERP 시스템 - 홈', null)}"></head>
+<head th:replace="~{fragments/layout :: head('GROUPWARE 시스템 - 홈', null)}"></head>
 <body>
     <div class="container">
         <!-- 좌측 네비게이션 바 -->
@@ -51,13 +51,13 @@
                             <span class="stat-number" id="todayScheduleCount">-<em>건</em></span>
                         </div>
                     </div>
-                    <div class="stat-card" id="approvalCard">
+                    <div class="stat-card" id="signatureCard" style="cursor:pointer;">
                         <div class="stat-icon icon-indigo">
-                            <i class="fas fa-file-signature"></i>
+                            <i class="fas fa-pen-nib"></i>
                         </div>
                         <div class="stat-content">
-                            <span class="stat-label">전자 문서</span>
-                            <span class="stat-number" id="pendingApprovalCount">-<em>건</em></span>
+                            <span class="stat-label">서명 대기</span>
+                            <span class="stat-number" id="pendingSignatureCount">-<em>건</em></span>
                         </div>
                     </div>
                     <div class="stat-card" id="projectDocCard">

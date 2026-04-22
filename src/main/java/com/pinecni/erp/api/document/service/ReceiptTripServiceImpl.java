@@ -15,6 +15,7 @@ import com.pinecni.erp.api.project.repository.ProjectCardRepository;
 import com.pinecni.erp.api.project.repository.ReceiptTripDailyExpenseRepository;
 import com.pinecni.erp.api.project.repository.ReceiptTripRepository;
 import com.pinecni.erp.api.project.service.ProjectMemberValidationService;
+import com.pinecni.erp.api.signature.service.SignatureService;
 import com.pinecni.erp.constant.CodeConstants;
 import com.pinecni.erp.entity.*;
 import lombok.RequiredArgsConstructor;
@@ -53,6 +54,7 @@ public class ReceiptTripServiceImpl implements ReceiptTripService {
     private final ProjectCardRepository projectCardRepository;
     private final ReceiptTripMapper mapper;
     private final ProjectMemberValidationService projectMemberValidationService;
+    private final SignatureService signatureService;
 
     @Value("${file.base.dir}")
     private String baseDir;
@@ -162,8 +164,9 @@ public class ReceiptTripServiceImpl implements ReceiptTripService {
                     .title(title)
                     .documentType(DOC_TYPE.getCode())
                     .isProject(true)
-                    .drafterUserIdx(createDTO.getDrafterUserIdx())
+                    .drafterUserIdx(createDTO.getDrafterUserIdx() != null ? createDTO.getDrafterUserIdx() : currentUserIdx)
                     .content(createDTO.getContent())
+                    .status(CodeConstants.DocumentStatus.DRAFTED.getCode())
                     .createdUserIdx(currentUserIdx)
                     .updatedUserIdx(currentUserIdx)
                     .build();
@@ -216,6 +219,17 @@ public class ReceiptTripServiceImpl implements ReceiptTripService {
             saved.setDailyExpenses(dailyExpenseRepository.findByReceiptTripIdxOrderByExpenseDateAsc(saved.getIdx()));
 
             log.info("출장 생성 완료 - idx: {}, documentNo: {}", saved.getIdx(), documentNo);
+
+            // 전자서명 요청 자동 생성
+            try {
+                signatureService.requestSignaturesForDocument(savedDocument.getIdx(), currentUserIdx,
+                        createDTO.getProjectIdx(), null);
+                savedDocument.setStatus(CodeConstants.DocumentStatus.SIGN_PENDING.getCode());
+                approvalDocumentRepository.save(savedDocument);
+            } catch (Exception e) {
+                log.error("[서명 요청 생성 실패] documentIdx: {}, error: {}", savedDocument.getIdx(), e.getMessage());
+            }
+
             return mapper.toDTO(saved);
 
         } catch (Exception e) {
@@ -234,6 +248,8 @@ public class ReceiptTripServiceImpl implements ReceiptTripService {
         if (Boolean.TRUE.equals(entity.getDeleted())) {
             throw new IllegalArgumentException("삭제된 출장입니다. idx: " + idx);
         }
+
+        // 연구비증빙은 수정요청 대응을 위해 서명 후에도 수정 가능 (서명은 유지)
 
         // 참여기간 검증 — 작성자(drafter) + 출장 인원이 출장 전 기간에 모두 활성이어야 함
         validateTripParticipationPeriod(
@@ -324,6 +340,12 @@ public class ReceiptTripServiceImpl implements ReceiptTripService {
 
         ReceiptTrip entity = receiptTripRepository.findById(idx)
                 .orElseThrow(() -> new IllegalArgumentException("출장 정보를 찾을 수 없습니다. idx: " + idx));
+
+        // 전자서명 게이트
+        if (entity.getDocumentIdx() != null
+                && signatureService.hasAnySignatureCaptured(entity.getDocumentIdx())) {
+            throw new IllegalStateException("전자서명이 진행된 문서는 삭제할 수 없습니다.");
+        }
 
         LocalDateTime now = LocalDateTime.now();
 

@@ -1,0 +1,426 @@
+/* 서명 관리 페이지 전용 스타일
+ * 공통 스타일(home.css, common-buttons.css)은 layout.html에서 전역 로드됨
+ * 여기서는 서명 관리 페이지에만 필요한 스타일만 정의 */
+
+/* 다른 페이지와 동일한 헤더 높이 확보 */
+.header {
+    min-height: 64px;
+}
+
+.content-area {
+    padding: 20px;
+}
+
+.content-area .quick-stats {
+    grid-template-columns: repeat(2, 1fr);
+    margin-bottom: 16px;
+}
+
+/* ============================================
+ * 통계 카드 — 서명 전용 색상
+ * ============================================ */
+.stat-card.stat-pending {
+    border-left: 4px solid #4f46e5;
+}
+
+.stat-card.stat-pending .stat-icon {
+    background: linear-gradient(135deg, #4f46e5 0%, #7c3aed 100%);
+    color: white;
+}
+
+.stat-card.stat-completed {
+    border-left: 4px solid #10b981;
+}
+
+.stat-card.stat-completed .stat-icon {
+    background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+    color: white;
+}
+
+/* ============================================
+ * 필터 섹션
+ * ============================================ */
+.filter-section {
+    background: white;
+    padding: 16px 20px;
+    border-radius: 12px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+    margin-bottom: 16px;
+    display: flex;
+    gap: 14px;
+    align-items: flex-end;
+}
+
+.filter-group {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    min-width: 0;
+}
+
+.filter-group label {
+    font-size: 13px;
+    font-weight: 600;
+    color: #334155;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.filter-group label i {
+    color: #667eea;
+}
+
+.search-input {
+    padding: 10px 14px;
+    border: 1px solid #e2e8f0;
+    border-radius: 6px;
+    font-size: 13.5px;
+    color: #334155;
+    transition: all 0.2s;
+    background: #fff;
+    min-width: 220px;
+}
+
+.search-input:focus {
+    border-color: #667eea;
+    box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+    outline: none;
+}
+
+/* 문서 종류 칩 버튼 */
+.type-chips {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+}
+
+.type-chip {
+    padding: 5px 12px;
+    border: 1px solid #e2e8f0;
+    border-radius: 16px;
+    background: #fff;
+    font-size: 12px;
+    font-weight: 500;
+    color: #64748b;
+    cursor: pointer;
+    transition: all 0.15s;
+    white-space: nowrap;
+}
+
+.type-chip:hover {
+    border-color: #667eea;
+    color: #667eea;
+}
+
+.type-chip.active {
+    background: #667eea;
+    color: #fff;
+    border-color: #667eea;
+}
+
+/* ============================================
+ * 탭
+ * ============================================ */
+.sig-tabs {
+    background: white;
+    border-radius: 12px 12px 0 0;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+    display: flex;
+    gap: 0;
+    border-bottom: 2px solid #e2e8f0;
+    padding: 0 20px;
+}
+
+.sig-tab {
+    padding: 14px 24px;
+    border: none;
+    background: none;
+    font-size: 14px;
+    font-weight: 500;
+    color: #64748b;
+    border-bottom: 2px solid transparent;
+    margin-bottom: -2px;
+    cursor: pointer;
+    transition: color 0.15s, border-color 0.15s;
+}
+
+.sig-tab.active {
+    color: #4f46e5;
+    font-weight: 600;
+    border-bottom-color: #4f46e5;
+}
+
+.sig-tab:hover:not(.active) {
+    color: #334155;
+}
+
+.sig-tab-badge {
+    background: #4f46e5;
+    color: #fff;
+    border-radius: 10px;
+    padding: 1px 8px;
+    font-size: 11px;
+    margin-left: 4px;
+}
+
+/* ============================================
+ * 일괄 액션 바
+ * ============================================ */
+.bulk-actions {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 12px 20px;
+    background: white;
+    border-bottom: 1px solid #f1f5f9;
+}
+
+.bulk-sign-btn {
+    padding: 7px 18px;
+    font-size: 13px;
+    font-weight: 600;
+    background: #4f46e5;
+    color: #fff;
+    border: none;
+    border-radius: 6px;
+    cursor: pointer;
+    transition: background 0.15s;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.bulk-sign-btn:hover {
+    background: #4338ca;
+}
+
+/* ============================================
+ * 테이블
+ * ============================================ */
+.documents-table-wrapper {
+    background: white;
+    border-radius: 0 0 12px 12px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+    overflow: hidden;
+}
+
+.documents-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 13.5px;
+}
+
+.documents-table thead {
+    background: #f8fafc;
+}
+
+.documents-table th {
+    padding: 14px 12px;
+    text-align: center;
+    font-weight: 600;
+    color: #475569;
+    font-size: 12.5px;
+    border-bottom: 2px solid #e2e8f0;
+    white-space: nowrap;
+}
+
+.documents-table td {
+    padding: 14px 12px;
+    border-bottom: 1px solid #f1f5f9;
+    color: #334155;
+    vertical-align: middle;
+    text-align: center;
+}
+
+.documents-table tbody tr {
+    transition: background 0.12s;
+}
+
+.documents-table tbody tr:hover {
+    background: #f8fafc;
+}
+
+.documents-table tbody tr:last-child td {
+    border-bottom: none;
+}
+
+.documents-table input[type="checkbox"] {
+    width: 16px;
+    height: 16px;
+    cursor: pointer;
+    accent-color: #4f46e5;
+}
+
+/* 슬롯 배지 */
+.slot-badge {
+    display: inline-block;
+    padding: 3px 10px;
+    border-radius: 10px;
+    font-size: 11px;
+    font-weight: 600;
+}
+
+.slot-badge.pending {
+    background: #e0e7ff;
+    color: #4f46e5;
+}
+
+.slot-badge.completed {
+    background: #d1fae5;
+    color: #059669;
+}
+
+/* 문서 유형 라벨 */
+.doc-type-label {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    white-space: nowrap;
+}
+
+.doc-type-label i {
+    color: #4f46e5;
+    font-size: 14px;
+}
+
+.doc-type-label.completed i {
+    color: #10b981;
+}
+
+/* 제목 클릭 */
+.doc-title-link {
+    cursor: pointer;
+    font-weight: 500;
+}
+
+.doc-title-link:hover {
+    color: #4f46e5;
+    text-decoration: underline;
+}
+
+/* 이동 버튼 */
+.btn-go {
+    background: none;
+    border: none;
+    color: #4f46e5;
+    cursor: pointer;
+    font-size: 14px;
+    padding: 6px 10px;
+    border-radius: 6px;
+    transition: background 0.12s;
+}
+
+.btn-go:hover {
+    background: #e0e7ff;
+}
+
+.btn-go.completed {
+    color: #10b981;
+}
+
+.btn-go.completed:hover {
+    background: #d1fae5;
+}
+
+/* 빈 상태 */
+.sig-empty {
+    text-align: center;
+    padding: 60px 20px;
+    color: #94a3b8;
+    background: white;
+    border-radius: 0 0 12px 12px;
+}
+
+.sig-empty i {
+    font-size: 48px;
+    margin-bottom: 16px;
+}
+
+.sig-empty h3 {
+    color: #1e293b;
+    margin-bottom: 8px;
+    font-size: 16px;
+}
+
+.sig-empty p {
+    font-size: 14px;
+}
+
+/* 정렬 아이콘 */
+.sort-icon {
+    font-size: 10px;
+    color: #94a3b8;
+    margin-left: 4px;
+}
+
+th[data-sort]:hover {
+    background: #f1f5f9;
+}
+
+th[data-sort]:hover .sort-icon {
+    color: #4f46e5;
+}
+
+/* ============================================
+ * 페이징
+ * ============================================ */
+.pagination-wrapper {
+    display: flex;
+    justify-content: center;
+    margin-top: 20px;
+    gap: 4px;
+}
+
+.pagination-wrapper button {
+    min-width: 34px;
+    height: 34px;
+    padding: 0 10px;
+    border: 1px solid #e2e8f0;
+    background: #fff;
+    border-radius: 6px;
+    cursor: pointer;
+    font-size: 12.5px;
+    color: #475569;
+    transition: all 0.15s;
+}
+
+.pagination-wrapper button:hover:not(:disabled) {
+    background: #f1f5f9;
+    border-color: #667eea;
+    color: #667eea;
+}
+
+.pagination-wrapper button.active {
+    background: #667eea;
+    color: white;
+    border-color: #667eea;
+    font-weight: 600;
+}
+
+.pagination-wrapper button:disabled {
+    opacity: 0.4;
+    cursor: not-allowed;
+}
+
+/* ============================================
+ * 반응형
+ * ============================================ */
+@media (max-width: 768px) {
+    .filter-section {
+        flex-direction: column;
+    }
+
+    .sig-tabs {
+        overflow-x: auto;
+    }
+
+    .bulk-actions {
+        flex-wrap: wrap;
+    }
+
+    .search-input {
+        min-width: auto;
+        width: 100%;
+    }
+}

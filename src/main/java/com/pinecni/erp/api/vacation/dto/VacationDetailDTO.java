@@ -22,13 +22,19 @@ public class VacationDetailDTO {
     private Long documentIdx;
     private String documentNo;
     private LocalDate applyDate;
-    private Long drafterUserIdx;  // 작성자 사용자 idx (삭제 버튼 표시 조건 확인용)
+    private Long drafterUserIdx;
     private String drafterName;
+    private String drafterNameSpaced;
     private String drafterDept;
     private String drafterPosition;
+    private String drafterAddress;
+    private String drafterBirthDate;
+    private String drafterPhone;
     private BigDecimal remainingDays;
     private String reason;
     private Boolean isApproved;
+    private String statusCode;
+    private String statusName;
 
     // 연차 기간 목록
     private List<PeriodDTO> periods;
@@ -64,6 +70,7 @@ public class VacationDetailDTO {
         private Long userIdx;
         private String name;
         private String position;
+        private String role;
     }
 
     /**

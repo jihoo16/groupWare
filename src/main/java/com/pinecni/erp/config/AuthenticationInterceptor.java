@@ -22,6 +22,13 @@ public class AuthenticationInterceptor implements HandlerInterceptor {
 
         log.debug("Authentication check for URI: {}", requestURI);
 
+        // 전자서명 관련 경로는 세션 인증 없이 토큰 기반으로 접근 (모바일 QR 스캔)
+        if (requestURI.startsWith("/sign/") || requestURI.startsWith("/api/signature/session/")
+                || requestURI.startsWith("/ws/signature")) {
+            log.debug("서명 경로 인증 스킵: {}", requestURI);
+            return true;
+        }
+
         // 개발용: X-Dev-Bypass 헤더가 있으면 인증 패스
         String devBypass = request.getHeader("X-Dev-Bypass");
         if ("true".equalsIgnoreCase(devBypass)) {

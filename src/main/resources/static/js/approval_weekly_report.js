@@ -456,8 +456,17 @@ document.addEventListener('DOMContentLoaded', function() {
                 });
 
                 if (response.ok) {
-                    await showSuccess('주간업무보고가 저장되었습니다.');
-                    window.location.href = '/approval';
+                    const result = await response.json();
+                    if (window.SignatureRender) {
+                        SignatureRender.afterSave({
+                            documentIdx: result.documentIdx || result.idx,
+                            redirectUrl: '/approval',
+                            successMessage: '주간업무보고가 저장되었습니다.'
+                        });
+                    } else {
+                        await showSuccess('주간업무보고가 저장되었습니다.');
+                        window.location.href = '/approval';
+                    }
                 } else {
                     const error = await response.text();
                     console.error('저장 실패:', error);

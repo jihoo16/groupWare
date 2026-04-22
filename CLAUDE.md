@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-A Spring Boot 3.5.6 ERP application implementing 12 functional modules for HR and organizational management. The project uses Java 21, Gradle, Thymeleaf templates, and vanilla JavaScript. Currently, the frontend UI is fully implemented with all templates and client-side logic, while the backend service and data access layers are in early stages.
+A Spring Boot 3.5.6 GROUPWARE application implementing 12 functional modules for HR and organizational management. The project uses Java 21, Gradle, Thymeleaf templates, and vanilla JavaScript. Currently, the frontend UI is fully implemented with all templates and client-side logic, while the backend service and data access layers are in early stages.
 
 ## Build and Development Commands
 

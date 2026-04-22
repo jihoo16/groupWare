@@ -3,10 +3,11 @@
 <head th:fragment="head(title, additionalCss)">
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title th:text="${title}">ERP 시스템</title>
+    <title th:text="${title}">GROUPWARE 시스템</title>
     <!-- Favicon -->
     <link rel="icon" type="image/svg+xml" th:href="@{/favicon.svg}">
     <link rel="stylesheet" th:href="@{/css/home.css}">
+    <link rel="stylesheet" th:href="@{/css/common-buttons.css}">
     <link rel="stylesheet" th:href="@{/css/common-modal.css}">
     <link rel="stylesheet" th:href="@{/css/tooltip.css}">
     <link rel="stylesheet" th:href="@{/css/file-preview-modal.css}">
@@ -16,6 +17,10 @@
     <th:block th:if="${additionalCss != null}">
         <link rel="stylesheet" th:href="@{${additionalCss}}">
     </th:block>
+
+    <!-- 전자서명 디버그 시각화 (개발 환경 전용, signature.debug.enabled=true일 때만) -->
+    <link th:if="${@environment.getProperty('signature.debug.enabled') == 'true'}"
+          rel="stylesheet" th:href="@{/css/signature-debug.css}">
     <!-- jQuery -->
     <script src="https://code.jquery.com/jquery-3.7.1.min.js" defer></script>
 

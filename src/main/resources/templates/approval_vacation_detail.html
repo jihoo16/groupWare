@@ -11,11 +11,15 @@
 
         <!-- 메인 콘텐츠 영역 -->
         <main class="main-content">
-            <header class="header">
+            <header class="header no-print">
                 <div class="header-left">
                     <h1 class="page-title"><i class="fas fa-calendar-check"></i> 연차신청서 상세</h1>
                 </div>
                 <div class="header-right" id="headerButtons">
+                    <button class="btn-secondary" id="printDocBtn" style="display:none;">
+                        <i class="fas fa-print"></i>
+                        인쇄
+                    </button>
                     <!-- 삭제 버튼은 작성자인 경우에만 동적으로 생성됨 -->
                     <button class="btn-secondary" onclick="history.back()">
                         <i class="fas fa-arrow-left"></i>
@@ -32,66 +36,119 @@
                 </div>
 
                 <div class="editor-area" th:classappend="${isDeleted} ? 'deleted-document' : ''" style="max-width: 1000px; margin: 0 auto;">
-                    <!-- 문서 양식 -->
-                    <div class="document-form">
-                        <h2 class="doc-title">연 차 신 청 서</h2>
+                    <!-- 공식 문서 양식 -->
+                    <div class="document-form" id="documentFormContent">
+                        <!-- 결재라인 -->
+                        <div class="approval-line-box">
+                            <table class="approval-line-table">
+                                <tr>
+                                    <th class="approval-header">신청자</th>
+                                    <th class="approval-header">부 서 장</th>
+                                    <th class="approval-header">대 표</th>
+                                </tr>
+                                <tr>
+                                    <td class="approval-sign-cell" data-role="담당" data-slot="C1602">
+                                        <div class="sign-area">
+                                            <span class="sign-placeholder"></span>
+                                        </div>
+                                    </td>
+                                    <td class="approval-sign-cell" data-role="부서장" data-slot="C1604">
+                                        <div class="sign-area">
+                                            <span class="sign-placeholder"></span>
+                                        </div>
+                                    </td>
+                                    <td class="approval-sign-cell signature-offline" data-role="대표이사">
+                                        <div class="sign-area">
+                                            <span class="sign-placeholder"></span>
+                                        </div>
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td class="approval-name-cell">
+                                        <span class="approver-name" data-role="담당">-</span>
+                                    </td>
+                                    <td class="approval-name-cell">
+                                        <span class="approver-name" data-role="부서장">-</span>
+                                    </td>
+                                    <td class="approval-name-cell">
+                                        <span class="approver-name" data-role="대표이사">-</span>
+                                    </td>
+                                </tr>
+                            </table>
+                        </div>
 
-                        <!-- 기본 정보 -->
+                        <h2 class="doc-title">휴 가 계</h2>
+
                         <table class="form-table">
+                            <colgroup>
+                                <col style="width: 120px;">
+                                <col>
+                                <col style="width: 120px;">
+                                <col>
+                            </colgroup>
                             <tr>
-                                <th style="width: 15%;">문서번호</th>
-                                <td style="width: 35%;">
-                                    <input type="text" id="documentNo" readonly>
-                                </td>
-                                <th style="width: 15%;">신청일</th>
-                                <td style="width: 35%;">
-                                    <input type="text" id="applyDate" readonly>
+                                <th>주 소</th>
+                                <td colspan="3"><span id="address" class="readonly-text"></span></td>
+                            </tr>
+                            <tr>
+                                <th>생년월일</th>
+                                <td><span id="birthDate" class="readonly-text"></span></td>
+                                <th>연 락 처</th>
+                                <td><span id="phone" class="readonly-text"></span></td>
+                            </tr>
+                            <tr>
+                                <th>소 속</th>
+                                <td><span id="department" class="readonly-text"></span></td>
+                                <th>직 급</th>
+                                <td><span id="position" class="readonly-text"></span></td>
+                            </tr>
+                            <tr>
+                                <th>성 명</th>
+                                <td colspan="3"><span id="applicantName" class="readonly-text"></span></td>
+                            </tr>
+                            <tr>
+                                <th>내 용</th>
+                                <td colspan="3"><span class="readonly-text" style="font-weight:600;">휴가 신청</span></td>
+                            </tr>
+                            <tr>
+                                <th>사 유</th>
+                                <td colspan="3" style="vertical-align:top; padding:16px;">
+                                    <span id="reason" class="readonly-text"></span>
                                 </td>
                             </tr>
                             <tr>
-                                <th>신청자</th>
-                                <td>
-                                    <input type="text" id="drafterName" readonly>
-                                </td>
-                                <th>부서</th>
-                                <td>
-                                    <input type="text" id="drafterDept" readonly>
-                                </td>
-                            </tr>
-                            <tr>
-                                <th>직급</th>
-                                <td>
-                                    <input type="text" id="drafterPosition" readonly>
-                                </td>
-                                <th>신청 후 잔여 연차</th>
-                                <td>
-                                    <input type="text" id="remainingDays" readonly>
+                                <th>휴가기간</th>
+                                <td colspan="3">
+                                    <div id="vacationPeriodDisplay"></div>
                                 </td>
                             </tr>
                         </table>
 
-                        <!-- 연차 기간 정보 -->
-                        <h3 class="section-title">연차 기간</h3>
-                        <div id="periodsList" class="periods-list">
-                            <!-- JavaScript로 동적 생성 -->
+                        <div class="document-footer">
+                            <p class="footer-text">위 사유로 상기기간 동안 휴가사용을 신청하오니 허가하여 주시기 바랍니다.</p>
+                            <div class="footer-date">
+                                <span id="applyDateText"></span>
+                            </div>
+                            <div class="footer-signature" data-slot="C1602">
+                                <span class="signature-label">신청인</span>
+                                <span class="signature-name" id="applicantNameFooter">-</span>
+                                <span class="signature-seal">(서명 또는 인)</span>
+                            </div>
                         </div>
+                    </div>
 
-                        <!-- 신청 사유 -->
-                        <h3 class="section-title">신청 사유</h3>
-                        <div class="reason-box">
-                            <p id="reason" class="reason-text"></p>
-                        </div>
-
-                        <!-- 첨부파일 (PDF) -->
+                    <!-- 레거시 첨부파일 (기존 PDF가 있는 경우에만 표시) -->
+                    <div id="attachmentsSection" style="display:none; margin-top:16px;">
                         <h3 class="section-title">첨부파일</h3>
-                        <div id="attachmentsList" class="attachments-list">
-                            <!-- JavaScript로 동적 생성 -->
-                        </div>
+                        <div id="attachmentsList" class="attachments-list"></div>
                     </div>
                 </div>
             </div>
         </main>
     </div>
+
+    <!-- 전자서명 QR 모달 프래그먼트 -->
+    <div th:replace="~{fragments/signature-modal :: signature-modal}"></div>
 
     <script th:src="@{/js/approval_vacation_detail.js}"></script>
 </body>

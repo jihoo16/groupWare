@@ -18,43 +18,6 @@
 }
 
 /* 섹션 헤더 */
-.section-header {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    margin-bottom: 16px;
-    padding-bottom: 10px;
-    border-bottom: 2px solid #f0f0f0;
-}
-
-.section-header h3 {
-    font-size: 14px;
-    font-weight: 700;
-    color: #1a1a1a;
-    margin: 0;
-    display: flex;
-    align-items: center;
-    gap: 8px;
-}
-
-.section-header h3 i {
-    font-size: 15px;
-    color: #667eea;
-}
-
-.section-header h4 {
-    font-size: 13.5px;
-    font-weight: 700;
-    color: #333;
-    margin: 0;
-    display: flex;
-    align-items: center;
-    gap: 8px;
-}
-
-.section-header h4 i {
-    color: #667eea;
-}
 
 /* 다중 회의 지원 */
 #meetingBlocksContainer {
@@ -582,46 +545,6 @@ div:focus {
 }
 
 /* 섹션 공통 스타일 */
-.section-header {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    margin-bottom: 15px;
-}
-
-.section-header h4 {
-    font-size: 13.5px;
-    font-weight: 700;
-    color: #333;
-    margin: 0;
-    display: flex;
-    align-items: center;
-    gap: 8px;
-}
-
-.section-header h4 i {
-    color: #667eea;
-}
-
-.btn-add {
-    padding: 8px 16px;
-    background: #667eea;
-    color: white;
-    border: none;
-    border-radius: 6px;
-    font-size: 11px;
-    font-weight: 600;
-    cursor: pointer;
-    display: flex;
-    align-items: center;
-    gap: 6px;
-    transition: all 0.2s ease;
-}
-
-.btn-add:hover {
-    background: #5568d3;
-    transform: translateY(-1px);
-}
 
 /* 결재선 섹션 */
 .approval-line-section {
@@ -631,7 +554,6 @@ div:focus {
     padding: 15px;
 }
 
-
 .empty-message {
     color: #999;
     font-size: 11.9px;
@@ -639,7 +561,6 @@ div:focus {
     text-align: center;
     width: 100%;
 }
-
 
 /* 섹션 헤더 */
 .section-header-common {
@@ -1374,7 +1295,6 @@ div h2{
     color: #d32f2f;
 }
 
-
 /* 헤더 버튼 기본 스타일 */
 .header-right button {
     padding: 14px 28px;
@@ -1389,26 +1309,6 @@ div h2{
     gap: 8px;
 }
 
-.btn-primary {
-    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-    color: white;
-}
-
-.btn-primary:hover {
-    transform: translateY(-2px);
-    box-shadow: 0 6px 20px rgba(102, 126, 234, 0.4);
-}
-
-.btn-secondary {
-    background: #f1f5f9;
-    border: none;
-    color: #475569;
-}
-
-.btn-secondary:hover {
-    background: #e2e8f0;
-}
-
 .btn-success {
     background: linear-gradient(135deg, #10b981 0%, #059669 100%);
     color: white;
@@ -1418,47 +1318,6 @@ div h2{
 .btn-success:hover {
     transform: translateY(-2px);
     box-shadow: 0 6px 20px rgba(16, 185, 129, 0.4);
-}
-
-.btn-danger {
-    background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);
-    color: white;
-    border: none;
-}
-
-.btn-danger:hover {
-    transform: translateY(-2px);
-    box-shadow: 0 6px 20px rgba(239, 68, 68, 0.4);
-    background: linear-gradient(135deg, #dc2626 0%, #b91c1c 100%);
-}
-
-.btn-outline,
-.header-right .btn-outline {
-    background: white;
-    color: #667eea;
-    border: 2px solid #667eea;
-    padding: 12px 24px;
-    border-radius: 8px;
-    font-size: 14px;
-    font-weight: 600;
-    cursor: pointer;
-    display: inline-flex;
-    align-items: center;
-    gap: 8px;
-    transition: all 0.3s;
-}
-
-.btn-outline:hover:not(:disabled),
-.header-right .btn-outline:hover:not(:disabled) {
-    background: #667eea;
-    color: white;
-}
-
-.btn-outline:disabled {
-    border-color: #cbd5e1;
-    color: #94a3b8;
-    cursor: not-allowed;
-    opacity: 0.6;
 }
 
 /* 모달 */
@@ -1785,7 +1644,6 @@ div h2{
     .template-sidebar {
         max-height: 200px;
     }
-
 
     .form-table th {
         width: 100px;
@@ -2124,7 +1982,6 @@ div h2{
 .trip-person-remove i {
     font-size: 10px;
 }
-
 
 /* 문서 미리보기 토글 버튼 */
 .document-preview-toggle {

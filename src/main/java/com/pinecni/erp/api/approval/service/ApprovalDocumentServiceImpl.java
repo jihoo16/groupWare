@@ -27,6 +27,7 @@ import com.pinecni.erp.api.document.repository.ExpenseRequisitionRepository;
 import com.pinecni.erp.api.document.repository.ReceiptPurchaseAttachmentRepository;
 import com.pinecni.erp.api.expense.repository.ExpenseApprovalRepository;
 import com.pinecni.erp.api.vacation.repository.VacationRequestRepository;
+import com.pinecni.erp.api.signature.repository.DocumentSignatureRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -80,6 +81,7 @@ public class ApprovalDocumentServiceImpl implements ApprovalDocumentService {
     private final VacationRequestRepository vacationRequestRepository;
     private final ReceiptAttendeeRepository receiptAttendeeRepository;
     private final ReceiptPurchaseAttachmentRepository receiptPurchaseAttachmentRepository;
+    private final DocumentSignatureRepository documentSignatureRepository;
 
     @Override
     public List<ApprovalDocumentDTO> getAllDocuments(Long currentUserIdx) {
@@ -730,19 +732,30 @@ public class ApprovalDocumentServiceImpl implements ApprovalDocumentService {
                 dto.setSourceDocumentId(requisition.getIdx());
             });
         } else if (CodeConstants.DocumentType.VACATION.getCode().equals(documentType)) {
-            // 연차신청서: VacationRequest.isApproved 기반으로 단순 2단계 상태(대기/승인) 표시
-            // - 한 문서에 여러 기간이 묶일 수 있으나 isApproved는 문서 단위로 일괄 처리되므로 첫 행 기준
-            List<VacationRequest> requests = vacationRequestRepository.findByDocumentIdx(document.getIdx());
-            if (!requests.isEmpty()) {
-                VacationRequest first = requests.get(0);
-                boolean approved = Boolean.TRUE.equals(first.getIsApproved());
-                dto.setStatusCode(approved ? "APPROVED" : "PENDING");
-                dto.setStatusName(approved ? "승인" : "대기");
+            if (document.getStatus() != null) {
+                dto.setStatusCode(document.getStatus());
+                try {
+                    CodeConstants.DocumentStatus ds = CodeConstants.DocumentStatus.fromCode(document.getStatus());
+                    dto.setStatusName(ds.getName());
+                } catch (IllegalArgumentException e) {
+                    dto.setStatusName(document.getStatus());
+                }
+            } else {
+                dto.setStatusCode(CodeConstants.DocumentStatus.DRAFTED.getCode());
+                dto.setStatusName(CodeConstants.DocumentStatus.DRAFTED.getName());
             }
         }
-        // 다른 문서 타입들도 필요시 추가
-        // else if ("월간업무보고".equals(documentType)) { ... }
-        // else if ("회의록".equals(documentType)) { ... }
+
+        // 그 외 문서 — statusCode 미설정 시 approval_documents.status에서 읽기
+        if (dto.getStatusCode() == null && document.getStatus() != null) {
+            dto.setStatusCode(document.getStatus());
+            try {
+                CodeConstants.DocumentStatus ds = CodeConstants.DocumentStatus.fromCode(document.getStatus());
+                dto.setStatusName(ds.getName());
+            } catch (IllegalArgumentException e) {
+                dto.setStatusName(document.getStatus());
+            }
+        }
 
         return dto;
     }
@@ -1540,12 +1553,29 @@ public class ApprovalDocumentServiceImpl implements ApprovalDocumentService {
                 dto.setSourceDocumentId(requisition.getIdx());
             });
         } else if (CodeConstants.DocumentType.VACATION.getCode().equals(documentType)) {
-            List<VacationRequest> requests = vacationRequestRepository.findByDocumentIdx(document.getIdx());
-            if (!requests.isEmpty()) {
-                VacationRequest first = requests.get(0);
-                boolean approved = Boolean.TRUE.equals(first.getIsApproved());
-                dto.setStatusCode(approved ? "APPROVED" : "PENDING");
-                dto.setStatusName(approved ? "승인" : "대기");
+            // 문서 상태는 approval_documents.status(C05 코드)에서 직접 조회
+            if (document.getStatus() != null) {
+                dto.setStatusCode(document.getStatus());
+                try {
+                    CodeConstants.DocumentStatus ds = CodeConstants.DocumentStatus.fromCode(document.getStatus());
+                    dto.setStatusName(ds.getName());
+                } catch (IllegalArgumentException e) {
+                    dto.setStatusName(document.getStatus());
+                }
+            } else {
+                dto.setStatusCode(CodeConstants.DocumentStatus.DRAFTED.getCode());
+                dto.setStatusName(CodeConstants.DocumentStatus.DRAFTED.getName());
+            }
+        }
+
+        // 그 외 문서 — statusCode가 아직 설정 안 된 경우 approval_documents.status에서 읽기
+        if (dto.getStatusCode() == null && document.getStatus() != null) {
+            dto.setStatusCode(document.getStatus());
+            try {
+                CodeConstants.DocumentStatus ds = CodeConstants.DocumentStatus.fromCode(document.getStatus());
+                dto.setStatusName(ds.getName());
+            } catch (IllegalArgumentException e) {
+                dto.setStatusName(document.getStatus());
             }
         }
 

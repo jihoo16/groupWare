@@ -1280,53 +1280,6 @@ document.addEventListener('DOMContentLoaded', function() {
     };
 
     // 제출
-    // ============================================
-    // 렌더링된 HTML/CSS 수집 함수 (PDF 생성용)
-    // ============================================
-    function captureRenderedDocument() {
-        // 문서 양식 영역의 HTML 가져오기
-        const documentForm = document.querySelector('.document-form');
-        if (!documentForm) {
-            console.error('문서 양식을 찾을 수 없습니다.');
-            return { html: '', css: '' };
-        }
-
-        // HTML 복사 및 정리
-        const clonedForm = documentForm.cloneNode(true);
-
-        // 불필요한 요소 제거 (편집 관련 요소 등)
-        clonedForm.querySelectorAll('button, input[type="button"]').forEach(el => el.remove());
-
-        const documentHtml = clonedForm.outerHTML;
-
-        // CSS 수집 (approval_vacation.css만)
-        let collectedCss = '';
-        try {
-            // 페이지의 모든 스타일시트 순회
-            Array.from(document.styleSheets).forEach(sheet => {
-                try {
-                    // approval_vacation.css 파일만 선택
-                    if (sheet.href && sheet.href.includes('approval_vacation.css')) {
-                        const rules = Array.from(sheet.cssRules || sheet.rules);
-                        rules.forEach(rule => {
-                            collectedCss += rule.cssText + '\n';
-                        });
-                    }
-                } catch (e) {
-                    // CORS 에러 등으로 접근 불가능한 스타일시트는 무시
-                    console.warn('스타일시트 접근 불가:', sheet.href, e);
-                }
-            });
-        } catch (error) {
-            console.error('CSS 수집 중 오류:', error);
-        }
-
-        return {
-            html: documentHtml,
-            css: collectedCss
-        };
-    }
-
     submitBtn.addEventListener('click', async function() {
         // 휴가기간 표시 영역 확인
         const vacationPeriodDisplay = document.getElementById('vacation_period_display');
@@ -1367,9 +1320,6 @@ document.addEventListener('DOMContentLoaded', function() {
             fullReason = `${fullReason}\n\n[마이너스연차 특별 요청 사유]\n${specialReasonTextarea.value.trim()}`;
         }
 
-        // 렌더링된 문서 HTML/CSS 캡처
-        const { html, css } = captureRenderedDocument();
-
         const saveData = {
             reason: fullReason,  // 특별 사유가 병합된 전체 사유
             allowMinusVacation: minusCheckbox ? minusCheckbox.checked : false,
@@ -1380,16 +1330,14 @@ document.addEventListener('DOMContentLoaded', function() {
                 startDate: period.startDate,
                 endDate: period.endDate,
                 days: period.days
-            })),
-            renderedHtml: html,
-            renderedCss: css
+            }))
         };
 
         // 저장 확인 메시지
         const confirmResult = await Swal.fire({
             icon: 'warning',
             title: '연차신청서 저장',
-            html: '신청서는 <strong>PDF 파일로 저장</strong>되며,<br>저장 후에는 <strong>문서 내용을 수정할 수 없습니다.</strong><br><br>수정을 원하실 경우 삭제 후 재생성해야 합니다.<br><br>저장하시겠습니까?',
+            html: '저장 후 <strong>본인 전자서명 단계</strong>로 진행됩니다.<br>서명이 시작된 문서는 <strong>수정할 수 없습니다.</strong><br><br>저장하시겠습니까?',
             showCancelButton: true,
             confirmButtonText: '저장',
             cancelButtonText: '취소',
@@ -1425,17 +1373,57 @@ document.addEventListener('DOMContentLoaded', function() {
             const result = await response.json();
 
             if (response.ok && result.success) {
-                // 성공 메시지 표시
-                await Swal.fire({
-                    icon: 'success',
-                    title: '저장 완료',
-                    text: '연차 신청서가 저장되었습니다.',
-                    timer: 2000,
-                    timerProgressBar: true,
-                    showConfirmButton: true,
-                    confirmButtonText: '확인'
-                });
-                window.location.href = '/approval';
+                const documentIdx = result.documentIdx;
+                const detailUrl = '/approval/vacation/detail?documentIdx=' + documentIdx;
+
+                // 서명 준비 실패 (결재라인 미설정 등) → 안내 후 상세 페이지
+                if (!result.signatureReady) {
+                    await Swal.fire({
+                        icon: 'warning',
+                        title: '저장 완료 (서명 준비 필요)',
+                        html: '연차 신청서는 저장되었으나<br>전자서명 설정 중 오류가 발생했습니다.<br><br>상세 페이지에서 서명을 진행해주세요.',
+                        confirmButtonText: '상세 페이지로 이동'
+                    });
+                    window.location.href = detailUrl;
+                    return;
+                }
+
+                Swal.close();
+
+                // 저장 완료 + 서명 준비 완료 → 본인 전자서명 QR 모달 자동 오픈
+                if (documentIdx && window.SignatureModal) {
+                    SignatureModal.open({
+                        documentIdx: documentIdx,
+                        signatureSlot: 'C1602',
+                        onComplete: () => {
+                            // 여기서 redirect 하지 않음 — 모달이 "서명 완료" 표시 2초 후 자동 닫힘
+                        },
+                        onClose: (ev) => {
+                            if (ev.completed) {
+                                // 서명 완료 후 모달 자동 닫힘 → 상세 페이지로 이동
+                                window.location.href = detailUrl;
+                            } else {
+                                // 서명하지 않고 닫은 경우 → 상세 페이지 안내
+                                Swal.fire({
+                                    icon: 'info',
+                                    title: '저장 완료',
+                                    html: '연차 신청서가 저장되었습니다.<br>상세 페이지에서 서명을 진행할 수 있습니다.',
+                                    confirmButtonText: '상세 페이지로 이동'
+                                }).then(() => {
+                                    window.location.href = detailUrl;
+                                });
+                            }
+                        }
+                    });
+                } else {
+                    await Swal.fire({
+                        icon: 'success',
+                        title: '저장 완료',
+                        text: '연차 신청서가 저장되었습니다.',
+                        confirmButtonText: '확인'
+                    });
+                    window.location.href = detailUrl;
+                }
             } else {
                 // 서버에서 온 사용자 친화적인 에러 메시지 표시
                 Swal.close();

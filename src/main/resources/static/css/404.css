@@ -97,6 +97,7 @@ body {
     margin-bottom: 20px;
 }
 
+/* 에러 페이지 전용 버튼 — 이 페이지는 layout fragment 미사용 → common-buttons.css 로드 안됨 */
 .btn-home,
 .btn-back {
     padding: 14px 30px;
@@ -201,5 +202,6 @@ body {
     .btn-home,
     .btn-back {
         width: 100%;
+        justify-content: center;
     }
 }

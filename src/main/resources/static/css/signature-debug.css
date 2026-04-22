@@ -1,0 +1,117 @@
+/* ============================================================
+ * 서명 슬롯 디버그 시각화 (개발 환경 전용)
+ *
+ * 활성화 조건:
+ *   application.properties에 signature.debug.enabled=true 일 때만
+ *   layout.html 프래그먼트가 조건부 로드
+ *
+ * 프로덕션 배포 시에는 이 CSS가 로드되지 않음
+ *
+ * 용도:
+ *   - 각 서명 슬롯이 올바른 data-slot 코드에 매핑되었는지 시각 확인
+ *   - 서명자 IDX, 역할, 순번이 올바른지 확인
+ *   - 연동 서명 관계 (linked) 확인
+ * ============================================================ */
+
+/* 전자서명 대상 셀: 빨간 점선 테두리 */
+[data-slot] {
+    outline: 2px dashed #e63946 !important;
+    outline-offset: -1px;
+    position: relative !important;
+}
+
+/* 슬롯 정보 라벨 (상단에 표시) */
+[data-slot]::before {
+    content: "🔴 " attr(data-slot)
+             " / 역할:" attr(data-signer-role)
+             " / 서명자:" attr(data-signer-idx)
+             " / 순번:" attr(data-signer-order);
+    position: absolute;
+    top: -20px;
+    left: 0;
+    background: #e63946;
+    color: white;
+    font-size: 10px;
+    font-family: 'Consolas', 'Courier New', monospace;
+    padding: 2px 6px;
+    border-radius: 3px 3px 0 0;
+    white-space: nowrap;
+    z-index: 9999;
+    pointer-events: none;
+    line-height: 1.4;
+}
+
+/* 서명 완료된 셀: 초록 실선 */
+[data-slot].signed {
+    outline: 2px solid #2a9d8f !important;
+}
+[data-slot].signed::before {
+    background: #2a9d8f;
+    content: "✅ " attr(data-slot) " 서명완료";
+}
+
+/* 연동 서명된 셀 (대기 중): 파란 점선 */
+[data-slot][data-linked-to]:not(.signed) {
+    outline: 2px dashed #4a90e2 !important;
+}
+[data-slot][data-linked-to]:not(.signed)::before {
+    background: #4a90e2;
+    content: "🔗 " attr(data-slot) " linked → idx:" attr(data-linked-to);
+}
+
+/* 전자서명 대상 아님 (대표이사 등 오프라인 수기) */
+.signature-offline {
+    outline: 2px dotted #adb5bd !important;
+    position: relative !important;
+}
+.signature-offline::before {
+    content: "✍️ 오프라인 수기 (" attr(data-role) ")";
+    position: absolute;
+    top: -20px;
+    left: 0;
+    background: #adb5bd;
+    color: white;
+    font-size: 10px;
+    font-family: 'Consolas', 'Courier New', monospace;
+    padding: 2px 6px;
+    border-radius: 3px 3px 0 0;
+    white-space: nowrap;
+    z-index: 9999;
+    pointer-events: none;
+}
+
+/* 페이지 우상단 디버그 모드 표시 */
+body::after {
+    content: "🔍 서명 디버그 모드 ON";
+    position: fixed;
+    top: 10px;
+    right: 10px;
+    background: #e63946;
+    color: white;
+    font-size: 11px;
+    padding: 4px 10px;
+    border-radius: 4px;
+    z-index: 99999;
+    font-family: 'Consolas', 'Courier New', monospace;
+    pointer-events: none;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+}
+
+/* 인쇄 시에는 디버그 시각화 숨김 */
+@media print {
+    [data-slot],
+    [data-slot].signed,
+    [data-slot][data-linked-to],
+    .signature-offline {
+        outline: none !important;
+    }
+    [data-slot]::before,
+    [data-slot].signed::before,
+    [data-slot][data-linked-to]::before,
+    .signature-offline::before {
+        display: none !important;
+    }
+    body::after {
+        display: none !important;
+    }
+}

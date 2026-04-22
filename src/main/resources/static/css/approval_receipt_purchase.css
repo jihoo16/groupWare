@@ -16,44 +16,6 @@
     gap: 16px;
 }
 
-.section-header {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    margin-bottom: 16px;
-    padding-bottom: 10px;
-    border-bottom: 2px solid #f0f0f0;
-}
-
-.section-header h3 {
-    font-size: 14px;
-    font-weight: 700;
-    color: #1a1a1a;
-    margin: 0;
-    display: flex;
-    align-items: center;
-    gap: 8px;
-}
-
-.section-header h3 i {
-    font-size: 15px;
-    color: #667eea;
-}
-
-.section-header h4 {
-    font-size: 13.5px;
-    font-weight: 700;
-    color: #333;
-    margin: 0;
-    display: flex;
-    align-items: center;
-    gap: 8px;
-}
-
-.section-header h4 i {
-    color: #667eea;
-}
-
 /* 행 추가 버튼 */
 .btn-add-item {
     background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
@@ -841,89 +803,6 @@
     gap: 8px;
 }
 
-.btn-primary {
-    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-    color: white;
-    border: none;
-    position: relative;
-}
-
-.btn-primary:hover {
-    transform: translateY(-2px);
-    box-shadow: 0 6px 20px rgba(102, 126, 234, 0.4);
-}
-
-.btn-secondary {
-    background: #f1f5f9;
-    border: none;
-    color: #475569;
-}
-
-.btn-secondary:hover {
-    background: #e2e8f0;
-}
-
-.btn-danger {
-    background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);
-    color: white;
-    border: none;
-}
-
-.btn-danger:hover {
-    transform: translateY(-2px);
-    box-shadow: 0 6px 20px rgba(239, 68, 68, 0.4);
-}
-
-.btn-print {
-    padding: 10px 20px;
-    background: linear-gradient(135deg, #10b981 0%, #059669 100%);
-    color: white;
-    border: none;
-    border-radius: 8px;
-    font-size: 14px;
-    font-weight: 600;
-    cursor: pointer;
-    transition: all 0.2s ease;
-    display: inline-flex;
-    align-items: center;
-    gap: 8px;
-}
-
-.btn-print:hover {
-    transform: translateY(-2px);
-    box-shadow: 0 4px 12px rgba(16, 185, 129, 0.3);
-}
-
-.btn-outline,
-.header-right .btn-outline {
-    background: white;
-    border: 2px solid #667eea;
-    color: #667eea;
-    padding: 12px 24px;
-    border-radius: 8px;
-    font-size: 14px;
-    font-weight: 600;
-    cursor: pointer;
-    display: inline-flex;
-    align-items: center;
-    gap: 8px;
-    transition: all 0.3s;
-}
-
-.btn-outline:hover:not(:disabled),
-.header-right .btn-outline:hover:not(:disabled) {
-    background: #667eea;
-    border-color: #667eea;
-    color: white;
-}
-
-.btn-outline:disabled {
-    border-color: #cbd5e1;
-    color: #94a3b8;
-    cursor: not-allowed;
-    opacity: 0.6;
-}
-
 /* ========================================
    카드 모달 내 프로젝트 선택 (convenience-notice)
    ======================================== */
@@ -1491,21 +1370,6 @@
     }
 
     /* 인쇄 시 숨길 요소 */
-    .sidebar,
-    .header,
-    .template-sidebar,
-    .common-info-section,
-    .attachment-section,
-    .document-preview-toggle,
-    .btn-outline,
-    .btn-primary,
-    .btn-secondary,
-    .btn-danger,
-    .btn-remove-row,
-    .modal,
-    [class*="modal"] {
-        display: none !important;
-    }
 
     /* 모든 컨테이너 all:unset */
     .container,

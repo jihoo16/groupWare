@@ -34,6 +34,9 @@ async function loadDocumentDetail(documentIdx) {
         displayPeriods(data.periods || []);
         displayAttachments(data.attachments || []);
 
+        // 전자서명 현황 로드 + 결재라인 렌더 (공통 모듈)
+        if (window.SignatureRender) SignatureRender.load(documentIdx);
+
         // 로딩 오버레이 숨김
         window.hidePageLoadingOverlay();
     } catch (error) {
@@ -48,126 +51,151 @@ async function loadDocumentDetail(documentIdx) {
 }
 
 /**
- * 문서 기본 정보 표시
+ * 공식문서 양식에 데이터 바인딩
  */
 function displayDocumentInfo(data) {
-    document.getElementById('documentNo').value = data.documentNo || '-';
-    document.getElementById('applyDate').value = formatDate(data.applyDate);
-    document.getElementById('drafterName').value = data.drafterName || '-';
-    document.getElementById('drafterDept').value = data.drafterDept || '-';
-    document.getElementById('drafterPosition').value = data.drafterPosition || '-';
-    document.getElementById('remainingDays').value = data.remainingDays ? `${data.remainingDays}일` : '-';
-    document.getElementById('reason').textContent = data.reason || '사유 없음';
+    // 공식문서 필드 바인딩
+    setText('address', data.drafterAddress);
+    setText('birthDate', data.drafterBirthDate);
+    setText('phone', data.drafterPhone);
+    setText('department', data.drafterDept);
+    setText('position', data.drafterPosition);
+    setText('applicantName', data.drafterName);
+    setText('reason', data.reason || '사유 없음');
+    setText('applicantNameFooter', data.drafterNameSpaced || data.drafterName || '-');
 
-    // 승인 상태 배너 표시
-    showApprovalStatusBanner(data.isApproved === true);
+    // 신청일 포맷
+    if (data.applyDate) {
+        const d = new Date(data.applyDate);
+        setText('applyDateText', `${d.getFullYear()}년 ${String(d.getMonth()+1).padStart(2,'0')}월 ${String(d.getDate()).padStart(2,'0')}일`);
+    }
 
-    // 작성자 확인 후 삭제 버튼 생성
+    // 결재라인 이름 바인딩 (role 기반)
+    if (data.approvers && data.approvers.length > 0) {
+        data.approvers.forEach(a => {
+            if (!a.role) return;
+            document.querySelectorAll(`.approver-name[data-role="${a.role}"]`).forEach(el => {
+                el.textContent = a.name || '-';
+            });
+        });
+    }
+
+    // 상태 배너 표시 (C05 코드 기반)
+    showDocumentStatusBanner(data.statusCode);
+
+    // 인쇄 버튼 — 서명완료(C0508) 또는 승인(C0504) 시에만 활성
+    const printBtn = document.getElementById('printDocBtn');
+    if (printBtn) {
+        const printableStatuses = ['C0508', 'C0504'];
+        if (printableStatuses.includes(data.statusCode)) {
+            printBtn.style.display = '';
+            printBtn.addEventListener('click', () => window.print());
+        } else {
+            printBtn.style.display = '';
+            printBtn.disabled = true;
+            printBtn.style.opacity = '0.5';
+            printBtn.style.cursor = 'not-allowed';
+            printBtn.dataset.tip = '전자서명이 모두 완료된 후 인쇄할 수 있습니다.';
+        }
+    }
+
+    // 삭제 버튼 조건 — 승인(C0504) 또는 반려(C0505)된 문서는 삭제 불가
     const currentUserIdx = window.CURRENT_USER ? window.CURRENT_USER.idx : null;
     const isAdmin = window.CURRENT_USER && ['C1101', 'C1102'].includes(window.CURRENT_USER.userRoleCode);
-    console.log('[삭제 버튼 표시 조건 확인]');
-    console.log('- 현재 로그인 사용자 idx:', currentUserIdx);
-    console.log('- 관리자 여부:', isAdmin);
-    console.log('- 문서 작성자 idx (drafterUserIdx):', data.drafterUserIdx);
-    console.log('- 문서 작성자 idx (userIdx):', data.userIdx);
-    console.log('- window.CURRENT_USER:', window.CURRENT_USER);
-
-    // drafterUserIdx 또는 userIdx 둘 다 확인 (API 응답 구조에 따라 다를 수 있음)
     const documentUserIdx = data.drafterUserIdx || data.userIdx;
-
-    // 작성자 본인이거나 관리자인 경우 삭제 버튼 생성 (단, 이미 삭제된 문서는 제외)
     const isOwner = documentUserIdx && currentUserIdx && Number(documentUserIdx) === Number(currentUserIdx);
     const isDeleted = data.deletedAt != null;
+    const isApprovedOrRejected = data.statusCode === 'C0504' || data.statusCode === 'C0505';
 
     if ((isOwner || isAdmin) && !isDeleted) {
-        console.log('✓ 작성자 본인이거나 관리자이므로 삭제 버튼 생성');
-        createDeleteButton(data.documentIdx, data.periods || [], data.isApproved === true);
-    } else if (isDeleted) {
-        console.log('✗ 이미 삭제된 문서이므로 삭제 버튼 미생성');
-    } else {
-        console.log('✗ 작성자가 아니고 관리자도 아니므로 삭제 버튼 미생성');
+        createDeleteButton(data.documentIdx, data.periods || [], data.statusCode || 'C0501');
     }
 }
 
+function setText(id, text) {
+    const el = document.getElementById(id);
+    if (el) el.textContent = text || '-';
+}
+
 /**
- * 승인 상태 배너 표시
+ * 문서 상태 배너 표시 (C05 코드 기반)
  */
-function showApprovalStatusBanner(isApproved) {
+const STATUS_BANNER_MAP = {
+    C0501: { cls: 'pending',  icon: 'fa-pen',            text: '작성완료 · 전자서명을 진행해주세요.' },
+    C0506: { cls: 'pending',  icon: 'fa-signature',      text: '서명대기 · 전자서명이 요청되었습니다. 서명을 진행해주세요.' },
+    C0507: { cls: 'pending',  icon: 'fa-pen-nib',        text: '서명진행중 · 일부 서명이 완료되었습니다.' },
+    C0508: { cls: 'approved', icon: 'fa-file-signature', text: '서명완료 · 인쇄 후 대표이사 서면 결재를 받아주세요.' },
+    C0504: { cls: 'approved', icon: 'fa-check-circle',   text: '승인 완료 · 관리자에 의해 승인된 문서입니다.' },
+    C0505: { cls: 'rejected', icon: 'fa-times-circle',   text: '반려 · 관리자에 의해 반려된 문서입니다.' },
+};
+
+function showDocumentStatusBanner(statusCode) {
     const writeContainer = document.querySelector('.write-container');
     const editorArea = document.querySelector('.editor-area');
     if (!writeContainer || !editorArea) return;
 
+    const info = STATUS_BANNER_MAP[statusCode];
+    if (!info) return;
+
     const banner = document.createElement('div');
-    banner.className = `approval-status-banner ${isApproved ? 'approved' : 'pending'}`;
-
-    if (isApproved) {
-        banner.innerHTML = `
-            <i class="fas fa-check-circle"></i>
-            <span>승인 완료 · 관리자에 의해 승인된 문서입니다.</span>
-        `;
-        editorArea.classList.add('approved-document');
-    } else {
-        banner.innerHTML = `
-            <i class="fas fa-clock"></i>
-            <span>승인 대기 중 · 아직 관리자 승인이 완료되지 않았습니다.</span>
-        `;
-    }
-
+    banner.className = `approval-status-banner ${info.cls}`;
+    banner.innerHTML = `<i class="fas ${info.icon}"></i><span>${info.text}</span>`;
     writeContainer.insertBefore(banner, editorArea);
+
+    if (statusCode === 'C0504') editorArea.classList.add('approved-document');
 }
 
 /**
  * 삭제 버튼 동적 생성
  */
-function createDeleteButton(documentIdx, periods, isApproved) {
+function createDeleteButton(documentIdx, periods, statusCode) {
     const headerButtons = document.getElementById('headerButtons');
     if (headerButtons && !document.getElementById('deleteBtn')) {
         const deleteBtn = document.createElement('button');
         deleteBtn.id = 'deleteBtn';
         deleteBtn.innerHTML = '<i class="fas fa-trash"></i> 삭제';
 
-        // 휴가 종료일이 지났는지 확인
         const isVacationExpired = checkIfVacationExpired(periods);
-
-        // 관리자 여부 확인
         const isAdmin = window.CURRENT_USER && ['C1101', 'C1102'].includes(window.CURRENT_USER.userRoleCode);
 
-        if (isApproved) {
-            // 승인된 문서 - 비활성화 (관리자 포함 모두)
-            deleteBtn.className = 'btn-danger disabled';
-            deleteBtn.disabled = true;
-            deleteBtn.style.cursor = 'not-allowed';
-            deleteBtn.style.opacity = '0.5';
-            deleteBtn.style.backgroundColor = '#999';
-            deleteBtn.style.borderColor = '#999';
-            deleteBtn.dataset.tip = '⚠️ 승인된 문서는 삭제 불가합니다.\n관리부에 문의해주세요.';
+        // 서명 진행중(C0507)/완료(C0508)/승인/반려 → 삭제 불가
+        // C0506(서명대기)은 아직 아무도 서명 안 한 상태이므로 삭제 가능
+        const signingCodes = ['C0507', 'C0508'];
+        const finalCodes = ['C0504', 'C0505'];
+        const isSigning = signingCodes.includes(statusCode);
+        const isFinal = finalCodes.includes(statusCode);
+
+        if (!isAdmin && isFinal) {
+            disableDeleteBtn(deleteBtn, '승인/반려 처리된 문서는 삭제할 수 없습니다.\n관리부에 문의해주세요.');
+        } else if (!isAdmin && isSigning) {
+            disableDeleteBtn(deleteBtn, '전자서명이 진행된 문서는 삭제할 수 없습니다.\n삭제가 필요하면 관리부에 문의해주세요.');
         } else if (isVacationExpired && !isAdmin) {
-            // 휴가일이 지났지만 관리자가 아닌 경우 - 비활성화
-            deleteBtn.className = 'btn-danger disabled';
-            deleteBtn.disabled = true;
-            deleteBtn.style.cursor = 'not-allowed';
-            deleteBtn.style.opacity = '0.5';
-            deleteBtn.style.backgroundColor = '#999';
-            deleteBtn.style.borderColor = '#999';
-            deleteBtn.dataset.tip = '⚠️ 휴가 날짜가 지난 경우 삭제가 불가능합니다.\n관리부에 문의해주세요.';
+            disableDeleteBtn(deleteBtn, '휴가 날짜가 지난 경우 삭제할 수 없습니다.\n관리부에 문의해주세요.');
         } else {
-            // 휴가일이 지나지 않았거나 관리자인 경우 - 정상 삭제 가능
             deleteBtn.className = 'btn-danger';
             deleteBtn.addEventListener('click', () => deleteDocument(documentIdx));
 
-            if (isAdmin && isVacationExpired) {
-                // 관리자가 만료된 휴가를 삭제하는 경우
-                deleteBtn.dataset.tip = '🛡️ 관리자 권한으로 삭제가 가능합니다.';
+            if (isAdmin && (isSigning || isFinal)) {
+                deleteBtn.dataset.tip = '관리자 권한으로 삭제합니다.';
+            } else if (isAdmin && isVacationExpired) {
+                deleteBtn.dataset.tip = '관리자 권한으로 삭제가 가능합니다.';
             } else {
-                // 일반적인 경우
-                deleteBtn.dataset.tip = 'ℹ️ 연차신청서는 PDF로 자동 생성되므로 수정이 불가능합니다.\n문서를 삭제하고 새로 작성해주세요.';
+                deleteBtn.dataset.tip = '문서를 삭제하고 새로 작성할 수 있습니다.';
             }
         }
 
-        // 돌아가기 버튼 앞에 삽입
         headerButtons.insertBefore(deleteBtn, headerButtons.firstChild);
-        console.log('작성자이므로 삭제 버튼을 생성합니다.');
     }
+}
+
+function disableDeleteBtn(btn, tipText) {
+    btn.className = 'btn-danger disabled';
+    btn.disabled = true;
+    btn.style.cursor = 'not-allowed';
+    btn.style.opacity = '0.5';
+    btn.style.backgroundColor = '#999';
+    btn.style.borderColor = '#999';
+    btn.dataset.tip = tipText;
 }
 
 /**
@@ -240,131 +268,65 @@ function displayApprovalLine(approvers) {
  * 연차 기간 표시
  */
 function displayPeriods(periods) {
-    const periodsList = document.getElementById('periodsList');
+    const displayEl = document.getElementById('vacationPeriodDisplay');
+    if (!displayEl) return;
 
     if (!periods || periods.length === 0) {
-        periodsList.innerHTML = '<p style="text-align: center; padding: 20px; color: #999;">연차 기간 정보가 없습니다.</p>';
+        displayEl.innerHTML = '<p style="color: #999;">연차 기간 정보가 없습니다.</p>';
         return;
     }
 
-    let html = '<table class="periods-table"><thead><tr>';
-    html += '<th>연차 유형</th><th>시작일</th><th>종료일</th><th>일수</th>';
-    html += '</tr></thead><tbody>';
-
+    const dowKor = ['일', '월', '화', '수', '목', '금', '토'];
     let totalDays = 0;
+    let html = '';
+
     periods.forEach(period => {
-        const isGyeongjosa = period.vacationType && period.vacationType.includes('경조사');
-        const rowClass = isGyeongjosa ? 'gyeongjosa-row' : '';
+        const start = new Date(period.startDate);
+        const end = new Date(period.endDate);
+        const days = parseFloat(period.days || 0);
+        totalDays += days;
 
-        html += `<tr class="${rowClass}">`;
-        html += `<td>${period.vacationType || '-'}</td>`;
-        html += `<td>${formatDate(period.startDate)}</td>`;
-        html += `<td>${formatDate(period.endDate)}</td>`;
-        html += `<td>${period.days || 0}일</td>`;
-        html += '</tr>';
+        const startStr = `${start.getFullYear()}년 ${String(start.getMonth()+1).padStart(2,'0')}월 ${String(start.getDate()).padStart(2,'0')}일 (${dowKor[start.getDay()]})`;
+        const endStr = `${end.getFullYear()}년 ${String(end.getMonth()+1).padStart(2,'0')}월 ${String(end.getDate()).padStart(2,'0')}일 (${dowKor[end.getDay()]})`;
+        const isSingle = period.startDate === period.endDate;
 
-        if (!isGyeongjosa) {
-            totalDays += parseFloat(period.days || 0);
-        }
+        let typeName = '연차';
+        if (period.vacationType && period.vacationType.includes('반차(오전)')) typeName = '오전반차';
+        else if (period.vacationType && period.vacationType.includes('반차(오후)')) typeName = '오후반차';
+        else if (period.vacationType) typeName = period.vacationType;
+
+        const dateDisplay = isSingle ? startStr : `${startStr} ~ ${endStr}`;
+        html += `<div class="vacation-period-line">${dateDisplay} ${typeName} ${days}일</div>`;
     });
 
-    html += '</tbody><tfoot><tr>';
-    html += `<td colspan="3" style="text-align: right; font-weight: bold;">총 연차 사용</td>`;
-    html += `<td style="font-weight: bold; color: #667eea;">${totalDays}일</td>`;
-    html += '</tr></tfoot></table>';
-
-    periodsList.innerHTML = html;
+    const daysText = totalDays === Math.floor(totalDays) ? Math.floor(totalDays) : totalDays;
+    html += `<div class="vacation-period-total">총 연차 ${daysText}일</div>`;
+    displayEl.innerHTML = html;
 }
 
 /**
- * 첨부파일 표시
+ * 첨부파일 표시 (레거시 PDF가 있는 경우에만)
  */
 function displayAttachments(attachments) {
-    const attachmentsList = document.getElementById('attachmentsList');
+    if (!attachments || attachments.length === 0) return;
 
-    if (!attachments || attachments.length === 0) {
-        attachmentsList.innerHTML = '<p style="color: #999;">첨부파일이 없습니다.</p>';
-        return;
-    }
+    const section = document.getElementById('attachmentsSection');
+    const list = document.getElementById('attachmentsList');
+    if (!section || !list) return;
 
+    section.style.display = '';
     let html = '<ul class="attachment-list">';
     attachments.forEach(file => {
-        html += `
-            <li class="attachment-item">
-                <i class="fas fa-file-pdf"></i>
-                <a href="/api/vacation/download/${file.idx}" target="_blank">
-                    ${file.originalFileName || '연차신청서.pdf'}
-                </a>
-                <span class="file-size">${formatFileSize(file.fileSize)}</span>
-            </li>
-        `;
+        html += `<li class="attachment-item">
+            <i class="fas fa-file-pdf"></i>
+            <a href="/api/vacation/download/${file.idx}" target="_blank">
+                ${file.originalFileName || '연차신청서.pdf'}
+            </a>
+            <span class="file-size">${formatFileSize(file.fileSize)}</span>
+        </li>`;
     });
     html += '</ul>';
-
-    attachmentsList.innerHTML = html;
-
-    // 헤더에 인쇄 버튼 추가 (첫 번째 PDF 사용)
-    try {
-        addVacationPrintButton(attachments[0].idx);
-    } catch (e) {
-        console.error('인쇄 버튼 생성 실패:', e);
-    }
-}
-
-/**
- * 연차신청서 PDF 인쇄 버튼 생성
- */
-function addVacationPrintButton(fileIdx) {
-    const headerButtons = document.getElementById('headerButtons');
-    if (!headerButtons || document.getElementById('printVacationBtn')) return;
-
-    const printBtn = document.createElement('button');
-    printBtn.id = 'printVacationBtn';
-    printBtn.className = 'btn-secondary';
-    printBtn.innerHTML = '<i class="fas fa-print"></i> 인쇄';
-    printBtn.addEventListener('click', () => printPdf(`/api/vacation/download/${fileIdx}`, printBtn));
-
-    // lastElementChild = 돌아가기 버튼 (항상 마지막 직계 자식)
-    // querySelector('button')은 wrapper div 안의 자식 버튼을 반환할 수 있어 insertBefore 실패
-    headerButtons.insertBefore(printBtn, headerButtons.lastElementChild);
-}
-
-/**
- * PDF 인쇄 함수
- */
-function printPdf(downloadUrl, btn) {
-    if (btn) {
-        btn.disabled = true;
-        btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> 준비 중...';
-    }
-    fetch(downloadUrl)
-        .then(res => {
-            if (!res.ok) throw new Error('파일 조회 실패');
-            return res.blob();
-        })
-        .then(blob => {
-            const blobUrl = URL.createObjectURL(blob);
-            const printWindow = window.open(blobUrl, '_blank');
-            if (printWindow) {
-                setTimeout(() => {
-                    try { printWindow.print(); } catch (e) {}
-                    setTimeout(() => URL.revokeObjectURL(blobUrl), 60000);
-                }, 1000);
-            } else {
-                showError('팝업이 차단되어 있습니다. 팝업 허용 후 다시 시도해주세요.');
-                URL.revokeObjectURL(blobUrl);
-            }
-        })
-        .catch(e => {
-            console.error('인쇄 중 오류:', e);
-            showError('인쇄 중 오류가 발생했습니다.');
-        })
-        .finally(() => {
-            if (btn) {
-                btn.disabled = false;
-                btn.innerHTML = '<i class="fas fa-print"></i> 인쇄';
-            }
-        });
+    list.innerHTML = html;
 }
 
 /**
@@ -377,7 +339,12 @@ async function deleteDocument(documentIdx) {
     }
 
     try {
-        const response = await fetch(`/api/vacation/delete?documentIdx=${documentIdx}`, {
+        const isAdmin = window.CURRENT_USER && ['C1101', 'C1102'].includes(window.CURRENT_USER.userRoleCode);
+        const url = isAdmin
+            ? `/api/vacation/admin/documents/${documentIdx}`
+            : `/api/vacation/delete?documentIdx=${documentIdx}`;
+
+        const response = await fetch(url, {
             method: 'DELETE',
             headers: {
                 'Content-Type': 'application/json'
@@ -429,20 +396,4 @@ function formatFileSize(bytes) {
     return Math.round(bytes / Math.pow(k, i) * 100) / 100 + ' ' + sizes[i];
 }
 
-function getApprovalStatusClass(status) {
-    switch (status) {
-        case 'APPROVED': return 'approved';
-        case 'REJECTED': return 'rejected';
-        case 'PENDING': return 'pending';
-        default: return '';
-    }
-}
 
-function getApprovalStatusText(status) {
-    switch (status) {
-        case 'APPROVED': return '승인';
-        case 'REJECTED': return '반려';
-        case 'PENDING': return '대기';
-        default: return '-';
-    }
-}
