@@ -123,7 +123,7 @@ document.addEventListener('DOMContentLoaded', async function() {
                 return [];
             }
 
-            if (!response.ok) throw new Error(`Failed to fetch vacation history: ${response.status}`);
+            if (!response.ok) throw new Error('연차 내역을 불러올 수 없습니다.');
             return await response.json();
         } catch (error) {
             console.error('연차 내역 조회 실패:', error);

@@ -387,7 +387,7 @@ document.addEventListener('DOMContentLoaded', async function () {
                 Swal.fire({ icon: 'error', title: '업로드 실패', text: '잠시 후 다시 시도해 주세요.' });
             }
         } catch (_) {
-            Swal.fire({ icon: 'error', title: '업로드 실패', text: '파일 업로드 중 오류가 발생했습니다.' });
+            Swal.fire({ icon: 'error', title: '업로드 실패', text: '파일 업로드 중 오류가 발생했습니다.\n잠시 후 다시 시도해주세요.' });
         }
     }
 
@@ -535,7 +535,7 @@ document.addEventListener('DOMContentLoaded', async function () {
             const updatedAttachments = await res.json();
             renderServerAttachments(updatedAttachments);
         } catch (_) {
-            Swal.fire({ icon: 'error', title: '업로드 실패', text: '파일 업로드 중 오류가 발생했습니다.' });
+            Swal.fire({ icon: 'error', title: '업로드 실패', text: '파일 업로드 중 오류가 발생했습니다.\n잠시 후 다시 시도해주세요.' });
         }
     }
 

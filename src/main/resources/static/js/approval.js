@@ -770,7 +770,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 loadAllDocuments();
                 Swal.fire({ icon: 'success', title: '저장 완료', text: '첨부파일이 저장되었습니다.', timer: 1500, showConfirmButton: false });
             } catch (err) {
-                Swal.fire({ icon: 'error', title: '저장 실패', text: err.message, didOpen: () => { const c = document.querySelector('.swal2-container'); if (c) c.style.zIndex = '20001'; } });
+                Swal.fire({ icon: 'error', title: '저장 실패', text: '저장에 실패했습니다.\n잠시 후 다시 시도해주세요.', didOpen: () => { const c = document.querySelector('.swal2-container'); if (c) c.style.zIndex = '20001'; } });
             } finally {
                 newSaveBtn.disabled = false;
                 newSaveBtn.textContent = '저장';

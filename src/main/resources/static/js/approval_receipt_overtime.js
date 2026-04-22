@@ -76,7 +76,7 @@ document.addEventListener('DOMContentLoaded', async function() {
             }
         } catch (error) {
             console.error('직원 데이터 로드 오류:', error);
-            showError('직원 데이터를 불러오는데 오류가 발생했습니다.');
+            showError('직원 데이터를 불러오는데 실패했습니다.\n잠시 후 다시 시도해주세요.');
         }
     }
 
@@ -726,7 +726,7 @@ document.addEventListener('DOMContentLoaded', async function() {
             }
         } catch (error) {
             console.error('야근식대 삭제 실패:', error);
-            showError('삭제 중 오류가 발생했습니다.');
+            showError('삭제 중 오류가 발생했습니다.\n잠시 후 다시 시도해주세요.');
         }
     }
 
@@ -2489,7 +2489,7 @@ document.addEventListener('DOMContentLoaded', async function() {
             document.body.removeChild(a);
             URL.revokeObjectURL(blobUrl);
         } catch (e) {
-            Swal.fire({ icon: 'error', title: '다운로드 오류', text: '파일 다운로드 중 오류가 발생했습니다.' });
+            Swal.fire({ icon: 'error', title: '다운로드 오류', text: '파일 다운로드 중 오류가 발생했습니다.\n잠시 후 다시 시도해주세요.' });
         }
     };
 
@@ -2673,9 +2673,8 @@ document.addEventListener('DOMContentLoaded', async function() {
                 console.error('[중복 검증 오류]', error);
                 const continueAnyway = await showConfirm(
                     `참석자 중복 검증 중 오류가 발생했습니다.<br><br>` +
-                    `${error.message || '알 수 없는 오류'}<br><br>` +
                     `중복 검증 없이 계속 진행하시겠습니까?`,
-                    '중복 검증 오류'
+                    '중복 검증 안내'
                 );
                 if (!continueAnyway) {
                     return;

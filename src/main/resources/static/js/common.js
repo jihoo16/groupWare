@@ -381,7 +381,7 @@ window.fetchWithErrorHandling = async function(url, options = {}, autoHandle404 
 
             // 기타 에러
             const errorText = await response.text();
-            throw new Error(`HTTP ${response.status}: ${errorText}`);
+            throw new Error('데이터를 불러올 수 없습니다.\n잠시 후 다시 시도해주세요.');
         }
 
         const data = await response.json();

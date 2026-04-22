@@ -406,7 +406,7 @@ document.addEventListener('DOMContentLoaded', function() {
             }
         } catch (error) {
             console.error('일정 로드 중 오류:', error);
-            await showError('일정 정보를 불러오는 중 오류가 발생했습니다.');
+            await showError('일정 정보를 불러오는 중 오류가 발생했습니다.\n잠시 후 다시 시도해주세요.');
             window.hidePageLoadingOverlay();
             window.location.href = '/calendar';
         }
@@ -1060,7 +1060,7 @@ document.addEventListener('DOMContentLoaded', function() {
             }
         } catch (error) {
             console.error('일정 삭제 중 오류:', error);
-            await showError('일정 삭제 중 오류가 발생했습니다.');
+            await showError('일정 삭제 중 오류가 발생했습니다.\n잠시 후 다시 시도해주세요.');
         }
     });
 
@@ -1141,7 +1141,7 @@ document.addEventListener('DOMContentLoaded', function() {
             }
         } catch (error) {
             console.error('일정 수정 중 오류:', error);
-            await showError('일정 수정 중 오류가 발생했습니다.');
+            await showError('일정 수정 중 오류가 발생했습니다.\n잠시 후 다시 시도해주세요.');
         }
     });
 

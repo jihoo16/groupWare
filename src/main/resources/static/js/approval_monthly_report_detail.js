@@ -92,7 +92,7 @@ document.addEventListener('DOMContentLoaded', function() {
             window.hidePageLoadingOverlay();
         } catch (error) {
             console.error('월간업무보고 상세 조회 오류:', error);
-            showError('월간업무보고 조회 중 오류가 발생했습니다.');
+            showError('월간업무보고 조회 중 오류가 발생했습니다.\n잠시 후 다시 시도해주세요.');
             window.hidePageLoadingOverlay();
             window.location.href = '/approval';
         }
@@ -340,7 +340,7 @@ document.addEventListener('DOMContentLoaded', function() {
             }
         } catch (error) {
             console.error('월간업무보고 수정 오류:', error);
-            showError('월간업무보고 수정 중 오류가 발생했습니다.');
+            showError('월간업무보고 수정 중 오류가 발생했습니다.\n잠시 후 다시 시도해주세요.');
         }
     }
 
@@ -362,7 +362,7 @@ document.addEventListener('DOMContentLoaded', function() {
             }
         } catch (error) {
             console.error('월간업무보고 삭제 오류:', error);
-            showError('월간업무보고 삭제 중 오류가 발생했습니다.');
+            showError('월간업무보고 삭제 중 오류가 발생했습니다.\n잠시 후 다시 시도해주세요.');
         }
     }
 });

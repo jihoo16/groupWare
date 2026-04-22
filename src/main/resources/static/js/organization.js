@@ -134,7 +134,7 @@
             console.log('Response status:', response.status);
 
             if (!response.ok) {
-                throw new Error(`HTTP error! status: ${response.status}`);
+                throw new Error('조직도 데이터를 불러올 수 없습니다.');
             }
 
             const data = await response.json();
@@ -144,7 +144,7 @@
             return data;
         } catch (error) {
             console.error('조직도 데이터 로딩 실패:', error);
-            showError('조직도 데이터를 불러오는데 실패했습니다.\n브라우저 콘솔을 확인해주세요.');
+            showError('조직도 데이터를 불러오는데 실패했습니다.\n잠시 후 다시 시도해주세요.\n문제가 지속되면 관리자에게 문의해주세요.');
             return null;
         }
     }

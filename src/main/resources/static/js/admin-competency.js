@@ -628,7 +628,7 @@ document.addEventListener('DOMContentLoaded', function () {
             Swal.close();
         } catch (err) {
             console.error(err);
-            Swal.fire({ icon: 'error', title: '다운로드 실패', text: err.message });
+            Swal.fire({ icon: 'error', title: '다운로드 실패', text: '파일 다운로드에 실패했습니다.\n잠시 후 다시 시도해주세요.' });
         }
     }
 
@@ -701,7 +701,7 @@ document.addEventListener('DOMContentLoaded', function () {
             const res = await fetch(url, { method });
             if (!res.ok) {
                 const data = await res.json().catch(() => ({}));
-                throw new Error(data.error || `HTTP ${res.status}`);
+                throw new Error(data.error || '처리에 실패했습니다.');
             }
             // 로컬 상태 갱신
             const emp = allEmployees.find(u => u.userIdx === userIdx);
@@ -721,7 +721,7 @@ document.addEventListener('DOMContentLoaded', function () {
         } catch (err) {
             console.error(err);
             checkbox.checked = !grant; // 원복
-            Swal.fire({ icon: 'error', title: '실패', text: err.message });
+            Swal.fire({ icon: 'error', title: '권한 변경 실패', text: '권한 변경에 실패했습니다.\n잠시 후 다시 시도해주세요.' });
         }
     }
 
@@ -861,7 +861,7 @@ document.addEventListener('DOMContentLoaded', function () {
             });
             if (!res.ok) {
                 const data = await res.json().catch(() => ({}));
-                throw new Error(data.error || `HTTP ${res.status}`);
+                throw new Error(data.error || '등록에 실패했습니다.');
             }
             const result = await res.json();
 
@@ -887,7 +887,7 @@ document.addEventListener('DOMContentLoaded', function () {
             loadOverview(); // 목록 갱신
         } catch (err) {
             console.error(err);
-            Swal.fire({ icon: 'error', title: '실패', text: err.message });
+            Swal.fire({ icon: 'error', title: '등록 실패', text: '일괄 등록에 실패했습니다.\n잠시 후 다시 시도해주세요.' });
         }
     }
 
@@ -923,7 +923,7 @@ document.addEventListener('DOMContentLoaded', function () {
 
     async function fetchJson(url) {
         const res = await fetch(url);
-        if (!res.ok) throw new Error(`HTTP ${res.status}`);
+        if (!res.ok) throw new Error('데이터를 불러올 수 없습니다.');
         return res.json();
     }
 

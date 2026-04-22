@@ -290,7 +290,7 @@ document.addEventListener('DOMContentLoaded', function() {
             loadAllCards(); // 목록 새로고침
         } catch (error) {
             console.error('카드 저장 오류:', error);
-            showError(error.message);
+            showError('카드 저장에 실패했습니다.\n잠시 후 다시 시도해주세요.');
         }
     };
 
@@ -323,7 +323,7 @@ document.addEventListener('DOMContentLoaded', function() {
             loadAllCards(); // 목록 새로고침
         } catch (error) {
             console.error('카드 삭제 오류:', error);
-            showError(error.message);
+            showError('카드 삭제에 실패했습니다.\n잠시 후 다시 시도해주세요.');
         }
     };
 

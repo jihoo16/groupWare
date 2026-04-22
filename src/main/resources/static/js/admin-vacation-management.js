@@ -263,7 +263,7 @@ document.addEventListener('DOMContentLoaded', function() {
             Swal.fire({
                 icon: 'error',
                 title: '데이터 로드 실패',
-                text: error.message || '데이터를 불러오는데 실패했습니다.'
+                text: '데이터를 불러오는데 실패했습니다.\n잠시 후 다시 시도해주세요.'
             });
         }
     }

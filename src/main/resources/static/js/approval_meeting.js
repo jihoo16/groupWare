@@ -166,7 +166,7 @@ document.addEventListener('DOMContentLoaded', function() {
             }
         } catch (error) {
             console.error('회의록 저장 오류:', error);
-            showError('회의록 저장 중 오류가 발생했습니다.');
+            showError('회의록 저장 중 오류가 발생했습니다.\n잠시 후 다시 시도해주세요.');
         }
     }
 

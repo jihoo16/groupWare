@@ -64,7 +64,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
         } catch (error) {
             console.error('연차신청서 목록 조회 오류:', error);
-            showError('데이터를 불러오는 중 오류가 발생했습니다.');
+            showError('데이터를 불러오는 중 오류가 발생했습니다.\n잠시 후 다시 시도해주세요.');
         }
     }
 
@@ -432,7 +432,7 @@ document.addEventListener('DOMContentLoaded', function() {
             Swal.fire({
                 icon: 'error',
                 title: `${action} 실패`,
-                text: error.message
+                text: `${action}에 실패했습니다.\n잠시 후 다시 시도해주세요.`
             });
         }
     };
@@ -481,7 +481,7 @@ document.addEventListener('DOMContentLoaded', function() {
             Swal.fire({
                 icon: 'error',
                 title: '삭제 실패',
-                text: error.message
+                text: '삭제에 실패했습니다.\n잠시 후 다시 시도해주세요.'
             });
         }
     };
@@ -602,7 +602,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 allActiveUsers = await res.json();
             } catch (err) {
                 console.error('사용자 목록 조회 오류:', err);
-                Swal.fire({ icon: 'error', title: '사용자 목록 조회 실패', text: err.message });
+                Swal.fire({ icon: 'error', title: '사용자 목록 조회 실패', text: '사용자 목록을 불러오지 못했습니다.\n잠시 후 다시 시도해주세요.' });
             }
         }
 
@@ -997,7 +997,7 @@ document.addEventListener('DOMContentLoaded', function() {
             loadDocuments();
         } catch (err) {
             console.error('관리자 권한 연차 등록 오류:', err);
-            Swal.fire({ icon: 'error', title: '관리자 권한 연차 등록 실패', text: err.message });
+            Swal.fire({ icon: 'error', title: '연차 등록 실패', text: '연차 등록에 실패했습니다.\n잠시 후 다시 시도해주세요.' });
         } finally {
             proxySubmitBtn.disabled = false;
         }

@@ -107,7 +107,7 @@
         });
         if (!response.ok) {
             const err = await _safeJson(response);
-            throw new Error(err?.message || `HTTP ${response.status}`);
+            throw new Error(err?.message || '서버에 연결할 수 없습니다.\n잠시 후 다시 시도해주세요.');
         }
         return response.json();
     }
@@ -323,6 +323,14 @@
         _setText('sig-modal-error-title', title);
         const msgEl = document.getElementById('sig-modal-error-message');
         if (msgEl) msgEl.innerHTML = (message || '').replace(/\n/g, '<br>');
+        // 안내 메시지인 경우 하단 힌트를 다르게 표시
+        const hintEl = document.getElementById('sig-modal-error-hint');
+        if (hintEl) {
+            const isGuide = title === '서명 안내';
+            hintEl.textContent = isGuide
+                ? '확인 후 모달을 닫아주세요.'
+                : '모달을 닫고 상세 페이지에서 다시 시도할 수 있습니다.';
+        }
         _setState('error');
     }
 

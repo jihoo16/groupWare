@@ -1396,7 +1396,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 await showSuccess('PDF가 저장되었습니다.');
             } catch (error) {
                 console.error('PDF 생성 오류:', error);
-                showError('PDF 생성 중 오류가 발생했습니다.\n' + error.message + '\n\n브라우저 콘솔(F12)을 확인해주세요.');
+                showError('문서 생성 중 오류가 발생했습니다.\n잠시 후 다시 시도해주세요.');
             } finally {
                 // 에러 발생 여부와 관계없이 항상 원래 스타일 복원
                 if (allDivs && originalDisplays.length > 0) {

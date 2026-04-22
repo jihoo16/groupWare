@@ -369,7 +369,7 @@ if (!empAddressInput.value.trim()) {
 
         } catch (error) {
             console.error('Form submit error:', error);
-            showAlert(error.message || '처리 중 오류가 발생했습니다.\n다시 시도해주세요.', 'error');
+            showAlert('처리 중 오류가 발생했습니다.\n다시 시도해주세요.', 'error');
             changePasswordBtn.classList.remove('loading');
             changePasswordBtn.disabled = false;
         }

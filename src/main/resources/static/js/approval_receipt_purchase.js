@@ -1464,12 +1464,12 @@ document.addEventListener('DOMContentLoaded', async function() {
             } else {
                 hideLoading();
                 const err = await res.json().catch(() => ({}));
-                Swal.fire({ icon: 'error', title: '저장 실패', text: err.message || '저장에 실패했습니다.' });
+                Swal.fire({ icon: 'error', title: '저장 실패', text: '저장에 실패했습니다.\n잠시 후 다시 시도해주세요.' });
             }
         } catch (e) {
             hideLoading();
             console.error('저장 오류:', e);
-            Swal.fire({ icon: 'error', title: '오류', text: '저장 중 오류가 발생했습니다.' });
+            Swal.fire({ icon: 'error', title: '저장 실패', text: '저장 중 오류가 발생했습니다.\n잠시 후 다시 시도해주세요.' });
         }
     });
 
@@ -1759,7 +1759,7 @@ document.addEventListener('DOMContentLoaded', async function() {
                 }
             } catch (e) {
                 hideLoading();
-                Swal.fire({ icon: 'error', title: '오류', text: '삭제 중 오류가 발생했습니다.' });
+                Swal.fire({ icon: 'error', title: '삭제 실패', text: '삭제 중 오류가 발생했습니다.\n잠시 후 다시 시도해주세요.' });
             }
         });
     }

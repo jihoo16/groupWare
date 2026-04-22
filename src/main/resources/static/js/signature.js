@@ -133,7 +133,7 @@
                 }
             } catch (err) {
                 console.error(err);
-                Swal.fire({ icon: 'error', title: '오류', text: '인증 처리 중 오류가 발생했습니다.' });
+                Swal.fire({ icon: 'error', title: '인증 실패', text: '인증 처리 중 오류가 발생했습니다.\n잠시 후 다시 시도해주세요.' });
             } finally {
                 btn.disabled = false;
             }
@@ -219,7 +219,7 @@
             showStep('step-complete');
         } catch (err) {
             console.error(err);
-            Swal.fire({ icon: 'error', title: '제출 실패', text: err.message || '다시 시도해주세요.' });
+            Swal.fire({ icon: 'error', title: '제출 실패', text: '서명 제출에 실패했습니다.\n잠시 후 다시 시도해주세요.' });
             submitBtn.disabled = false;
             submitBtn.innerHTML = '<i class="fas fa-paper-plane"></i> 제출';
         }

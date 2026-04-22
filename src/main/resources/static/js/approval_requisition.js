@@ -448,7 +448,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
             if (!res.ok) {
                 const err = await res.json().catch(() => ({}));
-                throw new Error(err.message || `서버 오류 (${res.status})`);
+                throw new Error(err.message || '저장에 실패했습니다.\n잠시 후 다시 시도해주세요.');
             }
 
             const data = await res.json();
@@ -480,7 +480,7 @@ document.addEventListener('DOMContentLoaded', function() {
             const res = await fetch(`/api/approval/requisition/${editingIdx}`, { method: 'DELETE' });
             if (!res.ok) {
                 const err = await res.json().catch(() => ({}));
-                throw new Error(err.message || `서버 오류 (${res.status})`);
+                throw new Error(err.message || '삭제에 실패했습니다.\n잠시 후 다시 시도해주세요.');
             }
             await showSuccess('품의서가 삭제되었습니다.');
             window.location.href = '/approval';
@@ -811,11 +811,11 @@ document.addEventListener('DOMContentLoaded', function() {
     async function loadDocument(idx) {
         try {
             const res = await fetch(`/api/approval/requisition/${idx}`);
-            if (!res.ok) throw new Error(`불러오기 실패 (${res.status})`);
+            if (!res.ok) throw new Error('문서를 불러올 수 없습니다.');
             const data = await res.json();
             populateForm(data);
         } catch (e) {
-            Swal.fire({ icon: 'error', title: '불러오기 실패', text: e.message });
+            Swal.fire({ icon: 'error', title: '불러오기 실패', text: '문서를 불러올 수 없습니다.\n잠시 후 다시 시도해주세요.' });
         }
     }
 
