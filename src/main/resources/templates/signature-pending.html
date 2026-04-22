@@ -15,28 +15,6 @@
         </header>
 
         <div class="content-area">
-            <!-- 통계 요약 -->
-            <div class="quick-stats">
-                <div class="stat-card stat-pending" id="statPendingCard" style="cursor:pointer;">
-                    <div class="stat-icon icon-indigo">
-                        <i class="fas fa-clock"></i>
-                    </div>
-                    <div class="stat-content">
-                        <span class="stat-label">서명 대기</span>
-                        <span class="stat-number" id="statPending">0<em>건</em></span>
-                    </div>
-                </div>
-                <div class="stat-card stat-completed" id="statCompletedCard" style="cursor:pointer;">
-                    <div class="stat-icon icon-purple">
-                        <i class="fas fa-check"></i>
-                    </div>
-                    <div class="stat-content">
-                        <span class="stat-label">서명 완료</span>
-                        <span class="stat-number" id="statCompleted">0<em>건</em></span>
-                    </div>
-                </div>
-            </div>
-
             <!-- 필터 영역 -->
             <div class="filter-section">
                 <div class="filter-group" style="flex:1;">
@@ -53,9 +31,17 @@
                         <button class="type-chip" data-type="C0407">재료비</button>
                         <button class="type-chip" data-type="C0408">장비비</button>
                         <button class="type-chip" data-type="C0410">주간보고</button>
-                        <button class="type-chip" data-type="C0411">월간보고</button>
-                        <button class="type-chip" data-type="C0412">회의록(일반)</button>
                     </div>
+                </div>
+                <div class="filter-group">
+                    <label><i class="fas fa-calendar-alt"></i> 기간 <span id="periodHint" style="font-weight:400; font-size:11px; color:#94a3b8; margin-left:4px;">서명 이력에만 적용</span></label>
+                    <select id="periodFilter" class="filter-select" style="min-width:120px;">
+                        <option value="all">전체</option>
+                        <option value="1m" selected>최근 1개월</option>
+                        <option value="3m">최근 3개월</option>
+                        <option value="6m">최근 6개월</option>
+                        <option value="1y">최근 1년</option>
+                    </select>
                 </div>
                 <div class="filter-group">
                     <label><i class="fas fa-search"></i> 검색</label>
@@ -66,10 +52,13 @@
             <!-- 탭 -->
             <div class="sig-tabs">
                 <button class="sig-tab active" data-tab="pending">
-                    서명 대기 <span class="sig-tab-badge" id="tabPendingCount"></span>
+                    받은 요청 <span class="sig-tab-badge" id="tabPendingCount"></span>
+                </button>
+                <button class="sig-tab" data-tab="requested">
+                    보낸 요청 <span class="sig-tab-badge" id="tabRequestedCount" style="background:#f59e0b;"></span>
                 </button>
                 <button class="sig-tab" data-tab="completed">
-                    서명 이력
+                    서명 이력 <span class="sig-tab-badge" id="tabCompletedCount" style="background:#10b981;"></span>
                 </button>
             </div>
 
@@ -77,8 +66,8 @@
             <div id="tabPendingContent">
                 <div class="sig-empty" id="emptyPending" style="display:none;">
                     <i class="fas fa-check-circle" style="color:#10b981;"></i>
-                    <h3>서명 대기 문서가 없습니다</h3>
-                    <p>현재 서명이 필요한 문서가 없습니다.</p>
+                    <h3>받은 서명 요청이 없습니다</h3>
+                    <p>현재 내가 서명해야 할 문서가 없습니다.</p>
                 </div>
 
                 <div class="bulk-actions" id="bulkActions" style="display:none;">
@@ -91,13 +80,15 @@
                     <table class="documents-table" id="pendingTable">
                         <thead>
                             <tr>
-                                <th style="width:5%;"><input type="checkbox" id="selectAllHeader"></th>
-                                <th style="width:14%; cursor:pointer;" data-sort="documentTypeName">문서 유형 <i class="fas fa-sort sort-icon"></i></th>
+                                <th style="width:4%;"><input type="checkbox" id="selectAllHeader"></th>
+                                <th style="width:9%; cursor:pointer;" data-sort="documentTypeName">유형 <i class="fas fa-sort sort-icon"></i></th>
+                                <th style="width:10%; cursor:pointer;" data-sort="documentNo">문서번호 <i class="fas fa-sort sort-icon"></i></th>
                                 <th style="cursor:pointer;" data-sort="documentTitle">문서 제목 <i class="fas fa-sort sort-icon"></i></th>
-                                <th style="width:11%; cursor:pointer;" data-sort="signatureSlotLabel">서명 위치 <i class="fas fa-sort sort-icon"></i></th>
-                                <th style="width:10%; cursor:pointer;" data-sort="drafterName">요청자 <i class="fas fa-sort sort-icon"></i></th>
-                                <th style="width:13%; cursor:pointer;" data-sort="requestedAt">요청 일시 <i class="fas fa-sort sort-icon"></i></th>
-                                <th style="width:6%;">이동</th>
+                                <th style="width:10%; cursor:pointer;" data-sort="statusName">진행 상태 <i class="fas fa-sort sort-icon"></i></th>
+                                <th style="width:6%; cursor:pointer;" data-sort="progress">현황 <i class="fas fa-sort sort-icon"></i></th>
+                                <th style="width:7%; cursor:pointer;" data-sort="drafterName">요청자 <i class="fas fa-sort sort-icon"></i></th>
+                                <th style="width:10%; cursor:pointer;" data-sort="requestedAt">요청 일시 <i class="fas fa-sort sort-icon"></i></th>
+                                <th style="width:4%;">이동</th>
                             </tr>
                         </thead>
                         <tbody id="pendingTableBody"></tbody>
@@ -117,18 +108,46 @@
                     <table class="documents-table" id="completedTable">
                         <thead>
                             <tr>
-                                <th style="width:14%; cursor:pointer;" data-sort="documentTypeName" data-tab="completed">문서 유형 <i class="fas fa-sort sort-icon"></i></th>
+                                <th style="width:9%; cursor:pointer;" data-sort="documentTypeName" data-tab="completed">유형 <i class="fas fa-sort sort-icon"></i></th>
+                                <th style="width:10%; cursor:pointer;" data-sort="documentNo" data-tab="completed">문서번호 <i class="fas fa-sort sort-icon"></i></th>
                                 <th style="cursor:pointer;" data-sort="documentTitle" data-tab="completed">문서 제목 <i class="fas fa-sort sort-icon"></i></th>
-                                <th style="width:11%; cursor:pointer;" data-sort="signatureSlotLabel" data-tab="completed">서명 위치 <i class="fas fa-sort sort-icon"></i></th>
-                                <th style="width:10%; cursor:pointer;" data-sort="drafterName" data-tab="completed">요청자 <i class="fas fa-sort sort-icon"></i></th>
-                                <th style="width:13%; cursor:pointer;" data-sort="signedAt" data-tab="completed">서명 일시 <i class="fas fa-sort sort-icon"></i></th>
-                                <th style="width:6%;">이동</th>
+                                <th style="width:10%; cursor:pointer;" data-sort="statusName" data-tab="completed">최종 상태 <i class="fas fa-sort sort-icon"></i></th>
+                                <th style="width:7%; cursor:pointer;" data-sort="drafterName" data-tab="completed">요청자 <i class="fas fa-sort sort-icon"></i></th>
+                                <th style="width:10%; cursor:pointer;" data-sort="signedAt" data-tab="completed">서명 일시 <i class="fas fa-sort sort-icon"></i></th>
+                                <th style="width:4%;">이동</th>
                             </tr>
                         </thead>
                         <tbody id="completedTableBody"></tbody>
                     </table>
                 </div>
                 <div class="pagination-wrapper" id="completedPagination"></div>
+            </div>
+
+            <!-- 요청 탭 -->
+            <div id="tabRequestedContent" style="display:none;">
+                <div class="sig-empty" id="emptyRequested" style="display:none;">
+                    <i class="fas fa-paper-plane" style="color:#cbd5e1;"></i>
+                    <h3>보낸 서명 요청이 없습니다</h3>
+                    <p>내가 작성한 문서 중 서명이 진행 중인 문서가 없습니다.</p>
+                </div>
+
+                <div class="documents-table-wrapper" id="requestedTableWrapper" style="display:none;">
+                    <table class="documents-table" id="requestedTable">
+                        <thead>
+                            <tr>
+                                <th style="width:9%; cursor:pointer;" data-sort="documentTypeName" data-tab="requested">유형 <i class="fas fa-sort sort-icon"></i></th>
+                                <th style="width:10%; cursor:pointer;" data-sort="documentNo" data-tab="requested">문서번호 <i class="fas fa-sort sort-icon"></i></th>
+                                <th style="cursor:pointer;" data-sort="documentTitle" data-tab="requested">문서 제목 <i class="fas fa-sort sort-icon"></i></th>
+                                <th style="width:10%; cursor:pointer;" data-sort="statusName" data-tab="requested">진행 상태 <i class="fas fa-sort sort-icon"></i></th>
+                                <th style="width:6%; cursor:pointer;" data-sort="progress" data-tab="requested">현황 <i class="fas fa-sort sort-icon"></i></th>
+                                <th style="width:10%; cursor:pointer;" data-sort="createdAt" data-tab="requested">생성 일시 <i class="fas fa-sort sort-icon"></i></th>
+                                <th style="width:4%;">이동</th>
+                            </tr>
+                        </thead>
+                        <tbody id="requestedTableBody"></tbody>
+                    </table>
+                </div>
+                <div class="pagination-wrapper" id="requestedPagination"></div>
             </div>
         </div>
     </main>

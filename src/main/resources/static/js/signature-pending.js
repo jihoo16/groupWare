@@ -3,12 +3,15 @@
  */
 let pendingItems = [];
 let completedItems = [];
+let requestedItems = [];
 let filteredPending = [];
 let filteredCompleted = [];
+let filteredRequested = [];
 let sortState = { key: null, asc: true };
 let pendingPage = 1;
 let completedPage = 1;
-const PAGE_SIZE = 15;
+let requestedPage = 1;
+const PAGE_SIZE = 10;
 let currentTab = 'pending';
 let searchKeyword = '';
 const searchUtils = typeof SearchUtils !== 'undefined' ? new SearchUtils() : null;
@@ -21,9 +24,6 @@ document.addEventListener('DOMContentLoaded', function() {
         tab.addEventListener('click', () => switchTab(tab.dataset.tab));
     });
 
-    // 카드 클릭 → 탭 전환
-    document.getElementById('statPendingCard').addEventListener('click', () => switchTab('pending'));
-    document.getElementById('statCompletedCard').addEventListener('click', () => switchTab('completed'));
 
     // 전체 선택
     document.getElementById('selectAllHeader').addEventListener('change', toggleSelectAll);
@@ -52,6 +52,7 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     });
     document.getElementById('searchInput').addEventListener('input', applyFilters);
+    document.getElementById('periodFilter').addEventListener('change', applyFilters);
 
     // 컬럼 정렬
     document.querySelectorAll('th[data-sort]').forEach(th => {
@@ -59,7 +60,7 @@ document.addEventListener('DOMContentLoaded', function() {
     });
 
     // 데이터 로드
-    Promise.all([loadPendingList(), loadCompletedList()])
+    Promise.all([loadPendingList(), loadCompletedList(), loadRequestedList()])
         .finally(() => window.hidePageLoadingOverlay());
 });
 
@@ -71,6 +72,7 @@ function switchTab(tabName) {
     });
     document.getElementById('tabPendingContent').style.display = tabName === 'pending' ? '' : 'none';
     document.getElementById('tabCompletedContent').style.display = tabName === 'completed' ? '' : 'none';
+    document.getElementById('tabRequestedContent').style.display = tabName === 'requested' ? '' : 'none';
     applyFilters();
 }
 
@@ -98,12 +100,10 @@ async function loadPendingList() {
         const res = await fetch('/api/signature/pending-list');
         if (!res.ok) throw new Error();
         pendingItems = await res.json();
-        document.getElementById('statPending').innerHTML = `${pendingItems.length}<em>건</em>`;
         const badge = document.getElementById('tabPendingCount');
         if (badge) badge.textContent = pendingItems.length > 0 ? pendingItems.length : '';
         applyFilters();
     } catch (e) {
-        document.getElementById('statPending').innerHTML = `0<em>건</em>`;
         document.getElementById('emptyPending').style.display = '';
     }
 }
@@ -113,10 +113,10 @@ async function loadCompletedList() {
         const res = await fetch('/api/signature/completed-list');
         if (!res.ok) throw new Error();
         completedItems = await res.json();
-        document.getElementById('statCompleted').innerHTML = `${completedItems.length}<em>건</em>`;
+        const completedBadge = document.getElementById('tabCompletedCount');
+        if (completedBadge) completedBadge.textContent = completedItems.length > 0 ? completedItems.length : '';
         applyFilters();
     } catch (e) {
-        document.getElementById('statCompleted').innerHTML = `0<em>건</em>`;
         document.getElementById('emptyCompleted').style.display = '';
     }
 }
@@ -129,7 +129,36 @@ function applyFilters() {
     const isAll = activeChips.includes('all') || activeChips.length === 0;
     searchKeyword = (document.getElementById('searchInput').value || '').trim();
 
+    // 기간 필터
+    const periodVal = document.getElementById('periodFilter').value;
+    let periodCutoff = null;
+    if (periodVal !== 'all') {
+        periodCutoff = new Date();
+        if (periodVal === '1m') periodCutoff.setMonth(periodCutoff.getMonth() - 1);
+        else if (periodVal === '3m') periodCutoff.setMonth(periodCutoff.getMonth() - 3);
+        else if (periodVal === '6m') periodCutoff.setMonth(periodCutoff.getMonth() - 6);
+        else if (periodVal === '1y') periodCutoff.setFullYear(periodCutoff.getFullYear() - 1);
+    }
+
     const filterFn = item => {
+        if (!isAll && !activeChips.includes(item.documentType)) return false;
+        if (searchKeyword) {
+            const targets = [item.documentTitle || '', item.drafterName || ''];
+            const matched = targets.some(t =>
+                searchUtils ? searchUtils.matchesSearch(t, searchKeyword) : t.toLowerCase().includes(searchKeyword.toLowerCase())
+            );
+            if (!matched) return false;
+        }
+        // 기간 필터 — 날짜 필드가 있는 항목만 적용
+        if (periodCutoff) {
+            const dateStr = item.requestedAt || item.signedAt || item.createdAt;
+            if (dateStr && new Date(dateStr) < periodCutoff) return false;
+        }
+        return true;
+    };
+
+    // 받은/보낸 요청은 기간 필터 제외
+    const baseFilterFn = item => {
         if (!isAll && !activeChips.includes(item.documentType)) return false;
         if (searchKeyword) {
             const targets = [item.documentTitle || '', item.drafterName || ''];
@@ -141,21 +170,34 @@ function applyFilters() {
         return true;
     };
 
-    filteredPending = pendingItems.filter(filterFn);
+    filteredPending = pendingItems.filter(baseFilterFn);
     filteredCompleted = completedItems.filter(filterFn);
+    filteredRequested = requestedItems.filter(baseFilterFn);
+
+    // 기본 정렬: 받은/보낸 요청은 오래된 순, 이력은 최신 순
+    filteredPending.sort((a, b) => new Date(a.requestedAt || 0) - new Date(b.requestedAt || 0));
+    filteredRequested.sort((a, b) => new Date(a.createdAt || 0) - new Date(b.createdAt || 0));
+    filteredCompleted.sort((a, b) => new Date(b.signedAt || 0) - new Date(a.signedAt || 0));
+
+    // 탭 배지 건수 업데이트
+    const pendingBadge = document.getElementById('tabPendingCount');
+    const requestedBadge = document.getElementById('tabRequestedCount');
+    const completedBadge = document.getElementById('tabCompletedCount');
+    if (pendingBadge) pendingBadge.textContent = filteredPending.length > 0 ? filteredPending.length : '';
+    if (requestedBadge) requestedBadge.textContent = filteredRequested.length > 0 ? filteredRequested.length : '';
+    if (completedBadge) completedBadge.textContent = filteredCompleted.length > 0 ? filteredCompleted.length : '';
 
     pendingPage = 1;
     completedPage = 1;
+    requestedPage = 1;
 
     renderCurrentTab();
 }
 
 function renderCurrentTab() {
-    if (currentTab === 'pending') {
-        renderPendingTab();
-    } else {
-        renderCompletedTab();
-    }
+    if (currentTab === 'pending') renderPendingTab();
+    else if (currentTab === 'completed') renderCompletedTab();
+    else if (currentTab === 'requested') renderRequestedTab();
 }
 
 // ============================================================
@@ -186,14 +228,20 @@ function renderPendingTab() {
         const href = getDetailUrl(item);
         const dateStr = item.requestedAt ? formatDateTime(item.requestedAt) : '-';
         const dsIdx = item.documentSignatureIdx || '';
-        const title = hl(item.documentTitle || '-');
+        const fullTitle = item.documentTitle || '-';
+        const title = hl(truncate(fullTitle, 20));
+        const tipAttr = fullTitle.length > 20 ? ` data-tip="${fullTitle.replace(/"/g, '&quot;')}"` : '';
         const drafter = hl(item.drafterName || '-');
+
+        const progressText = item.progress || '-';
 
         return `<tr>
             <td><input type="checkbox" class="sig-check" data-idx="${dsIdx}" data-index="${start + i}"></td>
             <td><span class="doc-type-label"><i class="fas ${icon}"></i> ${item.documentTypeName || item.documentType}</span></td>
-            <td class="doc-title-link" onclick="window.location.href='${href}'">${title}</td>
-            <td><span class="slot-badge pending">${item.signatureSlotLabel || '-'}</span></td>
+            <td style="font-size:11px; color:#64748b;">${item.documentNo || '-'}</td>
+            <td class="doc-title-cell" onclick="window.location.href='${href}'"${tipAttr}>${title}</td>
+            <td>${statusBadge(item.statusCode, item.statusName, item.documentType)}</td>
+            <td><span class="progress-badge clickable" onclick="event.stopPropagation(); showSignerDetail(${item.documentIdx}, 'pending')">${progressText}</span></td>
             <td>${drafter}</td>
             <td>${dateStr}</td>
             <td><button class="btn-go" onclick="window.location.href='${href}'"><i class="fas fa-arrow-right"></i></button></td>
@@ -232,13 +280,16 @@ function renderCompletedTab() {
         const icon = TYPE_ICONS[item.documentType] || 'fa-file';
         const href = getDetailUrl(item);
         const dateStr = item.signedAt ? formatDateTime(item.signedAt) : '-';
-        const title = hl(item.documentTitle || '-');
+        const fullTitle = item.documentTitle || '-';
+        const title = hl(truncate(fullTitle, 20));
+        const tipAttr = fullTitle.length > 20 ? ` data-tip="${fullTitle.replace(/"/g, '&quot;')}"` : '';
         const drafter = hl(item.drafterName || '-');
 
         return `<tr style="cursor:pointer;" onclick="window.location.href='${href}'">
             <td><span class="doc-type-label completed"><i class="fas ${icon}"></i> ${item.documentTypeName || item.documentType}</span></td>
-            <td class="doc-title-link">${title}</td>
-            <td><span class="slot-badge completed">${item.signatureSlotLabel || '-'}</span></td>
+            <td style="font-size:11px; color:#64748b;">${item.documentNo || '-'}</td>
+            <td class="doc-title-cell"${tipAttr}>${title}</td>
+            <td>${statusBadge(item.statusCode, item.statusName, item.documentType)}</td>
             <td>${drafter}</td>
             <td>${dateStr}</td>
             <td><button class="btn-go completed" onclick="event.stopPropagation(); window.location.href='${href}';"><i class="fas fa-arrow-right"></i></button></td>
@@ -246,6 +297,62 @@ function renderCompletedTab() {
     }).join('');
 
     renderPagination('completedPagination', filteredCompleted.length, completedPage, p => { completedPage = p; renderCompletedTab(); });
+}
+
+// ============================================================
+// 요청 탭
+// ============================================================
+async function loadRequestedList() {
+    try {
+        const res = await fetch('/api/signature/requested-list');
+        if (!res.ok) throw new Error();
+        requestedItems = await res.json();
+        const badge = document.getElementById('tabRequestedCount');
+        if (badge) badge.textContent = requestedItems.length > 0 ? requestedItems.length : '';
+        applyFilters();
+    } catch (e) {
+        document.getElementById('emptyRequested').style.display = '';
+    }
+}
+
+function renderRequestedTab() {
+    const empty = document.getElementById('emptyRequested');
+    const wrapper = document.getElementById('requestedTableWrapper');
+
+    if (filteredRequested.length === 0) {
+        empty.style.display = '';
+        wrapper.style.display = 'none';
+        document.getElementById('requestedPagination').innerHTML = '';
+        return;
+    }
+
+    empty.style.display = 'none';
+    wrapper.style.display = '';
+
+    const start = (requestedPage - 1) * PAGE_SIZE;
+    const pageItems = filteredRequested.slice(start, start + PAGE_SIZE);
+
+    document.getElementById('requestedTableBody').innerHTML = pageItems.map(item => {
+        const icon = TYPE_ICONS[item.documentType] || 'fa-file';
+        const href = getDetailUrl(item);
+        const dateStr = item.createdAt ? formatDateTime(item.createdAt) : '-';
+        const fullTitle = item.documentTitle || '-';
+        const title = hl(truncate(fullTitle, 20));
+        const tipAttr = fullTitle.length > 20 ? ` data-tip="${fullTitle.replace(/"/g, '&quot;')}"` : '';
+        const progressText = item.progress || '-';
+
+        return `<tr style="cursor:pointer;" onclick="window.location.href='${href}'">
+            <td><span class="doc-type-label"><i class="fas ${icon}"></i> ${item.documentTypeName || item.documentType}</span></td>
+            <td style="font-size:11px; color:#64748b;">${item.documentNo || '-'}</td>
+            <td class="doc-title-cell"${tipAttr}>${title}</td>
+            <td>${statusBadge(item.statusCode, item.statusName, item.documentType)}</td>
+            <td><span class="progress-badge clickable" onclick="event.stopPropagation(); showSignerDetail(${item.documentIdx}, 'requested')">${progressText}</span></td>
+            <td>${dateStr}</td>
+            <td><button class="btn-go" onclick="event.stopPropagation(); window.location.href='${href}';"><i class="fas fa-arrow-right"></i></button></td>
+        </tr>`;
+    }).join('');
+
+    renderPagination('requestedPagination', filteredRequested.length, requestedPage, p => { requestedPage = p; renderRequestedTab(); });
 }
 
 // ============================================================
@@ -281,7 +388,7 @@ function renderPagination(wrapperId, totalItems, currentPage, onPageChange) {
 // ============================================================
 function handleSort(th) {
     const key = th.dataset.sort;
-    const isCompleted = th.dataset.tab === 'completed';
+    const tabType = th.dataset.tab || 'pending';
 
     if (sortState.key === key) { sortState.asc = !sortState.asc; }
     else { sortState.key = key; sortState.asc = true; }
@@ -290,17 +397,28 @@ function handleSort(th) {
     const icon = th.querySelector('.sort-icon');
     if (icon) icon.className = `fas fa-sort-${sortState.asc ? 'up' : 'down'} sort-icon`;
 
-    const items = isCompleted ? filteredCompleted : filteredPending;
+    const items = tabType === 'completed' ? filteredCompleted : tabType === 'requested' ? filteredRequested : filteredPending;
+    const STATUS_ORDER = { C0501: 1, C0506: 2, C0507: 3, C0508: 4, C0504: 5, C0505: 6 };
+
     items.sort((a, b) => {
-        let va = a[key] || '', vb = b[key] || '';
-        if (typeof va === 'string') va = va.toLowerCase();
-        if (typeof vb === 'string') vb = vb.toLowerCase();
+        let va, vb;
+        if (key === 'statusName') {
+            va = STATUS_ORDER[a.statusCode] || 99;
+            vb = STATUS_ORDER[b.statusCode] || 99;
+        } else {
+            va = a[key] || '';
+            vb = b[key] || '';
+            if (typeof va === 'string') va = va.toLowerCase();
+            if (typeof vb === 'string') vb = vb.toLowerCase();
+        }
         if (va < vb) return sortState.asc ? -1 : 1;
         if (va > vb) return sortState.asc ? 1 : -1;
         return 0;
     });
 
-    if (isCompleted) renderCompletedTab(); else renderPendingTab();
+    if (tabType === 'completed') renderCompletedTab();
+    else if (tabType === 'requested') renderRequestedTab();
+    else renderPendingTab();
 }
 
 // ============================================================
@@ -335,8 +453,21 @@ async function handleBulkSign() {
     SignatureModal.open({
         documentIdx: firstItem.documentIdx, signatureSlot: firstItem.signatureSlot,
         onComplete: async (event) => {
-            const imageDataUrl = event.signatureImageDataUrl;
+            let imageDataUrl = event.signatureImageDataUrl;
             const remainingIdx = selectedIdxList.filter(idx => idx !== firstItem.documentSignatureIdx);
+
+            // 폴링 폴백으로 이미지가 없는 경우 서명 API에서 재조회
+            if (!imageDataUrl && remainingIdx.length > 0) {
+                try {
+                    const sigRes = await fetch(`/api/signature/document/${firstItem.documentIdx}`);
+                    if (sigRes.ok) {
+                        const sigs = await sigRes.json();
+                        const mySig = sigs.find(s => s.signatureImageDataUrl);
+                        if (mySig) imageDataUrl = mySig.signatureImageDataUrl;
+                    }
+                } catch (e) { /* 무시 */ }
+            }
+
             if (remainingIdx.length > 0 && imageDataUrl) {
                 try {
                     Swal.fire({ title: '일괄 서명 처리 중...', html: `나머지 ${remainingIdx.length}건 적용 중`, allowOutsideClick: false, didOpen: () => Swal.showLoading() });
@@ -357,9 +488,121 @@ async function handleBulkSign() {
 // ============================================================
 // 유틸
 // ============================================================
+// 승인 단계가 있는 문서 (연차만)
+const APPROVAL_TYPES = ['C0413'];
+
+const FLOW_STEPS = [
+    { codes: ['C0501', 'C0506'], label: '서명 요청' },
+    { codes: ['C0507'], label: '일부 서명' },
+    { codes: ['C0508'], label: '완료' }
+];
+
+function statusBadge(code, name, docType) {
+    // 연차 승인/반려 → 흐름 뒤에 별도 배지
+    const isVacation = APPROVAL_TYPES.includes(docType);
+    let approvalBadge = '';
+    if (isVacation) {
+        if (code === 'C0504') approvalBadge = ' <span class="flow-step step-approved">승인</span>';
+        else if (code === 'C0505') approvalBadge = ' <span class="flow-step step-rejected">반려</span>';
+        else approvalBadge = ' <span class="flow-step step-inactive">승인</span>';
+    }
+    if (code === 'C0505') {
+        // 반려 시 흐름은 마지막 도달 단계까지 표시 + 반려 배지
+        const lastIdx = FLOW_STEPS.length - 1;
+        return `<div class="status-flow">${FLOW_STEPS.map((s, i) => {
+            return `<span class="flow-step ${i <= lastIdx ? 'step-done' : 'step-inactive'}">${s.label}</span>`;
+        }).join('<span class="flow-arrow">›</span>')}${approvalBadge}</div>`;
+    }
+
+    const currentIdx = FLOW_STEPS.findIndex(s => s.codes.includes(code));
+    // 승인(C0504)이면 흐름은 전부 완료 + 승인 배지
+    const effectiveIdx = code === 'C0504' ? FLOW_STEPS.length : currentIdx;
+
+    return `<div class="status-flow">${FLOW_STEPS.map((s, i) => {
+        let cls = 'step-inactive';
+        if (i < effectiveIdx) cls = 'step-done';
+        else if (i === effectiveIdx) cls = 'step-current';
+        return `<span class="flow-step ${cls}">${s.label}</span>`;
+    }).join('<span class="flow-arrow">›</span>')}${approvalBadge}</div>`;
+}
+
+function truncate(text, max) {
+    if (!text || text.length <= max) return text;
+    return text.substring(0, max) + '…';
+}
+
 function hl(text) {
     if (!searchKeyword || !searchUtils) return text;
     return searchUtils.highlightText(text, searchKeyword);
+}
+
+function showSignerDetail(documentIdx, source) {
+    const list = source === 'pending' ? pendingItems : requestedItems;
+    const item = list.find(r => r.documentIdx === documentIdx);
+    if (!item || !item.signers) return;
+
+    const rows = item.signers.map(s => {
+        const icon = s.signed
+            ? '<i class="fas fa-check-circle" style="color:#059669; font-size:16px;"></i>'
+            : '<i class="fas fa-hourglass-half" style="color:#f59e0b; font-size:14px;"></i>';
+        const statusText = s.signed
+            ? '<span style="color:#059669; font-weight:600;">완료</span>'
+            : (s.requestedAt ? '<span style="color:#2563eb; font-weight:600;">요청됨</span>' : '<span style="color:#94a3b8;">순서 대기</span>');
+        const reqDate = s.requestedAt ? formatDateTime(s.requestedAt) : '-';
+        const signDate = s.signedAt ? formatDateTime(s.signedAt) : '-';
+
+        return `<tr style="border-bottom:1px solid #f1f5f9;">
+            <td style="text-align:center; padding:12px 8px;">${icon}</td>
+            <td style="padding:12px 8px; font-weight:500;">${s.signerName}</td>
+            <td style="text-align:center; padding:12px 8px;"><span class="slot-badge ${s.signed ? 'completed' : 'pending'}" style="font-size:11px;">${s.slotLabel}</span></td>
+            <td style="text-align:center; padding:12px 8px;">${statusText}</td>
+            <td style="text-align:center; padding:12px 8px; font-size:11px; color:#64748b;">${reqDate}</td>
+            <td style="text-align:center; padding:12px 8px; font-size:11px; color:#64748b;">${signDate}</td>
+        </tr>`;
+    }).join('');
+
+    const docNo = item.documentNo || '';
+    const docType = item.documentTypeName || '';
+    const signed = item.signers.filter(s => s.signed).length;
+    const total = item.signers.length;
+    const progressColor = signed === total ? '#059669' : '#f59e0b';
+
+    Swal.fire({
+        title: '',
+        html: `
+            <div style="text-align:left; margin-bottom:20px;">
+                <div style="font-size:16px; font-weight:700; color:#1e293b; margin-bottom:8px;">서명 현황</div>
+                <div style="display:flex; gap:16px; align-items:center; padding:14px 16px; background:#f8fafc; border-radius:8px;">
+                    <div style="flex:1;">
+                        <div style="font-size:11px; color:#94a3b8; margin-bottom:2px;">${docType} · ${docNo}</div>
+                        <div style="font-size:13px; font-weight:600; color:#1e293b;">${item.documentTitle || '-'}</div>
+                    </div>
+                    <div style="text-align:center;">
+                        <div style="font-size:24px; font-weight:700; color:${progressColor};">${signed}/${total}</div>
+                        <div style="font-size:10px; color:#94a3b8;">서명 완료</div>
+                    </div>
+                </div>
+            </div>
+            <table style="width:100%; border-collapse:collapse; font-size:12px;">
+                <thead>
+                    <tr style="background:#f8fafc; border-bottom:2px solid #e2e8f0;">
+                        <th style="padding:10px 8px; width:36px;"></th>
+                        <th style="padding:10px 8px; text-align:left;">서명자</th>
+                        <th style="padding:10px 8px;">위치</th>
+                        <th style="padding:10px 8px;">상태</th>
+                        <th style="padding:10px 8px;">요청 일시</th>
+                        <th style="padding:10px 8px;">서명 일시</th>
+                    </tr>
+                </thead>
+                <tbody>${rows}</tbody>
+            </table>
+        `,
+        width: 640,
+        showConfirmButton: true,
+        confirmButtonText: '확인',
+        confirmButtonColor: '#4f46e5',
+        customClass: { popup: 'swal-no-padding-top' }
+    });
 }
 
 function getDetailUrl(item) {
