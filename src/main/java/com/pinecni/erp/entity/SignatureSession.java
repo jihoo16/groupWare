@@ -41,9 +41,18 @@ public class SignatureSession {
     @Column(name = "document_idx", nullable = false)
     private Long documentIdx;
 
-    /** 서명 대상자 IDX */
+    /**
+     * 서명 대상자 IDX (polymorphic)
+     * - isExternal = false: users.idx
+     * - isExternal = true : external_person.idx (사번 2차 인증 스킵)
+     */
     @Column(name = "signer_user_idx", nullable = false)
     private Long signerUserIdx;
+
+    /** 외부인 서명 세션 여부 (true이면 사번 2차 인증 스킵 — SCANNED → VERIFIED 자동 전이) */
+    @Column(name = "is_external", nullable = false)
+    @Builder.Default
+    private Boolean isExternal = false;
 
     /** 세션 상태 (code_group C13) */
     @Column(name = "status", nullable = false, length = 10)

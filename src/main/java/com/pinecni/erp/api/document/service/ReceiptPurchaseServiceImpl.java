@@ -210,8 +210,14 @@ public class ReceiptPurchaseServiceImpl implements ReceiptPurchaseService {
             );
         }
 
-        ReceiptPurchase entity = receiptPurchaseRepository.findById(idx)
-                .orElseThrow(() -> new IllegalArgumentException("구매품의를 찾을 수 없습니다. idx: " + idx));
+        // polymorphic 조회: idx 가 receipt_purchase.idx 거나 document_idx 일 수 있음
+        //   (상세페이지 수정 버튼이 documentIdx 를 URL로 넘기므로 두 경우 모두 허용)
+        final Long requestedIdx = idx;
+        ReceiptPurchase entity = receiptPurchaseRepository.findByDocumentIdx(requestedIdx)
+                .orElseGet(() -> receiptPurchaseRepository.findById(requestedIdx)
+                        .orElseThrow(() -> new IllegalArgumentException("구매품의를 찾을 수 없습니다. idx: " + requestedIdx)));
+        // 이후 idx 는 반드시 entity.idx 로 정규화 (하류 FK 삽입이 receipt_purchase.idx 기반)
+        idx = entity.getIdx();
 
         // 연구비증빙은 수정요청 대응을 위해 서명 후에도 수정 가능 (서명은 유지)
 
@@ -266,12 +272,7 @@ public class ReceiptPurchaseServiceImpl implements ReceiptPurchaseService {
         ReceiptPurchase entity = receiptPurchaseRepository.findById(idx)
                 .orElseThrow(() -> new IllegalArgumentException("구매품의를 찾을 수 없습니다. idx: " + idx));
 
-        // 전자서명 게이트
-        if (entity.getDocumentIdx() != null
-                && signatureService.hasAnySignatureCaptured(entity.getDocumentIdx())) {
-            throw new IllegalStateException("전자서명이 진행된 문서는 삭제할 수 없습니다.");
-        }
-
+        // 연구비증빙(재료비/장비비)은 수정요청 대응을 위해 서명 진행/완료 후에도 삭제 허용
         entity.setIsDeleted(true);
         entity.setDeletedAt(LocalDateTime.now());
         entity.setDeletedUserIdx(deletedUserIdx);

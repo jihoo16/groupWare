@@ -38,6 +38,12 @@ public class SignatureEventMessage {
     /** 서명 위치 (C16 코드) */
     private String signatureSlot;
 
+    /** 서명 위치 한글 라벨 (COMPLETED 시 채워짐) — "신청자", "연구책임자", "부서장", "참석자" */
+    private String signatureSlotLabel;
+
+    /** 서명자 이름 (COMPLETED 시 채워짐) — 토스트 알림용 */
+    private String signerName;
+
     /** 서명 완료 시: Base64 서명 이미지 data URL */
     private String signatureImageDataUrl;
 

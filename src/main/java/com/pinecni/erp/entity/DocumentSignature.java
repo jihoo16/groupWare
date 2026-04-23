@@ -41,9 +41,19 @@ public class DocumentSignature {
     @Column(name = "document_idx", nullable = false)
     private Long documentIdx;
 
-    /** 서명자 IDX */
+    /**
+     * 서명자 IDX (polymorphic)
+     * - isExternal = false: users.idx
+     * - isExternal = true : external_person.idx
+     * FK 제약 없음 (receipt_attendee.user_idx와 동일 패턴)
+     */
     @Column(name = "signer_user_idx", nullable = false)
     private Long signerUserIdx;
+
+    /** 외부인 서명 여부 (true이면 signer_user_idx는 external_person.idx) */
+    @Column(name = "is_external", nullable = false)
+    @Builder.Default
+    private Boolean isExternal = false;
 
     /** 서명 위치 (code_group C16) */
     @Column(name = "signature_slot", nullable = false, length = 10)

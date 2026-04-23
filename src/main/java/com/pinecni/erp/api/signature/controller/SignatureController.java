@@ -62,6 +62,37 @@ public class SignatureController {
     }
 
     /**
+     * 외부인 전용 QR 서명 세션 생성 (연구비증빙 문서의 외부 참석자)
+     * - PC 사용자는 로그인 필요 (세션 생성자)
+     * - 외부인에겐 사번 2차 인증 스킵 (스캔 시 자동 VERIFIED)
+     * - 기존 /session 엔드포인트와는 별도 경로로 유지 (권한/로직 분리)
+     *
+     * 요청 바디: { "documentIdx": 500, "externalPersonIdx": 12 }
+     */
+    @PostMapping("/external/session")
+    public ResponseEntity<SignatureSessionResponse> createExternalSession(
+            @RequestBody Map<String, Long> body,
+            HttpSession session,
+            HttpServletRequest httpRequest) {
+
+        Long userIdx = (Long) session.getAttribute("userIdx");
+        if (userIdx == null) {
+            return ResponseEntity.status(401).build();
+        }
+
+        Long documentIdx = body.get("documentIdx");
+        Long externalPersonIdx = body.get("externalPersonIdx");
+        if (documentIdx == null || externalPersonIdx == null) {
+            return ResponseEntity.badRequest().build();
+        }
+
+        String ipAddress = resolveClientIp(httpRequest);
+        SignatureSessionResponse response = sessionService.createExternalSession(
+                documentIdx, externalPersonIdx, userIdx, ipAddress);
+        return ResponseEntity.ok(response);
+    }
+
+    /**
      * 토큰으로 세션 정보 조회 (모바일 서명 페이지 진입 시 — 세션 인증 불필요)
      */
     @GetMapping("/session/by-token/{token}")

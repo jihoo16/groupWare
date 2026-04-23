@@ -2781,6 +2781,7 @@ div h2{
     .common-info-section,
     .attachment-section,
     .document-preview-toggle,
+    .meeting-doc-label,
     .modal,
     [class*="modal"] {
         display: none !important;

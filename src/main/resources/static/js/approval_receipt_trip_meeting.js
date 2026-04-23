@@ -1423,6 +1423,11 @@ document.addEventListener('DOMContentLoaded', function() {
             if (meetingLocationEl && docMeetingLocationEl) {
                 docMeetingLocationEl.value = meetingLocationEl.value;
             }
+
+            // 회의-0 날짜가 바뀌면 문서번호 연번도 갱신
+            if (typeof window.updateMeetingDocNumbers === 'function') {
+                window.updateMeetingDocNumbers();
+            }
         }
         window.updateMeetingFields = updateMeetingFields;
 
@@ -2622,6 +2627,10 @@ document.addEventListener('DOMContentLoaded', function() {
         }
         // 금액 초과 재검증
         validateExtraMeetingAmount(idx);
+        // 공식 문서 미리보기(참여자 텍스트 + 서명 테이블) 동기화
+        if (typeof updateExtraMeetingDocFields === 'function') {
+            updateExtraMeetingDocFields(idx);
+        }
     }
 
     // idx=null → 기본 회의(meeting-0), idx=number → 추가 회의
@@ -2830,12 +2839,15 @@ document.addEventListener('DOMContentLoaded', function() {
         // 뱃지 재번호
         renumberMeetingBadges();
 
-        // 필드 변경 시 유효성 재검증 이벤트
+        // 필드 변경 시 유효성 재검증 이벤트 + 공식 문서 미리보기 동기화
         [`meeting_purpose_${idx}`, `meeting_date_${idx}`, `meeting_start_time_${idx}`, `meeting_end_time_${idx}`].forEach(id => {
             const el = document.getElementById(id);
             if (el) {
-                el.addEventListener('input', validateRequiredFields);
+                const syncDoc = () => updateExtraMeetingDocFields(idx);
+                el.addEventListener('input',  validateRequiredFields);
+                el.addEventListener('input',  syncDoc);
                 el.addEventListener('change', validateRequiredFields);
+                el.addEventListener('change', syncDoc);
             }
         });
 
@@ -2863,6 +2875,10 @@ document.addEventListener('DOMContentLoaded', function() {
                     // 회의 날짜 변경 시 참여기간 재검증 (특히 회의 작성자 검사)
                     if (id === `meeting_date_${idx}`) {
                         await revalidateRtmAgainstDates();
+                        // 문서번호 연번 갱신 (추가 회의의 날짜 기준)
+                        if (typeof window.updateMeetingDocNumbers === 'function') {
+                            window.updateMeetingDocNumbers();
+                        }
                     }
                 });
             }
@@ -2896,12 +2912,13 @@ document.addEventListener('DOMContentLoaded', function() {
             });
         }
 
-        // 바이트 카운터 이벤트 설정 + 독자적 필수값 검증
+        // 바이트 카운터 이벤트 설정 + 독자적 필수값 검증 + 공식 문서 미리보기 동기화
         const contentTextarea = document.getElementById(`meeting_content_${idx}`);
         if (contentTextarea) {
             contentTextarea.addEventListener('input', () => {
                 updateExtraMeetingByteCounter(idx);
                 validateRequiredFields();
+                updateExtraMeetingDocFields(idx);
             });
         }
 
@@ -2962,11 +2979,12 @@ document.addEventListener('DOMContentLoaded', function() {
         if (!container) return;
         const docHtml = `
 <div class="meeting-doc-block" data-doc-meeting-idx="${idx}" id="meeting-doc-block-${idx}">
-    <div style="background:#f0f4ff; border:1px solid #c7d2fe; border-radius:6px; padding:8px 16px; margin: 0 auto 16px; max-width:881px;">
+    <div class="meeting-doc-label" style="background:#f0f4ff; border:1px solid #c7d2fe; border-radius:6px; padding:8px 16px; margin: 0 auto 16px; max-width:881px;">
         <strong style="color:#667eea;"><i class="fas fa-comments"></i> ${idx + 1}번째 회의</strong>
     </div>
     <div style="background: white; border: 2px solid #e0e0e0; border-radius: 8px; padding: 30px; max-width: 881px; margin: 0 auto 30px">
         <h2 class="doc-title" style="margin: 0">회 의 록</h2>
+        <span class="doc-number-minutes" style="font-size: 14px; display: block; margin: 20px 0 5px"></span>
         <table class="form-table">
             <colgroup><col style="width: 15%;"><col style="width: 44%;"><col style="width: 14%;"><col style="width: 27%;"></colgroup>
             <tr><th style="height:64px">과제명</th><td><input type="text" class="auto-project" readonly style="background:#f9f9f9;text-align:center;font-size:12px;"></td><th>작성자</th><td><input type="text" id="doc_meeting_author_${idx}" readonly style="background:#f9f9f9;text-align:center;width:100%;padding:4px;border:1px solid #ddd;"></td></tr>
@@ -2979,6 +2997,7 @@ document.addEventListener('DOMContentLoaded', function() {
     </div>
     <div style="background: white; border: 2px solid #e0e0e0; border-radius: 8px; padding: 30px; margin: 0 auto 30px; max-width: 881px">
         <h2 class="doc-title" style="margin: 0">참 석 자 명 단</h2>
+        <span class="doc-number-attendee" style="font-size: 14px; display: block; margin: 20px 0 5px"></span>
         <table class="form-table">
             <colgroup><col style="width:15%;"><col style="width:44%;"><col style="width:14%;"><col style="width:27%;"></colgroup>
             <tr><th style="height:64px">과제</th><td><input type="text" class="auto-project" readonly style="background:#f9f9f9;text-align:center;font-size:12px;"></td><th>작성자</th><td><input type="text" id="doc_attendee_author_${idx}" readonly style="background:#f9f9f9;text-align:center;width:100%;padding:4px;border:1px solid #ddd;"></td></tr>
@@ -3048,7 +3067,116 @@ document.addEventListener('DOMContentLoaded', function() {
                 if (docContainer) docContainer.appendChild(docBlock);
             }
         });
+
+        // 블록 순서가 바뀌었으니 문서번호 연번도 재계산
+        updateMeetingDocNumbers();
     }
+
+    // 추가 회의(idx >= 1) 공식문서 영역 필드를 입력값·상태 기준으로 전부 동기화
+    //   회의-0은 기존 updateMeetingFields 에서 .auto-* 클래스로 자동 반영됨.
+    //   추가 블록은 idx별 고유 id라 별도 sync 필요.
+    function updateExtraMeetingDocFields(idx) {
+        const m = extraMeetings.find(em => em.idx === idx);
+        if (!m) return;
+
+        // 일시 (회의록·참석자명단 공통)
+        const dateVal  = document.getElementById(`meeting_date_${idx}`)?.value || '';
+        const startVal = document.getElementById(`meeting_start_time_${idx}`)?.value || '';
+        const endVal   = document.getElementById(`meeting_end_time_${idx}`)?.value || '';
+        let dateTimeText = '';
+        if (dateVal) {
+            const [y, mo, d] = dateVal.split('-');
+            dateTimeText = `${y}.${mo}.${d}`;
+            if (startVal && endVal)      dateTimeText += ` ${startVal} ~ ${endVal}`;
+            else if (startVal)           dateTimeText += ` ${startVal}`;
+        }
+        const dt1 = document.getElementById(`doc_meeting_datetime_${idx}`);
+        if (dt1) dt1.value = dateTimeText;
+        const dt2 = document.getElementById(`doc_attendee_datetime_${idx}`);
+        if (dt2) dt2.value = dateTimeText;
+
+        // 장소
+        const locVal = document.getElementById(`meeting_location_${idx}`)?.value || '';
+        const docLoc = document.getElementById(`doc_meeting_location_${idx}`);
+        if (docLoc) docLoc.value = locVal;
+
+        // 주제 (회의 목적)
+        const purpose = document.getElementById(`meeting_purpose_${idx}`)?.value || '';
+        const subj = document.getElementById(`doc_meeting_subject_${idx}`);
+        if (subj) subj.textContent = purpose;
+
+        // 주요 내용
+        const content = document.getElementById(`meeting_content_${idx}`)?.value || '';
+        const contentEl = document.getElementById(`doc_meeting_content_${idx}`);
+        if (contentEl) contentEl.textContent = content;
+
+        // 작성자 (회의록·참석자명단 양쪽에 채움)
+        const authorName = (document.getElementById(`meeting_author_${idx}`)?.value || '').split(' (')[0];
+        const docAuth1 = document.getElementById(`doc_meeting_author_${idx}`);
+        if (docAuth1) docAuth1.value = authorName;
+        const docAuth2 = document.getElementById(`doc_attendee_author_${idx}`);
+        if (docAuth2) docAuth2.value = authorName;
+
+        // 참여자 텍스트 (내부 "홍길동, 김철수(파인씨앤아이), 외부참석자(회사)" 형식)
+        const internal = (m.tripPersonsForMeeting || []).filter(p => p && p.name && p.name.trim());
+        const external = (m.attendees || []).filter(a => a && a.name && a.name.trim());
+        const internalNames = internal.map(a => a.name.trim());
+        const externalParts = external.map(a => `${a.name.trim()}(${(a.dept || '외부').trim()})`);
+        let allText = '';
+        if (internalNames.length > 0 && externalParts.length > 0) {
+            allText = internalNames.join(', ') + '(파인씨앤아이), ' + externalParts.join(', ');
+        } else if (internalNames.length > 0) {
+            allText = internalNames.join(', ') + '(파인씨앤아이)';
+        } else if (externalParts.length > 0) {
+            allText = externalParts.join(', ');
+        }
+        const attTd = document.getElementById(`doc_meeting_attendees_${idx}`);
+        if (attTd) attTd.textContent = allText;
+
+        // 참석자 서명 테이블
+        const sortedInternal = [...internal].sort((a, b) => {
+            const codeA = positionCodes.find(pc => pc.codeName === a.position)?.code || '';
+            const codeB = positionCodes.find(pc => pc.codeName === b.position)?.code || '';
+            return getPositionSortOrder(codeA) - getPositionSortOrder(codeB);
+        });
+        const sortedAll = [
+            ...external.map(e => ({ ...e, isExternal: true })),
+            ...sortedInternal.map(i => ({ ...i, isExternal: false }))
+        ];
+        const sigBody = document.getElementById(`attendeeSignatureBody_${idx}`);
+        if (sigBody) {
+            sigBody.innerHTML = sortedAll.map(a => {
+                const type = a.isExternal ? '외부' : '내부';
+                const dept = a.isExternal ? (a.dept || '') : '파인씨앤아이';
+                const sigAttr = a.idx
+                    ? ` data-slot="C1601"${a.isExternal ? ' data-external="true"' : ''} data-signer-idx="${a.idx}"`
+                    : '';
+                return `<tr style="height: 50px;"><td style="text-align:center;">${type}</td><td style="text-align:center;">${dept}</td><td style="text-align:center;">${a.name}</td><td${sigAttr}></td></tr>`;
+            }).join('');
+        }
+    }
+    window.updateExtraMeetingDocFields = updateExtraMeetingDocFields;
+
+    // 회의록/참석자명단 문서번호 연번 표시
+    //   여러 회의가 있을 때 DOM 순서대로 회의록-YYYYMMDD-01, -02 … 로 부여
+    //   날짜는 각 회의 블록의 입력값 기준 (meeting-0 → common_meeting_date,
+    //   추가 회의 → meeting_date_{idx})
+    function updateMeetingDocNumbers() {
+        const blocks = document.querySelectorAll('#meetingDocumentBlocks .meeting-doc-block');
+        blocks.forEach((block, i) => {
+            const idx = block.getAttribute('data-doc-meeting-idx');
+            const dateStr = idx === '0'
+                ? (document.getElementById('common_meeting_date')?.value || '')
+                : (document.getElementById(`meeting_date_${idx}`)?.value || '');
+            const seq = String(i + 1).padStart(2, '0');
+            const yyyymmdd = dateStr.replace(/-/g, '');
+            const minutesTxt  = yyyymmdd ? `회의록-${yyyymmdd}-${seq}` : '';
+            const attendeeTxt = yyyymmdd ? `참석자명단-${yyyymmdd}-${seq}` : '';
+            block.querySelectorAll('.doc-number-minutes').forEach(el => { el.textContent = minutesTxt; });
+            block.querySelectorAll('.doc-number-attendee').forEach(el => { el.textContent = attendeeTxt; });
+        });
+    }
+    window.updateMeetingDocNumbers = updateMeetingDocNumbers;
 
     // 추가된 회의 바이트 카운터 업데이트
     const MIN_MEETING_CONTENT_BYTES = 400;
@@ -3118,6 +3246,10 @@ document.addEventListener('DOMContentLoaded', function() {
             const docAuthorField = document.getElementById(`doc_meeting_author_${idx}`);
             if (authorField) { authorField.value = author.name; authorField.classList.remove('field-empty'); }
             if (docAuthorField) docAuthorField.value = author.name;
+            // 공식 문서 미리보기의 나머지 필드(참여자/서명 테이블 등)도 초기 동기화
+            if (typeof updateExtraMeetingDocFields === 'function') {
+                updateExtraMeetingDocFields(idx);
+            }
         }
     }
 
@@ -5026,6 +5158,10 @@ document.addEventListener('DOMContentLoaded', function() {
         }
 
         if (window.updateMeetingFields) window.updateMeetingFields();
+        // 추가 회의(idx >= 1) 공식 문서 작성자 필드까지 동기화
+        if (currentMeetingIdx > 0 && typeof updateExtraMeetingDocFields === 'function') {
+            updateExtraMeetingDocFields(currentMeetingIdx);
+        }
         closeMeetingAuthorModal();
     };
 
@@ -6004,6 +6140,13 @@ document.addEventListener('DOMContentLoaded', function() {
             } catch (e) {
                 console.warn('[populateForm] RTM 참여기간 재검증 오류:', e);
             }
+            // 추가 회의(idx >= 1) 공식 문서 미리보기 전부 동기화 + 문서번호 연번 갱신
+            extraMeetings.forEach(m => {
+                if (typeof updateExtraMeetingDocFields === 'function') {
+                    updateExtraMeetingDocFields(m.idx);
+                }
+            });
+            if (typeof updateMeetingDocNumbers === 'function') updateMeetingDocNumbers();
         }
     }
 

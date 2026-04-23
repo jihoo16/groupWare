@@ -2,6 +2,7 @@ package com.pinecni.erp.api.signature.service;
 
 import com.pinecni.erp.api.approval.repository.ApprovalDocumentRepository;
 import com.pinecni.erp.api.code.repository.CodeRepository;
+import com.pinecni.erp.api.externalperson.repository.ExternalPersonRepository;
 import com.pinecni.erp.api.project.repository.ProjectRepository;
 import com.pinecni.erp.api.signature.dto.DocumentSignatureResponse;
 import com.pinecni.erp.api.signature.repository.ApprovalLineTemplateRepository;
@@ -13,6 +14,7 @@ import com.pinecni.erp.entity.ApprovalDocument;
 import com.pinecni.erp.entity.ApprovalLineTemplate;
 import com.pinecni.erp.entity.Code;
 import com.pinecni.erp.entity.DocumentSignature;
+import com.pinecni.erp.entity.ExternalPerson;
 import com.pinecni.erp.entity.Project;
 import com.pinecni.erp.entity.SignatureRequest;
 import com.pinecni.erp.entity.User;
@@ -50,6 +52,7 @@ public class SignatureServiceImpl implements SignatureService {
     private final UserRepository userRepository;
     private final ProjectRepository projectRepository;
     private final CodeRepository codeRepository;
+    private final ExternalPersonRepository externalPersonRepository;
 
     // ============================================================
     // 결재라인 기반 서명 요청 생성
@@ -58,13 +61,22 @@ public class SignatureServiceImpl implements SignatureService {
     @Override
     @Transactional
     public void requestSignaturesForDocument(Long documentIdx, Long requesterUserIdx) {
-        requestSignaturesForDocument(documentIdx, requesterUserIdx, null, null);
+        requestSignaturesForDocument(documentIdx, requesterUserIdx, null, null, null);
     }
 
     @Override
     @Transactional
     public void requestSignaturesForDocument(Long documentIdx, Long requesterUserIdx,
                                               Long projectIdx, List<Long> attendeeUserIdxList) {
+        requestSignaturesForDocument(documentIdx, requesterUserIdx, projectIdx, attendeeUserIdxList, null);
+    }
+
+    @Override
+    @Transactional
+    public void requestSignaturesForDocument(Long documentIdx, Long requesterUserIdx,
+                                              Long projectIdx,
+                                              List<Long> attendeeUserIdxList,
+                                              List<Long> externalAttendeeIdxList) {
         ApprovalDocument document = approvalDocumentRepository.findById(documentIdx)
                 .orElseThrow(() -> new EntityNotFoundException("문서를 찾을 수 없습니다: " + documentIdx));
 
@@ -87,7 +99,10 @@ public class SignatureServiceImpl implements SignatureService {
         for (ApprovalLineTemplate template : templates) {
             List<Long> signerUserIdxList = resolveSigners(template, document, projectIdx, attendeeUserIdxList);
 
-            if (signerUserIdxList.isEmpty()) {
+            // ATTENDEE 템플릿은 내부 참석자가 없어도 외부 참석자 처리를 위해 계속 진행
+            boolean hasExternalForThisSlot = "ATTENDEE".equals(template.getSignerRole())
+                    && externalAttendeeIdxList != null && !externalAttendeeIdxList.isEmpty();
+            if (signerUserIdxList.isEmpty() && !hasExternalForThisSlot) {
                 log.warn("서명자 결정 실패 (건너뜀): template={}, signer_role={}",
                         template.getIdx(), template.getSignerRole());
                 continue;
@@ -110,9 +125,37 @@ public class SignatureServiceImpl implements SignatureService {
                         .signatureOrder(template.getSignatureOrder())
                         .status(CodeConstants.DocumentSignatureStatus.PENDING.getCode())
                         .createdUserIdx(requesterUserIdx)
+                        .isExternal(false)
                         .build();
                 row = documentSignatureRepository.save(row);
                 createdRows.add(row);
+            }
+
+            // 외부 참석자: ATTENDEE 슬롯에 대해 별도로 is_external=true row 생성
+            // (사번이 없어 인증 스킵, external_person.idx를 signer_user_idx로 사용)
+            if ("ATTENDEE".equals(template.getSignerRole())
+                    && externalAttendeeIdxList != null && !externalAttendeeIdxList.isEmpty()) {
+                for (Long externalPersonIdx : externalAttendeeIdxList) {
+                    if (externalPersonIdx == null) continue;
+                    Optional<DocumentSignature> existing = documentSignatureRepository
+                            .findByDocumentIdxAndSignerUserIdxAndSignatureSlot(
+                                    documentIdx, externalPersonIdx, template.getSignatureSlot());
+                    if (existing.isPresent()) {
+                        createdRows.add(existing.get());
+                        continue;
+                    }
+                    DocumentSignature row = DocumentSignature.builder()
+                            .documentIdx(documentIdx)
+                            .signerUserIdx(externalPersonIdx)
+                            .signatureSlot(template.getSignatureSlot())
+                            .signatureOrder(template.getSignatureOrder())
+                            .status(CodeConstants.DocumentSignatureStatus.PENDING.getCode())
+                            .createdUserIdx(requesterUserIdx)
+                            .isExternal(true)
+                            .build();
+                    row = documentSignatureRepository.save(row);
+                    createdRows.add(row);
+                }
             }
         }
 
@@ -125,8 +168,10 @@ public class SignatureServiceImpl implements SignatureService {
         }
 
         // 사용자별로 그룹화하여 같은 사람의 복수 슬롯 찾기
+        // 외부인은 linking 대상 제외 (한 슬롯만 가지며, external_person.idx ↔ users.idx 충돌 방지)
         Map<Long, List<DocumentSignature>> bySigner = new HashMap<>();
         for (DocumentSignature row : createdRows) {
+            if (Boolean.TRUE.equals(row.getIsExternal())) continue;
             bySigner.computeIfAbsent(row.getSignerUserIdx(), k -> new ArrayList<>()).add(row);
         }
 
@@ -134,11 +179,16 @@ public class SignatureServiceImpl implements SignatureService {
             List<DocumentSignature> rows = entry.getValue();
             if (rows.size() < 2) continue;
 
-            // order 오름차순 정렬 → 가장 낮은 order를 메인(직접 서명)으로, 나머지를 linked 처리
-            // 같은 사람이 order 1(담당) + order 2(연구책임자) 양쪽에 있으면
-            // order 1에서 한 번 서명 → order 2는 자동 반영
-            rows.sort((a, b) -> Integer.compare(a.getSignatureOrder(), b.getSignatureOrder()));
-            DocumentSignature mainRow = rows.get(0);  // 가장 낮은 order = 먼저 서명
+            // 1차: order 오름차순 — 낮은 order(먼저 서명할 단계)가 메인
+            // 2차: 같은 order일 때 슬롯 우선순위 — 정식 결재란이 메인, 참석자 행은 부(副)
+            //      DRAFTER(C1602) > DEPT_HEAD(C1604) > PROJECT_LEAD(C1603) > ATTENDEE(C1601)
+            //      (신청자가 참석자도 겸한 경우, 결재란 상단을 클릭해 서명하게끔 UX 정렬)
+            rows.sort((a, b) -> {
+                int orderCmp = Integer.compare(a.getSignatureOrder(), b.getSignatureOrder());
+                if (orderCmp != 0) return orderCmp;
+                return Integer.compare(slotPriority(a.getSignatureSlot()), slotPriority(b.getSignatureSlot()));
+            });
+            DocumentSignature mainRow = rows.get(0);  // 가장 낮은 order + 높은 슬롯 우선순위 = 메인
 
             for (int i = 1; i < rows.size(); i++) {
                 DocumentSignature later = rows.get(i);
@@ -165,15 +215,18 @@ public class SignatureServiceImpl implements SignatureService {
                 row.setRequestedAt(now);
                 documentSignatureRepository.save(row);
 
-                // 알림용 signature_requests 생성
-                SignatureRequest sr = SignatureRequest.builder()
-                        .documentIdx(documentIdx)
-                        .documentSignatureIdx(row.getIdx())
-                        .requesterUserIdx(requesterUserIdx)
-                        .signerUserIdx(row.getSignerUserIdx())
-                        .isCompleted(false)
-                        .build();
-                signatureRequestRepository.save(sr);
+                // 알림용 signature_requests 생성 — 외부인은 로그인 대상 아니라 알림 대상 아님.
+                //   external_person.idx ↔ users.idx 숫자 충돌 시 다른 사용자 알림에 섞일 위험도 있어 스킵.
+                if (!Boolean.TRUE.equals(row.getIsExternal())) {
+                    SignatureRequest sr = SignatureRequest.builder()
+                            .documentIdx(documentIdx)
+                            .documentSignatureIdx(row.getIdx())
+                            .requesterUserIdx(requesterUserIdx)
+                            .signerUserIdx(row.getSignerUserIdx())
+                            .isCompleted(false)
+                            .build();
+                    signatureRequestRepository.save(sr);
+                }
             }
         }
 
@@ -226,6 +279,21 @@ public class SignatureServiceImpl implements SignatureService {
                 }
                 log.warn("알 수 없는 signer_role: {}", role);
                 return List.of();
+        }
+    }
+
+    /**
+     * 같은 order에 여러 슬롯이 있을 때 어느 슬롯을 "메인(직접 서명)"으로 삼을지 결정.
+     * 낮을수록 우선. 결재란 상단(DRAFTER/DEPT_HEAD/PROJECT_LEAD)이 참석자 행(ATTENDEE)보다 우선.
+     */
+    private int slotPriority(String slot) {
+        if (slot == null) return 9;
+        switch (slot) {
+            case "C1602": return 0; // DRAFTER (신청자/담당)
+            case "C1604": return 1; // DEPT_HEAD (부서장)
+            case "C1603": return 2; // PROJECT_LEAD (연구책임자)
+            case "C1601": return 3; // ATTENDEE (참석자 — 결재란 있으면 후순위)
+            default:      return 9;
         }
     }
 
@@ -297,6 +365,13 @@ public class SignatureServiceImpl implements SignatureService {
                 row.setRequestedAt(now);
                 documentSignatureRepository.save(row);
 
+                // 외부인은 로그인 대상 아니라 알림 요청 스킵 (숫자 충돌 방지)
+                if (Boolean.TRUE.equals(row.getIsExternal())) {
+                    log.info("다음 단계 외부인 활성화 (알림 스킵): documentIdx={}, signerUserIdx={}",
+                            documentIdx, row.getSignerUserIdx());
+                    continue;
+                }
+
                 // signature_requests 생성 (중복 방지: 기존 없는 경우만)
                 SignatureRequest sr = SignatureRequest.builder()
                         .documentIdx(documentIdx)
@@ -349,14 +424,29 @@ public class SignatureServiceImpl implements SignatureService {
 
         List<DocumentSignatureResponse> result = new ArrayList<>();
         for (DocumentSignature row : rows) {
-            User signer = userRepository.findById(row.getSignerUserIdx()).orElse(null);
-            String signerName = signer != null ? signer.getEmpName() : "알 수 없음";
-            String empId = signer != null ? signer.getEmpId() : null;
-            String positionName = signer != null && signer.getEmpPosition() != null
-                    ? codeRepository.findByGroupCodeAndCode(
-                            CodeConstants.GroupCode.POSITION.getCode(), signer.getEmpPosition())
-                            .map(Code::getCodeName).orElse("")
-                    : "";
+            boolean isExternal = Boolean.TRUE.equals(row.getIsExternal());
+
+            String signerName;
+            String empId = null;
+            String positionName = "";
+            String signerCompany = null;
+
+            if (isExternal) {
+                // 외부인: external_person 조회
+                ExternalPerson ep = externalPersonRepository.findById(row.getSignerUserIdx()).orElse(null);
+                signerName = ep != null ? ep.getName() : "외부 인원";
+                positionName = ep != null && ep.getPosition() != null ? ep.getPosition() : "";
+                signerCompany = ep != null ? ep.getCompanyName() : null;
+            } else {
+                User signer = userRepository.findById(row.getSignerUserIdx()).orElse(null);
+                signerName = signer != null ? signer.getEmpName() : "알 수 없음";
+                empId = signer != null ? signer.getEmpId() : null;
+                positionName = signer != null && signer.getEmpPosition() != null
+                        ? codeRepository.findByGroupCodeAndCode(
+                                CodeConstants.GroupCode.POSITION.getCode(), signer.getEmpPosition())
+                                .map(Code::getCodeName).orElse("")
+                        : "";
+            }
 
             String slotLabel = codeRepository.findByGroupCodeAndCode(
                     CodeConstants.GroupCode.SIGNATURE_SLOT.getCode(), row.getSignatureSlot())
@@ -369,11 +459,15 @@ public class SignatureServiceImpl implements SignatureService {
                         + Base64.getEncoder().encodeToString(row.getSignatureImage());
             }
 
-            // 서명 가능 여부: 로그인 사용자가 서명자 본인 + 차례 도래 + 미서명 + linked 아님
-            boolean canSign = row.getSignerUserIdx().equals(loginUserIdx)
-                    && row.getRequestedAt() != null
+            // 서명 가능 여부:
+            //  - 내부: 로그인 사용자 == 서명자 본인 + 차례 + 미서명 + linked 아님
+            //  - 외부: 로그인 사용자 무관(누구나 QR 발급 가능) + 차례 + 미서명 + linked 아님
+            boolean baseCanSign = row.getRequestedAt() != null
                     && row.getLinkedSignatureIdx() == null
                     && CodeConstants.DocumentSignatureStatus.PENDING.getCode().equals(row.getStatus());
+            boolean canSign = isExternal
+                    ? baseCanSign
+                    : baseCanSign && row.getSignerUserIdx().equals(loginUserIdx);
 
             result.add(DocumentSignatureResponse.builder()
                     .idx(row.getIdx())
@@ -390,6 +484,8 @@ public class SignatureServiceImpl implements SignatureService {
                     .signedAt(row.getSignedAt())
                     .signatureImageDataUrl(imageDataUrl)
                     .canSign(canSign)
+                    .isExternal(isExternal)
+                    .signerCompany(signerCompany)
                     .build());
         }
         return result;

@@ -64,4 +64,10 @@ public class SignatureSessionResponse {
 
     /** 사번 2차 인증 완료 여부 */
     private Boolean verified;
+
+    /** 외부인 서명 세션 여부 (true면 모바일은 사번 입력 단계 스킵) */
+    private Boolean isExternal;
+
+    /** 외부인 소속 (isExternal=true일 때만 채워짐 — 모바일에서 확인용) */
+    private String signerCompany;
 }

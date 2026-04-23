@@ -69,4 +69,22 @@ public interface SignatureSessionService {
      * 세션 취소 (PC에서 모달 닫기 등)
      */
     void cancelSession(String token, Long loginUserIdx);
+
+    /**
+     * 외부인 서명용 QR 세션 생성 (PC에서 외부 참석자 칸 클릭 시)
+     * <ul>
+     *   <li>document_signatures에서 is_external=true + signer_user_idx=externalPersonIdx 행 조회</li>
+     *   <li>signature_sessions에 is_external=true 세션 생성 (사번 2차 인증 스킵)</li>
+     *   <li>모바일 /sign/{token} 에서 사번 입력 단계 건너뛰고 바로 서명 패드 표시</li>
+     * </ul>
+     *
+     * @param documentIdx 문서 IDX
+     * @param externalPersonIdx external_person.idx (참석자)
+     * @param loginUserIdx 세션 생성자 (PC 사용자, 문서 담당자 등)
+     * @param ipAddress 세션 생성자 IP (감사용)
+     */
+    SignatureSessionResponse createExternalSession(Long documentIdx,
+                                                    Long externalPersonIdx,
+                                                    Long loginUserIdx,
+                                                    String ipAddress);
 }

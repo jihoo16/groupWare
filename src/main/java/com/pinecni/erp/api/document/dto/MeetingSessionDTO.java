@@ -46,6 +46,9 @@ public class MeetingSessionDTO {
     /** 회의 작성자 user idx */
     private Long meetingDrafterUserIdx;
 
+    /** 회의 작성자 이름 (상세페이지 표시용, 응답 전용) */
+    private String meetingDrafterUserName;
+
     /** 실제 지출 회의비 금액 */
     private BigDecimal meetingAmount;
 
