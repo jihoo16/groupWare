@@ -18,7 +18,7 @@ document.addEventListener('DOMContentLoaded', function() {
         // receipt idx로 직접 조회
         loadByReceiptIdx(receiptId);
     } else {
-        // documentIdx로 조회 - 전체 목록에서 찾기
+        // documentIdx 로 polymorphic 조회 (백엔드가 receipt idx/document idx 둘 다 허용)
         loadByDocumentIdx(documentIdx);
     }
 });
@@ -48,16 +48,8 @@ async function loadByReceiptIdx(receiptIdx) {
 
 async function loadByDocumentIdx(documentIdx) {
     try {
-        // 전체 회의록 목록을 조회하여 documentIdx가 일치하는 건을 찾기
-        const listRes = await fetch('/api/receipt-meetings');
-        if (!listRes.ok) throw new Error('회의록 목록 조회 실패');
-        const list = await listRes.json();
-
-        const found = list.find(item => String(item.documentIdx) === String(documentIdx));
-        if (!found) throw new Error('해당 문서를 찾을 수 없습니다.');
-
-        // 상세 조회
-        const response = await fetch(`/api/receipt-meetings/${found.idx}`);
+        // 백엔드 getReceiptMeetingById 는 documentIdx/receipt idx 둘 다 polymorphic 지원
+        const response = await fetch(`/api/receipt-meetings/${documentIdx}`);
         if (!response.ok) throw new Error('회의록 조회 실패');
         const data = await response.json();
 

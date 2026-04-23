@@ -75,7 +75,7 @@
                                 <th style="width: 15%;">출장기간</th>
                                 <th>출장목적</th>
                             </tr>
-                            <tr>
+                            <tr id="tripPersonHeaderRow">
                                 <th style="width: 12%;">부서명</th>
                                 <th style="width: 12%;">직 위</th>
                                 <th style="width: 12%;">성 명</th>
@@ -87,9 +87,8 @@
                                     style="text-align: center; padding: 10px; vertical-align: middle;">
                                     <span id="doc_purpose"></span></td>
                             </tr>
-                            <tbody id="proposalPersonBody">
-                            <!-- 출장인원 행: JS에서 동적 생성 -->
-                            </tbody>
+                            <!-- 출장인원 행: JS가 tripPersonHeaderRow 바로 다음에 동적 삽입.
+                                 tbody 래퍼 두면 rowspan이 tbody 경계에서 잘려 출장지/기간/목적 셀이 1행만 차지. -->
                             <tr>
                                 <th colspan="6"
                                     style="background: #f0f0f0; padding: 15px; text-align: center;">소 요 경 비 내 역(원)
@@ -103,10 +102,9 @@
                                 <th>기타(일비)</th>
                                 <th>계</th>
                             </tr>
-                            <tbody id="proposalExpenseBody">
-                            <!-- 동적 생성 -->
-                            </tbody>
-                            <tr>
+                            <!-- 일별 비용 행은 JS 가 proposalExpenseAnchor 앞에 동적 삽입.
+                                 tbody 래퍼 두면 colgroup/열계산이 분할돼 레이아웃 깨짐. -->
+                            <tr id="proposalExpenseAnchor">
                                 <th style="height: 45px">합 계</th>
                                 <td colspan="5" style="text-align: center;"><span id="doc_request_amount">0</span> 원</td>
                             </tr>
@@ -198,10 +196,8 @@
                                 <th colspan="2" style="white-space: nowrap;">실집행금액</th>
                                 <td style="text-align: center;"><span id="doc_total_amount"></span></td>
                             </tr>
-                            <tbody id="reportExpenseBody">
-                            <!-- 동적 생성 -->
-                            </tbody>
-                            <tr>
+                            <!-- 일별 비용 행은 JS 가 reportExpenseAnchor 앞에 동적 삽입. -->
+                            <tr id="reportExpenseAnchor">
                                 <th colspan="2">차 액</th>
                                 <td style="text-align: center; padding: 8px;"><span id="doc_difference">0</span> 원</td>
                                 <td colspan="3" style="padding: 8px; text-align: center;">연구비 카드로 결재 (차액 결재 없음)</td>
