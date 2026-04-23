@@ -130,7 +130,7 @@ function displayReportData(data, documentIdx) {
     const currentUserIdx = window.CURRENT_USER ? window.CURRENT_USER.idx : null;
 
     if (currentUserIdx && data.projectIdx) {
-        checkProjectMemberAndShowButtons(data.projectIdx, data.id, documentIdx, currentUserIdx);
+        checkProjectMemberAndShowButtons(data.projectIdx, data.id, documentIdx, currentUserIdx, data.reportPeriod);
     }
 
     // 첨부파일 로드
@@ -239,8 +239,29 @@ async function downloadFile(fileIdx, originalFilename) {
     }
 }
 
+// reportPeriod 문자열("2026.04.13 ~ 2026.04.17")에서 종료일 추출 후 이번 주 이전인지 판단
+function isPastWeek(reportPeriod) {
+    if (!reportPeriod) return false;
+    try {
+        const endStr = reportPeriod.split('~')[1].trim(); // "2026.04.17"
+        const [y, m, d] = endStr.split('.').map(Number);
+        const endDate = new Date(y, m - 1, d);
+
+        const today = new Date();
+        const day = today.getDay(); // 0=일, 1=월 ...
+        const diffToMonday = day === 0 ? -6 : 1 - day;
+        const thisMonday = new Date(today);
+        thisMonday.setDate(today.getDate() + diffToMonday);
+        thisMonday.setHours(0, 0, 0, 0);
+
+        return endDate < thisMonday;
+    } catch (e) {
+        return false;
+    }
+}
+
 // 프로젝트 멤버 여부 확인 후 수정/삭제 버튼 생성
-async function checkProjectMemberAndShowButtons(projectIdx, reportId, documentIdx, currentUserIdx) {
+async function checkProjectMemberAndShowButtons(projectIdx, reportId, documentIdx, currentUserIdx, reportPeriod) {
     try {
         const response = await fetch(`/api/projects/${projectIdx}/members`);
         if (!response.ok) {
@@ -258,6 +279,11 @@ async function checkProjectMemberAndShowButtons(projectIdx, reportId, documentId
 
         const headerButtons = document.getElementById('headerButtons');
         if (!headerButtons) return;
+
+        if (isPastWeek(reportPeriod)) {
+            console.log('지나간 주 보고서이므로 수정/삭제 버튼을 표시하지 않습니다.');
+            return;
+        }
 
         const backBtn = headerButtons.querySelector('button');
 
