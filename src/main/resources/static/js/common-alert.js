@@ -275,4 +275,159 @@ window.confirmCustom = async function(message) {
     return await showConfirm(message);
 };
 
+// ============================================
+// 실패/오류 안내 표준 헬퍼 (카테고리별)
+// ============================================
+// 원칙: 무엇을 + 왜 + 다음 행동 — 기술 용어 금지.
+// subject 는 조사 없이 호출부에서 자연스러운 명사를 넘기면 된다.
+//   예) showSaveFailure('회의록'), showLoadFailure('직원 목록')
+
+/** 서버/네트워크 일시 장애로 저장되지 않음 */
+window.showSaveFailure = function(subject = '내용') {
+    return Swal.fire({
+        title: `${subject}을(를) 저장하지 못했습니다`,
+        html: `서버와 잠시 연결되지 않아 저장이 완료되지 않았습니다.<br>` +
+              `작성하신 내용은 그대로 남아 있으니 <b>다시 저장 버튼</b>을 눌러 주세요.<br>` +
+              `같은 문제가 계속되면 관리자에게 문의해 주세요.`,
+        icon: 'warning',
+        confirmButtonText: '확인',
+        confirmButtonColor: '#ff9800'
+    });
+};
+
+/** 수정 저장 실패 */
+window.showUpdateFailure = function(subject = '내용') {
+    return Swal.fire({
+        title: `${subject}을(를) 수정하지 못했습니다`,
+        html: `서버와 잠시 연결되지 않아 수정이 완료되지 않았습니다.<br>` +
+              `고치신 내용은 그대로 남아 있으니 <b>다시 수정 버튼</b>을 눌러 주세요.<br>` +
+              `같은 문제가 계속되면 관리자에게 문의해 주세요.`,
+        icon: 'warning',
+        confirmButtonText: '확인',
+        confirmButtonColor: '#ff9800'
+    });
+};
+
+/** 삭제 실패 */
+window.showDeleteFailure = function(subject = '항목') {
+    return Swal.fire({
+        title: `${subject}을(를) 삭제하지 못했습니다`,
+        html: `서버와 잠시 연결되지 않아 삭제가 완료되지 않았습니다.<br>` +
+              `<b>다시 삭제 버튼</b>을 눌러 주세요.<br>` +
+              `같은 문제가 계속되면 관리자에게 문의해 주세요.`,
+        icon: 'warning',
+        confirmButtonText: '확인',
+        confirmButtonColor: '#ff9800'
+    });
+};
+
+/** 파일 다운로드/내보내기 실패 */
+window.showDownloadFailure = function(subject = '파일') {
+    return Swal.fire({
+        title: `${subject}을(를) 내려받지 못했습니다`,
+        html: `서버와 잠시 연결되지 않아 내려받기가 완료되지 않았습니다.<br>` +
+              `인터넷 연결을 확인한 뒤 <b>다시 내려받기 버튼</b>을 눌러 주세요.`,
+        icon: 'warning',
+        confirmButtonText: '확인',
+        confirmButtonColor: '#ff9800'
+    });
+};
+
+/** 파일 생성(PDF 등) 실패 */
+window.showGenerateFailure = function(subject = '문서') {
+    return Swal.fire({
+        title: `${subject}을(를) 만들지 못했습니다`,
+        html: `${subject} 생성 중 문제가 생겨 파일이 만들어지지 않았습니다.<br>` +
+              `<b>다시 시도</b>하거나, 계속되면 관리자에게 문의해 주세요.`,
+        icon: 'warning',
+        confirmButtonText: '확인',
+        confirmButtonColor: '#ff9800'
+    });
+};
+
+/** 파일 업로드 실패 */
+window.showUploadFailure = function(subject = '파일') {
+    return Swal.fire({
+        title: `${subject}을(를) 올리지 못했습니다`,
+        html: `업로드 중 서버와 연결되지 않았습니다.<br>` +
+              `파일을 다시 선택해 올려 주세요. 크기가 너무 크거나 형식이 맞지 않는지 확인해 주세요.`,
+        icon: 'warning',
+        confirmButtonText: '확인',
+        confirmButtonColor: '#ff9800'
+    });
+};
+
+/** 파일 크기 초과 */
+window.showFileTooLarge = function(limitMB) {
+    return Swal.fire({
+        title: '파일이 너무 큽니다',
+        html: `첨부 파일은 <b>${limitMB}MB 이하</b>만 올릴 수 있습니다.<br>` +
+              `파일 크기를 줄이거나 여러 개로 나누어 올려 주세요.`,
+        icon: 'warning',
+        confirmButtonText: '확인',
+        confirmButtonColor: '#ff9800'
+    });
+};
+
+/** 허용되지 않는 파일 형식 */
+window.showFileTypeInvalid = function(allowedText = '') {
+    return Swal.fire({
+        title: '올릴 수 없는 파일 형식입니다',
+        html: allowedText
+            ? `${allowedText} 형식만 올릴 수 있습니다.<br>파일 형식을 확인한 뒤 다시 올려 주세요.`
+            : `지원하지 않는 파일 형식입니다.<br>파일 형식을 확인한 뒤 다시 올려 주세요.`,
+        icon: 'warning',
+        confirmButtonText: '확인',
+        confirmButtonColor: '#ff9800'
+    });
+};
+
+/** 목록/상세 데이터 로드 실패 */
+window.showLoadFailure = function(subject = '정보') {
+    return Swal.fire({
+        title: `${subject}을(를) 불러오지 못했습니다`,
+        html: `서버와 잠시 연결되지 않아 ${subject}을(를) 표시하지 못했습니다.<br>` +
+              `<b>페이지 새로고침(F5)</b> 후 다시 시도해 주세요.<br>` +
+              `같은 문제가 계속되면 관리자에게 문의해 주세요.`,
+        icon: 'warning',
+        confirmButtonText: '확인',
+        confirmButtonColor: '#ff9800'
+    });
+};
+
+/** 권한 부족 */
+window.showPermissionDenied = function(action = '이 작업') {
+    return Swal.fire({
+        title: '권한이 없습니다',
+        html: `${action}을(를) 수행할 권한이 없습니다.<br>` +
+              `필요한 경우 관리자에게 요청해 주세요.`,
+        icon: 'info',
+        confirmButtonText: '확인',
+        confirmButtonColor: '#667eea'
+    });
+};
+
+/** 필수 입력 누락 */
+window.showRequiredMissing = function(fieldName) {
+    return Swal.fire({
+        title: `${fieldName}을(를) 입력해 주세요`,
+        html: `${fieldName}은(는) 반드시 입력해야 하는 항목입니다.`,
+        icon: 'info',
+        confirmButtonText: '확인',
+        confirmButtonColor: '#667eea'
+    });
+};
+
+/** 서버/네트워크 응답 없음 (가장 범용) */
+window.showServerUnavailable = function(retryHint = '잠시 후 다시 시도해 주세요.') {
+    return Swal.fire({
+        title: '서버에 연결할 수 없습니다',
+        html: `서버와 연결되지 않습니다.<br>` +
+              `인터넷 연결을 확인해 주세요.<br>${retryHint}`,
+        icon: 'warning',
+        confirmButtonText: '확인',
+        confirmButtonColor: '#ff9800'
+    });
+};
+
 console.log('✅ Common Alert Utilities loaded successfully');
