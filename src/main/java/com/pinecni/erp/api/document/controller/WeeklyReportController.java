@@ -87,8 +87,13 @@ public class WeeklyReportController {
 
         log.debug("Updated by userIdx: {}", updatedUserIdx);
 
-        WeeklyReportDTO updated = weeklyReportService.updateWeeklyReport(id, updateDTO, updatedUserIdx);
-        return ResponseEntity.ok(updated);
+        try {
+            WeeklyReportDTO updated = weeklyReportService.updateWeeklyReport(id, updateDTO, updatedUserIdx);
+            return ResponseEntity.ok(updated);
+        } catch (IllegalStateException e) {
+            return ResponseEntity.status(HttpStatus.FORBIDDEN)
+                    .body(Map.of("error", e.getMessage()));
+        }
     }
 
     /**

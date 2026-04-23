@@ -6,7 +6,7 @@ export const BASE_URL = 'http://localhost:8080';
 
 // 로그인하고 세션 쿠키를 반환
 export function login(http, check, credentials) {
-  const creds = credentials || { empId: '2025020101', password: 'pine1234!@#$' };
+  const creds = credentials || { empId: '2026', password: 'a1234!@#$' };
 
   const res = http.post(
     `${BASE_URL}/api/auth/login`,
@@ -26,7 +26,7 @@ export function login(http, check, credentials) {
 
 // 로그인하고 { sessionId, userIdx } 반환 (creatorIdx 등이 필요한 시나리오용)
 export function loginFull(http, check, credentials) {
-  const creds = credentials || { empId: '2025020101', password: 'pine1234!@#$' };
+  const creds = credentials || { empId: '2026', password: 'a1234!@#$' };
 
   const res = http.post(
     `${BASE_URL}/api/auth/login`,

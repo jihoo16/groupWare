@@ -19,7 +19,10 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.DayOfWeek;
+import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -223,6 +226,22 @@ public class WeeklyReportServiceImpl implements WeeklyReportService {
         // 전자서명 게이트
         if (report.getDocumentIdx() != null && signatureService.hasAnySignatureCaptured(report.getDocumentIdx())) {
             throw new IllegalStateException("전자서명이 진행된 문서는 수정할 수 없습니다.");
+        }
+
+        // 지나간 주 수정 불가 (당주 + 다음 주만 허용)
+        if (report.getReportPeriod() != null) {
+            try {
+                String endStr = report.getReportPeriod().split("~")[1].trim();
+                LocalDate endDate = LocalDate.parse(endStr, DateTimeFormatter.ofPattern("yyyy.MM.dd"));
+                LocalDate thisWeekMonday = LocalDate.now().with(DayOfWeek.MONDAY);
+                if (endDate.isBefore(thisWeekMonday)) {
+                    throw new IllegalStateException("지나간 주의 주간보고는 수정할 수 없습니다.");
+                }
+            } catch (IllegalStateException e) {
+                throw e;
+            } catch (Exception e) {
+                log.warn("보고 기간 파싱 실패 - reportPeriod: {}", report.getReportPeriod());
+            }
         }
 
         // UpdateDTO로 Entity 업데이트

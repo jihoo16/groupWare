@@ -28,7 +28,7 @@ export default function () {
   group('PINE_ERP_SR_000-01: 로그인 성공', () => {
     const res = http.post(
       `${BASE_URL}/api/auth/login`,
-      JSON.stringify({ empId: '2025020101', password: 'pine1234!@#$' }),
+      JSON.stringify({ empId: '2026', password: 'a1234!@#$' }),
       { headers: { 'Content-Type': 'application/json' } }
     );
 
@@ -71,7 +71,7 @@ export default function () {
     // Spring AuthController는 rememberMe=true 일 때만 Set-Cookie 헤더에 JSESSIONID를 명시적으로 추가함
     const loginRes = http.post(
       `${BASE_URL}/api/auth/login`,
-      JSON.stringify({ empId: '2025020101', password: 'pine1234!@#$', rememberMe: true }),
+      JSON.stringify({ empId: '2026', password: 'a1234!@#$', rememberMe: true }),
       { headers: { 'Content-Type': 'application/json' } }
     );
 
